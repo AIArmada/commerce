@@ -92,7 +92,11 @@ class HungaryGeographyProvider implements CountryAddressAreaMetadataProvider, Co
     /** @return array<string, list<array{name: string, name_type?: string, is_preferred?: bool}>> */
     public function areaNames(AddressCountry $country): array
     {
-        return [];
+        return [
+            'hu:county:csongrad-csanad-county' => [
+                ['name' => 'Csongrád County', 'name_type' => 'historic'],
+            ],
+        ];
     }
 
     /** @return array<string, list<array{parent_source_id: string, relationship_type: string, hierarchy_type: string}>> */
@@ -198,7 +202,7 @@ class HungaryGeographyProvider implements CountryAddressAreaMetadataProvider, Co
             ['name' => 'Békéscsaba', 'code' => 'BC'],
             ['name' => 'Borsod-Abaúj-Zemplén', 'code' => 'BZ'],
             ['name' => 'Budapest', 'code' => 'BU'],
-            ['name' => 'Csongrád County', 'code' => 'CS'],
+            ['name' => 'Csongrád-Csanád County', 'code' => 'CS'],
             ['name' => 'Debrecen', 'code' => 'DE'],
             ['name' => 'Dunaújváros', 'code' => 'DU'],
             ['name' => 'Eger', 'code' => 'EG'],

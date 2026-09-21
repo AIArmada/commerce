@@ -92,7 +92,11 @@ class AzerbaijanGeographyProvider implements CountryAddressAreaMetadataProvider,
     /** @return array<string, list<array{name: string, name_type?: string, is_preferred?: bool}>> */
     public function areaNames(AddressCountry $country): array
     {
-        return [];
+        return [
+            'az:district:khojavend' => [
+                ['name' => 'Martuni', 'name_type' => 'alternative'],
+            ],
+        ];
     }
 
     /** @return array<string, list<array{parent_source_id: string, relationship_type: string, hierarchy_type: string}>> */
@@ -265,7 +269,7 @@ class AzerbaijanGeographyProvider implements CountryAddressAreaMetadataProvider,
             ['name' => 'Lankaran', 'code' => 'LAN'],
             ['name' => 'Lankaran', 'code' => 'LA'],
             ['name' => 'Lerik', 'code' => 'LER'],
-            ['name' => 'Martuni', 'code' => 'XVD'],
+            ['name' => 'Khojavend', 'code' => 'XVD'],
             ['name' => 'Masally', 'code' => 'MAS'],
             ['name' => 'Mingachevir', 'code' => 'MI'],
             ['name' => 'Naftalan', 'code' => 'NA'],

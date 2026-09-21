@@ -90,7 +90,11 @@ class PolandGeographyProvider implements CountryAddressAreaMetadataProvider, Cou
     /** @return array<string, list<array{name: string, name_type?: string, is_preferred?: bool}>> */
     public function areaNames(AddressCountry $country): array
     {
-        return [];
+        return [
+            'pl:voivodeship:opole' => [
+                ['name' => 'Opolskie', 'name_type' => 'official'],
+            ],
+        ];
     }
 
     /** @return array<string, list<array{parent_source_id: string, relationship_type: string, hierarchy_type: string}>> */
@@ -170,7 +174,7 @@ class PolandGeographyProvider implements CountryAddressAreaMetadataProvider, Cou
             ['name' => 'Łódź', 'code' => '10'],
             ['name' => 'Lesser Poland', 'code' => '12'],
             ['name' => 'Mazovia', 'code' => '14'],
-            ['name' => 'Upper Silesia', 'code' => '16'],
+            ['name' => 'Opole', 'code' => '16'],
             ['name' => 'Subcarpathia', 'code' => '18'],
             ['name' => 'Podlaskie', 'code' => '20'],
             ['name' => 'Pomerania', 'code' => '22'],

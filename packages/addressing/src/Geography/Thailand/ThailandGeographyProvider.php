@@ -206,7 +206,6 @@ class ThailandGeographyProvider implements CountryAddressAreaMetadataProvider, C
             '94' => '94',
             '95' => '95',
             '96' => '96',
-            'S' => 'S',
         ];
 
         return array_map(
@@ -303,7 +302,6 @@ class ThailandGeographyProvider implements CountryAddressAreaMetadataProvider, C
             ['name' => 'Pattani', 'code' => '94'],
             ['name' => 'Yala', 'code' => '95'],
             ['name' => 'Narathiwat', 'code' => '96'],
-            ['name' => 'Pattaya', 'code' => 'S'],
         ];
     }
 }

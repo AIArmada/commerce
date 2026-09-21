@@ -180,7 +180,7 @@ br:state:alagoas,BR,state,Alagoas,,AL,,1,,
 
 Duplicate names are normal and must never be "fixed" by renaming: Bangladesh ships 8 division/district twins, Laos ships two Vientianes (`VI` province, `VT` prefecture), and Kazakhstan, Kyrgyzstan, Azerbaijan, Belarus, Estonia, and Latvia all carry city/region or municipality twins. Filter by `type` (or `code`), never by name alone, and call the twins out in the country's [05-country-data](05-country-data.md) section and `resources/geography/README.md` line.
 
-When two rows share both name *and* type, the slug alone cannot disambiguate them. Suffix every colliding slug with its lowercased code (`lt:district_municipality:alytus-02`, `lt:district_municipality:alytus-03`) and document the suffix in the same two places. Never invent a distinguishing type to dodge the collision.
+When two rows share both name *and* type, the slug alone cannot disambiguate them. Resolve the collision properly first: Lithuania's city/district twins now differ by real type (`city_municipality` vs `district_municipality`) and name (`Vilniaus miestas` vs `Vilnius`), leaving the district slugs (`vilnius-58`) suffixed only as stability ballast. Only suffix both slugs with the lowercased code when the collision is genuine and unresolvable, and document the suffix in the same two places. Never invent a distinguishing type to dodge the collision.
 
 ## Level keys for mixed flat tiers
 

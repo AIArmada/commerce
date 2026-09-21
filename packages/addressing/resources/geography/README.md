@@ -143,7 +143,7 @@ Country-specific `AddressArea` trees imported by the bundled geography providers
 - `kosovo-address-areas.csv` — used by `KosovoGeographyProvider`. 7 districts.
 - `latvia-address-areas.csv` — used by `LatviaGeographyProvider`. 36 municipalities + 7 state cities; Jelgava/Rēzekne/Ventspils twins share names.
 - `liechtenstein-address-areas.csv` — used by `LiechtensteinGeographyProvider`. 11 communes.
-- `lithuania-address-areas.csv` — used by `LithuaniaGeographyProvider`. 10 counties + 60 municipalities flat at L1; Alytus/Kaunas/Šiauliai/Vilnius same-type twins suffixed by code.
+- `lithuania-address-areas.csv` — used by `LithuaniaGeographyProvider`. 10 counties + 60 municipalities flat at L1; 7 cities are `city_municipality` with `miestas` names, district twins keep code-suffixed slugs.
 - `luxembourg-address-areas.csv` — used by `LuxembourgGeographyProvider`. 12 cantons.
 - `malta-address-areas.csv` — used by `MaltaGeographyProvider`. 68 local councils.
 - `moldova-address-areas.csv` — used by `MoldovaGeographyProvider`. 32 districts + 3 cities + Gagauzia/Transnistria units.

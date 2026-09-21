@@ -611,7 +611,8 @@ Villages and urban villages (83,762 desa/kelurahan, level 4) ship as an
 opt-in dataset in `indonesia-villages.csv`, from the same upstream release.
 Set `addressing.geography.indonesia.villages` to `true`
 (`ADDRESSING_INDONESIA_VILLAGES`) to seed them; the default seed stops at
-districts.
+districts. Seeded villages carry the `village` role, matching the level's
+assignment role.
 
 ISO 3166-2 defines seven Indonesian geographical units (island groups such
 as `ID-JW` Jawa) alongside the 38 provinces. Those units are not provinces
@@ -620,9 +621,19 @@ stragglers from databases seeded before that fix, so `Papua` always resolves
 to the province. Nusantara/IKN is a separate capital authority, not a 39th
 province.
 
-Villages (83,762) and individual five-digit postcodes are intentionally not
-bundled. Import operational villages through `AddressAreaSource` and
-postcodes through `ImportPostalCodesAction`.
+Individual five-digit postcodes are intentionally not bundled; import
+operational postcodes through `ImportPostalCodesAction`. There is no postal
+hierarchy and no `refinedBy`: the single administrative chain
+province → regency/city → district → village already scopes every level,
+and villages are administrative rows rather than postal localities.
+
+Revisit record: all 38 province codes verified against ISO 3166-2:ID, every
+province's regency/city split reconciled (416 + 98), and all 91,599 rows
+checked for dangling parents and Kemendagri code shape with zero violations.
+Known lag: BPS counts 7,288 districts (2025) and 84,048 villages (2024)
+against the bundled 7,285 and 83,762 — upstream `lokabisa-oss/region-id`
+has no release newer than v1.0.1, so refresh when it does rather than
+hand-patching rows.
 
 Indonesian addresses are formatted as street lines, `kelurahan`/`desa` and
 `kecamatan` components, `{kota} {postcode}`, province, and country, per the
@@ -683,8 +694,8 @@ city, and country with no postcode line.
 ## Kuwait
 
 The bundled `KuwaitGeographyProvider` supplies the six ISO 3166-2
-governorates as `State` rows with 134 postal areas as level-2 areas
-(31 Capital, 29 Ahmadi, 24 Jahra, 20 Farwaniya, 17 Hawalli, 13 Mubarak
+governorates as `State` rows with 135 postal areas as level-2 areas
+(32 Capital, 29 Ahmadi, 24 Jahra, 20 Farwaniya, 17 Hawalli, 13 Mubarak
 Al-Kabeer) in a two-level administrative hierarchy. It is selected with
 `SeedCountryGeographiesAction::execute('KW')` after countries are seeded.
 Uninhabited islands (Miskan, Umm an Namil, Bubiyan, Warbah) are excluded;
@@ -1296,14 +1307,14 @@ country.
 
 The bundled `VietnamGeographyProvider` supplies the post-merger 34
 provincial-level divisions (28 provinces, 6 municipalities:
-Hà Nội, Hải Phòng, Huế, Đà Nẵng, Cần Thơ, Hồ Chí Minh City) as
+Hà Nội, Hải Phòng, Huế, Đà Nẵng, Cần Thơ, Hồ Chí Minh) as
 `State` rows and a single-level administrative hierarchy. It is
 selected with `SeedCountryGeographiesAction::execute('VN')` after
 countries are seeded.
 
 The June 2025 merger (63 → 34, districts eliminated) is reflected as
 shipped; seeding renames `Thừa Thiên-Huế` to `Huế` and retypes Hải
-Phòng, Hồ Chí Minh City, and Huế as municipalities. Communes and
+Phòng, Hồ Chí Minh, and Huế as municipalities. Communes and
 wards are intentionally not bundled.
 
 Vietnamese addresses are formatted per the UPU layout: street and
@@ -1313,9 +1324,11 @@ country.
 ## Thailand
 
 The bundled `ThailandGeographyProvider` supplies the 76 provinces
-plus Bangkok and Pattaya as `State` rows and a single-level
+plus Bangkok as `State` rows and a single-level
 administrative hierarchy. It is selected with
 `SeedCountryGeographiesAction::execute('TH')` after countries are seeded.
+Pattaya is a special administrative city inside Chon Buri, not a
+province, so it is intentionally not a row.
 
 Districts (amphoe) and sub-districts are intentionally not bundled.
 
@@ -1347,7 +1360,7 @@ and country.
 ## South Korea
 
 The bundled `SouthKoreaGeographyProvider` supplies the 17
-provincial-level divisions as `State` rows (8 provinces including the
+provincial-level divisions as `State` rows (9 provinces including the
 special self-governing Gangwon State, Jeju, and Jeonbuk State — the
 2023/2024 official renames, with `Gangwon` and `North Jeolla` aliased
 — 6 metropolitan cities, Seoul, and Sejong) and a single-level
@@ -1600,8 +1613,9 @@ The bundled `AzerbaijanGeographyProvider` supplies the 66 districts,
 rows and a single-level administrative hierarchy. It is selected with
 `SeedCountryGeographiesAction::execute('AZ')` after countries are seeded.
 
-The Lankaran, Shaki, Yevlakh, and Nakhchivan municipality/district
-pairs share names by design; filter by type.
+The Lankaran, Shaki, and Yevlakh municipality/district pairs share
+names by design, as do Nakhchivan city and the Nakhchivan Autonomous
+Republic; filter by type.
 
 Azerbaijani addresses are formatted per the UPU layout: street lines,
 `{postcode} {locality}` with an `AZ` + 4-digit postcode, the district
@@ -1717,9 +1731,12 @@ the governorate on its own line when both are set, and country.
 ## Maldives
 
 The bundled `MaldivesGeographyProvider` supplies the 20 atolls plus
-Addu City as `State` rows and a single-level administrative
+the Addu, Malé, Fuvahmulah, Kulhudhuffushi, and Thinadhoo cities as
+`State` rows and a single-level administrative
 hierarchy. It is selected with
 `SeedCountryGeographiesAction::execute('MV')` after countries are seeded.
+Fuvahmulah (`FVM`), Kulhudhuffushi (`KUH`), and Thinadhoo (`THD`)
+codes are invented pending ISO assignment.
 
 Maldivian addresses are formatted per the UPU layout: street lines,
 `{locality} {postcode}` with a 5-digit postcode, the atoll on its own
@@ -2416,7 +2433,8 @@ locality, the county, the Eircode on its own line, and country.
 The bundled `KosovoGeographyProvider` supplies the 7 districts
 as `State` rows and a single-level administrative hierarchy. It is
 selected with `SeedCountryGeographiesAction::execute('XK')` after
-countries are seeded.
+countries are seeded. Kosovo has no ISO 3166-2 subdivision entry, so
+district codes are an internal scheme.
 
 Kosovar addresses are formatted per the postal convention: street
 lines, `{postcode} {locality}` with a 5-digit postcode, and country.
@@ -2447,9 +2465,11 @@ The bundled `LithuaniaGeographyProvider` supplies the 10 counties
 and 60 municipalities flat at level 1 as `State` rows and a
 single-level administrative hierarchy. It is selected with
 `SeedCountryGeographiesAction::execute('LT')` after countries are seeded.
-The Alytus, Kaunas, Šiauliai, and Vilnius city/district pairs share
-both name and type in the source data, so their area slugs carry a
-code suffix (e.g. `alytus-02`).
+The Alytus, Kaunas, Šiauliai, and Vilnius city/district pairs differ
+by type (`city_municipality` vs `district_municipality`) and name
+(`Vilniaus miestas` vs `Vilnius`); the district slugs keep their code
+suffix (e.g. `vilnius-58`) for stability. Klaipėda, Palanga, and
+Panevėžys cities use the same `miestas` convention.
 
 Lithuanian addresses are formatted per the UPU layout: street lines,
 `{postcode} {locality}` with a 5-digit postcode, and country.

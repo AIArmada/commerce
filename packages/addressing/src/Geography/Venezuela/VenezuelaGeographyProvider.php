@@ -196,7 +196,7 @@ class VenezuelaGeographyProvider implements CountryAddressAreaMetadataProvider, 
             ['name' => 'Sucre', 'code' => 'R'],
             ['name' => 'Táchira', 'code' => 'S'],
             ['name' => 'Trujillo', 'code' => 'T'],
-            ['name' => 'Venezuela', 'code' => 'W'],
+            ['name' => 'Dependencias Federales', 'code' => 'W'],
             ['name' => 'Yaracuy', 'code' => 'U'],
             ['name' => 'Zulia', 'code' => 'V'],
         ];

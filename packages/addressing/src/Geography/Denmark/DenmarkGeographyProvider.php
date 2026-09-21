@@ -90,7 +90,11 @@ class DenmarkGeographyProvider implements CountryAddressAreaMetadataProvider, Co
     /** @return array<string, list<array{name: string, name_type?: string, is_preferred?: bool}>> */
     public function areaNames(AddressCountry $country): array
     {
-        return [];
+        return [
+            'dk:region:capital-region' => [
+                ['name' => 'Hovedstaden', 'name_type' => 'official'],
+            ],
+        ];
     }
 
     /** @return array<string, list<array{parent_source_id: string, relationship_type: string, hierarchy_type: string}>> */
@@ -153,7 +157,7 @@ class DenmarkGeographyProvider implements CountryAddressAreaMetadataProvider, Co
     {
         return [
             ['name' => 'Central Denmark', 'code' => '82'],
-            ['name' => 'Denmark', 'code' => '84'],
+            ['name' => 'Capital Region', 'code' => '84'],
             ['name' => 'North Denmark', 'code' => '81'],
             ['name' => 'Southern Denmark', 'code' => '83'],
             ['name' => 'Zealand', 'code' => '85'],

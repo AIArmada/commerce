@@ -132,6 +132,8 @@ class IndonesiaGeographyProvider implements CountryAddressAreaMetadataProvider, 
                 'regency' => ['regency'],
                 'city' => ['regency'],
                 'district' => ['district'],
+                'village' => ['village'],
+                'urban_village' => ['village'],
                 default => [],
             };
 
