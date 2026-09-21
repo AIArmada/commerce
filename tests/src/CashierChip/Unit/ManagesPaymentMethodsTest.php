@@ -24,23 +24,6 @@ describe('ManagesPaymentMethods', function (): void {
         $this->assertNull($method);
     });
 
-    it('has default payment method', function (): void {
-        $user = $this->createUser(['chip_id' => 'cli_123']);
-        Cashier::paymentMethodStore()->saveForBillable($user, 'tok_default', [
-            'type' => 'card',
-            'brand' => 'Visa',
-            'last_four' => '4242',
-        ], true);
-
-        $this->assertTrue($user->hasDefaultPaymentMethod());
-    });
-
-    it('has default payment method false', function (): void {
-        $user = $this->createUser(['chip_id' => 'cli_123']);
-
-        $this->assertFalse($user->hasDefaultPaymentMethod());
-    });
-
     it('default payment method returns null without default', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
 

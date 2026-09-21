@@ -23,11 +23,6 @@ beforeEach(function (): void {
 });
 
 describe('WebhookRouter', function (): void {
-    it('can be instantiated', function (): void {
-        $router = new WebhookRouter;
-        expect($router)->toBeInstanceOf(WebhookRouter::class);
-    });
-
     it('replays purchase.paid through the dispatcher fallback', function (): void {
         $router = new WebhookRouter;
         $payload = EnrichedWebhookPayload::fromPayload('purchase.paid', WebhookFactory::purchasePaid());
@@ -111,12 +106,6 @@ describe('WebhookRouter', function (): void {
 });
 
 describe('WebhookRetryManager', function (): void {
-    it('can be instantiated', function (): void {
-        $manager = app(WebhookRetryManager::class);
-
-        expect($manager)->toBeInstanceOf(WebhookRetryManager::class);
-    });
-
     it('calculates next retry delay', function (): void {
         $manager = app(WebhookRetryManager::class);
 

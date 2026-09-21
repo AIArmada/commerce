@@ -45,15 +45,6 @@ it('validates commerce webhook signatures with constant time comparison', functi
     expect($validator->isValid($request, supportWebhookConfig($secret)))->toBeTrue();
 });
 
-it('creates webhook calls tables with processed_at support', function (): void {
-    Schema::dropIfExists('webhook_calls');
-
-    commerceSupportMigration('1970_01_01_000004_create_webhook_calls_table.php.stub')->up();
-
-    expect(Schema::hasTable('webhook_calls'))->toBeTrue()
-        ->and(Schema::hasColumn('webhook_calls', 'processed_at'))->toBeTrue();
-});
-
 it('rejects unsigned invalid or unconfigured commerce webhook signatures', function (): void {
     $payload = json_encode(['event_type' => 'payment.completed'], JSON_THROW_ON_ERROR);
     $validator = new SupportWebhookSignatureValidator;

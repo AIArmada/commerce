@@ -95,12 +95,6 @@ describe('TieredVoucherCondition', function (): void {
             expect($condition->getName())->toBe('voucher_TIERED');
         });
 
-        it('has correct type', function (): void {
-            $voucher = createTieredVoucherDataFor();
-            $condition = new TieredVoucherCondition($voucher, $voucher->valueConfig);
-
-            expect($condition->getType())->toBe('voucher');
-        });
     });
 
     describe('tier retrieval', function (): void {

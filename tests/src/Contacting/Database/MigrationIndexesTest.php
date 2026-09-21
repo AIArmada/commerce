@@ -13,34 +13,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
-it('ships primary, demotion, and validity-window indexes in the base creates', function (): void {
-    $contactMethodsTable = config('contacting.database.tables.contact_methods', 'contact_methods');
-    $socialProfilesTable = config('contacting.database.tables.social_profiles', 'social_profiles');
-
-    expect(Schema::hasIndex($contactMethodsTable, 'contact_methods_primary_unique'))->toBeTrue()
-        ->and(Schema::hasIndex($contactMethodsTable, 'contact_methods_contactable_primary_index'))->toBeTrue()
-        ->and(Schema::hasIndex($contactMethodsTable, 'contact_methods_contactable_validity_index'))->toBeTrue()
-        ->and(Schema::hasIndex($socialProfilesTable, 'social_profiles_primary_unique'))->toBeTrue()
-        ->and(Schema::hasIndex($socialProfilesTable, 'social_profiles_socialable_primary_index'))->toBeTrue()
-        ->and(Schema::hasIndex($socialProfilesTable, 'social_profiles_socialable_validity_index'))->toBeTrue();
-
-    $migrationBase = dirname(__DIR__, 4) . '/packages/contacting/database/migrations/';
-
-    foreach ([
-        '2000_01_01_000001_create_contact_methods_table.php' => ['_primary_unique', '_contactable_primary_index', '_contactable_validity_index'],
-        '2000_01_01_000003_create_contact_social_profiles_table.php' => ['_primary_unique', '_socialable_primary_index', '_socialable_validity_index'],
-    ] as $file => $needles) {
-        $create = (string) file_get_contents($migrationBase . $file);
-
-        foreach ($needles as $needle) {
-            expect($create)->toContain($needle);
-        }
-
-        expect($create)->toContain('Schema::create')
-            ->and($create)->not->toContain('hasTable');
-    }
-});
-
 it('keeps primary application guards and rejects direct duplicate writes', function (): void {
     $customer = Customer::create([
         'first_name' => 'Indexed',

@@ -316,23 +316,6 @@ describe('InventorySerial', function (): void {
         expect($expiringSoon)->toHaveCount(1);
     });
 
-    it('history relationship', function (): void {
-        $serial = InventorySerial::factory()->create([
-            'inventoryable_type' => $this->item->getMorphClass(),
-            'inventoryable_id' => $this->item->getKey(),
-        ]);
-
-        InventorySerialHistory::create([
-            'serial_id' => $serial->id,
-            'event_type' => 'received',
-            'from_location_id' => null,
-            'to_location_id' => $this->location->id,
-            'occurred_at' => now(),
-        ]);
-
-        expect($serial->history)->toHaveCount(1);
-    });
-
     it('deleting serial cascades to history', function (): void {
         $serial = InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
@@ -363,17 +346,6 @@ describe('InventorySerial', function (): void {
         expect($serial->unit_cost_minor)->toBeInt();
         expect($serial->warranty_expires_at)->toBeInstanceOf(CarbonImmutable::class);
         expect($serial->metadata)->toBeArray();
-    });
-
-    it('assigned to relationship', function (): void {
-        $serial = InventorySerial::factory()->create([
-            'inventoryable_type' => $this->item->getMorphClass(),
-            'inventoryable_id' => $this->item->getKey(),
-            'assigned_to_type' => $this->item->getMorphClass(),
-            'assigned_to_id' => $this->item->getKey(),
-        ]);
-
-        expect($serial->assignedTo)->not->toBeNull();
     });
 
     it('can transition to', function (): void {

@@ -21,15 +21,6 @@ function createWebhookRequest(array $payload): Request
 }
 
 describe('ChipWebhookHandler instantiation', function (): void {
-    it('can be instantiated with dependencies', function (): void {
-        $webhookService = Mockery::mock(WebhookService::class);
-        $collectService = Mockery::mock(ChipCollectService::class);
-
-        $handler = new ChipWebhookHandler($webhookService, $collectService);
-
-        expect($handler)->toBeInstanceOf(ChipWebhookHandler::class);
-    });
-
     it('implements WebhookHandlerInterface', function (): void {
         $webhookService = Mockery::mock(WebhookService::class);
         $collectService = Mockery::mock(ChipCollectService::class);

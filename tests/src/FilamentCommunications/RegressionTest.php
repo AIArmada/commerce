@@ -206,22 +206,6 @@ describe('navigation sort offsets', function (): void {
 });
 
 describe('shared filter options', function (): void {
-    test('channel and provider options live in one place', function (): void {
-        expect(CommunicationFilterOptions::channels())->toBe([
-            'email' => 'Email',
-            'sms' => 'SMS',
-            'push' => 'Push',
-            'in_app' => 'In-App',
-        ])->and(CommunicationFilterOptions::providers())->toBe([
-            'ses' => 'SES',
-            'sendgrid' => 'SendGrid',
-            'twilio' => 'Twilio',
-            'slack' => 'Slack',
-            'fcm' => 'FCM',
-            'apns' => 'APNS',
-        ]);
-    });
-
     test('all channel filters share the same options', function (string $resourceClass): void {
         $table = $resourceClass::table(Table::make(Mockery::mock(HasTable::class)));
 
@@ -287,10 +271,6 @@ describe('widget toggle', function (): void {
 });
 
 describe('resource registry sanity', function (): void {
-    test('plugin id matches the package key', function (): void {
-        expect(FilamentCommunicationsPlugin::make()->getId())->toBe('filament-communications');
-    });
-
     test('all seven resources stay registered by default', function (): void {
         $panel = Panel::make();
 

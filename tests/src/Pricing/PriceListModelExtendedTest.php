@@ -153,24 +153,6 @@ describe('PriceList Model - Extended Tests', function (): void {
                 ->and($defaults->first()->name)->toBe('Default');
         });
 
-        it('filters by owner when enabled', function (): void {
-            // Note: This test only checks that forOwner scope runs without errors
-            // Full owner testing requires migrations with owner columns
-            config(['pricing.features.owner.enabled' => false]);
-
-            $prefix = uniqid();
-
-            PriceList::create([
-                'name' => 'Test List',
-                'slug' => "owned-{$prefix}",
-                'currency' => 'MYR',
-                'is_active' => true,
-            ]);
-
-            // This test verifies the scope exists and runs
-            $lists = PriceList::where('slug', 'like', "%-{$prefix}")->forOwner(null)->get();
-            expect($lists)->toHaveCount(1);
-        });
     });
 
     describe('relationships', function (): void {

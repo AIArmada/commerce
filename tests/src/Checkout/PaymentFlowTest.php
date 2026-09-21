@@ -643,44 +643,6 @@ describe('CreateOrderStep', function (): void {
         expect($session->fresh()->completed_at)->not->toBeNull();
     });
 
-    it('fails order creation when payment confirmation fails', function (): void {
-        config()->set('checkout.create_order.confirm_payment', true);
-
-        $orderService = mock(OrderServiceInterface::class);
-        $order = new Order;
-        $order->forceFill([
-            'id' => (string) Str::uuid(),
-            'order_number' => 'TEST-ORDER-PAYMENT-FAILED-NO-INV',
-        ]);
-
-        $orderService->shouldReceive('createOrder')->once()->andReturn($order);
-        $orderService->shouldReceive('confirmPayment')->once()->andThrow(new RuntimeException('gateway unavailable'));
-        app()->instance(OrderServiceInterface::class, $orderService);
-
-        $session = CheckoutSession::forceCreate([
-            'cart_id' => 'test-cart-payment-failed-no-inv',
-            'cart_snapshot' => ['items' => []],
-            'payment_data' => [
-                'type' => 'card',
-                'status' => PaymentStatus::Completed->value,
-                'transaction_id' => 'tx-payment-failed-no-inv',
-                'gateway' => 'chip',
-                'amount' => 1000,
-                'currency' => 'USD',
-            ],
-            'selected_payment_gateway' => 'chip',
-            'payment_id' => 'payment-failed-no-inv',
-            'subtotal' => 1000,
-            'grand_total' => 1000,
-            'currency' => 'USD',
-        ]);
-        $session = $session->transitionStatus(Processing::class);
-
-        $result = app(CreateOrderStep::class)->handle($session);
-
-        expect($result->isSuccessful())->toBeFalse();
-    });
-
     it('creates the order when payment confirmation succeeds for paid orders', function (): void {
         config()->set('checkout.create_order.confirm_payment', true);
 

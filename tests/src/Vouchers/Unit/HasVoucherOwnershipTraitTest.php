@@ -6,7 +6,6 @@ use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Traits\HasVoucherOwnership;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -21,12 +20,6 @@ class VoucherOwnerModel extends Model
 }
 
 describe('HasVoucherOwnership Trait', function (): void {
-    it('provides vouchers relationship', function (): void {
-        $owner = new VoucherOwnerModel;
-
-        expect($owner->vouchers())->toBeInstanceOf(MorphMany::class);
-    });
-
     it('returns vouchers owned by the model', function (): void {
         // Create owner first - we need a real user
         $ownerId = 'test-owner-' . uniqid();

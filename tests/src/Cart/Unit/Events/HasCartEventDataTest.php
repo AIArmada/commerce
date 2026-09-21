@@ -161,12 +161,6 @@ describe('MetadataBatchAdded', function (): void {
         expect($event)->toBeInstanceOf(CartEventInterface::class);
     });
 
-    it('returns correct event type', function (): void {
-        $event = new MetadataBatchAdded(['key' => 'value'], $this->cart);
-
-        expect($event->getEventType())->toBe('cart.metadata.batch_added');
-    });
-
     it('provides access to metadata', function (): void {
         $metadata = ['key1' => 'value1', 'key2' => ['nested' => 'data']];
         $event = new MetadataBatchAdded($metadata, $this->cart);
@@ -190,15 +184,6 @@ describe('MetadataBatchAdded', function (): void {
         $event = new MetadataBatchAdded(['key' => 'value'], $this->cart);
 
         expect($event->getCartInstance())->toBe('default');
-    });
-
-    it('returns cart ID (null for InMemoryStorage)', function (): void {
-        $event = new MetadataBatchAdded(['key' => 'value'], $this->cart);
-
-        $cartId = $event->getCartId();
-
-        // InMemoryStorage doesn't track cart UUIDs
-        expect($cartId)->toBeNull();
     });
 
     it('serializes to array', function (): void {

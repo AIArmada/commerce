@@ -69,13 +69,6 @@ describe('VoucherUsage Model', function (): void {
         expect($usage->notes)->toBe('Customer service approved this discount');
     });
 
-    it('uses correct table name from config', function (): void {
-        $usage = new VoucherUsage;
-        $table = $usage->getTable();
-
-        expect($table)->toBe('voucher_usage');
-    });
-
     it('allows polymorphic redeemedBy relationship', function (): void {
         $voucher = createVoucherForUsageTest('MORPH-TEST');
         $usage = VoucherUsage::create([

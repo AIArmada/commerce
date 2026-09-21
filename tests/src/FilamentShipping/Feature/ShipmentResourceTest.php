@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\FilamentShipping\Resources\ShipmentResource;
-use AIArmada\Shipping\Models\Shipment;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 
@@ -15,18 +13,6 @@ uses(TestCase::class);
 // ============================================
 // ShipmentResource Tests
 // ============================================
-
-it('has correct navigation icon', function (): void {
-    expect(ShipmentResource::getNavigationIcon())->toBe(Heroicon::OutlinedTruck);
-});
-
-it('has correct navigation group', function (): void {
-    expect(ShipmentResource::getNavigationGroup())->toBe('Shipping');
-});
-
-it('uses shipment model', function (): void {
-    expect(ShipmentResource::getModel())->toBe(Shipment::class);
-});
 
 it('has standard CRUD pages', function (): void {
     $pages = ShipmentResource::getPages();

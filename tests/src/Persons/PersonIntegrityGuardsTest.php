@@ -10,7 +10,6 @@ use AIArmada\Persons\Enums\CredentialType;
 use AIArmada\Persons\Enums\PersonNameType;
 use AIArmada\Persons\Enums\PersonStatus;
 use AIArmada\Persons\Enums\TitleUsagePosition;
-use AIArmada\Persons\Models\CredentialAssignment;
 use AIArmada\Persons\Models\CredentialDefinition;
 use AIArmada\Persons\Models\Person;
 use AIArmada\Persons\Models\PersonName;
@@ -19,7 +18,6 @@ use AIArmada\Persons\Models\TitleAssignment;
 use AIArmada\Persons\Models\TitleCategory;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 beforeEach(function (): void {
@@ -79,14 +77,6 @@ describe('person integrity guards', function (): void {
 
         expect($name)->toBe('Datuk Titled Person')
             ->and($queries)->toBeEmpty();
-    });
-
-    it('enforces assignment uniqueness at the database level', function (): void {
-        $titleTable = (new TitleAssignment)->getTable();
-        $credentialTable = (new CredentialAssignment)->getTable();
-
-        expect(Schema::hasIndex($titleTable, 'title_assignments_target_title_unique'))->toBeTrue()
-            ->and(Schema::hasIndex($credentialTable, 'credential_assignments_target_credential_unique'))->toBeTrue();
     });
 
     it('returns the existing assignment instead of duplicating', function (): void {

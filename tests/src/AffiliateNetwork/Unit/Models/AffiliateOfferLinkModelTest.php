@@ -46,11 +46,6 @@ describe('AffiliateOfferLink Model', function (): void {
             expect($link->id)->toMatch('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/');
         });
 
-        test('table name comes from config', function (): void {
-            $link = new AffiliateOfferLink;
-
-            expect($link->getTable())->toBe('affiliate_network_offer_links');
-        });
     });
 
     describe('code generation', function (): void {

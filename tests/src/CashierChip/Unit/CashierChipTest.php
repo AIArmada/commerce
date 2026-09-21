@@ -10,15 +10,6 @@ use AIArmada\Commerce\Tests\CashierChip\Fixtures\User;
 
 uses(CashierChipTestCase::class);
 
-it('can ignore routes', function (): void {
-    Cashier::ignoreRoutes();
-
-    expect(Cashier::$registersRoutes)->toBeFalse();
-
-    // Reset
-    Cashier::$registersRoutes = true;
-});
-
 it('restores boot-time static configuration between requests', function (): void {
     expect(Cashier::isFake())->toBeTrue();
 

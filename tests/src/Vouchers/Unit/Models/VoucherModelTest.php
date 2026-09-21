@@ -13,7 +13,6 @@ use AIArmada\Vouchers\States\Paused;
 use AIArmada\Vouchers\States\VoucherStatus;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
@@ -47,12 +46,6 @@ describe('Voucher Model', function (): void {
                 ->and($relation->getRelated())->toBeInstanceOf(VoucherWallet::class);
         });
 
-        it('defines affiliate relationship as BelongsTo', function (): void {
-            $voucher = new Voucher;
-            $relation = $voucher->affiliate();
-
-            expect($relation)->toBeInstanceOf(BelongsTo::class);
-        });
     });
 
     describe('belongsToAffiliate', function (): void {

@@ -75,32 +75,3 @@ it('registers resources and widgets on the panel', function (): void {
     $plugin = app(FilamentPricingPlugin::class);
     $plugin->register($panel);
 });
-
-it('defers promotion management to filament-promotions when the dedicated plugin is installed', function (): void {
-    if (! class_exists('\\AIArmada\\FilamentPromotions\\FilamentPromotionsPlugin')) {
-        $this->markTestSkipped('Filament promotions package is not installed.');
-    }
-
-    $panel = Mockery::mock(Panel::class);
-
-    $panel->shouldReceive('resources')->once()->with([
-        PriceListResource::class,
-    ])->andReturnSelf();
-
-    $expectedPages = [
-        ManagePricingSettings::class,
-    ];
-
-    if (class_exists('\\AIArmada\\Products\\Models\\Product') && class_exists('\\AIArmada\\Products\\Models\\Variant')) {
-        $expectedPages[] = PriceSimulator::class;
-    }
-
-    $panel->shouldReceive('pages')->once()->with($expectedPages)->andReturnSelf();
-
-    $panel->shouldReceive('widgets')->once()->with([
-        PricingStatsWidget::class,
-    ])->andReturnSelf();
-
-    $plugin = app(FilamentPricingPlugin::class);
-    $plugin->register($panel);
-});

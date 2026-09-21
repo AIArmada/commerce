@@ -20,16 +20,6 @@ describe('HasLocationHierarchy', function (): void {
         });
     });
 
-    describe('children relationship', function (): void {
-        it('has children relationship', function (): void {
-            $parent = InventoryLocation::factory()->create(['name' => 'Parent']);
-            $child1 = InventoryLocation::factory()->create(['name' => 'Child 1', 'parent_id' => $parent->id]);
-            $child2 = InventoryLocation::factory()->create(['name' => 'Child 2', 'parent_id' => $parent->id]);
-
-            expect($parent->children)->toHaveCount(2);
-        });
-    });
-
     describe('descendants attribute', function (): void {
         it('gets all descendants', function (): void {
             $root = InventoryLocation::factory()->create(['name' => 'Root']);

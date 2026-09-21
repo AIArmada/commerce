@@ -44,7 +44,6 @@ use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Spatie\ModelStates\Exceptions\TransitionNotFound;
 
@@ -461,16 +460,6 @@ it('drops forged owner tuples on event creation', function (): void {
 });
 
 // Capacity math is covered by composite indexes.
-it('indexes registration scope and status for capacity math', function (): void {
-    $indexes = array_map(
-        static fn (array $index): string => is_string($index['name'] ?? null) ? $index['name'] : '',
-        Schema::getIndexes('event_registrations'),
-    );
-
-    expect($indexes)->toContain('event_registrations_occurrence_status_index')
-        ->and($indexes)->toContain('event_registrations_session_status_index');
-});
-
 // Missing authz roles warn loudly instead of vanishing.
 it('warns when the authz role for a management assignment is missing', function (): void {
     config()->set('authz.scopes.enabled', true);

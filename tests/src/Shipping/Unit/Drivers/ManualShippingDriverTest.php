@@ -19,14 +19,6 @@ beforeEach(function (): void {
     $this->driver = new ManualShippingDriver;
 });
 
-it('returns correct carrier code', function (): void {
-    expect($this->driver->getCarrierCode())->toBe('manual');
-});
-
-it('returns correct carrier name', function (): void {
-    expect($this->driver->getCarrierName())->toBe('Manual Shipping');
-});
-
 it('reports no supported capabilities', function (): void {
     $driver = new ManualShippingDriver;
 

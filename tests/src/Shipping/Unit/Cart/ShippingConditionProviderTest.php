@@ -199,18 +199,6 @@ it('validates non-shipping conditions always pass', function (): void {
     expect($provider->validate($condition, $cart))->toBeTrue();
 });
 
-it('returns correct type', function (): void {
-    $provider = new ShippingConditionProvider($this->rateEngine);
-
-    expect($provider->getType())->toBe('shipping');
-});
-
-it('returns correct priority', function (): void {
-    $provider = new ShippingConditionProvider($this->rateEngine);
-
-    expect($provider->getPriority())->toBe(80);
-});
-
 it('gets selected rate when method is specified', function (): void {
     $storage = new InMemoryStorage;
     $cart = new Cart($storage, 'test-shipping-' . uniqid(), events: null);

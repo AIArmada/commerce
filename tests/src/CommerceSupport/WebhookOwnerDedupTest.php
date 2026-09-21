@@ -16,13 +16,6 @@ beforeEach(function (): void {
     ownerDedupMigration('1970_01_01_000004_create_webhook_calls_table.php.stub')->up();
 });
 
-it('creates webhook calls with owner dedup columns and an owner-scoped unique', function (): void {
-    expect(Schema::hasColumn('webhook_calls', 'owner_type'))->toBeTrue()
-        ->and(Schema::hasColumn('webhook_calls', 'owner_id'))->toBeTrue()
-        ->and(Schema::hasColumn('webhook_calls', 'owner_hash'))->toBeTrue()
-        ->and(Schema::hasIndex('webhook_calls', 'webhook_calls_owner_dedup_unique'))->toBeTrue();
-});
-
 it('processes identical provider events for two different owners', function (): void {
     $first = WebhookCall::query()->create([
         'name' => 'owner-dedup',

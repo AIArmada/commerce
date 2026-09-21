@@ -31,13 +31,6 @@ describe('Payment', function (): void {
         $this->assertTrue($payment->isSucceeded());
     });
 
-    it('is succeeded when paid', function (): void {
-        $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'paid']);
-        $payment = new Payment($purchase);
-
-        $this->assertTrue($payment->isSucceeded());
-    });
-
     it('is pending', function (): void {
         $purchase = PurchaseData::from(['id' => 'pur_123', 'status' => 'pending_execute']);
         $payment = new Payment($purchase);

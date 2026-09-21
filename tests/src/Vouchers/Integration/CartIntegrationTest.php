@@ -6,7 +6,6 @@ use AIArmada\Cart\CartManager;
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Vouchers\Conditions\VoucherCondition;
 use AIArmada\Vouchers\Enums\VoucherType;
-use AIArmada\Vouchers\Events\VoucherApplied;
 use AIArmada\Vouchers\Events\VoucherRemoved;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
 use AIArmada\Vouchers\Models\Voucher as VoucherModel;
@@ -409,27 +408,6 @@ test('can check if cart can add more vouchers', function (): void {
     Cart::applyVoucher('CHECK2');
 
     expect(Cart::canAddVoucher())->toBeFalse();
-});
-
-test('dispatches voucher applied event', function (): void {
-    Event::fake([VoucherApplied::class]);
-
-    VoucherModel::create([
-        'name' => 'Event Voucher',
-        'code' => 'EVENT',
-        'type' => VoucherType::Percentage,
-        'status' => Active::class,
-        'value' => 10,
-        'currency' => 'MYR',
-        'starts_at' => now()->subDay(),
-        'expires_at' => now()->addMonth(),
-    ]);
-
-    Cart::add('sku-event', 'Test Product', 140.00, 1);
-
-    Cart::applyVoucher('EVENT');
-
-    Event::assertDispatched(VoucherApplied::class);
 });
 
 test('dispatches voucher removed event', function (): void {

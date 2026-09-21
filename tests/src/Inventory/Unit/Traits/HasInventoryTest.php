@@ -7,7 +7,6 @@ use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventoryMovement;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 beforeEach(function (): void {
     $this->item = InventoryItem::create(['name' => 'Test Product']);
@@ -23,10 +22,6 @@ beforeEach(function (): void {
 
 describe('HasInventory trait', function (): void {
     describe('inventoryLevels relationship', function (): void {
-        it('returns morph many relationship', function (): void {
-            expect($this->item->inventoryLevels())->toBeInstanceOf(MorphMany::class);
-        });
-
         it('returns inventory levels for the model', function (): void {
             $levels = $this->item->inventoryLevels;
 
@@ -51,10 +46,6 @@ describe('HasInventory trait', function (): void {
     });
 
     describe('inventoryMovements relationship', function (): void {
-        it('returns morph many relationship', function (): void {
-            expect($this->item->inventoryMovements())->toBeInstanceOf(MorphMany::class);
-        });
-
         it('returns movements ordered by occurred_at desc', function (): void {
             $movement1 = InventoryMovement::factory()->create([
                 'inventoryable_type' => $this->item->getMorphClass(),
@@ -135,12 +126,6 @@ describe('HasInventory trait', function (): void {
 
             expect($availability)->toBeArray();
             expect($availability[$this->location->id])->toBe(90);
-        });
-    });
-
-    describe('getAllocationStrategy', function (): void {
-        it('returns null by default', function (): void {
-            expect($this->item->getAllocationStrategy())->toBeNull();
         });
     });
 

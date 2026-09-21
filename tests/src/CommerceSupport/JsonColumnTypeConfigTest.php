@@ -92,41 +92,6 @@ it('uses COMMERCE_JSON_COLUMN_TYPE fallback for every package', function (): voi
     }
 });
 
-it('uses the configured json column type in the commerce support webhook migration', function (): void {
-    $migration = file_get_contents(repoPath('packages/commerce-support/database/migrations/1970_01_01_000004_create_webhook_calls_table.php.stub'));
-
-    expect($migration)
-        ->toBeString()
-        ->toContain("commerce_json_column_type('commerce-support', 'jsonb')")
-        ->toContain("\$table->{\$jsonType}('headers')")
-        ->toContain("\$table->{\$jsonType}('payload')")
-        ->not->toContain("->json('headers')")
-        ->not->toContain("->json('payload')");
-});
-
-it('uses the configured json column type in the membership applications migration', function (): void {
-    $migration = file_get_contents(repoPath('packages/membership/database/migrations/2000_01_01_000001_create_membership_applications_table.php'));
-
-    expect($migration)
-        ->toBeString()
-        ->toContain("commerce_json_column_type('membership', 'jsonb')")
-        ->toContain("\$table->{\$jsonType}('meta')")
-        ->not->toContain("->jsonb('meta')");
-});
-
-it('uses configured membership table names in both migrations', function (): void {
-    $applications = file_get_contents(repoPath('packages/membership/database/migrations/2000_01_01_000001_create_membership_applications_table.php'));
-    $invitations = file_get_contents(repoPath('packages/membership/database/migrations/2000_01_01_000002_create_membership_invitations_table.php'));
-
-    expect($applications)
-        ->toBeString()
-        ->toContain("config('membership.database.tables.applications', 'membership_applications')");
-
-    expect($invitations)
-        ->toBeString()
-        ->toContain("config('membership.database.tables.invitations', 'membership_invitations')");
-});
-
 function unsetEnvVar(string $key): void
 {
     putenv($key);

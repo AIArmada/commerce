@@ -24,58 +24,10 @@ beforeEach(function (): void {
 });
 
 // AffiliateStatsWidget Tests
-it('AffiliateStatsWidget returns correct column count', function (): void {
-    $widget = new AffiliateStatsWidget;
-    $reflection = new ReflectionClass($widget);
-    $method = $reflection->getMethod('getColumns');
-
-    expect($method->invoke($widget))->toBe(5);
-});
-
 // PerformanceOverviewWidget Tests
-it('PerformanceOverviewWidget has polling interval', function (): void {
-    $widget = new PerformanceOverviewWidget;
-    $reflection = new ReflectionClass($widget);
-    $property = $reflection->getProperty('pollingInterval');
-
-    expect($property->getValue($widget))->toBe('30s');
-});
-
 // RealTimeActivityWidget Tests
-it('RealTimeActivityWidget has fast polling interval', function (): void {
-    $widget = new RealTimeActivityWidget;
-    $reflection = new ReflectionClass($widget);
-    $property = $reflection->getProperty('pollingInterval');
-
-    expect($property->getValue($widget))->toBe('10s');
-});
-
-it('RealTimeActivityWidget has full column span', function (): void {
-    $widget = new RealTimeActivityWidget;
-    $reflection = new ReflectionClass($widget);
-    $property = $reflection->getProperty('columnSpan');
-
-    expect($property->getValue($widget))->toBe('full');
-});
-
 // FraudAlertWidget Tests
-it('FraudAlertWidget has polling interval of 30s', function (): void {
-    $widget = new FraudAlertWidget;
-    $reflection = new ReflectionClass($widget);
-    $property = $reflection->getProperty('pollingInterval');
-
-    expect($property->getValue($widget))->toBe('30s');
-});
-
 // PayoutQueueWidget Tests
-it('PayoutQueueWidget has polling interval of 60s', function (): void {
-    $widget = new PayoutQueueWidget;
-    $reflection = new ReflectionClass($widget);
-    $property = $reflection->getProperty('pollingInterval');
-
-    expect($property->getValue($widget))->toBe('60s');
-});
-
 it('PayoutQueueWidget table heading includes pending count', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'WIDG-' . Str::uuid(),
@@ -117,12 +69,6 @@ it('UplineVisualizationWidget can mount without affiliate id', function (): void
     $widget->mount(null);
 
     expect($widget->affiliateId)->toBeNull();
-});
-
-it('UplineVisualizationWidget has default depth of 3', function (): void {
-    $widget = new UplineVisualizationWidget;
-
-    expect($widget->depth)->toBe(3);
 });
 
 it('UplineVisualizationWidget returns empty network data for non-existent affiliate', function (): void {

@@ -246,14 +246,6 @@ describe('Category Model', function (): void {
         });
     });
 
-    describe('Route Key Name', function (): void {
-        it('uses slug as route key', function (): void {
-            $category = Category::create(['name' => 'Route Category']);
-
-            expect($category->getRouteKeyName())->toBe('slug');
-        });
-    });
-
     describe('Deletion', function (): void {
         it('nullifies parent_id for children when deleted', function (): void {
             $parent = Category::create(['name' => 'Parent to Delete']);

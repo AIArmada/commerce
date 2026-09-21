@@ -16,20 +16,6 @@ describe('Additional Exceptions', function (): void {
             expect($exception->getMessage())->toBe('Gateway not found.');
         });
 
-        it('can be created with custom message', function (): void {
-            $exception = new GatewayNotFoundException('Custom message', 404);
-
-            expect($exception->getMessage())->toBe('Custom message')
-                ->and($exception->getCode())->toBe(404);
-        });
-
-        it('can be created with previous exception', function (): void {
-            $previous = new Exception('Previous error');
-            $exception = new GatewayNotFoundException('Gateway error', 0, $previous);
-
-            expect($exception->getPrevious())->toBe($previous);
-        });
-
         it('can be created for missing gateway', function (): void {
             $exception = GatewayNotFoundException::forGateway('paypal');
 

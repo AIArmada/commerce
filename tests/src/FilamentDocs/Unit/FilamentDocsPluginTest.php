@@ -24,12 +24,6 @@ beforeEach(function (): void {
     app()->forgetInstance(FilamentDocsPlugin::class);
 });
 
-it('exposes a stable plugin id', function (): void {
-    $plugin = new FilamentDocsPlugin;
-
-    expect($plugin->getId())->toBe('filament-docs');
-});
-
 it('registers docs resources and widgets on the panel', function (): void {
     /** @var Panel&MockInterface $panel */
     $panel = Mockery::mock(Panel::class);
@@ -149,34 +143,4 @@ it('can use custom resource classes via fluent API', function (): void {
 
     // @phpstan-ignore argument.type
     $plugin->register($panel);
-});
-
-it('can set navigation group via fluent API', function (): void {
-    $plugin = FilamentDocsPlugin::make()
-        ->navigationGroup('Billing');
-
-    expect($plugin->getNavigationGroup())->toBe('Billing');
-});
-
-it('applies the fluent navigation group to resources and pages', function (): void {
-    config(['filament-docs.navigation.group' => 'Billing']);
-
-    expect(DocResource::getNavigationGroup())->toBe('Billing')
-        ->and(DocTemplateResource::getNavigationGroup())->toBe('Billing')
-        ->and(DocSequenceResource::getNavigationGroup())->toBe('Billing')
-        ->and(DocEmailTemplateResource::getNavigationGroup())->toBe('Billing')
-        ->and(AgingReportPage::getNavigationGroup())->toBe('Billing')
-        ->and(PendingApprovalsPage::getNavigationGroup())->toBe('Billing');
-});
-
-it('returns null for navigation group when not set and config not available', function (): void {
-    $plugin = new FilamentDocsPlugin;
-
-    // When navigation group is not set via fluent API, it falls back to config
-    // In a real app with config bound, this would return the config value
-    // Here we test the property is null by default
-    $reflection = new ReflectionClass($plugin);
-    $property = $reflection->getProperty('navigationGroup');
-
-    expect($property->getValue($plugin))->toBeNull();
 });

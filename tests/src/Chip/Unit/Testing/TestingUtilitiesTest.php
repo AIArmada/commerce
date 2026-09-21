@@ -8,11 +8,6 @@ use AIArmada\Chip\Testing\WebhookFactory;
 use AIArmada\Chip\Webhooks\WebhookEnricher;
 
 describe('WebhookEnricher', function (): void {
-    it('can be instantiated', function (): void {
-        $enricher = new WebhookEnricher;
-        expect($enricher)->toBeInstanceOf(WebhookEnricher::class);
-    });
-
     it('enriches payload', function (): void {
         $enricher = new WebhookEnricher;
 
@@ -31,11 +26,6 @@ describe('WebhookEnricher', function (): void {
 });
 
 describe('WebhookFactory', function (): void {
-    it('can be instantiated via make', function (): void {
-        $factory = WebhookFactory::make();
-        expect($factory)->toBeInstanceOf(WebhookFactory::class);
-    });
-
     it('creates purchase.paid payload', function (): void {
         $payload = WebhookFactory::purchasePaid();
 

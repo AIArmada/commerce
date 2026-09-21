@@ -59,26 +59,6 @@ it('can get default payment method', function (): void {
     expect($paymentMethod->lastFour())->toBeNull();
 });
 
-it('can update default payment method', function (): void {
-    $this->linkChipCustomer($this->user, 'cli_test456');
-
-    // Add a recurring token to the fake client using Cashier::getFake()
-    $fake = Cashier::getFake();
-    $token = $fake->addRecurringToken($this->user->chip_id, [
-        'payment_method' => 'mastercard',
-        'description' => '**** **** **** 5555',
-    ]);
-
-    // Update default payment method
-    $this->user->updateDefaultPaymentMethod($token['id']);
-
-    // Refresh the user to get the latest values
-    $this->user->refresh();
-
-    expect($this->user->pm_type)->toBe('mastercard');
-    expect($this->user->pm_last_four)->toBeNull();
-});
-
 // Subscription Tests
 
 it('can check if subscribed', function (): void {

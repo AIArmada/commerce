@@ -18,9 +18,4 @@ describe('InventoryReleased', function (): void {
         expect($event->cartId)->toBe('cart-123');
     });
 
-    it('get event type returns correct value', function (): void {
-        $event = new InventoryReleased($this->item, 5, 'cart-123');
-
-        expect($event->getEventType())->toBe('inventory.released');
-    });
 });

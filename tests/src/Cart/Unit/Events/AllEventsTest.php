@@ -25,21 +25,12 @@ describe('CartCleared Event', function (): void {
         $this->event = new CartCleared($this->cart);
     });
 
-    it('returns correct event type', function (): void {
-        expect($this->event->getEventType())->toBe('cart.cleared');
-    });
-
     it('returns cart identifier', function (): void {
         expect($this->event->getCartIdentifier())->toBe('test-user');
     });
 
     it('returns cart instance', function (): void {
         expect($this->event->getCartInstance())->toBe('default');
-    });
-
-    it('returns cart id (null for InMemoryStorage)', function (): void {
-        // InMemoryStorage doesn't track cart UUIDs
-        expect($this->event->getCartId())->toBeNull();
     });
 
     it('converts to array', function (): void {
@@ -59,21 +50,12 @@ describe('CartCreated Event', function (): void {
         $this->event = new CartCreated($this->cart);
     });
 
-    it('returns correct event type', function (): void {
-        expect($this->event->getEventType())->toBe('cart.created');
-    });
-
     it('returns cart identifier', function (): void {
         expect($this->event->getCartIdentifier())->toBe('new-user');
     });
 
     it('returns cart instance', function (): void {
         expect($this->event->getCartInstance())->toBe('default');
-    });
-
-    it('returns cart id (null for InMemoryStorage)', function (): void {
-        // InMemoryStorage doesn't track cart UUIDs
-        expect($this->event->getCartId())->toBeNull();
     });
 
     it('converts to array', function (): void {
@@ -94,10 +76,6 @@ describe('CartDestroyed Event', function (): void {
             owner_type: 'App\\Models\\User',
             owner_id: '42',
         );
-    });
-
-    it('returns correct event type', function (): void {
-        expect($this->event->getEventType())->toBe('cart.destroyed');
     });
 
     it('returns cart identifier', function (): void {
@@ -134,10 +112,6 @@ describe('ItemAdded Event', function (): void {
         $this->event = new ItemAdded($this->item, $this->cart);
     });
 
-    it('returns correct event type', function (): void {
-        expect($this->event->getEventType())->toBe('cart.item.added');
-    });
-
     it('returns cart identifier', function (): void {
         expect($this->event->getCartIdentifier())->toBe('item-user');
     });
@@ -162,10 +136,6 @@ describe('ItemRemoved Event', function (): void {
         $this->event = new ItemRemoved($this->item, $this->cart);
     });
 
-    it('returns correct event type', function (): void {
-        expect($this->event->getEventType())->toBe('cart.item.removed');
-    });
-
     it('converts to array', function (): void {
         $array = $this->event->toArray();
 
@@ -183,10 +153,6 @@ describe('ItemUpdated Event', function (): void {
         $this->item = $this->cart->getItems()->first();
         // ItemUpdated only takes (item, cart) - no old/new quantities in constructor
         $this->event = new ItemUpdated($this->item, $this->cart);
-    });
-
-    it('returns correct event type', function (): void {
-        expect($this->event->getEventType())->toBe('cart.item.updated');
     });
 
     it('converts to array', function (): void {
@@ -208,10 +174,6 @@ describe('CartConditionAdded Event', function (): void {
             value: '-10%'
         );
         $this->event = new CartConditionAdded($this->condition, $this->cart);
-    });
-
-    it('returns correct event type', function (): void {
-        expect($this->event->getEventType())->toBe('cart.condition.added');
     });
 
     it('converts to array', function (): void {
@@ -242,10 +204,6 @@ describe('CartConditionRemoved Event', function (): void {
         $this->event = new CartConditionRemoved($this->condition, $this->cart);
     });
 
-    it('returns correct event type', function (): void {
-        expect($this->event->getEventType())->toBe('cart.condition.removed');
-    });
-
     it('converts to array', function (): void {
         $array = $this->event->toArray();
 
@@ -260,10 +218,6 @@ describe('MetadataAdded Event', function (): void {
         $storage = new InMemoryStorage;
         $this->cart = new Cart($storage, 'meta-user');
         $this->event = new MetadataAdded('coupon_code', 'SAVE20', $this->cart);
-    });
-
-    it('returns correct event type', function (): void {
-        expect($this->event->getEventType())->toBe('cart.metadata.added');
     });
 
     it('stores key and value', function (): void {
@@ -289,10 +243,6 @@ describe('MetadataRemoved Event', function (): void {
         $this->event = new MetadataRemoved('coupon_code', $this->cart);
     });
 
-    it('returns correct event type', function (): void {
-        expect($this->event->getEventType())->toBe('cart.metadata.removed');
-    });
-
     it('converts to array', function (): void {
         $array = $this->event->toArray();
 
@@ -307,10 +257,6 @@ describe('MetadataCleared Event', function (): void {
         $storage = new InMemoryStorage;
         $this->cart = new Cart($storage, 'meta-clear-user');
         $this->event = new MetadataCleared($this->cart);
-    });
-
-    it('returns correct event type', function (): void {
-        expect($this->event->getEventType())->toBe('cart.metadata.cleared');
     });
 
     it('converts to array', function (): void {

@@ -8,7 +8,6 @@ use AIArmada\FilamentShipping\Pages\ShippingDashboard;
 use AIArmada\Shipping\Models\Shipment;
 use AIArmada\Shipping\States\Shipped;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
@@ -20,35 +19,8 @@ uses(TestCase::class);
 // ============================================
 
 describe('ShippingDashboard', function (): void {
-    it('has correct navigation icon', function (): void {
-        $reflection = new ReflectionProperty(ShippingDashboard::class, 'navigationIcon');
-
-        expect($reflection->getValue(null))->toBe(Heroicon::OutlinedChartBar);
-    });
-
-    it('has correct navigation group', function (): void {
-        expect(ShippingDashboard::getNavigationGroup())->toBe('Shipping');
-    });
-
-    it('has correct navigation label', function (): void {
-        expect(ShippingDashboard::getNavigationLabel())->toBe('Dashboard');
-    });
-
-    it('has navigation sort order of 0', function (): void {
-        expect(ShippingDashboard::getNavigationSort())->toBe(0);
-    });
-
-    it('has correct slug', function (): void {
-        $reflection = new ReflectionProperty(ShippingDashboard::class, 'slug');
-
-        expect($reflection->getValue(null))->toBe('shipping-dashboard');
-    });
-
     it('returns title and widgets', function (): void {
         $page = new ShippingDashboard;
-
-        expect($page->getTitle())->toBe('Shipping Dashboard');
-        expect($page->getHeaderWidgetsColumns())->toBe(5);
 
         $getHeaderWidgets = new ReflectionMethod($page, 'getHeaderWidgets');
         $getFooterWidgets = new ReflectionMethod($page, 'getFooterWidgets');
@@ -64,30 +36,6 @@ describe('ShippingDashboard', function (): void {
 });
 
 describe('ManifestPage', function (): void {
-    it('has correct navigation icon', function (): void {
-        $reflection = new ReflectionProperty(ManifestPage::class, 'navigationIcon');
-
-        expect($reflection->getValue(null))->toBe(Heroicon::OutlinedDocumentText);
-    });
-
-    it('has correct navigation group', function (): void {
-        expect(ManifestPage::getNavigationGroup())->toBe('Shipping');
-    });
-
-    it('has correct navigation label', function (): void {
-        expect(ManifestPage::getNavigationLabel())->toBe('Manifests');
-    });
-
-    it('has navigation sort order of 5', function (): void {
-        expect(ManifestPage::getNavigationSort())->toBe(5);
-    });
-
-    it('has correct slug', function (): void {
-        $reflection = new ReflectionProperty(ManifestPage::class, 'slug');
-
-        expect($reflection->getValue(null))->toBe('shipping-manifests');
-    });
-
     it('mounts with today\'s manifest date', function (): void {
         $page = new ManifestPage;
         $page->mount();

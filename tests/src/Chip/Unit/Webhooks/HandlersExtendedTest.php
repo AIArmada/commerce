@@ -60,17 +60,6 @@ function createTestEnrichedPayload(string $event, array $rawPayload = []): Enric
     );
 }
 
-describe('PurchasePaidHandler', function (): void {
-    it('has handle method that accepts EnrichedWebhookPayload', function (): void {
-        $handler = app(PurchasePaidHandler::class);
-        $reflection = new ReflectionMethod($handler, 'handle');
-        $params = $reflection->getParameters();
-
-        expect($params)->toHaveCount(1);
-        expect($params[0]->getType()->getName())->toBe(EnrichedWebhookPayload::class);
-    });
-});
-
 describe('Handler edge cases', function (): void {
     it('all handlers handle empty payload gracefully', function (): void {
         $handlers = [

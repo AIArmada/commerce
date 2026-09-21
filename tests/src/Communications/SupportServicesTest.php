@@ -8,10 +8,7 @@ use AIArmada\Communications\Contracts\DestinationProtector;
 use AIArmada\Communications\Contracts\DestinationResolver;
 use AIArmada\Communications\Contracts\IdempotencyLock;
 use AIArmada\Communications\Contracts\PayloadRedactor;
-use AIArmada\Communications\Contracts\PreferenceResolver;
-use AIArmada\Communications\Contracts\QuietHoursResolver;
 use AIArmada\Communications\Contracts\RecipientSnapshotResolver;
-use AIArmada\Communications\Contracts\SuppressionResolver;
 use AIArmada\Communications\Data\RenderedContentData;
 use AIArmada\Communications\Enums\TemplateStatus;
 use AIArmada\Communications\Models\CommunicationTemplate;
@@ -119,34 +116,6 @@ test('null consent resolver denies marketing', function (): void {
     $result = $resolver->resolveConsent(null, null, 'mail', 'marketing');
 
     expect($result->consented)->toBeFalse();
-});
-
-test('null suppression resolver returns not suppressed', function (): void {
-    $resolver = app(SuppressionResolver::class);
-    $result = $resolver->resolveSuppression(null, null, null, 'mail', 'transactional');
-
-    expect($result->suppressed)->toBeFalse();
-});
-
-test('null preference resolver returns enabled', function (): void {
-    $resolver = app(PreferenceResolver::class);
-    $result = $resolver->isEnabled(null, null, 'mail', 'marketing');
-
-    expect($result)->toBeTrue();
-});
-
-test('null preference resolver returns null for opted in', function (): void {
-    $resolver = app(PreferenceResolver::class);
-    $result = $resolver->isOptedIn(null, null, 'mail', 'marketing');
-
-    expect($result)->toBeNull();
-});
-
-test('null quiet hours resolver returns no restriction', function (): void {
-    $resolver = app(QuietHoursResolver::class);
-    $result = $resolver->isInQuietHours(null, 'UTC');
-
-    expect($result)->toBeFalse();
 });
 
 test('destination protector encrypts and decrypts', function (): void {

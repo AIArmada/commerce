@@ -5,11 +5,8 @@ declare(strict_types=1);
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Gateways\ChipGateway;
 use AIArmada\Chip\Gateways\ChipPaymentIntent;
-use AIArmada\Chip\Gateways\ChipWebhookHandler;
 use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\Chip\Services\WebhookService;
-use AIArmada\CommerceSupport\Contracts\Payment\PaymentGatewayInterface;
-use AIArmada\CommerceSupport\Contracts\Payment\WebhookHandlerInterface;
 use AIArmada\CommerceSupport\Exceptions\PaymentGatewayException;
 use Akaunting\Money\Money;
 
@@ -18,22 +15,6 @@ describe('ChipGateway', function (): void {
         $this->collectService = Mockery::mock(ChipCollectService::class);
         $this->webhookService = Mockery::mock(WebhookService::class);
         $this->gateway = new ChipGateway($this->collectService, $this->webhookService);
-    });
-
-    it('implements PaymentGatewayInterface', function (): void {
-        expect($this->gateway)->toBeInstanceOf(PaymentGatewayInterface::class);
-    });
-
-    describe('getName', function (): void {
-        it('returns chip', function (): void {
-            expect($this->gateway->getName())->toBe('chip');
-        });
-    });
-
-    describe('getDisplayName', function (): void {
-        it('returns CHIP', function (): void {
-            expect($this->gateway->getDisplayName())->toBe('CHIP');
-        });
     });
 
     describe('isTestMode', function (): void {
@@ -49,48 +30,8 @@ describe('ChipGateway', function (): void {
     });
 
     describe('supports', function (): void {
-        it('supports refunds', function (): void {
-            expect($this->gateway->supports('refunds'))->toBeTrue();
-        });
-
-        it('supports partial_refunds', function (): void {
-            expect($this->gateway->supports('partial_refunds'))->toBeTrue();
-        });
-
-        it('supports pre_authorization', function (): void {
-            expect($this->gateway->supports('pre_authorization'))->toBeTrue();
-        });
-
-        it('supports recurring', function (): void {
-            expect($this->gateway->supports('recurring'))->toBeTrue();
-        });
-
-        it('supports webhooks', function (): void {
-            expect($this->gateway->supports('webhooks'))->toBeTrue();
-        });
-
-        it('supports hosted_checkout', function (): void {
-            expect($this->gateway->supports('hosted_checkout'))->toBeTrue();
-        });
-
-        it('does not support embedded_checkout', function (): void {
-            expect($this->gateway->supports('embedded_checkout'))->toBeFalse();
-        });
-
-        it('supports direct_charge', function (): void {
-            expect($this->gateway->supports('direct_charge'))->toBeTrue();
-        });
-
         it('returns false for unknown features', function (): void {
             expect($this->gateway->supports('unknown_feature'))->toBeFalse();
-        });
-    });
-
-    describe('getWebhookHandler', function (): void {
-        it('returns a ChipWebhookHandler', function (): void {
-            $handler = $this->gateway->getWebhookHandler();
-            expect($handler)->toBeInstanceOf(WebhookHandlerInterface::class);
-            expect($handler)->toBeInstanceOf(ChipWebhookHandler::class);
         });
     });
 

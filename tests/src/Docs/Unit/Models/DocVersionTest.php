@@ -8,13 +8,6 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-test('doc version relationships', function (): void {
-    $doc = Doc::factory()->create();
-    $version = DocVersion::factory()->create(['doc_id' => $doc->id]);
-
-    expect($version->doc->id)->toBe($doc->id);
-});
-
 test('doc version restore', function (): void {
     $doc = Doc::factory()->create(['notes' => 'Current Notes']);
     $snapshot = $doc->toArray();

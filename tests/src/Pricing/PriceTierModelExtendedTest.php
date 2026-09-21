@@ -5,7 +5,6 @@ declare(strict_types=1);
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\Pricing\Models\PriceList;
 use AIArmada\Pricing\Models\PriceTier;
-use Illuminate\Database\Eloquent\Relations\MorphTo;
 use OwenIt\Auditing\Contracts\Auditable;
 
 describe('PriceTier Model - Extended Tests', function (): void {
@@ -276,15 +275,6 @@ describe('PriceTier Model - Extended Tests', function (): void {
                 ->and($tier->priceList->id)->toBe($priceList->id);
         });
 
-        it('has morphTo tierable relationship', function (): void {
-            $tier = new PriceTier;
-
-            // Just verify the relationship method returns correct type
-            // Don't set tierable_type to avoid class resolution
-            $relation = $tier->tierable();
-
-            expect($relation)->toBeInstanceOf(MorphTo::class);
-        });
     });
 
     describe('default attributes', function (): void {

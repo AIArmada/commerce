@@ -4,20 +4,14 @@ declare(strict_types=1);
 
 use AIArmada\Chip\Models\BankAccount;
 use AIArmada\Chip\Models\Client;
-use AIArmada\Chip\Models\CompanyStatement;
 use AIArmada\Chip\Models\Payment;
 use AIArmada\Chip\Models\Purchase;
-use AIArmada\Chip\Models\SendInstruction;
-use AIArmada\Chip\Models\SendLimit;
 use AIArmada\Chip\Models\SendWebhook;
 use AIArmada\Chip\Models\Webhook;
 use Akaunting\Money\Money;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 describe('ChipModel base class', function (): void {
     it('uses HasUuids trait', function (): void {
@@ -25,27 +19,9 @@ describe('ChipModel base class', function (): void {
         expect(in_array(HasUuids::class, class_uses_recursive($purchase)))->toBeTrue();
     });
 
-    it('returns correct table name with prefix', function (): void {
-        config(['chip.database.table_prefix' => 'chip_']);
-
-        $purchase = new Purchase;
-        expect($purchase->getTable())->toBe('chip_purchases');
-
-        $client = new Client;
-        expect($client->getTable())->toBe('chip_clients');
-
-        $webhook = new Webhook;
-        expect($webhook->getTable())->toBe('webhook_calls');
-    });
-
     it('guards owner tuple on base models', function (): void {
         $purchase = new Purchase;
         expect($purchase->getGuarded())->toBe(['owner_type', 'owner_id']);
-    });
-
-    it('has owner relationship', function (): void {
-        $purchase = new Purchase;
-        expect($purchase->owner())->toBeInstanceOf(MorphTo::class);
     });
 
     it('can check if model has owner', function (): void {
@@ -113,22 +89,6 @@ describe('ChipIntegerModel base class', function (): void {
             ->and($bankAccount->getIncrementing())->toBeFalse();
     });
 
-    it('returns correct table name with prefix for integer models', function (): void {
-        config(['chip.database.table_prefix' => 'chip_']);
-
-        $bankAccount = new BankAccount;
-        expect($bankAccount->getTable())->toBe('chip_bank_accounts');
-
-        $sendInstruction = new SendInstruction;
-        expect($sendInstruction->getTable())->toBe('chip_send_instructions');
-
-        $sendLimit = new SendLimit;
-        expect($sendLimit->getTable())->toBe('chip_send_limits');
-
-        $sendWebhook = new SendWebhook;
-        expect($sendWebhook->getTable())->toBe('chip_send_webhooks');
-    });
-
     it('uses an integer API identity for Send webhooks', function (): void {
         $sendWebhook = new SendWebhook;
 
@@ -162,11 +122,6 @@ describe('Purchase model', function (): void {
             ->and($purchase->refundable_amount)->toBeNull();
     });
 
-    it('has payments relationship', function (): void {
-        $purchase = new Purchase;
-        expect($purchase->payments())->toBeInstanceOf(HasMany::class);
-    });
-
     it('can access amount attribute', function (): void {
         $purchase = new Purchase;
         $purchase->forceFill([
@@ -184,28 +139,6 @@ describe('Purchase model', function (): void {
         ]);
 
         expect($purchase->clientEmail)->toBe('test@example.com');
-    });
-
-    it('can get status color', function (): void {
-        $purchase = new Purchase;
-        $purchase->forceFill(['status' => 'paid']);
-        expect($purchase->statusColor())->toBe('success');
-
-        $purchase->forceFill(['status' => 'pending_execute']);
-        expect($purchase->statusColor())->toBe('warning');
-
-        $purchase->forceFill(['status' => 'error']);
-        expect($purchase->statusColor())->toBe('danger');
-
-        $purchase->forceFill(['status' => 'unknown']);
-        expect($purchase->statusColor())->toBe('secondary');
-    });
-
-    it('can get status badge', function (): void {
-        $purchase = new Purchase;
-        $purchase->forceFill(['status' => 'pending_capture']);
-
-        expect($purchase->statusBadge())->toBe('Pending Capture');
     });
 
     it('can access total money', function (): void {
@@ -308,11 +241,6 @@ describe('Payment model', function (): void {
             ->and($payment->pending_amount)->toBeNull();
     });
 
-    it('has purchase relationship', function (): void {
-        $payment = new Payment;
-        expect($payment->purchase())->toBeInstanceOf(BelongsTo::class);
-    });
-
     it('can access money attributes', function (): void {
         $payment = new Payment;
         $payment->forceFill([
@@ -374,17 +302,6 @@ describe('Webhook model', function (): void {
         expect($webhook->updatedOn)->toBeInstanceOf(CarbonImmutable::class);
     });
 
-    it('has correct casts', function (): void {
-        $webhook = new Webhook;
-        $casts = $webhook->getCasts();
-
-        expect($casts['events'])->toBe('array');
-        expect($casts['payload'])->toBe('array');
-        expect($casts['headers'])->toBe('array');
-        expect($casts['verified'])->toBe('boolean');
-        expect($casts['processed'])->toBe('boolean');
-    });
-
     it('protects owner and processing state from mass assignment', function (): void {
         $webhook = new Webhook([
             'event_type' => 'purchase.paid',
@@ -401,13 +318,5 @@ describe('Webhook model', function (): void {
             ->and($webhook->owner_id)->toBeNull()
             ->and($webhook->status)->toBeNull()
             ->and($webhook->processed_at)->toBeNull();
-    });
-});
-
-describe('CompanyStatement model', function (): void {
-    it('returns correct table name', function (): void {
-        config(['chip.database.table_prefix' => 'chip_']);
-        $statement = new CompanyStatement;
-        expect($statement->getTable())->toBe('chip_company_statements');
     });
 });

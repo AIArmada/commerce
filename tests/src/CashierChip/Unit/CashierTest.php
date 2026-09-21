@@ -16,10 +16,6 @@ describe('Cashier', function (): void {
         Cashier::restoreOctaneDefaults();
     });
 
-    it('version', function (): void {
-        $this->assertEquals('1.0.0', Cashier::VERSION);
-    });
-
     it('find billable returns null without chip id', function (): void {
         $result = Cashier::findBillable(null);
 
@@ -39,16 +35,6 @@ describe('Cashier', function (): void {
         $chip = Cashier::chip();
 
         $this->assertInstanceOf(FakeChipCollectService::class, $chip);
-    });
-
-    it('is fake', function (): void {
-        $this->assertTrue(Cashier::isFake());
-    });
-
-    it('get fake', function (): void {
-        $fake = Cashier::getFake();
-
-        $this->assertInstanceOf(FakeChipCollectService::class, $fake);
     });
 
     it('ignore routes', function (): void {

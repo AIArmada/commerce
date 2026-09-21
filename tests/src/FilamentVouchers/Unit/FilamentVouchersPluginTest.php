@@ -13,10 +13,6 @@ use AIArmada\FilamentVouchers\Widgets\VoucherStatsWidget;
 use Filament\Panel;
 use Mockery\MockInterface;
 
-it('exposes a stable plugin id', function (): void {
-    expect((new FilamentVouchersPlugin)->getId())->toBe('filament-vouchers');
-});
-
 it('registers voucher resources, pages, and widgets', function (): void {
     /** @var Panel&MockInterface $panel */
     $panel = Mockery::mock(Panel::class);

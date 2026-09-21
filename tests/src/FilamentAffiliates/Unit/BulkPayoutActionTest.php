@@ -64,10 +64,6 @@ function createBulkActionPayout(array $attributes): AffiliatePayout
     return $payout;
 }
 
-it('bulk payout action has correct default name', function (): void {
-    expect(BulkPayoutAction::getDefaultName())->toBe('bulk_process_payouts');
-});
-
 it('processes a pending payout successfully', function (): void {
     $user = User::create([
         'name' => 'Payout User',

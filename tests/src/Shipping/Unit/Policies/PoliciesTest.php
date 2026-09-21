@@ -156,10 +156,6 @@ describe('ShipmentPolicy', function (): void {
         $this->policy = new ShipmentPolicy;
     });
 
-    it('can be instantiated', function (): void {
-        expect($this->policy)->toBeInstanceOf(ShipmentPolicy::class);
-    });
-
     // viewAny tests
     it('allows viewAny when user has permission', function (): void {
         $user = createUserWithPermissions(['shipping.shipments.view']);
@@ -370,10 +366,6 @@ describe('ShippingZonePolicy', function (): void {
         $this->policy = new ShippingZonePolicy;
     });
 
-    it('can be instantiated', function (): void {
-        expect($this->policy)->toBeInstanceOf(ShippingZonePolicy::class);
-    });
-
     it('allows viewAny when user has permission', function (): void {
         $user = createUserWithPermissions(['shipping.zones.view']);
         expect($this->policy->viewAny($user))->toBeTrue();
@@ -462,10 +454,6 @@ describe('ShippingZonePolicy', function (): void {
 describe('ReturnAuthorizationPolicy', function (): void {
     beforeEach(function (): void {
         $this->policy = new ReturnAuthorizationPolicy;
-    });
-
-    it('can be instantiated', function (): void {
-        expect($this->policy)->toBeInstanceOf(ReturnAuthorizationPolicy::class);
     });
 
     // viewAny tests

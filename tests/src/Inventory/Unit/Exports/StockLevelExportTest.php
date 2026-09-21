@@ -20,18 +20,6 @@ describe('StockLevelExport', function (): void {
         expect($export)->toBeInstanceOf(ExportableInterface::class);
     });
 
-    it('returns correct headers', function (): void {
-        $export = new StockLevelExport;
-        $headers = $export->getHeaders();
-
-        expect($headers)->toBeArray();
-        expect($headers)->toContain('SKU Type');
-        expect($headers)->toContain('Quantity On Hand');
-        expect($headers)->toContain('Reserved');
-        expect($headers)->toContain('Available');
-        expect($headers)->toContain('Status');
-    });
-
     it('generates filename with date', function (): void {
         $export = new StockLevelExport;
         $filename = $export->getFilename();

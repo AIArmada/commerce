@@ -4,20 +4,9 @@ declare(strict_types=1);
 
 use AIArmada\Pricing\Settings\PricingSettings;
 use AIArmada\Pricing\Settings\PromotionalPricingSettings;
-use Spatie\LaravelSettings\Settings;
 
 describe('PricingSettings', function (): void {
-    describe('group method', function (): void {
-        it('returns correct group name', function (): void {
-            expect(PricingSettings::group())->toBe('pricing');
-        });
-    });
-
     describe('class structure', function (): void {
-        it('extends Spatie Settings class', function (): void {
-            expect(is_subclass_of(PricingSettings::class, Settings::class))->toBeTrue();
-        });
-
         it('has expected public properties defined', function (): void {
             $reflection = new ReflectionClass(PricingSettings::class);
             $properties = array_map(fn ($p) => $p->getName(), $reflection->getProperties(ReflectionProperty::IS_PUBLIC));
@@ -149,17 +138,7 @@ describe('PricingSettings', function (): void {
 });
 
 describe('PromotionalPricingSettings', function (): void {
-    describe('group method', function (): void {
-        it('returns correct group name', function (): void {
-            expect(PromotionalPricingSettings::group())->toBe('pricing_promotional');
-        });
-    });
-
     describe('class structure', function (): void {
-        it('extends Spatie Settings class', function (): void {
-            expect(is_subclass_of(PromotionalPricingSettings::class, Settings::class))->toBeTrue();
-        });
-
         it('has expected public properties defined', function (): void {
             $reflection = new ReflectionClass(PromotionalPricingSettings::class);
             $properties = array_map(fn ($p) => $p->getName(), $reflection->getProperties(ReflectionProperty::IS_PUBLIC));

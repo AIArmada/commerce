@@ -11,12 +11,6 @@ use AIArmada\Communications\Models\CommunicationTrackingToken;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Str;
 
-test('RecordTrackingInteractionAction exists and can be instantiated', function (): void {
-    $action = app(RecordTrackingInteractionAction::class);
-
-    expect($action)->toBeInstanceOf(RecordTrackingInteractionAction::class);
-});
-
 test('RecordTrackingInteractionAction handle throws for non-existent token', function (): void {
     $action = app(RecordTrackingInteractionAction::class);
 

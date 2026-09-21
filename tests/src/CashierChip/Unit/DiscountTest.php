@@ -10,12 +10,6 @@ use Carbon\CarbonInterface;
 uses(CashierChipTestCase::class);
 
 describe('Discount', function (): void {
-    it('can create discount', function (): void {
-        $discount = new Discount(['amount' => 1000]);
-
-        $this->assertInstanceOf(Discount::class, $discount);
-    });
-
     it('dynamic property access', function (): void {
         $discount = new Discount(['amount' => 1000, 'some_key' => 'some_value']);
 

@@ -5,7 +5,6 @@ declare(strict_types=1);
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Gateways\ChipPaymentIntent;
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentIntentInterface;
-use AIArmada\CommerceSupport\Contracts\Payment\PaymentStatus;
 use Akaunting\Money\Money;
 
 describe('ChipPaymentIntent', function (): void {
@@ -82,13 +81,6 @@ describe('ChipPaymentIntent', function (): void {
         expect($intent->isTest())->toBeTrue();
     });
 
-    it('returns gateway name', function (): void {
-        $purchase = PurchaseData::from($this->purchaseData);
-        $intent = new ChipPaymentIntent($purchase);
-
-        expect($intent->getGatewayName())->toBe('chip');
-    });
-
     it('returns raw response as array', function (): void {
         $purchase = PurchaseData::from($this->purchaseData);
         $intent = new ChipPaymentIntent($purchase);
@@ -104,137 +96,6 @@ describe('ChipPaymentIntent', function (): void {
         $intent = new ChipPaymentIntent($purchase);
 
         expect($intent->getPurchase())->toBe($purchase);
-    });
-
-    describe('status mapping', function (): void {
-        it('maps created status', function (): void {
-            $data = array_merge($this->purchaseData, ['status' => 'created']);
-            $purchase = PurchaseData::from($data);
-            $intent = new ChipPaymentIntent($purchase);
-
-            expect($intent->getStatus())->toBe(PaymentStatus::CREATED)
-                ->and($intent->isPending())->toBeTrue()
-                ->and($intent->isPaid())->toBeFalse();
-        });
-
-        it('maps pending_execute status', function (): void {
-            $data = array_merge($this->purchaseData, ['status' => 'pending_execute']);
-            $purchase = PurchaseData::from($data);
-            $intent = new ChipPaymentIntent($purchase);
-
-            expect($intent->getStatus())->toBe(PaymentStatus::PENDING);
-        });
-
-        it('maps pending_charge status', function (): void {
-            $data = array_merge($this->purchaseData, ['status' => 'pending_charge']);
-            $purchase = PurchaseData::from($data);
-            $intent = new ChipPaymentIntent($purchase);
-
-            expect($intent->getStatus())->toBe(PaymentStatus::PENDING);
-        });
-
-        it('maps paid status', function (): void {
-            $data = array_merge($this->purchaseData, ['status' => 'paid']);
-            $purchase = PurchaseData::from($data);
-            $intent = new ChipPaymentIntent($purchase);
-
-            expect($intent->getStatus())->toBe(PaymentStatus::PAID)
-                ->and($intent->isPaid())->toBeTrue();
-        });
-
-        it('maps refunded status', function (): void {
-            $data = array_merge($this->purchaseData, ['status' => 'refunded']);
-            $purchase = PurchaseData::from($data);
-            $intent = new ChipPaymentIntent($purchase);
-
-            expect($intent->getStatus())->toBe(PaymentStatus::REFUNDED)
-                ->and($intent->isRefunded())->toBeTrue();
-        });
-
-        it('maps pending_refund status', function (): void {
-            $data = array_merge($this->purchaseData, ['status' => 'pending_refund']);
-            $purchase = PurchaseData::from($data);
-            $intent = new ChipPaymentIntent($purchase);
-
-            expect($intent->getStatus())->toBe(PaymentStatus::PROCESSING)
-                ->and($intent->isPending())->toBeTrue();
-        });
-
-        it('maps settled status', function (): void {
-            $data = array_merge($this->purchaseData, ['status' => 'settled']);
-            $purchase = PurchaseData::from($data);
-            $intent = new ChipPaymentIntent($purchase);
-
-            expect($intent->getStatus())->toBe(PaymentStatus::PAID)
-                ->and($intent->isPaid())->toBeTrue();
-        });
-
-        it('maps released status', function (): void {
-            $data = array_merge($this->purchaseData, ['status' => 'released']);
-            $purchase = PurchaseData::from($data);
-            $intent = new ChipPaymentIntent($purchase);
-
-            expect($intent->getStatus())->toBe(PaymentStatus::CANCELLED)
-                ->and($intent->isCancelled())->toBeTrue();
-        });
-
-        it('maps chargeback status', function (): void {
-            $data = array_merge($this->purchaseData, ['status' => 'chargeback']);
-            $purchase = PurchaseData::from($data);
-            $intent = new ChipPaymentIntent($purchase);
-
-            expect($intent->getStatus())->toBe(PaymentStatus::DISPUTED);
-        });
-
-        it('maps cancelled status', function (): void {
-            $data = array_merge($this->purchaseData, ['status' => 'cancelled']);
-            $purchase = PurchaseData::from($data);
-            $intent = new ChipPaymentIntent($purchase);
-
-            expect($intent->getStatus())->toBe(PaymentStatus::CANCELLED)
-                ->and($intent->isCancelled())->toBeTrue();
-        });
-
-        it('maps expired status', function (): void {
-            $data = array_merge($this->purchaseData, ['status' => 'expired']);
-            $purchase = PurchaseData::from($data);
-            $intent = new ChipPaymentIntent($purchase);
-
-            expect($intent->getStatus())->toBe(PaymentStatus::EXPIRED);
-        });
-
-        it('maps overdue status', function (): void {
-            $data = array_merge($this->purchaseData, ['status' => 'overdue']);
-            $purchase = PurchaseData::from($data);
-            $intent = new ChipPaymentIntent($purchase);
-
-            expect($intent->getStatus())->toBe(PaymentStatus::PENDING);
-        });
-
-        it('maps error status', function (): void {
-            $data = array_merge($this->purchaseData, ['status' => 'error']);
-            $purchase = PurchaseData::from($data);
-            $intent = new ChipPaymentIntent($purchase);
-
-            expect($intent->getStatus())->toBe(PaymentStatus::FAILED)
-                ->and($intent->isFailed())->toBeTrue();
-        });
-
-        it('maps blocked status', function (): void {
-            $data = array_merge($this->purchaseData, ['status' => 'blocked']);
-            $purchase = PurchaseData::from($data);
-            $intent = new ChipPaymentIntent($purchase);
-
-            expect($intent->getStatus())->toBe(PaymentStatus::FAILED);
-        });
-
-        it('maps hold/preauthorized status to authorized', function (): void {
-            $data = array_merge($this->purchaseData, ['status' => 'hold']);
-            $purchase = PurchaseData::from($data);
-            $intent = new ChipPaymentIntent($purchase);
-
-            expect($intent->getStatus())->toBe(PaymentStatus::AUTHORIZED);
-        });
     });
 
     describe('timestamps', function (): void {

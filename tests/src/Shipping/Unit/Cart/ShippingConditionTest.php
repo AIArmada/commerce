@@ -106,56 +106,6 @@ it('formats value with currency when not free shipping', function (): void {
     expect($condition->getFormattedValue())->toBe('10.50 MYR');
 });
 
-it('uses MYR as default currency', function (): void {
-    $condition = new ShippingCondition(
-        name: 'Standard Shipping',
-        type: 'shipping',
-        value: 1000,
-    );
-
-    expect($condition->getFormattedValue())->toBe('10.00 MYR');
-});
-
-it('returns null for missing carrier attribute', function (): void {
-    $condition = new ShippingCondition(
-        name: 'Standard Shipping',
-        type: 'shipping',
-        value: 500,
-    );
-
-    expect($condition->getCarrier())->toBeNull();
-});
-
-it('returns null for missing service attribute', function (): void {
-    $condition = new ShippingCondition(
-        name: 'Standard Shipping',
-        type: 'shipping',
-        value: 500,
-    );
-
-    expect($condition->getService())->toBeNull();
-});
-
-it('returns null for missing estimated days attribute', function (): void {
-    $condition = new ShippingCondition(
-        name: 'Standard Shipping',
-        type: 'shipping',
-        value: 500,
-    );
-
-    expect($condition->getEstimatedDays())->toBeNull();
-});
-
-it('returns null for missing quote id attribute', function (): void {
-    $condition = new ShippingCondition(
-        name: 'Standard Shipping',
-        type: 'shipping',
-        value: 500,
-    );
-
-    expect($condition->getQuoteId())->toBeNull();
-});
-
 it('respects custom order in attributes', function (): void {
     $condition = new ShippingCondition(
         name: 'Standard Shipping',

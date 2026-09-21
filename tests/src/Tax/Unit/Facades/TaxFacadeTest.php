@@ -2,22 +2,13 @@
 
 declare(strict_types=1);
 
-use AIArmada\Tax\Contracts\TaxCalculatorInterface;
 use AIArmada\Tax\Data\TaxResultData;
 use AIArmada\Tax\Facades\Tax;
 use AIArmada\Tax\Models\TaxRate;
 use AIArmada\Tax\Models\TaxZone;
-use AIArmada\Tax\Services\TaxCalculator;
 use AIArmada\Tax\Settings\TaxSettings;
 
 describe('TaxFacade', function (): void {
-    it('facade resolves to tax calculator', function (): void {
-        $resolved = Tax::getFacadeRoot();
-
-        $this->assertInstanceOf(TaxCalculatorInterface::class, $resolved);
-        $this->assertInstanceOf(TaxCalculator::class, $resolved);
-    });
-
     it('facade can calculate tax', function (): void {
         $zone = TaxZone::create([
             'name' => 'Malaysia',
@@ -77,21 +68,6 @@ describe('TaxFacade', function (): void {
         $result = Tax::calculateTax(10000);
 
         $this->assertEquals(0, $result->taxAmount);
-    });
-
-    it('facade is singleton', function (): void {
-        $instance1 = Tax::getFacadeRoot();
-        $instance2 = Tax::getFacadeRoot();
-
-        $this->assertSame($instance1, $instance2);
-    });
-
-    it('can resolve via app helper', function (): void {
-        $viaTax = app('tax');
-        $viaInterface = app(TaxCalculatorInterface::class);
-
-        $this->assertInstanceOf(TaxCalculator::class, $viaTax);
-        $this->assertSame($viaTax, $viaInterface);
     });
 
     it('facade with context', function (): void {

@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\Docs\Enums\DocApprovalStatus;
-use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocApproval;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -38,11 +37,4 @@ test('doc approval expiry', function (): void {
         'expires_at' => now()->addDay(),
     ]);
     expect($valid->isExpired())->toBeFalse();
-});
-
-test('doc approval relationships', function (): void {
-    $doc = Doc::factory()->create();
-    $approval = DocApproval::factory()->create(['doc_id' => $doc->id]);
-
-    expect($approval->doc->id)->toBe($doc->id);
 });

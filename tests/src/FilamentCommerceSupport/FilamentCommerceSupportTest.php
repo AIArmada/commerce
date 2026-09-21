@@ -30,12 +30,6 @@ it('uses config-driven settings navigation without a static group property', fun
         ->not->toContain('$navigationGroup');
 });
 
-it('has correct plugin id', function (): void {
-    $plugin = FilamentCommerceSupportPlugin::make();
-
-    expect($plugin->getId())->toBe('filament-commerce-support');
-});
-
 it('registers the canonical commerce navigation engine', function (): void {
     config()->set('filament-commerce-support.navigation.enabled', false);
     config()->set('filament-commerce-support.exchange_rates.enabled', false);
@@ -49,10 +43,6 @@ it('registers the canonical commerce navigation engine', function (): void {
     (new FilamentCommerceSupportPlugin(app()))->register($panel);
 
     expect($panel)->toBeInstanceOf(Panel::class);
-});
-
-it('returns the settings group name', function (): void {
-    expect(CommerceNavigationSettings::group())->toBe('commerce-navigation');
 });
 
 it('merges groups into commerce-support config via navigation configurator', function (): void {

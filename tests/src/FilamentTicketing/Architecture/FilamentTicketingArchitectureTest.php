@@ -2,12 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\FilamentTicketing\FilamentTicketingServiceProvider;
 use AIArmada\FilamentTicketing\Resources\PassHolderResource;
 use AIArmada\FilamentTicketing\Resources\PassResource;
 use AIArmada\FilamentTicketing\Resources\PassTransferResource;
 use AIArmada\FilamentTicketing\Resources\TicketTypeResource;
-use Spatie\LaravelPackageTools\PackageServiceProvider;
 
 $resources = [
     TicketTypeResource::class,
@@ -36,12 +34,3 @@ test('no resource declares static $navigationGroup', function () use ($resources
 arch('filament-ticketing config')
     ->expect('filament-ticketing')
     ->not->toHaveKeys(['navigation_group']);
-
-test('filament-ticketing service provider is concrete', function (): void {
-    $provider = new FilamentTicketingServiceProvider(app());
-    expect($provider)->toBeInstanceOf(PackageServiceProvider::class);
-});
-
-test('filament-ticketing config is accessible', function (): void {
-    expect(config('filament-ticketing.navigation.group'))->toBe('Ticketing');
-});

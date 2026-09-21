@@ -6,7 +6,6 @@ use AIArmada\Communications\Data\CommunicationContextData;
 use AIArmada\Communications\Facades\Communications;
 use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Models\CommunicationBatch;
-use AIArmada\Communications\Services\CommunicationManagerService;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Notifications\Notification;
@@ -40,10 +39,6 @@ final class StreamAManagerNotification extends Notification
             ->line('Hello!');
     }
 }
-
-test('facade resolves manager service', function (): void {
-    expect(Communications::getFacadeRoot())->toBeInstanceOf(CommunicationManagerService::class);
-});
 
 test('manager notify creates communication record', function (): void {
     $notifiable = new StreamAManagerNotifiable;

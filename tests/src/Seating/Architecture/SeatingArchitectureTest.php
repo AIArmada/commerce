@@ -1,8 +1,6 @@
 <?php
 
 declare(strict_types=1);
-use AIArmada\Seating\SeatingServiceProvider;
-use Spatie\LaravelPackageTools\PackageServiceProvider;
 
 arch('seating')
     ->expect('AIArmada\Seating')
@@ -40,13 +38,3 @@ arch('seating actions')
 arch('seating exceptions')
     ->expect('AIArmada\Seating\Exceptions')
     ->toExtend('RuntimeException');
-
-test('seating service provider is concrete', function (): void {
-    $provider = new SeatingServiceProvider(app());
-    expect($provider)->toBeInstanceOf(PackageServiceProvider::class);
-});
-
-test('seating config is accessible', function (): void {
-    expect(config('seating.database.tables.seat_maps'))->toBe('seat_maps');
-    expect(config('seating.holds.ttl_minutes'))->toBe(15);
-});

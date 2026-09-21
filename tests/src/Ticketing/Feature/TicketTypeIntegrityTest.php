@@ -14,7 +14,6 @@ use AIArmada\Ticketing\Models\TicketTypeProduct;
 use AIArmada\Ticketing\Models\TicketTypeSeatingOption;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 it('aggregates available inventory in sql with per-level clamping', function (): void {
     $ticketType = TicketType::factory()->create();
@@ -66,14 +65,6 @@ it('rejects duplicate component pairs', function (): void {
         'parent_ticket_type_id' => $component->parent_ticket_type_id,
         'component_ticket_type_id' => $component->component_ticket_type_id,
     ]))->toThrow(QueryException::class);
-});
-
-it('indexes the transfer expiry scan column', function (): void {
-    $indexes = Schema::getIndexes(config('ticketing.database.tables.passes', 'ticket_passes'));
-
-    $columns = collect($indexes)->flatMap(fn (array $index): array => $index['columns'] ?? [])->all();
-
-    expect($columns)->toContain('transfer_expires_at');
 });
 
 it('rejects ticket type statuses outside the enum', function (): void {

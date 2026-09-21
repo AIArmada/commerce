@@ -5,7 +5,6 @@ declare(strict_types=1);
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Models\ShippingRate;
 use AIArmada\Shipping\Models\ShippingZone;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 describe('ShippingZone Model', function (): void {
     it('can create a shipping zone with required fields', function (): void {
@@ -56,19 +55,6 @@ describe('ShippingZone Model', function (): void {
         expect($zone->priority)->toBeInt();
         expect($zone->is_default)->toBeBool();
         expect($zone->active)->toBeBool();
-    });
-
-    it('has correct relationships', function (): void {
-        $zone = ShippingZone::create([
-            'owner_type' => 'TestOwner',
-            'owner_id' => 'test-owner-123',
-            'name' => 'Test Zone',
-            'code' => 'TEST_ZONE',
-            'type' => 'country',
-            'countries' => ['US'],
-        ]);
-
-        expect($zone->rates())->toBeInstanceOf(HasMany::class);
     });
 
     it('can create shipping rates', function (): void {

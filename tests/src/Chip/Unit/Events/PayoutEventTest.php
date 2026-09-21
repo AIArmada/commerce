@@ -150,21 +150,6 @@ describe('PayoutEvent base class', function (): void {
         expect($liveEvent->isTest())->toBeFalse();
     });
 
-    it('returns correct event types for all payout events', function (): void {
-        $payload = createPayoutPayload();
-        $payoutData = PayoutData::from($payload);
-
-        $events = [
-            PayoutSuccess::class => WebhookEventType::PayoutSuccess,
-            PayoutPending::class => WebhookEventType::PayoutPending,
-            PayoutFailed::class => WebhookEventType::PayoutFailed,
-        ];
-
-        foreach ($events as $eventClass => $expectedType) {
-            $event = new $eventClass($payoutData, $payload);
-            expect($event->eventType())->toBe($expectedType, "Failed for {$eventClass}");
-        }
-    });
 });
 
 describe('PayoutFailed specific methods', function (): void {

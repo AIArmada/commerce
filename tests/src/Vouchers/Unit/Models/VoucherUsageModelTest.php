@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 describe('VoucherUsage Model', function (): void {
     describe('class structure', function (): void {
@@ -127,12 +126,6 @@ describe('VoucherUsage Model', function (): void {
                 ->and($relation->getRelated())->toBeInstanceOf(Voucher::class);
         });
 
-        it('defines redeemedBy relationship as MorphTo', function (): void {
-            $usage = new VoucherUsage;
-            $relation = $usage->redeemedBy();
-
-            expect($relation)->toBeInstanceOf(MorphTo::class);
-        });
     });
 
     describe('isManual method', function (): void {

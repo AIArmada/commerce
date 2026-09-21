@@ -229,45 +229,4 @@ describe('AbstractProductMatcher', function (): void {
         });
     });
 
-    describe('constructor config handling', function (): void {
-        it('accepts empty config array', function (): void {
-            $matcher = new SkuMatcher([]);
-
-            expect($matcher)->toBeInstanceOf(ProductMatcherInterface::class);
-        });
-
-        it('stores config for subclass access', function (): void {
-            // PriceMatcher uses config internally
-            $matcher = new PriceMatcher(
-                minPrice: 10000, // 100.00
-                maxPrice: 50000  // 500.00
-            );
-
-            $item = makeMatcherTestCartItem('1', 'Product', 30000, 1); // 300.00
-
-            expect($matcher->matches($item))->toBeTrue();
-        });
-
-        it('PriceMatcher rejects items below min price', function (): void {
-            $matcher = new PriceMatcher(
-                minPrice: 10000, // 100.00
-                maxPrice: null
-            );
-
-            $item = makeMatcherTestCartItem('1', 'Product', 5000, 1); // 50.00
-
-            expect($matcher->matches($item))->toBeFalse();
-        });
-
-        it('PriceMatcher rejects items above max price', function (): void {
-            $matcher = new PriceMatcher(
-                minPrice: null,
-                maxPrice: 10000  // 100.00
-            );
-
-            $item = makeMatcherTestCartItem('1', 'Product', 15000, 1); // 150.00
-
-            expect($matcher->matches($item))->toBeFalse();
-        });
-    });
 });

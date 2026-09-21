@@ -13,22 +13,6 @@ beforeEach(function (): void {
     $this->product = InventoryItem::create(['name' => 'Test Product']);
 });
 
-describe('getHeaders', function (): void {
-    it('returns correct headers', function (): void {
-        $export = new BatchExport;
-
-        $headers = $export->getHeaders();
-
-        expect($headers)->toContain('Batch Number');
-        expect($headers)->toContain('SKU Type');
-        expect($headers)->toContain('Location');
-        expect($headers)->toContain('Quantity');
-        expect($headers)->toContain('Status');
-        expect($headers)->toContain('Expiry Date');
-        expect($headers)->toContain('Days Until Expiry');
-    });
-});
-
 describe('getRows', function (): void {
     it('returns all batches when no filters', function (): void {
         InventoryBatch::factory()->count(3)->create([

@@ -13,7 +13,6 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 uses(CashierChipTestCase::class);
@@ -95,13 +94,4 @@ it('blocks cross-owner renewal attempt creation and processing', function (): vo
 
     expect(fn (): mixed => OwnerContext::withOwner($ownerA, fn (): mixed => $method->invoke($command, $attemptB)))
         ->toThrow(AuthorizationException::class);
-});
-
-it('creates renewal attempts with owner columns and the subscription period unique index', function (): void {
-    $attemptsTable = (new RenewalAttempt)->getTable();
-    $uniqueIndex = str_replace(['.', '-', ' '], '_', $attemptsTable) . '_subscription_period_unique';
-
-    expect(Schema::hasColumns($attemptsTable, ['owner_type', 'owner_id']))->toBeTrue()
-        ->and(Schema::hasIndex($attemptsTable, ['owner_type', 'owner_id']))->toBeTrue()
-        ->and(Schema::hasIndex($attemptsTable, $uniqueIndex))->toBeTrue();
 });

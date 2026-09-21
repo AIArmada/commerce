@@ -29,11 +29,6 @@ describe('AffiliateOfferCreative Model', function (): void {
             expect($creative->id)->toMatch('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/');
         });
 
-        test('table name comes from config', function (): void {
-            $creative = new AffiliateOfferCreative;
-
-            expect($creative->getTable())->toBe('affiliate_network_offer_creatives');
-        });
     });
 
     describe('creative types', function (): void {

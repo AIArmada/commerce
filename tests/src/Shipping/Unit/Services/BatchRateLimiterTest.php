@@ -15,18 +15,6 @@ beforeEach(function (): void {
 });
 
 describe('BatchRateLimiter', function (): void {
-    it('can be instantiated via make', function (): void {
-        $limiter = BatchRateLimiter::make();
-
-        expect($limiter)->toBeInstanceOf(BatchRateLimiter::class);
-    });
-
-    it('can be configured for a carrier', function (): void {
-        $limiter = BatchRateLimiter::forCarrier('jnt');
-
-        expect($limiter)->toBeInstanceOf(BatchRateLimiter::class);
-    });
-
     it('processes all items in batch', function (): void {
         $items = [1, 2, 3, 4, 5];
 
@@ -60,17 +48,6 @@ describe('BatchRateLimiter', function (): void {
         expect($results[1]['success'])->toBeFalse();
         expect($results[1]['error'])->toBe('Item 2 failed');
         expect($results[2]['success'])->toBeTrue();
-    });
-
-    it('supports chaining all configuration setters', function (): void {
-        $limiter = BatchRateLimiter::make()
-            ->maxAttempts(20)
-            ->decaySeconds(120)
-            ->batchDelay(500)
-            ->batchSize(10)
-            ->keyPrefix('custom:prefix');
-
-        expect($limiter)->toBeInstanceOf(BatchRateLimiter::class);
     });
 
     it('preserves array keys', function (): void {

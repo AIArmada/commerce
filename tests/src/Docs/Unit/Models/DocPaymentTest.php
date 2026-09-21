@@ -20,16 +20,3 @@ it('casts payment status to the DocPaymentStatus enum', function (): void {
 
     expect($payment->fresh()->status)->toBe(DocPaymentStatus::Paid);
 });
-
-it('rejects unsupported payment statuses', function (): void {
-    $doc = Doc::factory()->create();
-
-    expect(fn (): DocPayment => DocPayment::query()->create([
-        'doc_id' => $doc->id,
-        'status' => 'settled_elsewhere',
-        'amount_minor' => 100,
-        'currency' => 'MYR',
-        'payment_method' => 'cash',
-        'paid_at' => now(),
-    ]))->toThrow(ValueError::class);
-});

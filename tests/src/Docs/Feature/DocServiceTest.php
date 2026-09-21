@@ -10,22 +10,12 @@ use AIArmada\Docs\Models\DocTemplate;
 use AIArmada\Docs\Services\DocService;
 use AIArmada\Docs\States\DocStatus;
 use AIArmada\Docs\States\Draft;
-use AIArmada\Docs\States\Overdue;
 use AIArmada\Docs\States\Paid;
 use AIArmada\Docs\States\Pending;
 use AIArmada\Docs\States\Refunded;
 use AIArmada\Docs\States\Sent;
 use AIArmada\Docs\Support\TemplateBlockRegistry;
 use Illuminate\Validation\ValidationException;
-
-test('it can generate doc numbers', function (): void {
-    $service = app(DocService::class);
-    $number = $service->generateNumber('invoice');
-
-    expect($number)
-        ->toBeString()
-        ->toMatch('/^INV\d{2}-[A-Z0-9]{6}$/');
-});
 
 test('default strategy respects numbering format overrides', function (): void {
     $service = app(DocService::class);
@@ -237,18 +227,6 @@ test('it rejects templates from a different document type', function (): void {
         'doc_template_id' => $template->id,
         'items' => [['name' => 'Item', 'quantity' => 1, 'unit_price_minor' => 100]],
     ])))->toThrow(ValidationException::class);
-});
-
-test('doc status has correct labels', function (): void {
-    expect(DocStatus::labelFor(Draft::class))->toBe('Draft')
-        ->and(DocStatus::labelFor(Paid::class))->toBe('Paid')
-        ->and(DocStatus::labelFor(Overdue::class))->toBe('Overdue');
-});
-
-test('doc status has correct colors', function (): void {
-    expect(DocStatus::colorFor(Draft::class))->toBe('gray')
-        ->and(DocStatus::colorFor(Paid::class))->toBe('success')
-        ->and(DocStatus::colorFor(Overdue::class))->toBe('danger');
 });
 
 test('it can check payable status', function (): void {

@@ -14,6 +14,23 @@
 - HUMAN-CALL items: untouched, pending user review.
 - Verification: per-wave Pest runs (all green); full-suite run skipped per user instruction.
 
+## Execution Status (2026-09-21 re-audit)
+
+- Fresh read-only re-audit of the current tree (7 auditors, ~6.4k tests judged) found further
+  ONETIME/TRIVIAL/TAUTOLOGY/DUPLICATE tests in Cart, Cashier, CashierChip, Checkout, Chip,
+  CommerceSupport, Communications, Contacting, Customers, Docs, References, Seating, Shipping,
+  Signals, Tax, and one demo test. All verified verdicts applied (waves 1–9) with per-scope
+  Pest runs green. One auditor verdict was partially rejected on keeper inspection (the
+  `pay()`-only test has no covering keeper, so it stays). Separately, a few carried-over
+  candidate paths (`LocationModelTest`, `OrderCreateScreenTest`, a 210-line `CartTest`) match
+  no file anywhere in the tree and were closed as no-ops.
+- Pre-existing failures noted (not caused by removals; each fails on pristine HEAD):
+  `demo/tests/Feature/BillingOwnerScopingTest.php` — `signal_sessions` has no `country`
+  column (seeder/migration drift); `tests/src/Feedback/FeedbackSubmissionTest.php:250`
+  (expects 2 successful submits, gets 1);
+  `tests/src/Inventory/Feature/CheckoutReservationConcurrencyTest.php` (2 SQLite
+  savepoint errors under `--parallel`).
+
 ## Summary counts
 
 Total candidates: **231**

@@ -30,11 +30,6 @@ describe('AffiliateSite Model', function (): void {
             expect($site->id)->toMatch('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/');
         });
 
-        test('table name comes from config', function (): void {
-            $site = new AffiliateSite;
-
-            expect($site->getTable())->toBe('affiliate_network_sites');
-        });
     });
 
     describe('statuses', function (): void {
@@ -73,13 +68,6 @@ describe('AffiliateSite Model', function (): void {
     });
 
     describe('relationships', function (): void {
-        test('has many offers', function (): void {
-            $site = AffiliateSite::factory()->verified()->create();
-            AffiliateOffer::factory()->count(3)->forSite($site)->create();
-
-            expect($site->offers)->toHaveCount(3);
-        });
-
         test('has morphable owner', function (): void {
             $user = User::factory()->create();
             $site = AffiliateSite::factory()->forOwner($user)->create();

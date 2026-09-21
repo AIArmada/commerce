@@ -102,12 +102,6 @@ describe('BOGOVoucherCondition', function (): void {
             expect($condition->getName())->toBe('voucher_BOGO');
         });
 
-        it('has correct type', function (): void {
-            $voucher = createBogoVoucherDataFor();
-            $condition = new BOGOVoucherCondition($voucher, $voucher->valueConfig);
-
-            expect($condition->getType())->toBe('voucher');
-        });
     });
 
     describe('discount description', function (): void {

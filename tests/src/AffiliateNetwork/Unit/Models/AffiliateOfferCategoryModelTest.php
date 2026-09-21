@@ -25,11 +25,6 @@ describe('AffiliateOfferCategory Model', function (): void {
             expect($category->id)->toMatch('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/');
         });
 
-        test('table name comes from config', function (): void {
-            $category = new AffiliateOfferCategory;
-
-            expect($category->getTable())->toBe('affiliate_network_offer_categories');
-        });
     });
 
     describe('relationships', function (): void {
@@ -39,20 +34,6 @@ describe('AffiliateOfferCategory Model', function (): void {
 
             expect($child->parent)->toBeInstanceOf(AffiliateOfferCategory::class);
             expect($child->parent->id)->toBe($parent->id);
-        });
-
-        test('has many children', function (): void {
-            $parent = AffiliateOfferCategory::factory()->create();
-            AffiliateOfferCategory::factory()->count(3)->forParent($parent)->create();
-
-            expect($parent->children)->toHaveCount(3);
-        });
-
-        test('has many offers', function (): void {
-            $category = AffiliateOfferCategory::factory()->create();
-            AffiliateOffer::factory()->count(5)->forCategory($category)->create();
-
-            expect($category->offers)->toHaveCount(5);
         });
 
         test('has morphable owner', function (): void {

@@ -4,16 +4,11 @@ declare(strict_types=1);
 
 use AIArmada\Cashier\Contracts\GatewayContract;
 use AIArmada\Cashier\Facades\Cashier;
-use AIArmada\Cashier\GatewayManager;
 use AIArmada\Commerce\Tests\Cashier\CashierTestCase;
 
 uses(CashierTestCase::class);
 
 describe('Cashier Facade', function (): void {
-    it('resolves to GatewayManager', function (): void {
-        expect(Cashier::getFacadeRoot())->toBeInstanceOf(GatewayManager::class);
-    });
-
     it('proxies gateway method to manager', function (): void {
         $gateway = Cashier::gateway('stripe');
 

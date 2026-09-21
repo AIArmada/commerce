@@ -20,14 +20,6 @@ describe('CartStatsWidget', function (): void {
         Cache::flush();
     });
 
-    it('returns 4 columns', function (): void {
-        $widget = new CartStatsWidget;
-        $reflection = new ReflectionClass($widget);
-        $method = $reflection->getMethod('getColumns');
-
-        expect($method->invoke($widget))->toBe(4);
-    });
-
     it('is owner scoped when owner mode is enabled', function (): void {
         config()->set('cart.owner.enabled', true);
         config()->set('cart.owner.include_global', false);

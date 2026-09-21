@@ -19,11 +19,6 @@ describe('InventoryBatch', function (): void {
         ]);
     });
 
-    it('get table returns correct table name', function (): void {
-        $batch = new InventoryBatch;
-        expect($batch->getTable())->toBe('inventory_batches');
-    });
-
     it('inventoryable relationship', function (): void {
         $batch = new InventoryBatch;
         $relation = $batch->inventoryable();

@@ -2,49 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Data\Casts\MoneyCast;
 use AIArmada\Chip\Data\Collections\ProductCollection;
 use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Chip\Data\ProductData;
-use AIArmada\Chip\Data\Transformers\MoneyTransformer;
 use Akaunting\Money\Money;
 
-describe('MoneyCast', function (): void {
-    it('can be instantiated with default currency', function (): void {
-        $cast = new MoneyCast(currency: 'MYR');
-        expect($cast)->toBeInstanceOf(MoneyCast::class);
-    });
-
-    it('can be instantiated with currency property reference', function (): void {
-        $cast = new MoneyCast(currencyProperty: 'currency');
-        expect($cast)->toBeInstanceOf(MoneyCast::class);
-    });
-
-    it('can be instantiated without arguments', function (): void {
-        $cast = new MoneyCast;
-        expect($cast)->toBeInstanceOf(MoneyCast::class);
-    });
-});
-
-describe('MoneyTransformer', function (): void {
-    it('can be instantiated', function (): void {
-        $transformer = new MoneyTransformer;
-        expect($transformer)->toBeInstanceOf(MoneyTransformer::class);
-    });
-});
-
 describe('ProductCollection', function (): void {
-    it('creates a typed collection of ProductData', function (): void {
-        $products = [
-            ProductData::make('Product A', Money::MYR(1000)),
-            ProductData::make('Product B', Money::MYR(2000)),
-        ];
-
-        $collection = new ProductCollection($products);
-
-        expect($collection)->toBeInstanceOf(ProductCollection::class);
-        expect($collection->count())->toBe(2);
-    });
 
     it('calculates total price in cents', function (): void {
         $products = [

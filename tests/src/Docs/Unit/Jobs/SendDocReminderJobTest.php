@@ -79,14 +79,6 @@ test('sends reminders for overdue docs', function (): void {
         ->and($doc->emails->first()->recipient_email)->toBe('overdue@example.com');
 });
 
-test('tags return correct array', function (): void {
-    $job1 = new SendDocReminderJob('123');
-    expect($job1->tags())->toContain('docs', 'reminder', 'doc:123');
-
-    $job2 = new SendDocReminderJob;
-    expect($job2->tags())->toContain('docs', 'reminder', 'batch');
-});
-
 test('owner fan-out fails fast on malformed owner tuple rows', function (): void {
     config()->set('docs.owner.enabled', true);
 

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use AIArmada\Chip\Clients\ChipSendClient;
 use AIArmada\Chip\Exceptions\ChipValidationException;
-use AIArmada\Chip\Models\BankAccount;
 use AIArmada\Chip\Models\Client;
 use AIArmada\Chip\Models\SendInstruction;
 use AIArmada\Chip\Models\SendLimit;
@@ -52,26 +51,6 @@ describe('Client Model', function (): void {
     });
 });
 
-describe('BankAccount Model', function (): void {
-    it('returns status color and label', function (): void {
-        $account = new BankAccount(['status' => 'verified']);
-        expect($account->statusColor())->toBe('success');
-        expect($account->statusLabel())->toBe('Verified');
-
-        $account->status = 'pending';
-        expect($account->statusColor())->toBe('warning');
-
-        $account->status = 'rejected';
-        expect($account->statusColor())->toBe('danger');
-    });
-
-    it('has correct table name', function (): void {
-        Config::set('chip.database.table_prefix', 'chip_');
-        $account = new BankAccount;
-        expect($account->getTable())->toBe('chip_bank_accounts');
-    });
-});
-
 describe('SendInstruction Model', function (): void {
     it('returns amount as Money without floating point conversion', function (): void {
         $instruction = new SendInstruction(['amount' => '100.50']);
@@ -86,22 +65,6 @@ describe('SendInstruction Model', function (): void {
         expect($instruction->amountInMinorUnits())->toBe(10001);
     });
 
-    it('returns state label and color', function (): void {
-        $instruction = new SendInstruction(['state' => 'completed']);
-        expect($instruction->stateLabel)->toBe('Completed');
-        expect($instruction->stateColor())->toBe('success');
-
-        $instruction->state = 'received';
-        expect($instruction->stateColor())->toBe('warning');
-
-        $instruction->state = 'rejected';
-        expect($instruction->stateColor())->toBe('danger');
-    });
-
-    it('has correct table name', function (): void {
-        $instruction = new SendInstruction;
-        expect($instruction->getTable())->toBe('chip_send_instructions');
-    });
 });
 
 describe('SendLimit Model', function (): void {
@@ -122,14 +85,4 @@ describe('SendLimit Model', function (): void {
         expect($limit->feeMoney->getAmount())->toBe(2);
     });
 
-    it('returns status color', function (): void {
-        $limit = new SendLimit(['status' => 'approved']);
-        expect($limit->statusColor())->toBe('success');
-
-        $limit->status = 'pending';
-        expect($limit->statusColor())->toBe('warning');
-
-        $limit->status = 'expired';
-        expect($limit->statusColor())->toBe('danger');
-    });
 });

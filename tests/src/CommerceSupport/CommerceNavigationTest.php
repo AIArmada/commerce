@@ -138,10 +138,6 @@ it('memoizes the navigation builder only for the current request', function (): 
     }
 });
 
-it('exposes a filament plugin for panel registration', function (): void {
-    expect(CommerceNavigationPlugin::make()->getId())->toBe('commerce-navigation');
-});
-
 final class CommerceNavigationFixtureResource {}
 
 final class CommerceNavigationPanelFixture

@@ -2,35 +2,11 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Exceptions\NoRecurringTokenException;
 use AIArmada\Chip\Health\ChipGatewayCheck;
 use Illuminate\Support\Facades\Http;
 use Spatie\Health\Checks\Result;
 
-describe('NoRecurringTokenException', function (): void {
-    it('can be constructed with default message', function (): void {
-        $exception = new NoRecurringTokenException;
-
-        expect($exception)->toBeInstanceOf(NoRecurringTokenException::class)
-            ->and($exception->getMessage())->toBe('No recurring token available');
-    });
-
-    it('can be constructed with custom message', function (): void {
-        $exception = new NoRecurringTokenException('Custom error message');
-
-        expect($exception->getMessage())->toBe('Custom error message');
-    });
-
-});
-
 describe('ChipGatewayCheck', function (): void {
-    it('can be instantiated', function (): void {
-        $check = new ChipGatewayCheck;
-
-        expect($check)->toBeInstanceOf(ChipGatewayCheck::class)
-            ->and($check->name)->toBe('CHIP Payment Gateway');
-    });
-
     it('can set endpoint', function (): void {
         $check = new ChipGatewayCheck;
         $result = $check->endpoint('https://custom-endpoint.com/');

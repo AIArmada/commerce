@@ -82,9 +82,3 @@ describe('customerPortalUrl', function (): void {
         expect($url)->toContain('customer-portal');
     });
 });
-
-describe('gateway name', function (): void {
-    it('returns chip as gateway name', function (): void {
-        expect($this->gateway->name())->toBe('chip');
-    });
-});

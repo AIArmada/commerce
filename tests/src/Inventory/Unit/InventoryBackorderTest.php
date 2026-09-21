@@ -13,11 +13,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 describe('InventoryBackorder', function (): void {
-    it('get table returns correct table name', function (): void {
-        $backorder = new InventoryBackorder;
-        expect($backorder->getTable())->toBe('inventory_backorders');
-    });
-
     it('inventoryable relationship', function (): void {
         $backorder = new InventoryBackorder;
         $relation = $backorder->inventoryable();

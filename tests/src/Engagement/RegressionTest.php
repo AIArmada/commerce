@@ -38,7 +38,6 @@ use Illuminate\Notifications\Notification;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 beforeEach(function (): void {
@@ -546,28 +545,4 @@ it('dedupes identical pending reminders', function (): void {
     $manager->setReminder($this->actor, $this->subject, 'follow_up', ['remind_at' => CarbonImmutable::now()->addHours(2)]);
 
     expect(Reminder::query()->count())->toBe(2);
-});
-
-it('ships hot-path composite indexes and identity uniques', function (): void {
-    $tables = config('engagement.database.tables');
-
-    $hasIndex = function (string $table, array $columns, bool $unique = false): bool {
-        foreach (Schema::getIndexes($table) as $index) {
-            $indexColumns = array_map('strtolower', (array) ($index['columns'] ?? []));
-
-            if ($indexColumns === $columns && (bool) ($index['unique'] ?? false) === $unique) {
-                return true;
-            }
-        }
-
-        return false;
-    };
-
-    expect(Schema::hasColumn($tables['subscriptions'], 'criteria_hash'))->toBeTrue()
-        ->and($hasIndex($tables['reminders'], ['status', 'remind_at']))->toBeTrue()
-        ->and($hasIndex($tables['subscriptions'], ['status', 'subscribable_type', 'subscribable_id']))->toBeTrue()
-        ->and($hasIndex($tables['reactions'], ['reactable_type', 'reactable_id', 'reaction_type', 'status']))->toBeTrue()
-        ->and($hasIndex($tables['responses'], ['respondable_type', 'respondable_id', 'response_type', 'status']))->toBeTrue()
-        ->and($hasIndex($tables['subscriptions'], ['subscriber_type', 'subscriber_id', 'subscribable_type', 'subscribable_id', 'subscription_type', 'criteria_hash', 'owner_type', 'owner_id'], true))->toBeTrue()
-        ->and($hasIndex($tables['bookmark_collection_items'], ['bookmark_collection_id', 'bookmark_id', 'owner_type', 'owner_id'], true))->toBeTrue();
 });

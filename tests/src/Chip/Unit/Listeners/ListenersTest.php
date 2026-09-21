@@ -6,11 +6,6 @@ use AIArmada\Chip\Events\WebhookReceived;
 use AIArmada\Chip\Listeners\StoreWebhookData;
 
 describe('StoreWebhookData listener', function (): void {
-    it('can be instantiated', function (): void {
-        $listener = new StoreWebhookData;
-        expect($listener)->toBeInstanceOf(StoreWebhookData::class);
-    });
-
     it('returns early when config disabled', function (): void {
         config(['chip.webhooks.store_webhooks' => false]);
 

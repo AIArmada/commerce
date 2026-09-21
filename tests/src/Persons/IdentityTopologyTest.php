@@ -9,14 +9,6 @@ use AIArmada\Customers\Actions\UpdateCustomerProfile;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Persons\Models\Person;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Support\Facades\Schema;
-
-it('pins the indexed nullable customer person link', function (): void {
-    $table = (new Customer)->getTable();
-
-    expect(Schema::hasColumn($table, 'person_id'))->toBeTrue()
-        ->and(Schema::hasIndex($table, 'customers_person_id_index'))->toBeTrue();
-});
 
 it('links an owner-scoped customer to the shared person identity', function (): void {
     [$customer, $person] = OwnerContext::withOwner(null, function (): array {

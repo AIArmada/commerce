@@ -257,17 +257,4 @@ describe('HasInventoryEventData', function (): void {
         });
     });
 
-    describe('getEventMetadata', function (): void {
-        it('returns metadata array', function (): void {
-            $event = new TestEventWithTrait($this->item);
-            $metadata = $event->getEventMetadata();
-
-            expect($metadata)->toHaveKey('source');
-            expect($metadata)->toHaveKey('version');
-            expect($metadata)->toHaveKey('timestamp');
-
-            expect($metadata['source'])->toBe('inventory');
-            expect($metadata['version'])->toBe('1.0');
-        });
-    });
 });

@@ -22,14 +22,6 @@ beforeEach(function (): void {
     $this->driver = new NullShippingDriver;
 });
 
-it('returns correct carrier code', function (): void {
-    expect($this->driver->getCarrierCode())->toBe('null');
-});
-
-it('returns correct carrier name', function (): void {
-    expect($this->driver->getCarrierName())->toBe('Null Driver (Testing)');
-});
-
 it('reports all capabilities as supported', function (): void {
     // Null driver supports everything for testing purposes
     expect($this->driver->supports(DriverCapability::RateQuotes))->toBeTrue();

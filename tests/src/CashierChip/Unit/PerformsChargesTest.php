@@ -9,13 +9,6 @@ use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 uses(CashierChipTestCase::class);
 
 describe('PerformsCharges', function (): void {
-    it('charge returns payment', function (): void {
-        $user = $this->createUser(['chip_id' => 'cli_123']);
-
-        $payment = $user->charge(1000);
-
-        $this->assertInstanceOf(Payment::class, $payment);
-    });
 
     it('pay returns payment', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);

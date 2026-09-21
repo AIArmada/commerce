@@ -69,13 +69,6 @@ describe('ShipmentCancelled', function (): void {
         expect($event->reason)->toBe('Customer requested cancellation');
     });
 
-    it('allows null reason', function (): void {
-        $shipment = Mockery::mock(Shipment::class);
-
-        $event = new ShipmentCancelled($shipment);
-
-        expect($event->reason)->toBeNull();
-    });
 });
 
 // ============================================

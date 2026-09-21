@@ -73,12 +73,6 @@ describe('PurchaseHold event', function (): void {
             ->and($event->eventType())->toBe(WebhookEventType::PurchaseHold);
     });
 
-    it('returns correct event type value', function (): void {
-        $payload = createLowCoveragePayload('hold');
-        $event = PurchaseHold::fromPayload($payload);
-
-        expect($event->getEventTypeValue())->toBe('purchase.hold');
-    });
 });
 
 describe('PurchasePreauthorized event', function (): void {
@@ -90,12 +84,6 @@ describe('PurchasePreauthorized event', function (): void {
             ->and($event->eventType())->toBe(WebhookEventType::PurchasePreauthorized);
     });
 
-    it('returns correct event type value', function (): void {
-        $payload = createLowCoveragePayload('preauthorized');
-        $event = PurchasePreauthorized::fromPayload($payload);
-
-        expect($event->getEventTypeValue())->toBe('purchase.preauthorized');
-    });
 });
 
 /**

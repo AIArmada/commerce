@@ -16,19 +16,6 @@ beforeEach(function (): void {
     Event::fake();
 });
 
-describe('WebhookEventDispatcher structure', function (): void {
-    it('can be instantiated', function (): void {
-        $dispatcher = new WebhookEventDispatcher;
-        expect($dispatcher)->toBeInstanceOf(WebhookEventDispatcher::class);
-    });
-
-    it('is registered as singleton in container', function (): void {
-        $dispatcher1 = app(WebhookEventDispatcher::class);
-        $dispatcher2 = app(WebhookEventDispatcher::class);
-        expect($dispatcher1)->toBe($dispatcher2);
-    });
-});
-
 describe('WebhookEventDispatcher::extractPurchase', function (): void {
     it('extracts PurchaseData for purchase type', function (): void {
         $dispatcher = new WebhookEventDispatcher;

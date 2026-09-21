@@ -6,14 +6,10 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Contacting\Actions\BuildContactLinksAction;
 use AIArmada\Contacting\Actions\CreateContactSnapshotAction;
-use AIArmada\Contacting\Actions\NormalizeContactMethodAction;
-use AIArmada\Contacting\Actions\NormalizeSocialProfileAction;
 use AIArmada\Contacting\Actions\UpdateContactMethodAction;
 use AIArmada\Contacting\Actions\UpdateSocialProfileAction;
 use AIArmada\Contacting\Concerns\HasContactMethods;
 use AIArmada\Contacting\Concerns\HasSocialProfiles;
-use AIArmada\Contacting\Contracts\ContactMethodNormalizer;
-use AIArmada\Contacting\Contracts\SocialProfileNormalizer;
 use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Contacting\Data\SocialProfileData;
 use AIArmada\Contacting\Models\ContactMethod;
@@ -332,20 +328,6 @@ it('syncs verification timestamps with the flag', function (): void {
     expect($profile->fresh()?->verified_at)->not->toBeNull();
 });
 
-it('uses collision-safe expressions in the mysql primary backstop', function (): void {
-    $migrationBase = dirname(__DIR__, 3) . '/packages/contacting/database/migrations/';
-
-    foreach ([
-        '2000_01_01_000001_create_contact_methods_table.php',
-        '2000_01_01_000003_create_contact_social_profiles_table.php',
-    ] as $file) {
-        $migration = (string) file_get_contents($migrationBase . $file);
-
-        expect($migration)->toContain('JSON_ARRAY')
-            ->and($migration)->not->toContain('CONCAT_WS');
-    }
-});
-
 it('snapshots bundles in bulk with per-source owners', function (): void {
     $customer = regressionCustomer('bundle');
 
@@ -378,12 +360,6 @@ it('snapshots bundles in bulk with per-source owners', function (): void {
         ->and((new CreateContactSnapshotAction)->fromBundle($customer, [], [], 'bundle-empty'))->toHaveCount(0);
 });
 
-it('indexes snapshot lineage lookups', function (): void {
-    $table = config('contacting.database.tables.contact_snapshots', 'contact_snapshots');
-
-    expect(Schema::hasIndex($table, 'contact_snapshots_source_type_source_id_index'))->toBeTrue();
-});
-
 it('limits contact link building when asked', function (): void {
     $customer = regressionCustomer('link-limit');
 
@@ -409,11 +385,6 @@ it('treats snapshots as append-only with action-owned lineage', function (): voi
     expect($filled->source_id)->toBeNull()
         ->and($filled->source_type)->toBeNull()
         ->and($filled->getFillable())->not->toContain('source_id', 'source_type');
-});
-
-it('wires the normalizer contracts', function (): void {
-    expect(app(ContactMethodNormalizer::class))->toBeInstanceOf(NormalizeContactMethodAction::class)
-        ->and(app(SocialProfileNormalizer::class))->toBeInstanceOf(NormalizeSocialProfileAction::class);
 });
 
 it('leaves parentless primaries undemoted by design', function (): void {

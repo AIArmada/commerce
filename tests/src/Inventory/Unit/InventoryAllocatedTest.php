@@ -43,13 +43,6 @@ describe('InventoryAllocated', function (): void {
         expect($event->cartId)->toBe('cart-123');
     });
 
-    it('get event type returns correct value', function (): void {
-        $allocations = new Collection;
-        $event = new InventoryAllocated($this->item, $allocations, 'cart-123');
-
-        expect($event->getEventType())->toBe('inventory.allocated');
-    });
-
     it('get total quantity sums allocations', function (): void {
         $allocations = new Collection([
             InventoryAllocation::factory()->create([

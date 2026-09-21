@@ -25,20 +25,6 @@ describe('PromotionResource', function (): void {
         });
     });
 
-    describe('navigation', function (): void {
-        it('has navigation label', function (): void {
-            expect(PromotionResource::getNavigationLabel())->toBe('Promotions');
-        });
-
-        it('has model label', function (): void {
-            expect(PromotionResource::getModelLabel())->toBe('Promotion');
-        });
-
-        it('has plural model label', function (): void {
-            expect(PromotionResource::getPluralModelLabel())->toBe('Promotions');
-        });
-    });
-
     describe('pages', function (): void {
         it('has index page', function (): void {
             $pages = PromotionResource::getPages();
@@ -65,14 +51,6 @@ describe('PromotionResource', function (): void {
         });
     });
 
-    describe('eloquent query', function (): void {
-        it('returns query builder', function (): void {
-            $query = PromotionResource::getEloquentQuery();
-
-            expect($query)->toBeInstanceOf(Builder::class);
-        });
-    });
-
     describe('navigation badge', function (): void {
         it('returns null when no active promotions', function (): void {
             Promotion::factory()->inactive()->count(3)->create();
@@ -88,14 +66,6 @@ describe('PromotionResource', function (): void {
     });
 
     describe('configuration', function (): void {
-        it('has correct navigation group', function (): void {
-            expect(PromotionResource::getNavigationGroup())->toBe(config('filament-promotions.navigation.group'));
-        });
-
-        it('has navigation badge color', function (): void {
-            expect(PromotionResource::getNavigationBadgeColor())->toBe('success');
-        });
-
         it('registers issued vouchers relation manager when voucher tracking is available', function (): void {
             $relations = PromotionResource::getRelations();
 

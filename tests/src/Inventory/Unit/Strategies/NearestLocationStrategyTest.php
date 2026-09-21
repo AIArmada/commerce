@@ -19,18 +19,6 @@ describe('NearestLocationStrategy', function (): void {
         expect($this->strategy)->toBeInstanceOf(AllocationStrategyInterface::class);
     });
 
-    it('has correct name', function (): void {
-        expect($this->strategy->name())->toBe('nearest_location');
-    });
-
-    it('has correct label', function (): void {
-        expect($this->strategy->label())->toBe('Nearest Location');
-    });
-
-    it('has description', function (): void {
-        expect($this->strategy->description())->toContain('closest');
-    });
-
     it('allocates from single location', function (): void {
         $location = InventoryLocation::factory()->create([
             'coordinate_x' => 0,

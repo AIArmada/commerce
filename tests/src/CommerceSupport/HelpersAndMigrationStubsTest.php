@@ -36,14 +36,6 @@ it('adds nullable morph IDs using Laravel default morph key types', function ():
     }
 });
 
-it('uses the centralized morph key helper in the audit migration stub', function (): void {
-    $createStub = file_get_contents(helpersAndMigrationStubsRepoPath('packages/commerce-support/database/migrations/1970_01_01_000002_create_audits_table.php.stub'));
-
-    expect($createStub)->toBeString()
-        ->and($createStub)->toContain('commerce_morph_key($table, $morphPrefix)')
-        ->and($createStub)->not->toContain("config('commerce-support.database.morph_key_type'");
-});
-
 function helpersAndMigrationStubsRepoPath(string $relativePath): string
 {
     return dirname(__DIR__, 3) . '/' . $relativePath;

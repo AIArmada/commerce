@@ -335,11 +335,6 @@ it('reports invalid parent references with a descriptive reason', function (): v
         + SocialProfile::query()->where('socialable_id', $customer->getKey())->count()))->toBe(0);
 });
 
-it('importers use human-readable model labels', function (): void {
-    expect(ContactMethodImporter::getModelLabel())->toBe('Contact Method');
-    expect(SocialProfileImporter::getModelLabel())->toBe('Social Profile');
-});
-
 it('importers are insert-only', function (): void {
     $owner = makeContactingTestOwner();
     $customer = makeContactingTestCustomer($owner, 'f');
@@ -584,16 +579,6 @@ it('plugin requires the standalone resources master switch', function (): void {
     FilamentContactingPlugin::make()->register($panel);
 });
 
-it('docs use the correct namespace casing and filament version', function (): void {
-    $root = dirname(__DIR__, 3);
-    $installation = (string) file_get_contents($root . '/packages/filament-contacting/docs/02-installation.md');
-    $usage = (string) file_get_contents($root . '/packages/filament-contacting/docs/04-usage.md');
-
-    expect($installation)->not->toContain('AiArmada\\');
-    expect($usage)->not->toContain('AiArmada\\');
-    expect($installation)->toContain('filament/filament');
-});
-
 it('infolist links only safe urls', function (): void {
     config()->set('filament-contacting.features.open_url_actions', true);
 
@@ -639,13 +624,6 @@ it('social profiles require a handle or a url', function (): void {
     expect(fn () => $validate(['platform' => 'facebook']))->toThrow(ValidationException::class);
     $validate(['platform' => 'facebook', 'handle' => 'example']);
     $validate(['platform' => 'facebook', 'url' => 'https://facebook.com/example']);
-});
-
-it('drops the unused phone input dependency', function (): void {
-    $root = dirname(__DIR__, 3);
-    $composer = json_decode((string) file_get_contents($root . '/packages/filament-contacting/composer.json'), true);
-
-    expect($composer['require'])->not->toHaveKey('ysfkaya/filament-phone-input');
 });
 
 it('exposes an optional purpose select on the contact method form', function (): void {

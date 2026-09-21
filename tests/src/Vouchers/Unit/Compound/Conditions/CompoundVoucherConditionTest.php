@@ -188,12 +188,6 @@ describe('CompoundVoucherCondition', function (): void {
             expect($condition->getName())->toBe("voucher_{$voucher->code}");
         });
 
-        it('returns type as voucher', function (): void {
-            $voucher = createCompoundVoucherData(VoucherType::BuyXGetY);
-            $condition = CompoundVoucherCondition::create($voucher);
-
-            expect($condition->getType())->toBe('voucher');
-        });
     });
 
     describe('toArray', function (): void {

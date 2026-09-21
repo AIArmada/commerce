@@ -96,12 +96,6 @@ describe('CashbackVoucherCondition', function (): void {
             expect($condition->getName())->toBe('voucher_CASHBACK');
         });
 
-        it('has correct type', function (): void {
-            $voucher = createCashbackVoucherDataFor();
-            $condition = new CashbackVoucherCondition($voucher, $voucher->valueConfig);
-
-            expect($condition->getType())->toBe('voucher');
-        });
     });
 
     describe('discount calculation', function (): void {

@@ -60,61 +60,12 @@ class TraitTestClass
 }
 
 describe('SimulatesWebhooks trait', function (): void {
-    it('creates webhook simulator', function (): void {
-        $test = new TraitTestClass;
-        $simulator = $test->testSimulateWebhook();
-
-        expect($simulator)->toBeInstanceOf(WebhookSimulator::class);
-    });
-
     it('creates paid webhook simulator', function (): void {
         $test = new TraitTestClass;
         $simulator = $test->testSimulatePaidWebhook();
 
         expect($simulator)->toBeInstanceOf(WebhookSimulator::class);
         expect($simulator->getPayload()['status'])->toBe('paid');
-    });
-
-    it('creates paid webhook simulator with URL', function (): void {
-        $test = new TraitTestClass;
-        $simulator = $test->testSimulatePaidWebhook('https://example.com/webhook');
-
-        expect($simulator)->toBeInstanceOf(WebhookSimulator::class);
-    });
-
-    it('creates failed webhook simulator', function (): void {
-        $test = new TraitTestClass;
-        $simulator = $test->testSimulateFailedWebhook();
-
-        expect($simulator)->toBeInstanceOf(WebhookSimulator::class);
-    });
-
-    it('creates cancelled webhook simulator', function (): void {
-        $test = new TraitTestClass;
-        $simulator = $test->testSimulateCancelledWebhook();
-
-        expect($simulator)->toBeInstanceOf(WebhookSimulator::class);
-    });
-
-    it('creates refunded webhook simulator', function (): void {
-        $test = new TraitTestClass;
-        $simulator = $test->testSimulateRefundedWebhook();
-
-        expect($simulator)->toBeInstanceOf(WebhookSimulator::class);
-    });
-
-    it('creates simulator for specific event type', function (): void {
-        $test = new TraitTestClass;
-        $simulator = $test->testSimulateWebhookEvent(WebhookEventType::PurchasePaid);
-
-        expect($simulator)->toBeInstanceOf(WebhookSimulator::class);
-    });
-
-    it('creates simulator for event type with URL', function (): void {
-        $test = new TraitTestClass;
-        $simulator = $test->testSimulateWebhookEvent(WebhookEventType::PurchasePaid, 'https://example.com');
-
-        expect($simulator)->toBeInstanceOf(WebhookSimulator::class);
     });
 
     it('disables signature verification', function (): void {

@@ -7,7 +7,6 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Engagement\Enums\FollowStatus;
 use AIArmada\Engagement\Models\Follow;
 use AIArmada\FilamentEngagement\FilamentEngagementPlugin;
-use AIArmada\FilamentEngagement\FilamentEngagementServiceProvider;
 use AIArmada\FilamentEngagement\Resources\BookmarkCollectionResource;
 use AIArmada\FilamentEngagement\Resources\BookmarkResource;
 use AIArmada\FilamentEngagement\Resources\FollowResource;
@@ -34,13 +33,6 @@ it('exposes the plugin resources and widget', function (): void {
             ReminderResource::class,
         )
         ->and($widgets)->toContain(EngagementOverviewWidget::class);
-});
-
-it('loads the filament engagement package config and plugin singleton', function (): void {
-    app()->register(FilamentEngagementServiceProvider::class);
-
-    expect(config('filament-engagement.navigation.group'))->toBe('Engagement')
-        ->and(app(FilamentEngagementPlugin::class))->toBeInstanceOf(FilamentEngagementPlugin::class);
 });
 
 it('scopes engagement resources to the current owner', function (): void {

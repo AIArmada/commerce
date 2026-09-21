@@ -17,14 +17,6 @@ beforeEach(function (): void {
     $this->driver = new FlatRateShippingDriver;
 });
 
-it('returns correct carrier code', function (): void {
-    expect($this->driver->getCarrierCode())->toBe('flat_rate');
-});
-
-it('returns correct carrier name', function (): void {
-    expect($this->driver->getCarrierName())->toBe('Flat Rate Shipping');
-});
-
 it('supports rate quotes capability', function (): void {
     expect($this->driver->supports(DriverCapability::RateQuotes))->toBeTrue();
 });

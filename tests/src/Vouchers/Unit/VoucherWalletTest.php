@@ -456,24 +456,6 @@ test('wallet entry knows if voucher can be used', function (): void {
     expect($walletEntry->canBeUsed())->toBeTrue();
 });
 
-test('wallet entry knows if voucher is expired', function (): void {
-    $user = TestWalletUser::create(['name' => 'Test User', 'email' => 'test@example.com']);
-
-    Voucher::create([
-        'code' => 'EXPIRED',
-        'name' => 'Expired Check',
-        'type' => 'percentage',
-        'value' => 1000,
-        'currency' => 'MYR',
-        'status' => 'active',
-        'expires_at' => now()->subDay(),
-    ]);
-
-    $walletEntry = $user->addVoucherToWallet('EXPIRED');
-
-    expect($walletEntry->isExpired())->toBeTrue();
-});
-
 final class TestWalletUser extends Model
 {
     use HasVouchers;

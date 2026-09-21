@@ -19,18 +19,6 @@ describe('ValuationExport', function (): void {
         expect($export)->toBeInstanceOf(ExportableInterface::class);
     });
 
-    it('returns correct headers', function (): void {
-        $export = new ValuationExport;
-        $headers = $export->getHeaders();
-
-        expect($headers)->toBeArray();
-        expect($headers)->toContain('Snapshot Date');
-        expect($headers)->toContain('Costing Method');
-        expect($headers)->toContain('Total Value');
-        expect($headers)->toContain('Average Unit Cost');
-        expect($headers)->toContain('Currency');
-    });
-
     it('generates filename with date', function (): void {
         $export = new ValuationExport;
         $filename = $export->getFilename();

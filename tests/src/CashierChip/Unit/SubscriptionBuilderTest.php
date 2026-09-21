@@ -12,13 +12,6 @@ use Illuminate\Auth\Access\AuthorizationException;
 uses(CashierChipTestCase::class);
 
 describe('SubscriptionBuilder', function (): void {
-    it('can create builder', function (): void {
-        $user = $this->createUser(['chip_id' => 'cli_123']);
-        $builder = new SubscriptionBuilder($user, 'default', 'price_123');
-
-        $this->assertInstanceOf(SubscriptionBuilder::class, $builder);
-    });
-
     it('can add price', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $builder = new SubscriptionBuilder($user, 'default');

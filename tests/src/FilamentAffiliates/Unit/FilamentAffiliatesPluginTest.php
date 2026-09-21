@@ -34,10 +34,6 @@ use AIArmada\FilamentAffiliates\Widgets\UplineVisualizationWidget;
 use Filament\Panel;
 use Mockery\MockInterface;
 
-it('exposes a stable plugin id', function (): void {
-    expect((new FilamentAffiliatesPlugin)->getId())->toBe('filament-affiliates');
-});
-
 it('can be created via make factory method', function (): void {
     $plugin = FilamentAffiliatesPlugin::make();
 

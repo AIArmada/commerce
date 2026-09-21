@@ -7,11 +7,6 @@ use AIArmada\Chip\Webhooks\WebhookValidator;
 use Illuminate\Http\Request;
 
 describe('ChipWebhookProfile', function (): void {
-    it('can be instantiated', function (): void {
-        $profile = new ChipWebhookProfile;
-        expect($profile)->toBeInstanceOf(ChipWebhookProfile::class);
-    });
-
     it('returns false when event_type is missing', function (): void {
         $profile = new ChipWebhookProfile;
         $request = Request::create('/webhook', 'POST', []);
@@ -80,11 +75,6 @@ describe('WebhookValidator', function (): void {
         if (isset($this->keyPair)) {
             openssl_free_key($this->keyPair);
         }
-    });
-
-    it('can be instantiated', function (): void {
-        $validator = new WebhookValidator;
-        expect($validator)->toBeInstanceOf(WebhookValidator::class);
     });
 
     it('returns false when signature header is missing', function (): void {

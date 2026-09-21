@@ -9,7 +9,6 @@ use AIArmada\Inventory\Enums\TemperatureZone;
 use AIArmada\Inventory\Models\InventoryAllocation;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Models\InventoryMovement;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 
@@ -25,49 +24,6 @@ describe('InventoryLocation', function (): void {
         expect($location->name)->toBe('Main Warehouse');
         expect($location->code)->toBe('MAIN');
         expect($location->is_active)->toBeTrue();
-    });
-
-    it('inventory levels relationship', function (): void {
-        $location = InventoryLocation::factory()->create();
-        $item = InventoryItem::create(['name' => 'Test Item']);
-
-        InventoryLevel::factory()->create([
-            'location_id' => $location->id,
-            'inventoryable_type' => $item->getMorphClass(),
-            'inventoryable_id' => $item->getKey(),
-        ]);
-
-        expect($location->inventoryLevels)->toHaveCount(1);
-    });
-
-    it('movements to relationship', function (): void {
-        $location = InventoryLocation::factory()->create();
-        $fromLocation = InventoryLocation::factory()->create();
-        $item = InventoryItem::create(['name' => 'Test Item']);
-
-        InventoryMovement::factory()->create([
-            'to_location_id' => $location->id,
-            'from_location_id' => $fromLocation->id,
-            'inventoryable_type' => $item->getMorphClass(),
-            'inventoryable_id' => $item->getKey(),
-        ]);
-
-        expect($location->movementsTo)->toHaveCount(1);
-    });
-
-    it('movements from relationship', function (): void {
-        $location = InventoryLocation::factory()->create();
-        $toLocation = InventoryLocation::factory()->create();
-        $item = InventoryItem::create(['name' => 'Test Item']);
-
-        InventoryMovement::factory()->create([
-            'from_location_id' => $location->id,
-            'to_location_id' => $toLocation->id,
-            'inventoryable_type' => $item->getMorphClass(),
-            'inventoryable_id' => $item->getKey(),
-        ]);
-
-        expect($location->movementsFrom)->toHaveCount(1);
     });
 
     it('scope active', function (): void {
@@ -86,19 +42,6 @@ describe('InventoryLocation', function (): void {
 
         expect($defaultLocation->isDefault())->toBeTrue();
         expect($regularLocation->isDefault())->toBeFalse();
-    });
-
-    it('has no children for empty', function (): void {
-        $location = InventoryLocation::factory()->create();
-
-        expect($location->children)->toHaveCount(0);
-    });
-
-    it('has children when children exist', function (): void {
-        $parent = InventoryLocation::factory()->create();
-        InventoryLocation::factory()->create(['parent_id' => $parent->id]);
-
-        expect($parent->children)->toHaveCount(1);
     });
 
     it('deleting location cascades to inventory levels', function (): void {
@@ -384,27 +327,6 @@ describe('InventoryLocation', function (): void {
 
         expect($certified->canStoreHazmat())->toBeTrue();
         expect($notCertified->canStoreHazmat())->toBeFalse();
-    });
-
-    it('allocations relationship', function (): void {
-        $location = InventoryLocation::factory()->create();
-        $item = InventoryItem::create(['name' => 'Test Item']);
-
-        $level = InventoryLevel::factory()->create([
-            'location_id' => $location->id,
-            'inventoryable_type' => $item->getMorphClass(),
-            'inventoryable_id' => $item->getKey(),
-        ]);
-
-        InventoryAllocation::factory()->create([
-            'location_id' => $location->id,
-            'level_id' => $level->id,
-            'inventoryable_type' => $item->getMorphClass(),
-            'inventoryable_id' => $item->getKey(),
-            'quantity' => 10,
-        ]);
-
-        expect($location->allocations)->toHaveCount(1);
     });
 
     it('deleting location cascades to allocations', function (): void {

@@ -48,18 +48,6 @@ describe('ProcessChipWebhook', function (): void {
         }
     });
 
-    it('can be instantiated', function (): void {
-        $webhookCall = WebhookCall::create([
-            'name' => Webhook::WEBHOOK_NAME,
-            'url' => 'https://example.test/chip/webhooks',
-            'payload' => ['event_type' => 'purchase.paid', 'type' => 'purchase'],
-        ]);
-
-        $processor = new ProcessChipWebhook($webhookCall);
-
-        expect($processor)->toBeInstanceOf(ProcessChipWebhook::class);
-    });
-
     it('dispatches PurchaseCreated event', function (): void {
         $payload = [
             'event_type' => 'purchase.created',

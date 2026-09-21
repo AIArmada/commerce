@@ -34,24 +34,6 @@ function unionNullCastsForDriver(?string $driver): array
 }
 
 describe('Batch union null casts', function (): void {
-    it('emits postgres casts for typed union columns', function (): void {
-        $casts = unionNullCastsForDriver('pgsql');
-
-        expect($casts['uuid'])->toBe('CAST(NULL AS uuid)')
-            ->and($casts['timestamptz'])->toBe('CAST(NULL AS timestamptz)')
-            ->and($casts['bigint'])->toBe('CAST(NULL AS bigint)')
-            ->and($casts['json'])->toStartWith('CAST(NULL AS ');
-    });
-
-    it('emits mysql-compatible casts without a json cast', function (): void {
-        $casts = unionNullCastsForDriver('mysql');
-
-        expect($casts['uuid'])->toBe('CAST(NULL AS char(36))')
-            ->and($casts['timestamptz'])->toBe('CAST(NULL AS datetime)')
-            ->and($casts['bigint'])->toBe('CAST(NULL AS signed)')
-            ->and($casts['json'])->toBe('NULL');
-    });
-
     it('emits bare nulls on sqlite and runs the batched union without casts', function (): void {
         expect(unionNullCastsForDriver('sqlite'))->toBe([
             'uuid' => 'NULL',

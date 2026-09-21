@@ -61,24 +61,6 @@ it('creates result with warnings', function (): void {
     expect($result->warnings)->toBe(['Address may be residential', 'Postal code format adjusted']);
 });
 
-it('returns false for hasCorrectedAddress when null', function (): void {
-    $result = new AddressValidationResult(valid: true);
-
-    expect($result->hasCorrectedAddress())->toBeFalse();
-});
-
-it('returns false for hasWarnings when empty', function (): void {
-    $result = new AddressValidationResult(valid: true);
-
-    expect($result->hasWarnings())->toBeFalse();
-});
-
-it('returns false for hasErrors when empty', function (): void {
-    $result = new AddressValidationResult(valid: true);
-
-    expect($result->hasErrors())->toBeFalse();
-});
-
 it('creates result with all fields', function (): void {
     $corrected = new AddressData(
         name: 'John Doe',

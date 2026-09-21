@@ -8,14 +8,8 @@ use AIArmada\Signals\Console\Commands\ProcessSignalAlertsCommand;
 use AIArmada\Signals\Contracts\SignalLocationResolverContract;
 use AIArmada\Signals\Listeners\RecordCommerceSignal;
 use AIArmada\Signals\Models\SignalSession;
-use AIArmada\Signals\Services\CommerceSignalsRecorder;
 use AIArmada\Signals\Services\Geocoders\NominatimGeocoder;
-use AIArmada\Signals\Services\SignalAlertDispatcher;
-use AIArmada\Signals\Services\SignalAlertEvaluator;
 use AIArmada\Signals\Services\SignalLocationResolverPipeline;
-use AIArmada\Signals\Services\SignalMetricsAggregator;
-use AIArmada\Signals\Services\SignalsDashboardService;
-use AIArmada\Signals\Services\TrackedPropertyResolver;
 use AIArmada\Signals\SignalsServiceProvider;
 use AIArmada\Signals\Support\CommerceSignalsIntegrationRegistrar;
 use AIArmada\Signals\Support\SignalEventMap;
@@ -42,18 +36,6 @@ it('configures the package name, config, and migrations', function (): void {
 
     $provider = new SignalsServiceProvider(app());
     $provider->configurePackage($package);
-});
-
-it('registers the dashboard and aggregator services as singletons', function (): void {
-    app()->register(SignalsServiceProvider::class);
-
-    expect(app()->bound(SignalsDashboardService::class))->toBeTrue()
-        ->and(app()->bound(SignalMetricsAggregator::class))->toBeTrue()
-        ->and(app()->bound(TrackedPropertyResolver::class))->toBeTrue()
-        ->and(app()->bound(CommerceSignalsRecorder::class))->toBeTrue()
-        ->and(app()->bound(SignalAlertEvaluator::class))->toBeTrue()
-        ->and(app()->bound(SignalAlertDispatcher::class))->toBeTrue()
-        ->and(app()->bound(SignalLocationResolverPipeline::class))->toBeTrue();
 });
 
 it('registers the default reverse geocoder and optional location resolver on the pipeline', function (): void {

@@ -5,16 +5,9 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Enums\FraudSeverity;
 use AIArmada\Affiliates\Enums\FraudSignalStatus;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateCommissionTemplate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateFraudSignal;
-use AIArmada\Affiliates\Models\AffiliateLink;
 use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Models\AffiliateRank;
-use AIArmada\Affiliates\Models\AffiliateRankHistory;
-use AIArmada\Affiliates\Models\AffiliateSupportTicket;
-use AIArmada\Affiliates\Models\AffiliateTaxDocument;
 use AIArmada\Affiliates\Models\AffiliateTouchpoint;
 use AIArmada\Affiliates\Models\AffiliateUpline;
 use AIArmada\Affiliates\States\Active;
@@ -57,10 +50,6 @@ beforeEach(function (): void {
 });
 
 // AffiliateResource Tests
-it('AffiliateResource has correct model', function (): void {
-    expect(AffiliateResource::getModel())->toBe(Affiliate::class);
-});
-
 it('AffiliateResource returns pages array', function (): void {
     $pages = AffiliateResource::getPages();
 
@@ -122,10 +111,6 @@ it('AffiliateResource CRUD abilities follow affiliate permission set', function 
 });
 
 // AffiliateConversionResource Tests
-it('AffiliateConversionResource has correct model', function (): void {
-    expect(AffiliateConversionResource::getModel())->toBe(AffiliateConversion::class);
-});
-
 it('AffiliateConversionResource returns pages array', function (): void {
     $pages = AffiliateConversionResource::getPages();
 
@@ -209,10 +194,6 @@ it('AffiliateConversionResource canViewAny allows affiliate.approve permission',
     expect(AffiliateConversionResource::canViewAny())->toBeTrue();
 });
 
-it('AffiliateCommissionTemplateResource has correct model', function (): void {
-    expect(AffiliateCommissionTemplateResource::getModel())->toBe(AffiliateCommissionTemplate::class);
-});
-
 it('AffiliateCommissionTemplateResource returns pages array', function (): void {
     expect(AffiliateCommissionTemplateResource::getPages())
         ->toBeArray()
@@ -222,19 +203,11 @@ it('AffiliateCommissionTemplateResource returns pages array', function (): void 
         ->toHaveKey('edit');
 });
 
-it('AffiliateRankHistoryResource has correct model', function (): void {
-    expect(AffiliateRankHistoryResource::getModel())->toBe(AffiliateRankHistory::class);
-});
-
 it('AffiliateRankHistoryResource returns pages array', function (): void {
     expect(AffiliateRankHistoryResource::getPages())
         ->toBeArray()
         ->toHaveKey('index')
         ->toHaveKey('view');
-});
-
-it('AffiliateSupportTicketResource has correct model', function (): void {
-    expect(AffiliateSupportTicketResource::getModel())->toBe(AffiliateSupportTicket::class);
 });
 
 it('AffiliateSupportTicketResource returns pages array', function (): void {
@@ -252,10 +225,6 @@ it('AffiliateSupportTicketResource has messages relation manager', function (): 
         ->toBe([MessagesRelationManager::class]);
 });
 
-it('AffiliateTaxDocumentResource has correct model', function (): void {
-    expect(AffiliateTaxDocumentResource::getModel())->toBe(AffiliateTaxDocument::class);
-});
-
 it('AffiliateTaxDocumentResource returns pages array', function (): void {
     expect(AffiliateTaxDocumentResource::getPages())
         ->toBeArray()
@@ -264,10 +233,6 @@ it('AffiliateTaxDocumentResource returns pages array', function (): void {
 });
 
 // AffiliatePayoutResource Tests
-it('AffiliatePayoutResource has correct model', function (): void {
-    expect(AffiliatePayoutResource::getModel())->toBe(AffiliatePayout::class);
-});
-
 it('AffiliatePayoutResource has relations', function (): void {
     $relations = AffiliatePayoutResource::getRelations();
 
@@ -310,10 +275,6 @@ it('AffiliatePayoutResource has navigation sort from config', function (): void 
 });
 
 // AffiliateProgramResource Tests
-it('AffiliateProgramResource has correct model', function (): void {
-    expect(AffiliateProgramResource::getModel())->toBe(AffiliateProgram::class);
-});
-
 it('AffiliateProgramResource returns pages array', function (): void {
     $pages = AffiliateProgramResource::getPages();
 
@@ -371,10 +332,6 @@ it('AffiliateProgramResource CRUD abilities follow affiliate permission set', fu
 });
 
 // AffiliateLinkResource Tests
-it('AffiliateLinkResource has correct model', function (): void {
-    expect(AffiliateLinkResource::getModel())->toBe(AffiliateLink::class);
-});
-
 it('AffiliateLinkResource CRUD abilities follow affiliate permission set', function (): void {
     $user = User::create([
         'name' => 'Link CRUD Operator',
@@ -397,10 +354,6 @@ it('AffiliateLinkResource CRUD abilities follow affiliate permission set', funct
 });
 
 // AffiliateTouchpointResource Tests
-it('AffiliateTouchpointResource has correct model', function (): void {
-    expect(AffiliateTouchpointResource::getModel())->toBe(AffiliateTouchpoint::class);
-});
-
 it('AffiliateTouchpointResource is read-only', function (): void {
     $touchpoint = AffiliateTouchpoint::make();
 
@@ -417,10 +370,6 @@ it('AffiliateTouchpointResource returns pages array', function (): void {
 });
 
 // AffiliateRankResource Tests
-it('AffiliateRankResource has correct model', function (): void {
-    expect(AffiliateRankResource::getModel())->toBe(AffiliateRank::class);
-});
-
 it('AffiliateRankResource returns pages array', function (): void {
     expect(AffiliateRankResource::getPages())
         ->toBeArray()
@@ -437,10 +386,6 @@ it('AffiliateRankResource has navigation sort from config', function (): void {
 });
 
 // AffiliateUplineResource Tests
-it('AffiliateUplineResource has correct model', function (): void {
-    expect(AffiliateUplineResource::getModel())->toBe(AffiliateUpline::class);
-});
-
 it('AffiliateUplineResource is read-only', function (): void {
     $network = AffiliateUpline::make();
 
@@ -457,10 +402,6 @@ it('AffiliateUplineResource returns pages array', function (): void {
 });
 
 // AffiliateFraudSignalResource Tests
-it('AffiliateFraudSignalResource has correct model', function (): void {
-    expect(AffiliateFraudSignalResource::getModel())->toBe(AffiliateFraudSignal::class);
-});
-
 it('AffiliateFraudSignalResource returns pages array', function (): void {
     $pages = AffiliateFraudSignalResource::getPages();
 
@@ -472,10 +413,6 @@ it('AffiliateFraudSignalResource returns pages array', function (): void {
 
 it('AffiliateFraudSignalResource has empty relations', function (): void {
     expect(AffiliateFraudSignalResource::getRelations())->toBeArray()->toBeEmpty();
-});
-
-it('AffiliateFraudSignalResource has navigation badge color', function (): void {
-    expect(AffiliateFraudSignalResource::getNavigationBadgeColor())->toBe('danger');
 });
 
 it('AffiliateFraudSignalResource is explicitly non-CRUD', function (): void {

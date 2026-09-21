@@ -113,10 +113,6 @@ describe('LowStockCheck', function (): void {
         expect($result->notificationMessage)->toContain('low stock');
     });
 
-    it('has default name', function (): void {
-        expect($this->check->name)->toBe('Low Stock Alert');
-    });
-
     it('allows method chaining', function (): void {
         $result = $this->check
             ->threshold(5)

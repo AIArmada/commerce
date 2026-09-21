@@ -12,12 +12,6 @@ describe('FilamentAuthzPlugin', function (): void {
         expect($plugin)->toBeInstanceOf(FilamentAuthzPlugin::class);
     });
 
-    it('has an id', function (): void {
-        $plugin = FilamentAuthzPlugin::make();
-
-        expect($plugin->getId())->toBe('aiarmada-filament-authz');
-    });
-
     it('implements Plugin interface', function (): void {
         $plugin = FilamentAuthzPlugin::make();
 

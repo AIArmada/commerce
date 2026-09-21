@@ -4,30 +4,12 @@ declare(strict_types=1);
 
 use AIArmada\Contacting\Actions\NormalizeSocialProfileAction;
 use AIArmada\Contacting\Data\SocialProfileData;
-use AIArmada\Contacting\Enums\SocialPlatform;
 use AIArmada\Contacting\Models\SocialProfile;
 use AIArmada\Contacting\Support\NormalizesSocialHandle;
 use AIArmada\Contacting\Support\NormalizesUrl;
 use AIArmada\Contacting\Support\SocialProfileConfig;
 use AIArmada\Customers\Models\Customer;
 use Carbon\CarbonImmutable;
-
-test('SocialPlatform enum has expected values', function (): void {
-    expect(SocialPlatform::Facebook->value)->toBe('facebook');
-    expect(SocialPlatform::Instagram->value)->toBe('instagram');
-    expect(SocialPlatform::Tiktok->value)->toBe('tiktok');
-    expect(SocialPlatform::Youtube->value)->toBe('youtube');
-    expect(SocialPlatform::Linkedin->value)->toBe('linkedin');
-    expect(SocialPlatform::X->value)->toBe('x');
-    expect(SocialPlatform::Other->value)->toBe('other');
-});
-
-test('SocialPlatform options map configured values', function (): void {
-    expect(SocialPlatform::options(['facebook', 'telegram_channel', 'x']))->toBe([
-        'facebook' => 'Facebook',
-        'x' => 'X / Twitter',
-    ]);
-});
 
 test('SocialProfileData constructor', function (): void {
     $data = new SocialProfileData(

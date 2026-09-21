@@ -283,40 +283,6 @@ describe('AddVoucherToWallet Action', function (): void {
             ->and($wallet->holder_id)->toBe('user-123');
     });
 
-    it('returns existing wallet entry if already added', function (): void {
-        $voucher = Voucher::create([
-            'code' => 'WALLET-DUPE',
-            'name' => 'Wallet Dupe Voucher',
-            'type' => VoucherType::Fixed,
-            'value' => 500,
-            'status' => 'active',
-        ]);
-
-        $owner = new class extends Model
-        {
-            public $exists = true;
-
-            protected $table = 'users';
-
-            public function getKey(): string
-            {
-                return 'user-456';
-            }
-
-            public function getMorphClass(): string
-            {
-                return 'user';
-            }
-        };
-
-        $action = new AddVoucherToWallet;
-
-        $wallet1 = $action->handle('WALLET-DUPE', $owner);
-        $wallet2 = $action->handle('WALLET-DUPE', $owner);
-
-        expect($wallet1->id)->toBe($wallet2->id);
-    });
-
     it('throws exception for non-existent voucher', function (): void {
         $owner = new class extends Model
         {

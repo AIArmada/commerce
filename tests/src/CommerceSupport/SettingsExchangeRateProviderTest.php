@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\CommerceSupport\Contracts\ExchangeRateProvider;
 use AIArmada\CommerceSupport\Settings\ExchangeRateSettings;
 use AIArmada\CommerceSupport\Support\SettingsExchangeRateProvider;
 use Illuminate\Support\Facades\Artisan;
@@ -21,10 +20,6 @@ describe('SettingsExchangeRateProvider', function (): void {
     beforeEach(function (): void {
         // Settings cache outlives RefreshDatabase rollbacks within a process.
         Artisan::call('settings:clear-cache');
-    });
-
-    it('is the default ExchangeRateProvider binding', function (): void {
-        expect(app(ExchangeRateProvider::class))->toBeInstanceOf(SettingsExchangeRateProvider::class);
     });
 
     it('ships migration defaults through the normal migrate flow', function (): void {

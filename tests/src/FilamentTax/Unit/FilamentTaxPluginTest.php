@@ -24,12 +24,6 @@ it('creates plugin instance', function (): void {
     expect($plugin)->toBeInstanceOf(FilamentTaxPlugin::class);
 });
 
-it('returns correct plugin id', function (): void {
-    $plugin = FilamentTaxPlugin::make();
-
-    expect($plugin->getId())->toBe('filament-tax');
-});
-
 it('registers resources, widgets, and pages on the panel', function (): void {
     $plugin = FilamentTaxPlugin::make();
 

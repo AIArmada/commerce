@@ -111,14 +111,6 @@ describe('Subscription', function (): void {
         $this->assertFalse($subscription->hasIncompletePayment());
     });
 
-    it('owner relationship', function (): void {
-        $user = new User;
-        $subscription = new Subscription;
-        $subscription->setRelation('owner', $user);
-
-        $this->assertSame($user, $subscription->owner);
-    });
-
     it('items relationship', function (): void {
         // hasMany relation
         $subscription = new Subscription;

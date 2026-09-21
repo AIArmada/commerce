@@ -18,7 +18,6 @@ use AIArmada\Organizations\Enums\OrganizationStatus;
 use AIArmada\Organizations\Enums\OrganizationVisibility;
 use AIArmada\Organizations\Models\Organization;
 use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 uses(OrganizationsTestCase::class);
@@ -129,30 +128,4 @@ it('rejects an ownership transfer target from a different member model', functio
 
     expect(fn () => TransferOrganizationOwnershipAction::make()->handle($organization, $creator, $otherOrg->refresh()))
         ->toThrow(InvalidArgumentException::class, 'member model');
-});
-
-it('drops and recreates the organization tables through the create migrations', function (): void {
-    $organizationsTable = (string) config('organizations.database.tables.organizations', 'organizations');
-    $membersTable = (string) config('organizations.database.tables.members', 'organization_members');
-    $base = dirname(__DIR__, 4) . '/packages/organizations/database/migrations/';
-
-    $createOrganizations = require $base . '2000_01_01_000001_create_organizations_table.php';
-    $createMembers = require $base . '2000_01_01_000002_create_organization_members_table.php';
-
-    expect(Schema::hasTable($organizationsTable))->toBeTrue()
-        ->and(Schema::hasTable($membersTable))->toBeTrue();
-
-    try {
-        Schema::dropIfExists($membersTable);
-        Schema::dropIfExists($organizationsTable);
-
-        expect(Schema::hasTable($organizationsTable))->toBeFalse()
-            ->and(Schema::hasTable($membersTable))->toBeFalse();
-    } finally {
-        $createOrganizations->up();
-        $createMembers->up();
-    }
-
-    expect(Schema::hasTable($organizationsTable))->toBeTrue()
-        ->and(Schema::hasTable($membersTable))->toBeTrue();
 });

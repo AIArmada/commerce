@@ -15,7 +15,6 @@ use AIArmada\Feedback\Models\FeedbackResponse;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
-use Illuminate\Support\Facades\Schema;
 
 it('recalculates stale form analytics through an owner-scoped worker', function (): void {
     $ownerA = User::query()->create([
@@ -118,26 +117,4 @@ it('queues recalculation with the response owner tuple', function (): void {
             && (string) $job->ownerId === (string) $owner->getKey()
             && $job->ownerIsGlobal === false;
     });
-});
-
-it('ships a guarded aggregate schema in the base create migration', function (): void {
-    $table = (string) config('feedback.database.tables.form_analytics', 'feedback_form_analytics');
-
-    expect(Schema::hasTable($table))->toBeTrue()
-        ->and(Schema::hasColumns($table, [
-            'id',
-            'feedback_form_id',
-            'owner_type',
-            'owner_id',
-            'total_responses',
-            'completed_responses',
-            'average_score',
-            'max_score',
-            'completion_rate',
-            'pending_review',
-            'rejected',
-            'spam',
-            'calculated_at',
-        ]))->toBeTrue()
-        ->and(Schema::hasIndex($table, 'feedback_form_analytics_form_unique'))->toBeTrue();
 });

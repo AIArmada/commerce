@@ -240,18 +240,4 @@ describe('StoreWebhookData Listener', function (): void {
                 ->toBe(collect([(string) $ownerOne->getKey(), (string) $ownerTwo->getKey()])->sort()->values()->all());
         });
     });
-
-    describe('listener instantiation', function (): void {
-        it('has handle method', function (): void {
-            expect(method_exists($this->listener, 'handle'))->toBeTrue();
-        });
-
-        it('handle method accepts WebhookReceived event', function (): void {
-            $reflection = new ReflectionMethod($this->listener, 'handle');
-            $params = $reflection->getParameters();
-
-            expect($params)->toHaveCount(1);
-            expect($params[0]->getType()?->getName())->toBe(WebhookReceived::class);
-        });
-    });
 });

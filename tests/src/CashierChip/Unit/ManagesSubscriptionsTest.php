@@ -20,18 +20,6 @@ describe('ManagesSubscriptions', function (): void {
         $this->assertInstanceOf(SubscriptionBuilder::class, $builder);
     });
 
-    it('on trial returns false without subscription', function (): void {
-        $user = $this->createUser(['chip_id' => 'cli_123']);
-
-        $this->assertFalse($user->onTrial('default'));
-    });
-
-    it('on generic trial', function (): void {
-        $user = $this->createUser(['chip_id' => 'cli_123', 'trial_ends_at' => Carbon::now()->addDays(7)]);
-
-        $this->assertTrue($user->onGenericTrial());
-    });
-
     it('on generic trial false when expired', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123', 'trial_ends_at' => Carbon::now()->subDay()]);
 
@@ -55,12 +43,6 @@ describe('ManagesSubscriptions', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123', 'trial_ends_at' => $trialDate]);
 
         $this->assertEquals($trialDate->toDateTimeString(), $user->trialEndsAt()->toDateTimeString());
-    });
-
-    it('subscribed returns false without subscription', function (): void {
-        $user = $this->createUser(['chip_id' => 'cli_123']);
-
-        $this->assertFalse($user->subscribed('default'));
     });
 
     it('subscription returns null without subscription', function (): void {
@@ -115,16 +97,6 @@ describe('ManagesSubscriptions', function (): void {
         $user = $this->createUser(['chip_id' => 'cli_123']);
 
         $this->assertEquals([], $user->priceTaxRates());
-    });
-
-    it('subscribed with active subscription', function (): void {
-        $user = $this->createUser(['chip_id' => 'cli_123']);
-        Subscription::factory()->for($user, 'billable')->create([
-            'type' => 'default',
-            'chip_status' => SubscriptionStatus::Active,
-        ]);
-
-        $this->assertTrue($user->subscribed('default'));
     });
 
     it('has incomplete payment with past due subscription', function (): void {

@@ -474,11 +474,4 @@ describe('Collection Model', function (): void {
         });
     });
 
-    describe('Route Key Name', function (): void {
-        it('uses slug as route key', function (): void {
-            $collection = Collection::create(['name' => 'Route Key Collection']);
-
-            expect($collection->getRouteKeyName())->toBe('slug');
-        });
-    });
 });

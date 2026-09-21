@@ -6,7 +6,6 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Models\Product;
 use Illuminate\Database\QueryException;
-use Illuminate\Support\Facades\Schema;
 
 it('rejects duplicate global product slugs and skus', function (): void {
     OwnerContext::withOwner(null, function (): void {
@@ -66,17 +65,4 @@ it('scopes product slugs and skus by the owner tuple', function (): void {
         ->and($productB->owner_id)->toBe($ownerB->getKey())
         ->and($productA->slug)->toBe($productB->slug)
         ->and($productB->sku)->toBe('SHARED-SKU');
-});
-
-it('removes the superseded identity columns and installs tuple indexes', function (): void {
-    foreach (['products', 'product_variants', 'product_collections', 'product_attribute_groups', 'product_attributes', 'product_attribute_sets'] as $tableName) {
-        expect(Schema::hasColumn($tableName, 'owner_scope'))->toBeFalse();
-    }
-
-    expect(Schema::hasColumn('product_categories', 'owner_scope'))->toBeFalse()
-        ->and(Schema::hasColumn('product_categories', 'parent_scope'))->toBeFalse()
-        ->and(Schema::hasIndex('products', 'products_slug_owner_unique'))->toBeTrue()
-        ->and(Schema::hasIndex('products', 'products_slug_global_unique'))->toBeTrue()
-        ->and(Schema::hasIndex('products', 'products_sku_owner_unique'))->toBeTrue()
-        ->and(Schema::hasIndex('products', 'products_sku_global_unique'))->toBeTrue();
 });

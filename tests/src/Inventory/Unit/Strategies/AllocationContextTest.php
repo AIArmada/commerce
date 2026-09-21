@@ -6,21 +6,6 @@ use AIArmada\Inventory\Strategies\AllocationContext;
 
 describe('AllocationContext', function (): void {
     describe('constructor', function (): void {
-        it('creates with defaults', function (): void {
-            $context = new AllocationContext;
-
-            expect($context->locationId)->toBeNull();
-            expect($context->orderId)->toBeNull();
-            expect($context->customerId)->toBeNull();
-            expect($context->excludeExpiringSoon)->toBeFalse();
-            expect($context->minDaysToExpiry)->toBe(7);
-            expect($context->allowPartialAllocation)->toBeTrue();
-            expect($context->createBackorderForShortfall)->toBeFalse();
-            expect($context->maxLocations)->toBeNull();
-            expect($context->preferSameLocation)->toBeTrue();
-            expect($context->preferWholeBatches)->toBeFalse();
-        });
-
         it('creates with custom values', function (): void {
             $context = new AllocationContext(
                 locationId: 'loc-123',

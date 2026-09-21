@@ -26,12 +26,6 @@ it('creates plugin instance', function (): void {
     expect($plugin)->toBeInstanceOf(FilamentShippingPlugin::class);
 });
 
-it('returns correct plugin id', function (): void {
-    $plugin = FilamentShippingPlugin::make();
-
-    expect($plugin->getId())->toBe('filament-shipping');
-});
-
 it('supports method chaining for all feature toggles', function (): void {
     $plugin = FilamentShippingPlugin::make()
         ->shipmentResource(false)

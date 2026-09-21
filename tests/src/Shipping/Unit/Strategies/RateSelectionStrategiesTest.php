@@ -36,11 +36,6 @@ describe('CheapestRateStrategy', function (): void {
         expect($selected)->toBeNull();
     });
 
-    it('returns correct strategy name', function (): void {
-        $strategy = new CheapestRateStrategy;
-
-        expect($strategy->getStrategyName())->toBe('cheapest');
-    });
 });
 
 // ============================================
@@ -71,11 +66,6 @@ describe('FastestRateStrategy', function (): void {
         expect($selected)->toBeNull();
     });
 
-    it('returns correct strategy name', function (): void {
-        $strategy = new FastestRateStrategy;
-
-        expect($strategy->getStrategyName())->toBe('fastest');
-    });
 });
 
 // ============================================
@@ -146,11 +136,6 @@ describe('PreferredCarrierStrategy', function (): void {
         expect($selected->carrier)->toBe('carrier_b');
     });
 
-    it('returns correct strategy name', function (): void {
-        $strategy = new PreferredCarrierStrategy([]);
-
-        expect($strategy->getStrategyName())->toBe('preferred');
-    });
 });
 
 // ============================================
@@ -207,12 +192,6 @@ describe('BalancedRateStrategy', function (): void {
         $selected = $strategy->select(collect());
 
         expect($selected)->toBeNull();
-    });
-
-    it('returns correct strategy name', function (): void {
-        $strategy = new BalancedRateStrategy;
-
-        expect($strategy->getStrategyName())->toBe('balanced');
     });
 
     it('can override weights via options', function (): void {

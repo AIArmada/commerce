@@ -6,7 +6,6 @@ use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Inventory\Enums\BatchStatus;
 use AIArmada\Inventory\Models\InventoryBatch;
 use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Strategies\AllocationContext;
 use AIArmada\Inventory\Strategies\FefoStrategy;
 
 describe('FefoStrategy', function (): void {
@@ -17,18 +16,6 @@ describe('FefoStrategy', function (): void {
             'name' => 'Test Location',
             'code' => 'TEST',
         ]);
-    });
-
-    it('name returns correct value', function (): void {
-        expect($this->strategy->name())->toBe('fefo');
-    });
-
-    it('label returns correct value', function (): void {
-        expect($this->strategy->label())->toBe('First Expired, First Out');
-    });
-
-    it('description returns correct value', function (): void {
-        expect($this->strategy->description())->toContain('Allocates inventory from batches with the earliest expiry dates first');
     });
 
     it('allocate returns empty array when no batches', function (): void {
@@ -45,33 +32,6 @@ describe('FefoStrategy', function (): void {
 
     it('get recommended order returns empty collection when no batches', function (): void {
         $order = $this->strategy->getRecommendedOrder($this->item);
-
-        expect($order)->toBeEmpty();
-    });
-
-    it('allocate with context location filter', function (): void {
-        $context = new AllocationContext;
-        $context->locationId = $this->location->id;
-
-        $allocations = $this->strategy->allocate($this->item, 10, $context);
-
-        expect($allocations)->toBeEmpty();
-    });
-
-    it('can fulfill with context location filter', function (): void {
-        $context = new AllocationContext;
-        $context->locationId = $this->location->id;
-
-        $canFulfill = $this->strategy->canFulfill($this->item, 10, $context);
-
-        expect($canFulfill)->toBeFalse();
-    });
-
-    it('get recommended order with context location filter', function (): void {
-        $context = new AllocationContext;
-        $context->locationId = $this->location->id;
-
-        $order = $this->strategy->getRecommendedOrder($this->item, $context);
 
         expect($order)->toBeEmpty();
     });

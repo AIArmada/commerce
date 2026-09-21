@@ -89,16 +89,6 @@ describe('RetryService', function (): void {
         expect($attempts)->toBe(3);
     });
 
-    it('supports chaining all configuration setters', function (): void {
-        $retry = RetryService::make()
-            ->attempts(5)
-            ->delay(500)
-            ->backoff(3.0)
-            ->withJitter(false);
-
-        expect($retry)->toBeInstanceOf(RetryService::class);
-    });
-
     it('identifies timeout as retryable', function (): void {
         $attempts = 0;
 

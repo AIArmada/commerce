@@ -12,7 +12,6 @@ use AIArmada\References\Policies\ReferencePolicy;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 beforeEach(function (): void {
@@ -59,11 +58,6 @@ test('slugs are unique per owner rather than globally', function (): void {
         'owner_type' => $ownerA->getMorphClass(),
         'owner_id' => $ownerA->getKey(),
     ])))->toThrow(QueryException::class);
-});
-
-test('slug identity uses per-owner partial unique indexes', function (): void {
-    expect(Schema::hasIndex('references', 'references_slug_owner_unique'))->toBeTrue()
-        ->and(Schema::hasIndex('references', 'references_slug_global_unique'))->toBeTrue();
 });
 
 test('rejects invalid reference parents', function (): void {

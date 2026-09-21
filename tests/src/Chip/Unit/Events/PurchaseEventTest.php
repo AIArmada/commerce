@@ -4,26 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Enums\WebhookEventType;
-use AIArmada\Chip\Events\PurchaseCancelled;
-use AIArmada\Chip\Events\PurchaseCaptured;
-use AIArmada\Chip\Events\PurchaseCaptureFailure;
-use AIArmada\Chip\Events\PurchaseCreated;
 use AIArmada\Chip\Events\PurchaseHold;
 use AIArmada\Chip\Events\PurchasePaid;
-use AIArmada\Chip\Events\PurchasePaymentFailure;
-use AIArmada\Chip\Events\PurchasePendingCapture;
-use AIArmada\Chip\Events\PurchasePendingCharge;
-use AIArmada\Chip\Events\PurchasePendingExecute;
-use AIArmada\Chip\Events\PurchasePendingRecurringTokenDelete;
-use AIArmada\Chip\Events\PurchasePendingRefund;
-use AIArmada\Chip\Events\PurchasePendingRelease;
-use AIArmada\Chip\Events\PurchasePreauthorized;
-use AIArmada\Chip\Events\PurchaseRecurringTokenDeleted;
-use AIArmada\Chip\Events\PurchaseRefundFailure;
-use AIArmada\Chip\Events\PurchaseReleased;
-use AIArmada\Chip\Events\PurchaseReleaseFailure;
-use AIArmada\Chip\Events\PurchaseSettled;
-use AIArmada\Chip\Events\PurchaseViewed;
 
 describe('PurchaseEvent base class', function (): void {
     function createPurchasePayload(array $overrides = []): array
@@ -73,47 +55,6 @@ describe('PurchaseEvent base class', function (): void {
             ->and($event->purchase)->toBeInstanceOf(PurchaseData::class)
             ->and($event->payload)->toBe($payload)
             ->and($event->eventType())->toBe(WebhookEventType::PurchasePaid);
-    });
-
-    it('returns correct event type for all purchase events', function (): void {
-        $payload = createPurchasePayload();
-        $purchaseData = PurchaseData::from($payload);
-
-        $events = [
-            PurchasePaid::class => WebhookEventType::PurchasePaid,
-            PurchaseCancelled::class => WebhookEventType::PurchaseCancelled,
-            PurchaseCaptured::class => WebhookEventType::PurchaseCaptured,
-            PurchaseCaptureFailure::class => WebhookEventType::PurchaseCaptureFailure,
-            PurchaseCreated::class => WebhookEventType::PurchaseCreated,
-            PurchaseHold::class => WebhookEventType::PurchaseHold,
-            PurchasePaymentFailure::class => WebhookEventType::PurchasePaymentFailure,
-            PurchasePendingCapture::class => WebhookEventType::PurchasePendingCapture,
-            PurchasePendingCharge::class => WebhookEventType::PurchasePendingCharge,
-            PurchasePendingExecute::class => WebhookEventType::PurchasePendingExecute,
-            PurchasePendingRecurringTokenDelete::class => WebhookEventType::PurchasePendingRecurringTokenDelete,
-            PurchasePendingRefund::class => WebhookEventType::PurchasePendingRefund,
-            PurchasePendingRelease::class => WebhookEventType::PurchasePendingRelease,
-            PurchasePreauthorized::class => WebhookEventType::PurchasePreauthorized,
-            PurchaseRefundFailure::class => WebhookEventType::PurchaseRefundFailure,
-            PurchaseRecurringTokenDeleted::class => WebhookEventType::PurchaseRecurringTokenDeleted,
-            PurchaseReleased::class => WebhookEventType::PurchaseReleased,
-            PurchaseReleaseFailure::class => WebhookEventType::PurchaseReleaseFailure,
-            PurchaseSettled::class => WebhookEventType::PurchaseSettled,
-            PurchaseViewed::class => WebhookEventType::PurchaseViewed,
-        ];
-
-        foreach ($events as $eventClass => $expectedType) {
-            $event = new $eventClass($purchaseData, $payload);
-            expect($event->eventType())->toBe($expectedType, "Failed for {$eventClass}");
-        }
-    });
-
-    it('provides correct getEventTypeValue', function (): void {
-        $payload = createPurchasePayload();
-        $purchaseData = PurchaseData::from($payload);
-        $event = new PurchasePaid($purchaseData, $payload);
-
-        expect($event->getEventTypeValue())->toBe('purchase.paid');
     });
 
     it('provides correct getReference', function (): void {

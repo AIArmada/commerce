@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use AIArmada\Docs\Enums\DocEInvoiceSubmissionStatus;
 use AIArmada\Docs\Enums\DocEInvoiceValidationStatus;
-use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocEInvoiceSubmission;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -61,11 +60,4 @@ test('einvoice portal url generation', function (): void {
     // No long id
     $sub->update(['long_id' => null]);
     expect($sub->getPortalUrl())->toBeNull();
-});
-
-test('einvoice relationships', function (): void {
-    $doc = Doc::factory()->create();
-    $sub = DocEInvoiceSubmission::factory()->create(['doc_id' => $doc->id]);
-
-    expect($sub->doc->id)->toBe($doc->id);
 });

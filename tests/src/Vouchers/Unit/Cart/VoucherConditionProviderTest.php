@@ -399,33 +399,6 @@ describe('VoucherConditionProvider validate', function (): void {
 });
 
 describe('VoucherConditionProvider edge cases', function (): void {
-    it('handles unsupported voucher type gracefully', function (): void {
-        // This test verifies that unknown voucher types return null
-        // In practice, all VoucherType enum values are handled
-        $cart = createCartForVoucherConditionTest(['voucher_codes' => ['UNKNOWN']]);
-
-        // Create a voucher with a mock type that would hit default case
-        // Since we can't create an "unknown" VoucherType, we rely on the
-        // pattern matching - all enum values are covered, but this tests
-        // the behavior if somehow an unhandled type exists
-        $voucher = createVoucherData(code: 'UNKNOWN', type: VoucherType::Fixed, value: 1000); // $10.00
-
-        $this->voucherService->shouldReceive('find')
-            ->with('UNKNOWN')
-            ->once()
-            ->andReturn($voucher);
-
-        $this->voucherService->shouldReceive('validate')
-            ->with('UNKNOWN', $cart)
-            ->once()
-            ->andReturn(createValidValidationResult());
-
-        $conditions = $this->provider->getConditionsFor($cart);
-
-        // Fixed type should be handled
-        expect($conditions)->toHaveCount(1);
-    });
-
     it('processes mixed valid and invalid vouchers', function (): void {
         $cart = createCartForVoucherConditionTest(['voucher_codes' => ['VALID', 'INVALID', 'NOTFOUND']]);
 

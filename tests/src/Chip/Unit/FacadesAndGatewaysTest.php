@@ -31,14 +31,6 @@ describe('Chip Facade', function (): void {
         expect($url)->toContain('/custom/chip/hook');
     });
 
-    it('returns facade accessor', function (): void {
-        $class = new ReflectionClass(Chip::class);
-        $method = $class->getMethod('getFacadeAccessor');
-
-        $accessor = $method->invoke(null);
-
-        expect($accessor)->toBe(ChipCollectService::class);
-    });
 });
 
 describe('ChipWebhookHandler', function (): void {
@@ -210,13 +202,6 @@ describe('ChipPaymentIntent', function (): void {
         ], $overrides));
     }
 
-    it('can be instantiated from PurchaseData', function (): void {
-        $purchase = createTestPurchaseData();
-        $intent = new ChipPaymentIntent($purchase);
-
-        expect($intent)->toBeInstanceOf(ChipPaymentIntent::class);
-    });
-
     it('returns metadata', function (): void {
         $purchase = createTestPurchaseData([
             'purchase' => ['total' => 10000, 'currency' => 'MYR', 'metadata' => ['order_id' => 123]],
@@ -226,26 +211,6 @@ describe('ChipPaymentIntent', function (): void {
         expect($intent->getMetadata())->toBe(['order_id' => 123]);
     });
 
-    it('checks if paid', function (): void {
-        $purchase = createTestPurchaseData(['status' => 'paid']);
-        $intent = new ChipPaymentIntent($purchase);
-
-        expect($intent->isPaid())->toBeTrue();
-    });
-
-    it('checks if not paid', function (): void {
-        $purchase = createTestPurchaseData(['status' => 'pending_execute']);
-        $intent = new ChipPaymentIntent($purchase);
-
-        expect($intent->isPaid())->toBeFalse();
-    });
-
-    it('checks if failed', function (): void {
-        $purchase = createTestPurchaseData(['status' => 'error']);
-        $intent = new ChipPaymentIntent($purchase);
-
-        expect($intent->isFailed())->toBeTrue();
-    });
 });
 
 describe('ChipGateway', function (): void {

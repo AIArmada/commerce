@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use AIArmada\Communications\Data\CommunicationContextData;
 use AIArmada\Communications\Facades\Communications;
-use AIArmada\Communications\Testing\FakeCommunicationManager;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Notifications\Notification;
 use PHPUnit\Framework\AssertionFailedError;
@@ -15,10 +14,6 @@ beforeEach(function (): void {
 
 afterEach(function (): void {
     $this->fake->reset();
-});
-
-test('fake swaps manager binding', function (): void {
-    expect(Communications::getFacadeRoot())->toBeInstanceOf(FakeCommunicationManager::class);
 });
 
 test('fake records sent notifications', function (): void {

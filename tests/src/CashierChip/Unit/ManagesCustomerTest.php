@@ -9,23 +9,6 @@ use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 uses(CashierChipTestCase::class);
 
 describe('ManagesCustomer', function (): void {
-    it('chip id', function (): void {
-        $user = $this->createUser(['chip_id' => 'cli_123']);
-
-        $this->assertEquals('cli_123', $user->chipId());
-    });
-
-    it('has chip id', function (): void {
-        $user = $this->createUser(['chip_id' => 'cli_123']);
-
-        $this->assertTrue($user->hasChipId());
-    });
-
-    it('has chip id false', function (): void {
-        $user = $this->createUser(['email' => 'test@example.com']);
-
-        $this->assertFalse($user->hasChipId());
-    });
 
     it('chip name', function (): void {
         $user = $this->createUser(['name' => 'John Doe']);

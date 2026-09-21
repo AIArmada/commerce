@@ -342,12 +342,6 @@ describe('TaxExemption', function (): void {
         $this->assertInstanceOf(ApprovedState::class, $exemption->refresh()->status);
     });
 
-    it('get table method', function (): void {
-        $exemption = new TaxExemption;
-
-        $this->assertEquals('tax_exemptions', $exemption->getTable());
-    });
-
     it('get table method with custom config', function (): void {
         config(['tax.database.tables.tax_exemptions' => 'custom_tax_exemptions']);
 
@@ -359,12 +353,4 @@ describe('TaxExemption', function (): void {
         config(['tax.database.tables.tax_exemptions' => 'tax_exemptions']);
     });
 
-    it('exemptable relationship is morph to', function (): void {
-        $exemption = new TaxExemption;
-
-        // Access the relationship builder
-        $relation = $exemption->exemptable();
-
-        $this->assertInstanceOf(MorphTo::class, $relation);
-    });
 });

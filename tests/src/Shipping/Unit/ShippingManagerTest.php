@@ -4,13 +4,11 @@ declare(strict_types=1);
 
 use AIArmada\Shipping\Contracts\ShippingDriverInterface;
 use AIArmada\Shipping\Contracts\StatusMapperInterface;
-use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Drivers\ManualShippingDriver;
 use AIArmada\Shipping\Drivers\NullShippingDriver;
 use AIArmada\Shipping\Enums\TrackingStatus;
 use AIArmada\Shipping\Facades\Shipping;
 use AIArmada\Shipping\ShippingManager;
-use Illuminate\Support\Collection;
 
 // ============================================
 // ShippingManager Tests (using Laravel framework)
@@ -138,24 +136,6 @@ it('returns null for unregistered status mapper', function (): void {
     $mapper = $this->manager->getStatusMapper('nonexistent');
 
     expect($mapper)->toBeNull();
-});
-
-it('can get drivers for destination', function (): void {
-    $destination = new AddressData(
-        name: 'Test Destination',
-        phone: '123-456-7890',
-        line1: '123 Test St',
-        postcode: '12345',
-        country: 'US',
-        city: 'Test City',
-        state: 'TS'
-    );
-
-    // Both null and manual drivers should return true for servicesDestination by default
-    $drivers = $this->manager->getDriversForDestination($destination);
-
-    // At minimum, we should have drivers that service the destination
-    expect($drivers)->toBeInstanceOf(Collection::class);
 });
 
 it('supports dynamic method calls via facade', function (): void {

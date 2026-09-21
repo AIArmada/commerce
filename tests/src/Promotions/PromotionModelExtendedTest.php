@@ -7,7 +7,6 @@ use AIArmada\Promotions\Enums\PromotionType;
 use AIArmada\Promotions\Models\Promotion;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Carbon;
 
 describe('Promotion Model - Extended Tests', function (): void {
@@ -273,20 +272,6 @@ describe('Promotion Model - Extended Tests', function (): void {
 
         // Note: forOwner tests require owner_type/owner_id columns in test schema
         // which aren't present. Full owner testing done in integration tests.
-    });
-
-    describe('relationships', function (): void {
-        it('has morphToMany products relationship', function (): void {
-            $promotion = new Promotion;
-
-            expect($promotion->products())->toBeInstanceOf(MorphToMany::class);
-        });
-
-        it('has morphToMany categories relationship', function (): void {
-            $promotion = new Promotion;
-
-            expect($promotion->categories())->toBeInstanceOf(MorphToMany::class);
-        });
     });
 
     describe('default attributes', function (): void {

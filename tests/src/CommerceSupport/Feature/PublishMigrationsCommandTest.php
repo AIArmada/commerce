@@ -4,12 +4,6 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\Artisan;
 
-test('commerce:publish-migrations command is registered', function (): void {
-    $commands = Artisan::all();
-
-    expect(array_key_exists('commerce:publish-migrations', $commands))->toBeTrue();
-});
-
 test('commerce:publish-migrations can list tags', function (): void {
     $exitCode = Artisan::call('commerce:publish-migrations', ['--list' => true]);
 

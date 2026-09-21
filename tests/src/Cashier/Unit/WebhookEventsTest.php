@@ -11,14 +11,6 @@ uses(CashierTestCase::class);
 
 describe('Webhook Events', function (): void {
     describe('WebhookHandled', function (): void {
-        it('can be instantiated with gateway and payload', function (): void {
-            $event = new WebhookHandled('stripe', ['type' => 'payment_intent.succeeded']);
-
-            expect($event)->toBeInstanceOf(WebhookHandled::class)
-                ->and($event->gateway)->toBe('stripe')
-                ->and($event->payload)->toBe(['type' => 'payment_intent.succeeded']);
-        });
-
         it('returns gateway via method', function (): void {
             $event = new WebhookHandled('chip', ['event' => 'purchase.completed']);
 
@@ -34,14 +26,6 @@ describe('Webhook Events', function (): void {
     });
 
     describe('WebhookReceived', function (): void {
-        it('can be instantiated with gateway and payload', function (): void {
-            $event = new WebhookReceived('stripe', ['type' => 'customer.created']);
-
-            expect($event)->toBeInstanceOf(WebhookReceived::class)
-                ->and($event->gateway)->toBe('stripe')
-                ->and($event->payload)->toBe(['type' => 'customer.created']);
-        });
-
         it('can be instantiated with optional request', function (): void {
             $request = Request::create('/webhook', 'POST');
             $event = new WebhookReceived('chip', ['event' => 'payment'], $request);

@@ -6,12 +6,6 @@ use AIArmada\Chip\Data\WebhookHealth;
 use AIArmada\Chip\Webhooks\WebhookMonitor;
 
 describe('WebhookMonitor', function (): void {
-    it('can be instantiated', function (): void {
-        $monitor = new WebhookMonitor;
-
-        expect($monitor)->toBeInstanceOf(WebhookMonitor::class);
-    });
-
     it('has getHealth method', function (): void {
         $monitor = new WebhookMonitor;
 

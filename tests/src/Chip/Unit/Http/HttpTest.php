@@ -89,11 +89,6 @@ describe('WebhookController', function (): void {
         Mockery::close();
     });
 
-    it('can be instantiated', function (): void {
-        $controller = new WebhookController;
-        expect($controller)->toBeInstanceOf(WebhookController::class);
-    });
-
     it('handles purchase.paid webhook', function (): void {
         $controller = new WebhookController;
 
@@ -254,13 +249,6 @@ describe('WebhookController', function (): void {
 describe('VerifyWebhookSignature middleware', function (): void {
     afterEach(function (): void {
         Mockery::close();
-    });
-
-    it('can be instantiated', function (): void {
-        $webhookService = Mockery::mock(WebhookService::class);
-        $middleware = new VerifyWebhookSignature($webhookService);
-
-        expect($middleware)->toBeInstanceOf(VerifyWebhookSignature::class);
     });
 
     it('returns 400 when signature header is missing', function (): void {

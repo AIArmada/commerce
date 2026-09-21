@@ -42,12 +42,6 @@ describe('VoucherApplied event', function (): void {
             ->and($event->voucher)->toBe($this->voucherData);
     });
 
-    it('returns correct event type', function (): void {
-        $event = new VoucherApplied($this->cart, $this->voucherData);
-
-        expect($event->getEventType())->toBe('voucher.applied');
-    });
-
     it('implements VoucherEventInterface', function (): void {
         $event = new VoucherApplied($this->cart, $this->voucherData);
 
@@ -113,12 +107,6 @@ describe('VoucherRemoved event', function (): void {
             ->and($event->voucher)->toBe($this->voucherData);
     });
 
-    it('returns correct event type', function (): void {
-        $event = new VoucherRemoved($this->cart, $this->voucherData);
-
-        expect($event->getEventType())->toBe('voucher.removed');
-    });
-
     it('implements VoucherEventInterface', function (): void {
         $event = new VoucherRemoved($this->cart, $this->voucherData);
 
@@ -166,15 +154,6 @@ describe('VoucherApplied and VoucherRemoved difference', function (): void {
             'currency' => 'MYR',
             'status' => Active::class,
         ]);
-    });
-
-    it('events have different event types', function (): void {
-        $applied = new VoucherApplied($this->cart, $this->voucherData);
-        $removed = new VoucherRemoved($this->cart, $this->voucherData);
-
-        expect($applied->getEventType())->not->toBe($removed->getEventType())
-            ->and($applied->getEventType())->toBe('voucher.applied')
-            ->and($removed->getEventType())->toBe('voucher.removed');
     });
 
     it('events can share the same voucher data', function (): void {

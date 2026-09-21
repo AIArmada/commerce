@@ -7,11 +7,6 @@ use AIArmada\Chip\Webhooks\WebhookMonitor;
 use Carbon\CarbonImmutable;
 
 describe('WebhookMonitor without database', function (): void {
-    it('can be instantiated', function (): void {
-        $monitor = new WebhookMonitor;
-        expect($monitor)->toBeInstanceOf(WebhookMonitor::class);
-    });
-
     it('calculates health metrics from stored webhooks', function (): void {
         $since = CarbonImmutable::parse('2026-04-22 08:00:00');
 

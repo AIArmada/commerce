@@ -161,23 +161,4 @@ describe('Customer Model - Extended Coverage', function (): void {
         });
     });
 
-    describe('Media Collections', function (): void {
-        it('registers media collections', function (): void {
-            $customer = new Customer;
-
-            expect(collect($customer->getRegisteredMediaCollections())->pluck('name')->all())
-                ->toBe(['avatar', 'documents']);
-        });
-
-        it('returns null for avatar when none set', function (): void {
-            $customer = Customer::create([
-                'first_name' => 'No',
-                'last_name' => 'Avatar',
-                'email' => 'no-avatar-' . uniqid() . '@example.com',
-                'status' => CustomerStatus::Active,
-            ]);
-
-            expect($customer->getAvatarUrl())->toBeNull();
-        });
-    });
 });

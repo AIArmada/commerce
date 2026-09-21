@@ -45,11 +45,6 @@ describe('AffiliateOfferApplication Model', function (): void {
             expect($application->id)->toMatch('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/');
         });
 
-        test('table name comes from config', function (): void {
-            $application = new AffiliateOfferApplication;
-
-            expect($application->getTable())->toBe('affiliate_network_offer_applications');
-        });
     });
 
     describe('status helpers', function (): void {

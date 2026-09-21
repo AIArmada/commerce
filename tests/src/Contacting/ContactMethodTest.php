@@ -4,38 +4,12 @@ declare(strict_types=1);
 
 use AIArmada\Contacting\Actions\NormalizeContactMethodAction;
 use AIArmada\Contacting\Data\ContactMethodData;
-use AIArmada\Contacting\Enums\ContactMethodType;
-use AIArmada\Contacting\Enums\ContactPurpose;
 use AIArmada\Contacting\Models\ContactMethod;
 use AIArmada\Contacting\Support\NormalizesEmailAddress;
 use AIArmada\Contacting\Support\NormalizesPhoneNumber;
 use AIArmada\Contacting\Support\NormalizesUrl;
 use AIArmada\Customers\Models\Customer;
 use Carbon\CarbonImmutable;
-
-test('ContactMethodType enum has expected values', function (): void {
-    expect(ContactMethodType::Email->value)->toBe('email');
-    expect(ContactMethodType::Phone->value)->toBe('phone');
-    expect(ContactMethodType::Whatsapp->value)->toBe('whatsapp');
-    expect(ContactMethodType::Website->value)->toBe('website');
-    expect(ContactMethodType::Other->value)->toBe('other');
-});
-
-test('ContactMethodType options map configured values', function (): void {
-    expect(ContactMethodType::options(['email', 'phone', 'whatsapp']))->toBe([
-        'email' => 'Email',
-        'phone' => 'Phone',
-        'whatsapp' => 'WhatsApp',
-    ]);
-});
-
-test('ContactPurpose enum has expected values', function (): void {
-    expect(ContactPurpose::General->value)->toBe('general');
-    expect(ContactPurpose::Admin->value)->toBe('admin');
-    expect(ContactPurpose::Support->value)->toBe('support');
-    expect(ContactPurpose::Billing->value)->toBe('billing');
-    expect(ContactPurpose::Emergency->value)->toBe('emergency');
-});
 
 test('primary contact methods remain unique per contactable type and purpose', function (): void {
     $customer = Customer::create([

@@ -9,7 +9,6 @@ use AIArmada\Products\Models\OptionValue;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 describe('Variant Model', function (): void {
     describe('Variant Creation', function (): void {
@@ -118,12 +117,6 @@ describe('Variant Model', function (): void {
     });
 
     describe('Variant Inventory', function (): void {
-        it('does not store stock_quantity directly', function (): void {
-            $variant = new Variant;
-
-            expect(Schema::hasColumn($variant->getTable(), 'stock_quantity'))->toBeFalse();
-        });
-
         it('inherits inventory tracking from the parent product', function (): void {
             $digitalTicket = Product::create([
                 'name' => 'Digital Ticket',
@@ -679,28 +672,6 @@ describe('Option Model', function (): void {
         });
     });
 
-    describe('Deletion', function (): void {
-        it('deletes option values when option is deleted', function (): void {
-            $product = Product::create([
-                'name' => 'Delete Option Product',
-                'price' => 9000,
-                'status' => ProductStatus::Active,
-            ]);
-
-            $option = Option::create([
-                'product_id' => $product->id,
-                'name' => 'Delete Me',
-            ]);
-
-            $value1 = OptionValue::create(['option_id' => $option->id, 'name' => 'Value 1']);
-            $value2 = OptionValue::create(['option_id' => $option->id, 'name' => 'Value 2']);
-
-            $optionId = $option->id;
-            $option->delete();
-
-            expect(OptionValue::where('option_id', $optionId)->count())->toBe(0);
-        });
-    });
 });
 
 describe('OptionValue Model', function (): void {

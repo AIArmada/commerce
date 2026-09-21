@@ -34,11 +34,6 @@ describe('AffiliateOffer Model', function (): void {
             expect($offer->id)->toMatch('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/');
         });
 
-        test('table name comes from config', function (): void {
-            $offer = new AffiliateOffer;
-
-            expect($offer->getTable())->toBe('affiliate_network_offers');
-        });
     });
 
     describe('isActive', function (): void {
@@ -96,26 +91,6 @@ describe('AffiliateOffer Model', function (): void {
             expect($offer->category->id)->toBe($category->id);
         });
 
-        test('has many creatives', function (): void {
-            $offer = AffiliateOffer::factory()->forSite($this->site)->create();
-            AffiliateOfferCreative::factory()->count(3)->forOffer($offer)->create();
-
-            expect($offer->creatives)->toHaveCount(3);
-        });
-
-        test('has many applications', function (): void {
-            $offer = AffiliateOffer::factory()->forSite($this->site)->create();
-            AffiliateOfferApplication::factory()->count(2)->forOffer($offer)->create();
-
-            expect($offer->applications)->toHaveCount(2);
-        });
-
-        test('has many links', function (): void {
-            $offer = AffiliateOffer::factory()->forSite($this->site)->create();
-            AffiliateOfferLink::factory()->count(5)->forOffer($offer)->create();
-
-            expect($offer->links)->toHaveCount(5);
-        });
     });
 
     describe('cascading deletes', function (): void {

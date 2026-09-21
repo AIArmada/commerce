@@ -115,17 +115,3 @@ it('does not allow picking seats from another map', function (): void {
 
     expect($component->picked)->toBe([]);
 });
-
-it('shows legend when showLegend is true', function (): void {
-    $component = new SeatMap;
-    $component->mount(seatMapId: $this->map->id, showLegend: true);
-
-    expect($component->showLegend)->toBeTrue();
-});
-
-it('hides legend when showLegend is false', function (): void {
-    $component = new SeatMap;
-    $component->mount(seatMapId: $this->map->id, showLegend: false);
-
-    expect($component->showLegend)->toBeFalse();
-});

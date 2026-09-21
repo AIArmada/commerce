@@ -340,25 +340,6 @@ describe('InventoryLevel', function (): void {
         expect($level->inventoryable->id)->toBe($this->item->id);
     });
 
-    it('allocations relationship', function (): void {
-        $level = InventoryLevel::factory()->create([
-            'inventoryable_type' => $this->item->getMorphClass(),
-            'inventoryable_id' => $this->item->getKey(),
-            'location_id' => $this->location->id,
-        ]);
-
-        InventoryAllocation::factory()->create([
-            'inventoryable_type' => $this->item->getMorphClass(),
-            'inventoryable_id' => $this->item->getKey(),
-            'location_id' => $this->location->id,
-            'level_id' => $level->id,
-            'cart_id' => 'cart-1',
-            'expires_at' => now()->addHour(),
-        ]);
-
-        expect($level->allocations)->toHaveCount(1);
-    });
-
     it('deleting level cascades to allocations', function (): void {
         $level = InventoryLevel::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),

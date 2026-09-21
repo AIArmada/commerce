@@ -101,12 +101,6 @@ describe('BundleVoucherCondition', function (): void {
             expect($condition->getName())->toBe('voucher_BUNDLE');
         });
 
-        it('has correct type', function (): void {
-            $voucher = createBundleVoucherDataFor();
-            $condition = new BundleVoucherCondition($voucher, $voucher->valueConfig);
-
-            expect($condition->getType())->toBe('voucher');
-        });
     });
 
     describe('required products', function (): void {

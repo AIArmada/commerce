@@ -11,16 +11,6 @@ use AIArmada\Chip\Commands\RetryWebhooksCommand;
  */
 describe('Command classes structure', function (): void {
     describe('CleanWebhooksCommand', function (): void {
-        it('has correct name', function (): void {
-            $command = new CleanWebhooksCommand;
-            expect($command->getName())->toBe('chip:clean-webhooks');
-        });
-
-        it('has description', function (): void {
-            $command = new CleanWebhooksCommand;
-            expect($command->getDescription())->not()->toBeEmpty();
-        });
-
         it('has days option', function (): void {
             $command = new CleanWebhooksCommand;
             expect($command->getDefinition()->hasOption('days'))->toBeTrue();
@@ -50,16 +40,6 @@ describe('Command classes structure', function (): void {
     });
 
     describe('RetryWebhooksCommand', function (): void {
-        it('has correct name', function (): void {
-            $command = new RetryWebhooksCommand;
-            expect($command->getName())->toBe('chip:retry-webhooks');
-        });
-
-        it('has description', function (): void {
-            $command = new RetryWebhooksCommand;
-            expect($command->getDescription())->not()->toBeEmpty();
-        });
-
         it('has limit option', function (): void {
             $command = new RetryWebhooksCommand;
             expect($command->getDefinition()->hasOption('limit'))->toBeTrue();

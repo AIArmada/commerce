@@ -94,31 +94,6 @@ it('can get single attribute', function (): void {
         ->and($item->getAttribute('nonexistent'))->toBeNull();
 });
 
-it('can check if associated with model', function (): void {
-    $model = new stdClass;
-    $model->id = 123;
-
-    $item = new CartItem(
-        id: 'product-1',
-        name: 'Test Product',
-        price: 9999,
-        quantity: 1,
-        associatedModel: $model
-    );
-
-    expect($item->isAssociatedWith(stdClass::class))->toBeTrue()
-        ->and($item->isAssociatedWith('App\\Models\\Product'))->toBeFalse();
-
-    $itemWithoutModel = new CartItem(
-        id: 'product-2',
-        name: 'Test Product 2',
-        price: 49.99,
-        quantity: 1
-    );
-
-    expect($itemWithoutModel->isAssociatedWith(stdClass::class))->toBeFalse();
-});
-
 it('can calculate price with conditions', function (): void {
     $item = new CartItem(
         id: 'product-1',

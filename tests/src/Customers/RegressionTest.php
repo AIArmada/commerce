@@ -179,13 +179,6 @@ describe('user relation owner verification', function (): void {
 });
 
 describe('user profile uniqueness', function (): void {
-    it('ships a scoped unique index on user_id in the customers create', function (): void {
-        $customersTable = config('customers.database.tables.customers', 'customers');
-
-        expect(Schema::hasIndex($customersTable, 'customers_owner_user_unique'))->toBeTrue()
-            ->and(Schema::hasIndex($customersTable, ['owner_type', 'owner_id', 'user_id']))->toBeTrue();
-    });
-
     it('rejects duplicate user profiles within one owner scope', function (): void {
         $owner = CustomersTestOwner::query()->create(['name' => 'Owner']);
         $userId = (string) Str::uuid();
@@ -709,11 +702,6 @@ describe('marketing default and customer indexes', function (): void {
             ->and($customer->fresh()?->accepts_marketing)->toBeFalse();
     });
 
-    it('ships a created_at index in the customers create', function (): void {
-        $customersTable = config('customers.database.tables.customers', 'customers');
-
-        expect(Schema::hasIndex($customersTable, 'customers_created_at_index'))->toBeTrue();
-    });
 });
 
 describe('reactivation clears deactivated_at', function (): void {

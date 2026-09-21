@@ -11,14 +11,6 @@ use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\Services\PaymentGatewayResolver;
 
 describe('PaymentGatewayResolver', function (): void {
-    it('can register a processor', function (): void {
-        $resolver = new PaymentGatewayResolver(null, ['test']);
-        $processor = createMockProcessor('test');
-
-        $resolver->register('test', $processor);
-
-        expect($resolver->hasGateway('test'))->toBeTrue();
-    });
 
     it('rejects conflicting registrations for the same identifier', function (): void {
         $resolver = new PaymentGatewayResolver(null, ['test']);

@@ -232,9 +232,4 @@ describe('Voucher Relationships', function (): void {
             ->and($voucher->usages->first())->toBeInstanceOf(VoucherUsage::class);
     });
 
-    it('uses correct table name from config', function (): void {
-        $voucher = new Voucher;
-
-        expect($voucher->getTable())->toBe('vouchers');
-    });
 });

@@ -67,30 +67,6 @@ it('returns LogOptions with correct configuration', function (): void {
     expect($options)->toBeInstanceOf(LogOptions::class);
 });
 
-it('uses custom log name when specified', function (): void {
-    $model = createLoggableModel(['name', 'status'], 'test-log');
-
-    // The log name is set via useLogName() method
-    // We verify the trait method returns the correct name
-    $reflectionMethod = new ReflectionMethod($model, 'getActivityLogName');
-    expect($reflectionMethod->invoke($model))->toBe('test-log');
-});
-
-it('uses fillable attributes as default loggable attributes', function (): void {
-    // Create a model without overriding getLoggableAttributes (using null)
-    $model = createLoggableModel(null, null);
-
-    $reflectionMethod = new ReflectionMethod($model, 'getLoggableAttributes');
-    expect($reflectionMethod->invoke($model))->toBe(['name', 'status', 'price']);
-});
-
-it('uses commerce as default log name', function (): void {
-    $model = createLoggableModel(null, null);
-
-    $reflectionMethod = new ReflectionMethod($model, 'getActivityLogName');
-    expect($reflectionMethod->invoke($model))->toBe('commerce');
-});
-
 it('generates correct event descriptions', function (): void {
     $model = createLoggableModel(['name', 'status'], 'test-log');
 
@@ -106,13 +82,6 @@ it('generates correct event descriptions', function (): void {
 
     $description = $model->getDescriptionForEvent('custom_event');
     expect($description)->toEndWith('custom_event');
-});
-
-it('allows custom loggable attributes', function (): void {
-    $model = createLoggableModel(['name', 'status'], null);
-
-    $reflectionMethod = new ReflectionMethod($model, 'getLoggableAttributes');
-    expect($reflectionMethod->invoke($model))->toBe(['name', 'status']);
 });
 
 it('excludes sensitive attributes from the default loggable attributes', function (): void {

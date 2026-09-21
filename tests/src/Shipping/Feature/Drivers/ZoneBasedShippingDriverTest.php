@@ -43,14 +43,6 @@ beforeEach(function (): void {
     );
 });
 
-it('returns correct carrier code', function (): void {
-    expect($this->driver->getCarrierCode())->toBe('zone');
-});
-
-it('returns correct carrier name', function (): void {
-    expect($this->driver->getCarrierName())->toBe('Zone-Based Shipping');
-});
-
 it('returns custom carrier name from config', function (): void {
     $driver = new ZoneBasedShippingDriver($this->resolver, ['name' => 'Custom Zone Shipping']);
 

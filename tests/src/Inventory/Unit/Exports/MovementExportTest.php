@@ -21,17 +21,6 @@ describe('MovementExport', function (): void {
         expect($export)->toBeInstanceOf(ExportableInterface::class);
     });
 
-    it('returns correct headers', function (): void {
-        $export = new MovementExport;
-        $headers = $export->getHeaders();
-
-        expect($headers)->toBeArray();
-        expect($headers)->toContain('ID');
-        expect($headers)->toContain('Type');
-        expect($headers)->toContain('Quantity');
-        expect($headers)->toContain('Occurred At');
-    });
-
     it('generates filename with date', function (): void {
         $export = new MovementExport;
         $filename = $export->getFilename();

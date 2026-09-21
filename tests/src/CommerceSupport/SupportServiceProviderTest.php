@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\CommerceSupport\Commands\SetupCommand;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\NullOwnerResolver;
 use AIArmada\CommerceSupport\SupportServiceProvider;
@@ -13,15 +12,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Schema;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\WebhookClient\Models\WebhookCall;
-
-it('registers the commerce setup command', function (): void {
-    $provider = new SupportServiceProvider(app());
-    $package = new Package;
-
-    $provider->configurePackage($package);
-
-    expect($package->commands)->toContain(SetupCommand::class);
-});
 
 it('only registers filament views when filament is available', function (): void {
     $provider = new SupportServiceProvider(app());

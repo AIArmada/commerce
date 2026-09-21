@@ -450,13 +450,6 @@ it('honors per-resource enabled flags', function (): void {
 
 // Group-field visibility must read the sibling group_key, not each
 // field's own state.
-it('reads sibling group_key for group-field visibility', function (): void {
-    $source = file_get_contents(__DIR__ . '/../../../packages/filament-commerce-support/src/Pages/ManageCommerceNavigation.php');
-
-    expect(mb_substr_count($source, 'isUngroupedSection($get)'))->toBeGreaterThanOrEqual(6)
-        ->and($source)->not->toContain('fn (?string $state)');
-});
-
 // Missing settings storage degrades to in-memory defaults instead of
 // 500ing, and reads never write.
 it('falls back to empty settings when rows are missing', function (): void {
@@ -533,12 +526,6 @@ it('never calls navigation methods on unregistered classes', function (): void {
 });
 
 // Timezone sort falls back to 100 like its siblings.
-it('defaults the timezone navigation sort to 100', function (): void {
-    config()->set('filament-commerce-support.navigation', ['enabled' => true]);
-
-    expect(TimezoneResource::getNavigationSort())->toBe(100);
-});
-
 // Corrupted sidebar entries must not fatal the manager page.
 it('tolerates non-array sidebar entries when building the form', function (): void {
     $page = new ManageCommerceNavigation('navmgr-test');

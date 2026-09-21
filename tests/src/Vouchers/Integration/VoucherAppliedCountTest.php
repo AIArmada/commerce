@@ -271,21 +271,6 @@ test('getStatistics returns comprehensive stats', function (): void {
         ->and($stats['remaining_uses'])->toBe(85);
 });
 
-test('applied_count defaults to zero for new vouchers', function (): void {
-    $voucher = VoucherModel::create([
-        'name' => 'Default Test',
-        'code' => 'DEFAULT',
-        'type' => VoucherType::Percentage,
-        'value' => 10,
-        'currency' => 'MYR',
-        'status' => Active::class,
-    ]);
-
-    $voucher = $voucher->fresh(); // Refresh to get database defaults
-
-    expect($voucher->applied_count)->toBe(0);
-});
-
 test('applied_count is not incremented when tracking is disabled', function (): void {
     config(['vouchers.tracking.track_applications' => false]);
 

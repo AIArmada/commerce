@@ -7,12 +7,8 @@ use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Enums\ProductVisibility;
 use AIArmada\Products\Models\Category;
 use AIArmada\Products\Models\Collection;
-use AIArmada\Products\Models\Option;
-use AIArmada\Products\Models\OptionValue;
 use AIArmada\Products\Models\Product;
-use AIArmada\Products\Models\Variant;
 use Akaunting\Money\Money;
-use Illuminate\Support\Facades\DB;
 
 describe('Product Model', function (): void {
     describe('Product Creation', function (): void {
@@ -54,14 +50,6 @@ describe('Product Model', function (): void {
                 ->and($product->tracks_inventory)->toBeTrue();
         });
 
-        it('uses slug as route key name', function (): void {
-            $product = Product::create([
-                'name' => 'Route Key Product',
-                'price' => 1000,
-            ]);
-
-            expect($product->getRouteKeyName())->toBe('slug');
-        });
     });
 
     describe('Product Status', function (): void {
@@ -681,33 +669,4 @@ describe('Product Model', function (): void {
         });
     });
 
-    describe('Product Deletion', function (): void {
-        it('deletes related entities when deleted', function (): void {
-            $product = Product::create([
-                'name' => 'Delete Relations',
-                'price' => 1000,
-                'type' => ProductType::Configurable,
-            ]);
-
-            $variant = $product->variants()->create(['name' => 'Delete Variant', 'sku' => 'DEL-VAR', 'price' => 1000]);
-
-            $option = $product->options()->create(['name' => 'Color', 'position' => 1]);
-            $optionValue = OptionValue::create(['option_id' => $option->id, 'name' => 'Red', 'position' => 0]);
-            $variant->optionValues()->attach($optionValue->id);
-
-            $category = Category::create(['name' => 'Del Cat', 'slug' => 'del-cat']);
-            $product->categories()->attach($category->id);
-
-            $collection = Collection::create(['name' => 'Del Col', 'slug' => 'del-col']);
-            $product->collections()->attach($collection->id);
-
-            $productId = $product->id;
-            $variantId = $variant->id;
-            $product->delete();
-
-            expect(Variant::where('product_id', $productId)->count())->toBe(0)
-                ->and(Option::where('product_id', $productId)->count())->toBe(0)
-                ->and(DB::table('product_variant_options')->where('variant_id', $variantId)->count())->toBe(0);
-        });
-    });
 });

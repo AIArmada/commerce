@@ -20,11 +20,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
 
 describe('WebhookSimulator', function (): void {
-    it('can be instantiated via make', function (): void {
-        $simulator = WebhookSimulator::make();
-        expect($simulator)->toBeInstanceOf(WebhookSimulator::class);
-    });
-
     it('can create paid simulator', function (): void {
         $simulator = WebhookSimulator::paid();
         $payload = $simulator->getPayload();

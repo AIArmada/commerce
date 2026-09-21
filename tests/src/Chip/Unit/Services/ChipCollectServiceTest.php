@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Builders\PurchaseBuilder;
 use AIArmada\Chip\Clients\ChipCollectClient;
 use AIArmada\Chip\Data\ClientData;
 use AIArmada\Chip\Data\ClientDetailsData;
@@ -892,10 +891,6 @@ describe('ChipCollectService Client Tokens', function (): void {
 });
 
 describe('ChipCollectService Utilities', function (): void {
-    it('provides a purchase builder instance', function (): void {
-        expect($this->service->purchase())->toBeInstanceOf(PurchaseBuilder::class);
-    });
-
     it('returns the configured brand id from the client', function (): void {
         $this->client->shouldReceive('getBrandId')
             ->once()
