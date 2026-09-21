@@ -56,10 +56,10 @@ class CentralAfricanRepublicGeographyProvider implements CountryAddressAreaMetad
                 levels: [
                     new AddressLevelDefinition(
                         key: 'prefecture',
-                        label: 'Prefecture / Commune / Economic Prefecture',
+                        label: 'Prefecture / Economic Prefecture',
                         kind: 'state',
                         hierarchyType: 'administrative',
-                        areaTypes: ['prefecture', 'commune', 'economic_prefecture'],
+                        areaTypes: ['prefecture', 'economic_prefecture'],
                         areaLevel: 1,
                     ),
                 ],
@@ -75,7 +75,6 @@ class CentralAfricanRepublicGeographyProvider implements CountryAddressAreaMetad
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
                 'prefecture' => ['prefecture'],
-                'commune' => ['commune'],
                 'economic_prefecture' => ['economic_prefecture'],
                 default => [],
             };
@@ -136,7 +135,9 @@ class CentralAfricanRepublicGeographyProvider implements CountryAddressAreaMetad
             'HM' => 'HM',
             'HK' => 'HK',
             'KG' => 'KG',
+            'LP' => 'LP',
             'LB' => 'LB',
+            'ME' => 'ME',
             'HS' => 'HS',
             'MB' => 'MB',
             'KB' => 'KB',
@@ -144,6 +145,7 @@ class CentralAfricanRepublicGeographyProvider implements CountryAddressAreaMetad
             'MP' => 'MP',
             'UK' => 'UK',
             'AC' => 'AC',
+            'OF' => 'OF',
             'OP' => 'OP',
             'SE' => 'SE',
             'VK' => 'VK',
@@ -172,7 +174,9 @@ class CentralAfricanRepublicGeographyProvider implements CountryAddressAreaMetad
             ['name' => 'Haut-Mbomou', 'code' => 'HM'],
             ['name' => 'Haute-Kotto', 'code' => 'HK'],
             ['name' => 'Kémo', 'code' => 'KG'],
+            ['name' => 'Lim-Pendé', 'code' => 'LP'],
             ['name' => 'Lobaye', 'code' => 'LB'],
+            ['name' => 'Mambéré', 'code' => 'ME'],
             ['name' => 'Mambéré-Kadéï', 'code' => 'HS'],
             ['name' => 'Mbomou', 'code' => 'MB'],
             ['name' => 'Nana-Grébizi', 'code' => 'KB'],
@@ -180,6 +184,7 @@ class CentralAfricanRepublicGeographyProvider implements CountryAddressAreaMetad
             ['name' => 'Ombella-M\'Poko', 'code' => 'MP'],
             ['name' => 'Ouaka', 'code' => 'UK'],
             ['name' => 'Ouham', 'code' => 'AC'],
+            ['name' => 'Ouham-Fafa', 'code' => 'OF'],
             ['name' => 'Ouham-Pendé', 'code' => 'OP'],
             ['name' => 'Sangha-Mbaéré', 'code' => 'SE'],
             ['name' => 'Vakaga', 'code' => 'VK'],

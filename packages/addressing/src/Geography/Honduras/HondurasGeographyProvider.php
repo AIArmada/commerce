@@ -90,7 +90,11 @@ class HondurasGeographyProvider implements CountryAddressAreaMetadataProvider, C
     /** @return array<string, list<array{name: string, name_type?: string, is_preferred?: bool}>> */
     public function areaNames(AddressCountry $country): array
     {
-        return [];
+        return [
+            'hn:department:islas-de-la-bahia' => [
+                ['name' => 'Bay Islands', 'name_type' => 'alternative'],
+            ],
+        ];
     }
 
     /** @return array<string, list<array{parent_source_id: string, relationship_type: string, hierarchy_type: string}>> */
@@ -166,7 +170,7 @@ class HondurasGeographyProvider implements CountryAddressAreaMetadataProvider, C
     {
         return [
             ['name' => 'Atlántida', 'code' => 'AT'],
-            ['name' => 'Bay Islands', 'code' => 'IB'],
+            ['name' => 'Islas de la Bahía', 'code' => 'IB'],
             ['name' => 'Choluteca', 'code' => 'CH'],
             ['name' => 'Colón', 'code' => 'CL'],
             ['name' => 'Comayagua', 'code' => 'CM'],

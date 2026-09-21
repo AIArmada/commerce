@@ -40,3 +40,20 @@ it('assigns LA to Lankaran city and LAN to Lankaran district', function (): void
 
     expect($names['az:district:khojavend'][0]['name'])->toBe('Martuni');
 });
+
+it('exposes corrected Azerbaijani district slugs and names', function (): void {
+    $areas = app(AzerbaijanGeographyProvider::class)->addressAreaSource()->areas()->collect()->keyBy->sourceId;
+
+    expect($areas->get('az:district:fuzuli')->name)->toBe('Fuzuli')
+        ->and($areas->get('az:district:fuzuli')->code)->toBe('FUZ')
+        ->and($areas->get('az:district:ismayilli')->name)->toBe('Ismayilli')
+        ->and($areas->get('az:district:ismayilli')->code)->toBe('ISM')
+        ->and($areas->get('az:district:khojaly')->name)->toBe('Khojaly')
+        ->and($areas->get('az:district:khojaly')->code)->toBe('XCI')
+        ->and($areas->get('az:district:gdby')->name)->toBe('Gadabay')
+        ->and($areas->get('az:district:gdby')->type)->toBe('district')
+        ->and($areas->get('az:district:agdam')->name)->toBe('Agdam')
+        ->and($areas->has('az:district:fizuli'))->toBeFalse()
+        ->and($areas->has('az:district:ismailli'))->toBeFalse()
+        ->and($areas->has('az:district:khojali'))->toBeFalse();
+});

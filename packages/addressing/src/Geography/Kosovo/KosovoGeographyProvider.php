@@ -155,7 +155,7 @@ class KosovoGeographyProvider implements CountryAddressAreaMetadataProvider, Cou
     {
         return [
             ['name' => 'Ferizaj', 'code' => 'XUF'],
-            ['name' => 'Gjakove', 'code' => 'XDG'],
+            ['name' => 'Gjakova', 'code' => 'XDG'],
             ['name' => 'Gjilan', 'code' => 'XGJ'],
             ['name' => 'Mitrovica', 'code' => 'XKM'],
             ['name' => 'Peja', 'code' => 'PEJ'],

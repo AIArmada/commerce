@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Geography\Iceland\IcelandAddressFormatter;
+use AIArmada\Addressing\Geography\Iceland\IcelandGeographyProvider;
 
 it('formats Icelandic addresses with the postcode left of the locality', function (): void {
     $formatted = app(IcelandAddressFormatter::class)->format(AddressData::from([
@@ -24,4 +25,14 @@ it('formats Icelandic capital addresses with the town postcode', function (): vo
     ]));
 
     expect($formatted)->toBe("Ingólfsstræti 3\n121 REYKJAVÍK\nIceland");
+});
+it('exposes corrected Icelandic municipality names', function (): void {
+    $areas = app(IcelandGeographyProvider::class)->addressAreaSource()->areas()->collect()->keyBy->sourceId;
+
+    expect($areas->get('is:municipality:horgarsveit')->name)->toBe('Hörgársveit')
+        ->and($areas->get('is:municipality:horgarsveit')->code)->toBe('HRG')
+        ->and($areas->get('is:municipality:horgarsveit')->type)->toBe('municipality')
+        ->and($areas->get('is:municipality:svalbardsstrandarhreppur')->name)->toBe('Svalbarðsstrandarhreppur')
+        ->and($areas->get('is:municipality:svalbardsstrandarhreppur')->code)->toBe('SBT')
+        ->and($areas->has('is:municipality:horarsveit'))->toBeFalse();
 });

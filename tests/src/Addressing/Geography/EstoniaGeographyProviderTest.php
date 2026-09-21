@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Geography\Estonia\EstoniaAddressFormatter;
+use AIArmada\Addressing\Geography\Estonia\EstoniaGeographyProvider;
 
 it('formats Estonian addresses with the postcode left of the locality', function (): void {
     $formatted = app(EstoniaAddressFormatter::class)->format(AddressData::from([
@@ -25,4 +26,15 @@ it('formats Estonian rural addresses with the county on the postcode line', func
     ]));
 
     expect($formatted)->toBe("Allika talu\nHalliste alevik\n69501 VILJANDIMAA\nEstonia");
+});
+it('exposes corrected Estonian municipality names', function (): void {
+    $areas = app(EstoniaGeographyProvider::class)->addressAreaSource()->areas()->collect()->keyBy->sourceId;
+
+    expect($areas->get('ee:rural_municipality:noo')->name)->toBe('Nõo')
+        ->and($areas->get('ee:rural_municipality:noo')->code)->toBe('528')
+        ->and($areas->get('ee:rural_municipality:pohja-parnumaa')->name)->toBe('Põhja-Pärnumaa')
+        ->and($areas->get('ee:rural_municipality:pohja-parnumaa')->code)->toBe('638')
+        ->and($areas->get('ee:rural_municipality:pohja-parnumaa')->type)->toBe('rural_municipality')
+        ->and($areas->get('ee:rural_municipality:poltsamaa')->name)->toBe('Põltsamaa')
+        ->and($areas->has('ee:rural_municipality:pohja-parnu'))->toBeFalse();
 });

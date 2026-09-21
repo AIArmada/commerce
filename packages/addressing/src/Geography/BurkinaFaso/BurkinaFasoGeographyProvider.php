@@ -56,11 +56,21 @@ class BurkinaFasoGeographyProvider implements CountryAddressAreaMetadataProvider
                 levels: [
                     new AddressLevelDefinition(
                         key: 'region',
-                        label: 'Region / Province',
+                        label: 'Region',
                         kind: 'state',
                         hierarchyType: 'administrative',
-                        areaTypes: ['region', 'province'],
+                        areaTypes: ['region'],
                         areaLevel: 1,
+                    ),
+                    new AddressLevelDefinition(
+                        key: 'province',
+                        label: 'Province',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['province'],
+                        areaLevels: [2],
+                        parentKey: 'region',
+                        assignmentRole: 'province',
                     ),
                 ],
             ),
@@ -195,11 +205,13 @@ class BurkinaFasoGeographyProvider implements CountryAddressAreaMetadataProvider
             'ZOU' => 'ZOU',
         ];
 
+        $regionCodes = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12', '13', '14', '15', '16', '17'];
+
         return array_map(
             static fn (string $areaCode): array => [
                 'area_code' => $areaCode,
                 'source' => self::AREA_SOURCE,
-                'area_level' => 1,
+                'area_level' => in_array($areaCode, $regionCodes, true) ? 1 : 2,
                 'hierarchy_types' => ['administrative'],
             ],
             $areaCodes,

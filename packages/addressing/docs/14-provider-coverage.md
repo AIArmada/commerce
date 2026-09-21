@@ -44,7 +44,7 @@ All 229 providers ship a formatter: 181 print a postcode (←99 →39 US →8 ab
 | Algeria | DZ | 69 | 69 | 617 | 2 | administrative: wilaya > daira | daira | ← | Complete — 69 wilayas + 548 dairas per décrets 91-306/26-253; communes excluded |
 | American Samoa | AS | 5 | 5 | 5 | 1 | administrative: district | — | US → | L1 — 3 districts + 2 atolls |
 | Andorra | AD | 7 | 7 | 7 | 1 | administrative: parish | — | ← | L1 |
-| Angola | AO | 18 | 18 | 18 | 1 | administrative: province | — | none | L1; 2024 split unimplemented |
+| Angola | AO | 21 | 21 | 21 | 1 | administrative: province | — | none | L1 — 21 provinces, 2024 split operational Dec 2024; CUA/CUB/IEB/MLE provisional; CCU retired |
 | Anguilla | AI | 14 | 14 | 14 | 1 | administrative: district | — | below | L1 |
 | Antigua and Barbuda | AG | 8 | 8 | 8 | 1 | administrative: parish | — | none | L1 — 6 parishes + Barbuda/Redonda |
 | Argentina | AR | 24 | 24 | 24 | 1 | administrative: province | — | ← | L1 — 23 provinces + CABA |
@@ -53,7 +53,7 @@ All 229 providers ship a formatter: 181 print a postcode (←99 →39 US →8 ab
 | Australia | AU | 8 | 8 | 8 | 1 | administrative: state | — | → | L1 — 6 states + 2 territories; externals global-only |
 | Austria | AT | 9 | 9 | 9 | 1 | administrative: state | — | ← | L1 — 9 states |
 | Azerbaijan | AZ | 78 | 78 | 78 | 1 | administrative: district | — | ← | L1 — 66 districts + 11 municipalities + Nakhchivan AR |
-| Bahamas | BS | 32 | 32 | 32 | 1 | administrative: district | — | none | L1 — 31 districts + New Providence |
+| Bahamas | BS | 32 | 32 | 32 | 1 | administrative: district | — | none | L1 — 32 districts (ISO names) |
 | Bahrain | BH | 4 | 4 | 4 | 1 | administrative: governorate | — | → | L1; no admin tier-2, blocks are postal |
 | Bangladesh | BD | 72 | 8 | 72 | 2 | administrative: division > district | district | → | Complete to district; upazilas out of scope |
 | Barbados | BB | 11 | 11 | 11 | 1 | administrative: parish | — | → | L1 |
@@ -65,11 +65,11 @@ All 229 providers ship a formatter: 181 print a postcode (←99 →39 US →8 ab
 | Bhutan | BT | 20 | 20 | 20 | 1 | administrative: district | — | → | L1 — 20 dzongkhags; gewogs out of scope |
 | Bolivia | BO | 9 | 9 | 9 | 1 | administrative: department | — | none | L1 |
 | Bosnia and Herzegovina | BA | 3 | 3 | 3 | 1 | administrative: entity | — | ← | L1 — 2 entities + Brčko District |
-| Botswana | BW | 16 | 16 | 16 | 1 | administrative: district | — | none | L1 — 10 districts + 2 cities + 4 towns |
+| Botswana | BW | 17 | 17 | 17 | 1 | administrative: district | — | none | L1 — 10 districts + 2 cities + 5 towns; OR provisional |
 | Brazil | BR | 27 | 27 | 27 | 1 | administrative: state | — | below | L1 — 26 states + DF |
 | Brunei | BN | 4 | 4 | 43 | 2 | administrative: district > mukim | mukim | → | Complete; kampungs via components |
 | Bulgaria | BG | 28 | 28 | 28 | 1 | administrative: district | — | ← | L1 |
-| Burkina Faso | BF | 64 | 64 | 64 | 1 | administrative: region | — | ← | L1 — 17 regions + 47 provinces flat (July 2025 reform); region codes 14–17 + KAR/DYA provisional |
+| Burkina Faso | BF | 64 | 64 | 64 | 2 | administrative: region > province | province | ← | Complete — 17 regions + 47 provinces L2 (July 2025 reform); region codes 14–17 + KAR/DYA provisional |
 | Burundi | BI | 5 | 5 | 5 | 1 | administrative: province | — | none | L1 — 5 provinces (July 2025 reform); codes 01-05 provisional pending ISO |
 | Cambodia | KH | 25 | 25 | 25 | 1 | administrative: province | — | → | L1 — 24 provinces + Phnom Penh; districts/communes out of scope |
 | Cameroon | CM | 10 | 10 | 10 | 1 | administrative: region | — | none | L1 |
@@ -77,13 +77,13 @@ All 229 providers ship a formatter: 181 print a postcode (←99 →39 US →8 ab
 | Cape Verde | CV | 24 | 24 | 24 | 1 | administrative: municipality | — | ← | L1 — 22 municipalities + 2 island groups |
 | Caribbean Netherlands | BQ | 3 | 3 | 3 | 1 | administrative: special_municipality | — | none | L1 — 3 special municipalities |
 | Cayman Islands | KY | 3 | 3 | 3 | 1 | administrative: island | — | → | L1 — 3 islands |
-| Central African Republic | CF | 17 | 17 | 17 | 1 | administrative: prefecture | — | none | L1 — 15 prefectures + Bangui + Nana-Grébizi |
+| Central African Republic | CF | 20 | 20 | 20 | 1 | administrative: prefecture | — | none | L1 — 18 prefectures (incl. Bangui) + 2 economic prefectures; LP/ME/OF provisional |
 | Chad | TD | 23 | 23 | 23 | 1 | administrative: province | — | none | L1 |
 | Chile | CL | 16 | 16 | 16 | 1 | administrative: region | — | ← | L1 |
 | China | CN | 33 | 33 | 33 | 1 | administrative: province | — | ← | L1; Taiwan separate (TW) |
 | Colombia | CO | 33 | 33 | 33 | 1 | administrative: department | — | → | L1 — 32 departments + Bogotá |
 | Comoros | KM | 3 | 3 | 3 | 1 | administrative: island | — | none | L1 — 3 islands |
-| Congo | CG | 12 | 12 | 12 | 1 | administrative: department | — | none | L1 |
+| Congo | CG | 15 | 15 | 15 | 1 | administrative: department | — | none | L1 — 15 departments (Oct-2024 trio); 17/18/19 provisional |
 | Costa Rica | CR | 7 | 7 | 7 | 1 | administrative: province | — | below | L1 |
 | Croatia | HR | 21 | 21 | 21 | 1 | administrative: county | — | ← | L1 — 20 counties + City of Zagreb |
 | Cuba | CU | 16 | 16 | 16 | 1 | administrative: province | — | ← | L1 — 15 provinces + Isla de la Juventud |
@@ -146,7 +146,7 @@ All 229 providers ship a formatter: 181 print a postcode (←99 →39 US →8 ab
 | Kenya | KE | 47 | 47 | 47 | 1 | administrative: county | — | below | L1 |
 | Kiribati | KI | 3 | 3 | 3 | 1 | administrative: island | — | → | L1 — 3 island groups |
 | Kosovo | XK | 7 | 7 | 7 | 1 | administrative: district | — | ← | L1 |
-| Kuwait | KW | 6 | 6 | 140 | 2 | administrative: governorate > area | area | ← | Complete — 6 governorates + 134 areas; blocks and per-area postcodes out of scope |
+| Kuwait | KW | 6 | 6 | 141 | 2 | administrative: governorate > area | area | ← | Complete — 6 governorates + 135 areas; blocks and per-area postcodes out of scope |
 | Kyrgyzstan | KG | 9 | 9 | 9 | 1 | administrative: region | — | ← | L1 — 7 regions + Bishkek/Osh |
 | Laos | LA | 18 | 18 | 18 | 1 | administrative: province | — | ← | L1 — 17 provinces + Vientiane Prefecture; muang out of scope |
 | Latvia | LV | 43 | 43 | 43 | 1 | administrative: municipality | — | → | L1 — 36 municipalities + 7 state cities; 3 twins share names |
@@ -161,7 +161,7 @@ All 229 providers ship a formatter: 181 print a postcode (←99 →39 US →8 ab
 | Malawi | MW | 3 | 3 | 31 | 2 | administrative: region > district | district | ← | Complete — 3 regions + 28 districts |
 | Malaysia | MY | 16 | 16 | 1782 | dual 2+4 | administrative: region > division > district > subdivision; postal: region > locality | administrative_district, administrative_division, administrative_subdivision, postal_locality | ← | Complete; postal CSVs bundled; KL + Selangor + Pahang + Johor + Perlis + Melaka + Penang + Terengganu + Perak + Kedah + Kelantan per JUPEM UPI + N.Sembilan per PLANMalaysia/gazettes + Sabah + Sarawak per gazettes/SPR/DOSM |
 | Maldives | MV | 21 | 21 | 21 | 1 | administrative: atoll | — | → | L1 — 20 atolls + Addu City |
-| Mali | ML | 11 | 11 | 11 | 1 | administrative: region | — | none | L1 — 10 regions + Bamako |
+| Mali | ML | 20 | 20 | 20 | 1 | administrative: region | — | none | L1 — 19 regions + Bamako (2023 reform); 9/10 per national law, diverge from ISO |
 | Malta | MT | 68 | 68 | 68 | 1 | administrative: local_council | — | below | L1 — 68 local councils |
 | Marshall Islands | MH | 26 | 26 | 26 | 1 | administrative: municipality | — | US → | L1 — 24 municipalities + 2 chains |
 | Martinique | MQ | 4 | 4 | 4 | 1 | administrative: district | — | ← | L1 — 4 districts |
@@ -171,7 +171,7 @@ All 229 providers ship a formatter: 181 print a postcode (←99 →39 US →8 ab
 | Mexico | MX | 32 | 32 | 32 | 1 | administrative: state | — | ← | L1 |
 | Micronesia | FM | 4 | 4 | 4 | 1 | administrative: state | — | US → | L1 — 4 states |
 | Moldova | MD | 37 | 37 | 37 | 1 | administrative: district | — | ← | L1 — 32 districts + 3 cities + Gagauzia/Transnistria |
-| Monaco | MC | 17 | 17 | 17 | 1 | administrative: quarter | — | ← | L1 — 17 quarters |
+| Monaco | MC | 17 | 17 | 17 | 1 | administrative: quarter | — | ← | L1 — 17 ISO quarters (2013 ordinance wards noted, not modelled) |
 | Mongolia | MN | 22 | 22 | 22 | 1 | administrative: province | — | → | L1 — 21 aimags + Ulaanbaatar |
 | Montenegro | ME | 25 | 25 | 25 | 1 | administrative: municipality | — | ← | L1 |
 | Montserrat | MS | 3 | 3 | 3 | 1 | administrative: parish | — | → | L1 — 3 parishes |
@@ -202,7 +202,7 @@ All 229 providers ship a formatter: 181 print a postcode (←99 →39 US →8 ab
 | Philippines | PH | 99 | 82 | 82 | 1 | administrative: province | — | ← | L1 — provinces; regions global-only; municipalities/barangay out of scope |
 | Poland | PL | 16 | 16 | 16 | 1 | administrative: voivodeship | — | ← | L1 |
 | Portugal | PT | 20 | 20 | 20 | 1 | administrative: district | — | ← | L1 — 18 districts + Azores/Madeira |
-| Puerto Rico | PR | 78 | 78 | 78 | 1 | administrative: municipality | — | US → | L1 — 78 municipios (10 typed region in source) |
+| Puerto Rico | PR | 78 | 78 | 78 | 1 | administrative: municipality | — | US → | L1 — 78 municipios, all typed municipality (FIPS codes) |
 | Qatar | QA | 8 | 8 | 98 | 2 | administrative: municipality > zone | zone | none | Complete — 8 municipalities + 90 zones; PSA 2020 names; numbers 8–11, 59, 87–89 unassigned |
 | Reunion | RE | 4 | 4 | 4 | 1 | administrative: district | — | ← | L1 — 4 districts |
 | Romania | RO | 42 | 42 | 42 | 1 | administrative: department | — | ← | L1 — 41 departments + Bucharest |
@@ -245,7 +245,7 @@ All 229 providers ship a formatter: 181 print a postcode (←99 →39 US →8 ab
 | Timor-Leste | TL | 14 | 14 | 14 | 1 | administrative: municipality | — | → | L1 — 13 ISO + Atauro (AT provisional); admin posts out of scope |
 | Togo | TG | 5 | 5 | 5 | 1 | administrative: region | — | none | L1 |
 | Tonga | TO | 5 | 5 | 5 | 1 | administrative: division | — | none | L1 — 5 divisions |
-| Trinidad and Tobago | TT | 15 | 15 | 15 | 1 | administrative: region | — | → | L1 — 10 regions + 3 boroughs + POS + Tobago |
+| Trinidad and Tobago | TT | 15 | 15 | 15 | 1 | administrative: region | — | → | L1 — 7 regions + 5 boroughs + 2 cities + Tobago |
 | Tunisia | TN | 24 | 24 | 24 | 1 | administrative: governorate | — | ← | L1 |
 | Turkmenistan | TM | 6 | 6 | 6 | 1 | administrative: region | — | below | L1 — 5 regions + Ashgabat |
 | Turks and Caicos | TC | 6 | 6 | 6 | 1 | administrative: district | — | below | L1 — 6 districts |

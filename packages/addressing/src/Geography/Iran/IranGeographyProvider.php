@@ -206,7 +206,7 @@ class IranGeographyProvider implements CountryAddressAreaMetadataProvider, Count
             ['name' => 'Sistan and Baluchestan', 'code' => '11'],
             ['name' => 'South Khorasan', 'code' => '29'],
             ['name' => 'Tehran', 'code' => '23'],
-            ['name' => 'West Azarbaijan', 'code' => '04'],
+            ['name' => 'West Azerbaijan', 'code' => '04'],
             ['name' => 'Yazd', 'code' => '21'],
             ['name' => 'Zanjan', 'code' => '19'],
         ];

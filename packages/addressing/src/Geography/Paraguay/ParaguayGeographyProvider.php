@@ -59,7 +59,7 @@ class ParaguayGeographyProvider implements CountryAddressAreaMetadataProvider, C
                         label: 'Department',
                         kind: 'state',
                         hierarchyType: 'administrative',
-                        areaTypes: ['department'],
+                        areaTypes: ['department', 'capital_district'],
                         areaLevel: 1,
                     ),
                 ],
@@ -75,6 +75,7 @@ class ParaguayGeographyProvider implements CountryAddressAreaMetadataProvider, C
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
                 'department' => ['department'],
+                'capital_district' => ['department'],
                 default => [],
             };
 
@@ -168,7 +169,7 @@ class ParaguayGeographyProvider implements CountryAddressAreaMetadataProvider, C
             ['name' => 'Alto Paraguay', 'code' => '16'],
             ['name' => 'Alto Paraná', 'code' => '10'],
             ['name' => 'Amambay', 'code' => '13'],
-            ['name' => 'Asuncion', 'code' => 'ASU'],
+            ['name' => 'Asunción', 'code' => 'ASU'],
             ['name' => 'Boquerón', 'code' => '19'],
             ['name' => 'Caaguazú', 'code' => '5'],
             ['name' => 'Caazapá', 'code' => '6'],

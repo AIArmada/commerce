@@ -44,6 +44,13 @@ class AngolaGeographyProvider implements CountryAddressAreaMetadataProvider, Cou
                 ],
             );
         }
+
+        // Cuando Cubango split into Cuando and Cubango under the 2024 law.
+        // Delete stragglers seeded before the split so reseeds converge.
+        $stateClass::query()
+            ->where('country_id', $country->id)
+            ->where('code', 'CCU')
+            ->delete();
     }
 
     /** @return list<AddressHierarchyDefinition> */
@@ -132,16 +139,19 @@ class AngolaGeographyProvider implements CountryAddressAreaMetadataProvider, Cou
             'BGU' => 'BGU',
             'BIE' => 'BIE',
             'CAB' => 'CAB',
-            'CCU' => 'CCU',
             'CNN' => 'CNN',
             'CNO' => 'CNO',
+            'CUA' => 'CUA',
+            'CUB' => 'CUB',
             'CUS' => 'CUS',
             'HUA' => 'HUA',
             'HUI' => 'HUI',
+            'IEB' => 'IEB',
             'LNO' => 'LNO',
             'LSU' => 'LSU',
             'LUA' => 'LUA',
             'MAL' => 'MAL',
+            'MLE' => 'MLE',
             'MOX' => 'MOX',
             'NAM' => 'NAM',
             'UIG' => 'UIG',
@@ -169,16 +179,19 @@ class AngolaGeographyProvider implements CountryAddressAreaMetadataProvider, Cou
             ['name' => 'Benguela', 'code' => 'BGU'],
             ['name' => 'Bié', 'code' => 'BIE'],
             ['name' => 'Cabinda', 'code' => 'CAB'],
-            ['name' => 'Cuando Cubango', 'code' => 'CCU'],
             ['name' => 'Cunene', 'code' => 'CNN'],
             ['name' => 'Cuanza Norte', 'code' => 'CNO'],
+            ['name' => 'Cuando', 'code' => 'CUA'],
+            ['name' => 'Cubango', 'code' => 'CUB'],
             ['name' => 'Cuanza', 'code' => 'CUS'],
             ['name' => 'Huambo', 'code' => 'HUA'],
             ['name' => 'Huíla', 'code' => 'HUI'],
+            ['name' => 'Icolo e Bengo', 'code' => 'IEB'],
             ['name' => 'Lunda Norte', 'code' => 'LNO'],
             ['name' => 'Lunda Sul', 'code' => 'LSU'],
             ['name' => 'Luanda', 'code' => 'LUA'],
             ['name' => 'Malanje', 'code' => 'MAL'],
+            ['name' => 'Moxico Leste', 'code' => 'MLE'],
             ['name' => 'Moxico', 'code' => 'MOX'],
             ['name' => 'Namibe', 'code' => 'NAM'],
             ['name' => 'Uíge', 'code' => 'UIG'],

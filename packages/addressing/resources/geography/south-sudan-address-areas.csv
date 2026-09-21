@@ -1,7 +1,7 @@
 source_id,country_code,type,name,native_name,code,parent_source_id,level,latitude,longitude
 ss:state:central-equatoria,SS,state,Central Equatoria,,EC,,1,,
 ss:state:eastern-equatoria,SS,state,Eastern Equatoria,,EE,,1,,
-ss:state:jonglei-state,SS,state,Jonglei State,,JG,,1,,
+ss:state:jonglei,SS,state,Jonglei,,JG,,1,,
 ss:state:lakes,SS,state,Lakes,,LK,,1,,
 ss:state:northern-bahr-el-ghazal,SS,state,Northern Bahr el Ghazal,,BN,,1,,
 ss:state:unity,SS,state,Unity,,UY,,1,,

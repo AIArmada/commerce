@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Geography\Iran\IranAddressFormatter;
+use AIArmada\Addressing\Geography\Iran\IranGeographyProvider;
 
 it('formats Iranian addresses with the postcode below the province', function (): void {
     $formatted = app(IranAddressFormatter::class)->format(AddressData::from([
@@ -26,4 +27,12 @@ it('formats Iranian addresses without a postcode line when missing', function ()
     ]));
 
     expect($formatted)->toBe("West 196 street\nTehranpars\nTehran Province\nIran");
+});
+it('exposes the corrected West Azerbaijan province slug and name', function (): void {
+    $areas = app(IranGeographyProvider::class)->addressAreaSource()->areas()->collect()->keyBy->sourceId;
+
+    expect($areas->get('ir:province:west-azerbaijan')->name)->toBe('West Azerbaijan')
+        ->and($areas->get('ir:province:west-azerbaijan')->code)->toBe('04')
+        ->and($areas->get('ir:province:west-azerbaijan')->type)->toBe('province')
+        ->and($areas->has('ir:province:west-azarbaijan'))->toBeFalse();
 });

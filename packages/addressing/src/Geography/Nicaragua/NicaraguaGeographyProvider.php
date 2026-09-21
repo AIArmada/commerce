@@ -91,7 +91,14 @@ class NicaraguaGeographyProvider implements CountryAddressAreaMetadataProvider, 
     /** @return array<string, list<array{name: string, name_type?: string, is_preferred?: bool}>> */
     public function areaNames(AddressCountry $country): array
     {
-        return [];
+        return [
+            'ni:autonomous_region:costa-caribe-norte' => [
+                ['name' => 'North Caribbean Coast', 'name_type' => 'alternative'],
+            ],
+            'ni:autonomous_region:costa-caribe-sur' => [
+                ['name' => 'South Caribbean Coast', 'name_type' => 'alternative'],
+            ],
+        ];
     }
 
     /** @return array<string, list<array{parent_source_id: string, relationship_type: string, hierarchy_type: string}>> */
@@ -177,11 +184,11 @@ class NicaraguaGeographyProvider implements CountryAddressAreaMetadataProvider, 
             ['name' => 'Managua', 'code' => 'MN'],
             ['name' => 'Masaya', 'code' => 'MS'],
             ['name' => 'Matagalpa', 'code' => 'MT'],
-            ['name' => 'North Caribbean Coast', 'code' => 'AN'],
+            ['name' => 'Costa Caribe Norte', 'code' => 'AN'],
             ['name' => 'Nueva Segovia', 'code' => 'NS'],
             ['name' => 'Río San Juan', 'code' => 'SJ'],
             ['name' => 'Rivas', 'code' => 'RI'],
-            ['name' => 'South Caribbean Coast', 'code' => 'AS'],
+            ['name' => 'Costa Caribe Sur', 'code' => 'AS'],
         ];
     }
 }

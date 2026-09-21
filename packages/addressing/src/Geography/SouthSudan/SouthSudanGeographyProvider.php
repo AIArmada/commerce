@@ -159,7 +159,7 @@ class SouthSudanGeographyProvider implements CountryAddressAreaMetadataProvider,
         return [
             ['name' => 'Central Equatoria', 'code' => 'EC'],
             ['name' => 'Eastern Equatoria', 'code' => 'EE'],
-            ['name' => 'Jonglei State', 'code' => 'JG'],
+            ['name' => 'Jonglei', 'code' => 'JG'],
             ['name' => 'Lakes', 'code' => 'LK'],
             ['name' => 'Northern Bahr el Ghazal', 'code' => 'BN'],
             ['name' => 'Unity', 'code' => 'UY'],

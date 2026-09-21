@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Geography\Kosovo\KosovoAddressFormatter;
+use AIArmada\Addressing\Geography\Kosovo\KosovoGeographyProvider;
 
 it('formats Kosovar addresses with the postcode left of the locality', function (): void {
     $formatted = app(KosovoAddressFormatter::class)->format(AddressData::from([
@@ -25,4 +26,12 @@ it('prints matching Kosovar city and district once', function (): void {
     ]));
 
     expect($formatted)->toBe("Rruga Adem Jashari 1\n20000 Prizren\nKosovo");
+});
+it('exposes the corrected Gjakova district slug and name', function (): void {
+    $areas = app(KosovoGeographyProvider::class)->addressAreaSource()->areas()->collect()->keyBy->sourceId;
+
+    expect($areas->get('xk:district:gjakova')->name)->toBe('Gjakova')
+        ->and($areas->get('xk:district:gjakova')->code)->toBe('XDG')
+        ->and($areas->get('xk:district:gjakova')->type)->toBe('district')
+        ->and($areas->has('xk:district:gjakove'))->toBeFalse();
 });

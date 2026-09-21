@@ -127,7 +127,7 @@ class ThailandGeographyProvider implements CountryAddressAreaMetadataProvider, C
      */
     public function stateAreaMappings(): array
     {
-        /** @var array<string, string> */
+        /** @var array<int|string, string> */
         $areaCodes = [
             '10' => '10',
             '11' => '11',

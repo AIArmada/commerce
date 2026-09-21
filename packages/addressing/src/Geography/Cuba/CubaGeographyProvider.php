@@ -91,7 +91,11 @@ class CubaGeographyProvider implements CountryAddressAreaMetadataProvider, Count
     /** @return array<string, list<array{name: string, name_type?: string, is_preferred?: bool}>> */
     public function areaNames(AddressCountry $country): array
     {
-        return [];
+        return [
+            'cu:province:la-habana' => [
+                ['name' => 'Havana', 'name_type' => 'alternative'],
+            ],
+        ];
     }
 
     /** @return array<string, list<array{parent_source_id: string, relationship_type: string, hierarchy_type: string}>> */
@@ -170,7 +174,7 @@ class CubaGeographyProvider implements CountryAddressAreaMetadataProvider, Count
             ['name' => 'Cienfuegos', 'code' => '06'],
             ['name' => 'Granma', 'code' => '12'],
             ['name' => 'Guantánamo', 'code' => '14'],
-            ['name' => 'Havana', 'code' => '03'],
+            ['name' => 'La Habana', 'code' => '03'],
             ['name' => 'Holguín', 'code' => '11'],
             ['name' => 'Isla de la Juventud', 'code' => '99'],
             ['name' => 'Las Tunas', 'code' => '10'],

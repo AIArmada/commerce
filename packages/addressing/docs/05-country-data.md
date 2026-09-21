@@ -1434,16 +1434,20 @@ country.
 
 ## Angola
 
-The bundled `AngolaGeographyProvider` supplies the 18 ISO provinces
+The bundled `AngolaGeographyProvider` supplies the 21 provinces
 as `State` rows and a single-level administrative hierarchy. It is
 selected with `SeedCountryGeographiesAction::execute('AO')` after
 countries are seeded.
 
-The September 2024 law creating three more provinces (Icolo e Bengo,
-Moxico Leste, and the Cuando/Cubango split, 21 total) is enacted but,
-per official sources, not yet implemented — so the shipped 18 track
-implemented reality, and the new units will be added once live.
-Municipalities are intentionally not bundled.
+Law 14/24 (gazetted 5 Sept 2024) split Cuando Cubango into `Cuando`
+and `Cubango`, carved `Icolo e Bengo` out of Luanda, and `Moxico
+Leste` out of Moxico; the new provinces were formally instituted
+with appointed governors in December 2024 and the 2024 census
+tabulates all 21, so the bundled data tracks the 21 as operational.
+The retired `Cuando Cubango` row is removed (a split has no single
+successor to alias). ISO 3166-2:AO still lists only the former 18,
+so the bundled codes `CUA`/`CUB`/`IEB`/`MLE` are provisional
+pending ISO. Municipalities are intentionally not bundled.
 
 Angola has no postcode system, so the formatter stacks street lines,
 city, and country with no postcode line.
@@ -1857,9 +1861,11 @@ prints on its own line.
 ## Botswana
 
 The bundled `BotswanaGeographyProvider` supplies the 10 districts,
-Gaborone, Francistown, and 4 towns as `State` rows and a
+Gaborone, Francistown, and 5 towns as `State` rows and a
 single-level administrative hierarchy. It is selected with
 `SeedCountryGeographiesAction::execute('BW')` after countries are seeded.
+`Orapa` town is bundled with provisional code `OR`; ISO 3166-2:BW
+has not assigned it a code.
 
 Botswana has no postcode system. Addresses are formatted per the UPU
 layout: P.O. box or private bag lines, the town, and country; any
@@ -1867,14 +1873,30 @@ supplied code prints on its own line.
 ## Burkina Faso
 
 The bundled `BurkinaFasoGeographyProvider` supplies the 17 regions
-and 47 provinces flat at level 1 as `State` rows and a single-level
-administrative hierarchy. It is selected with
+as `State` rows plus the 47 provinces nested at level 2 under their
+regions, in a two-level administrative hierarchy. It is selected with
 `SeedCountryGeographiesAction::execute('BF')` after countries are seeded.
 The July 2025 reform renamed all 13 regions, renamed 5 provinces
 (`Koosin`, `Gobnangou`, `Djelgodji`, `Sandbondtenga`, `Bassitenga`),
 and added 4 regions plus `Karo-Peli` and `Dyamongou` provinces.
 Renamed divisions keep their former codes; region codes `14`–`17`
 and province codes `KAR`/`DYA` are provisional pending ISO 3166-2:BF.
+
+Compositions follow the published reform details: Sourou region holds
+`Koosin`, Nayala, and Sourou; Sirba holds Gnagna and Komondjari;
+Tapoa holds `Gobnangou` and `Dyamongou` (Kantchari was a Tapoa
+department); Goulmou holds Gourma and Kompienga; Liptako holds
+Oudalan, Séno, and Yagha; Soum holds `Djelgodji` and `Karo-Peli`
+(Arbinda was a Soum department); Bankui holds the remaining Balé,
+Banwa, and Mouhoun; every other region keeps its pre-reform
+composition under its new name. Provinces remain `State` rows for
+compatibility and link their level-2 areas.
+
+Spelling evidence (Sept 2026): `Koosin` follows the decree table and
+Burkina Information Agency usage — the `Kossin` form appears only in
+the Presidency communiqué prose quoted by news outlets. `Gobnangou`
+follows the decree table; English Wikipedia still lists `Tapoa`
+because its province page predates the reform.
 
 Burkinabe addresses are formatted per the UPU layout: street lines,
 `{postcode} {locality}` with a 5-digit postcode, the region on its
@@ -1907,9 +1929,15 @@ lines, `{postcode} {locality}` with a 4-digit (or 7-digit
 ## Central African Republic
 
 The bundled `CentralAfricanRepublicGeographyProvider` supplies the
-15 prefectures plus the Bangui commune and Nana-Grébizi as `State`
-rows and a single-level administrative hierarchy. It is selected with
+20 prefectures — 18 administrative plus the Nana-Grébizi and
+Sangha-Mbaéré economic prefectures — as `State` rows and a
+single-level administrative hierarchy. It is selected with
 `SeedCountryGeographiesAction::execute('CF')` after countries are seeded.
+The December 2020 law added `Lim-Pendé` (Paoua), `Mambéré` (Carnot),
+and `Ouham-Fafa` (Batangafo), and retyped Bangui from commune to
+prefecture; Sangha-Mbaéré is modelled as an economic prefecture.
+ISO 3166-2:CF still lists only the former 17, so the bundled codes
+`LP`/`ME`/`OF` are provisional pending ISO.
 
 The country has no postcode system. Addresses are formatted per the
 UPU layout: P.O. box lines, the locality, and country; any supplied
@@ -1936,10 +1964,16 @@ layout: P.O. box lines, the locality, the island when it differs,
 and country; any supplied code prints on its own line.
 ## Congo
 
-The bundled `CongoGeographyProvider` supplies the 12 departments
+The bundled `CongoGeographyProvider` supplies the 15 departments
 of the Republic of Congo as `State` rows and a single-level
 administrative hierarchy. It is selected with
 `SeedCountryGeographiesAction::execute('CG')` after countries are seeded.
+Laws 25/26/27-2024 (8 Oct 2024) added `Congo-Oubangui` (Bokoma,
+Loukoléla and Mossaka from Cuvette plus Liranga from Likouala),
+`Nkéni-Alima` (five districts from Plateaux), and `Djoué-Léfini`
+(five districts from Pool). ISO 3166-2:CG still lists only the
+former 12, so the bundled codes `17`/`18`/`19` are provisional
+local numbers pending ISO.
 
 Congo has no postcode system. Addresses are formatted per the UPU
 layout: street lines, the locality, and country; any supplied code
@@ -2082,10 +2116,16 @@ Malawian addresses are formatted per the UPU layout: street lines,
 own line when both are set, and country.
 ## Mali
 
-The bundled `MaliGeographyProvider` supplies the 10 regions plus
+The bundled `MaliGeographyProvider` supplies the 19 regions plus
 the Bamako district as `State` rows and a single-level
 administrative hierarchy. It is selected with
 `SeedCountryGeographiesAction::execute('ML')` after countries are seeded.
+Laws 2023-006/007 added Nioro (`11`), Kita (`12`), Dioila (`13`),
+Nara (`14`), Bougouni (`15`), Koutiala (`16`), San (`17`), Douentza
+(`18`), and Bandiagara (`19`). The bundled `9`/`10` numbering follows
+the national law (Taoudénit `09`, Ménaka `10`) and therefore diverges
+from ISO 3166-2:ML, which still assigns `ML-9` to Ménaka and `ML-10`
+to Taoudénit.
 
 Mali has no postcode system. Addresses are formatted per the UPU
 layout: street lines, the quarter, the locality, and country; any
@@ -2510,6 +2550,14 @@ The bundled `MonacoGeographyProvider` supplies the 17 quarters
 as `State` rows and a single-level administrative hierarchy. It is
 selected with `SeedCountryGeographiesAction::execute('MC')` after
 countries are seeded.
+
+These are the ISO 3166-2:MC traditional quarters, which ISO still
+defines unchanged (verified Sept 2026) — not the 2013 sovereign
+ordinance's town-planning layer of 7 wards plus the Monaco-Ville
+and Ravin de Sainte-Dévote reserved sectors. Under that ordinance
+La Colle merged into Jardin Exotique, but the `La Colle` ISO row is
+retained since the wards carry no ISO codes. Revisit if ISO updates
+the MC entry.
 
 Monegasque addresses are formatted per the UPU layout: street lines,
 `{postcode} {locality}` with a 5-digit `98xxx` postcode, and country.

@@ -1,6 +1,6 @@
 source_id,country_code,type,name,native_name,code,parent_source_id,level,latitude,longitude
 hn:department:atlantida,HN,department,Atlántida,,AT,,1,,
-hn:department:bay-islands,HN,department,Bay Islands,,IB,,1,,
+hn:department:islas-de-la-bahia,HN,department,Islas de la Bahía,,IB,,1,,
 hn:department:choluteca,HN,department,Choluteca,,CH,,1,,
 hn:department:colon,HN,department,Colón,,CL,,1,,
 hn:department:comayagua,HN,department,Comayagua,,CM,,1,,

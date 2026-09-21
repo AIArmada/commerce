@@ -162,7 +162,7 @@ class SenegalGeographyProvider implements CountryAddressAreaMetadataProvider, Co
     {
         return [
             ['name' => 'Dakar', 'code' => 'DK'],
-            ['name' => 'Diourbel Region', 'code' => 'DB'],
+            ['name' => 'Diourbel', 'code' => 'DB'],
             ['name' => 'Fatick', 'code' => 'FK'],
             ['name' => 'Kaffrine', 'code' => 'KA'],
             ['name' => 'Kaolack', 'code' => 'KL'],
@@ -172,8 +172,8 @@ class SenegalGeographyProvider implements CountryAddressAreaMetadataProvider, Co
             ['name' => 'Matam', 'code' => 'MT'],
             ['name' => 'Saint-Louis', 'code' => 'SL'],
             ['name' => 'Sédhiou', 'code' => 'SE'],
-            ['name' => 'Tambacounda Region', 'code' => 'TC'],
-            ['name' => 'Thiès Region', 'code' => 'TH'],
+            ['name' => 'Tambacounda', 'code' => 'TC'],
+            ['name' => 'Thiès', 'code' => 'TH'],
             ['name' => 'Ziguinchor', 'code' => 'ZG'],
         ];
     }
