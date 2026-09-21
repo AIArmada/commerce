@@ -220,6 +220,20 @@ Sedili Besar, Sungei Pinggan, Renggam, Gerisek, Bandar Pontian). Postal
 links were repointed to the surviving mukim, bandar, pekan, or district
 rows; duplicate same-area links created by the merges were collapsed.
 
+Two-hierarchy relocation pilot: 21 of the removed towns were reinstated as
+postal `locality` rows under the two-hierarchy rule (postcode + official
+recognition required; relocate, don't delete). Reinstated: Gelang Patah,
+Iskandar Puteri, Masai, Pasir Gudang, Ulu Tiram, Ulu Choh (corrected to
+Kulai), Gugusan Taib Andak, Bandar Tenggara and Ayer Tawar 2 (both corrected
+to Kota Tinggi), Bandar Penawar, Kukup, Endau, Parit Raja, Parit Sulong,
+Semerah, Renggam and Simpang Rengam (towns distinct from Mukim Rengam),
+Pekan Chaah (corrected to Segamat), Pagoh, Bukit Gambir (corrected to
+Tangkak), and Gerisek (town within Mukim Grisek). Bandar Tiram (quarter of
+Ulu Tiram), Divisyen Bandaraya (non-place label), Bandar Pontian (alias of
+Pontian Kechil), and Pulau Satu (Forest City island, no own postcode) stay
+deleted. Each town's postcodes link it as primary with the covering admin
+areas kept as secondary links.
+
 ## Perlis
 
 Perlis has no districts (`TIADA DAERAH`) and exactly 22 mukims, all already

@@ -68,7 +68,7 @@ class MalaysiaGeographyProvider implements CountryAddressAreaMetadataProvider, C
                         kind: 'area',
                         hierarchyType: 'postal',
                         areaTypes: ['locality', 'precinct'],
-                        areaLevels: [2],
+                        areaLevels: [2, 3],
                         parentKey: 'region',
                         assignmentRole: 'postal_locality',
                     ),
@@ -427,17 +427,13 @@ class MalaysiaGeographyProvider implements CountryAddressAreaMetadataProvider, C
                 'hierarchy_type' => $hierarchyType,
             ];
 
-            if ($isPostal) {
-                continue;
-            }
-
             $stateSourceId = $this->stateAncestorSourceId($area->sourceId, $parentSourceIds);
 
             if ($stateSourceId !== null && $stateSourceId !== $area->parentSourceId) {
                 $relationships[$area->sourceId][] = [
                     'parent_source_id' => $stateSourceId,
                     'relationship_type' => 'contains',
-                    'hierarchy_type' => 'administrative',
+                    'hierarchy_type' => $hierarchyType,
                 ];
             }
         }

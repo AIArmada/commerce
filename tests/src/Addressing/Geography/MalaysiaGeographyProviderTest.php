@@ -204,3 +204,32 @@ it('deactivates prior areas when a provider changes its imported source key', fu
             ->where('source', 'test.addressing.rekey')
             ->value('address_area_id'))->toBe(AddressArea::query()->where('source', 'test-feed-v2')->value('id'));
 });
+
+it('exposes district-parented postal localities under the region', function (): void {
+    $provider = app(MalaysiaGeographyProvider::class);
+
+    $locality = collect(collect($provider->addressHierarchies())->firstWhere('key', 'postal')->levels)
+        ->firstWhere('key', 'locality');
+
+    expect($locality->areaLevels)->toContain(2, 3);
+
+    $areas = $provider->addressAreaSource()->areas()->collect()->keyBy->sourceId;
+    $paritSulong = $areas->get('my:subdistrict:district:johor:batu-pahat:parit-sulong');
+
+    expect($paritSulong->type)->toBe('locality')
+        ->and($paritSulong->level)->toBe(3)
+        ->and($paritSulong->parentSourceId)->toBe('my:district:johor:batu-pahat')
+        ->and($areas->get('my:subdistrict:district:johor:segamat:pekan-chaah')->parentSourceId)->toBe('my:district:johor:segamat');
+
+    $country = new AddressCountry;
+    $roles = $provider->areaRoles($country);
+
+    expect($roles['my:subdistrict:district:johor:batu-pahat:parit-sulong'][0]['role'])->toBe('postal_locality');
+
+    $links = $provider->areaRelationships($country)['my:subdistrict:district:johor:batu-pahat:parit-sulong'];
+
+    expect($links)->toContain(
+        ['parent_source_id' => 'my:district:johor:batu-pahat', 'relationship_type' => 'contains', 'hierarchy_type' => 'postal'],
+        ['parent_source_id' => 'my:state:johor', 'relationship_type' => 'contains', 'hierarchy_type' => 'postal'],
+    );
+});

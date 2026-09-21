@@ -76,6 +76,16 @@ public function addressHierarchies(): array
 
 A deep level follows the same shape with `kind: 'area'`, for example Indonesia's regency level: `areaTypes: ['regency', 'city']`, `areaLevels: [2]`, `parentKey: 'province'`, `assignmentRole: 'regency'`. Related types may share one level and role when the addressing semantics are identical.
 
+## The two-hierarchy rule
+
+When a country exposes both an `administrative` and a `postal` hierarchy, every area row must pass the evidence bar of the hierarchy it sits in — and a row that fails one bar must be relocated, never silently discarded:
+
+- **Administrative rows require legal backing**: a gazette, an official boundary book, census admin geography, or an equivalent legal inventory. A real place with no legal standing as an admin unit must not sit in the administrative hierarchy.
+- **Postal-locality rows require delivery backing**: a postcode assignment from the national postal operator **plus** recognition as a distinct place by at least one official source (census locality list, electoral geography, local government). No postcode, no locality.
+- **Relocate, don't delete.** A row that fails its hierarchy's test moves to the other hierarchy when it passes that bar (a non-gazetted town becomes a postal `locality`, keeping its postcodes). Delete only rows that pass neither bar: non-places, duplicates, errors. Move rows that are merely misfiled.
+- **No cross-hierarchy dedup.** The same place may exist in both hierarchies under different types (a gazetted bandar and its postal town are different truths, not duplicates).
+- **Postal areas need state-ancestor links.** Any postal row parented below the state must carry a shortcut relationship to its state ancestor in the `postal` hierarchy type, or region-scoped selectors cannot resolve it.
+
 ## stateDefinitions and seed()
 
 `seed()` populates `State` rows from a private `stateDefinitions()` list of `['name', 'code']` pairs, keyed by `[country_id, code]`:
