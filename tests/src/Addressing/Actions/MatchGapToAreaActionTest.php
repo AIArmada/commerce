@@ -20,7 +20,8 @@ beforeEach(function (): void {
         new AddressAreaData(source: 'areas', sourceId: 'kl', countryCode: 'MY', type: 'locality', level: 2, name: 'Wilayah Persekutuan Kuala Lumpur'),
         new AddressAreaData(source: 'areas', sourceId: 'pj', countryCode: 'MY', type: 'locality', level: 2, name: 'Petaling Jaya'),
         new AddressAreaData(source: 'areas', sourceId: 'district', countryCode: 'MY', type: 'district', level: 2, name: 'Petaling'),
-        new AddressAreaData(source: 'areas', sourceId: 'deep', countryCode: 'MY', type: 'locality', level: 3, name: 'Deep Locality'),
+        new AddressAreaData(source: 'areas', sourceId: 'town', countryCode: 'MY', type: 'locality', level: 3, name: 'District Town'),
+        new AddressAreaData(source: 'areas', sourceId: 'deep', countryCode: 'MY', type: 'locality', level: 5, name: 'Deep Locality'),
         new AddressAreaData(source: 'areas', sourceId: 'jkt', countryCode: 'ID', type: 'locality', level: 2, name: 'Jakarta'),
     ]));
 
@@ -113,6 +114,15 @@ it('refuses areas that miss the role type or level', function (): void {
         ->toThrow(ValidationException::class, 'does not match the required hierarchy level')
         ->and(fn (): ResolutionGap => $match->execute($levelGap, $this->areas['deep']))
         ->toThrow(ValidationException::class, 'does not match the required hierarchy level');
+});
+
+it('matches gaps to district-parented level-3 localities', function (): void {
+    $gap = app(LogAddressResolutionGapAction::class)->execute('google-picker', 'MY', 'postal_locality', 'District Town');
+
+    $result = app(MatchGapToAreaAction::class)->execute($gap, $this->areas['town']);
+
+    expect($result->status)->toBe('matched')
+        ->and($result->matched_area_id)->toBe($this->areas['town']->getKey());
 });
 
 it('refuses when the value already resolves to a different area primary name', function (): void {
