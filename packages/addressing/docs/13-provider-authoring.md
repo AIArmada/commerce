@@ -46,6 +46,8 @@ Return one `AddressHierarchyDefinition` per address structure the country needs.
 
 List the primary hierarchy first: hierarchy order is the canonical cascade order (`CountryAddressProfileResolver::assignmentRoles()`), and first-wins lookups such as `stateLevel()` resolve ties by it. Malaysia lists `administrative` before `postal` because the land cascade (state → district → mukim) is primary and postal localities are the secondary delivery overlay.
 
+When a state's proper term for an area type differs from the headline rendering, implement `CountryAreaTypeLabelProvider`: `areaTypeLabels()` for country-wide terms, `stateAreaTypeLabels()` for per-state overrides keyed by state code (Malaysia maps Kelantan `district` to `Jajahan`). `levelLabel()` resolves state override, then country base, then headline, so only genuine proper-term differences need declaring.
+
 ```php
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
 use AIArmada\Addressing\Data\AddressLevelDefinition;

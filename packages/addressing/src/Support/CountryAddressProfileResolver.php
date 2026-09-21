@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Addressing\Support;
 
 use AIArmada\Addressing\Contracts\CountryAddressProfile;
+use AIArmada\Addressing\Contracts\CountryAreaTypeLabelProvider;
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
 use AIArmada\Addressing\Data\AddressLevelDefinition;
 use AIArmada\Addressing\Models\AddressCountry;
@@ -12,6 +13,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 
 final class CountryAddressProfileResolver
@@ -390,6 +392,59 @@ final class CountryAddressProfileResolver
         return $parent;
     }
 
+    /**
+     * Display label for a role, narrowed to the types present in scope.
+     *
+     * Without a state the static level label applies. With one, the label
+     * joins the distinct area-type labels present under the role's resolved
+     * parent (narrowed like the options themselves), so a Johor district
+     * selector reads District, a Putrajaya locality selector reads Precinct,
+     * and mixed scopes keep a combined label. Null when the country or role
+     * is unknown.
+     *
+     * @param  array<string, ?string>  $areaIdsByRole
+     */
+    public function levelLabel(mixed $country, string $role, mixed $stateId = null, array $areaIdsByRole = []): ?string
+    {
+        $definition = $this->definitionForRole($country, $role);
+
+        if ($definition === null) {
+            return null;
+        }
+
+        $stateIdString = self::stringOrNull($stateId);
+
+        if ($stateIdString === null) {
+            return $definition['level']->label;
+        }
+
+        $parentId = $this->parentAreaIdForRole($country, $role, $stateIdString, $areaIdsByRole);
+
+        if ($parentId === null) {
+            return $definition['level']->label;
+        }
+
+        $types = $this->scopeTypes($definition, $parentId);
+
+        if ($types === []) {
+            return $definition['level']->label;
+        }
+
+        $profile = $this->resolve($country);
+        $stateCode = $this->stateCode($stateIdString);
+        $labels = [];
+
+        foreach ($types as $type) {
+            $label = $this->areaTypeLabel($profile, $stateCode, $type);
+
+            if (! in_array($label, $labels, true)) {
+                $labels[] = $label;
+            }
+        }
+
+        return implode(' / ', $labels);
+    }
+
     /** @return list<string> */
     public static function areaTypesForLevel(AddressLevelDefinition $level): array
     {
@@ -592,6 +647,85 @@ final class CountryAddressProfileResolver
         $value = mb_trim($value);
 
         return $value === '' ? null : $value;
+    }
+
+    /**
+     * Distinct area types in scope, ordered by the level's type order.
+     *
+     * @param  array{hierarchy: AddressHierarchyDefinition, level: AddressLevelDefinition}  $definition
+     * @return list<string>
+     */
+    private function scopeTypes(array $definition, string $parentId): array
+    {
+        $areaClass = ModelResolver::areaClass();
+        $areaTypes = self::areaTypesForLevel($definition['level']);
+        $areaLevels = self::areaLevelsForLevel($definition['level']);
+
+        $found = $areaClass::query()
+            ->where('is_active', true)
+            ->when($areaTypes !== [], static fn (EloquentBuilder $query): EloquentBuilder => $query->whereIn('type', $areaTypes))
+            ->when($areaLevels !== [], static fn (EloquentBuilder $query): EloquentBuilder => $query->whereIn('level', $areaLevels))
+            ->whereAncestorLink($parentId, self::hierarchyType($definition['hierarchy'], $definition['level']))
+            ->distinct()
+            ->pluck('type')
+            ->map(static fn (mixed $type): string => (string) $type)
+            ->all();
+
+        $order = array_flip($areaTypes);
+
+        usort($found, static fn (string $a, string $b): int => ($order[$a] ?? PHP_INT_MAX) <=> ($order[$b] ?? PHP_INT_MAX));
+
+        return array_values(array_unique($found));
+    }
+
+    private function areaTypeLabel(?CountryAddressProfile $profile, ?string $stateCode, string $type): string
+    {
+        if ($profile instanceof CountryAreaTypeLabelProvider) {
+            if ($stateCode !== null) {
+                foreach ($profile->stateAreaTypeLabels() as $override) {
+                    if (($override['state_code'] ?? null) === $stateCode && isset($override['type_labels'][$type])) {
+                        return $override['type_labels'][$type];
+                    }
+                }
+            }
+
+            $base = $profile->areaTypeLabels();
+
+            if (isset($base[$type])) {
+                return $base[$type];
+            }
+        }
+
+        return Str::headline($type);
+    }
+
+    private function stateCode(string $stateId): ?string
+    {
+        $key = 'state-code:' . $stateId;
+
+        if (app()->bound('request')) {
+            $cache = request()->attributes->get(self::REQUEST_CACHE_KEY, []);
+
+            if (is_array($cache) && array_key_exists($key, $cache)) {
+                $cached = $cache[$key];
+
+                return is_string($cached) ? $cached : null;
+            }
+        }
+
+        $stateClass = ModelResolver::stateClass();
+        $code = $stateClass::query()->whereKey($stateId)->value('code');
+        $code = is_scalar($code) ? self::stringOrNull((string) $code) : null;
+
+        if (app()->bound('request')) {
+            $request = request();
+            $cache = $request->attributes->get(self::REQUEST_CACHE_KEY, []);
+            $cache = is_array($cache) ? $cache : [];
+            $cache[$key] = $code;
+            $request->attributes->set(self::REQUEST_CACHE_KEY, $cache);
+        }
+
+        return $code;
     }
 
     private function cacheKey(mixed $country): ?string

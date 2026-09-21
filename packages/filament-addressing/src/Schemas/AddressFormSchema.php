@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAddressing\Schemas;
 
 use AIArmada\Addressing\Contracts\CountryAddressProfile;
+use AIArmada\Addressing\Data\AddressHierarchyDefinition;
 use AIArmada\Addressing\Models\Address;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressCountry;
@@ -95,9 +96,25 @@ class AddressFormSchema
 
             $fields[] = Select::make($field)
                 ->label(function (callable $get) use ($prefix, $role): string {
-                    $definition = app(CountryAddressProfileResolver::class)->definitionForRole(self::nullableString($get($prefix . 'country_code')), $role);
+                    $countryCode = self::nullableString($get($prefix . 'country_code'));
 
-                    return $definition === null ? str_replace('_', ' ', ucfirst($role)) : $definition['level']->label;
+                    if ($countryCode === null) {
+                        return str_replace('_', ' ', ucfirst($role));
+                    }
+
+                    $resolver = app(CountryAddressProfileResolver::class);
+                    $definition = $resolver->definitionForRole($countryCode, $role);
+
+                    if ($definition === null) {
+                        return str_replace('_', ' ', ucfirst($role));
+                    }
+
+                    return $resolver->levelLabel(
+                        $countryCode,
+                        $role,
+                        self::nullableString($get($prefix . 'state_id')),
+                        self::areaIdsByRole($get, $prefix, $definition['hierarchy']),
+                    ) ?? str_replace('_', ' ', ucfirst($role));
                 })
                 ->getSearchResultsUsing(function (string $search, callable $get) use ($prefix, $areaClass, $role): array {
                     $countryCode = $get($prefix . 'country_code');
@@ -123,16 +140,7 @@ class AddressFormSchema
                         ->when($areaTypes !== [], fn ($query) => $query->whereIn('type', $areaTypes))
                         ->when($areaLevels !== [], fn ($query) => $query->whereIn('level', $areaLevels));
 
-                    $areaIds = [];
-
-                    foreach ($definition['hierarchy']->levels as $level) {
-                        if ($level->kind === 'state') {
-                            continue;
-                        }
-
-                        $levelRole = CountryAddressProfileResolver::roleForLevel($definition['hierarchy'], $level);
-                        $areaIds[$levelRole] = self::nullableString($get($prefix . 'area_assignments.' . $levelRole));
-                    }
+                    $areaIds = self::areaIdsByRole($get, $prefix, $definition['hierarchy']);
 
                     $parentId = $resolver->parentAreaIdForRole(
                         $countryCode,
@@ -257,6 +265,23 @@ class AddressFormSchema
         }
 
         return array_values(array_unique($roles));
+    }
+
+    /** @return array<string, ?string> */
+    private static function areaIdsByRole(callable $get, string $prefix, AddressHierarchyDefinition $hierarchy): array
+    {
+        $areaIds = [];
+
+        foreach ($hierarchy->levels as $level) {
+            if ($level->kind === 'state') {
+                continue;
+            }
+
+            $levelRole = CountryAddressProfileResolver::roleForLevel($hierarchy, $level);
+            $areaIds[$levelRole] = self::nullableString($get($prefix . 'area_assignments.' . $levelRole));
+        }
+
+        return $areaIds;
     }
 
     private static function countryHasStates(mixed $countryCode): bool

@@ -6,6 +6,7 @@ namespace AIArmada\Addressing\Geography\Malaysia;
 
 use AIArmada\Addressing\Contracts\AddressAreaSource;
 use AIArmada\Addressing\Contracts\CountryAddressAreaMetadataProvider;
+use AIArmada\Addressing\Contracts\CountryAreaTypeLabelProvider;
 use AIArmada\Addressing\Contracts\CountryGeographyProvider;
 use AIArmada\Addressing\Contracts\CountryHierarchyProvider;
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
@@ -14,7 +15,7 @@ use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Support\CsvAddressAreaSource;
 use AIArmada\Addressing\Support\ModelResolver;
 
-class MalaysiaGeographyProvider implements CountryAddressAreaMetadataProvider, CountryGeographyProvider, CountryHierarchyProvider
+class MalaysiaGeographyProvider implements CountryAddressAreaMetadataProvider, CountryAreaTypeLabelProvider, CountryGeographyProvider, CountryHierarchyProvider
 {
     private const string AREA_SOURCE = 'aiarmada_addressing_malaysia_v1';
 
@@ -123,6 +124,23 @@ class MalaysiaGeographyProvider implements CountryAddressAreaMetadataProvider, C
                     ),
                 ],
             ),
+        ];
+    }
+
+    /** @return array<string, string> */
+    public function areaTypeLabels(): array
+    {
+        // Headline rendering covers every Malaysian type (Mukim, Bandar,
+        // Pekan, Precinct); only state-specific proper terms are declared.
+        return [];
+    }
+
+    /** @return list<array{state_code: string, type_labels: array<string, string>}> */
+    public function stateAreaTypeLabels(): array
+    {
+        return [
+            ['state_code' => '03', 'type_labels' => ['district' => 'Jajahan', 'minor_district' => 'Jajahan Kecil']],
+            ['state_code' => '06', 'type_labels' => ['minor_district' => 'Daerah Kecil']],
         ];
     }
 

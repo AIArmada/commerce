@@ -556,6 +556,14 @@ $gate = $resolver->effectiveParentLevel($countryId, 'administrative_subdivision'
 
 `parentAreaIdForRole()` accepts a `$hasOptions` probe and `effectiveParentLevel()` a `$hasStructuralLinks` probe when a consumer's option query differs from the package default (custom caching, slug maps, or extra scopes). Both probes default to link-proven package queries, so consumers that query areas the standard way pass nothing.
 
+### Contextual labels
+
+```php
+$resolver->levelLabel($countryId, 'administrative_district', $stateId, $areaIdsByRole);
+```
+
+Without a state the static level label applies. With one, the label joins the distinct area-type labels present under the role's resolved parent — narrowed like the options themselves — so a Johor district selector reads `District`, a Putrajaya locality selector reads `Precinct`, and mixed scopes keep a combined label (`Mukim / Bandar / Pekan`). Types resolve through provider overrides first (Kelantan calls districts `Jajahan`), else a headline rendering. Null when the country or role is unknown.
+
 ## Import Areas
 
 ### From a custom source
