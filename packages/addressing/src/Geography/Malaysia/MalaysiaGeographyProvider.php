@@ -46,34 +46,15 @@ class MalaysiaGeographyProvider implements CountryAddressAreaMetadataProvider, C
         }
     }
 
-    /** @return list<AddressHierarchyDefinition> */
+    /**
+     * Administrative geography is the primary hierarchy (listed first);
+     * postal localities are the secondary delivery overlay.
+     *
+     * @return list<AddressHierarchyDefinition>
+     */
     public function addressHierarchies(): array
     {
         return [
-            new AddressHierarchyDefinition(
-                key: 'postal',
-                label: 'Postal / Address Geography',
-                levels: [
-                    new AddressLevelDefinition(
-                        key: 'region',
-                        label: 'State / Federal Territory',
-                        kind: 'state',
-                        hierarchyType: 'postal',
-                        areaTypes: ['state', 'wilayah_persekutuan'],
-                        areaLevel: 1,
-                    ),
-                    new AddressLevelDefinition(
-                        key: 'locality',
-                        label: 'Locality / Precinct / Kampung',
-                        kind: 'area',
-                        hierarchyType: 'postal',
-                        areaTypes: ['locality', 'precinct'],
-                        areaLevels: [2, 3, 4],
-                        parentKey: 'region',
-                        assignmentRole: 'postal_locality',
-                    ),
-                ],
-            ),
             new AddressHierarchyDefinition(
                 key: 'administrative',
                 label: 'Administrative / Land Geography',
@@ -115,6 +96,30 @@ class MalaysiaGeographyProvider implements CountryAddressAreaMetadataProvider, C
                         areaLevels: [2, 3, 4],
                         parentKey: 'region',
                         assignmentRole: 'administrative_subdivision',
+                    ),
+                ],
+            ),
+            new AddressHierarchyDefinition(
+                key: 'postal',
+                label: 'Postal / Address Geography',
+                levels: [
+                    new AddressLevelDefinition(
+                        key: 'region',
+                        label: 'State / Federal Territory',
+                        kind: 'state',
+                        hierarchyType: 'postal',
+                        areaTypes: ['state', 'wilayah_persekutuan'],
+                        areaLevel: 1,
+                    ),
+                    new AddressLevelDefinition(
+                        key: 'locality',
+                        label: 'Locality / Precinct / Kampung',
+                        kind: 'area',
+                        hierarchyType: 'postal',
+                        areaTypes: ['locality', 'precinct'],
+                        areaLevels: [2, 3, 4],
+                        parentKey: 'region',
+                        assignmentRole: 'postal_locality',
                     ),
                 ],
             ),

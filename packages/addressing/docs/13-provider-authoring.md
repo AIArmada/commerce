@@ -44,6 +44,8 @@ class BrazilGeographyProvider implements CountryAddressAreaMetadataProvider, Cou
 
 Return one `AddressHierarchyDefinition` per address structure the country needs. Every bundled provider uses the `administrative` hierarchy key with label `Administrative / Territorial Geography`; only Malaysia and Singapore add a second `postal` hierarchy, so a new provider should start with `administrative` alone.
 
+List the primary hierarchy first: hierarchy order is the canonical cascade order (`CountryAddressProfileResolver::assignmentRoles()`), and first-wins lookups such as `stateLevel()` resolve ties by it. Malaysia lists `administrative` before `postal` because the land cascade (state → district → mukim) is primary and postal localities are the secondary delivery overlay.
+
 ```php
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
 use AIArmada\Addressing\Data\AddressLevelDefinition;

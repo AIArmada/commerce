@@ -104,7 +104,7 @@ app(SeedCountryGeographiesAction::class)->execute('MY');
 
 This uses the bundled Malaysia country provider. Other country providers can define different address structures without changing `State`, `City`, or `AddressArea` core tables.
 
-Malaysia exposes one first-level region type whose values are either a state or a federal territory. The provider then exposes two separate hierarchies: postal/address geography (`region → locality / precinct / kampung`) and administrative/land geography (`region → district / division / jajahan → mukim / subdistrict / bandar / pekan`). A federal territory is never wrapped in a duplicate postal-town node.
+Malaysia exposes one first-level region type whose values are either a state or a federal territory. The provider then exposes two separate hierarchies: administrative/land geography (`region → district / division / jajahan → mukim / subdistrict / bandar / pekan`) first, then postal/address geography (`region → locality / precinct / kampung`) as the secondary delivery overlay. A federal territory is never wrapped in a duplicate postal-town node.
 
 ### Seed Singapore geography
 
@@ -522,6 +522,39 @@ $level = $resolver->levelForRole($countryId, 'state_id');
 ```
 
 Roles match `$level->assignmentRole ?? "{hierarchyKey}_{levelKey}"` against the first non-state level in hierarchy order. `state_id` resolves to the first state-kind level instead, since those levels carry no assignment role. Unknown countries, unknown roles, and `state_id` for profiles without a state level all return null. The `$country` parameter accepts a country ID, an ISO code, or a country model.
+
+### Driving a cascade
+
+```php
+use AIArmada\Addressing\Support\CountryAddressProfileResolver;
+
+$resolver = app(CountryAddressProfileResolver::class);
+
+// Canonical render order: administrative_division, administrative_district,
+// administrative_subdivision, postal_locality for MY.
+$roles = $resolver->assignmentRoles($countryId);
+
+// Declared parent level within the role's own hierarchy.
+$parent = $resolver->parentLevel($countryId, 'administrative_subdivision');
+
+// Area id scoping a role's options: the declared chain parent, or the
+// nearest preceding selected level when stored links prove the narrowing
+// (a picked district narrows subdivisions to its own rows), else the
+// state root so district-less states keep working.
+$parentId = $resolver->parentAreaIdForRole($countryId, 'administrative_subdivision', $stateId, $areaIdsByRole);
+
+// Roles to clear when a role changes (declared descendants plus
+// narrowed successors).
+$reset = $resolver->successorRoles($countryId, 'administrative_district');
+
+// Level gating a role's selector: the declared parent, except
+// region-parented roles gate on the nearest preceding area level where
+// links prove the narrowing is structural in the selected state
+// (subdivisions gate on the district in Johor, on the state in KL).
+$gate = $resolver->effectiveParentLevel($countryId, 'administrative_subdivision', $stateId);
+```
+
+`parentAreaIdForRole()` accepts a `$hasOptions` probe and `effectiveParentLevel()` a `$hasStructuralLinks` probe when a consumer's option query differs from the package default (custom caching, slug maps, or extra scopes). Both probes default to link-proven package queries, so consumers that query areas the standard way pass nothing.
 
 ## Import Areas
 

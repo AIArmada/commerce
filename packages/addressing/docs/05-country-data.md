@@ -13,7 +13,7 @@ The package always bundles ISO 3166-1 country/territory data.
 
 File location: `resources/data/countries.json`
 
-The bundled `MalaysiaGeographyProvider` supplies Malaysia's State/Federal Territory catalog, two explicit address hierarchies, the AddressArea hierarchy, and State↔AddressArea mappings. The postal/address hierarchy is `region → locality / precinct / kampung`; the administrative/land hierarchy is `region → district / division / jajahan → mukim / subdistrict / bandar / pekan`. It is selected with `SeedCountryGeographiesAction::execute('MY')` after countries are seeded.
+The bundled `MalaysiaGeographyProvider` supplies Malaysia's State/Federal Territory catalog, two explicit address hierarchies, the AddressArea hierarchy, and State↔AddressArea mappings. The primary administrative/land hierarchy is `region → district / division / jajahan → mukim / subdistrict / bandar / pekan`; the secondary postal/address hierarchy is `region → locality / precinct / kampung`. It is selected with `SeedCountryGeographiesAction::execute('MY')` after countries are seeded.
 
 The dataset contains **250 records** — these are ISO 3166-1 address entities, not 250 sovereign countries. Records include:
 
