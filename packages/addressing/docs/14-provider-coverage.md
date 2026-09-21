@@ -168,7 +168,7 @@ All 229 providers ship a formatter: 181 print a postcode (←99 →39 US →8 ab
 | Mauritania | MR | 15 | 15 | 15 | 1 | administrative: region | — | none | L1 |
 | Mauritius | MU | 12 | 12 | 12 | 1 | administrative: district | — | → | L1 — 9 districts + 3 dependencies |
 | Mayotte | YT | 17 | 17 | 17 | 1 | administrative: commune | — | ← | L1 — 17 communes |
-| Mexico | MX | 32 | 32 | 32 | 1 | administrative: state | — | ← | L1 |
+| Mexico | MX | 32 | 32 | 2511 | 2 | administrative: state > municipality | municipality | ← | Complete — 32 states + 2,479 municipios (16 CDMX boroughs); INEGI CVEGEO |
 | Micronesia | FM | 4 | 4 | 4 | 1 | administrative: state | — | US → | L1 — 4 states |
 | Moldova | MD | 37 | 37 | 37 | 1 | administrative: district | — | ← | L1 — 32 districts + 3 cities + Gagauzia/Transnistria |
 | Monaco | MC | 17 | 17 | 17 | 1 | administrative: quarter | — | ← | L1 — 17 ISO quarters (2013 ordinance wards noted, not modelled) |

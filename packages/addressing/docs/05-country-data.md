@@ -1231,11 +1231,20 @@ country.
 
 The bundled `MexicoGeographyProvider` supplies the 32 federal
 entities as `State` rows (all typed `state`, including Ciudad de
-México, which has been state-equivalent since 2016) and a
-single-level administrative hierarchy. It is selected with
+México, which has been state-equivalent since 2016) with 2,479
+municipalities as level-2 areas in a two-level administrative
+hierarchy. It is selected with
 `SeedCountryGeographiesAction::execute('MX')` after countries are seeded.
 
-Municipalities are intentionally not bundled.
+Municipalities carry 5-digit INEGI CVEGEO codes (state prefix plus
+municipio number) and parent their state row. The 16 Ciudad de
+México alcaldías are typed `borough`, everything else `municipality`.
+Recent adds included: Villa Juárez, Aguascalientes (01012, created
+August 2026); Villa de Pozos, San Luis Potosí (24059); Eldorado
+(25019) and Juan José Ríos (25020), Sinaloa. Municipio names and
+codes were sourced from Wikidata P3801 claims (CC0), verified
+against the Spanish Wikipedia state annexes (CC-BY-SA) and the INEGI
+2024 national count of 2,478 (plus Villa Juárez).
 
 Mexican addresses are formatted per the UPU layout: street lines,
 `{postcode} {locality}, {abbrev}` with the state abbreviation from

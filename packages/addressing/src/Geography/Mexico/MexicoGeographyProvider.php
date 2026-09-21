@@ -62,6 +62,16 @@ class MexicoGeographyProvider implements CountryAddressAreaMetadataProvider, Cou
                         areaTypes: ['state'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'municipality',
+                        label: 'Municipality',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['municipality', 'borough'],
+                        areaLevels: [2],
+                        parentKey: 'state',
+                        assignmentRole: 'municipality',
+                    ),
                 ],
             ),
         ];
@@ -75,6 +85,8 @@ class MexicoGeographyProvider implements CountryAddressAreaMetadataProvider, Cou
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
                 'state' => ['state'],
+                'municipality' => ['municipality'],
+                'borough' => ['borough'],
                 default => [],
             };
 

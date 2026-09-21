@@ -71,10 +71,10 @@ For the postal-`locality` method that sits below L2, see
 
 ## Mexico — municipalities
 
-- **Layer:** municipalities plus the 16 CDMX alcaldías, **2,478** in
-  the 2024 INEGI count (2,475 in the 2023 national catalog; the number
-  moves as states split municipalities — Baja California added San
-  Quintín and San Felipe recently).
+- **Layer:** municipalities plus the 16 CDMX alcaldías, **2,479**
+  (INEGI 2024 count 2,478 plus Villa Juárez, Aguascalientes, created
+  August 2026; the number moves as states split municipalities —
+  Baja California added San Quintín and San Felipe recently).
 - **Source:** INEGI Marco Geoestadístico / Catálogo Nacional de
   Municipios, free. Each municipio carries a 5-digit CVEGEO (2-digit
   state + 3-digit municipio); parent derives from the state prefix.
