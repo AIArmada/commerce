@@ -1033,9 +1033,20 @@ line, and country.
 The bundled `UnitedStatesGeographyProvider` supplies 56 states,
 districts, and territories as `State` rows (50 states, the District
 of Columbia, American Samoa, Guam, the Northern Mariana Islands,
-Puerto Rico, and the U.S. Virgin Islands) and a single-level
-administrative hierarchy. It is selected with
+Puerto Rico, and the U.S. Virgin Islands) with 3,143 counties and
+county equivalents as level-2 areas in a two-level administrative
+hierarchy. It is selected with
 `SeedCountryGeographiesAction::execute('US')` after countries are seeded.
+
+Counties carry 5-digit FIPS GEOIDs and parent their state row, typed
+by Census flavor (`county`, `parish`, `borough`, `census_area`,
+`city` for the 38 Virginian plus Baltimore, St. Louis, and Carson
+City independents, `municipality` for Anchorage and Skagway, and
+`planning_region` for Connecticut's 9 post-2022 regions). Puerto
+Rico's municipios stay owned by the Puerto Rico provider and the
+District of Columbia has no county child (it is its own
+county-equivalent); both are intentionally absent here. County rows
+come from the 2025 Census Gazetteer (public domain).
 
 The military postal regions (`AA`, `AE`, `AP`) and the Minor Outlying
 Islands (`UM`) are postal constructs, not addressable geography, and

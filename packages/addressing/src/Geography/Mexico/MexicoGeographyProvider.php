@@ -86,7 +86,9 @@ class MexicoGeographyProvider implements CountryAddressAreaMetadataProvider, Cou
             $areaRoles = match ($area->type) {
                 'state' => ['state'],
                 'municipality' => ['municipality'],
-                'borough' => ['borough'],
+                // Alcaldias function as municipalities; the borough type
+                // stays distinct for precision (PY/CO precedent).
+                'borough' => ['municipality'],
                 default => [],
             };
 

@@ -62,6 +62,16 @@ class UnitedStatesGeographyProvider implements CountryAddressAreaMetadataProvide
                         areaTypes: ['state', 'district', 'territory'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'county',
+                        label: 'County / County Equivalent',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['county', 'parish', 'borough', 'census_area', 'city', 'municipality', 'planning_region'],
+                        areaLevels: [2],
+                        parentKey: 'state',
+                        assignmentRole: 'county',
+                    ),
                 ],
             ),
         ];
@@ -77,6 +87,13 @@ class UnitedStatesGeographyProvider implements CountryAddressAreaMetadataProvide
                 'state' => ['state'],
                 'district' => ['state'],
                 'territory' => ['state'],
+                'county' => ['county'],
+                'parish' => ['county'],
+                'borough' => ['county'],
+                'census_area' => ['county'],
+                'city' => ['county'],
+                'municipality' => ['county'],
+                'planning_region' => ['county'],
                 default => [],
             };
 

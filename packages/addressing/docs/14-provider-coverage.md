@@ -255,7 +255,7 @@ All 229 providers ship a formatter: 181 print a postcode (←99 →39 US →8 ab
 | Ukraine | UA | 27 | 27 | 27 | 1 | administrative: oblast | — | below | L1 — 24 oblasts + Kyiv/Sevastopol/Crimea |
 | United Arab Emirates | AE | 7 | 7 | 7 | 1 | administrative: emirate | — | none | L1; no official tier-2 |
 | United Kingdom | GB | 4 | 4 | 4 | 1 | administrative: nation | — | below | L1 — 4 nations; 221 subdivisions global-only |
-| United States | US | 56 | 56 | 56 | 1 | administrative: state | — | US → | L1 — 50 + DC + 5 territories; AA/AE/AP/UM global-only |
+| United States | US | 56 | 56 | 3199 | 2 | administrative: state > county | county | US → | Complete — 56 + 3,143 counties (Census flavors); PR/DC exclusions; AA/AE/AP/UM global-only |
 | US Minor Outlying Islands | UM | 9 | 9 | 9 | 1 | administrative: island | — | none | L1 — 9 islands; uninhabited |
 | US Virgin Islands | VI | 3 | 3 | 3 | 1 | administrative: district | — | US → | L1 — 3 districts |
 | Uruguay | UY | 19 | 19 | 19 | 1 | administrative: department | — | ← | L1 |
