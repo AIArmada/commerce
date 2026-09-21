@@ -95,6 +95,45 @@ it('narrows the label with the selected parent scope', function (): void {
     ]))->toBe('Mukim');
 });
 
+it('labels an Indonesian kota with its proper term', function (): void {
+    $country = AddressCountry::query()->where('iso2', 'ID')->firstOrFail();
+    $state = State::query()->create([
+        'country_id' => $country->id,
+        'name' => 'DKI Jakarta',
+        'label' => 'DKI Jakarta',
+        'code' => 'JK',
+    ]);
+    $provinceArea = AddressArea::query()->create([
+        'country_id' => $country->id,
+        'country_code' => 'ID',
+        'type' => 'province',
+        'level' => 1,
+        'name' => 'DKI Jakarta',
+        'slug' => 'dki-jakarta',
+        'source' => 'test',
+        'source_id' => Str::uuid()->toString(),
+    ]);
+    AddressAreaStateLink::query()->create(['address_area_id' => $provinceArea->id, 'state_id' => $state->id]);
+    $kota = AddressArea::query()->create([
+        'country_id' => $country->id,
+        'country_code' => 'ID',
+        'type' => 'city',
+        'level' => 2,
+        'name' => 'Jakarta Selatan',
+        'slug' => 'jakarta-selatan',
+        'source' => 'test',
+        'source_id' => Str::uuid()->toString(),
+    ]);
+    AddressAreaRelationship::query()->create([
+        'parent_address_area_id' => $provinceArea->id,
+        'child_address_area_id' => $kota->id,
+        'relationship_type' => 'contains',
+        'hierarchy_type' => 'administrative',
+    ]);
+
+    expect(app(CountryAddressProfileResolver::class)->levelLabel('ID', 'regency', (string) $state->id))->toBe('Kota');
+});
+
 it('falls back to the static label without scope and null when unknown', function (): void {
     $resolver = app(CountryAddressProfileResolver::class);
 
