@@ -7,6 +7,10 @@ use AIArmada\Addressing\Contracts\CountryAddressProfile;
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
 use AIArmada\Addressing\Data\AddressLevelDefinition;
 use AIArmada\Addressing\Models\AddressArea;
+use AIArmada\Addressing\Models\AddressAreaRelationship;
+use AIArmada\Addressing\Models\AddressAreaStateLink;
+use AIArmada\Addressing\Models\AddressCountry;
+use AIArmada\Addressing\Models\State;
 use AIArmada\FilamentAddressing\Schemas\AddressFormSchema;
 
 beforeEach(function (): void {
@@ -142,6 +146,156 @@ it('clears only child roles when a parent area changes', function (): void {
 
     expect($cleared)->toBe([]);
 });
+
+it('narrows region-parented options to the selected district', function (): void {
+    $ids = narrowedWorld();
+
+    $field = collect(AddressFormSchema::make())
+        ->first(fn ($component): bool => $component->getName() === 'area_assignments.narrow_subdivision');
+    $callback = (new ReflectionProperty($field, 'getSearchResultsUsing'))->getValue($field);
+    $results = $callback('mukim', static fn (string $path): ?string => match ($path) {
+        'country_code' => 'MY',
+        'state_id' => $ids['state'],
+        'area_assignments.narrow_district' => $ids['district'],
+        default => null,
+    });
+
+    expect($results)->toBe([
+        $ids['mukim_one'] => 'Mukim One',
+        $ids['mukim_two'] => 'Mukim Two',
+    ]);
+});
+
+it('falls back to state scope without a district selection', function (): void {
+    $ids = narrowedWorld();
+
+    $field = collect(AddressFormSchema::make())
+        ->first(fn ($component): bool => $component->getName() === 'area_assignments.narrow_subdivision');
+    $callback = (new ReflectionProperty($field, 'getSearchResultsUsing'))->getValue($field);
+    $results = $callback('mukim', static fn (string $path): ?string => match ($path) {
+        'country_code' => 'MY',
+        'state_id' => $ids['state'],
+        default => null,
+    });
+
+    expect($results)->toBe([
+        $ids['mukim_one'] => 'Mukim One',
+        $ids['mukim_three'] => 'Mukim Three',
+        $ids['mukim_two'] => 'Mukim Two',
+    ]);
+});
+
+it('keeps state scope for siblings without district links', function (): void {
+    $ids = narrowedWorld();
+
+    $field = collect(AddressFormSchema::make())
+        ->first(fn ($component): bool => $component->getName() === 'area_assignments.narrow_zone');
+    $callback = (new ReflectionProperty($field, 'getSearchResultsUsing'))->getValue($field);
+    $results = $callback('zone', static fn (string $path): ?string => match ($path) {
+        'country_code' => 'MY',
+        'state_id' => $ids['state'],
+        'area_assignments.narrow_district' => $ids['district'],
+        default => null,
+    });
+
+    expect($results)->toBe([$ids['zone'] => 'Zone One']);
+});
+
+it('clears narrowed successors when an earlier level changes', function (): void {
+    narrowedWorld();
+
+    $fields = collect(AddressFormSchema::make())->keyBy(fn ($component): string => $component->getName());
+    $callbacks = (new ReflectionProperty($fields->get('area_assignments.narrow_district'), 'afterStateUpdated'))->getValue($fields->get('area_assignments.narrow_district'));
+
+    expect($callbacks)->toHaveCount(1);
+
+    $cleared = [];
+    $callbacks[0](
+        static function (string $path, mixed $value) use (&$cleared): void {
+            $cleared[$path] = $value;
+        },
+        static fn (string $path): ?string => $path === 'country_code' ? 'MY' : null,
+    );
+
+    expect($cleared)->toBe([
+        'area_assignments.narrow_subdivision' => null,
+        'area_assignments.narrow_zone' => null,
+    ]);
+});
+
+/**
+ * @return array{state: string, district: string, mukim_one: string, mukim_two: string, mukim_three: string, zone: string}
+ */
+function narrowedWorld(): array
+{
+    $profile = new class implements CountryAddressProfile
+    {
+        public function countryCode(): string
+        {
+            return 'MY';
+        }
+
+        public function addressHierarchies(): array
+        {
+            return [new AddressHierarchyDefinition('geo', 'Geo', [
+                new AddressLevelDefinition(key: 'state', label: 'State', kind: 'state'),
+                new AddressLevelDefinition(key: 'district', label: 'District', kind: 'area', parentKey: 'state', assignmentRole: 'narrow_district', areaTypes: ['district'], areaLevel: 2),
+                new AddressLevelDefinition(key: 'subdivision', label: 'Subdivision', kind: 'area', parentKey: 'state', assignmentRole: 'narrow_subdivision', areaTypes: ['mukim'], areaLevel: 3),
+                new AddressLevelDefinition(key: 'zone', label: 'Zone', kind: 'area', parentKey: 'state', assignmentRole: 'narrow_zone', areaTypes: ['zone'], areaLevel: 3),
+            ])];
+        }
+    };
+    config()->set('addressing.geography.providers', [get_class($profile)]);
+
+    $country = AddressCountry::query()->where('iso2', 'MY')->firstOrFail();
+    $state = State::query()->create(['country_id' => $country->id, 'name' => 'Johor', 'label' => 'Johor']);
+
+    $makeArea = static fn (string $type, int $level, string $name, string $slug): AddressArea => AddressArea::query()->create([
+        'country_id' => $country->id,
+        'country_code' => 'MY',
+        'type' => $type,
+        'level' => $level,
+        'name' => $name,
+        'slug' => $slug,
+        'source' => 'test',
+        'source_id' => $slug,
+    ]);
+
+    $stateArea = $makeArea('state', 1, 'Johor', 'johor');
+    $district = $makeArea('district', 2, 'Batu Pahat', 'batu-pahat');
+    $mukimOne = $makeArea('mukim', 3, 'Mukim One', 'mukim-one');
+    $mukimTwo = $makeArea('mukim', 3, 'Mukim Two', 'mukim-two');
+    $mukimThree = $makeArea('mukim', 3, 'Mukim Three', 'mukim-three');
+    $zone = $makeArea('zone', 3, 'Zone One', 'zone-one');
+
+    AddressAreaStateLink::query()->create(['address_area_id' => $stateArea->id, 'state_id' => $state->id]);
+
+    $link = static function (AddressArea $parent, AddressArea $child): void {
+        AddressAreaRelationship::query()->create([
+            'parent_address_area_id' => $parent->id,
+            'child_address_area_id' => $child->id,
+            'relationship_type' => 'contains',
+            'hierarchy_type' => 'geo',
+        ]);
+    };
+
+    $link($stateArea, $district);
+    $link($stateArea, $mukimOne);
+    $link($stateArea, $mukimTwo);
+    $link($stateArea, $mukimThree);
+    $link($stateArea, $zone);
+    $link($district, $mukimOne);
+    $link($district, $mukimTwo);
+
+    return [
+        'state' => (string) $state->id,
+        'district' => (string) $district->id,
+        'mukim_one' => (string) $mukimOne->id,
+        'mukim_two' => (string) $mukimTwo->id,
+        'mukim_three' => (string) $mukimThree->id,
+        'zone' => (string) $zone->id,
+    ];
+}
 
 function cascadeProfile(): void
 {

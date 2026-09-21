@@ -17,6 +17,12 @@ selected parent (state or parent role), and clear their children automatically
 when a parent changes. Selections are validated twice: by form rules at input
 time and by `SyncAddressAreaAssignmentsAction` at save time.
 
+Region-parented levels narrow to a selected intermediate level when the stored
+links prove the narrowing is structural: Malaysia's subdivisions list only the
+selected district's rows once a district is picked, and fall back to
+state-wide options without one (so district-less states like KL keep working).
+Changing an earlier level clears the narrowed selections below it.
+
 ## Embed The Schema
 
 ```php

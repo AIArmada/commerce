@@ -120,7 +120,7 @@ class AddressFormSchema
                         ->where('is_active', true)
                         ->when(self::areaTypes($definition['level']) !== [], fn ($query) => $query->whereIn('type', self::areaTypes($definition['level'])))
                         ->when(self::areaLevels($definition['level']) !== [], fn ($query) => $query->whereIn('level', self::areaLevels($definition['level'])));
-                    $parentId = self::parentId($definition, $get, $prefix);
+                    $parentId = self::parentId($definition, $get, $prefix, $areaClass);
 
                     if ($definition['level']->parentKey !== null && $parentId === null) {
                         return [];
@@ -251,7 +251,7 @@ class AddressFormSchema
     }
 
     /** @param array{hierarchy: AddressHierarchyDefinition, level: AddressLevelDefinition} $definition */
-    private static function parentId(array $definition, callable $get, string $prefix): ?string
+    private static function parentId(array $definition, callable $get, string $prefix, string $areaClass): ?string
     {
         $parentKey = $definition['level']->parentKey;
 
@@ -262,13 +262,72 @@ class AddressFormSchema
         foreach ($definition['hierarchy']->levels as $level) {
             if ($level->key === $parentKey) {
                 if ($level->kind === 'state') {
-                    return AddressAreaStateBridge::areaIdForState(
-                        self::nullableString($get($prefix . 'state_id')),
-                        self::hierarchyType($definition),
-                    );
+                    return self::narrowedParentId($definition, $get, $prefix, $areaClass)
+                        ?? AddressAreaStateBridge::areaIdForState(
+                            self::nullableString($get($prefix . 'state_id')),
+                            self::hierarchyType($definition),
+                        );
                 }
 
                 return self::nullableString($get($prefix . 'area_assignments.' . CountryAddressProfileResolver::roleForLevel($definition['hierarchy'], $level)));
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Prefer a selected intermediate area level over the declared state
+     * parent when the stored links prove the narrowing is structural.
+     *
+     * Region-parented levels such as Malaysia's subdivisions stay reachable
+     * for district-less states (KL) through the state fallback, while a
+     * selected district narrows them to its own rows. Levels without a
+     * matching parent/child link in the data never narrow, so unrelated
+     * sibling levels keep state scope.
+     *
+     * @param array{hierarchy: AddressHierarchyDefinition, level: AddressLevelDefinition} $definition
+     */
+    private static function narrowedParentId(array $definition, callable $get, string $prefix, string $areaClass): ?string
+    {
+        $levels = array_values($definition['hierarchy']->levels);
+        $position = null;
+
+        foreach ($levels as $index => $level) {
+            if ($level->key === $definition['level']->key) {
+                $position = $index;
+
+                break;
+            }
+        }
+
+        if ($position === null) {
+            return null;
+        }
+
+        for ($index = $position - 1; $index >= 0; $index--) {
+            $candidate = $levels[$index];
+
+            if ($candidate->kind !== 'area') {
+                continue;
+            }
+
+            $selected = self::nullableString($get(
+                $prefix . 'area_assignments.' . CountryAddressProfileResolver::roleForLevel($definition['hierarchy'], $candidate),
+            ));
+
+            if ($selected === null) {
+                continue;
+            }
+
+            $query = $areaClass::query()
+                ->where('is_active', true)
+                ->when(self::areaTypes($definition['level']) !== [], fn ($query) => $query->whereIn('type', self::areaTypes($definition['level'])))
+                ->when(self::areaLevels($definition['level']) !== [], fn ($query) => $query->whereIn('level', self::areaLevels($definition['level'])))
+                ->whereAncestorLink($selected, self::hierarchyType($definition));
+
+            if ($query->exists()) {
+                return $selected;
             }
         }
 
@@ -351,10 +410,52 @@ class AddressFormSchema
 
             if (self::ancestorMatches($definition['hierarchy'], $definition['level'], static fn (AddressLevelDefinition $ancestor): bool => $ancestor->key === $parentKey)) {
                 $children[] = $role;
+            } elseif (self::isNarrowedSuccessor($changed, $definition)) {
+                $children[] = $role;
             }
         }
 
         return $children;
+    }
+
+    /**
+     * Region-parented levels positioned after the changed level reset with
+     * it, mirroring narrowedParentId(): a new district invalidates any
+     * subdivision picked under the previous one.
+     *
+     * @param array{hierarchy: AddressHierarchyDefinition, level: AddressLevelDefinition} $changed
+     * @param array{hierarchy: AddressHierarchyDefinition, level: AddressLevelDefinition} $definition
+     */
+    private static function isNarrowedSuccessor(array $changed, array $definition): bool
+    {
+        if ($definition['hierarchy']->key !== $changed['hierarchy']->key || $changed['level']->kind !== 'area') {
+            return false;
+        }
+
+        $reachesState = self::ancestorMatches(
+            $definition['hierarchy'],
+            $definition['level'],
+            static fn (AddressLevelDefinition $ancestor): bool => $ancestor->kind === 'state',
+        );
+
+        if (! $reachesState) {
+            return false;
+        }
+
+        $changedPosition = null;
+        $candidatePosition = null;
+
+        foreach (array_values($definition['hierarchy']->levels) as $index => $level) {
+            if ($level->key === $changed['level']->key) {
+                $changedPosition = $index;
+            }
+
+            if ($level->key === $definition['level']->key) {
+                $candidatePosition = $index;
+            }
+        }
+
+        return $changedPosition !== null && $candidatePosition !== null && $changedPosition < $candidatePosition;
     }
 
     /** @param callable(AddressLevelDefinition): bool $matches */
