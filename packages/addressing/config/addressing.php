@@ -491,6 +491,12 @@ return [
         ],
     ],
 
+    'fields' => [
+        // Present co-level subdivision + locality roles as one grouped
+        // control by default. Apps opting out get one control per role.
+        'group_subdivision_locality' => env('ADDRESSING_GROUP_SUBDIVISION_LOCALITY', true),
+    ],
+
     'geography' => [
         // Add country providers here; the core package remains country-neutral.
         'providers' => [
@@ -965,6 +971,11 @@ return [
     'defaults' => [
         'country_code' => env('ADDRESS_DEFAULT_COUNTRY_CODE'),
         'locale' => env('ADDRESS_DEFAULT_LOCALE'),
+    ],
+
+    'seed' => [
+        // ISO2 codes fully seeded outside production; empty keeps the full city dataset.
+        'full_city_countries' => [],
     ],
 
     'area_sources' => [

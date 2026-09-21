@@ -564,7 +564,19 @@ with `SeedCountryGeographiesAction::execute('SG')` after countries are seeded.
 CDC districts, URA regions, and postal districts are three independent
 first-level partitions: a CDC district is never the parent of a planning area
 or a postal sector. `State` rows link to matching district areas without a
-hierarchy type so the bridge resolves them for any hierarchy.
+hierarchy type so the bridge resolves them for any hierarchy. The
+independence is structural, not a gap: CDC boundaries follow electoral
+divisions (GRCs/SMCs), which cut across planning areas and regions — four of
+the five CDCs overlap the Central Region alone — so no CDC nesting is
+modeled and no `refinedBy` is declared.
+
+Revisit record: the postal tree was verified link by link (all 81 sector →
+district links, sector `74` unallocated, no sector `83`) and the planning
+tree name by name (all 55 areas with region parents: 22 Central, 6 East, 8
+North, 7 North-East, 12 West). Singapore intentionally has no postal
+`locality` level: postcodes are building-level, so towns have no single
+postcode, and HDB towns already coincide with planning areas. The pins live
+in `SingaporeGeographyProviderTest`.
 
 Individual six-digit postcodes are intentionally not bundled. Every building
 in Singapore has its own postcode, so the dataset is SingPost-scale. Resolve

@@ -155,3 +155,21 @@ it('gates subdivisions on the district only where links prove the structure', fu
         ->toBe('region')
         ->and($resolver->effectiveParentLevel('MY', 'nope', (string) $this->johor->id))->toBeNull();
 });
+
+it('groups subdivision and locality controls where gates match', function (): void {
+    $resolver = app(CountryAddressProfileResolver::class);
+
+    expect($resolver->shouldGroupSubdivisionLocality('MY', (string) $this->johor->id))->toBeTrue()
+        ->and($resolver->shouldGroupSubdivisionLocality('MY', (string) $this->kualaLumpur->id))->toBeTrue()
+        ->and($resolver->shouldGroupSubdivisionLocality('XX', null))->toBeFalse();
+});
+
+it('lets apps ungroup subdivision and locality controls', function (): void {
+    config(['addressing.fields.group_subdivision_locality' => false]);
+
+    try {
+        expect(app(CountryAddressProfileResolver::class)->shouldGroupSubdivisionLocality('MY', (string) $this->johor->id))->toBeFalse();
+    } finally {
+        config(['addressing.fields.group_subdivision_locality' => true]);
+    }
+});

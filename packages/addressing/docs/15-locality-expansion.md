@@ -4,10 +4,11 @@ title: Locality Expansion Method
 
 # Locality Expansion Method
 
-How postal-`locality` coverage is grown deliberately, state by state, and
-what the Batu Pahat pilot established. The per-state results live in
-[Country Data](./05-country-data.md); this file records the method so every
-state gets the same treatment.
+How postal-`locality` coverage is grown deliberately, division by division,
+for any country. Malaysia was the first worked example and the Batu Pahat
+pilot established the method; the per-state results live in
+[Country Data](./05-country-data.md). Malaysia paths are shown below —
+substitute the country's own files when revisiting another country.
 
 ## What the pilot did (Johor / Batu Pahat)
 
@@ -27,19 +28,18 @@ state gets the same treatment.
    **secondary** with Bandar Penggaram staying primary (same precedent as
    Rengam town sharing 86300 with Mukim Renggam).
 
-## Per-state audit procedure
+## Per-division audit procedure
 
-Repeat for every state and WP:
+Repeat for every top-level division (state/province/WP):
 
-1. List the state's current rows from
-   `resources/geography/malaysia-address-areas.csv` by district, plus
-   their links in `malaysia-postal-code-areas.csv`.
+1. List the division's current rows from the country's areas CSV by
+   district, plus their links in the postal-code areas CSV.
 2. Compare against external town lists (Wikipedia district *Towns*
    sections, postcode directories, council portals). Open every source
    cited; snippets are not evidence.
 3. Every town missing from the dataset **entirely** (no row of any type)
-   is a candidate. Towns already covered by a mukim/bandar/pekan row are
-   not duplicated.
+   is a candidate. Towns already covered by an administrative row (for
+   Malaysia: mukim/bandar/pekan) are not duplicated.
 4. Verify each candidate's postcode and parent district from addresses
    and postcode directories before adding.
 
@@ -50,18 +50,44 @@ Repeat for every state and WP:
 - Own postcode → primary link, covering admin rows secondary.
 - Shared postcode → secondary link only; the existing primary never moves.
   Invariant: exactly one primary per postcode.
-- `source_id` scheme:
+- Keep the provider's `source_id` scheme stable. Malaysia uses
   `my:subdistrict:district:{state}:{district}:{slug}`, type `locality`,
   level 3, parent `my:district:{state}:{district}`.
-- Keep CSV order: alphabetical by slug within the district group;
-  postcode links adjacent with the primary first.
+- Follow the file's existing row and link ordering convention. Malaysia
+  keeps CSV order alphabetical by slug within the district group, with
+  postcode links adjacent and the primary first.
+
+## Starting another country
+
+1. Audit the country's provider: confirm its hierarchies, levels, and
+   area types match reality before adding rows.
+2. Declare cross-hierarchy narrowing (`refinedBy`) only where it is real,
+   with link proof and a broader-scope fallback for districts that
+   genuinely have no localities.
+3. Run the per-division audit procedure above across every division.
+4. Honor the grouped subdivision/locality presentation default; apps
+   override it through config, never with hardcoded scoping.
+5. Ship the verification set below in the same pass.
+
+## After changing the dataset
+
+Dataset truth is not database truth. Consumers must re-run `address:seed`
+(or the bundled `AddressingSeeder`) to pick up new rows and rebuilt
+links; the geography seed upserts areas by `source_id` with stable IDs,
+so reseeding is safe.
+
+The stale-seed symptom is over-broad scoping: a district page listing
+other districts' towns. The narrowing probes find no district links and
+fall back to the broader scope by design. If the dataset parents are
+correct but the UI is broad, the database predates the dataset — reseed.
 
 ## Verification
 
-- Add a sampling test in
-  `tests/src/Addressing/Geography/MalaysiaGeographyProviderTest.php`
+- Add a sampling test in the country's geography provider test (for
+  Malaysia: `tests/src/Addressing/Geography/MalaysiaGeographyProviderTest.php`)
   covering each new row (type, level, parent, `postal_locality` role,
   district + state postal links).
 - `GeographyProviderContractTest` must stay green (parent references).
-- Update the state section in [Country Data](./05-country-data.md) in the
+- Update the country section in [Country Data](./05-country-data.md) in the
   same pass.
+- Reseed every consuming app database and spot-check one narrowed page.

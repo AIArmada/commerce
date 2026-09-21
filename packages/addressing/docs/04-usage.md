@@ -554,6 +554,12 @@ $reset = $resolver->successorRoles($countryId, 'administrative_district');
 // (subdivisions and localities gate on the district in Johor, on the state
 // in KL).
 $gate = $resolver->effectiveParentLevel($countryId, 'administrative_subdivision', $stateId);
+
+// Whether subdivision + locality share one grouped control: the package
+// default groups them, but only where both roles resolve and gate on the
+// same parent level. Apps override with
+// addressing.fields.group_subdivision_locality.
+$grouped = $resolver->shouldGroupSubdivisionLocality($countryId, $stateId);
 ```
 
 `parentAreaIdForRole()` accepts a `$hasOptions` probe and `effectiveParentLevel()` a `$hasStructuralLinks` probe when a consumer's option query differs from the package default (custom caching, slug maps, or extra scopes). Both probes default to link-proven package queries, so consumers that query areas the standard way pass nothing.

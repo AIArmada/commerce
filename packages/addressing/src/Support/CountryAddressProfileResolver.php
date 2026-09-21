@@ -423,6 +423,29 @@ final class CountryAddressProfileResolver
     }
 
     /**
+     * Whether subdivision + locality roles should share one grouped
+     * control: the package default groups them, but only where both
+     * roles resolve and gate on the same parent level, so the group
+     * never mixes differently-scoped selectors. Apps override with
+     * addressing.fields.group_subdivision_locality.
+     *
+     * @param  ?callable(string $role, string $ancestorRole, ?string $stateId): bool  $hasStructuralLinks
+     */
+    public function shouldGroupSubdivisionLocality(mixed $country, mixed $stateId, ?callable $hasStructuralLinks = null): bool
+    {
+        if (! config('addressing.fields.group_subdivision_locality', true)) {
+            return false;
+        }
+
+        $subdivisionGate = $this->effectiveParentLevel($country, 'administrative_subdivision', $stateId, $hasStructuralLinks);
+        $localityGate = $this->effectiveParentLevel($country, 'postal_locality', $stateId, $hasStructuralLinks);
+
+        return $subdivisionGate !== null
+            && $localityGate !== null
+            && $subdivisionGate->key === $localityGate->key;
+    }
+
+    /**
      * Display label for a role, narrowed to the types present in scope.
      *
      * Without a state the static level label applies. With one, the label
