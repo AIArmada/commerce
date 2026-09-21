@@ -44,6 +44,14 @@ class MaldivesGeographyProvider implements CountryAddressAreaMetadataProvider, C
                 ],
             );
         }
+
+        // Gnaviyani atoll was absorbed by Fuvahmulah city, which covers it
+        // entirely. Delete stragglers seeded before the fix so reseeds
+        // converge on the 18 atolls plus 5 cities.
+        $stateClass::query()
+            ->where('country_id', $country->id)
+            ->where('code', '29')
+            ->delete();
     }
 
     /** @return list<AddressHierarchyDefinition> */
@@ -137,8 +145,9 @@ class MaldivesGeographyProvider implements CountryAddressAreaMetadataProvider, C
             '14' => '14',
             '27' => '27',
             '28' => '28',
-            '29' => '29',
-            '07' => '07',
+            'FVM' => 'FVM',
+            'KUH' => 'KUH',
+            'THD' => 'THD',            '07' => '07',
             '23' => '23',
             '26' => '26',
             '05' => '05',
@@ -177,8 +186,9 @@ class MaldivesGeographyProvider implements CountryAddressAreaMetadataProvider, C
             ['name' => 'Faafu', 'code' => '14'],
             ['name' => 'Gaafu Alif', 'code' => '27'],
             ['name' => 'Gaafu Dhaalu', 'code' => '28'],
-            ['name' => 'Gnaviyani', 'code' => '29'],
-            ['name' => 'Haa Alif', 'code' => '07'],
+            ['name' => 'Fuvahmulah', 'code' => 'FVM'],
+            ['name' => 'Kulhudhuffushi', 'code' => 'KUH'],
+            ['name' => 'Thinadhoo', 'code' => 'THD'],            ['name' => 'Haa Alif', 'code' => '07'],
             ['name' => 'Haa Dhaalu', 'code' => '23'],
             ['name' => 'Kaafu', 'code' => '26'],
             ['name' => 'Laamu', 'code' => '05'],

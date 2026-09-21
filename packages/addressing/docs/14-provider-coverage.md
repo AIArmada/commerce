@@ -160,7 +160,7 @@ All 229 providers ship a formatter: 181 print a postcode (←99 →39 US →8 ab
 | Madagascar | MG | 6 | 6 | 6 | 1 | administrative: province | — | ← | L1; codeless 23 regions omitted |
 | Malawi | MW | 3 | 3 | 31 | 2 | administrative: region > district | district | ← | Complete — 3 regions + 28 districts |
 | Malaysia | MY | 16 | 16 | 1782 | dual 2+4 | administrative: region > division > district > subdivision; postal: region > locality | administrative_district, administrative_division, administrative_subdivision, postal_locality | ← | Complete; postal CSVs bundled; KL + Selangor + Pahang + Johor + Perlis + Melaka + Penang + Terengganu + Perak + Kedah + Kelantan per JUPEM UPI + N.Sembilan per PLANMalaysia/gazettes + Sabah + Sarawak per gazettes/SPR/DOSM |
-| Maldives | MV | 21 | 21 | 21 | 1 | administrative: atoll | — | → | L1 — 20 atolls + Addu City |
+| Maldives | MV | 23 | 23 | 23 | 1 | administrative: atoll | — | → | L1 — 18 atolls + 5 cities; FVM/KUH/THD provisional; Gnaviyani retired |
 | Mali | ML | 20 | 20 | 20 | 1 | administrative: region | — | none | L1 — 19 regions + Bamako (2023 reform); 9/10 per national law, diverge from ISO |
 | Malta | MT | 68 | 68 | 68 | 1 | administrative: local_council | — | below | L1 — 68 local councils |
 | Marshall Islands | MH | 26 | 26 | 26 | 1 | administrative: municipality | — | US → | L1 — 24 municipalities + 2 chains |

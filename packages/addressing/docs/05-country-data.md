@@ -1734,11 +1734,13 @@ the governorate on its own line when both are set, and country.
 
 ## Maldives
 
-The bundled `MaldivesGeographyProvider` supplies the 20 atolls plus
+The bundled `MaldivesGeographyProvider` supplies the 18 atolls plus
 the Addu, Malé, Fuvahmulah, Kulhudhuffushi, and Thinadhoo cities as
 `State` rows and a single-level administrative
 hierarchy. It is selected with
 `SeedCountryGeographiesAction::execute('MV')` after countries are seeded.
+Malé is typed city (ISO MV-MLE), not an atoll. Gnaviyani atoll is
+retired: Fuvahmulah city covers it entirely (ISO still lists MV-29).
 Fuvahmulah (`FVM`), Kulhudhuffushi (`KUH`), and Thinadhoo (`THD`)
 codes are invented pending ISO assignment.
 
