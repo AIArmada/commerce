@@ -66,7 +66,7 @@ All 229 providers ship a formatter: 181 print a postcode (←99 →39 US →8 ab
 | Bolivia | BO | 9 | 9 | 9 | 1 | administrative: department | — | none | L1 |
 | Bosnia and Herzegovina | BA | 3 | 3 | 3 | 1 | administrative: entity | — | ← | L1 — 2 entities + Brčko District |
 | Botswana | BW | 17 | 17 | 17 | 1 | administrative: district | — | none | L1 — 10 districts + 2 cities + 5 towns; OR provisional |
-| Brazil | BR | 27 | 27 | 27 | 1 | administrative: state | — | below | L1 — 26 states + DF |
+| Brazil | BR | 27 | 27 | 5598 | 2 | administrative: state > municipality | municipality | below | Complete — 27 + 5,571 municipios (IBGE codes); Noronha typed district |
 | Brunei | BN | 4 | 4 | 43 | 2 | administrative: district > mukim | mukim | → | Complete; kampungs via components |
 | Bulgaria | BG | 28 | 28 | 28 | 1 | administrative: district | — | ← | L1 |
 | Burkina Faso | BF | 64 | 64 | 64 | 2 | administrative: region > province | province | ← | Complete — 17 regions + 47 provinces L2 (July 2025 reform); region codes 14–17 + KAR/DYA provisional |

@@ -54,8 +54,9 @@ For the postal-`locality` method that sits below L2, see
 
 ## Brazil — municipalities
 
-- **Layer:** municipalities, 5,568 plus the Federal District and
-  Fernando de Noronha = **5,570 units** (IBGE official count).
+- **Layer:** municipalities, **5,571 units** (IBGE's 5,570 plus Boa
+  Esperança do Norte, Mato Grosso, effective January 2025;
+  includes the Federal District row and Fernando de Noronha).
 - **Source:** IBGE, free. Canonical machine source is the Localidades
   API (`servicodados.ibge.gov.br/api/v1/localidades/municipios`),
   verified live: each record carries the 7-digit code, name, and the

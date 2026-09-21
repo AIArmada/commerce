@@ -62,6 +62,16 @@ class BrazilGeographyProvider implements CountryAddressAreaMetadataProvider, Cou
                         areaTypes: ['state', 'federal_district'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'municipality',
+                        label: 'Municipality',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['municipality', 'district'],
+                        areaLevels: [2],
+                        parentKey: 'state',
+                        assignmentRole: 'municipality',
+                    ),
                 ],
             ),
         ];
@@ -76,6 +86,8 @@ class BrazilGeographyProvider implements CountryAddressAreaMetadataProvider, Cou
             $areaRoles = match ($area->type) {
                 'state' => ['state'],
                 'federal_district' => ['state'],
+                'municipality' => ['municipality'],
+                'district' => ['municipality'],
                 default => [],
             };
 

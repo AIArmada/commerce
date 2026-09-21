@@ -1227,11 +1227,17 @@ Algerian addresses are formatted per the UPU layout: street lines,
 ## Brazil
 
 The bundled `BrazilGeographyProvider` supplies the 26 states plus the
-Distrito Federal as `State` rows and a single-level administrative
-hierarchy. It is selected with
-`SeedCountryGeographiesAction::execute('BR')` after countries are seeded.
+Distrito Federal as `State` rows with 5,571 municipalities as
+level-2 areas in a two-level administrative hierarchy. It is
+selected with `SeedCountryGeographiesAction::execute('BR')` after
+countries are seeded.
 
-Municipalities (5,500+) are intentionally not bundled.
+Municipalities carry 7-digit IBGE codes (2-digit UF prefix) and
+parent their state row, sourced from the IBGE Localidades API.
+Fernando de Noronha is typed `district` (a Pernambuco state
+district, not a municipality); Brasília parents the Distrito
+Federal row. The set includes Boa Esperança do Norte, Mato Grosso
+(5101837, effective January 2025).
 
 Brazilian addresses are formatted per the UPU layout: street lines,
 `{locality} - {ST}` with the two-letter state abbreviation resolved
