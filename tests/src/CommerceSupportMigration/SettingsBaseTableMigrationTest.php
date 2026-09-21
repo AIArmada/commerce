@@ -202,6 +202,9 @@ function settingsMigrationIsRegistered(): bool
 function expectSettingsToMatchDefaults(): void
 {
     $expected = [
+        'commerce-exchange-rates.base' => 'USD',
+        'commerce-exchange-rates.rates' => [],
+        'commerce-exchange-rates.history' => [],
         'pricing.defaultCurrency' => 'MYR',
         'pricing.decimalPlaces' => 2,
         'pricing.pricesIncludeTax' => false,
