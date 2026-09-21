@@ -121,6 +121,7 @@ class MalaysiaGeographyProvider implements CountryAddressAreaMetadataProvider, C
                         areaLevels: [2, 3, 4],
                         parentKey: 'region',
                         assignmentRole: 'postal_locality',
+                        refinedBy: 'administrative_district',
                     ),
                 ],
             ),

@@ -204,12 +204,13 @@ final class CountryAddressProfileResolver
      * Resolve the area id scoping a role's options.
      *
      * Declared chain parents resolve to the selected id directly.
-     * Region-parented roles narrow to the nearest preceding selected level
-     * when the probe proves it yields options (a picked district narrows
-     * subdivisions to its own rows), falling back to the declared state
-     * parent otherwise so district-less states keep working. Levels without
-     * a matching parent/child link in the data never narrow, so unrelated
-     * sibling levels keep state scope.
+     * Region-parented roles narrow first to an explicitly refinedBy role
+     * (a picked district narrows postal localities to its own rows), then
+     * to the nearest preceding selected level when the probe proves it
+     * yields options, falling back to the declared state parent otherwise
+     * so district-less states keep working. Levels without a matching
+     * parent/child link in the data never narrow, so unrelated sibling
+     * levels keep state scope.
      *
      * @param  array<string, ?string>  $areaIdsByRole
      * @param  ?callable(string $role, string $parentId): bool  $hasOptions
@@ -232,6 +233,17 @@ final class CountryAddressProfileResolver
             return self::stringOrNull($areaIdsByRole[self::roleForLevel($definition['hierarchy'], $parent)] ?? null);
         }
 
+        $probe = $hasOptions ?? fn (string $probeRole, string $probeParentId): bool => $this->defaultHasOptions($country, $probeRole, $probeParentId);
+        $refinedBy = $definition['level']->refinedBy;
+
+        if ($refinedBy !== null) {
+            $selected = self::stringOrNull($areaIdsByRole[$refinedBy] ?? null);
+
+            if ($selected !== null && $probe($role, $selected)) {
+                return $selected;
+            }
+        }
+
         $levels = array_values($definition['hierarchy']->levels);
         $position = null;
 
@@ -244,8 +256,6 @@ final class CountryAddressProfileResolver
         }
 
         if ($position !== null) {
-            $probe = $hasOptions ?? fn (string $probeRole, string $probeParentId): bool => $this->defaultHasOptions($country, $probeRole, $probeParentId);
-
             for ($index = $position - 1; $index >= 0; $index--) {
                 $candidate = $levels[$index];
 
@@ -272,10 +282,10 @@ final class CountryAddressProfileResolver
     }
 
     /**
-     * Roles that reset when the given role changes: declared descendants
-     * plus region-parented levels positioned after it, mirroring
-     * parentAreaIdForRole(). A new district invalidates any subdivision
-     * picked under the previous one.
+     * Roles that reset when the given role changes: declared descendants,
+     * levels refined by it, plus region-parented levels positioned after
+     * it, mirroring parentAreaIdForRole(). A new district invalidates any
+     * subdivision or locality picked under the previous one.
      *
      * @return list<string>
      */
@@ -296,7 +306,17 @@ final class CountryAddressProfileResolver
 
             $definition = $this->definitionForRole($country, $candidate);
 
-            if ($definition === null || $definition['hierarchy']->key !== $changed['hierarchy']->key) {
+            if ($definition === null) {
+                continue;
+            }
+
+            if ($definition['level']->refinedBy === $role) {
+                $successors[] = $candidate;
+
+                continue;
+            }
+
+            if ($definition['hierarchy']->key !== $changed['hierarchy']->key) {
                 continue;
             }
 
@@ -336,12 +356,13 @@ final class CountryAddressProfileResolver
 
     /**
      * Level gating a role's selector: the declared parent, except
-     * region-parented roles gate on the nearest preceding area level when
-     * stored links prove the narrowing is structural in the selected state.
+     * region-parented roles gate on an explicitly refinedBy level or the
+     * nearest preceding area level when stored links prove the narrowing
+     * is structural in the selected state.
      *
-     * Malaysia's subdivisions gate on the district in Johor (districts own
-     * mukim rows there) but stay state-gated in KL (no districts exist),
-     * so district-less states keep working.
+     * Malaysia's subdivisions and localities gate on the district in Johor
+     * (districts own mukim and locality rows there) but stay state-gated
+     * in KL (no districts exist), so district-less states keep working.
      *
      * @param  ?callable(string $role, string $ancestorRole, ?string $stateId): bool  $hasStructuralLinks
      */
@@ -359,6 +380,18 @@ final class CountryAddressProfileResolver
             return $parent;
         }
 
+        $resolvedStateId = self::stringOrNull($stateId);
+        $check = $hasStructuralLinks ?? fn (string $checkRole, string $checkAncestor, ?string $checkState): bool => $this->defaultHasStructuralLinks($country, $checkRole, $checkAncestor, $checkState);
+        $refinedBy = $definition['level']->refinedBy;
+
+        if ($refinedBy !== null) {
+            $refiner = $this->definitionForRole($country, $refinedBy);
+
+            if ($refiner !== null && $check($role, $refinedBy, $resolvedStateId)) {
+                return $refiner['level'];
+            }
+        }
+
         $levels = array_values($definition['hierarchy']->levels);
         $position = null;
 
@@ -373,9 +406,6 @@ final class CountryAddressProfileResolver
         if ($position === null) {
             return $parent;
         }
-
-        $resolvedStateId = self::stringOrNull($stateId);
-        $check = $hasStructuralLinks ?? fn (string $checkRole, string $checkAncestor, ?string $checkState): bool => $this->defaultHasStructuralLinks($country, $checkRole, $checkAncestor, $checkState);
 
         for ($index = $position - 1; $index >= 0; $index--) {
             $candidate = $levels[$index];

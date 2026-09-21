@@ -537,20 +537,22 @@ $roles = $resolver->assignmentRoles($countryId);
 // Declared parent level within the role's own hierarchy.
 $parent = $resolver->parentLevel($countryId, 'administrative_subdivision');
 
-// Area id scoping a role's options: the declared chain parent, or the
-// nearest preceding selected level when stored links prove the narrowing
-// (a picked district narrows subdivisions to its own rows), else the
-// state root so district-less states keep working.
+// Area id scoping a role's options: the declared chain parent, an explicitly
+// refinedBy role first, then the nearest preceding selected level when stored
+// links prove the narrowing (a picked district narrows subdivisions and postal
+// localities to its own rows), else the state root so district-less states
+// keep working.
 $parentId = $resolver->parentAreaIdForRole($countryId, 'administrative_subdivision', $stateId, $areaIdsByRole);
 
-// Roles to clear when a role changes (declared descendants plus
-// narrowed successors).
+// Roles to clear when a role changes (declared descendants, levels refined by
+// it, plus narrowed successors).
 $reset = $resolver->successorRoles($countryId, 'administrative_district');
 
-// Level gating a role's selector: the declared parent, except
-// region-parented roles gate on the nearest preceding area level where
-// links prove the narrowing is structural in the selected state
-// (subdivisions gate on the district in Johor, on the state in KL).
+// Level gating a role's selector: the declared parent, except region-parented
+// roles gate on an explicitly refinedBy level or the nearest preceding area
+// level where links prove the narrowing is structural in the selected state
+// (subdivisions and localities gate on the district in Johor, on the state
+// in KL).
 $gate = $resolver->effectiveParentLevel($countryId, 'administrative_subdivision', $stateId);
 ```
 

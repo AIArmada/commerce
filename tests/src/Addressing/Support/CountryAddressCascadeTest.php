@@ -50,6 +50,9 @@ beforeEach(function (): void {
     $link($this->johorArea, $this->batuPahat);
     $this->paritSulong = $makeArea('mukim', 3, 'Parit Sulong');
     $link($this->batuPahat, $this->paritSulong);
+    $semerah = $makeArea('locality', 3, 'Semerah');
+    $link($this->batuPahat, $semerah, 'postal');
+    $link($this->johorArea, $semerah, 'postal');
 
     // Kuala Lumpur: mukim rows hang off the state, no districts exist.
     $this->kualaLumpur = $makeState('WP Kuala Lumpur');
@@ -109,7 +112,7 @@ it('falls back to the state parent when no narrowing selection applies', functio
 it('resets narrowed successors with their narrowing role', function (): void {
     $resolver = app(CountryAddressProfileResolver::class);
 
-    expect($resolver->successorRoles('MY', 'administrative_district'))->toBe(['administrative_subdivision'])
+    expect($resolver->successorRoles('MY', 'administrative_district'))->toBe(['administrative_subdivision', 'postal_locality'])
         ->and($resolver->successorRoles('MY', 'postal_locality'))->toBe([])
         ->and($resolver->successorRoles('MY', 'nope'))->toBe([])
         ->and($resolver->stateDependentRoles('MY'))->toBe([
@@ -118,6 +121,25 @@ it('resets narrowed successors with their narrowing role', function (): void {
             'administrative_subdivision',
             'postal_locality',
         ]);
+});
+
+it('narrows localities to a picked district across hierarchies', function (): void {
+    $resolver = app(CountryAddressProfileResolver::class);
+
+    expect($resolver->parentAreaIdForRole('MY', 'postal_locality', (string) $this->johor->id, [
+        'administrative_district' => (string) $this->batuPahat->id,
+    ]))->toBe((string) $this->batuPahat->id)
+        ->and($resolver->parentAreaIdForRole('MY', 'postal_locality', (string) $this->johor->id, []))
+        ->toBe((string) $this->johorArea->id);
+});
+
+it('gates localities on the district only where links prove the structure', function (): void {
+    $resolver = app(CountryAddressProfileResolver::class);
+
+    expect($resolver->effectiveParentLevel('MY', 'postal_locality', (string) $this->johor->id)?->key)
+        ->toBe('district')
+        ->and($resolver->effectiveParentLevel('MY', 'postal_locality', (string) $this->kualaLumpur->id)?->key)
+        ->toBe('region');
 });
 
 it('gates subdivisions on the district only where links prove the structure', function (): void {
@@ -130,8 +152,6 @@ it('gates subdivisions on the district only where links prove the structure', fu
         ->and($resolver->effectiveParentLevel('MY', 'administrative_subdivision', null)?->key)
         ->toBe('region')
         ->and($resolver->effectiveParentLevel('MY', 'administrative_district', (string) $this->johor->id)?->key)
-        ->toBe('region')
-        ->and($resolver->effectiveParentLevel('MY', 'postal_locality', (string) $this->johor->id)?->key)
         ->toBe('region')
         ->and($resolver->effectiveParentLevel('MY', 'nope', (string) $this->johor->id))->toBeNull();
 });

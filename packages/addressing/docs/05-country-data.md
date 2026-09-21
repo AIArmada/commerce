@@ -251,6 +251,110 @@ Pontian Kechil), and Pulau Satu (Forest City island, no own postcode) stay
 deleted. Each town's postcodes link it as primary with the covering admin
 areas kept as secondary links.
 
+Scope expansion: Tongkang Pechah and Parit Yaani were added as Batu Pahat
+postal `locality` rows (external town lists name both, and addresses place
+them under 83010). They share 83010 with the town core, so they link it as
+secondary with Bandar Penggaram staying primary — the same pattern as Ulu
+Choh sharing 81550 with Gelang Patah. (Renggam town is the opposite case:
+86300 is its own code, so the town is primary there.)
+
+Johor sweep (shared-postcode secondaries, primaries untouched): Skudai
+(JB, 81300), Saleng (Kulai, 81400 shared with Senai), Kelapa Sawit (Kulai,
+81000/81030 shared with Bandar Kulai), Chamek (Kluang, 86600 shared with
+Paloh). Skipped for weak evidence: Sedili and Teluk Sengat (no distinct
+town postcode), Seelong/Sengkang/Ayer Bemban (no postcode evidence),
+Kangkar Pulai (ambiguous district), Taman Universiti and Mengkibol
+(sub-localities of Skudai/Kluang).
+
+Johor sweep, batch 2: Tanjung Agas (Tangkak, 84000 shared cross-district
+with Muar town core). Muar, Segamat, Pontian, and Mersing needed no
+additions — every listed town already has a row. Skipped: Bukit Naning and
+Bukit Siput (suburbs), Kampung Tengah (85000 suburb), Jagoh, Sungai Karas,
+Kayu Ara Pasong, Sanglang, Teluk Sengat, Sagil (village-level, no town
+postcode evidence), Gemas Baharu (weak evidence), Pontian Besar (covered by
+Mukim Pontian), Pekan Air Panas (likely Labis alias), Air Papan (village),
+Segamat Baru (township), Permas (unreliable listing; Permas Jaya is JB).
+
+Melaka sweep: Lubok China (Alor Gajah) added as a postal `locality` —
+own post office and postcode 78100, so it takes primary with the district
+placeholder demoted to secondary. All other Melaka towns already have rows.
+
+Negeri Sembilan sweep: Telok Kemang (Port Dickson, federal constituency,
+71050 shared with Si Rusa) added as a secondary-link `locality`. Gemas
+town stays covered by Mukim Gemas. Seremban suburbs without rows (Sikamat,
+Mambau, Paroi, Lobak, Rahang) deliberately skipped as sub-localities of
+the town core.
+
+Kedah sweep: Tikam Batu (Kuala Muda, federal-gazette post office, 08700
+shared with Jeniang) added as a secondary-link `locality`. Guar Chempedak
+already covered as Bandar Guar Cempedak (gazette spelling). Skipped:
+Simpang Kuala (Alor Setar suburb), Tanjung Dawai (fishing village, no
+town postcode evidence), Sungai Lalang / Sintok / Napoh (no verified
+postcode evidence yet), Naka (village-level).
+
+Perlis sweep: Kangar (01000), Padang Besar (02100), Kaki Bukit (02200),
+and Simpang Empat (02700) added as state-parented `locality` rows, each
+taking primary on its own code with the covering mukim demoted to
+secondary. Arau and Kuala Perlis stay covered by their mukim rows.
+
+Penang sweep: Teluk Bahang (Barat Daya, DUN, 11050 shared cross-district
+with Bandar George Town), Batu Kawan (SPS, 14100 shared with Simpang
+Ampat), and Bertam (SPU, DUN, 13200 shared with Kepala Batas) added as
+secondary-link `locality` rows. Skipped: Bukit Minyak, Juru, Seberang
+Jaya, Mak Mandin, Sungai Dua, Tanjung Bungah, Paya Terubong, and Sungai
+Bakap (suburbs/sub-localities).
+
+Kelantan sweep: Kok Lanas (Kota Bharu, 16450 shared with Ketereh) added
+as a secondary-link `locality`. Skipped for lack of verified postcode
+evidence: Pengkalan Kubor, Gual Ipoh, Bukit Bunga (in Jeli district, not
+Tanah Merah).
+
+Terengganu sweep: no additions — Chukai and Jerteh are already covered
+as Bandar Cukai and Jertih (UPI spellings) with primaries on 24000 and
+22000. All other listed towns have rows. Skipped: Seberang Takir (no
+verified postcode evidence), Gong Badak (KT suburb), Penarik (fishing
+village).
+
+Pahang sweep: Bukit Tinggi (Bentong, 28750 shared with Bentong) and
+Mengkarak (Bera, 28200 shared with Bandar Bera) added as secondary-link
+`locality` rows. Genting Highlands already covered as Bandar Genting with
+the 69000 primary. Skipped: Kampung Raja and Tanjung Gemok (no verified
+postcode evidence); Janda Baik, Tekek, Tringkap, Kuala Semantan, Teriang,
+Kerayong, Nenasi, Merchong (village-level).
+
+Perak sweep: Simpang Lima (Kerian, 34200 shared with Parit Buntar) added
+as a secondary-link `locality`. Trolak already covered as Terolak (UPI
+spelling) with the 35700 primary; Tanjung Piandang already covered as
+Mukim Tanjong Piandang. Skipped: Ayer Kuning, Bukit Merah, Lubuk Merbau,
+Salak (no verified postcode evidence); Ampang and Tanjung Rambutan
+(Ipoh suburbs).
+
+Selangor sweep: Seri Kembangan (43300) and Serdang (43400) added as
+Petaling `locality` rows taking primaries from district placeholders;
+Balakong (Hulu Langat, 43300 shared cross-district) added secondary.
+Tanjung Sepat already covered as Tanjong Sepat (UPI spelling).
+Skipped: Sijangkang and Sungai Air Tawar (no clean postcode evidence —
+conflicting codes for the latter); Batang Berjuntai (Bestari Jaya
+alias); Setia Alam (township); Klang Valley suburbs and townships as a
+class (USJ, Sunway, Puchong Jaya, Kinrara, and the like).
+
+Sabah sweep: no additions — towns live as level-4 `subdistrict` rows and
+every checked town (Kundasang, Tamparuli, Kiulu, Donggongon, Kinarut,
+Benoni, Kimanis, Bongawan, Menumbok, Melalap, Kemabong, Sindumin,
+Apin-Apin, Bingkor, Tungku, Sukau, Bukit Garam, Matunggong, Tandek) has
+one. Skipped: Lok Kawi, Sikuati, Kanibongan (no verified postcode
+evidence).
+
+Sarawak sweep: no additions — same level-4 `subdistrict` pattern covers
+every checked town (Sematan, Engkilili, Debak, Spaoh, Roban, Bintangor,
+Niah, Batu Niah, Bekenu, Oya, Balingian, Sundar, Trusan, Sadong Jaya).
+Skipped: Bako (fishing village).
+
+WP sweep: no additions — KL's 11 parliamentary `locality` rows plus 7
+mukims, Putrajaya's precincts, and Labuan's 28 kampung `locality` rows
+already model each territory. KL neighborhoods (Bangsar, Mont Kiara,
+and the like) deliberately skipped as sub-localities.
+
 ## Perlis
 
 Perlis has no districts (`TIADA DAERAH`) and exactly 22 mukims, all already
