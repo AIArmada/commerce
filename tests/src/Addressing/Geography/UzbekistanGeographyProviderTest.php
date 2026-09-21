@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Geography\Uzbekistan\UzbekistanAddressFormatter;
+use AIArmada\Addressing\Geography\Uzbekistan\UzbekistanGeographyProvider;
 
 it('formats Uzbek addresses with the postcode and comma left of the locality', function (): void {
     $formatted = app(UzbekistanAddressFormatter::class)->format(AddressData::from([
@@ -14,4 +15,11 @@ it('formats Uzbek addresses with the postcode and comma left of the locality', f
     ]));
 
     expect($formatted)->toBe("pr-t Mustakillik, d. 5, kv. 12\n100123, g. Tashkent 123\nUzbekistan");
+});
+
+it('spells the Xorazm tuman Tuproqqal\'a', function (): void {
+    $areas = app(UzbekistanGeographyProvider::class)->addressAreaSource()->areas()->collect()->keyBy->sourceId;
+
+    expect($areas->get('uz:tuman:xorazm:tuproqqala')->name)->toBe('Tuproqqal\'a')
+        ->and($areas->has('uz:tuman:xorazm:toproqqala'))->toBeFalse();
 });

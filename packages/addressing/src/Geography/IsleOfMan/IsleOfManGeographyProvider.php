@@ -55,11 +55,11 @@ class IsleOfManGeographyProvider implements CountryAddressAreaMetadataProvider, 
                 label: 'Administrative / Territorial Geography',
                 levels: [
                     new AddressLevelDefinition(
-                        key: 'sheadings',
+                        key: 'sheading',
                         label: 'Sheadings',
                         kind: 'state',
                         hierarchyType: 'administrative',
-                        areaTypes: ['sheadings'],
+                        areaTypes: ['sheading'],
                         areaLevel: 1,
                     ),
                 ],
@@ -74,7 +74,7 @@ class IsleOfManGeographyProvider implements CountryAddressAreaMetadataProvider, 
 
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
-                'sheadings' => ['sheadings'],
+                'sheading' => ['sheading'],
                 default => [],
             };
 

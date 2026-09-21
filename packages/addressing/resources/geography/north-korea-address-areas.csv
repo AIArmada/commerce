@@ -1,8 +1,8 @@
 source_id,country_code,type,name,native_name,code,parent_source_id,level,latitude,longitude
 kp:province:chagang,KP,province,Chagang,,04,,1,,
-kp:metropolitan_city:kaesong,KP,metropolitan_city,Kaesong,,15,,1,,
+kp:special_city:kaesong,KP,special_city,Kaesong,,15,,1,,
 kp:province:kangwon,KP,province,Kangwon,,07,,1,,
-kp:metropolitan_city:nampho,KP,metropolitan_city,Nampho,,14,,1,,
+kp:special_city:nampo,KP,special_city,Nampo,,14,,1,,
 kp:province:north-hamgyong,KP,province,North Hamgyong,,09,,1,,
 kp:province:north-hwanghae,KP,province,North Hwanghae,,06,,1,,
 kp:province:north-pyongan,KP,province,North Pyongan,,03,,1,,

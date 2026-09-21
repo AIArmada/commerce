@@ -192,7 +192,7 @@ All 229 providers ship a formatter: 181 print a postcode (←99 →39 US →8 ab
 | North Macedonia | MK | 80 | 80 | 80 | 1 | administrative: municipality | — | ← | L1 — 80 municipalities |
 | Norway | NO | 17 | 17 | 17 | 1 | administrative: county | — | ← | L1 — 15 counties + Svalbard/Jan Mayen |
 | Oman | OM | 11 | 11 | 74 | 2 | administrative: governorate > wilayat | wilayat | above | Complete — 11 governorates + 63 wilayats |
-| Pakistan | PK | 7 | 7 | 181 | 2 | administrative: province > district | district | → | Complete to district (174, late-2025); tehsils out; 2026 Balochistan batch excluded |
+| Pakistan | PK | 7 | 7 | 185 | 2 | administrative: province > district | district | → | Complete to district (178, mid-2026); tehsils out; Karezat/Jampur excluded |
 | Palau | PW | 16 | 16 | 16 | 1 | administrative: state | — | US → | L1 — 16 states |
 | Palestine | PS | 16 | 16 | 16 | 1 | administrative: governorate | — | → | L1 |
 | Panama | PA | 14 | 14 | 14 | 1 | administrative: province | — | none | L1 — 10 provinces + 4 comarcas |

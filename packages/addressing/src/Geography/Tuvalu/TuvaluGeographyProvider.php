@@ -159,7 +159,7 @@ class TuvaluGeographyProvider implements CountryAddressAreaMetadataProvider, Cou
             ['name' => 'Funafuti', 'code' => 'FUN'],
             ['name' => 'Nanumanga', 'code' => 'NMG'],
             ['name' => 'Nanumea', 'code' => 'NMA'],
-            ['name' => 'Niutao Island Council', 'code' => 'NIT'],
+            ['name' => 'Niutao', 'code' => 'NIT'],
             ['name' => 'Nui', 'code' => 'NUI'],
             ['name' => 'Nukufetau', 'code' => 'NKF'],
             ['name' => 'Nukulaelae', 'code' => 'NKL'],

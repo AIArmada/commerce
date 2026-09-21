@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Geography\IsleOfMan\IsleOfManAddressFormatter;
+use AIArmada\Addressing\Geography\IsleOfMan\IsleOfManGeographyProvider;
 
 it('formats Manx addresses with the postcode below the post town', function (): void {
     $formatted = app(IsleOfManAddressFormatter::class)->format(AddressData::from([
@@ -25,4 +26,12 @@ it('formats Manx street addresses with the sheading below the town', function ()
     ]));
 
     expect($formatted)->toBe("50 Athol Street\nDouglas\nMiddle\nIM1 1JB\nIsle of Man");
+});
+
+it('types the sheadings with the singular type key', function (): void {
+    $areas = app(IsleOfManGeographyProvider::class)->addressAreaSource()->areas()->collect()->keyBy->sourceId;
+
+    expect($areas)->toHaveCount(6)
+        ->and($areas->where('type', 'sheadings'))->toBeEmpty()
+        ->and($areas->get('im:sheading:ayre')->code)->toBe('01');
 });

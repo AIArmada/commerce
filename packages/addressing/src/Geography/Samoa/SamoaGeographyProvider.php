@@ -158,16 +158,16 @@ class SamoaGeographyProvider implements CountryAddressAreaMetadataProvider, Coun
     private function stateDefinitions(): array
     {
         return [
-            ['name' => 'A\'ana', 'code' => 'AA'],
+            ['name' => 'Aʻana', 'code' => 'AA'],
             ['name' => 'Aiga-i-le-Tai', 'code' => 'AL'],
             ['name' => 'Atua', 'code' => 'AT'],
-            ['name' => 'Fa\'asaleleaga', 'code' => 'FA'],
-            ['name' => 'Gaga\'emauga', 'code' => 'GE'],
-            ['name' => 'Gaga\'ifomauga', 'code' => 'GI'],
+            ['name' => 'Faʻasaleleaga', 'code' => 'FA'],
+            ['name' => 'Gagaʻemauga', 'code' => 'GE'],
+            ['name' => 'Gagaifomauga', 'code' => 'GI'],
             ['name' => 'Palauli', 'code' => 'PA'],
-            ['name' => 'Satupa\'itea', 'code' => 'SA'],
+            ['name' => 'Satupaʻitea', 'code' => 'SA'],
             ['name' => 'Tuamasaga', 'code' => 'TU'],
-            ['name' => 'Va\'a-o-Fonoti', 'code' => 'VF'],
+            ['name' => 'Vaʻa-o-Fonoti', 'code' => 'VF'],
             ['name' => 'Vaisigano', 'code' => 'VS'],
         ];
     }

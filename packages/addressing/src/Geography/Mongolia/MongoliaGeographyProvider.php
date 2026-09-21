@@ -44,6 +44,13 @@ class MongoliaGeographyProvider implements CountryAddressAreaMetadataProvider, C
                 ],
             );
         }
+
+        // Ulaanbaatar follows ISO MN-1 (single digit). Delete stragglers
+        // seeded with the zero-padded code so reseeds converge.
+        $stateClass::query()
+            ->where('country_id', $country->id)
+            ->where('code', '001')
+            ->delete();
     }
 
     /** @return list<AddressHierarchyDefinition> */
@@ -148,7 +155,7 @@ class MongoliaGeographyProvider implements CountryAddressAreaMetadataProvider, C
             '049' => '049',
             '051' => '051',
             '047' => '047',
-            '001' => '001',
+            '1' => '1',
             '046' => '046',
             '057' => '057',
         ];
@@ -189,7 +196,7 @@ class MongoliaGeographyProvider implements CountryAddressAreaMetadataProvider, C
             ['name' => 'Selenge', 'code' => '049'],
             ['name' => 'Sükhbaatar', 'code' => '051'],
             ['name' => 'Töv', 'code' => '047'],
-            ['name' => 'Ulaanbaatar', 'code' => '001'],
+            ['name' => 'Ulaanbaatar', 'code' => '1'],
             ['name' => 'Uvs', 'code' => '046'],
             ['name' => 'Zavkhan', 'code' => '057'],
         ];

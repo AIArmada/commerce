@@ -817,18 +817,18 @@ The bundled `PakistanGeographyProvider` supplies the seven ISO 3166-2
 subdivisions as `State` rows — four provinces plus the Islamabad
 Capital Territory, Gilgit-Baltistan, and Azad Jammu and Kashmir
 (`Azad Kashmir` is aliased) — and a two-level administrative hierarchy
-(province/territory → 174 districts). It is selected with
+(province/territory → 178 districts). It is selected with
 `SeedCountryGeographiesAction::execute('PK')` after countries are seeded.
 
-Districts follow the late-2025 reorganization state: Punjab counts 42
-(`Jampur` and `Taunsa` included), Khyber Pakhtunkhwa counts 40
+Districts follow the mid-2026 reorganization state: Punjab counts 41
+(`Taunsa` included; `Jampur` was announced in December 2022 but never
+notified and stays excluded), Khyber Pakhtunkhwa counts 40
 (Chitral split into Lower/Upper plus `Central Dir`, `Paharpur`, and
-`Upper Swat` from the October 2025 batch), and Balochistan includes
-`Hub`, `Karezat`, and `Surab`. The January/May 2026 Balochistan batch
-(`Tump`, Upper Dera Bugti, `Taftan`, `Wadh`, `Barshor`, Quetta
-East/West) is intentionally excluded: unlike the clean October 2025
-Khyber Pakhtunkhwa adds, its January Quetta City/Saddar and May Quetta
-East/West notifications contradict each other. Tehsils are
+`Upper Swat`), and Balochistan counts 42. The May 2026 Balochistan
+batch (`Barshore`, `Tump`, Upper Dera Bugti, `Taftan`, `Wadh`, Quetta
+East/West) supersedes the January Quetta City/Saddar notification and
+is included; whole `Quetta` is retired by the East/West split and
+`Karezat` stays removed (abolished 29 November 2022). Tehsils are
 intentionally not bundled.
 
 Pakistani addresses are formatted per the UPU layout: street lines,
@@ -1019,7 +1019,10 @@ Hokkaido, Fuchu city/town in Hiroshima, Toshima ward/village in Tokyo,
 and ten more) plus ~100 cross-prefecture twins (Date, Fuchu) — filter
 by `code` and parent, never by name alone. Ordinance-designated-city
 wards (e.g. Osaka's 24 ku) are sub-municipal and intentionally not
-bundled.
+bundled. Level-2 names are validated mechanically against the MIC
+table (code↔parent consistency, kind totals, twin coverage);
+row-by-row external name verification of all 1,747 rows remains
+future work.
 
 Japanese addresses are formatted per the UPU western layout: street
 lines, `{city}, {prefecture}`, the `NNN-NNNN` postcode on its own
@@ -2686,6 +2689,9 @@ The bundled `AlandGeographyProvider` supplies the 16
 municipalities as `State` rows and a single-level administrative
 hierarchy. It is selected with
 `SeedCountryGeographiesAction::execute('AX')` after countries are seeded.
+Municipality codes 01–16 are dataset-invented: ISO defines no
+Åland subdivisions, and the official Finnish 3-digit kuntakoodi are
+not used, so the codes carry no external meaning.
 
 Åland addresses are formatted per the UPU layout: street lines,
 `{postcode} {locality}` with a 5-digit `22xxx` postcode, and country.
@@ -2725,7 +2731,10 @@ street lines, the post town, the postcode on its own line, and country.
 The bundled `IsleOfManGeographyProvider` supplies the 6 sheadings
 as `State` rows and a single-level administrative hierarchy. It is
 selected with `SeedCountryGeographiesAction::execute('IM')` after
-countries are seeded.
+countries are seeded. Sheadings are the former administrative
+partition (today only a loose coroners/electoral layer), but they
+remain the only island-wide geography, so they are modeled as the
+address level.
 
 The Isle of Man follows the UK postcode system (`IM` prefix).
 Addresses print street lines, the post town, the postcode on its own

@@ -212,7 +212,7 @@ class AfghanistanGeographyProvider implements CountryAddressAreaMetadataProvider
             ['name' => 'Samangan', 'code' => 'SAM'],
             ['name' => 'Sar-e Pol', 'code' => 'SAR'],
             ['name' => 'Takhar', 'code' => 'TAK'],
-            ['name' => 'Urozgan', 'code' => 'URU'],
+            ['name' => 'Uruzgan', 'code' => 'URU'],
             ['name' => 'Wardak', 'code' => 'WAR'],
             ['name' => 'Zabul', 'code' => 'ZAB'],
         ];
