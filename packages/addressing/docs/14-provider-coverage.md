@@ -73,7 +73,7 @@ All 229 providers ship a formatter: 181 print a postcode (←99 →39 US →8 ab
 | Burundi | BI | 5 | 5 | 5 | 1 | administrative: province | — | none | L1 — 5 provinces (July 2025 reform); codes 01-05 provisional pending ISO |
 | Cambodia | KH | 25 | 25 | 25 | 1 | administrative: province | — | → | L1 — 24 provinces + Phnom Penh; districts/communes out of scope |
 | Cameroon | CM | 10 | 10 | 10 | 1 | administrative: region | — | none | L1 |
-| Canada | CA | 13 | 13 | 13 | 1 | administrative: province | — | → | L1 — 10 provinces + 3 territories |
+| Canada | CA | 13 | 13 | 5041 | 2 | administrative: province > municipality | municipality | → | Complete — 13 + 5,028 CSDs (2024 SGC); reserves/unorganized typed |
 | Cape Verde | CV | 24 | 24 | 24 | 1 | administrative: municipality | — | ← | L1 — 22 municipalities + 2 island groups |
 | Caribbean Netherlands | BQ | 3 | 3 | 3 | 1 | administrative: special_municipality | — | none | L1 — 3 special municipalities |
 | Cayman Islands | KY | 3 | 3 | 3 | 1 | administrative: island | — | → | L1 — 3 islands |

@@ -1270,9 +1270,19 @@ the UPU list (`CDMX`, `EDOMEX`, `Q. ROO`, `TAMPS`), and country.
 ## Canada
 
 The bundled `CanadaGeographyProvider` supplies the 10 provinces plus
-the 3 territories as `State` rows and a single-level administrative
-hierarchy. It is selected with
-`SeedCountryGeographiesAction::execute('CA')` after countries are seeded.
+the 3 territories as `State` rows with 5,028 census subdivisions as
+level-2 areas in a two-level administrative hierarchy. It is
+selected with `SeedCountryGeographiesAction::execute('CA')` after
+countries are seeded.
+
+Subdivisions carry 7-digit SGC codes (province plus division plus
+subdivision) and parent their province row, sourced from the 2024
+StatCan boundary file DBF. Types collapse the 60 CSDTYPE codes to
+three: `municipality` for municipal governments, `indigenous_reserve`
+for Indian reserves, and `unorganized` for unorganized areas. Names
+follow StatCan recognition, including reserve spellings; filter by
+code and parent, never by name alone, since 152 names repeat across
+provinces.
 
 Canadian addresses are formatted per the UPU layout: street lines,
 `{locality} {PR} {postcode}` with the two-letter province abbreviation

@@ -62,6 +62,16 @@ class CanadaGeographyProvider implements CountryAddressAreaMetadataProvider, Cou
                         areaTypes: ['province', 'territory'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'municipality',
+                        label: 'Census Subdivision',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['municipality', 'indigenous_reserve', 'unorganized'],
+                        areaLevels: [2],
+                        parentKey: 'province',
+                        assignmentRole: 'municipality',
+                    ),
                 ],
             ),
         ];
@@ -76,6 +86,9 @@ class CanadaGeographyProvider implements CountryAddressAreaMetadataProvider, Cou
             $areaRoles = match ($area->type) {
                 'province' => ['province'],
                 'territory' => ['province'],
+                'municipality' => ['municipality'],
+                'indigenous_reserve' => ['municipality'],
+                'unorganized' => ['municipality'],
                 default => [],
             };
 
