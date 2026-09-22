@@ -32,7 +32,7 @@ it('formats Puerto Rican addresses keeping the barrio above the ZIP line', funct
 it('types all 78 municipios as municipality with FIPS codes', function (): void {
     $areas = app(PuertoRicoGeographyProvider::class)->addressAreaSource()->areas()->collect()->keyBy->sourceId;
 
-    expect($areas)->toHaveCount(78)
+    expect($areas->where('level', 1))->toHaveCount(78)
         ->and($areas->where('type', 'region'))->toBeEmpty()
         ->and($areas->get('pr:municipality:arecibo')->code)->toBe('013')
         ->and($areas->get('pr:municipality:bayamon')->name)->toBe('Bayamón')
@@ -54,4 +54,17 @@ it('types all 78 municipios as municipality with FIPS codes', function (): void 
     foreach (['AR', 'BY', 'CG', 'CL', 'GN', 'MG', 'PO', 'SJ', 'TB', 'TA'] as $retiredCode) {
         expect($mappings)->not->toHaveKey($retiredCode);
     }
+});
+
+it('ships 901 barrios under municipios with parent links', function (): void {
+    $areas = app(PuertoRicoGeographyProvider::class)->addressAreaSource()->areas()->collect();
+    $byId = $areas->keyBy->sourceId;
+    $l2 = $areas->where('level', 2);
+
+    expect($l2)->toHaveCount(901)
+        ->and($l2->pluck('parentSourceId')->every(fn ($p) => $byId->has($p)))->toBeTrue()
+        ->and($l2->where('type', 'barrio'))->toHaveCount(827)
+        ->and($l2->where('type', 'barrio_pueblo'))->toHaveCount(74)
+        ->and($byId->get('pr:barrio:santurce')->parentSourceId)->toBe('pr:municipality:san-juan')
+        ->and($byId->get('pr:barrio_pueblo:adjuntas')->parentSourceId)->toBe('pr:municipality:adjuntas');
 });

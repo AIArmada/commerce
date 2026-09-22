@@ -62,6 +62,16 @@ class TunisiaGeographyProvider implements CountryAddressAreaMetadataProvider, Co
                         areaTypes: ['governorate'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'delegation',
+                        label: 'Delegation',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['delegation'],
+                        areaLevels: [2],
+                        parentKey: 'governorate',
+                        assignmentRole: 'delegation',
+                    ),
                 ],
             ),
         ];
@@ -75,6 +85,7 @@ class TunisiaGeographyProvider implements CountryAddressAreaMetadataProvider, Co
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
                 'governorate' => ['governorate'],
+                'delegation' => ['delegation'],
                 default => [],
             };
 

@@ -62,6 +62,16 @@ class VietnamGeographyProvider implements CountryAddressAreaMetadataProvider, Co
                         areaTypes: ['province', 'municipality'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'commune',
+                        label: 'Commune / Ward / Special Zone',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['commune', 'ward', 'special_zone'],
+                        areaLevels: [2],
+                        parentKey: 'province',
+                        assignmentRole: 'commune',
+                    ),
                 ],
             ),
         ];
@@ -76,6 +86,9 @@ class VietnamGeographyProvider implements CountryAddressAreaMetadataProvider, Co
             $areaRoles = match ($area->type) {
                 'province' => ['province'],
                 'municipality' => ['province'],
+                'commune' => ['commune'],
+                'ward' => ['commune'],
+                'special_zone' => ['commune'],
                 default => [],
             };
 

@@ -62,6 +62,16 @@ class BosniaAndHerzegovinaGeographyProvider implements CountryAddressAreaMetadat
                         areaTypes: ['entity', 'district'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'municipality',
+                        label: 'Municipality',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['municipality'],
+                        areaLevels: [2],
+                        parentKey: 'entity',
+                        assignmentRole: 'municipality',
+                    ),
                 ],
             ),
         ];
@@ -76,6 +86,7 @@ class BosniaAndHerzegovinaGeographyProvider implements CountryAddressAreaMetadat
             $areaRoles = match ($area->type) {
                 'entity' => ['entity'],
                 'district' => ['district'],
+                'municipality' => ['municipality'],
                 default => [],
             };
 

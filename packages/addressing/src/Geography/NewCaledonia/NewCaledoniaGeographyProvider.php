@@ -62,6 +62,16 @@ class NewCaledoniaGeographyProvider implements CountryAddressAreaMetadataProvide
                         areaTypes: ['province'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'commune',
+                        label: 'Commune',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['commune'],
+                        areaLevels: [2],
+                        parentKey: 'province',
+                        assignmentRole: 'commune',
+                    ),
                 ],
             ),
         ];
@@ -75,6 +85,7 @@ class NewCaledoniaGeographyProvider implements CountryAddressAreaMetadataProvide
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
                 'province' => ['province'],
+                'commune' => ['commune'],
                 default => [],
             };
 

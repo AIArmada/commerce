@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Geography\SouthKorea\SouthKoreaAddressFormatter;
+use AIArmada\Addressing\Geography\SouthKorea\SouthKoreaGeographyProvider;
 
 it('formats South Korean addresses with the postcode right of the city', function (): void {
     $formatted = app(SouthKoreaAddressFormatter::class)->format(AddressData::from([
@@ -65,4 +66,16 @@ it('prints South Korean city-states once without a postcode', function (): void 
     ]));
 
     expect($formatted)->toBe("97-1 Toegye-ro, Jung-gu\nSeoul\nSouth Korea");
+});
+
+it('ships 228 cities/counties/districts under provinces with parent links', function (): void {
+    $areas = app(SouthKoreaGeographyProvider::class)->addressAreaSource()->areas()->collect();
+    $byId = $areas->keyBy->sourceId;
+    $l2 = $areas->whereIn('type', ['city', 'county', 'district']);
+
+    expect($l2)->toHaveCount(228)
+        ->and($l2->pluck('parentSourceId')->every(fn ($p) => $byId->has($p)))->toBeTrue()
+        ->and($byId->get('kr:city:suwon')->name)->toBe('Suwon')
+        ->and($byId->get('kr:county:gijang')->name)->toBe('Gijang')
+        ->and($byId->get('kr:district:gangnam')->name)->toBe('Gangnam');
 });

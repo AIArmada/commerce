@@ -62,6 +62,16 @@ class CostaRicaGeographyProvider implements CountryAddressAreaMetadataProvider, 
                         areaTypes: ['province'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'canton',
+                        label: 'Canton',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['canton'],
+                        areaLevels: [2],
+                        parentKey: 'province',
+                        assignmentRole: 'canton',
+                    ),
                 ],
             ),
         ];
@@ -75,6 +85,7 @@ class CostaRicaGeographyProvider implements CountryAddressAreaMetadataProvider, 
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
                 'province' => ['province'],
+                'canton' => ['canton'],
                 default => [],
             };
 

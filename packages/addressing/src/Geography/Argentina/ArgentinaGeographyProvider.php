@@ -62,6 +62,16 @@ class ArgentinaGeographyProvider implements CountryAddressAreaMetadataProvider, 
                         areaTypes: ['province', 'city'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'department',
+                        label: 'Department / Partido / Commune',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['department', 'partido', 'commune'],
+                        areaLevels: [2],
+                        parentKey: 'province',
+                        assignmentRole: 'department',
+                    ),
                 ],
             ),
         ];
@@ -76,6 +86,9 @@ class ArgentinaGeographyProvider implements CountryAddressAreaMetadataProvider, 
             $areaRoles = match ($area->type) {
                 'province' => ['province'],
                 'city' => ['province'],
+                'department' => ['department'],
+                'partido' => ['department'],
+                'commune' => ['department'],
                 default => [],
             };
 

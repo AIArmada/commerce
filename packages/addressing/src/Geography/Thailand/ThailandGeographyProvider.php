@@ -62,6 +62,16 @@ class ThailandGeographyProvider implements CountryAddressAreaMetadataProvider, C
                         areaTypes: ['province', 'metropolitan_administration'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'amphoe',
+                        label: 'Amphoe / Khet',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['amphoe', 'khet'],
+                        areaLevels: [2],
+                        parentKey: 'province',
+                        assignmentRole: 'amphoe',
+                    ),
                 ],
             ),
         ];
@@ -76,6 +86,8 @@ class ThailandGeographyProvider implements CountryAddressAreaMetadataProvider, C
             $areaRoles = match ($area->type) {
                 'province' => ['province'],
                 'metropolitan_administration' => ['province'],
+                'amphoe' => ['amphoe'],
+                'khet' => ['amphoe'],
                 default => [],
             };
 
@@ -91,7 +103,11 @@ class ThailandGeographyProvider implements CountryAddressAreaMetadataProvider, C
     /** @return array<string, list<array{name: string, name_type?: string, is_preferred?: bool}>> */
     public function areaNames(AddressCountry $country): array
     {
-        return [];
+        return [
+            'th:metropolitan_administration:pattaya' => [
+                ['name' => 'Phatthaya', 'name_type' => 'alternative'],
+            ],
+        ];
     }
 
     /** @return array<string, list<array{parent_source_id: string, relationship_type: string, hierarchy_type: string}>> */
@@ -206,6 +222,7 @@ class ThailandGeographyProvider implements CountryAddressAreaMetadataProvider, C
             '94' => '94',
             '95' => '95',
             '96' => '96',
+            'S' => 'S',
         ];
 
         return array_map(
@@ -302,6 +319,7 @@ class ThailandGeographyProvider implements CountryAddressAreaMetadataProvider, C
             ['name' => 'Pattani', 'code' => '94'],
             ['name' => 'Yala', 'code' => '95'],
             ['name' => 'Narathiwat', 'code' => '96'],
+            ['name' => 'Pattaya', 'code' => 'S'],
         ];
     }
 }

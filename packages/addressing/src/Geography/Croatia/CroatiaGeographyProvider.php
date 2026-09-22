@@ -62,6 +62,16 @@ class CroatiaGeographyProvider implements CountryAddressAreaMetadataProvider, Co
                         areaTypes: ['county'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'municipality',
+                        label: 'Municipality / Town',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['municipality', 'town'],
+                        areaLevels: [2],
+                        parentKey: 'county',
+                        assignmentRole: 'municipality',
+                    ),
                 ],
             ),
         ];
@@ -75,6 +85,8 @@ class CroatiaGeographyProvider implements CountryAddressAreaMetadataProvider, Co
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
                 'county' => ['county'],
+                'municipality' => ['municipality'],
+                'town' => ['municipality'],
                 default => [],
             };
 

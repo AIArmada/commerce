@@ -62,6 +62,16 @@ class FrenchGuianaGeographyProvider implements CountryAddressAreaMetadataProvide
                         areaTypes: ['overseas_region'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'commune',
+                        label: 'Commune',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['commune'],
+                        areaLevels: [2],
+                        parentKey: 'overseas_region',
+                        assignmentRole: 'commune',
+                    ),
                 ],
             ),
         ];
@@ -75,6 +85,7 @@ class FrenchGuianaGeographyProvider implements CountryAddressAreaMetadataProvide
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
                 'overseas_region' => ['overseas_region'],
+                'commune' => ['commune'],
                 default => [],
             };
 

@@ -34,3 +34,15 @@ it('exposes the corrected Jonglei state slug and name', function (): void {
         ->and($areas->get('ss:state:jonglei')->type)->toBe('state')
         ->and($areas->has('ss:state:jonglei-state'))->toBeFalse();
 });
+
+it('ships 88 countys under states with parent links', function (): void {
+    $areas = app(SouthSudanGeographyProvider::class)->addressAreaSource()->areas()->collect();
+    $byId = $areas->keyBy->sourceId;
+    $l2 = $areas->where('type', 'county');
+
+    expect($l2)->toHaveCount(88)
+        ->and($l2->pluck('parentSourceId')->every(fn ($p) => $byId->has($p)))->toBeTrue()
+        ->and($byId->get('ss:county:wau')->name)->toBe('Wau')
+        ->and($byId->get('ss:county:jur-river')->name)->toBe('Jur River')
+        ->and($byId->get('ss:county:pibor')->name)->toBe('Pibor');
+});

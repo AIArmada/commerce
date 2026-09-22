@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Geography\Bolivia\BoliviaAddressFormatter;
+use AIArmada\Addressing\Geography\Bolivia\BoliviaGeographyProvider;
 
 it('formats Bolivian addresses without a postcode system', function (): void {
     $formatted = app(BoliviaAddressFormatter::class)->format(AddressData::from([
@@ -22,4 +23,15 @@ it('formats Bolivian box addresses with the casilla in the street line', functio
     ]));
 
     expect($formatted)->toBe("Casilla Postal 1234\nLA PAZ\nBolivia");
+});
+
+it('ships 112 provinces under departments with parent links', function (): void {
+    $areas = app(BoliviaGeographyProvider::class)->addressAreaSource()->areas()->collect();
+    $byId = $areas->keyBy->sourceId;
+    $l2 = $areas->where('type', 'province');
+
+    expect($l2)->toHaveCount(112)
+        ->and($l2->pluck('parentSourceId')->every(fn ($p) => $byId->has($p)))->toBeTrue()
+        ->and($byId->get('bo:province:cercado')->name)->toBe('Cercado')
+        ->and($byId->get('bo:province:andres-ibanez')->name)->toBe('Andrés Ibáñez');
 });

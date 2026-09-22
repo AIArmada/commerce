@@ -38,3 +38,15 @@ it('spells the comarcas Ngäbe-Buglé and Guna Yala', function (): void {
         ->and($areas->has('pa:indigenous_region:ngobe-bugle-comarca'))->toBeFalse()
         ->and($areas->has('pa:indigenous_region:guna'))->toBeFalse();
 });
+
+it('ships 81 districts under provinces with parent links', function (): void {
+    $areas = app(PanamaGeographyProvider::class)->addressAreaSource()->areas()->collect();
+    $byId = $areas->keyBy->sourceId;
+    $l2 = $areas->where('type', 'district');
+
+    expect($l2)->toHaveCount(81)
+        ->and($l2->pluck('parentSourceId')->every(fn ($p) => $byId->has($p)))->toBeTrue()
+        ->and($byId->get('pa:district:panama')->name)->toBe('Panamá')
+        ->and($byId->get('pa:district:veraguas:santa-fe')->name)->toBe('Santa Fe')
+        ->and($byId->get('pa:district:david')->name)->toBe('David');
+});

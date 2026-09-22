@@ -62,6 +62,16 @@ class KazakhstanGeographyProvider implements CountryAddressAreaMetadataProvider,
                         areaTypes: ['region', 'city'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'district',
+                        label: 'District',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['district'],
+                        areaLevels: [2],
+                        parentKey: 'region',
+                        assignmentRole: 'district',
+                    ),
                 ],
             ),
         ];
@@ -76,6 +86,7 @@ class KazakhstanGeographyProvider implements CountryAddressAreaMetadataProvider,
             $areaRoles = match ($area->type) {
                 'region' => ['region'],
                 'city' => ['city'],
+                'district' => ['district'],
                 default => [],
             };
 

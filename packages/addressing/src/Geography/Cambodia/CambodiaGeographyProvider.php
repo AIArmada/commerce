@@ -62,6 +62,16 @@ class CambodiaGeographyProvider implements CountryAddressAreaMetadataProvider, C
                         areaTypes: ['province', 'municipality'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'district',
+                        label: 'District / Municipality / Section',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['district', 'municipality', 'section'],
+                        areaLevels: [2],
+                        parentKey: 'province',
+                        assignmentRole: 'district',
+                    ),
                 ],
             ),
         ];
@@ -76,6 +86,9 @@ class CambodiaGeographyProvider implements CountryAddressAreaMetadataProvider, C
             $areaRoles = match ($area->type) {
                 'province' => ['province'],
                 'municipality' => ['province'],
+                'district' => ['district'],
+                'municipality' => ['district'],
+                'section' => ['district'],
                 default => [],
             };
 

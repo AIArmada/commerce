@@ -62,6 +62,16 @@ class SamoaGeographyProvider implements CountryAddressAreaMetadataProvider, Coun
                         areaTypes: ['district'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'village',
+                        label: 'Village',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['village'],
+                        areaLevels: [2],
+                        parentKey: 'district',
+                        assignmentRole: 'village',
+                    ),
                 ],
             ),
         ];
@@ -75,6 +85,7 @@ class SamoaGeographyProvider implements CountryAddressAreaMetadataProvider, Coun
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
                 'district' => ['district'],
+                'village' => ['village'],
                 default => [],
             };
 
@@ -163,7 +174,7 @@ class SamoaGeographyProvider implements CountryAddressAreaMetadataProvider, Coun
             ['name' => 'Atua', 'code' => 'AT'],
             ['name' => 'Faʻasaleleaga', 'code' => 'FA'],
             ['name' => 'Gagaʻemauga', 'code' => 'GE'],
-            ['name' => 'Gagaifomauga', 'code' => 'GI'],
+            ['name' => 'Gagaʻifomauga', 'code' => 'GI'],
             ['name' => 'Palauli', 'code' => 'PA'],
             ['name' => 'Satupaʻitea', 'code' => 'SA'],
             ['name' => 'Tuamasaga', 'code' => 'TU'],

@@ -141,3 +141,77 @@ it('falls back to the static label without scope and null when unknown', functio
         ->and($resolver->levelLabel('MY', 'nope'))->toBeNull()
         ->and($resolver->levelLabel('XX', 'administrative_district'))->toBeNull();
 });
+
+it('labels Indonesian types with national and special-autonomy terms', function (): void {
+    $country = AddressCountry::query()->where('iso2', 'ID')->firstOrFail();
+
+    $makeState = static fn (string $name, string $code): State => State::query()->create([
+        'country_id' => $country->id,
+        'name' => $name,
+        'label' => $name,
+        'code' => $code,
+    ]);
+
+    $makeArea = static fn (string $type, int $level, string $name): AddressArea => AddressArea::query()->create([
+        'country_id' => $country->id,
+        'country_code' => 'ID',
+        'type' => $type,
+        'level' => $level,
+        'name' => $name,
+        'slug' => Str::slug($name),
+        'source' => 'test',
+        'source_id' => Str::uuid()->toString(),
+    ]);
+
+    $link = static function (AddressArea $parent, AddressArea $child): void {
+        AddressAreaRelationship::query()->create([
+            'parent_address_area_id' => $parent->id,
+            'child_address_area_id' => $child->id,
+            'relationship_type' => 'contains',
+            'hierarchy_type' => 'administrative',
+        ]);
+    };
+
+    // Builds province → regency → district → village (+urban) and returns
+    // [stateId, regencyId, districtId].
+    $chain = static function (string $stateName, string $stateCode, bool $withUrban = true) use ($makeState, $makeArea, $link): array {
+        $state = $makeState($stateName, $stateCode);
+        $province = $makeArea('province', 1, $stateName);
+        AddressAreaStateLink::query()->create(['address_area_id' => $province->id, 'state_id' => $state->id]);
+        $regency = $makeArea('regency', 2, $stateName . ' Regency');
+        $link($province, $regency);
+        $district = $makeArea('district', 3, $stateName . ' District');
+        $link($regency, $district);
+        $link($district, $makeArea('village', 4, $stateName . ' Village'));
+
+        if ($withUrban) {
+            $link($district, $makeArea('urban_village', 4, $stateName . ' Urban'));
+        }
+
+        return [(string) $state->id, (string) $regency->id, (string) $district->id];
+    };
+
+    $resolver = app(CountryAddressProfileResolver::class);
+
+    [$jbState, $jbRegency, $jbDistrict] = $chain('Jawa Barat', 'JB');
+    [$sbState, , $sbDistrict] = $chain('Sumatera Barat', 'SB', false);
+    [$acState, , $acDistrict] = $chain('Aceh', 'AC');
+    [$paState, $paRegency, $paDistrict] = $chain('Papua', 'PA', false);
+    [$yoState, $yoRegency, $yoDistrict] = $chain('DI Yogyakarta', 'YO', false);
+
+    expect($resolver->levelLabel('ID', 'district', $jbState, ['regency' => $jbRegency]))->toBe('Kecamatan')
+        ->and($resolver->levelLabel('ID', 'village', $jbState, ['district' => $jbDistrict]))->toBe('Desa / Kelurahan')
+        ->and($resolver->levelLabel('ID', 'village', $sbState, ['district' => $sbDistrict]))->toBe('Nagari')
+        ->and($resolver->levelLabel('ID', 'village', $acState, ['district' => $acDistrict]))->toBe('Gampong')
+        ->and($resolver->levelLabel('ID', 'district', $paState, ['regency' => $paRegency]))->toBe('Distrik')
+        ->and($resolver->levelLabel('ID', 'village', $paState, ['district' => $paDistrict]))->toBe('Kampung')
+        ->and($resolver->levelLabel('ID', 'district', $yoState, ['regency' => $yoRegency]))->toBe('Kapanewon / Kemantren')
+        ->and($resolver->levelLabel('ID', 'village', $yoState, ['district' => $yoDistrict]))->toBe('Kalurahan');
+});
+
+it('falls back to Indonesian level labels without a state scope', function (): void {
+    $resolver = app(CountryAddressProfileResolver::class);
+
+    expect($resolver->levelLabel('ID', 'district'))->toBe('Kecamatan')
+        ->and($resolver->levelLabel('ID', 'village'))->toBe('Desa / Kelurahan');
+});

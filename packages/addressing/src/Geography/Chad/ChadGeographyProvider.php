@@ -62,6 +62,16 @@ class ChadGeographyProvider implements CountryAddressAreaMetadataProvider, Count
                         areaTypes: ['province'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'department',
+                        label: 'Department',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['department'],
+                        areaLevels: [2],
+                        parentKey: 'province',
+                        assignmentRole: 'department',
+                    ),
                 ],
             ),
         ];
@@ -75,6 +85,7 @@ class ChadGeographyProvider implements CountryAddressAreaMetadataProvider, Count
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
                 'province' => ['province'],
+                'department' => ['department'],
                 default => [],
             };
 

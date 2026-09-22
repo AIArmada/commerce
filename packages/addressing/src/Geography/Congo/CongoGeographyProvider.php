@@ -62,6 +62,16 @@ class CongoGeographyProvider implements CountryAddressAreaMetadataProvider, Coun
                         areaTypes: ['department'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'district',
+                        label: 'District',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['district'],
+                        areaLevels: [2],
+                        parentKey: 'department',
+                        assignmentRole: 'district',
+                    ),
                 ],
             ),
         ];
@@ -75,6 +85,7 @@ class CongoGeographyProvider implements CountryAddressAreaMetadataProvider, Coun
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
                 'department' => ['department'],
+                'district' => ['district'],
                 default => [],
             };
 

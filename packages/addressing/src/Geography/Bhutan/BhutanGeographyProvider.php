@@ -62,6 +62,16 @@ class BhutanGeographyProvider implements CountryAddressAreaMetadataProvider, Cou
                         areaTypes: ['district'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'gewog',
+                        label: 'Gewog',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['gewog'],
+                        areaLevels: [2],
+                        parentKey: 'district',
+                        assignmentRole: 'gewog',
+                    ),
                 ],
             ),
         ];
@@ -75,6 +85,7 @@ class BhutanGeographyProvider implements CountryAddressAreaMetadataProvider, Cou
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
                 'district' => ['district'],
+                'gewog' => ['gewog'],
                 default => [],
             };
 

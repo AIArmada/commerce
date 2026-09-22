@@ -37,3 +37,15 @@ it('names the W federal dependency Dependencias Federales', function (): void {
     expect($area->name)->toBe('Dependencias Federales')
         ->and($area->code)->toBe('W');
 });
+
+it('ships 335 municipalitys under states with parent links', function (): void {
+    $areas = app(VenezuelaGeographyProvider::class)->addressAreaSource()->areas()->collect();
+    $byId = $areas->keyBy->sourceId;
+    $l2 = $areas->where('type', 'municipality');
+
+    expect($l2)->toHaveCount(335)
+        ->and($l2->pluck('parentSourceId')->every(fn ($p) => $byId->has($p)))->toBeTrue()
+        ->and($byId->get('ve:municipality:chacao')->name)->toBe('Chacao')
+        ->and($byId->get('ve:municipality:baruta')->name)->toBe('Baruta')
+        ->and($byId->get('ve:municipality:libertador-bolivarian')->name)->toBe('Libertador');
+});

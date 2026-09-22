@@ -33,6 +33,6 @@ it('exposes corrected Slovenian municipality names', function (): void {
         ->and($areas->get('si:municipality:dobrovapolhov-gradec')->code)->toBe('021')
         ->and($areas->get('si:municipality:miklavz-na-dravskem-polju')->name)->toBe('Miklavž na Dravskem polju')
         ->and($areas->get('si:municipality:miklavz-na-dravskem-polju')->code)->toBe('169')
-        ->and($areas->get('si:municipality:sveti-jurij-v-slovenskih-goricah')->name)->toBe('Sveti Jurij v slovenskih goricah')
+        ->and($areas->get('si:municipality:sveti-jurij-v-slovenskih-goricah')->name)->toBe('Sveti Jurij v Slovenskih goricah')
         ->and($areas->get('si:municipality:sveti-jurij-v-slovenskih-goricah')->type)->toBe('municipality');
 });

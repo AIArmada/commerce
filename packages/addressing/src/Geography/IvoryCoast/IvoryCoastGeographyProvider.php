@@ -62,6 +62,16 @@ class IvoryCoastGeographyProvider implements CountryAddressAreaMetadataProvider,
                         areaTypes: ['district', 'autonomous_district'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'region',
+                        label: 'Region',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['region'],
+                        areaLevels: [2],
+                        parentKey: 'district',
+                        assignmentRole: 'region',
+                    ),
                 ],
             ),
         ];
@@ -76,6 +86,7 @@ class IvoryCoastGeographyProvider implements CountryAddressAreaMetadataProvider,
             $areaRoles = match ($area->type) {
                 'district' => ['district'],
                 'autonomous_district' => ['autonomous_district'],
+                'region' => ['region'],
                 default => [],
             };
 

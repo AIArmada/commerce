@@ -70,6 +70,16 @@ class EthiopiaGeographyProvider implements CountryAddressAreaMetadataProvider, C
                         areaTypes: ['region', 'city'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'zone',
+                        label: 'Zone / Woreda',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['zone', 'woreda'],
+                        areaLevels: [2],
+                        parentKey: 'region',
+                        assignmentRole: 'zone',
+                    ),
                 ],
             ),
         ];
@@ -84,6 +94,8 @@ class EthiopiaGeographyProvider implements CountryAddressAreaMetadataProvider, C
             $areaRoles = match ($area->type) {
                 'region' => ['region'],
                 'city' => ['region'],
+                'zone' => ['zone'],
+                'woreda' => ['zone'],
                 default => [],
             };
 

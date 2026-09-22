@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Geography\Guyana\GuyanaAddressFormatter;
+use AIArmada\Addressing\Geography\Guyana\GuyanaGeographyProvider;
 
 it('formats Guyanese addresses with the postcode below the locality', function (): void {
     $formatted = app(GuyanaAddressFormatter::class)->format(AddressData::from([
@@ -26,4 +27,16 @@ it('formats Guyanese East Coast addresses with the district postcode', function 
     ]));
 
     expect($formatted)->toBe("Lot 12 Public Road\nEast Coast Demerara\n4212501\nGuyana");
+});
+
+it('ships 76 towns/councils under regions with parent links', function (): void {
+    $areas = app(GuyanaGeographyProvider::class)->addressAreaSource()->areas()->collect();
+    $byId = $areas->keyBy->sourceId;
+    $l2 = $areas->whereIn('type', ['town', 'neighbourhood_democratic_council']);
+
+    expect($l2)->toHaveCount(76)
+        ->and($l2->pluck('parentSourceId')->every(fn ($p) => $byId->has($p)))->toBeTrue()
+        ->and($byId->get('gy:town:georgetown')->name)->toBe('Georgetown')
+        ->and($byId->get('gy:town:linden')->name)->toBe('Linden')
+        ->and($byId->get('gy:neighbourhood_democratic_council:wakenaam')->name)->toBe('Wakenaam');
 });

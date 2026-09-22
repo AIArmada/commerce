@@ -40,3 +40,15 @@ it('exposes corrected Senegalese region slugs and names', function (): void {
         ->and($areas->has('sn:region:tambacounda-region'))->toBeFalse()
         ->and($areas->has('sn:region:thies-region'))->toBeFalse();
 });
+
+it('ships 46 departments under regions with parent links', function (): void {
+    $areas = app(SenegalGeographyProvider::class)->addressAreaSource()->areas()->collect();
+    $byId = $areas->keyBy->sourceId;
+    $l2 = $areas->where('type', 'department');
+
+    expect($l2)->toHaveCount(46)
+        ->and($l2->pluck('parentSourceId')->every(fn ($p) => $byId->has($p)))->toBeTrue()
+        ->and($byId->get('sn:department:dakar')->name)->toBe('Dakar')
+        ->and($byId->get('sn:department:keur-massar')->name)->toBe('Keur Massar')
+        ->and($byId->get('sn:department:dagana')->name)->toBe('Dagana');
+});

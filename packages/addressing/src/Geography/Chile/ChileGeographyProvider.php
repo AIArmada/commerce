@@ -62,6 +62,16 @@ class ChileGeographyProvider implements CountryAddressAreaMetadataProvider, Coun
                         areaTypes: ['region'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'province',
+                        label: 'Province',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['province'],
+                        areaLevels: [2],
+                        parentKey: 'region',
+                        assignmentRole: 'province',
+                    ),
                 ],
             ),
         ];
@@ -75,6 +85,7 @@ class ChileGeographyProvider implements CountryAddressAreaMetadataProvider, Coun
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
                 'region' => ['region'],
+                'province' => ['province'],
                 default => [],
             };
 

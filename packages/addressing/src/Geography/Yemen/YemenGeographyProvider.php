@@ -62,6 +62,16 @@ class YemenGeographyProvider implements CountryAddressAreaMetadataProvider, Coun
                         areaTypes: ['governorate', 'municipality'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'district',
+                        label: 'District',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['district'],
+                        areaLevels: [2],
+                        parentKey: 'governorate',
+                        assignmentRole: 'district',
+                    ),
                 ],
             ),
         ];
@@ -76,6 +86,7 @@ class YemenGeographyProvider implements CountryAddressAreaMetadataProvider, Coun
             $areaRoles = match ($area->type) {
                 'governorate' => ['governorate'],
                 'municipality' => ['municipality'],
+                'district' => ['district'],
                 default => [],
             };
 

@@ -62,6 +62,16 @@ class MartiniqueGeographyProvider implements CountryAddressAreaMetadataProvider,
                         areaTypes: ['district'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'commune',
+                        label: 'Commune',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['commune'],
+                        areaLevels: [2],
+                        parentKey: 'district',
+                        assignmentRole: 'commune',
+                    ),
                 ],
             ),
         ];
@@ -75,6 +85,7 @@ class MartiniqueGeographyProvider implements CountryAddressAreaMetadataProvider,
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
                 'district' => ['district'],
+                'commune' => ['commune'],
                 default => [],
             };
 

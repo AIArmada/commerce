@@ -57,3 +57,15 @@ it('exposes corrected Azerbaijani district slugs and names', function (): void {
         ->and($areas->has('az:district:ismailli'))->toBeFalse()
         ->and($areas->has('az:district:khojali'))->toBeFalse();
 });
+
+it('ships 685 local municipalities under districts and cities', function (): void {
+    $areas = app(AzerbaijanGeographyProvider::class)->addressAreaSource()->areas()->collect();
+    $byId = $areas->keyBy->sourceId;
+    $l2 = $areas->where('level', 2);
+
+    expect($l2)->toHaveCount(685)
+        ->and($l2->pluck('parentSourceId')->every(fn ($p) => $byId->has($p)))->toBeTrue()
+        ->and($byId->get('az:local_municipality:kis')->parentSourceId)->toBe('az:district:shaki')
+        ->and($byId->get('az:local_municipality:asagi-quscu')->parentSourceId)->toBe('az:district:tovuz')
+        ->and($byId->get('az:local_municipality:seki')->parentSourceId)->toBe('az:municipality:shaki');
+});

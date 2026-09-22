@@ -62,6 +62,16 @@ class GambiaGeographyProvider implements CountryAddressAreaMetadataProvider, Cou
                         areaTypes: ['division', 'city'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'district',
+                        label: 'District',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['district'],
+                        areaLevels: [2],
+                        parentKey: 'division',
+                        assignmentRole: 'district',
+                    ),
                 ],
             ),
         ];
@@ -76,6 +86,7 @@ class GambiaGeographyProvider implements CountryAddressAreaMetadataProvider, Cou
             $areaRoles = match ($area->type) {
                 'division' => ['division'],
                 'city' => ['city'],
+                'district' => ['district'],
                 default => [],
             };
 

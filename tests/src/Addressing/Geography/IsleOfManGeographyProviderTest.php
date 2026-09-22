@@ -31,7 +31,19 @@ it('formats Manx street addresses with the sheading below the town', function ()
 it('types the sheadings with the singular type key', function (): void {
     $areas = app(IsleOfManGeographyProvider::class)->addressAreaSource()->areas()->collect()->keyBy->sourceId;
 
-    expect($areas)->toHaveCount(6)
+    expect($areas->where('type', 'sheading'))->toHaveCount(6)
         ->and($areas->where('type', 'sheadings'))->toBeEmpty()
         ->and($areas->get('im:sheading:ayre')->code)->toBe('01');
+});
+
+it('ships 21 local authorities under sheadings with parent links', function (): void {
+    $areas = app(IsleOfManGeographyProvider::class)->addressAreaSource()->areas()->collect();
+    $byId = $areas->keyBy->sourceId;
+    $l2 = $areas->whereIn('type', ['parish', 'town', 'district', 'village']);
+
+    expect($l2)->toHaveCount(21)
+        ->and($l2->pluck('parentSourceId')->every(fn ($p) => $byId->has($p)))->toBeTrue()
+        ->and($byId->get('im:town:douglas')->name)->toBe('Douglas')
+        ->and($byId->get('im:parish:braddan')->name)->toBe('Braddan')
+        ->and($byId->get('im:village:port-erin')->name)->toBe('Port Erin');
 });

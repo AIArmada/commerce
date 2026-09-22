@@ -183,7 +183,7 @@ class AngolaGeographyProvider implements CountryAddressAreaMetadataProvider, Cou
             ['name' => 'Cuanza Norte', 'code' => 'CNO'],
             ['name' => 'Cuando', 'code' => 'CUA'],
             ['name' => 'Cubango', 'code' => 'CUB'],
-            ['name' => 'Cuanza', 'code' => 'CUS'],
+            ['name' => 'Cuanza Sul', 'code' => 'CUS'],
             ['name' => 'Huambo', 'code' => 'HUA'],
             ['name' => 'Huíla', 'code' => 'HUI'],
             ['name' => 'Icolo e Bengo', 'code' => 'IEB'],

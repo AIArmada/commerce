@@ -62,6 +62,16 @@ class ArmeniaGeographyProvider implements CountryAddressAreaMetadataProvider, Co
                         areaTypes: ['region', 'city'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'municipality',
+                        label: 'Municipality / District',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['municipality', 'district'],
+                        areaLevels: [2],
+                        parentKey: 'region',
+                        assignmentRole: 'municipality',
+                    ),
                 ],
             ),
         ];
@@ -76,6 +86,8 @@ class ArmeniaGeographyProvider implements CountryAddressAreaMetadataProvider, Co
             $areaRoles = match ($area->type) {
                 'region' => ['region'],
                 'city' => ['city'],
+                'municipality' => ['municipality'],
+                'district' => ['municipality'],
                 default => [],
             };
 

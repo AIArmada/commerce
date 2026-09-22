@@ -62,6 +62,16 @@ class AustraliaGeographyProvider implements CountryAddressAreaMetadataProvider, 
                         areaTypes: ['state', 'territory'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'lga',
+                        label: 'Local Government Area',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['city', 'shire', 'town', 'region', 'borough', 'municipality', 'rural_city', 'council'],
+                        areaLevels: [2],
+                        parentKey: 'state',
+                        assignmentRole: 'lga',
+                    ),
                 ],
             ),
         ];
@@ -76,6 +86,7 @@ class AustraliaGeographyProvider implements CountryAddressAreaMetadataProvider, 
             $areaRoles = match ($area->type) {
                 'state' => ['state'],
                 'territory' => ['state'],
+                'city', 'shire', 'town', 'region', 'borough', 'municipality', 'rural_city', 'council' => ['lga'],
                 default => [],
             };
 

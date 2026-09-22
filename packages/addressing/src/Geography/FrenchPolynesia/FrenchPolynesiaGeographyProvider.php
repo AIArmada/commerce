@@ -62,6 +62,16 @@ class FrenchPolynesiaGeographyProvider implements CountryAddressAreaMetadataProv
                         areaTypes: ['division'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'commune',
+                        label: 'Commune',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['commune'],
+                        areaLevels: [2],
+                        parentKey: 'division',
+                        assignmentRole: 'commune',
+                    ),
                 ],
             ),
         ];
@@ -75,6 +85,7 @@ class FrenchPolynesiaGeographyProvider implements CountryAddressAreaMetadataProv
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
                 'division' => ['division'],
+                'commune' => ['commune'],
                 default => [],
             };
 

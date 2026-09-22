@@ -70,6 +70,16 @@ class IraqGeographyProvider implements CountryAddressAreaMetadataProvider, Count
                         areaTypes: ['governorate'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'district',
+                        label: 'District',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['district'],
+                        areaLevels: [2],
+                        parentKey: 'governorate',
+                        assignmentRole: 'district',
+                    ),
                 ],
             ),
         ];
@@ -83,6 +93,7 @@ class IraqGeographyProvider implements CountryAddressAreaMetadataProvider, Count
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
                 'governorate' => ['governorate'],
+                'district' => ['district'],
                 default => [],
             };
 

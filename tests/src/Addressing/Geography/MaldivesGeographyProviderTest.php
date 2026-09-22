@@ -31,7 +31,7 @@ it('formats Maldivian island addresses with the atoll below the postcode line', 
 it('ships 18 atolls and 5 cities with Malé typed as a city', function (): void {
     $areas = app(MaldivesGeographyProvider::class)->addressAreaSource()->areas()->collect()->keyBy->sourceId;
 
-    expect($areas)->toHaveCount(23)
+    expect($areas->where('level', 1))->toHaveCount(23)
         ->and($areas->where('type', 'atoll'))->toHaveCount(18)
         ->and($areas->where('type', 'city'))->toHaveCount(5)
         ->and($areas->get('mv:city:male')->code)->toBe('MLE')
@@ -40,4 +40,16 @@ it('ships 18 atolls and 5 cities with Malé typed as a city', function (): void 
         ->and($areas->get('mv:city:thinadhoo')->code)->toBe('THD')
         ->and($areas->has('mv:atoll:male'))->toBeFalse()
         ->and($areas->has('mv:atoll:gnaviyani'))->toBeFalse();
+});
+
+it('ships 192 islands under atolls with parent links', function (): void {
+    $areas = app(MaldivesGeographyProvider::class)->addressAreaSource()->areas()->collect();
+    $byId = $areas->keyBy->sourceId;
+    $l2 = $areas->where('type', 'island');
+
+    expect($l2)->toHaveCount(192)
+        ->and($l2->pluck('parentSourceId')->every(fn ($p) => $byId->has($p)))->toBeTrue()
+        ->and($byId->get('mv:island:thulusdhoo')->name)->toBe('Thulusdhoo')
+        ->and($byId->get('mv:island:hithadhoo')->name)->toBe('Hithadhoo')
+        ->and($byId->get('mv:island:fuvahmulah')->name)->toBe('Fuvahmulah');
 });

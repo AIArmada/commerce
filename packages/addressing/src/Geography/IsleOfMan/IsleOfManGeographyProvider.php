@@ -62,6 +62,16 @@ class IsleOfManGeographyProvider implements CountryAddressAreaMetadataProvider, 
                         areaTypes: ['sheading'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'local_authority',
+                        label: 'Parish / Town / District / Village',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['parish', 'town', 'district', 'village'],
+                        areaLevels: [2],
+                        parentKey: 'sheading',
+                        assignmentRole: 'local_authority',
+                    ),
                 ],
             ),
         ];
@@ -75,6 +85,10 @@ class IsleOfManGeographyProvider implements CountryAddressAreaMetadataProvider, 
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
                 'sheading' => ['sheading'],
+                'parish' => ['local_authority'],
+                'town' => ['local_authority'],
+                'district' => ['local_authority'],
+                'village' => ['local_authority'],
                 default => [],
             };
 

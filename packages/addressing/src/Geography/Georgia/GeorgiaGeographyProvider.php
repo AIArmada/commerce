@@ -62,6 +62,16 @@ class GeorgiaGeographyProvider implements CountryAddressAreaMetadataProvider, Co
                         areaTypes: ['region', 'autonomous_republic', 'city'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'municipality',
+                        label: 'Municipality / District / City',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['municipality', 'district', 'city'],
+                        areaLevels: [2],
+                        parentKey: 'region',
+                        assignmentRole: 'municipality',
+                    ),
                 ],
             ),
         ];
@@ -77,6 +87,9 @@ class GeorgiaGeographyProvider implements CountryAddressAreaMetadataProvider, Co
                 'region' => ['region'],
                 'autonomous_republic' => ['autonomous_republic'],
                 'city' => ['city'],
+                'municipality' => ['municipality'],
+                'district' => ['municipality'],
+                'city' => ['municipality'],
                 default => [],
             };
 

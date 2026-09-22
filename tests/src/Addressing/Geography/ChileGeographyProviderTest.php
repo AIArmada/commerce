@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Geography\Chile\ChileAddressFormatter;
+use AIArmada\Addressing\Geography\Chile\ChileGeographyProvider;
 
 it('formats Chilean addresses with the postcode left of the commune', function (): void {
     $formatted = app(ChileAddressFormatter::class)->format(AddressData::from([
@@ -25,4 +26,16 @@ it('formats Chilean Quilicura addresses with the block postcode', function (): v
     ]));
 
     expect($formatted)->toBe("Av. Ossa 10\n8720019 QUILICURA\nChile");
+});
+
+it('ships 56 provinces under regions with parent links', function (): void {
+    $areas = app(ChileGeographyProvider::class)->addressAreaSource()->areas()->collect();
+    $byId = $areas->keyBy->sourceId;
+    $l2 = $areas->where('type', 'province');
+
+    expect($l2)->toHaveCount(56)
+        ->and($l2->pluck('parentSourceId')->every(fn ($p) => $byId->has($p)))->toBeTrue()
+        ->and($byId->get('cl:province:santiago')->name)->toBe('Santiago')
+        ->and($byId->get('cl:province:valparaiso')->name)->toBe('Valparaíso')
+        ->and($byId->get('cl:province:concepcion')->name)->toBe('Concepción');
 });

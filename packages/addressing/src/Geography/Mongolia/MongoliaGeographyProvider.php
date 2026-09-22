@@ -69,6 +69,16 @@ class MongoliaGeographyProvider implements CountryAddressAreaMetadataProvider, C
                         areaTypes: ['province', 'capital_city'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'district',
+                        label: 'District',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['district'],
+                        areaLevels: [2],
+                        parentKey: 'province',
+                        assignmentRole: 'district',
+                    ),
                 ],
             ),
         ];
@@ -83,6 +93,7 @@ class MongoliaGeographyProvider implements CountryAddressAreaMetadataProvider, C
             $areaRoles = match ($area->type) {
                 'province' => ['province'],
                 'capital_city' => ['capital_city'],
+                'district' => ['district'],
                 default => [],
             };
 

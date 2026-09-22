@@ -42,3 +42,14 @@ it('types Asunción as a capital district with a department role', function (): 
 
     expect($roles['py:capital_district:asuncion'][0]['role'])->toBe('department');
 });
+
+it('ships 263 districts under departments with parent links', function (): void {
+    $areas = app(ParaguayGeographyProvider::class)->addressAreaSource()->areas()->collect();
+    $byId = $areas->keyBy->sourceId;
+    $l2 = $areas->where('type', 'district');
+
+    expect($l2)->toHaveCount(263)
+        ->and($l2->pluck('parentSourceId')->every(fn ($p) => $byId->has($p)))->toBeTrue()
+        ->and($byId->get('py:district:ciudad-del-este')->name)->toBe('Ciudad del Este')
+        ->and($byId->get('py:district:asuncion')->name)->toBe('Asunción');
+});

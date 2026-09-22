@@ -62,6 +62,16 @@ class GabonGeographyProvider implements CountryAddressAreaMetadataProvider, Coun
                         areaTypes: ['province'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'department',
+                        label: 'Department',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['department'],
+                        areaLevels: [2],
+                        parentKey: 'province',
+                        assignmentRole: 'department',
+                    ),
                 ],
             ),
         ];
@@ -75,6 +85,7 @@ class GabonGeographyProvider implements CountryAddressAreaMetadataProvider, Coun
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
                 'province' => ['province'],
+                'department' => ['department'],
                 default => [],
             };
 

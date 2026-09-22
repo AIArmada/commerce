@@ -62,6 +62,16 @@ class PanamaGeographyProvider implements CountryAddressAreaMetadataProvider, Cou
                         areaTypes: ['province', 'indigenous_region'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'district',
+                        label: 'District',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['district'],
+                        areaLevels: [2],
+                        parentKey: 'province',
+                        assignmentRole: 'district',
+                    ),
                 ],
             ),
         ];
@@ -76,6 +86,7 @@ class PanamaGeographyProvider implements CountryAddressAreaMetadataProvider, Cou
             $areaRoles = match ($area->type) {
                 'province' => ['province'],
                 'indigenous_region' => ['indigenous_region'],
+                'district' => ['district'],
                 default => [],
             };
 

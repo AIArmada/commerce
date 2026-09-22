@@ -62,6 +62,16 @@ class LaosGeographyProvider implements CountryAddressAreaMetadataProvider, Count
                         areaTypes: ['province', 'prefecture'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'district',
+                        label: 'District',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['district'],
+                        areaLevels: [2],
+                        parentKey: 'province',
+                        assignmentRole: 'district',
+                    ),
                 ],
             ),
         ];
@@ -76,6 +86,7 @@ class LaosGeographyProvider implements CountryAddressAreaMetadataProvider, Count
             $areaRoles = match ($area->type) {
                 'province' => ['province'],
                 'prefecture' => ['province'],
+                'district' => ['district'],
                 default => [],
             };
 

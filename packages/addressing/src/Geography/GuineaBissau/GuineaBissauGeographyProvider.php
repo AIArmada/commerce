@@ -62,6 +62,16 @@ class GuineaBissauGeographyProvider implements CountryAddressAreaMetadataProvide
                         areaTypes: ['province', 'region', 'autonomous_sector'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'sector',
+                        label: 'Sector',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['sector'],
+                        areaLevels: [2],
+                        parentKey: 'province',
+                        assignmentRole: 'sector',
+                    ),
                 ],
             ),
         ];
@@ -77,6 +87,7 @@ class GuineaBissauGeographyProvider implements CountryAddressAreaMetadataProvide
                 'province' => ['province'],
                 'region' => ['region'],
                 'autonomous_sector' => ['autonomous_sector'],
+                'sector' => ['sector'],
                 default => [],
             };
 

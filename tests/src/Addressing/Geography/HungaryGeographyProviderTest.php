@@ -38,3 +38,15 @@ it('renames Csongrád County and types Zalaegerszeg as a city', function (): voi
 
     expect($names['hu:county:csongrad-csanad-county'][0]['name'])->toBe('Csongrád County');
 });
+
+it('ships 197 districts under countys with parent links', function (): void {
+    $areas = app(HungaryGeographyProvider::class)->addressAreaSource()->areas()->collect();
+    $byId = $areas->keyBy->sourceId;
+    $l2 = $areas->where('type', 'district');
+
+    expect($l2)->toHaveCount(197)
+        ->and($l2->pluck('parentSourceId')->every(fn ($p) => $byId->has($p)))->toBeTrue()
+        ->and($byId->get('hu:district:kispest')->name)->toBe('Kispest')
+        ->and($byId->get('hu:district:varkerulet')->name)->toBe('Várkerület')
+        ->and($byId->get('hu:district:debrecen')->name)->toBe('Debrecen');
+});

@@ -62,6 +62,16 @@ class NetherlandsGeographyProvider implements CountryAddressAreaMetadataProvider
                         areaTypes: ['province'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'municipality',
+                        label: 'Municipality',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['municipality'],
+                        areaLevels: [2],
+                        parentKey: 'province',
+                        assignmentRole: 'municipality',
+                    ),
                 ],
             ),
         ];
@@ -75,6 +85,7 @@ class NetherlandsGeographyProvider implements CountryAddressAreaMetadataProvider
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
                 'province' => ['province'],
+                'municipality' => ['municipality'],
                 default => [],
             };
 

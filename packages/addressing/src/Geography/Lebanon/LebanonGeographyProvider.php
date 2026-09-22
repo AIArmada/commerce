@@ -62,6 +62,16 @@ class LebanonGeographyProvider implements CountryAddressAreaMetadataProvider, Co
                         areaTypes: ['governorate'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'caza',
+                        label: 'Caza',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['caza'],
+                        areaLevels: [2],
+                        parentKey: 'governorate',
+                        assignmentRole: 'caza',
+                    ),
                 ],
             ),
         ];
@@ -75,6 +85,7 @@ class LebanonGeographyProvider implements CountryAddressAreaMetadataProvider, Co
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
                 'governorate' => ['governorate'],
+                'caza' => ['caza'],
                 default => [],
             };
 
@@ -132,6 +143,7 @@ class LebanonGeographyProvider implements CountryAddressAreaMetadataProvider, Co
             'BH' => 'BH',
             'BA' => 'BA',
             'BI' => 'BI',
+            'KJ' => 'KJ',
             'JL' => 'JL',
             'NA' => 'NA',
             'AS' => 'AS',
@@ -159,6 +171,7 @@ class LebanonGeographyProvider implements CountryAddressAreaMetadataProvider, Co
             ['name' => 'Baalbek-Hermel', 'code' => 'BH'],
             ['name' => 'Beirut', 'code' => 'BA'],
             ['name' => 'Beqaa', 'code' => 'BI'],
+            ['name' => 'Keserwan-Jbeil', 'code' => 'KJ'],
             ['name' => 'Mount Lebanon', 'code' => 'JL'],
             ['name' => 'Nabatieh', 'code' => 'NA'],
             ['name' => 'North', 'code' => 'AS'],

@@ -62,6 +62,16 @@ class ColombiaGeographyProvider implements CountryAddressAreaMetadataProvider, C
                         areaTypes: ['department', 'capital_district'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'municipality',
+                        label: 'Municipality / Locality / Area',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['municipality', 'locality', 'non_municipalized_area'],
+                        areaLevels: [2],
+                        parentKey: 'department',
+                        assignmentRole: 'municipality',
+                    ),
                 ],
             ),
         ];
@@ -76,6 +86,9 @@ class ColombiaGeographyProvider implements CountryAddressAreaMetadataProvider, C
             $areaRoles = match ($area->type) {
                 'department' => ['department'],
                 'capital_district' => ['department'],
+                'municipality' => ['municipality'],
+                'locality' => ['municipality'],
+                'non_municipalized_area' => ['municipality'],
                 default => [],
             };
 

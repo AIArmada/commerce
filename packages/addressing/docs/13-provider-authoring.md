@@ -4,7 +4,7 @@ title: Provider Authoring
 
 # Provider Authoring
 
-This guide covers adding a new country geography provider to `aiarmada/addressing`. Follow it top to bottom; you should not need to read provider source for conventions. Copy `BrazilGeographyProvider` for a state-only country or `IndonesiaGeographyProvider` for a deep tree, then adapt. Copy `LaosAddressFormatter` for the UPU formatter.
+This guide covers adding a new country geography provider to `aiarmada/addressing`. Follow it top to bottom; you should not need to read provider source for conventions. Copy `MonacoGeographyProvider` for a state-only country or `IndonesiaGeographyProvider` for a deep tree, then adapt. Copy `LaosAddressFormatter` for the UPU formatter.
 
 The full pipeline is: **CSV → provider class → consumer registration → docs**. Each stage is required: data without a provider never seeds, a provider without registration is invisible (see [Provider registration](03-configuration.md)), and a provider without docs is a silent gap — see [05-country-data](05-country-data.md) and `resources/geography/README.md`.
 
@@ -184,11 +184,11 @@ When two rows share both name *and* type, the slug alone cannot disambiguate the
 
 ## Level keys for mixed flat tiers
 
-A single-level tier may legitimately carry two administrative tiers flat (Sri Lanka's provinces + districts, Burkina Faso's regions + provinces, Lithuania's counties + municipalities). Name the level `key` after the top tier (`province`, `region`, `county`), list every carried type in `areaTypes` top-tier-first, and join the labels with ` / `. Record the country as a depth-2 candidate in the [provider coverage registry](14-provider-coverage.md) so a future split has a starting point.
+A single-level tier may legitimately carry two administrative tiers flat (Azerbaijan's districts + municipalities + autonomous republic). Name the level `key` after the top tier (`province`, `region`, `county`), list every carried type in `areaTypes` top-tier-first, and join the labels with ` / `. Record the country as a depth-2 candidate in the [provider coverage registry](14-provider-coverage.md) so a future split has a starting point.
 
 ## State-only versus deep trees
 
-Ship state-only (one `state` level, one CSV level, identity mappings) unless consumer addressing genuinely needs sub-state granularity. Most bundled providers are state-only. Deep trees exist where addressing or hierarchy selection requires them: dual-hierarchy Malaysia and Singapore, depth-3 Indonesia, and depth-2 Algeria, Bangladesh, Brunei, India, Japan, Jordan, Morocco, Nigeria, Oman, Pakistan, Qatar, Spain, Türkiye, and Uzbekistan. When in doubt, start state-only — depth can be added later without breaking the state level, while shipping wrong depth forces consumers to carry it.
+Ship state-only (one `state` level, one CSV level, identity mappings) unless consumer addressing genuinely needs sub-state granularity. Deep trees exist where addressing or hierarchy selection requires them: dual-hierarchy Malaysia and Singapore, depth-4 Indonesia, and the depth-2 providers listed in the [provider coverage registry](14-provider-coverage.md). When in doubt, start state-only — depth can be added later without breaking the state level, while shipping wrong depth forces consumers to carry it.
 
 ## The numeric-key gotcha
 
@@ -264,7 +264,7 @@ Every assignment role and area type in use across the bundled providers, extract
 
 Level 1 is always state-kind (one level per country, `areaLevel: 1`), except Singapore, which has no states: its level-1 `postal_district` and `region` are `kind: 'area'`.
 
-State-level (kind `state`, level 1): administrative_region, arctic_region, area, atoll, autonomous_city, autonomous_community, autonomous_district, autonomous_oblast, autonomous_region, autonomous_republic, autonomous_sector, autonomous_territorial_unit, canton, capital_city, capital_district, capital_territory, city, city_municipality, city_with_county_rights, commune, county, department, dependency, district, district_municipality, districts_under_republic_administration, division, economic_prefecture, emirate, entity, federal_city, federal_district, geographical_region, governorate, island, krai, local_council, metropolitan_administration, metropolitan_city, municipality, nation, oblast, okrug, parish, popularate, prefecture, province, quarter, region, regional_unit, republic, rural_municipality, sheadings, special_administrative_region, special_city, special_municipality, special_self_governing_city, special_self_governing_province, state, state_city, territorial_unit, territory, town, union_territory, urban_community, urban_municipality, voivodeship, wilaya, wilayah_persekutuan.
+State-level (kind `state`, level 1): administrative_region, arctic_region, area, atoll, autonomous_city, autonomous_community, autonomous_district, autonomous_oblast, autonomous_region, autonomous_republic, autonomous_sector, autonomous_territorial_unit, canton, capital_city, capital_district, capital_territory, city, city_municipality, city_with_county_rights, commune, county, department, dependency, district, district_municipality, districts_under_republic_administration, division, economic_prefecture, emirate, entity, federal_city, federal_district, geographical_region, governorate, island, krai, local_council, metropolitan_administration, metropolitan_city, municipality, nation, oblast, okrug, parish, popularate, prefecture, province, quarter, region, regional_unit, republic, rural_municipality, sheading, special_administrative_region, special_city, special_municipality, special_self_governing_city, special_self_governing_province, state, state_city, territorial_unit, territory, town, union_territory, urban_community, urban_municipality, voivodeship, wilaya, wilayah_persekutuan.
 
 Sub-state (kind `area`, level 2+, plus SG level 1): area_council, city, daira, district, division, lga, liwa, locality, minor_district, mukim, municipality, planning_area, postal_district, postal_sector, precinct, prefecture, province, regency, region, subdistrict, tuman, wilayat, zone.
 

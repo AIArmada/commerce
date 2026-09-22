@@ -34,3 +34,15 @@ it('codes Ulaanbaatar as single digit 1 per ISO MN-1', function (): void {
 
     expect($areas->get('mn:capital_city:ulaanbaatar')->code)->toBe('1');
 });
+
+it('ships 339 districts under provinces with parent links', function (): void {
+    $areas = app(MongoliaGeographyProvider::class)->addressAreaSource()->areas()->collect();
+    $byId = $areas->keyBy->sourceId;
+    $l2 = $areas->where('type', 'district');
+
+    expect($l2)->toHaveCount(339)
+        ->and($l2->pluck('parentSourceId')->every(fn ($p) => $byId->has($p)))->toBeTrue()
+        ->and($byId->get('mn:district:kharkhorin')->name)->toBe('Kharkhorin')
+        ->and($byId->get('mn:district:dalanzadgad')->name)->toBe('Dalanzadgad')
+        ->and($byId->get('mn:district:ulaanbaatar:bayangol')->name)->toBe('Bayangol');
+});

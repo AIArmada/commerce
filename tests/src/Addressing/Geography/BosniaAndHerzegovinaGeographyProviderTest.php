@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Geography\BosniaAndHerzegovina\BosniaAndHerzegovinaAddressFormatter;
+use AIArmada\Addressing\Geography\BosniaAndHerzegovina\BosniaAndHerzegovinaGeographyProvider;
 
 it('formats Bosnian addresses with the postcode left of the locality', function (): void {
     $formatted = app(BosniaAndHerzegovinaAddressFormatter::class)->format(AddressData::from([
@@ -24,4 +25,16 @@ it('formats Bosnian rural addresses with the numberless street line', function (
     ]));
 
     expect($formatted)->toBe("Sapna BB\n75411 SAPNA\nBosnia and Herzegovina");
+});
+
+it('ships 143 municipalitys under entitys with parent links', function (): void {
+    $areas = app(BosniaAndHerzegovinaGeographyProvider::class)->addressAreaSource()->areas()->collect();
+    $byId = $areas->keyBy->sourceId;
+    $l2 = $areas->where('type', 'municipality');
+
+    expect($l2)->toHaveCount(143)
+        ->and($l2->pluck('parentSourceId')->every(fn ($p) => $byId->has($p)))->toBeTrue()
+        ->and($byId->get('ba:municipality:banja-luka')->name)->toBe('Banja Luka')
+        ->and($byId->get('ba:municipality:mostar')->name)->toBe('Mostar')
+        ->and($byId->get('ba:municipality:bihac')->name)->toBe('Bihać');
 });

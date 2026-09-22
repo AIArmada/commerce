@@ -62,6 +62,16 @@ class BulgariaGeographyProvider implements CountryAddressAreaMetadataProvider, C
                         areaTypes: ['district'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'municipality',
+                        label: 'Municipality',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['municipality'],
+                        areaLevels: [2],
+                        parentKey: 'district',
+                        assignmentRole: 'municipality',
+                    ),
                 ],
             ),
         ];
@@ -75,6 +85,7 @@ class BulgariaGeographyProvider implements CountryAddressAreaMetadataProvider, C
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
                 'district' => ['district'],
+                'municipality' => ['municipality'],
                 default => [],
             };
 

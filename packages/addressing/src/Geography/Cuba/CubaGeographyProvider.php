@@ -62,6 +62,16 @@ class CubaGeographyProvider implements CountryAddressAreaMetadataProvider, Count
                         areaTypes: ['province', 'special_municipality'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'municipality',
+                        label: 'Municipality',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['municipality'],
+                        areaLevels: [2],
+                        parentKey: 'province',
+                        assignmentRole: 'municipality',
+                    ),
                 ],
             ),
         ];
@@ -76,6 +86,7 @@ class CubaGeographyProvider implements CountryAddressAreaMetadataProvider, Count
             $areaRoles = match ($area->type) {
                 'province' => ['province'],
                 'special_municipality' => ['special_municipality'],
+                'municipality' => ['municipality'],
                 default => [],
             };
 

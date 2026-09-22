@@ -62,6 +62,16 @@ class DjiboutiGeographyProvider implements CountryAddressAreaMetadataProvider, C
                         areaTypes: ['region', 'city'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'subprefecture',
+                        label: 'Sub-prefecture',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['subprefecture'],
+                        areaLevels: [2],
+                        parentKey: 'region',
+                        assignmentRole: 'subprefecture',
+                    ),
                 ],
             ),
         ];
@@ -76,6 +86,7 @@ class DjiboutiGeographyProvider implements CountryAddressAreaMetadataProvider, C
             $areaRoles = match ($area->type) {
                 'region' => ['region'],
                 'city' => ['city'],
+                'subprefecture' => ['subprefecture'],
                 default => [],
             };
 

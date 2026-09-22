@@ -62,6 +62,16 @@ class BeninGeographyProvider implements CountryAddressAreaMetadataProvider, Coun
                         areaTypes: ['department'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'commune',
+                        label: 'Commune',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['commune'],
+                        areaLevels: [2],
+                        parentKey: 'department',
+                        assignmentRole: 'commune',
+                    ),
                 ],
             ),
         ];
@@ -75,6 +85,7 @@ class BeninGeographyProvider implements CountryAddressAreaMetadataProvider, Coun
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
                 'department' => ['department'],
+                'commune' => ['commune'],
                 default => [],
             };
 

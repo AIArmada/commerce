@@ -62,6 +62,16 @@ class HaitiGeographyProvider implements CountryAddressAreaMetadataProvider, Coun
                         areaTypes: ['department'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'arrondissement',
+                        label: 'Arrondissement',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['arrondissement'],
+                        areaLevels: [2],
+                        parentKey: 'department',
+                        assignmentRole: 'arrondissement',
+                    ),
                 ],
             ),
         ];
@@ -75,6 +85,7 @@ class HaitiGeographyProvider implements CountryAddressAreaMetadataProvider, Coun
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
                 'department' => ['department'],
+                'arrondissement' => ['arrondissement'],
                 default => [],
             };
 

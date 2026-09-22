@@ -62,6 +62,16 @@ class PeruGeographyProvider implements CountryAddressAreaMetadataProvider, Count
                         areaTypes: ['region', 'municipality'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'province',
+                        label: 'Province',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['province'],
+                        areaLevels: [2],
+                        parentKey: 'region',
+                        assignmentRole: 'province',
+                    ),
                 ],
             ),
         ];
@@ -76,6 +86,7 @@ class PeruGeographyProvider implements CountryAddressAreaMetadataProvider, Count
             $areaRoles = match ($area->type) {
                 'region' => ['region'],
                 'municipality' => ['region'],
+                'province' => ['province'],
                 default => [],
             };
 

@@ -72,3 +72,13 @@ it('exposes village roles when the villages flag is on', function (): void {
     expect($roles['id:village:1101012001'][0]['role'])->toBe('village')
         ->and($roles['id:urban_village:1201011001'][0]['role'])->toBe('village');
 });
+
+it('links deep areas to their province ancestor', function (): void {
+    $relationships = app(IndonesiaGeographyProvider::class)->areaRelationships(new AddressCountry);
+
+    expect($relationships['id:district:110101'])->toHaveCount(2)
+        ->and($relationships['id:district:110101'][0]['parent_source_id'])->toBe('id:regency:1101')
+        ->and($relationships['id:district:110101'][1]['parent_source_id'])->toBe('id:province:11')
+        ->and($relationships['id:regency:1101'])->toHaveCount(1)
+        ->and($relationships['id:regency:1101'][0]['parent_source_id'])->toBe('id:province:11');
+});

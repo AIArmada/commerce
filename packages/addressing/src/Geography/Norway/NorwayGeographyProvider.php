@@ -62,6 +62,16 @@ class NorwayGeographyProvider implements CountryAddressAreaMetadataProvider, Cou
                         areaTypes: ['county', 'arctic_region'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'municipality',
+                        label: 'Municipality',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['municipality'],
+                        areaLevels: [2],
+                        parentKey: 'county',
+                        assignmentRole: 'municipality',
+                    ),
                 ],
             ),
         ];
@@ -76,6 +86,7 @@ class NorwayGeographyProvider implements CountryAddressAreaMetadataProvider, Cou
             $areaRoles = match ($area->type) {
                 'county' => ['county'],
                 'arctic_region' => ['arctic_region'],
+                'municipality' => ['municipality'],
                 default => [],
             };
 

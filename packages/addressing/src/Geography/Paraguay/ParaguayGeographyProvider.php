@@ -62,6 +62,16 @@ class ParaguayGeographyProvider implements CountryAddressAreaMetadataProvider, C
                         areaTypes: ['department', 'capital_district'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'district',
+                        label: 'District',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['district'],
+                        areaLevels: [2],
+                        parentKey: 'department',
+                        assignmentRole: 'district',
+                    ),
                 ],
             ),
         ];
@@ -76,6 +86,7 @@ class ParaguayGeographyProvider implements CountryAddressAreaMetadataProvider, C
             $areaRoles = match ($area->type) {
                 'department' => ['department'],
                 'capital_district' => ['department'],
+                'district' => ['district'],
                 default => [],
             };
 

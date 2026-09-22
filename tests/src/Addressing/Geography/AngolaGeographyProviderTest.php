@@ -27,5 +27,7 @@ it('ships the 21 operational provinces with Cuando Cubango retired', function ()
         ->and($byId->get('ao:province:cuando')->code)->toBe('CUA')
         ->and($byId->get('ao:province:cubango')->code)->toBe('CUB')
         ->and($byId->get('ao:province:icolo-e-bengo')->name)->toBe('Icolo e Bengo')
-        ->and($byId->get('ao:province:moxico-leste')->code)->toBe('MLE');
+        ->and($byId->get('ao:province:moxico-leste')->code)->toBe('MLE')
+        ->and($byId->get('ao:province:cuanza-sul')->name)->toBe('Cuanza Sul')
+        ->and($byId->has('ao:province:cuanza'))->toBeFalse();
 });

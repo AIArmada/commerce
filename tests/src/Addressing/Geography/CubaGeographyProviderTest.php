@@ -41,3 +41,15 @@ it('names the capital province La Habana with a Havana alias', function (): void
 
     expect($names['cu:province:la-habana'][0]['name'])->toBe('Havana');
 });
+
+it('ships 168 municipalitys under provinces with parent links', function (): void {
+    $areas = app(CubaGeographyProvider::class)->addressAreaSource()->areas()->collect();
+    $byId = $areas->keyBy->sourceId;
+    $l2 = $areas->where('type', 'municipality');
+
+    expect($l2)->toHaveCount(168)
+        ->and($l2->pluck('parentSourceId')->every(fn ($p) => $byId->has($p)))->toBeTrue()
+        ->and($byId->get('cu:municipality:santiago-de-cuba')->name)->toBe('Santiago de Cuba')
+        ->and($byId->get('cu:municipality:centro-habana')->name)->toBe('Centro Habana')
+        ->and($byId->get('cu:municipality:habana-del-este')->name)->toBe('Habana del Este');
+});

@@ -62,6 +62,16 @@ class PortugalGeographyProvider implements CountryAddressAreaMetadataProvider, C
                         areaTypes: ['district', 'autonomous_region'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'municipality',
+                        label: 'Municipality',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['municipality'],
+                        areaLevels: [2],
+                        parentKey: 'district',
+                        assignmentRole: 'municipality',
+                    ),
                 ],
             ),
         ];
@@ -76,6 +86,7 @@ class PortugalGeographyProvider implements CountryAddressAreaMetadataProvider, C
             $areaRoles = match ($area->type) {
                 'district' => ['district'],
                 'autonomous_region' => ['autonomous_region'],
+                'municipality' => ['municipality'],
                 default => [],
             };
 

@@ -39,3 +39,15 @@ it('names region 84 Capital Region with a Hovedstaden alias', function (): void 
 
     expect($names['dk:region:capital-region'][0]['name'])->toBe('Hovedstaden');
 });
+
+it('ships 98 municipalitys under regions with parent links', function (): void {
+    $areas = app(DenmarkGeographyProvider::class)->addressAreaSource()->areas()->collect();
+    $byId = $areas->keyBy->sourceId;
+    $l2 = $areas->where('type', 'municipality');
+
+    expect($l2)->toHaveCount(98)
+        ->and($l2->pluck('parentSourceId')->every(fn ($p) => $byId->has($p)))->toBeTrue()
+        ->and($byId->get('dk:municipality:copenhagen')->name)->toBe('Copenhagen')
+        ->and($byId->get('dk:municipality:aarhus')->name)->toBe('Aarhus')
+        ->and($byId->get('dk:municipality:odense')->name)->toBe('Odense');
+});

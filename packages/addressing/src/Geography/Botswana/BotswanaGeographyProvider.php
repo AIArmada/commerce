@@ -62,6 +62,16 @@ class BotswanaGeographyProvider implements CountryAddressAreaMetadataProvider, C
                         areaTypes: ['district', 'city', 'town'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'subdistrict',
+                        label: 'Subdistrict',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['subdistrict'],
+                        areaLevels: [2],
+                        parentKey: 'district',
+                        assignmentRole: 'subdistrict',
+                    ),
                 ],
             ),
         ];
@@ -77,6 +87,7 @@ class BotswanaGeographyProvider implements CountryAddressAreaMetadataProvider, C
                 'district' => ['district'],
                 'city' => ['city'],
                 'town' => ['town'],
+                'subdistrict' => ['subdistrict'],
                 default => [],
             };
 

@@ -62,6 +62,16 @@ class HungaryGeographyProvider implements CountryAddressAreaMetadataProvider, Co
                         areaTypes: ['county', 'city_with_county_rights', 'capital_city'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'district',
+                        label: 'District',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['district'],
+                        areaLevels: [2],
+                        parentKey: 'county',
+                        assignmentRole: 'district',
+                    ),
                 ],
             ),
         ];
@@ -77,6 +87,7 @@ class HungaryGeographyProvider implements CountryAddressAreaMetadataProvider, Co
                 'county' => ['county'],
                 'city_with_county_rights' => ['city_with_county_rights'],
                 'capital_city' => ['capital_city'],
+                'district' => ['district'],
                 default => [],
             };
 

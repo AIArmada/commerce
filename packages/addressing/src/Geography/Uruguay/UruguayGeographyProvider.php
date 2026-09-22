@@ -62,6 +62,16 @@ class UruguayGeographyProvider implements CountryAddressAreaMetadataProvider, Co
                         areaTypes: ['department'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'municipality',
+                        label: 'Municipality',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['municipality'],
+                        areaLevels: [2],
+                        parentKey: 'department',
+                        assignmentRole: 'municipality',
+                    ),
                 ],
             ),
         ];
@@ -75,6 +85,7 @@ class UruguayGeographyProvider implements CountryAddressAreaMetadataProvider, Co
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
                 'department' => ['department'],
+                'municipality' => ['municipality'],
                 default => [],
             };
 

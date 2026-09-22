@@ -62,6 +62,16 @@ class IsraelGeographyProvider implements CountryAddressAreaMetadataProvider, Cou
                         areaTypes: ['district'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'subdistrict',
+                        label: 'Subdistrict',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['subdistrict'],
+                        areaLevels: [2],
+                        parentKey: 'district',
+                        assignmentRole: 'subdistrict',
+                    ),
                 ],
             ),
         ];
@@ -75,6 +85,7 @@ class IsraelGeographyProvider implements CountryAddressAreaMetadataProvider, Cou
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
                 'district' => ['district'],
+                'subdistrict' => ['subdistrict'],
                 default => [],
             };
 

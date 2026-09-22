@@ -69,6 +69,16 @@ class GreeceGeographyProvider implements CountryAddressAreaMetadataProvider, Cou
                         areaTypes: ['administrative_region', 'regional_unit'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'municipality',
+                        label: 'Municipality',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['municipality'],
+                        areaLevels: [2],
+                        parentKey: 'administrative_region',
+                        assignmentRole: 'municipality',
+                    ),
                 ],
             ),
         ];
@@ -83,6 +93,7 @@ class GreeceGeographyProvider implements CountryAddressAreaMetadataProvider, Cou
             $areaRoles = match ($area->type) {
                 'administrative_region' => ['administrative_region'],
                 'regional_unit' => ['regional_unit'],
+                'municipality' => ['municipality'],
                 default => [],
             };
 

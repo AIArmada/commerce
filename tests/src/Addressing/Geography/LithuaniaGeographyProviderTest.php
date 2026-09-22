@@ -45,3 +45,15 @@ it('types the seven city municipalities with miestas names', function (): void {
     expect($byId->get('lt:district_municipality:klaipeda')->code)->toBe('21')
         ->and($byId->get('lt:district_municipality:panevezys')->code)->toBe('33');
 });
+
+it('ships 60 municipalities under counties with parent links', function (): void {
+    $areas = app(LithuaniaGeographyProvider::class)->addressAreaSource()->areas()->collect();
+    $byId = $areas->keyBy->sourceId;
+    $l2 = $areas->whereIn('type', ['district_municipality', 'municipality', 'city_municipality']);
+
+    expect($l2)->toHaveCount(60)
+        ->and($l2->pluck('parentSourceId')->every(fn ($p) => $byId->has($p)))->toBeTrue()
+        ->and($byId->get('lt:district_municipality:alytus-03')->parentSourceId)->toBe('lt:county:alytus')
+        ->and($byId->get('lt:municipality:marijampole')->type)->toBe('municipality')
+        ->and($byId->get('lt:municipality:marijampole')->parentSourceId)->toBe('lt:county:marijampole');
+});

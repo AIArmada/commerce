@@ -29,7 +29,7 @@ it('prints any supplied Central African code on its own line', function (): void
 it('ships 20 prefectures with Bangui and Sangha-Mbaéré retyped', function (): void {
     $areas = app(CentralAfricanRepublicGeographyProvider::class)->addressAreaSource()->areas();
 
-    expect($areas)->toHaveCount(20);
+    expect($areas->where('level', 1))->toHaveCount(20);
 
     $byId = $areas->keyBy('sourceId');
 
@@ -40,4 +40,16 @@ it('ships 20 prefectures with Bangui and Sangha-Mbaéré retyped', function (): 
         ->and($byId->get('cf:prefecture:lim-pende')->name)->toBe('Lim-Pendé')
         ->and($byId->get('cf:prefecture:mambere')->name)->toBe('Mambéré')
         ->and($byId->get('cf:prefecture:ouham-fafa')->name)->toBe('Ouham-Fafa');
+});
+
+it('ships 80 subprefectures under prefectures with parent links', function (): void {
+    $areas = app(CentralAfricanRepublicGeographyProvider::class)->addressAreaSource()->areas()->collect();
+    $byId = $areas->keyBy->sourceId;
+    $l2 = $areas->where('type', 'subprefecture');
+
+    expect($l2)->toHaveCount(80)
+        ->and($l2->pluck('parentSourceId')->every(fn ($p) => $byId->has($p)))->toBeTrue()
+        ->and($byId->get('cf:subprefecture:bamingui')->name)->toBe('Bamingui')
+        ->and($byId->get('cf:subprefecture:alindao')->name)->toBe('Alindao')
+        ->and($byId->get('cf:subprefecture:ndele')->name)->toBe('Ndélé');
 });

@@ -62,6 +62,16 @@ class RomaniaGeographyProvider implements CountryAddressAreaMetadataProvider, Co
                         areaTypes: ['department', 'municipality'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'commune',
+                        label: 'Commune / Town / Municipality / Sector',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['commune', 'town', 'municipality', 'sector'],
+                        areaLevels: [2],
+                        parentKey: 'department',
+                        assignmentRole: 'commune',
+                    ),
                 ],
             ),
         ];
@@ -73,9 +83,14 @@ class RomaniaGeographyProvider implements CountryAddressAreaMetadataProvider, Co
         $roles = [];
 
         foreach ($this->addressAreaSource()->areas() as $area) {
-            $areaRoles = match ($area->type) {
-                'department' => ['department'],
-                'municipality' => ['municipality'],
+            // `municipality` spans two levels: Bucharest (L1) vs county municipalities (L2).
+            $areaRoles = match (true) {
+                $area->type === 'department' => ['department'],
+                $area->type === 'municipality' && $area->level === 1 => ['municipality'],
+                $area->type === 'municipality' => ['commune'],
+                $area->type === 'town' => ['commune'],
+                $area->type === 'commune' => ['commune'],
+                $area->type === 'sector' => ['commune'],
                 default => [],
             };
 

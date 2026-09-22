@@ -62,6 +62,16 @@ class ElSalvadorGeographyProvider implements CountryAddressAreaMetadataProvider,
                         areaTypes: ['department'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'municipality',
+                        label: 'Municipality',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['municipality'],
+                        areaLevels: [2],
+                        parentKey: 'department',
+                        assignmentRole: 'municipality',
+                    ),
                 ],
             ),
         ];
@@ -75,6 +85,7 @@ class ElSalvadorGeographyProvider implements CountryAddressAreaMetadataProvider,
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
                 'department' => ['department'],
+                'municipality' => ['municipality'],
                 default => [],
             };
 

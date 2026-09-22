@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Geography\ElSalvador\ElSalvadorAddressFormatter;
+use AIArmada\Addressing\Geography\ElSalvador\ElSalvadorGeographyProvider;
 
 it('formats Salvadoran addresses with the postcode left of the locality', function (): void {
     $formatted = app(ElSalvadorAddressFormatter::class)->format(AddressData::from([
@@ -25,4 +26,16 @@ it('formats Salvadoran box addresses with the branch postcode', function (): voi
     ]));
 
     expect($formatted)->toBe("APARTADO POSTAL 131\nSUCURSAL SOPAYANGO\n1116 SAN SALVADOR\nEl Salvador");
+});
+
+it('ships 44 municipalitys under departments with parent links', function (): void {
+    $areas = app(ElSalvadorGeographyProvider::class)->addressAreaSource()->areas()->collect();
+    $byId = $areas->keyBy->sourceId;
+    $l2 = $areas->where('type', 'municipality');
+
+    expect($l2)->toHaveCount(44)
+        ->and($l2->pluck('parentSourceId')->every(fn ($p) => $byId->has($p)))->toBeTrue()
+        ->and($byId->get('sv:municipality:central-ahuachapan')->name)->toBe('Central Ahuachapán')
+        ->and($byId->get('sv:municipality:northern-ahuachapan')->name)->toBe('Northern Ahuachapán')
+        ->and($byId->get('sv:municipality:southern-ahuachapan')->name)->toBe('Southern Ahuachapán');
 });

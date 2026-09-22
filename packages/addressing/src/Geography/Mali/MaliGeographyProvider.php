@@ -62,6 +62,16 @@ class MaliGeographyProvider implements CountryAddressAreaMetadataProvider, Count
                         areaTypes: ['region', 'district'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'cercle',
+                        label: 'Cercle',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['cercle'],
+                        areaLevels: [2],
+                        parentKey: 'region',
+                        assignmentRole: 'cercle',
+                    ),
                 ],
             ),
         ];
@@ -76,6 +86,7 @@ class MaliGeographyProvider implements CountryAddressAreaMetadataProvider, Count
             $areaRoles = match ($area->type) {
                 'region' => ['region'],
                 'district' => ['district'],
+                'cercle' => ['cercle'],
                 default => [],
             };
 

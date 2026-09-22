@@ -62,6 +62,16 @@ class PolandGeographyProvider implements CountryAddressAreaMetadataProvider, Cou
                         areaTypes: ['voivodeship'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'land_county',
+                        label: 'Land / City County',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['land_county', 'city_county'],
+                        areaLevels: [2],
+                        parentKey: 'voivodeship',
+                        assignmentRole: 'land_county',
+                    ),
                 ],
             ),
         ];
@@ -75,6 +85,8 @@ class PolandGeographyProvider implements CountryAddressAreaMetadataProvider, Cou
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
                 'voivodeship' => ['voivodeship'],
+                'land_county' => ['land_county'],
+                'city_county' => ['land_county'],
                 default => [],
             };
 
@@ -126,11 +138,11 @@ class PolandGeographyProvider implements CountryAddressAreaMetadataProvider, Cou
     }
 
     /**
-     * @return array<string, array{area_code: string, source: string, area_level: int, hierarchy_types?: list<string>}>
+     * @return array<int|string, array{area_code: string, source: string, area_level: int, hierarchy_types?: list<string>}>
      */
     public function stateAreaMappings(): array
     {
-        /** @var array<string, string> */
+        /** @var array<int|string, string> */
         $areaCodes = [
             '02' => '02',
             '04' => '04',

@@ -70,6 +70,16 @@ class MaldivesGeographyProvider implements CountryAddressAreaMetadataProvider, C
                         areaTypes: ['atoll', 'city'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'island',
+                        label: 'Island',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['island'],
+                        areaLevels: [2],
+                        parentKey: 'atoll',
+                        assignmentRole: 'island',
+                    ),
                 ],
             ),
         ];
@@ -84,6 +94,7 @@ class MaldivesGeographyProvider implements CountryAddressAreaMetadataProvider, C
             $areaRoles = match ($area->type) {
                 'atoll' => ['atoll'],
                 'city' => ['city'],
+                'island' => ['island'],
                 default => [],
             };
 
@@ -147,7 +158,8 @@ class MaldivesGeographyProvider implements CountryAddressAreaMetadataProvider, C
             '28' => '28',
             'FVM' => 'FVM',
             'KUH' => 'KUH',
-            'THD' => 'THD',            '07' => '07',
+            'THD' => 'THD',
+            '07' => '07',
             '23' => '23',
             '26' => '26',
             '05' => '05',
@@ -188,7 +200,8 @@ class MaldivesGeographyProvider implements CountryAddressAreaMetadataProvider, C
             ['name' => 'Gaafu Dhaalu', 'code' => '28'],
             ['name' => 'Fuvahmulah', 'code' => 'FVM'],
             ['name' => 'Kulhudhuffushi', 'code' => 'KUH'],
-            ['name' => 'Thinadhoo', 'code' => 'THD'],            ['name' => 'Haa Alif', 'code' => '07'],
+            ['name' => 'Thinadhoo', 'code' => 'THD'],
+            ['name' => 'Haa Alif', 'code' => '07'],
             ['name' => 'Haa Dhaalu', 'code' => '23'],
             ['name' => 'Kaafu', 'code' => '26'],
             ['name' => 'Laamu', 'code' => '05'],

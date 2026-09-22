@@ -29,7 +29,7 @@ For the postal-`locality` method that sits below L2, see
 
 ## United States — counties
 
-- **Layer:** counties and county equivalents (~3,236 rows).
+- **Layer:** counties and county equivalents (~3,222 rows: 3,143 stateside + 78 PR + 1 DC).
 - **Source:** US Census Bureau, public domain. Use the **annual County
   Gazetteer** (current vintage plus centroids), not the code-list text
   files: `national_county.txt` is stale (still lists pre-2015 Alaska
@@ -54,9 +54,10 @@ For the postal-`locality` method that sits below L2, see
 
 ## Brazil — municipalities
 
-- **Layer:** municipalities, **5,571 units** (IBGE's 5,570 plus Boa
-  Esperança do Norte, Mato Grosso, effective January 2025;
-  includes the Federal District row and Fernando de Noronha).
+- **Layer:** municipalities, **5,571 units** (IBGE now returns 5,571
+  directly, including Boa Esperança do Norte, Mato Grosso, and
+  the Fernando de Noronha state district alongside the
+  Federal District row).
 - **Source:** IBGE, free. Canonical machine source is the Localidades
   API (`servicodados.ibge.gov.br/api/v1/localidades/municipios`),
   verified live: each record carries the 7-digit code, name, and the
@@ -77,8 +78,12 @@ For the postal-`locality` method that sits below L2, see
   August 2026; the number moves as states split municipalities —
   Baja California added San Quintín and San Felipe recently).
 - **Source:** INEGI Marco Geoestadístico / Catálogo Nacional de
-  Municipios, free. Each municipio carries a 5-digit CVEGEO (2-digit
-  state + 3-digit municipio); parent derives from the state prefix.
+  Municipios, free (as-built: sourced from Wikidata P3801 CVEGEO
+  values, verified against the Spanish Wikipedia state annexes
+  and the INEGI 2024 national count — see `05-country-data.md`).
+  Each municipio carries a 5-digit CVEGEO
+  (2-digit state + 3-digit municipio); parent derives from the
+  state prefix.
 - **Trap:** CDMX's 16 units are alcaldías (former delegaciones), not
   municipios — type them distinctly like other capital overlay units.
 - **Postcodes:** SEPOMEX's `cpdescarga.txt` (state/municipio/locality/CP
@@ -100,7 +105,7 @@ For the postal-`locality` method that sits below L2, see
 - **Codes:** 7-digit SGC (2-digit province + 2-digit CD + 3-digit CSD);
   parent chain derives mechanically. Keep the CSD type (city, town,
   réserve, hamlet, …) — it disambiguates same-name rows.
-- **Trap:** ~992 Indian reserves are CSDs; names and spellings follow
+- **Trap:** ~1,028 Indian reserves are CSDs; names and spellings follow
   ISC/CIRNAC recognition and change — do not normalize them by hand.
 - **Postcodes:** the full 6-character file is a commercial Canada Post
   product. The free layer is the FSA (first 3 characters, ~1,620 —
@@ -115,7 +120,7 @@ For the postal-`locality` method that sits below L2, see
    postcode story fully understood (consumer-supplied SEPOMEX).
 2. **US** — sources free and verified, but mind the Gazetteer-vs-txt
    trap and the Connecticut patch; ZIP layer stays weights-only.
-3. **BR** — source free and machine-readable, but 5,570 rows is the
+3. **BR** — source free and machine-readable, but 5,571 rows is the
    largest import; CEP stays out unless licensed.
 4. **CA** — needs the CD-vs-CSD decision confirmed per consumer and
    the reserve-naming caveat honored; smallest postcode story (FSA).

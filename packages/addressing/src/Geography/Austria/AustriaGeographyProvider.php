@@ -62,6 +62,16 @@ class AustriaGeographyProvider implements CountryAddressAreaMetadataProvider, Co
                         areaTypes: ['state'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'district',
+                        label: 'District / Statutory City',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['district', 'statutory_city'],
+                        areaLevels: [2],
+                        parentKey: 'state',
+                        assignmentRole: 'district',
+                    ),
                 ],
             ),
         ];
@@ -75,6 +85,8 @@ class AustriaGeographyProvider implements CountryAddressAreaMetadataProvider, Co
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
                 'state' => ['state'],
+                'district' => ['district'],
+                'statutory_city' => ['district'],
                 default => [],
             };
 

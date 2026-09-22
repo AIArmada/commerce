@@ -18,7 +18,7 @@ it('formats Afghan addresses with the postcode left and province below', functio
     expect($formatted)->toBe("House No 123, Street 5\n265101 HESARAK\nNANGARHAR\nAfghanistan");
 });
 
-it('spells the province Uruzgan per ISO AF-URU', function (): void {
+it('spells the province Uruzgan per the list page (ISO AF-URU)', function (): void {
     $areas = app(AfghanistanGeographyProvider::class)->addressAreaSource()->areas()->collect()->keyBy->sourceId;
 
     expect($areas->get('af:province:uruzgan')->name)->toBe('Uruzgan')

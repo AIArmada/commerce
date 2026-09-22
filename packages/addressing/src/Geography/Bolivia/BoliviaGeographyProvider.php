@@ -62,6 +62,16 @@ class BoliviaGeographyProvider implements CountryAddressAreaMetadataProvider, Co
                         areaTypes: ['department'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'province',
+                        label: 'Province',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['province'],
+                        areaLevels: [2],
+                        parentKey: 'department',
+                        assignmentRole: 'province',
+                    ),
                 ],
             ),
         ];
@@ -75,6 +85,7 @@ class BoliviaGeographyProvider implements CountryAddressAreaMetadataProvider, Co
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
                 'department' => ['department'],
+                'province' => ['province'],
                 default => [],
             };
 

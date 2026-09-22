@@ -62,6 +62,16 @@ class CapeVerdeGeographyProvider implements CountryAddressAreaMetadataProvider, 
                         areaTypes: ['municipality', 'geographical_region'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'parish',
+                        label: 'Parish',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['parish'],
+                        areaLevels: [2],
+                        parentKey: 'municipality',
+                        assignmentRole: 'parish',
+                    ),
                 ],
             ),
         ];
@@ -76,6 +86,7 @@ class CapeVerdeGeographyProvider implements CountryAddressAreaMetadataProvider, 
             $areaRoles = match ($area->type) {
                 'municipality' => ['municipality'],
                 'geographical_region' => ['geographical_region'],
+                'parish' => ['parish'],
                 default => [],
             };
 

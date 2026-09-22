@@ -62,6 +62,16 @@ class IranGeographyProvider implements CountryAddressAreaMetadataProvider, Count
                         areaTypes: ['province'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'county',
+                        label: 'County (Shahrestan)',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['county'],
+                        areaLevels: [2],
+                        parentKey: 'province',
+                        assignmentRole: 'county',
+                    ),
                 ],
             ),
         ];
@@ -75,6 +85,7 @@ class IranGeographyProvider implements CountryAddressAreaMetadataProvider, Count
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
                 'province' => ['province'],
+                'county' => ['county'],
                 default => [],
             };
 

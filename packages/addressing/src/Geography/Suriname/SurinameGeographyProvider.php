@@ -62,6 +62,16 @@ class SurinameGeographyProvider implements CountryAddressAreaMetadataProvider, C
                         areaTypes: ['district'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'resort',
+                        label: 'Resort',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['resort'],
+                        areaLevels: [2],
+                        parentKey: 'district',
+                        assignmentRole: 'resort',
+                    ),
                 ],
             ),
         ];
@@ -75,6 +85,7 @@ class SurinameGeographyProvider implements CountryAddressAreaMetadataProvider, C
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
                 'district' => ['district'],
+                'resort' => ['resort'],
                 default => [],
             };
 

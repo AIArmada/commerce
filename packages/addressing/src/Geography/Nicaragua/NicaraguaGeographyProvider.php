@@ -62,6 +62,16 @@ class NicaraguaGeographyProvider implements CountryAddressAreaMetadataProvider, 
                         areaTypes: ['department', 'autonomous_region'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'municipality',
+                        label: 'Municipality',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['municipality'],
+                        areaLevels: [2],
+                        parentKey: 'department',
+                        assignmentRole: 'municipality',
+                    ),
                 ],
             ),
         ];
@@ -76,6 +86,7 @@ class NicaraguaGeographyProvider implements CountryAddressAreaMetadataProvider, 
             $areaRoles = match ($area->type) {
                 'department' => ['department'],
                 'autonomous_region' => ['autonomous_region'],
+                'municipality' => ['municipality'],
                 default => [],
             };
 

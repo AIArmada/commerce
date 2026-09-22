@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Geography\Serbia\SerbiaAddressFormatter;
+use AIArmada\Addressing\Geography\Serbia\SerbiaGeographyProvider;
 
 it('formats Serbian addresses with the postcode left of the office', function (): void {
     $formatted = app(SerbiaAddressFormatter::class)->format(AddressData::from([
@@ -25,4 +26,16 @@ it('prints matching Serbian city and capital once', function (): void {
     ]));
 
     expect($formatted)->toBe("Knez Mihailova 10\n11130 Belgrade\nSerbia");
+});
+
+it('ships 157 municipalities/cities under districts with parent links', function (): void {
+    $areas = app(SerbiaGeographyProvider::class)->addressAreaSource()->areas()->collect();
+    $byId = $areas->keyBy->sourceId;
+    $l2 = $areas->whereIn('type', ['municipality', 'city', 'city_municipality'])->where('level', 2);
+
+    expect($l2)->toHaveCount(157)
+        ->and($l2->pluck('parentSourceId')->every(fn ($p) => $byId->has($p)))->toBeTrue()
+        ->and($byId->get('rs:city:novi-sad')->name)->toBe('Novi Sad')
+        ->and($byId->get('rs:city_municipality:zemun')->name)->toBe('Zemun')
+        ->and($byId->get('rs:city_municipality:novi-beograd')->name)->toBe('Novi Beograd');
 });

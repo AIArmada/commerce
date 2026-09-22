@@ -62,6 +62,16 @@ class ItalyGeographyProvider implements CountryAddressAreaMetadataProvider, Coun
                         areaTypes: ['region'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'province',
+                        label: 'Province / Metropolitan City / Consortium / Entity',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['province', 'metropolitan_city', 'free_municipal_consortium', 'decentralization_entity', 'autonomous_province'],
+                        areaLevels: [2],
+                        parentKey: 'region',
+                        assignmentRole: 'province',
+                    ),
                 ],
             ),
         ];
@@ -75,6 +85,11 @@ class ItalyGeographyProvider implements CountryAddressAreaMetadataProvider, Coun
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
                 'region' => ['region'],
+                'province' => ['province'],
+                'metropolitan_city' => ['province'],
+                'free_municipal_consortium' => ['province'],
+                'decentralization_entity' => ['province'],
+                'autonomous_province' => ['province'],
                 default => [],
             };
 

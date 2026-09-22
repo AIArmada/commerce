@@ -29,7 +29,7 @@ it('prints any supplied Congolese code on its own line', function (): void {
 it('ships the 15 departments including the October 2024 trio', function (): void {
     $areas = app(CongoGeographyProvider::class)->addressAreaSource()->areas();
 
-    expect($areas)->toHaveCount(15);
+    expect($areas->where('level', 1))->toHaveCount(15);
 
     $byId = $areas->keyBy('sourceId');
 
@@ -39,4 +39,16 @@ it('ships the 15 departments including the October 2024 trio', function (): void
         ->and($byId->get('cg:department:djoue-lefini')->code)->toBe('18')
         ->and($byId->get('cg:department:nkeni-alima')->name)->toBe('Nkéni-Alima')
         ->and($byId->get('cg:department:nkeni-alima')->code)->toBe('19');
+});
+
+it('ships 89 districts under departments with parent links', function (): void {
+    $areas = app(CongoGeographyProvider::class)->addressAreaSource()->areas()->collect();
+    $byId = $areas->keyBy->sourceId;
+    $l2 = $areas->where('type', 'district');
+
+    expect($l2)->toHaveCount(89)
+        ->and($l2->pluck('parentSourceId')->every(fn ($p) => $byId->has($p)))->toBeTrue()
+        ->and($byId->get('cg:district:owando')->name)->toBe('Owando')
+        ->and($byId->get('cg:district:bokoma')->name)->toBe('Bokoma')
+        ->and($byId->get('cg:district:tchiamba-nzassi')->name)->toBe('Tchiamba-Nzassi');
 });

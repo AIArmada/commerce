@@ -70,6 +70,16 @@ class PuertoRicoGeographyProvider implements CountryAddressAreaMetadataProvider,
                         areaTypes: ['municipality'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'barrio',
+                        label: 'Barrio / Barrio-pueblo',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['barrio', 'barrio_pueblo'],
+                        areaLevels: [2],
+                        parentKey: 'municipality',
+                        assignmentRole: 'barrio',
+                    ),
                 ],
             ),
         ];
@@ -83,6 +93,8 @@ class PuertoRicoGeographyProvider implements CountryAddressAreaMetadataProvider,
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
                 'municipality' => ['municipality'],
+                'barrio' => ['barrio'],
+                'barrio_pueblo' => ['barrio'],
                 default => [],
             };
 

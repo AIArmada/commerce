@@ -62,6 +62,16 @@ class MadagascarGeographyProvider implements CountryAddressAreaMetadataProvider,
                         areaTypes: ['province'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'region',
+                        label: 'Region',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['region'],
+                        areaLevels: [2],
+                        parentKey: 'province',
+                        assignmentRole: 'region',
+                    ),
                 ],
             ),
         ];
@@ -75,6 +85,7 @@ class MadagascarGeographyProvider implements CountryAddressAreaMetadataProvider,
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
                 'province' => ['province'],
+                'region' => ['region'],
                 default => [],
             };
 

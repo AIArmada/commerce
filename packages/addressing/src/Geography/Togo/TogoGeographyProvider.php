@@ -62,6 +62,16 @@ class TogoGeographyProvider implements CountryAddressAreaMetadataProvider, Count
                         areaTypes: ['region'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'prefecture',
+                        label: 'Prefecture',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['prefecture'],
+                        areaLevels: [2],
+                        parentKey: 'region',
+                        assignmentRole: 'prefecture',
+                    ),
                 ],
             ),
         ];
@@ -75,6 +85,7 @@ class TogoGeographyProvider implements CountryAddressAreaMetadataProvider, Count
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
                 'region' => ['region'],
+                'prefecture' => ['prefecture'],
                 default => [],
             };
 

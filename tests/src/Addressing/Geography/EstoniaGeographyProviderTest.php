@@ -36,5 +36,7 @@ it('exposes corrected Estonian municipality names', function (): void {
         ->and($areas->get('ee:rural_municipality:pohja-parnumaa')->code)->toBe('638')
         ->and($areas->get('ee:rural_municipality:pohja-parnumaa')->type)->toBe('rural_municipality')
         ->and($areas->get('ee:rural_municipality:poltsamaa')->name)->toBe('Põltsamaa')
+        ->and($areas->get('ee:rural_municipality:joelahtme')->name)->toBe('Jõelähtme')
+        ->and($areas->get('ee:rural_municipality:joelahtme')->code)->toBe('245')
         ->and($areas->has('ee:rural_municipality:pohja-parnu'))->toBeFalse();
 });

@@ -62,6 +62,16 @@ class SaudiArabiaGeographyProvider implements CountryAddressAreaMetadataProvider
                         areaTypes: ['region'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'governorate',
+                        label: 'Governorate',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['governorate'],
+                        areaLevels: [2],
+                        parentKey: 'region',
+                        assignmentRole: 'governorate',
+                    ),
                 ],
             ),
         ];
@@ -75,6 +85,7 @@ class SaudiArabiaGeographyProvider implements CountryAddressAreaMetadataProvider
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
                 'region' => ['region'],
+                'governorate' => ['governorate'],
                 default => [],
             };
 

@@ -62,6 +62,16 @@ class CentralAfricanRepublicGeographyProvider implements CountryAddressAreaMetad
                         areaTypes: ['prefecture', 'economic_prefecture'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'subprefecture',
+                        label: 'Subprefecture',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['subprefecture'],
+                        areaLevels: [2],
+                        parentKey: 'prefecture',
+                        assignmentRole: 'subprefecture',
+                    ),
                 ],
             ),
         ];
@@ -76,6 +86,7 @@ class CentralAfricanRepublicGeographyProvider implements CountryAddressAreaMetad
             $areaRoles = match ($area->type) {
                 'prefecture' => ['prefecture'],
                 'economic_prefecture' => ['economic_prefecture'],
+                'subprefecture' => ['subprefecture'],
                 default => [],
             };
 

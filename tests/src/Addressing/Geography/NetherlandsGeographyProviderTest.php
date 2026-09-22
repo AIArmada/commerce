@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Geography\Netherlands\NetherlandsAddressFormatter;
+use AIArmada\Addressing\Geography\Netherlands\NetherlandsGeographyProvider;
 
 it('formats Dutch addresses with two spaces after the postcode', function (): void {
     $formatted = app(NetherlandsAddressFormatter::class)->format(AddressData::from([
@@ -14,4 +15,16 @@ it('formats Dutch addresses with two spaces after the postcode', function (): vo
     ]));
 
     expect($formatted)->toBe("Drieslag 5-1\n6832 AM  ARNHEM\nNetherlands");
+});
+
+it('ships 342 municipalitys under provinces with parent links', function (): void {
+    $areas = app(NetherlandsGeographyProvider::class)->addressAreaSource()->areas()->collect();
+    $byId = $areas->keyBy->sourceId;
+    $l2 = $areas->where('type', 'municipality');
+
+    expect($l2)->toHaveCount(342)
+        ->and($l2->pluck('parentSourceId')->every(fn ($p) => $byId->has($p)))->toBeTrue()
+        ->and($byId->get('nl:municipality:amsterdam')->name)->toBe('Amsterdam')
+        ->and($byId->get('nl:municipality:rotterdam')->name)->toBe('Rotterdam')
+        ->and($byId->get('nl:municipality:utrecht')->name)->toBe('Utrecht');
 });

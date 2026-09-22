@@ -62,6 +62,16 @@ class SerbiaGeographyProvider implements CountryAddressAreaMetadataProvider, Cou
                         areaTypes: ['district', 'province', 'city'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'municipality',
+                        label: 'Municipality / City',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['municipality', 'city', 'city_municipality'],
+                        areaLevels: [2],
+                        parentKey: 'district',
+                        assignmentRole: 'municipality',
+                    ),
                 ],
             ),
         ];
@@ -77,6 +87,9 @@ class SerbiaGeographyProvider implements CountryAddressAreaMetadataProvider, Cou
                 'district' => ['district'],
                 'province' => ['province'],
                 'city' => ['city'],
+                'municipality' => ['municipality'],
+                'city' => ['municipality'],
+                'city_municipality' => ['municipality'],
                 default => [],
             };
 

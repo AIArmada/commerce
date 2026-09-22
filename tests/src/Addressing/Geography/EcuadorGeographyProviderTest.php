@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Geography\Ecuador\EcuadorAddressFormatter;
+use AIArmada\Addressing\Geography\Ecuador\EcuadorGeographyProvider;
 
 it('formats Ecuadorian addresses with the postcode and hyphen left of the locality', function (): void {
     $formatted = app(EcuadorAddressFormatter::class)->format(AddressData::from([
@@ -26,4 +27,16 @@ it('formats Ecuadorian Guayaquil addresses with the zone postcode', function ():
     ]));
 
     expect($formatted)->toBe("Av. 9 de Octubre 100\n090306 - GUAYAQUIL\nEcuador");
+});
+
+it('ships 222 cantons under provinces with parent links', function (): void {
+    $areas = app(EcuadorGeographyProvider::class)->addressAreaSource()->areas()->collect();
+    $byId = $areas->keyBy->sourceId;
+    $l2 = $areas->where('type', 'canton');
+
+    expect($l2)->toHaveCount(222)
+        ->and($l2->pluck('parentSourceId')->every(fn ($p) => $byId->has($p)))->toBeTrue()
+        ->and($byId->get('ec:canton:quito')->name)->toBe('Quito')
+        ->and($byId->get('ec:canton:cuenca')->name)->toBe('Cuenca')
+        ->and($byId->get('ec:canton:guayaquil')->name)->toBe('Guayaquil');
 });

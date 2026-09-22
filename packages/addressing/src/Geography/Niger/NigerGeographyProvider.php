@@ -62,6 +62,16 @@ class NigerGeographyProvider implements CountryAddressAreaMetadataProvider, Coun
                         areaTypes: ['region', 'urban_community'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'department',
+                        label: 'Department / Commune',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['department', 'commune'],
+                        areaLevels: [2],
+                        parentKey: 'region',
+                        assignmentRole: 'department',
+                    ),
                 ],
             ),
         ];
@@ -76,6 +86,8 @@ class NigerGeographyProvider implements CountryAddressAreaMetadataProvider, Coun
             $areaRoles = match ($area->type) {
                 'region' => ['region'],
                 'urban_community' => ['urban_community'],
+                'department' => ['department'],
+                'commune' => ['department'],
                 default => [],
             };
 

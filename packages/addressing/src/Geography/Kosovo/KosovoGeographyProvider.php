@@ -62,6 +62,16 @@ class KosovoGeographyProvider implements CountryAddressAreaMetadataProvider, Cou
                         areaTypes: ['district'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'municipality',
+                        label: 'Municipality',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['municipality'],
+                        areaLevels: [2],
+                        parentKey: 'district',
+                        assignmentRole: 'municipality',
+                    ),
                 ],
             ),
         ];
@@ -75,6 +85,7 @@ class KosovoGeographyProvider implements CountryAddressAreaMetadataProvider, Cou
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
                 'district' => ['district'],
+                'municipality' => ['municipality'],
                 default => [],
             };
 

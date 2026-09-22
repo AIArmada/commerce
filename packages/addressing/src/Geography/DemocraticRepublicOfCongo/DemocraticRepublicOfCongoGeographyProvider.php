@@ -62,6 +62,16 @@ class DemocraticRepublicOfCongoGeographyProvider implements CountryAddressAreaMe
                         areaTypes: ['province'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'territory',
+                        label: 'Territory',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['territory'],
+                        areaLevels: [2],
+                        parentKey: 'province',
+                        assignmentRole: 'territory',
+                    ),
                 ],
             ),
         ];
@@ -75,6 +85,7 @@ class DemocraticRepublicOfCongoGeographyProvider implements CountryAddressAreaMe
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
                 'province' => ['province'],
+                'territory' => ['territory'],
                 default => [],
             };
 

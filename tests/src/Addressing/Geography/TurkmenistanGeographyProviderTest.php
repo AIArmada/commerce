@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Geography\Turkmenistan\TurkmenistanAddressFormatter;
+use AIArmada\Addressing\Geography\Turkmenistan\TurkmenistanGeographyProvider;
 
 it('formats Turkmen addresses with the postcode below the locality', function (): void {
     $formatted = app(TurkmenistanAddressFormatter::class)->format(AddressData::from([
@@ -27,4 +28,16 @@ it('prints matching Turkmen city and capital once above the postcode', function 
     ]));
 
     expect($formatted)->toBe("Galkynysh Street 1\nASHGABAT\n744000\nTurkmenistan");
+});
+
+it('ships 58 districts under regions with parent links', function (): void {
+    $areas = app(TurkmenistanGeographyProvider::class)->addressAreaSource()->areas()->collect();
+    $byId = $areas->keyBy->sourceId;
+    $l2 = $areas->where('type', 'district');
+
+    expect($l2)->toHaveCount(58)
+        ->and($l2->pluck('parentSourceId')->every(fn ($p) => $byId->has($p)))->toBeTrue()
+        ->and($byId->get('tm:district:bagtyyarlyk')->name)->toBe('Bagtyýarlyk')
+        ->and($byId->get('tm:district:tejen')->name)->toBe('Tejen')
+        ->and($byId->get('tm:district:kerki')->name)->toBe('Kerki');
 });

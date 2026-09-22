@@ -62,6 +62,16 @@ class EritreaGeographyProvider implements CountryAddressAreaMetadataProvider, Co
                         areaTypes: ['region'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'subregion',
+                        label: 'Subregion',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['subregion'],
+                        areaLevels: [2],
+                        parentKey: 'region',
+                        assignmentRole: 'subregion',
+                    ),
                 ],
             ),
         ];
@@ -75,6 +85,7 @@ class EritreaGeographyProvider implements CountryAddressAreaMetadataProvider, Co
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
                 'region' => ['region'],
+                'subregion' => ['subregion'],
                 default => [],
             };
 

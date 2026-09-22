@@ -62,6 +62,16 @@ class WallisAndFutunaGeographyProvider implements CountryAddressAreaMetadataProv
                         areaTypes: ['administrative_precinct'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'district',
+                        label: 'District',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['district'],
+                        areaLevels: [2],
+                        parentKey: 'administrative_precinct',
+                        assignmentRole: 'district',
+                    ),
                 ],
             ),
         ];
@@ -75,6 +85,7 @@ class WallisAndFutunaGeographyProvider implements CountryAddressAreaMetadataProv
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
                 'administrative_precinct' => ['administrative_precinct'],
+                'district' => ['district'],
                 default => [],
             };
 

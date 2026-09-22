@@ -62,6 +62,16 @@ class ComorosGeographyProvider implements CountryAddressAreaMetadataProvider, Co
                         areaTypes: ['island'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'prefecture',
+                        label: 'Prefecture',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['prefecture'],
+                        areaLevels: [2],
+                        parentKey: 'island',
+                        assignmentRole: 'prefecture',
+                    ),
                 ],
             ),
         ];
@@ -75,6 +85,7 @@ class ComorosGeographyProvider implements CountryAddressAreaMetadataProvider, Co
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
                 'island' => ['island'],
+                'prefecture' => ['prefecture'],
                 default => [],
             };
 

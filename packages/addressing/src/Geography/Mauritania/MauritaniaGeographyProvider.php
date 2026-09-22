@@ -62,6 +62,16 @@ class MauritaniaGeographyProvider implements CountryAddressAreaMetadataProvider,
                         areaTypes: ['region'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'department',
+                        label: 'Department',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['department'],
+                        areaLevels: [2],
+                        parentKey: 'region',
+                        assignmentRole: 'department',
+                    ),
                 ],
             ),
         ];
@@ -75,6 +85,7 @@ class MauritaniaGeographyProvider implements CountryAddressAreaMetadataProvider,
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
                 'region' => ['region'],
+                'department' => ['department'],
                 default => [],
             };
 
