@@ -98,6 +98,9 @@ class BahamasGeographyProvider implements CountryAddressAreaMetadataProvider, Co
             'bs:district:city-of-freeport' => [
                 ['name' => 'Freeport', 'name_type' => 'alternative'],
             ],
+            'bs:district:san-salvador' => [
+                ['name' => 'San Salvador Island', 'name_type' => 'alternative'],
+            ],
         ];
     }
 

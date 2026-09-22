@@ -34,14 +34,15 @@ it('uses ISO district names with aliases for the renamed districts', function ()
         ->and($areas->get('bs:district:crooked-island-and-long-cay')->name)->toBe('Crooked Island and Long Cay')
         ->and($areas->get('bs:district:city-of-freeport')->name)->toBe('City of Freeport')
         ->and($areas->get('bs:district:san-salvador')->name)->toBe('San Salvador')
-        ->and($areas->get('bs:district:new-providence')->type)->toBe('district')
+        ->and($areas->get('bs:island:new-providence')->type)->toBe('island')
         ->and($areas->has('bs:district:crooked-island'))->toBeFalse()
         ->and($areas->has('bs:district:freeport'))->toBeFalse()
         ->and($areas->has('bs:district:san-salvador-island'))->toBeFalse()
-        ->and($areas->has('bs:island:new-providence'))->toBeFalse();
+        ->and($areas->has('bs:district:new-providence'))->toBeFalse();
 
     $names = app(BahamasGeographyProvider::class)->areaNames(new AddressCountry);
 
     expect($names['bs:district:crooked-island-and-long-cay'][0]['name'])->toBe('Crooked Island')
-        ->and($names['bs:district:city-of-freeport'][0]['name'])->toBe('Freeport');
+        ->and($names['bs:district:city-of-freeport'][0]['name'])->toBe('Freeport')
+        ->and($names['bs:district:san-salvador'][0]['name'])->toBe('San Salvador Island');
 });

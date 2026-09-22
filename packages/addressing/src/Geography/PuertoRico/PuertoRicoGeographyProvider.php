@@ -64,10 +64,10 @@ class PuertoRicoGeographyProvider implements CountryAddressAreaMetadataProvider,
                 levels: [
                     new AddressLevelDefinition(
                         key: 'municipality',
-                        label: 'Municipality / Region',
+                        label: 'Municipality',
                         kind: 'state',
                         hierarchyType: 'administrative',
-                        areaTypes: ['municipality', 'region'],
+                        areaTypes: ['municipality'],
                         areaLevel: 1,
                     ),
                 ],
@@ -83,7 +83,6 @@ class PuertoRicoGeographyProvider implements CountryAddressAreaMetadataProvider,
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
                 'municipality' => ['municipality'],
-                'region' => ['region'],
                 default => [],
             };
 

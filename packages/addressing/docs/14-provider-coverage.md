@@ -53,7 +53,7 @@ All 229 providers ship a formatter: 181 print a postcode (←99 →39 US →8 ab
 | Australia | AU | 8 | 8 | 8 | 1 | administrative: state | — | → | L1 — 6 states + 2 territories; externals global-only |
 | Austria | AT | 9 | 9 | 9 | 1 | administrative: state | — | ← | L1 — 9 states |
 | Azerbaijan | AZ | 78 | 78 | 78 | 1 | administrative: district | — | ← | L1 — 66 districts + 11 municipalities + Nakhchivan AR |
-| Bahamas | BS | 32 | 32 | 32 | 1 | administrative: district | — | none | L1 — 32 districts (ISO names) |
+| Bahamas | BS | 32 | 32 | 32 | 1 | administrative: district | — | none | L1 — 31 districts + New Providence island (ISO categories) |
 | Bahrain | BH | 4 | 4 | 4 | 1 | administrative: governorate | — | → | L1; no admin tier-2, blocks are postal |
 | Bangladesh | BD | 72 | 8 | 72 | 2 | administrative: division > district | district | → | Complete to district; upazilas out of scope |
 | Barbados | BB | 11 | 11 | 11 | 1 | administrative: parish | — | → | L1 |

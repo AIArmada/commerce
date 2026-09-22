@@ -56,7 +56,7 @@ class ParaguayGeographyProvider implements CountryAddressAreaMetadataProvider, C
                 levels: [
                     new AddressLevelDefinition(
                         key: 'department',
-                        label: 'Department',
+                        label: 'Department / Capital District',
                         kind: 'state',
                         hierarchyType: 'administrative',
                         areaTypes: ['department', 'capital_district'],
