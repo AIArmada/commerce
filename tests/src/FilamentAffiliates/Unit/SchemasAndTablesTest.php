@@ -1,6 +1,11 @@
 <?php
 
 declare(strict_types=1);
+use AIArmada\FilamentAffiliates\Resources\AffiliateResource\Schemas\AffiliateForm;
+use Filament\Schemas\Concerns\InteractsWithSchemas;
+use Filament\Schemas\Contracts\HasSchemas;
+use Filament\Schemas\Schema;
+use Livewire\Component;
 
 it('conversion resource schemas use neutral reference fields', function (): void {
     $repositoryRoot = dirname(__DIR__, 4);
@@ -94,9 +99,9 @@ it('AffiliatePayoutsTable uses canonical payout status values', function (): voi
         ->not->toContain("updateStatus(\$payout, 'queued')");
 });
 
-class AffiliateFormSchemaHostComponent extends Livewire\Component implements Filament\Schemas\Contracts\HasSchemas
+class AffiliateFormSchemaHostComponent extends Component implements HasSchemas
 {
-    use Filament\Schemas\Concerns\InteractsWithSchemas;
+    use InteractsWithSchemas;
 
     public ?array $data = [];
 
@@ -107,8 +112,8 @@ class AffiliateFormSchemaHostComponent extends Livewire\Component implements Fil
 }
 
 it('affiliate form keeps computed network depth read-only', function (): void {
-    $schema = AIArmada\FilamentAffiliates\Resources\AffiliateResource\Schemas\AffiliateForm::configure(
-        Filament\Schemas\Schema::make(new AffiliateFormSchemaHostComponent)->statePath('data')
+    $schema = AffiliateForm::configure(
+        Schema::make(new AffiliateFormSchemaHostComponent)->statePath('data')
     );
 
     $field = $schema->getComponent('network_depth');

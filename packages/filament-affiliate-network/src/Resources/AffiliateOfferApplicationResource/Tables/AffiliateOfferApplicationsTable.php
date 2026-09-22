@@ -45,7 +45,7 @@ final class AffiliateOfferApplicationsTable
 
                 TextColumn::make('status')
                     ->badge()
-                    ->color(fn (ApplicationStatus|string $state): string => match ($state instanceof ApplicationStatus ? $state->value : $state) {
+                    ->color(fn (ApplicationStatus | string $state): string => match ($state instanceof ApplicationStatus ? $state->value : $state) {
                         'approved' => 'success',
                         'pending' => 'warning',
                         default => 'danger',
