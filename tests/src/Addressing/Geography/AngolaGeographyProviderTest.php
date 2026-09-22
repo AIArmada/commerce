@@ -19,7 +19,7 @@ it('formats Angolan addresses without a postcode line', function (): void {
 it('ships the 21 operational provinces with Cuando Cubango retired', function (): void {
     $areas = app(AngolaGeographyProvider::class)->addressAreaSource()->areas();
 
-    expect($areas)->toHaveCount(21);
+    expect($areas->where('level', 1))->toHaveCount(21);
 
     $byId = $areas->keyBy('sourceId');
 
@@ -30,4 +30,17 @@ it('ships the 21 operational provinces with Cuando Cubango retired', function ()
         ->and($byId->get('ao:province:moxico-leste')->code)->toBe('MLE')
         ->and($byId->get('ao:province:cuanza-sul')->name)->toBe('Cuanza Sul')
         ->and($byId->has('ao:province:cuanza'))->toBeFalse();
+});
+
+it('ships 326 municipalities under provinces with parent links', function (): void {
+    $areas = app(AngolaGeographyProvider::class)->addressAreaSource()->areas()->collect();
+    $byId = $areas->keyBy->sourceId;
+    $l2 = $areas->where('level', 2);
+
+    expect($l2)->toHaveCount(326)
+        ->and($l2->pluck('parentSourceId')->every(fn ($p) => $byId->has($p)))->toBeTrue()
+        ->and($l2->where('parentSourceId', 'ao:province:malanje'))->toHaveCount(27)
+        ->and($l2->where('parentSourceId', 'ao:province:icolo-e-bengo'))->toHaveCount(7)
+        ->and($byId->get('ao:municipality:viana')->parentSourceId)->toBe('ao:province:luanda')
+        ->and($byId->get('ao:municipality:quelo')->parentSourceId)->toBe('ao:province:zaire');
 });

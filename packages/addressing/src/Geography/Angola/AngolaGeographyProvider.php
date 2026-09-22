@@ -69,6 +69,16 @@ class AngolaGeographyProvider implements CountryAddressAreaMetadataProvider, Cou
                         areaTypes: ['province'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'municipality',
+                        label: 'Municipality',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['municipality'],
+                        areaLevels: [2],
+                        parentKey: 'province',
+                        assignmentRole: 'municipality',
+                    ),
                 ],
             ),
         ];
@@ -82,6 +92,7 @@ class AngolaGeographyProvider implements CountryAddressAreaMetadataProvider, Cou
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
                 'province' => ['province'],
+                'municipality' => ['municipality'],
                 default => [],
             };
 

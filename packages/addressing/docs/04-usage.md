@@ -170,9 +170,10 @@ first.
 Saudi Arabia exposes `region → governorate` (13 regions, 139
 governorates) via `execute('SA')`: only regions link to states, and
 governorates are assignable through the `governorate` role with their
-region selected first. Egypt (27 governorates) exposes a single-level
-administrative hierarchy of ISO 3166-2 states, seeded with
-`execute('EG')`. Jordan exposes `governorate
+region selected first. Egypt exposes `governorate → district` (27
+governorates, 365 districts) via `execute('EG')`: only governorates
+link to states, and districts are assignable through the `district`
+role with their governorate selected first. Jordan exposes `governorate
 → liwa` (12 governorates, 51 liwa) via `execute('JO')`: only
 governorates link to states, and liwa are assignable through the
 `liwa` role with their governorate selected first. Morocco exposes `region → province / prefecture`
@@ -358,7 +359,7 @@ seeds Atauro under provisional code `AT`. The formatters print
 Armenia (10 regions + Yerevan), Azerbaijan (66 districts + 11
 municipalities + Nakhchivan AR), Bhutan (20 dzongkhags), Cyprus (6
 districts), Georgia (9 regions + 2 ARs + Tbilisi), Hong Kong (18
-districts), Iran (31 provinces), Israel (6 districts), Kazakhstan (17
+districts), Iran (31 provinces), Kazakhstan (17
 regions + 3 cities), Kyrgyzstan (7 regions + 2 cities), Lebanon (9
 governorates), Maldives (18 atolls + 5 cities), Mongolia (21 aimags +
 Ulaanbaatar), Nepal (7 provinces), North Korea (9 provinces + 4

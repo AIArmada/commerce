@@ -10,9 +10,9 @@ counts, or changes scope. See [Country Data](./05-country-data.md)
 for per-country narrative and [Provider Authoring](./13-provider-authoring.md)
 for how to add a level.
 
-Current shape: 229 providers — 2 dual-hierarchy, 1 depth-4, 1 depth-3, 172 depth-2,
-53 depth-1.
-All 229 providers ship a formatter: 181 print a postcode (←99 →39 US →8 above6 below28 after country1), 48 codeless.
+Current shape: 228 providers — 2 dual-hierarchy, 1 depth-4, 1 depth-3, 177 depth-2,
+47 depth-1.
+All 228 providers ship a formatter: 180 print a postcode (←98 →39 US →8 above6 below28 after country1), 48 codeless.
 
 ## Legend
 
@@ -38,13 +38,13 @@ All 229 providers ship a formatter: 181 print a postcode (←99 →39 US →8 ab
 
 | Country | Code | States | Mapped | Rows | Depth | Hierarchy | Roles | Fmt | Status |
 |---|---|---:|:---:|:---:|:---:|---|---|---|---|
-| Afghanistan | AF | 34 | 34 | 34 | 1 | administrative: province | — | ← | L1; districts (~400) blocked — consolidated list self-declared inaccurate, CSO/IDLG sets disagree |
+| Afghanistan | AF | 34 | 34 | 435 | 2 | administrative: province > district | district | ← | Complete — 34 provinces + 401 districts (OCHA COD-AB v03, Jun 2025; UN p-codes; govt counts vary 398–407 by vintage) |
 | Aland | AX | 16 | 16 | 16 | 1 | administrative: municipality | — | ← | L1 — no admin tier-2; L1 already municipal level |
 | Albania | AL | 12 | 12 | 73 | 2 | administrative: county > municipality | municipality | above | Complete — 12 counties + 61 municipalities (12 county pages; main table lacks county column) |
 | Algeria | DZ | 69 | 69 | 617 | 2 | administrative: wilaya > daira | daira | ← | Complete — 69 wilayas + 548 dairas per décrets 91-306/26-253; communes excluded |
 | American Samoa | AS | 5 | 5 | 20 | 2 | administrative: district > county | county | US → | Complete — 3 districts + 2 atolls + 15 counties (5 per district; Rose/Swains childless) |
-| Andorra | AD | 7 | 7 | 7 | 1 | administrative: parish | — | ← | L1 — no reliable tier-2; village lists conflict (57 vs 44 official poblacions) |
-| Angola | AO | 21 | 21 | 21 | 1 | administrative: province | — | none | L1 — 21 provinces, 2024 split operational Dec 2024; CUA/CUB/IEB/MLE provisional; CCU retired; 326 new municípios skipped (no reliable consolidated list; all wiki lists pre-reform) |
+| Andorra | AD | 7 | 7 | 7 | 1 | administrative: parish | — | ← | Blocked — wiki table contradicts its own "44 official poblacions" claim (45 rows with figures + 8 n/a after Nov-2024 re-adds of unofficial places); only stat reference is a dead 2016 estadistica.ad link, stats office unreachable; rival all-villages lists run to 57 |
+| Angola | AO | 21 | 21 | 347 | 2 | administrative: province > municipality | municipality | none | Complete — 21 provinces + 326 municipalities (Law 14/24 gazette annexes, one map page each; CCU retired; CUA/CUB/IEB/MLE provisional) |
 | Anguilla | AI | 14 | 14 | 14 | 1 | administrative: district | — | below | L1 — no admin tier-2; 14 districts terminal|
 | Antigua and Barbuda | AG | 8 | 8 | 8 | 1 | administrative: parish | — | none | L1 — no admin tier-2; parishes/dependencies terminal|
 | Argentina | AR | 24 | 24 | 551 | 2 | administrative: province / city > department / partido / commune | department | ← | Complete — 24 provinces + 377 departments + 135 partidos + 15 comunas (Departments/Partidos/Communes of Buenos Aires) |
@@ -59,7 +59,7 @@ All 229 providers ship a formatter: 181 print a postcode (←99 →39 US →8 ab
 | Barbados | BB | 11 | 11 | 11 | 1 | administrative: parish | — | → | L1 — no admin tier-2; 11 parishes terminal|
 | Belarus | BY | 7 | 7 | 125 | 2 | administrative: oblast / city > district | district | ← | Complete — 7 regions + 118 districts (Districts of Belarus; Minsk-region rows under oblast not city) |
 | Belgium | BE | 3 | 3 | 13 | 2 | administrative: region > province | province | ← | Complete — 3 regions + 10 provinces; Brussels childless |
-| Belize | BZ | 6 | 6 | 6 | 1 | administrative: district | — | none | L1 — city/town/village councils exist but no consolidated district-mapped list; constituencies electoral|
+| Belize | BZ | 6 | 6 | 6 | 1 | administrative: district | — | none | Blocked — councils exist but no consolidated district-mapped list; OCHA COD-AB stops at the 6 districts |
 | Benin | BJ | 12 | 12 | 89 | 2 | administrative: department > commune | commune | none | Complete — 12 departments + 77 communes (per-department lists) |
 | Bermuda | BM | 9 | 9 | 9 | 1 | administrative: municipality | — | → | L1 — no admin tier-2; parishes/municipalities terminal|
 | Bhutan | BT | 20 | 20 | 225 | 2 | administrative: district > gewog | gewog | → | Complete — 20 districts + 205 gewogs (single table w/ Dzongkhag rowspan (ECB spellings)) |
@@ -95,7 +95,7 @@ All 229 providers ship a formatter: 181 print a postcode (←99 →39 US →8 ab
 | Dominican Republic | DO | 10 | 10 | 42 | 2 | administrative: region > province | province | ← | Complete — 10 regions + 31 provinces + DN; DN under Ozama |
 | DR Congo | CD | 26 | 26 | 171 | 2 | administrative: province > territory | territory | ← | Complete — 26 provinces + 145 territories (post-2015 mapping; Kinshasa terminal) |
 | Ecuador | EC | 24 | 24 | 246 | 2 | administrative: province > canton | canton | ← | Complete — 24 provinces + 222 cantons (Source: Wikipedia Cantons of Ecuador (MediaWiki API, Sep 2026); header counts sum to 222.) |
-| Egypt | EG | 27 | 27 | 27 | 1 | administrative: governorate | — | below | L1 — tier-2 (qism/markaz) has no consolidated governorate mapping; 2013 list flagged inaccurate |
+| Egypt | EG | 27 | 27 | 392 | 2 | administrative: governorate > district | district | below | Complete — 27 governorates + 365 districts (OCHA COD-AB, CAPMAS geography, Apr 2017; mixed qism/markaz; COD transliteration) |
 | El Salvador | SV | 14 | 14 | 58 | 2 | administrative: department > municipality | municipality | ← | Complete — 14 departments + 44 municipalities (Source: Wikipedia List of municipalities and districts of El Salvador (MediaWiki API, Sep 2026). Post-May-2024 reform: 44 municipalities; former 262 are now districts (not modelled).) |
 | Equatorial Guinea | GQ | 2 | 2 | 10 | 2 | administrative: region > province | province | none | Complete — 2 regions + 8 provinces |
 | Eritrea | ER | 6 | 6 | 64 | 2 | administrative: region > subregion | subregion | none | Complete — 6 regions + 58 subregions (per-region bullets) |
@@ -135,7 +135,6 @@ All 229 providers ship a formatter: 181 print a postcode (←99 →39 US →8 ab
 | Iraq | IQ | 19 | 19 | 138 | 2 | administrative: governorate > district | district | below | Complete — 19 governorates + 119 districts (per-governorate bullets (Makhmur under Nineveh only)) |
 | Ireland | IE | 4 | 4 | 30 | 2 | administrative: province > county | county | below | Complete — 4 provinces + 26 counties |
 | Isle of Man | IM | 6 | 6 | 27 | 2 | administrative: sheading > parish / town / district / village | local_authority | below | Complete — 6 sheadings + 13 parishes + 4 towns + 2 districts + 2 villages (Local government today table w/ Sheading column) |
-| Israel | IL | 6 | 6 | 21 | 2 | administrative: district > subdistrict | subdistrict | ← | Complete — 6 districts + 15 subdistricts (Districts of Israel) |
 | Italy | IT | 20 | 20 | 129 | 2 | administrative: region > province / metropolitan_city / free_municipal_consortium / decentralization_entity / autonomous_province | province | ← | Complete — 20 regions + 82 provinces + 15 metros + 6 consortiums + 4 entities + 2 autonomous (Provinces of Italy; Aosta disestablished excluded) |
 | Ivory Coast | CI | 14 | 14 | 45 | 2 | administrative: district > region | region | none | Complete — 12 districts + Abidjan/Yamoussoukro + 31 regions (autonomous districts terminal; departments are L3) |
 | Jamaica | JM | 14 | 14 | 14 | 1 | administrative: parish | — | none | L1 — no admin tier-2; 14 parishes terminal|
@@ -153,7 +152,7 @@ All 229 providers ship a formatter: 181 print a postcode (←99 →39 US →8 ab
 | Lebanon | LB | 9 | 9 | 34 | 2 | administrative: governorate > caza | caza | → | Complete — 9 governorates (KJ provisional) + 25 cazas (Districts of Lebanon) |
 | Lesotho | LS | 10 | 10 | 90 | 2 | administrative: district > constituency | constituency | → | Complete — 10 districts + 80 constituencys (per-district tables (Legal Notice 37/2022)) |
 | Liberia | LR | 15 | 15 | 142 | 2 | administrative: county > district | district | ← | Complete — 15 countys + 127 districts (rowspan county table (intro 136 stale; county articles confirm)) |
-| Libya | LY | 22 | 22 | 22 | 1 | administrative: popularate | — | none | L1 — 22 sha'biyat; baladiyat skipped (99 vs 100 vs 106–114 conflict, no consolidated list) |
+| Libya | LY | 22 | 22 | 122 | 2 | administrative: popularate > baladiya | baladiya | none | Complete — 22 sha'biyat + 100 baladiyas (IOM DTM R50/R62 identical sets, Oct 2023–Apr 2026; p-coded; DTM mantika mapped to ISO popularates) |
 | Liechtenstein | LI | 11 | 11 | 11 | 1 | administrative: commune | — | ← | L1 — no admin tier-2; L1 already municipal level |
 | Lithuania | LT | 10 | 10 | 70 | 2 | administrative: county > district_municipality / municipality / city_municipality | municipality | ← | Complete — 10 counties + 43 district + 10 plain + 7 city municipalities (restructure; Marijampolė retyped) |
 | Luxembourg | LU | 12 | 12 | 112 | 2 | administrative: canton > commune | commune | ← | Complete — 12 cantons + 100 communes (List of communes of Luxembourg) |
@@ -177,7 +176,7 @@ All 229 providers ship a formatter: 181 print a postcode (←99 →39 US →8 ab
 | Montserrat | MS | 3 | 3 | 3 | 1 | administrative: parish | — | → | L1 — no admin tier-2; 3 parishes terminal|
 | Morocco | MA | 87 | 12 | 87 | 2 | administrative: region > province | province | ← | Complete to province; communes (~1,500) out of scope |
 | Mozambique | MZ | 11 | 11 | 147 | 2 | administrative: province > district | district | ← | Complete — 10 provinces + Maputo City + 136 districts (129 provincial + 7 Maputo municipal; Maxixe excluded as city) |
-| Myanmar | MM | 15 | 15 | 15 | 1 | administrative: region | — | → | L1 — 7 regions + 7 states + Naypyidaw; districts skipped (list sums 124 vs official 121, 3 rows unidentified; SAZ accounting unclear) |
+| Myanmar | MM | 15 | 15 | 95 | 2 | administrative: region > district | district | → | Complete — 15 + 80 districts (MIMU via OCHA COD-AB, Feb 2024; Bago E/W + Shan E/N/S rolled up to ISO L1; announced 121 never operationalized) |
 | Namibia | NA | 14 | 14 | 135 | 2 | administrative: region > constituency | constituency | below | Complete — 14 regions + 121 constituencies (Tondoro + Oshikunde added; Wiki table omits both) |
 | Nauru | NR | 14 | 14 | 14 | 1 | administrative: district | — | below | L1 — 169 villages historical (1908 source, merged settlement; no admin function) |
 | Nepal | NP | 7 | 7 | 84 | 2 | administrative: province > district | district | → | Complete — 7 provinces + 77 districts (7 per-province tables) |
@@ -188,7 +187,7 @@ All 229 providers ship a formatter: 181 print a postcode (←99 →39 US →8 ab
 | Niger | NE | 8 | 8 | 79 | 2 | administrative: region / urban_community > department / commune | department | ← | Complete — 7 regions + Niamey + 66 departments + 5 Niamey communes (per-region bullets + Niamey article) |
 | Nigeria | NG | 37 | 37 | 811 | 2 | administrative: state > lga | lga | → | Complete — 37 states + 768 LGAs + 6 FCT area councils; post-2023 names; LCDAs excluded |
 | Niue | NU | 14 | 14 | 14 | 1 | administrative: village | — | → | L1 — 14 municipal villages, no tier below |
-| North Korea | KP | 13 | 13 | 13 | 1 | administrative: province | — | none | L1 — tier-2 list 2021-vintage and inconsistent (Namp'o double-placed); no reliable L2 |
+| North Korea | KP | 13 | 13 | 192 | 2 | administrative: province > district | district | none | Complete — 13 + 179 districts (OCHA COD-AB, Jun 2019; Kaesong/Rason undivided; Pyongyang 3 rows incl. city core) |
 | North Macedonia | MK | 80 | 80 | 80 | 1 | administrative: municipality | — | ← | L1 — no admin tier-2; L1 already municipal level |
 | Norway | NO | 17 | 17 | 374 | 2 | administrative: county / arctic_region > municipality | municipality | ← | Complete — 17 counties + 357 municipalities (List of municipalities of Norway, May-2024 vintage; codes) |
 | Oman | OM | 11 | 11 | 74 | 2 | administrative: governorate > wilayat | wilayat | above | Complete — 11 governorates + 63 wilayats |

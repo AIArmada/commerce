@@ -62,6 +62,16 @@ class AfghanistanGeographyProvider implements CountryAddressAreaMetadataProvider
                         areaTypes: ['province'],
                         areaLevel: 1,
                     ),
+                    new AddressLevelDefinition(
+                        key: 'district',
+                        label: 'District',
+                        kind: 'area',
+                        hierarchyType: 'administrative',
+                        areaTypes: ['district'],
+                        areaLevels: [2],
+                        parentKey: 'province',
+                        assignmentRole: 'district',
+                    ),
                 ],
             ),
         ];
@@ -75,6 +85,7 @@ class AfghanistanGeographyProvider implements CountryAddressAreaMetadataProvider
         foreach ($this->addressAreaSource()->areas() as $area) {
             $areaRoles = match ($area->type) {
                 'province' => ['province'],
+                'district' => ['district'],
                 default => [],
             };
 

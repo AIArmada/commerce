@@ -14,7 +14,7 @@ Country-specific `AddressArea` trees imported by the bundled geography providers
 - `oman-address-areas.csv` — used by `OmanGeographyProvider`. 11 governorates per ISO 3166-2:OM plus 63 wilayats.
 - `united-arab-emirates-address-areas.csv` — used by `UnitedArabEmiratesGeographyProvider`. 7 emirates.
 - `saudi-arabia-address-areas.csv` — used by `SaudiArabiaGeographyProvider`. 13 regions per ISO 3166-2:SA.
-- `egypt-address-areas.csv` — used by `EgyptGeographyProvider`. 27 governorates per ISO 3166-2:EG.
+- `egypt-address-areas.csv` — used by `EgyptGeographyProvider`. 27 governorates per ISO 3166-2:EG + 365 COD-AB districts (mixed qism/markaz).
 - `south-africa-address-areas.csv` — used by `SouthAfricaGeographyProvider`. 9 provinces per ISO 3166-2:ZA.
 - `turkiye-address-areas.csv` — used by `TurkiyeGeographyProvider`. 81 provinces per ISO 3166-2:TR plus 973 districts (51 bare `Merkez`; `Ereğli` twins Konya/Zonguldak; newest Derecik 2018; no district codes).
 - `pakistan-address-areas.csv` — used by `PakistanGeographyProvider`. 4 provinces + 3 federal territories per ISO 3166-2:PK plus 174 districts (late-2025 reorganization state; contradictory 2026 Balochistan batch excluded).
@@ -55,13 +55,13 @@ Country-specific `AddressArea` trees imported by the bundled geography providers
 - `ukraine-address-areas.csv` — used by `UkraineGeographyProvider`. 24 oblasts + Kyiv + Sevastopol + Crimea; ISO adjectival names.
 - `iraq-address-areas.csv` — used by `IraqGeographyProvider`. 19 governorates incl. Halabja (HL per UK usage, provisional); overlapping KR region excluded.
 - `ghana-address-areas.csv` — used by `GhanaGeographyProvider`. 16 regions including the 2019 batch.
-- `angola-address-areas.csv` — used by `AngolaGeographyProvider`. 18 ISO provinces; 2024 split pending implementation.
+- `angola-address-areas.csv` — used by `AngolaGeographyProvider`. 21 post-reform provinces + 326 municipalities (Law 14/24 gazette annexes).
 - `cameroon-address-areas.csv` — used by `CameroonGeographyProvider`. 10 regions.
 - `madagascar-address-areas.csv` — used by `MadagascarGeographyProvider`. 6 provinces per ISO; codeless 23 regions excluded.
-- `afghanistan-address-areas.csv` — used by `AfghanistanGeographyProvider`. 34 provinces; Ghor/Kunduz spellings fixed.
+- `afghanistan-address-areas.csv` — used by `AfghanistanGeographyProvider`. 34 provinces + 401 COD-AB districts; Ghor/Kunduz spellings fixed.
 - `mozambique-address-areas.csv` — used by `MozambiqueGeographyProvider`. 10 provinces + Maputo City, disambiguated.
 - `uzbekistan-address-areas.csv` — used by `UzbekistanGeographyProvider`. 12 regions + Karakalpakstan + Tashkent City, plus 175 tumanlar and 31 regional-subordination cities sharing the L2 `tuman` role; official Uzbek Latin endonyms with ASCII apostrophes; 17 tuman/city twins (filter by type + parent); Namangan city districts excluded (L3).
-- `myanmar-address-areas.csv` — used by `MyanmarGeographyProvider`. 7 regions + 7 states + Naypyidaw; Mon normalized.
+- `myanmar-address-areas.csv` — used by `MyanmarGeographyProvider`. 7 regions + 7 states + Naypyidaw + 80 MIMU districts; Mon normalized.
 - `cambodia-address-areas.csv` — used by `CambodiaGeographyProvider`. 24 provinces + Phnom Penh; official `Preah Sihanouk` with `Sihanoukville` aliased.
 - `laos-address-areas.csv` — used by `LaosGeographyProvider`. 17 provinces + Vientiane Prefecture; Vientiane province/prefecture share a name.
 - `timor-leste-address-areas.csv` — used by `TimorLesteGeographyProvider`. 13 ISO municipalities + Atauro (`AT` provisional, no ISO code yet).
@@ -72,14 +72,13 @@ Country-specific `AddressArea` trees imported by the bundled geography providers
 - `georgia-address-areas.csv` — used by `GeorgiaGeographyProvider`. 9 regions + Abkhazia/Adjara ARs + Tbilisi.
 - `hong-kong-address-areas.csv` — used by `HongKongGeographyProvider`. 18 districts; no postcode system.
 - `iran-address-areas.csv` — used by `IranGeographyProvider`. 31 ostans.
-- `israel-address-areas.csv` — used by `IsraelGeographyProvider`. 6 districts.
 - `kazakhstan-address-areas.csv` — used by `KazakhstanGeographyProvider`. 17 regions + Almaty/Astana/Shymkent; region/city Almaty share a name.
 - `kyrgyzstan-address-areas.csv` — used by `KyrgyzstanGeographyProvider`. 7 regions + Bishkek/Osh; region/city Osh share a name.
 - `lebanon-address-areas.csv` — used by `LebanonGeographyProvider`. 8 governorates incl. Akkar and Baalbek-Hermel.
 - `maldives-address-areas.csv` — used by `MaldivesGeographyProvider`. 20 atolls + Addu City.
 - `mongolia-address-areas.csv` — used by `MongoliaGeographyProvider`. 21 aimags + Ulaanbaatar.
 - `nepal-address-areas.csv` — used by `NepalGeographyProvider`. 7 provinces per 2015 constitution.
-- `north-korea-address-areas.csv` — used by `NorthKoreaGeographyProvider`. 9 provinces + 4 cities; no postcode system.
+- `north-korea-address-areas.csv` — used by `NorthKoreaGeographyProvider`. 9 provinces + 4 cities + 179 COD-AB districts; no postcode system.
 - `palestine-address-areas.csv` — used by `PalestineGeographyProvider`. 16 governorates (West Bank + Gaza).
 - `sri-lanka-address-areas.csv` — used by `SriLankaGeographyProvider`. 9 provinces with 25 districts at L2 (5/3/3/3/3/2/2/2/2).
 - `syria-address-areas.csv` — used by `SyriaGeographyProvider`. 14 provinces.
@@ -105,7 +104,7 @@ Country-specific `AddressArea` trees imported by the bundled geography providers
 - `guinea-bissau-address-areas.csv` — used by `GuineaBissauGeographyProvider`. 3 provinces + 8 regions + Bissau sector.
 - `lesotho-address-areas.csv` — used by `LesothoGeographyProvider`. 10 districts.
 - `liberia-address-areas.csv` — used by `LiberiaGeographyProvider`. 15 counties.
-- `libya-address-areas.csv` — used by `LibyaGeographyProvider`. 22 popularates (sha'biyat).
+- `libya-address-areas.csv` — used by `LibyaGeographyProvider`. 22 popularates (sha'biyat) + 100 IOM DTM baladiyas.
 - `malawi-address-areas.csv` — used by `MalawiGeographyProvider`. 3 regions with 28 districts at L2 (13/9/6).
 - `mali-address-areas.csv` — used by `MaliGeographyProvider`. 10 regions + Bamako district.
 - `mauritania-address-areas.csv` — used by `MauritaniaGeographyProvider`. 15 regions incl. 3 Nouakchott regions.

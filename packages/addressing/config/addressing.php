@@ -196,8 +196,6 @@ use AIArmada\Addressing\Geography\Ireland\IrelandAddressFormatter;
 use AIArmada\Addressing\Geography\Ireland\IrelandGeographyProvider;
 use AIArmada\Addressing\Geography\IsleOfMan\IsleOfManAddressFormatter;
 use AIArmada\Addressing\Geography\IsleOfMan\IsleOfManGeographyProvider;
-use AIArmada\Addressing\Geography\Israel\IsraelAddressFormatter;
-use AIArmada\Addressing\Geography\Israel\IsraelGeographyProvider;
 use AIArmada\Addressing\Geography\Italy\ItalyAddressFormatter;
 use AIArmada\Addressing\Geography\Italy\ItalyGeographyProvider;
 use AIArmada\Addressing\Geography\IvoryCoast\IvoryCoastAddressFormatter;
@@ -569,7 +567,6 @@ return [
             GeorgiaGeographyProvider::class,
             HongKongGeographyProvider::class,
             IranGeographyProvider::class,
-            IsraelGeographyProvider::class,
             KazakhstanGeographyProvider::class,
             KyrgyzstanGeographyProvider::class,
             LebanonGeographyProvider::class,
@@ -806,7 +803,6 @@ return [
         GeorgiaAddressFormatter::class,
         HongKongAddressFormatter::class,
         IranAddressFormatter::class,
-        IsraelAddressFormatter::class,
         KazakhstanAddressFormatter::class,
         KyrgyzstanAddressFormatter::class,
         LebanonAddressFormatter::class,

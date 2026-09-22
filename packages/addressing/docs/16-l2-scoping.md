@@ -10,6 +10,11 @@ what the postcode posture is. This is a scoping note, not an
 implementation plan: row counts and URLs were verified in September
 2026, but the implementer must re-pull every source at build time.
 
+> Status: all four scoped builds are complete (US 3,143 counties,
+> BR 5,571 municípios, MX 2,479 municipios, CA 5,028 CSDs — all
+> depth-2 in the [coverage registry](./14-provider-coverage.md)).
+> Kept as the source-and-trap reference for those tiers.
+
 For the postal-`locality` method that sits below L2, see
 [Locality Expansion Method](./15-locality-expansion.md).
 

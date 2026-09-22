@@ -775,9 +775,18 @@ Box layout are not generated.
 ## Egypt
 
 The bundled `EgyptGeographyProvider` supplies the 27 ISO 3166-2
-governorates as `State` rows and a single-level administrative
+governorates as `State` rows and a two-level administrative
 hierarchy. It is selected with
 `SeedCountryGeographiesAction::execute('EG')` after countries are seeded.
+The 365 districts ship as level-2 areas from the OCHA Common
+Operational Dataset on Administrative Boundaries (CAPMAS
+census geography, valid 21 April 2017), which carries a
+p-code (`EG0401`-style) and an explicit governorate parent
+per district. Rows mix urban qisms and rural marakiz (plus a
+few police-administered units such as `Port Suez Police
+Department`); same-named qism/markaz pairs (e.g. the two
+`Luxor` rows) ship as separate parent-scoped rows. Names use
+COD transliteration (`Suhag`, `Sharkia`, `Qina`).
 
 Egyptian addresses are formatted per the UPU layout: street lines,
 locality, governorate, a 7-digit postcode on its own line, and country.
@@ -1580,12 +1589,16 @@ country.
 ## Angola
 
 The bundled `AngolaGeographyProvider` supplies the 21 provinces
-as `State` rows and a single-level administrative hierarchy. It is
+as `State` rows and a two-level administrative hierarchy. It is
 selected with `SeedCountryGeographiesAction::execute('AO')` after
 countries are seeded.
-The 326 post-reform municipalities are not bundled: no reliable
-consolidated list exists yet (all wiki lists still show the
-pre-reform 164, which cannot nest under the new provinces).
+The 326 post-reform municipalities ship as level-2 areas,
+extracted from the 21 annexes of Law 14/24 itself (Diário da
+República, 5 September 2024 — one map page per municipality,
+titles parsed and counted to exactly 326). Names are
+title-cased from the gazette's all-caps with Portuguese
+particles kept lowercase; official spellings omit apostrophes
+(`Mbanza Kongo`, `Nzeto`) per current government usage.
 
 Law 14/24 (gazetted 5 Sept 2024) split Cuando Cubango into `Cuando`
 and `Cubango`, carved `Icolo e Bengo` out of Luanda, and `Moxico
@@ -1631,13 +1644,19 @@ Malagasy addresses are formatted per the UPU layout: street lines,
 ## Afghanistan
 
 The bundled `AfghanistanGeographyProvider` supplies the 34 provinces
-as `State` rows and a single-level administrative hierarchy. It is
+as `State` rows and a two-level administrative hierarchy. It is
 selected with `SeedCountryGeographiesAction::execute('AF')` after
 countries are seeded.
 
-Districts are intentionally not bundled: the consolidated list is
-self-declared inaccurate (mixes stale and missing rows against the
-announced 421) and the CSO/IDLG sets disagree. The `Ghor` and `Kunduz`
+The 401 districts ship as level-2 areas from the OCHA Common
+Operational Dataset on Administrative Boundaries (COD-AB v03,
+valid 1 June 2025), which carries a UN p-code (`AF0101`-style)
+and an explicit province parent per district. Afghan government
+sources disagree on the district count over time (398/399/407 in
+various CSO/IDLG/SIGAR vintages), so the COD — the operational
+standard used by the UN and humanitarian community — is the
+bundled source of truth; 33 provincial centres and Kabul city
+ship as their own district rows. The `Ghor` and `Kunduz`
 spellings are corrected at seed.
 
 Afghan addresses are formatted per the UPU layout: street lines,
@@ -1695,16 +1714,22 @@ own line (omitted when it duplicates the city), and country.
 ## Myanmar
 
 The bundled `MyanmarGeographyProvider` supplies the 7 regions, 7
-states, and Naypyidaw as `State` rows and a single-level
+states, and Naypyidaw as `State` rows and a two-level
 administrative hierarchy. It is selected with
 `SeedCountryGeographiesAction::execute('MM')` after countries are seeded.
-Districts are not bundled: the consolidated list sums to 124 rows
-against the official 121 with 3 rows unidentified after
-multi-source verification, and self-administered-zone accounting is
-unclear. A future pass with the gazetted 2022 notifications can
-close the gap.
-
-Townships and districts are intentionally not bundled.
+The 80 districts ship as level-2 areas from the OCHA
+Common Operational Dataset on Administrative Boundaries
+(MIMU Place Codes, valid 15 February 2024), which carries a
+p-code (`MMR016001`-style) and an explicit parent per
+district. Operational reality wins over announcement
+reality: the April 2022 MOI announcement (Notifications
+319–333, 76 + 46 = 121) was never operationalized, and the
+reference table churns between counts, so the 80-district
+MIMU operational list is the bundled source of truth.
+MIMU splits Bago into East/West and Shan into East/North/
+South (18 admin-1 units); those split parents are rolled up
+into the ISO `Bago` and `Shan` states (Shan 16, Bago 4).
+Townships are not bundled.
 
 Myanmar addresses are formatted per the UPU layout: street lines,
 `{locality}, {postcode}` with a 7-digit postcode, the region or state
@@ -1864,17 +1889,6 @@ Iranian addresses are formatted per the UPU layout: street lines,
 the locality, the province, the 10-digit postcode on its own line,
 and country.
 
-## Israel
-
-The bundled `IsraelGeographyProvider` supplies the 6 districts as
-`State` rows and a two-level administrative hierarchy. It is
-selected with `SeedCountryGeographiesAction::execute('IL')` after
-countries are seeded. The 15 subdistricts ship as level-2 areas under their districts.
-
-Israeli addresses are formatted per the UPU layout: street lines,
-`{postcode} {locality}` with a 7-digit postcode (legacy 5-digit codes
-pass through), and country.
-
 ## Kazakhstan
 
 The bundled `KazakhstanGeographyProvider` supplies the 17 regions
@@ -1964,12 +1978,17 @@ own line when both are set, and country.
 
 The bundled `NorthKoreaGeographyProvider` supplies the 9 provinces
 plus Kaesong, Nampo, Pyongyang, and Rason as `State` rows and a
-single-level administrative hierarchy. It is selected with
+two-level administrative hierarchy. It is selected with
 `SeedCountryGeographiesAction::execute('KP')` after countries are seeded.
-Counties, cities, and wards exist below but the only consolidated
-list is 2021-vintage and internally inconsistent (Namp'o placed
-both as a first-level city and under South Pyongan), so no
-reliable tier-2 ships.
+The 179 districts (si/gun) ship as level-2 areas from the OCHA
+Common Operational Dataset on Administrative Boundaries
+(valid 24 June 2019), which carries a p-code (`KP1102`-style)
+and an explicit parent per district; Nampo nests cleanly with
+6 children (no double placement). Two modelling notes:
+COD-AB covers 11 of the 13 first-level units, so Kaesong and
+Rason ship without subdivisions, and Pyongyang ships with 3
+rows (city core plus Kangdong and Unjong counties) rather
+than its full guyok set.
 
 North Korea has no postcode system. Addresses are formatted per the
 UPU layout: street lines, the locality, and country; any supplied
@@ -2338,12 +2357,20 @@ stay optional; Monrovia zone suffixes pass through as supplied.
 ## Libya
 
 The bundled `LibyaGeographyProvider` supplies the 22 popularates
-(sha'biyat) as `State` rows and a single-level administrative
+(sha'biyat) as `State` rows and a two-level administrative
 hierarchy. It is selected with
 `SeedCountryGeographiesAction::execute('LY')` after countries are seeded.
-Baladiyat are not bundled: counts conflict across sources (99
-gazetted 2013 vs 100 IOM-operational vs 106–114 claimed) with no
-reliable consolidated list.
+The 100 baladiyas ship as level-2 areas from IOM DTM Libya's
+Mobility Tracking baseline (Round 50, Oct–Dec 2023: `Baladiya
+Main` sheet with a `LY021102`-style p-code and an explicit
+mantika parent per baladiya). The 100-set is stable: Round 62
+(Mar–Apr 2026) carries the identical 100 (mantika, baladiya)
+pairs, both rounds' summaries assert `# Baladiyas: 100`, and
+IOM reports have used 100 consistently since 2017. Rival
+counts (99 gazetted 2013, ~101, 106–114 claimed) lose to this
+operational consensus. DTM mantika spellings map onto the ISO
+popularates (Ejdabia→Al Wahat, Tobruk→Al Butnan,
+Ubari→Wadi al Hayaa, Zwara→Nuqat al Khams).
 
 Libya has no postcode system. Addresses are formatted per the UPU
 layout: street lines, the locality, and country; any supplied code
@@ -3581,17 +3608,6 @@ the `district` assignment role.
 
 New Zealand postcodes print left of the locality
 (`6011 Wellington`).
-
-## Egypt
-
-The bundled `EgyptGeographyProvider` supplies the 27
-governorates as `State` rows plus a flat `State` level only.
-Egypt remains a depth-1 provider: its second tier (qisms,
-marakiz, new cities, police-administered areas) has no
-consolidated governorate-mapped source — the reference list
-is a flat 351-row 2013 table explicitly flagged as inaccurate
-and not reflecting the post-2014 system (Source:
-Subdivisions of Egypt).
 
 ## Numeric state codes
 
