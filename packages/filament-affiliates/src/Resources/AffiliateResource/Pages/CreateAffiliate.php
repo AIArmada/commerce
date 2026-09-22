@@ -44,7 +44,7 @@ final class CreateAffiliate extends CreateRecord
             $record->save();
         } catch (InvalidArgumentException $exception) {
             throw ValidationException::withMessages([
-                'linked_user' => $exception->getMessage(),
+                'data.linked_user' => $exception->getMessage(),
             ]);
         }
 

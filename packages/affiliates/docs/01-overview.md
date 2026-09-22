@@ -153,4 +153,6 @@ All integrations are detected via `class_exists()` and enabled automatically.
 - [Commands](11-commands.md)
 - [Events](12-events.md)
 - [API](13-api.md)
+- [Catalog](14-catalog.md)
+- [Network merchant SDK](15-network-merchant.md)
 - [Filament Affiliates overview](../../filament-affiliates/docs/01-overview.md)

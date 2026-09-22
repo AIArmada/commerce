@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferApplicationResource\Tables;
 
+use AIArmada\AffiliateNetwork\Enums\ApplicationStatus;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
 use AIArmada\AffiliateNetwork\Models\Concerns\ScopesByBelongsToOwner;
 use AIArmada\AffiliateNetwork\Services\OfferManagementService;
@@ -44,7 +45,7 @@ final class AffiliateOfferApplicationsTable
 
                 TextColumn::make('status')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
+                    ->color(fn (ApplicationStatus|string $state): string => match ($state instanceof ApplicationStatus ? $state->value : $state) {
                         'approved' => 'success',
                         'pending' => 'warning',
                         default => 'danger',

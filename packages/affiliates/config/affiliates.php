@@ -298,6 +298,28 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Affiliate Network Merchant SDK
+    |--------------------------------------------------------------------------
+    |
+    | Connection details for reporting sales to an affiliate network via
+    | NetworkPostbackClient, plus the referral-capture settings used by the
+    | CaptureNetworkReferral middleware. Only needed on merchant stores
+    | that sell through a network marketplace.
+    |
+    */
+
+    'merchant' => [
+        'network_url' => env('AFFILIATE_NETWORK_URL'),
+        'prefix' => env('AFFILIATE_NETWORK_PREFIX', 'api/affiliate-network'),
+        'site' => env('AFFILIATE_NETWORK_SITE'),
+        'token' => env('AFFILIATE_NETWORK_TOKEN'),
+        'referral_param' => env('AFFILIATE_NETWORK_REFERRAL_PARAM', 'anl'),
+        'session_key' => env('AFFILIATE_NETWORK_SESSION_KEY', 'affiliate_network.link_code'),
+        'timeout_seconds' => env('AFFILIATE_NETWORK_TIMEOUT', 8),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Tax
     |--------------------------------------------------------------------------
     */

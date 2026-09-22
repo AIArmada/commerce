@@ -82,6 +82,10 @@ final class AffiliateSupportTicketResource extends Resource
         /** @var Builder<Model> $modelQuery */
         $modelQuery = $query;
 
+        if (! (bool) config('affiliates.owner.enabled', false)) {
+            return $modelQuery;
+        }
+
         return OwnerUiScope::apply($modelQuery, includeGlobal: false);
     }
 

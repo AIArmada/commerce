@@ -68,6 +68,11 @@ The middleware:
 3. Sets a tracking cookie (default: 30 days)
 4. Links the attribution to the cart when shopping begins
 
+The service provider automatically excludes the tracking cookie from
+Laravel's cookie encryption, so `CartBridge::hydrateAffiliateFromCookie()`
+sees the same value in controllers that the middleware wrote. No app
+configuration is needed for this.
+
 ### Consent Management
 
 For GDPR compliance, enable consent requirement:

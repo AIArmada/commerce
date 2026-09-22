@@ -8,6 +8,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentAffiliates\Resources\AffiliateLinkResource;
+use AIArmada\FilamentAffiliates\Resources\AffiliateLinkResource\Pages\Concerns\FillsTrackingUrl;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
@@ -17,6 +18,8 @@ use RuntimeException;
 
 final class CreateAffiliateLink extends CreateRecord
 {
+    use FillsTrackingUrl;
+
     protected static string $resource = AffiliateLinkResource::class;
 
     /**
@@ -29,7 +32,7 @@ final class CreateAffiliateLink extends CreateRecord
 
         if (! is_string($affiliateId) && ! is_int($affiliateId)) {
             throw ValidationException::withMessages([
-                'affiliate_id' => 'The selected affiliate is invalid.',
+                'data.affiliate_id' => 'The selected affiliate is invalid.',
             ]);
         }
 
@@ -44,12 +47,12 @@ final class CreateAffiliateLink extends CreateRecord
         if ($programId === null || $programId === '') {
             $data['program_id'] = null;
 
-            return $data;
+            return $this->fillTrackingUrl($data);
         }
 
         if (! is_string($programId) && ! is_int($programId)) {
             throw ValidationException::withMessages([
-                'program_id' => 'The selected program is invalid.',
+                'data.program_id' => 'The selected program is invalid.',
             ]);
         }
 
@@ -59,7 +62,7 @@ final class CreateAffiliateLink extends CreateRecord
             'program_id',
         );
 
-        return $data;
+        return $this->fillTrackingUrl($data);
     }
 
     /**
@@ -69,6 +72,18 @@ final class CreateAffiliateLink extends CreateRecord
      */
     private function resolveOwnedId(string $model, string $id, string $field): string
     {
+        if (! (bool) config('affiliates.owner.enabled', false)) {
+            $record = $model::query()->find($id);
+
+            if (! $record instanceof Model) {
+                throw ValidationException::withMessages([
+                    'data.' . $field => 'The selected ' . str_replace('_id', '', $field) . ' is invalid.',
+                ]);
+            }
+
+            return (string) $record->getKey();
+        }
+
         try {
             return (string) OwnerWriteGuard::findOrFailForOwner(
                 $model,
@@ -78,7 +93,7 @@ final class CreateAffiliateLink extends CreateRecord
             )->getKey();
         } catch (AuthorizationException | InvalidArgumentException | RuntimeException) {
             throw ValidationException::withMessages([
-                $field => 'The selected ' . str_replace('_id', '', $field) . ' is not accessible in the current owner scope.',
+                'data.' . $field => 'The selected ' . str_replace('_id', '', $field) . ' is not accessible in the current owner scope.',
             ]);
         }
     }

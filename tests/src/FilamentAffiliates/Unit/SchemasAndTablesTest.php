@@ -93,3 +93,27 @@ it('AffiliatePayoutsTable uses canonical payout status values', function (): voi
         ->not->toContain("updateStatus(\$payout, 'paid')")
         ->not->toContain("updateStatus(\$payout, 'queued')");
 });
+
+class AffiliateFormSchemaHostComponent extends Livewire\Component implements Filament\Schemas\Contracts\HasSchemas
+{
+    use Filament\Schemas\Concerns\InteractsWithSchemas;
+
+    public ?array $data = [];
+
+    public function render()
+    {
+        return view('livewire.placeholder');
+    }
+}
+
+it('affiliate form keeps computed network depth read-only', function (): void {
+    $schema = AIArmada\FilamentAffiliates\Resources\AffiliateResource\Schemas\AffiliateForm::configure(
+        Filament\Schemas\Schema::make(new AffiliateFormSchemaHostComponent)->statePath('data')
+    );
+
+    $field = $schema->getComponent('network_depth');
+
+    expect($field)->not->toBeNull()
+        ->and($field->isDisabled())->toBeTrue()
+        ->and($field->isDehydrated())->toBeFalse();
+});

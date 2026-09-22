@@ -53,3 +53,8 @@ it('refuses pinned sends when a custom handler stack is configured', function ()
         Http::globalOptions([]);
     }
 });
+
+it('refuses pinned sends with handler-swapping request options', function (): void {
+    expect(fn () => (new PinnedHttpClient)->send('GET', pinnedTarget(), ['stream' => true]))
+        ->toThrow(RuntimeException::class, 'custom handler options');
+});

@@ -61,7 +61,7 @@ final class EditAffiliate extends EditRecord
             $record->update($data);
         } catch (InvalidArgumentException $exception) {
             throw ValidationException::withMessages([
-                'linked_user' => $exception->getMessage(),
+                'data.linked_user' => $exception->getMessage(),
             ]);
         }
 

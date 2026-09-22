@@ -13,6 +13,7 @@ use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateVolumeTier;
 use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
 use AIArmada\Affiliates\Services\ProgramCatalogService;
+use AIArmada\Affiliates\Support\Catalog\CallbackPromotableProvider;
 use AIArmada\Affiliates\Support\Catalog\PromotableRegistry;
 use Carbon\CarbonImmutable;
 
@@ -108,4 +109,13 @@ describe('ProgramCatalogService', function (): void {
         expect(AffiliateCommissionPromotion::query()->count())->toBe($usesBefore + 1);
         expect(AffiliateCommissionPromotion::query()->sum('current_uses'))->toBe(0);
     });
+});
+
+test('callback promotable provider delegates type and listing', function (): void {
+    $provider = new CallbackPromotableProvider('product', static fn (?string $programId): iterable => [
+        ['subject_key' => 'SKU-1', 'program' => $programId],
+    ]);
+
+    expect($provider->type())->toBe('product')
+        ->and($provider->list('prog-1'))->toBe([['subject_key' => 'SKU-1', 'program' => 'prog-1']]);
 });

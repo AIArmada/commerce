@@ -12,6 +12,7 @@
     "aiarmada/affiliates": "self.version",
     "aiarmada/authz": "self.version",
     "filament/filament": "^5.8.1",
+    "filament/spatie-laravel-media-library-plugin": "^5.8.1",
     "php": "^8.4"
   },
   "autoload": {

@@ -247,3 +247,27 @@ describe('AffiliateBalance Model', function (): void {
         expect($balance->getTable())->toBe('affiliate_balances');
     });
 });
+
+it('exposes the latest balance through the affiliate balance relation', function (): void {
+    $affiliate = Affiliate::create([
+        'code' => 'BAL-REL-' . uniqid(),
+        'name' => 'Balance Relation Affiliate',
+        'status' => Active::class,
+        'commission_type' => CommissionType::Percentage,
+        'commission_rate' => 1000,
+        'currency' => 'USD',
+    ]);
+
+    AffiliateBalance::create([
+        'affiliate_id' => $affiliate->id,
+        'currency' => 'USD',
+        'holding_minor' => 0,
+        'available_minor' => 2500,
+        'lifetime_earnings_minor' => 2500,
+        'minimum_payout_minor' => 1000,
+    ]);
+
+    expect($affiliate->balance)->toBeInstanceOf(AffiliateBalance::class)
+        ->and($affiliate->balance->available_minor)->toBe(2500)
+        ->and(Affiliate::with('balance')->find($affiliate->id)->balance)->not->toBeNull();
+});

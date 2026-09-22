@@ -71,9 +71,16 @@ final class AffiliateCreativeResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         /** @var Builder<AffiliateProgramCreative> $query */
-        $query = parent::getEloquentQuery();
+        $query = parent::getEloquentQuery()->general();
 
-        return OwnerUiScope::apply($query->general(), includeGlobal: false);
+        if (! (bool) config('affiliates.owner.enabled', false)) {
+            return $query;
+        }
+
+        /** @var Builder<Model> $modelQuery */
+        $modelQuery = $query;
+
+        return OwnerUiScope::apply($modelQuery, includeGlobal: false);
     }
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-photo';

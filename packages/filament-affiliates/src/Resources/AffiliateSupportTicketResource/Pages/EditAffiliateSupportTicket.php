@@ -28,7 +28,7 @@ final class EditAffiliateSupportTicket extends EditRecord
 
         if (! is_string($affiliateId) && ! is_int($affiliateId)) {
             throw ValidationException::withMessages([
-                'affiliate_id' => 'The selected affiliate is invalid.',
+                'data.affiliate_id' => 'The selected affiliate is invalid.',
             ]);
         }
 
@@ -47,6 +47,18 @@ final class EditAffiliateSupportTicket extends EditRecord
 
     private function resolveOwnedAffiliateId(string $affiliateId): string
     {
+        if (! (bool) config('affiliates.owner.enabled', false)) {
+            $affiliate = Affiliate::query()->find($affiliateId);
+
+            if (! $affiliate instanceof Affiliate) {
+                throw ValidationException::withMessages([
+                    'data.affiliate_id' => 'The selected affiliate is invalid.',
+                ]);
+            }
+
+            return (string) $affiliate->getKey();
+        }
+
         try {
             return (string) OwnerWriteGuard::findOrFailForOwner(
                 Affiliate::class,
@@ -56,7 +68,7 @@ final class EditAffiliateSupportTicket extends EditRecord
             )->getKey();
         } catch (AuthorizationException | InvalidArgumentException | RuntimeException) {
             throw ValidationException::withMessages([
-                'affiliate_id' => 'The selected affiliate is not accessible in the current owner scope.',
+                'data.affiliate_id' => 'The selected affiliate is not accessible in the current owner scope.',
             ]);
         }
     }
