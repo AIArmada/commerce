@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Geography\SanMarino\SanMarinoAddressFormatter;
+use AIArmada\Addressing\Geography\SanMarino\SanMarinoGeographyProvider;
 
 it('formats Sammarinese addresses with the postcode left of the locality', function (): void {
     $formatted = app(SanMarinoAddressFormatter::class)->format(AddressData::from([
@@ -24,4 +25,20 @@ it('formats Sammarinese Serravalle addresses with the town postcode', function (
     ]));
 
     expect($formatted)->toBe("Via del Serrone 12\n47899 Serravalle\nSan Marino");
+});
+
+it('ships the 9 castelli as terminal states', function (): void {
+    $areas = app(SanMarinoGeographyProvider::class)->addressAreaSource()->areas()->collect();
+    $byId = $areas->keyBy->sourceId;
+
+    expect($areas)->toHaveCount(9)
+        ->and($areas->pluck('parentSourceId')->filter()->isEmpty())->toBeTrue()
+        ->and($byId->get('sm:municipality:borgo-maggiore')->name)->toBe('Borgo Maggiore');
+});
+
+it('labels the tier Castello', function (): void {
+    $provider = app(SanMarinoGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['municipality' => 'Castello'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
 });

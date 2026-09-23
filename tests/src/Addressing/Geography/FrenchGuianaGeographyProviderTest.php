@@ -38,3 +38,10 @@ it('ships 22 communes under overseas_regions with parent links', function (): vo
         ->and($byId->get('gf:commune:kourou')->name)->toBe('Kourou')
         ->and($byId->get('gf:commune:saint-laurent-du-maroni')->name)->toBe('Saint-Laurent-du-Maroni');
 });
+
+it('labels tiers Région and Commune', function (): void {
+    $provider = app(FrenchGuianaGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['overseas_region' => 'Région', 'commune' => 'Commune'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

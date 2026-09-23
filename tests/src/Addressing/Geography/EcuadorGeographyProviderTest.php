@@ -40,3 +40,10 @@ it('ships 222 cantons under provinces with parent links', function (): void {
         ->and($byId->get('ec:canton:cuenca')->name)->toBe('Cuenca')
         ->and($byId->get('ec:canton:guayaquil')->name)->toBe('Guayaquil');
 });
+
+it('labels tiers Provincia and Cantón', function (): void {
+    $provider = app(EcuadorGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['province' => 'Provincia', 'canton' => 'Cantón'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

@@ -51,3 +51,10 @@ it('ships 98 municipalitys under regions with parent links', function (): void {
         ->and($byId->get('dk:municipality:aarhus')->name)->toBe('Aarhus')
         ->and($byId->get('dk:municipality:odense')->name)->toBe('Odense');
 });
+
+it('labels tiers Region and Kommune', function (): void {
+    $provider = app(DenmarkGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['region' => 'Region', 'municipality' => 'Kommune'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

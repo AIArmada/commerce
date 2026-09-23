@@ -209,6 +209,23 @@ Pick the closest layout pattern and note the UPU source in a one-line comment:
 
 Pass-through rules: formatters print postcodes exactly as supplied — they never add, strip, or validate prefixes and spacing. City/state twins that compare equal print once (`sameText` guard). The country line uses the short display name from `resources/data/countries.json` (`Iran`, not `IRAN (ISLAMIC REP.)`), except where the database spelling is unusable on mail (Isle of Man prints `Isle of Man`, not `Man (Isle of)`). When the model cannot represent part of the UPU line (Serbia's street-level PAK, Gabon's trailing office code), document the gap in the formatter comment and the country's [05-country-data](05-country-data.md) section instead of fabricating it.
 
+## Bundling postcodes
+
+When the verdict in [postal overlays](18-postal-overlays.md) is
+`complete`, ship the file pair
+`{slug}-postal-codes.csv` (`country_code,code`) and
+`{slug}-postal-code-areas.csv`
+(`postcode,area_source_id,relationship_type,is_primary`) next to the
+areas CSV. Import with the generic source — no per-country seeder:
+
+```php
+$source = new CsvPostalCodeSource('SM', $codesPath, $linksPath, $areaSource);
+app(ImportPostalCodesAction::class)->execute($source);
+```
+
+`PostalCodeCsvImportTest` picks up every pair automatically and
+enforces zero failures plus exactly one primary link per postcode.
+
 ## Testing a provider
 
 Add `tests/src/Addressing/Geography/<Country>GeographyProviderTest.php` following the Brazil pattern, and run it per package:

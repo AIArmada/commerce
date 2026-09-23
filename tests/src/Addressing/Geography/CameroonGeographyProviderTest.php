@@ -27,3 +27,10 @@ it('ships 58 departments under regions with parent links', function (): void {
         ->and($byId->get('cm:department:mfoundi')->name)->toBe('Mfoundi')
         ->and($byId->get('cm:department:fako')->name)->toBe('Fako');
 });
+
+it('labels tiers Région and Département', function (): void {
+    $provider = app(CameroonGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['region' => 'Région', 'department' => 'Département'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

@@ -23,3 +23,13 @@ it('spells the Xorazm tuman Tuproqqal\'a', function (): void {
     expect($areas->get('uz:tuman:xorazm:tuproqqala')->name)->toBe('Tuproqqal\'a')
         ->and($areas->has('uz:tuman:xorazm:toproqqala'))->toBeFalse();
 });
+
+it('ships 175 tumans and 31 cities under regions with parent links', function (): void {
+    $areas = app(UzbekistanGeographyProvider::class)->addressAreaSource()->areas()->collect();
+    $byId = $areas->keyBy->sourceId;
+    $l2 = $areas->where('level', 2);
+
+    expect($areas->where('type', 'tuman'))->toHaveCount(175)
+        ->and($l2->where('type', 'city'))->toHaveCount(31)
+        ->and($l2->pluck('parentSourceId')->every(fn ($p) => $byId->has($p)))->toBeTrue();
+});

@@ -6,6 +6,7 @@ namespace AIArmada\Addressing\Geography\Paraguay;
 
 use AIArmada\Addressing\Contracts\AddressAreaSource;
 use AIArmada\Addressing\Contracts\CountryAddressAreaMetadataProvider;
+use AIArmada\Addressing\Contracts\CountryAreaTypeLabelProvider;
 use AIArmada\Addressing\Contracts\CountryGeographyProvider;
 use AIArmada\Addressing\Contracts\CountryHierarchyProvider;
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
@@ -14,7 +15,7 @@ use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Support\CsvAddressAreaSource;
 use AIArmada\Addressing\Support\ModelResolver;
 
-class ParaguayGeographyProvider implements CountryAddressAreaMetadataProvider, CountryGeographyProvider, CountryHierarchyProvider
+class ParaguayGeographyProvider implements CountryAddressAreaMetadataProvider, CountryAreaTypeLabelProvider, CountryGeographyProvider, CountryHierarchyProvider
 {
     public const string AREA_SOURCE = 'aiarmada_addressing_paraguay_v1';
 
@@ -75,6 +76,23 @@ class ParaguayGeographyProvider implements CountryAddressAreaMetadataProvider, C
                 ],
             ),
         ];
+    }
+
+    /** @return array<string, string> */
+    public function areaTypeLabels(): array
+    {
+        // Spanish administrative terms.
+        return [
+            'department' => 'Departamento',
+            'capital_district' => 'Distrito Capital',
+            'district' => 'Distrito',
+        ];
+    }
+
+    /** @return list<array{state_code: string, type_labels: array<string, string>}> */
+    public function stateAreaTypeLabels(): array
+    {
+        return [];
     }
 
     /** @return array<string, list<array{role: string, country_code?: string, is_primary?: bool}>> */

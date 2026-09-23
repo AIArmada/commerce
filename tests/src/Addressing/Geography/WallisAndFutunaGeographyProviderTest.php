@@ -37,3 +37,10 @@ it('ships 3 districts under Uvea with Alo and Sigave childless', function (): vo
         ->and($l2->pluck('parentSourceId')->unique()->all())->toBe(['wf:administrative_precinct:uvea'])
         ->and($byId->get('wf:district:mu-a')->name)->toBe("Mu'a");
 });
+
+it('labels tiers Circonscription and District', function (): void {
+    $provider = app(WallisAndFutunaGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['administrative_precinct' => 'Circonscription', 'district' => 'District'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

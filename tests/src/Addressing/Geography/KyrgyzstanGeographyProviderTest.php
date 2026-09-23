@@ -39,3 +39,10 @@ it('ships 44 districts under regions with parent links', function (): void {
         ->and($byId->get('kg:district:birinchi-may')->name)->toBe('Birinchi May')
         ->and($byId->get('kg:district:kara-suu')->name)->toBe('Kara-Suu');
 });
+
+it('labels tiers Oblus, Shaar and Raion', function (): void {
+    $provider = app(KyrgyzstanGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['region' => 'Oblus', 'city' => 'Shaar', 'district' => 'Raion'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

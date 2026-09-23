@@ -27,7 +27,7 @@ it('formats Faroese northern addresses with the town postcode', function (): voi
     expect($formatted)->toBe("Bøgøta 5\nFO-700 Klaksvík\nFaroe Islands");
 });
 
-it('ships 29 municipalitys under regions with parent links', function (): void {
+it('ships 29 municipalities under regions with parent links', function (): void {
     $areas = app(FaroeIslandsGeographyProvider::class)->addressAreaSource()->areas()->collect();
     $byId = $areas->keyBy->sourceId;
     $l2 = $areas->where('type', 'municipality');

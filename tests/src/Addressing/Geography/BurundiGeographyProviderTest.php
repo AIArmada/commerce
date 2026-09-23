@@ -38,3 +38,10 @@ it('ships 42 communes under provinces with parent links', function (): void {
         ->and($byId->get('bi:commune:shombo')->name)->toBe('Shombo')
         ->and($byId->get('bi:commune:mukaza')->name)->toBe('Mukaza');
 });
+
+it('labels tiers Province and Commune', function (): void {
+    $provider = app(BurundiGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['province' => 'Province', 'commune' => 'Commune'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

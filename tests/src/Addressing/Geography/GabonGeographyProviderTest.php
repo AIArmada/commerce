@@ -39,3 +39,10 @@ it('ships 49 departments under provinces with parent links', function (): void {
         ->and($byId->get('ga:department:noya')->name)->toBe('Noya')
         ->and($byId->get('ga:department:libreville')->name)->toBe('Libreville');
 });
+
+it('labels tiers Province and Département', function (): void {
+    $provider = app(GabonGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['province' => 'Province', 'department' => 'Département'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

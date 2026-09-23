@@ -6,6 +6,7 @@ namespace AIArmada\Addressing\Geography\Venezuela;
 
 use AIArmada\Addressing\Contracts\AddressAreaSource;
 use AIArmada\Addressing\Contracts\CountryAddressAreaMetadataProvider;
+use AIArmada\Addressing\Contracts\CountryAreaTypeLabelProvider;
 use AIArmada\Addressing\Contracts\CountryGeographyProvider;
 use AIArmada\Addressing\Contracts\CountryHierarchyProvider;
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
@@ -14,7 +15,7 @@ use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Support\CsvAddressAreaSource;
 use AIArmada\Addressing\Support\ModelResolver;
 
-class VenezuelaGeographyProvider implements CountryAddressAreaMetadataProvider, CountryGeographyProvider, CountryHierarchyProvider
+class VenezuelaGeographyProvider implements CountryAddressAreaMetadataProvider, CountryAreaTypeLabelProvider, CountryGeographyProvider, CountryHierarchyProvider
 {
     public const string AREA_SOURCE = 'aiarmada_addressing_venezuela_v1';
 
@@ -77,15 +78,34 @@ class VenezuelaGeographyProvider implements CountryAddressAreaMetadataProvider, 
         ];
     }
 
+    /** @return array<string, string> */
+    public function areaTypeLabels(): array
+    {
+        // Spanish administrative terms.
+        return [
+            'state' => 'Estado',
+            'capital_district' => 'Distrito Capital',
+            'federal_dependency' => 'Dependencias Federales',
+            'municipality' => 'Municipio',
+        ];
+    }
+
+    /** @return list<array{state_code: string, type_labels: array<string, string>}> */
+    public function stateAreaTypeLabels(): array
+    {
+        return [];
+    }
+
     /** @return array<string, list<array{role: string, country_code?: string, is_primary?: bool}>> */
     public function areaRoles(AddressCountry $country): array
     {
         $roles = [];
 
         foreach ($this->addressAreaSource()->areas() as $area) {
+            // The capital district sits in the state tier; the childless federal dependency stays distinct.
             $areaRoles = match ($area->type) {
                 'state' => ['state'],
-                'capital_district' => ['capital_district'],
+                'capital_district' => ['state'],
                 'federal_dependency' => ['federal_dependency'],
                 'municipality' => ['municipality'],
                 default => [],

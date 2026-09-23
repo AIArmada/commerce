@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Geography\Aland\AlandAddressFormatter;
+use AIArmada\Addressing\Geography\Aland\AlandGeographyProvider;
 
 it('formats Alander addresses with the prefixed postcode left of the town', function (): void {
     $formatted = app(AlandAddressFormatter::class)->format(AddressData::from([
@@ -24,4 +25,11 @@ it('formats Alander domestic addresses with a bare postcode', function (): void 
     ]));
 
     expect($formatted)->toBe("Stadshusparken\n22100 MARIEHAMN\nAland Islands");
+});
+
+it('labels municipalities Kommun', function (): void {
+    $provider = app(AlandGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['municipality' => 'Kommun'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
 });

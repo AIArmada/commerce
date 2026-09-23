@@ -17,7 +17,7 @@ it('formats Dutch addresses with two spaces after the postcode', function (): vo
     expect($formatted)->toBe("Drieslag 5-1\n6832 AM  ARNHEM\nNetherlands");
 });
 
-it('ships 342 municipalitys under provinces with parent links', function (): void {
+it('ships 342 municipalities under provinces with parent links', function (): void {
     $areas = app(NetherlandsGeographyProvider::class)->addressAreaSource()->areas()->collect();
     $byId = $areas->keyBy->sourceId;
     $l2 = $areas->where('type', 'municipality');
@@ -27,4 +27,11 @@ it('ships 342 municipalitys under provinces with parent links', function (): voi
         ->and($byId->get('nl:municipality:amsterdam')->name)->toBe('Amsterdam')
         ->and($byId->get('nl:municipality:rotterdam')->name)->toBe('Rotterdam')
         ->and($byId->get('nl:municipality:utrecht')->name)->toBe('Utrecht');
+});
+
+it('labels tiers Provincie and Gemeente', function (): void {
+    $provider = app(NetherlandsGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['province' => 'Provincie', 'municipality' => 'Gemeente'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
 });

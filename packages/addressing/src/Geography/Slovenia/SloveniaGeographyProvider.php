@@ -6,6 +6,7 @@ namespace AIArmada\Addressing\Geography\Slovenia;
 
 use AIArmada\Addressing\Contracts\AddressAreaSource;
 use AIArmada\Addressing\Contracts\CountryAddressAreaMetadataProvider;
+use AIArmada\Addressing\Contracts\CountryAreaTypeLabelProvider;
 use AIArmada\Addressing\Contracts\CountryGeographyProvider;
 use AIArmada\Addressing\Contracts\CountryHierarchyProvider;
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
@@ -14,7 +15,7 @@ use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Support\CsvAddressAreaSource;
 use AIArmada\Addressing\Support\ModelResolver;
 
-class SloveniaGeographyProvider implements CountryAddressAreaMetadataProvider, CountryGeographyProvider, CountryHierarchyProvider
+class SloveniaGeographyProvider implements CountryAddressAreaMetadataProvider, CountryAreaTypeLabelProvider, CountryGeographyProvider, CountryHierarchyProvider
 {
     public const string AREA_SOURCE = 'aiarmada_addressing_slovenia_v1';
 
@@ -67,15 +68,32 @@ class SloveniaGeographyProvider implements CountryAddressAreaMetadataProvider, C
         ];
     }
 
+    /** @return array<string, string> */
+    public function areaTypeLabels(): array
+    {
+        // Slovenian administrative terms.
+        return [
+            'municipality' => 'Občina',
+            'urban_municipality' => 'Mestna občina',
+        ];
+    }
+
+    /** @return list<array{state_code: string, type_labels: array<string, string>}> */
+    public function stateAreaTypeLabels(): array
+    {
+        return [];
+    }
+
     /** @return array<string, list<array{role: string, country_code?: string, is_primary?: bool}>> */
     public function areaRoles(AddressCountry $country): array
     {
         $roles = [];
 
         foreach ($this->addressAreaSource()->areas() as $area) {
+            // Urban municipalities are municipalities with city status and share the selector.
             $areaRoles = match ($area->type) {
                 'municipality' => ['municipality'],
-                'urban_municipality' => ['urban_municipality'],
+                'urban_municipality' => ['municipality'],
                 default => [],
             };
 

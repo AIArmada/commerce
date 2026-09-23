@@ -39,3 +39,10 @@ it('ships 279 delegations under governorates with parent links', function (): vo
         ->and($byId->get('tn:delegation:beja-nord')->name)->toBe('Béja Nord')
         ->and($byId->get('tn:delegation:hammamet')->name)->toBe('Hammamet');
 });
+
+it('labels tiers Gouvernorat and Délégation', function (): void {
+    $provider = app(TunisiaGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['governorate' => 'Gouvernorat', 'delegation' => 'Délégation'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

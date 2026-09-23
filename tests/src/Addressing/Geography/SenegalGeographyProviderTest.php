@@ -52,3 +52,10 @@ it('ships 46 departments under regions with parent links', function (): void {
         ->and($byId->get('sn:department:keur-massar')->name)->toBe('Keur Massar')
         ->and($byId->get('sn:department:dagana')->name)->toBe('Dagana');
 });
+
+it('labels tiers Région and Département', function (): void {
+    $provider = app(SenegalGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['region' => 'Région', 'department' => 'Département'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

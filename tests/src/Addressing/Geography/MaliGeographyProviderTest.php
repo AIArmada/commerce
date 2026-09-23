@@ -55,3 +55,10 @@ it('ships 159 cercles under regions with parent links', function (): void {
         ->and($byId->get('ml:cercle:sadiola')->code)->toBe('0110')
         ->and($byId->get('ml:cercle:ansongo')->code)->toBe('0703');
 });
+
+it('labels tiers District, Région and Cercle', function (): void {
+    $provider = app(MaliGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['district' => 'District', 'region' => 'Région', 'cercle' => 'Cercle'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

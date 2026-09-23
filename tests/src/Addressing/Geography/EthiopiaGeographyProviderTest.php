@@ -28,3 +28,10 @@ it('ships 127 zones/woredas under regions with parent links', function (): void 
         ->and($byId->get('et:woreda:sofi')->name)->toBe('Sofi')
         ->and($byId->get('et:zone:bole')->name)->toBe('Bole');
 });
+
+it('labels regions Kilil', function (): void {
+    $provider = app(EthiopiaGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['region' => 'Kilil'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

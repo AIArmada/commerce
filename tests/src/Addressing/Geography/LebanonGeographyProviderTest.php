@@ -40,3 +40,10 @@ it('ships 25 cazas under governorates with parent links', function (): void {
         ->and($byId->get('lb:caza:byblos')->name)->toBe('Byblos')
         ->and($byId->get('lb:caza:tripoli')->name)->toBe('Tripoli');
 });
+
+it('labels governorates Muhafaza', function (): void {
+    $provider = app(LebanonGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['governorate' => 'Muhafaza'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

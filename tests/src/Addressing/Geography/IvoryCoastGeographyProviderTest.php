@@ -37,3 +37,10 @@ it('ships 31 regions under districts with parent links', function (): void {
         ->and($byId->get('ci:region:san-pedro')->name)->toBe('San-Pédro')
         ->and($byId->get('ci:region:folon')->name)->toBe('Folon');
 });
+
+it('labels tiers District Autonome, District and Région', function (): void {
+    $provider = app(IvoryCoastGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['autonomous_district' => 'District Autonome', 'district' => 'District', 'region' => 'Région'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

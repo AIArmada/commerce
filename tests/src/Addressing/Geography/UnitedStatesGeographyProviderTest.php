@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Geography\UnitedStates\UnitedStatesAddressFormatter;
 use AIArmada\Addressing\Geography\UnitedStates\UnitedStatesGeographyProvider;
+use AIArmada\Addressing\Models\AddressCountry;
 
 it('formats American addresses with the state abbreviation and ZIP', function (): void {
     $formatted = app(UnitedStatesAddressFormatter::class)->format(AddressData::from([
@@ -39,4 +40,15 @@ it('ships 3,143 counties and county equivalents under their states', function ()
         ->and($byId->get('us:municipality:02020')->name)->toBe('Anchorage')
         ->and($byId->has('us:county:11001'))->toBeFalse()
         ->and($areas->where('parentSourceId', 'us:territory:puerto-rico'))->toBeEmpty();
+});
+
+it('declares USPS abbreviations for all 56 states, territories, and DC', function (): void {
+    $names = app(UnitedStatesGeographyProvider::class)->areaNames(new AddressCountry);
+
+    expect($names)->toHaveCount(56)
+        ->and($names['us:state:california'][0])->toBe(['name' => 'CA', 'name_type' => 'abbreviation'])
+        ->and($names['us:state:texas'][0]['name'])->toBe('TX')
+        ->and($names['us:district:district-of-columbia'][0]['name'])->toBe('DC')
+        ->and($names['us:territory:puerto-rico'][0]['name'])->toBe('PR')
+        ->and(collect($names)->flatten(1)->pluck('name')->all())->not->toContain('AA', 'AE', 'AP');
 });

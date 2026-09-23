@@ -33,3 +33,10 @@ it('keeps the 17 ISO quarters rather than the 2013 ordinance wards', function ()
     expect($areas)->toHaveCount(17)
         ->and($areas->firstWhere('sourceId', 'mc:quarter:la-colle')->code)->toBe('CL');
 });
+
+it('labels the tier Quartier', function (): void {
+    $provider = app(MonacoGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['quarter' => 'Quartier'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

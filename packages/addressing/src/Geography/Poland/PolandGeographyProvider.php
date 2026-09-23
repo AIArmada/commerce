@@ -6,6 +6,7 @@ namespace AIArmada\Addressing\Geography\Poland;
 
 use AIArmada\Addressing\Contracts\AddressAreaSource;
 use AIArmada\Addressing\Contracts\CountryAddressAreaMetadataProvider;
+use AIArmada\Addressing\Contracts\CountryAreaTypeLabelProvider;
 use AIArmada\Addressing\Contracts\CountryGeographyProvider;
 use AIArmada\Addressing\Contracts\CountryHierarchyProvider;
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
@@ -14,7 +15,7 @@ use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Support\CsvAddressAreaSource;
 use AIArmada\Addressing\Support\ModelResolver;
 
-class PolandGeographyProvider implements CountryAddressAreaMetadataProvider, CountryGeographyProvider, CountryHierarchyProvider
+class PolandGeographyProvider implements CountryAddressAreaMetadataProvider, CountryAreaTypeLabelProvider, CountryGeographyProvider, CountryHierarchyProvider
 {
     public const string AREA_SOURCE = 'aiarmada_addressing_poland_v1';
 
@@ -75,6 +76,23 @@ class PolandGeographyProvider implements CountryAddressAreaMetadataProvider, Cou
                 ],
             ),
         ];
+    }
+
+    /** @return array<string, string> */
+    public function areaTypeLabels(): array
+    {
+        // Polish administrative terms.
+        return [
+            'voivodeship' => 'Województwo',
+            'land_county' => 'Powiat Ziemski',
+            'city_county' => 'Powiat Grodzki',
+        ];
+    }
+
+    /** @return list<array{state_code: string, type_labels: array<string, string>}> */
+    public function stateAreaTypeLabels(): array
+    {
+        return [];
     }
 
     /** @return array<string, list<array{role: string, country_code?: string, is_primary?: bool}>> */

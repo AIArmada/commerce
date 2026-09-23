@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Geography\Malta\MaltaAddressFormatter;
+use AIArmada\Addressing\Geography\Malta\MaltaGeographyProvider;
 
 it('formats Maltese addresses with the postcode below the locality', function (): void {
     $formatted = app(MaltaAddressFormatter::class)->format(AddressData::from([
@@ -24,4 +25,13 @@ it('formats Maltese Valletta addresses with the locality postcode', function ():
     ]));
 
     expect($formatted)->toBe("Palace Square 1\nVALLETTA\nVLT 1117\nMalta");
+});
+
+it('ships the 68 local councils as terminal states', function (): void {
+    $areas = app(MaltaGeographyProvider::class)->addressAreaSource()->areas()->collect();
+    $byId = $areas->keyBy->sourceId;
+
+    expect($areas)->toHaveCount(68)
+        ->and($areas->pluck('parentSourceId')->filter()->isEmpty())->toBeTrue()
+        ->and($byId->get('mt:local_council:attard')->name)->toBe('Attard');
 });

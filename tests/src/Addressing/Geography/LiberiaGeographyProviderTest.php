@@ -27,7 +27,7 @@ it('formats Liberian addresses without a postcode when missing', function (): vo
     expect($formatted)->toBe("Water Street\nMonrovia\nMontserrado\nLiberia");
 });
 
-it('ships 127 districts under countys with parent links', function (): void {
+it('ships 127 districts under counties with parent links', function (): void {
     $areas = app(LiberiaGeographyProvider::class)->addressAreaSource()->areas()->collect();
     $byId = $areas->keyBy->sourceId;
     $l2 = $areas->where('type', 'district');

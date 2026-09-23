@@ -58,3 +58,10 @@ it('exposes the province level below the region level', function (): void {
         ->and($levels[1]->key)->toBe('province')
         ->and($levels[1]->parentKey)->toBe('region');
 });
+
+it('labels tiers Région and Province', function (): void {
+    $provider = app(BurkinaFasoGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['region' => 'Région', 'province' => 'Province'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

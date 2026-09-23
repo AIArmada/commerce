@@ -37,3 +37,10 @@ it('ships 16 prefectures under islands with parent links', function (): void {
         ->and($byId->get('km:prefecture:mutsamudu')->name)->toBe('Mutsamudu')
         ->and($byId->get('km:prefecture:fomboni')->name)->toBe('Fomboni');
 });
+
+it('labels tiers Île and Préfecture', function (): void {
+    $provider = app(ComorosGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['island' => 'Île', 'prefecture' => 'Préfecture'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

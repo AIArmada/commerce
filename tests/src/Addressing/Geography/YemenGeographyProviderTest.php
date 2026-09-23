@@ -37,3 +37,10 @@ it('ships 333 districts under governorates with parent links', function (): void
         ->and($byId->get('ye:district:crater')->name)->toBe('Crater')
         ->and($byId->get('ye:district:az-zahir')->name)->toBe('Az Zahir');
 });
+
+it('labels tiers Muhafaza, Municipality and District', function (): void {
+    $provider = app(YemenGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['governorate' => 'Muhafaza', 'municipality' => 'Municipality', 'district' => 'District'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

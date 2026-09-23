@@ -73,9 +73,10 @@ class TuvaluGeographyProvider implements CountryAddressAreaMetadataProvider, Cou
         $roles = [];
 
         foreach ($this->addressAreaSource()->areas() as $area) {
+            // Funafuti's town council sits in the island-council tier as the capital's local government.
             $areaRoles = match ($area->type) {
                 'island_council' => ['island_council'],
-                'town_council' => ['town_council'],
+                'town_council' => ['island_council'],
                 default => [],
             };
 

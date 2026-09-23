@@ -39,3 +39,10 @@ it('ships 170 districts under regions with parent links', function (): void {
         ->and($byId->get('kz:district:talgar')->name)->toBe('Talgar')
         ->and($byId->get('kz:district:saryagash')->name)->toBe('Saryagash');
 });
+
+it('labels tiers Oblys, Qala and Audan', function (): void {
+    $provider = app(KazakhstanGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['region' => 'Oblys', 'city' => 'Qala', 'district' => 'Audan'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

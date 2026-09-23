@@ -30,3 +30,10 @@ it('ships 136 districts under provinces with parent links', function (): void {
         ->and($byId->get('mz:district:guro')->name)->toBe('Guro')
         ->and($byId->get('mz:district:ile')->name)->toBe('Ile');
 });
+
+it('labels tiers Província, Cidade and Distrito', function (): void {
+    $provider = app(MozambiqueGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['province' => 'Província', 'city' => 'Cidade', 'district' => 'Distrito'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

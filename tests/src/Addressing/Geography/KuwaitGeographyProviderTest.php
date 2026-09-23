@@ -27,3 +27,21 @@ it('exposes the Kuwait City area under Al Asimah', function (): void {
         ->and($city->level)->toBe(2)
         ->and($city->parentSourceId)->toBe('kw:governorate:al-asimah');
 });
+
+it('ships 135 areas under governorates with parent links', function (): void {
+    $areas = app(KuwaitGeographyProvider::class)->addressAreaSource()->areas()->collect();
+    $byId = $areas->keyBy->sourceId;
+    $l2 = $areas->where('type', 'area');
+
+    expect($l2)->toHaveCount(135)
+        ->and($l2->pluck('parentSourceId')->every(fn ($p) => $byId->has($p)))->toBeTrue()
+        ->and($byId->get('kw:area:adailiya')->name)->toBe('Adailiya')
+        ->and($byId->get('kw:area:abdulla-al-salem')->parentSourceId)->toBe('kw:governorate:al-asimah');
+});
+
+it('labels governorates Muhafaza', function (): void {
+    $provider = app(KuwaitGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['governorate' => 'Muhafaza'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

@@ -38,3 +38,10 @@ it('ships 42 arrondissements under departments with parent links', function (): 
         ->and($byId->get('ht:arrondissement:port-au-prince')->name)->toBe('Port-au-Prince')
         ->and($byId->get('ht:arrondissement:la-gonave')->name)->toBe('La Gonâve');
 });
+
+it('labels tiers Département and Arrondissement', function (): void {
+    $provider = app(HaitiGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['department' => 'Département', 'arrondissement' => 'Arrondissement'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

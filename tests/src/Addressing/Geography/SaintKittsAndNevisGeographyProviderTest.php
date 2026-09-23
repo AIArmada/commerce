@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Geography\SaintKittsAndNevis\SaintKittsAndNevisAddressFormatter;
+use AIArmada\Addressing\Geography\SaintKittsAndNevis\SaintKittsAndNevisGeographyProvider;
 
 it('formats Kittitian addresses with the postcode below the island', function (): void {
     $formatted = app(SaintKittsAndNevisAddressFormatter::class)->format(AddressData::from([
@@ -27,4 +28,12 @@ it('formats Nevis addresses with the island postcode', function (): void {
     ]));
 
     expect($formatted)->toBe("Main Street\nCharlestown\nNevis\nKN0902\nSaint Kitts and Nevis");
+});
+
+it('ships 14 parishes under the two island states with parent links', function (): void {
+    $areas = app(SaintKittsAndNevisGeographyProvider::class)->addressAreaSource()->areas()->collect();
+    $byId = $areas->keyBy->sourceId;
+
+    expect($areas->where('type', 'parish'))->toHaveCount(14)
+        ->and($byId->get('kn:parish:christ-church-nichola-town')->parentSourceId)->toBe('kn:state:saint-kitts');
 });

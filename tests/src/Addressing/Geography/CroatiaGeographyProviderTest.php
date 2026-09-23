@@ -38,3 +38,10 @@ it('ships 556 municipalities/towns under counties with parent links', function (
         ->and($byId->get('hr:town:rijeka')->name)->toBe('Rijeka')
         ->and($byId->get('hr:town:dubrovnik')->name)->toBe('Dubrovnik');
 });
+
+it('labels tiers Županija, Općina and Grad', function (): void {
+    $provider = app(CroatiaGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['county' => 'Županija', 'municipality' => 'Općina', 'town' => 'Grad'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

@@ -69,3 +69,17 @@ it('ships 685 local municipalities under districts and cities', function (): voi
         ->and($byId->get('az:local_municipality:asagi-quscu')->parentSourceId)->toBe('az:district:tovuz')
         ->and($byId->get('az:local_municipality:seki')->parentSourceId)->toBe('az:municipality:shaki');
 });
+
+it('roles first-level cities with the district selector', function (): void {
+    $roles = app(AzerbaijanGeographyProvider::class)->areaRoles(new AddressCountry);
+
+    expect($roles['az:municipality:baku'][0]['role'])->toBe('district')
+        ->and($roles['az:autonomous_republic:nakhchivan'][0]['role'])->toBe('autonomous_republic');
+});
+
+it('labels tiers Rayon, Şəhər, Muxtar Respublika and Bələdiyyə', function (): void {
+    $provider = app(AzerbaijanGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['district' => 'Rayon', 'municipality' => 'Şəhər', 'autonomous_republic' => 'Muxtar Respublika', 'local_municipality' => 'Bələdiyyə'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

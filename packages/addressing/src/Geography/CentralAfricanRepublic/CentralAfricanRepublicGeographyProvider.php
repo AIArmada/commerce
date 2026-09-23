@@ -6,6 +6,7 @@ namespace AIArmada\Addressing\Geography\CentralAfricanRepublic;
 
 use AIArmada\Addressing\Contracts\AddressAreaSource;
 use AIArmada\Addressing\Contracts\CountryAddressAreaMetadataProvider;
+use AIArmada\Addressing\Contracts\CountryAreaTypeLabelProvider;
 use AIArmada\Addressing\Contracts\CountryGeographyProvider;
 use AIArmada\Addressing\Contracts\CountryHierarchyProvider;
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
@@ -14,7 +15,7 @@ use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Support\CsvAddressAreaSource;
 use AIArmada\Addressing\Support\ModelResolver;
 
-class CentralAfricanRepublicGeographyProvider implements CountryAddressAreaMetadataProvider, CountryGeographyProvider, CountryHierarchyProvider
+class CentralAfricanRepublicGeographyProvider implements CountryAddressAreaMetadataProvider, CountryAreaTypeLabelProvider, CountryGeographyProvider, CountryHierarchyProvider
 {
     public const string AREA_SOURCE = 'aiarmada_addressing_central_african_republic_v1';
 
@@ -75,6 +76,23 @@ class CentralAfricanRepublicGeographyProvider implements CountryAddressAreaMetad
                 ],
             ),
         ];
+    }
+
+    /** @return array<string, string> */
+    public function areaTypeLabels(): array
+    {
+        // French administrative terms.
+        return [
+            'prefecture' => 'Préfecture',
+            'economic_prefecture' => 'Préfecture Économique',
+            'subprefecture' => 'Sous-préfecture',
+        ];
+    }
+
+    /** @return list<array{state_code: string, type_labels: array<string, string>}> */
+    public function stateAreaTypeLabels(): array
+    {
+        return [];
     }
 
     /** @return array<string, list<array{role: string, country_code?: string, is_primary?: bool}>> */

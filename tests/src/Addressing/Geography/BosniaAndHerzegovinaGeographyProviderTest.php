@@ -38,3 +38,12 @@ it('ships 143 municipalitys under entitys with parent links', function (): void 
         ->and($byId->get('ba:municipality:mostar')->name)->toBe('Mostar')
         ->and($byId->get('ba:municipality:bihac')->name)->toBe('Bihać');
 });
+
+it('labels tiers Entitet, Distrikt and Općina with an Opština override for Srpska', function (): void {
+    $provider = app(BosniaAndHerzegovinaGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['entity' => 'Entitet', 'district' => 'Distrikt', 'municipality' => 'Općina'])
+        ->and($provider->stateAreaTypeLabels())->toBe([
+            ['state_code' => 'SRP', 'type_labels' => ['municipality' => 'Opština']],
+        ]);
+});

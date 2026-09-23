@@ -38,3 +38,10 @@ it('ships 292 municipalities/cities under regions with parent links', function (
         ->and($byId->get('fi:city:espoo')->name)->toBe('Espoo')
         ->and($byId->get('fi:city:tampere')->name)->toBe('Tampere');
 });
+
+it('labels tiers Maakunta, Kaupunki and Kunta', function (): void {
+    $provider = app(FinlandGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['region' => 'Maakunta', 'city' => 'Kaupunki', 'municipality' => 'Kunta'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

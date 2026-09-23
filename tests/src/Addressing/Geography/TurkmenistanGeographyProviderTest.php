@@ -41,3 +41,10 @@ it('ships 58 districts under regions with parent links', function (): void {
         ->and($byId->get('tm:district:tejen')->name)->toBe('Tejen')
         ->and($byId->get('tm:district:kerki')->name)->toBe('Kerki');
 });
+
+it('labels tiers Welaýat, Şäher and Etrap', function (): void {
+    $provider = app(TurkmenistanGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['region' => 'Welaýat', 'city' => 'Şäher', 'district' => 'Etrap'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

@@ -44,3 +44,10 @@ it('ships 326 municipalities under provinces with parent links', function (): vo
         ->and($byId->get('ao:municipality:viana')->parentSourceId)->toBe('ao:province:luanda')
         ->and($byId->get('ao:municipality:quelo')->parentSourceId)->toBe('ao:province:zaire');
 });
+
+it('labels tiers Província and Município with no per-state overrides', function (): void {
+    $provider = app(AngolaGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['province' => 'Província', 'municipality' => 'Município'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

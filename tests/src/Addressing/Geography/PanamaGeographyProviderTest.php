@@ -50,3 +50,10 @@ it('ships 81 districts under provinces with parent links', function (): void {
         ->and($byId->get('pa:district:veraguas:santa-fe')->name)->toBe('Santa Fe')
         ->and($byId->get('pa:district:david')->name)->toBe('David');
 });
+
+it('labels tiers Provincia, Comarca Indígena and Distrito', function (): void {
+    $provider = app(PanamaGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['province' => 'Provincia', 'indigenous_region' => 'Comarca Indígena', 'district' => 'Distrito'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

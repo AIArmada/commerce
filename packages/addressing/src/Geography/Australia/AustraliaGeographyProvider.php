@@ -102,7 +102,33 @@ class AustraliaGeographyProvider implements CountryAddressAreaMetadataProvider, 
     /** @return array<string, list<array{name: string, name_type?: string, is_preferred?: bool}>> */
     public function areaNames(AddressCountry $country): array
     {
-        return [];
+        // Australia Post abbreviations, mirroring the formatter map.
+        return [
+            'au:state:new-south-wales' => [
+                ['name' => 'NSW', 'name_type' => 'abbreviation'],
+            ],
+            'au:state:queensland' => [
+                ['name' => 'QLD', 'name_type' => 'abbreviation'],
+            ],
+            'au:state:south-australia' => [
+                ['name' => 'SA', 'name_type' => 'abbreviation'],
+            ],
+            'au:state:tasmania' => [
+                ['name' => 'TAS', 'name_type' => 'abbreviation'],
+            ],
+            'au:state:victoria' => [
+                ['name' => 'VIC', 'name_type' => 'abbreviation'],
+            ],
+            'au:state:western-australia' => [
+                ['name' => 'WA', 'name_type' => 'abbreviation'],
+            ],
+            'au:territory:australian-capital-territory' => [
+                ['name' => 'ACT', 'name_type' => 'abbreviation'],
+            ],
+            'au:territory:northern-territory' => [
+                ['name' => 'NT', 'name_type' => 'abbreviation'],
+            ],
+        ];
     }
 
     /** @return array<string, list<array{parent_source_id: string, relationship_type: string, hierarchy_type: string}>> */

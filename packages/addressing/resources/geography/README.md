@@ -3,6 +3,7 @@
 Country-specific `AddressArea` trees imported by the bundled geography providers.
 
 - `malaysia-address-areas.csv`, `malaysia-postal-codes.csv`, `malaysia-postal-code-areas.csv` — used by `MalaysiaGeographyProvider`.
+- `{slug}-postal-codes.csv` + `{slug}-postal-code-areas.csv` pairs — bundled postcode datasets imported via `CsvPostalCodeSource` (28 countries including Malaysia; full list and per-country verdicts in `docs/18-postal-overlays.md`).
 - `singapore-address-areas.csv` — used by `SingaporeGeographyProvider`.
 - `indonesia-address-areas.csv` — used by `IndonesiaGeographyProvider`. Derived from [lokabisa-oss/region-id v1.0.1](https://github.com/lokabisa-oss/region-id/releases/tag/v1.0.1) (MIT, © 2025 lokabisa), keeping Kemendagri codes, official names, and parent links for provinces, regencies/cities, and districts. Province 31 is named `DKI Jakarta` and province 34 `DI Yogyakarta` to match the seeded states; see `docs/05-country-data.md`.
 - `indonesia-villages.csv` — opt-in L4 set for `IndonesiaGeographyProvider` (83,762 desa/kelurahan from the same region-id v1.0.1 release). Seeded only when `addressing.geography.indonesia.villages` is true.
@@ -25,7 +26,7 @@ Country-specific `AddressArea` trees imported by the bundled geography providers
 - `china-address-areas.csv` — used by `ChinaGeographyProvider`. 33 provincial-level divisions per ISO 3166-2:CN; Taiwan excluded (own TW country).
 - `russia-address-areas.csv` — used by `RussiaGeographyProvider`. 83 federal subjects per ISO 3166-2:RU; names per the UPU province list.
 - `germany-address-areas.csv` — used by `GermanyGeographyProvider`. 16 Länder with German official names; English exonyms aliased.
-- `france-address-areas.csv` — used by `FranceGeographyProvider`. 18 regions only; departments intentionally not areas.
+- `france-address-areas.csv` — used by `FranceGeographyProvider`. 18 regions + 101 departments and the Lyon Metropolis; 973 region named `Guyane` with `French Guiana` as alias.
 - `italy-address-areas.csv` — used by `ItalyGeographyProvider`. 20 regions with Italian official names; English exonyms aliased; provinces intentionally not areas.
 - `japan-address-areas.csv` — used by `JapanGeographyProvider`. 47 prefectures plus 1,747 municipalities (792 cities + 743 towns + 183 villages + 23 Tokyo special wards + 6 Northern-Territories paper villages) from the MIC R6.1.1 table; bare unmacroned romanization with kanji in `native_name`; 13 same-prefecture twins (Tomari ×2, Fuchu ×2, Toshima ×2, …); designated-city wards excluded.
 - `united-states-address-areas.csv` — used by `UnitedStatesGeographyProvider`. 50 states + DC + 5 inhabited territories; military codes and UM excluded.

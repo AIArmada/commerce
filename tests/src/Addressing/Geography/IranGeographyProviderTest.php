@@ -48,3 +48,10 @@ it('ships 429 May-2019 counties under provinces with parent links', function ():
         ->and($l2->where('parentSourceId', 'ir:province:qom'))->toHaveCount(1)
         ->and($byId->get('ir:county:abadan')->parentSourceId)->toBe('ir:province:khuzestan');
 });
+
+it('labels tiers Ostan and Shahrestan', function (): void {
+    $provider = app(IranGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['province' => 'Ostan', 'county' => 'Shahrestan'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

@@ -6,6 +6,7 @@ namespace AIArmada\Addressing\Geography\Thailand;
 
 use AIArmada\Addressing\Contracts\AddressAreaSource;
 use AIArmada\Addressing\Contracts\CountryAddressAreaMetadataProvider;
+use AIArmada\Addressing\Contracts\CountryAreaTypeLabelProvider;
 use AIArmada\Addressing\Contracts\CountryGeographyProvider;
 use AIArmada\Addressing\Contracts\CountryHierarchyProvider;
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
@@ -14,7 +15,7 @@ use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Support\CsvAddressAreaSource;
 use AIArmada\Addressing\Support\ModelResolver;
 
-class ThailandGeographyProvider implements CountryAddressAreaMetadataProvider, CountryGeographyProvider, CountryHierarchyProvider
+class ThailandGeographyProvider implements CountryAddressAreaMetadataProvider, CountryAreaTypeLabelProvider, CountryGeographyProvider, CountryHierarchyProvider
 {
     public const string AREA_SOURCE = 'aiarmada_addressing_thailand_v1';
 
@@ -77,6 +78,25 @@ class ThailandGeographyProvider implements CountryAddressAreaMetadataProvider, C
         ];
     }
 
+    /** @return array<string, string> */
+    public function areaTypeLabels(): array
+    {
+        // Amphoe, Khet, and Metropolitan Administration render correctly
+        // from the type strings; only the English-generic province type
+        // needs its proper Thai term.
+        return [
+            'province' => 'Changwat',
+        ];
+    }
+
+    /** @return list<array{state_code: string, type_labels: array<string, string>}> */
+    public function stateAreaTypeLabels(): array
+    {
+        // Bangkok's khet-vs-amphoe split is already a type difference,
+        // not a per-state terminology override.
+        return [];
+    }
+
     /** @return array<string, list<array{role: string, country_code?: string, is_primary?: bool}>> */
     public function areaRoles(AddressCountry $country): array
     {
@@ -104,6 +124,9 @@ class ThailandGeographyProvider implements CountryAddressAreaMetadataProvider, C
     public function areaNames(AddressCountry $country): array
     {
         return [
+            'th:metropolitan_administration:bangkok' => [
+                ['name' => 'Krung Thep Maha Nakhon', 'name_type' => 'official'],
+            ],
             'th:metropolitan_administration:pattaya' => [
                 ['name' => 'Phatthaya', 'name_type' => 'alternative'],
             ],

@@ -39,3 +39,10 @@ it('ships 81 municipalities/districts under regions with parent links', function
         ->and($byId->get('am:municipality:vanadzor')->name)->toBe('Vanadzor')
         ->and($byId->get('am:district:kentron')->name)->toBe('Kentron');
 });
+
+it('labels regions Marz and municipalities Hamaynk', function (): void {
+    $provider = app(ArmeniaGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['region' => 'Marz', 'municipality' => 'Hamaynk'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

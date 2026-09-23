@@ -39,3 +39,10 @@ it('ships 93 districts/cities under states with parent links', function (): void
         ->and($byId->get('at:district:linz-land')->name)->toBe('Linz-Land')
         ->and($byId->get('at:statutory_city:salzburg')->name)->toBe('Salzburg');
 });
+
+it('labels tiers Bundesland, Bezirk and Statutarstadt', function (): void {
+    $provider = app(AustriaGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['state' => 'Bundesland', 'district' => 'Bezirk', 'statutory_city' => 'Statutarstadt'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

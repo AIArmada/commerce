@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Geography\Andorra\AndorraAddressFormatter;
+use AIArmada\Addressing\Geography\Andorra\AndorraGeographyProvider;
 
 it('formats Andorran addresses with the postcode left of the locality', function (): void {
     $formatted = app(AndorraAddressFormatter::class)->format(AddressData::from([
@@ -25,4 +26,11 @@ it('formats Andorran street addresses with the parish postcode', function (): vo
     ]));
 
     expect($formatted)->toBe("Avinguda Meritxell 10\nAD500 ANDORRA LA VELLA\nAndorra");
+});
+
+it('labels parishes Parròquia', function (): void {
+    $provider = app(AndorraGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['parish' => 'Parròquia'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
 });

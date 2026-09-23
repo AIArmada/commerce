@@ -28,3 +28,10 @@ it('ships 24 regions under provinces with parent links', function (): void {
         ->and($byId->get('mg:region:diana')->name)->toBe('Diana')
         ->and($byId->get('mg:region:ambatosoa')->name)->toBe('Ambatosoa');
 });
+
+it('labels tiers Faritany and Faritra', function (): void {
+    $provider = app(MadagascarGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['province' => 'Faritany', 'region' => 'Faritra'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

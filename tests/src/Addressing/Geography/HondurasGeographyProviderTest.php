@@ -42,7 +42,7 @@ it('names the island department Islas de la Bahía with a Bay Islands alias', fu
     expect($names['hn:department:islas-de-la-bahia'][0]['name'])->toBe('Bay Islands');
 });
 
-it('ships 298 municipalitys under departments with parent links', function (): void {
+it('ships 298 municipalities under departments with parent links', function (): void {
     $areas = app(HondurasGeographyProvider::class)->addressAreaSource()->areas()->collect();
     $byId = $areas->keyBy->sourceId;
     $l2 = $areas->where('type', 'municipality');
@@ -52,4 +52,11 @@ it('ships 298 municipalitys under departments with parent links', function (): v
         ->and($byId->get('hn:municipality:distrito-central')->name)->toBe('Distrito Central')
         ->and($byId->get('hn:municipality:san-pedro-sula')->name)->toBe('San Pedro Sula')
         ->and($byId->get('hn:municipality:la-ceiba')->name)->toBe('La Ceiba');
+});
+
+it('labels tiers Departamento and Municipio', function (): void {
+    $provider = app(HondurasGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['department' => 'Departamento', 'municipality' => 'Municipio'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
 });

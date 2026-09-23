@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Geography\Guernsey\GuernseyAddressFormatter;
+use AIArmada\Addressing\Geography\Guernsey\GuernseyGeographyProvider;
 
 it('formats Guernsey addresses with the postcode below the post town', function (): void {
     $formatted = app(GuernseyAddressFormatter::class)->format(AddressData::from([
@@ -26,4 +27,14 @@ it('formats Sark addresses with the two-digit district postcode', function (): v
     ]));
 
     expect($formatted)->toBe("La Seigneurie\nSARK\nGY10 1SF\nGuernsey");
+});
+
+it('ships 10 parishes plus Alderney and Sark as dependencies', function (): void {
+    $areas = app(GuernseyGeographyProvider::class)->addressAreaSource()->areas()->collect();
+    $byId = $areas->keyBy->sourceId;
+
+    expect($areas->where('type', 'parish'))->toHaveCount(10)
+        ->and($areas->where('type', 'dependency'))->toHaveCount(2)
+        ->and($byId->get('gg:dependency:alderney')->name)->toBe('Alderney')
+        ->and($byId->get('gg:dependency:sark')->name)->toBe('Sark');
 });

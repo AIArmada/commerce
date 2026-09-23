@@ -38,3 +38,10 @@ it('ships 32 parishes under municipalities with parent links', function (): void
         ->and($byId->get('cv:parish:santo-amaro-abade')->name)->toBe('Santo Amaro Abade')
         ->and($byId->get('cv:parish:maio:nossa-senhora-da-luz')->name)->toBe('Nossa Senhora da Luz');
 });
+
+it('labels tiers Concelho, Região Geográfica and Freguesia', function (): void {
+    $provider = app(CapeVerdeGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['municipality' => 'Concelho', 'geographical_region' => 'Região Geográfica', 'parish' => 'Freguesia'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

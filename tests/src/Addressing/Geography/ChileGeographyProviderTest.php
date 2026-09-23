@@ -39,3 +39,10 @@ it('ships 56 provinces under regions with parent links', function (): void {
         ->and($byId->get('cl:province:valparaiso')->name)->toBe('Valparaíso')
         ->and($byId->get('cl:province:concepcion')->name)->toBe('Concepción');
 });
+
+it('labels tiers Región and Provincia', function (): void {
+    $provider = app(ChileGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['region' => 'Región', 'province' => 'Provincia'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

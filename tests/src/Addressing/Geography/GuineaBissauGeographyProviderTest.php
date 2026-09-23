@@ -26,7 +26,7 @@ it('formats Bissau-Guinean addresses without a postcode when missing', function 
     expect($formatted)->toBe("Rua Justino Lopes 12C\nBISSAU\nGuinea-Bissau");
 });
 
-it('ships 38 sectors under provinces with parent links', function (): void {
+it('ships 38 sectors under regions with parent links', function (): void {
     $areas = app(GuineaBissauGeographyProvider::class)->addressAreaSource()->areas()->collect();
     $byId = $areas->keyBy->sourceId;
     $l2 = $areas->where('type', 'sector');
@@ -36,4 +36,11 @@ it('ships 38 sectors under provinces with parent links', function (): void {
         ->and($byId->get('gw:sector:bambadinca')->name)->toBe('Bambadinca')
         ->and($byId->get('gw:sector:gabu')->name)->toBe('Gabú')
         ->and($byId->get('gw:sector:uno')->name)->toBe('Uno');
+});
+
+it('labels tiers Região, Sector Autónomo and Sector', function (): void {
+    $provider = app(GuineaBissauGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['region' => 'Região', 'autonomous_sector' => 'Sector Autónomo', 'sector' => 'Sector'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
 });

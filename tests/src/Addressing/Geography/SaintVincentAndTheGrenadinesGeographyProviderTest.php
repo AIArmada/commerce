@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Geography\SaintVincentAndTheGrenadines\SaintVincentAndTheGrenadinesAddressFormatter;
+use AIArmada\Addressing\Geography\SaintVincentAndTheGrenadines\SaintVincentAndTheGrenadinesGeographyProvider;
 
 it('formats Vincentian addresses with the postcode below the locality', function (): void {
     $formatted = app(SaintVincentAndTheGrenadinesAddressFormatter::class)->format(AddressData::from([
@@ -24,4 +25,13 @@ it('formats Bequia addresses with the island postcode', function (): void {
     ]));
 
     expect($formatted)->toBe("P.O BOX BQ400\nBEQUIA\nVC0400\nSaint Vincent and the Grenadines");
+});
+
+it('ships the 6 parishes as terminal states', function (): void {
+    $areas = app(SaintVincentAndTheGrenadinesGeographyProvider::class)->addressAreaSource()->areas()->collect();
+    $byId = $areas->keyBy->sourceId;
+
+    expect($areas)->toHaveCount(6)
+        ->and($areas->pluck('parentSourceId')->filter()->isEmpty())->toBeTrue()
+        ->and($byId->get('vc:parish:charlotte')->name)->toBe('Charlotte');
 });

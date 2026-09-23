@@ -29,3 +29,10 @@ it('ships 1140 municipalities/localities/areas under departments with parent lin
         ->and($byId->get('co:locality:suba')->name)->toBe('Suba')
         ->and($byId->get('co:municipality:cali')->name)->toBe('Cali');
 });
+
+it('labels tiers with Spanish administrative terms', function (): void {
+    $provider = app(ColombiaGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['department' => 'Departamento', 'capital_district' => 'Distrito Capital', 'municipality' => 'Municipio', 'locality' => 'Localidad', 'non_municipalized_area' => 'Área No Municipalizada'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

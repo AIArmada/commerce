@@ -37,3 +37,10 @@ it('ships 63 departments under provinces with parent links', function (): void {
         ->and($byId->get('td:department:fada')->name)->toBe('Fada')
         ->and($byId->get('td:department:am-djarass')->name)->toBe('Am-Djarass');
 });
+
+it('labels tiers Province and Département', function (): void {
+    $provider = app(ChadGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['province' => 'Province', 'department' => 'Département'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

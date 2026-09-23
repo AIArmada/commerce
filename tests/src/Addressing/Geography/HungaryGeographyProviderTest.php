@@ -39,7 +39,7 @@ it('renames Csongrád County and types Zalaegerszeg as a city', function (): voi
     expect($names['hu:county:csongrad-csanad-county'][0]['name'])->toBe('Csongrád County');
 });
 
-it('ships 197 districts under countys with parent links', function (): void {
+it('ships 197 districts under counties with parent links', function (): void {
     $areas = app(HungaryGeographyProvider::class)->addressAreaSource()->areas()->collect();
     $byId = $areas->keyBy->sourceId;
     $l2 = $areas->where('type', 'district');
@@ -48,5 +48,13 @@ it('ships 197 districts under countys with parent links', function (): void {
         ->and($l2->pluck('parentSourceId')->every(fn ($p) => $byId->has($p)))->toBeTrue()
         ->and($byId->get('hu:district:kispest')->name)->toBe('Kispest')
         ->and($byId->get('hu:district:varkerulet')->name)->toBe('Várkerület')
-        ->and($byId->get('hu:district:debrecen')->name)->toBe('Debrecen');
+        ->and($byId->get('hu:district:debrecen')->name)->toBe('Debrecen')
+        ->and($byId->get('hu:district:ajka')->parentSourceId)->toBe('hu:county:veszprem-county');
+});
+
+it('labels tiers Vármegye, Megyei Jogú Város, Főváros and Járás', function (): void {
+    $provider = app(HungaryGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['county' => 'Vármegye', 'city_with_county_rights' => 'Megyei Jogú Város', 'capital_city' => 'Főváros', 'district' => 'Járás'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
 });

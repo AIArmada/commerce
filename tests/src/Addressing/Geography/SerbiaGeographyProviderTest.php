@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Geography\Serbia\SerbiaAddressFormatter;
 use AIArmada\Addressing\Geography\Serbia\SerbiaGeographyProvider;
+use AIArmada\Addressing\Models\AddressCountry;
 
 it('formats Serbian addresses with the postcode left of the office', function (): void {
     $formatted = app(SerbiaAddressFormatter::class)->format(AddressData::from([
@@ -38,4 +39,18 @@ it('ships 157 municipalities/cities under districts with parent links', function
         ->and($byId->get('rs:city:novi-sad')->name)->toBe('Novi Sad')
         ->and($byId->get('rs:city_municipality:zemun')->name)->toBe('Zemun')
         ->and($byId->get('rs:city_municipality:novi-beograd')->name)->toBe('Novi Beograd');
+});
+
+it('roles Belgrade as a city and county cities as municipalities', function (): void {
+    $roles = app(SerbiaGeographyProvider::class)->areaRoles(new AddressCountry);
+
+    expect($roles['rs:city:belgrade'][0]['role'])->toBe('city')
+        ->and($roles['rs:city:bor'][0]['role'])->toBe('municipality');
+});
+
+it('labels tiers Okrug, Pokrajina, Grad, Opština and Gradska opština', function (): void {
+    $provider = app(SerbiaGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['district' => 'Okrug', 'province' => 'Pokrajina', 'city' => 'Grad', 'municipality' => 'Opština', 'city_municipality' => 'Gradska opština'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
 });

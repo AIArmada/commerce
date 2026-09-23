@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Geography\CzechRepublic\CzechRepublicAddressFormatter;
+use AIArmada\Addressing\Geography\CzechRepublic\CzechRepublicGeographyProvider;
 
 it('formats Czech addresses with the spaced postcode left of the locality', function (): void {
     $formatted = app(CzechRepublicAddressFormatter::class)->format(AddressData::from([
@@ -25,4 +26,22 @@ it('formats Czech rural addresses with the region below the postcode line', func
     ]));
 
     expect($formatted)->toBe("Roprachtice 129\n513 01 Roprachtice\nLiberecký kraj\nCzech Republic");
+});
+
+it('ships 76 districts under regions with parent links', function (): void {
+    $areas = app(CzechRepublicGeographyProvider::class)->addressAreaSource()->areas()->collect();
+    $byId = $areas->keyBy->sourceId;
+    $l2 = $areas->where('type', 'district');
+
+    expect($l2)->toHaveCount(76)
+        ->and($l2->pluck('parentSourceId')->every(fn ($p) => $byId->has($p)))->toBeTrue()
+        ->and($byId->get('cz:district:benesov')->name)->toBe('Benešov')
+        ->and($byId->get('cz:district:beroun')->name)->toBe('Beroun');
+});
+
+it('labels tiers Kraj, Hlavní Město and Okres', function (): void {
+    $provider = app(CzechRepublicGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['region' => 'Kraj', 'capital_city' => 'Hlavní Město', 'district' => 'Okres'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
 });

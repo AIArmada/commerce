@@ -37,3 +37,10 @@ it('ships 39 prefectures under regions with parent links', function (): void {
         ->and($byId->get('tg:prefecture:golfe')->name)->toBe('Golfe')
         ->and($byId->get('tg:prefecture:assoli')->name)->toBe('Assoli');
 });
+
+it('labels tiers Région and Préfecture', function (): void {
+    $provider = app(TogoGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['region' => 'Région', 'prefecture' => 'Préfecture'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

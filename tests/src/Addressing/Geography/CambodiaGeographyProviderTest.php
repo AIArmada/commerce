@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Geography\Cambodia\CambodiaAddressFormatter;
 use AIArmada\Addressing\Geography\Cambodia\CambodiaGeographyProvider;
+use AIArmada\Addressing\Models\AddressCountry;
 
 it('formats Cambodian addresses with the postcode right of the province', function (): void {
     $formatted = app(CambodiaAddressFormatter::class)->format(AddressData::from([
@@ -38,4 +39,20 @@ it('ships 210 districts/municipalities/sections under provinces with parent link
         ->and($byId->get('kh:district:mongkol-borey')->name)->toBe('Mongkol Borey')
         ->and($byId->get('kh:municipality:kep')->name)->toBe('Kep')
         ->and($byId->get('kh:section:chamkar-mon')->name)->toBe('Chamkar Mon');
+});
+
+it('labels tiers with Khmer administrative terms', function (): void {
+    $provider = app(CambodiaGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['province' => 'Khet', 'municipality' => 'Krong', 'district' => 'Srok', 'section' => 'Khan'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});
+
+it('roles Phnom Penh as a province and krong cities as districts', function (): void {
+    $roles = app(CambodiaGeographyProvider::class)->areaRoles(new AddressCountry);
+
+    expect($roles['kh:municipality:phnom-penh'][0]['role'])->toBe('province')
+        ->and($roles['kh:municipality:poipet'][0]['role'])->toBe('district')
+        ->and($roles['kh:district:mongkol-borey'][0]['role'])->toBe('district')
+        ->and($roles['kh:section:chamkar-mon'][0]['role'])->toBe('district');
 });

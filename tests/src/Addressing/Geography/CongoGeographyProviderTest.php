@@ -52,3 +52,10 @@ it('ships 89 districts under departments with parent links', function (): void {
         ->and($byId->get('cg:district:bokoma')->name)->toBe('Bokoma')
         ->and($byId->get('cg:district:tchiamba-nzassi')->name)->toBe('Tchiamba-Nzassi');
 });
+
+it('labels tiers Département and District', function (): void {
+    $provider = app(CongoGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['department' => 'Département', 'district' => 'District'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

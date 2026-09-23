@@ -37,3 +37,10 @@ it('ships 77 communes under departments with parent links', function (): void {
         ->and($byId->get('bj:commune:natitingou')->name)->toBe('Natitingou')
         ->and($byId->get('bj:commune:ouidah')->name)->toBe('Ouidah');
 });
+
+it('labels tiers Département and Commune', function (): void {
+    $provider = app(BeninGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['department' => 'Département', 'commune' => 'Commune'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

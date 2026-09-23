@@ -2,7 +2,7 @@ source_id,country_code,type,name,native_name,code,parent_source_id,level,latitud
 fr:region:corse,FR,region,Corse,,20R,,1,,
 fr:region:guadeloupe,FR,region,Guadeloupe,,971,,1,,
 fr:region:martinique,FR,region,Martinique,,972,,1,,
-fr:region:french-guiana,FR,region,French Guiana,,973,,1,,
+fr:region:french-guiana,FR,region,Guyane,,973,,1,,
 fr:region:la-reunion,FR,region,La Réunion,,974,,1,,
 fr:region:mayotte,FR,region,Mayotte,,976,,1,,
 fr:region:auvergne-rhone-alpes,FR,region,Auvergne-Rhône-Alpes,,ARA,,1,,

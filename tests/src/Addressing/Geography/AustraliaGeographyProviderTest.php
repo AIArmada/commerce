@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Geography\Australia\AustraliaAddressFormatter;
 use AIArmada\Addressing\Geography\Australia\AustraliaGeographyProvider;
+use AIArmada\Addressing\Models\AddressCountry;
 
 it('formats Australian addresses with double-spaced parts', function (): void {
     $formatted = app(AustraliaAddressFormatter::class)->format(AddressData::from([
@@ -38,4 +39,13 @@ it('ships 537 local government areas under states with parent links', function (
         ->and($byId->get('au:borough:borough-of-queenscliffe')->parentSourceId)->toBe('au:state:victoria')
         ->and($byId->get('au:city:south-australia:city-of-campbelltown')->parentSourceId)->toBe('au:state:south-australia')
         ->and($byId->get('au:council:tasmania:central-coast-council')->parentSourceId)->toBe('au:state:tasmania');
+});
+
+it('declares postal abbreviations for all 8 states and territories', function (): void {
+    $names = app(AustraliaGeographyProvider::class)->areaNames(new AddressCountry);
+
+    expect($names)->toHaveCount(8)
+        ->and($names['au:state:new-south-wales'][0])->toBe(['name' => 'NSW', 'name_type' => 'abbreviation'])
+        ->and($names['au:state:queensland'][0]['name'])->toBe('QLD')
+        ->and($names['au:territory:northern-territory'][0]['name'])->toBe('NT');
 });

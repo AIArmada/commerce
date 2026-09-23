@@ -39,3 +39,10 @@ it('ships 44 municipalitys under departments with parent links', function (): vo
         ->and($byId->get('sv:municipality:northern-ahuachapan')->name)->toBe('Northern Ahuachapán')
         ->and($byId->get('sv:municipality:southern-ahuachapan')->name)->toBe('Southern Ahuachapán');
 });
+
+it('labels tiers Departamento and Municipio', function (): void {
+    $provider = app(ElSalvadorGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['department' => 'Departamento', 'municipality' => 'Municipio'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

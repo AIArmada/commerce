@@ -1,7 +1,7 @@
 source_id,country_code,type,name,native_name,code,parent_source_id,level,latitude,longitude
 ar:province:salta,AR,province,Salta,,A,,1,,
 ar:province:buenos-aires,AR,province,Buenos Aires,,B,,1,,
-ar:city:autonomous-city-of-buenos-aires,AR,city,Autonomous City of Buenos Aires,,C,,1,,
+ar:city:autonomous-city-of-buenos-aires,AR,city,Ciudad Autónoma de Buenos Aires,,C,,1,,
 ar:province:san-luis,AR,province,San Luis,,D,,1,,
 ar:province:entre-rios,AR,province,Entre Ríos,,E,,1,,
 ar:province:la-rioja,AR,province,La Rioja,,F,,1,,

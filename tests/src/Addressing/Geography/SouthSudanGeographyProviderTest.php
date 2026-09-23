@@ -35,7 +35,7 @@ it('exposes the corrected Jonglei state slug and name', function (): void {
         ->and($areas->has('ss:state:jonglei-state'))->toBeFalse();
 });
 
-it('ships 88 countys under states with parent links', function (): void {
+it('ships 88 counties under states with parent links', function (): void {
     $areas = app(SouthSudanGeographyProvider::class)->addressAreaSource()->areas()->collect();
     $byId = $areas->keyBy->sourceId;
     $l2 = $areas->where('type', 'county');

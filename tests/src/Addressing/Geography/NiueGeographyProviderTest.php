@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Geography\Niue\NiueAddressFormatter;
+use AIArmada\Addressing\Geography\Niue\NiueGeographyProvider;
 
 it('formats Niue addresses with the sole code right of the locality', function (): void {
     $formatted = app(NiueAddressFormatter::class)->format(AddressData::from([
@@ -25,4 +26,13 @@ it('uses the same island code for every village', function (): void {
     ]));
 
     expect($formatted)->toBe("Huihui Road\nAlofi 9974\nNiue");
+});
+
+it('ships the 14 villages as terminal states', function (): void {
+    $areas = app(NiueGeographyProvider::class)->addressAreaSource()->areas()->collect();
+    $byId = $areas->keyBy->sourceId;
+
+    expect($areas)->toHaveCount(14)
+        ->and($areas->pluck('parentSourceId')->filter()->isEmpty())->toBeTrue()
+        ->and($byId->get('nu:village:alofi-north')->name)->toBe('Alofi North');
 });

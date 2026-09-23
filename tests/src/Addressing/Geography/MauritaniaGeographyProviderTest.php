@@ -37,3 +37,10 @@ it('ships 63 departments under regions with parent links', function (): void {
         ->and($byId->get('mr:department:aioun')->name)->toBe('Aïoun')
         ->and($byId->get('mr:department:atar')->name)->toBe('Atar');
 });
+
+it('labels tiers Wilaya and Moughataa', function (): void {
+    $provider = app(MauritaniaGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['region' => 'Wilaya', 'department' => 'Moughataa'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

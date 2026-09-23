@@ -39,3 +39,10 @@ it('ships 265 municipalitys under districts with parent links', function (): voi
         ->and($byId->get('bg:municipality:plovdiv')->name)->toBe('Plovdiv')
         ->and($byId->get('bg:municipality:burgas')->name)->toBe('Burgas');
 });
+
+it('labels districts Oblast', function (): void {
+    $provider = app(BulgariaGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['district' => 'Oblast'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

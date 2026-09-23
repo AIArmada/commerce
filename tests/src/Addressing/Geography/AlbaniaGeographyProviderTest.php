@@ -40,3 +40,10 @@ it('ships 61 municipalitys under countys with parent links', function (): void {
         ->and($byId->get('al:municipality:durres')->name)->toBe('Durrës')
         ->and($byId->get('al:municipality:shkoder')->name)->toBe('Shkodër');
 });
+
+it('labels counties Qark and municipalities Bashki', function (): void {
+    $provider = app(AlbaniaGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['county' => 'Qark', 'municipality' => 'Bashki'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

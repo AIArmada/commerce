@@ -29,3 +29,10 @@ it('ships 119 districts under governorates with parent links', function (): void
         ->and($byId->get('iq:district:abu-ghraib')->name)->toBe('Abu Ghraib')
         ->and($byId->get('iq:district:makhmur')->name)->toBe('Makhmur');
 });
+
+it('labels tiers Muhafaza and Qadaa', function (): void {
+    $provider = app(IraqGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['governorate' => 'Muhafaza', 'district' => 'Qadaa'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

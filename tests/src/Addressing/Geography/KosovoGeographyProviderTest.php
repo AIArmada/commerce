@@ -36,7 +36,7 @@ it('exposes the corrected Gjakova district slug and name', function (): void {
         ->and($areas->has('xk:district:gjakove'))->toBeFalse();
 });
 
-it('ships 38 municipalitys under districts with parent links', function (): void {
+it('ships 38 municipalities under districts with parent links', function (): void {
     $areas = app(KosovoGeographyProvider::class)->addressAreaSource()->areas()->collect();
     $byId = $areas->keyBy->sourceId;
     $l2 = $areas->where('type', 'municipality');
@@ -46,4 +46,11 @@ it('ships 38 municipalitys under districts with parent links', function (): void
         ->and($byId->get('xk:municipality:pristina')->name)->toBe('Pristina')
         ->and($byId->get('xk:municipality:prizren')->name)->toBe('Prizren')
         ->and($byId->get('xk:municipality:mitrovica')->name)->toBe('Mitrovica');
+});
+
+it('labels tiers Rajoni and Komuna', function (): void {
+    $provider = app(KosovoGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['district' => 'Rajoni', 'municipality' => 'Komuna'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
 });

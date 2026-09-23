@@ -27,7 +27,7 @@ it('prints matching Basotho city and district once when the postcode is missing'
     expect($formatted)->toBe("P.O. Box 500\nMaseru\nLesotho");
 });
 
-it('ships 80 constituencys under districts with parent links', function (): void {
+it('ships 80 constituencies under districts with parent links', function (): void {
     $areas = app(LesothoGeographyProvider::class)->addressAreaSource()->areas()->collect();
     $byId = $areas->keyBy->sourceId;
     $l2 = $areas->where('type', 'constituency');

@@ -45,3 +45,10 @@ it('ships 20 sub-prefectures under regions with parent links', function (): void
         ->and($byId->get('dj:subprefecture:lac-assal')->parentSourceId)->toBe('dj:region:arta')
         ->and($byId->get('dj:subprefecture:adailou')->parentSourceId)->toBe('dj:region:tadjourah');
 });
+
+it('labels tiers Région, Ville and Sous-préfecture', function (): void {
+    $provider = app(DjiboutiGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['region' => 'Région', 'city' => 'Ville', 'subprefecture' => 'Sous-préfecture'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

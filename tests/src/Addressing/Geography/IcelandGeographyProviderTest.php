@@ -49,3 +49,10 @@ it('ships 61 municipalities under regions with parent links', function (): void 
         ->and($byId->get('is:municipality:grindavik')->name)->toBe('Grindavíkurbær')
         ->and($byId->has('is:municipality:skagabygg'))->toBeFalse();
 });
+
+it('labels tiers Landsvæði and Sveitarfélag', function (): void {
+    $provider = app(IcelandGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['region' => 'Landsvæði', 'municipality' => 'Sveitarfélag'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

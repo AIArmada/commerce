@@ -35,14 +35,23 @@ it('codes Ulaanbaatar as single digit 1 per ISO MN-1', function (): void {
     expect($areas->get('mn:capital_city:ulaanbaatar')->code)->toBe('1');
 });
 
-it('ships 339 districts under provinces with parent links', function (): void {
+it('ships 330 sums and 9 duuregs under provinces with parent links', function (): void {
     $areas = app(MongoliaGeographyProvider::class)->addressAreaSource()->areas()->collect();
     $byId = $areas->keyBy->sourceId;
-    $l2 = $areas->where('type', 'district');
+    $l2 = $areas->where('level', 2);
 
     expect($l2)->toHaveCount(339)
+        ->and($areas->where('type', 'sum'))->toHaveCount(330)
+        ->and($areas->where('type', 'duureg'))->toHaveCount(9)
         ->and($l2->pluck('parentSourceId')->every(fn ($p) => $byId->has($p)))->toBeTrue()
-        ->and($byId->get('mn:district:kharkhorin')->name)->toBe('Kharkhorin')
-        ->and($byId->get('mn:district:dalanzadgad')->name)->toBe('Dalanzadgad')
-        ->and($byId->get('mn:district:ulaanbaatar:bayangol')->name)->toBe('Bayangol');
+        ->and($byId->get('mn:sum:kharkhorin')->name)->toBe('Kharkhorin')
+        ->and($byId->get('mn:sum:dalanzadgad')->name)->toBe('Dalanzadgad')
+        ->and($byId->get('mn:duureg:ulaanbaatar:bayangol')->name)->toBe('Bayangol');
+});
+
+it('labels tiers Aimag, Sum and Düüreg', function (): void {
+    $provider = app(MongoliaGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['province' => 'Aimag', 'sum' => 'Sum', 'duureg' => 'Düüreg'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
 });

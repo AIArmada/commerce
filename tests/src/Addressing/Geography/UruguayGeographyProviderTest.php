@@ -28,7 +28,7 @@ it('formats Uruguayan capital addresses with the Montevideo postcode', function 
     expect($formatted)->toBe("Av. 18 de Julio 1000\n11600 – MONTEVIDEO\nUruguay");
 });
 
-it('ships 125 municipalitys under departments with parent links', function (): void {
+it('ships 125 municipalities under departments with parent links', function (): void {
     $areas = app(UruguayGeographyProvider::class)->addressAreaSource()->areas()->collect();
     $byId = $areas->keyBy->sourceId;
     $l2 = $areas->where('type', 'municipality');
@@ -38,4 +38,11 @@ it('ships 125 municipalitys under departments with parent links', function (): v
         ->and($byId->get('uy:municipality:municipality-a')->name)->toBe('Municipality A')
         ->and($byId->get('uy:municipality:maldonado')->name)->toBe('Maldonado')
         ->and($byId->get('uy:municipality:ciudad-de-la-costa')->name)->toBe('Ciudad de la Costa');
+});
+
+it('labels tiers Departamento and Municipio', function (): void {
+    $provider = app(UruguayGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['department' => 'Departamento', 'municipality' => 'Municipio'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
 });

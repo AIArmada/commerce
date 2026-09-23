@@ -38,3 +38,10 @@ it('ships 32 communes under districts with parent links', function (): void {
         ->and($byId->get('gp:commune:baie-mahault')->name)->toBe('Baie-Mahault')
         ->and($byId->get('gp:commune:basse-terre')->name)->toBe('Basse-Terre');
 });
+
+it('labels tiers Arrondissement and Commune', function (): void {
+    $provider = app(GuadeloupeGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['district' => 'Arrondissement', 'commune' => 'Commune'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

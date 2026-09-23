@@ -41,3 +41,10 @@ it('ships 380 land/city counties under voivodeships with parent links', function
         ->and($byId->get('pl:city_county:krakow')->name)->toBe('Kraków')
         ->and($byId->get('pl:land_county:powiat-krakowski')->name)->toBe('powiat krakowski');
 });
+
+it('labels tiers Województwo, Powiat Ziemski and Powiat Grodzki', function (): void {
+    $provider = app(PolandGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['voivodeship' => 'Województwo', 'land_county' => 'Powiat Ziemski', 'city_county' => 'Powiat Grodzki'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

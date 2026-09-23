@@ -38,3 +38,10 @@ it('ships 34 communes under districts with parent links', function (): void {
         ->and($byId->get('mq:commune:fort-de-france')->name)->toBe('Fort-de-France')
         ->and($byId->get('mq:commune:sainte-anne')->name)->toBe('Sainte-Anne');
 });
+
+it('labels tiers Arrondissement and Commune', function (): void {
+    $provider = app(MartiniqueGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['district' => 'Arrondissement', 'commune' => 'Commune'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

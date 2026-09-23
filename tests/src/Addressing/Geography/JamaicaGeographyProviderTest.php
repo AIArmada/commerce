@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Geography\Jamaica\JamaicaAddressFormatter;
+use AIArmada\Addressing\Geography\Jamaica\JamaicaGeographyProvider;
 
 it('formats Jamaican addresses without a national postcode', function (): void {
     $formatted = app(JamaicaAddressFormatter::class)->format(AddressData::from([
@@ -24,4 +25,13 @@ it('formats Jamaican Kingston addresses keeping the sector in the locality', fun
     ]));
 
     expect($formatted)->toBe("15 Molynes Road\nKingston 10\nJamaica");
+});
+
+it('ships the 14 parishes as terminal states', function (): void {
+    $areas = app(JamaicaGeographyProvider::class)->addressAreaSource()->areas()->collect();
+    $byId = $areas->keyBy->sourceId;
+
+    expect($areas)->toHaveCount(14)
+        ->and($areas->pluck('parentSourceId')->filter()->isEmpty())->toBeTrue()
+        ->and($byId->get('jm:parish:clarendon')->name)->toBe('Clarendon');
 });

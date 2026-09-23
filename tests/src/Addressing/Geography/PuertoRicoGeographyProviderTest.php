@@ -68,3 +68,10 @@ it('ships 901 barrios under municipios with parent links', function (): void {
         ->and($byId->get('pr:barrio:santurce')->parentSourceId)->toBe('pr:municipality:san-juan')
         ->and($byId->get('pr:barrio_pueblo:adjuntas')->parentSourceId)->toBe('pr:municipality:adjuntas');
 });
+
+it('labels tiers Municipio, Barrio-Pueblo and Barrio', function (): void {
+    $provider = app(PuertoRicoGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['municipality' => 'Municipio', 'barrio_pueblo' => 'Barrio-Pueblo', 'barrio' => 'Barrio'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

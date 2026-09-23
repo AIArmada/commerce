@@ -10,9 +10,9 @@ counts, or changes scope. See [Country Data](./05-country-data.md)
 for per-country narrative and [Provider Authoring](./13-provider-authoring.md)
 for how to add a level.
 
-Current shape: 228 providers — 2 dual-hierarchy, 1 depth-4, 1 depth-3, 177 depth-2,
-47 depth-1.
-All 228 providers ship a formatter: 180 print a postcode (←98 →39 US →8 above6 below28 after country1), 48 codeless.
+Current shape: 228 providers — 2 dual-hierarchy, 1 depth-4, 1 depth-3, 178 depth-2,
+46 depth-1.
+All 228 providers ship a formatter: 180 print a postcode (←97 ← state1 →39 US →8 above6 below27 with country1 after country1), 48 codeless.
 
 ## Legend
 
@@ -27,7 +27,9 @@ All 228 providers ship a formatter: 180 print a postcode (←98 →39 US →8 ab
 - **Fmt** — postcode position the formatter implements: `←` code
   left of the locality, `→` code right of it, `US →` US-system
   `LOCALITY ST ZIP` line, `above`/`below` code on its own line
-  above/below the locality, `after country` code after the
+  above/below the locality, `← state` code left of the state or
+  province (Afghanistan), `with country` code on the country line
+  left of the country name (Japan), `after country` code after the
   country line (Singapore), `none` no postcode system (a supplied
   code prints on its own line).
 - **Status** — `Complete` (at designed depth), `L1` (level-1 only),
@@ -38,7 +40,7 @@ All 228 providers ship a formatter: 180 print a postcode (←98 →39 US →8 ab
 
 | Country | Code | States | Mapped | Rows | Depth | Hierarchy | Roles | Fmt | Status |
 |---|---|---:|:---:|:---:|:---:|---|---|---|---|
-| Afghanistan | AF | 34 | 34 | 435 | 2 | administrative: province > district | district | ← | Complete — 34 provinces + 401 districts (OCHA COD-AB v03, Jun 2025; UN p-codes; govt counts vary 398–407 by vintage) |
+| Afghanistan | AF | 34 | 34 | 435 | 2 | administrative: province > district | district | ← state | Complete — 34 provinces + 401 districts (OCHA COD-AB v03, Jun 2025; UN p-codes; govt counts vary 398–407 by vintage) |
 | Aland | AX | 16 | 16 | 16 | 1 | administrative: municipality | — | ← | L1 — no admin tier-2; L1 already municipal level |
 | Albania | AL | 12 | 12 | 73 | 2 | administrative: county > municipality | municipality | above | Complete — 12 counties + 61 municipalities (12 county pages; main table lacks county column) |
 | Algeria | DZ | 69 | 69 | 617 | 2 | administrative: wilaya > daira | daira | ← | Complete — 69 wilayas + 548 dairas per décrets 91-306/26-253; communes excluded |
@@ -61,7 +63,7 @@ All 228 providers ship a formatter: 180 print a postcode (←98 →39 US →8 ab
 | Belgium | BE | 3 | 3 | 13 | 2 | administrative: region > province | province | ← | Complete — 3 regions + 10 provinces; Brussels childless |
 | Belize | BZ | 6 | 6 | 6 | 1 | administrative: district | — | none | Blocked — councils exist but no consolidated district-mapped list; OCHA COD-AB stops at the 6 districts |
 | Benin | BJ | 12 | 12 | 89 | 2 | administrative: department > commune | commune | none | Complete — 12 departments + 77 communes (per-department lists) |
-| Bermuda | BM | 9 | 9 | 9 | 1 | administrative: municipality | — | → | L1 — no admin tier-2; parishes/municipalities terminal|
+| Bermuda | BM | 9 | 9 | 11 | 2 | administrative: parish > municipality | municipality | → | Complete — 9 parishes + City of Hamilton (under Pembroke) + Town of St George (under St George's) |
 | Bhutan | BT | 20 | 20 | 225 | 2 | administrative: district > gewog | gewog | → | Complete — 20 districts + 205 gewogs (single table w/ Dzongkhag rowspan (ECB spellings)) |
 | Bolivia | BO | 9 | 9 | 121 | 2 | administrative: department > province | province | none | Complete — 9 departments + 112 provinces (Source: Wikipedia Provinces of Bolivia department navbox templates (MediaWiki API, Sep 2026).) |
 | Bosnia and Herzegovina | BA | 3 | 3 | 146 | 2 | administrative: district / entity > municipality | municipality | ← | Complete — 3 entities + 143 municipalities (79 FBiH + 64 RS flatlists; +Siroki Brijeg +Istocno Sarajevo; cantons skipped) |
@@ -106,23 +108,23 @@ All 228 providers ship a formatter: 180 print a postcode (←98 →39 US →8 ab
 | Fiji | FJ | 5 | 5 | 19 | 2 | administrative: division > province | province | none | Complete — 4 divisions + Rotuma + 14 provinces; Rotuma standalone |
 | Finland | FI | 18 | 18 | 310 | 2 | administrative: region > municipality / city | municipality | ← | Complete — 18 regions + 185 municipalities + 107 cities (fi.wiki Luettelo Suomen kunnista; 16 Aland rows excluded, covered by AX) |
 | France | FR | 18 | 18 | 120 | 2 | administrative: region > department | department | ← | Complete — 18 regions + 101 departments + Lyon Metropolis (Departments of France; INSEE codes) |
-| French Guiana | GF | 1 | 1 | 23 | 2 | administrative: overseas_region > commune | commune | ← | Complete — 1 overseas_regions + 22 communes (Source: Wikipedia Communes of French Guiana (MediaWiki API, Sep 2026); INSEE codes in code column.) |
+| French Guiana | GF | 1 | 1 | 23 | 2 | administrative: overseas_region > commune | commune | ← | Complete — 1 overseas region + 22 communes (Source: Wikipedia Communes of French Guiana (MediaWiki API, Sep 2026); INSEE codes in code column.) |
 | French Polynesia | PF | 5 | 5 | 53 | 2 | administrative: division > commune | commune | ← | Complete — 5 divisions + 48 communes (Administrative divisions of French Polynesia) |
 | French Southern Territories | TF | 5 | 5 | 5 | 1 | administrative: district | — | none | L1 — uninhabited; 5 districts terminal|
 | Gabon | GA | 9 | 9 | 58 | 2 | administrative: province > department | department | ← | Complete — 9 provinces + 49 departments (per-province bullets (Cap Esterias deleted 2013 excluded)) |
-| Gambia | GM | 6 | 6 | 49 | 2 | administrative: city / division > district | district | none | Complete — 6 divisions + 43 districts (per-LGA bullets mapped to divisions (Kanifing under Banjul/Greater Banjul)) |
+| Gambia | GM | 7 | 7 | 49 | 2 | administrative: city / region > district | district | none | Complete — 5 regions + Banjul + Kanifing + 42 districts (divisions renamed regions 2007; Kanifing first-level city) |
 | Georgia | GE | 12 | 12 | 97 | 2 | administrative: autonomous_republic / region / city > municipality / district / city | municipality | ← | Complete — 9 regions + 2 ARs + Tbilisi + 65 municipalities + 16 districts + 4 cities (Geostat table; Abkhazia/SO units are Georgia formal claim, incl. 10 Tbilisi districts) |
-| Germany | DE | 16 | 16 | 417 | 2 | administrative: state > district | district | ← | Complete — 16 states + 401 districts (List of districts of Germany; Aachen/Hanover/Gottingen city rows merged into districts) |
+| Germany | DE | 16 | 16 | 417 | 2 | administrative: state > district | district | ← | Complete — 16 states + 401 districts split rural/urban (294 Landkreise + 107 kreisfreie Städte; source Form column; Aachen/Hanover/Saarbrücken ride rural as district-level Kommunalverbände) |
 | Ghana | GH | 16 | 16 | 277 | 2 | administrative: region > district | district | → | Complete — 16 regions + 261 assemblies (6 metropolitan + 113 municipal + 142 district) |
 | Greece | GR | 14 | 14 | 346 | 2 | administrative: administrative_region > municipality | municipality | ← | Complete — 14 regions + 332 municipalities (List of municipalities of Greece 2011, incl. 2019 splits; Athos has none) |
 | Greenland | GL | 5 | 5 | 5 | 1 | administrative: municipality | — | ← | L1 — no admin tier-2; 5 municipalities terminal|
-| Grenada | GD | 7 | 7 | 7 | 1 | administrative: parish | — | none | L1 — no admin tier-2; parishes terminal|
+| Grenada | GD | 7 | 7 | 7 | 1 | administrative: parish / dependency | — | none | L1 — 6 parishes + Carriacou dependency terminal|
 | Guadeloupe | GP | 2 | 2 | 34 | 2 | administrative: district > commune | commune | ← | Complete — 2 districts + 32 communes (Communes of Guadeloupe + FR arrondissements) |
 | Guam | GU | 19 | 19 | 19 | 1 | administrative: village | — | US → | L1 — 19 municipal villages, no tier below (regions statistical) |
 | Guatemala | GT | 22 | 22 | 362 | 2 | administrative: department > municipality | municipality | ← | Complete — 22 departments + 340 municipalities (Source: Wikipedia Municipalities of Guatemala (MediaWiki API, Sep 2026).) |
-| Guernsey | GG | 12 | 12 | 12 | 1 | administrative: parish | — | below | L1 — no admin tier-2; douzaines are electoral only |
+| Guernsey | GG | 12 | 12 | 12 | 1 | administrative: parish / dependency | — | below | L1 — 10 parishes + Alderney/Sark as dependencies; douzaines are electoral only |
 | Guinea | GN | 8 | 8 | 41 | 2 | administrative: administrative_region > prefecture | prefecture | ← | Complete — 7 regions + Conakry + 33 prefectures; Conakry childless |
-| Guinea-Bissau | GW | 12 | 12 | 50 | 2 | administrative: region / autonomous_sector / province > sector | sector | ← | Complete — 12 provinces + 38 sectors (per-region bullets (Bissau self-row dropped)) |
+| Guinea-Bissau | GW | 9 | 9 | 47 | 2 | administrative: region / autonomous_sector > sector | sector | ← | Complete — 8 regions + Bissau + 38 sectors (Leste/Norte/Sul statistical provinces not shipped) |
 | Guyana | GY | 10 | 10 | 86 | 2 | administrative: region > town / neighbourhood_democratic_council | town | below | Complete — 10 regions + 10 towns + 66 NDCs (Neighbourhood Councils of Guyana; towns mapped to regions) |
 | Haiti | HT | 10 | 10 | 52 | 2 | administrative: department > arrondissement | arrondissement | ← | Complete — 10 departments + 42 arrondissements (Source: Wikipedia Arrondissements of Haiti (MediaWiki API, Sep 2026). La Gonave links to the island article; named La Gonave per IHSI.) |
 | Honduras | HN | 18 | 18 | 316 | 2 | administrative: department > municipality | municipality | ← | Complete — 18 departments + 298 municipalities (Source: Wikipedia Municipalities of Honduras (MediaWiki API, Sep 2026).) |
@@ -138,7 +140,7 @@ All 228 providers ship a formatter: 180 print a postcode (←98 →39 US →8 ab
 | Italy | IT | 20 | 20 | 129 | 2 | administrative: region > province / metropolitan_city / free_municipal_consortium / decentralization_entity / autonomous_province | province | ← | Complete — 20 regions + 82 provinces + 15 metros + 6 consortiums + 4 entities + 2 autonomous (Provinces of Italy; Aosta disestablished excluded) |
 | Ivory Coast | CI | 14 | 14 | 45 | 2 | administrative: district > region | region | none | Complete — 12 districts + Abidjan/Yamoussoukro + 31 regions (autonomous districts terminal; departments are L3) |
 | Jamaica | JM | 14 | 14 | 14 | 1 | administrative: parish | — | none | L1 — no admin tier-2; 14 parishes terminal|
-| Japan | JP | 47 | 47 | 1794 | 2 | administrative: prefecture > municipality | municipality | below | Complete — 47 prefectures + 1,747 municipalities (792 cities + 743 towns + 183 villages + 23 Tokyo special wards + 6 Northern-Territories paper villages); designated-city wards out of scope |
+| Japan | JP | 47 | 47 | 1794 | 2 | administrative: prefecture > municipality | municipality | with country | Complete — 47 prefectures + 1,747 municipalities (792 cities + 743 towns + 183 villages + 23 Tokyo special wards + 6 Northern-Territories paper villages); designated-city wards out of scope |
 | Jersey | JE | 12 | 12 | 68 | 2 | administrative: parish > vingtaine / canton / cueillette | vingtaine | below | Complete — 12 parishes + 48 vingtaines + 2 cantons + 6 cueillettes (Table of vingtaines w/ Parish column) |
 | Jordan | JO | 12 | 12 | 63 | 2 | administrative: governorate > liwa | liwa | → | Complete — 12 governorates + 51 liwa per DOS Yearbook 2024; qada out of scope |
 | Kazakhstan | KZ | 20 | 20 | 190 | 2 | administrative: region / city > district | district | ← | Complete — 20 regions + 170 districts (single table w/ rowspan Region (stat.gov.kz 2023; 3 cities childless, districts in flux)) |
@@ -146,7 +148,7 @@ All 228 providers ship a formatter: 180 print a postcode (←98 →39 US →8 ab
 | Kiribati | KI | 3 | 3 | 27 | 2 | administrative: island > council | council | → | Complete — 3 island groups + 24 councils (20 Gilbert incl. Banaba, 3 Line, Canton) |
 | Kosovo | XK | 7 | 7 | 45 | 2 | administrative: district > municipality | municipality | ← | Complete — 7 districts + 38 municipalities (7-district table w/ municipality cells) |
 | Kuwait | KW | 6 | 6 | 141 | 2 | administrative: governorate > area | area | ← | Complete — 6 governorates + 135 areas; blocks and per-area postcodes out of scope |
-| Kyrgyzstan | KG | 9 | 9 | 53 | 2 | administrative: region / city > district | district | ← | Complete — 9 regions + 44 districts (per-region tables (Osh city not in L1)) |
+| Kyrgyzstan | KG | 9 | 9 | 53 | 2 | administrative: region / city > district | district | ← | Complete — 7 regions + Bishkek/Osh + 44 districts (per-region tables) |
 | Laos | LA | 18 | 18 | 166 | 2 | administrative: province / prefecture > district | district | ← | Complete — 18 provinces + 148 districts (single coded table w/ Province column) |
 | Latvia | LV | 42 | 42 | 627 | 2 | administrative: municipality > parish / town / city | parish | → | Complete — 35 municipalities + 7 state cities + 585 units (Varakļāni merged to Madona 1 Jul 2025; 3 twins share names) |
 | Lebanon | LB | 9 | 9 | 34 | 2 | administrative: governorate > caza | caza | → | Complete — 9 governorates (KJ provisional) + 25 cazas (Districts of Lebanon) |
@@ -171,9 +173,9 @@ All 228 providers ship a formatter: 180 print a postcode (←98 →39 US →8 ab
 | Micronesia | FM | 4 | 4 | 79 | 2 | administrative: state > municipality / city | municipality | US → | Complete — 4 states + 73 municipalities + 2 cities (40/4/11/20; Piherarh dup shipped once) |
 | Moldova | MD | 37 | 37 | 1018 | 2 | administrative: district > commune / city | commune | ← | Complete — 37 L1 + 915 communes + 66 cities (Transnistria de jure; 6 pairs typed; 67 parent-scoped) |
 | Monaco | MC | 17 | 17 | 17 | 1 | administrative: quarter | — | ← | L1 — 17 ISO quarters (2013 ordinance wards noted, not modelled) |
-| Mongolia | MN | 22 | 22 | 361 | 2 | administrative: province / capital_city > district | district | → | Complete — 22 provinces + 339 districts (per-province sum lists w/ counts + 9 UB duuregs) |
+| Mongolia | MN | 22 | 22 | 361 | 2 | administrative: province / capital_city > sum / duureg | district | → | Complete — 21 aimags + Ulaanbaatar + 330 sums + 9 UB duuregs (per-province sum lists w/ counts) |
 | Montenegro | ME | 25 | 25 | 25 | 1 | administrative: municipality | — | ← | L1 — no admin tier-2; L1 already municipal level |
-| Montserrat | MS | 3 | 3 | 3 | 1 | administrative: parish | — | → | L1 — no admin tier-2; 3 parishes terminal|
+| Montserrat | MS | 4 | 4 | 4 | 1 | administrative: parish | — | → | L1 — no admin tier-2; 4 parishes terminal (incl. uninhabited Saint Patrick) |
 | Morocco | MA | 87 | 12 | 87 | 2 | administrative: region > province | province | ← | Complete to province; communes (~1,500) out of scope |
 | Mozambique | MZ | 11 | 11 | 147 | 2 | administrative: province > district | district | ← | Complete — 10 provinces + Maputo City + 136 districts (129 provincial + 7 Maputo municipal; Maxixe excluded as city) |
 | Myanmar | MM | 15 | 15 | 95 | 2 | administrative: region > district | district | → | Complete — 15 + 80 districts (MIMU via OCHA COD-AB, Feb 2024; Bago E/W + Shan E/N/S rolled up to ISO L1; announced 121 never operationalized) |
@@ -208,7 +210,7 @@ All 228 providers ship a formatter: 180 print a postcode (←98 →39 US →8 ab
 | Russia | RU | 83 | 83 | 83 | 1 | administrative: subject | — | below | L1 — 83 ISO subjects; tier-2 parked pending GAR extract (see doc 17 research log) |
 | Rwanda | RW | 5 | 5 | 35 | 2 | administrative: province / city > district | district | none | Complete — 5 provinces/city + 30 districts (Districts of Rwanda) |
 | Saint Barthelemy | BL | 1 | 1 | 1 | 1 | administrative: overseas_collectivity | — | ← | L1 — single collectivity; no tier-2|
-| Saint Helena | SH | 10 | 10 | 10 | 1 | administrative: district | — | → | L1 — 8 districts + Ascension/Tristan da Cunha (added, provisional states); all terminal |
+| Saint Helena | SH | 10 | 10 | 10 | 1 | administrative: district / island | — | → | L1 — 8 districts + Ascension/Tristan da Cunha (added, provisional states); all terminal |
 | Saint Kitts and Nevis | KN | 2 | 2 | 16 | 2 | administrative: island > parish | parish | below | Complete — 2 islands + 14 parishes |
 | Saint Lucia | LC | 10 | 10 | 10 | 1 | administrative: district | — | → | L1 — no admin tier-2; districts terminal|
 | Saint Martin | MF | 1 | 1 | 1 | 1 | administrative: overseas_collectivity | — | ← | L1 — single collectivity; no tier-2|
@@ -216,7 +218,7 @@ All 228 providers ship a formatter: 180 print a postcode (←98 →39 US →8 ab
 | Saint Vincent and the Grenadines | VC | 6 | 6 | 6 | 1 | administrative: parish | — | below | L1 — no admin tier-2; 6 parishes terminal|
 | Samoa | WS | 11 | 11 | 353 | 2 | administrative: district > village | village | → | Complete — 11 districts + 342 census villages (Matautu/Mulivai twins disambiguated; 12 parent-scoped) |
 | San Marino | SM | 9 | 9 | 9 | 1 | administrative: municipality | — | ← | L1 — no admin tier-2; L1 already municipal level |
-| Sao Tome and Principe | ST | 7 | 7 | 7 | 1 | administrative: district | — | none | L1 — 6 districts + Príncipe AR; districts terminal (localidades not admin) |
+| Sao Tome and Principe | ST | 7 | 7 | 7 | 1 | administrative: district / autonomous_region | — | none | L1 — 6 districts + Príncipe AR; districts terminal (localidades not admin) |
 | Saudi Arabia | SA | 13 | 13 | 152 | 2 | administrative: region > governorate | governorate | above | Complete — 13 regions + 139 governorates (per-region tables incl. ill rows; = infobox 139) |
 | Senegal | SN | 14 | 14 | 60 | 2 | administrative: region > department | department | ← | Complete — 14 regions + 46 departments (Departments of Senegal) |
 | Serbia | RS | 32 | 32 | 189 | 2 | administrative: city / district / province > municipality / city / city_municipality | municipality | ← | Complete — 32 districts + 117 municipalities + 23 cities + 17 Belgrade city-municipalities (Municipalities and cities of Serbia; Kosovo under XK) |
@@ -224,13 +226,13 @@ All 228 providers ship a formatter: 180 print a postcode (←98 →39 US →8 ab
 | Sierra Leone | SL | 5 | 5 | 21 | 2 | administrative: province / area > district | district | none | Complete — 5 provinces + 16 districts (District/Province table) |
 | Singapore | SG | 5 | 5 | 174 | dual 2+2 | postal: postal_district > postal_sector; administrative: region > planning_area | planning_area, postal_district, postal_sector, region | after country | Complete; postcodes via OneMap |
 | Slovakia | SK | 8 | 8 | 87 | 2 | administrative: region > district | district | ← | Complete — 8 regions + 79 districts (Districts of Slovakia) |
-| Slovenia | SI | 212 | 212 | 212 | 1 | administrative: municipality | — | ← | L1 — no admin tier-2; L1 already municipal level |
+| Slovenia | SI | 212 | 212 | 212 | 1 | administrative: municipality / urban_municipality | — | ← | L1 — 200 municipalities + 12 urban (grouped role); no admin tier-2 |
 | Solomon Islands | SB | 10 | 10 | 193 | 2 | administrative: province > ward | ward | none | Complete — 9 provinces + Honiara + 183 wards (OCHA COD gazetteer w/ SINSO pcodes; Statoids cross-check) |
 | Somalia | SO | 18 | 18 | 107 | 2 | administrative: region > district | district | none | Complete — 18 regions + 89 districts (Region/Districts table (formal claim incl. Somaliland)) |
 | South Africa | ZA | 9 | 9 | 61 | 2 | administrative: province > district_municipality / city_municipality | municipality | below | Complete — 9 provinces + 44 districts + 8 metros (List of municipalities in South Africa) |
 | South Korea | KR | 17 | 17 | 245 | 2 | administrative: special_city / metropolitan_city / province / special_self_governing_province / special_self_governing_city > city / county / district | sigungu | → | Complete — 17 first-level + 77 cities + 82 counties + 69 autonomous districts (si/gun/gu lists; non-autonomous gu excluded; Sejong childless) |
-| South Sudan | SS | 10 | 10 | 98 | 2 | administrative: state > county | county | none | Complete — 10 states + 88 countys (per-state bullets + WBG table; Ruweng->Unity, Pibor->Jonglei) |
-| Spain | ES | 69 | 19 | 69 | 2 | administrative: community > province | province | ← | Complete — communities + 50 provinces |
+| South Sudan | SS | 10 | 10 | 98 | 2 | administrative: state > county | county | none | Complete — 10 states + 88 counties (per-state bullets + WBG table; Ruweng->Unity, Pibor->Jonglei) |
+| Spain | ES | 19 | 19 | 69 | 2 | administrative: autonomous_community / autonomous_city > province | province | ← | Complete — 17 communities + Ceuta/Melilla + 50 provinces |
 | Sri Lanka | LK | 9 | 9 | 34 | 2 | administrative: province > district | district | below | Complete — 9 provinces + 25 districts |
 | Sudan | SD | 18 | 18 | 206 | 2 | administrative: state > district | district | above | Complete — 18 states + 188 districts (UN OCHA; Aj Jazirah/Gedaref mapped; Abyei PCA excluded) |
 | Suriname | SR | 10 | 10 | 73 | 2 | administrative: district > resort | resort | none | Complete — 10 districts + 63 resorts (Resorts of Suriname) |
@@ -241,14 +243,14 @@ All 228 providers ship a formatter: 180 print a postcode (←98 →39 US →8 ab
 | Tajikistan | TJ | 5 | 5 | 74 | 2 | administrative: capital_territory / autonomous_region / region / districts_under_republic_administration > district / city | district | ← | Complete — 5 first-level + 51 districts + 18 cities (per-region tables w/ 2024 ests; intro 58/17 stale) |
 | Tanzania | TZ | 31 | 31 | 224 | 2 | administrative: region > district | district | ← | Complete — 31 regions + 193 districts (post-2021 splits; Nanyamba Town rename) |
 | Thailand | TH | 78 | 78 | 1006 | 2 | administrative: province > amphoe | amphoe | below | Complete — 76 provinces + Bangkok/Pattaya + 928 (878 amphoe + 50 khet, DOPA geocoded; Mueang restored; Bueng Kan recoded; Pattaya terminal) |
-| Timor-Leste | TL | 14 | 14 | 81 | 2 | administrative: municipality / special_administrative_region > administrative_post | administrative_post | → | Complete — 14 municipalities + 67 administrative_posts (Source: Wikipedia Administrative posts of Timor-Leste (MediaWiki API, Sep 2026). 13 of 14 municipalities have posts; Atauro has none.) |
+| Timor-Leste | TL | 14 | 14 | 81 | 2 | administrative: municipality / special_administrative_region > administrative_post | administrative_post | → | Complete — 14 municipalities + 67 administrative posts (Source: Wikipedia Administrative posts of Timor-Leste (MediaWiki API, Sep 2026). 13 of 14 municipalities have posts; Atauro has none.) |
 | Togo | TG | 5 | 5 | 44 | 2 | administrative: region > prefecture | prefecture | none | Complete — 5 regions + 39 prefectures (Prefectures of Togo) |
 | Tonga | TO | 5 | 5 | 28 | 2 | administrative: division > district | district | none | Complete — 5 divisions + 23 districts (ISO codes; Ha'ano TO-025 fixes table dup) |
-| Trinidad and Tobago | TT | 15 | 15 | 15 | 1 | administrative: region | — | → | L1 — no admin tier-2; L1 already municipal level|
+| Trinidad and Tobago | TT | 15 | 15 | 15 | 1 | administrative: region / borough / city / ward | — | → | L1 — 7 regions + 5 boroughs + 2 cities + Tobago ward; no admin tier-2 |
 | Tunisia | TN | 24 | 24 | 303 | 2 | administrative: governorate > delegation | delegation | ← | Complete — 24 governorates + 279 delegations (INS 2024) |
 | Turkmenistan | TM | 6 | 6 | 64 | 2 | administrative: region / city > district | district | below | Complete — 6 regions + 58 districts (per-province tables incl. Sep-2025 reestablishments) |
 | Turks and Caicos | TC | 6 | 6 | 6 | 1 | administrative: district | — | below | L1 — no admin tier-2; 6 districts terminal|
-| Tuvalu | TV | 8 | 8 | 8 | 1 | administrative: island_council | — | none | L1 — councils are the local government (Falekaupule Act); villages no admin function |
+| Tuvalu | TV | 8 | 8 | 8 | 1 | administrative: island_council / town_council | — | none | L1 — councils are the local government (Falekaupule Act; Funafuti town council grouped); villages no admin function |
 | Türkiye | TR | 81 | 81 | 1054 | 2 | administrative: province > district | district | ← | Complete — 81 provinces + 973 districts; 51 Merkez; Ereğli twins; no district codes |
 | Uganda | UG | 4 | 4 | 150 | 2 | administrative: region > district | district | ← | Complete — 4 regions + 135 districts + 11 cities (UBOS 2024 census; stable since Jul 2020; 5 unfunded cities excluded) |
 | Ukraine | UA | 27 | 27 | 163 | 2 | administrative: oblast / city / republic > raion | raion | below | Complete — 27 regions + 136 raions incl. Crimea 10 (Raions of Ukraine; Kyiv/Sevastopol cities have none) |
@@ -258,10 +260,10 @@ All 228 providers ship a formatter: 180 print a postcode (←98 →39 US →8 ab
 | US Minor Outlying Islands | UM | 9 | 9 | 9 | 1 | administrative: island | — | none | L1 — uninhabited; 9 islands terminal|
 | US Virgin Islands | VI | 3 | 3 | 23 | 2 | administrative: district > subdistrict | subdistrict | US → | Complete — 3 districts + 20 subdistricts (Source: Wikipedia Districts and sub-districts of the USVI (MediaWiki API, Sep 2026). 20 census subdistricts; town sub-rows excluded; East End parent-scoped.) |
 | Uruguay | UY | 19 | 19 | 144 | 2 | administrative: department > municipality | municipality | ← | Complete — 19 departments + 125 municipalities (Source: Wikipedia Municipalities of Uruguay (MediaWiki API, Sep 2026); official 125 total.) |
-| Uzbekistan | UZ | 14 | 14 | 220 | 2 | administrative: region > tuman | tuman | ← | Complete — 12 regions + republic + city; 175 tumanlar + 31 regional-subordination cities; ASCII apostrophes; Namangan city districts excluded (L3) |
+| Uzbekistan | UZ | 14 | 14 | 220 | 2 | administrative: region / republic / city > tuman / city | tuman | ← | Complete — 12 regions + republic + city; 175 tumanlar + 31 regional-subordination cities; ASCII apostrophes; Namangan city districts excluded (L3) |
 | Vanuatu | VU | 6 | 6 | 69 | 2 | administrative: province > area_council | area_council | none | Complete — 6 provinces + 60 area councils + 3 municipalities (HASC-coded; Lenakel added; municipalities parented geographically) |
 | Venezuela | VE | 25 | 25 | 360 | 2 | administrative: state / capital_district / federal_dependency > municipality | municipality | → | Complete — 25 states + 335 municipalities (Source: Wikipedia Municipalities of Venezuela (MediaWiki API, Sep 2026). Vargas section mapped to La Guaira; Dependencias Federales has none.) |
-| Vietnam | VN | 34 | 34 | 3355 | 2 | administrative: province > commune / ward / special_zone | commune | → | Complete — 34 provinces/municipalities + 3321 commune-level units (2599 + 709 + 13; GSO list service, post-2026 typing) |
+| Vietnam | VN | 34 | 34 | 3355 | 2 | administrative: province / municipality > commune / ward / special_zone | commune | → | Complete — 34 provinces/municipalities + 3321 commune-level units (2599 + 709 + 13; GSO list service, post-2026 typing) |
 | Wallis and Futuna | WF | 3 | 3 | 6 | 2 | administrative: administrative_precinct > district | district | ← | Complete — 3 kingdoms + 3 Uvea districts (Alo/Sigave childless) |
 | Yemen | YE | 22 | 22 | 355 | 2 | administrative: governorate / municipality > district | district | none | Complete — 22 governorates + 333 districts (per-governorate bullets) |
 | Zambia | ZM | 10 | 10 | 126 | 2 | administrative: province > district | district | → | Complete — 10 provinces + 116 districts (per-province lists) |

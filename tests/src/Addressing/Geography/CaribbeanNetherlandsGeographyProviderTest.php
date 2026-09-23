@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Geography\CaribbeanNetherlands\CaribbeanNetherlandsAddressFormatter;
+use AIArmada\Addressing\Geography\CaribbeanNetherlands\CaribbeanNetherlandsGeographyProvider;
 
 it('formats Caribbean Netherlands addresses without a postcode system', function (): void {
     $formatted = app(CaribbeanNetherlandsAddressFormatter::class)->format(AddressData::from([
@@ -24,4 +25,11 @@ it('prints any supplied Caribbean Netherlands code on its own line', function ()
     ]));
 
     expect($formatted)->toBe("Kaya Grandi 5\nKRALENDIJK\n0000 AA\nBonaire, Sint Eustatius and Saba");
+});
+
+it('labels the tier Bijzondere Gemeente', function (): void {
+    $provider = app(CaribbeanNetherlandsGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['special_municipality' => 'Bijzondere Gemeente'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
 });

@@ -39,3 +39,10 @@ it('ships 71 departments/communes under regions with parent links', function ():
         ->and($byId->get('ne:department:dosso')->name)->toBe('Dosso')
         ->and($byId->get('ne:commune:niamey-i')->name)->toBe('Niamey I');
 });
+
+it('labels tiers Région, Communauté Urbaine, Département and Commune', function (): void {
+    $provider = app(NigerGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['region' => 'Région', 'urban_community' => 'Communauté Urbaine', 'department' => 'Département', 'commune' => 'Commune'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

@@ -38,3 +38,10 @@ it('ships 84 cantons under provinces with parent links', function (): void {
         ->and($byId->get('cr:canton:monteverde')->name)->toBe('Monteverde')
         ->and($byId->get('cr:canton:puerto-jimenez')->name)->toBe('Puerto Jiménez');
 });
+
+it('labels tiers Provincia and Cantón', function (): void {
+    $provider = app(CostaRicaGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['province' => 'Provincia', 'canton' => 'Cantón'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

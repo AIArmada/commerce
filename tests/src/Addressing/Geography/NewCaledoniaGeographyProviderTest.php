@@ -38,3 +38,10 @@ it('ships 33 communes under provinces with parent links', function (): void {
         ->and($byId->get('nc:commune:poya')->name)->toBe('Poya')
         ->and($byId->get('nc:commune:lifou')->name)->toBe('Lifou');
 });
+
+it('labels tiers Province and Commune', function (): void {
+    $provider = app(NewCaledoniaGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['province' => 'Province', 'commune' => 'Commune'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

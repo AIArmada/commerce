@@ -27,7 +27,7 @@ it('formats Greek post box addresses with the box postcode', function (): void {
     expect($formatted)->toBe("P.O. BOX 999\n151 10 MAROUSI\nGreece");
 });
 
-it('ships 332 municipalitys under administrative_regions with parent links', function (): void {
+it('ships 332 municipalities under administrative regions with parent links', function (): void {
     $areas = app(GreeceGeographyProvider::class)->addressAreaSource()->areas()->collect();
     $byId = $areas->keyBy->sourceId;
     $l2 = $areas->where('type', 'municipality');
@@ -37,4 +37,11 @@ it('ships 332 municipalitys under administrative_regions with parent links', fun
         ->and($byId->get('gr:municipality:athens')->name)->toBe('Athens')
         ->and($byId->get('gr:municipality:thessaloniki')->name)->toBe('Thessaloniki')
         ->and($byId->get('gr:municipality:patras')->name)->toBe('Patras');
+});
+
+it('labels tiers Periféreia and Dímos', function (): void {
+    $provider = app(GreeceGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['administrative_region' => 'Periféreia', 'municipality' => 'Dímos'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
 });

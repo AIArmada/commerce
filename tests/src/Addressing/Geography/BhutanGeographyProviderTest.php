@@ -40,3 +40,10 @@ it('ships 205 gewogs under districts with parent links', function (): void {
         ->and($byId->get('bt:gewog:bongo')->name)->toBe('Bongo')
         ->and($byId->get('bt:gewog:tang')->name)->toBe('Tang');
 });
+
+it('labels districts Dzongkhag', function (): void {
+    $provider = app(BhutanGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['district' => 'Dzongkhag'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

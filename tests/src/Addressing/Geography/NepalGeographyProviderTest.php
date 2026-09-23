@@ -40,3 +40,10 @@ it('ships 77 districts under provinces with parent links', function (): void {
         ->and($byId->get('np:district:kaski')->name)->toBe('Kaski')
         ->and($byId->get('np:district:jhapa')->name)->toBe('Jhapa');
 });
+
+it('labels tiers Pradesh and Jilla', function (): void {
+    $provider = app(NepalGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['province' => 'Pradesh', 'district' => 'Jilla'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

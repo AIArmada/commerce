@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Geography\UnitedArabEmirates\UnitedArabEmiratesAddressFormatter;
+use AIArmada\Addressing\Geography\UnitedArabEmirates\UnitedArabEmiratesGeographyProvider;
 
 it('formats Emirati addresses without a postcode line', function (): void {
     $formatted = app(UnitedArabEmiratesAddressFormatter::class)->format(AddressData::from([
@@ -42,4 +43,13 @@ it('keeps distinct Emirati city and emirate lines', function (): void {
     ]));
 
     expect($formatted)->toBe("PO BOX 111\nAl Ain\nAbu Dhabi\nUnited Arab Emirates");
+});
+
+it('ships the 7 emirates as terminal states', function (): void {
+    $areas = app(UnitedArabEmiratesGeographyProvider::class)->addressAreaSource()->areas()->collect();
+    $byId = $areas->keyBy->sourceId;
+
+    expect($areas)->toHaveCount(7)
+        ->and($areas->pluck('parentSourceId')->filter()->isEmpty())->toBeTrue()
+        ->and($byId->get('ae:emirate:abu-dhabi')->name)->toBe('Abu Dhabi');
 });

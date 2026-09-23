@@ -28,7 +28,7 @@ it('formats Guatemalan Villa Canales addresses with the town postcode', function
     expect($formatted)->toBe("Calle Principal 1\n01065 - Villa Canales\nGuatemala");
 });
 
-it('ships 340 municipalitys under departments with parent links', function (): void {
+it('ships 340 municipalities under departments with parent links', function (): void {
     $areas = app(GuatemalaGeographyProvider::class)->addressAreaSource()->areas()->collect();
     $byId = $areas->keyBy->sourceId;
     $l2 = $areas->where('type', 'municipality');
@@ -38,4 +38,11 @@ it('ships 340 municipalitys under departments with parent links', function (): v
         ->and($byId->get('gt:municipality:coban')->name)->toBe('Cobán')
         ->and($byId->get('gt:municipality:quetzaltenango')->name)->toBe('Quetzaltenango')
         ->and($byId->get('gt:municipality:ciudad-de-guatemala')->name)->toBe('Ciudad de Guatemala');
+});
+
+it('labels tiers Departamento and Municipio', function (): void {
+    $provider = app(GuatemalaGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['department' => 'Departamento', 'municipality' => 'Municipio'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
 });

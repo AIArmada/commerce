@@ -28,3 +28,10 @@ it('ships 139 governorates under regions with parent links', function (): void {
         ->and($byId->get('sa:governorate:taif')->name)->toBe('Taif')
         ->and($byId->get('sa:governorate:umluj')->name)->toBe('Umluj');
 });
+
+it('labels tiers Region and Muhafaza', function (): void {
+    $provider = app(SaudiArabiaGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['region' => 'Region', 'governorate' => 'Muhafaza'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

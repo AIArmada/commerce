@@ -53,3 +53,10 @@ it('ships 80 subprefectures under prefectures with parent links', function (): v
         ->and($byId->get('cf:subprefecture:alindao')->name)->toBe('Alindao')
         ->and($byId->get('cf:subprefecture:ndele')->name)->toBe('Ndélé');
 });
+
+it('labels tiers Préfecture, Préfecture Économique and Sous-préfecture', function (): void {
+    $provider = app(CentralAfricanRepublicGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['prefecture' => 'Préfecture', 'economic_prefecture' => 'Préfecture Économique', 'subprefecture' => 'Sous-préfecture'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

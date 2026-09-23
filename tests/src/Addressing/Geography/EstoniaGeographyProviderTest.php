@@ -40,3 +40,10 @@ it('exposes corrected Estonian municipality names', function (): void {
         ->and($areas->get('ee:rural_municipality:joelahtme')->code)->toBe('245')
         ->and($areas->has('ee:rural_municipality:pohja-parnu'))->toBeFalse();
 });
+
+it('labels tiers Maakond, Vald and Linn', function (): void {
+    $provider = app(EstoniaGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['county' => 'Maakond', 'rural_municipality' => 'Vald', 'urban_municipality' => 'Linn'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

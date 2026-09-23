@@ -53,3 +53,10 @@ it('ships 168 municipalitys under provinces with parent links', function (): voi
         ->and($byId->get('cu:municipality:centro-habana')->name)->toBe('Centro Habana')
         ->and($byId->get('cu:municipality:habana-del-este')->name)->toBe('Habana del Este');
 });
+
+it('labels tiers Provincia, Municipio Especial and Municipio', function (): void {
+    $provider = app(CubaGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['province' => 'Provincia', 'special_municipality' => 'Municipio Especial', 'municipality' => 'Municipio'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

@@ -39,7 +39,7 @@ it('prints Timorese city-municipalities once when city and state match', functio
     expect($formatted)->toBe("Avenida Presidente Nicolau Lobato\nDILI TL10901\nTimor-Leste");
 });
 
-it('ships 67 administrative_posts under municipalitys with parent links', function (): void {
+it('ships 67 administrative posts under municipalities with parent links', function (): void {
     $areas = app(TimorLesteGeographyProvider::class)->addressAreaSource()->areas()->collect();
     $byId = $areas->keyBy->sourceId;
     $l2 = $areas->where('type', 'administrative_post');

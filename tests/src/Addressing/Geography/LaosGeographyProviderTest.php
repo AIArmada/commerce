@@ -39,3 +39,10 @@ it('ships 148 districts under provinces with parent links', function (): void {
         ->and($byId->get('la:district:sikhottabong')->name)->toBe('Sikhottabong')
         ->and($byId->get('la:district:xaysetha')->name)->toBe('Xaysetha');
 });
+
+it('labels tiers Khoueng and Muang', function (): void {
+    $provider = app(LaosGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['province' => 'Khoueng', 'district' => 'Muang'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

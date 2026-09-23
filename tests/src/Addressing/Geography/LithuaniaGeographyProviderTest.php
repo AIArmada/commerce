@@ -57,3 +57,10 @@ it('ships 60 municipalities under counties with parent links', function (): void
         ->and($byId->get('lt:municipality:marijampole')->type)->toBe('municipality')
         ->and($byId->get('lt:municipality:marijampole')->parentSourceId)->toBe('lt:county:marijampole');
 });
+
+it('labels tiers Apskritis, Rajono Savivaldybė, Miesto Savivaldybė and Savivaldybė', function (): void {
+    $provider = app(LithuaniaGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['county' => 'Apskritis', 'district_municipality' => 'Rajono Savivaldybė', 'city_municipality' => 'Miesto Savivaldybė', 'municipality' => 'Savivaldybė'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

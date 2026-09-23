@@ -29,3 +29,10 @@ it('ships 145 territories under provinces with parent links', function (): void 
         ->and($byId->get('cd:territory:bagata')->name)->toBe('Bagata')
         ->and($byId->get('cd:territory:beni')->name)->toBe('Beni');
 });
+
+it('labels tiers Province and Territoire', function (): void {
+    $provider = app(DemocraticRepublicOfCongoGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['province' => 'Province', 'territory' => 'Territoire'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

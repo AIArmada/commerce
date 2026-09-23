@@ -39,3 +39,10 @@ it('ships 24 communes under districts with parent links', function (): void {
         ->and($byId->get('re:commune:bras-panon')->name)->toBe('Bras-Panon')
         ->and($byId->get('re:commune:saint-denis')->name)->toBe('Saint-Denis');
 });
+
+it('labels tiers Arrondissement and Commune', function (): void {
+    $provider = app(ReunionGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['district' => 'Arrondissement', 'commune' => 'Commune'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

@@ -53,3 +53,10 @@ it('ships 263 districts under departments with parent links', function (): void 
         ->and($byId->get('py:district:ciudad-del-este')->name)->toBe('Ciudad del Este')
         ->and($byId->get('py:district:asuncion')->name)->toBe('Asunción');
 });
+
+it('labels tiers Departamento, Distrito Capital and Distrito', function (): void {
+    $provider = app(ParaguayGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['department' => 'Departamento', 'capital_district' => 'Distrito Capital', 'district' => 'Distrito'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

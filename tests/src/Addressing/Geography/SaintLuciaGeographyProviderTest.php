@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Geography\SaintLucia\SaintLuciaAddressFormatter;
+use AIArmada\Addressing\Geography\SaintLucia\SaintLuciaGeographyProvider;
 
 it('formats Saint Lucian addresses with the postcode right of the locality', function (): void {
     $formatted = app(SaintLuciaAddressFormatter::class)->format(AddressData::from([
@@ -25,4 +26,13 @@ it('formats Saint Lucian Choiseul addresses with the district postcode', functio
     ]));
 
     expect($formatted)->toBe("Church Street\nCHOISEUL, LC10  101\nSaint Lucia");
+});
+
+it('ships the 10 districts as terminal states', function (): void {
+    $areas = app(SaintLuciaGeographyProvider::class)->addressAreaSource()->areas()->collect();
+    $byId = $areas->keyBy->sourceId;
+
+    expect($areas)->toHaveCount(10)
+        ->and($areas->pluck('parentSourceId')->filter()->isEmpty())->toBeTrue()
+        ->and($byId->get('lc:district:castries')->name)->toBe('Castries');
 });

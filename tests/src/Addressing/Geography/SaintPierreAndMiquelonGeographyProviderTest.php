@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Geography\SaintPierreAndMiquelon\SaintPierreAndMiquelonAddressFormatter;
+use AIArmada\Addressing\Geography\SaintPierreAndMiquelon\SaintPierreAndMiquelonGeographyProvider;
 
 it('formats Saint Pierre and Miquelon addresses with the code left of the locality', function (): void {
     $formatted = app(SaintPierreAndMiquelonAddressFormatter::class)->format(AddressData::from([
@@ -25,4 +26,11 @@ it('uses the same code for Miquelon', function (): void {
     ]));
 
     expect($formatted)->toBe("Rue de la Chapelle\n97500 Miquelon\nSaint Pierre and Miquelon");
+});
+
+it('ships the single collectivity as a terminal state', function (): void {
+    $areas = app(SaintPierreAndMiquelonGeographyProvider::class)->addressAreaSource()->areas()->collect();
+
+    expect($areas)->toHaveCount(1)
+        ->and($areas->first()->sourceId)->toBe('pm:overseas_collectivity:saint-pierre-and-miquelon');
 });

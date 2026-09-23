@@ -56,3 +56,10 @@ it('ships 3321 communes, wards and special zones under provinces', function (): 
         ->and($byId->get('vn:ward:ba-dinh')->parentSourceId)->toBe('vn:municipality:ha-noi')
         ->and($byId->get('vn:special_zone:hoang-sa')->parentSourceId)->toBe('vn:municipality:da-nang');
 });
+
+it('labels tiers Tỉnh, Thành phố, Xã, Phường and Đặc khu', function (): void {
+    $provider = app(VietnamGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['province' => 'Tỉnh', 'municipality' => 'Thành phố', 'commune' => 'Xã', 'ward' => 'Phường', 'special_zone' => 'Đặc khu'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

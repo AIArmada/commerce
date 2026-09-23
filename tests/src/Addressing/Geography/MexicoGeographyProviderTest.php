@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Geography\Mexico\MexicoAddressFormatter;
 use AIArmada\Addressing\Geography\Mexico\MexicoGeographyProvider;
+use AIArmada\Addressing\Models\AddressCountry;
 
 it('formats Mexican addresses with the postcode left and abbreviation after', function (): void {
     $formatted = app(MexicoAddressFormatter::class)->format(AddressData::from([
@@ -39,4 +40,20 @@ it('ships 2,479 municipalities and boroughs under their states', function (): vo
         ->and($byId->get('mx:municipality:01012')->name)->toBe('Villa Juárez')
         ->and($byId->get('mx:borough:09002')->name)->toBe('Azcapotzalco')
         ->and($byId->get('mx:municipality:08008')->name)->toBe('Batopilas de Manuel Gómez Morín');
+});
+
+it('labels tiers with Spanish administrative terms', function (): void {
+    $provider = app(MexicoGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['state' => 'Estado', 'municipality' => 'Municipio', 'borough' => 'Alcaldía'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});
+
+it('declares traditional abbreviations for all 32 states', function (): void {
+    $names = app(MexicoGeographyProvider::class)->areaNames(new AddressCountry);
+
+    expect($names)->toHaveCount(32)
+        ->and($names['mx:state:ciudad-de-mexico'][0])->toBe(['name' => 'CDMX', 'name_type' => 'abbreviation'])
+        ->and($names['mx:state:estado-de-mexico'][0]['name'])->toBe('EDOMEX')
+        ->and($names['mx:state:quintana-roo'][0]['name'])->toBe('Q. ROO');
 });

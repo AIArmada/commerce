@@ -52,3 +52,10 @@ it('ships 3186 communes, towns, municipalities and sectors under counties with p
         ->and($byId->get('ro:town:baneasa')->parentSourceId)->toBe('ro:department:constanta')
         ->and($byId->get('ro:sector:sector-1')->code)->toBe('S1');
 });
+
+it('labels tiers Județ, Municipiu, Comună, Oraș and Sector', function (): void {
+    $provider = app(RomaniaGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['department' => 'Județ', 'municipality' => 'Municipiu', 'commune' => 'Comună', 'town' => 'Oraș', 'sector' => 'Sector'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

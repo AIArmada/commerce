@@ -29,3 +29,10 @@ it('ships 109 provinces/metros/consortiums under regions with parent links', fun
         ->and($byId->get('it:metropolitan_city:milan')->name)->toBe('Milan')
         ->and($byId->get('it:metropolitan_city:naples')->name)->toBe('Naples');
 });
+
+it('labels regions Regione with no per-state overrides', function (): void {
+    $provider = app(ItalyGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['region' => 'Regione'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

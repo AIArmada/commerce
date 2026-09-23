@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Geography\Thailand\ThailandAddressFormatter;
 use AIArmada\Addressing\Geography\Thailand\ThailandGeographyProvider;
+use AIArmada\Addressing\Models\AddressCountry;
 
 it('formats Thai addresses with district, province and postcode below', function (): void {
     $formatted = app(ThailandAddressFormatter::class)->format(AddressData::from([
@@ -39,4 +40,18 @@ it('ships 928 amphoe and khet under provinces with parent links', function (): v
         ->and($byId->get('th:amphoe:mueang-bueng-kan')->code)->toBe('3801')
         ->and($byId->get('th:khet:bang-kapi')->code)->toBe('1006')
         ->and($byId->get('th:amphoe:galyani-vadhana')->code)->toBe('5026');
+});
+
+it('labels provinces Changwat with no per-state overrides', function (): void {
+    $provider = app(ThailandGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['province' => 'Changwat'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});
+
+it('declares Bangkok official Thai name and Pattaya ISO spelling', function (): void {
+    $names = app(ThailandGeographyProvider::class)->areaNames(new AddressCountry);
+
+    expect($names['th:metropolitan_administration:bangkok'][0])->toBe(['name' => 'Krung Thep Maha Nakhon', 'name_type' => 'official'])
+        ->and($names['th:metropolitan_administration:pattaya'][0]['name'])->toBe('Phatthaya');
 });

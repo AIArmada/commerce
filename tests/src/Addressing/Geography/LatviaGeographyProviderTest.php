@@ -39,3 +39,10 @@ it('ships 585 parishes, towns and cities under municipalities with parent links'
         ->and($l2->where('parentSourceId', 'lv:municipality:madona'))->toHaveCount(25)
         ->and($byId->get('lv:parish:marupe:sala-parish')->parentSourceId)->toBe('lv:municipality:marupe');
 });
+
+it('labels tiers Novads, Valstspilsēta, Pagasts and Pilsēta', function (): void {
+    $provider = app(LatviaGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['municipality' => 'Novads', 'state_city' => 'Valstspilsēta', 'parish' => 'Pagasts', 'town' => 'Pilsēta', 'city' => 'Pilsēta'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

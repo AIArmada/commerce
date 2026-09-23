@@ -27,7 +27,7 @@ it('formats Swedish box addresses with the box postcode', function (): void {
     expect($formatted)->toBe("BOX 222\n111 81 STOCKHOLM\nSweden");
 });
 
-it('ships 290 municipalitys under countys with parent links', function (): void {
+it('ships 290 municipalities under counties with parent links', function (): void {
     $areas = app(SwedenGeographyProvider::class)->addressAreaSource()->areas()->collect();
     $byId = $areas->keyBy->sourceId;
     $l2 = $areas->where('type', 'municipality');
@@ -37,4 +37,11 @@ it('ships 290 municipalitys under countys with parent links', function (): void 
         ->and($byId->get('se:municipality:stockholm')->name)->toBe('Stockholm')
         ->and($byId->get('se:municipality:gothenburg')->name)->toBe('Gothenburg')
         ->and($byId->get('se:municipality:malmo')->name)->toBe('Malmö');
+});
+
+it('labels tiers Län and Kommun', function (): void {
+    $provider = app(SwedenGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['county' => 'Län', 'municipality' => 'Kommun'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
 });

@@ -28,7 +28,7 @@ it('formats Portuguese Lisbon addresses with the parish postcode', function (): 
     expect($formatted)->toBe("Avenida da Liberdade 100\n1601-801 LISBOA\nPortugal");
 });
 
-it('ships 308 municipalitys under districts with parent links', function (): void {
+it('ships 308 municipalities under districts with parent links', function (): void {
     $areas = app(PortugalGeographyProvider::class)->addressAreaSource()->areas()->collect();
     $byId = $areas->keyBy->sourceId;
     $l2 = $areas->where('type', 'municipality');
@@ -38,4 +38,11 @@ it('ships 308 municipalitys under districts with parent links', function (): voi
         ->and($byId->get('pt:municipality:lisbon')->name)->toBe('Lisbon')
         ->and($byId->get('pt:municipality:porto')->name)->toBe('Porto')
         ->and($byId->get('pt:municipality:sintra')->name)->toBe('Sintra');
+});
+
+it('labels tiers Região Autónoma, Distrito and Município', function (): void {
+    $provider = app(PortugalGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['autonomous_region' => 'Região Autónoma', 'district' => 'Distrito', 'municipality' => 'Município'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
 });

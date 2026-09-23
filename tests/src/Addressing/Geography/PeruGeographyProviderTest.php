@@ -28,3 +28,10 @@ it('ships 196 provinces under regions with parent links', function (): void {
         ->and($byId->get('pe:province:callao')->name)->toBe('Callao')
         ->and($byId->get('pe:province:cusco')->name)->toBe('Cusco');
 });
+
+it('labels tiers Región, Municipalidad and Provincia', function (): void {
+    $provider = app(PeruGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['region' => 'Región', 'municipality' => 'Municipalidad', 'province' => 'Provincia'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Geography\Brazil\BrazilAddressFormatter;
 use AIArmada\Addressing\Geography\Brazil\BrazilGeographyProvider;
+use AIArmada\Addressing\Models\AddressCountry;
 
 it('formats Brazilian addresses with the state abbreviation and postcode below', function (): void {
     $formatted = app(BrazilAddressFormatter::class)->format(AddressData::from([
@@ -34,4 +35,19 @@ it('ships 5,571 municipalities under their states', function (): void {
         ->and($byId->get('br:municipality:5101837')->name)->toBe('Boa Esperança do Norte')
         ->and($byId->get('br:municipality:5300108')->name)->toBe('Brasília')
         ->and($byId->get('br:district:2605459')->name)->toBe('Fernando de Noronha');
+});
+
+it('labels tiers with Portuguese administrative terms', function (): void {
+    $provider = app(BrazilGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['state' => 'Estado', 'federal_district' => 'Distrito Federal', 'municipality' => 'Município', 'district' => 'Distrito'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});
+
+it('declares UF abbreviations for all 27 states and the federal district', function (): void {
+    $names = app(BrazilGeographyProvider::class)->areaNames(new AddressCountry);
+
+    expect($names)->toHaveCount(27)
+        ->and($names['br:state:sao-paulo'][0])->toBe(['name' => 'SP', 'name_type' => 'abbreviation'])
+        ->and($names['br:federal_district:distrito-federal'][0]['name'])->toBe('DF');
 });

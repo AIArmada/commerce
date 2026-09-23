@@ -35,3 +35,10 @@ it('ships 112 provinces under departments with parent links', function (): void 
         ->and($byId->get('bo:province:cercado')->name)->toBe('Cercado')
         ->and($byId->get('bo:province:andres-ibanez')->name)->toBe('Andrés Ibáñez');
 });
+
+it('labels tiers Departamento and Provincia', function (): void {
+    $provider = app(BoliviaGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['department' => 'Departamento', 'province' => 'Provincia'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

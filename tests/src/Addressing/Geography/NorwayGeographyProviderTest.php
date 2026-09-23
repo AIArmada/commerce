@@ -27,7 +27,7 @@ it('formats Norwegian rural addresses with the village postcode', function (): v
     expect($formatted)->toBe("Ølvevegen 44\n5637 ØLVE\nNorway");
 });
 
-it('ships 357 municipalitys under countys with parent links', function (): void {
+it('ships 357 municipalities under counties with parent links', function (): void {
     $areas = app(NorwayGeographyProvider::class)->addressAreaSource()->areas()->collect();
     $byId = $areas->keyBy->sourceId;
     $l2 = $areas->where('type', 'municipality');
@@ -37,4 +37,11 @@ it('ships 357 municipalitys under countys with parent links', function (): void 
         ->and($byId->get('no:municipality:oslo')->name)->toBe('Oslo')
         ->and($byId->get('no:municipality:bergen')->name)->toBe('Bergen')
         ->and($byId->get('no:municipality:trondheim')->name)->toBe('Trondheim');
+});
+
+it('labels tiers Fylke and Kommune', function (): void {
+    $provider = app(NorwayGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['county' => 'Fylke', 'municipality' => 'Kommune'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
 });

@@ -39,3 +39,10 @@ it('ships 85 municipalities/districts/cities under regions with parent links', f
         ->and($byId->get('ge:city:batumi')->name)->toBe('Batumi')
         ->and($byId->get('ge:district:gldani')->name)->toBe('Gldani');
 });
+
+it('labels regions Mkhare', function (): void {
+    $provider = app(GeorgiaGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['region' => 'Mkhare'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

@@ -45,7 +45,7 @@ it('names the autonomous regions Costa Caribe with English aliases', function ()
         ->and($names['ni:autonomous_region:costa-caribe-sur'][0]['name'])->toBe('South Caribbean Coast');
 });
 
-it('ships 153 municipalitys under departments with parent links', function (): void {
+it('ships 153 municipalities under departments with parent links', function (): void {
     $areas = app(NicaraguaGeographyProvider::class)->addressAreaSource()->areas()->collect();
     $byId = $areas->keyBy->sourceId;
     $l2 = $areas->where('type', 'municipality');
@@ -55,4 +55,11 @@ it('ships 153 municipalitys under departments with parent links', function (): v
         ->and($byId->get('ni:municipality:managua')->name)->toBe('Managua')
         ->and($byId->get('ni:municipality:granada')->name)->toBe('Granada')
         ->and($byId->get('ni:municipality:bluefields')->name)->toBe('Bluefields');
+});
+
+it('labels tiers Departamento, Región Autónoma and Municipio', function (): void {
+    $provider = app(NicaraguaGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['department' => 'Departamento', 'autonomous_region' => 'Región Autónoma', 'municipality' => 'Municipio'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
 });

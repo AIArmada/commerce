@@ -38,3 +38,10 @@ it('ships 63 resorts under districts with parent links', function (): void {
         ->and($byId->get('sr:resort:marshallkreek')->name)->toBe('Marshallkreek')
         ->and($byId->get('sr:resort:centrum')->name)->toBe('Centrum');
 });
+
+it('labels tiers District and Ressort', function (): void {
+    $provider = app(SurinameGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['district' => 'District', 'resort' => 'Ressort'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

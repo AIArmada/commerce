@@ -39,3 +39,10 @@ it('ships 48 communes under divisions with parent links', function (): void {
         ->and($byId->get('pf:commune:fatu-hiva')->name)->toBe('Fatu-Hiva')
         ->and($byId->get('pf:commune:ua-pou')->name)->toBe('Ua-Pou');
 });
+
+it('labels tiers Subdivision and Commune', function (): void {
+    $provider = app(FrenchPolynesiaGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['division' => 'Subdivision', 'commune' => 'Commune'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

@@ -6,6 +6,7 @@ namespace AIArmada\Addressing\Geography\Azerbaijan;
 
 use AIArmada\Addressing\Contracts\AddressAreaSource;
 use AIArmada\Addressing\Contracts\CountryAddressAreaMetadataProvider;
+use AIArmada\Addressing\Contracts\CountryAreaTypeLabelProvider;
 use AIArmada\Addressing\Contracts\CountryGeographyProvider;
 use AIArmada\Addressing\Contracts\CountryHierarchyProvider;
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
@@ -14,7 +15,7 @@ use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Support\CsvAddressAreaSource;
 use AIArmada\Addressing\Support\ModelResolver;
 
-class AzerbaijanGeographyProvider implements CountryAddressAreaMetadataProvider, CountryGeographyProvider, CountryHierarchyProvider
+class AzerbaijanGeographyProvider implements CountryAddressAreaMetadataProvider, CountryAreaTypeLabelProvider, CountryGeographyProvider, CountryHierarchyProvider
 {
     public const string AREA_SOURCE = 'aiarmada_addressing_azerbaijan_v1';
 
@@ -77,15 +78,34 @@ class AzerbaijanGeographyProvider implements CountryAddressAreaMetadataProvider,
         ];
     }
 
+    /** @return array<string, string> */
+    public function areaTypeLabels(): array
+    {
+        // Azerbaijani administrative terms (the 11 L1 cities are şəhər, district-level).
+        return [
+            'district' => 'Rayon',
+            'municipality' => 'Şəhər',
+            'autonomous_republic' => 'Muxtar Respublika',
+            'local_municipality' => 'Bələdiyyə',
+        ];
+    }
+
+    /** @return list<array{state_code: string, type_labels: array<string, string>}> */
+    public function stateAreaTypeLabels(): array
+    {
+        return [];
+    }
+
     /** @return array<string, list<array{role: string, country_code?: string, is_primary?: bool}>> */
     public function areaRoles(AddressCountry $country): array
     {
         $roles = [];
 
         foreach ($this->addressAreaSource()->areas() as $area) {
+            // First-level cities share the district selector; Nakhchivan stays distinct.
             $areaRoles = match ($area->type) {
                 'district' => ['district'],
-                'municipality' => ['municipality'],
+                'municipality' => ['district'],
                 'autonomous_republic' => ['autonomous_republic'],
                 'local_municipality' => ['local_municipality'],
                 default => [],

@@ -37,3 +37,10 @@ it('ships 58 subregions under regions with parent links', function (): void {
         ->and($byId->get('er:subregion:adi-quala')->name)->toBe('Adi Quala')
         ->and($byId->get('er:subregion:massawa')->name)->toBe('Massawa');
 });
+
+it('labels regions Zoba', function (): void {
+    $provider = app(EritreaGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['region' => 'Zoba'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});
