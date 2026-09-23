@@ -343,6 +343,19 @@ describe('affiliate email virtual column', function (): void {
     });
 });
 
+describe('application status badge', function (): void {
+    test('accepts enum and string states', function (): void {
+        $host = new RepairTableHostComponent;
+        $column = AffiliateOfferApplicationsTable::configure(Table::make($host))->getColumn('status');
+
+        expect($column)->not->toBeNull()
+            ->and($column->getColor(ApplicationStatus::Approved))->toBe('success')
+            ->and($column->getColor(ApplicationStatus::Pending))->toBe('warning')
+            ->and($column->getColor(ApplicationStatus::Rejected))->toBe('danger')
+            ->and($column->getColor('approved'))->toBe('success');
+    });
+});
+
 describe('marketplace batched application statuses', function (): void {
     test('status map is correct and query-constant regardless of offer count', function (): void {
         $suffix = uniqid();

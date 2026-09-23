@@ -28,6 +28,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\ModelStates\HasStates;
@@ -262,6 +263,18 @@ class Affiliate extends Model implements Auditable
     public function balanceFor(string $currency): ?AffiliateBalance
     {
         return $this->balances()->where('currency', mb_strtoupper($currency))->first();
+    }
+
+    /**
+     * Current balance shortcut for single-currency affiliates.
+     *
+     * Multi-currency merchants should use balances() or balanceFor().
+     *
+     * @return HasOne<AffiliateBalance, $this>
+     */
+    public function balance(): HasOne
+    {
+        return $this->hasOne(AffiliateBalance::class)->latestOfMany();
     }
 
     /**

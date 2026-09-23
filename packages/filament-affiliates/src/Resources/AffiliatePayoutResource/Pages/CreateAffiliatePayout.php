@@ -25,7 +25,7 @@ final class CreateAffiliatePayout extends CreateRecord
 
         if (! is_string($affiliateId) && ! is_int($affiliateId)) {
             throw ValidationException::withMessages([
-                'affiliate_id' => 'The selected affiliate is invalid.',
+                'data.affiliate_id' => 'The selected affiliate is invalid.',
             ]);
         }
 
@@ -41,14 +41,14 @@ final class CreateAffiliatePayout extends CreateRecord
                 );
             } catch (AuthorizationException | InvalidArgumentException | RuntimeException) {
                 throw ValidationException::withMessages([
-                    'affiliate_id' => 'The selected affiliate is not accessible in the current owner scope.',
+                    'data.affiliate_id' => 'The selected affiliate is not accessible in the current owner scope.',
                 ]);
             }
         }
 
         if (! $affiliate instanceof Affiliate) {
             throw ValidationException::withMessages([
-                'affiliate_id' => 'The selected affiliate is invalid.',
+                'data.affiliate_id' => 'The selected affiliate is invalid.',
             ]);
         }
 

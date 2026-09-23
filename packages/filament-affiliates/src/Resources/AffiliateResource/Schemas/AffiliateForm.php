@@ -174,10 +174,11 @@ final class AffiliateForm
                             ->default($currency),
 
                         TextInput::make('network_depth')
-                            ->label('Max Network Depth')
+                            ->label('Network Depth')
                             ->numeric()
-                            ->minValue(0)
-                            ->helperText('How deep this affiliate\'s referral tree can go (0 = disabled). Falls back to global config when empty.')
+                            ->disabled()
+                            ->dehydrated(false)
+                            ->helperText('Position in the upline tree. Computed automatically on placement.')
                             ->suffix('levels'),
                     ]),
                 ])

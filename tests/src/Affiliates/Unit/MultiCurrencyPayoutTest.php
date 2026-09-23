@@ -119,3 +119,14 @@ describe('Multi-currency payouts', function (): void {
             ->and(ClaimScheduledPayout::run((string) $affiliate->id, 5000, 'MYR'))->not->toBeNull();
     });
 });
+
+test('scheduled claims default to the affiliate currency when omitted', function (): void {
+    $affiliate = createPayoutTestAffiliate();
+    recordApprovedConversion($affiliate, 'USD', 6000);
+
+    $operation = ClaimScheduledPayout::run((string) $affiliate->id, 5000);
+
+    expect($operation)->not->toBeNull()
+        ->and(balanceFor($affiliate, 'USD')->available_minor)->toBe(0);
+    expect(ClaimScheduledPayout::make()->isEligibleSnapshot((string) $affiliate->id, 5000))->toBeFalse();
+});

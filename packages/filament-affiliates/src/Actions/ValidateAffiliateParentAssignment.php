@@ -81,7 +81,7 @@ final class ValidateAffiliateParentAssignment
     private function validationException(string $message): ValidationException
     {
         return ValidationException::withMessages([
-            'parent_affiliate_id' => $message,
+            'data.parent_affiliate_id' => $message,
         ]);
     }
 

@@ -36,7 +36,7 @@ final class ResolveAffiliateLinkedOwner
 
         if (! is_string($linkedUserId) && ! is_int($linkedUserId)) {
             throw ValidationException::withMessages([
-                'linked_user' => 'The selected linked user is invalid.',
+                'data.linked_user' => 'The selected linked user is invalid.',
             ]);
         }
 
@@ -45,7 +45,7 @@ final class ResolveAffiliateLinkedOwner
 
         if (! $userModel::query()->whereKey($userId)->exists()) {
             throw ValidationException::withMessages([
-                'linked_user' => 'The selected linked user could not be found.',
+                'data.linked_user' => 'The selected linked user could not be found.',
             ]);
         }
 

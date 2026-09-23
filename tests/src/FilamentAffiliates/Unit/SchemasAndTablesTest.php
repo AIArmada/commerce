@@ -1,6 +1,11 @@
 <?php
 
 declare(strict_types=1);
+use AIArmada\FilamentAffiliates\Resources\AffiliateResource\Schemas\AffiliateForm;
+use Filament\Schemas\Concerns\InteractsWithSchemas;
+use Filament\Schemas\Contracts\HasSchemas;
+use Filament\Schemas\Schema;
+use Livewire\Component;
 
 it('conversion resource schemas use neutral reference fields', function (): void {
     $repositoryRoot = dirname(__DIR__, 4);
@@ -92,4 +97,28 @@ it('AffiliatePayoutsTable uses canonical payout status values', function (): voi
         ->toContain('FailedPayout::value()')
         ->not->toContain("updateStatus(\$payout, 'paid')")
         ->not->toContain("updateStatus(\$payout, 'queued')");
+});
+
+class AffiliateFormSchemaHostComponent extends Component implements HasSchemas
+{
+    use InteractsWithSchemas;
+
+    public ?array $data = [];
+
+    public function render()
+    {
+        return view('livewire.placeholder');
+    }
+}
+
+it('affiliate form keeps computed network depth read-only', function (): void {
+    $schema = AffiliateForm::configure(
+        Schema::make(new AffiliateFormSchemaHostComponent)->statePath('data')
+    );
+
+    $field = $schema->getComponent('network_depth');
+
+    expect($field)->not->toBeNull()
+        ->and($field->isDisabled())->toBeTrue()
+        ->and($field->isDehydrated())->toBeFalse();
 });

@@ -19,9 +19,9 @@ final class ClaimScheduledPayout
 {
     use AsAction;
 
-    public function isEligibleSnapshot(string $affiliateId, int $minimumAmountMinor, string $currency): bool
+    public function isEligibleSnapshot(string $affiliateId, int $minimumAmountMinor, ?string $currency = null): bool
     {
-        $currency = mb_strtoupper($currency);
+        $currency = mb_strtoupper($currency ?? $this->defaultCurrency($affiliateId));
         $affiliate = Affiliate::query()->forOwner()->find($affiliateId);
 
         if (! $affiliate instanceof Affiliate) {
@@ -64,9 +64,9 @@ final class ClaimScheduledPayout
         return $allocation['amount_minor'] >= $threshold;
     }
 
-    public function handle(string $affiliateId, int $minimumAmountMinor, string $currency): ?AffiliatePayoutOperation
+    public function handle(string $affiliateId, int $minimumAmountMinor, ?string $currency = null): ?AffiliatePayoutOperation
     {
-        $currency = mb_strtoupper($currency);
+        $currency = mb_strtoupper($currency ?? $this->defaultCurrency($affiliateId));
 
         return DB::transaction(function () use ($affiliateId, $minimumAmountMinor, $currency): ?AffiliatePayoutOperation {
             $affiliate = Affiliate::query()->forOwner()->lockForUpdate()->find($affiliateId);
@@ -183,6 +183,17 @@ final class ClaimScheduledPayout
 
             return $operation->refresh();
         }, attempts: 3);
+    }
+
+    private function defaultCurrency(string $affiliateId): string
+    {
+        $affiliateCurrency = Affiliate::query()->forOwner()->whereKey($affiliateId)->value('currency');
+
+        if (is_string($affiliateCurrency) && $affiliateCurrency !== '') {
+            return $affiliateCurrency;
+        }
+
+        return (string) config('affiliates.currency.default', 'MYR');
     }
 
     /**

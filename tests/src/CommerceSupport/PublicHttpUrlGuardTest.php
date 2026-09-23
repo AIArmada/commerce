@@ -67,3 +67,43 @@ test('formats IPv6 pinned addresses for CURLOPT_RESOLVE', function (): void {
     expect($target->selectedIp)->toBe('2606:2800:220:1:248:1893:25c8:1946')
         ->and($target->curlResolveEntry())->toBe('example.com:443:[2606:2800:220:1:248:1893:25c8:1946]');
 });
+
+it('exempts test-allowed hosts from the public-IP precondition', function (): void {
+    PublicHttpUrlGuard::allowHostsForTesting(['.test']);
+
+    try {
+        $guard = new PublicHttpUrlGuard(static fn (string $host): array => ['127.0.0.1']);
+        $target = $guard->validate('http://merchant.test/api/catalog');
+
+        expect($target->host)->toBe('merchant.test')
+            ->and($target->selectedIp)->toBe('127.0.0.1')
+            ->and($target->curlResolveEntry())->toBe('merchant.test:80:127.0.0.1');
+    } finally {
+        PublicHttpUrlGuard::clearTestAllowedHosts();
+    }
+});
+
+it('ignores test-allowed hosts once the opt-in is cleared', function (): void {
+    PublicHttpUrlGuard::allowHostsForTesting(['.test']);
+    PublicHttpUrlGuard::clearTestAllowedHosts();
+
+    $guard = new PublicHttpUrlGuard(static fn (string $host): array => ['127.0.0.1']);
+
+    expect(fn () => $guard->validate('http://merchant.test/api/catalog'))
+        ->toThrow(InvalidArgumentException::class, 'resolve exclusively to public IP addresses');
+});
+
+it('still enforces scheme and credential rules for test-allowed hosts', function (): void {
+    PublicHttpUrlGuard::allowHostsForTesting(['merchant.test']);
+
+    try {
+        $guard = new PublicHttpUrlGuard(static fn (string $host): array => ['127.0.0.1']);
+
+        expect(fn () => $guard->validate('file:///etc/passwd'))->toThrow(InvalidArgumentException::class);
+        expect(fn () => $guard->validate('https://user:secret@merchant.test/x'))->toThrow(InvalidArgumentException::class);
+        expect($guard->isAllowed('http://merchant.test/x'))->toBeTrue();
+        expect($guard->isAllowed('http://other.test/x'))->toBeFalse();
+    } finally {
+        PublicHttpUrlGuard::clearTestAllowedHosts();
+    }
+});

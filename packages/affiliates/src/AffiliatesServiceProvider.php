@@ -67,6 +67,7 @@ use AIArmada\Cart\CartManager;
 use AIArmada\Cart\Conditions\ConditionProviderRegistry;
 use AIArmada\Orders\Events\CommissionAttributionRequired;
 use Illuminate\Contracts\Http\Kernel;
+use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Blade;
@@ -212,6 +213,8 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
      */
     private function registerCookieTrackingMiddleware(): void
     {
+        $this->excludeTrackingCookieFromEncryption();
+
         if (! $this->app->bound('router')) {
             return;
         }
@@ -223,6 +226,27 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
         if (config('affiliates.cookies.auto_register_middleware', true) && $this->app->bound(Kernel::class)) {
             $this->app->make(Kernel::class)->prependMiddleware(TrackAffiliateCookie::class);
         }
+    }
+
+    /**
+     * Keep tracking-cookie reads consistent between middleware and app code.
+     *
+     * The tracking middleware is global, so it writes the cookie outside
+     * Laravel's encryption pass. Without this exclusion EncryptCookies
+     * would null the plaintext value before controllers run, silently
+     * breaking cookie-to-cart hydration (CartBridge). The value is an
+     * opaque random identifier, so plaintext transport matches the
+     * middleware's existing write behavior.
+     */
+    private function excludeTrackingCookieFromEncryption(): void
+    {
+        if (! class_exists(EncryptCookies::class)) {
+            return;
+        }
+
+        EncryptCookies::except(
+            [(string) config('affiliates.cookies.name', 'affiliate_session')]
+        );
     }
 
     private function registerPublicPageSupport(): void

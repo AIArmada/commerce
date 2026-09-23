@@ -146,6 +146,20 @@ final class CommissionPromotionsRelationManager extends RelationManager
                 ]);
             }
 
+            if (! (bool) config('affiliates.owner.enabled', false)) {
+                $affiliate = Affiliate::query()->find((string) $affiliateId);
+
+                if (! $affiliate instanceof Affiliate) {
+                    throw ValidationException::withMessages([
+                        'affiliate_ids' => 'Affiliate IDs must contain only valid affiliate identifiers.',
+                    ]);
+                }
+
+                $validatedAffiliateIds[] = (string) $affiliate->getKey();
+
+                continue;
+            }
+
             try {
                 $validatedAffiliateIds[] = (string) OwnerWriteGuard::findOrFailForOwner(
                     Affiliate::class,
