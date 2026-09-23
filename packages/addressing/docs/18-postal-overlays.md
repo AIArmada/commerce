@@ -55,21 +55,10 @@ countries use it and why the rest do not.
   area).
 - Parked for lack of a verifiable complete source (do not ship
   partial compilations):
-  - Estonia: GeoNames dump misses 8 towns (Narva, Viljandi, Rakvere,
-    Võru, Maardu, Keila, Sillamäe, Loksa) and uses pre-2019 EHAK
-    codes for Kiili/Saku (bundled 0305/0719 are current). Needs
-    Omniva or ADS data. Bundled areas also miss Toila vald.
   - Samoa: only third-party compilations found and they misattribute
     districts (Manono WS1190 listed under A'ana). Needs the Samoa
     Post official list.
-  - Bulgaria: GeoNames admin2 attribution has homonym collisions
-    (41 cross-district code conflicts). Needs Bulgarian Posts data.
-  - Finland: GeoNames admin2 is sub-region, not municipality; code
-    overlap causes false joins. Needs Posti data.
-  - Uruguay: GeoNames prefixes scatter across departments and round
-    codes attach to wrong localities. Needs Correo Uruguayo data.
-  - Serbia: GeoNames dump carries no admin columns at all. Needs
-    Pošta Srbije data or full locality mapping.
+
   - Timor-Leste: TL+5 system is brand new (UPU profile 8/2026);
     CTL site unreachable and no published code list found yet.
     Revisit once Correios de Timor-Leste publishes the list.
@@ -81,10 +70,6 @@ countries use it and why the rest do not.
     archived copies have a broken database; GeoNames publishes no
     CV postal export and correios.cv has no finder. Revisit once
     the official finder is back online.
-  - Cuba: correos.cu has no postcode finder and its office-search
-    widget ships no loader (stuck on "Cargando..."); GeoNames
-    publishes no CU postal export. Only third-party compilations
-    found. Needs Correos de Cuba data.
   - Guyana: 7-digit system confirmed by UPU profile (08/2025;
     district/region/sub-region/office/locality structure) but the
     allocation list lives only in guypost.gy's "Find Your
@@ -97,9 +82,6 @@ countries use it and why the rest do not.
   - Nicaragua: correos.gob.ni is Cloudflare-walled and no
     postcode pages are captured in archives; GeoNames publishes
     no NI postal export. Needs Correos de Nicaragua data.
-  - El Salvador: correos.gob.sv publishes no postcode list
-    (offices page and downloads checked); GeoNames publishes no
-    SV postal export. Needs Correos de El Salvador data.
   - Honduras: HONDUCOR publishes no postcode list and its search
     is ModSecurity-blocked; the GeoNames HN postal export covers
     only 38 major towns (not the 298 municipalities). Needs
@@ -114,6 +96,22 @@ countries use it and why the rest do not.
   - Trinidad and Tobago: 6-digit street/community codes exist but
     TTPost publishes no allocation list; lookup is a manual query
     form only. Needs a TTPost code list.
+  - Lesotho: lesothopost.org.ls 403s, lps.org.ls is dead, UPU profile
+    lists no codes, and GeoNames publishes no LS postal export;
+    third-party lists conflict (Leribe 300 vs 9730). Needs Lesotho
+    Post data.
+  - Oman: the official Oman Post office locator (213 codes) omits
+    known offices (Muttrah 125, Khoula 127, Seeb Airport 128) and
+    conflicts with the established 2019-2024 numbering (Mutrah 169,
+    Airport Heights 111); no authoritative current list found. Needs
+    Oman Post data.
+  - Bahrain: the open data portal publishes no postcode/block
+    dataset (mailbox/PO-box stats only) and block-level codes need
+    city/block modeling first. Needs a block list with governorate
+    mapping.
+  - Morocco: the GeoNames dump (1325 rows) has no Casablanca or
+    Rabat city codes at all, so it cannot serve as the source.
+    Needs Barid Al-Maghrib data.
 
 ## Built datasets
 
@@ -125,24 +123,33 @@ countries use it and why the rest do not.
 | Andorra | AD | 7 | 7 | UPU AND profile + parish list (AD100–AD700) |
 | Anguilla | AI | 1 | 0 | UPU single-code list (AI-2640) |
 | Azerbaijan | AZ | 1186 | 1186 | GeoNames dump at district/city level (AZ 0100–AZ 8011; city branches split to city municipalities) |
+| Bangladesh | BD | 1349 | 1349 | GeoNames dump at district level (1000–9461; all 64 districts; old spellings mapped to post-2018 names; GPO anchors 1000/1100/4000/6000/9000 verified) |
 | Barbados | BB | 1176 | 1185 | BPS finder JS dataset (BB11000–BB27193 incl. 15 office base codes; 9 BB23 splits dual-linked; BB190215 6-digit typo omitted) |
 | Bhutan | BT | 38 | 38 | Bhutan Post legacy finder, all 20 dzongkhags queried (11001–46002; office base codes only; finder Gewog column holds office towns so links are district-level; Samdrupjongkhar/Trashiyangtse spelling variants) |
 | Bosnia and Herzegovina | BA | 517 | 570 | BiH routing manual 2013 (7,363 settlements; 70101–89247; 55 cross-boundary codes dual-linked; 71335 Pržidi omitted) |
 | Brunei | BN | 394 | 394 | post.gov.bn finder scrape (kampong→mukim; 23 Peti Surat PO-box + 87 ministry large-user rows excluded; Kampong Amo A/B/C unfetched; finder spells Burong Pinggai Ayer, Kampong Peramu = Peramu) |
+| Bulgaria | BG | 4363 | 4375 | CRC/Bulgarian Posts 2016 directory (5358 settlement rows) + GeoNames screened vote-by-vote (598 fiction rows + 354 stale codes dropped; Malko Tarnovo 8162–8174 superseded by post-2016 8350–8370 renumber per mapanet/WPC/estate ads; 12 cross-municipality codes dual-linked; Sarnitsa post-2015 split + Gurkovo/Ognen/Ravninata admin-truth overrides; Byala Ruse/Varna + Dobrich city/municipality disambiguated) |
 | Denmark | DK | 1159 | 1159 | GeoNames dump joined on municipal codes (0800–9990) |
 | Djibouti | DJ | 10 | 10 | UPU DJI profile code table (77101–77601; city districts 77102–77105 + 5 region capitals at subprefecture level) |
+| Dominican Republic | DO | 528 | 530 | INPOSDOM codigo-postal data.json (1403 sector rows; 10100–94100 + Moca 53xxx + Santiago 58081 overflow; 2 junk rows excluded; DN 10100–10699 links L2; 71100 Pueblo Viejo/Guayabal + 81100 Cabral/Jaquimeyes dual-linked, largest primary) |
+| Ecuador | EC | 1225 | 1225 | GeoNames dump at canton level (010101–900004; all 222 cantons; undelimited-zone codes to absorbing cantons: El Piedrero El Triunfo, Manga del Cura El Carmen, Las Golondrinas Cotacachi) |
 | Eswatini | SZ | 80 | 80 | Eswatini Post postcode page, region-grouped (H100–L317; H103 shared Eveni/Swazi Plaza, Swazi Plaza primary) |
+| El Salvador | SV | 262 | 262 | 262 district codes × 44 post-reform municipalities (gist/youbianku cross-checked, groupings verified against reform annex; upstream typos fixed via third sources: Candelaria 1302→1402, Alegría 3404→3402, Cacaopera 3216→3203, Chilanga 3203→3205 per mapanet/UPU compendium) |
+| Estonia | EE | 5397 | 5415 | GeoNames dump joined on municipality names (5293 codes; Toila rows → Jõhvi post Nov-2025 merger) + 8 GeoNames-missing cities via mapanet/WPC town sets with business-register spot checks (112 town codes); 17 boundary codes dual-linked, primary = majority rows else town side |
+| Finland | FI | 3576 | 3576 | GeoNames dump joined on admin3 municipality codes (00002–99999; Swedish/Finnish bilingual names mapped; Pertunmaa→Mäntyharju, Valtimo→Nurmes, Honkajoki→Kankaanpää post-merger mapping) |
 | Faroe Islands | FO | 118 | 119 | Posta code tables via da/fo wiki (FO-100–FO-970; 12 postsmoga excluded; FO-485 dual-linked) |
 | French Guiana | GF | 25 | 25 | La Poste Hexasmal (Sep 2026) |
 | French Polynesia | PF | 83 | 93 | La Poste Hexasmal (Sep 2026); shared: 98732 Huahine, 98735 Uturoa, 98790 Rangiroa, 98796 Nuku-Hiva |
 | Greenland | GL | 27 | 27 | Post Greenland + postcode lists (town→municipality mapping) |
 | Croatia | HR | 1094 | 1094 | Hrvatska pošta live finder scrape (10000–53534; customs-only 10004 + 36 retired codes excluded) |
+| Cuba | CU | 785 | 788 | Correos de Cuba office-search API full pull (841 offices; 6 zero-code HQ rows excluded; 16 office-municipio aliases incl. Buenaventura→Calixto García, La Maya→Songo-La Maya, Cuatro Caminos→Najasa; San Luis split Pinar/Santiago by province; 3 shared codes dual-linked, majority primary) |
 | Cyprus | CY | 1125 | 1127 | GeoNames postal dump at locality level (1000–9999; 1036 Nicosia quarters + 4528 Akti Kyverniti/Pentakomo dual-linked, first-listed primary) |
 | Guadeloupe | GP | 33 | 33 | La Poste Hexasmal (Sep 2026) |
 | Guam | GU | 21 | 21 | USPS village ZIPs (Chalan Pago-Ordot has no asserted code) |
 | Guatemala | GT | 548 | 548 | GeoNames dump at department level (01001–22220) |
 | Greece | GR | 974 | 984 | ELTA street register (72k rows, 497 localities) joined via GeoNames dimos codes (10442–85800; 10 cross-municipality codes dual-linked, street-majority primary; 2019 split dimos mapped to current municipalities; Athos codes to Mount Athos region; bundled Agioi Deka corrected to Gortyna) |
 | Iceland | IS | 174 | 178 | Pósturinn register via is.wiki (101–900; 20 PO-box/special omitted; 512 omitted, see rules; 4 neighbour-served communes dual-linked) |
+| Kenya | KE | 949 | 949 | PCK office directory (951 codes; office towns × GeoNames admin1, 877 exact joins, rest via block/neighbour evidence; 00127 Ruaraka + 08010 typos fixed against PCK codes 00618/80100) |
 | Kiribati | KI | 25 | 25 | MICTTD official 37-code table via archive (KI0101–KI0303; 12 uninhabited-island codes excluded) |
 | Kosovo | XK | 127 | 127 | Posta e Kosovës regional lists via archive.org (10000–73000; 10020 transit centre excluded; post-split offices mapped to current municipalities; Parteš/Ranilug/North Mitrovica have no office code) |
 | Latvia | LV | 697 | 719 | GeoNames dump at novads level (LV-1001–LV-5752; city-edge splits dual-linked; stale Varakļāni mapped to Rēzekne) |
@@ -150,6 +157,7 @@ countries use it and why the rest do not.
 | Lithuania | LT | 2023 | 2068 | GeoNames dump at municipality level (00001–99069; 3 cross-county stray links dropped; same-county splits dual-linked) |
 | Luxembourg | LU | 4330 | 4407 | GeoNames dump at commune level (L-1111–L-9999; pre-2018 communes mapped to merged names; border street codes dual-linked) |
 | Malaysia | MY | 3025 | 3696 | Pos Malaysia (existing dataset) |
+| Malta | MT | 27823 | 27823 | MaltaPost postcode finder API exhaustive sweep (89 towns incl. 3 CBD + Comino; street codes ATM 2000–ZBK 5100; sub-localities to parent councils: Kappara San Ġwann, Gwardamanġa Pietà, Baħrija Rabat; Victoria/Rabat disambiguated) |
 | Maldives | MV | 199 | 202 | Postcodebase + 56ok cross-validated island lists (00010–23000; resort/uninhabited codes + Malé/Villingili street ranges excluded; 05020 dual-linked) |
 | Marshall Islands | MH | 2 | 2 | USPS (96960 Majuro, 96970 Ebeye; outer atolls route via hubs) |
 | Mauritius | MU | 1990 | 1990 | Mauritius Post finder exhaustive scrape (11101–91710 + 182 Rodrigues R-codes at dependency + 4 Agalega A-codes) |
@@ -168,6 +176,7 @@ countries use it and why the rest do not.
 | Norway | NO | 5136 | 5136 | GeoNames dump joined on municipal codes + Posten.no Svalbard/Jan Mayen codes (0001–9991; PO-only status per code unverified) |
 | Niue | NU | 1 | 0 | UPU single-code list (9974) |
 | Palau | PW | 2 | 16 | USPS bulletin (96939 Ngerulmud/Melekeok, 96940 rest, Koror primary) |
+| Pakistan | PK | 3114 | 3121 | Pakistan Post office directory (3130 delivery offices; GPO service areas × GeoNames admin2 × post-split crosswalk; 7 NPO code collisions dual-linked incl. 07529 Dumba Goth/Gulistan-e-Jauhar; Quetta East/West by railway line; 12 districts with no table office: Allai, Darel, Haveli, Kolai-Palas, Lower South Waziristan, Mohmand, Rondu, Shigar, Sohbatpur, Surab, Upper Dera Bugti, Wadh) |
 | Philippines | PH | 1933 | 1933 | GeoNames dump at province level (1000–9811; 258 facility/PO-box codes excluded; NCR linked at region) |
 | Puerto Rico | PR | 177 | 177 | GeoNames USPS ZIP dump joined on municipio FIPS (00601–00962; PO-only status per ZIP unverified) |
 | Réunion | RE | 37 | 37 | La Poste Hexasmal (Sep 2026) |
@@ -180,9 +189,13 @@ countries use it and why the rest do not.
 | Saint-Barthélemy | BL | 1 | 1 | UPU addressing (97133) |
 | Saint-Martin | MF | 1 | 1 | UPU addressing (97150) |
 | San Marino | SM | 10 | 10 | UPU SMR profile (47890–47899; Serravalle holds 47891+47899) |
+| Serbia | RS | 1334 | 1407 | Mapanet municipality pages (145 munis, 4281 locality rows; Belgrade at city-municipality level) + 104 GN-only town/village codes (muni inherited from mapanet locality, 32 via Nominatim with Đurđevo→Žabalj + Kaluđerske Bare→Bajina Bašta fixes) + 100 courier-list Belgrade branch codes (generic at city); Kosovo r1 rows excluded (Posta e Kosovës system, XK overlaid); Niš/Užice/Požarevac/Vranje link district (cities unbundled); 68 shared codes dual-linked, majority-rows primary |
 | Slovenia | SI | 468 | 469 | Pošta Slovenije official list Aug-2025 via archive (1000–9503; 76 PO-box/large-user/internal excluded; 3231 Grobelno dual-linked Šentjur primary) |
+| Sri Lanka | LK | 2121 | 2121 | Dept. of Posts Post Code Directory 2022 at district level (00100–91559; Colombo 01–15 zones incl. 10 from scanned p.iii table; APR+AR both Ampara) |
+| Tanzania | TZ | 4034 | 4034 | TCRA postcode API full pull (85,110 locations; urban/rural + split-district wards resolved via council ward lists: Madaba from Songea, Tunduma from Momba, Mpimbwe/Nsimbo; Kibiti + Tanganyika wards unmapped — no bundled district; Mpanda rural + Mpimbwe have no API wards) |
 | Turks and Caicos | TC | 1 | 0 | UPU single-code list (TKCA 1ZZ) |
 | US Virgin Islands | VI | 16 | 16 | GeoNames USPS ZIP dump, island-attributed (00801–00851 at district level; subdistrict split + PO-only status need licensed USPS city file) |
+| Uruguay | UY | 124 | 339 | Correo Uruguayo listadoCP (124 codes, 117 dept/locality rows) joined to 125 municipalities via INAADS/Intendencia polygons + INE localidades + mapanet/WPC with decree-backed town fixes (Rincón/Estación Rincón, Minas de Corrales to Rivera; 35200 Cerro Chato dual-linked Florida-dept + TT Cerro Chato municipio) |
 | Vietnam | VN | 3320 | 3320 | MOST 2025 national postcode list (94pp; X./P./Đặc khu wards incl. 13 special zones; Tam Dương Bắc cell reads 152213, taken as 15221 sequential; Nghi Dương post-dates the list, omitted) |
 | Wallis and Futuna | WF | 3 | 3 | La Poste Hexasmal (Sep 2026) |
 
@@ -223,7 +236,7 @@ $result = app(ImportPostalCodesAction::class)->execute($source);
 | Azerbaijan | AZ | complete | L1: district,municipality (77) |
 | Bahamas | BS | none | L1: district,island (32) |
 | Bahrain | BH | expansion | L1: governorate (4) |
-| Bangladesh | BD | expansion | L2: district (64) |
+| Bangladesh | BD | complete | L2: district (64) |
 | Barbados | BB | complete | L1: parish (11) |
 | Belarus | BY | expansion | L2: district (118) |
 | Belgium | BE | expansion | L2: province (10) |
@@ -236,13 +249,13 @@ $result = app(ImportPostalCodesAction::class)->execute($source);
 | Botswana | BW | none | L2: subdistrict (23) |
 | Brazil | BR | expansion | L2: district,municipality (5571) |
 | Brunei | BN | complete | L2: mukim (39) |
-| Bulgaria | BG | admin-ready | L2: municipality (265) |
+| Bulgaria | BG | complete | L2: municipality (265) |
 | Burkina Faso | BF | none | L2: province (47) |
 | Burundi | BI | none | L2: commune (42) |
 | Cambodia | KH | expansion | L2: district,municipality,section (210) |
 | Cameroon | CM | none | L2: department (58) |
 | Canada | CA | expansion | L2: indigenous_reserve,municipality,unorganized (5028) |
-| Cape Verde | CV | admin-ready | L2: parish (32) |
+| Cape Verde | CV | admin-ready | L2: parish (32); 2020 decree moved the full list to portal-only (codigopostal.cv, now dead + unarchived for data) — annex carries 33 examples only; third parties still show the superseded pre-2020 4-digit system |
 | Caribbean Netherlands | BQ | none | L1: special_municipality (3) |
 | Cayman Islands | KY | none | box-only system (UPU: street address alone undeliverable, PO boxes only); codes pass through, nothing to import |
 | Central African Republic | CF | none | L2: subprefecture (80) |
@@ -254,25 +267,25 @@ $result = app(ImportPostalCodesAction::class)->execute($source);
 | Congo | CG | none | L2: district (89) |
 | Costa Rica | CR | expansion | L2: canton (84) |
 | Croatia | HR | complete | L1: county (21) |
-| Cuba | CU | admin-ready | L2: municipality (168) |
+| Cuba | CU | complete | L2: municipality (168) |
 | Cyprus | CY | complete | L2: locality (752) |
 | Czech Republic | CZ | expansion | L2: district (76) |
 | DR Congo | CD | expansion | L2: territory (145) |
 | Denmark | DK | complete | L2: municipality (98) |
 | Djibouti | DJ | complete | L2: subprefecture (20) |
 | Dominica | DM | none | L1: parish (10) |
-| Dominican Republic | DO | expansion | L2: district,province (32) |
-| Ecuador | EC | expansion | L2: canton (222) |
+| Dominican Republic | DO | complete | L2: district,province (32) + L3: municipality (158) |
+| Ecuador | EC | complete | L2: canton (222) |
 | Egypt | EG | expansion | L2: district (365) |
-| El Salvador | SV | admin-ready | L2: municipality (44) |
+| El Salvador | SV | complete | L2: municipality (44) |
 | Equatorial Guinea | GQ | none | L2: province (8) |
 | Eritrea | ER | none | L2: subregion (58) |
-| Estonia | EE | admin-ready | L2: rural_municipality,urban_municipality (78) |
+| Estonia | EE | complete | L2: rural_municipality,urban_municipality (78) |
 | Eswatini | SZ | complete | L1: region (4) |
 | Ethiopia | ET | expansion | L2: woreda,zone (127) |
 | Faroe Islands | FO | complete | L2: municipality (29) |
 | Fiji | FJ | none | L2: province (14) |
-| Finland | FI | admin-ready | L2: city,municipality (292) |
+| Finland | FI | complete | L2: city,municipality (292) |
 | France | FR | expansion | L2: department (102) |
 | French Guiana | GF | complete | L2: commune (22) |
 | French Polynesia | PF | complete | L2: commune (48) |
@@ -310,7 +323,7 @@ $result = app(ImportPostalCodesAction::class)->execute($source);
 | Jersey | JE | expansion | L2: canton,cueillette,vingtaine (56) |
 | Jordan | JO | expansion | L2: liwa (51) |
 | Kazakhstan | KZ | expansion | L2: district (170) |
-| Kenya | KE | expansion | L2: constituency (290) |
+| Kenya | KE | complete | L2: constituency (290) |
 | Kiribati | KI | complete | L2: council (24) |
 | Kosovo | XK | complete | L2: municipality (38) |
 | Kuwait | KW | expansion | L2: area (135) |
@@ -329,7 +342,7 @@ $result = app(ImportPostalCodesAction::class)->execute($source);
 | Malaysia | MY | complete | L4: locality,subdistrict (292) |
 | Maldives | MV | complete | L2: island (192) |
 | Mali | ML | none | L2: cercle (159) |
-| Malta | MT | expansion | L1: local_council (68) |
+| Malta | MT | complete | L1: local_council (68) |
 | Marshall Islands | MH | complete | L2: municipality (24) |
 | Martinique | MQ | complete | L2: commune (34) |
 | Mauritania | MR | none | L2: department (63) |
@@ -359,7 +372,7 @@ $result = app(ImportPostalCodesAction::class)->execute($source);
 | North Macedonia | MK | complete | L1: municipality (80) |
 | Norway | NO | complete | L2: municipality (357) |
 | Oman | OM | expansion | L2: wilayat (63) |
-| Pakistan | PK | expansion | L2: district (178) |
+| Pakistan | PK | complete | L2: district (178) |
 | Palau | PW | complete | L1: state (16) |
 | Palestine | PS | expansion | L1: governorate (16) |
 | Panama | PA | none | L2: district (81) |
@@ -387,7 +400,7 @@ $result = app(ImportPostalCodesAction::class)->execute($source);
 | Sao Tome and Principe | ST | none | L1: autonomous_region,district (7) |
 | Saudi Arabia | SA | expansion | L2: governorate (139) |
 | Senegal | SN | expansion | L2: department (46) |
-| Serbia | RS | admin-ready | L2: city,city_municipality,municipality (157) |
+| Serbia | RS | complete | L2: city,city_municipality,municipality (157) |
 | Seychelles | SC | none | L1: district (27) |
 | Sierra Leone | SL | none | L2: district (16) |
 | Singapore | SG | runtime | L2: planning_area,postal_sector (136) |
@@ -399,7 +412,7 @@ $result = app(ImportPostalCodesAction::class)->execute($source);
 | South Korea | KR | expansion | L2: city,county,district (228) |
 | South Sudan | SS | none | L2: county (88) |
 | Spain | ES | expansion | L2: province (50) |
-| Sri Lanka | LK | expansion | L2: district (25) |
+| Sri Lanka | LK | complete | L2: district (25) |
 | Sudan | SD | expansion | L2: district (188) |
 | Suriname | SR | none | L2: resort (63) |
 | Sweden | SE | expansion | L2: municipality (290) |
@@ -407,7 +420,7 @@ $result = app(ImportPostalCodesAction::class)->execute($source);
 | Syria | SY | none | L2: district (66) |
 | Taiwan | TW | expansion | L2: county_administered_city,district,mountain_indigenous_district,mountain_indigenous_township,rural_township,urban_township (368) |
 | Tajikistan | TJ | expansion | L2: city,district (69) |
-| Tanzania | TZ | expansion | L2: district (193) |
+| Tanzania | TZ | complete | L2: district (193) |
 | Thailand | TH | expansion | L2: amphoe,khet (928) |
 | Timor-Leste | TL | admin-ready | L2: administrative_post (67) |
 | Togo | TG | none | L2: prefecture (39) |
@@ -420,12 +433,12 @@ $result = app(ImportPostalCodesAction::class)->execute($source);
 | Türkiye | TR | expansion | L2: district (973) |
 | US Minor Outlying Islands | UM | none | L1: island (9) |
 | US Virgin Islands | VI | complete | L1: district (3) |
-| Uganda | UG | admin-ready | L2: city,district (146) |
+| Uganda | UG | admin-ready | L2: city,district (146); 5-digit system adopted per UPU 1.2026 but no published allocation list — 2019 draft stale (22321 Bugalo draft vs Nabbingo adopted), E-Posta API auth-walled, no GeoNames dump |
 | Ukraine | UA | expansion | L2: raion (136) |
 | United Arab Emirates | AE | none | L1: emirate (7) |
 | United Kingdom | GB | expansion | L2: council_area,county,county_borough,district (113) |
 | United States | US | expansion | L2: borough,census_area,city,county,municipality,parish,planning_region (3143) |
-| Uruguay | UY | admin-ready | L2: municipality (125) |
+| Uruguay | UY | complete | L2: municipality (125) |
 | Uzbekistan | UZ | expansion | L2: city,tuman (206) |
 | Vanuatu | VU | none | L2: area_council,municipality (63) |
 | Venezuela | VE | admin-ready | L2: municipality (335) |
@@ -450,8 +463,7 @@ remaining `admin-ready` verdicts above.
 
 `expansion` countries need doc-15 locality rows first. Street-level
 systems additionally need sub-locality data or licensed files:
-Guernsey/Jersey/Isle of Man (Royal Mail PAF, licensed), Malta
-(MaltaPost full list),
+Guernsey/Jersey/Isle of Man (Royal Mail PAF, licensed),
 Brazil (CEP), Argentina (CPA), Mexico (colonias), Colombia
 (6-digit), Netherlands (4+2), Sweden (PostNord), Canada
 (full codes; FSA-level possible), United States (USPS licensed,

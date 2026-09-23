@@ -786,6 +786,13 @@ Ecuadorian addresses are formatted per the UPU layout: street
 lines, `{postcode} - {locality}` with a 6-digit postcode, and
 country. Types are labelled `Provincia` and `Cantón`.
 
+The 1225-code overlay (010101–900004) comes from the GeoNames dump
+at canton level covering all 222 cantons. The four zone-90 codes
+for the former undelimited zones link their absorbing cantons
+(El Piedrero to El Triunfo, Manga del Cura to El Carmen, Las
+Golondrinas to Cotacachi, per referendum/decree records). No new
+area rows.
+
 ## Egypt
 
 The bundled `EgyptGeographyProvider` supplies the 27 ISO 3166-2
@@ -984,6 +991,11 @@ Names follow the post-2018 official English spellings (`Barishal`,
 `Netrokona`); seeding also corrects the matching global state rows.
 Only divisions link to states; districts are assignable through the
 `district` role with their division selected first.
+
+The 1349-code overlay (1000–9461) comes from the GeoNames dump at
+district level: all 64 districts covered, old-spelling admin2 names
+mapped to the post-2018 spellings, GPO anchors verified. Office-level
+codes link their district; no new area rows.
 
 Bangladeshi addresses are formatted per the UPU layout: street lines,
 an optional `thana` component, `{locality} - {postcode}` with a
@@ -1305,8 +1317,7 @@ Mpimbwe, Itigi) verified against government council registers.
 
 Tanzanian addresses are formatted per the UPU layout: street lines,
 `{postcode} {locality}` with a 5-digit postcode, the region on its
-own line, and country. Districts and wards are intentionally not
-bundled.
+own line, and country. Wards are intentionally not bundled.
 
 ## Kenya
 
@@ -2199,6 +2210,13 @@ Sri Lankan addresses are formatted per the UPU layout: street lines,
 the locality, the province when it differs, the 5-digit postcode on
 its own line, and country.
 
+The 2121-code overlay comes from the Department of Posts Post Code
+Directory (2022): each office row carries its postal division, mapped
+to the 25 districts (APR and AR/Akkaraipattu both Ampara), with the
+Colombo 01–15 zones completed from the book's scanned zone table.
+Office-level codes link their district (Romania precedent); no new
+area rows.
+
 ## Syria
 
 The bundled `SyriaGeographyProvider` supplies the 14 provinces as
@@ -2494,7 +2512,19 @@ administrative hierarchy. It is selected with
 
 Dominican addresses are formatted per the UPU layout: street lines,
 `{postcode} {locality}` with a 5-digit postcode, and country.
-Types are labelled `Región`, `Provincia`, and `Distrito`.
+Types are labelled `Región`, `Provincia`, `Distrito`, and `Municipio`.
+
+158 municipalities ship as level-3 `municipality` areas under their
+province (Baitoa, Matanzas, San Víctor verified via Senate creation
+laws), with a `postal` hierarchy (region > municipality, refined by
+province) and the `postal_locality` role. The 528-code overlay comes
+from INPOSDOM's official postcode-finder dataset (1403 sector rows;
+sector codes link their municipality): DN sectors 10100–10699 link the
+L2 district directly, Moca city sectors use 53xxx overflow codes and
+Urb. Henríquez uses 58081 (both outside the published ranges), 2 junk
+rows (empty code, `Sin titulo`) are excluded, and 71100 (Pueblo Viejo
+primary, Guayabal secondary) plus 81100 (Cabral primary, Jaquimeyes
+secondary) are dual-linked largest-first.
 
 ## El Salvador
 
