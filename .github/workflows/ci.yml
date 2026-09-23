@@ -150,8 +150,23 @@ jobs:
           COMPOSER_AUTH: '{"http-basic":{"packages.filamentphp.com":{"username":"${{ secrets.COMPOSER_AUTH_USERNAME }}","password":"${{ secrets.COMPOSER_AUTH_PASSWORD }}"}}}'
         run: composer install --prefer-dist --no-interaction --no-progress
 
+      - name: Restore PHPStan result cache
+        uses: actions/cache/restore@v5
+        with:
+          path: var/cache/phpstan
+          key: ${{ runner.os }}-phpstan-result-${{ hashFiles('composer.lock') }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            ${{ runner.os }}-phpstan-result-${{ hashFiles('composer.lock') }}-
+
       - name: Run PHPStan
         run: composer test:phpstan
+
+      - name: Save PHPStan result cache
+        uses: actions/cache/save@v5
+        if: ${{ !cancelled() }}
+        with:
+          path: var/cache/phpstan
+          key: ${{ runner.os }}-phpstan-result-${{ hashFiles('composer.lock') }}-${{ github.run_id }}-${{ github.run_attempt }}
 
   tests:
     needs: changes

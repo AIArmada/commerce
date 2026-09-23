@@ -71,7 +71,9 @@ final class AffiliateCreativeResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         /** @var Builder<AffiliateProgramCreative> $query */
-        $query = parent::getEloquentQuery()->general();
+        $query = parent::getEloquentQuery();
+
+        $query = $query->general();
 
         if (! (bool) config('affiliates.owner.enabled', false)) {
             return $query;
