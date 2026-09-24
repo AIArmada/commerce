@@ -261,6 +261,7 @@ countries use it and why the rest do not.
 | Estonia | EE | 5397 | 5415 | GeoNames dump joined on municipality names (5293 codes; Toila rows → Jõhvi post Nov-2025 merger) + 8 GeoNames-missing cities via mapanet/WPC town sets with business-register spot checks (112 town codes); 17 boundary codes dual-linked, primary = majority rows else town side |
 | Finland | FI | 3576 | 3576 | GeoNames dump joined on admin3 municipality codes (00002–99999; Swedish/Finnish bilingual names mapped; Pertunmaa→Mäntyharju, Valtimo→Nurmes, Honkajoki→Kankaanpää post-merger mapping) |
 | Faroe Islands | FO | 118 | 119 | Posta code tables via da/fo wiki (FO-100–FO-970; 12 postsmoga excluded; FO-485 dual-linked); bare domestic input gains the FO- prefix at lookup |
+| France | FR | 20315 | 20346 | GeoNames 51,611-row dump joined on department code (CEDEX suffixes stripped to base delivery code; 31 cross-department codes dual-linked: 23 inter-dept majorities + 8 Lyon splits; 1v1 ties 13780→13 Cuges-les-Pins over Riboux + 42620→42 St-Martin-d'Estréaux over St-Pierre-Laval on seat size, 69280/69290/69390→69M alphabetical); 69 split via geo.api.gouv.fr EPCI 200046977 (58 metro communes, place-level: 69001–69009 Lyon-city single 69M, 7 mixed codes dual); Clipperton 98799 dropped (uninhabited, no L2) |
 | French Guiana | GF | 25 | 25 | La Poste Hexasmal (Sep 2026) |
 | French Polynesia | PF | 83 | 93 | La Poste Hexasmal (Sep 2026); shared: 98732 Huahine, 98735 Uturoa, 98790 Rangiroa, 98796 Nuku-Hiva |
 | Greenland | GL | 27 | 27 | Post Greenland + postcode lists (town→municipality mapping) |
@@ -464,7 +465,6 @@ $result = app(ImportPostalCodesAction::class)->execute($source);
 | French Guiana | GF | complete | L2: commune (22) |
 | French Polynesia | PF | complete | L2: commune (48) |
 | French Southern Territories | TF | none | L1: district (5) |
-| France | FR | 20315 | 20346 | GeoNames 51,611-row dump joined on department code (CEDEX suffixes stripped to base delivery code; 31 cross-department codes dual-linked: 23 inter-dept majorities + 8 Lyon splits; 1v1 ties 13780→13 Cuges-les-Pins over Riboux + 42620→42 St-Martin-d'Estréaux over St-Pierre-Laval on seat size, 69280/69290/69390→69M alphabetical); 69 split via geo.api.gouv.fr EPCI 200046977 (58 metro communes, place-level: 69001–69009 Lyon-city single 69M, 7 mixed codes dual); Clipperton 98799 dropped (uninhabited, no L2) |
 | Gabon | GA | none | L2: department (49) |
 | Gambia | GM | none | L2: district (42) |
 | Georgia | GE | complete | L2: city,district,municipality (85) |

@@ -970,6 +970,12 @@ selected with `SeedCountryGeographiesAction::execute('GB')` after
 countries are seeded.
 The 48 English ceremonial counties, 32 Scottish council areas, 22 Welsh principal areas and 11 Northern Ireland districts ship as level-2 areas under their nations.
 
+The 2,941-code overlay (outward codes) comes from postcodes.io
+(ONSPD-derived) at ceremonial county/council level: 597 multi-area
+codes carry authoritative secondaries (London boroughs roll to Greater
+London, Scilly to Cornwall); Crown Dependencies and non-geographic or
+invalid codes are excluded; no new area rows.
+
 British addresses are formatted per the UPU layout: street lines, post
 town, the uppercased postcode on its own line, and country. The county
 line is omitted when a postcode is present, per the UPU rule. Nation,
@@ -1016,6 +1022,11 @@ the matching global state rows. Only regions link to states;
 provinces and prefectures are assignable through the `province` role
 with their region selected first.
 
+The 2,089-code overlay (10000–94152) joins the GeoNames 1,325-code
+base with a Mapanet 3,370-row top-up that adds Casablanca and Rabat
+coverage: 62 of 75 provinces/prefectures covered (13 small/new
+codeless), 7 conflicts adjudicated; no new area rows.
+
 Moroccan addresses are formatted per the UPU layout: street lines,
 `{postcode} {locality}` with a 5-digit postcode left of the locality,
 and country. Types are labelled `Région`, `Préfecture`, and
@@ -1036,6 +1047,12 @@ system, so it is intentionally not a CN area. Counties and districts
 (level 3) are intentionally not bundled. The two Suzhou and two Fuzhou
 prefecture-level cities carry province-disambiguated names
 ("Suzhou, Anhui" vs "Suzhou, Jiangsu").
+
+The 2,349-code overlay comes from the GeoNames 2,352-row dump at
+prefecture level: same-name prefectures disambiguated by province,
+Tibetan/Uyghur romanization aliases mapped, 12 admin1 misfiles
+corrected, 79 municipality/direct-admin links at L1; zero
+cross-prefecture codes; no new area rows.
 
 Chinese addresses are formatted per the UPU layout: street lines, an
 optional city/district line, `{postcode} {province}` with a 6-digit
@@ -1104,6 +1121,12 @@ as areas. It is selected with
 `SeedCountryGeographiesAction::execute('FR')` after countries are seeded.
 The 101 departments plus the Lyon Metropolis ship as level-2 areas under their regions.
 
+The 20,315-code overlay comes from the GeoNames 51,611-row dump at
+department level: CEDEX suffixes strip to the base delivery code, 31
+cross-department codes dual-linked, Lyon split via the metro commune
+list (69001–69009 to the metropolis), Clipperton 98799 dropped
+(uninhabited); no new area rows.
+
 French addresses are formatted per the UPU layout: street lines,
 `{postcode} {locality}` with a 5-digit postcode, and country. CEDEX
 suffixes are not generated. Types are labelled `Région` and
@@ -1122,6 +1145,11 @@ Region names use Italian official forms (`Toscana`, `Sicilia`); the
 eight common English exonyms (`Piedmont`, `Aosta Valley`, `Lombardy`,
 `Trentino-South Tyrol`, `Tuscany`, `Apulia`, `Sicily`, `Sardinia`)
 are kept as aliases.
+
+The 4,735-code overlay joins the GeoNames 18,415-row dump on province
+sigla: 105 of 109 L2 direct (Aosta Valley links at L1, no provinces),
+Sardinia's 160 CAPs point-remapped to the 8 post-2025 provinces, 9
+cross-province codes dual/triple-linked; no new area rows.
 
 Italian addresses are formatted per the UPU layout: street lines,
 `{postcode} {locality} {province}` with a 5-digit postcode, and
@@ -1155,6 +1183,12 @@ bundled. Level-2 names are validated mechanically against the MIC
 table (code↔parent consistency, kind totals, twin coverage);
 row-by-row external name verification of all 1,747 rows remains
 future work.
+
+The 120,682-code overlay comes from the Japan Post ken_all official
+gazette at municipality level (stored in dashed NNN-NNNN form):
+designated-city wards roll up to their city codes, firm codes and
+abolished rows excluded, 1,741 of 1,747 municipalities covered (the 6
+Northern Territories villages codeless); no new area rows.
 
 Japanese addresses are formatted per the UPU western layout: street
 lines, `{city}, {prefecture}`, and `{postcode} {country}` on the last
@@ -1439,6 +1473,11 @@ August 2026); Villa de Pozos, San Luis Potosí (24059); Eldorado
 codes were sourced from Wikidata P3801 claims (CC0), verified
 against the Spanish Wikipedia state annexes (CC-BY-SA) and the INEGI
 2024 national count of 2,478 (plus Villa Juárez).
+
+The 32,448-code overlay (01000–99998) joins the GeoNames 144,655-row
+dump on INEGI state+municipality code: zero misses, zero
+cross-municipality codes, 2,457 of 2,479 municipalities covered (22
+codeless are post-dump creations and splits); no new area rows.
 
 Mexican addresses are formatted per the UPU layout: street lines,
 `{postcode} {locality}, {abbrev}` with the state abbreviation from
@@ -1829,6 +1868,11 @@ the 7 municipal districts under Maputo City. `Maputo Province` and
 `Maputo City` are disambiguated at seed. Maxixe is excluded (city,
 not a district).
 
+The 113-code overlay files Mapanet rows to districts via the
+posto→district table (101 of 136 districts; city municipalities and
+11 dropped codes excluded as admin-separate or anomalous);
+Maputo-city codes district-mapped; no new area rows.
+
 Mozambican addresses are formatted per the UPU layout: street lines,
 `{postcode} {locality}` with a 4-digit postcode, the province on its
 own line, and country. Types are labelled `Província`, `Cidade`,
@@ -2124,6 +2168,12 @@ their governorates (Beirut has none — the governorate is the city).
 Keserwan-Jbeil (split from Mount Lebanon in 2017) carries the
 provisional code `KJ`: ISO 3166-2:LB still lists the 8 old
 governorates.
+
+The 683-code overlay files Mapanet rows to caza via per-point
+reverse-geocode (Beirut links at L1, no caza; 16 zero rows
+adjudicated, 10 ties + 3 row-majority multis); spaced/compact 8-digit
+sector suffixes strip to the base 4-digit code at lookup; no new area
+rows.
 
 Lebanese addresses are formatted per the UPU layout: street lines,
 `{locality} {postcode}` with the optional 4+4-digit LibanPost code,
@@ -2665,6 +2715,11 @@ selected with `SeedCountryGeographiesAction::execute('LR')` after
 countries are seeded.
 The 127 districts ship as level-2 areas under their countys.
 
+The 31-code overlay (1000–7520) comes from the post-office list at
+county level (codes do not resolve to districts): UPU-anchored
+Monrovia 1000 and Buchanan 4000, Monrovia 1000-xx delivery units strip
+to base at lookup, Gbarpolu codeless; no new area rows.
+
 Liberian addresses are formatted per the UPU layout: street lines,
 `{postcode} {locality}` with a 4-digit postcode, and country. The
 system is officially defined but flagged not-in-use by UPU, so codes
@@ -2760,6 +2815,11 @@ countries are seeded.
 The 121 constituencies ship as level-2 areas under their regions
 (Tondoro and Oshikunde verified against the Electoral Commission
 register; the Wikipedia list table omits both rows).
+
+The 149-code overlay comes from the NamPost official postcode table
+(5-digit 2018+ system, all 14 regions): offices link at L1 region
+(delivery points sit below constituency granularity), stale pre-2018
+ZA-era codes excluded; no new area rows.
 
 Namibian addresses are formatted per the UPU layout: street or box
 lines, the locality, the 5-digit postcode on its own line, and
@@ -3312,6 +3372,11 @@ The 96 districts ship as level-2 areas under their provinces
 (post-2022 electorate count, including the 3 National Capital
 District seats under Port Moresby).
 
+The 62-code overlay files Mapanet cells to districts via seat LLGs
+(60 of 96 districts, 36 rural codeless): NCD codes suburb-mapped to
+the 3 seats, 4 multi-district codes with seat primaries; no new area
+rows.
+
 Papua New Guinean addresses are formatted per the UPU layout: street
 lines, `{locality} {postcode}` with a 3-digit postcode, and country.
 ## Portugal
@@ -3479,6 +3544,11 @@ administrative hierarchy. It is selected with
 `SeedCountryGeographiesAction::execute('GG')` after countries are
 seeded. Alderney and Sark ship as dependencies, not parishes.
 
+The 10-code overlay (GY1–GY10) cross-checks GeoNames against the
+postcode-area table at parish level: Herm and Jethou stay St Peter
+Port, 3 shared codes dual-linked with alphabetical primaries; no new
+area rows.
+
 Guernsey follows the UK postcode system (`GY` prefix, not `GG`).
 Addresses print street lines, the post town, the postcode on its own
 line, and country.
@@ -3490,6 +3560,11 @@ The bundled `JerseyGeographyProvider` supplies the 12 parishes as
 selected with `SeedCountryGeographiesAction::execute('JE')` after
 countries are seeded.
 The 48 vingtaines, 2 cantons and 6 cueillettes ship as level-2 areas under their parishes.
+
+The 2-code overlay (JE2/JE3 outward codes) comes from the
+postcode-area table at parish level (large-user, PO-box and
+bespoke-delivery ranges excluded as non-geographic; outward codes
+cannot reach vingtaine level); no new area rows.
 
 Jersey follows the UK postcode system (`JE` prefix). Addresses print
 street lines, the post town, the postcode on its own line, and country.
@@ -3503,6 +3578,10 @@ The 13 parishes, 4 towns, 2 districts and 2 villages ship as level-2 areas under
 partition (today only a loose coroners/electoral layer), but they
 remain the only island-wide geography, so they are modeled as the
 address level.
+
+The 9-code overlay (IM1–IM9) parish-maps GeoNames localities at L2
+(PO-box/large-user codes and 4 conflicted singles excluded); no new
+area rows.
 
 The Isle of Man follows the UK postcode system (`IM` prefix).
 Addresses print street lines, the post town, the postcode on its own
