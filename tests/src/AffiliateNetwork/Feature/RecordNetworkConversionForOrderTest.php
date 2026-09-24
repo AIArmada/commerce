@@ -31,7 +31,7 @@ describe('RecordNetworkConversionForOrder', function (): void {
         $this->affiliate = createTestAffiliate();
         $this->link = AffiliateOfferLink::factory()
             ->forOffer($this->offer)
-            ->forAffiliate($this->affiliate)
+            ->forAffiliateId((string) $this->affiliate->getKey())
             ->create();
     });
 

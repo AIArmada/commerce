@@ -104,6 +104,10 @@ final class AffiliateOffersTable
                     ->color('success')
                     ->requiresConfirmation()
                     ->visible(fn (AffiliateOffer $record): bool => $record->status !== OfferStatus::Published)
+                    ->disabled(fn (AffiliateOffer $record): bool => ! AffiliateSite::isVerifiedKey($record->site_id))
+                    ->tooltip(fn (AffiliateOffer $record): ?string => AffiliateSite::isVerifiedKey($record->site_id)
+                        ? null
+                        : 'Verify the site before publishing its offers.')
                     ->action(function (AffiliateOffer $record): void {
                         self::transitionOffer($record, OfferStatus::Published);
                     }),

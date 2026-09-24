@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates;
 
+use AIArmada\AffiliateNetwork\Contracts\AffiliateIdentityResolver;
+use AIArmada\AffiliateNetwork\Contracts\LinkedProgramBridge;
+use AIArmada\AffiliateNetwork\Contracts\NetworkLedger;
+use AIArmada\AffiliateNetwork\Services\Catalog\CatalogReaderResolver;
 use AIArmada\Affiliates\Actions\Affiliates\ResolvePublicAffiliateReferralContext;
 use AIArmada\Affiliates\Cart\AffiliateDiscountConditionProvider;
 use AIArmada\Affiliates\Contracts\AffiliateLookup;
@@ -121,7 +125,41 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
         $this->app->singleton(VoucherIntegrationRegistrar::class);
         $this->app->singleton(AffiliateDiscountConditionProvider::class);
 
+        $this->registerNetworkSeam();
         $this->registerSettingsMigrationPath();
+    }
+
+    /**
+     * Bind the affiliate-network seam when the network package is installed.
+     *
+     * Everything here is skipped when the network is absent, so plain
+     * merchant installs never load network classes.
+     */
+    private function registerNetworkSeam(): void
+    {
+        if (! interface_exists(AffiliateIdentityResolver::class)
+            || ! class_exists(Network\AffiliatesIdentityResolver::class)) {
+            return;
+        }
+
+        $this->app->singleton(
+            AffiliateIdentityResolver::class,
+            Network\AffiliatesIdentityResolver::class
+        );
+        $this->app->singleton(
+            NetworkLedger::class,
+            Network\AffiliatesLedger::class
+        );
+        $this->app->singleton(
+            LinkedProgramBridge::class,
+            Network\AffiliatesProgramBridge::class
+        );
+        $this->app->singleton(
+            CatalogReaderResolver::LOCAL_READER_KEY,
+            Network\LocalProgramReader::class
+        );
+
+        config(['affiliate-network.models.affiliate' => Affiliate::class]);
     }
 
     private function registerSettingsMigrationPath(): void

@@ -11,12 +11,18 @@ class AffiliateConversionPolicy
 {
     public function viewAny(Authorizable $user): bool
     {
-        return $user->can('affiliate_conversion.viewAny') || $user->can('affiliate.viewAny');
+        return $user->can('affiliate_conversion.viewAny')
+            || $user->can('affiliate.viewAny')
+            || $user->can('affiliate_conversion.update')
+            || $user->can('affiliate.approve');
     }
 
     public function view(Authorizable $user, AffiliateConversion $conversion): bool
     {
-        return $user->can('affiliate_conversion.view') || $user->can('affiliate.view');
+        return $user->can('affiliate_conversion.view')
+            || $user->can('affiliate.view')
+            || $user->can('affiliate_conversion.update')
+            || $user->can('affiliate.approve');
     }
 
     public function update(Authorizable $user, AffiliateConversion $conversion): bool

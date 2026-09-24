@@ -5,33 +5,32 @@
         </x-slot>
 
         <form wire:submit="save" class="space-y-6">
-            <x-filament::input.wrapper>
-                <x-filament::input
-                    type="checkbox"
+            <div class="flex items-center gap-3">
+                <x-filament::input.checkbox
                     id="multi_level_enabled"
                     wire:model="multi_level_enabled"
                 />
-                <label for="multi_level_enabled" class="ml-2 text-sm font-medium text-gray-900 dark:text-white">
+                <label for="multi_level_enabled" class="cursor-pointer text-sm font-medium text-gray-950 dark:text-white">
                     {{ __('Enable Multi-Level Commissions') }}
                 </label>
-            </x-filament::input.wrapper>
+            </div>
 
-            <div class="rounded-lg bg-gray-50 p-4 dark:bg-white/5">
-                <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">
+            <div class="rounded-xl bg-gray-50 p-4 dark:bg-white/5 sm:p-6">
+                <h3 class="text-sm font-semibold text-gray-950 dark:text-white">
                     {{ __('Upline Commission Rates') }}
                 </h3>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
                     {{ __('Each level is the percentage of the commission that flows to that upline affiliate.') }}
                 </p>
 
-                <div class="space-y-3">
+                <div class="mt-4 space-y-3">
                     @foreach ($multi_level_rates as $index => $rate)
-                        <div class="flex items-center gap-3">
-                            <div class="w-16 text-sm font-medium text-gray-700 dark:text-gray-300">
+                        <div wire:key="level-{{ $index }}" class="flex items-center gap-3">
+                            <div class="w-20 shrink-0 text-sm font-medium text-gray-700 dark:text-gray-200">
                                 {{ __('Level') }} {{ $rate['level'] }}
                             </div>
 
-                            <x-filament::input.wrapper class="flex-1">
+                            <x-filament::input.wrapper suffix="%" class="min-w-0 flex-1">
                                 <x-filament::input
                                     type="number"
                                     step="0.01"
@@ -42,33 +41,37 @@
                                 />
                             </x-filament::input.wrapper>
 
-                            <span class="text-sm text-gray-500 w-4">%</span>
-
                             @if (count($multi_level_rates) > 1)
-                                <button
-                                    type="button"
+                                <x-filament::icon-button
+                                    icon="heroicon-m-x-mark"
+                                    color="danger"
+                                    size="sm"
+                                    :label="__('Remove level')"
+                                    :tooltip="__('Remove level')"
                                     wire:click="removeLevel({{ $index }})"
-                                    class="text-danger-600 hover:text-danger-500 text-xl leading-none"
-                                >
-                                    &times;
-                                </button>
+                                />
                             @endif
                         </div>
                     @endforeach
                 </div>
 
-                <button
+                <x-filament::button
                     type="button"
+                    outlined
+                    size="sm"
+                    icon="heroicon-m-plus"
                     wire:click="addLevel"
-                    class="mt-3 text-sm font-semibold text-primary-600 hover:text-primary-500"
+                    class="mt-4"
                 >
-                    + {{ __('Add level') }}
-                </button>
+                    {{ __('Add level') }}
+                </x-filament::button>
             </div>
 
-            <x-filament::button type="submit">
-                {{ __('Save') }}
-            </x-filament::button>
+            <div class="flex justify-end">
+                <x-filament::button type="submit">
+                    {{ __('Save') }}
+                </x-filament::button>
+            </div>
         </form>
     </x-filament::section>
 </x-filament-panels::page>

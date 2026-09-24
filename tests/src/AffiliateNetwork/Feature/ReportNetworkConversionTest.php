@@ -42,7 +42,7 @@ function postbackFixtures(string $domain, int $rateBp = 1500): array
 
     $link = AffiliateOfferLink::factory()
         ->forOffer($offer)
-        ->forAffiliate($affiliate)
+        ->forAffiliateId((string) $affiliate->getKey())
         ->create(['currency' => 'MYR']);
 
     return [$site, $offer, $affiliate, $link];

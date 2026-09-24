@@ -58,7 +58,7 @@ final class AffiliatePayoutResource extends Resource
 
     public static function canCreate(): bool
     {
-        return FilamentPermission::hasAnyAbility(['affiliate.payout', 'affiliates.payout.update']);
+        return FilamentPermission::hasAnyAbility(['affiliates.payout.create', 'affiliate.payout', 'affiliates.payout.update']);
     }
 
     public static function canEdit(Model $record): bool

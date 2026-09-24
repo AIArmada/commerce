@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferApplicationResource\Tables;
 
+use AIArmada\AffiliateNetwork\Contracts\AffiliateIdentityResolver;
 use AIArmada\AffiliateNetwork\Enums\ApplicationStatus;
+use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
+use AIArmada\AffiliateNetwork\Models\AffiliateSite;
 use AIArmada\AffiliateNetwork\Models\Concerns\ScopesByBelongsToOwner;
 use AIArmada\AffiliateNetwork\Services\OfferManagementService;
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Filament\Actions;
 use Filament\Forms\Components\Textarea;
@@ -83,6 +85,10 @@ final class AffiliateOfferApplicationsTable
                     ->color('success')
                     ->requiresConfirmation()
                     ->visible(fn (AffiliateOfferApplication $record): bool => $record->isPending())
+                    ->disabled(fn (AffiliateOfferApplication $record): bool => ! self::isOfferSiteVerified($record))
+                    ->tooltip(fn (AffiliateOfferApplication $record): ?string => self::isOfferSiteVerified($record)
+                        ? null
+                        : 'Verify the site before approving its applications.')
                     ->action(function (AffiliateOfferApplication $record): void {
                         self::withApplicationOwnerContext($record, fn (): AffiliateOfferApplication => app(OfferManagementService::class)->approveApplication(
                             $record,
@@ -179,7 +185,8 @@ final class AffiliateOfferApplicationsTable
      * The admin table lists applications cross-tenant (scope bypassed), but the
      * domain service re-queries under ScopesByBelongsToOwner. Entering the
      * affiliate's own context makes those re-queries match truthfully when
-     * affiliates.owner.enabled=true, instead of 404ing on cross-owner rows.
+     * owner scoping is on, instead of 404ing on cross-owner rows. Without an
+     * identity resolver the mutations run unscoped.
      *
      * @template TResult
      *
@@ -188,21 +195,21 @@ final class AffiliateOfferApplicationsTable
      */
     private static function withApplicationOwnerContext(AffiliateOfferApplication $record, callable $callback): mixed
     {
-        $affiliate = $record->getRelationValue('affiliate');
+        $affiliate = app(AffiliateIdentityResolver::class)->find((string) $record->affiliate_id);
 
-        if (! $affiliate instanceof Affiliate) {
-            $affiliate = OwnerContext::withOwner(null, fn (): Affiliate => Affiliate::query()
-                ->withoutOwnerScope()
-                ->whereKey($record->affiliate_id)
-                ->firstOrFail());
-        }
+        return OwnerContext::withOwner($affiliate?->owner(), $callback);
+    }
 
-        /** @var string|null $ownerType */
-        $ownerType = $affiliate->owner_type;
-        /** @var string|null $ownerId */
-        $ownerId = $affiliate->owner_id;
+    private static function isOfferSiteVerified(AffiliateOfferApplication $record): bool
+    {
+        // Verification is a network fact: resolve keys unscoped so ambient
+        // admin scope can never disable approval on a verified site.
+        $siteId = AffiliateOffer::query()
+            ->withoutGlobalScopes()
+            ->whereKey($record->offer_id)
+            ->value('site_id');
 
-        return OwnerContext::withOwner(OwnerContext::fromTypeAndId($ownerType, $ownerId), $callback);
+        return $siteId !== null && AffiliateSite::isVerifiedKey($siteId);
     }
 
     private static function getReviewerName(): ?string

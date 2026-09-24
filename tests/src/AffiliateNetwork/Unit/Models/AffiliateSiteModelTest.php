@@ -95,11 +95,11 @@ describe('AffiliateSite Model', function (): void {
             $creative = AffiliateOfferCreative::factory()->forOffer($offer)->create();
             $application = AffiliateOfferApplication::factory()
                 ->forOffer($offer)
-                ->forAffiliate($affiliate)
+                ->forAffiliateId((string) $affiliate->getKey())
                 ->create();
             $link = AffiliateOfferLink::factory()
                 ->forOffer($offer)
-                ->forAffiliate($affiliate)
+                ->forAffiliateId((string) $affiliate->getKey())
                 ->create();
 
             $site->delete();

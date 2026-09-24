@@ -35,7 +35,7 @@ describe('OfferLinkService', function (): void {
 
     describe('createLink', function (): void {
         test('creates link with default values', function (): void {
-            $link = $this->service->createLink($this->offer, $this->affiliate);
+            $link = $this->service->createLink($this->offer, (string) $this->affiliate->getKey());
 
             expect($link)->toBeInstanceOf(AffiliateOfferLink::class);
             expect($link->offer_id)->toBe($this->offer->id);
@@ -47,7 +47,7 @@ describe('OfferLinkService', function (): void {
         });
 
         test('creates link with custom target URL', function (): void {
-            $link = $this->service->createLink($this->offer, $this->affiliate, [
+            $link = $this->service->createLink($this->offer, (string) $this->affiliate->getKey(), [
                 'target_url' => 'https://custom.com/page',
             ]);
 
@@ -55,7 +55,7 @@ describe('OfferLinkService', function (): void {
         });
 
         test('creates link with sub IDs', function (): void {
-            $link = $this->service->createLink($this->offer, $this->affiliate, [
+            $link = $this->service->createLink($this->offer, (string) $this->affiliate->getKey(), [
                 'sub_id' => 'campaign1',
                 'sub_id_2' => 'source',
                 'sub_id_3' => 'creative',
@@ -67,7 +67,7 @@ describe('OfferLinkService', function (): void {
         });
 
         test('creates link with custom parameters', function (): void {
-            $link = $this->service->createLink($this->offer, $this->affiliate, [
+            $link = $this->service->createLink($this->offer, (string) $this->affiliate->getKey(), [
                 'custom_parameters' => 'utm_source=affiliate&utm_medium=banner',
             ]);
 
@@ -77,7 +77,7 @@ describe('OfferLinkService', function (): void {
         test('creates link with expiration', function (): void {
             $expiresAt = now()->addDays(30);
 
-            $link = $this->service->createLink($this->offer, $this->affiliate, [
+            $link = $this->service->createLink($this->offer, (string) $this->affiliate->getKey(), [
                 'expires_at' => $expiresAt,
             ]);
 
@@ -85,7 +85,7 @@ describe('OfferLinkService', function (): void {
         });
 
         test('creates link with metadata', function (): void {
-            $link = $this->service->createLink($this->offer, $this->affiliate, [
+            $link = $this->service->createLink($this->offer, (string) $this->affiliate->getKey(), [
                 'metadata' => ['campaign' => 'spring_sale'],
             ]);
 
@@ -95,7 +95,7 @@ describe('OfferLinkService', function (): void {
         test('falls back to site domain when no landing URL', function (): void {
             $this->offer->update(['landing_url' => null]);
 
-            $link = $this->service->createLink($this->offer, $this->affiliate);
+            $link = $this->service->createLink($this->offer, (string) $this->affiliate->getKey());
 
             expect($link->target_url)->toBe('https://example.com/');
         });
@@ -105,13 +105,13 @@ describe('OfferLinkService', function (): void {
                 'requires_approval' => false,
             ]);
 
-            $this->service->createLink($draft, $this->affiliate);
+            $this->service->createLink($draft, (string) $this->affiliate->getKey());
         })->throws(RuntimeException::class, 'active');
 
         test('refuses links without approval', function (): void {
             $this->offer->update(['requires_approval' => true]);
 
-            $this->service->createLink($this->offer, $this->affiliate);
+            $this->service->createLink($this->offer, (string) $this->affiliate->getKey());
         })->throws(RuntimeException::class, 'not approved');
 
         test('creates links for approved affiliates', function (): void {
@@ -119,17 +119,17 @@ describe('OfferLinkService', function (): void {
 
             AffiliateOfferApplication::factory()
                 ->forOffer($this->offer)
-                ->forAffiliate($this->affiliate)
+                ->forAffiliateId((string) $this->affiliate->getKey())
                 ->approved()
                 ->create();
 
-            $link = $this->service->createLink($this->offer, $this->affiliate);
+            $link = $this->service->createLink($this->offer, (string) $this->affiliate->getKey());
 
             expect($link->offer_id)->toBe($this->offer->id);
         });
 
         test('refuses non-http target urls', function (): void {
-            $this->service->createLink($this->offer, $this->affiliate, [
+            $this->service->createLink($this->offer, (string) $this->affiliate->getKey(), [
                 'target_url' => 'javascript:alert(1)',
             ]);
         })->throws(RuntimeException::class, 'http(s)');
@@ -137,7 +137,7 @@ describe('OfferLinkService', function (): void {
         test('stamps the offer currency on the link', function (): void {
             $this->offer->update(['currency' => 'EUR']);
 
-            $link = $this->service->createLink($this->offer, $this->affiliate);
+            $link = $this->service->createLink($this->offer, (string) $this->affiliate->getKey());
 
             expect($link->currency)->toBe('EUR');
         });
@@ -149,7 +149,7 @@ describe('OfferLinkService', function (): void {
 
             $link = AffiliateOfferLink::factory()
                 ->forOffer($this->offer)
-                ->forAffiliate($this->affiliate)
+                ->forAffiliateId((string) $this->affiliate->getKey())
                 ->create([
                     'code' => 'testcode123',
                     'target_url' => 'https://example.com/product',
@@ -166,7 +166,7 @@ describe('OfferLinkService', function (): void {
 
             $link = AffiliateOfferLink::factory()
                 ->forOffer($this->offer)
-                ->forAffiliate($this->affiliate)
+                ->forAffiliateId((string) $this->affiliate->getKey())
                 ->create([
                     'code' => 'testcode123',
                     'target_url' => 'https://example.com/product?existing=param',
@@ -180,7 +180,7 @@ describe('OfferLinkService', function (): void {
         test('includes sub IDs in direct link', function (): void {
             $link = AffiliateOfferLink::factory()
                 ->forOffer($this->offer)
-                ->forAffiliate($this->affiliate)
+                ->forAffiliateId((string) $this->affiliate->getKey())
                 ->withSubIds('campaign1', 'source', 'creative')
                 ->create([
                     'target_url' => 'https://example.com/product',
@@ -196,7 +196,7 @@ describe('OfferLinkService', function (): void {
         test('includes custom parameters in direct link', function (): void {
             $link = AffiliateOfferLink::factory()
                 ->forOffer($this->offer)
-                ->forAffiliate($this->affiliate)
+                ->forAffiliateId((string) $this->affiliate->getKey())
                 ->create([
                     'target_url' => 'https://example.com/product',
                     'custom_parameters' => 'utm_source=affiliate&utm_medium=banner',
@@ -216,7 +216,7 @@ describe('OfferLinkService', function (): void {
 
             $link = AffiliateOfferLink::factory()
                 ->forOffer($this->offer)
-                ->forAffiliate($this->affiliate)
+                ->forAffiliateId((string) $this->affiliate->getKey())
                 ->create(['code' => 'trackcode']);
 
             $url = $this->service->generateTrackingUrl($link);
@@ -232,7 +232,7 @@ describe('OfferLinkService', function (): void {
         test('resolves active link by code', function (): void {
             $link = AffiliateOfferLink::factory()
                 ->forOffer($this->offer)
-                ->forAffiliate($this->affiliate)
+                ->forAffiliateId((string) $this->affiliate->getKey())
                 ->active()
                 ->create(['code' => 'findme123']);
 
@@ -245,7 +245,7 @@ describe('OfferLinkService', function (): void {
         test('does not resolve inactive link', function (): void {
             AffiliateOfferLink::factory()
                 ->forOffer($this->offer)
-                ->forAffiliate($this->affiliate)
+                ->forAffiliateId((string) $this->affiliate->getKey())
                 ->inactive()
                 ->create(['code' => 'inactive123']);
 
@@ -263,14 +263,14 @@ describe('OfferLinkService', function (): void {
         test('eager loads relationships', function (): void {
             $link = AffiliateOfferLink::factory()
                 ->forOffer($this->offer)
-                ->forAffiliate($this->affiliate)
+                ->forAffiliateId((string) $this->affiliate->getKey())
                 ->forSite($this->site)
                 ->create(['code' => 'eager123']);
 
             $resolved = $this->service->resolveLink('eager123');
 
             expect($resolved->relationLoaded('offer'))->toBeTrue();
-            expect($resolved->relationLoaded('affiliate'))->toBeTrue();
+            expect($resolved->relationLoaded('affiliate'))->toBeFalse();
             expect($resolved->relationLoaded('site'))->toBeTrue();
         });
 
@@ -301,7 +301,7 @@ describe('OfferLinkService', function (): void {
 
             OwnerContext::withOwner($owner, fn () => AffiliateOfferLink::factory()
                 ->forOffer($offer)
-                ->forAffiliate($affiliate)
+                ->forAffiliateId((string) $affiliate->getKey())
                 ->forSite($site)
                 ->active()
                 ->create(['code' => 'owned-link-code']));
@@ -319,7 +319,7 @@ describe('OfferLinkService', function (): void {
         test('increments click count', function (): void {
             $link = AffiliateOfferLink::factory()
                 ->forOffer($this->offer)
-                ->forAffiliate($this->affiliate)
+                ->forAffiliateId((string) $this->affiliate->getKey())
                 ->withStats(10, 0, 0)
                 ->create();
 
@@ -331,7 +331,7 @@ describe('OfferLinkService', function (): void {
         test('increments from zero', function (): void {
             $link = AffiliateOfferLink::factory()
                 ->forOffer($this->offer)
-                ->forAffiliate($this->affiliate)
+                ->forAffiliateId((string) $this->affiliate->getKey())
                 ->create();
 
             $this->service->recordClick($link);
@@ -344,7 +344,7 @@ describe('OfferLinkService', function (): void {
         test('increments conversion and revenue', function (): void {
             $link = AffiliateOfferLink::factory()
                 ->forOffer($this->offer)
-                ->forAffiliate($this->affiliate)
+                ->forAffiliateId((string) $this->affiliate->getKey())
                 ->withStats(0, 5, 10000)
                 ->create();
 
@@ -358,7 +358,7 @@ describe('OfferLinkService', function (): void {
         test('records conversion without revenue', function (): void {
             $link = AffiliateOfferLink::factory()
                 ->forOffer($this->offer)
-                ->forAffiliate($this->affiliate)
+                ->forAffiliateId((string) $this->affiliate->getKey())
                 ->create();
 
             $this->service->recordConversion($link, 0);
@@ -371,7 +371,7 @@ describe('OfferLinkService', function (): void {
         test('aggregates revenue when currencies match', function (): void {
             $link = AffiliateOfferLink::factory()
                 ->forOffer($this->offer)
-                ->forAffiliate($this->affiliate)
+                ->forAffiliateId((string) $this->affiliate->getKey())
                 ->create();
 
             $this->service->recordConversion($link, 5000, $link->currency);
@@ -386,7 +386,7 @@ describe('OfferLinkService', function (): void {
 
             $link = AffiliateOfferLink::factory()
                 ->forOffer($this->offer)
-                ->forAffiliate($this->affiliate)
+                ->forAffiliateId((string) $this->affiliate->getKey())
                 ->create(['currency' => 'USD']);
 
             $this->service->recordConversion($link, 5000, 'MYR');
@@ -403,7 +403,7 @@ describe('OfferLinkService', function (): void {
         test('calculates stats correctly', function (): void {
             $link = AffiliateOfferLink::factory()
                 ->forOffer($this->offer)
-                ->forAffiliate($this->affiliate)
+                ->forAffiliateId((string) $this->affiliate->getKey())
                 ->withStats(1000, 50, 250000)
                 ->create();
 
@@ -419,7 +419,7 @@ describe('OfferLinkService', function (): void {
         test('handles zero clicks', function (): void {
             $link = AffiliateOfferLink::factory()
                 ->forOffer($this->offer)
-                ->forAffiliate($this->affiliate)
+                ->forAffiliateId((string) $this->affiliate->getKey())
                 ->create();
 
             $stats = $this->service->getStats($link);
@@ -431,7 +431,7 @@ describe('OfferLinkService', function (): void {
         test('handles high conversion rate', function (): void {
             $link = AffiliateOfferLink::factory()
                 ->forOffer($this->offer)
-                ->forAffiliate($this->affiliate)
+                ->forAffiliateId((string) $this->affiliate->getKey())
                 ->withStats(10, 8, 80000)
                 ->create();
 

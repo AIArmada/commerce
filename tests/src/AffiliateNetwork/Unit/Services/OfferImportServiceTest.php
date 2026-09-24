@@ -7,7 +7,7 @@ use AIArmada\AffiliateNetwork\Actions\UpdateOffer;
 use AIArmada\AffiliateNetwork\Enums\OfferStatus;
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
-use AIArmada\AffiliateNetwork\Services\Catalog\LocalProgramReader;
+use AIArmada\AffiliateNetwork\Services\Catalog\CatalogReaderResolver;
 use AIArmada\AffiliateNetwork\Services\Catalog\RemoteCatalogClient;
 use AIArmada\AffiliateNetwork\Services\OfferImportService;
 use AIArmada\Affiliates\Enums\CommissionRuleType;
@@ -190,8 +190,7 @@ describe('OfferImportService', function (): void {
         ]);
 
         $importer = new OfferImportService(
-            app(LocalProgramReader::class),
-            new RemoteCatalogClient(new PublicHttpUrlGuard(dnsResolver: fn (string $host): array => ['93.184.216.34'])),
+            new CatalogReaderResolver(new RemoteCatalogClient(new PublicHttpUrlGuard(dnsResolver: fn (string $host): array => ['93.184.216.34']))),
             app(CreateOffer::class),
             app(UpdateOffer::class),
         );
@@ -314,8 +313,7 @@ describe('OfferImportService', function (): void {
         ]);
 
         $importer = new OfferImportService(
-            app(LocalProgramReader::class),
-            new RemoteCatalogClient(new PublicHttpUrlGuard(dnsResolver: fn (string $host): array => ['93.184.216.34'])),
+            new CatalogReaderResolver(new RemoteCatalogClient(new PublicHttpUrlGuard(dnsResolver: fn (string $host): array => ['93.184.216.34']))),
             app(CreateOffer::class),
             app(UpdateOffer::class),
         );
@@ -364,8 +362,7 @@ describe('OfferImportService', function (): void {
         ]);
 
         $importer = new OfferImportService(
-            app(LocalProgramReader::class),
-            new RemoteCatalogClient(new PublicHttpUrlGuard(dnsResolver: fn (string $host): array => ['93.184.216.34'])),
+            new CatalogReaderResolver(new RemoteCatalogClient(new PublicHttpUrlGuard(dnsResolver: fn (string $host): array => ['93.184.216.34']))),
             app(CreateOffer::class),
             app(UpdateOffer::class),
         );
