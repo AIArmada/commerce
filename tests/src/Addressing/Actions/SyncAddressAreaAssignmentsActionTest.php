@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\ImportAddressAreasAction;
-use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
 use AIArmada\Addressing\Actions\SyncAddressAreaAssignmentsAction;
 use AIArmada\Addressing\Contracts\CountryAddressProfile;
 use AIArmada\Addressing\Data\AddressAreaData;
@@ -22,7 +21,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Validation\ValidationException;
 
 beforeEach(function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
+    $this->seedCountry('MY');
     $country = AddressCountry::query()->where('iso2', 'MY')->firstOrFail();
     $state = State::query()->create([
         'country_id' => $country->getKey(),

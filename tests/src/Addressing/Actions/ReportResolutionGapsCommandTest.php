@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\ImportAddressAreasAction;
 use AIArmada\Addressing\Actions\LogAddressResolutionGapAction;
-use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
 use AIArmada\Addressing\Contracts\AddressAreaSource;
 use AIArmada\Addressing\Contracts\CountryAddressAreaMetadataProvider;
 use AIArmada\Addressing\Contracts\CountryGeographyProvider;
@@ -65,7 +64,8 @@ final class GapReportFakeGeographyProvider implements CountryAddressAreaMetadata
 }
 
 beforeEach(function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
+    $this->seedCountry('MY');
+    $this->seedCountry('ID');
 
     $log = app(LogAddressResolutionGapAction::class);
     $log->execute('google-picker', 'MY', 'postal_locality', 'Kuala Lumpur');

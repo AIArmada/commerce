@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaRelationship;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -12,7 +11,7 @@ use AIArmada\Addressing\Support\AddressAreaStateBridge;
 use Illuminate\Support\Str;
 
 beforeEach(function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
+    $this->seedCountry('MY');
 });
 
 it('bridges a state to its level one area and back from a child area', function (): void {

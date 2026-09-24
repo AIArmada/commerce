@@ -28,16 +28,17 @@ it('formats rural Armenian addresses with the region below the postcode line', f
     expect($formatted)->toBe("Mashtots Street 1\n0601 Vedi\nArarat\nArmenia");
 });
 
-it('ships 81 municipalities/districts under regions with parent links', function (): void {
+it('ships 82 municipalities/districts under regions with parent links', function (): void {
     $areas = app(ArmeniaGeographyProvider::class)->addressAreaSource()->areas()->collect();
     $byId = $areas->keyBy->sourceId;
     $l2 = $areas->whereIn('type', ['municipality', 'district']);
 
-    expect($l2)->toHaveCount(81)
+    expect($l2)->toHaveCount(82)
         ->and($l2->pluck('parentSourceId')->every(fn ($p) => $byId->has($p)))->toBeTrue()
         ->and($byId->get('am:municipality:gyumri')->name)->toBe('Gyumri')
         ->and($byId->get('am:municipality:vanadzor')->name)->toBe('Vanadzor')
-        ->and($byId->get('am:district:kentron')->name)->toBe('Kentron');
+        ->and($byId->get('am:district:kentron')->name)->toBe('Kentron')
+        ->and($byId->get('am:municipality:khoy')->name)->toBe('Khoy');
 });
 
 it('labels regions Marz and municipalities Hamaynk', function (): void {

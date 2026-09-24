@@ -15,7 +15,7 @@ File location: `resources/data/countries.json`
 
 The bundled `MalaysiaGeographyProvider` supplies Malaysia's State/Federal Territory catalog, two explicit address hierarchies, the AddressArea hierarchy, and State↔AddressArea mappings. The primary administrative/land hierarchy is `region → district / division / jajahan → mukim / subdistrict / bandar / pekan`; the secondary postal/address hierarchy is `region → locality / precinct / kampung`. It is selected with `SeedCountryGeographiesAction::execute('MY')` after countries are seeded.
 
-The dataset contains **250 records** — these are ISO 3166-1 address entities, not 250 sovereign countries. Records include:
+The dataset contains **249 records** — these are ISO 3166-1 address entities, not 249 sovereign countries. Records include:
 
 - ISO2, ISO3, numeric codes
 - Names (common, native)
@@ -46,7 +46,7 @@ Without selecting a country provider, the following must be supplied by users th
 
 ## Bundled States and Cities
 
-`states.json` and `cities.json` are bundled from the same nnjeim/world source. Seed the global files first; country providers then complement those rows using stable country-scoped identities. The Malaysia provider updates matching states in place and adds Malaysia-specific rows not present in the global file, such as Putrajaya. It does not seed shared commerce-support reference data. The bundled area source contains no canonical city mapping data.
+`states.json` and `cities.json.gz` are bundled from the same nnjeim/world source. The city file ships gzipped; the seed readers prefer the `.gz` sidecar automatically. Seed the global files first; country providers then complement those rows using stable country-scoped identities. The Malaysia provider updates matching states in place and adds Malaysia-specific rows not present in the global file, such as Putrajaya. It does not seed shared commerce-support reference data. The bundled area source contains no canonical city mapping data.
 
 ## Malaysia area roles
 
@@ -1198,17 +1198,18 @@ correctly as distinct types).
 
 ## Spain
 
-The bundled `SpainGeographyProvider` supplies the 17 autonomous
-communities plus Ceuta and Melilla as `State` rows, with all 50
-provinces, and one administrative hierarchy: 19 communities/cities →
-50 provinces. It is selected with
+The bundled `SpainGeographyProvider` supplies 69 `State` rows — the 17 autonomous
+communities plus Ceuta and Melilla, and all 50 provinces — with one
+administrative hierarchy: 19 communities/cities → 50 provinces. It is
+selected with
 `SeedCountryGeographiesAction::execute('ES')` after countries are seeded.
 
 Community names use short English forms (`Extremadura`, `Asturias`,
 `Murcia`, `Madrid`) while provinces keep official local spellings
 (`A Coruña`, `Bizkaia`, `Gipuzkoa`, `Araba`, `Ourense`, `Illes
-Balears`). Only communities link to states; provinces are assignable
-through the `province` role with their community selected first.
+Balears`). Only the 19 communities link to level-1 areas; provinces are
+additionally assignable through the `province` role with their community
+selected first.
 
 Spanish addresses are formatted per the UPU layout: street lines,
 `{postcode} {locality}` with a 5-digit postcode, the province on its
@@ -1503,7 +1504,7 @@ plus the Autonomous City of Buenos Aires as `State` rows and a
 two-level administrative hierarchy. It is selected with
 `SeedCountryGeographiesAction::execute('AR')` after countries are seeded.
 
-The 377 departments, 135 Buenos Aires partidos and 15 CABA comunas ship as level-2 areas under their provinces.
+The 379 departments, 135 Buenos Aires partidos and 15 CABA comunas ship as level-2 areas under their provinces.
 
 Argentine addresses are formatted per the UPU layout: street lines,
 `{CPA} {locality}` with the `XNNNNLLL` postcode left of the locality,
@@ -1768,10 +1769,19 @@ lines, city, and country with no postcode line. Types are labelled
 ## Madagascar
 
 The bundled `MadagascarGeographyProvider` supplies the 6 provinces
-as `State` rows and a two-level administrative hierarchy. It is
+as `State` rows and a three-level administrative hierarchy. It is
 selected with `SeedCountryGeographiesAction::execute('MG')` after
 countries are seeded.
-The 24 regions ship as level-2 areas under their provinces.
+The 24 regions ship as level-2 areas under their provinces, and the
+114 districts ship as level-3 areas under their regions
+(INSTAT/Wikipedia list with French↔Malagasy name variants mapped).
+Ambatosoa is the 24th region, created by Law 2023-012 (29 June 2023)
+from the Maroantsetra and Mananara Avaratra districts of northern
+Analanjirofo; the bundled rows parent both districts under Ambatosoa.
+The bundled 114 districts treat Antananarivo-Renivohitra as a single
+district; sources that split it into its 6 arrondissement-districts
+report the official total of 119. Communes (1,695) and fokotany are
+not bundled.
 
 The regions have no ISO codes (ISO 3166-2:MG still lists the 6
 former faritany); the 6 remain postally relevant since the
@@ -1779,7 +1789,7 @@ postcode's first digit routes by old province.
 
 Malagasy addresses are formatted per the UPU layout: street lines,
 `{postcode} {town}` with a 3-digit postcode, and country. Types are
-labelled `Faritany` and `Faritra`.
+labelled `Faritany`, `Faritra`, and `Distrika`.
 
 ## Afghanistan
 
@@ -1937,7 +1947,7 @@ The bundled `ArmeniaGeographyProvider` supplies the 10 regions plus
 Yerevan as `State` rows and a two-level administrative hierarchy.
 It is selected with
 `SeedCountryGeographiesAction::execute('AM')` after countries are seeded.
-The 69 municipalities and 12 Yerevan districts ship as level-2 areas under their regions and city.
+The 70 municipalities and 12 Yerevan districts ship as level-2 areas under their regions and city.
 
 Armenian addresses are formatted per the UPU layout: street lines,
 `{postcode} {locality}` with a 4-digit postcode, the region on its
@@ -1952,8 +1962,10 @@ The bundled `AzerbaijanGeographyProvider` supplies the 66 districts
 Republic as `State` rows and a two-level administrative hierarchy.
 It is selected with
 `SeedCountryGeographiesAction::execute('AZ')` after countries are seeded.
-The first-level cities share the `district` assignment role;
-Nakhchivan keeps its own role.
+All 78 first-level rows seed as states under the state-kind `district`
+level; the 11 cities keep the `municipality` area type and Nakhchivan
+the `autonomous_republic` type. State-kind levels carry no assignment
+role — only `local_municipality` is assignable.
 
 The 685 local municipalities (bələdiyyə) ship as level-2 areas
 from the State Statistical Committee classification (4,455
@@ -1964,7 +1976,7 @@ district together (Şəki, Lənkəran, Yevlax), the eponymous
 municipality goes to the city and the rest to the district.
 Liberated-territory districts and Aghdara are absent from SSC
 and stay childless. Type and role are `local_municipality`
-(L1 cities already own `municipality`).
+(the `municipality` area type is already taken by L1 cities).
 
 The Lankaran, Shaki, and Yevlakh municipality/district pairs share
 names by design, as do Nakhchivan city and the Nakhchivan Autonomous

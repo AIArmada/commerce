@@ -29,9 +29,21 @@ it('ships 24 regions under provinces with parent links', function (): void {
         ->and($byId->get('mg:region:ambatosoa')->name)->toBe('Ambatosoa');
 });
 
-it('labels tiers Faritany and Faritra', function (): void {
+it('labels tiers Faritany, Faritra and Distrika', function (): void {
     $provider = app(MadagascarGeographyProvider::class);
 
-    expect($provider->areaTypeLabels())->toBe(['province' => 'Faritany', 'region' => 'Faritra'])
+    expect($provider->areaTypeLabels())->toBe(['province' => 'Faritany', 'region' => 'Faritra', 'district' => 'Distrika'])
         ->and($provider->stateAreaTypeLabels())->toBe([]);
+});
+
+it('ships 114 districts under regions with parent links', function (): void {
+    $areas = app(MadagascarGeographyProvider::class)->addressAreaSource()->areas()->collect();
+    $byId = $areas->keyBy->sourceId;
+    $l3 = $areas->where('type', 'district');
+
+    expect($l3)->toHaveCount(114)
+        ->and($l3->pluck('parentSourceId')->every(fn ($p) => $byId->has($p)))->toBeTrue()
+        ->and($byId->get('mg:district:antananarivo-renivohitra')->name)->toBe('Antananarivo-Renivohitra')
+        ->and($byId->get('mg:district:toamasina-i')->parentSourceId)->toBe('mg:region:atsinanana')
+        ->and($byId->get('mg:district:maroantsetra')->parentSourceId)->toBe('mg:region:ambatosoa');
 });

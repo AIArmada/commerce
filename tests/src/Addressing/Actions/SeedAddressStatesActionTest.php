@@ -2,12 +2,11 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
 use AIArmada\Addressing\Actions\SeedAddressStatesAction;
 use AIArmada\Addressing\Models\State;
 
 beforeEach(function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
+    $this->seedCountry('US');
     $this->action = app(SeedAddressStatesAction::class);
 });
 

@@ -3,13 +3,12 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\NormalizeAddressDataAction;
-use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\City;
 use AIArmada\Addressing\Models\State;
 
 beforeEach(function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
+    $this->seedCountry('US');
 
     $country = AddressCountry::query()->where('iso2', 'US')->firstOrFail();
     $state = State::query()->create([

@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\CreateAddressSnapshotAction;
-use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
 use AIArmada\Addressing\Models\Address;
 use AIArmada\Addressing\Models\Addressable;
 use AIArmada\Addressing\Traits\HasAddresses;
@@ -11,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Event;
 
 beforeEach(function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
+    $this->seedCountry('MY');
 });
 
 it('generates formatted output on create when none is supplied', function (): void {

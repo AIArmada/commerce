@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\FormatAddressAction;
-use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
 use AIArmada\Addressing\Data\AddressData;
 
 it('formats Malaysian addresses using the country formatter', function (): void {
@@ -137,8 +136,37 @@ it('falls back to the generic formatter for countries without a formatter', func
     ]));
 });
 
+it('keeps zero street lines on the country formatter path', function (): void {
+    $address = AddressData::from([
+        'line1' => '0',
+        'city' => 'Córdoba',
+        'countryCode' => 'AR',
+    ]);
+
+    expect(app(FormatAddressAction::class)->format($address))->toBe(implode("\n", [
+        '0',
+        'Córdoba',
+        'Argentina',
+    ]));
+});
+
+it('keeps zero street and city lines on the generic path', function (): void {
+    $address = AddressData::from([
+        'line1' => '0',
+        'city' => '0',
+        'postcode' => '00120',
+        'countryCode' => 'VA',
+    ]);
+
+    expect(app(FormatAddressAction::class)->format($address))->toBe(implode("\n", [
+        '0',
+        '00120 0',
+        'VA',
+    ]));
+});
+
 it('prints the seeded country name for provider-less countries like Macao', function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
+    $this->seedCountry('MO');
 
     $address = AddressData::from([
         'line1' => 'Avenida da Praia Grande 762',

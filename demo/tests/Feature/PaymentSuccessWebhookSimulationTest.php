@@ -8,8 +8,8 @@ use AIArmada\Chip\Models\Payment as ChipPayment;
 use AIArmada\Chip\Models\Purchase as ChipPurchase;
 use AIArmada\Chip\Testing\WebhookSimulator;
 use AIArmada\Jnt\Models\JntOrder;
+use AIArmada\Orders\Actions\CreateOrder;
 use AIArmada\Orders\Models\Order;
-use AIArmada\Orders\Models\OrderAddress;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 
@@ -43,9 +43,7 @@ test('payment success simulates CHIP webhook without morph map violations', func
             $order->save();
         }
 
-        OrderAddress::create([
-            'order_id' => $order->id,
-            'type' => 'shipping',
+        app(CreateOrder::class)->addAddress($order, [
             'first_name' => 'Demo',
             'last_name' => 'Buyer',
             'line1' => '1 Jalan Demo',
@@ -55,7 +53,7 @@ test('payment success simulates CHIP webhook without morph map violations', func
             'postcode' => '50000',
             'country' => 'MY',
             'email' => 'demo-buyer@example.com',
-        ]);
+        ], 'shipping');
 
         return $order;
     });
@@ -105,9 +103,7 @@ test('payment success replays a real CHIP purchase into local storage before ren
             $order->save();
         }
 
-        OrderAddress::create([
-            'order_id' => $order->id,
-            'type' => 'shipping',
+        app(CreateOrder::class)->addAddress($order, [
             'first_name' => 'Demo',
             'last_name' => 'Buyer',
             'line1' => '1 Jalan Demo',
@@ -117,7 +113,7 @@ test('payment success replays a real CHIP purchase into local storage before ren
             'postcode' => '50000',
             'country' => 'MY',
             'email' => 'demo-buyer@example.com',
-        ]);
+        ], 'shipping');
 
         return $order;
     });

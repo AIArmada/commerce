@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\ResolveSingaporePostalCodesAction;
-use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressCountry;
@@ -69,7 +68,7 @@ it('serves cached postcodes without calling OneMap', function (): void {
 });
 
 it('imports missing postcodes from OneMap and links their sector', function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
+    $this->seedCountry('SG');
     app(SeedCountryGeographiesAction::class)->execute('SG');
     fakeOneMap(['569933' => [oneMapResult('569933')]]);
 
@@ -96,7 +95,7 @@ it('reports malformed postcodes as invalid without calling OneMap', function ():
 });
 
 it('reports postcodes OneMap does not know as invalid', function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
+    $this->seedCountry('SG');
     app(SeedCountryGeographiesAction::class)->execute('SG');
     fakeOneMap([]);
 
@@ -108,7 +107,7 @@ it('reports postcodes OneMap does not know as invalid', function (): void {
 });
 
 it('fails fast when the sector tree is not seeded', function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
+    $this->seedCountry('SG');
 
     $country = AddressCountry::query()->where('iso2', 'SG')->firstOrFail();
 

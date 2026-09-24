@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
 use AIArmada\Addressing\Contracts\AddressAreaSource;
 use AIArmada\Addressing\Contracts\CountryAddressAreaMetadataProvider;
@@ -66,7 +65,7 @@ final class GapReseedFakeGeographyProvider implements CountryAddressAreaMetadata
 }
 
 it('preserves manual gap-match aliases across geography reseeds', function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
+    $this->seedCountry('MY');
     config()->set('addressing.geography.providers', [GapReseedFakeGeographyProvider::class]);
 
     app(SeedCountryGeographiesAction::class)->execute('MY');

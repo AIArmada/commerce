@@ -1253,7 +1253,6 @@ abstract class TestCase extends Orchestra
         Schema::dropIfExists('order_notes');
         Schema::dropIfExists('order_refunds');
         Schema::dropIfExists('order_payments');
-        Schema::dropIfExists('order_addresses');
         Schema::dropIfExists('order_items');
         Schema::dropIfExists('orders');
 

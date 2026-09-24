@@ -9,6 +9,7 @@ if (! class_exists('Facades\\Livewire\\Features\\SupportFileUploads\\GenerateSig
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Authz\Models\Role;
 use AIArmada\Cart\Conditions\ConditionTarget;
+use AIArmada\Commerce\Tests\Addressing\AddressingDatabaseTestCase;
 use AIArmada\Commerce\Tests\Addressing\AddressingGeographyTestCase;
 use AIArmada\Commerce\Tests\Feedback\FeedbackTestCase;
 use AIArmada\Commerce\Tests\FilamentAuthz\FilamentAuthzTestCase;
@@ -53,17 +54,11 @@ pest()->extend(TestCase::class)->in(
     'src/FilamentTicketing',
     'src/FilamentSeating',
     'src/Seating',
-    'src/Addressing/Actions',
-    'src/Addressing/Casts',
-    'src/Addressing/Data',
-    'src/Addressing/Database',
-    'src/Addressing/Models',
-    'src/Addressing/Support',
-    'src/Addressing/Traits',
     // NOTE: 'src/Addressing' is bound per-subdir (not blanket) so that
-    // 'src/Addressing/Geography' can use the slim AddressingGeographyTestCase
-    // below. New subdirs under src/Addressing MUST be added here.
-    'src/Addressing/*.php',
+    // most of it can use the slim addressing cases below. Only
+    // AddressOwnerGuardTest stays here: it boots the events package.
+    // New subdirs under src/Addressing MUST be added to the slim binding.
+    'src/Addressing/AddressOwnerGuardTest.php',
     'src/Authz',
     'src/FilamentAddressing',
     'src/Cart',
@@ -123,6 +118,17 @@ pest()->extend(FilamentAuthzTestCase::class)->in('src/FilamentAuthzScoped');
 pest()->extend(FeedbackTestCase::class)->in('src/Feedback');
 
 pest()->extend(AddressingGeographyTestCase::class)->in('src/Addressing/Geography');
+
+pest()->extend(AddressingDatabaseTestCase::class)->in(
+    'src/Addressing/Actions',
+    'src/Addressing/Casts',
+    'src/Addressing/Data',
+    'src/Addressing/Models',
+    'src/Addressing/Support',
+    'src/Addressing/Traits',
+    'src/Addressing/AddressAreaSearchTest.php',
+    'src/Addressing/OwnerScopingTest.php',
+);
 
 // CashierChip tests use their own CashierChipTestCase via uses() in each test file
 // Cashier (unified) tests use their own CashierTestCase via uses() in each test file

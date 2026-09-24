@@ -3,11 +3,13 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SearchAddressAreasAction;
+use AIArmada\Addressing\Geography\Argentina\ArgentinaGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaName;
 use AIArmada\Addressing\Models\AddressAreaRelationship;
 use AIArmada\Addressing\Models\AddressAreaRole;
 use AIArmada\Addressing\Models\AddressCountry;
+use AIArmada\Addressing\Models\PostalCode;
 
 beforeEach(function (): void {
     $country = AddressCountry::query()->create(['iso2' => 'MY', 'name' => 'Malaysia']);
@@ -229,4 +231,59 @@ it('finds a cross-boundary area under either administrative parent', function ()
 
     expect($underFirst->pluck('name')->all())->toContain('Split Mukim')
         ->and($underSecond->pluck('name')->all())->toContain('Split Mukim');
+});
+
+it('resolves full Argentine CPA codes through their base code', function (): void {
+    config()->set('addressing.geography.providers', [ArgentinaGeographyProvider::class]);
+
+    $country = AddressCountry::query()->create(['iso2' => 'AR', 'name' => 'Argentina']);
+
+    $comuna = AddressArea::query()->create([
+        'country_id' => $country->id,
+        'country_code' => 'AR',
+        'type' => 'commune',
+        'level' => 2,
+        'name' => 'Comuna 10',
+        'slug' => 'comuna-10',
+        'source' => 'test-fixture',
+        'source_id' => 'fixture:comuna-10',
+        'is_active' => true,
+    ]);
+    $caba = PostalCode::query()->create(['country_code' => 'AR', 'code' => 'C1406', 'is_active' => true]);
+    $comuna->postalCodes()->attach($caba->getKey(), [
+        'source' => 'test-fixture',
+        'source_id' => 'C1406:fixture',
+        'relationship_type' => 'served_by',
+        'is_primary' => true,
+    ]);
+
+    $department = AddressArea::query()->create([
+        'country_id' => $country->id,
+        'country_code' => 'AR',
+        'type' => 'department',
+        'level' => 2,
+        'name' => 'Rosario',
+        'slug' => 'rosario',
+        'source' => 'test-fixture',
+        'source_id' => 'fixture:rosario',
+        'is_active' => true,
+    ]);
+    $interior = PostalCode::query()->create(['country_code' => 'AR', 'code' => '4419', 'is_active' => true]);
+    $department->postalCodes()->attach($interior->getKey(), [
+        'source' => 'test-fixture',
+        'source_id' => '4419:fixture',
+        'relationship_type' => 'served_by',
+        'is_primary' => true,
+    ]);
+
+    $action = app(SearchAddressAreasAction::class);
+
+    expect($action->execute(query: 'Comuna 10', countryCode: 'AR', postalCode: 'C1406DOB')->pluck('name')->all())
+        ->toContain('Comuna 10')
+        ->and($action->execute(query: 'Rosario', countryCode: 'AR', postalCode: 'N4419ABC')->pluck('name')->all())
+        ->toContain('Rosario')
+        ->and($action->execute(query: 'Comuna 10', countryCode: 'AR', postalCode: 'c1406dob')->pluck('name')->all())
+        ->toContain('Comuna 10')
+        ->and($action->execute(query: 'Comuna 10', countryCode: 'AR', postalCode: 'C1406')->pluck('name')->all())
+        ->toContain('Comuna 10');
 });

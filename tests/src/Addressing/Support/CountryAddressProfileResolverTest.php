@@ -10,7 +10,7 @@ use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Support\CountryAddressProfileResolver;
 
 beforeEach(function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
+    $this->seedCountry('MY');
 });
 
 it('resolves a normal role to its hierarchy and level', function (): void {
@@ -57,6 +57,8 @@ it('returns null for unknown countries', function (): void {
 });
 
 it('resolves every provider area role with area kind and no other', function (): void {
+    app(SeedAddressCountriesAction::class)->execute();
+
     $resolver = app(CountryAddressProfileResolver::class);
     $checked = 0;
 
@@ -90,6 +92,8 @@ it('resolves every provider area role with area kind and no other', function ():
 });
 
 it('resolves state_id to a state level only where providers define one', function (): void {
+    app(SeedAddressCountriesAction::class)->execute();
+
     $resolver = app(CountryAddressProfileResolver::class);
 
     foreach (config('addressing.geography.providers', []) as $providerClass) {

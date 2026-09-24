@@ -5,7 +5,6 @@ declare(strict_types=1);
 use AIArmada\Orders\Enums\PaymentStatus;
 use AIArmada\Orders\Enums\RefundStatus;
 use AIArmada\Orders\Models\Order;
-use AIArmada\Orders\Models\OrderAddress;
 use AIArmada\Orders\Models\OrderItem;
 use AIArmada\Orders\Models\OrderNote;
 use AIArmada\Orders\Models\OrderPayment;
@@ -71,11 +70,5 @@ it('still requires an order id when scoping is off', function (): void {
     expect(fn (): OrderNote => OrderNote::create([
         'order_id' => null,
         'content' => 'note without an order',
-    ]))->toThrow(InvalidArgumentException::class, 'order_id is required');
-
-    expect(fn (): OrderAddress => OrderAddress::create([
-        'order_id' => null,
-        'type' => 'billing',
-        'country_code' => 'MY',
     ]))->toThrow(InvalidArgumentException::class, 'order_id is required');
 });

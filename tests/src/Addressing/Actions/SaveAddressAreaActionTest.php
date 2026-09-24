@@ -3,14 +3,13 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SaveAddressAreaAction;
-use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaRelationship;
 use AIArmada\Addressing\Models\AddressCountry;
 use Illuminate\Validation\ValidationException;
 
 beforeEach(function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
+    $this->seedCountry('MY');
     $this->action = app(SaveAddressAreaAction::class);
 });
 

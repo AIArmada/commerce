@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\ImportAddressAreasAction;
-use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
 use AIArmada\Addressing\Data\AddressAreaData;
 use AIArmada\Addressing\Support\ArrayAddressAreaSource;
 use AIArmada\Addressing\Support\ConsoleSeedProgress;
@@ -12,7 +11,7 @@ use Symfony\Component\Console\Output\BufferedOutput;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 beforeEach(function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
+    $this->seedCountry('MY');
 });
 
 it('reports import progress per row with totals', function (): void {

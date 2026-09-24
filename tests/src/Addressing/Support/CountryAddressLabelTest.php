@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaRelationship;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -12,7 +11,8 @@ use AIArmada\Addressing\Support\CountryAddressProfileResolver;
 use Illuminate\Support\Str;
 
 beforeEach(function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
+    $this->seedCountry('MY');
+    $this->seedCountry('ID');
 
     $country = AddressCountry::query()->where('iso2', 'MY')->firstOrFail();
 

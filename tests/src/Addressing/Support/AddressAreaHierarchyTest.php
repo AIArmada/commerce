@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\ImportAddressAreasAction;
-use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
 use AIArmada\Addressing\Data\AddressAreaData;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressCountry;
@@ -11,7 +10,7 @@ use AIArmada\Addressing\Support\AddressAreaHierarchy;
 use AIArmada\Addressing\Support\ArrayAddressAreaSource;
 
 beforeEach(function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
+    $this->seedCountry('MY');
     $this->action = app(ImportAddressAreasAction::class);
 });
 

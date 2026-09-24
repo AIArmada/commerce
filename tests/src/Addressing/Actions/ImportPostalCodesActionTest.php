@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\ImportAddressAreasAction;
 use AIArmada\Addressing\Actions\ImportPostalCodesAction;
-use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
 use AIArmada\Addressing\Data\AddressAreaData;
 use AIArmada\Addressing\Data\PostalCodeData;
 use AIArmada\Addressing\Models\AddressArea;
@@ -13,7 +12,8 @@ use AIArmada\Addressing\Support\ArrayAddressAreaSource;
 use AIArmada\Addressing\Support\ArrayPostalCodeSource;
 
 beforeEach(function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
+    $this->seedCountry('MY');
+    $this->seedCountry('SG');
 });
 
 it('imports postcode coverage and preserves source metadata', function (): void {

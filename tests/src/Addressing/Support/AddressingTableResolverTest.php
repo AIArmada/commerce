@@ -21,7 +21,6 @@ it('uses the canonical configured table names for runtime models and every addre
         'country_currency_links' => 'addressing_custom_country_currency_links',
         'country_timezone_links' => 'addressing_custom_country_timezone_links',
         'area_state_links' => 'addressing_custom_area_state_links',
-        'area_city_links' => 'addressing_custom_area_city_links',
         'area_names' => 'addressing_custom_area_names',
         'area_roles' => 'addressing_custom_area_roles',
         'area_relationships' => 'addressing_custom_area_relationships',

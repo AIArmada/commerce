@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use AIArmada\Orders\Actions\CreateOrder;
 use AIArmada\Orders\Models\Order;
-use AIArmada\Orders\Models\OrderAddress;
 use AIArmada\Orders\Models\OrderItem;
 use AIArmada\Orders\States\Canceled;
 use AIArmada\Orders\States\Delivered;
@@ -94,17 +94,8 @@ final class OrderSeeder extends Seeder
                 'canceled_at' => $status === Canceled::class ? fake()->dateTimeBetween('-5 days', 'now') : null,
             ]);
 
-            OrderAddress::create([
-                ...$address,
-                'order_id' => $order->id,
-                'type' => 'billing',
-            ]);
-
-            OrderAddress::create([
-                ...$address,
-                'order_id' => $order->id,
-                'type' => 'shipping',
-            ]);
+            app(CreateOrder::class)->addAddress($order, $address, 'billing');
+            app(CreateOrder::class)->addAddress($order, $address, 'shipping');
 
             foreach ($items as $itemData) {
                 OrderItem::create([
