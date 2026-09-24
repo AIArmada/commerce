@@ -142,7 +142,7 @@ describe('offer catalog operations', function (): void {
             'currency' => 'USD',
         ]);
 
-        $link = AffiliateOfferLink::factory()->forOffer($offer)->forAffiliate($affiliate)->create();
+        $link = AffiliateOfferLink::factory()->forOffer($offer)->forAffiliateId((string) $affiliate->getKey())->create();
 
         $manager = new LinksRelationManager;
         $table = $manager->table(Table::make(new CatalogOperationsHostComponent));

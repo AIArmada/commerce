@@ -28,7 +28,7 @@ describe('AffiliateOfferApplication Model', function (): void {
         test('can create application', function (): void {
             $application = AffiliateOfferApplication::factory()
                 ->forOffer($this->offer)
-                ->forAffiliate($this->affiliate)
+                ->forAffiliateId((string) $this->affiliate->getKey())
                 ->create();
 
             expect($application->id)->not->toBeEmpty();
@@ -39,7 +39,7 @@ describe('AffiliateOfferApplication Model', function (): void {
         test('uses uuid primary key', function (): void {
             $application = AffiliateOfferApplication::factory()
                 ->forOffer($this->offer)
-                ->forAffiliate($this->affiliate)
+                ->forAffiliateId((string) $this->affiliate->getKey())
                 ->create();
 
             expect($application->id)->toMatch('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/');
@@ -51,7 +51,7 @@ describe('AffiliateOfferApplication Model', function (): void {
         test('isPending returns true for pending status', function (): void {
             $application = AffiliateOfferApplication::factory()
                 ->forOffer($this->offer)
-                ->forAffiliate($this->affiliate)
+                ->forAffiliateId((string) $this->affiliate->getKey())
                 ->pending()
                 ->create();
 
@@ -61,7 +61,7 @@ describe('AffiliateOfferApplication Model', function (): void {
         test('isPending returns false for approved status', function (): void {
             $application = AffiliateOfferApplication::factory()
                 ->forOffer($this->offer)
-                ->forAffiliate($this->affiliate)
+                ->forAffiliateId((string) $this->affiliate->getKey())
                 ->approved()
                 ->create();
 
@@ -71,7 +71,7 @@ describe('AffiliateOfferApplication Model', function (): void {
         test('isApproved returns true for approved status', function (): void {
             $application = AffiliateOfferApplication::factory()
                 ->forOffer($this->offer)
-                ->forAffiliate($this->affiliate)
+                ->forAffiliateId((string) $this->affiliate->getKey())
                 ->approved()
                 ->create();
 
@@ -81,7 +81,7 @@ describe('AffiliateOfferApplication Model', function (): void {
         test('isApproved returns false for rejected status', function (): void {
             $application = AffiliateOfferApplication::factory()
                 ->forOffer($this->offer)
-                ->forAffiliate($this->affiliate)
+                ->forAffiliateId((string) $this->affiliate->getKey())
                 ->rejected()
                 ->create();
 
@@ -93,7 +93,7 @@ describe('AffiliateOfferApplication Model', function (): void {
         test('belongs to offer', function (): void {
             $application = AffiliateOfferApplication::factory()
                 ->forOffer($this->offer)
-                ->forAffiliate($this->affiliate)
+                ->forAffiliateId((string) $this->affiliate->getKey())
                 ->create();
 
             expect($application->offer)->toBeInstanceOf(AffiliateOffer::class);
@@ -103,7 +103,7 @@ describe('AffiliateOfferApplication Model', function (): void {
         test('belongs to affiliate', function (): void {
             $application = AffiliateOfferApplication::factory()
                 ->forOffer($this->offer)
-                ->forAffiliate($this->affiliate)
+                ->forAffiliateId((string) $this->affiliate->getKey())
                 ->create();
 
             expect($application->affiliate)->toBeInstanceOf(Affiliate::class);
@@ -115,7 +115,7 @@ describe('AffiliateOfferApplication Model', function (): void {
         test('reviewed_at is immutable datetime', function (): void {
             $application = AffiliateOfferApplication::factory()
                 ->forOffer($this->offer)
-                ->forAffiliate($this->affiliate)
+                ->forAffiliateId((string) $this->affiliate->getKey())
                 ->approved()
                 ->create();
 
@@ -125,7 +125,7 @@ describe('AffiliateOfferApplication Model', function (): void {
         test('metadata is array', function (): void {
             $application = AffiliateOfferApplication::factory()
                 ->forOffer($this->offer)
-                ->forAffiliate($this->affiliate)
+                ->forAffiliateId((string) $this->affiliate->getKey())
                 ->create([
                     'metadata' => ['source' => 'dashboard'],
                 ]);
@@ -156,7 +156,7 @@ describe('AffiliateOfferApplication Model', function (): void {
 
             OwnerContext::withOwner(null, fn () => AffiliateOfferApplication::factory()
                 ->forOffer($offer)
-                ->forAffiliate($affiliate)
+                ->forAffiliateId((string) $affiliate->getKey())
                 ->pending()
                 ->create());
         })->throws(RuntimeException::class, 'inaccessible or missing owner relation');
@@ -191,13 +191,13 @@ describe('AffiliateOfferApplication Model', function (): void {
 
             OwnerContext::withOwner($owner, fn () => AffiliateOfferApplication::factory()
                 ->forOffer($offer)
-                ->forAffiliate($affiliate)
+                ->forAffiliateId((string) $affiliate->getKey())
                 ->pending()
                 ->create());
 
             $globalApplication = OwnerContext::withOwner(null, fn () => AffiliateOfferApplication::factory()
                 ->forOffer($offer)
-                ->forAffiliate($globalAffiliate)
+                ->forAffiliateId((string) $globalAffiliate->getKey())
                 ->pending()
                 ->create());
 

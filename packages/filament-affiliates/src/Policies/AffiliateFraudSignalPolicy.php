@@ -11,12 +11,16 @@ class AffiliateFraudSignalPolicy
 {
     public function viewAny(Authorizable $user): bool
     {
-        return $user->can('affiliates.fraud.view-any') || $user->can('affiliate.viewAny');
+        return $user->can('affiliates.fraud.view-any')
+            || $user->can('affiliate.viewAny')
+            || $user->can('affiliate.approve');
     }
 
     public function view(Authorizable $user, AffiliateFraudSignal $signal): bool
     {
-        return $user->can('affiliates.fraud.view') || $user->can('affiliate.view');
+        return $user->can('affiliates.fraud.view')
+            || $user->can('affiliate.view')
+            || $user->can('affiliate.approve');
     }
 
     public function create(Authorizable $user): bool

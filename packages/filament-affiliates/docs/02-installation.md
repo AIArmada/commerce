@@ -73,7 +73,11 @@ The package ships an optional dedicated panel provider:
 
 - `AIArmada\FilamentAffiliates\AffiliatePanelProvider`
 
-Register that provider in your app's provider list.
+Register that provider in your app's provider list, then publish the portal stylesheet (without this step portal pages render unstyled):
+
+```bash
+php artisan filament:assets
+```
 
 ### Configure portal
 

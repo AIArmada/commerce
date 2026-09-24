@@ -37,7 +37,7 @@ describe('TrackNetworkLinkCookie middleware', function (): void {
 
         $link = AffiliateOfferLink::factory()
             ->forOffer($this->offer)
-            ->forAffiliate($this->affiliate)
+            ->forAffiliateId((string) $this->affiliate->getKey())
             ->create([
                 'code' => 'cookie-link',
                 'target_url' => 'https://cookie.example/offers/test',

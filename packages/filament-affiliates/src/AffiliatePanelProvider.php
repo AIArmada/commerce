@@ -28,6 +28,7 @@ use Illuminate\Session\Middleware\AuthenticateSession;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Throwable;
 
 /**
  * Affiliate Portal Panel Provider for affiliate self-service portal.
@@ -69,10 +70,7 @@ class AffiliatePanelProvider extends PanelProvider
             ->colors([
                 'primary' => $config['primary_color'],
             ])
-            ->assets([
-                Css::make('affiliate-portal', __DIR__ . '/../resources/css/affiliate-portal.css'),
-                Css::make('app-styles', Vite::asset('resources/css/app.css')),
-            ], 'aiarmada/filament-affiliates')
+            ->assets($this->getAssets(), 'aiarmada/filament-affiliates')
             ->pages($this->getPages())
             ->middleware($this->getMiddleware())
             ->authMiddleware($this->getAuthMiddleware());
@@ -130,6 +128,37 @@ class AffiliatePanelProvider extends PanelProvider
         }
 
         return $this->portalConfig;
+    }
+
+    /**
+     * Portal stylesheets. The host app stylesheet requires a Vite build
+     * (or dev server); without one Vite::asset() throws during panel boot,
+     * so it is only registered when a build is actually available.
+     *
+     * @return array<int, Css>
+     */
+    protected function getAssets(): array
+    {
+        $assets = [
+            Css::make('affiliate-portal', __DIR__ . '/../resources/css/affiliate-portal.css'),
+        ];
+
+        if ($this->viteBuildAvailable()) {
+            $assets[] = Css::make('app-styles', Vite::asset('resources/css/app.css'));
+        }
+
+        return $assets;
+    }
+
+    protected function viteBuildAvailable(): bool
+    {
+        try {
+            $public = public_path();
+        } catch (Throwable) {
+            return false;
+        }
+
+        return is_file($public . '/hot') || is_file($public . '/build/manifest.json');
     }
 
     /**

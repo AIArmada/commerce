@@ -30,7 +30,7 @@ beforeEach(function (): void {
     ]);
     $this->link = AffiliateOfferLink::factory()
         ->forOffer($this->offer)
-        ->forAffiliate($this->affiliate)
+        ->forAffiliateId((string) $this->affiliate->getKey())
         ->create(['currency' => 'USD']);
 });
 

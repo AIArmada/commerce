@@ -11,17 +11,23 @@ class AffiliatePayoutPolicy
 {
     public function viewAny(Authorizable $user): bool
     {
-        return $user->can('affiliates.payout.view-any') || $user->can('affiliate.viewAny');
+        return $user->can('affiliates.payout.view-any')
+            || $user->can('affiliate.viewAny')
+            || $user->can('affiliate.payout')
+            || $user->can('affiliates.payout.update');
     }
 
     public function view(Authorizable $user, AffiliatePayout $payout): bool
     {
-        return $user->can('affiliates.payout.view') || $user->can('affiliate.view');
+        return $user->can('affiliates.payout.view')
+            || $user->can('affiliate.view')
+            || $user->can('affiliate.payout')
+            || $user->can('affiliates.payout.update');
     }
 
     public function create(Authorizable $user): bool
     {
-        return $user->can('affiliates.payout.create');
+        return $user->can('affiliates.payout.create') || $user->can('affiliate.payout');
     }
 
     public function update(Authorizable $user, AffiliatePayout $payout): bool

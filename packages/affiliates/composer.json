@@ -14,6 +14,7 @@
     "spatie/laravel-settings": "^3.9.0"
   },
   "suggest": {
+    "aiarmada/affiliate-network": "Binds the network seam adapters (identity, ledger, programs, local catalog).",
     "aiarmada/cart": "Enables cart level attribution helpers and conversion tracking",
     "aiarmada/orders": "Optional integration",
     "aiarmada/vouchers": "Auto associates affiliate codes with voucher campaigns"

@@ -74,21 +74,40 @@ final class AffiliateSitesTable
                     ->requiresConfirmation()
                     ->visible(fn (AffiliateSite $record): bool => $record->isPending())
                     ->action(function (AffiliateSite $record): void {
-                        // Admin table action: run inside the site's own owner context so the
-                        // re-fetch matches under owner scoping and the HasOwner saving guard
-                        // accepts the write (explicit-global would 404/deny owned sites).
-                        $owner = OwnerContext::fromTypeAndId($record->owner_type, $record->owner_id);
-
-                        OwnerContext::withOwner($owner, function () use ($record): void {
-                            $scopedRecord = AffiliateSite::query()
-                                ->whereKey($record->getKey())
-                                ->firstOrFail();
-
-                            $scopedRecord->update([
-                                'status' => AffiliateSite::STATUS_VERIFIED,
-                                'verified_at' => CarbonImmutable::now(),
-                            ]);
-                        });
+                        self::transitionSite($record, [
+                            'status' => AffiliateSite::STATUS_VERIFIED,
+                            'verified_at' => CarbonImmutable::now(),
+                        ]);
+                    }),
+                Actions\Action::make('reject')
+                    ->icon('heroicon-o-x-mark')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->visible(fn (AffiliateSite $record): bool => $record->isPending())
+                    ->action(function (AffiliateSite $record): void {
+                        self::transitionSite($record, [
+                            'status' => AffiliateSite::STATUS_REJECTED,
+                        ]);
+                    }),
+                Actions\Action::make('suspend')
+                    ->icon('heroicon-o-pause')
+                    ->color('warning')
+                    ->requiresConfirmation()
+                    ->visible(fn (AffiliateSite $record): bool => $record->isVerified())
+                    ->action(function (AffiliateSite $record): void {
+                        self::transitionSite($record, [
+                            'status' => AffiliateSite::STATUS_SUSPENDED,
+                        ]);
+                    }),
+                Actions\Action::make('reinstate')
+                    ->icon('heroicon-o-play')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->visible(fn (AffiliateSite $record): bool => $record->isSuspended())
+                    ->action(function (AffiliateSite $record): void {
+                        self::transitionSite($record, [
+                            'status' => AffiliateSite::STATUS_VERIFIED,
+                        ]);
                     }),
             ])
             ->bulkActions([
@@ -96,5 +115,23 @@ final class AffiliateSitesTable
                     Actions\DeleteBulkAction::make(),
                 ]),
             ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    private static function transitionSite(AffiliateSite $record, array $attributes): void
+    {
+        // Admin table action: run inside the site's own owner context so the
+        // re-fetch matches under owner scoping and the HasOwner saving guard
+        // accepts the write (explicit-global would 404/deny owned sites).
+        $owner = OwnerContext::fromTypeAndId($record->owner_type, $record->owner_id);
+
+        OwnerContext::withOwner($owner, function () use ($record, $attributes): void {
+            AffiliateSite::query()
+                ->whereKey($record->getKey())
+                ->firstOrFail()
+                ->update($attributes);
+        });
     }
 }

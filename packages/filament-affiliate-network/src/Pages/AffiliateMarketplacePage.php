@@ -4,23 +4,18 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliateNetwork\Pages;
 
+use AIArmada\AffiliateNetwork\Contracts\AffiliateIdentityResolver;
+use AIArmada\AffiliateNetwork\Data\NetworkAffiliate;
 use AIArmada\AffiliateNetwork\Enums\OfferStatus;
 use AIArmada\AffiliateNetwork\Enums\OfferVisibility;
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferCategory;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
 use AIArmada\AffiliateNetwork\Models\Concerns\ScopesByBelongsToOwner;
 use AIArmada\AffiliateNetwork\Services\OfferLinkService;
 use AIArmada\AffiliateNetwork\Services\OfferManagementService;
-use AIArmada\Affiliates\Enums\MembershipStatus;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Models\AffiliateProgramMembership;
-use AIArmada\Affiliates\States\Active;
 use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerScope;
 use BackedEnum;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
@@ -60,7 +55,7 @@ final class AffiliateMarketplacePage extends Page
 
     public ?string $sortBy = 'featured';
 
-    private ?Affiliate $resolvedAffiliate = null;
+    private ?NetworkAffiliate $resolvedAffiliate = null;
 
     private bool $affiliateResolved = false;
 
@@ -116,6 +111,7 @@ final class AffiliateMarketplacePage extends Page
             return AffiliateOffer::withoutGlobalScope(ScopesByBelongsToOwner::class)
                 ->where('status', OfferStatus::Published)
                 ->where('visibility', OfferVisibility::Public)
+                ->whereSiteVerified()
                 ->when(mb_strlen((string) $search) >= 3, function (Builder $query) use ($search): Builder {
                     $pattern = LikeSearch::contains((string) $search);
 
@@ -137,7 +133,7 @@ final class AffiliateMarketplacePage extends Page
         });
     }
 
-    public function getAffiliate(): ?Affiliate
+    public function getAffiliate(): ?NetworkAffiliate
     {
         if ($this->affiliateResolved) {
             return $this->resolvedAffiliate;
@@ -168,19 +164,14 @@ final class AffiliateMarketplacePage extends Page
             return null;
         }
 
+        $resolver = app(AffiliateIdentityResolver::class);
+
         // Public marketplace: find the user's affiliate regardless of owner — explicit global scope bypass.
-        // contact_email is a virtual attribute stored in contact_methods, not a DB column.
-        $this->resolvedAffiliate = OwnerContext::withOwner(null, fn (): ?Affiliate => Affiliate::query()
-            ->withoutOwnerScope()
-            ->whereHas('contactMethods', function (Builder $query) use ($email): void {
-                $query->withoutGlobalScope(OwnerScope::class)
-                    ->where('type', 'email')
-                    ->where('purpose', 'general')
-                    ->where(fn (Builder $q) => $q->where('value', $email)
-                        ->orWhere('normalized_value', $email));
-            })
-            ->whereState('status', Active::class)
-            ->first());
+        $affiliateId = OwnerContext::withOwner(null, fn (): ?string => $resolver->findIdForVerifiedEmail($email));
+
+        $this->resolvedAffiliate = $affiliateId !== null
+            ? OwnerContext::withOwner(null, fn () => $resolver->find($affiliateId))
+            : null;
 
         return $this->resolvedAffiliate;
     }
@@ -194,7 +185,7 @@ final class AffiliateMarketplacePage extends Page
         }
 
         return $this->withAffiliateOwnerContext($affiliate, fn (): bool => app(OfferManagementService::class)
-            ->hasAppliedForOffer($offer, $affiliate));
+            ->hasAppliedForOffer($offer, $affiliate->id));
     }
 
     public function getApplicationStatus(AffiliateOffer $offer): ?string
@@ -217,7 +208,8 @@ final class AffiliateMarketplacePage extends Page
 
         $single = $this->withAffiliateOwnerContext(
             $affiliate,
-            fn (): array => $this->buildApplicationStatusMap($affiliate, new Collection([$offer]))
+            fn (): array => app(OfferManagementService::class)
+                ->applicationStatusMap($affiliate->id, new Collection([$offer]))
         );
 
         return $single[(string) $offer->getKey()] ?? null;
@@ -241,84 +233,11 @@ final class AffiliateMarketplacePage extends Page
         $offers = $this->getOffers();
 
         if ($affiliate !== null && $offers->isNotEmpty()) {
-            $map = $this->withAffiliateOwnerContext($affiliate, fn (): array => $this->buildApplicationStatusMap($affiliate, $offers));
+            $map = $this->withAffiliateOwnerContext($affiliate, fn (): array => app(OfferManagementService::class)
+                ->applicationStatusMap($affiliate->id, $offers));
         }
 
         return $this->applicationStatusMap = $map;
-    }
-
-    /**
-     * @param  Collection<int, AffiliateOffer>  $offers
-     * @return array<string, ?string>
-     */
-    private function buildApplicationStatusMap(Affiliate $affiliate, Collection $offers): array
-    {
-        $management = app(OfferManagementService::class);
-
-        /** @var array<string, array<int, string>> $programOfferIds program id => offer ids */
-        $programOfferIds = [];
-        /** @var array<int, string> $networkOfferIds */
-        $networkOfferIds = [];
-
-        /** @var array<string, ?string> $map */
-        $map = [];
-
-        foreach ($offers as $offer) {
-            $offerId = (string) $offer->getKey();
-            $map[$offerId] = null;
-
-            if ($management->isLocalProgramOffer($offer)) {
-                $programOfferIds[(string) $offer->external_program_id][] = $offerId;
-            } else {
-                $networkOfferIds[] = $offerId;
-            }
-        }
-
-        if ($programOfferIds !== []) {
-            /** @var array<int, string> $existingIds */
-            $existingIds = AffiliateProgram::query()
-                ->whereIn('id', array_keys($programOfferIds))
-                ->pluck('id')
-                ->map(fn (mixed $id): string => (string) $id)
-                ->all();
-
-            $existing = array_fill_keys($existingIds, true);
-
-            /** @var array<string, ?string> $statusByProgram */
-            $statusByProgram = [];
-
-            foreach (AffiliateProgramMembership::query()
-                ->where('affiliate_id', $affiliate->getKey())
-                ->whereIn('program_id', $existingIds)
-                ->pluck('status', 'program_id') as $programId => $status) {
-                $statusByProgram[(string) $programId] = $status instanceof BackedEnum ? $status->value : (string) $status;
-            }
-
-            foreach ($programOfferIds as $programId => $offerIds) {
-                if (! isset($existing[$programId])) {
-                    // Missing local program: same fallback as the domain service —
-                    // resolve through the network application flow instead.
-                    array_push($networkOfferIds, ...$offerIds);
-
-                    continue;
-                }
-
-                foreach ($offerIds as $offerId) {
-                    $map[$offerId] = $statusByProgram[$programId] ?? null;
-                }
-            }
-        }
-
-        if ($networkOfferIds !== []) {
-            foreach (AffiliateOfferApplication::query()
-                ->where('affiliate_id', $affiliate->getKey())
-                ->whereIn('offer_id', $networkOfferIds)
-                ->pluck('status', 'offer_id') as $offerId => $status) {
-                $map[(string) $offerId] = $status instanceof BackedEnum ? $status->value : (string) $status;
-            }
-        }
-
-        return $map;
     }
 
     public function applyForOffer(string $offerId, string $reason = ''): void
@@ -356,7 +275,7 @@ final class AffiliateMarketplacePage extends Page
         }
 
         if ($management->isLocalProgramOffer($offer)) {
-            $membership = $this->withAffiliateOwnerContext($affiliate, fn () => $management->enrollInLinkedProgram($offer, $affiliate));
+            $membership = $this->withAffiliateOwnerContext($affiliate, fn () => $management->enrollInLinkedProgram($offer, $affiliate->id));
 
             if ($membership === null) {
                 Notification::make()
@@ -368,7 +287,7 @@ final class AffiliateMarketplacePage extends Page
                 return;
             }
 
-            if ($membership->status !== MembershipStatus::Approved) {
+            if (! $membership->isApproved()) {
                 Notification::make()
                     ->title('Application submitted successfully')
                     ->success()
@@ -398,7 +317,7 @@ final class AffiliateMarketplacePage extends Page
         }
 
         $this->withAffiliateOwnerContext($affiliate, fn () => $management
-            ->applyForOffer($offer, $affiliate, $reason));
+            ->applyForOffer($offer, $affiliate->id, $reason));
 
         Notification::make()
             ->title('Application submitted successfully')
@@ -431,7 +350,7 @@ final class AffiliateMarketplacePage extends Page
         }
 
         $isApprovedForOffer = $this->withAffiliateOwnerContext($affiliate, fn (): bool => app(OfferManagementService::class)
-            ->isApprovedForOffer($offer, $affiliate));
+            ->isApprovedForOffer($offer, $affiliate->id));
 
         if ($offer->requires_approval && ! $isApprovedForOffer) {
             Notification::make()
@@ -444,7 +363,7 @@ final class AffiliateMarketplacePage extends Page
         }
 
         $linkService = app(OfferLinkService::class);
-        $link = $this->withAffiliateOwnerContext($affiliate, fn (): AffiliateOfferLink => $linkService->createLink($offer, $affiliate));
+        $link = $this->withAffiliateOwnerContext($affiliate, fn (): AffiliateOfferLink => $linkService->createLink($offer, $affiliate->id));
         $trackingUrl = $linkService->generateTrackingUrl($link);
 
         Notification::make()
@@ -461,17 +380,9 @@ final class AffiliateMarketplacePage extends Page
      * @param  callable(): TResult  $callback
      * @return TResult
      */
-    private function withAffiliateOwnerContext(Affiliate $affiliate, callable $callback): mixed
+    private function withAffiliateOwnerContext(NetworkAffiliate $affiliate, callable $callback): mixed
     {
-        /** @var string|null $ownerType */
-        $ownerType = $affiliate->owner_type;
-        /** @var string|null $ownerId */
-        $ownerId = $affiliate->owner_id;
-
-        /** @var Model|null $owner */
-        $owner = OwnerContext::fromTypeAndId($ownerType, $ownerId);
-
-        return OwnerContext::withOwner($owner, $callback);
+        return OwnerContext::withOwner($affiliate->owner(), $callback);
     }
 
     /**

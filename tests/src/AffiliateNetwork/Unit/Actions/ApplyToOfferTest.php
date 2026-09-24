@@ -23,7 +23,7 @@ describe('ApplyToOffer', function (): void {
 
         $this->offer->update(['requires_approval' => true]);
 
-        $application = $this->action->execute($this->offer, $this->affiliate);
+        $application = $this->action->execute($this->offer, (string) $this->affiliate->getKey());
 
         expect($application)->toBeInstanceOf(AffiliateOfferApplication::class);
         expect($application->offer_id)->toBe($this->offer->id);
@@ -36,7 +36,7 @@ describe('ApplyToOffer', function (): void {
     test('creates approved application for offer not requiring approval', function (): void {
         $this->offer->update(['requires_approval' => false]);
 
-        $application = $this->action->execute($this->offer, $this->affiliate);
+        $application = $this->action->execute($this->offer, (string) $this->affiliate->getKey());
 
         expect($application->status)->toBe(ApplicationStatus::Approved);
         expect($application->reviewed_at)->not->toBeNull();
@@ -45,7 +45,7 @@ describe('ApplyToOffer', function (): void {
     test('creates approved application when auto_approve enabled', function (): void {
         config(['affiliate-network.applications.auto_approve' => true]);
 
-        $application = $this->action->execute($this->offer, $this->affiliate);
+        $application = $this->action->execute($this->offer, (string) $this->affiliate->getKey());
 
         expect($application->status)->toBe(ApplicationStatus::Approved);
     });
@@ -53,7 +53,7 @@ describe('ApplyToOffer', function (): void {
     test('includes reason in application', function (): void {
         $application = $this->action->execute(
             $this->offer,
-            $this->affiliate,
+            (string) $this->affiliate->getKey(),
             'I have a large audience',
         );
 
@@ -63,11 +63,11 @@ describe('ApplyToOffer', function (): void {
     test('returns existing application if already exists', function (): void {
         $existing = AffiliateOfferApplication::factory()
             ->forOffer($this->offer)
-            ->forAffiliate($this->affiliate)
+            ->forAffiliateId((string) $this->affiliate->getKey())
             ->pending()
             ->create();
 
-        $application = $this->action->execute($this->offer, $this->affiliate);
+        $application = $this->action->execute($this->offer, (string) $this->affiliate->getKey());
 
         expect($application->id)->toBe($existing->id);
     });
@@ -77,14 +77,14 @@ describe('ApplyToOffer', function (): void {
 
         $existing = AffiliateOfferApplication::factory()
             ->forOffer($this->offer)
-            ->forAffiliate($this->affiliate)
+            ->forAffiliateId((string) $this->affiliate->getKey())
             ->rejected()
             ->create([
                 'rejected_at' => now()->subDays(10),
                 'updated_at' => now()->subDays(10),
             ]);
 
-        $application = $this->action->execute($this->offer, $this->affiliate);
+        $application = $this->action->execute($this->offer, (string) $this->affiliate->getKey());
 
         expect($application->id)->toBe($existing->id);
         expect($application->status)->toBe(ApplicationStatus::Pending);
@@ -96,14 +96,14 @@ describe('ApplyToOffer', function (): void {
 
         $existing = AffiliateOfferApplication::factory()
             ->forOffer($this->offer)
-            ->forAffiliate($this->affiliate)
+            ->forAffiliateId((string) $this->affiliate->getKey())
             ->rejected()
             ->create([
                 'rejected_at' => now()->subDays(10),
                 'updated_at' => now(),
             ]);
 
-        $application = $this->action->execute($this->offer, $this->affiliate);
+        $application = $this->action->execute($this->offer, (string) $this->affiliate->getKey());
 
         expect($application->id)->toBe($existing->id);
         expect($application->status)->toBe(ApplicationStatus::Pending);
@@ -114,13 +114,13 @@ describe('ApplyToOffer', function (): void {
 
         AffiliateOfferApplication::factory()
             ->forOffer($this->offer)
-            ->forAffiliate($this->affiliate)
+            ->forAffiliateId((string) $this->affiliate->getKey())
             ->rejected()
             ->create([
                 'rejected_at' => now()->subDays(3),
                 'updated_at' => now()->subDays(3),
             ]);
 
-        $this->action->execute($this->offer, $this->affiliate);
+        $this->action->execute($this->offer, (string) $this->affiliate->getKey());
     })->throws(RuntimeException::class);
 });

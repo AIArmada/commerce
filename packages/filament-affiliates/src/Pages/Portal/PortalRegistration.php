@@ -309,6 +309,17 @@ class PortalRegistration extends FilamentRegister
 
     protected function getPhoneFormComponent(): Component
     {
+        // ysfkaya/filament-phone-input is an optional integration: fall back
+        // to a plain tel input when the package is not installed so portal
+        // registration keeps working in lean merchant apps.
+        if (! class_exists(PhoneInput::class)) {
+            return TextInput::make('phone')
+                ->label(__('Phone Number'))
+                ->tel()
+                ->required()
+                ->maxLength(32);
+        }
+
         return PhoneInput::make('phone')
             ->label(__('Phone Number'))
             ->required()

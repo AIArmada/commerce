@@ -160,11 +160,11 @@ describe('OfferManagementService', function (): void {
 
             AffiliateOfferApplication::factory()
                 ->forOffer($offer)
-                ->forAffiliate($affiliate)
+                ->forAffiliateId((string) $affiliate->getKey())
                 ->approved()
                 ->create();
 
-            $result = $this->service->isApprovedForOffer($offer, $affiliate);
+            $result = $this->service->isApprovedForOffer($offer, (string) $affiliate->getKey());
 
             expect($result)->toBeTrue();
         });
@@ -175,11 +175,11 @@ describe('OfferManagementService', function (): void {
 
             AffiliateOfferApplication::factory()
                 ->forOffer($offer)
-                ->forAffiliate($affiliate)
+                ->forAffiliateId((string) $affiliate->getKey())
                 ->pending()
                 ->create();
 
-            $result = $this->service->isApprovedForOffer($offer, $affiliate);
+            $result = $this->service->isApprovedForOffer($offer, (string) $affiliate->getKey());
 
             expect($result)->toBeFalse();
         });
@@ -188,7 +188,7 @@ describe('OfferManagementService', function (): void {
             $offer = AffiliateOffer::factory()->published()->forSite($this->site)->create();
             $affiliate = createTestAffiliate();
 
-            $result = $this->service->isApprovedForOffer($offer, $affiliate);
+            $result = $this->service->isApprovedForOffer($offer, (string) $affiliate->getKey());
 
             expect($result)->toBeFalse();
         });
@@ -204,17 +204,17 @@ describe('OfferManagementService', function (): void {
 
             AffiliateOfferApplication::factory()
                 ->forOffer($activeOffer)
-                ->forAffiliate($affiliate)
+                ->forAffiliateId((string) $affiliate->getKey())
                 ->approved()
                 ->create();
 
             AffiliateOfferApplication::factory()
                 ->forOffer($pausedOffer)
-                ->forAffiliate($affiliate)
+                ->forAffiliateId((string) $affiliate->getKey())
                 ->approved()
                 ->create();
 
-            $offers = $this->service->getApprovedOffers($affiliate);
+            $offers = $this->service->getApprovedOffers((string) $affiliate->getKey());
 
             expect($offers)->toHaveCount(1);
             expect($offers->first()->id)->toBe($activeOffer->id);
@@ -228,13 +228,13 @@ describe('OfferManagementService', function (): void {
 
                 AffiliateOfferApplication::factory()
                     ->forOffer($offer)
-                    ->forAffiliate($affiliate)
+                    ->forAffiliateId((string) $affiliate->getKey())
                     ->approved()
                     ->create();
             }
 
-            expect($this->service->getApprovedOffers($affiliate, 2))->toHaveCount(2)
-                ->and($this->service->getApprovedOffers($affiliate))->toHaveCount(3);
+            expect($this->service->getApprovedOffers((string) $affiliate->getKey(), 2))->toHaveCount(2)
+                ->and($this->service->getApprovedOffers((string) $affiliate->getKey()))->toHaveCount(3);
         });
 
         test('includes published local offers with approved core memberships', function (): void {
@@ -254,7 +254,7 @@ describe('OfferManagementService', function (): void {
                 'external_program_id' => $program->getKey(),
             ]);
 
-            $offers = $this->service->getApprovedOffers($affiliate);
+            $offers = $this->service->getApprovedOffers((string) $affiliate->getKey());
 
             expect($offers->pluck('id')->all())->toContain((string) $linked->getKey());
         });
@@ -276,7 +276,7 @@ describe('OfferManagementService', function (): void {
                 'external_program_id' => $program->getKey(),
             ]);
 
-            expect($this->service->getApprovedOffers($affiliate))->toHaveCount(0);
+            expect($this->service->getApprovedOffers((string) $affiliate->getKey()))->toHaveCount(0);
         });
 
         test('falls back to network applications when the linked program is gone', function (): void {
@@ -288,11 +288,11 @@ describe('OfferManagementService', function (): void {
 
             AffiliateOfferApplication::factory()
                 ->forOffer($orphaned)
-                ->forAffiliate($affiliate)
+                ->forAffiliateId((string) $affiliate->getKey())
                 ->approved()
                 ->create();
 
-            $offers = $this->service->getApprovedOffers($affiliate);
+            $offers = $this->service->getApprovedOffers((string) $affiliate->getKey());
 
             expect($offers->pluck('id')->all())->toContain((string) $orphaned->getKey());
         });
@@ -315,7 +315,7 @@ describe('OfferManagementService', function (): void {
                 'metadata' => ['catalog_source' => 'remote'],
             ]);
 
-            expect($this->service->getApprovedOffers($affiliate))->toHaveCount(0);
+            expect($this->service->getApprovedOffers((string) $affiliate->getKey()))->toHaveCount(0);
         });
     });
 
@@ -354,9 +354,9 @@ describe('OfferManagementService', function (): void {
             $offer->update(['requires_approval' => false]);
             $affiliate = createTestAffiliate();
 
-            $this->service->applyForOffer($offer, $affiliate);
+            $this->service->applyForOffer($offer, (string) $affiliate->getKey());
 
-            $status = $this->service->applicationStatusForOffer($offer, $affiliate);
+            $status = $this->service->applicationStatusForOffer($offer, (string) $affiliate->getKey());
 
             expect($status)->toBeString();
             expect($status)->toBe(ApplicationStatus::Approved->value);
@@ -366,7 +366,7 @@ describe('OfferManagementService', function (): void {
             $offer = AffiliateOffer::factory()->published()->forSite($this->site)->create();
             $affiliate = createTestAffiliate();
 
-            expect($this->service->applicationStatusForOffer($offer, $affiliate))->toBeNull();
+            expect($this->service->applicationStatusForOffer($offer, (string) $affiliate->getKey()))->toBeNull();
         });
     });
 });

@@ -25,7 +25,7 @@ describe('RecordNetworkConversion', function (): void {
         ]);
         $this->link = AffiliateOfferLink::factory()
             ->forOffer($this->offer)
-            ->forAffiliate($this->affiliate)
+            ->forAffiliateId((string) $this->affiliate->getKey())
             ->withStats(0, 5, 10000)
             ->create();
     });
@@ -41,7 +41,7 @@ describe('RecordNetworkConversion', function (): void {
     test('records conversion without revenue', function (): void {
         $link = AffiliateOfferLink::factory()
             ->forOffer($this->offer)
-            ->forAffiliate($this->affiliate)
+            ->forAffiliateId((string) $this->affiliate->getKey())
             ->create();
 
         $this->action->execute($link, 0);

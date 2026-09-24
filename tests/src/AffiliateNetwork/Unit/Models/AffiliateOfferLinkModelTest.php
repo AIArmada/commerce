@@ -26,7 +26,7 @@ describe('AffiliateOfferLink Model', function (): void {
         test('can create link', function (): void {
             $link = AffiliateOfferLink::factory()
                 ->forOffer($this->offer)
-                ->forAffiliate($this->affiliate)
+                ->forAffiliateId((string) $this->affiliate->getKey())
                 ->create([
                     'target_url' => 'https://example.com/product',
                 ]);
@@ -40,7 +40,7 @@ describe('AffiliateOfferLink Model', function (): void {
         test('uses uuid primary key', function (): void {
             $link = AffiliateOfferLink::factory()
                 ->forOffer($this->offer)
-                ->forAffiliate($this->affiliate)
+                ->forAffiliateId((string) $this->affiliate->getKey())
                 ->create();
 
             expect($link->id)->toMatch('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/');
@@ -52,7 +52,7 @@ describe('AffiliateOfferLink Model', function (): void {
         test('auto generates code on creation', function (): void {
             $link = AffiliateOfferLink::factory()
                 ->forOffer($this->offer)
-                ->forAffiliate($this->affiliate)
+                ->forAffiliateId((string) $this->affiliate->getKey())
                 ->create(['code' => '']);
 
             expect($link->code)->not->toBeEmpty();
@@ -68,7 +68,7 @@ describe('AffiliateOfferLink Model', function (): void {
         test('uses provided code when set', function (): void {
             $link = AffiliateOfferLink::factory()
                 ->forOffer($this->offer)
-                ->forAffiliate($this->affiliate)
+                ->forAffiliateId((string) $this->affiliate->getKey())
                 ->create(['code' => 'customcode12345!']);
 
             expect($link->code)->toBe('customcode12345!');
@@ -79,7 +79,7 @@ describe('AffiliateOfferLink Model', function (): void {
         test('incrementClicks increases click count', function (): void {
             $link = AffiliateOfferLink::factory()
                 ->forOffer($this->offer)
-                ->forAffiliate($this->affiliate)
+                ->forAffiliateId((string) $this->affiliate->getKey())
                 ->withStats(10, 0, 0)
                 ->create();
 
@@ -91,7 +91,7 @@ describe('AffiliateOfferLink Model', function (): void {
         test('incrementClicks works from zero', function (): void {
             $link = AffiliateOfferLink::factory()
                 ->forOffer($this->offer)
-                ->forAffiliate($this->affiliate)
+                ->forAffiliateId((string) $this->affiliate->getKey())
                 ->create();
 
             $link->incrementClicks();
@@ -104,7 +104,7 @@ describe('AffiliateOfferLink Model', function (): void {
         test('recordConversion increases conversions and revenue', function (): void {
             $link = AffiliateOfferLink::factory()
                 ->forOffer($this->offer)
-                ->forAffiliate($this->affiliate)
+                ->forAffiliateId((string) $this->affiliate->getKey())
                 ->withStats(100, 5, 25000)
                 ->create();
 
@@ -120,7 +120,7 @@ describe('AffiliateOfferLink Model', function (): void {
         test('isExpired returns true when expires_at is in past', function (): void {
             $link = AffiliateOfferLink::factory()
                 ->forOffer($this->offer)
-                ->forAffiliate($this->affiliate)
+                ->forAffiliateId((string) $this->affiliate->getKey())
                 ->expired()
                 ->create();
 
@@ -130,7 +130,7 @@ describe('AffiliateOfferLink Model', function (): void {
         test('isExpired returns false when expires_at is in future', function (): void {
             $link = AffiliateOfferLink::factory()
                 ->forOffer($this->offer)
-                ->forAffiliate($this->affiliate)
+                ->forAffiliateId((string) $this->affiliate->getKey())
                 ->expiresAt(now()->addDays(30))
                 ->create();
 
@@ -140,7 +140,7 @@ describe('AffiliateOfferLink Model', function (): void {
         test('isExpired returns false when expires_at is null', function (): void {
             $link = AffiliateOfferLink::factory()
                 ->forOffer($this->offer)
-                ->forAffiliate($this->affiliate)
+                ->forAffiliateId((string) $this->affiliate->getKey())
                 ->create(['expires_at' => null]);
 
             expect($link->isExpired())->toBeFalse();
@@ -151,7 +151,7 @@ describe('AffiliateOfferLink Model', function (): void {
         test('belongs to offer', function (): void {
             $link = AffiliateOfferLink::factory()
                 ->forOffer($this->offer)
-                ->forAffiliate($this->affiliate)
+                ->forAffiliateId((string) $this->affiliate->getKey())
                 ->create();
 
             expect($link->offer)->toBeInstanceOf(AffiliateOffer::class);
@@ -161,7 +161,7 @@ describe('AffiliateOfferLink Model', function (): void {
         test('belongs to affiliate', function (): void {
             $link = AffiliateOfferLink::factory()
                 ->forOffer($this->offer)
-                ->forAffiliate($this->affiliate)
+                ->forAffiliateId((string) $this->affiliate->getKey())
                 ->create();
 
             expect($link->affiliate)->toBeInstanceOf(Affiliate::class);
@@ -171,7 +171,7 @@ describe('AffiliateOfferLink Model', function (): void {
         test('belongs to site', function (): void {
             $link = AffiliateOfferLink::factory()
                 ->forOffer($this->offer)
-                ->forAffiliate($this->affiliate)
+                ->forAffiliateId((string) $this->affiliate->getKey())
                 ->forSite($this->site)
                 ->create();
 
@@ -184,7 +184,7 @@ describe('AffiliateOfferLink Model', function (): void {
         test('clicks conversions revenue are integers', function (): void {
             $link = AffiliateOfferLink::factory()
                 ->forOffer($this->offer)
-                ->forAffiliate($this->affiliate)
+                ->forAffiliateId((string) $this->affiliate->getKey())
                 ->withStats(100, 10, 50000)
                 ->create();
 
@@ -196,7 +196,7 @@ describe('AffiliateOfferLink Model', function (): void {
         test('is_active is boolean', function (): void {
             $link = AffiliateOfferLink::factory()
                 ->forOffer($this->offer)
-                ->forAffiliate($this->affiliate)
+                ->forAffiliateId((string) $this->affiliate->getKey())
                 ->active()
                 ->create();
 
@@ -207,7 +207,7 @@ describe('AffiliateOfferLink Model', function (): void {
         test('expires_at is immutable datetime', function (): void {
             $link = AffiliateOfferLink::factory()
                 ->forOffer($this->offer)
-                ->forAffiliate($this->affiliate)
+                ->forAffiliateId((string) $this->affiliate->getKey())
                 ->expiresAt(now()->addDays(30))
                 ->create();
 
@@ -217,7 +217,7 @@ describe('AffiliateOfferLink Model', function (): void {
         test('metadata is array', function (): void {
             $link = AffiliateOfferLink::factory()
                 ->forOffer($this->offer)
-                ->forAffiliate($this->affiliate)
+                ->forAffiliateId((string) $this->affiliate->getKey())
                 ->create([
                     'metadata' => ['campaign' => 'summer_sale'],
                 ]);

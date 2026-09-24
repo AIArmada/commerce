@@ -32,7 +32,7 @@ describe('affiliate network redirect route', function (): void {
     test('redirect route rejects unsigned requests', function (): void {
         $link = AffiliateOfferLink::factory()
             ->forOffer($this->offer)
-            ->forAffiliate($this->affiliate)
+            ->forAffiliateId((string) $this->affiliate->getKey())
             ->create([
                 'code' => 'unsigned-link',
                 'target_url' => 'https://merchant.example/offers/spring',
@@ -50,7 +50,7 @@ describe('affiliate network redirect route', function (): void {
 
         $link = AffiliateOfferLink::factory()
             ->forOffer($this->offer)
-            ->forAffiliate($this->affiliate)
+            ->forAffiliateId((string) $this->affiliate->getKey())
             ->create([
                 'code' => 'signed-link',
                 'target_url' => 'https://merchant.example/offers/spring',
@@ -66,7 +66,7 @@ describe('affiliate network redirect route', function (): void {
     test('valid signed redirect records a click and preserves attribution code', function (): void {
         $link = AffiliateOfferLink::factory()
             ->forOffer($this->offer)
-            ->forAffiliate($this->affiliate)
+            ->forAffiliateId((string) $this->affiliate->getKey())
             ->create([
                 'code' => 'click-link',
                 'target_url' => 'https://merchant.example/offers/spring',
@@ -79,10 +79,31 @@ describe('affiliate network redirect route', function (): void {
             ->and($link->fresh()->clicks)->toBe(1);
     });
 
+    test('unverified-site links return gone without recording a click', function (): void {
+        $site = AffiliateSite::factory()->suspended()->create([
+            'domain' => 'suspended-redirect.example',
+        ]);
+        $offer = AffiliateOffer::factory()->published()->forSite($site)->create([
+            'landing_url' => 'https://suspended-redirect.example/deal',
+        ]);
+        $link = AffiliateOfferLink::factory()
+            ->forOffer($offer)
+            ->forAffiliateId((string) $this->affiliate->getKey())
+            ->create([
+                'code' => 'suspended-link',
+                'target_url' => 'https://suspended-redirect.example/deal',
+            ]);
+
+        $response = $this->get(app(OfferLinkService::class)->generateTrackingUrl($link));
+
+        $response->assertGone();
+        expect($link->fresh()->clicks)->toBe(0);
+    });
+
     test('bot hits redirect without recording a click', function (): void {
         $link = AffiliateOfferLink::factory()
             ->forOffer($this->offer)
-            ->forAffiliate($this->affiliate)
+            ->forAffiliateId((string) $this->affiliate->getKey())
             ->create([
                 'code' => 'bot-link',
                 'target_url' => 'https://merchant.example/offers/spring',
@@ -100,7 +121,7 @@ describe('affiliate network redirect route', function (): void {
     test('expired link returns gone without recording a click', function (): void {
         $link = AffiliateOfferLink::factory()
             ->forOffer($this->offer)
-            ->forAffiliate($this->affiliate)
+            ->forAffiliateId((string) $this->affiliate->getKey())
             ->expired()
             ->create(['code' => 'expired-link']);
 
@@ -113,7 +134,7 @@ describe('affiliate network redirect route', function (): void {
     test('expired signed URL and forged code are rejected', function (): void {
         $link = AffiliateOfferLink::factory()
             ->forOffer($this->offer)
-            ->forAffiliate($this->affiliate)
+            ->forAffiliateId((string) $this->affiliate->getKey())
             ->create(['code' => 'signed-expiry-link']);
 
         $expiredUrl = URL::temporarySignedRoute(
