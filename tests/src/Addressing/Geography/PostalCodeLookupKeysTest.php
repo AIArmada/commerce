@@ -20,6 +20,8 @@ use AIArmada\Addressing\Geography\Haiti\HaitiGeographyProvider;
 use AIArmada\Addressing\Geography\Ireland\IrelandGeographyProvider;
 use AIArmada\Addressing\Geography\Kiribati\KiribatiGeographyProvider;
 use AIArmada\Addressing\Geography\Latvia\LatviaGeographyProvider;
+use AIArmada\Addressing\Geography\Lebanon\LebanonGeographyProvider;
+use AIArmada\Addressing\Geography\Liberia\LiberiaGeographyProvider;
 use AIArmada\Addressing\Geography\Luxembourg\LuxembourgGeographyProvider;
 use AIArmada\Addressing\Geography\Malta\MaltaGeographyProvider;
 use AIArmada\Addressing\Geography\MarshallIslands\MarshallIslandsGeographyProvider;
@@ -88,12 +90,19 @@ it('expands country-specific postcode lookup keys', function (string $providerCl
     'LU bare gains prefix' => [LuxembourgGeographyProvider::class, '1111', ['1111', 'L-1111']],
     'AI bare gains prefix' => [AnguillaGeographyProvider::class, '2640', ['2640', 'AI-2640']],
     'AD bare gains prefix' => [AndorraGeographyProvider::class, '100', ['100', 'AD100']],
+    'AD one-letter-short prefix canonicalizes' => [AndorraGeographyProvider::class, 'A501', ['A501', 'AD501']],
     'BB bare gains prefix' => [BarbadosGeographyProvider::class, '11000', ['11000', 'BB11000']],
+    'BB one-letter-short prefix canonicalizes' => [BarbadosGeographyProvider::class, 'B26028', ['B26028', 'BB26028']],
     'HT bare gains prefix' => [HaitiGeographyProvider::class, '1110', ['1110', 'HT1110']],
+    'HT one-letter-short prefix canonicalizes' => [HaitiGeographyProvider::class, 'H6110', ['H6110', 'HT6110']],
     'KI bare gains prefix' => [KiribatiGeographyProvider::class, '0101', ['0101', 'KI0101']],
+    'KI one-letter-short prefix canonicalizes' => [KiribatiGeographyProvider::class, 'K0107', ['K0107', 'KI0107']],
     'KN bare gains prefix' => [SaintKittsAndNevisGeographyProvider::class, '0101', ['0101', 'KN0101']],
+    'KN one-letter-short prefix canonicalizes' => [SaintKittsAndNevisGeographyProvider::class, 'K0602', ['K0602', 'KN0602']],
     'MS bare gains prefix' => [MontserratGeographyProvider::class, '1110', ['1110', 'MSR1110']],
+    'MS one-letter-short prefix canonicalizes' => [MontserratGeographyProvider::class, 'MS1110', ['MS1110', 'MSR1110']],
     'VC bare gains prefix' => [SaintVincentAndTheGrenadinesGeographyProvider::class, '0110', ['0110', 'VC0110']],
+    'VC one-letter-short prefix canonicalizes' => [SaintVincentAndTheGrenadinesGeographyProvider::class, 'V0120', ['V0120', 'VC0120']],
     'AZ bare gains prefix' => [AzerbaijanGeographyProvider::class, '0100', ['0100', 'AZ 0100']],
     'AZ spaceless gains space' => [AzerbaijanGeographyProvider::class, 'AZ0100', ['AZ0100', 'AZ 0100']],
     'BM compact gains space' => [BermudaGeographyProvider::class, 'CR01', ['CR01', 'CR 01']],
@@ -106,6 +115,12 @@ it('expands country-specific postcode lookup keys', function (string $providerCl
     'CA lowercase full postcode' => [CanadaGeographyProvider::class, 'h3z 2y7', ['H3Z2Y7', 'H3Z']],
     'CA FSA passes through' => [CanadaGeographyProvider::class, 'H3Z', ['H3Z']],
     'CA rural FSA passes through' => [CanadaGeographyProvider::class, 'T0A', ['T0A']],
+    'CA partial FSA passes through' => [CanadaGeographyProvider::class, 'K1', ['K1']],
+    'LB sector suffix spaced' => [LebanonGeographyProvider::class, '1107 2020', ['1107 2020', '1107']],
+    'LB sector suffix compact' => [LebanonGeographyProvider::class, '11072020', ['11072020', '1107']],
+    'LB base passes through' => [LebanonGeographyProvider::class, '1107', ['1107']],
+    'LR delivery unit' => [LiberiaGeographyProvider::class, '1000-10', ['1000-10', '1000']],
+    'LR base passes through' => [LiberiaGeographyProvider::class, '1000', ['1000']],
     'unknown input passes through' => [ArgentinaGeographyProvider::class, 'XYZ', ['XYZ']],
 ]);
 
@@ -148,6 +163,8 @@ it('keeps every bundled code resolvable through its own normalizer', function ()
         [SaintLuciaGeographyProvider::class, 'saint-lucia'],
         [SaintHelenaGeographyProvider::class, 'saint-helena'],
         [TurksAndCaicosGeographyProvider::class, 'turks-and-caicos'],
+        [LebanonGeographyProvider::class, 'lebanon'],
+        [LiberiaGeographyProvider::class, 'liberia'],
     ];
 
     $dir = __DIR__ . '/../../../../packages/addressing/resources/geography';
