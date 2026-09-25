@@ -61,14 +61,14 @@ countries use it and why the rest do not.
   area).
 - Parked for lack of a verifiable complete source (do not ship
   partial compilations):
+  - DR Congo: UPU addressing sheet codEn.pdf confirms a 7-digit
+    postcode system (province/city/sector/office structure, e.g.
+    1003071/1004131 Kinshasa, 3202011 Kwilu), so the verdict is not
+    `none`. No allocation source: GeoNames has no CD export (404)
+    and Mapanet CD rows carry empty codes.
   - Bahrain: overturned — SLRB states 478 Logical Map Boundaries
     following the administrative blocks, matching the shipped 479
     (the earlier ~1000+ was the number range, not the used count).
-  - Guernsey/Jersey/Isle of Man: UK-style street-level codes
-    (ONSPD enumerates them but carries no CI/IOM coordinates;
-    Guernsey finder API works per full code but caps broader
-    queries). Needs a polite per-code attribution batch (~9k
-    finder queries) or PAF access.
   - Egypt: access recheck 2026-09-25 (retried same day): https://egyptpost.gov.eg/
     still HTTP 403 and https://www.egyptpost.org/ timed out. The
     official BareedMall page
@@ -86,22 +86,6 @@ countries use it and why the rest do not.
     (https://ttpost.net/2017/02/27/trinidad-tobago-postal-code-system-tt-pcs-2/)
     likewise directs users to TTPost outlets. No dataset vintage or
     reuse terms are published; GeoNames has no TT export.
-  - Samoa: access recheck 2026-09-25 found the official Samoa Post
-    list at https://www.samoapost.ws/index.php/special-services/post-code-for-samoa
-    (HTTP 200; robots.txt permits the page): 224 village/postcode
-    pairs, 224 unique codes, 221 distinct names. The page has no
-    published vintage or data reuse terms. Its Upolu/Savaii grouping
-    does not provide district attribution; normalized matching against
-    the bundled 342 villages gives 159 unique matches, 7 ambiguous
-    names, and 58 entries with no row. The UPU addressing-sheet copy
-    (https://youbianku.com/files/upu/WSM.pdf) confirms Manono Tai
-    WS1190, while GeoPostcodes
-    (https://www.geopostcodes.com/en-GB/country/samoa/postcode/)
-    assigns it to A'ana. GeoNames' current source registry
-    (https://www.geonames.org/postal-codes-sources.html) lists only
-    one WS row, with no date. Obtain an authoritative district
-    crosswalk and reuse terms before building; do not ship a partial
-    overlay.
   - Kuwait: access recheck 2026-09-25: the official MOC page
     (https://www.moc.gov.kw/en/important-links?tab=2) advertises
     separate P.O.-box and block-number tables, but its indexed view
@@ -161,28 +145,6 @@ countries use it and why the rest do not.
     allocation rows and publishes no dataset vintage or reuse terms.
     GeoNames' registry has no GY rows. Needs a public allocation list
     from Guyana Post.
-  - Venezuela: access recheck 2026-09-25: GET
-    https://www.ipostel.gob.ve/ timed out after 12 seconds. No public
-    IPOSTEL allocation endpoint or downloadable table was found;
-    GeoNames' current registry has no VE row. No rows, vintage, or
-    reuse terms are available. Needs IPOSTEL data.
-  - Nicaragua: access recheck 2026-09-25: the official summary endpoint
-    https://www.correos.gob.ni/postalcode/postalcodes.php returns
-    HTTP 403. Search-indexed copies show the summary with no results
-    and blank totals plus individual historical records (for example,
-    https://www.correos.gob.ni/postalcode/PostalCodes.php?operation=view&pk0=13082),
-    but expose no complete export or count. GeoNames' registry names
-    Correos de Nicaragua as the official source but has blank row/date
-    fields. No dataset vintage or reuse terms are published. Do not
-    bypass the live block; needs a public Correos list.
-  - Honduras: access recheck 2026-09-25: https://honducor.gob.hn/
-    returns HTTP 200, but the accessible home/search results yielded
-    no postcode allocation list. The previously observed HONDUCOR
-    search ModSecurity block was not retried. GeoNames' current source
-    registry (https://www.geonames.org/postal-codes-sources.html)
-    lists 38 HN rows/matches, no source URL, and no vintage date,
-    against 298 municipalities; that is insufficient coverage. No
-    complete-source reuse terms are available. Needs HONDUCOR data.
   - Tajikistan: access recheck 2026-09-25 surfaced an official
     Tajik Post index page
     (https://tajikpost.tj/ru/перечень-почтовых-индексов-таджикистан/)
@@ -208,21 +170,6 @@ countries use it and why the rest do not.
     or reuse terms are available; needs an authoritative Oman Post
     export. (MapAnet crawl: 519 rows / 86 codes, unattributed —
     partial against the locator's 213 branches.)
-  - Bahrain: the open data portal publishes no postcode/block
-    dataset (mailbox/PO-box stats only) and block-level codes need
-    city/block modeling first. Needs a block list with governorate
-    mapping.
-  - Morocco: access recheck 2026-09-25 found the official code finder
-    (https://www.codepostal.ma/index.aspx), with searches by
-    neighborhood, street, or Barid Al-Maghrib agency and a link to
-    download its directory; the page and PDF
-    (https://www.codepostal.ma/annuaire.pdf) both timed out on direct
-    fetch. The Moroccan open-data portal also indexes “Codes postaux
-    des quartiers” under Poste Maroc, but its dataset page timed out
-    and the catalog query returned HTTP 403. No data rows, row count,
-    vintage, or reuse license could be verified. GeoNames' 1,325-row
-    dump still lacks Casablanca and Rabat codes.
-
 ## Built datasets
 
 | Country | Code | Codes | Links | Source |
@@ -363,7 +310,7 @@ countries use it and why the rest do not.
 | Serbia | RS | 1334 | 1407 | Mapanet municipality pages (145 munis, 4281 locality rows; Belgrade at city-municipality level) + 104 GN-only town/village codes (muni inherited from mapanet locality, 32 via Nominatim with Đurđevo→Žabalj + Kaluđerske Bare→Bajina Bašta fixes) + 100 courier-list Belgrade branch codes (generic at city); Kosovo r1 rows excluded (Posta e Kosovës system, XK overlaid); Niš/Užice/Požarevac/Vranje link district (cities unbundled); 68 shared codes dual-linked, majority-rows primary |
 | Slovakia | SK | 3480 | 3514 | GeoNames dump at district level (010 01–992 01; office-number rows resolved via town→district from street rows, Rajec→Žilina; Bratislava blanks via 2nd-digit district rule anchored on street rows + verified 851 01 Petržalka-V / 841 04 Karlova Ves-IV via orsr.sk + Wikipedia street list; Košice-city 329 office codes at region (intra-city office→district needs Slovak Post branch data, CZ-Prague precedent); 33 cross-district dual-linked, majority primary with prefix/post-office tiebreaks incl. 906 35 Malacky (pop 741 + both-village Wikipedia infoboxes), 985 42 Lučenec (pošta Veľké Dravce per citypopulation), 985 45 Detva (985 45 = Látky), 094 06 Vranov / 916 13+916 16 NMnV / 930 28 DS / 976 81 Brezno / 980 33 RS / 985 22 Poltár on prefix, 067 82 Snina, 040 16 KE-II) |
 | Slovenia | SI | 468 | 469 | Pošta Slovenije official list Aug-2025 via archive (1000–9503; 76 PO-box/large-user/internal excluded; 3231 Grobelno dual-linked Šentjur primary) |
-| Saudi Arabia | SA | 9256 | 9256 | Mapanet full pull (218,705 rows, 190k ZIP+4 codes → 9,256 5-digit bases, all 13 regions; Wasel -XXXX suffixes strip to base at lookup via new SA normalizer): L1 region links; 60 multi-region bases adjudicated single by Nominatim reverse-geocode (all tight clusters = Mapanet duplication: 20 Bahah inc. 28769 Mikhwah, 31 Makkah inc. 3 Ghamid-Az-Zinad rows both sources misfiled, 5 Asir, 58276 Qassim, 58459 Riyadh/Dawadmi, 89799/89934 Jazan); 3 missed r2 groups backfilled (Diriyah/Al-Ardah/Al-Mikhwah, 307 rows); GAPS: Riyadh city 11xxx entirely absent from source + Arar city missing (N.Borders 74 rural rows) — documented codeless (PG precedent); L2 governorate not attempted (95 r2 zones ≠ 139 governorates 1:1 in 8/13 regions, no village gazetteer) |
+| Saudi Arabia | SA | 9256 | 9256 | Mapanet full pull (218,705 rows, 190k ZIP+4 codes → 9,256 5-digit bases, all 13 regions; Wasel -XXXX suffixes strip to base at lookup via new SA normalizer): L1 region links; 60 multi-region bases adjudicated single by Nominatim reverse-geocode (all tight clusters = Mapanet duplication: 20 Bahah inc. 28769 Mikhwah, 31 Makkah inc. 3 Ghamid-Az-Zinad rows both sources misfiled, 5 Asir, 58276 Qassim, 58459 Riyadh/Dawadmi, 89799/89934 Jazan); 3 missed r2 groups backfilled (Diriyah/Al-Ardah/Al-Mikhwah, 307 rows); GAPS: Riyadh city 11xxx entirely absent from source + Arar city missing (N.Borders 74 rural rows) — documented codeless (PG precedent); L2 governorate not attempted (98 r2 zones ≠ 139 governorates 1:1 in 8/13 regions, no village gazetteer) |
 | South Africa | ZA | 3266 | 3273 | GeoNames 3920 rows: municipal-boundary PIP + gazetteer placemun agreed 3536; Nominatim 425-place batch (filtered to settlement-class hits after 16 road-hits incl. Tongaat-Stellenbosch-road poison) + 3-digit prefix blocks adjudicated 29 place disputes incl. Middelburg-MP/EC pc-split (105x Nkangala vs 5900 Chris Hani), Richmond-NC 7090 Pixley, Greytown global Umvoti fix, Tokoza/Thokoza EKU, Lady Frere Chris Hani, Kranskop uMzinyathi; junk-province rows fixed to pc-area; ~70 anomalous pc/place pairs fixed to pc-area (Brits-0189, Krugersdorp-1928/1933, Umtata-4740 etc.); 7 genuine boundary duals (Hammanskraal TSH/Bojanala, JHB/EKU, Marble Hall/Siyabuswa); Nebo/Driekop/1060-1064 Sekhukhune enclaves kept |
 | South Korea | KR | 34249 | 34249 | GeoNames 5-digit dump joined on si/gun/gu via Revised Romanization + 29 phonetic-assimilation exceptions (Pyeongtaek/Buk/Jungnang/Gangneung/Jongno/Mokpo/Chilgok etc.); general-gu collapsed to parent si (Suwon/Seongnam/Goyang/Yongin/Changwon/Cheongju/Cheonan/Jeonju/Pohang/Ansan/Anyang); Sejong 142 codes linked at city (no L2); no cross-area codes; 06076 Gangnam/03056 Jongno/63001 Jeju-Chuja match youbianku + Korea Post example |
 | Spain | ES | 11150 | 11172 | GeoNames dump joined on province plate code (01001–52080; all rows pass INE 2-digit prefix check except 70 genuine cross-border deliveries; Ceuta 8 + Melilla 9 codes linked at autonomous city with ME→ML plate fix; 22 cross-province codes dual-linked incl. Treviño enclave 01118/01211/01427, majority primary with prefix-home tiebreak for 13110 Ciudad Real / 22584 Huesca / 44591 Teruel; orphan-prefix 26127 Montenegro de Cameros confirmed by SEUR carrier list + 14449 La Garganta by 5 sources) |
