@@ -1814,13 +1814,16 @@ countries are seeded.
 The 24 regions ship as level-2 areas under their provinces, and the
 114 districts ship as level-3 areas under their regions
 (INSTAT/Wikipedia list with French↔Malagasy name variants mapped).
-Ambatosoa is the 24th region, created by Law 2023-012 (29 June 2023)
-from the Maroantsetra and Mananara Avaratra districts of northern
-Analanjirofo; the bundled rows parent both districts under Ambatosoa.
+Ambatosoa is the 24th region, created by Law 2023-012 (annex
+7 June 2023; promulgated 11 August 2023) from the Maroantsetra and
+Mananara Avaratra districts of northern Analanjirofo; the bundled
+rows parent both districts under Ambatosoa.
 The bundled 114 districts treat Antananarivo-Renivohitra as a single
-district; sources that split it into its 6 arrondissement-districts
-report the official total of 119. Communes (1,695) and fokotany are
-not bundled.
+district; the legal total is 119, and the census aggregation to 114
+follows the INSTAT RGPH-3 Atlas, which counts the six Antananarivo
+districts as one. Communes (1,695 per the Law 2023-012 annex) and
+fokontany (18,251 per the MEF consolidated table under Décret
+2015-592, unchanged by the 2023 law) are not bundled.
 
 The regions have no ISO codes (ISO 3166-2:MG still lists the 6
 former faritany); the 6 remain postally relevant since the
@@ -2252,8 +2255,19 @@ and Gaza governorates as `State` rows and a single-level
 administrative hierarchy. It is selected with
 `SeedCountryGeographiesAction::execute('PS')` after countries are seeded.
 Localities (~500) are not bundled: no consolidated machine-readable
-list with governorate parents exists (OCHA COD stops at
-governorates) and Gaza geography is in flux.
+administrative locality list with stable identifiers and governorate
+parents exists (OCHA COD stops at governorates), and Gaza geography is
+in flux. Separately, the Ministry of Telecommunications and Digital
+Economy [postal-zone table](https://site.mtde.gov.ps/home/PostalCodes),
+accessed 2026-09-25, contains 755 locality/code rows and 603 distinct
+P3 codes under all 16 governorates. Every code falls within its
+governorate range in [Palestinian Instruction No. 1/2022](https://mjr.ogb.gov.ps/Decrees/ViewText/32052),
+and no code appears under multiple governorates. The overlay links
+only those published P3 codes to the bundled governorate areas; it
+does not infer unlisted codes or add locality areas. The [UPU Palestine
+profile](https://www.upu.int/UPU/media/upu/PostalEntitiesFiles/addressingUnit/pseFr.pdf)
+(05/2025) confirms the P+7 format and P126/P144/P610 examples. The
+Ministry table publishes no edition date or data-reuse terms.
 
 Palestinian addresses are formatted per the UPU layout: street lines,
 `{locality} {postcode}` with a `P` + 7-digit postcode (short `P` + 3
@@ -3776,6 +3790,13 @@ are parent-scoped.
 
 Samoan postcodes print right of the locality
 (`Apia WS1330`).
+
+Samoa Post's official village table, accessed 2026-09-25, lists 224
+postcode pairs grouped by Upolu and Savai'i but gives no district
+crosswalk. Compared with the bundled village rows, 159 entries match
+uniquely, 7 are ambiguous, and 58 have no matching row. The official
+list has no published reuse terms; no partial postcode overlay is
+bundled pending an authoritative crosswalk and reuse terms.
 
 ## Cayman Islands
 
