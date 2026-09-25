@@ -9,11 +9,6 @@ use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
 use AIArmada\AffiliateNetwork\Services\OfferManagementService;
-use AIArmada\Affiliates\Enums\CommissionType;
-use AIArmada\Affiliates\Enums\ProgramStatus;
-use AIArmada\Affiliates\Enums\ProgramVisibility;
-use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Services\ProgramService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Str;
 
@@ -237,49 +232,41 @@ describe('OfferManagementService', function (): void {
                 ->and($this->service->getApprovedOffers((string) $affiliate->getKey()))->toHaveCount(3);
         });
 
-        test('includes published local offers with approved core memberships', function (): void {
+        test('includes published mirrored offers with approved network applications', function (): void {
             $affiliate = createTestAffiliate();
-            $program = AffiliateProgram::create([
-                'name' => 'Linked Program',
-                'slug' => 'linked-program-' . uniqid(),
-                'status' => ProgramStatus::Active,
-                'visibility' => ProgramVisibility::Public,
-                'requires_approval' => false,
-                'commission_type' => CommissionType::Percentage,
-            ]);
-
-            app(ProgramService::class)->joinProgram($affiliate, $program);
 
             $linked = AffiliateOffer::factory()->published()->forSite($this->site)->create([
-                'external_program_id' => $program->getKey(),
+                'external_program_id' => (string) Str::uuid(),
             ]);
+
+            AffiliateOfferApplication::factory()
+                ->forOffer($linked)
+                ->forAffiliateId((string) $affiliate->getKey())
+                ->approved()
+                ->create();
 
             $offers = $this->service->getApprovedOffers((string) $affiliate->getKey());
 
             expect($offers->pluck('id')->all())->toContain((string) $linked->getKey());
         });
 
-        test('excludes local offers when the core membership is pending', function (): void {
+        test('excludes mirrored offers without approved applications', function (): void {
             $affiliate = createTestAffiliate();
-            $program = AffiliateProgram::create([
-                'name' => 'Approval Program',
-                'slug' => 'approval-program-' . uniqid(),
-                'status' => ProgramStatus::Active,
-                'visibility' => ProgramVisibility::Public,
-                'requires_approval' => true,
-                'commission_type' => CommissionType::Percentage,
+
+            $linked = AffiliateOffer::factory()->published()->forSite($this->site)->create([
+                'external_program_id' => (string) Str::uuid(),
             ]);
 
-            app(ProgramService::class)->joinProgram($affiliate, $program);
-
-            AffiliateOffer::factory()->published()->forSite($this->site)->create([
-                'external_program_id' => $program->getKey(),
-            ]);
+            AffiliateOfferApplication::factory()
+                ->forOffer($linked)
+                ->forAffiliateId((string) $affiliate->getKey())
+                ->pending()
+                ->create();
 
             expect($this->service->getApprovedOffers((string) $affiliate->getKey()))->toHaveCount(0);
         });
 
-        test('falls back to network applications when the linked program is gone', function (): void {
+        test('includes mirrored offers whose program vanished when the application is approved', function (): void {
             $affiliate = createTestAffiliate();
 
             $orphaned = AffiliateOffer::factory()->published()->forSite($this->site)->create([
@@ -297,21 +284,11 @@ describe('OfferManagementService', function (): void {
             expect($offers->pluck('id')->all())->toContain((string) $orphaned->getKey());
         });
 
-        test('excludes remote mirrors without approved applications', function (): void {
+        test('excludes mirrored offers with no application at all', function (): void {
             $affiliate = createTestAffiliate();
-            $program = AffiliateProgram::create([
-                'name' => 'Remote Program',
-                'slug' => 'remote-program-' . uniqid(),
-                'status' => ProgramStatus::Active,
-                'visibility' => ProgramVisibility::Public,
-                'requires_approval' => false,
-                'commission_type' => CommissionType::Percentage,
-            ]);
-
-            app(ProgramService::class)->joinProgram($affiliate, $program);
 
             AffiliateOffer::factory()->published()->forSite($this->site)->create([
-                'external_program_id' => $program->getKey(),
+                'external_program_id' => (string) Str::uuid(),
                 'metadata' => ['catalog_source' => 'remote'],
             ]);
 

@@ -6,6 +6,7 @@ namespace AIArmada\Affiliates\Network;
 
 use AIArmada\AffiliateNetwork\Contracts\AffiliateIdentityResolver;
 use AIArmada\AffiliateNetwork\Data\NetworkAffiliate;
+use AIArmada\AffiliateNetwork\Support\UserKeyAffiliateIdentityResolver;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\CommerceSupport\Support\OwnerScope;
@@ -16,6 +17,10 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 /**
  * Resolve network affiliate identity from core affiliates.
+ *
+ * Industry behavior: network identity is sufficient to join. Merchant
+ * affiliate rows still resolve first, but ids without one fall back to
+ * the host user — nothing is required or provisioned on the merchant side.
  */
 final class AffiliatesIdentityResolver implements AffiliateIdentityResolver
 {
@@ -23,7 +28,11 @@ final class AffiliatesIdentityResolver implements AffiliateIdentityResolver
     {
         $affiliate = Affiliate::query()->withoutOwnerScope()->whereKey($affiliateId)->first();
 
-        return $affiliate instanceof Affiliate ? self::toNetworkAffiliate($affiliate) : null;
+        if ($affiliate instanceof Affiliate) {
+            return self::toNetworkAffiliate($affiliate);
+        }
+
+        return $this->userIdentities()->find($affiliateId);
     }
 
     public function findAccessible(string $affiliateId): ?NetworkAffiliate
@@ -39,8 +48,10 @@ final class AffiliatesIdentityResolver implements AffiliateIdentityResolver
                 includeGlobal: false,
                 message: 'Affiliate is not accessible in the current owner scope.',
             );
-        } catch (ModelNotFoundException | AuthorizationException) {
+        } catch (AuthorizationException) {
             return null;
+        } catch (ModelNotFoundException) {
+            return $this->userIdentities()->findAccessible($affiliateId);
         }
 
         return $affiliate instanceof Affiliate ? self::toNetworkAffiliate($affiliate) : null;
@@ -63,6 +74,11 @@ final class AffiliatesIdentityResolver implements AffiliateIdentityResolver
             ->first();
 
         return $affiliate instanceof Affiliate ? (string) $affiliate->getKey() : null;
+    }
+
+    private function userIdentities(): UserKeyAffiliateIdentityResolver
+    {
+        return new UserKeyAffiliateIdentityResolver;
     }
 
     private static function toNetworkAffiliate(Affiliate $affiliate): NetworkAffiliate

@@ -132,7 +132,7 @@ The package fully supports multi-tenant architectures using the `commerce-suppor
 | `aiarmada/filament-affiliates` | Full admin UI with resources, widgets, portal |
 | `aiarmada/affiliate-network` | Network seam adapters: identity resolution, ledger posting, program bridge, local catalog reader |
 
-All integrations are detected via `class_exists()` and enabled automatically. When the network package is present, this package binds its seam contracts (`AffiliateIdentityResolver`, `NetworkLedger`, `LinkedProgramBridge`, the local catalog reader) and points `affiliate-network.models.affiliate` at the core `Affiliate` model; without it, nothing network-related loads.
+All integrations are detected via `class_exists()` and enabled automatically. When the network package is present, this package binds its seam contracts (`AffiliateIdentityResolver`, `NetworkLedger`, the local catalog reader) and points `affiliate-network.models.affiliate` at the core `Affiliate` model; without it, nothing network-related loads. The identity adapter resolves merchant affiliate rows first and falls back to the host user — joining never requires or provisions a merchant-side account.
 
 ## Requirements
 

@@ -7,6 +7,7 @@ namespace AIArmada\Affiliates\Network;
 use AIArmada\AffiliateNetwork\Contracts\NetworkLedger;
 use AIArmada\AffiliateNetwork\Data\NetworkConversionDraft;
 use AIArmada\AffiliateNetwork\Data\NetworkPostedConversion;
+use AIArmada\AffiliateNetwork\Support\UserKeyAffiliateIdentityResolver;
 use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
 use AIArmada\Affiliates\Data\AffiliateConversionData;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
@@ -42,6 +43,10 @@ final class AffiliatesLedger implements NetworkLedger
         // key; ambient owner scope (e.g. the link owner's context from
         // recordConversion) must not hide the affiliate or prior postings.
         $affiliate = Affiliate::query()->withoutOwnerScope()->whereKey($draft->affiliateId)->first();
+
+        if (! $affiliate instanceof Affiliate) {
+            $affiliate = $this->affiliateForNetworkUser($draft->affiliateId);
+        }
 
         if (! $affiliate instanceof Affiliate) {
             return null;
@@ -117,6 +122,35 @@ final class AffiliatesLedger implements NetworkLedger
                 'commission_minor' => (int) $row->commission_minor,
             ])
             ->all();
+    }
+
+    /**
+     * Map a network user id to its merchant affiliate row via the account
+     * email.
+     *
+     * Joining never creates this linkage — it exists only when the
+     * merchant side already knows the email (portal signup with the same
+     * address, admin entry). The id arrives from an authenticated
+     * link-creation chain, and only Active affiliates match. Unknown
+     * users post nothing; the network keeps counters-only.
+     */
+    private function affiliateForNetworkUser(string $affiliateId): ?Affiliate
+    {
+        $email = (new UserKeyAffiliateIdentityResolver)->find($affiliateId)?->email;
+
+        if (! is_string($email) || $email === '') {
+            return null;
+        }
+
+        $id = (new AffiliatesIdentityResolver)->findIdForVerifiedEmail($email);
+
+        if (! is_string($id)) {
+            return null;
+        }
+
+        $affiliate = Affiliate::query()->withoutOwnerScope()->whereKey($id)->first();
+
+        return $affiliate instanceof Affiliate ? $affiliate : null;
     }
 
     /**

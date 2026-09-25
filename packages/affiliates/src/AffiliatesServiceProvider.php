@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates;
 
 use AIArmada\AffiliateNetwork\Contracts\AffiliateIdentityResolver;
-use AIArmada\AffiliateNetwork\Contracts\LinkedProgramBridge;
 use AIArmada\AffiliateNetwork\Contracts\NetworkLedger;
 use AIArmada\AffiliateNetwork\Services\Catalog\CatalogReaderResolver;
 use AIArmada\Affiliates\Actions\Affiliates\ResolvePublicAffiliateReferralContext;
@@ -149,10 +148,6 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
         $this->app->singleton(
             NetworkLedger::class,
             Network\AffiliatesLedger::class
-        );
-        $this->app->singleton(
-            LinkedProgramBridge::class,
-            Network\AffiliatesProgramBridge::class
         );
         $this->app->singleton(
             CatalogReaderResolver::LOCAL_READER_KEY,

@@ -3,15 +3,11 @@
 declare(strict_types=1);
 
 use AIArmada\AffiliateNetwork\Actions\ApplyToOffer;
-use AIArmada\AffiliateNetwork\Actions\ApproveApplication;
-use AIArmada\AffiliateNetwork\Actions\CreateOffer;
 use AIArmada\AffiliateNetwork\Actions\PostNetworkConversionToLedger;
 use AIArmada\AffiliateNetwork\Contracts\AffiliateIdentityResolver;
-use AIArmada\AffiliateNetwork\Contracts\LinkedProgramBridge;
 use AIArmada\AffiliateNetwork\Contracts\NetworkLedger;
 use AIArmada\AffiliateNetwork\Data\NetworkAffiliate;
 use AIArmada\AffiliateNetwork\Data\NetworkConversionDraft;
-use AIArmada\AffiliateNetwork\Data\NetworkMembership;
 use AIArmada\AffiliateNetwork\Data\NetworkPostedConversion;
 use AIArmada\AffiliateNetwork\Enums\OfferVisibility;
 use AIArmada\AffiliateNetwork\Exceptions\AffiliatesNotInstalled;
@@ -27,7 +23,6 @@ use AIArmada\AffiliateNetwork\Services\OfferManagementService;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Network\AffiliatesIdentityResolver;
 use AIArmada\Affiliates\Network\AffiliatesLedger;
-use AIArmada\Affiliates\Network\AffiliatesProgramBridge;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Collection;
 
@@ -138,50 +133,6 @@ final class FakeNetworkLedger implements NetworkLedger
         }
 
         return $rows;
-    }
-}
-
-final class FakeLinkedPrograms implements LinkedProgramBridge
-{
-    /** @param array<string, NetworkMembership> $memberships keyed by program id */
-    public function __construct(private array $memberships = []) {}
-
-    public function join(string $affiliateId, string $programId): NetworkMembership
-    {
-        return $this->memberships[$programId] ?? new NetworkMembership(
-            id: 'membership-' . $programId,
-            affiliateId: $affiliateId,
-            programId: $programId,
-            status: 'approved',
-        );
-    }
-
-    public function membershipsFor(string $affiliateId, array $programIds): array
-    {
-        return array_filter(
-            $this->memberships,
-            fn (NetworkMembership $membership, string $programId): bool => in_array($programId, $programIds, true)
-                && $membership->affiliateId === $affiliateId,
-            ARRAY_FILTER_USE_BOTH,
-        );
-    }
-
-    public function existingProgramIds(array $programIds): array
-    {
-        return array_values(array_intersect($programIds, array_keys($this->memberships)));
-    }
-
-    public function approvedProgramIds(string $affiliateId, int $limit = 500): array
-    {
-        $ids = [];
-
-        foreach ($this->memberships as $programId => $membership) {
-            if ($membership->affiliateId === $affiliateId && $membership->isApproved()) {
-                $ids[] = $programId;
-            }
-        }
-
-        return array_slice($ids, 0, max(1, $limit));
     }
 }
 
@@ -313,10 +264,10 @@ describe('Network seam', function (): void {
         expect($report['match'])->toBeTrue();
     });
 
-    test('linked-program features degrade to the network flow without a bridge', function (): void {
-        [$site] = seamFixtures('seam-remote.example');
+    test('mirrored program offers use the network application flow', function (): void {
+        [$site] = seamFixtures('seam-mirror.example');
         $offer = AffiliateOffer::factory()->published()->forSite($site)->create([
-            'landing_url' => 'https://seam-remote.example/landing',
+            'landing_url' => 'https://seam-mirror.example/landing',
             'requires_approval' => true,
             'visibility' => OfferVisibility::Public,
             'external_program_id' => 'program-vanished',
@@ -325,46 +276,43 @@ describe('Network seam', function (): void {
 
         $management = app(OfferManagementService::class);
 
-        // Construct the remote-only shape directly: no program bridge bound.
-        $remoteOnly = new OfferManagementService(
-            app(CreateOffer::class),
-            app(ApplyToOffer::class),
-            app(ApproveApplication::class),
-            null,
-        );
+        expect($management->hasAppliedForOffer($offer, 'aff-1'))->toBeFalse()
+            ->and($management->isApprovedForOffer($offer, 'aff-1'))->toBeFalse()
+            ->and($management->applicationStatusForOffer($offer, 'aff-1'))->toBeNull();
 
-        expect($management->isLocalProgramOffer($offer))->toBeTrue()
-            ->and($remoteOnly->enrollInLinkedProgram($offer, 'aff-1'))->toBeNull()
-            ->and($remoteOnly->hasAppliedForOffer($offer, 'aff-1'))->toBeFalse()
-            ->and($remoteOnly->isApprovedForOffer($offer, 'aff-1'))->toBeFalse();
+        AffiliateOfferApplication::factory()
+            ->forOffer($offer)
+            ->forAffiliateId('aff-1')
+            ->approved()
+            ->create();
+
+        expect($management->hasAppliedForOffer($offer, 'aff-1'))->toBeTrue()
+            ->and($management->isApprovedForOffer($offer, 'aff-1'))->toBeTrue()
+            ->and($management->applicationStatusForOffer($offer, 'aff-1'))->toBe('approved');
     });
 
-    test('program memberships resolve through the bridge', function (): void {
-        [$site] = seamFixtures('seam-bridge.example');
+    test('approvals for mirrored offers need no merchant membership', function (): void {
+        [$site] = seamFixtures('seam-mirror-approve.example');
         $offer = AffiliateOffer::factory()->published()->forSite($site)->create([
-            'landing_url' => 'https://seam-bridge.example/landing',
+            'landing_url' => 'https://seam-mirror-approve.example/landing',
             'requires_approval' => true,
             'visibility' => OfferVisibility::Public,
             'external_program_id' => 'program-1',
             'metadata' => ['catalog_source' => 'local'],
         ]);
+        $application = AffiliateOfferApplication::factory()
+            ->forOffer($offer)
+            ->forAffiliateId('aff-1')
+            ->create();
 
-        $management = new OfferManagementService(
-            app(CreateOffer::class),
-            app(ApplyToOffer::class),
-            app(ApproveApplication::class),
-            new FakeLinkedPrograms([
-                'program-1' => new NetworkMembership(id: 'm-1', affiliateId: 'aff-1', programId: 'program-1', status: 'approved'),
-            ]),
-        );
+        $management = app(OfferManagementService::class);
+        $management->approveApplication($application);
 
         expect($management->isApprovedForOffer($offer, 'aff-1'))->toBeTrue()
-            ->and($management->hasAppliedForOffer($offer, 'aff-1'))->toBeTrue()
-            ->and($management->applicationStatusForOffer($offer, 'aff-1'))->toBe('approved')
-            ->and($management->enrollInLinkedProgram($offer, 'aff-1'))->not->toBeNull();
+            ->and($management->applicationStatusForOffer($offer, 'aff-1'))->toBe('approved');
     });
 
-    test('status maps batch network and program offers', function (): void {
+    test('status maps batch plain and mirrored offers in one flow', function (): void {
         [$site, $offer] = seamFixtures('seam-map.example');
         $programOffer = AffiliateOffer::factory()->published()->forSite($site)->create([
             'landing_url' => 'https://seam-map.example/program',
@@ -378,17 +326,13 @@ describe('Network seam', function (): void {
             ->forAffiliateId('aff-1')
             ->approved()
             ->create();
+        AffiliateOfferApplication::factory()
+            ->forOffer($programOffer)
+            ->forAffiliateId('aff-1')
+            ->pending()
+            ->create();
 
-        $management = new OfferManagementService(
-            app(CreateOffer::class),
-            app(ApplyToOffer::class),
-            app(ApproveApplication::class),
-            new FakeLinkedPrograms([
-                'program-9' => new NetworkMembership(id: 'm-9', affiliateId: 'aff-1', programId: 'program-9', status: 'pending'),
-            ]),
-        );
-
-        $map = $management->applicationStatusMap('aff-1', new Collection([$offer, $programOffer]));
+        $map = app(OfferManagementService::class)->applicationStatusMap('aff-1', new Collection([$offer, $programOffer]));
 
         expect($map[(string) $offer->getKey()])->toBe('approved')
             ->and($map[(string) $programOffer->getKey()])->toBe('pending');
@@ -407,7 +351,6 @@ describe('Network seam', function (): void {
         expect(app()->bound(AffiliateIdentityResolver::class))->toBeTrue()
             ->and(app(AffiliateIdentityResolver::class))->toBeInstanceOf(AffiliatesIdentityResolver::class)
             ->and(app(NetworkLedger::class))->toBeInstanceOf(AffiliatesLedger::class)
-            ->and(app(LinkedProgramBridge::class))->toBeInstanceOf(AffiliatesProgramBridge::class)
             ->and(app()->bound(CatalogReaderResolver::LOCAL_READER_KEY))->toBeTrue()
             ->and(config('affiliate-network.models.affiliate'))->toBe(Affiliate::class);
     });
