@@ -11,6 +11,7 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Communications\CommunicationsServiceProvider;
 use AIArmada\Communications\Models\Communication;
 use Illuminate\Support\Facades\Queue;
+use Livewire\LivewireServiceProvider;
 
 function notificationOffer(string $domain): AffiliateOffer
 {
@@ -29,7 +30,7 @@ describe('network notifications', function (): void {
     beforeEach(function (): void {
         Queue::fake();
 
-        $this->app->register(Livewire\LivewireServiceProvider::class);
+        $this->app->register(LivewireServiceProvider::class);
         $this->app->register(CommunicationsServiceProvider::class);
         $this->loadMigrationsFrom(__DIR__ . '/../../../../packages/communications/database/migrations');
         $this->artisan('migrate', ['--database' => 'testing']);

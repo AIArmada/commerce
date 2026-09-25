@@ -6,6 +6,7 @@ use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
 use AIArmada\AffiliateNetwork\Services\OfferLinkService;
+use Illuminate\Support\Str;
 
 function reconcileFixtures(string $domain, bool $clean): AffiliateOffer
 {
@@ -60,7 +61,7 @@ describe('reconcile command', function (): void {
             ->expectsOutputToContain('1 offer(s)')
             ->assertSuccessful();
 
-        $this->artisan('affiliate-network:reconcile', ['--offer' => (string) \Illuminate\Support\Str::uuid()])
+        $this->artisan('affiliate-network:reconcile', ['--offer' => (string) Str::uuid()])
             ->assertFailed();
     });
 });

@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
+use AIArmada\AffiliateNetwork\Adapters\Affiliates\AffiliatesCatalogReader;
 use AIArmada\AffiliateNetwork\Exceptions\OfferNotFoundException;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\ProgramVisibility;
 use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\AffiliateNetwork\Adapters\Affiliates\AffiliatesCatalogReader;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\NullOwnerResolver;

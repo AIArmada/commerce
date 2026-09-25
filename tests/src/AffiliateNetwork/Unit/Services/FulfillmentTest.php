@@ -8,7 +8,6 @@ use AIArmada\AffiliateNetwork\Enums\LegStatus;
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
-use AIArmada\AffiliateNetwork\Models\NetworkConversionLeg;
 use AIArmada\AffiliateNetwork\Services\HostManualFulfillment;
 use AIArmada\AffiliateNetwork\Services\NetworkBooks;
 use AIArmada\Affiliates\Models\Affiliate;

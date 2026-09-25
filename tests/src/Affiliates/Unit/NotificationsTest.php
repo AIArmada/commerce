@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateToCart;
+use AIArmada\Affiliates\Actions\Conversions\RecordAffiliateConversion;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\ProgramVisibility;
@@ -10,6 +12,7 @@ use AIArmada\Affiliates\Services\ProgramService;
 use AIArmada\Communications\CommunicationsServiceProvider;
 use AIArmada\Communications\Models\Communication;
 use Illuminate\Support\Facades\Queue;
+use Livewire\LivewireServiceProvider;
 
 function notificationProgram(): AffiliateProgram
 {
@@ -27,7 +30,7 @@ describe('engine notifications', function (): void {
     beforeEach(function (): void {
         Queue::fake();
 
-        $this->app->register(Livewire\LivewireServiceProvider::class);
+        $this->app->register(LivewireServiceProvider::class);
         $this->app->register(CommunicationsServiceProvider::class);
         $this->loadMigrationsFrom(__DIR__ . '/../../../../packages/communications/database/migrations');
         $this->artisan('migrate', ['--database' => 'testing']);
@@ -48,10 +51,10 @@ describe('engine notifications', function (): void {
     test('recorded conversions queue a managed notification', function (): void {
         $affiliate = createTestAffiliate(['contact_email' => 'conv-notify-' . uniqid() . '@example.com']);
         $cart = app('cart')->getCurrentCart();
-        app(AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateToCart::class)->handle($affiliate, $cart);
+        app(AttachAffiliateToCart::class)->handle($affiliate, $cart);
         $cart->add('notify-item', 'Order item', 10.00, 1);
 
-        app(AIArmada\Affiliates\Actions\Conversions\RecordAffiliateConversion::class)->handle($cart, [
+        app(RecordAffiliateConversion::class)->handle($cart, [
             'external_reference' => 'NOTIFY-1',
         ]);
 

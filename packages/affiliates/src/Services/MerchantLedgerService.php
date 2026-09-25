@@ -14,7 +14,6 @@ use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Services\Commissions\CommissionCaps;
-use AIArmada\Affiliates\Services\FraudDetectionService;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\RejectedConversion;
 use Carbon\CarbonImmutable;

@@ -15,6 +15,6 @@ final readonly class MerchantAffiliate
         public string $code,
         public ?string $email,
         public ?string $ownerType,
-        public string|int|null $ownerId,
+        public string | int | null $ownerId,
     ) {}
 }
