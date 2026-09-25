@@ -69,8 +69,8 @@ countries use it and why the rest do not.
     Guernsey finder API works per full code but caps broader
     queries). Needs a polite per-code attribution batch (~9k
     finder queries) or PAF access.
-  - Egypt: access recheck 2026-09-25: https://egyptpost.gov.eg/
-    returns HTTP 403 and https://www.egyptpost.org/ timed out. The
+  - Egypt: access recheck 2026-09-25 (retried same day): https://egyptpost.gov.eg/
+    still HTTP 403 and https://www.egyptpost.org/ timed out. The
     official BareedMall page
     (https://bareedmall.egyptpost.org/bareedmallstorefront/bareedmall/ar/v/Enpo)
     is a stamp shop, not a postal directory; its current indexed copy
@@ -356,6 +356,7 @@ countries use it and why the rest do not.
 | Saint-Barthélemy | BL | 1 | 1 | UPU addressing (97133) |
 | Saint-Martin | MF | 1 | 1 | UPU addressing (97150) |
 | San Marino | SM | 10 | 10 | UPU SMR profile (47890–47899; Serravalle holds 47891+47899) |
+| Samoa | WS | 223 | 240 | Samoa Post official list (224 pairs) × SBS 2021 Village Directory PDF (341 villages + constituency + pop): 187 L2 single, 13 L2-split (primary = largest census pop), 1 L2-multi (Manono Tai WS1190 → 4 island villages per UNESCO), 22 L1 district links (townships Falelatai/Salelologa/Satupaitea/Mulifanua + block-pure micros); 4 naive-match traps fixed (Vaiala WS1332→Tuamasaga split, Safune WS2386→Gagaifomauga L1, Saletele WS2373→Gagaifomauga L1 via Photon hamlet, Papa WS2482→Papa Uta Vaisigano); GeoPostcodes disregarded (wrong districts + coords); Lolua WS2374 omitted (no census/OSM/web presence; WS237x straddles Gagaemauga/Gagaifomauga boundary) |
 | Serbia | RS | 1334 | 1407 | Mapanet municipality pages (145 munis, 4281 locality rows; Belgrade at city-municipality level) + 104 GN-only town/village codes (muni inherited from mapanet locality, 32 via Nominatim with Đurđevo→Žabalj + Kaluđerske Bare→Bajina Bašta fixes) + 100 courier-list Belgrade branch codes (generic at city); Kosovo r1 rows excluded (Posta e Kosovës system, XK overlaid); Niš/Užice/Požarevac/Vranje link district (cities unbundled); 68 shared codes dual-linked, majority-rows primary |
 | Slovakia | SK | 3480 | 3514 | GeoNames dump at district level (010 01–992 01; office-number rows resolved via town→district from street rows, Rajec→Žilina; Bratislava blanks via 2nd-digit district rule anchored on street rows + verified 851 01 Petržalka-V / 841 04 Karlova Ves-IV via orsr.sk + Wikipedia street list; Košice-city 329 office codes at region (intra-city office→district needs Slovak Post branch data, CZ-Prague precedent); 33 cross-district dual-linked, majority primary with prefix/post-office tiebreaks incl. 906 35 Malacky (pop 741 + both-village Wikipedia infoboxes), 985 42 Lučenec (pošta Veľké Dravce per citypopulation), 985 45 Detva (985 45 = Látky), 094 06 Vranov / 916 13+916 16 NMnV / 930 28 DS / 976 81 Brezno / 980 33 RS / 985 22 Poltár on prefix, 067 82 Snina, 040 16 KE-II) |
 | Slovenia | SI | 468 | 469 | Pošta Slovenije official list Aug-2025 via archive (1000–9503; 76 PO-box/large-user/internal excluded; 3231 Grobelno dual-linked Šentjur primary) |
@@ -578,7 +579,7 @@ $result = app(ImportPostalCodesAction::class)->execute($source);
 | Saint Martin | MF | complete | L1: overseas_collectivity (1) |
 | Saint Pierre and Miquelon | PM | complete | L1: overseas_collectivity (1) |
 | Saint Vincent and the Grenadines | VC | complete | L1: parish (6) |
-| Samoa | WS | admin-ready | L2: village (342) |
+| Samoa | WS | complete | L2: village (342) |
 | San Marino | SM | complete | L1: municipality (9) |
 | Sao Tome and Principe | ST | none | L1: autonomous_region,district (7) |
 | Saudi Arabia | SA | expansion | L2: governorate (139) |
