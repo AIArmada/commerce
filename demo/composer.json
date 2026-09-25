@@ -100,6 +100,10 @@
         },
         {
             "type": "path",
+            "url": "../packages/filament-affiliate-network"
+        },
+        {
+            "type": "path",
             "url": "../packages/filament-chip"
         },
         {
@@ -117,6 +121,10 @@
         {
             "type": "path",
             "url": "../packages/filament-jnt"
+        },
+        {
+            "type": "path",
+            "url": "../packages/links"
         },
         {
             "type": "path",
@@ -246,6 +254,8 @@
         "aiarmada/signals": "*",
         "aiarmada/vouchers": "*",
         "aiarmada/affiliates": "*",
+        "aiarmada/affiliate-network": "*",
+        "aiarmada/filament-affiliate-network": "*",
         "aiarmada/jnt": "*",
         "aiarmada/filament-cart": "*",
         "aiarmada/filament-cashier": "*",

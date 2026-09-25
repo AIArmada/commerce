@@ -45,6 +45,33 @@ it('checks global roles without leaking the active team scope', function (): voi
         ->and(getPermissionsTeamId())->toBe($owner->getKey());
 });
 
+it('treats team-scoped assignments as global for the super-admin check', function (): void {
+    $owner = app(OwnerResolverInterface::class)->resolve();
+    expect($owner)->not->toBeNull();
+
+    // Single-tenant seeders scope every assignment to the owner; the
+    // global check must still see the role from a null-team context.
+    setPermissionsTeamId($owner->getKey());
+
+    $user = User::query()->create([
+        'name' => 'Team Scoped Super Admin',
+        'email' => 'team-scoped-super-admin@example.com',
+        'password' => 'secret',
+    ]);
+    $role = Role::create([
+        'name' => 'team-super-admin',
+        'guard_name' => 'web',
+    ]);
+
+    $user->assignRole($role);
+
+    setPermissionsTeamId(null);
+
+    expect(UserRoleChecker::hasGlobalRole($user, 'team-super-admin'))->toBeTrue()
+        ->and(getPermissionsTeamId())->toBeNull()
+        ->and(app(PermissionRegistrar::class)->teams)->toBeTrue();
+});
+
 it('caches wildcard permissions for the current request', function (): void {
     $user = new class
     {

@@ -132,9 +132,13 @@ abstract class ConversionStatus extends State
             ->allowTransition(PendingConversion::class, QualifiedConversion::class)
             ->allowTransition(PendingConversion::class, ApprovedConversion::class)
             ->allowTransition(PendingConversion::class, RejectedConversion::class)
+            ->allowTransition(PendingConversion::class, ReversedConversion::class)
             ->allowTransition(QualifiedConversion::class, ApprovedConversion::class)
             ->allowTransition(QualifiedConversion::class, RejectedConversion::class)
+            ->allowTransition(QualifiedConversion::class, ReversedConversion::class)
             ->allowTransition(ApprovedConversion::class, PaidConversion::class)
-            ->allowTransition(ApprovedConversion::class, RejectedConversion::class);
+            ->allowTransition(ApprovedConversion::class, RejectedConversion::class)
+            ->allowTransition(ApprovedConversion::class, ReversedConversion::class)
+            ->allowTransition(PaidConversion::class, ReversedConversion::class);
     }
 }

@@ -82,6 +82,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Notifications
+    |--------------------------------------------------------------------------
+    |
+    | Managed notifications via aiarmada/communications when installed
+    | (program joins, conversions). On by default; silent when the
+    | communications package is absent regardless of this flag.
+    |
+    */
+    'notifications' => [
+        'enabled' => env('AFFILIATES_NOTIFICATIONS_ENABLED', true),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Ownership (Multi-Tenancy)
     |--------------------------------------------------------------------------
     |

@@ -33,13 +33,13 @@ return new class extends Migration
             $table->string('conversion_type', 64)->nullable();
             $table->string('performance_bonus_key', 160)->nullable()->unique();
             $table->unsignedBigInteger('subtotal_minor')->default(0);
-            $table->unsignedBigInteger('commission_minor')->default(0);
+            $table->bigInteger('commission_minor')->default(0);
             $table->unsignedBigInteger('value_minor')->default(0);
             $table->string('commission_currency', 3)->index();
             $table->decimal('commission_rate_to_base', 20, 8)->nullable();
             $table->string('commission_rate_base', 3)->nullable();
             $table->uuid('affiliate_link_id')->nullable()->index();
-            $table->uuid('network_link_id')->nullable()->index();
+            $table->string('source_ref', 120)->nullable()->index();
             $table->uuid('sharer_user_id')->nullable()->index();
             $table->uuid('actor_user_id')->nullable()->index();
             $table->string('origin', 32)->nullable()->index();
@@ -50,6 +50,7 @@ return new class extends Migration
             $table->timestampTz('occurred_at')->nullable()->index();
             $table->timestampTz('approved_at')->nullable()->index();
             $table->timestampTz('rejected_at')->nullable();
+            $table->timestampTz('reversed_at')->nullable();
             $table->timestampTz('paid_at')->nullable();
             $table->timestampsTz();
 

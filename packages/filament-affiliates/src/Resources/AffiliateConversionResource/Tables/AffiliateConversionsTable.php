@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource\Tables;
 
+use AIArmada\Affiliates\Actions\Conversions\ReverseAffiliateConversion as ReverseConversion;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\ConversionStatus;
 use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\States\RejectedConversion;
+use AIArmada\Affiliates\States\ReversedConversion;
 use AIArmada\Affiliates\Support\Integrations\CartBridge;
 use AIArmada\Affiliates\Support\Integrations\VoucherBridge;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
@@ -17,6 +19,7 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
+use Filament\Forms\Components\TextInput;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -52,6 +55,20 @@ final class AffiliateConversionsTable
                     ->color(fn (ConversionStatus | string $state): string => self::statusColor($state))
                     ->formatStateUsing(fn (ConversionStatus | string $state): string => self::statusLabel($state))
                     ->sortable(),
+
+                TextColumn::make('origin')
+                    ->label('Origin')
+                    ->badge()
+                    ->placeholder('—')
+                    ->toggleable()
+                    ->sortable(),
+
+                TextColumn::make('source_ref')
+                    ->label('Source Ref')
+                    ->placeholder('—')
+                    ->copyable()
+                    ->toggleable()
+                    ->searchable(),
 
                 TextColumn::make('occurred_at')
                     ->label('Occurred')
@@ -106,6 +123,22 @@ final class AffiliateConversionsTable
                     ->visible(fn (AffiliateConversion $record): bool => $record->status->canTransitionTo(PaidConversion::class))
                     ->requiresConfirmation()
                     ->action(fn (AffiliateConversion $record): bool => self::updateStatus($record, PaidConversion::class)),
+                Action::make('reverse')
+                    ->label('Reverse')
+                    ->color('danger')
+                    ->icon(Heroicon::OutlinedArrowUturnLeft)
+                    ->authorize(fn (): bool => FilamentPermission::hasAnyAbility(['affiliate_conversion.update', 'affiliate.approve']))
+                    ->visible(fn (AffiliateConversion $record): bool => $record->status->canTransitionTo(ReversedConversion::class))
+                    ->form([
+                        TextInput::make('reason')
+                            ->label('Reason')
+                            ->required()
+                            ->maxLength(120)
+                            ->placeholder('refund, chargeback, clawback…'),
+                    ])
+                    ->action(function (AffiliateConversion $record, array $data): void {
+                        self::reverse($record, (string) $data['reason']);
+                    }),
             ])
             ->bulkActions([]);
     }
@@ -118,6 +151,17 @@ final class AffiliateConversionsTable
     public static function statusLabel(ConversionStatus | string $state): string
     {
         return ConversionStatus::fromString($state)->label();
+    }
+
+    public static function reverse(AffiliateConversion $record, string $reason): void
+    {
+        Gate::authorize('update', $record);
+
+        $conversion = (bool) config('affiliates.owner.enabled', false)
+            ? OwnerWriteGuard::findOrFailForOwner(AffiliateConversion::class, $record->getKey())
+            : AffiliateConversion::findOrFail($record->getKey());
+
+        app(ReverseConversion::class)->execute($conversion, $reason);
     }
 
     public static function updateStatus(AffiliateConversion $record, ConversionStatus | string $status): bool

@@ -6,7 +6,7 @@ Filament v5 plugin that turns the `aiarmada/affiliates` package into a full-fled
 
 - 🎛️ **Affiliate Resource** – CRUD partners with commission policies, voucher hints, metadata, and owner scoping.
 - 🛰️ **Attribution Timeline** – Inspect which carts, campaigns, and UTMs are driving activity.
-- 💸 **Conversions & Payouts** – Moderate commission statuses, approve payouts, and export ledgers.
+- 💸 **Conversions & Payouts** – Moderate commission statuses, approve payouts, reverse conversions with reasons, and export ledgers.
 - 🔗 **Deep Links** – When `aiarmada/filament-cart` or `aiarmada/filament-vouchers` exist we render contextual actions that jump to carts or vouchers.
 - 📊 **Dashboard Widget** – One look metrics for active affiliates, pending approvals, total commissions, and conversion rates.
 

@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Authz\Support;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerContextTeamResolver;
 use Illuminate\Database\Eloquent\Model;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -36,8 +34,14 @@ final class UserRoleChecker
             return (bool) $user->hasRole($role);
         }
 
-        $originalTeamId = $registrar->getPermissionsTeamId();
-        $originalOwner = OwnerContext::resolve();
+        // Drop team scoping entirely for the check: a global assignment may
+        // itself carry a team id (single-tenant seeders scope everything to
+        // the owner), so filtering by "team null" would miss it. This mirrors
+        // FilamentPermission::isSuperAdmin, keeping Gate and UI verdicts
+        // coherent.
+        $teams = $registrar->teams;
+        $registrar->teams = false;
+
         $hadLoadedRoles = $user instanceof Model && $user->relationLoaded('roles');
         $loadedRoles = $hadLoadedRoles ? $user->getRelation('roles') : null;
 
@@ -46,19 +50,9 @@ final class UserRoleChecker
         }
 
         try {
-            $registrar->setPermissionsTeamId(null);
-
             return (bool) $user->hasRole($role);
         } finally {
-            $teamResolverClass = config('permission.team_resolver');
-            $preservesOwnerType = is_string($teamResolverClass)
-                && is_a($teamResolverClass, OwnerContextTeamResolver::class, true);
-
-            $registrar->setPermissionsTeamId(
-                $preservesOwnerType
-                    ? $originalOwner
-                    : $originalTeamId,
-            );
+            $registrar->teams = $teams;
 
             if ($user instanceof Model) {
                 $user->unsetRelation('roles');

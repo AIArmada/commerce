@@ -10,6 +10,8 @@ Affiliate attribution, referral tracking, and commission workflows for Laravel c
 - 🧩 **Composable Integrations** – Drop-in Cart + Voucher bridges automatically attach affiliates the moment a code or voucher is applied.
 - 🍪 **Visit Cookies** – Optional middleware captures affiliate clicks before a cart exists, keeping referrals alive across sessions.
 - 📡 **Events Everywhere** – `AffiliateAttributed` and `AffiliateConversionRecorded` events make automation straightforward.
+- ↩️ **Reversals** – Refunds and chargebacks mark the conversion reversed and post a negated companion, keeping sum-based readers correct.
+- 🔌 **Merchant Seams** – `MerchantLedger`, `MerchantIdentity`, and `MerchantCatalog` contracts let marketplaces post, recognize, and mirror without the engine naming them.
 
 ## Installation
 

@@ -6,7 +6,7 @@ namespace App\Filament\Pages;
 
 use AIArmada\FilamentAffiliates\Widgets\AffiliateStatsWidget;
 use AIArmada\FilamentCart\Widgets\AbandonedCartsWidget;
-use AIArmada\FilamentCart\Widgets\CartStatsOverviewWidget;
+use AIArmada\FilamentCart\Widgets\CartStatsWidget;
 use AIArmada\FilamentChip\Widgets\ChipStatsWidget;
 use AIArmada\FilamentChip\Widgets\RecentTransactionsWidget;
 use AIArmada\FilamentDocs\Widgets\DocStatsWidget;
@@ -40,11 +40,11 @@ use Filament\Support\Icons\Heroicon;
  */
 final class Dashboard extends BaseDashboard
 {
-    protected static string | BackedEnum | null $navigationIcon = Heroicon::Home;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::Home;
 
     protected static ?int $navigationSort = -2;
 
-    protected int | string | array $columns = [
+    protected int|string|array $columns = [
         'default' => 1,
         'sm' => 2,
         'md' => 3,
@@ -118,7 +118,7 @@ final class Dashboard extends BaseDashboard
             // ============================================
             // ROW 8: CART RECOVERY
             // ============================================
-            CartStatsOverviewWidget::class,
+            CartStatsWidget::class,
             AbandonedCartsWidget::class,
         ];
     }

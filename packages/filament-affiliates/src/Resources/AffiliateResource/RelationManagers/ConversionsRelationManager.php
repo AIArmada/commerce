@@ -35,6 +35,18 @@ final class ConversionsRelationManager extends RelationManager
                     ->placeholder('—')
                     ->searchable(),
 
+                TextColumn::make('origin')
+                    ->label('Origin')
+                    ->badge()
+                    ->placeholder('—')
+                    ->toggleable(),
+
+                TextColumn::make('source_ref')
+                    ->label('Source Ref')
+                    ->placeholder('—')
+                    ->copyable()
+                    ->toggleable(),
+
                 TextColumn::make('commission_minor')
                     ->label('Commission')
                     ->formatStateUsing(fn (AffiliateConversion $record): string => MoneyFormatter::formatMinor($record->commission_minor, $record->commission_currency))

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
+use AIArmada\AffiliateNetwork\Adapters\Affiliates\AffiliatesIdentityReader;
 use AIArmada\AffiliateNetwork\Contracts\AffiliateIdentityResolver;
 use AIArmada\AffiliateNetwork\Support\UserKeyAffiliateIdentityResolver;
-use AIArmada\Affiliates\Network\AffiliatesIdentityResolver;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 
@@ -55,6 +55,6 @@ describe('UserKeyAffiliateIdentityResolver', function (): void {
     });
 
     test('engine adapter still wins the container binding when installed', function (): void {
-        expect(app(AffiliateIdentityResolver::class))->toBeInstanceOf(AffiliatesIdentityResolver::class);
+        expect(app(AffiliateIdentityResolver::class))->toBeInstanceOf(AffiliatesIdentityReader::class);
     });
 });

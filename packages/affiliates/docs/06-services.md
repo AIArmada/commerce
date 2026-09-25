@@ -32,6 +32,13 @@ The canonical orchestration surface for affiliates is the `Actions` tree. Prefer
 | `MatureConversion::run($conversion)` | Mature a single conversion |
 | `ProcessConversionMaturity::run()` | Process batch maturity |
 | `RecordAffiliateConversion::run($cart, $payload)` | Record a conversion |
+| `app(ReverseAffiliateConversion::class)->execute($conversion, $reason)` | Reverse a conversion (negated companion) |
+
+`RecordAffiliateConversion` accepts `origin` and `source_ref` in the
+payload to stamp provenance (e.g. `origin: network` with the network
+link code in `source_ref`). `ReverseAffiliateConversion` is idempotent
+on (conversion, reason): the original is marked reversed and a negated
+companion conversion posts, so sum-based readers stay correct.
 
 ### Payouts Actions (`Actions/Payouts/`)
 
@@ -316,3 +323,22 @@ $affiliate = $model->getCreditedAffiliate($cart);
 // Distribute credit (for linear attribution)
 $distribution = $model->distributeCredit($touchpoints, $total);
 ```
+
+## Merchant Seam Contracts
+
+The network talks to merchants only through merchant-vocabulary seams in
+`Contracts/` — the engine never names the external system beyond an opaque
+source key:
+
+- `MerchantLedger` — post externally-attributed conversions into merchant
+  books. Idempotent on (source, source ref); `postingsForExternalReference`
+  feeds the dual-reporting collision report (the same sale posted by two
+  origins means two systems paid it).
+- `MerchantIdentity` — resolve merchant affiliates by id or verified email
+  without assuming the network's user model.
+- `MerchantCatalog` — read-only program snapshots for catalog sync; no
+  commission or payout rows are ever written through it.
+
+`aiarmada/affiliate-network` binds its adapters (`AffiliatesLedgerPoster`,
+`AffiliatesIdentityReader`, `AffiliatesCatalogReader`) onto these contracts
+at boot when the engine is installed.

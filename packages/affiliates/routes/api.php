@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Http\Controllers\AffiliateApiController;
 use AIArmada\Affiliates\Http\Controllers\ProgramCatalogController;
+use AIArmada\Affiliates\Http\Controllers\ProgramMembershipController;
 use AIArmada\Affiliates\Support\Middleware\EnsureApiAuthorized;
 use AIArmada\CommerceSupport\Middleware\NeedsOwner;
 use Illuminate\Support\Facades\Route;
@@ -27,5 +28,7 @@ Route::prefix(config('affiliates.api.prefix', 'api/affiliates'))
             Route::get('{code}/summary', [AffiliateApiController::class, 'summary']);
             Route::post('{code}/links', [AffiliateApiController::class, 'links']);
             Route::get('{code}/creatives', [AffiliateApiController::class, 'creatives']);
+            Route::post('{code}/programs/{id}/join', [ProgramMembershipController::class, 'join']);
+            Route::get('{code}/programs/{id}/membership', [ProgramMembershipController::class, 'membership']);
         });
     });

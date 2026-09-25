@@ -54,7 +54,7 @@ final class LinksRelationManager extends RelationManager
                     ->sortable(),
 
                 TextColumn::make('revenue')
-                    ->money(fn (AffiliateOfferLink $record): string => mb_strtoupper((string) ($record->currency ?? config('affiliate-network.currency.default', 'MYR'))))
+                    ->money(fn (AffiliateOfferLink $record): string => mb_strtoupper((string) ($record->currency ?? config('affiliate-network.currency.default', 'MYR'))), 100)
                     ->sortable(),
 
                 TextColumn::make('currency')

@@ -10,6 +10,7 @@ enum ConversionStatus: string
     case Qualified = 'qualified';
     case Approved = 'approved';
     case Rejected = 'rejected';
+    case Reversed = 'reversed';
     case Paid = 'paid';
 
     public function label(): string
@@ -19,6 +20,7 @@ enum ConversionStatus: string
             self::Qualified => 'Qualified',
             self::Approved => 'Approved',
             self::Rejected => 'Rejected',
+            self::Reversed => 'Reversed',
             self::Paid => 'Paid Out',
         };
     }

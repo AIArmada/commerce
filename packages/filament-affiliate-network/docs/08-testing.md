@@ -508,3 +508,22 @@ it('shows success notification on approve', function () {
         ->assertNotified('Application approved');
 });
 ```
+
+## Real-Chrome Smoke Test
+
+Pest covers wiring; `demo/tests/chrome/affiliate-surfaces.mjs` proves the
+surfaces in real Chrome via Puppeteer: login, offers table (fee column),
+offer Legs tab + leg reverse, site token rotation, conversions table
+(origin/source ref) + conversion reverse. Deterministic `CHROME-*`
+fixtures come from `demo/database/seeders/ChromeSmokeSeeder.php`, which
+resets its own rows on every run.
+
+```bash
+# From demo/, against a migrated + served app (Herd or artisan serve):
+npm run chrome:affiliates
+BASE_URL=http://127.0.0.1:8000 npm run chrome:affiliates
+node tests/chrome/affiliate-surfaces.mjs --no-seed  # skip re-seeding
+```
+
+Screenshots land in `demo/tests/chrome/screenshots/` (gitignored). The
+script exits non-zero with the failing check names.

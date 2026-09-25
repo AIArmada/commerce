@@ -69,7 +69,7 @@ describe('ReportNetworkConversionController', function (): void {
 
         expect($payload['duplicate'])->toBeFalse()
             ->and($payload['conversion']['commission_minor'])->toBe(13485)
-            ->and($payload['conversion']['affiliate_code'])->toBe($affiliate->code)
+            ->and($payload['conversion']['affiliate_id'])->toBe((string) $affiliate->getKey())
             ->and($link->fresh()->conversions)->toBe(1)
             ->and($link->fresh()->revenue)->toBe(89900)
             ->and(AffiliateConversion::where('external_reference', 'ORDER-1')->count())->toBe(1);

@@ -107,14 +107,23 @@ final class AffiliateOfferForm
                             ->nullable()
                             ->placeholder('30'),
 
-                        Select::make('rate_source')
-                            ->label('Rate source')
+                        Select::make('source')
+                            ->label('Source')
                             ->options([
-                                'synced' => 'Synced from catalog',
+                                'mirrored' => 'Mirrored from catalog',
                                 'manual' => 'Manually managed',
                             ])
-                            ->default('synced')
+                            ->default('manual')
                             ->helperText('Editing any rate field flips this to manual; sync then holds rates back until you switch it back.'),
+
+                        TextInput::make('network_fee_bp')
+                            ->label('Network fee (bp)')
+                            ->rule('integer')
+                            ->minValue(0)
+                            ->maxValue(10000)
+                            ->nullable()
+                            ->placeholder('Default')
+                            ->helperText('Marketplace take-rate in basis points. Empty uses the configured default.'),
 
                         Repeater::make('volume_tiers')
                             ->label('Volume tiers')

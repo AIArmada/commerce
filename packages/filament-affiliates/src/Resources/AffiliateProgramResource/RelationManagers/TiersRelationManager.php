@@ -87,7 +87,7 @@ final class TiersRelationManager extends RelationManager
 
                 TextColumn::make('min_revenue')
                     ->label('Min Revenue')
-                    ->money(fn ($record): string => $record->revenueCurrency())
+                    ->money(fn ($record): string => $record->revenueCurrency(), 100)
                     ->sortable(),
             ])
             ->headerActions([

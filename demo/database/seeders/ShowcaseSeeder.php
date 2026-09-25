@@ -279,7 +279,7 @@ final class ShowcaseSeeder extends Seeder
             }
         }
 
-        $this->command->info('   ✓ Created ' . count($allVouchers) . ' voucher campaigns');
+        $this->command->info('   ✓ Created '.count($allVouchers).' voucher campaigns');
     }
 
     private function createVoucherUsageHistory(Voucher $voucher, int $count): void
@@ -296,7 +296,7 @@ final class ShowcaseSeeder extends Seeder
                 'channel' => fake()->randomElement(['automatic', 'manual', 'api']),
                 'used_at' => now()->subDays(rand(1, 60)),
                 'metadata' => [
-                    'order_id' => 'ORD-' . Str::upper(Str::random(8)),
+                    'order_id' => 'ORD-'.Str::upper(Str::random(8)),
                     'source' => fake()->randomElement(['checkout', 'cart', 'api']),
                 ],
             ]);
@@ -516,7 +516,7 @@ final class ShowcaseSeeder extends Seeder
         // Create attributions and conversions for active affiliates
         $this->createAffiliateActivity($allAffiliates);
 
-        $this->command->info('   ✓ Created ' . (count($topInfluencers) + count($businessPartners) + count($regularAffiliates) + count($pendingAffiliates)) . ' affiliates');
+        $this->command->info('   ✓ Created '.(count($topInfluencers) + count($businessPartners) + count($regularAffiliates) + count($pendingAffiliates)).' affiliates');
     }
 
     /**
@@ -549,17 +549,17 @@ final class ShowcaseSeeder extends Seeder
                         '/sale',
                     ]),
                     'referrer_url' => fake()->randomElement([
-                        'https://youtube.com/watch?v=' . Str::random(11),
-                        'https://tiktok.com/@' . Str::random(8),
-                        'https://instagram.com/p/' . Str::random(11),
-                        'https://facebook.com/posts/' . rand(1000000, 9999999),
+                        'https://youtube.com/watch?v='.Str::random(11),
+                        'https://tiktok.com/@'.Str::random(8),
+                        'https://instagram.com/p/'.Str::random(11),
+                        'https://facebook.com/posts/'.rand(1000000, 9999999),
                         null,
                     ]),
                     'source' => $affiliate->code,
                     'medium' => fake()->randomElement(['social', 'video', 'email', 'banner']),
                     'campaign' => fake()->randomElement(['holiday_2024', 'flash_sale', 'new_arrivals', 'clearance']),
                     'user_agent' => fake()->userAgent(),
-                    'ip_address' => fake()->ipv4(),
+                    'ip_address' => hash('sha256', fake()->ipv4()),
                     'first_seen_at' => now()->subDays(rand(1, 90)),
                     'last_seen_at' => now()->subDays(rand(0, 30)),
                 ]);
@@ -594,9 +594,10 @@ final class ShowcaseSeeder extends Seeder
                 AffiliateConversion::create([
                     'affiliate_id' => $affiliate->id,
                     'affiliate_code' => $affiliate->code,
-                    'order_reference' => 'ORD-' . Str::upper(Str::random(8)),
+                    'external_reference' => 'ORD-'.Str::upper(Str::random(8)),
+                    'subject_key' => 'checkout:'.Str::uuid()->toString(),
                     'subtotal_minor' => $orderValue,
-                    'total_minor' => $orderValue,
+                    'value_minor' => $orderValue,
                     'commission_minor' => $commissionAmount,
                     'commission_currency' => 'MYR',
                     'status' => $status,

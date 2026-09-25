@@ -148,36 +148,36 @@ describe('AffiliateOffer Model', function (): void {
         test('operator rate edits flip the lock to manual', function (): void {
             $offer = AffiliateOffer::factory()->forSite($this->site)->create([
                 'rate_base_bp' => 1000,
-                'rate_source' => 'synced',
+                'source' => 'mirrored',
             ]);
 
             $offer->update(['rate_base_bp' => 1500]);
 
-            expect($offer->fresh()->rate_source)->toBe('manual');
+            expect($offer->fresh()->source)->toBe('manual');
             expect($offer->fresh()->rate_base_bp)->toBe(1500);
         });
 
         test('explicit unlock clears the checksum for re-apply', function (): void {
             $offer = AffiliateOffer::factory()->forSite($this->site)->create([
                 'rate_base_bp' => 1500,
-                'rate_source' => 'manual',
+                'source' => 'manual',
                 'source_checksum' => 'abc123',
             ]);
 
-            $offer->update(['rate_source' => 'synced']);
+            $offer->update(['source' => 'mirrored']);
 
-            expect($offer->fresh()->rate_source)->toBe('synced');
+            expect($offer->fresh()->source)->toBe('mirrored');
             expect($offer->fresh()->source_checksum)->toBeNull();
         });
 
         test('non-rate edits leave the lock alone', function (): void {
             $offer = AffiliateOffer::factory()->forSite($this->site)->create([
-                'rate_source' => 'synced',
+                'source' => 'mirrored',
             ]);
 
             $offer->update(['name' => 'Renamed']);
 
-            expect($offer->fresh()->rate_source)->toBe('synced');
+            expect($offer->fresh()->source)->toBe('mirrored');
         });
 
         test('is_featured is boolean', function (): void {

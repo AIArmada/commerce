@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "510d0cbf76da3eaf83b3749aacbb9776",
+    "content-hash": "7ecd3d581a0651d1289ba19944d1599f",
     "packages": [
         {
             "name": "aiarmada/addressing",
@@ -12,12 +12,12 @@
             "dist": {
                 "type": "path",
                 "url": "../packages/addressing",
-                "reference": "2d90c7d8d1eb676dc201642c755743352e8d4d3a"
+                "reference": "ba0a56f7de6fc629d72c05bc60616e0b72c67cbe"
             },
             "require": {
                 "aiarmada/commerce-support": "self.version",
                 "php": "^8.4",
-                "spatie/laravel-package-tools": "^1.93.1"
+                "spatie/laravel-package-tools": "^1.93.2"
             },
             "type": "library",
             "extra": {
@@ -57,19 +57,66 @@
             }
         },
         {
+            "name": "aiarmada/affiliate-network",
+            "version": "dev-main",
+            "dist": {
+                "type": "path",
+                "url": "../packages/affiliate-network",
+                "reference": "755a7242f3b6ca20f5c9b518a925c5d76060326b"
+            },
+            "require": {
+                "aiarmada/commerce-support": "self.version",
+                "aiarmada/contacting": "self.version",
+                "aiarmada/links": "self.version",
+                "php": "^8.4"
+            },
+            "suggest": {
+                "aiarmada/affiliates": "Local adapters for affiliate identity, conversion ledger, core programs, and catalog sync.",
+                "aiarmada/orders": "Optional integration"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "AIArmada\\AffiliateNetwork\\AffiliateNetworkServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "AIArmada\\AffiliateNetwork\\": "src/",
+                    "AIArmada\\AffiliateNetwork\\Database\\Factories\\": "database/factories/"
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "description": "Multi-merchant affiliate network and marketplace. Runs standalone; pair with AIArmada affiliates for local identity, ledger, and programs.",
+            "homepage": "https://github.com/aiarmada/commerce",
+            "support": {
+                "issues": "https://github.com/aiarmada/commerce/issues",
+                "source": "https://github.com/aiarmada/commerce"
+            },
+            "transport-options": {
+                "relative": true
+            }
+        },
+        {
             "name": "aiarmada/affiliates",
             "version": "dev-main",
             "dist": {
                 "type": "path",
                 "url": "../packages/affiliates",
-                "reference": "5681beeeccdbc23c802d282b919596ab91a2b866"
+                "reference": "99574c3fcf5527b84f1496e60e14e7664297e659"
             },
             "require": {
                 "aiarmada/commerce-support": "self.version",
                 "aiarmada/contacting": "self.version",
-                "php": "^8.4"
+                "php": "^8.4",
+                "spatie/laravel-settings": "^3.9.0"
             },
             "suggest": {
+                "aiarmada/affiliate-network": "Binds the network seam adapters (identity, ledger, programs, local catalog).",
                 "aiarmada/cart": "Enables cart level attribution helpers and conversion tracking",
                 "aiarmada/orders": "Optional integration",
                 "aiarmada/vouchers": "Auto associates affiliate codes with voucher campaigns"
@@ -109,12 +156,12 @@
             "dist": {
                 "type": "path",
                 "url": "../packages/authz",
-                "reference": "0e14068fa6d5bac9979b38257cf3815323e347c0"
+                "reference": "1c71f40519684f84e5e87ad8d12283837ad48394"
             },
             "require": {
                 "aiarmada/commerce-support": "self.version",
                 "php": "^8.4",
-                "spatie/laravel-permission": "^8.0.0"
+                "spatie/laravel-permission": "^8.3.0"
             },
             "suggest": {
                 "aiarmada/filament-authz": "Optional integration"
@@ -260,13 +307,13 @@
             "dist": {
                 "type": "path",
                 "url": "../packages/cashier-chip",
-                "reference": "c545d2c7f7b1c7b28f0ebf66a76b9e78e699e7a8"
+                "reference": "c9dbb0e78ca926897ef80c15a0b86f3672a22df4"
             },
             "require": {
                 "aiarmada/chip": "self.version",
                 "aiarmada/commerce-support": "self.version",
                 "php": "^8.4",
-                "spatie/laravel-webhook-client": "^3.6.2"
+                "spatie/laravel-webhook-client": "^3.7.0"
             },
             "suggest": {
                 "aiarmada/docs": "Optional integration",
@@ -313,7 +360,7 @@
             "dist": {
                 "type": "path",
                 "url": "../packages/checkout",
-                "reference": "feb072f489be4fbdc56879c5133839089ced3594"
+                "reference": "828085e8aa15f523da274d4e885c6f0e1fc36e8f"
             },
             "require": {
                 "aiarmada/cart": "self.version",
@@ -324,10 +371,10 @@
                 "aiarmada/pricing": "self.version",
                 "aiarmada/products": "self.version",
                 "aiarmada/shipping": "self.version",
-                "illuminate/contracts": "^13.15.0",
-                "illuminate/support": "^13.15.0",
+                "illuminate/contracts": "^13.31.0",
+                "illuminate/support": "^13.31.0",
                 "php": "^8.4",
-                "spatie/laravel-webhook-client": "^3.6.2"
+                "spatie/laravel-webhook-client": "^3.7.0"
             },
             "suggest": {
                 "aiarmada/cashier": "For unified multi-gateway payment processing (recommended)",
@@ -374,16 +421,16 @@
             "dist": {
                 "type": "path",
                 "url": "../packages/chip",
-                "reference": "83fdb8bfb935ee8b268323d05f8cd43c9324844c"
+                "reference": "b4a8867e9cec126a68152285367b8efa5bd712e6"
             },
             "require": {
                 "aiarmada/commerce-support": "self.version",
                 "ext-curl": "*",
-                "illuminate/http": "^13.15.0",
-                "illuminate/queue": "^13.15.0",
-                "illuminate/validation": "^13.15.0",
+                "illuminate/http": "^13.31.0",
+                "illuminate/queue": "^13.31.0",
+                "illuminate/validation": "^13.31.0",
                 "php": "^8.4",
-                "spatie/laravel-webhook-client": "^3.6.2"
+                "spatie/laravel-webhook-client": "^3.7.0"
             },
             "suggest": {
                 "aiarmada/docs": "Optional integration"
@@ -424,29 +471,30 @@
             "dist": {
                 "type": "path",
                 "url": "../packages/commerce-support",
-                "reference": "df422f60909466c2a10f77fd2d57a67b52531cd0"
+                "reference": "89ac99e1f7bcd98f4998fb9d816416d778fc4efe"
             },
             "require": {
                 "akaunting/laravel-money": "^6.0.3",
                 "ext-intl": "*",
-                "illuminate/contracts": "^13.15.0",
-                "illuminate/database": "^13.15.0",
-                "illuminate/support": "^13.15.0",
-                "lorisleiva/laravel-actions": "^2.10.1",
+                "illuminate/contracts": "^13.31.0",
+                "illuminate/database": "^13.31.0",
+                "illuminate/http": "^13.31.0",
+                "illuminate/support": "^13.31.0",
+                "lorisleiva/laravel-actions": "^2.12.0",
                 "nunomaduro/essentials": "^1.2.0",
-                "owen-it/laravel-auditing": "^14.0.3",
+                "owen-it/laravel-auditing": "^14.0.6",
                 "php": "^8.4",
-                "spatie/laravel-activitylog": "^5.0.0",
+                "spatie/laravel-activitylog": "^5.1.1",
                 "spatie/laravel-data": "^4.23.0",
-                "spatie/laravel-health": "^1.39.3",
-                "spatie/laravel-medialibrary": "^11.22.1",
-                "spatie/laravel-model-states": "^2.14.1",
-                "spatie/laravel-package-tools": "^1.93.1",
-                "spatie/laravel-settings": "^3.8.1",
-                "spatie/laravel-sluggable": "^4.0.2",
-                "spatie/laravel-tags": "^4.11.0",
+                "spatie/laravel-health": "^1.40.2",
+                "spatie/laravel-medialibrary": "^11.23.8",
+                "spatie/laravel-model-states": "^2.14.2",
+                "spatie/laravel-package-tools": "^1.93.2",
+                "spatie/laravel-settings": "^3.9.0",
+                "spatie/laravel-sluggable": "^4.0.3",
+                "spatie/laravel-tags": "^4.12.0",
                 "spatie/laravel-translatable": "^6.14.1",
-                "spatie/laravel-webhook-client": "^3.6.2"
+                "spatie/laravel-webhook-client": "^3.7.0"
             },
             "suggest": {
                 "filament/filament": "Required to use the optional Commerce Navigation Filament plugin.",
@@ -488,14 +536,14 @@
             "dist": {
                 "type": "path",
                 "url": "../packages/contacting",
-                "reference": "7e0821f12575f50af4f2a3d33fd1d4c5a045be96"
+                "reference": "88fc49bfdb68bacbf0142b45e989682f11d7aea1"
             },
             "require": {
                 "aiarmada/commerce-support": "self.version",
                 "php": "^8.4",
-                "propaganistas/laravel-phone": "^6.0",
+                "propaganistas/laravel-phone": "^6.0.3",
                 "spatie/laravel-data": "^4.23.0",
-                "spatie/laravel-package-tools": "^1.93.1"
+                "spatie/laravel-package-tools": "^1.93.2"
             },
             "suggest": {
                 "aiarmada/filament-contacting": "Filament admin UI for contact methods and social profiles."
@@ -592,13 +640,13 @@
             "dist": {
                 "type": "path",
                 "url": "../packages/docs",
-                "reference": "f2cd55f7aba73a4ec226fda9da2f6fd0624b46e1"
+                "reference": "cf461c564c09c9886016c012425ae121781e02b8"
             },
             "require": {
                 "aiarmada/commerce-support": "self.version",
                 "php": "^8.4",
-                "spatie/browsershot": "^5.3.0",
-                "spatie/laravel-pdf": "^2.9.0"
+                "spatie/browsershot": "^5.4.0",
+                "spatie/laravel-pdf": "^2.13.1"
             },
             "type": "library",
             "extra": {
@@ -636,12 +684,12 @@
             "dist": {
                 "type": "path",
                 "url": "../packages/filament-addressing",
-                "reference": "0ea8aa5851eb9fc6d33f2b9e1c376b55e865b09f"
+                "reference": "1812a59f1d92e7966303d767c4282bcb862af134"
             },
             "require": {
                 "aiarmada/addressing": "self.version",
                 "aiarmada/commerce-support": "self.version",
-                "filament/filament": "^5.7.0",
+                "filament/filament": "^5.8.1",
                 "php": "^8.4"
             },
             "type": "library",
@@ -671,18 +719,62 @@
             }
         },
         {
+            "name": "aiarmada/filament-affiliate-network",
+            "version": "dev-main",
+            "dist": {
+                "type": "path",
+                "url": "../packages/filament-affiliate-network",
+                "reference": "622d156b77903bc55d32f370e0e76fc7ebcc48a7"
+            },
+            "require": {
+                "aiarmada/affiliate-network": "self.version",
+                "aiarmada/commerce-support": "self.version",
+                "filament/filament": "^5.8.1",
+                "php": "^8.4"
+            },
+            "suggest": {
+                "aiarmada/filament-affiliates": "Optional integration"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "AIArmada\\FilamentAffiliateNetwork\\FilamentAffiliateNetworkServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "AIArmada\\FilamentAffiliateNetwork\\": "src/"
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "description": "Filament admin plugin for managing AIArmada affiliate network marketplace.",
+            "homepage": "https://github.com/aiarmada/commerce",
+            "support": {
+                "issues": "https://github.com/aiarmada/commerce/issues",
+                "source": "https://github.com/aiarmada/commerce"
+            },
+            "transport-options": {
+                "relative": true
+            }
+        },
+        {
             "name": "aiarmada/filament-affiliates",
             "version": "dev-main",
             "dist": {
                 "type": "path",
                 "url": "../packages/filament-affiliates",
-                "reference": "ea1e10febfb515ba9059049bac822156bbc42a89"
+                "reference": "42341628ca8585b0722ba235939f2d9bc8e939b8"
             },
             "require": {
                 "aiarmada/affiliates": "self.version",
                 "aiarmada/authz": "self.version",
                 "aiarmada/commerce-support": "self.version",
-                "filament/filament": "^5.7.0",
+                "filament/filament": "^5.8.1",
+                "filament/spatie-laravel-media-library-plugin": "^5.8.1",
                 "php": "^8.4"
             },
             "suggest": {
@@ -726,14 +818,14 @@
             "dist": {
                 "type": "path",
                 "url": "../packages/filament-authz",
-                "reference": "63f3274aa806404961ea740c021defdcdc9de7eb"
+                "reference": "79256a49342e127965ac0d816b372dae49c17a86"
             },
             "require": {
                 "aiarmada/authz": "self.version",
                 "aiarmada/commerce-support": "self.version",
-                "filament/filament": "^5.7.0",
+                "filament/filament": "^5.8.1",
                 "php": "^8.4",
-                "spatie/laravel-permission": "^8.0.0"
+                "spatie/laravel-permission": "^8.3.0"
             },
             "suggest": {
                 "aiarmada/affiliates": "Optional integration",
@@ -766,12 +858,12 @@
             "dist": {
                 "type": "path",
                 "url": "../packages/filament-cart",
-                "reference": "b2b22191c002aaa262804f09d960aaa14e057044"
+                "reference": "25bb7bb53c6246d47accca4cedd197f3316b2a74"
             },
             "require": {
                 "aiarmada/cart": "self.version",
                 "aiarmada/commerce-support": "self.version",
-                "filament/filament": "^5.7.0",
+                "filament/filament": "^5.8.1",
                 "php": "^8.4"
             },
             "suggest": {
@@ -811,12 +903,12 @@
             "dist": {
                 "type": "path",
                 "url": "../packages/filament-cashier",
-                "reference": "7d7f9dc74877c1f191b3c8436c64b6442a914e41"
+                "reference": "ecf70c0561cd493c640605ba6f5910a173197186"
             },
             "require": {
                 "aiarmada/cashier": "self.version",
                 "aiarmada/commerce-support": "self.version",
-                "filament/filament": "^5.7.0",
+                "filament/filament": "^5.8.1",
                 "php": "^8.4"
             },
             "suggest": {
@@ -869,12 +961,12 @@
             "dist": {
                 "type": "path",
                 "url": "../packages/filament-chip",
-                "reference": "57f1c004e39ca8593de7eeb8d0549ef9dba51f2a"
+                "reference": "1d8eabcdbcebe92f16bd6a4d74125422d1922489"
             },
             "require": {
                 "aiarmada/chip": "self.version",
                 "aiarmada/commerce-support": "self.version",
-                "filament/filament": "^5.7.0",
+                "filament/filament": "^5.8.1",
                 "php": "^8.4"
             },
             "suggest": {
@@ -912,12 +1004,12 @@
             "dist": {
                 "type": "path",
                 "url": "../packages/filament-customers",
-                "reference": "cdf2ccec9f8a2535dc6405caad43c27389cac446"
+                "reference": "ebde5ea09c7db73c06f821c79c749d11401bd942"
             },
             "require": {
                 "aiarmada/commerce-support": "self.version",
                 "aiarmada/customers": "self.version",
-                "filament/filament": "^5.7.0",
+                "filament/filament": "^5.8.1",
                 "php": "^8.4"
             },
             "suggest": {
@@ -966,12 +1058,12 @@
             "dist": {
                 "type": "path",
                 "url": "../packages/filament-docs",
-                "reference": "c49c303b68625be048efc84ffec7a811761413f8"
+                "reference": "f8506b1d57b99cddf1260cb923727d3421fff517"
             },
             "require": {
                 "aiarmada/commerce-support": "self.version",
                 "aiarmada/docs": "self.version",
-                "filament/filament": "^5.7.0",
+                "filament/filament": "^5.8.1",
                 "php": "^8.4"
             },
             "type": "library",
@@ -1008,12 +1100,12 @@
             "dist": {
                 "type": "path",
                 "url": "../packages/filament-growth",
-                "reference": "cd3d02ecc68c7aa2e7782ae43f918d097fa54b53"
+                "reference": "0acd4df4052f558efc0c8b5fe0de52c8f8b27662"
             },
             "require": {
                 "aiarmada/commerce-support": "self.version",
                 "aiarmada/growth": "self.version",
-                "filament/filament": "^5.7.0",
+                "filament/filament": "^5.8.1",
                 "php": "^8.4"
             },
             "suggest": {
@@ -1058,12 +1150,12 @@
             "dist": {
                 "type": "path",
                 "url": "../packages/filament-inventory",
-                "reference": "42be6e799148a190c1adfb1d9cc62fc268abe6f2"
+                "reference": "66f8d52d5bf07badf2902ee6c63845f2f33fa107"
             },
             "require": {
                 "aiarmada/commerce-support": "self.version",
                 "aiarmada/inventory": "self.version",
-                "filament/filament": "^5.7.0",
+                "filament/filament": "^5.8.1",
                 "php": "^8.4"
             },
             "type": "library",
@@ -1098,12 +1190,12 @@
             "dist": {
                 "type": "path",
                 "url": "../packages/filament-jnt",
-                "reference": "6ef415cd2df543559e0f210fdb8fd6f916da24f3"
+                "reference": "22daad353b8e0fa3a665d79088cc42457087d88a"
             },
             "require": {
                 "aiarmada/commerce-support": "self.version",
                 "aiarmada/jnt": "self.version",
-                "filament/filament": "^5.7.0",
+                "filament/filament": "^5.8.1",
                 "php": "^8.4"
             },
             "type": "library",
@@ -1138,12 +1230,12 @@
             "dist": {
                 "type": "path",
                 "url": "../packages/filament-orders",
-                "reference": "ed435b292ba15569986e1007868ec95d640d1947"
+                "reference": "f214c9352b427175b48cfc2ae1ca33a824f14111"
             },
             "require": {
                 "aiarmada/commerce-support": "self.version",
                 "aiarmada/orders": "self.version",
-                "filament/filament": "^5.7.0",
+                "filament/filament": "^5.8.1",
                 "php": "^8.4"
             },
             "suggest": {
@@ -1189,13 +1281,13 @@
             "dist": {
                 "type": "path",
                 "url": "../packages/filament-pricing",
-                "reference": "81d5d82e85464b8e5d53689c0c7f571a18bde313"
+                "reference": "0ff2408230db41cd6822b569afef4449a347e872"
             },
             "require": {
                 "aiarmada/commerce-support": "self.version",
                 "aiarmada/pricing": "self.version",
-                "filament/filament": "^5.7.0",
-                "filament/spatie-laravel-settings-plugin": "^5.7.0",
+                "filament/filament": "^5.8.1",
+                "filament/spatie-laravel-settings-plugin": "^5.8.1",
                 "php": "^8.4"
             },
             "suggest": {
@@ -1245,14 +1337,14 @@
             "dist": {
                 "type": "path",
                 "url": "../packages/filament-products",
-                "reference": "400bcfaa3750e88724734350ea9d90269599ccff"
+                "reference": "83604e7645a8f1a7e27187cc43e2266c06fe6089"
             },
             "require": {
                 "aiarmada/commerce-support": "self.version",
                 "aiarmada/products": "self.version",
-                "filament/filament": "^5.7.0",
-                "filament/spatie-laravel-media-library-plugin": "^5.7.0",
-                "filament/spatie-laravel-tags-plugin": "^5.7.0",
+                "filament/filament": "^5.8.1",
+                "filament/spatie-laravel-media-library-plugin": "^5.8.1",
+                "filament/spatie-laravel-tags-plugin": "^5.8.1",
                 "php": "^8.4"
             },
             "suggest": {
@@ -1299,12 +1391,12 @@
             "dist": {
                 "type": "path",
                 "url": "../packages/filament-promotions",
-                "reference": "2a292d0cbc38e4323b64ce46553748ae735b6bf5"
+                "reference": "b44c66fbc549edc6736542f1c54e8568d4889c80"
             },
             "require": {
                 "aiarmada/commerce-support": "self.version",
                 "aiarmada/promotions": "self.version",
-                "filament/filament": "^5.7.0",
+                "filament/filament": "^5.8.1",
                 "php": "^8.4"
             },
             "suggest": {
@@ -1345,12 +1437,12 @@
             "dist": {
                 "type": "path",
                 "url": "../packages/filament-shipping",
-                "reference": "268953c815448c8f9e277b3edbe0cf1d169e8bf2"
+                "reference": "13ec1eb0c1b28a6aa59894a31e1b93a3ee8f5a9e"
             },
             "require": {
                 "aiarmada/commerce-support": "self.version",
                 "aiarmada/shipping": "self.version",
-                "filament/filament": "^5.7.0",
+                "filament/filament": "^5.8.1",
                 "php": "^8.4"
             },
             "suggest": {
@@ -1389,12 +1481,12 @@
             "dist": {
                 "type": "path",
                 "url": "../packages/filament-signals",
-                "reference": "ce09c3c1ffa7cf4fb8d813dfc45730fb731ec7ff"
+                "reference": "dff41219417f9df7fe4db192cdd1036d999696bb"
             },
             "require": {
                 "aiarmada/commerce-support": "self.version",
                 "aiarmada/signals": "self.version",
-                "filament/filament": "^5.7.0",
+                "filament/filament": "^5.8.1",
                 "php": "^8.4"
             },
             "type": "library",
@@ -1437,13 +1529,13 @@
             "dist": {
                 "type": "path",
                 "url": "../packages/filament-tax",
-                "reference": "e3ce43f7d5f42b98355b7d70efc096bfd490ccf2"
+                "reference": "4855959f7c74cb5941f52be0dd53a24fb7ec80bb"
             },
             "require": {
                 "aiarmada/commerce-support": "self.version",
                 "aiarmada/filament-authz": "self.version",
                 "aiarmada/tax": "self.version",
-                "filament/filament": "^5.7.0",
+                "filament/filament": "^5.8.1",
                 "php": "^8.4"
             },
             "suggest": {
@@ -1491,12 +1583,12 @@
             "dist": {
                 "type": "path",
                 "url": "../packages/filament-vouchers",
-                "reference": "d626482ff81650c51c517873b77b852d73b9731f"
+                "reference": "de070d3c71f6a920dd6d5fb557eca3cee932601e"
             },
             "require": {
                 "aiarmada/commerce-support": "self.version",
                 "aiarmada/vouchers": "self.version",
-                "filament/filament": "^5.7.0",
+                "filament/filament": "^5.8.1",
                 "php": "^8.4"
             },
             "suggest": {
@@ -1679,19 +1771,55 @@
             }
         },
         {
+            "name": "aiarmada/links",
+            "version": "dev-main",
+            "dist": {
+                "type": "path",
+                "url": "../packages/links",
+                "reference": "6ac173073d817b72894cd461356798ac317ad931"
+            },
+            "require": {
+                "aiarmada/commerce-support": "self.version",
+                "lorisleiva/laravel-actions": "^2.12.0",
+                "matomo/device-detector": "^6.5.1",
+                "php": "^8.4",
+                "spatie/laravel-package-tools": "^1.93.2"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "AIArmada\\Links\\LinksServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "AIArmada\\Links\\": "src/"
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "description": "Generic tracked-link management for Laravel - cloaked redirects, click capture, expiry and limits, with domain events for third-party integrations",
+            "transport-options": {
+                "relative": true
+            }
+        },
+        {
             "name": "aiarmada/orders",
             "version": "dev-main",
             "dist": {
                 "type": "path",
                 "url": "../packages/orders",
-                "reference": "4c384513d16770b0ad1c0e3d4101094fd88cfdfa"
+                "reference": "eca2558f6a5b159645969cac043326d8fafd8656"
             },
             "require": {
                 "aiarmada/addressing": "self.version",
                 "aiarmada/commerce-support": "self.version",
                 "php": "^8.4",
-                "spatie/browsershot": "^5.3.0",
-                "spatie/laravel-pdf": "^2.9.0"
+                "spatie/browsershot": "^5.4.0",
+                "spatie/laravel-pdf": "^2.13.1"
             },
             "suggest": {
                 "aiarmada/docs": "Optional integration",
@@ -1841,14 +1969,14 @@
             "dist": {
                 "type": "path",
                 "url": "../packages/promotions",
-                "reference": "e64a65972628f6dd2ac22d8342055d7ccd2f9dcc"
+                "reference": "daced7b4b4878764005e648ea50bc001c7a99f85"
             },
             "require": {
                 "aiarmada/commerce-support": "self.version",
-                "illuminate/database": "^13.15.0",
-                "illuminate/support": "^13.15.0",
+                "illuminate/database": "^13.31.0",
+                "illuminate/support": "^13.31.0",
                 "php": "^8.4",
-                "spatie/laravel-activitylog": "^5.0.0",
+                "spatie/laravel-activitylog": "^5.1.1",
                 "spatie/laravel-data": "^4.23.0"
             },
             "suggest": {
@@ -1936,11 +2064,11 @@
             "dist": {
                 "type": "path",
                 "url": "../packages/signals",
-                "reference": "930dcc07493be9b3bbc8f504eb312234fa3f9cb9"
+                "reference": "330234ea4509ae5f7e6d574bb3e8341453d75a75"
             },
             "require": {
                 "aiarmada/commerce-support": "self.version",
-                "matomo/device-detector": "^6.5.0",
+                "matomo/device-detector": "^6.5.1",
                 "php": "^8.4"
             },
             "suggest": {
@@ -1986,17 +2114,17 @@
             "dist": {
                 "type": "path",
                 "url": "../packages/tax",
-                "reference": "d5007fe6fa9e3e6be3bffdf1992b4b748671e879"
+                "reference": "66469a5adcc9785bd9dc374f81ddaad47d5b4ec5"
             },
             "require": {
                 "aiarmada/commerce-support": "self.version",
                 "akaunting/laravel-money": "^6.0.3",
-                "owen-it/laravel-auditing": "^14.0.3",
+                "owen-it/laravel-auditing": "^14.0.6",
                 "php": "^8.4",
-                "spatie/laravel-activitylog": "^5.0.0",
+                "spatie/laravel-activitylog": "^5.1.1",
                 "spatie/laravel-data": "^4.23.0",
-                "spatie/laravel-model-states": "^2.14.1",
-                "spatie/laravel-settings": "^3.8.1"
+                "spatie/laravel-model-states": "^2.14.2",
+                "spatie/laravel-settings": "^3.9.0"
             },
             "type": "library",
             "extra": {
@@ -2150,16 +2278,16 @@
         },
         {
             "name": "anourvalar/eloquent-serialize",
-            "version": "1.3.11",
+            "version": "1.3.12",
             "source": {
                 "type": "git",
                 "url": "https://github.com/AnourValar/eloquent-serialize.git",
-                "reference": "abd890c4d1ad8e90dd454d01283fbf342f80f1e5"
+                "reference": "eb46e698efe7e20c311f1f93830111fcdcdabd96"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/AnourValar/eloquent-serialize/zipball/abd890c4d1ad8e90dd454d01283fbf342f80f1e5",
-                "reference": "abd890c4d1ad8e90dd454d01283fbf342f80f1e5",
+                "url": "https://api.github.com/repos/AnourValar/eloquent-serialize/zipball/eb46e698efe7e20c311f1f93830111fcdcdabd96",
+                "reference": "eb46e698efe7e20c311f1f93830111fcdcdabd96",
                 "shasum": ""
             },
             "require": {
@@ -2209,9 +2337,9 @@
             ],
             "support": {
                 "issues": "https://github.com/AnourValar/eloquent-serialize/issues",
-                "source": "https://github.com/AnourValar/eloquent-serialize/tree/1.3.11"
+                "source": "https://github.com/AnourValar/eloquent-serialize/tree/1.3.12"
             },
-            "time": "2026-08-07T06:14:19+00:00"
+            "time": "2026-09-13T06:25:37+00:00"
         },
         {
             "name": "blade-ui-kit/blade-heroicons",
@@ -2365,23 +2493,24 @@
         },
         {
             "name": "brick/math",
-            "version": "0.18.0",
+            "version": "1.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/brick/math.git",
-                "reference": "82944324d1c1bdb2c2618e89978d4e2ad78d69ad"
+                "reference": "2effe05d2177c451b86c6a073196a4034c02f211"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/brick/math/zipball/82944324d1c1bdb2c2618e89978d4e2ad78d69ad",
-                "reference": "82944324d1c1bdb2c2618e89978d4e2ad78d69ad",
+                "url": "https://api.github.com/repos/brick/math/zipball/2effe05d2177c451b86c6a073196a4034c02f211",
+                "reference": "2effe05d2177c451b86c6a073196a4034c02f211",
                 "shasum": ""
             },
             "require": {
                 "php": "^8.2"
             },
             "require-dev": {
-                "phpstan/phpstan": "2.1.22",
+                "phpstan/phpstan": "2.2.13",
+                "phpstan/phpstan-phpunit": "2.0.18",
                 "phpunit/phpunit": "^11.5"
             },
             "type": "library",
@@ -2412,7 +2541,7 @@
             ],
             "support": {
                 "issues": "https://github.com/brick/math/issues",
-                "source": "https://github.com/brick/math/tree/0.18.0"
+                "source": "https://github.com/brick/math/tree/1.0.0"
             },
             "funding": [
                 {
@@ -2420,7 +2549,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-06-14T18:21:03+00:00"
+            "time": "2026-09-12T10:28:18+00:00"
         },
         {
             "name": "carbonphp/carbon-doctrine-types",
@@ -2660,16 +2789,16 @@
         },
         {
             "name": "composer/semver",
-            "version": "3.4.4",
+            "version": "3.5.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/composer/semver.git",
-                "reference": "198166618906cb2de69b95d7d47e5fa8aa1b2b95"
+                "reference": "f7a296f4c4cf8cb8bb83e35d6951a406bb11afa5"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/composer/semver/zipball/198166618906cb2de69b95d7d47e5fa8aa1b2b95",
-                "reference": "198166618906cb2de69b95d7d47e5fa8aa1b2b95",
+                "url": "https://api.github.com/repos/composer/semver/zipball/f7a296f4c4cf8cb8bb83e35d6951a406bb11afa5",
+                "reference": "f7a296f4c4cf8cb8bb83e35d6951a406bb11afa5",
                 "shasum": ""
             },
             "require": {
@@ -2711,7 +2840,7 @@
                     "homepage": "http://robbast.nl"
                 }
             ],
-            "description": "Semver library that offers utilities, version constraint parsing and validation.",
+            "description": "Version comparison library that offers utilities, version constraint parsing and validation.",
             "keywords": [
                 "semantic",
                 "semver",
@@ -2721,7 +2850,7 @@
             "support": {
                 "irc": "ircs://irc.libera.chat:6697/composer",
                 "issues": "https://github.com/composer/semver/issues",
-                "source": "https://github.com/composer/semver/tree/3.4.4"
+                "source": "https://github.com/composer/semver/tree/3.5.0"
             },
             "funding": [
                 {
@@ -2733,7 +2862,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2025-08-20T19:15:30+00:00"
+            "time": "2026-09-24T14:38:51+00:00"
         },
         {
             "name": "danharrin/date-format-converter",
@@ -2788,16 +2917,16 @@
         },
         {
             "name": "danharrin/livewire-rate-limiting",
-            "version": "v2.2.1",
+            "version": "v2.3.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/danharrin/livewire-rate-limiting.git",
-                "reference": "69436717dc70e30f80d7f8fd02504c22992a9ad5"
+                "reference": "46c4ceaf7997c713c79afe7c507a39649f6c9d6f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/danharrin/livewire-rate-limiting/zipball/69436717dc70e30f80d7f8fd02504c22992a9ad5",
-                "reference": "69436717dc70e30f80d7f8fd02504c22992a9ad5",
+                "url": "https://api.github.com/repos/danharrin/livewire-rate-limiting/zipball/46c4ceaf7997c713c79afe7c507a39649f6c9d6f",
+                "reference": "46c4ceaf7997c713c79afe7c507a39649f6c9d6f",
                 "shasum": ""
             },
             "require": {
@@ -2838,7 +2967,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-08-06T08:41:51+00:00"
+            "time": "2026-09-18T07:38:01+00:00"
         },
         {
             "name": "dflydev/dot-access-data",
@@ -3055,27 +3184,25 @@
         },
         {
             "name": "doctrine/lexer",
-            "version": "3.0.1",
+            "version": "3.0.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/doctrine/lexer.git",
-                "reference": "31ad66abc0fc9e1a1f2d9bc6a42668d2fbbcd6dd"
+                "reference": "e96fe45e92a54233726014a7cc7340abf29bb14c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/doctrine/lexer/zipball/31ad66abc0fc9e1a1f2d9bc6a42668d2fbbcd6dd",
-                "reference": "31ad66abc0fc9e1a1f2d9bc6a42668d2fbbcd6dd",
+                "url": "https://api.github.com/repos/doctrine/lexer/zipball/e96fe45e92a54233726014a7cc7340abf29bb14c",
+                "reference": "e96fe45e92a54233726014a7cc7340abf29bb14c",
                 "shasum": ""
             },
             "require": {
                 "php": "^8.1"
             },
             "require-dev": {
-                "doctrine/coding-standard": "^12",
-                "phpstan/phpstan": "^1.10",
-                "phpunit/phpunit": "^10.5",
-                "psalm/plugin-phpunit": "^0.18.3",
-                "vimeo/psalm": "^5.21"
+                "doctrine/coding-standard": "^14",
+                "phpstan/phpstan": "^2",
+                "phpunit/phpunit": "^10.5.58 || ^12.5.4"
             },
             "type": "library",
             "autoload": {
@@ -3112,7 +3239,7 @@
             ],
             "support": {
                 "issues": "https://github.com/doctrine/lexer/issues",
-                "source": "https://github.com/doctrine/lexer/tree/3.0.1"
+                "source": "https://github.com/doctrine/lexer/tree/3.0.2"
             },
             "funding": [
                 {
@@ -3128,7 +3255,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2024-02-05T11:56:58+00:00"
+            "time": "2026-06-14T20:44:06+00:00"
         },
         {
             "name": "dragonmantank/cron-expression",
@@ -3994,16 +4121,16 @@
         },
         {
             "name": "giggsey/libphonenumber-for-php-lite",
-            "version": "9.0.39",
+            "version": "9.0.40",
             "source": {
                 "type": "git",
                 "url": "https://github.com/giggsey/libphonenumber-for-php-lite.git",
-                "reference": "35cd53ef595b709218756965a3fc22263ed9b24e"
+                "reference": "314fdac61038421a74bc794555ba9e9fc537eb31"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/giggsey/libphonenumber-for-php-lite/zipball/35cd53ef595b709218756965a3fc22263ed9b24e",
-                "reference": "35cd53ef595b709218756965a3fc22263ed9b24e",
+                "url": "https://api.github.com/repos/giggsey/libphonenumber-for-php-lite/zipball/314fdac61038421a74bc794555ba9e9fc537eb31",
+                "reference": "314fdac61038421a74bc794555ba9e9fc537eb31",
                 "shasum": ""
             },
             "require": {
@@ -4068,7 +4195,7 @@
                 "issues": "https://github.com/giggsey/libphonenumber-for-php-lite/issues",
                 "source": "https://github.com/giggsey/libphonenumber-for-php-lite"
             },
-            "time": "2026-09-10T13:00:46+00:00"
+            "time": "2026-09-24T13:47:31+00:00"
         },
         {
             "name": "graham-campbell/result-type",
@@ -4548,16 +4675,16 @@
         },
         {
             "name": "kirschbaum-development/eloquent-power-joins",
-            "version": "4.3.3",
+            "version": "4.3.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/kirschbaum-development/eloquent-power-joins.git",
-                "reference": "c609dbbe4ad2051b667e937f1ab554067519d64b"
+                "reference": "a0e6c0420c381861e1830693c4b74bdac7f7fb5f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/kirschbaum-development/eloquent-power-joins/zipball/c609dbbe4ad2051b667e937f1ab554067519d64b",
-                "reference": "c609dbbe4ad2051b667e937f1ab554067519d64b",
+                "url": "https://api.github.com/repos/kirschbaum-development/eloquent-power-joins/zipball/a0e6c0420c381861e1830693c4b74bdac7f7fb5f",
+                "reference": "a0e6c0420c381861e1830693c4b74bdac7f7fb5f",
                 "shasum": ""
             },
             "require": {
@@ -4605,26 +4732,26 @@
             ],
             "support": {
                 "issues": "https://github.com/kirschbaum-development/eloquent-power-joins/issues",
-                "source": "https://github.com/kirschbaum-development/eloquent-power-joins/tree/4.3.3"
+                "source": "https://github.com/kirschbaum-development/eloquent-power-joins/tree/4.3.4"
             },
-            "time": "2026-07-23T11:41:37+00:00"
+            "time": "2026-09-25T11:10:42+00:00"
         },
         {
             "name": "laravel/framework",
-            "version": "v13.31.0",
+            "version": "v13.33.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laravel/framework.git",
-                "reference": "7c75fbf93f91fa077d3df1c820cc14f4e59a9774"
+                "reference": "91188a17ceaa3dbace6e8a5f7abd0d042e466359"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laravel/framework/zipball/7c75fbf93f91fa077d3df1c820cc14f4e59a9774",
-                "reference": "7c75fbf93f91fa077d3df1c820cc14f4e59a9774",
+                "url": "https://api.github.com/repos/laravel/framework/zipball/91188a17ceaa3dbace6e8a5f7abd0d042e466359",
+                "reference": "91188a17ceaa3dbace6e8a5f7abd0d042e466359",
                 "shasum": ""
             },
             "require": {
-                "brick/math": "^0.14.2 || ^0.15 || ^0.16 || ^0.17 || ^0.18 || ^0.19",
+                "brick/math": "^0.14.2 || ^0.15 || ^0.16 || ^0.17 || ^0.18 || ^0.19 || ^0.20 || ^1.0",
                 "composer-runtime-api": "^2.2",
                 "doctrine/inflector": "^2.0.5",
                 "dragonmantank/cron-expression": "^3.4",
@@ -4739,15 +4866,17 @@
                 "orchestra/testbench-core": "^11.0.0",
                 "pda/pheanstalk": "^7.0.0 || ^8.0.0",
                 "php-http/discovery": "^1.15",
-                "phpstan/phpstan": "^2.0",
+                "phpstan/phpstan": "^2.2.14",
                 "phpunit/phpunit": "^11.5.50 || ^12.5.8 || ^13.0.3",
                 "predis/predis": "^2.3 || ^3.0",
                 "rector/rector": "2.6.3",
                 "resend/resend-php": "^1.0",
                 "symfony/cache": "^7.4.0 || ^8.0.0",
                 "symfony/http-client": "^7.4.0 || ^8.0.0",
+                "symfony/mercure": "^0.8.0",
                 "symfony/psr-http-message-bridge": "^7.4.0 || ^8.0.0",
-                "symfony/translation": "^7.4.0 || ^8.0.0"
+                "symfony/translation": "^7.4.0 || ^8.0.0",
+                "web-token/jwt-library": "^4.1"
             },
             "suggest": {
                 "ably/ably-php": "Required to use the Ably broadcast driver (^1.0).",
@@ -4783,8 +4912,10 @@
                 "symfony/filesystem": "Required to enable support for relative symbolic links (^7.4 || ^8.0).",
                 "symfony/http-client": "Required to enable support for the Symfony API mail transports (^7.4 || ^8.0).",
                 "symfony/mailgun-mailer": "Required to enable support for the Mailgun mail transport (^7.4 || ^8.0).",
+                "symfony/mercure": "Required to use the Mercure broadcast driver (^0.8).",
                 "symfony/postmark-mailer": "Required to enable support for the Postmark mail transport (^7.4 || ^8.0).",
-                "symfony/psr-http-message-bridge": "Required to use PSR-7 bridging features (^7.4 || ^8.0)."
+                "symfony/psr-http-message-bridge": "Required to use PSR-7 bridging features (^7.4 || ^8.0).",
+                "web-token/jwt-library": "Required to sign Mercure JWTs and use end-to-end encrypted channels (^4.1)."
             },
             "type": "library",
             "extra": {
@@ -4834,7 +4965,7 @@
                 "issues": "https://github.com/laravel/framework/issues",
                 "source": "https://github.com/laravel/framework"
             },
-            "time": "2026-09-08T14:22:55+00:00"
+            "time": "2026-09-22T14:12:33+00:00"
         },
         {
             "name": "laravel/prompts",
@@ -4897,16 +5028,16 @@
         },
         {
             "name": "laravel/serializable-closure",
-            "version": "v2.0.16",
+            "version": "v2.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laravel/serializable-closure.git",
-                "reference": "7cfc24e4fa2cca045fb8dd2a797a2b2b13b655ed"
+                "reference": "2d5869a838bbcf37e0d8b0568fc41914e81374b5"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laravel/serializable-closure/zipball/7cfc24e4fa2cca045fb8dd2a797a2b2b13b655ed",
-                "reference": "7cfc24e4fa2cca045fb8dd2a797a2b2b13b655ed",
+                "url": "https://api.github.com/repos/laravel/serializable-closure/zipball/2d5869a838bbcf37e0d8b0568fc41914e81374b5",
+                "reference": "2d5869a838bbcf37e0d8b0568fc41914e81374b5",
                 "shasum": ""
             },
             "require": {
@@ -4954,7 +5085,7 @@
                 "issues": "https://github.com/laravel/serializable-closure/issues",
                 "source": "https://github.com/laravel/serializable-closure"
             },
-            "time": "2026-08-18T20:28:54+00:00"
+            "time": "2026-09-22T14:32:34+00:00"
         },
         {
             "name": "laravel/tinker",
@@ -5027,16 +5158,16 @@
         },
         {
             "name": "league/commonmark",
-            "version": "2.10.1",
+            "version": "2.10.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/thephpleague/commonmark.git",
-                "reference": "9d489ab67a02960fd8ffe624d93f751daf95439e"
+                "reference": "6efbd9c472b91db0a3350fcd601c8332c2382e1f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/thephpleague/commonmark/zipball/9d489ab67a02960fd8ffe624d93f751daf95439e",
-                "reference": "9d489ab67a02960fd8ffe624d93f751daf95439e",
+                "url": "https://api.github.com/repos/thephpleague/commonmark/zipball/6efbd9c472b91db0a3350fcd601c8332c2382e1f",
+                "reference": "6efbd9c472b91db0a3350fcd601c8332c2382e1f",
                 "shasum": ""
             },
             "require": {
@@ -5130,7 +5261,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-09-07T13:44:26+00:00"
+            "time": "2026-09-21T13:07:34+00:00"
         },
         {
             "name": "league/config",
@@ -5761,16 +5892,16 @@
         },
         {
             "name": "livewire/livewire",
-            "version": "v4.4.4",
+            "version": "v4.4.6",
             "source": {
                 "type": "git",
                 "url": "https://github.com/livewire/livewire.git",
-                "reference": "00bf1b9959807d7cbcf38fc088515a7261cb6fa8"
+                "reference": "c6b7db7a92103ac2738e8fdc926cecc93eb67853"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/livewire/livewire/zipball/00bf1b9959807d7cbcf38fc088515a7261cb6fa8",
-                "reference": "00bf1b9959807d7cbcf38fc088515a7261cb6fa8",
+                "url": "https://api.github.com/repos/livewire/livewire/zipball/c6b7db7a92103ac2738e8fdc926cecc93eb67853",
+                "reference": "c6b7db7a92103ac2738e8fdc926cecc93eb67853",
                 "shasum": ""
             },
             "require": {
@@ -5825,7 +5956,7 @@
             "description": "A front-end framework for Laravel.",
             "support": {
                 "issues": "https://github.com/livewire/livewire/issues",
-                "source": "https://github.com/livewire/livewire/tree/v4.4.4"
+                "source": "https://github.com/livewire/livewire/tree/v4.4.6"
             },
             "funding": [
                 {
@@ -5833,7 +5964,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-09-07T16:02:43+00:00"
+            "time": "2026-09-21T18:51:23+00:00"
         },
         {
             "name": "lorisleiva/laravel-actions",
@@ -6301,16 +6432,16 @@
         },
         {
             "name": "nesbot/carbon",
-            "version": "3.13.2",
+            "version": "3.14.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/CarbonPHP/carbon.git",
-                "reference": "a1c54919f5fff9800cd03c32bd01defd5a4061cb"
+                "reference": "0023eaa2c9110e47446dd512a263c69c40cd41f2"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/CarbonPHP/carbon/zipball/a1c54919f5fff9800cd03c32bd01defd5a4061cb",
-                "reference": "a1c54919f5fff9800cd03c32bd01defd5a4061cb",
+                "url": "https://api.github.com/repos/CarbonPHP/carbon/zipball/0023eaa2c9110e47446dd512a263c69c40cd41f2",
+                "reference": "0023eaa2c9110e47446dd512a263c69c40cd41f2",
                 "shasum": ""
             },
             "require": {
@@ -6402,7 +6533,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-08-08T11:40:35+00:00"
+            "time": "2026-09-12T20:45:19+00:00"
         },
         {
             "name": "nette/php-generator",
@@ -8175,20 +8306,20 @@
         },
         {
             "name": "ramsey/uuid",
-            "version": "4.9.3",
+            "version": "4.9.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/ramsey/uuid.git",
-                "reference": "1df15849d00943a67d677dc9cfd80795f038c9f8"
+                "reference": "75d73f48d02797c2c285a7e9f348fadc0102ffe2"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ramsey/uuid/zipball/1df15849d00943a67d677dc9cfd80795f038c9f8",
-                "reference": "1df15849d00943a67d677dc9cfd80795f038c9f8",
+                "url": "https://api.github.com/repos/ramsey/uuid/zipball/75d73f48d02797c2c285a7e9f348fadc0102ffe2",
+                "reference": "75d73f48d02797c2c285a7e9f348fadc0102ffe2",
                 "shasum": ""
             },
             "require": {
-                "brick/math": ">=0.8.16 <=0.18",
+                "brick/math": "^0.8.16 || ^0.9 || ^0.10 || ^0.11 || ^0.12 || ^0.13 || ^0.14 || ^0.15 || ^0.16 || ^0.17 || ^0.18 || ^0.19 || ^0.20 || ^1.0",
                 "php": "^8.0",
                 "ramsey/collection": "^1.2 || ^2.0"
             },
@@ -8247,9 +8378,9 @@
             ],
             "support": {
                 "issues": "https://github.com/ramsey/uuid/issues",
-                "source": "https://github.com/ramsey/uuid/tree/4.9.3"
+                "source": "https://github.com/ramsey/uuid/tree/4.9.4"
             },
-            "time": "2026-06-18T03:57:49+00:00"
+            "time": "2026-09-16T11:39:30+00:00"
         },
         {
             "name": "ryangjchandler/blade-capture-directive",
@@ -9087,16 +9218,16 @@
         },
         {
             "name": "spatie/laravel-medialibrary",
-            "version": "11.23.7",
+            "version": "11.23.8",
             "source": {
                 "type": "git",
                 "url": "https://github.com/spatie/laravel-medialibrary.git",
-                "reference": "94b11766ea5e10b1e2a88159b24937eae89a5d5f"
+                "reference": "32bd3926b1065c4dc154789b9c6b17567acaaa15"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/spatie/laravel-medialibrary/zipball/94b11766ea5e10b1e2a88159b24937eae89a5d5f",
-                "reference": "94b11766ea5e10b1e2a88159b24937eae89a5d5f",
+                "url": "https://api.github.com/repos/spatie/laravel-medialibrary/zipball/32bd3926b1065c4dc154789b9c6b17567acaaa15",
+                "reference": "32bd3926b1065c4dc154789b9c6b17567acaaa15",
                 "shasum": ""
             },
             "require": {
@@ -9181,7 +9312,7 @@
             ],
             "support": {
                 "issues": "https://github.com/spatie/laravel-medialibrary/issues",
-                "source": "https://github.com/spatie/laravel-medialibrary/tree/11.23.7"
+                "source": "https://github.com/spatie/laravel-medialibrary/tree/11.23.8"
             },
             "funding": [
                 {
@@ -9193,7 +9324,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-09-03T13:52:57+00:00"
+            "time": "2026-09-14T11:54:24+00:00"
         },
         {
             "name": "spatie/laravel-model-states",
@@ -10319,16 +10450,16 @@
         },
         {
             "name": "symfony/console",
-            "version": "v8.1.6",
+            "version": "v8.1.7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/console.git",
-                "reference": "eb7d9957d66739649e931ce7a9d05dab69f8abac"
+                "reference": "29afb89f4e941f68a6e90f28e3f52ff1f6793a7d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/console/zipball/eb7d9957d66739649e931ce7a9d05dab69f8abac",
-                "reference": "eb7d9957d66739649e931ce7a9d05dab69f8abac",
+                "url": "https://api.github.com/repos/symfony/console/zipball/29afb89f4e941f68a6e90f28e3f52ff1f6793a7d",
+                "reference": "29afb89f4e941f68a6e90f28e3f52ff1f6793a7d",
                 "shasum": ""
             },
             "require": {
@@ -10395,7 +10526,7 @@
                 "terminal"
             ],
             "support": {
-                "source": "https://github.com/symfony/console/tree/v8.1.6"
+                "source": "https://github.com/symfony/console/tree/v8.1.7"
             },
             "funding": [
                 {
@@ -10415,7 +10546,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-08-25T14:18:42+00:00"
+            "time": "2026-09-13T10:55:57+00:00"
         },
         {
             "name": "symfony/css-selector",
@@ -10806,16 +10937,16 @@
         },
         {
             "name": "symfony/finder",
-            "version": "v8.1.5",
+            "version": "v8.1.7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/finder.git",
-                "reference": "8d7acede2b2ae07605783d1c43e49b5767036474"
+                "reference": "4fbe46a3eb64abf8a57f0364075b91f4a233e062"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/finder/zipball/8d7acede2b2ae07605783d1c43e49b5767036474",
-                "reference": "8d7acede2b2ae07605783d1c43e49b5767036474",
+                "url": "https://api.github.com/repos/symfony/finder/zipball/4fbe46a3eb64abf8a57f0364075b91f4a233e062",
+                "reference": "4fbe46a3eb64abf8a57f0364075b91f4a233e062",
                 "shasum": ""
             },
             "require": {
@@ -10850,7 +10981,7 @@
             "description": "Finds files and directories via an intuitive fluent interface",
             "homepage": "https://symfony.com",
             "support": {
-                "source": "https://github.com/symfony/finder/tree/v8.1.5"
+                "source": "https://github.com/symfony/finder/tree/v8.1.7"
             },
             "funding": [
                 {
@@ -10870,20 +11001,20 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-08-21T12:16:08+00:00"
+            "time": "2026-09-10T19:14:39+00:00"
         },
         {
             "name": "symfony/html-sanitizer",
-            "version": "v8.1.6",
+            "version": "v8.1.7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/html-sanitizer.git",
-                "reference": "f8bbdb0704e6b6e9a3412481c1a87886a0633199"
+                "reference": "3d79bdecd01f71bccc45ddfa1d33c024df347a1f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/html-sanitizer/zipball/f8bbdb0704e6b6e9a3412481c1a87886a0633199",
-                "reference": "f8bbdb0704e6b6e9a3412481c1a87886a0633199",
+                "url": "https://api.github.com/repos/symfony/html-sanitizer/zipball/3d79bdecd01f71bccc45ddfa1d33c024df347a1f",
+                "reference": "3d79bdecd01f71bccc45ddfa1d33c024df347a1f",
                 "shasum": ""
             },
             "require": {
@@ -10922,7 +11053,7 @@
                 "sanitizer"
             ],
             "support": {
-                "source": "https://github.com/symfony/html-sanitizer/tree/v8.1.6"
+                "source": "https://github.com/symfony/html-sanitizer/tree/v8.1.7"
             },
             "funding": [
                 {
@@ -10942,20 +11073,20 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-08-30T01:03:44+00:00"
+            "time": "2026-09-04T10:14:04+00:00"
         },
         {
             "name": "symfony/http-foundation",
-            "version": "v8.1.6",
+            "version": "v8.1.7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/http-foundation.git",
-                "reference": "093b78326f649c3a9db922b9f17123b6aeb3b8fb"
+                "reference": "d8fdc670ed510a69e3a9eb4f5eac89f5ed627e17"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/http-foundation/zipball/093b78326f649c3a9db922b9f17123b6aeb3b8fb",
-                "reference": "093b78326f649c3a9db922b9f17123b6aeb3b8fb",
+                "url": "https://api.github.com/repos/symfony/http-foundation/zipball/d8fdc670ed510a69e3a9eb4f5eac89f5ed627e17",
+                "reference": "d8fdc670ed510a69e3a9eb4f5eac89f5ed627e17",
                 "shasum": ""
             },
             "require": {
@@ -11003,7 +11134,7 @@
             "description": "Defines an object-oriented layer for the HTTP specification",
             "homepage": "https://symfony.com",
             "support": {
-                "source": "https://github.com/symfony/http-foundation/tree/v8.1.6"
+                "source": "https://github.com/symfony/http-foundation/tree/v8.1.7"
             },
             "funding": [
                 {
@@ -11023,20 +11154,20 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-08-30T20:10:55+00:00"
+            "time": "2026-09-14T17:47:24+00:00"
         },
         {
             "name": "symfony/http-kernel",
-            "version": "v8.1.6",
+            "version": "v8.1.7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/http-kernel.git",
-                "reference": "2f73beb7c6f1a97d2c17bbf4dbd59da8cc18b355"
+                "reference": "ec7a3a5832c22cf880cf27d2fdc7ad2e94838e85"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/http-kernel/zipball/2f73beb7c6f1a97d2c17bbf4dbd59da8cc18b355",
-                "reference": "2f73beb7c6f1a97d2c17bbf4dbd59da8cc18b355",
+                "url": "https://api.github.com/repos/symfony/http-kernel/zipball/ec7a3a5832c22cf880cf27d2fdc7ad2e94838e85",
+                "reference": "ec7a3a5832c22cf880cf27d2fdc7ad2e94838e85",
                 "shasum": ""
             },
             "require": {
@@ -11113,7 +11244,7 @@
             "description": "Provides a structured process for converting a Request into a Response",
             "homepage": "https://symfony.com",
             "support": {
-                "source": "https://github.com/symfony/http-kernel/tree/v8.1.6"
+                "source": "https://github.com/symfony/http-kernel/tree/v8.1.7"
             },
             "funding": [
                 {
@@ -11133,20 +11264,20 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-08-30T21:40:49+00:00"
+            "time": "2026-09-15T07:12:52+00:00"
         },
         {
             "name": "symfony/mailer",
-            "version": "v8.1.5",
+            "version": "v8.1.7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/mailer.git",
-                "reference": "89f43137da74b8f1aab37c99926482b7084f51b9"
+                "reference": "8783380ecdafa23d36fc90c5873fd44b635c6e10"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/mailer/zipball/89f43137da74b8f1aab37c99926482b7084f51b9",
-                "reference": "89f43137da74b8f1aab37c99926482b7084f51b9",
+                "url": "https://api.github.com/repos/symfony/mailer/zipball/8783380ecdafa23d36fc90c5873fd44b635c6e10",
+                "reference": "8783380ecdafa23d36fc90c5873fd44b635c6e10",
                 "shasum": ""
             },
             "require": {
@@ -11193,7 +11324,7 @@
             "description": "Helps sending emails",
             "homepage": "https://symfony.com",
             "support": {
-                "source": "https://github.com/symfony/mailer/tree/v8.1.5"
+                "source": "https://github.com/symfony/mailer/tree/v8.1.7"
             },
             "funding": [
                 {
@@ -11213,20 +11344,20 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-08-21T17:47:34+00:00"
+            "time": "2026-09-15T06:01:24+00:00"
         },
         {
             "name": "symfony/mime",
-            "version": "v8.1.6",
+            "version": "v8.1.7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/mime.git",
-                "reference": "1b36ccfd7ccb9ad1d6eafb9024b3dd3d9606b15f"
+                "reference": "773ac57f20e2795bdadb65b5b1b5f4850d498283"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/mime/zipball/1b36ccfd7ccb9ad1d6eafb9024b3dd3d9606b15f",
-                "reference": "1b36ccfd7ccb9ad1d6eafb9024b3dd3d9606b15f",
+                "url": "https://api.github.com/repos/symfony/mime/zipball/773ac57f20e2795bdadb65b5b1b5f4850d498283",
+                "reference": "773ac57f20e2795bdadb65b5b1b5f4850d498283",
                 "shasum": ""
             },
             "require": {
@@ -11279,7 +11410,7 @@
                 "mime-type"
             ],
             "support": {
-                "source": "https://github.com/symfony/mime/tree/v8.1.6"
+                "source": "https://github.com/symfony/mime/tree/v8.1.7"
             },
             "funding": [
                 {
@@ -11299,7 +11430,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-08-22T09:06:25+00:00"
+            "time": "2026-09-04T11:02:17+00:00"
         },
         {
             "name": "symfony/polyfill-ctype",
@@ -12212,16 +12343,16 @@
         },
         {
             "name": "symfony/process",
-            "version": "v8.1.6",
+            "version": "v8.1.7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/process.git",
-                "reference": "d863f5e70d7c87abb906ac11b61f83036093000b"
+                "reference": "10823b09358e690df4ff943e24e8492bb1019fc3"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/process/zipball/d863f5e70d7c87abb906ac11b61f83036093000b",
-                "reference": "d863f5e70d7c87abb906ac11b61f83036093000b",
+                "url": "https://api.github.com/repos/symfony/process/zipball/10823b09358e690df4ff943e24e8492bb1019fc3",
+                "reference": "10823b09358e690df4ff943e24e8492bb1019fc3",
                 "shasum": ""
             },
             "require": {
@@ -12253,7 +12384,7 @@
             "description": "Executes commands in sub-processes",
             "homepage": "https://symfony.com",
             "support": {
-                "source": "https://github.com/symfony/process/tree/v8.1.6"
+                "source": "https://github.com/symfony/process/tree/v8.1.7"
             },
             "funding": [
                 {
@@ -12273,7 +12404,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-08-21T17:47:34+00:00"
+            "time": "2026-09-02T12:40:29+00:00"
         },
         {
             "name": "symfony/routing",
@@ -12444,16 +12575,16 @@
         },
         {
             "name": "symfony/string",
-            "version": "v8.1.2",
+            "version": "v8.1.7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/string.git",
-                "reference": "286a76b7255e5cc4bf0101a0bc5388ecf1c38ccc"
+                "reference": "d950140b5f56f31901e5b7a0c04ffc3a3deb943c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/string/zipball/286a76b7255e5cc4bf0101a0bc5388ecf1c38ccc",
-                "reference": "286a76b7255e5cc4bf0101a0bc5388ecf1c38ccc",
+                "url": "https://api.github.com/repos/symfony/string/zipball/d950140b5f56f31901e5b7a0c04ffc3a3deb943c",
+                "reference": "d950140b5f56f31901e5b7a0c04ffc3a3deb943c",
                 "shasum": ""
             },
             "require": {
@@ -12510,7 +12641,7 @@
                 "utf8"
             ],
             "support": {
-                "source": "https://github.com/symfony/string/tree/v8.1.2"
+                "source": "https://github.com/symfony/string/tree/v8.1.7"
             },
             "funding": [
                 {
@@ -12530,7 +12661,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-07-28T07:35:25+00:00"
+            "time": "2026-09-11T14:51:16+00:00"
         },
         {
             "name": "symfony/translation",
@@ -12787,16 +12918,16 @@
         },
         {
             "name": "symfony/var-dumper",
-            "version": "v8.1.6",
+            "version": "v8.1.7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/var-dumper.git",
-                "reference": "3783365b58972f4779254d98372af80fbf15e170"
+                "reference": "741a8c4c948b0bb9bd3653daacd3644c73c40ea5"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/var-dumper/zipball/3783365b58972f4779254d98372af80fbf15e170",
-                "reference": "3783365b58972f4779254d98372af80fbf15e170",
+                "url": "https://api.github.com/repos/symfony/var-dumper/zipball/741a8c4c948b0bb9bd3653daacd3644c73c40ea5",
+                "reference": "741a8c4c948b0bb9bd3653daacd3644c73c40ea5",
                 "shasum": ""
             },
             "require": {
@@ -12850,7 +12981,7 @@
                 "dump"
             ],
             "support": {
-                "source": "https://github.com/symfony/var-dumper/tree/v8.1.6"
+                "source": "https://github.com/symfony/var-dumper/tree/v8.1.7"
             },
             "funding": [
                 {
@@ -12870,7 +13001,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-08-30T20:10:55+00:00"
+            "time": "2026-09-03T16:02:27+00:00"
         },
         {
             "name": "tijsverkoyen/css-to-inline-styles",

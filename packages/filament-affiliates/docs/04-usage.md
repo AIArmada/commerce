@@ -79,6 +79,22 @@ When `affiliates.features.commission_tracking.enabled` is `false`, these admin f
 - programs
 - commission management
 
+## Conversions table
+
+`AffiliateConversionResource` lists conversions with affiliate, reference,
+commission, and status columns, plus two provenance columns:
+
+- **Origin** — where the conversion was recorded (`storefront`,
+  `marketplace`, `network`, …).
+- **Source Ref** — the upstream pointer (network link code, etc.).
+
+Row actions approve, reject, mark paid, and **reverse**. Reverse asks for
+a reason and routes through `ReverseAffiliateConversion`: the original is
+marked reversed and a negated companion conversion posts, so readers that
+sum posted rows stay correct. All mutations authorize through the
+conversion policy (`affiliate_conversion.update` / `affiliate.approve`)
+and re-resolve the record in owner scope.
+
 ## Owner scope and write safety
 
 Resource/page filters are not authorization by themselves.

@@ -147,7 +147,7 @@ final class AffiliateVolumeTierResource extends Resource
 
                 Tables\Columns\TextColumn::make('min_volume_minor')
                     ->label('Min Volume')
-                    ->money(fn ($record): string => $record->currencyCode())
+                    ->money(fn ($record): string => $record->currencyCode(), 100)
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('currency')

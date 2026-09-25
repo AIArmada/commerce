@@ -19,6 +19,7 @@ use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\Affiliates\States\ProcessingPayout;
 use AIArmada\Affiliates\States\QualifiedConversion;
 use AIArmada\Affiliates\States\RejectedConversion;
+use AIArmada\Affiliates\States\ReversedConversion;
 
 test('AffiliateStatus states have correct labels', function (): void {
     expect(AffiliateStatus::all()->count())->toBe(5);
@@ -41,7 +42,7 @@ test('CommissionType enum has correct cases and labels', function (): void {
 });
 
 test('ConversionStatus states have correct values and labels', function (): void {
-    expect(ConversionStatus::all()->count())->toBe(5);
+    expect(ConversionStatus::all()->count())->toBe(6);
 
     expect(PendingConversion::value())->toBe('pending');
     expect(ConversionStatus::labelFor(PendingConversion::class))->toBe('Pending Review');
@@ -54,6 +55,9 @@ test('ConversionStatus states have correct values and labels', function (): void
 
     expect(RejectedConversion::value())->toBe('rejected');
     expect(ConversionStatus::labelFor(RejectedConversion::class))->toBe('Rejected');
+
+    expect(ReversedConversion::value())->toBe('reversed');
+    expect(ConversionStatus::labelFor(ReversedConversion::class))->toBe('Reversed');
 
     expect(PaidConversion::value())->toBe('paid');
     expect(ConversionStatus::labelFor(PaidConversion::class))->toBe('Paid Out');

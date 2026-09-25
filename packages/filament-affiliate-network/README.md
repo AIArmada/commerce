@@ -31,8 +31,8 @@ public function panel(Panel $panel): Panel
 ## Features
 
 ### Admin Resources
-- **Sites** - Manage merchant domains and verification
-- **Offers** - Create and manage affiliate offers
+- **Sites** - Manage merchant domains and verification, catalog sync, token rotation
+- **Offers** - Create and manage affiliate offers, fees, volume tiers, money legs
 - **Categories** - Organize offers into categories
 - **Applications** - Review affiliate applications
 

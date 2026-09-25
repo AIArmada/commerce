@@ -20,6 +20,7 @@ This index intentionally points only to **current** documentation.
 - [AI Context](../CONTEXT.md)
 - [AI Retrieval Layer](ai/01-overview.md)
 - [AI Package Manifests](ai/package-manifests.json)
+- [Affiliate Routing Across Packages](affiliates.md)
 
 ## Canonical package documentation
 

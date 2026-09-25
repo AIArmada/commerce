@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates;
 
-use AIArmada\AffiliateNetwork\Contracts\AffiliateIdentityResolver;
-use AIArmada\AffiliateNetwork\Contracts\NetworkLedger;
-use AIArmada\AffiliateNetwork\Services\Catalog\CatalogReaderResolver;
 use AIArmada\Affiliates\Actions\Affiliates\ResolvePublicAffiliateReferralContext;
 use AIArmada\Affiliates\Cart\AffiliateDiscountConditionProvider;
 use AIArmada\Affiliates\Contracts\AffiliateLookup;
+use AIArmada\Affiliates\Contracts\MerchantCatalog;
+use AIArmada\Affiliates\Contracts\MerchantIdentity;
+use AIArmada\Affiliates\Contracts\MerchantLedger;
+use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
+use AIArmada\Affiliates\Events\AffiliateProgramJoined;
+use AIArmada\Affiliates\Listeners\NotifyConversionRecorded;
+use AIArmada\Affiliates\Listeners\NotifyProgramJoined;
 use AIArmada\Affiliates\Listeners\RecordCommissionForOrder;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
@@ -53,6 +57,9 @@ use AIArmada\Affiliates\Services\DailyAggregationService;
 use AIArmada\Affiliates\Services\FraudDetectionService;
 use AIArmada\Affiliates\Services\PayoutReconciliationService;
 use AIArmada\Affiliates\Services\Payouts\PayoutProcessorFactory;
+use AIArmada\Affiliates\Services\MerchantCatalogService;
+use AIArmada\Affiliates\Services\MerchantIdentityService;
+use AIArmada\Affiliates\Services\MerchantLedgerService;
 use AIArmada\Affiliates\Services\ProgramCatalogService;
 use AIArmada\Affiliates\Services\ProgramService;
 use AIArmada\Affiliates\Services\RankQualificationService;
@@ -124,37 +131,11 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
         $this->app->singleton(VoucherIntegrationRegistrar::class);
         $this->app->singleton(AffiliateDiscountConditionProvider::class);
 
-        $this->registerNetworkSeam();
+        $this->app->singleton(MerchantLedger::class, MerchantLedgerService::class);
+        $this->app->singleton(MerchantIdentity::class, MerchantIdentityService::class);
+        $this->app->singleton(MerchantCatalog::class, MerchantCatalogService::class);
+
         $this->registerSettingsMigrationPath();
-    }
-
-    /**
-     * Bind the affiliate-network seam when the network package is installed.
-     *
-     * Everything here is skipped when the network is absent, so plain
-     * merchant installs never load network classes.
-     */
-    private function registerNetworkSeam(): void
-    {
-        if (! interface_exists(AffiliateIdentityResolver::class)
-            || ! class_exists(Network\AffiliatesIdentityResolver::class)) {
-            return;
-        }
-
-        $this->app->singleton(
-            AffiliateIdentityResolver::class,
-            Network\AffiliatesIdentityResolver::class
-        );
-        $this->app->singleton(
-            NetworkLedger::class,
-            Network\AffiliatesLedger::class
-        );
-        $this->app->singleton(
-            CatalogReaderResolver::LOCAL_READER_KEY,
-            Network\LocalProgramReader::class
-        );
-
-        config(['affiliate-network.models.affiliate' => Affiliate::class]);
     }
 
     private function registerSettingsMigrationPath(): void
@@ -196,9 +177,13 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
             config('affiliates.features.commission_tracking.enabled', true)
             && class_exists(CommissionAttributionRequired::class)
             && class_exists(CartManager::class)
+            && ! $this->networkCoordinatesAttribution()
         ) {
             Event::listen(CommissionAttributionRequired::class, RecordCommissionForOrder::class);
         }
+
+        Event::listen(AffiliateProgramJoined::class, NotifyProgramJoined::class);
+        Event::listen(AffiliateConversionRecorded::class, NotifyConversionRecorded::class);
 
         if (config('affiliates.cookies.enabled', true)) {
             $this->registerCookieTrackingMiddleware();
@@ -322,6 +307,22 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
                 $publicReferralContext
             );
         });
+    }
+
+    /**
+     * Whether the marketplace coordinates listener order.
+     *
+     * When both packages are installed, the network provider registers
+     * the attribution listeners in decision order (network provisional,
+     * engine, network finalizer), so the engine must not self-register
+     * and double-record. String class check only — the engine imports
+     * no network code; standalone behavior is untouched.
+     */
+    private function networkCoordinatesAttribution(): bool
+    {
+        $providers = $this->app->getLoadedProviders();
+
+        return isset($providers['AIArmada\AffiliateNetwork\AffiliateNetworkServiceProvider']);
     }
 
     private function registerAttributionStrategies(): void

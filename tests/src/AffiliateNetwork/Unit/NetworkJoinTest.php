@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\AffiliateNetwork\Contracts\NetworkLedger;
 use AIArmada\AffiliateNetwork\Data\NetworkConversionDraft;
 use AIArmada\AffiliateNetwork\Enums\ApplicationStatus;
 use AIArmada\AffiliateNetwork\Enums\OfferVisibility;
@@ -11,7 +12,6 @@ use AIArmada\AffiliateNetwork\Services\OfferManagementService;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateProgramMembership;
-use AIArmada\Affiliates\Network\AffiliatesLedger;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Contacting\Data\ContactMethodData;
@@ -76,7 +76,7 @@ describe('network identity join', function (): void {
         $affiliate = createTestAffiliate();
         $affiliate->addContactMethod(ContactMethodData::email($user->email, 'general'));
 
-        $posted = app(AffiliatesLedger::class)->post(new NetworkConversionDraft(
+        $posted = app(NetworkLedger::class)->post(new NetworkConversionDraft(
             linkId: (string) Str::uuid(),
             offerId: (string) Str::uuid(),
             siteId: null,
@@ -96,7 +96,7 @@ describe('network identity join', function (): void {
     test('ledger posts nothing for users without a linked affiliate', function (): void {
         $user = User::factory()->create();
 
-        $posted = app(AffiliatesLedger::class)->post(new NetworkConversionDraft(
+        $posted = app(NetworkLedger::class)->post(new NetworkConversionDraft(
             linkId: (string) Str::uuid(),
             offerId: (string) Str::uuid(),
             siteId: null,

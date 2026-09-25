@@ -120,6 +120,7 @@ final class AffiliateSiteForm
 
         if (is_string($token) && $token !== '') {
             $data['catalog_token_encrypted'] = encrypt($token);
+            $data['catalog_token_issued_at'] = now();
         }
 
         return $data;

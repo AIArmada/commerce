@@ -260,6 +260,16 @@ class Affiliate extends Model implements Auditable
         return $this->hasMany(AffiliateBalance::class);
     }
 
+    /**
+     * Route mail notifications to the primary email contact method.
+     */
+    public function routeNotificationForMail(): ?string
+    {
+        $email = $this->contact_email;
+
+        return is_string($email) && $email !== '' ? $email : null;
+    }
+
     public function balanceFor(string $currency): ?AffiliateBalance
     {
         return $this->balances()->where('currency', mb_strtoupper($currency))->first();

@@ -3,26 +3,31 @@
 declare(strict_types=1);
 
 use AIArmada\AffiliateNetwork\Actions\ApplyToOffer;
-use AIArmada\AffiliateNetwork\Actions\PostNetworkConversionToLedger;
+use AIArmada\AffiliateNetwork\Adapters\Affiliates\AffiliatesIdentityReader;
+use AIArmada\AffiliateNetwork\Adapters\Affiliates\AffiliatesLedgerPoster;
+use AIArmada\AffiliateNetwork\Adapters\Affiliates\EnginePayoutFulfillment;
 use AIArmada\AffiliateNetwork\Contracts\AffiliateIdentityResolver;
+use AIArmada\AffiliateNetwork\Contracts\Fulfillment;
 use AIArmada\AffiliateNetwork\Contracts\NetworkLedger;
 use AIArmada\AffiliateNetwork\Data\NetworkAffiliate;
 use AIArmada\AffiliateNetwork\Data\NetworkConversionDraft;
 use AIArmada\AffiliateNetwork\Data\NetworkPostedConversion;
+use AIArmada\AffiliateNetwork\Enums\LegStatus;
 use AIArmada\AffiliateNetwork\Enums\OfferVisibility;
 use AIArmada\AffiliateNetwork\Exceptions\AffiliatesNotInstalled;
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
+use AIArmada\AffiliateNetwork\Models\NetworkConversionLeg;
 use AIArmada\AffiliateNetwork\Services\Catalog\CatalogReaderInterface;
 use AIArmada\AffiliateNetwork\Services\Catalog\CatalogReaderResolver;
 use AIArmada\AffiliateNetwork\Services\Catalog\RemoteCatalogClient;
+use AIArmada\AffiliateNetwork\Services\NetworkBooks;
 use AIArmada\AffiliateNetwork\Services\NetworkLedgerReconciliationService;
+use AIArmada\AffiliateNetwork\Services\OfferLinkService;
 use AIArmada\AffiliateNetwork\Services\OfferManagementService;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Network\AffiliatesIdentityResolver;
-use AIArmada\Affiliates\Network\AffiliatesLedger;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Collection;
 
@@ -134,6 +139,24 @@ final class FakeNetworkLedger implements NetworkLedger
 
         return $rows;
     }
+
+    public function postingsForExternalReference(string $externalReference): array
+    {
+        $rows = [];
+
+        foreach ($this->posted as $draft) {
+            if ($draft->externalReference === $externalReference) {
+                $rows[] = [
+                    'origin' => 'marketplace',
+                    'source_ref' => $draft->linkId,
+                    'commission_currency' => $draft->currency,
+                    'commission_minor' => $draft->commissionMinor,
+                ];
+            }
+        }
+
+        return $rows;
+    }
 }
 
 final class FakeLocalCatalogReader implements CatalogReaderInterface
@@ -164,18 +187,22 @@ function seamFixtures(string $domain): array
 }
 
 describe('Network seam', function (): void {
-    test('network and filament-network sources never reference affiliates classes', function (): void {
+    test('affiliates references live only in network adapters', function (): void {
         $root = networkPackageRoot();
 
-        $hits = [
-            ...phpFilesWithNeedle($root . '/affiliate-network/src', 'AIArmada\\Affiliates'),
-            ...phpFilesWithNeedle($root . '/affiliate-network/database', 'AIArmada\\Affiliates'),
-            ...phpFilesWithNeedle($root . '/affiliate-network/config', 'AIArmada\\Affiliates'),
-            ...phpFilesWithNeedle($root . '/affiliate-network/routes', 'AIArmada\\Affiliates'),
-            ...phpFilesWithNeedle($root . '/filament-affiliate-network/src', 'AIArmada\\Affiliates'),
-        ];
+        $adapterHits = phpFilesWithNeedle($root . '/affiliate-network/src/Adapters', 'AIArmada\\Affiliates');
+        $otherSrcHits = array_values(array_filter(
+            phpFilesWithNeedle($root . '/affiliate-network/src', 'AIArmada\\Affiliates'),
+            fn (string $path): bool => ! str_contains($path, '/src/Adapters/'),
+        ));
 
-        expect($hits)->toBe([]);
+        expect($adapterHits)->not->toBe([])
+            ->and($otherSrcHits)->toHaveCount(1)
+            ->and($otherSrcHits[0])->toEndWith('AffiliateNetworkServiceProvider.php')
+            ->and(phpFilesWithNeedle($root . '/affiliate-network/database', 'AIArmada\\Affiliates'))->toBe([])
+            ->and(phpFilesWithNeedle($root . '/affiliate-network/config', 'AIArmada\\Affiliates'))->toBe([])
+            ->and(phpFilesWithNeedle($root . '/affiliate-network/routes', 'AIArmada\\Affiliates'))->toBe([])
+            ->and(phpFilesWithNeedle($root . '/filament-affiliate-network/src', 'AIArmada\\Affiliates'))->toBe([]);
     });
 
     test('applications file against a fake identity without affiliates models', function (): void {
@@ -198,7 +225,7 @@ describe('Network seam', function (): void {
             ->toThrow(ModelNotFoundException::class);
     });
 
-    test('commission math stays in the network and reaches the ledger on the draft', function (): void {
+    test('commission math stays in the network books', function (): void {
         [, $offer] = seamFixtures('seam-math.example');
 
         $link = AffiliateOfferLink::factory()
@@ -206,15 +233,14 @@ describe('Network seam', function (): void {
             ->forAffiliateId('aff-1')
             ->create(['currency' => 'MYR']);
 
-        $ledger = new FakeNetworkLedger;
+        $leg = app(NetworkBooks::class)->post($link, 89900, 'MYR', 'ORDER-1');
 
-        $posted = (new PostNetworkConversionToLedger($ledger))->execute($link, 89900, 'MYR', 'ORDER-1');
-
-        expect($posted)->not->toBeNull()
-            ->and($ledger->posted)->toHaveCount(1)
-            ->and($ledger->posted[0]->commissionMinor)->toBe(13485)
-            ->and($ledger->posted[0]->currency)->toBe('MYR')
-            ->and($ledger->posted[0]->affiliateId)->toBe('aff-1');
+        expect($leg->commission_minor)->toBe(13485)
+            ->and($leg->commission_currency)->toBe('MYR')
+            ->and($leg->affiliate_id)->toBe('aff-1')
+            ->and($leg->payout_minor)->toBe(13485)
+            ->and($leg->fee_minor)->toBe(0)
+            ->and($leg->status)->toBe(LegStatus::Posted);
     });
 
     test('fixed-rate offers post the fixed commission', function (): void {
@@ -228,36 +254,55 @@ describe('Network seam', function (): void {
         ]);
         $link = AffiliateOfferLink::factory()->forOffer($offer)->forAffiliateId('aff-1')->create();
 
-        $ledger = new FakeNetworkLedger;
+        $leg = app(NetworkBooks::class)->post($link, 99999, null, 'ORDER-2');
 
-        (new PostNetworkConversionToLedger($ledger))->execute($link, 99999, null, 'ORDER-2');
-
-        expect($ledger->posted)->toHaveCount(1)
-            ->and($ledger->posted[0]->commissionMinor)->toBe(2500);
+        expect($leg->commission_minor)->toBe(2500)
+            ->and($leg->commission_currency)->toBe('MYR');
     });
 
-    test('posting without a ledger keeps counters only', function (): void {
+    test('recording without a reference keeps counters only', function (): void {
         [, $offer] = seamFixtures('seam-noledger.example');
         $link = AffiliateOfferLink::factory()->forOffer($offer)->forAffiliateId('aff-1')->create();
 
-        expect((new PostNetworkConversionToLedger)->execute($link, 5000, 'MYR', 'ORDER-3'))->toBeNull();
+        $leg = app(OfferLinkService::class)->recordConversion($link, 5000, 'MYR');
+
+        expect($leg)->toBeNull()
+            ->and(NetworkConversionLeg::query()->exists())->toBeFalse()
+            ->and($link->fresh()->conversions)->toBe(1);
     });
 
-    test('reconciliation without a ledger fails explicitly', function (): void {
+    test('reconciliation runs standalone on legs', function (): void {
         [, $offer] = seamFixtures('seam-reconcile.example');
         $link = AffiliateOfferLink::factory()->forOffer($offer)->forAffiliateId('aff-1')->create();
 
-        expect(fn () => (new NetworkLedgerReconciliationService)->reconcileLink($link))
-            ->toThrow(AffiliatesNotInstalled::class);
+        app(OfferLinkService::class)->recordConversion($link, 5000, 'MYR', 'ORDER-3');
+
+        $report = (new NetworkLedgerReconciliationService)->reconcileLink($link->fresh());
+
+        expect($report['match'])->toBeTrue()
+            ->and($report['ledger'])->toBeNull()
+            ->and($report['legs']['posted'])->toBe(1);
     });
 
     test('reconciliation runs against a fake ledger', function (): void {
         [, $offer] = seamFixtures('seam-reconcile-fake.example');
         $link = AffiliateOfferLink::factory()->forOffer($offer)->forAffiliateId('aff-1')->create(['currency' => 'MYR']);
 
+        app(OfferLinkService::class)->recordConversion($link, 5000, 'MYR', 'ORDER-4');
+
+        $leg = NetworkConversionLeg::query()->where('external_reference', 'ORDER-4')->firstOrFail();
         $ledger = new FakeNetworkLedger;
-        (new PostNetworkConversionToLedger($ledger))->execute($link, 5000, 'MYR', 'ORDER-4');
-        $link->recordConversion(5000);
+        $ledger->post(new NetworkConversionDraft(
+            linkId: (string) $link->getKey(),
+            offerId: (string) $offer->getKey(),
+            siteId: null,
+            affiliateId: 'aff-1',
+            linkCode: 'X',
+            revenueMinor: 5000,
+            currency: 'MYR',
+            externalReference: 'ORDER-4',
+            commissionMinor: $leg->payout_minor,
+        ));
 
         $report = (new NetworkLedgerReconciliationService($ledger))->reconcileLink($link->fresh());
 
@@ -347,10 +392,11 @@ describe('Network seam', function (): void {
         expect(fn () => $link->affiliate()->first())->toThrow(AffiliatesNotInstalled::class);
     });
 
-    test('affiliates package binds the network seam adapters', function (): void {
+    test('network binds the engine adapters when the engine is installed', function (): void {
         expect(app()->bound(AffiliateIdentityResolver::class))->toBeTrue()
-            ->and(app(AffiliateIdentityResolver::class))->toBeInstanceOf(AffiliatesIdentityResolver::class)
-            ->and(app(NetworkLedger::class))->toBeInstanceOf(AffiliatesLedger::class)
+            ->and(app(AffiliateIdentityResolver::class))->toBeInstanceOf(AffiliatesIdentityReader::class)
+            ->and(app(NetworkLedger::class))->toBeInstanceOf(AffiliatesLedgerPoster::class)
+            ->and(app(Fulfillment::class))->toBeInstanceOf(EnginePayoutFulfillment::class)
             ->and(app()->bound(CatalogReaderResolver::LOCAL_READER_KEY))->toBeTrue()
             ->and(config('affiliate-network.models.affiliate'))->toBe(Affiliate::class);
     });

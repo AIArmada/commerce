@@ -1,9 +1,14 @@
 ---
 title: Affiliate Network + Affiliates Engine Study
-status: research
+status: superseded by the fresh rebuild (see fresh-architecture.md)
 ---
 
 # Affiliate Network end-to-end + engine seam study
+
+> Superseded: this study describes the pre-rebuild implementation. The
+> fresh architecture (money legs, fees, fulfillment, merchant seams) is
+> specified in [fresh-architecture.md](fresh-architecture.md) and
+> documented in `packages/*/docs/`.
 
 Primary-source study of `packages/affiliate-network` (the marketplace) and
 `packages/affiliates` (the engine), plus the seam between them. Every claim

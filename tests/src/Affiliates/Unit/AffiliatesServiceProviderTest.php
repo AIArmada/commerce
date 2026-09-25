@@ -3,6 +3,10 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\AffiliatesServiceProvider;
+use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
+use AIArmada\Affiliates\Events\AffiliateProgramJoined;
+use AIArmada\Affiliates\Listeners\NotifyConversionRecorded;
+use AIArmada\Affiliates\Listeners\NotifyProgramJoined;
 use AIArmada\Affiliates\Listeners\RecordCommissionForOrder;
 use AIArmada\Affiliates\Support\Integrations\VoucherIntegrationRegistrar;
 use AIArmada\Affiliates\Support\Middleware\HydratePublicAffiliateReferralContext;
@@ -91,6 +95,12 @@ it('registers the commission listener only when commission tracking is enabled',
     Event::shouldReceive('listen')
         ->once()
         ->with(CommissionAttributionRequired::class, RecordCommissionForOrder::class);
+    Event::shouldReceive('listen')
+        ->once()
+        ->with(AffiliateProgramJoined::class, NotifyProgramJoined::class);
+    Event::shouldReceive('listen')
+        ->once()
+        ->with(AffiliateConversionRecorded::class, NotifyConversionRecorded::class);
 
     $provider = new AffiliatesServiceProvider(app());
     $provider->packageBooted();
@@ -102,7 +112,12 @@ it('does not register the commission listener when commission tracking is disabl
     config()->set('affiliates.features.commission_tracking.enabled', false);
     config()->set('affiliates.cookies.enabled', false);
 
-    Event::shouldReceive('listen')->never();
+    Event::shouldReceive('listen')
+        ->once()
+        ->with(AffiliateProgramJoined::class, NotifyProgramJoined::class);
+    Event::shouldReceive('listen')
+        ->once()
+        ->with(AffiliateConversionRecorded::class, NotifyConversionRecorded::class);
 
     $provider = new AffiliatesServiceProvider(app());
     $provider->packageBooted();

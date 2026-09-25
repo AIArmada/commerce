@@ -49,6 +49,17 @@ final class RecordAffiliateConversion
         return DB::transaction(fn (): ?AffiliateConversionData => $this->record($cart, $payload));
     }
 
+    /**
+     * Resolve the active attribution for a cart without recording.
+     *
+     * Lets order listeners compare touch times before deciding whether
+     * this conversion should exist at all (cross-system winner rule).
+     */
+    public function resolveAttributionFor(Cart $cart): ?AffiliateAttribution
+    {
+        return $this->resolveAttribution($cart, []);
+    }
+
     private function record(Cart $cart, array $payload = []): ?AffiliateConversionData
     {
         $attribution = $this->resolveAttribution($cart, $payload);
@@ -126,6 +137,7 @@ final class RecordAffiliateConversion
                 'status' => $autoApprove ? ApprovedConversion::class : $statusEnum::class,
                 'channel' => $channel,
                 'origin' => $payload['origin'] ?? $attribution?->origin,
+                'source_ref' => $payload['source_ref'] ?? null,
                 'sharer_user_id' => $payload['sharer_user_id'] ?? $attribution?->sharer_user_id,
                 'actor_user_id' => $payload['actor_user_id'] ?? null,
                 'metadata' => $conversionMetadata,
@@ -371,7 +383,7 @@ final class RecordAffiliateConversion
         $metadata = Arr::except($metadata, [
             'affiliate_id', 'affiliate_code', 'affiliate_attribution_id', 'affiliate_link_id',
             'subject_type', 'subject_key', 'subject_id', 'subject_instance',
-            'subject_title_snapshot', 'voucher_code', 'channel', 'origin',
+            'subject_title_snapshot', 'voucher_code', 'channel', 'origin', 'source_ref',
             'sharer_user_id', 'actor_user_id', 'external_reference', 'conversion_type',
             'affiliate_program_id', 'commission_override', 'upline_levels', 'program_id', 'cart_identifier', 'cart_instance',
         ]);

@@ -9,6 +9,7 @@ use AIArmada\Affiliates\States\ConversionStatus;
 use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\Affiliates\States\RejectedConversion;
+use AIArmada\Affiliates\States\ReversedConversion;
 use AIArmada\CommerceSupport\Contracts\ExchangeRateProvider;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
@@ -49,7 +50,7 @@ use Spatie\ModelStates\HasStates;
  * @property float|null $commission_rate_to_base
  * @property string|null $commission_rate_base
  * @property ConversionStatus $status
- * @property string|null $network_link_id
+ * @property string|null $source_ref
  * @property string|null $affiliate_link_id
  * @property string|null $sharer_user_id
  * @property string|null $actor_user_id
@@ -61,6 +62,7 @@ use Spatie\ModelStates\HasStates;
  * @property CarbonInterface|null $occurred_at
  * @property CarbonInterface|null $approved_at
  * @property CarbonInterface|null $rejected_at
+ * @property CarbonInterface|null $reversed_at
  * @property CarbonInterface|null $paid_at
  * @property CarbonInterface|null $created_at
  * @property CarbonInterface|null $updated_at
@@ -105,7 +107,7 @@ class AffiliateConversion extends Model
         'commission_rate_to_base',
         'commission_rate_base',
         'affiliate_link_id',
-        'network_link_id',
+        'source_ref',
         'sharer_user_id',
         'actor_user_id',
         'origin',
@@ -115,6 +117,7 @@ class AffiliateConversion extends Model
         'occurred_at',
         'approved_at',
         'rejected_at',
+        'reversed_at',
         'paid_at',
     ];
 
@@ -261,6 +264,11 @@ class AffiliateConversion extends Model
                 $conversion->updateQuietly(['paid_at' => CarbonImmutable::now()]);
                 $conversion->paid_at = CarbonImmutable::now();
             }
+
+            if ($newStatus->equals(ReversedConversion::class) && $conversion->reversed_at === null) {
+                $conversion->updateQuietly(['reversed_at' => CarbonImmutable::now()]);
+                $conversion->reversed_at = CarbonImmutable::now();
+            }
         });
     }
 
@@ -287,6 +295,7 @@ class AffiliateConversion extends Model
             'occurred_at' => 'immutable_datetime',
             'approved_at' => 'immutable_datetime',
             'rejected_at' => 'immutable_datetime',
+            'reversed_at' => 'immutable_datetime',
             'paid_at' => 'immutable_datetime',
             'value_minor' => 'integer',
             'commission_rate_to_base' => 'float',

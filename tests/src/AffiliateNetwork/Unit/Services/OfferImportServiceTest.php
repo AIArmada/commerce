@@ -218,11 +218,11 @@ describe('OfferImportService', function (): void {
         $this->importer->sync($this->site, (string) $this->program->getKey());
 
         $offer = AffiliateOffer::query()->where('site_id', $this->site->getKey())->first();
-        expect($offer->rate_source)->toBe('synced');
+        expect($offer->source)->toBe('mirrored');
 
         // Operator override in Filament locks the rate block.
         $offer->update(['rate_base_bp' => 3000]);
-        expect($offer->fresh()->rate_source)->toBe('manual');
+        expect($offer->fresh()->source)->toBe('manual');
 
         // Merchant moves the rate; sync must hold the operator value back.
         $rule->update(['commission_value' => 2500]);
@@ -231,7 +231,7 @@ describe('OfferImportService', function (): void {
         expect($held['locked'])->toBe(1);
         expect($held['updated'])->toBe(0);
         expect($offer->fresh()->rate_base_bp)->toBe(3000);
-        expect($offer->fresh()->rate_source)->toBe('manual');
+        expect($offer->fresh()->source)->toBe('manual');
 
         // Same snapshot again: checksum stamped, so it skips quietly.
         $again = $this->importer->sync($this->site, (string) $this->program->getKey());
@@ -239,12 +239,12 @@ describe('OfferImportService', function (): void {
         expect($again['skipped'])->toBe(1);
 
         // Explicit unlock re-applies catalog rates on next sync.
-        $offer->update(['rate_source' => 'synced']);
+        $offer->update(['source' => 'mirrored']);
         $released = $this->importer->sync($this->site, (string) $this->program->getKey());
 
         expect($released['updated'])->toBe(1);
         expect($offer->fresh()->rate_base_bp)->toBe(2500);
-        expect($offer->fresh()->rate_source)->toBe('synced');
+        expect($offer->fresh()->source)->toBe('mirrored');
     });
 
     test('sync never silently unlocks a manual offer when rates agree', function (): void {
@@ -265,7 +265,7 @@ describe('OfferImportService', function (): void {
 
         // Operator independently lands on the same value merchants publish.
         $offer->update(['rate_base_bp' => 2500]);
-        expect($offer->fresh()->rate_source)->toBe('manual');
+        expect($offer->fresh()->source)->toBe('manual');
 
         $rule->update(['commission_value' => 2500]);
         $result = $this->importer->sync($this->site, (string) $this->program->getKey());
@@ -273,7 +273,7 @@ describe('OfferImportService', function (): void {
         expect($result['locked'])->toBe(0);
         expect($result['updated'])->toBe(1);
         expect($offer->fresh()->rate_base_bp)->toBe(2500);
-        expect($offer->fresh()->rate_source)->toBe('manual');
+        expect($offer->fresh()->source)->toBe('manual');
     });
 
     test('counts failed subjects without aborting the sync', function (): void {

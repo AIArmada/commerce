@@ -46,36 +46,65 @@ Tables\Actions\Action::make('verify')
 | Action | Icon | Color | Visibility | Description |
 |--------|------|-------|------------|-------------|
 | Edit | - | - | Always | Open edit form |
-| Activate | `heroicon-o-play` | Success | When not active | Set status to active |
-| Pause | `heroicon-o-pause` | Warning | When active | Set status to paused |
+| Activate | `heroicon-o-play` | Success | When not published | Publish via `UpdateOffer` (stamps `published_at`) |
+| Pause | `heroicon-o-pause` | Warning | When published | Archive via `UpdateOffer` (stamps `archived_at`) |
 
-### Activate Action Implementation
-
-```php
-Tables\Actions\Action::make('activate')
-    ->icon('heroicon-o-play')
-    ->color('success')
-    ->requiresConfirmation()
-    ->visible(fn (AffiliateOffer $record): bool => $record->status !== AffiliateOffer::STATUS_ACTIVE)
-    ->action(fn (AffiliateOffer $record) => $record->update(['status' => AffiliateOffer::STATUS_ACTIVE]));
-```
-
-### Pause Action Implementation
-
-```php
-Tables\Actions\Action::make('pause')
-    ->icon('heroicon-o-pause')
-    ->color('warning')
-    ->requiresConfirmation()
-    ->visible(fn (AffiliateOffer $record): bool => $record->status === AffiliateOffer::STATUS_ACTIVE)
-    ->action(fn (AffiliateOffer $record) => $record->update(['status' => AffiliateOffer::STATUS_PAUSED]));
-```
+Activate is disabled until the owning site is verified. Both transitions
+run inside the site's owner context and fire the domain `OfferUpdated`
+event.
 
 ### Bulk Actions
 
 | Action | Description |
 |--------|-------------|
 | Delete | Delete selected offers |
+
+### Relation Managers
+
+| Manager | Tab | Actions |
+|---------|-----|---------|
+| `LinksRelationManager` | Links | Reconcile (prove legs posted to the merchant ledger exactly once) |
+| `LegsRelationManager` | Legs | Reverse (posted legs only; records a reason and posts the negated companion leg) |
+
+```php
+// Legs reverse action
+Action::make('reverse')
+    ->label('Reverse')
+    ->color('danger')
+    ->visible(fn (NetworkConversionLeg $record): bool => $record->status === LegStatus::Posted)
+    ->form([
+        TextInput::make('reason')->required()->maxLength(120),
+    ])
+    ->action(fn (NetworkConversionLeg $record, array $data) =>
+        app(NetworkBooks::class)->reverse($record, $data['reason']));
+```
+
+---
+
+## AffiliateSiteResource Header Actions
+
+The site edit page carries two header actions besides save/delete:
+
+| Action | Icon | Color | Description |
+|--------|------|-------|-------------|
+| Sync catalog | `heroicon-o-arrow-path` | Info | Pull the merchant catalog now (requires confirmation) |
+| Rotate catalog token | `heroicon-o-key` | Warning | Issue a fresh postback token (requires confirmation) |
+
+```php
+Actions\Action::make('rotate_catalog_token')
+    ->label('Rotate catalog token')
+    ->requiresConfirmation()
+    ->modalDescription('The previous token stops working immediately. Copy the new token now — it is shown once.')
+    ->action(function (AffiliateSite $record): void {
+        $token = $record->rotateCatalogToken();
+
+        Notification::make()
+            ->title('New catalog token')
+            ->body($token)
+            ->persistent()
+            ->send();
+    });
+```
 
 ---
 

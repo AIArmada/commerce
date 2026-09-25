@@ -48,8 +48,15 @@ final class AffiliateOffersTable
                     ->formatStateUsing(fn (AffiliateOffer $record): string => $record->formattedRate())
                     ->sortable(),
 
-                TextColumn::make('rate_source')
-                    ->label('Rates')
+                TextColumn::make('network_fee_bp')
+                    ->label('Fee (bp)')
+                    ->placeholder('default')
+                    ->numeric()
+                    ->sortable()
+                    ->toggleable(),
+
+                TextColumn::make('source')
+                    ->label('Source')
                     ->badge()
                     ->color(fn (string $state): string => $state === 'manual' ? 'warning' : 'success')
                     ->toggleable(),

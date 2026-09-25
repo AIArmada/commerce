@@ -41,6 +41,8 @@ keywords:
 
 ## Key surfaces
 - Resources: `AffiliateOfferApplicationResource`, `AffiliateOfferCategoryResource`, `AffiliateOfferResource`, `AffiliateSiteResource`
+- Relation managers: `AffiliateOfferResource/RelationManagers/LinksRelationManager`, `…/LegsRelationManager` (reverse action)
+- Page actions: `EditAffiliateSite` rotate-catalog-token header action
 - Actions/Services: `Support/NetworkAdminAccess`, `Support/NetworkStatsAggregator`
 - Config `filament-affiliate-network.php`: `navigation`, `group`, `sort`, `authorization`, `admin_ability`, `marketplace`, `show_commission_rates`, `show_cookie_duration`
 

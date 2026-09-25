@@ -10,6 +10,7 @@ use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource\Schemas\AffiliateSiteForm;
 use Carbon\CarbonImmutable;
 use Filament\Actions;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 
 final class EditAffiliateSite extends EditRecord
@@ -49,6 +50,21 @@ final class EditAffiliateSite extends EditRecord
                 ->color('info')
                 ->requiresConfirmation()
                 ->action(fn (AffiliateSite $record): array => app(SyncSiteCatalog::class)->handle($record)),
+            Actions\Action::make('rotate_catalog_token')
+                ->label('Rotate catalog token')
+                ->icon('heroicon-o-key')
+                ->color('warning')
+                ->requiresConfirmation()
+                ->modalDescription('The previous token stops working immediately. Copy the new token now — it is shown once.')
+                ->action(function (AffiliateSite $record): void {
+                    $token = $record->rotateCatalogToken();
+
+                    Notification::make()
+                        ->title('New catalog token')
+                        ->body($token)
+                        ->persistent()
+                        ->send();
+                }),
             Actions\DeleteAction::make(),
         ];
     }

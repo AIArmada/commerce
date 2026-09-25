@@ -14,18 +14,19 @@ Merchant dashboard counts and lists are scoped to the current merchant owner. Th
 network stats and top-offers widgets are separate, deliberate network-wide admin
 reporting surfaces and cache their global result for 30 seconds.
 
-The network owns discovery, enrollment, and link metrics: every offer
-enrolls through network applications, and joining never requires or creates
-a merchant-side account. `affiliates` owns merchant-local attribution,
-commissions, and payouts; program memberships stay merchant-side only and
-are never read or written by marketplace enrollment.
+The network owns discovery, enrollment, link metrics, and its own money
+legs: every offer enrolls through network applications, and joining never
+requires or creates a merchant-side account. `affiliates` owns
+merchant-local attribution, commissions, and payouts; program memberships
+stay merchant-side only and are never read or written by marketplace
+enrollment. Merchant-ledger postings arrive through the fulfillment step,
+never inline.
 
-If checkout observes both boundaries for one order, keep duplicate guards
-independent: reject a second network conversion when the order already carries
-the `network_attribution` marker, and pass a stable `external_reference` to the
-core conversion path so `affiliates` can apply its idempotency key. Network
-metrics are discovery reporting; core commission and payout records are the
-authoritative execution records.
+If checkout observes both boundaries for one order, the last-touch decider
+settles it: a provisional network leg is confirmed on a network win and
+superseded on an engine win, so exactly one side pays. Network legs are
+the network money source of truth; engine commission and payout records
+are the merchant execution records.
 
 ## AffiliateSiteResource
 
@@ -52,6 +53,10 @@ Manage merchant sites/domains.
 - Verification method
 - Verified at (read-only; stamped when the status becomes verified and cleared when it leaves verified)
 
+**Catalog Sync:**
+- Catalog URL (merchant API base; empty for locally-managed offers)
+- Catalog API token (stored encrypted; setting it stamps issuance; leave empty to keep)
+
 **Settings:**
 - Settings (key-value)
 - Metadata (key-value)
@@ -63,6 +68,11 @@ Manage merchant sites/domains.
 | Edit | Edit site details |
 | Verify | Manually verify a pending site (runs inside the site's owner context) |
 | Delete | Delete site |
+
+The edit page adds two header actions: **Sync catalog** (pull the
+merchant catalog now) and **Rotate catalog token** (issues a fresh
+postback token; the previous one dies immediately and the new plaintext
+is shown once in a persistent notification).
 
 ### Status Colors
 
@@ -86,10 +96,12 @@ Manage affiliate offers.
 - Category name (toggleable)
 - Status (badge)
 - Commission (formatted)
+- Fee in basis points (toggleable; blank uses the configured default)
+- Source (badge: synced/manual)
 - Featured (icon)
-- Public (icon)
+- Visibility (badge)
 - Applications count
-- Created at (toggleable)
+- Created at (toggleable, hidden by default)
 
 ### Form Sections
 
@@ -102,15 +114,18 @@ Manage affiliate offers.
 - Terms & Conditions
 
 **Commission:**
-- Commission type (percentage/fixed)
-- Commission rate (whole-number basis points or minor units; negatives rejected)
+- Base rate in basis points (percentage; negatives rejected)
+- Fixed amount in minor units (per conversion; takes precedence when set)
 - Currency (three-letter code)
 - Cookie duration (whole days; negatives rejected)
+- Source (synced/manual; editing any rate field flips to manual)
+- Network fee in basis points (marketplace take-rate; empty uses the configured default)
+- Volume tiers (repeater: floor in minor units + rate in basis points)
 
 **Settings:**
-- Status
+- Status (draft/published/archived)
+- Visibility (public/private/unlisted)
 - Featured toggle
-- Public toggle
 - Requires approval toggle
 - Landing page URL
 - Start/end dates (end must be on or after start)
@@ -118,6 +133,18 @@ Manage affiliate offers.
 **Advanced:**
 - Restrictions (key-value)
 - Metadata (key-value)
+
+### Relation Managers
+
+The edit page carries two read-only relation tabs:
+
+- **Links:** issued tracking links with clicks, conversions, and revenue,
+  plus a reconcile action proving every counted conversion posted to the
+  merchant ledger exactly once.
+- **Legs:** posted money legs (reference, revenue, commission, fee,
+  payout, status). Operators cannot edit legs, but a **Reverse**
+  action on posted legs records a reason and posts the negated
+  companion leg.
 
 ### Actions
 
@@ -133,9 +160,9 @@ Activate and pause run inside the owning site's owner context and fire the domai
 ### Filters
 
 - Status
+- Visibility
 - Site
 - Featured (ternary)
-- Public (ternary)
 
 ---
 

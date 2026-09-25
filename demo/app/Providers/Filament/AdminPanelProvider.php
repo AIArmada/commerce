@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Providers\Filament;
 
 use AIArmada\FilamentAddressing\FilamentAddressingPlugin;
+use AIArmada\FilamentAffiliateNetwork\FilamentAffiliateNetworkPlugin;
+use AIArmada\FilamentAffiliates\FilamentAffiliatesPlugin;
 use App\Filament\Pages\Dashboard;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -14,7 +16,6 @@ use Filament\Navigation\NavigationGroup;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
-use Filament\Widgets\AccountWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Routing\Middleware\SubstituteBindings;
@@ -49,6 +50,8 @@ final class AdminPanelProvider extends PanelProvider
             ])
             ->plugins([
                 FilamentAddressingPlugin::make(),
+                FilamentAffiliatesPlugin::make(),
+                FilamentAffiliateNetworkPlugin::make(),
             ])
             ->middleware([
                 EncryptCookies::class,

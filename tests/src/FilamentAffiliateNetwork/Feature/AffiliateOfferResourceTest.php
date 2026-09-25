@@ -17,8 +17,8 @@ describe('AffiliateOfferResource', function (): void {
     });
 
     test('registers the links relation manager', function (): void {
-        expect(AffiliateOfferResource::getRelations())->toBe([
+        expect(AffiliateOfferResource::getRelations())->toContain(
             LinksRelationManager::class,
-        ]);
+        );
     });
 });
