@@ -11,7 +11,10 @@ use AIArmada\Authz\Models\Role;
 use AIArmada\Cart\Conditions\ConditionTarget;
 use AIArmada\Commerce\Tests\Addressing\AddressingDatabaseTestCase;
 use AIArmada\Commerce\Tests\Addressing\AddressingGeographyTestCase;
+use AIArmada\Commerce\Tests\AffiliateNetwork\AffiliateNetworkTestCase;
+use AIArmada\Commerce\Tests\Affiliates\AffiliatesTestCase;
 use AIArmada\Commerce\Tests\Feedback\FeedbackTestCase;
+use AIArmada\Commerce\Tests\FilamentAffiliateNetwork\FilamentAffiliateNetworkTestCase;
 use AIArmada\Commerce\Tests\FilamentAuthz\FilamentAuthzTestCase;
 use AIArmada\Commerce\Tests\FilamentInventory\FilamentInventoryTestCase;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
@@ -80,9 +83,6 @@ pest()->extend(TestCase::class)->in(
     'src/FilamentAuthz',
     'src/FilamentAffiliates',
     'src/FilamentPromotions',
-    'src/Affiliates',
-    'src/AffiliateNetwork',
-    'src/FilamentAffiliateNetwork',
     'src/Vouchers',
     'src/Customers',
     'src/Orders',
@@ -100,6 +100,12 @@ pest()->extend(TestCase::class)->in(
     'src/Links',
     'src/FilamentLinks',
 );
+
+pest()->extend(AffiliateNetworkTestCase::class)->in('src/AffiliateNetwork');
+
+pest()->extend(AffiliatesTestCase::class)->in('src/Affiliates');
+
+pest()->extend(FilamentAffiliateNetworkTestCase::class)->in('src/FilamentAffiliateNetwork');
 
 pest()->extend(PersonsTestCase::class)->in('src/Persons');
 
