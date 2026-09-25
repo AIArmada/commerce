@@ -57,7 +57,6 @@ describe('ScopesByBelongsToOwner', function (): void {
                     'offer_id' => $offer->id,
                     'affiliate_id' => $affiliate->id,
                     'site_id' => $site->id,
-                    'target_url' => 'https://example.com/' . $entry['suffix'],
                 ]);
 
                 return compact('site', 'category', 'offer', 'creative', 'affiliate', 'application', 'link');

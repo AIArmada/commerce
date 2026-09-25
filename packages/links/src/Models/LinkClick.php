@@ -6,6 +6,7 @@ namespace AIArmada\Links\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Links\Models\Concerns\HasSubject;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -16,6 +17,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $link_id
  * @property string|null $owner_type
  * @property string|null $owner_id
+ * @property string|null $subject_type
+ * @property string|null $subject_id
  * @property CarbonImmutable $occurred_at
  * @property string|null $ip_address
  * @property string|null $user_agent
@@ -40,6 +43,7 @@ final class LinkClick extends Model
 {
     use HasOwner;
     use HasOwnerScopeConfig;
+    use HasSubject;
     use HasUuids;
 
     protected static string $ownerScopeConfigKey = 'links.owner';
@@ -47,6 +51,8 @@ final class LinkClick extends Model
     /** @var list<string> */
     protected $fillable = [
         'link_id',
+        'subject_type',
+        'subject_id',
         'occurred_at',
         'ip_address',
         'user_agent',

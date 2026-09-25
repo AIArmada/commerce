@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentLinks\Resources\LinkResource\Tables;
 
 use AIArmada\Links\Actions\DeactivateLink;
+use AIArmada\Links\Actions\GenerateLinkUrl;
 use AIArmada\Links\Actions\ReactivateLink;
 use AIArmada\Links\Models\Link;
 use Filament\Actions\Action;
@@ -68,6 +69,16 @@ final class LinksTable
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+
+                Tables\Columns\IconColumn::make('require_signature')
+                    ->label('Signed')
+                    ->boolean()
+                    ->toggleable(),
+
+                Tables\Columns\TextColumn::make('subject_type')
+                    ->label('Subject')
+                    ->formatStateUsing(fn (?string $state): string => $state !== null && $state !== '' ? (string) str($state)->classBasename() : '—')
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 Filter::make('active')
@@ -86,7 +97,7 @@ final class LinksTable
                 Action::make('open')
                     ->label('Open')
                     ->icon('heroicon-o-arrow-top-right-on-square')
-                    ->url(fn (Link $record): string => $record->cloakedUrl())
+                    ->url(fn (Link $record): string => GenerateLinkUrl::run($record))
                     ->openUrlInNewTab(),
 
                 Action::make('deactivate')

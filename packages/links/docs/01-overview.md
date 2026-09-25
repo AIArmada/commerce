@@ -10,9 +10,10 @@ The `aiarmada/links` package is generic tracked-link management for Laravel. It 
 
 ## What this package owns
 
-- Tracked links: names, slugs, destinations, UTM defaults, expiry, click limits, activation lifecycle
-- The cloaked redirect route (`/go/{slug}` by default) with UTM merging
-- Click records: IP, user agent, device/browser/OS, bot flags, referrer, UTM values
+- Tracked links: names, slugs, destinations, UTM defaults, destination parameters, expiry, click limits, activation lifecycle
+- The cloaked redirect route (`/go/{slug}` by default) with parameter merging and optional per-link signed URLs
+- Click records: IP, user agent, device/browser/OS, bot flags, referrer, UTM values, ad click IDs, subject reference
+- Consumer seams: subject morphs, the link-gate policy contract, and signed-URL generation
 - Counter caches (`total_clicks`, `human_clicks`) and first/last click timestamps
 - Click retention pruning via `links:prune-clicks`
 - Domain events for every lifecycle transition and click
@@ -26,6 +27,7 @@ The `aiarmada/links` package is generic tracked-link management for Laravel. It 
 ## Related packages
 
 - [`aiarmada/filament-links`](../../filament-links/docs/01-overview.md) — Filament link management UI
+- [`aiarmada/affiliate-network`](../../affiliate-network/docs/01-overview.md) — rides on tracked links for offer redirects
 - [`aiarmada/signals`](../../signals/docs/01-overview.md) — optional analytics sink for `LinkClicked` events
 - [`aiarmada/commerce-support`](../../commerce-support/docs/01-overview.md) — owner scoping and shared utilities
 
@@ -34,8 +36,8 @@ The `aiarmada/links` package is generic tracked-link management for Laravel. It 
 - **Models** — `Link`, `LinkClick`
 - **Actions** — `CreateLink`, `UpdateLink`, `DeactivateLink`, `ReactivateLink`, `ResolveLink`, `RecordLinkClick`, `RedirectToLink`
 - **Events** — `LinkCreated`, `LinkUpdated`, `LinkDeactivated`, `LinkReactivated`, `LinkClicked`, `LinkExpired`, `LinkClickLimitReached`
-- **Contracts** — `SlugGeneratorInterface`, `BotDetectorInterface`, `UserAgentParserInterface`, each with a swappable default
-- **HTTP surface** — `GET /go/{slug}` redirect route (prefix, domain, and middleware are configurable)
+- **Contracts** — `SlugGeneratorInterface`, `BotDetectorInterface`, `UserAgentParserInterface`, `LinkGateInterface`, each with a swappable default
+- **HTTP surface** — `GET /go/{slug}` redirect route (prefix, domain, and middleware are configurable); per-link signed URLs via `GenerateLinkUrl`
 - **Console** — `links:prune-clicks` retention command
 
 ## Owner scoping and security notes

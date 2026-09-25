@@ -11,18 +11,11 @@ use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferCategory;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
-use AIArmada\Affiliates\Enums\CommissionType;
-use AIArmada\Affiliates\Enums\MembershipStatus;
-use AIArmada\Affiliates\Enums\ProgramStatus;
-use AIArmada\Affiliates\Enums\ProgramVisibility;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Services\ProgramService;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Settings\ExchangeRateSettings;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\FilamentAffiliateNetwork\Pages\AffiliateMarketplacePage;
 use AIArmada\FilamentAffiliateNetwork\Pages\MerchantDashboardPage;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferApplicationResource\Tables\AffiliateOfferApplicationsTable;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferCategoryResource\Pages\EditAffiliateOfferCategory;
@@ -46,12 +39,9 @@ use Filament\Support\Contracts\TranslatableContentDriver;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 
@@ -84,26 +74,6 @@ class RepairSchemaHostComponent extends Component implements HasSchemas
     public function render()
     {
         return view('livewire.placeholder');
-    }
-}
-
-class RepairVerifiedUser extends User implements MustVerifyEmail
-{
-    public bool $regressionVerified = false;
-
-    public function hasVerifiedEmail(): bool
-    {
-        return $this->regressionVerified;
-    }
-
-    public function markEmailAsVerified(): bool
-    {
-        return $this->regressionVerified = true;
-    }
-
-    public function getEmailForVerification(): string
-    {
-        return $this->email;
     }
 }
 
@@ -332,14 +302,13 @@ describe('admin application actions in affiliate owner context', function (): vo
     });
 });
 
-describe('affiliate email virtual column', function (): void {
-    test('email column is display-only with no search or sort', function (): void {
+describe('affiliate id column', function (): void {
+    test('affiliate id column is searchable and copyable', function (): void {
         $host = new RepairTableHostComponent;
-        $column = AffiliateOfferApplicationsTable::configure(Table::make($host))->getColumn('affiliate.email');
+        $column = AffiliateOfferApplicationsTable::configure(Table::make($host))->getColumn('affiliate_id');
 
         expect($column)->not->toBeNull()
-            ->and($column->isSearchable())->toBeFalse()
-            ->and($column->isSortable())->toBeFalse();
+            ->and($column->isSearchable())->toBeTrue();
     });
 });
 
@@ -353,138 +322,6 @@ describe('application status badge', function (): void {
             ->and($column->getColor(ApplicationStatus::Pending))->toBe('warning')
             ->and($column->getColor(ApplicationStatus::Rejected))->toBe('danger')
             ->and($column->getColor('approved'))->toBe('success');
-    });
-});
-
-describe('marketplace batched application statuses', function (): void {
-    test('status map is correct and query-constant regardless of offer count', function (): void {
-        $suffix = uniqid();
-        $user = User::create([
-            'name' => 'M2 User',
-            'email' => "m2-{$suffix}@example.com",
-            'password' => bcrypt('password'),
-        ]);
-        $affiliate = regressionCreateAffiliateFor($user, 'M2' . $suffix);
-        $site = AffiliateSite::factory()->verified()->create(['domain' => "m2-{$suffix}.example"]);
-
-        $makeOffer = fn (string $slug, array $overrides = []): AffiliateOffer => AffiliateOffer::factory()->published()->forSite($site)->create(array_merge([
-            'slug' => $slug,
-            'visibility' => OfferVisibility::Public,
-            'requires_approval' => true,
-        ], $overrides));
-
-        $programA = AffiliateProgram::create([
-            'name' => 'M2 Program A',
-            'slug' => "m2-program-a-{$suffix}",
-            'status' => ProgramStatus::Active,
-            'visibility' => ProgramVisibility::Public,
-            'requires_approval' => false,
-            'commission_type' => CommissionType::Percentage,
-            'default_commission_rate_basis_points' => 1000,
-        ]);
-        $programB = AffiliateProgram::create([
-            'name' => 'M2 Program B',
-            'slug' => "m2-program-b-{$suffix}",
-            'status' => ProgramStatus::Active,
-            'visibility' => ProgramVisibility::Public,
-            'requires_approval' => false,
-            'commission_type' => CommissionType::Percentage,
-            'default_commission_rate_basis_points' => 1000,
-        ]);
-
-        app(ProgramService::class)->joinProgram($affiliate, $programA);
-
-        $networkApplied = $makeOffer("m2-network-applied-{$suffix}");
-        $networkFresh = $makeOffer("m2-network-fresh-{$suffix}");
-        $programMember = $makeOffer("m2-program-member-{$suffix}", [
-            'external_program_id' => $programA->getKey(),
-            'metadata' => ['catalog_source' => 'local'],
-        ]);
-        $programStranger = $makeOffer("m2-program-stranger-{$suffix}", [
-            'external_program_id' => $programB->getKey(),
-            'metadata' => ['catalog_source' => 'local'],
-        ]);
-        $programMissing = $makeOffer("m2-program-missing-{$suffix}", [
-            'external_program_id' => (string) Str::uuid(),
-            'metadata' => ['catalog_source' => 'local'],
-        ]);
-
-        AffiliateOfferApplication::create([
-            'offer_id' => $networkApplied->id,
-            'affiliate_id' => $affiliate->id,
-            'status' => ApplicationStatus::Pending,
-        ]);
-        AffiliateOfferApplication::create([
-            'offer_id' => $programMissing->id,
-            'affiliate_id' => $affiliate->id,
-            'status' => ApplicationStatus::Pending,
-        ]);
-
-        $this->actingAs($user);
-
-        $countQueries = function (): int {
-            DB::flushQueryLog();
-            DB::enableQueryLog();
-            app(AffiliateMarketplacePage::class)->getApplicationStatusMap();
-            $count = count(DB::getQueryLog());
-            DB::disableQueryLog();
-
-            return $count;
-        };
-
-        $map = app(AffiliateMarketplacePage::class)->getApplicationStatusMap();
-
-        expect($map)->toHaveKeys([
-            $networkApplied->id,
-            $networkFresh->id,
-            $programMember->id,
-            $programStranger->id,
-            $programMissing->id,
-        ])
-            ->and($map[$networkApplied->id])->toBe(ApplicationStatus::Pending->value)
-            ->and($map[$networkFresh->id])->toBeNull()
-            ->and($map[$programMember->id])->toBe(MembershipStatus::Approved->value)
-            ->and($map[$programStranger->id])->toBeNull()
-            ->and($map[$programMissing->id])->toBe(ApplicationStatus::Pending->value);
-
-        $queriesForFive = $countQueries();
-
-        for ($i = 0; $i < 5; $i++) {
-            $makeOffer("m2-extra-{$suffix}-{$i}");
-        }
-
-        $queriesForTen = $countQueries();
-
-        expect($queriesForTen)->toBe($queriesForFive)
-            ->and($queriesForTen)->toBeLessThanOrEqual(10);
-    });
-
-    test('per-card status never throws on applied network offers', function (): void {
-        $suffix = uniqid();
-        $user = User::create([
-            'name' => 'M2 Card User',
-            'email' => "m2card-{$suffix}@example.com",
-            'password' => bcrypt('password'),
-        ]);
-        $affiliate = regressionCreateAffiliateFor($user, 'M2C' . $suffix);
-        $site = AffiliateSite::factory()->verified()->create(['domain' => "m2card-{$suffix}.example"]);
-        $offer = AffiliateOffer::factory()->published()->forSite($site)->create([
-            'slug' => "m2card-offer-{$suffix}",
-            'visibility' => OfferVisibility::Public,
-            'requires_approval' => true,
-        ]);
-
-        AffiliateOfferApplication::create([
-            'offer_id' => $offer->id,
-            'affiliate_id' => $affiliate->id,
-            'status' => ApplicationStatus::Approved,
-        ]);
-
-        $this->actingAs($user);
-
-        $status = app(AffiliateMarketplacePage::class)->getApplicationStatus($offer);
-
-        expect($status)->toBe(ApplicationStatus::Approved->value);
     });
 });
 
@@ -632,63 +469,6 @@ describe('relationship selects', function (): void {
     });
 });
 
-describe('verified-email affiliate resolution', function (): void {
-    test('unverified users cannot resolve or act as an affiliate', function (): void {
-        $suffix = uniqid();
-        $user = RepairVerifiedUser::create([
-            'name' => 'M6 Unverified',
-            'email' => "m6-unverified-{$suffix}@example.com",
-            'password' => bcrypt('password'),
-        ]);
-        $affiliate = regressionCreateAffiliateFor($user, 'M6U' . $suffix);
-        $site = AffiliateSite::factory()->verified()->create(['domain' => "m6u-{$suffix}.example"]);
-        $offer = AffiliateOffer::factory()->published()->forSite($site)->create([
-            'slug' => "m6u-offer-{$suffix}",
-            'visibility' => OfferVisibility::Public,
-            'requires_approval' => true,
-        ]);
-
-        $this->actingAs($user);
-
-        expect(app(AffiliateMarketplacePage::class)->getAffiliate())->toBeNull();
-
-        app(AffiliateMarketplacePage::class)->applyForOffer($offer->id, 'Trying to claim this affiliate.');
-
-        expect(AffiliateOfferApplication::query()
-            ->where('offer_id', $offer->id)
-            ->where('affiliate_id', $affiliate->id)
-            ->exists())->toBeFalse();
-    });
-
-    test('verified users resolve normally', function (): void {
-        $suffix = uniqid();
-        $user = RepairVerifiedUser::create([
-            'name' => 'M6 Verified',
-            'email' => "m6-verified-{$suffix}@example.com",
-            'password' => bcrypt('password'),
-        ]);
-        $user->regressionVerified = true;
-        $affiliate = regressionCreateAffiliateFor($user, 'M6V' . $suffix);
-        $site = AffiliateSite::factory()->verified()->create(['domain' => "m6v-{$suffix}.example"]);
-        $offer = AffiliateOffer::factory()->published()->forSite($site)->create([
-            'slug' => "m6v-offer-{$suffix}",
-            'visibility' => OfferVisibility::Public,
-            'requires_approval' => true,
-        ]);
-
-        $this->actingAs($user);
-
-        expect(app(AffiliateMarketplacePage::class)->getAffiliate()?->id)->toBe($affiliate->id);
-
-        app(AffiliateMarketplacePage::class)->applyForOffer($offer->id, 'Legitimate application.');
-
-        expect(AffiliateOfferApplication::query()
-            ->where('offer_id', $offer->id)
-            ->where('affiliate_id', $affiliate->id)
-            ->exists())->toBeTrue();
-    });
-});
-
 describe('offer transitions through the domain action', function (): void {
     beforeEach(function (): void {
         config(['affiliate-network.owner.enabled' => true]);
@@ -748,65 +528,6 @@ describe('offer transitions through the domain action', function (): void {
             ->and($fresh->archived_at)->not->toBeNull();
 
         Event::assertDispatched(OfferUpdated::class);
-    });
-});
-
-describe('marketplace throttles and reason cap', function (): void {
-    test('apply action is throttled per user', function (): void {
-        $suffix = uniqid();
-        $user = User::create([
-            'name' => 'L1 User',
-            'email' => "l1-{$suffix}@example.com",
-            'password' => bcrypt('password'),
-        ]);
-        $affiliate = regressionCreateAffiliateFor($user, 'L1' . $suffix);
-        $site = AffiliateSite::factory()->verified()->create(['domain' => "l1-{$suffix}.example"]);
-
-        $offers = [];
-        for ($i = 0; $i < 11; $i++) {
-            $offers[] = AffiliateOffer::factory()->published()->forSite($site)->create([
-                'slug' => "l1-offer-{$suffix}-{$i}",
-                'visibility' => OfferVisibility::Public,
-                'requires_approval' => true,
-            ]);
-        }
-
-        $this->actingAs($user);
-
-        foreach ($offers as $index => $offer) {
-            app(AffiliateMarketplacePage::class)->applyForOffer($offer->id, "Application {$index}.");
-        }
-
-        expect(AffiliateOfferApplication::query()
-            ->where('affiliate_id', $affiliate->id)
-            ->count())->toBe(10);
-    });
-
-    test('application reason is capped', function (): void {
-        $suffix = uniqid();
-        $user = User::create([
-            'name' => 'L1 Reason User',
-            'email' => "l1reason-{$suffix}@example.com",
-            'password' => bcrypt('password'),
-        ]);
-        $affiliate = regressionCreateAffiliateFor($user, 'L1R' . $suffix);
-        $site = AffiliateSite::factory()->verified()->create(['domain' => "l1reason-{$suffix}.example"]);
-        $offer = AffiliateOffer::factory()->published()->forSite($site)->create([
-            'slug' => "l1reason-offer-{$suffix}",
-            'visibility' => OfferVisibility::Public,
-            'requires_approval' => true,
-        ]);
-
-        $this->actingAs($user);
-
-        app(AffiliateMarketplacePage::class)->applyForOffer($offer->id, str_repeat('x', 3000));
-
-        $reason = AffiliateOfferApplication::query()
-            ->where('offer_id', $offer->id)
-            ->where('affiliate_id', $affiliate->id)
-            ->value('reason');
-
-        expect(mb_strlen((string) $reason))->toBe(2000);
     });
 });
 

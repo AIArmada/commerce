@@ -213,7 +213,7 @@ describe('Merchant portal self-service', function (): void {
 
         $request = Request::create('/api/affiliate-network/conversions', 'POST', [
             'site' => 'unverified-postback.example',
-            'link_code' => $link->code,
+            'link_code' => $link->link->slug,
             'external_reference' => 'ORDER-1',
             'revenue_minor' => 100,
         ], [], [], ['HTTP_AUTHORIZATION' => 'Bearer site-secret']);

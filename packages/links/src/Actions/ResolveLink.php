@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Links\Actions;
 
+use AIArmada\Links\Contracts\LinkGateInterface;
 use AIArmada\Links\Models\Link;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -19,19 +20,24 @@ final class ResolveLink
             return null;
         }
 
+        if (app(LinkGateInterface::class)->blockedReason($link) !== null) {
+            return null;
+        }
+
         return $link;
     }
 
     /**
      * Why a slug does not resolve. Null when the slug is missing or resolves fine.
      *
-     * @return 'deactivated'|'expired'|'limit_reached'|null
+     * Core reasons are 'deactivated', 'expired' and 'limit_reached'; anything
+     * else comes from the bound link gate.
      */
     public function blockedReason(string $slug): ?string
     {
         $link = $this->findBySlug($slug);
 
-        if (! $link instanceof Link || $link->isActive()) {
+        if (! $link instanceof Link) {
             return null;
         }
 
@@ -43,7 +49,11 @@ final class ResolveLink
             return 'expired';
         }
 
-        return 'limit_reached';
+        if ($link->hasReachedClickLimit()) {
+            return 'limit_reached';
+        }
+
+        return app(LinkGateInterface::class)->blockedReason($link);
     }
 
     private function findBySlug(string $slug): ?Link

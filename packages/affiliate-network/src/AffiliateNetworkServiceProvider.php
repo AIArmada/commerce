@@ -6,7 +6,9 @@ namespace AIArmada\AffiliateNetwork;
 
 use AIArmada\AffiliateNetwork\Console\Commands\ArchiveExpiredOffersCommand;
 use AIArmada\AffiliateNetwork\Console\Commands\SyncSiteOffersCommand;
+use AIArmada\AffiliateNetwork\Contracts\AffiliateIdentityResolver;
 use AIArmada\AffiliateNetwork\Http\Middleware\TrackNetworkLinkCookie;
+use AIArmada\AffiliateNetwork\Listeners\IncrementNetworkLinkClicks;
 use AIArmada\AffiliateNetwork\Listeners\RecordNetworkConversionForOrder;
 use AIArmada\AffiliateNetwork\Services\OfferLinkService;
 use AIArmada\AffiliateNetwork\Services\OfferManagementService;
@@ -14,7 +16,10 @@ use AIArmada\AffiliateNetwork\Services\SiteVerificationService;
 use AIArmada\AffiliateNetwork\Strategies\DnsVerificationStrategy;
 use AIArmada\AffiliateNetwork\Strategies\FileVerificationStrategy;
 use AIArmada\AffiliateNetwork\Strategies\MetaTagVerificationStrategy;
+use AIArmada\AffiliateNetwork\Support\OfferLinkGate;
 use AIArmada\AffiliateNetwork\Support\SiteContentFetcher;
+use AIArmada\Links\Contracts\LinkGateInterface;
+use AIArmada\Links\Events\LinkClicked;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Support\Facades\Event;
 use Spatie\LaravelPackageTools\Package;
@@ -46,12 +51,53 @@ final class AffiliateNetworkServiceProvider extends PackageServiceProvider
         $this->app->singleton(Services\Catalog\RemoteCatalogClient::class);
         $this->app->singleton(Services\OfferImportService::class);
 
+        $this->app->bind(LinkGateInterface::class, OfferLinkGate::class);
+
+        $this->registerDefaultIdentityResolver();
         $this->registerVerificationStrategies();
     }
 
     public function packageBooted(): void
     {
+        Event::listen(LinkClicked::class, IncrementNetworkLinkClicks::class);
+
+        $this->registerDefaultAffiliateModel();
         $this->bootCheckoutIntegration();
+    }
+
+    /**
+     * Default affiliate identity for engine-less installs.
+     *
+     * The affiliates package binds its own adapter unconditionally, so
+     * the conditional keeps both provider orders working: engine wins
+     * when installed, user-key identity otherwise.
+     */
+    private function registerDefaultIdentityResolver(): void
+    {
+        if ($this->app->bound(AffiliateIdentityResolver::class)) {
+            return;
+        }
+
+        $this->app->bind(AffiliateIdentityResolver::class, Support\UserKeyAffiliateIdentityResolver::class);
+    }
+
+    /**
+     * Default affiliate relations to the auth user for engine-less installs.
+     *
+     * The affiliates package sets this config unconditionally when
+     * installed, so the conditional keeps engine installs untouched.
+     */
+    private function registerDefaultAffiliateModel(): void
+    {
+        if (config('affiliate-network.models.affiliate') !== null) {
+            return;
+        }
+
+        $userModel = config('auth.providers.users.model');
+
+        if (is_string($userModel) && class_exists($userModel)) {
+            config(['affiliate-network.models.affiliate' => $userModel]);
+        }
     }
 
     private function registerVerificationStrategies(): void

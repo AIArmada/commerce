@@ -471,7 +471,8 @@ class LinksRelationManager extends RelationManager
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('code')
+                Tables\Columns\TextColumn::make('link.slug')
+                    ->label('Slug')
                     ->copyable(),
                 Tables\Columns\TextColumn::make('affiliate.code')
                     ->label('Affiliate'),

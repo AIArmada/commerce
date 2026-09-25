@@ -4,9 +4,9 @@ title: Troubleshooting
 
 # Troubleshooting
 
-## Redirects return 404 for a link that exists
+## Redirects return 410 for a link that exists
 
-Check, in order: `deactivated_at` is set, `expires_at` is past, or `human_clicks` reached `max_clicks`. Any of these makes the slug unresolvable. The `slug` route pattern also only accepts `[A-Za-z0-9_-]+`.
+Check, in order: `deactivated_at` is set, `expires_at` is past, `human_clicks` reached `max_clicks`, or the bound link gate blocks the slug. Any of these makes the slug unresolvable. The `slug` route pattern also only accepts `[A-Za-z0-9_-]+`. `404` means the slug itself is unknown; `403` means a required URL signature is missing or expired.
 
 ## Click counts look low
 

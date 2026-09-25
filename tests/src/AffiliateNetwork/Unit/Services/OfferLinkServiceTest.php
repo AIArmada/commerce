@@ -10,8 +10,8 @@ use AIArmada\AffiliateNetwork\Services\OfferLinkService;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Links\Models\Link;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\URL;
 
 describe('OfferLinkService', function (): void {
     beforeEach(function (): void {
@@ -35,15 +35,20 @@ describe('OfferLinkService', function (): void {
 
     describe('createLink', function (): void {
         test('creates link with default values', function (): void {
+            config(['affiliate-network.links.parameter' => 'anl']);
+
             $link = $this->service->createLink($this->offer, (string) $this->affiliate->getKey());
 
             expect($link)->toBeInstanceOf(AffiliateOfferLink::class);
             expect($link->offer_id)->toBe($this->offer->id);
             expect($link->affiliate_id)->toBe($this->affiliate->id);
             expect($link->site_id)->toBe($this->site->id);
-            expect($link->target_url)->toBe('https://example.com/landing');
-            expect($link->code)->not->toBeEmpty();
             expect($link->is_active)->toBeTrue();
+            expect($link->link)->toBeInstanceOf(Link::class);
+            expect($link->link->destination_url)->toBe('https://example.com/landing');
+            expect($link->link->require_signature)->toBeTrue();
+            expect($link->link->subject_id)->toBe((string) $link->getKey());
+            expect($link->link->parameters['anl'])->toBe($link->link->slug);
         });
 
         test('creates link with custom target URL', function (): void {
@@ -51,7 +56,15 @@ describe('OfferLinkService', function (): void {
                 'target_url' => 'https://custom.com/page',
             ]);
 
-            expect($link->target_url)->toBe('https://custom.com/page');
+            expect($link->link->destination_url)->toBe('https://custom.com/page');
+        });
+
+        test('allows plain http merchant urls', function (): void {
+            $link = $this->service->createLink($this->offer, (string) $this->affiliate->getKey(), [
+                'target_url' => 'http://legacy-merchant.example/page',
+            ]);
+
+            expect($link->link->destination_url)->toBe('http://legacy-merchant.example/page');
         });
 
         test('creates link with sub IDs', function (): void {
@@ -64,14 +77,21 @@ describe('OfferLinkService', function (): void {
             expect($link->sub_id)->toBe('campaign1');
             expect($link->sub_id_2)->toBe('source');
             expect($link->sub_id_3)->toBe('creative');
+            expect($link->link->parameters['sub1'])->toBe('campaign1');
+            expect($link->link->parameters['sub2'])->toBe('source');
+            expect($link->link->parameters['sub3'])->toBe('creative');
         });
 
         test('creates link with custom parameters', function (): void {
+            config(['affiliate-network.links.parameter' => 'anl']);
+
             $link = $this->service->createLink($this->offer, (string) $this->affiliate->getKey(), [
-                'custom_parameters' => 'utm_source=affiliate&utm_medium=banner',
+                'custom_parameters' => 'utm_source=affiliate&utm_medium=banner&anl=spoofed',
             ]);
 
-            expect($link->custom_parameters)->toBe('utm_source=affiliate&utm_medium=banner');
+            expect($link->link->parameters['utm_source'])->toBe('affiliate');
+            expect($link->link->parameters['utm_medium'])->toBe('banner');
+            expect($link->link->parameters['anl'])->toBe($link->link->slug);
         });
 
         test('creates link with expiration', function (): void {
@@ -81,7 +101,8 @@ describe('OfferLinkService', function (): void {
                 'expires_at' => $expiresAt,
             ]);
 
-            expect($link->expires_at->toDateString())->toBe($expiresAt->toDateString());
+            expect($link->link->expires_at->toDateString())->toBe($expiresAt->toDateString());
+            expect($link->isExpired())->toBeFalse();
         });
 
         test('creates link with metadata', function (): void {
@@ -97,7 +118,7 @@ describe('OfferLinkService', function (): void {
 
             $link = $this->service->createLink($this->offer, (string) $this->affiliate->getKey());
 
-            expect($link->target_url)->toBe('https://example.com/');
+            expect($link->link->destination_url)->toBe('https://example.com/');
         });
 
         test('refuses links for inactive offers', function (): void {
@@ -143,98 +164,30 @@ describe('OfferLinkService', function (): void {
         });
     });
 
-    describe('buildDirectLink', function (): void {
-        test('builds direct link with code parameter', function (): void {
-            config(['affiliate-network.links.parameter' => 'anl']);
-
-            $link = AffiliateOfferLink::factory()
-                ->forOffer($this->offer)
-                ->forAffiliateId((string) $this->affiliate->getKey())
-                ->create([
-                    'code' => 'testcode123',
-                    'target_url' => 'https://example.com/product',
-                ]);
-
-            $url = $this->service->buildDirectLink($link);
-
-            expect($url)->toContain('anl=testcode123');
-            expect($url)->toStartWith('https://example.com/product?');
-        });
-
-        test('builds direct link with existing query string', function (): void {
-            config(['affiliate-network.links.parameter' => 'anl']);
-
-            $link = AffiliateOfferLink::factory()
-                ->forOffer($this->offer)
-                ->forAffiliateId((string) $this->affiliate->getKey())
-                ->create([
-                    'code' => 'testcode123',
-                    'target_url' => 'https://example.com/product?existing=param',
-                ]);
-
-            $url = $this->service->buildDirectLink($link);
-
-            expect($url)->toContain('&anl=testcode123');
-        });
-
-        test('includes sub IDs in direct link', function (): void {
-            $link = AffiliateOfferLink::factory()
-                ->forOffer($this->offer)
-                ->forAffiliateId((string) $this->affiliate->getKey())
-                ->withSubIds('campaign1', 'source', 'creative')
-                ->create([
-                    'target_url' => 'https://example.com/product',
-                ]);
-
-            $url = $this->service->buildDirectLink($link);
-
-            expect($url)->toContain('sub1=campaign1');
-            expect($url)->toContain('sub2=source');
-            expect($url)->toContain('sub3=creative');
-        });
-
-        test('includes custom parameters in direct link', function (): void {
-            $link = AffiliateOfferLink::factory()
-                ->forOffer($this->offer)
-                ->forAffiliateId((string) $this->affiliate->getKey())
-                ->create([
-                    'target_url' => 'https://example.com/product',
-                    'custom_parameters' => 'utm_source=affiliate&utm_medium=banner',
-                ]);
-
-            $url = $this->service->buildDirectLink($link);
-
-            expect($url)->toContain('utm_source=affiliate');
-            expect($url)->toContain('utm_medium=banner');
-        });
-    });
-
     describe('generateTrackingUrl', function (): void {
         test('generates signed tracking URL', function (): void {
-            config(['affiliate-network.links.parameter' => 'anl']);
-            URL::defaults(['signature' => 'test']);
-
             $link = AffiliateOfferLink::factory()
                 ->forOffer($this->offer)
                 ->forAffiliateId((string) $this->affiliate->getKey())
-                ->create(['code' => 'trackcode']);
+                ->withSlug('trackslug')
+                ->create();
 
             $url = $this->service->generateTrackingUrl($link);
 
+            expect($url)->toContain('/go/trackslug');
             expect($url)->toContain('signature=');
             expect($url)->toContain('expires=');
-            expect($url)->toContain('anl=trackcode');
-            expect($url)->not->toContain('sig=');
         });
     });
 
     describe('resolveLink', function (): void {
-        test('resolves active link by code', function (): void {
+        test('resolves active link by slug', function (): void {
             $link = AffiliateOfferLink::factory()
                 ->forOffer($this->offer)
                 ->forAffiliateId((string) $this->affiliate->getKey())
                 ->active()
-                ->create(['code' => 'findme123']);
+                ->withSlug('findme123')
+                ->create();
 
             $resolved = $this->service->resolveLink('findme123');
 
@@ -247,14 +200,15 @@ describe('OfferLinkService', function (): void {
                 ->forOffer($this->offer)
                 ->forAffiliateId((string) $this->affiliate->getKey())
                 ->inactive()
-                ->create(['code' => 'inactive123']);
+                ->withSlug('inactive123')
+                ->create();
 
             $resolved = $this->service->resolveLink('inactive123');
 
             expect($resolved)->toBeNull();
         });
 
-        test('returns null for non-existent code', function (): void {
+        test('returns null for non-existent slug', function (): void {
             $resolved = $this->service->resolveLink('nonexistent');
 
             expect($resolved)->toBeNull();
@@ -265,10 +219,12 @@ describe('OfferLinkService', function (): void {
                 ->forOffer($this->offer)
                 ->forAffiliateId((string) $this->affiliate->getKey())
                 ->forSite($this->site)
-                ->create(['code' => 'eager123']);
+                ->withSlug('eager123')
+                ->create();
 
             $resolved = $this->service->resolveLink('eager123');
 
+            expect($resolved->relationLoaded('link'))->toBeTrue();
             expect($resolved->relationLoaded('offer'))->toBeTrue();
             expect($resolved->relationLoaded('affiliate'))->toBeFalse();
             expect($resolved->relationLoaded('site'))->toBeTrue();
@@ -304,39 +260,15 @@ describe('OfferLinkService', function (): void {
                 ->forAffiliateId((string) $affiliate->getKey())
                 ->forSite($site)
                 ->active()
-                ->create(['code' => 'owned-link-code']));
+                ->withSlug('owned-link-slug')
+                ->create());
 
-            $resolved = $this->service->resolveLink('owned-link-code');
+            $resolved = $this->service->resolveLink('owned-link-slug');
 
             expect($resolved)->not->toBeNull()
                 ->and($resolved->offer->id)->toBe($offer->id)
                 ->and($resolved->affiliate->id)->toBe($affiliate->id)
                 ->and($resolved->site?->id)->toBe($site->id);
-        });
-    });
-
-    describe('recordClick', function (): void {
-        test('increments click count', function (): void {
-            $link = AffiliateOfferLink::factory()
-                ->forOffer($this->offer)
-                ->forAffiliateId((string) $this->affiliate->getKey())
-                ->withStats(10, 0, 0)
-                ->create();
-
-            $this->service->recordClick($link);
-
-            expect($link->fresh()->clicks)->toBe(11);
-        });
-
-        test('increments from zero', function (): void {
-            $link = AffiliateOfferLink::factory()
-                ->forOffer($this->offer)
-                ->forAffiliateId((string) $this->affiliate->getKey())
-                ->create();
-
-            $this->service->recordClick($link);
-
-            expect($link->fresh()->clicks)->toBe(1);
         });
     });
 

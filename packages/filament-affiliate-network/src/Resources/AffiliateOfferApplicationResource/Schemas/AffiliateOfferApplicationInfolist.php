@@ -20,8 +20,9 @@ final class AffiliateOfferApplicationInfolist
                         TextEntry::make('offer.name')
                             ->label('Offer'),
 
-                        TextEntry::make('affiliate.code')
-                            ->label('Affiliate'),
+                        TextEntry::make('affiliate_id')
+                            ->label('Affiliate ID')
+                            ->copyable(),
 
                         TextEntry::make('status')
                             ->label('Status')

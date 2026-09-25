@@ -55,7 +55,7 @@ describe('ReportNetworkConversionController', function (): void {
         $response = app(ReportNetworkConversionController::class)(
             postbackRequest([
                 'site' => 'postback.example',
-                'link_code' => $link->code,
+                'link_code' => $link->link->slug,
                 'external_reference' => 'ORDER-1',
                 'revenue_minor' => 89900,
                 'currency' => 'MYR',
@@ -80,7 +80,7 @@ describe('ReportNetworkConversionController', function (): void {
 
         $makeRequest = static fn (): Request => postbackRequest([
             'site' => 'redeliver.example',
-            'link_code' => $link->code,
+            'link_code' => $link->link->slug,
             'external_reference' => 'ORDER-9',
             'revenue_minor' => 5000,
         ], 'site-secret');
@@ -103,7 +103,7 @@ describe('ReportNetworkConversionController', function (): void {
 
         $payload = [
             'site' => 'secure.example',
-            'link_code' => $link->code,
+            'link_code' => $link->link->slug,
             'external_reference' => 'ORDER-X',
             'revenue_minor' => 100,
         ];

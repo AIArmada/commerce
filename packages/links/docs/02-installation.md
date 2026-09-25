@@ -22,7 +22,7 @@ php artisan vendor:publish --tag=links-config
 php artisan migrate
 ```
 
-This creates the `tracked_links` and `tracked_link_clicks` tables (remappable in config).
+This creates the `tracked_links` and `tracked_link_clicks` tables (remappable in config), including the subject morphs, destination parameters, and per-link signature flags.
 
 ## Schedule pruning (optional)
 

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliateNetwork;
 
-use AIArmada\FilamentAffiliateNetwork\Pages\AffiliateMarketplacePage;
 use AIArmada\FilamentAffiliateNetwork\Pages\MerchantDashboardPage;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferApplicationResource;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferCategoryResource;
@@ -46,7 +45,6 @@ final class FilamentAffiliateNetworkPlugin implements Plugin
             ])
             ->pages([
                 MerchantDashboardPage::class,
-                AffiliateMarketplacePage::class,
             ])
             ->widgets([
                 NetworkStatsWidget::class,

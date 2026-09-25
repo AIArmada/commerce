@@ -13,7 +13,7 @@ use Illuminate\Http\Request;
 function networkAttributionRequest(string $cookieName, AffiliateOfferLink $link): void
 {
     $value = encrypt(json_encode([
-        'code' => $link->code,
+        'code' => $link->link->slug,
         'affiliate_id' => $link->affiliate_id,
         'offer_id' => $link->offer_id,
         'clicked_at' => now()->toIso8601String(),

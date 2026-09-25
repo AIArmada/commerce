@@ -38,6 +38,8 @@ final class RecordLinkClick
 
         $click = new LinkClick([
             'link_id' => $link->getKey(),
+            'subject_type' => $link->subject_type,
+            'subject_id' => $link->subject_id,
             'occurred_at' => CarbonImmutable::now(),
             'ip_address' => $this->resolveIpAddress($context),
             'user_agent' => (bool) config('links.features.tracking.user_agent.store_raw', true) ? $userAgent : null,
@@ -55,7 +57,7 @@ final class RecordLinkClick
             'utm_campaign' => $this->utmValue($context, 'utm_campaign'),
             'utm_content' => $this->utmValue($context, 'utm_content'),
             'utm_term' => $this->utmValue($context, 'utm_term'),
-            'properties' => $this->propertiesValue($context['properties'] ?? null),
+            'properties' => $this->propertiesValue($context),
             'owner_type' => $link->owner_type,
             'owner_id' => $link->owner_id,
         ]);
@@ -172,11 +174,70 @@ final class RecordLinkClick
     }
 
     /**
+     * @param  array<string, mixed>  $context
      * @return array<string, mixed>|null
      */
-    private function propertiesValue(mixed $value): ?array
+    private function propertiesValue(array $context): ?array
     {
-        return is_array($value) && $value !== [] ? $value : null;
+        $properties = $context['properties'] ?? null;
+        $properties = is_array($properties) ? $properties : [];
+
+        $clickIds = $this->clickIds($context);
+
+        if ($clickIds !== []) {
+            $existing = $properties['click_ids'] ?? null;
+            $existing = is_array($existing) ? $existing : [];
+            $properties['click_ids'] = [...$existing, ...$clickIds];
+        }
+
+        return $properties !== [] ? $properties : null;
+    }
+
+    /**
+     * Ad click IDs from explicit context, then the current request.
+     *
+     * @param  array<string, mixed>  $context
+     * @return array<string, string>
+     */
+    private function clickIds(array $context): array
+    {
+        $ids = [];
+
+        $map = $context['click_ids'] ?? null;
+
+        if (is_array($map)) {
+            foreach ($map as $key => $value) {
+                $value = $this->stringValue($value);
+
+                if (is_string($key) && in_array($key, LinkAttributes::CLICK_ID_KEYS, true) && $value !== null) {
+                    $ids[$key] = $value;
+                }
+            }
+        }
+
+        foreach (LinkAttributes::CLICK_ID_KEYS as $key) {
+            $explicit = $this->stringValue($context[$key] ?? null);
+
+            if ($explicit !== null) {
+                $ids[$key] = $explicit;
+
+                continue;
+            }
+
+            if (isset($ids[$key])) {
+                continue;
+            }
+
+            if (app()->bound('request')) {
+                $fromRequest = request()->query($key);
+
+                if (is_string($fromRequest) && $fromRequest !== '') {
+                    $ids[$key] = $fromRequest;
+                }
+            }
+        }
+
+        return $ids;
     }
 
     private function stringValue(mixed $value): ?string
