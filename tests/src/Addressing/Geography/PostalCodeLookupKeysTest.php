@@ -36,6 +36,7 @@ use AIArmada\Addressing\Geography\SaintHelena\SaintHelenaGeographyProvider;
 use AIArmada\Addressing\Geography\SaintKittsAndNevis\SaintKittsAndNevisGeographyProvider;
 use AIArmada\Addressing\Geography\SaintLucia\SaintLuciaGeographyProvider;
 use AIArmada\Addressing\Geography\SaintVincentAndTheGrenadines\SaintVincentAndTheGrenadinesGeographyProvider;
+use AIArmada\Addressing\Geography\SaudiArabia\SaudiArabiaGeographyProvider;
 use AIArmada\Addressing\Geography\Slovakia\SlovakiaGeographyProvider;
 use AIArmada\Addressing\Geography\Sweden\SwedenGeographyProvider;
 use AIArmada\Addressing\Geography\Taiwan\TaiwanGeographyProvider;
@@ -121,6 +122,9 @@ it('expands country-specific postcode lookup keys', function (string $providerCl
     'LB base passes through' => [LebanonGeographyProvider::class, '1107', ['1107']],
     'LR delivery unit' => [LiberiaGeographyProvider::class, '1000-10', ['1000-10', '1000']],
     'LR base passes through' => [LiberiaGeographyProvider::class, '1000', ['1000']],
+    'SA Wasel dashed' => [SaudiArabiaGeographyProvider::class, '46366-4656', ['46366-4656', '46366']],
+    'SA Wasel plain' => [SaudiArabiaGeographyProvider::class, '463664656', ['463664656', '46366']],
+    'SA base passes through' => [SaudiArabiaGeographyProvider::class, '46366', ['46366']],
     'unknown input passes through' => [ArgentinaGeographyProvider::class, 'XYZ', ['XYZ']],
 ]);
 
@@ -165,6 +169,7 @@ it('keeps every bundled code resolvable through its own normalizer', function ()
         [TurksAndCaicosGeographyProvider::class, 'turks-and-caicos'],
         [LebanonGeographyProvider::class, 'lebanon'],
         [LiberiaGeographyProvider::class, 'liberia'],
+        [SaudiArabiaGeographyProvider::class, 'saudi-arabia'],
     ];
 
     $dir = __DIR__ . '/../../../../packages/addressing/resources/geography';
