@@ -20,7 +20,7 @@ it('formats Malaysian addresses using the country formatter', function (): void 
         'Hulu Langat',
         '43000 Kajang',
         'Selangor',
-        'MY',
+        'Malaysia',
     ]));
 });
 

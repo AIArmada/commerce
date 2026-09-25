@@ -33,3 +33,10 @@ it('ships 175 tumans and 31 cities under regions with parent links', function ()
         ->and($l2->where('type', 'city'))->toHaveCount(31)
         ->and($l2->pluck('parentSourceId')->every(fn ($p) => $byId->has($p)))->toBeTrue();
 });
+
+it('labels cities Shahar', function (): void {
+    $provider = app(UzbekistanGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['city' => 'Shahar'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

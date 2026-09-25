@@ -40,3 +40,10 @@ it('ships 981 communes and cities under districts with parent links', function (
         ->and($byId->get('md:city:donduseni')->name)->toBe('Dondușeni (city)')
         ->and($byId->get('md:commune:donduseni')->parentSourceId)->toBe('md:district:donduseni');
 });
+
+it('labels tiers Raion, Comună and Oraș', function (): void {
+    $provider = app(MoldovaGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['district' => 'Raion', 'commune' => 'Comună', 'city' => 'Oraș'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

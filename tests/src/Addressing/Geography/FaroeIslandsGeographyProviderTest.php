@@ -38,3 +38,10 @@ it('ships 29 municipalities under regions with parent links', function (): void 
         ->and($byId->get('fo:municipality:klaksvik')->name)->toBe('Klaksvík')
         ->and($byId->get('fo:municipality:sunda')->name)->toBe('Sunda');
 });
+
+it('labels municipalities Kommuna', function (): void {
+    $provider = app(FaroeIslandsGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['municipality' => 'Kommuna'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

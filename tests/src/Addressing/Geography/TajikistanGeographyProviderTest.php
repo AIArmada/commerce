@@ -39,3 +39,10 @@ it('ships 69 districts/cities under regions with parent links', function (): voi
         ->and($byId->get('tj:city:khujand')->name)->toBe('Khujand')
         ->and($byId->get('tj:district:ibn-sina')->name)->toBe('Ibn Sina');
 });
+
+it('labels tiers Viloyat, Nohiya and Shahr', function (): void {
+    $provider = app(TajikistanGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['region' => 'Viloyat', 'district' => 'Nohiya', 'city' => 'Shahr'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});

@@ -38,3 +38,10 @@ it('ships 79 districts under regions with parent links', function (): void {
         ->and($byId->get('sk:district:kosice-iii')->name)->toBe('Košice III')
         ->and($byId->get('sk:district:bardejov')->name)->toBe('Bardejov');
 });
+
+it('labels tiers Kraj and Okres', function (): void {
+    $provider = app(SlovakiaGeographyProvider::class);
+
+    expect($provider->areaTypeLabels())->toBe(['region' => 'Kraj', 'district' => 'Okres'])
+        ->and($provider->stateAreaTypeLabels())->toBe([]);
+});
