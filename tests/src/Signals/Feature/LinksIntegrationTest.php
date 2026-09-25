@@ -27,6 +27,9 @@ beforeEach(function (): void {
         $table->string('slug')->unique();
         $table->text('destination_url');
         $table->json('utm_defaults')->nullable();
+        $table->nullableUuidMorphs('subject');
+        $table->json('parameters')->nullable();
+        $table->boolean('require_signature')->default(false);
         $table->unsignedInteger('max_clicks')->nullable();
         $table->unsignedBigInteger('total_clicks')->default(0);
         $table->unsignedBigInteger('human_clicks')->default(0);
@@ -41,6 +44,7 @@ beforeEach(function (): void {
         $table->uuid('id')->primary();
         $table->foreignUuid('link_id');
         $table->nullableUuidMorphs('owner');
+        $table->nullableUuidMorphs('subject');
         $table->timestampTz('occurred_at');
         $table->string('ip_address')->nullable();
         $table->text('user_agent')->nullable();

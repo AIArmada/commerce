@@ -32,14 +32,15 @@ final class LinksRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
-            ->recordTitleAttribute('code')
+            ->recordTitleAttribute('link.slug')
             ->columns([
                 TextColumn::make('affiliate.code')
                     ->label('Affiliate')
                     ->searchable()
                     ->sortable(),
 
-                TextColumn::make('code')
+                TextColumn::make('link.slug')
+                    ->label('Slug')
                     ->searchable()
                     ->copyable(),
 
@@ -91,7 +92,7 @@ final class LinksRelationManager extends RelationManager
                     ->label('Reconcile')
                     ->icon('heroicon-o-scale')
                     ->color('gray')
-                    ->modalHeading(fn (AffiliateOfferLink $record): string => 'Reconcile link ' . $record->code)
+                    ->modalHeading(fn (AffiliateOfferLink $record): string => 'Reconcile link ' . $record->link?->slug)
                     ->modalDescription(function (AffiliateOfferLink $record): string {
                         $report = app(NetworkLedgerReconciliationService::class)->reconcileLink($record);
 

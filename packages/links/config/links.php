@@ -69,5 +69,6 @@ return [
         'domain' => null,
         'middleware' => ['web'],
         'name' => 'links.redirect',
+        'signature_ttl_minutes' => 60 * 24 * 30,
     ],
 ];

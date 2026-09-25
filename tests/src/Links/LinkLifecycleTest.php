@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Event;
 
 const LINKS_LIFECYCLE_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
 
-test('expired links return 404 and fire an event', function (): void {
+test('expired links return gone and fire an event', function (): void {
     Event::fake([LinkExpired::class]);
 
     CreateLink::run([
@@ -24,12 +24,12 @@ test('expired links return 404 and fire an event', function (): void {
         'expires_at' => CarbonImmutable::now()->subDay()->toDateTimeString(),
     ]);
 
-    $this->get('/go/expired-link')->assertNotFound();
+    $this->get('/go/expired-link')->assertGone();
 
     Event::assertDispatched(LinkExpired::class);
 });
 
-test('links with exhausted click limits return 404 and fire an event', function (): void {
+test('links with exhausted click limits return gone and fire an event', function (): void {
     Event::fake([LinkClickLimitReached::class]);
 
     $link = CreateLink::run([
@@ -43,12 +43,12 @@ test('links with exhausted click limits return 404 and fire an event', function 
 
     expect($link->refresh()->human_clicks)->toBe(1);
 
-    $this->get('/go/limited-link')->assertNotFound();
+    $this->get('/go/limited-link')->assertGone();
 
     Event::assertDispatched(LinkClickLimitReached::class);
 });
 
-test('deactivated links return 404 until reactivated', function (): void {
+test('deactivated links return gone until reactivated', function (): void {
     $link = CreateLink::run([
         'name' => 'Toggled',
         'slug' => 'toggled-link',
@@ -57,7 +57,7 @@ test('deactivated links return 404 until reactivated', function (): void {
 
     DeactivateLink::run($link);
 
-    $this->get('/go/toggled-link')->assertNotFound();
+    $this->get('/go/toggled-link')->assertGone();
 
     ReactivateLink::run($link);
 

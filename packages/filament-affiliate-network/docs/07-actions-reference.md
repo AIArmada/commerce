@@ -337,9 +337,9 @@ class AffiliateOfferResource extends BaseResource
                     ->action(function ($record) {
                         // Generate CSV export
                         return response()->streamDownload(function () use ($record) {
-                            echo "Link Code,Clicks,Conversions,Revenue\n";
+                            echo "Link Slug,Clicks,Conversions,Revenue\n";
                             foreach ($record->links as $link) {
-                                echo "{$link->code},{$link->clicks},{$link->conversions},{$link->revenue}\n";
+                                echo "{$link->link?->slug},{$link->clicks},{$link->conversions},{$link->revenue}\n";
                             }
                         }, "{$record->slug}-stats.csv");
                     }),

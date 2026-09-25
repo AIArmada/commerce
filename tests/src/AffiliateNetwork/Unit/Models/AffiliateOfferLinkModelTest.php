@@ -6,6 +6,7 @@ use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Links\Models\Link;
 use Carbon\CarbonImmutable;
 
 describe('AffiliateOfferLink Model', function (): void {
@@ -27,14 +28,13 @@ describe('AffiliateOfferLink Model', function (): void {
             $link = AffiliateOfferLink::factory()
                 ->forOffer($this->offer)
                 ->forAffiliateId((string) $this->affiliate->getKey())
-                ->create([
-                    'target_url' => 'https://example.com/product',
-                ]);
+                ->withTarget('https://example.com/product')
+                ->create();
 
             expect($link->id)->not->toBeEmpty();
             expect($link->offer_id)->toBe($this->offer->id);
             expect($link->affiliate_id)->toBe($this->affiliate->id);
-            expect($link->target_url)->toBe('https://example.com/product');
+            expect($link->link->destination_url)->toBe('https://example.com/product');
         });
 
         test('uses uuid primary key', function (): void {
@@ -48,30 +48,23 @@ describe('AffiliateOfferLink Model', function (): void {
 
     });
 
-    describe('code generation', function (): void {
-        test('auto generates code on creation', function (): void {
+    describe('tracked link', function (): void {
+        test('factory mints a signed backing link with attribution parameters', function (): void {
+            config(['affiliate-network.links.parameter' => 'anl']);
+
             $link = AffiliateOfferLink::factory()
                 ->forOffer($this->offer)
                 ->forAffiliateId((string) $this->affiliate->getKey())
-                ->create(['code' => '']);
+                ->withSlug('offer-slug-1')
+                ->create();
 
-            expect($link->code)->not->toBeEmpty();
-            expect(mb_strlen($link->code))->toBe(16);
-        });
-
-        test('generateCode creates 16 character hex string', function (): void {
-            $code = AffiliateOfferLink::generateCode();
-
-            expect($code)->toMatch('/^[0-9a-f]{16}$/');
-        });
-
-        test('uses provided code when set', function (): void {
-            $link = AffiliateOfferLink::factory()
-                ->forOffer($this->offer)
-                ->forAffiliateId((string) $this->affiliate->getKey())
-                ->create(['code' => 'customcode12345!']);
-
-            expect($link->code)->toBe('customcode12345!');
+            expect($link->link)->toBeInstanceOf(Link::class)
+                ->and($link->trackedSlug())->toBe('offer-slug-1')
+                ->and($link->link->slug)->toBe('offer-slug-1')
+                ->and($link->link->require_signature)->toBeTrue()
+                ->and($link->link->subject_type)->toBe($link->getMorphClass())
+                ->and($link->link->subject_id)->toBe((string) $link->getKey())
+                ->and($link->link->parameters['anl'])->toBe('offer-slug-1');
         });
     });
 
@@ -141,7 +134,7 @@ describe('AffiliateOfferLink Model', function (): void {
             $link = AffiliateOfferLink::factory()
                 ->forOffer($this->offer)
                 ->forAffiliateId((string) $this->affiliate->getKey())
-                ->create(['expires_at' => null]);
+                ->create();
 
             expect($link->isExpired())->toBeFalse();
         });
@@ -178,6 +171,16 @@ describe('AffiliateOfferLink Model', function (): void {
             expect($link->site)->toBeInstanceOf(AffiliateSite::class);
             expect($link->site->id)->toBe($this->site->id);
         });
+
+        test('belongs to tracked link', function (): void {
+            $link = AffiliateOfferLink::factory()
+                ->forOffer($this->offer)
+                ->forAffiliateId((string) $this->affiliate->getKey())
+                ->create();
+
+            expect($link->link)->toBeInstanceOf(Link::class);
+            expect($link->link->id)->toBe($link->link_id);
+        });
     });
 
     describe('casts', function (): void {
@@ -204,14 +207,14 @@ describe('AffiliateOfferLink Model', function (): void {
             expect($link->is_active)->toBeBool();
         });
 
-        test('expires_at is immutable datetime', function (): void {
+        test('backing link expires_at is immutable datetime', function (): void {
             $link = AffiliateOfferLink::factory()
                 ->forOffer($this->offer)
                 ->forAffiliateId((string) $this->affiliate->getKey())
                 ->expiresAt(now()->addDays(30))
                 ->create();
 
-            expect($link->expires_at)->toBeInstanceOf(CarbonImmutable::class);
+            expect($link->link()->withoutOwnerScope()->first()->expires_at)->toBeInstanceOf(CarbonImmutable::class);
         });
 
         test('metadata is array', function (): void {

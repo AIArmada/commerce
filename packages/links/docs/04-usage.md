@@ -34,7 +34,7 @@ use AIArmada\Links\Actions\ReactivateLink;
 use AIArmada\Links\Actions\UpdateLink;
 
 UpdateLink::run($link, ['destination_url' => 'https://merchant.example/new-camera']);
-DeactivateLink::run($link); // cloaked URL starts returning 404
+DeactivateLink::run($link); // cloaked URL starts returning 410
 ReactivateLink::run($link);
 ```
 
@@ -42,13 +42,17 @@ Deactivation uses a `deactivated_at` toggle timestamp; expiry uses `expires_at`;
 
 ## The redirect
 
-`GET /go/{slug}` resolves the link, records a click, merges UTM values, and redirects:
+`GET /go/{slug}` resolves the link, records a click, merges parameters, and redirects:
 
-- Incoming `?utm_*` query parameters win.
+- The link's `parameters` always win, so request query strings can never spoof them.
+- Incoming `?utm_*` query parameters win over defaults.
+- Incoming ad click IDs (`gclid`, `fbclid`, `msclkid`, `ttclid`, and friends) pass through untouched.
 - The destination's own query parameters are preserved.
 - The link's `utm_defaults` fill any remaining gaps.
 
-Unknown, deactivated, expired, or limit-reached slugs return `404`. If click recording fails, the failure is reported and the visitor is still redirected.
+Any other incoming query parameter is dropped: it is neither forwarded nor stored.
+
+Unknown slugs return `404`. Deactivated, expired, limit-reached, or gate-blocked links return `410`. If click recording fails, the failure is reported and the visitor is still redirected.
 
 Add rate limiting through `routing.middleware` when the redirect route is public (for example `['web', 'throttle:120,1']`).
 
@@ -91,13 +95,46 @@ Event::listen(LinkClicked::class, SendClickToAnalytics::class);
 
 ## Swapping implementations
 
-Slug generation, bot detection, and user-agent parsing sit behind contracts:
+Slug generation, bot detection, user-agent parsing, and redirect policy sit behind contracts:
 
 ```php
 use AIArmada\Links\Contracts\BotDetectorInterface;
 
 app()->bind(BotDetectorInterface::class, MyBotDetector::class);
 ```
+
+## Consumer seams
+
+Packages with their own domain objects (offers, campaigns) attach them as the link `subject`; clicks inherit it, and `forSubject($model)` scopes query both tables:
+
+```php
+CreateLink::run([
+    'name' => 'Spring offer / AFF-1',
+    'destination_url' => 'https://merchant.example/spring',
+    'subject_type' => $offerLink->getMorphClass(),
+    'subject_id' => (string) $offerLink->getKey(),
+    'parameters' => ['anl' => $slug],
+    'require_signature' => true,
+]);
+```
+
+Redirect policy plugs in through `LinkGateInterface`: return a machine-readable reason to block with `410` plus a `LinkBlocked` event, or `null` to allow:
+
+```php
+use AIArmada\Links\Contracts\LinkGateInterface;
+use AIArmada\Links\Models\Link;
+
+final class OfferLinkGate implements LinkGateInterface
+{
+    public function blockedReason(Link $link): ?string
+    {
+        // Load the subject, check offer/site/approval state...
+        return $blocked ? 'offer_inactive' : null;
+    }
+}
+```
+
+Signed URLs come from `GenerateLinkUrl`, which returns a plain cloaked URL unless the link requires a signature (TTL from `routing.signature_ttl_minutes`). Unsigned, tampered, or expired hits on signed links return `403` and record nothing.
 
 ## Multi-tenancy
 

@@ -16,10 +16,11 @@ final class UpdateLink
 
     /**
      * @param  array<string, mixed>  $attributes
+     * @param  list<string>|null  $allowedHosts
      */
-    public function handle(Link $link, array $attributes): Link
+    public function handle(Link $link, array $attributes, ?bool $requireHttps = null, ?array $allowedHosts = null): Link
     {
-        $validated = Validator::make($attributes, LinkAttributes::updateRules($link))->validate();
+        $validated = Validator::make($attributes, LinkAttributes::updateRules($link, $requireHttps, $allowedHosts))->validate();
 
         if (! is_string($validated['slug'] ?? null) || ($validated['slug'] ?? '') === '') {
             unset($validated['slug']);

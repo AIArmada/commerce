@@ -7,6 +7,7 @@ namespace AIArmada\Links\Models;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Links\Contracts\SlugGeneratorInterface;
+use AIArmada\Links\Models\Concerns\HasSubject;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -18,10 +19,14 @@ use RuntimeException;
  * @property string $id
  * @property string|null $owner_type
  * @property string|null $owner_id
+ * @property string|null $subject_type
+ * @property string|null $subject_id
  * @property string $name
  * @property string $slug
  * @property string $destination_url
  * @property array<string, string|null>|null $utm_defaults
+ * @property array<string, string|null>|null $parameters
+ * @property bool $require_signature
  * @property int|null $max_clicks
  * @property int $total_clicks
  * @property int $human_clicks
@@ -35,6 +40,7 @@ final class Link extends Model
 {
     use HasOwner;
     use HasOwnerScopeConfig;
+    use HasSubject;
     use HasUuids;
 
     protected static string $ownerScopeConfigKey = 'links.owner';
@@ -45,6 +51,10 @@ final class Link extends Model
         'slug',
         'destination_url',
         'utm_defaults',
+        'parameters',
+        'require_signature',
+        'subject_type',
+        'subject_id',
         'max_clicks',
         'total_clicks',
         'human_clicks',
@@ -60,11 +70,14 @@ final class Link extends Model
     protected $attributes = [
         'total_clicks' => 0,
         'human_clicks' => 0,
+        'require_signature' => false,
     ];
 
     /** @var array<string, string> */
     protected $casts = [
         'utm_defaults' => 'array',
+        'parameters' => 'array',
+        'require_signature' => 'boolean',
         'max_clicks' => 'integer',
         'total_clicks' => 'integer',
         'human_clicks' => 'integer',

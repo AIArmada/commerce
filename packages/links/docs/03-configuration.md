@@ -67,6 +67,7 @@ All settings live in `config/links.php`.
 | `routing.domain` | `null` | Optional dedicated domain (e.g. `go.example.com`). |
 | `routing.middleware` | `['web']` | Middleware for the redirect route. |
 | `routing.name` | `links.redirect` | Route name used by `Link::cloakedUrl()`. |
+| `routing.signature_ttl_minutes` | `43200` | TTL for `GenerateLinkUrl` signed URLs (30 days). |
 
 ## Read next
 

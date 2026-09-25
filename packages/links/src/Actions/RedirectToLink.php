@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\Links\Actions;
 
+use AIArmada\Links\Events\LinkBlocked;
 use AIArmada\Links\Events\LinkClickLimitReached;
 use AIArmada\Links\Events\LinkExpired;
 use AIArmada\Links\Models\Link;
 use AIArmada\Links\Support\LinkAttributes;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\URL;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
 
@@ -19,12 +21,23 @@ final class RedirectToLink
 
     public function asController(Request $request, string $slug): RedirectResponse
     {
-        $link = app(ResolveLink::class)->handle($slug);
+        $slug = mb_trim($slug);
+        $link = Link::query()->withoutOwnerScope()->where('slug', $slug)->first();
 
         if (! $link instanceof Link) {
-            $this->fireBlockedEvent($slug);
-
             abort(404);
+        }
+
+        if ($link->require_signature && ! URL::hasValidSignature($request)) {
+            abort(403, 'Invalid or expired signed URL.');
+        }
+
+        $reason = app(ResolveLink::class)->blockedReason($slug);
+
+        if ($reason !== null) {
+            $this->fireBlockedEvent($link, $reason);
+
+            abort(410, 'Link is no longer available.');
         }
 
         try {
@@ -34,29 +47,21 @@ final class RedirectToLink
         }
 
         return redirect()->to(
-            $this->destinationWithUtm($link, $request),
+            $this->destinationWithParams($link, $request),
             (int) config('links.defaults.redirect_status', 302),
         );
     }
 
-    private function fireBlockedEvent(string $slug): void
+    private function fireBlockedEvent(Link $link, string $reason): void
     {
-        $reason = app(ResolveLink::class)->blockedReason($slug);
-
-        if ($reason !== 'expired' && $reason !== 'limit_reached') {
-            return;
-        }
-
-        $link = Link::query()->withoutOwnerScope()->where('slug', mb_trim($slug))->first();
-
-        if (! $link instanceof Link) {
-            return;
-        }
-
-        event($reason === 'expired' ? new LinkExpired($link) : new LinkClickLimitReached($link));
+        event(match ($reason) {
+            'expired' => new LinkExpired($link),
+            'limit_reached' => new LinkClickLimitReached($link),
+            default => new LinkBlocked($link, $reason),
+        });
     }
 
-    private function destinationWithUtm(Link $link, Request $request): string
+    private function destinationWithParams(Link $link, Request $request): string
     {
         $parts = parse_url($link->destination_url) ?: [];
         $query = [];
@@ -74,6 +79,25 @@ final class RedirectToLink
                 $query[$key] = $incoming;
             } elseif (! isset($query[$key]) && isset($defaults[$key]) && is_string($defaults[$key]) && $defaults[$key] !== '') {
                 $query[$key] = $defaults[$key];
+            }
+        }
+
+        // Ad click IDs pass through so merchants keep their own ad attribution.
+        foreach (LinkAttributes::CLICK_ID_KEYS as $key) {
+            $incoming = $request->query($key);
+
+            if (is_string($incoming) && $incoming !== '') {
+                $query[$key] = $incoming;
+            }
+        }
+
+        // Link parameters are the owner's explicit intent: they always win,
+        // so request query strings can never spoof attribution values.
+        $parameters = is_array($link->parameters) ? $link->parameters : [];
+
+        foreach ($parameters as $key => $value) {
+            if (is_string($key) && $key !== '' && is_string($value) && $value !== '') {
+                $query[$key] = $value;
             }
         }
 

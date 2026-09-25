@@ -52,6 +52,13 @@ final class ClicksRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('utm_campaign')
                     ->label('Campaign')
                     ->toggleable(),
+
+                Tables\Columns\TextColumn::make('properties.click_ids')
+                    ->label('Click IDs')
+                    ->formatStateUsing(fn (mixed $state): string => is_array($state)
+                        ? collect($state)->map(fn (mixed $value, mixed $key): string => "{$key}={$value}")->implode(', ')
+                        : '—')
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->defaultSort('occurred_at', 'desc');
     }

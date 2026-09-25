@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentLinks\Resources\LinkResource\Pages;
 
 use AIArmada\FilamentLinks\Resources\LinkResource;
+use AIArmada\Links\Actions\GenerateLinkUrl;
 use AIArmada\Links\Actions\UpdateLink as UpdateLinkAction;
 use AIArmada\Links\Models\Link;
 use Filament\Actions;
@@ -39,6 +40,6 @@ final class EditLink extends EditRecord
         /** @var Link $record */
         $record = $this->getRecord();
 
-        return $record->cloakedUrl();
+        return GenerateLinkUrl::run($record);
     }
 }

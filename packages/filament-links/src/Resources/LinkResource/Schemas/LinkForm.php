@@ -50,6 +50,25 @@ final class LinkForm
                 ])
                 ->columns(2),
 
+            Section::make('Destination parameters')
+                ->description('Always merged into the destination on redirect. These win over incoming query values, so request URLs can never spoof them.')
+                ->collapsible()
+                ->schema([
+                    Forms\Components\KeyValue::make('parameters')
+                        ->keyLabel('Parameter')
+                        ->valueLabel('Value')
+                        ->columnSpanFull(),
+                ]),
+
+            Section::make('Signed URLs')
+                ->description('Signed links only redirect with a valid, unexpired signature. Generate shareable URLs from the row Open action.')
+                ->collapsible()
+                ->schema([
+                    Forms\Components\Toggle::make('require_signature')
+                        ->label('Require signature')
+                        ->helperText('Unsigned, tampered, or expired hits return 403 and record nothing.'),
+                ]),
+
             Section::make('Limits')
                 ->collapsible()
                 ->schema([

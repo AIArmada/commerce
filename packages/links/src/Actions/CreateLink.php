@@ -16,10 +16,11 @@ final class CreateLink
 
     /**
      * @param  array<string, mixed>  $attributes
+     * @param  list<string>|null  $allowedHosts
      */
-    public function handle(array $attributes): Link
+    public function handle(array $attributes, ?bool $requireHttps = null, ?array $allowedHosts = null): Link
     {
-        $validated = Validator::make($attributes, LinkAttributes::creationRules())->validate();
+        $validated = Validator::make($attributes, LinkAttributes::creationRules($requireHttps, $allowedHosts))->validate();
 
         $link = Link::query()->create($validated);
 
