@@ -33,16 +33,10 @@ final class AffiliateOfferApplicationsTable
                     ->searchable()
                     ->sortable(),
 
-                TextColumn::make('affiliate.code')
-                    ->label('Affiliate')
+                TextColumn::make('affiliate_id')
+                    ->label('Affiliate ID')
                     ->searchable()
-                    ->sortable(),
-
-                // affiliate.email is a virtual accessor over contact_methods (no email
-                // column exists), so it must stay display-only: searchable/sortable
-                // would generate SQL against a nonexistent column.
-                TextColumn::make('affiliate.email')
-                    ->label('Email')
+                    ->copyable()
                     ->toggleable(),
 
                 TextColumn::make('status')
@@ -195,7 +189,11 @@ final class AffiliateOfferApplicationsTable
      */
     private static function withApplicationOwnerContext(AffiliateOfferApplication $record, callable $callback): mixed
     {
-        $affiliate = app(AffiliateIdentityResolver::class)->find((string) $record->affiliate_id);
+        $resolver = app()->bound(AffiliateIdentityResolver::class)
+            ? app(AffiliateIdentityResolver::class)
+            : null;
+
+        $affiliate = $resolver?->find((string) $record->affiliate_id);
 
         return OwnerContext::withOwner($affiliate?->owner(), $callback);
     }

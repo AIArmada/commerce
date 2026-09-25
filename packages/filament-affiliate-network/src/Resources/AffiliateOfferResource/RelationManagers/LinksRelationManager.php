@@ -34,10 +34,11 @@ final class LinksRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('link.slug')
             ->columns([
-                TextColumn::make('affiliate.code')
-                    ->label('Affiliate')
+                TextColumn::make('affiliate_id')
+                    ->label('Affiliate ID')
                     ->searchable()
-                    ->sortable(),
+                    ->copyable()
+                    ->toggleable(),
 
                 TextColumn::make('link.slug')
                     ->label('Slug')
