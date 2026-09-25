@@ -672,10 +672,13 @@ Open once post towns are modeled.
   delivery is via P.O. boxes. Verdict `none`.
 - Hong Kong 999077 and French Southern Territories codes are
   foreign-administered routing codes, not domestic systems.
-- Tajikistan: 6-digit system exists but no open district-level
-  source found (GeoNames missing, Mapanet prefix-only 734/735/736,
-  Tajik Post unreachable, scrapers empty). Still `expansion`.
-  Verdict `none`.
+- Tajikistan: 6-digit system exists; Tajik Post index article
+  unblocked at https://tajikpost.tj/ru/перечень-почтовых-индексов-таджикис/
+  (390 rows, 336 codes, WP post 899 modified 2025-09-16) but visibly
+  truncated mid-Khatlon (~20 Khatlon districts missing; 753456 typo
+  for 735456; 14 shared codes need primary rule; Danghara/Norak/Yovon
+  stale-grouped under RRP). Cannot ship complete (Egypt precedent).
+  Still `expansion`.
 - Israel has no geography provider yet; provider creation is
   separate work outside this overlay pass.
 - Trinidad and Tobago: per-address 6-digit S-42 system (PP-RR-ZZ per
