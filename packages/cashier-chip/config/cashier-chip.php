@@ -42,6 +42,7 @@ return [
             'include_global' => env('CASHIER_CHIP_OWNER_INCLUDE_GLOBAL', false),
             'auto_assign_on_create' => env('CASHIER_CHIP_OWNER_AUTO_ASSIGN_ON_CREATE', true),
             'validate_billable_owner' => env('CASHIER_CHIP_OWNER_VALIDATE_BILLABLE_OWNER', true),
+            'customer_resolver' => null,
         ],
     ],
 

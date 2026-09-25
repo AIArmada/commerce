@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashierChip\Resources\CustomerResource\Pages;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentCashierChip\Concerns\HasSetupPaymentMethodIdempotencyKey;
 use AIArmada\FilamentCashierChip\Resources\CustomerResource;
 use Filament\Actions\Action;
@@ -11,6 +12,7 @@ use Filament\Actions\ActionGroup;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Override;
 
@@ -53,6 +55,7 @@ final class ViewCustomer extends ViewRecord
                     ->visible(fn (): bool => ! method_exists($this->getRecord(), 'hasChipId') || ! $this->getRecord()->hasChipId())
                     ->action(function (): void {
                         $record = $this->getRecord();
+                        $this->assertCustomerInScope($record);
 
                         if (method_exists($record, 'createAsChipCustomer')) {
                             $record->createAsChipCustomer();
@@ -74,6 +77,7 @@ final class ViewCustomer extends ViewRecord
                     ->visible(fn (): bool => method_exists($this->getRecord(), 'hasChipId') && $this->getRecord()->hasChipId())
                     ->action(function (): void {
                         $record = $this->getRecord();
+                        $this->assertCustomerInScope($record);
 
                         if (method_exists($record, 'syncChipCustomerDetails')) {
                             $record->syncChipCustomerDetails();
@@ -94,6 +98,7 @@ final class ViewCustomer extends ViewRecord
                     ->visible(fn (): bool => method_exists($this->getRecord(), 'hasChipId') && $this->getRecord()->hasChipId())
                     ->action(function (): void {
                         $record = $this->getRecord();
+                        $this->assertCustomerInScope($record);
 
                         if (method_exists($record, 'updateDefaultPaymentMethodFromChip')) {
                             $record->updateDefaultPaymentMethodFromChip();
@@ -114,6 +119,7 @@ final class ViewCustomer extends ViewRecord
                 ->visible(fn (): bool => method_exists($this->getRecord(), 'hasChipId') && $this->getRecord()->hasChipId())
                 ->action(function (): void {
                     $record = $this->getRecord();
+                    $this->assertCustomerInScope($record);
 
                     if (method_exists($record, 'setupPaymentMethodUrl')) {
                         $url = $record->setupPaymentMethodUrl($this->setupPaymentMethodOptions([
@@ -153,5 +159,23 @@ final class ViewCustomer extends ViewRecord
         $chipCustomerId = call_user_func([$record, 'chipId']);
 
         return is_string($chipCustomerId) && $chipCustomerId !== '' ? $chipCustomerId : null;
+    }
+
+    private function assertCustomerInScope(Model $record): void
+    {
+        if (! (bool) config('cashier-chip.features.owner.enabled', false)) {
+            return;
+        }
+
+        $owner = OwnerContext::resolve();
+
+        OwnerContext::assertResolvedOrExplicitGlobal(
+            $owner,
+            sprintf('%s requires an owner context or explicit global context.', static::class),
+        );
+
+        if (! CustomerResource::customerOwnerResolver()->canAccess($record, $owner)) {
+            throw new AuthorizationException('Cross-tenant customer access blocked.');
+        }
     }
 }

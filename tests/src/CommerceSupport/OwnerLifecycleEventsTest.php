@@ -130,6 +130,112 @@ describe('Owner lifecycle events', function (): void {
         Event::assertDispatchedTimes(ForgotCurrentOwnerEvent::class, 1);
     });
 
+    it('restores previous owner state when a Made listener throws', function (): void {
+        $ownerA = new class extends Model
+        {
+            public $timestamps = false;
+
+            public function getMorphClass(): string
+            {
+                return 'store';
+            }
+
+            public function getKey(): mixed
+            {
+                return 'store-evt-made-a';
+            }
+        };
+
+        $ownerB = new class extends Model
+        {
+            public $timestamps = false;
+
+            public function getMorphClass(): string
+            {
+                return 'store';
+            }
+
+            public function getKey(): mixed
+            {
+                return 'store-evt-made-b';
+            }
+        };
+
+        Event::listen(MadeOwnerCurrentEvent::class, function (MadeOwnerCurrentEvent $event): void {
+            if ((string) $event->owner->getKey() === 'store-evt-made-b') {
+                throw new RuntimeException('made listener failed');
+            }
+        });
+
+        try {
+            OwnerContext::withOwner($ownerA, function () use ($ownerA, $ownerB): void {
+                expect((string) OwnerContext::resolve()?->getKey())->toBe((string) $ownerA->getKey());
+
+                expect(fn (): string => OwnerContext::withOwner($ownerB, fn (): string => 'never'))
+                    ->toThrow(RuntimeException::class, 'made listener failed');
+
+                expect((string) OwnerContext::resolve()?->getKey())->toBe((string) $ownerA->getKey());
+            });
+        } finally {
+            Event::forget(MadeOwnerCurrentEvent::class);
+        }
+
+        expect(OwnerContext::hasOverride())->toBeFalse();
+    });
+
+    it('restores previous owner state when a Forgetting listener throws', function (): void {
+        $ownerA = new class extends Model
+        {
+            public $timestamps = false;
+
+            public function getMorphClass(): string
+            {
+                return 'store';
+            }
+
+            public function getKey(): mixed
+            {
+                return 'store-evt-forgetting-a';
+            }
+        };
+
+        $ownerB = new class extends Model
+        {
+            public $timestamps = false;
+
+            public function getMorphClass(): string
+            {
+                return 'store';
+            }
+
+            public function getKey(): mixed
+            {
+                return 'store-evt-forgetting-b';
+            }
+        };
+
+        Event::listen(ForgettingCurrentOwnerEvent::class, function (ForgettingCurrentOwnerEvent $event): void {
+            if ((string) $event->owner->getKey() === 'store-evt-forgetting-b') {
+                throw new RuntimeException('forgetting listener failed');
+            }
+        });
+
+        try {
+            OwnerContext::withOwner($ownerA, function () use ($ownerA, $ownerB): void {
+                expect((string) OwnerContext::resolve()?->getKey())->toBe((string) $ownerA->getKey());
+
+                expect(fn (): string => OwnerContext::withOwner($ownerB, fn (): string => 'ok'))
+                    ->toThrow(RuntimeException::class, 'forgetting listener failed');
+
+                expect((string) OwnerContext::resolve()?->getKey())->toBe((string) $ownerA->getKey());
+            });
+        } finally {
+            Event::forget(ForgettingCurrentOwnerEvent::class);
+        }
+
+        expect(OwnerContext::hasOverride())->toBeFalse();
+    });
+
     it('dispatches lifecycle events for each nested withOwner call even when owner is the same', function (): void {
         Event::fake([
             MakingOwnerCurrentEvent::class,

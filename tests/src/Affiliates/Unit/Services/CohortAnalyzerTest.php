@@ -9,9 +9,12 @@ use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Services\CohortAnalyzer;
 use AIArmada\Affiliates\States\Active;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
 
@@ -457,3 +460,159 @@ test('analyzeMonthly prefers neutral revenue value over legacy total', function 
         ->and($results['2024-01']['avg_revenue_per_affiliate'])->toBe(9000.0)
         ->and($results['2024-01']['monthly_breakdown'][0]['revenue'])->toBe(9000);
 });
+
+test('analyzeMonthly uses batched queries instead of per-affiliate queries', function (): void {
+    for ($i = 1; $i <= 5; $i++) {
+        $affiliate = Affiliate::create([
+            'code' => "BATCH{$i}",
+            'name' => "Batch Affiliate {$i}",
+            'status' => Active::class,
+            'commission_type' => 'percentage',
+            'commission_rate' => 1000,
+            'currency' => 'USD',
+            'created_at' => '2024-01-05',
+        ]);
+
+        AffiliateConversion::create([
+            'affiliate_id' => $affiliate->id,
+            'affiliate_code' => $affiliate->code,
+            'external_reference' => "BATCH-O{$i}",
+            'occurred_at' => '2024-01-20',
+            'value_minor' => 1000 * $i,
+            'commission_minor' => 100 * $i,
+            'commission_currency' => 'USD',
+            'status' => 'approved',
+        ]);
+    }
+
+    DB::enableQueryLog();
+    DB::flushQueryLog();
+
+    try {
+        $results = $this->analyzer->analyzeMonthly(
+            CarbonImmutable::parse('2024-01-01'),
+            CarbonImmutable::parse('2024-01-31'),
+            3
+        );
+    } finally {
+        $queryCount = count(DB::getQueryLog());
+        DB::disableQueryLog();
+    }
+
+    expect($results['2024-01']['total_conversions'])->toBe(5)
+        ->and($results['2024-01']['total_revenue'])->toBe(15000)
+        ->and($queryCount)->toBeLessThan(10);
+});
+
+test('analyzeMonthly keeps owner isolation on batched queries', function (): void {
+    config()->set('affiliates.owner.enabled', true);
+    config()->set('affiliates.owner.include_global', false);
+    config()->set('affiliates.owner.auto_assign_on_create', false);
+
+    $ownerA = CohortAnalyzerTestOwner::create(['name' => 'Owner A']);
+    $ownerB = CohortAnalyzerTestOwner::create(['name' => 'Owner B']);
+
+    $setOwner = function (?Model $owner): void {
+        app()->instance(OwnerResolverInterface::class, new class($owner) implements OwnerResolverInterface
+        {
+            public function __construct(private readonly ?Model $owner) {}
+
+            public function resolve(): ?Model
+            {
+                return $this->owner;
+            }
+        });
+    };
+
+    $setOwner($ownerA);
+
+    $affiliateA = new Affiliate([
+        'code' => 'COHORT-OWN-A',
+        'name' => 'Affiliate A',
+        'status' => Active::class,
+        'commission_type' => 'percentage',
+        'commission_rate' => 1000,
+        'currency' => 'USD',
+        'created_at' => '2024-01-05',
+    ]);
+    $affiliateA->forceFill([
+        'owner_type' => $ownerA->getMorphClass(),
+        'owner_id' => $ownerA->getKey(),
+    ]);
+    $affiliateA->save();
+
+    $conversionA = new AffiliateConversion([
+        'affiliate_id' => $affiliateA->id,
+        'affiliate_code' => $affiliateA->code,
+        'external_reference' => 'COHORT-OWN-A-1',
+        'occurred_at' => '2024-01-20',
+        'value_minor' => 10000,
+        'commission_minor' => 1000,
+        'commission_currency' => 'USD',
+        'status' => 'approved',
+    ]);
+    $conversionA->forceFill([
+        'owner_type' => $ownerA->getMorphClass(),
+        'owner_id' => $ownerA->getKey(),
+    ]);
+    $conversionA->save();
+
+    $setOwner($ownerB);
+
+    $affiliateB = new Affiliate([
+        'code' => 'COHORT-OWN-B',
+        'name' => 'Affiliate B',
+        'status' => Active::class,
+        'commission_type' => 'percentage',
+        'commission_rate' => 1000,
+        'currency' => 'USD',
+        'created_at' => '2024-01-06',
+    ]);
+    $affiliateB->forceFill([
+        'owner_type' => $ownerB->getMorphClass(),
+        'owner_id' => $ownerB->getKey(),
+    ]);
+    $affiliateB->save();
+
+    $conversionB = new AffiliateConversion([
+        'affiliate_id' => $affiliateB->id,
+        'affiliate_code' => $affiliateB->code,
+        'external_reference' => 'COHORT-OWN-B-1',
+        'occurred_at' => '2024-01-21',
+        'value_minor' => 50000,
+        'commission_minor' => 5000,
+        'commission_currency' => 'USD',
+        'status' => 'approved',
+    ]);
+    $conversionB->forceFill([
+        'owner_type' => $ownerB->getMorphClass(),
+        'owner_id' => $ownerB->getKey(),
+    ]);
+    $conversionB->save();
+
+    $setOwner($ownerA);
+
+    $results = $this->analyzer->analyzeMonthly(
+        CarbonImmutable::parse('2024-01-01'),
+        CarbonImmutable::parse('2024-01-31'),
+        1
+    );
+
+    expect($results['2024-01']['total_affiliates'])->toBe(1)
+        ->and($results['2024-01']['total_conversions'])->toBe(1)
+        ->and($results['2024-01']['total_revenue'])->toBe(10000)
+        ->and($results['2024-01']['monthly_breakdown'][0]['revenue'])->toBe(10000);
+});
+
+final class CohortAnalyzerTestOwner extends Model
+{
+    use HasUuids;
+
+    public $incrementing = false;
+
+    protected $table = 'test_products';
+
+    protected $guarded = [];
+
+    protected $keyType = 'string';
+}

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashierChip\Resources;
 
+use AIArmada\CashierChip\Contracts\CustomerOwnerResolverInterface;
+use AIArmada\CashierChip\Support\DefaultCustomerOwnerResolver;
 use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerCache;
@@ -69,18 +71,16 @@ abstract class BaseCashierChipResource extends Resource
             return $query->whereRaw('1 = 0');
         }
 
-        if (! method_exists($model, 'ownerScopeConfig')) {
-            // Explicit opt-out: billable customer models (User/Team) carry no
-            // owner tuple, so owner-column constraints would SQL-error.
-            return $query;
-        }
-
         $owner = OwnerContext::resolve();
 
         OwnerContext::assertResolvedOrExplicitGlobal(
             $owner,
             sprintf('%s requires an owner context or explicit global context.', static::class),
         );
+
+        if (! method_exists($model, 'ownerScopeConfig')) {
+            return static::customerOwnerResolver()->scopeQuery($query, $owner);
+        }
 
         $config = $model->ownerScopeConfig();
 
@@ -93,6 +93,21 @@ abstract class BaseCashierChipResource extends Resource
             $config->ownerTypeColumn,
             $config->ownerIdColumn,
         );
+    }
+
+    public static function customerOwnerResolver(): CustomerOwnerResolverInterface
+    {
+        $configured = config('cashier-chip.features.owner.customer_resolver');
+
+        if (is_string($configured) && $configured !== '' && class_exists($configured)) {
+            $resolved = app($configured);
+
+            if ($resolved instanceof CustomerOwnerResolverInterface) {
+                return $resolved;
+            }
+        }
+
+        return app(DefaultCustomerOwnerResolver::class);
     }
 
     protected static function pollingInterval(): string

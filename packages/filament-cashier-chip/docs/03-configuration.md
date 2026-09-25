@@ -286,9 +286,17 @@ The package automatically inherits owner scoping from `cashier-chip`:
 ```
 
 When enabled:
-- All resources are owner-scoped
-- Queries use `CashierChipOwnerScope::apply()`
-- Cross-tenant data is hidden
+- Subscription and invoice resources apply owner-column scoping
+- The customer resource scopes billables through the configured customer
+  resolver (owner tuple when defined, self-identity, owned CHIP link, or
+  owned subscription) and fails closed when ownership cannot be proven
+- Cross-tenant data is hidden; explicit global context sees global-only rows
+  on tuple models and all rows on billables without an owner tuple
+
+Billable customer models usually carry no owner tuple. Point
+`cashier-chip.features.owner.customer_resolver` at a custom
+`AIArmada\CashierChip\Contracts\CustomerOwnerResolverInterface` implementation
+when the default link/subscription mapping does not fit your tenancy model.
 
 ## Resource Sort Order
 

@@ -160,15 +160,22 @@ Browse invoices from CHIP purchases.
 
 ## Owner Scoping
 
-All resources automatically apply owner scoping when enabled:
+All resources automatically apply owner scoping when
+`cashier-chip.features.owner.enabled` is true. Subscription and invoice queries
+use owner-column constraints. Customer queries use the configured customer
+resolver because billable models often carry no owner tuple:
 
-```php
-// In BaseCashierChipResource
-public static function getEloquentQuery(): Builder
-{
-    return CashierChipOwnerScope::apply(parent::getEloquentQuery());
-}
-```
+- the model's own owner tuple when it defines one,
+- otherwise owner IS the customer (same class and key): only that record,
+- otherwise an owned CHIP customer link or an owned subscription,
+- otherwise no rows (fail closed).
+
+Explicit global context sees global-only rows on tuple models and all rows on
+billables without an owner tuple. Record actions on the customer view page
+revalidate the record through the same resolver and throw on cross-tenant
+access. Point `cashier-chip.features.owner.customer_resolver` at a custom
+`AIArmada\CashierChip\Contracts\CustomerOwnerResolverInterface` implementation
+when the default mapping does not fit.
 
 This ensures:
 - Each tenant only sees their own data

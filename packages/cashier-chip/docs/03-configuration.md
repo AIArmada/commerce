@@ -43,11 +43,32 @@ The owner-scope settings mirror the multitenancy contract from `commerce-support
 | `features.owner.include_global` | Include global rows when owner mode is enabled |
 | `features.owner.auto_assign_on_create` | Auto-assign the current owner on create |
 | `features.owner.validate_billable_owner` | Re-validate billable ownership on write flows |
+| `features.owner.customer_resolver` | Custom `CustomerOwnerResolverInterface` class for customer scoping (`null` uses the default) |
 
 When owner scoping is enabled, `RenewalAttempt` records inherit `owner_type` and `owner_id` from
 their parent subscription. Direct renewal-attempt queries and writes therefore require the same
 owner context as the subscription. The package migrations add the owner columns and backfill
 legacy attempts from their parent subscriptions.
+
+Billable customer models (`User`, `Team`) usually carry no owner tuple, so customer lists
+cannot always use owner-column constraints. The default customer resolver proves
+ownership via the model's own owner tuple when it defines one, self-identity
+(owner IS the customer), an owned CHIP customer link, or an owned subscription,
+and fails closed with no rows when none apply. Explicit global context sees
+global-only rows on tuple models and all rows on billables without an owner
+tuple. Point `customer_resolver` at a custom
+`AIArmada\CashierChip\Contracts\CustomerOwnerResolverInterface` implementation to map
+customers to owners differently:
+
+```php
+use App\Billing\TeamCustomerResolver;
+
+'features' => [
+    'owner' => [
+        'customer_resolver' => TeamCustomerResolver::class,
+    ],
+],
+```
 
 ## Rate limits
 

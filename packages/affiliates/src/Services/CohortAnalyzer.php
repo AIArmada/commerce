@@ -12,6 +12,7 @@ use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -54,6 +55,9 @@ final class CohortAnalyzer
         $cohorts = $this->getCohorts($from, $to);
         $results = [];
 
+        $allAffiliateIds = $cohorts->flatten()->unique()->values()->all();
+        $totalsByAffiliate = $this->getConversionTotalsByAffiliate($allAffiliateIds);
+
         foreach ($cohorts as $cohortMonth => $affiliateIds) {
             $cohortDate = CarbonImmutable::parse($cohortMonth . '-01');
             $affiliates = Affiliate::whereIn('id', $affiliateIds)->get();
@@ -61,20 +65,25 @@ final class CohortAnalyzer
             $monthlyBreakdown = $this->calculateMonthlyBreakdown(
                 $affiliateIds,
                 $cohortDate,
-                $monthsToTrack
+                $monthsToTrack,
+                $affiliates
             );
 
-            $totalConversions = $affiliates->sum(function ($affiliate) {
-                return $affiliate->conversions()->count();
-            });
+            $totalConversions = 0;
+            $totalRevenue = 0;
+            $totalCommissions = 0;
 
-            $totalRevenue = (int) $affiliates->sum(function ($affiliate): int | float {
-                return (int) $affiliate->conversions()->sum(DB::raw('COALESCE(value_minor, 0)'));
-            });
+            foreach ($affiliateIds as $affiliateId) {
+                $totals = $totalsByAffiliate[(string) $affiliateId] ?? null;
 
-            $totalCommissions = (int) $affiliates->sum(function ($affiliate): int | float {
-                return $affiliate->conversions()->sum('commission_minor');
-            });
+                if ($totals === null) {
+                    continue;
+                }
+
+                $totalConversions += $totals['count'];
+                $totalRevenue += $totals['revenue'];
+                $totalCommissions += $totals['commissions'];
+            }
 
             $activeAffiliates = $affiliates
                 ->filter(fn (Affiliate $affiliate): bool => $affiliate->status->equals(Active::class))
@@ -389,65 +398,176 @@ final class CohortAnalyzer
     /**
      * Calculate monthly breakdown for a cohort.
      *
+     * Active counts are computed in memory from the already-loaded affiliates,
+     * and conversions are fetched in one grouped query per cohort instead of
+     * two queries per cohort-month.
+     *
      * @param  array<string>  $affiliateIds
+     * @param  Collection<int, Affiliate>  $affiliates
      * @return array<int, array{month: int, active: int, conversions: int, revenue: int, commissions: int}>
      */
     private function calculateMonthlyBreakdown(
         array $affiliateIds,
         CarbonImmutable $cohortDate,
-        int $monthsToTrack
+        int $monthsToTrack,
+        Collection $affiliates
     ): array {
         $breakdown = [];
 
+        $maxMonth = 0;
+
         for ($month = 0; $month < $monthsToTrack; $month++) {
             $periodStart = $cohortDate->copy()->addMonths($month)->startOfMonth();
-            $periodEnd = $periodStart->copy()->endOfMonth();
 
             if ($periodStart->isFuture()) {
                 break;
             }
 
-            $activeCount = Affiliate::whereIn('id', $affiliateIds)
-                ->where('status', Active::class)
-                ->where(function ($query) use ($periodEnd): void {
-                    $query->whereNull('deactivated_at')
-                        ->orWhere('deactivated_at', '>', $periodEnd);
-                })
+            $maxMonth = $month + 1;
+        }
+
+        if ($maxMonth <= 0) {
+            return $breakdown;
+        }
+
+        $conversionsByMonth = $this->getMonthlyConversionAggregates($affiliateIds, $cohortDate, $maxMonth);
+
+        for ($month = 0; $month < $maxMonth; $month++) {
+            $periodEnd = $cohortDate->copy()->addMonths($month)->endOfMonth();
+
+            $activeCount = $affiliates
+                ->filter(fn (Affiliate $affiliate): bool => $affiliate->status->equals(Active::class)
+                    && ($affiliate->deactivated_at === null || $affiliate->deactivated_at->greaterThan($periodEnd)))
                 ->count();
 
-            $conversionsTable = (new AffiliateConversion)->getTable();
-            $conversionsQuery = DB::table($conversionsTable)
-                ->whereIn('affiliate_id', $affiliateIds)
-                ->whereBetween('occurred_at', [$periodStart, $periodEnd])
-                ->selectRaw('COUNT(*) as count, COALESCE(SUM(COALESCE(value_minor, 0)), 0) as revenue, COALESCE(SUM(commission_minor), 0) as commissions');
-
-            if ((bool) config('affiliates.owner.enabled', false)) {
-                $owner = OwnerContext::resolve();
-                OwnerContext::assertResolvedOrExplicitGlobal(
-                    $owner,
-                    'Cohort queries require an owner context or explicit global context.',
-                );
-
-                OwnerQuery::applyToQueryBuilder(
-                    $conversionsQuery,
-                    $owner,
-                    (bool) config('affiliates.owner.include_global', false),
-                    "{$conversionsTable}.owner_type",
-                    "{$conversionsTable}.owner_id",
-                );
-            }
-
-            $conversions = $conversionsQuery->first();
+            $conversions = $conversionsByMonth[$month] ?? ['count' => 0, 'revenue' => 0, 'commissions' => 0];
 
             $breakdown[$month] = [
                 'month' => $month,
                 'active' => $activeCount,
-                'conversions' => (int) ($conversions->count ?? 0),
-                'revenue' => (int) ($conversions->revenue ?? 0),
-                'commissions' => (int) ($conversions->commissions ?? 0),
+                'conversions' => (int) $conversions['count'],
+                'revenue' => (int) $conversions['revenue'],
+                'commissions' => (int) $conversions['commissions'],
             ];
         }
 
         return $breakdown;
+    }
+
+    /**
+     * Fetch lifetime conversion totals grouped by affiliate in one query.
+     *
+     * @param  array<int, string>  $affiliateIds
+     * @return array<string, array{count: int, revenue: int, commissions: int}>
+     */
+    private function getConversionTotalsByAffiliate(array $affiliateIds): array
+    {
+        if ($affiliateIds === []) {
+            return [];
+        }
+
+        $conversionsTable = (new AffiliateConversion)->getTable();
+
+        $query = DB::table($conversionsTable)
+            ->whereIn('affiliate_id', $affiliateIds)
+            ->select('affiliate_id')
+            ->selectRaw('COUNT(*) as count, COALESCE(SUM(COALESCE(value_minor, 0)), 0) as revenue, COALESCE(SUM(commission_minor), 0) as commissions')
+            ->groupBy('affiliate_id');
+
+        $this->applyConversionsOwnerScope($query, $conversionsTable);
+
+        $totals = [];
+
+        foreach ($query->get() as $row) {
+            $totals[(string) $row->affiliate_id] = [
+                'count' => (int) ($row->count ?? 0),
+                'revenue' => (int) ($row->revenue ?? 0),
+                'commissions' => (int) ($row->commissions ?? 0),
+            ];
+        }
+
+        return $totals;
+    }
+
+    /**
+     * Fetch conversion aggregates grouped by cohort-relative month in one query.
+     *
+     * @param  array<string>  $affiliateIds
+     * @return array<int, array{count: int, revenue: int, commissions: int}>
+     */
+    private function getMonthlyConversionAggregates(
+        array $affiliateIds,
+        CarbonImmutable $cohortDate,
+        int $maxMonth
+    ): array {
+        if ($affiliateIds === [] || $maxMonth <= 0) {
+            return [];
+        }
+
+        $conversionsTable = (new AffiliateConversion)->getTable();
+        $driver = ConnectionDriver::name(DB::connection());
+
+        $monthExpression = match ($driver) {
+            'pgsql' => "to_char(occurred_at, 'YYYY-MM')",
+            'mysql', 'mariadb' => "DATE_FORMAT(occurred_at, '%Y-%m')",
+            'sqlite' => "strftime('%Y-%m', occurred_at)",
+            default => throw new RuntimeException("Unsupported database driver [{$driver}] for affiliate cohorts."),
+        };
+
+        $rangeStart = $cohortDate->copy()->startOfMonth();
+        $rangeEnd = $cohortDate->copy()->addMonths($maxMonth - 1)->endOfMonth();
+
+        $query = DB::table($conversionsTable)
+            ->whereIn('affiliate_id', $affiliateIds)
+            ->whereBetween('occurred_at', [$rangeStart, $rangeEnd])
+            ->selectRaw("{$monthExpression} as month_key")
+            ->selectRaw('COUNT(*) as count, COALESCE(SUM(COALESCE(value_minor, 0)), 0) as revenue, COALESCE(SUM(commission_minor), 0) as commissions')
+            ->groupBy('month_key');
+
+        $this->applyConversionsOwnerScope($query, $conversionsTable);
+
+        $aggregates = [];
+
+        foreach ($query->get() as $row) {
+            if (! isset($row->month_key) || ! is_string($row->month_key)) {
+                continue;
+            }
+
+            $rowMonth = CarbonImmutable::parse($row->month_key . '-01');
+            $index = ($rowMonth->year - $cohortDate->year) * 12 + ($rowMonth->month - $cohortDate->month);
+
+            if ($index < 0 || $index >= $maxMonth) {
+                continue;
+            }
+
+            $aggregates[$index] = [
+                'count' => (int) ($row->count ?? 0),
+                'revenue' => (int) ($row->revenue ?? 0),
+                'commissions' => (int) ($row->commissions ?? 0),
+            ];
+        }
+
+        return $aggregates;
+    }
+
+    private function applyConversionsOwnerScope(QueryBuilder $query, string $conversionsTable): void
+    {
+        if (! (bool) config('affiliates.owner.enabled', false)) {
+            return;
+        }
+
+        $owner = OwnerContext::resolve();
+        OwnerContext::assertResolvedOrExplicitGlobal(
+            $owner,
+            'Cohort queries require an owner context or explicit global context.',
+        );
+
+        OwnerQuery::applyToQueryBuilder(
+            $query,
+            $owner,
+            (bool) config('affiliates.owner.include_global', false),
+            "{$conversionsTable}.owner_type",
+            "{$conversionsTable}.owner_id",
+        );
     }
 }
