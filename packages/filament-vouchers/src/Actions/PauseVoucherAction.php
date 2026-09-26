@@ -25,7 +25,7 @@ final class PauseVoucherAction extends Action
         $this->modalHeading('Pause Voucher');
         $this->modalDescription('This will temporarily disable the voucher.');
 
-        $this->visible(fn (Voucher $record): bool => $record->status instanceof Active);
+        $this->visible(fn (Voucher $record): bool => $record->status instanceof Active && ! $record->isExpired());
 
         $this->action(function (Voucher $record): void {
             if (config('vouchers.owner.enabled', false)) {

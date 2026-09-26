@@ -8,7 +8,6 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
 use AIArmada\Feedback\Enums\FeedbackInvitationStatus;
 use AIArmada\Feedback\Models\FeedbackInvitation;
-use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\RateLimiter;
 use RuntimeException;
 
@@ -60,7 +59,7 @@ final class ResolveFeedbackInvitationTokenAction
             throw new RuntimeException('This invitation has already been used.');
         }
 
-        if ($invitation->expires_at !== null && CarbonImmutable::now()->isAfter($invitation->expires_at)) {
+        if ($invitation->isExpired()) {
             $owner = OwnerTupleParser::fromTypeAndId(
                 $invitation->owner_type,
                 $invitation->owner_id,

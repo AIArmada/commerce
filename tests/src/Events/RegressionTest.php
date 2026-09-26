@@ -3,8 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
-use AIArmada\CommerceSupport\Support\NullOwnerResolver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Events\Actions\ApproveAssignmentRequestAction;
@@ -368,17 +366,6 @@ it('resolves duplicate slugs to the earliest created event', function (): void {
 
         expect(app(EventQueryService::class)->findBySlug('dupe-slug')?->id)->toBe($first->id);
     });
-});
-
-// The finalize command runs under explicit owner context.
-it('finalize command fails without an owner context and runs with global context', function (): void {
-    app()->instance(OwnerResolverInterface::class, new NullOwnerResolver);
-
-    $this->artisan('events:finalize-orders', ['--dry-run' => true])
-        ->assertFailed();
-
-    $this->artisan('events:finalize-orders', ['--global' => true, '--dry-run' => true])
-        ->assertSuccessful();
 });
 
 // Child models carry owner-derived policies.

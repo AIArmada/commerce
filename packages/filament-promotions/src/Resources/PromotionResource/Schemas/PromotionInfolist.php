@@ -157,7 +157,7 @@ final class PromotionInfolist
                     ->schema([
                         Grid::make(3)
                             ->schema([
-                                IconEntry::make('is_active')
+                                IconEntry::make('is_currently_active')
                                     ->label('Active')
                                     ->boolean(),
 

@@ -50,17 +50,16 @@ final class FeedbackInvitationResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('phone')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('status')
+                Tables\Columns\TextColumn::make('effective_status')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'pending' => 'gray',
-                        'sent' => 'info',
-                        'opened' => 'warning',
-                        'started' => 'warning',
-                        'submitted' => 'success',
-                        'expired' => 'danger',
-                        'cancelled' => 'danger',
-                        default => 'gray',
+                    ->color(fn (FeedbackInvitationStatus $state): string => match ($state) {
+                        FeedbackInvitationStatus::Pending => 'gray',
+                        FeedbackInvitationStatus::Sent => 'info',
+                        FeedbackInvitationStatus::Opened => 'warning',
+                        FeedbackInvitationStatus::Started => 'warning',
+                        FeedbackInvitationStatus::Submitted => 'success',
+                        FeedbackInvitationStatus::Expired => 'danger',
+                        FeedbackInvitationStatus::Cancelled => 'danger',
                     }),
                 Tables\Columns\TextColumn::make('sent_at')
                     ->dateTime()
@@ -77,9 +76,34 @@ final class FeedbackInvitationResource extends Resource
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
-                    ->options(FeedbackInvitationStatus::options()),
+                    ->options(FeedbackInvitationStatus::options())
+                    ->query(function (Builder $query, array $data): Builder {
+                        $status = $data['value'] ?? null;
+
+                        if ($status === FeedbackInvitationStatus::Expired->value) {
+                            return $query->where(function (Builder $query): void {
+                                $query
+                                    ->where('status', FeedbackInvitationStatus::Expired->value)
+                                    ->orWhere(function (Builder $query): void {
+                                        $query
+                                            ->whereNotIn('status', self::TERMINAL_STATUSES)
+                                            ->whereNotNull('expires_at')
+                                            ->where('expires_at', '<=', now());
+                                    });
+                            });
+                        }
+
+                        return $status === null ? $query : $query->where('status', $status);
+                    }),
             ]);
     }
+
+    /** @var list<string> */
+    private const TERMINAL_STATUSES = [
+        FeedbackInvitationStatus::Submitted->value,
+        FeedbackInvitationStatus::Cancelled->value,
+        FeedbackInvitationStatus::Expired->value,
+    ];
 
     public static function getPages(): array
     {

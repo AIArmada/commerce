@@ -604,7 +604,7 @@ it('persists invitation expiry when submission fails on an expired invitation', 
         ->and(FeedbackResponse::query()->where('feedback_form_id', $form->id)->count())->toBe(0);
 });
 
-it('prunes past-due invitations through the console command', function (): void {
+it('derives invitation expiry from the date rather than the stored status', function (): void {
     $form = regressionPublishedForm('Prune Form');
     $due = FeedbackInvitation::query()->create([
         'feedback_form_id' => $form->id,
@@ -619,14 +619,45 @@ it('prunes past-due invitations through the console command', function (): void 
         'expires_at' => CarbonImmutable::now()->addDay(),
     ]);
 
-    $this->artisan('feedback:prune-expired-invitations --dry-run')->assertSuccessful();
+    // Nothing sweeps the status column: the stored value stays 'sent' …
+    expect($due->fresh()->status)->toBe(FeedbackInvitationStatus::Sent)
+        ->and($due->isExpired())->toBeTrue()
+        ->and($due->effective_status)->toBe(FeedbackInvitationStatus::Expired)
+        // Filament reads column state via data_get, so the badge needs the
+        // attribute to resolve that way and not only as a direct read.
+        ->and(data_get($due, 'effective_status'))->toBe(FeedbackInvitationStatus::Expired)
+        // … while a live invitation is unaffected.
+        ->and($freshInvitation->fresh()->isExpired())->toBeFalse()
+        ->and($freshInvitation->fresh()->effective_status)->toBe(FeedbackInvitationStatus::Sent);
+});
 
-    expect($due->fresh()->status)->toBe(FeedbackInvitationStatus::Sent);
+it('does not report a terminal past-due invitation as expired', function (): void {
+    $form = regressionPublishedForm('Terminal Form');
 
-    $this->artisan('feedback:prune-expired-invitations')->assertSuccessful();
+    foreach ([FeedbackInvitationStatus::Submitted, FeedbackInvitationStatus::Cancelled] as $status) {
+        $invitation = FeedbackInvitation::query()->create([
+            'feedback_form_id' => $form->id,
+            'token_hash' => hash('sha256', 'terminal-' . $status->value),
+            'status' => $status->value,
+            'expires_at' => CarbonImmutable::now()->subDay(),
+        ]);
 
-    expect($due->fresh()->status)->toBe(FeedbackInvitationStatus::Expired)
-        ->and($freshInvitation->fresh()->status)->toBe(FeedbackInvitationStatus::Sent);
+        expect($invitation->fresh()->isExpired())->toBeTrue()
+            ->and($invitation->fresh()->effective_status)->toBe($status);
+    }
+});
+
+it('reports a null expiry as not expired', function (): void {
+    $form = regressionPublishedForm('No Expiry Form');
+    $invitation = FeedbackInvitation::query()->create([
+        'feedback_form_id' => $form->id,
+        'token_hash' => hash('sha256', 'no-expiry'),
+        'status' => 'sent',
+        'expires_at' => null,
+    ]);
+
+    expect($invitation->fresh()->isExpired())->toBeFalse()
+        ->and($invitation->fresh()->effective_status)->toBe(FeedbackInvitationStatus::Sent);
 });
 
 it('hides the invitation token hash from serialized output', function (): void {

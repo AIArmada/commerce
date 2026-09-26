@@ -4,16 +4,14 @@ declare(strict_types=1);
 
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Testing\InMemoryStorage;
-use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\Vouchers\Actions\ApplyVoucherToCart;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Listeners\ValidateVoucherOnCheckout;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\States\Active;
+use AIArmada\Vouchers\States\Depleted;
 use AIArmada\Vouchers\States\Expired;
 use AIArmada\Vouchers\Support\VoucherCartMetadata;
 use AIArmada\Vouchers\Traits\HasVouchers;
@@ -147,48 +145,53 @@ describe('checkout voucher validation', function (): void {
     });
 });
 
-describe('voucher expiry command', function (): void {
+describe('voucher expiry is derived from the date', function (): void {
 
-    it('expires past-due vouchers', function (): void {
+    it('reports a past-due voucher as expired without any sweep', function (): void {
         $pastDue = scopeVoucher(['expires_at' => now()->subMinute()]);
         $upcoming = scopeVoucher(['expires_at' => now()->addDay()]);
 
-        $exitCode = $this->artisan('vouchers:expire')->run();
-
-        expect($exitCode)->toBe(0);
-
-        expect($pastDue->fresh()->status)->toBeInstanceOf(Expired::class)
-            ->and($upcoming->fresh()->status)->toBeInstanceOf(Active::class);
+        // The stored status is untouched …
+        expect($pastDue->fresh()->status)->toBeInstanceOf(Active::class)
+            ->and($pastDue->isExpired())->toBeTrue()
+            // … but every reader sees Expired, and redemption already refused it.
+            ->and($pastDue->fresh()->effective_status)->toBeInstanceOf(Expired::class)
+            // Filament reads column state via data_get, so the badge needs the
+            // attribute to resolve that way and not only as a direct read.
+            ->and(data_get($pastDue->fresh(), 'effective_status'))->toBeInstanceOf(Expired::class)
+            ->and($pastDue->fresh()->isActive())->toBeTrue()
+            ->and($pastDue->fresh()->canBeRedeemed())->toBeFalse()
+            // A live voucher is unaffected.
+            ->and($upcoming->fresh()->isExpired())->toBeFalse()
+            ->and($upcoming->fresh()->effective_status)->toBeInstanceOf(Active::class)
+            ->and($upcoming->fresh()->canBeRedeemed())->toBeTrue();
     });
 
-    it('reports without changing in dry-run mode', function (): void {
+    it('keeps a depleted past-due voucher depleted', function (): void {
+        $depleted = scopeVoucher(['expires_at' => now()->subMinute()]);
+        $depleted->status = new Depleted($depleted);
+        $depleted->save();
+
+        expect($depleted->fresh()->effective_status)->toBeInstanceOf(Depleted::class);
+    });
+
+    it('keeps a stored-expired voucher expired', function (): void {
+        $stored = scopeVoucher(['expires_at' => now()->addDay()]);
+        $stored->status = new Expired($stored);
+        $stored->save();
+
+        expect($stored->fresh()->isExpired())->toBeFalse()
+            ->and($stored->fresh()->effective_status)->toBeInstanceOf(Expired::class);
+    });
+
+    it('excludes past-due vouchers from the live scope', function (): void {
         $pastDue = scopeVoucher(['expires_at' => now()->subMinute()]);
+        $live = scopeVoucher(['expires_at' => now()->addDay()]);
 
-        $exitCode = $this->artisan('vouchers:expire', ['--dry-run' => true])->run();
+        $liveIds = Voucher::query()->live()->pluck('id');
 
-        expect($exitCode)->toBe(0);
-
-        expect($pastDue->fresh()->status)->toBeInstanceOf(Active::class);
-    });
-
-    it('expires vouchers across owners', function (): void {
-        config()->set('vouchers.owner.enabled', true);
-        config()->set('vouchers.owner.include_global', false);
-
-        $ownerA = User::query()->create(['name' => 'Expire A', 'email' => 'expire-a@example.com', 'password' => 'secret']);
-        $ownerB = User::query()->create(['name' => 'Expire B', 'email' => 'expire-b@example.com', 'password' => 'secret']);
-
-        app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver(null));
-
-        $voucherA = OwnerContext::withOwner($ownerA, static fn (): Voucher => scopeVoucher(['expires_at' => now()->subMinute()]));
-        $voucherB = OwnerContext::withOwner($ownerB, static fn (): Voucher => scopeVoucher(['expires_at' => now()->subMinute()]));
-
-        $exitCode = $this->artisan('vouchers:expire')->run();
-
-        expect($exitCode)->toBe(0);
-
-        expect($voucherA->fresh()->status)->toBeInstanceOf(Expired::class)
-            ->and($voucherB->fresh()->status)->toBeInstanceOf(Expired::class);
+        expect($liveIds)->toContain($live->id)
+            ->and($liveIds)->not->toContain($pastDue->id);
     });
 });
 

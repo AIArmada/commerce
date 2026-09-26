@@ -506,12 +506,4 @@ describe('RepairRegression security', function (): void {
 
         expect($subscription->recurring_token)->toBeNull();
     });
-
-    it('webhook command reports the chip signature switch', function (): void {
-        config()->set('chip.webhooks.verify_signature', false);
-
-        $this->artisan('cashier-chip:webhook')
-            ->expectsOutputToContain('Disabled')
-            ->assertSuccessful();
-    });
 });

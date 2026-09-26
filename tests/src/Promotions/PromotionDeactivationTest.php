@@ -2,21 +2,11 @@
 
 declare(strict_types=1);
 
-use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
-use AIArmada\CommerceSupport\Support\NullOwnerResolver;
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Promotions\Actions\DeactivatePromotion;
-use AIArmada\Promotions\Console\Commands\DeactivateExpiredPromotionsCommand;
 use AIArmada\Promotions\Events\PromotionDeactivated;
 use AIArmada\Promotions\Models\Promotion;
 use Carbon\CarbonImmutable;
-use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\Event;
-
-beforeEach(function (): void {
-    $this->app->make(Kernel::class)->registerCommand(new DeactivateExpiredPromotionsCommand);
-});
 
 it('stamps the deactivation time and returns a usable promotion', function (): void {
     Event::fake([PromotionDeactivated::class]);
@@ -32,47 +22,54 @@ it('stamps the deactivation time and returns a usable promotion', function (): v
     Event::assertDispatched(PromotionDeactivated::class);
 });
 
-it('deactivates expired promotions per owner without tripping the write guard', function (): void {
-    config()->set('promotions.features.owner.enabled', true);
-    config()->set('promotions.features.owner.include_global', false);
-    config()->set('promotions.features.owner.auto_assign_on_create', true);
-
-    // Console runs have no ambient owner; drop the default test resolver so
-    // the command iterates discovered owners like production.
-    app()->instance(OwnerResolverInterface::class, new NullOwnerResolver);
-
-    $ownerA = User::factory()->create();
-    $ownerB = User::factory()->create();
-
-    $expiredA = OwnerContext::withOwner($ownerA, fn (): Promotion => Promotion::factory()->create([
-        'is_active' => true,
-        'starts_at' => null,
-        'ends_at' => CarbonImmutable::now()->subDay(),
-    ]));
-    $expiredB = OwnerContext::withOwner($ownerB, fn (): Promotion => Promotion::factory()->create([
-        'is_active' => true,
-        'starts_at' => null,
-        'ends_at' => CarbonImmutable::now()->subDay(),
-    ]));
-    $live = OwnerContext::withOwner($ownerA, fn (): Promotion => Promotion::factory()->active()->create());
-
-    $this->artisan('promotions:deactivate-expired')->assertSuccessful();
-
-    expect($expiredA->fresh()->is_active)->toBeFalse()
-        ->and($expiredA->fresh()->deactivated_at)->not->toBeNull()
-        ->and($expiredB->fresh()->is_active)->toBeFalse()
-        ->and($live->fresh()->is_active)->toBeTrue();
-});
-
-it('leaves expired promotions untouched on dry runs', function (): void {
-    $expired = Promotion::factory()->create([
+it('reports an ended promotion as not currently active without a sweep', function (): void {
+    $ended = Promotion::factory()->create([
         'is_active' => true,
         'starts_at' => null,
         'ends_at' => CarbonImmutable::now()->subDay(),
     ]);
+    $live = Promotion::factory()->active()->create();
 
-    $this->artisan('promotions:deactivate-expired', ['--dry-run' => true])->assertSuccessful();
+    // The stored flag is untouched: nothing sweeps it.
+    expect($ended->is_active)->toBeTrue()
+        ->and($ended->is_currently_active)->toBeFalse()
+        ->and($live->fresh()->is_currently_active)->toBeTrue()
+        // The canonical scope already refused it before any deactivation.
+        ->and($ended->isActive())->toBeFalse()
+        // Filament resolves column state through data_get, which will not call
+        // a bare method: the attribute must be readable that way too.
+        ->and(data_get($ended, 'is_currently_active'))->toBeFalse()
+        ->and(data_get($live->fresh(), 'is_currently_active'))->toBeTrue();
+});
 
-    expect($expired->fresh()->is_active)->toBeTrue()
-        ->and($expired->fresh()->deactivated_at)->toBeNull();
+it('excludes ended promotions from the currently-active scope', function (): void {
+    $ended = Promotion::factory()->create([
+        'is_active' => true,
+        'starts_at' => null,
+        'ends_at' => CarbonImmutable::now()->subDay(),
+    ]);
+    $live = Promotion::factory()->active()->create();
+    $disabled = Promotion::factory()->create(['is_active' => false]);
+
+    $ids = Promotion::query()->currentlyActive()->pluck('id');
+
+    expect($ids)->toContain($live->id)
+        ->and($ids)->not->toContain($ended->id)
+        ->and($ids)->not->toContain($disabled->id);
+});
+
+it('keeps a promotion at its usage limit out of the canonical scope but inside currently-active', function (): void {
+    $capped = Promotion::factory()->create([
+        'is_active' => true,
+        'starts_at' => null,
+        'ends_at' => null,
+        'usage_limit' => 1,
+        'usage_count' => 1,
+    ]);
+
+    // Usage cap is a redemption constraint, not a lifecycle end, so reporting
+    // still counts it while the discount engine refuses it.
+    expect($capped->isActive())->toBeFalse()
+        ->and($capped->is_currently_active)->toBeTrue()
+        ->and(Promotion::query()->currentlyActive()->pluck('id'))->toContain($capped->id);
 });

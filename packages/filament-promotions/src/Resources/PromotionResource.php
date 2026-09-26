@@ -126,7 +126,7 @@ final class PromotionResource extends Resource
             'filament-promotions.nav-badge.active-count',
             CarbonImmutable::now()->addSeconds(30),
             static fn (): int => (int) self::getEloquentQuery()
-                ->where('is_active', true)
+                ->currentlyActive()
                 ->count(),
         );
     }

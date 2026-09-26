@@ -54,7 +54,7 @@ final class InvitationsRelationManager extends RelationManager
                     ->icon('heroicon-o-x-circle')
                     ->color('danger')
                     ->requiresConfirmation()
-                    ->visible(fn (MembershipInvitation $record): bool => $record->status === InvitationStatus::Pending)
+                    ->visible(fn (MembershipInvitation $record): bool => $record->status === InvitationStatus::Pending && ! $record->isExpired())
                     ->action(function (InvitationsRelationManager $livewire, MembershipInvitation $record): void {
                         $organization = self::ownerOrganization($livewire);
 

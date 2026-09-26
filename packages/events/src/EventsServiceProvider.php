@@ -18,7 +18,6 @@ use AIArmada\Events\Actions\RecordWalkInAction;
 use AIArmada\Events\Actions\RegisterForFreeAction;
 use AIArmada\Events\Actions\SyncManagementAssignmentToAuthzAction;
 use AIArmada\Events\Checkout\EventsStepContributor;
-use AIArmada\Events\Console\Commands\FinalizeEventOrdersCommand;
 use AIArmada\Events\Contracts\EventChangeNoticeAudienceResolver;
 use AIArmada\Events\Contracts\EventChangeNoticeNotificationDispatcher;
 use AIArmada\Events\Contracts\EventChangeNoticeWorkflow;
@@ -138,7 +137,6 @@ final class EventsServiceProvider extends PackageServiceProvider
             ->name('events')
             ->hasConfigFile()
             ->hasViews()
-            ->hasCommand(FinalizeEventOrdersCommand::class)
             ->runsMigrations()
             ->discoversMigrations();
     }

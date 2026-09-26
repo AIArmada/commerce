@@ -61,7 +61,7 @@ final class EditPromotion extends EditRecord
             ->label('Deactivate')
             ->color('danger')
             ->requiresConfirmation()
-            ->visible(fn (Promotion $record): bool => $record->is_active)
+            ->visible(fn (Promotion $record): bool => ! $record->is_currently_active)
             ->action(fn (Promotion $record): Promotion => app(DeactivatePromotion::class)->handle($record));
         $actions[] = DeleteAction::make();
 

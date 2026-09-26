@@ -25,7 +25,7 @@ final class ActivateVoucherAction extends Action
         $this->modalHeading('Activate Voucher');
         $this->modalDescription('This will make the voucher available for use.');
 
-        $this->visible(fn (Voucher $record): bool => $record->status instanceof Paused);
+        $this->visible(fn (Voucher $record): bool => $record->status instanceof Paused && ! $record->isExpired());
 
         $this->action(function (Voucher $record): void {
             if (config('vouchers.owner.enabled', false)) {

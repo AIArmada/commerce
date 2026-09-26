@@ -59,7 +59,7 @@ final class FeedbackSubmissionGuard
             throw new RuntimeException('This invitation has already been used.');
         }
 
-        if ($invitation->expires_at !== null && CarbonImmutable::now()->isAfter($invitation->expires_at)) {
+        if ($invitation->isExpired()) {
             throw new FeedbackInvitationExpiredException($invitation->id);
         }
     }

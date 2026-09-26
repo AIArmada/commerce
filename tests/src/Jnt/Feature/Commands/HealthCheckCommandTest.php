@@ -54,6 +54,27 @@ test('health check fails when base URLs are missing', function (): void {
         ->assertExitCode(1);
 });
 
+test('health check fails when private key has an invalid format', function (): void {
+    Config::set('jnt.private_key', 'invalid-key-format');
+
+    $this->artisan(HealthCheckCommand::class)
+        ->expectsOutput('J&T Express API Health Check')
+        ->expectsOutput('✗ Some systems are experiencing issues')
+        ->assertExitCode(1);
+});
+
+test('health check fails when a base URL is malformed', function (): void {
+    Config::set('jnt.base_urls', [
+        'testing' => 'not-a-valid-url',
+        'production' => 'https://ylopenapi.jtexpress.my/webopenplatformapi',
+    ]);
+
+    $this->artisan(HealthCheckCommand::class)
+        ->expectsOutput('J&T Express API Health Check')
+        ->expectsOutput('✗ Some systems are experiencing issues')
+        ->assertExitCode(1);
+});
+
 test('health check shows warning when API is unreachable but configuration is valid', function (): void {
     Http::fake([
         '*' => Http::response('Server Error', 500),

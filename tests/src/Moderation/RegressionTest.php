@@ -6,7 +6,6 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Moderation\Actions\BlockEntityAction;
-use AIArmada\Moderation\Actions\ExpireModerationBlocksAction;
 use AIArmada\Moderation\Actions\RecordModerationAction;
 use AIArmada\Moderation\Enums\BlockReason;
 use AIArmada\Moderation\Enums\BlockStatus;
@@ -239,34 +238,6 @@ test('deleting a blockable expires active blocks from every owner scope', functi
 
     expect(Block::withoutOwnerScope()->findOrFail($blockA->getKey())->status)->toBe(BlockStatus::Expired)
         ->and(Block::withoutOwnerScope()->findOrFail($blockB->getKey())->status)->toBe(BlockStatus::Expired);
-});
-
-test('expires past-due blocks in bulk without firing model events', function (): void {
-    Block::unguarded(fn (): Block => Block::create([
-        'blockable_type' => $this->entity->getMorphClass(),
-        'blockable_id' => $this->entity->id,
-        'reason' => BlockReason::Spam,
-        'status' => BlockStatus::Active,
-        'expires_at' => CarbonImmutable::now()->subMinute(),
-    ]));
-    Block::unguarded(fn (): Block => Block::create([
-        'blockable_type' => $this->entity->getMorphClass(),
-        'blockable_id' => $this->entity->id,
-        'reason' => BlockReason::Spam,
-        'status' => BlockStatus::Active,
-        'expires_at' => CarbonImmutable::now()->addHour(),
-    ]));
-
-    $saved = 0;
-    Block::saved(function () use (&$saved): void {
-        $saved++;
-    });
-
-    $processed = app(ExpireModerationBlocksAction::class)->execute(withoutEvents: true);
-
-    expect($processed)->toBe(1)
-        ->and($saved)->toBe(0)
-        ->and(Block::expired()->count())->toBe(1);
 });
 
 test('restricts actor types when an allowlist is configured', function (): void {

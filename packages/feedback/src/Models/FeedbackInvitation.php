@@ -88,4 +88,31 @@ final class FeedbackInvitation extends Model
     {
         return $this->morphTo('recipient');
     }
+
+    /**
+     * Past-due by date, independent of the persisted status. The status column
+     * is only updated when something sweeps it, so every read path derives
+     * expiry from `expires_at` instead of trusting the stored value.
+     */
+    public function isExpired(): bool
+    {
+        return $this->expires_at !== null && CarbonImmutable::now()->isAfter($this->expires_at);
+    }
+
+    /**
+     * The status a reader should see: a past-due invitation reads as expired
+     * even when no sweep has written it yet.
+     */
+    public function getEffectiveStatusAttribute(): FeedbackInvitationStatus
+    {
+        if ($this->isExpired() && ! in_array($this->status, [
+            FeedbackInvitationStatus::Submitted,
+            FeedbackInvitationStatus::Cancelled,
+            FeedbackInvitationStatus::Expired,
+        ], true)) {
+            return FeedbackInvitationStatus::Expired;
+        }
+
+        return $this->status;
+    }
 }

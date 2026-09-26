@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Membership;
 
-use AIArmada\Membership\Console\Commands\ExpireInvitationsCommand;
 use AIArmada\Membership\Console\Commands\SyncRolesCommand;
 use AIArmada\Membership\Services\MembershipRoleSyncService;
 use Illuminate\Support\ServiceProvider;
@@ -28,7 +27,6 @@ final class MembershipServiceProvider extends ServiceProvider
 
         if ($this->app->runningInConsole()) {
             $this->commands([
-                ExpireInvitationsCommand::class,
                 SyncRolesCommand::class,
             ]);
         }

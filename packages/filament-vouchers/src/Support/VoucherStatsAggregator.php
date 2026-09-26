@@ -9,6 +9,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
+use AIArmada\Vouchers\States\Depleted;
 use AIArmada\Vouchers\States\Expired;
 use AIArmada\Vouchers\States\VoucherStatus;
 use Carbon\CarbonImmutable;
@@ -39,7 +40,21 @@ final class VoucherStatsAggregator
                 'upcoming' => $this->vouchers()
                     ->where('starts_at', '>', CarbonImmutable::now())
                     ->count(),
-                'expired' => $this->vouchers()->where('status', VoucherStatus::normalize(Expired::class))->count(),
+                'expired' => $this->vouchers()
+                    ->where(function ($builder): void {
+                        $builder
+                            ->where('status', VoucherStatus::normalize(Expired::class))
+                            ->orWhere(function ($builder): void {
+                                $builder
+                                    ->whereNotIn('status', [
+                                        VoucherStatus::normalize(Expired::class),
+                                        VoucherStatus::normalize(Depleted::class),
+                                    ])
+                                    ->whereNotNull('expires_at')
+                                    ->where('expires_at', '<=', now());
+                            });
+                    })
+                    ->count(),
                 'manual_redemptions' => $this->usages()->where('channel', VoucherUsage::CHANNEL_MANUAL)->count(),
                 'total_discount_minor' => $this->sumDiscountMinor(),
             ],

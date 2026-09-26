@@ -11,7 +11,6 @@ use AIArmada\Membership\Actions\ApplyForMembershipAction;
 use AIArmada\Membership\Actions\ApproveMembershipApplicationAction;
 use AIArmada\Membership\Actions\CancelMembershipApplicationAction;
 use AIArmada\Membership\Actions\ChangeMemberRoleAction;
-use AIArmada\Membership\Actions\ExpireMembershipInvitationsAction;
 use AIArmada\Membership\Actions\InviteMemberAction;
 use AIArmada\Membership\Actions\RejectMembershipApplicationAction;
 use AIArmada\Membership\Actions\RemoveMemberAction;
@@ -20,15 +19,12 @@ use AIArmada\Membership\Enums\ApplicationStatus;
 use AIArmada\Membership\Enums\InvitationStatus;
 use AIArmada\Membership\Enums\MemberRole;
 use AIArmada\Membership\Events\MembershipInvitationSent;
-use AIArmada\Membership\MembershipServiceProvider;
 use AIArmada\Membership\Models\MembershipApplication;
 use AIArmada\Membership\Models\MembershipInvitation;
 use AIArmada\Membership\Tests\Fixtures\TestSubject;
 use AIArmada\Membership\Tests\MembershipTestCase;
-use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Schema;
@@ -73,52 +69,51 @@ it('creates a fresh invitation when the previous one expired', function (): void
     Event::assertDispatchedTimes(MembershipInvitationSent::class, 1);
 });
 
-it('expires past-due invitations across owner scopes', function (): void {
-    $ownerA = User::query()->create(['name' => 'Sweep A', 'email' => 'sweep-a@app.com', 'password' => 'secret']);
-    $ownerB = User::query()->create(['name' => 'Sweep B', 'email' => 'sweep-b@app.com', 'password' => 'secret']);
-    $now = CarbonImmutable::parse('2026-09-11 12:00:00');
-
-    $due = OwnerContext::withOwner($ownerA, fn (): MembershipInvitation => $this->createInvitation([
+it('self-heals a past-due invitation on read instead of relying on a sweep', function (): void {
+    $due = $this->withMembershipOwner(fn (): MembershipInvitation => $this->createInvitation([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
         'email' => 'due@example.com',
         'role' => MemberRole::Viewer->spatieRoleName(),
         'invited_by' => $this->inviter->getKey(),
-        'expires_at' => $now->subMinute(),
+        'expires_at' => now()->subMinute(),
     ]));
-    $upcoming = OwnerContext::withOwner($ownerB, fn (): MembershipInvitation => $this->createInvitation([
+    $upcoming = $this->withMembershipOwner(fn (): MembershipInvitation => $this->createInvitation([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
         'email' => 'upcoming@example.com',
         'role' => MemberRole::Viewer->spatieRoleName(),
         'invited_by' => $this->inviter->getKey(),
-        'expires_at' => $now->addMinute(),
+        'expires_at' => now()->addMinute(),
     ]));
 
-    $processed = OwnerContext::withOwner(null, fn (): int => app(ExpireMembershipInvitationsAction::class)->execute($now));
+    // The date is the authority: isExpired() is true before any write happens.
+    expect($due->isExpired())->toBeTrue()
+        ->and($upcoming->isExpired())->toBeFalse();
 
-    expect($processed)->toBe(1)
-        ->and(OwnerContext::withOwner($ownerA, fn (): MembershipInvitation => $due->fresh()))->status->toBe(InvitationStatus::Expired)
-        ->and(OwnerContext::withOwner($ownerB, fn (): MembershipInvitation => $upcoming->fresh()))->status->toBe(InvitationStatus::Pending);
+    // expireIfDue() is the self-heal the re-invite path calls.
+    expect($due->expireIfDue())->toBeTrue()
+        ->and($due->fresh()->status)->toBe(InvitationStatus::Expired)
+        ->and($upcoming->expireIfDue())->toBeFalse()
+        ->and($upcoming->fresh()->status)->toBe(InvitationStatus::Pending);
+
+    // A second call is a no-op, so the transition is idempotent.
+    expect($due->fresh()->expireIfDue())->toBeFalse();
 });
 
-it('expires past-due invitations from the console', function (): void {
-    app()->register(MembershipServiceProvider::class);
-
+it('refuses a past-due invitation at the accept gate without any sweep', function (): void {
     $invitation = $this->withMembershipOwner(fn (): MembershipInvitation => $this->createInvitation([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
-        'email' => 'console-sweep@example.com',
+        'email' => 'expired-accept@example.com',
         'role' => MemberRole::Viewer->spatieRoleName(),
         'invited_by' => $this->inviter->getKey(),
         'expires_at' => now()->subMinute(),
     ]));
 
-    $exitCode = OwnerContext::withOwner(null, fn (): int => Artisan::call('membership:expire-invitations'));
-
-    expect($exitCode)->toBe(0)
-        ->and($invitation->fresh()->status)->toBe(InvitationStatus::Expired)
-        ->and(Artisan::output())->toContain('Expired 1 membership invitation(s).');
+    // Stored status is still pending; isValid() must reject on the date alone.
+    expect($invitation->fresh()->status)->toBe(InvitationStatus::Pending)
+        ->and($invitation->fresh()->isValid())->toBeFalse();
 });
 
 it('verifies the invitation token when one is provided', function (): void {

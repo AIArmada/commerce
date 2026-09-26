@@ -20,6 +20,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 
 final class PromotionsTable
@@ -63,10 +64,10 @@ final class PromotionsTable
                     ->sortable()
                     ->alignCenter(),
 
-                IconColumn::make('is_active')
+                IconColumn::make('is_currently_active')
                     ->label('Active')
                     ->boolean()
-                    ->sortable(),
+                    ->sortable(['is_active']),
 
                 IconColumn::make('is_stackable')
                     ->label('Stack')
@@ -104,8 +105,9 @@ final class PromotionsTable
                     ))
                     ->native(false),
 
-                TernaryFilter::make('is_active')
-                    ->label('Active'),
+                TernaryFilter::make('is_currently_active')
+                    ->label('Active')
+                    ->query(static fn (Builder $query, array $data): Builder => self::applyActiveFilter($query, $data)),
 
                 TernaryFilter::make('is_stackable')
                     ->label('Stackable'),
@@ -158,5 +160,31 @@ final class PromotionsTable
                         }),
                 ]),
             ]);
+    }
+
+    /**
+     * Match the Active column: "Active" means enabled and not past `ends_at`.
+     * Mirrors `Promotion::scopeCurrentlyActive()`; the inverse is written out
+     * because there is no `scopeNotCurrentlyActive()`.
+     *
+     * @param  Builder<Promotion>  $query
+     * @return Builder<Promotion>
+     */
+    private static function applyActiveFilter(Builder $query, array $data): Builder
+    {
+        return match ($data['state'] ?? null) {
+            true => $query->currentlyActive(),
+            false => $query->where(function (Builder $query): void {
+                $query
+                    ->where('is_active', false)
+                    ->orWhere(function (Builder $query): void {
+                        $query
+                            ->where('is_active', true)
+                            ->whereNotNull('ends_at')
+                            ->where('ends_at', '<=', now());
+                    });
+            }),
+            default => $query,
+        };
     }
 }

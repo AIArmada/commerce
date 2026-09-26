@@ -161,7 +161,7 @@ final class VouchersTable
                         ->toggleable(isToggledHiddenByDefault: true)
                     : null,
 
-                TextColumn::make('status')
+                TextColumn::make('effective_status')
                     ->label('Status')
                     ->badge()
                     ->color(static function (VoucherStatus | string $state): string {
@@ -176,7 +176,7 @@ final class VouchersTable
                         };
                     })
                     ->formatStateUsing(static fn (VoucherStatus | string $state): string => VoucherStatus::labelFor($state))
-                    ->sortable(),
+                    ->sortable(['status']),
 
                 IconColumn::make('allows_manual_redemption')
                     ->label('Manual?')
@@ -208,7 +208,35 @@ final class VouchersTable
 
                 SelectFilter::make('status')
                     ->label('Status')
-                    ->options(static fn (): array => VoucherStatus::options()),
+                    ->options(static fn (): array => VoucherStatus::options())
+                    ->query(static function ($query, array $data): mixed {
+                        $status = $data['value'] ?? null;
+
+                        if ($status === null) {
+                            return $query;
+                        }
+
+                        if ($status !== VoucherStatus::normalize(Expired::class)) {
+                            return $query->where('status', $status);
+                        }
+
+                        // A past-due voucher reads as Expired even when the stored
+                        // status is still active or paused, so match the same set
+                        // `getEffectiveStatusAttribute()` reports.
+                        return $query->where(function ($builder): void {
+                            $builder
+                                ->where('status', VoucherStatus::normalize(Expired::class))
+                                ->orWhere(function ($builder): void {
+                                    $builder
+                                        ->whereNotIn('status', [
+                                            VoucherStatus::normalize(Expired::class),
+                                            VoucherStatus::normalize(Depleted::class),
+                                        ])
+                                        ->whereNotNull('expires_at')
+                                        ->where('expires_at', '<=', now());
+                                });
+                        });
+                    }),
 
                 Filter::make('manual_only')
                     ->label('Manual Redemption')
