@@ -121,8 +121,8 @@ class AttributeForm
                             ->label(__('filament-products::resources.attributes.fields.is_required'))
                             ->default(false),
 
-                        KeyValue::make('validation_rules')
-                            ->label(__('filament-products::resources.attributes.fields.validation_rules'))
+                        KeyValue::make('validation')
+                            ->label(__('filament-products::resources.attributes.fields.validation'))
                             ->keyLabel(__('filament-products::resources.attributes.fields.rule'))
                             ->valueLabel(__('filament-products::resources.attributes.fields.value'))
                             ->addActionLabel(__('filament-products::resources.attributes.fields.add_rule'))
@@ -151,11 +151,6 @@ class AttributeForm
                         Toggle::make('is_visible_on_front')
                             ->label(__('filament-products::resources.attributes.fields.is_visible_on_front'))
                             ->helperText(__('filament-products::resources.attributes.fields.is_visible_on_front_help'))
-                            ->default(true),
-
-                        Toggle::make('is_visible_in_admin')
-                            ->label(__('filament-products::resources.attributes.fields.is_visible_in_admin'))
-                            ->helperText(__('filament-products::resources.attributes.fields.is_visible_in_admin_help'))
                             ->default(true),
                     ])
                     ->columns(3)

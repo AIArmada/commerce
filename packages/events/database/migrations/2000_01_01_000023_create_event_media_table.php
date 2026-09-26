@@ -19,7 +19,6 @@ return new class extends Migration
             $table->uuid('event_session_id')->nullable()->index();
             $table->string('media_type')->index();
             $table->string('usage_type')->index();
-            $table->uuid('file_id')->nullable()->index();
             $table->text('url')->nullable();
             $table->string('title')->nullable();
             $table->text('caption')->nullable();

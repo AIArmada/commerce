@@ -18,8 +18,6 @@ use Illuminate\Support\Carbon;
  * @property string $field_key
  * @property mixed|null $old_value
  * @property mixed|null $new_value
- * @property mixed|null $old_value_json
- * @property mixed|null $new_value_json
  * @property int $sort_order
  * @property array|null $metadata
  * @property Carbon|null $created_at
@@ -35,7 +33,6 @@ final class EventUpdateItem extends Model
         'event_update_id',
         'field_key',
         'old_value', 'new_value',
-        'old_value_json', 'new_value_json',
         'sort_order',
         'metadata',
     ];
@@ -50,8 +47,6 @@ final class EventUpdateItem extends Model
         return [
             'old_value' => 'array',
             'new_value' => 'array',
-            'old_value_json' => 'array',
-            'new_value_json' => 'array',
             'sort_order' => 'integer',
             'metadata' => 'array',
         ];

@@ -1071,7 +1071,6 @@ abstract class TestCase extends Orchestra
             $table->boolean('is_searchable')->default(false);
             $table->boolean('is_comparable')->default(false);
             $table->boolean('is_visible_on_front')->default(true);
-            $table->boolean('is_visible_on_admin')->default(true);
             $table->unsignedInteger('position')->default(0);
             $table->string('suffix')->nullable();
             $table->string('placeholder')->nullable();
@@ -1384,8 +1383,6 @@ abstract class TestCase extends Orchestra
 
             // Status tracking
             $table->string('status')->default('pending')->index();
-            $table->string('finalization_phase')->nullable();
-            $table->text('finalization_error')->nullable();
             $table->string('current_step')->nullable();
             $table->string('error_message')->nullable();
 

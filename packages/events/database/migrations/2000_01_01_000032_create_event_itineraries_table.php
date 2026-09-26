@@ -19,7 +19,6 @@ return new class extends Migration
             $table->string('owner_type')->nullable()->index();
             $table->uuid('owner_id')->nullable()->index();
             $table->string('name');
-            $table->string('itinerary_type')->index();
             $table->string('visibility')->index();
             $table->string('status')->index();
             $table->{$jsonType}('metadata')->nullable();

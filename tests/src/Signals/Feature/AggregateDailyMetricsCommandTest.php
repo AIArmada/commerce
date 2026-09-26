@@ -45,7 +45,6 @@ it('aggregates daily metrics from raw records', function (): void {
         'signal_identity_id' => $identity->id,
         'session_identifier' => 'session-1',
         'started_at' => CarbonImmutable::parse('2026-03-10 08:00:00'),
-        'is_bounce' => false,
     ]);
     $session->assignOwner($owner)->save();
 
@@ -118,7 +117,6 @@ it('aggregates daily metrics for each owner when no ambient owner is resolved', 
         'signal_identity_id' => $identityA->id,
         'session_identifier' => 'aggregate-multi-session-a',
         'started_at' => CarbonImmutable::parse('2026-03-10 08:00:00'),
-        'is_bounce' => false,
     ]);
 
     SignalEvent::query()->create([
@@ -149,7 +147,6 @@ it('aggregates daily metrics for each owner when no ambient owner is resolved', 
         'signal_identity_id' => $identityB->id,
         'session_identifier' => 'aggregate-multi-session-b',
         'started_at' => CarbonImmutable::parse('2026-03-10 09:00:00'),
-        'is_bounce' => true,
     ]);
 
     SignalEvent::query()->create([

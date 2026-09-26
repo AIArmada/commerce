@@ -22,7 +22,6 @@ return new class extends Migration
             $table->integer('row_number');
             $table->integer('column_number');
             $table->string('category')->nullable()->index();
-            $table->bigInteger('price_modifier')->nullable();
             $table->string('status')->default(SeatStatus::Available->value)->index();
             $table->{$jsonType}('metadata')->nullable();
             $table->timestampsTz();

@@ -52,6 +52,7 @@ final class CommunicationPreference extends Model
         'recipient_id',
         'channel',
         'category',
+        'scope_type',
         'scope_key',
         'locale',
         'timezone',

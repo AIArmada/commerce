@@ -19,7 +19,6 @@ return new class extends Migration
             $table->uuid('event_id')->nullable()->index();
             $table->uuid('event_occurrence_id')->nullable()->index();
             $table->uuid('event_session_id')->nullable()->index();
-            $table->string('block_type')->index();
             $table->text('reason')->nullable();
             $table->text('notes')->nullable();
             $table->timestampTz('starts_at');

@@ -18,7 +18,6 @@ final class EventItineraryFactory extends Factory
     {
         return [
             'name' => $this->faker->sentence(3),
-            'itinerary_type' => 'schedule',
             'visibility' => 'public',
             'status' => 'active',
         ];

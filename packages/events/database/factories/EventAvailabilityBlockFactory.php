@@ -19,7 +19,6 @@ final class EventAvailabilityBlockFactory extends Factory
         return [
             'blockable_type' => $this->faker->word(),
             'blockable_id' => (string) $this->faker->uuid(),
-            'block_type' => 'maintenance',
             'starts_at' => now(),
             'ends_at' => now()->addDay(),
             'timezone' => 'UTC',

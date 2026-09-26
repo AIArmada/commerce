@@ -79,3 +79,17 @@ test('preference stores metadata', function (): void {
 
     expect($preference->metadata['source'])->toBe('registration');
 });
+
+test('preference mass assigns documented scope columns', function (): void {
+    $preference = new CommunicationPreference([
+        'recipient_id' => 'usr-789',
+        'channel' => 'mail',
+        'category' => 'marketing',
+        'scope_type' => 'event',
+        'scope_key' => 'evt-1',
+    ]);
+    $preference->forceFill(['recipient_type' => 'user'])->save();
+
+    expect($preference->scope_type)->toBe('event')
+        ->and($preference->scope_key)->toBe('evt-1');
+});

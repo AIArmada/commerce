@@ -21,7 +21,6 @@ use Illuminate\Support\Carbon;
  * @property string|null $owner_type
  * @property string|null $owner_id
  * @property string $name
- * @property string $itinerary_type
  * @property string $visibility
  * @property string $status
  * @property array|null $metadata
@@ -39,7 +38,7 @@ final class EventItinerary extends Model
 
     protected $fillable = [
         'event_id', 'event_occurrence_id',
-        'name', 'itinerary_type',
+        'name',
         'visibility', 'status',
         'metadata',
     ];

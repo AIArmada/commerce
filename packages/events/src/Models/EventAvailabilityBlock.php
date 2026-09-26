@@ -22,7 +22,6 @@ use Illuminate\Support\Carbon;
  * @property string|null $event_id
  * @property string|null $event_occurrence_id
  * @property string|null $event_session_id
- * @property string $block_type
  * @property string|null $reason
  * @property string|null $notes
  * @property CarbonImmutable $starts_at
@@ -52,7 +51,7 @@ final class EventAvailabilityBlock extends Model
     protected $fillable = [
         'blockable_type', 'blockable_id',
         'event_id', 'event_occurrence_id', 'event_session_id',
-        'block_type', 'reason', 'notes',
+        'reason', 'notes',
         'starts_at', 'ends_at', 'timezone',
         'status', 'visibility',
         'created_by_type', 'created_by_id',

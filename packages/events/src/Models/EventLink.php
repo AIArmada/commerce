@@ -24,7 +24,6 @@ use Illuminate\Support\Carbon;
  * @property string $visibility
  * @property CarbonImmutable|null $opens_at
  * @property CarbonImmutable|null $expires_at
- * @property string|null $access_notes
  * @property int $sort_order
  * @property array|null $metadata
  * @property Carbon|null $created_at
@@ -40,7 +39,7 @@ final class EventLink extends Model
         'event_id', 'event_occurrence_id', 'event_session_id',
         'link_type', 'label', 'url',
         'visibility',
-        'opens_at', 'expires_at', 'access_notes',
+        'opens_at', 'expires_at',
         'sort_order',
         'metadata',
     ];

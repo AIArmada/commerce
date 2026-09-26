@@ -29,7 +29,6 @@ use Illuminate\Support\Carbon;
  * @property string|null $notes
  * @property string|null $performed_by_type
  * @property string|null $performed_by_id
- * @property CarbonImmutable|null $performed_at
  * @property CarbonImmutable|null $reversed_at
  * @property CarbonImmutable|null $expired_at
  * @property array|null $metadata
@@ -50,7 +49,7 @@ class EventModerationAction extends Model
         'action_type', 'status',
         'reason', 'notes',
         'performed_by_type', 'performed_by_id',
-        'performed_at', 'reversed_at', 'expired_at',
+        'reversed_at', 'expired_at',
         'metadata',
     ];
 
@@ -62,7 +61,6 @@ class EventModerationAction extends Model
     protected function casts(): array
     {
         return [
-            'performed_at' => 'immutable_datetime',
             'reversed_at' => 'immutable_datetime',
             'expired_at' => 'immutable_datetime',
             'metadata' => 'array',

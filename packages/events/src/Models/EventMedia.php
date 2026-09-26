@@ -19,7 +19,6 @@ use Illuminate\Support\Carbon;
  * @property string|null $event_session_id
  * @property string $media_type
  * @property string|null $usage_type
- * @property string|null $file_id
  * @property string|null $url
  * @property string|null $title
  * @property string|null $caption
@@ -39,7 +38,7 @@ final class EventMedia extends Model
     protected $fillable = [
         'event_id', 'event_occurrence_id', 'event_session_id',
         'media_type', 'usage_type',
-        'file_id', 'url',
+        'url',
         'title', 'caption', 'alt_text',
         'visibility', 'sort_order',
         'metadata',

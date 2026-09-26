@@ -23,7 +23,6 @@ return new class extends Migration
             $table->string('visibility')->index();
             $table->timestampTz('opens_at')->nullable();
             $table->timestampTz('expires_at')->nullable();
-            $table->text('access_notes')->nullable();
             $table->integer('sort_order')->default(0)->index();
             $table->{$jsonType}('metadata')->nullable();
             $table->timestampsTz();

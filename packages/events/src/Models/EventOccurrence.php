@@ -59,7 +59,6 @@ use Spatie\ModelStates\HasStates;
  * @property string|null $registration_mode
  * @property bool|null $issue_passes_for_free
  * @property string|null $status_reason
- * @property string|null $status_message
  * @property array|null $metadata
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -133,7 +132,7 @@ final class EventOccurrence extends Model implements HasMedia
         'published_at', 'delayed_at', 'postponed_at', 'rescheduled_at',
         'cancelled_at', 'completed_at', 'archived_at',
         'rescheduled_from_occurrence_id', 'rescheduled_to_occurrence_id',
-        'status_reason', 'status_message',
+        'status_reason',
         'metadata',
     ];
 

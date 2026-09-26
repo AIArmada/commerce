@@ -16,7 +16,6 @@ describe('InventorySupplierLeadtime', function (): void {
             $leadtime = InventorySupplierLeadtime::create([
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
-                'supplier_name' => 'Test Supplier',
                 'lead_time_days' => 7,
                 'lead_time_variance_days' => 2,
                 'minimum_order_quantity' => 10,
@@ -36,7 +35,7 @@ describe('InventorySupplierLeadtime', function (): void {
             InventorySupplierLeadtime::create([
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
-                'supplier_name' => 'Primary Supplier',
+                'supplier_id' => '11111111-1111-1111-1111-111111111111',
                 'lead_time_days' => 5,
                 'lead_time_variance_days' => 1,
                 'minimum_order_quantity' => 10,
@@ -50,7 +49,7 @@ describe('InventorySupplierLeadtime', function (): void {
             InventorySupplierLeadtime::create([
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
-                'supplier_name' => 'Secondary Supplier',
+                'supplier_id' => '22222222-2222-2222-2222-222222222222',
                 'lead_time_days' => 10,
                 'lead_time_variance_days' => 3,
                 'minimum_order_quantity' => 20,
@@ -64,7 +63,7 @@ describe('InventorySupplierLeadtime', function (): void {
             InventorySupplierLeadtime::create([
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
-                'supplier_name' => 'Inactive Supplier',
+                'supplier_id' => '33333333-3333-3333-3333-333333333333',
                 'lead_time_days' => 3,
                 'lead_time_variance_days' => 0,
                 'minimum_order_quantity' => 5,
@@ -81,7 +80,6 @@ describe('InventorySupplierLeadtime', function (): void {
             InventorySupplierLeadtime::create([
                 'inventoryable_type' => $otherItem->getMorphClass(),
                 'inventoryable_id' => $otherItem->getKey(),
-                'supplier_name' => 'Other Supplier',
                 'lead_time_days' => 7,
                 'lead_time_variance_days' => 2,
                 'minimum_order_quantity' => 10,
@@ -106,7 +104,7 @@ describe('InventorySupplierLeadtime', function (): void {
             $primary = InventorySupplierLeadtime::primary()->get();
 
             expect($primary)->toHaveCount(1);
-            expect($primary->first()->supplier_name)->toBe('Primary Supplier');
+            expect($primary->first()->supplier_id)->toBe('11111111-1111-1111-1111-111111111111');
         });
 
         it('orders by lead time ascending', function (): void {
@@ -129,7 +127,6 @@ describe('InventorySupplierLeadtime', function (): void {
             $leadtime = InventorySupplierLeadtime::create([
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
-                'supplier_name' => 'Test Supplier',
                 'lead_time_days' => 7,
                 'lead_time_variance_days' => 3,
                 'minimum_order_quantity' => 10,
@@ -148,7 +145,6 @@ describe('InventorySupplierLeadtime', function (): void {
             $leadtime = InventorySupplierLeadtime::create([
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
-                'supplier_name' => 'Test Supplier',
                 'lead_time_days' => 7,
                 'lead_time_variance_days' => 2,
                 'minimum_order_quantity' => 10,
@@ -165,7 +161,6 @@ describe('InventorySupplierLeadtime', function (): void {
             $leadtime = InventorySupplierLeadtime::create([
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
-                'supplier_name' => 'Fast Supplier',
                 'lead_time_days' => 1,
                 'lead_time_variance_days' => 3,
                 'minimum_order_quantity' => 10,
@@ -184,7 +179,6 @@ describe('InventorySupplierLeadtime', function (): void {
             $leadtime = InventorySupplierLeadtime::create([
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
-                'supplier_name' => 'Test Supplier',
                 'lead_time_days' => 7,
                 'lead_time_variance_days' => 0,
                 'minimum_order_quantity' => 10,
@@ -203,7 +197,6 @@ describe('InventorySupplierLeadtime', function (): void {
             $leadtime = InventorySupplierLeadtime::create([
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
-                'supplier_name' => 'Test Supplier',
                 'lead_time_days' => 7,
                 'lead_time_variance_days' => 0,
                 'minimum_order_quantity' => 20,
@@ -220,7 +213,6 @@ describe('InventorySupplierLeadtime', function (): void {
             $leadtime = InventorySupplierLeadtime::create([
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
-                'supplier_name' => 'Flexible Supplier',
                 'lead_time_days' => 7,
                 'lead_time_variance_days' => 0,
                 'minimum_order_quantity' => 5,
@@ -240,7 +232,6 @@ describe('InventorySupplierLeadtime', function (): void {
             $leadtime = InventorySupplierLeadtime::create([
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
-                'supplier_name' => 'Test Supplier',
                 'lead_time_days' => 7,
                 'lead_time_variance_days' => 0,
                 'minimum_order_quantity' => 10,
@@ -259,7 +250,6 @@ describe('InventorySupplierLeadtime', function (): void {
             $leadtime = InventorySupplierLeadtime::create([
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
-                'supplier_name' => 'No Cost Supplier',
                 'lead_time_days' => 7,
                 'lead_time_variance_days' => 0,
                 'minimum_order_quantity' => 10,
@@ -277,7 +267,6 @@ describe('InventorySupplierLeadtime', function (): void {
             $leadtime = InventorySupplierLeadtime::create([
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
-                'supplier_name' => 'Test Supplier',
                 'lead_time_days' => 7,
                 'lead_time_variance_days' => 0,
                 'minimum_order_quantity' => 10,
@@ -298,7 +287,6 @@ describe('InventorySupplierLeadtime', function (): void {
             $primary = InventorySupplierLeadtime::create([
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
-                'supplier_name' => 'Primary Supplier',
                 'lead_time_days' => 5,
                 'lead_time_variance_days' => 1,
                 'minimum_order_quantity' => 10,
@@ -311,7 +299,6 @@ describe('InventorySupplierLeadtime', function (): void {
             $secondary = InventorySupplierLeadtime::create([
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
-                'supplier_name' => 'Secondary Supplier',
                 'lead_time_days' => 10,
                 'lead_time_variance_days' => 2,
                 'minimum_order_quantity' => 20,
@@ -334,7 +321,6 @@ describe('InventorySupplierLeadtime', function (): void {
             $leadtime = InventorySupplierLeadtime::create([
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
-                'supplier_name' => 'Test Supplier',
                 'lead_time_days' => 7,
                 'lead_time_variance_days' => 0,
                 'minimum_order_quantity' => 10,
@@ -357,7 +343,6 @@ describe('InventorySupplierLeadtime', function (): void {
             $leadtime = InventorySupplierLeadtime::create([
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
-                'supplier_name' => 'Test Supplier',
                 'lead_time_days' => 7,
                 'lead_time_variance_days' => 0,
                 'minimum_order_quantity' => 10,
@@ -380,7 +365,6 @@ describe('InventorySupplierLeadtime', function (): void {
             $leadtime = InventorySupplierLeadtime::create([
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
-                'supplier_name' => 'Test Supplier',
                 'lead_time_days' => 7,
                 'lead_time_variance_days' => 0,
                 'minimum_order_quantity' => 10,
@@ -400,7 +384,6 @@ describe('InventorySupplierLeadtime', function (): void {
             $leadtime = InventorySupplierLeadtime::create([
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
-                'supplier_name' => 'Test Supplier',
                 'lead_time_days' => 7,
                 'lead_time_variance_days' => 0,
                 'minimum_order_quantity' => 10,
@@ -420,7 +403,6 @@ describe('InventorySupplierLeadtime', function (): void {
             $leadtime = InventorySupplierLeadtime::create([
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
-                'supplier_name' => 'Test Supplier',
                 'lead_time_days' => 7,
                 'lead_time_variance_days' => 0,
                 'minimum_order_quantity' => 10,
@@ -439,7 +421,6 @@ describe('InventorySupplierLeadtime', function (): void {
             $leadtime = InventorySupplierLeadtime::create([
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
-                'supplier_name' => 'Test Supplier',
                 'lead_time_days' => '7',
                 'lead_time_variance_days' => '2',
                 'minimum_order_quantity' => '10',

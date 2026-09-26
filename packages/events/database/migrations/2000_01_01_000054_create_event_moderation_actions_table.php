@@ -26,7 +26,6 @@ return new class extends Migration
             $table->text('notes')->nullable();
             $table->string('performed_by_type')->nullable()->index();
             $table->string('performed_by_id')->nullable()->index();
-            $table->timestampTz('performed_at')->nullable();
             $table->timestampTz('reversed_at')->nullable();
             $table->timestampTz('expired_at')->nullable();
             $table->{$jsonType}('metadata')->nullable();

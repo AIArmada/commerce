@@ -37,7 +37,6 @@ return new class extends Migration
             $table->uuid('rescheduled_from_occurrence_id')->nullable()->index();
             $table->uuid('rescheduled_to_occurrence_id')->nullable()->index();
             $table->text('status_reason')->nullable();
-            $table->text('status_message')->nullable();
             $table->{$jsonType}('metadata')->nullable();
             $table->timestampsTz();
 

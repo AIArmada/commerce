@@ -37,10 +37,6 @@ return new class extends Migration
                 $table->string('callback', 500)->nullable()->index();
             }
 
-            if (! Schema::hasColumn('webhook_calls', 'all_events')) {
-                $table->boolean('all_events')->default(false);
-            }
-
             if (! Schema::hasColumn('webhook_calls', 'public_key')) {
                 $table->text('public_key')->nullable();
             }
@@ -65,10 +61,6 @@ return new class extends Migration
                 $table->text('processing_error')->nullable();
             }
 
-            if (! Schema::hasColumn('webhook_calls', 'processing_attempts')) {
-                $table->unsignedInteger('processing_attempts')->default(0);
-            }
-
             if (! Schema::hasColumn('webhook_calls', 'status')) {
                 $table->string('status')->default('pending')->index();
             }
@@ -91,10 +83,6 @@ return new class extends Migration
 
             if (! Schema::hasColumn('webhook_calls', 'processing_time_ms')) {
                 $table->decimal('processing_time_ms', 10, 3)->nullable();
-            }
-
-            if (! Schema::hasColumn('webhook_calls', 'ip_address')) {
-                $table->string('ip_address')->nullable();
             }
 
             if (! Schema::hasColumn('webhook_calls', 'created_on')) {

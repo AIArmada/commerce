@@ -63,7 +63,6 @@ use Spatie\ModelStates\HasStates;
  * @property CarbonImmutable|null $completed_at
  * @property CarbonImmutable|null $last_state_change_at
  * @property string|null $status_reason
- * @property string|null $status_message
  * @property string|null $pricing_mode
  * @property string|null $registration_mode
  * @property bool|null $issue_passes_for_free
@@ -167,7 +166,7 @@ class Event extends Model implements HasMedia, TicketableInterface
         'type', 'schedule_kind', 'status', 'visibility', 'delivery_mode',
         'timezone', 'default_venue_id',
         'pricing_mode', 'registration_mode', 'issue_passes_for_free',
-        'status_reason', 'status_message',
+        'status_reason',
         'metadata',
     ];
 

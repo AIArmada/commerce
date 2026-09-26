@@ -54,7 +54,6 @@ describe('InventoryReorderSuggestion', function (): void {
             $supplierLeadtime = InventorySupplierLeadtime::create([
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
-                'supplier_name' => 'Test Supplier',
                 'lead_time_days' => 7,
                 'lead_time_variance_days' => 2,
                 'minimum_order_quantity' => 10,

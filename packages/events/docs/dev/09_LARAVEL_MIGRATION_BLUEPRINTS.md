@@ -84,7 +84,6 @@ Schema::create('events', function (Blueprint $table) {
     $table->timestampTz('completed_at')->nullable()->index();
 
     $table->text('status_reason')->nullable();
-    $table->text('status_message')->nullable();
 
     $table->jsonb('metadata')->nullable();
     $table->timestampsTz();
@@ -123,7 +122,6 @@ Schema::create('event_occurrences', function (Blueprint $table) {
     $table->uuid('rescheduled_to_occurrence_id')->nullable()->index();
 
     $table->text('status_reason')->nullable();
-    $table->text('status_message')->nullable();
 
     $table->jsonb('metadata')->nullable();
     $table->timestampsTz();

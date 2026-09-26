@@ -22,7 +22,6 @@ use Throwable;
  * @property array<string>|null $events
  * @property array<string, mixed>|null $payload
  * @property array<string, string>|null $headers
- * @property bool $all_events
  * @property bool $verified
  * @property bool $processed
  * @property string|null $idempotency_key
@@ -30,7 +29,6 @@ use Throwable;
  * @property CarbonImmutable|null $last_retry_at
  * @property string|null $last_error
  * @property float|null $processing_time_ms
- * @property string|null $ip_address
  * @property int|null $created_on
  * @property int|null $updated_on
  * @property CarbonImmutable|null $processed_at
@@ -62,20 +60,17 @@ class Webhook extends WebhookCall
         'title',
         'events',
         'callback',
-        'all_events',
         'public_key',
         'event_type',
         'signature',
         'verified',
         'processed',
         'processing_error',
-        'processing_attempts',
         'idempotency_key',
         'retry_count',
         'last_retry_at',
         'last_error',
         'processing_time_ms',
-        'ip_address',
         'created_on',
         'updated_on',
     ];
@@ -88,7 +83,6 @@ class Webhook extends WebhookCall
         'payload' => 'array',
         'exception' => 'array',
         'events' => 'array',
-        'all_events' => 'boolean',
         'verified' => 'boolean',
         'processed' => 'boolean',
         'created_at' => 'datetime',
@@ -96,7 +90,6 @@ class Webhook extends WebhookCall
         'processed_at' => 'datetime',
         'last_retry_at' => 'datetime',
         'retry_count' => 'integer',
-        'processing_attempts' => 'integer',
         'processing_time_ms' => 'float',
     ];
 

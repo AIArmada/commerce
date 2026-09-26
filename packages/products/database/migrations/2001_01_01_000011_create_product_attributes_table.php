@@ -36,7 +36,6 @@ return new class extends Migration
             $table->boolean('is_searchable')->default(false);
             $table->boolean('is_comparable')->default(false);
             $table->boolean('is_visible_on_front')->default(true);
-            $table->boolean('is_visible_on_admin')->default(true);
 
             // Display
             $table->unsignedInteger('position')->default(0);

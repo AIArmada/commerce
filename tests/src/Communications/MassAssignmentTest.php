@@ -67,7 +67,7 @@ test('communications models do not mass assign morph identity columns', function
     'communication' => [Communication::class, ['subject_type', 'sender_type']],
     'attachment' => [CommunicationAttachment::class, ['attachable_type']],
     'destination' => [CommunicationDestination::class, ['recipient_type']],
-    'preference' => [CommunicationPreference::class, ['recipient_type', 'scope_type']],
+    'preference' => [CommunicationPreference::class, ['recipient_type']],
     'recipient' => [CommunicationRecipient::class, ['recipient_type']],
     'reference' => [CommunicationReference::class, ['reference_type']],
     'suppression' => [CommunicationSuppression::class, ['recipient_type', 'created_by_type']],

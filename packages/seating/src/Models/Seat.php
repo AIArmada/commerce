@@ -24,7 +24,6 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property int $row_number
  * @property int $column_number
  * @property string|null $category
- * @property int|null $price_modifier
  * @property SeatStatus $status
  * @property array|null $metadata
  */
@@ -65,7 +64,6 @@ class Seat extends Model
         'row_number',
         'column_number',
         'category',
-        'price_modifier',
         'status',
         'metadata',
     ];
@@ -80,7 +78,6 @@ class Seat extends Model
         return [
             'row_number' => 'integer',
             'column_number' => 'integer',
-            'price_modifier' => 'integer',
             'status' => SeatStatus::class,
             'metadata' => 'array',
         ];

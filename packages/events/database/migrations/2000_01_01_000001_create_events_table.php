@@ -37,7 +37,6 @@ return new class extends Migration
             $table->timestampTz('completed_at')->nullable()->index();
             $table->timestampTz('last_state_change_at')->nullable();
             $table->text('status_reason')->nullable();
-            $table->text('status_message')->nullable();
             $table->{$jsonType}('metadata')->nullable();
             $table->timestampsTz();
 

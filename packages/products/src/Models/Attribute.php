@@ -38,7 +38,6 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property bool $is_searchable
  * @property bool $is_comparable
  * @property bool $is_visible_on_front
- * @property bool $is_visible_on_admin
  * @property int $position
  * @property string|null $suffix
  * @property string|null $placeholder
@@ -87,7 +86,6 @@ class Attribute extends Model implements Auditable
         'is_searchable',
         'is_comparable',
         'is_visible_on_front',
-        'is_visible_on_admin',
         'position',
         'suffix',
         'placeholder',
@@ -106,7 +104,6 @@ class Attribute extends Model implements Auditable
             'is_searchable' => 'boolean',
             'is_comparable' => 'boolean',
             'is_visible_on_front' => 'boolean',
-            'is_visible_on_admin' => 'boolean',
             'position' => 'integer',
         ];
     }
@@ -121,7 +118,6 @@ class Attribute extends Model implements Auditable
         'is_searchable' => false,
         'is_comparable' => false,
         'is_visible_on_front' => true,
-        'is_visible_on_admin' => true,
         'position' => 0,
     ];
 

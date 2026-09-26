@@ -297,7 +297,6 @@ event_availability_blocks
 - event_occurrence_id uuid nullable
 - event_session_id uuid nullable
 
-- block_type
 - reason nullable
 - notes nullable
 
@@ -319,19 +318,6 @@ event_availability_blocks
 
 - created_at timestampTz
 - updated_at timestampTz
-```
-
-### Example `block_type`
-
-```text
-unavailable
-reserved
-maintenance
-private_booking
-blackout
-travel_time
-preparation_time
-cleanup_time
 ```
 
 ### Services
@@ -1245,7 +1231,6 @@ event_moderation_actions
 - performed_by_type nullable
 - performed_by_id nullable
 
-- performed_at timestampTz nullable
 - reversed_at timestampTz nullable
 - expired_at timestampTz nullable
 

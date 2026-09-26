@@ -61,7 +61,6 @@ use Spatie\ModelStates\HasStates;
  * @property string|null $registration_mode
  * @property bool|null $issue_passes_for_free
  * @property string|null $status_reason
- * @property string|null $status_message
  * @property array|null $metadata
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -131,7 +130,7 @@ final class EventSession extends Model implements HasMedia
         'pricing_mode', 'registration_mode', 'issue_passes_for_free',
         'published_at', 'delayed_at', 'postponed_at', 'rescheduled_at',
         'cancelled_at', 'completed_at', 'archived_at',
-        'status_reason', 'status_message',
+        'status_reason',
         'metadata',
     ];
 

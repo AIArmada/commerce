@@ -152,15 +152,15 @@ Preferences may optionally narrow to a scope:
 ```php
 use AIArmada\Communications\Models\CommunicationPreference;
 
-CommunicationPreference::query()->create([
-    'recipient_type' => $user->getMorphClass(),
-    'recipient_id' => (string) $user->getKey(),
+$preference = CommunicationPreference::query()->make([
     'channel' => 'mail',
     'category' => 'marketing',
     'scope_type' => 'event',
     'scope_key' => (string) $event->getKey(),
     // additional preference columns as needed
 ]);
+$preference->recipient()->associate($user);
+$preference->save();
 ```
 
 Leave `scope_type` and `scope_key` null for recipient-wide channel/category preferences.

@@ -40,7 +40,6 @@ describe('Attribute Model', function (): void {
                 ->and($attribute->is_searchable)->toBeFalse()
                 ->and($attribute->is_comparable)->toBeFalse()
                 ->and($attribute->is_visible_on_front)->toBeTrue()
-                ->and($attribute->is_visible_on_admin)->toBeTrue()
                 ->and($attribute->position)->toBe(0);
         });
 

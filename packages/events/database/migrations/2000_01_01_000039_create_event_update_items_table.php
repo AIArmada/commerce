@@ -18,8 +18,6 @@ return new class extends Migration
             $table->string('field_key')->index();
             $table->text('old_value')->nullable();
             $table->text('new_value')->nullable();
-            $table->{$jsonType}('old_value_json')->nullable();
-            $table->{$jsonType}('new_value_json')->nullable();
             $table->integer('sort_order')->default(0);
             $table->{$jsonType}('metadata')->nullable();
             $table->timestampsTz();
