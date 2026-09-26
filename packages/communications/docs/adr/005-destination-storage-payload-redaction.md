@@ -1,6 +1,6 @@
 # ADR 005: Sensitive Destination Storage, Payload Redaction, and Retention
 
-**Status:** Accepted
+**Status:** Accepted — Decision 2 superseded (see Corrections)
 
 **Context:** Communication records contain personally identifiable information (email addresses, phone numbers, names) and provider request/response payloads that may include tokens, message bodies, and headers. These must be protected at rest, masked in operational UIs, and safely retained or redacted per policy.
 
@@ -19,3 +19,13 @@
 8. **No soft deletes** — `PruneCommunicationDataAction` hard-deletes eligible records after legal retention review. `DeleteCommunicationAggregateAction` cascades deletion through all child records in application logic (no DB cascades).
 
 **Consequences:** Apps can store resolvable destinations separately from notifiable models. Sensitive destinations are encrypted at rest and masked in UIs. Provider payloads are redacted before persistence. Historical content snapshots remain accurate. Retention commands use explicit owner-scoped iteration and dry-run safety. All deletion is hard-delete with application-level cascade.
+
+## Corrections
+
+The original text above is preserved as written. Three details drifted after this ADR was accepted:
+
+1. **Decision 2 — encryption scheme (superseded).** This ADR specifies *AES-256-CBC using `app.key`*, which is unauthenticated. `DestinationProtectorService` now uses **Laravel authenticated encryption** (`Crypt::encryptString()`, i.e. AES-256-GCM). Ciphertext written by the old implementation **cannot be decrypted** — re-protect affected destinations after upgrading. See the Breaking changes section of `../../docs/01-overview.md`.
+2. **Decision 6 — `communications:redact` does not exist.** The package ships six commands: `communications:dispatch-due`, `communications:expire`, `communications:prune`, `communications:prune-inboxes`, `communications:reconcile`, `communications:replay-webhooks`. Payload redaction is available as the `RedactCommunicationPayloadAction` action, not as an artisan command.
+3. **Decision 7 — `viewSensitivePayload` is not referenced in code.** Masked `destination_hint` by default is accurate and enforced. The named permission is not currently checked anywhere, so treat "full destination reveal requires explicit authorization" as the intent rather than the current behaviour.
+
+Decisions 1, 3, 4, 5, and 8 remain accurate and in force. The overall intent — encrypt destinations at rest, mask them in operational UIs, redact payloads before persistence — is unchanged; only the mechanism and the two items above moved.

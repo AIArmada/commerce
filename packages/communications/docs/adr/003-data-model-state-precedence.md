@@ -1,6 +1,6 @@
 # ADR 003: Data Model, State Precedence, and Out-of-Order Provider Events
 
-**Status:** Accepted
+**Status:** Accepted — two details superseded (see Corrections)
 
 **Context:** The data model spans 15 tables covering batches, threads, communications, recipients, content, deliveries, attempts, events, templates, template versions, preferences, suppressions, attachments, references, and tracking tokens. Provider callbacks may arrive late or out of order (e.g., `delivered` before `sent`). State must not regress.
 
@@ -14,3 +14,12 @@
 6. **Aggregate status stays synchronized** — after each delivery-level transition, callers should invoke `RecalculateCommunicationStatusAction` to update the parent communication's status and dispatch `CommunicationCompleted`/`CommunicationFailed` as appropriate.
 
 **Consequences:** Provider event ordering is resilient. Timestamps remain complete regardless of arrival order. The transition table is the single source of truth for allowed state changes. Callers must remember to recalculate aggregate status after mass delivery changes.
+
+## Corrections
+
+The original text above is preserved as written. Two details drifted after this ADR was accepted:
+
+1. **Table count.** The Context states 15 tables. The package now defines **17** — `destinations` and `notification_inboxes` were added later. See `communications.database.tables` in `config/communications.php`.
+2. **Terminal delivery states.** Decision 4 lists four (`suppressed`, `failed`, `cancelled`, `expired`). `TransitionDeliveryAction::TERMINAL_STATUSES` has **five** — `unsubscribed` was added. The decision itself (no regression from a terminal state) still holds.
+
+Everything else in this ADR remains accurate and still in force.

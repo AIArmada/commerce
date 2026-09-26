@@ -4,6 +4,20 @@ Complete technical review of every package under `/packages/*`. Review-only phas
 
 > **Migration track: COMPLETED 2026-09-07.** All 11 migration findings are settled — implemented, dropped, or corrected after independent verification. The record lives in [`migration-record.md`](migration-record.md) (per-package outcomes, evidence, commits, deployment gates). Per-package audit files carry DONE verdicts with residual notes; post-track schema work is recorded in `migration-record.md` as deviations.
 
+> **warning**
+> These files are **point-in-time records**, not current documentation. The Artisan command surface
+> has since been pruned — 18 duplicate and non-load-bearing commands were removed (see
+> `OPEN-ISSUES.md` at the repo root for the full cleanup summary). Audit findings and
+> `../evidence/` files still cite commands that no longer exist, including `address:seed`,
+> `address:seed-countries`, `address:seed-states`, `address:seed-cities`,
+> `address:seed-country-references`, `address:import-areas-csv`, `commerce:seed-currencies`,
+> `commerce:seed-languages`, `commerce:seed-timezones`, `cashier-chip:webhook`,
+> `jnt:config:check`, `events:finalize-orders`, `moderation:expire-blocks`,
+> `membership:expire-invitations`, `feedback:prune-expired-invitations`,
+> `promotions:deactivate-expired`, and `vouchers:expire`. Where a command moved to a seeder,
+> see the owning package's `docs/02-installation.md`. Verify any command name against
+> `php artisan list` before acting on it here.
+
 ## Coverage
 
 - **39 audit files**: 36 package audits + [`migration-record.md`](migration-record.md) + [`code-fixes-record.md`](code-fixes-record.md) + this index.
