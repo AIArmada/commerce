@@ -66,22 +66,27 @@ class Affiliate extends Model
 }
 ```
 
-### Owner-Scoped Models
+### Owner-Scoped Models (`HasOwner` + the shared `OwnerScope`)
 
 - `Affiliate`
 - `AffiliateAttribution`
 - `AffiliateConversion`
 - `AffiliatePayout`
+- `AffiliatePayoutOperation`
 - `AffiliateProgram`
 - `AffiliateRank`
 - `AffiliateCommissionTemplate`
+- `AffiliateDailyStat`
+- `AffiliateTouchpoint`
+- `AffiliateUpline`
 
-### Derived Models (Scope via Affiliate)
+### Derived Models (Relational Scope, No Owner Columns)
 
-Some models don't have direct owner columns but are scoped through their parent affiliate:
+These models have no `owner_*` columns; they are scoped through their parent:
 
 ```php
 use AIArmada\Affiliates\Models\Concerns\ScopesByAffiliateOwner;
+// or ScopesByProgramOwner, ScopesByTicketAffiliateOwner
 
 class AffiliateFraudSignal extends Model
 {
@@ -91,23 +96,33 @@ class AffiliateFraudSignal extends Model
 }
 ```
 
-These models:
+Through `affiliate_id` (`ScopesByAffiliateOwner`):
+
 - `AffiliateFraudSignal`
 - `AffiliateBalance`
-- `AffiliateDailyStat`
 - `AffiliatePayoutMethod`
 - `AffiliatePayoutHold`
 - `AffiliateLink`
+- `AffiliateProgramMembership`
+- `AffiliateRankHistory`
+- `AffiliateTaxDocument`
+- `AffiliateSupportTicket`
+
+Through `program_id` (`ScopesByProgramOwner`):
+
+- `AffiliateProgramTier`
+- `AffiliateProgramCreative`
 - `AffiliateCommissionRule`
 - `AffiliateVolumeTier`
+- `AffiliateCommissionPromotion`
 
-Direct affiliate, attribution, conversion, payout, program, rank, template,
-daily-stat, touchpoint, and upline roots use `HasOwner` and
-the shared `OwnerScope`. Derived rows without owner columns use a relational
-`ScopesBy*` concern: affiliate-owned rows join through `affiliate_id`,
-program-owned rows through `program_id`, and support messages through their
-ticket. These concerns are relationship-boundary guards, not alternate
-implementations of `HasOwner`.
+Through the ticket (`ScopesByTicketAffiliateOwner`):
+
+- `AffiliateSupportMessage`
+
+These `ScopesBy*` concerns are relationship-boundary guards, not alternate
+implementations of `HasOwner`. Each traversal is a greppable opt-out point —
+if you remove the scope, you own re-scoping.
 
 ## Querying with Owner Scope
 
@@ -169,7 +184,10 @@ $affiliate = Affiliate::create([
 
 ## Global Records
 
-Global records (`owner_id = null`) can be shared across all tenants:
+Global records are rows with `owner_type` / `owner_id` both null. They are
+global-*only*, not "visible to everyone": ordinary owner-scoped queries skip
+them entirely, and a tenant sees them only when it opts in with
+`includeGlobal: true` (or `affiliates.owner.include_global`, default `false`).
 
 ```php
 // Create global program available to all tenants

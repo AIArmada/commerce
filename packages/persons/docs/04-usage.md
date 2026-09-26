@@ -48,7 +48,7 @@ $title = app(ReorderTitleAction::class)->create([
 - `TitleIssuer` with type government/university requires an `institution_id`.
 - `AssignTitleAction`/`AssignCredentialAction` are idempotent: re-assigning the same title/credential returns the existing assignment (`CreatePersonAction` always creates).
 - `CreatePersonAction` validates input: `name` is required (1–255 chars), `family_name`/`middle_name` cap at 100 chars, and `gender`/`status`/`slug` must be valid when present.
-- Title and credential assignments carry database unique indexes on their `(assignable_type, assignable_id, definition_id)` tuples; concurrent double-assigns resolve to the existing row instead of duplicating.
+- Title and credential assignments carry database unique indexes on their `(titleable_type, titleable_id, title_id)` and `(credentialable_type, credentialable_id, credential_id)` tuples; concurrent double-assigns resolve to the existing row instead of duplicating.
 - `Person::withFormattedName()` eager-loads the title graph behind `formatted_name`; use it in lists to avoid one query per person. The accessor itself never populates relations.
 - `ReorderTitleAction::create()/update()` renumbers the `(category_id, usage_position)` scope gaplessly (`1..N`) in a transaction with `lockForUpdate`.
 
@@ -165,10 +165,11 @@ $affiliation->roles()->create([
 ### Primary identity records
 
 `PersonName::is_primary` is exclusive within `(person_id, name_type,
-language_code)`. `Affiliation::is_primary` is exclusive within its person.
-Saving a primary record locks the parent and clears the matching siblings,
-including writes made through Filament relation managers. The database partial
-unique backstop is scheduled for the next permitted index migration.
+language_code)`. `Affiliation::is_primary` is exclusive within its affiliatable
+target. Saving a primary record locks the parent and clears the matching
+siblings, including writes made through Filament relation managers. The
+database backstops are the driver-conditional partial uniques
+`person_names_primary_unique` and `affiliations_primary_unique`.
 
 ## Linking a customer profile
 
@@ -215,7 +216,7 @@ $titleIssuer->country;
 Seed it once after migration:
 
 ```bash
-php artisan commerce:seed-languages
+php artisan db:seed --class="AIArmada\CommerceSupport\Database\Seeders\LanguageSeeder"
 ```
 
 Or from a seeder:

@@ -80,8 +80,8 @@ All resources and pages are grouped under the "Pricing" navigation group:
 ### Required
 
 - `aiarmada/pricing` - Core pricing engine
-- `filament/filament` ^5.0 - Filament admin panel
-- `filament/spatie-laravel-settings-plugin` ^5.0 - Settings management
+- `filament/filament` ^5.8.1 - Filament admin panel
+- `filament/spatie-laravel-settings-plugin` ^5.8.1 - Settings management
 
 ### Optional
 

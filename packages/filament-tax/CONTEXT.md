@@ -40,9 +40,13 @@ keywords:
 - Owner/security: OwnerUiScope in queries.
 
 ## Key surfaces
-- Resources: `TaxClassResource`, `TaxExemptionResource`, `TaxRateResource`, `TaxZoneResource`
-- Actions/Services: `Actions/DownloadTaxExemptionCertificateAction`, `Support/FilamentTaxAuthz`
-- Config `filament-tax.php`: `features`, `zones`, `classes`, `rates`, `exemptions`, `widgets`, `settings_page`, `certificates`, `disk`, `directory`
+- Resources: `TaxZoneResource`, `TaxClassResource`, `TaxRateResource`, `TaxExemptionResource`
+- Relation managers: `TaxZoneResource/RelationManagers/RatesRelationManager`
+- Pages: `Pages/ManageTaxSettings`
+- Widgets: `Widgets/TaxStatsWidget`, `Widgets/ExpiringExemptionsWidget`, `Widgets/ZoneCoverageWidget`
+- Policies: `TaxZonePolicy`, `TaxClassPolicy`, `TaxRatePolicy`, `TaxExemptionPolicy` (registered by `FilamentTaxServiceProvider`)
+- Actions/Services: `Actions/DownloadTaxExemptionCertificateAction` (`execute()`, not `run()`), `Support/FilamentTaxAuthz`
+- Config `filament-tax.php` keys: `features.{zones,classes,rates,exemptions,widgets,settings_page}`, `certificates.{disk,directory}`, `navigation.group`, `navigation.settings_group`, `resources.navigation_sort.{zones,classes,rates,exemptions}`, `pages.navigation_sort.settings`
 
 ## Docs map
 - Start: `01-overview` → `03-configuration` → `04-usage` → `99-troubleshooting`

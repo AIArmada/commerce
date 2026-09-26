@@ -65,7 +65,8 @@ The following policies gate resource access:
 | `SignalSegmentPolicy` | Signal segments |
 | `TrackedPropertyPolicy` | Tracked properties |
 
-Override any policy in your `AuthServiceProvider` to customize authorization logic.
+Override any policy by registering your own class with `Gate::policy()` in a
+service provider — `AuthServiceProvider::$policies` no longer exists in Laravel 11+.
 
 ## Extending Plugin Registration
 

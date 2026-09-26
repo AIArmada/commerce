@@ -14,16 +14,19 @@ The ticketing package configuration is located in `config/ticketing.php`.
 'database' => [
     'table_prefix' => 'ticket_',
     'tables' => [
-        'ticket_types' => 'ticket_ticket_types',
-        'ticket_type_components' => 'ticket_ticket_type_components',
-        'ticket_type_products' => 'ticket_ticket_type_products',
-        'ticket_type_seating_options' => 'ticket_ticket_type_seating_options',
+        'ticket_types' => 'ticket_types',
+        'ticket_type_components' => 'ticket_type_components',
+        'ticket_type_products' => 'ticket_type_products',
+        'ticket_type_seating_options' => 'ticket_type_seating_options',
         'passes' => 'ticket_passes',
         'pass_holders' => 'ticket_pass_holders',
         'pass_transfers' => 'ticket_pass_transfers',
     ],
 ],
 ```
+
+`table_prefix` is only applied to `passes`, `pass_holders`, and `pass_transfers`; the
+four ticket-type tables default to unprefixed names.
 
 Override any table name via environment variables:
 
@@ -224,7 +227,7 @@ $table = (new Pass)->getTable(); // Uses config value
 The migrations include optimized indexes for common queries:
 
 - `ticket_types`: `ticketable_type + ticketable_id`, `code`, sales window columns
-- `passes`: `pass_no` (unique), `holder_email`, state columns, `ticket_type_id`
+- `passes`: `pass_no` (unique), `transfer_expires_at`, state columns, `ticket_type_id`
 - `pass_transfers`: `pass_id`, `created_at`
 
 ### JSON Column Optimization

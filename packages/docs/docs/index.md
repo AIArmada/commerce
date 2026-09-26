@@ -60,7 +60,8 @@ $doc = app(DocService::class)->create(DocData::from([
 | PHP | 8.4+ |
 | Laravel | 13.0+ |
 | aiarmada/commerce-support | Required |
-| spatie/laravel-pdf | Required transitively |
+| spatie/laravel-pdf | Required |
+| spatie/browsershot | Required |
 
 ## Related Packages
 

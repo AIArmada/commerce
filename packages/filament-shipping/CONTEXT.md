@@ -41,9 +41,12 @@ keywords:
 - Owner/security: Mirrors shipping scope.
 
 ## Key surfaces
-- Resources: `ReturnAuthorizationResource`, `ShipmentResource`, `ShippingRateResource`, `ShippingZoneResource`
-- Actions/Services: `Actions/ApproveReturnAction`, `Actions/CancelShipmentAction`, `Actions/PrintLabelAction`, `Actions/RejectReturnAction`, `Actions/ShipAction`, `Actions/SyncTrackingAction`, `Support/ShippingStatsAggregator`
-- Config `filament-shipping.php`: `shipping_methods`, `standard`, `express`, `overnight`, `pickup`, `carriers`, `features`, `enable_fulfillment_queue`, `fulfillment`, `urgent_threshold_hours`
+- Resources: `ShipmentResource`, `ShippingZoneResource`, `ShippingRateResource`, `ReturnAuthorizationResource`
+- Relation managers: `ShipmentResource/RelationManagers/{EventsRelationManager,ItemsRelationManager}`, `ReturnAuthorizationResource/RelationManagers/ItemsRelationManager`, `ShippingZoneResource/RelationManagers/RatesRelationManager`
+- Pages: `Pages/ShippingDashboard`, `Pages/FulfillmentQueue`, `Pages/ManifestPage`
+- Widgets: `Widgets/ShippingDashboardWidget`, `Widgets/PendingShipmentsWidget`, `Widgets/CarrierPerformanceWidget`, `Widgets/PendingActionsWidget`
+- Actions/Support: `Actions/{ShipAction,CancelShipmentAction,PrintLabelAction,SyncTrackingAction,ApproveReturnAction,RejectReturnAction}` (all `Filament\Actions\Action` subclasses — no bulk variants), `Support/MoneyInput`, `Support/ShippingStatsAggregator`
+- Config `filament-shipping.php` keys: `shipping_methods`, `carriers` (shipped but unread), `features.enable_fulfillment_queue`, `fulfillment.urgent_threshold_hours`, `fulfillment.old_threshold_hours`, `navigation.group`, `navigation.sort`, `pages.navigation_sort.{dashboard,fulfillment_queue,manifest}`, `resources.navigation_sort.{shipments,zones,rates,returns}`
 
 ## Docs map
 - Start: `01-overview` → `03-configuration` → `04-usage` → `99-troubleshooting`

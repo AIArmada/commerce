@@ -71,20 +71,22 @@ View and filter tracking history.
 
 | Column | Description |
 |--------|-------------|
-| Order | Related order ID |
-| Tracking # | Bill code |
-| Scan Type | Event type (COLLECT, TRANSFER, etc.) |
-| Status | Normalized status |
-| Location | Scan location |
+| Order Ref | Related order reference |
+| Tracking # | J&T tracking number |
+| Status | Normalized tracking status badge (rendered from the raw scan type) |
+| Scan Time | When the scan occurred |
+| Location | Scan network name |
 | Description | Event description |
-| Timestamp | When event occurred |
+| Problem | Problem indicator |
+| City | Scan network city (hidden by default) |
+| Staff | Scanning staff name (hidden by default) |
+| Created | Record creation timestamp (hidden by default) |
 
 ### Filters
 
-- By order
-- By scan type
-- By date range
-- By location
+- **Status** - Filter by normalized tracking status
+- **Has Problem** - Show only scans flagged with a problem
+- **Delivered** - Show only scans with a delivered status
 
 ---
 
@@ -96,15 +98,16 @@ Monitor webhook activity and troubleshoot issues.
 
 | Column | Description |
 |--------|-------------|
-| Bill Code | Tracking number |
-| Order ID | Related order |
-| Processed | Processing status |
-| Exception | Error message if failed |
+| Bill Code | J&T tracking number |
+| Order ID | Related order reference |
+| Processed | Processing status badge |
+| Exception | Error message when processing failed |
+| Processed At | When the webhook was processed |
 | Created | When received |
 
 ### Features
 
-- View raw webhook payload
+- Open a webhook log to see its raw JSON payload (requires `filament-jnt.features.show_raw_payloads`)
 - Filter by processing status
 - Identify failed webhooks
 - Debug webhook issues
@@ -150,9 +153,9 @@ Manually sync tracking information:
 
 ### Print AWB Action
 
-Print the Air Waybill (shipping label) for an order:
+Print the Air Waybill (shipping label) for an order from the order view page:
 
-1. Click **Print AWB** button on any order row
+1. Open the order and click **Print AWB**
 2. Wait for PDF generation
 3. Label opens in a new browser tab
 
@@ -161,27 +164,9 @@ Print the Air Waybill (shipping label) for an order:
 - Opens PDF in new browser window
 - Shows error notification if generation fails
 
-**Visibility**: Available on all orders in the table view.
+**Visibility**: Available on any order that already has an `order_id`.
 
-### Bulk Print AWBs Action
-
-Print multiple shipping labels at once:
-
-1. Select orders using checkboxes
-2. Click **Bulk actions** dropdown
-3. Select **Print AWBs**
-4. Confirm the action
-5. Wait for all labels to generate
-6. Success notification shows download link
-
-**Features**:
-- Generates labels for all selected orders
-- Caches labels temporarily with signed URLs
-- Shows progress during generation
-- Reports success/failure count
-- Opens combined PDF in new tab
-
-**Visibility**: Available when one or more orders are selected.
+There is no bulk print action. `PrintAwbTableAction` prints one label per order.
 
 ---
 
@@ -202,8 +187,8 @@ The JntStatsWidget displays shipping statistics on your dashboard.
 
 ### Features
 
-- **Caching**: Stats cached for 30 seconds
-- **Owner-scoped**: Filtered by current tenant
+- **Caching**: Stats cached for 30 seconds (hard limit 90)
+- **Owner-scoped**: Filtered by the owner resolved from `commerce-support`
 - **Responsive**: 6-column layout
 - **Icons**: Heroicons for visual clarity
 
@@ -224,132 +209,71 @@ The widget appears on the dashboard by default. To customize placement:
 
 ## Customization
 
-### Extending Resources
+`JntOrderResource`, `JntTrackingEventResource`, `JntWebhookLogResource`, and
+`JntStatsWidget` are all declared `final`, so they cannot be subclassed. Write your own
+resource and widget classes instead, and register them on the panel.
 
-Create custom resources by extending the base:
+### Custom Resource
+
+`BaseJntResource` is the abstract base and only requires a `navigationSortKey()`:
 
 ```php
-use AIArmada\FilamentJnt\Resources\JntOrderResource;
+use AIArmada\FilamentJnt\Resources\BaseJntResource;
 
-class CustomOrderResource extends JntOrderResource
+class CustomOrderResource extends BaseJntResource
 {
-    // Override model if using custom model
-    protected static ?string $model = CustomJntOrder::class;
-    
-    // Add custom columns
+    protected static ?string $model = \App\Models\CustomJntOrder::class;
+
+    protected static function navigationSortKey(): string
+    {
+        return 'orders';
+    }
+
     public static function table(Table $table): Table
     {
-        return parent::table($table)
+        return $table
             ->columns([
-                ...parent::getTableColumns(),
-                TextColumn::make('custom_field'),
+                // ... your own columns
             ]);
     }
 }
 ```
 
-### Custom Actions
-
-Add your own actions:
+Register it on the panel and keep the J&T features you want:
 
 ```php
-use Filament\Actions\Action;
+use AIArmada\FilamentJnt\FilamentJntPlugin;
 
-class CustomResource extends JntOrderResource
-{
-    public static function getActions(): array
-    {
-        return [
-            ...parent::getActions(),
-            Action::make('customAction')
-                ->label('Custom')
-                ->action(fn ($record) => /* ... */),
-        ];
-    }
-}
+$panel->plugins([
+    FilamentJntPlugin::make()->webhookLogs(false),
+]);
+
+$panel->resources([
+    \App\Filament\Resources\CustomOrderResource::class,
+]);
 ```
 
 ### Custom Widget
 
-Create a custom stats widget:
+Extend Filament's own widget base and pull the shared aggregator:
 
 ```php
-use AIArmada\FilamentJnt\Widgets\JntStatsWidget;
+use AIArmada\FilamentJnt\Support\JntStatsAggregator;
+use Filament\Widgets\StatsOverviewWidget;
+use Filament\Widgets\StatsOverviewWidget\Stat;
 
-class CustomStatsWidget extends JntStatsWidget
+class CustomStatsWidget extends StatsOverviewWidget
 {
     protected function getStats(): array
     {
-        $stats = parent::getStats();
-        
-        // Add custom stat
-        $stats[] = Stat::make('Custom', $this->customCount())
-            ->description('Custom metric')
-            ->color('info');
-        
-        return $stats;
+        $stats = JntStatsAggregator::calculateOrderStats();
+
+        return [
+            Stat::make('Total Orders', $stats['total']),
+            Stat::make('Delivered', $stats['delivered']),
+        ];
     }
 }
-```
-
----
-
-## Testing
-
-### Test Resources
-
-```php
-use AIArmada\FilamentJnt\Resources\JntOrderResource;
-use AIArmada\Jnt\Models\JntOrder;
-
-it('can list orders', function () {
-    $orders = JntOrder::factory()->count(3)->create();
-    
-    livewire(ListJntOrders::class)
-        ->assertCanSeeTableRecords($orders);
-});
-
-it('can view order details', function () {
-    $order = JntOrder::factory()->create();
-    
-    livewire(ViewJntOrder::class, ['record' => $order->getKey()])
-        ->assertSuccessful();
-});
-```
-
-### Test Actions
-
-```php
-use AIArmada\FilamentJnt\Actions\CancelOrderAction;
-
-it('can cancel order', function () {
-    $order = JntOrder::factory()->create(['status' => 'pending']);
-    
-    livewire(ViewJntOrder::class, ['record' => $order->getKey()])
-        ->callAction('cancelOrder', [
-            'reason' => 'CUSTOMER_CHANGED_MIND',
-        ])
-        ->assertHasNoActionErrors();
-    
-    expect($order->fresh()->status)->toBe('cancelled');
-});
-```
-
-### Test Widget
-
-```php
-use AIArmada\FilamentJnt\Widgets\JntStatsWidget;
-
-it('displays order stats', function () {
-    JntOrder::factory()->count(5)->create();
-    JntOrder::factory()->delivered()->count(3)->create();
-    
-    livewire(JntStatsWidget::class)
-        ->assertSee('Total Orders')
-        ->assertSee('5')
-        ->assertSee('Delivered')
-        ->assertSee('3');
-});
 ```
 
 ---
@@ -360,11 +284,11 @@ it('displays order stats', function () {
 
 1. **Enable polling appropriately** - Use longer intervals for low-traffic panels
 2. **Cache configuration** - Run `php artisan config:cache` in production
-3. **Widget caching** - Stats are cached for 30 seconds automatically
+3. **Widget caching** - Stats are cached for 30 seconds (hard limit 90) automatically
 
 ### Security
 
-1. **Owner scoping** - Enable for multi-tenant applications
+1. **Owner scoping** - Enable for multi-tenant applications; scoping comes from `commerce-support`, not Filament tenancy
 2. **Action authorization** - Actions check authentication
 3. **ID validation** - Actions validate record ownership
 

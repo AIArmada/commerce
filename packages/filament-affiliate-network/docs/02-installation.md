@@ -45,7 +45,7 @@ public function panel(Panel $panel): Panel
 
 ## Publish Views (Optional)
 
-To customize the marketplace or dashboard views:
+To customize the dashboard view:
 
 ```bash
 php artisan vendor:publish --tag=filament-affiliate-network-views
@@ -71,7 +71,6 @@ The plugin automatically registers:
 
 ### Pages
 - `MerchantDashboardPage` - Merchant analytics
-- `AffiliateMarketplacePage` - Offer discovery
 
 ### Widgets
 - `NetworkStatsWidget` - Network overview stats
@@ -96,4 +95,4 @@ To change the group:
 1. Configure [settings](03-configuration.md)
 2. Create merchant sites
 3. Publish offers
-4. Let affiliates browse the marketplace
+4. Review affiliate applications

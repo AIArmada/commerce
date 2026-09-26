@@ -10,16 +10,19 @@ The package dispatches events for key actions and supports webhook delivery to e
 
 ### AffiliateAttributed
 
-Dispatched when a cart or session is attributed to an affiliate.
+Dispatched when a cart or session is attributed to an affiliate. It carries
+spatie/laravel-data DTOs, not models.
 
 ```php
 use AIArmada\Affiliates\Events\AffiliateAttributed;
+use AIArmada\Affiliates\Data\AffiliateData;
+use AIArmada\Affiliates\Data\AffiliateAttributionData;
 
 class AffiliateAttributed
 {
     public function __construct(
-        public readonly Affiliate $affiliate,
-        public readonly AffiliateAttribution $attribution,
+        public readonly AffiliateData $affiliate,
+        public readonly AffiliateAttributionData $attribution,
     ) {}
 }
 ```
@@ -48,16 +51,17 @@ class SendAttributionNotification
 
 ### AffiliateConversionRecorded
 
-Dispatched when a conversion is recorded.
+Dispatched when a conversion is recorded. It carries only the conversion DTO —
+there is no `$affiliate` property.
 
 ```php
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
+use AIArmada\Affiliates\Data\AffiliateConversionData;
 
 class AffiliateConversionRecorded
 {
     public function __construct(
-        public readonly Affiliate $affiliate,
-        public readonly AffiliateConversion $conversion,
+        public readonly AffiliateConversionData $conversion
     ) {}
 }
 ```
@@ -93,22 +97,25 @@ class SendConversionToAnalytics
 
 ### Other Events
 
+These are the full set of events in `AIArmada\Affiliates\Events`:
+
 ```php
-// Affiliate status changed
-AffiliateStatusChanged::class
-
-// Payout created
-AffiliatePayoutCreated::class
-
-// Payout completed
-AffiliatePayoutCompleted::class
-
-// Fraud threshold reached
-FraudThresholdReached::class
-
-// Rank upgraded
-AffiliateRankUpgraded::class
+AffiliateActivated::class          // Affiliate $affiliate
+AffiliateCreated::class             // Affiliate $affiliate
+AffiliateProgramJoined::class       // Affiliate, AffiliateProgram, AffiliateProgramMembership
+AffiliateProgramLeft::class         // Affiliate, AffiliateProgram
+AffiliateTierUpgraded::class        // Affiliate, AffiliateProgram, ?fromTier, toTier
+AffiliateRankChanged::class         // Affiliate, ?fromRank, toRank, RankQualificationReason
+DailyStatsAggregated::class         // CarbonImmutable $date, int $affiliateCount
+FraudSignalDetected::class          // AffiliateFraudSignal $signal
 ```
+
+> **warning:**
+> There are no `AffiliateStatusChanged`, `AffiliatePayoutCreated`,
+> `AffiliatePayoutCompleted`, `FraudThresholdReached`, or
+> `AffiliateRankUpgraded` events. Payout state changes are model transitions on
+> `AffiliatePayout` (see `UpdatePayoutStatus`), and rank movement surfaces as
+> `AffiliateRankChanged`.
 
 ## Registering Listeners
 
@@ -152,16 +159,10 @@ The package can dispatch webhooks to external endpoints for real-time integratio
 'webhooks' => [
     'signature_secret' => env('AFFILIATES_WEBHOOK_SIGNATURE_SECRET'),
     'endpoints' => [
-        'attribution' => [
-            'https://your-crm.com/webhooks/affiliate-attribution',
-        ],
-        'conversion' => [
-            'https://your-crm.com/webhooks/affiliate-conversion',
-            'https://slack-webhook.com/...',
-        ],
-        'payout' => [
-            'https://accounting-system.com/webhooks/payout',
-        ],
+        // Comma-separated string per event type, exploded into an array.
+        'attribution' => explode(',', (string) env('AFFILIATES_WEBHOOKS_ATTRIBUTION', '')),
+        'conversion' => explode(',', (string) env('AFFILIATES_WEBHOOKS_CONVERSION', '')),
+        'payout' => explode(',', (string) env('AFFILIATES_WEBHOOKS_PAYOUT', '')),
     ],
     'headers' => [
         'X-Affiliates-Signature' => env('AFFILIATES_WEBHOOKS_SIGNATURE'),
@@ -217,25 +218,27 @@ The package can dispatch webhooks to external endpoints for real-time integratio
 
 ### Using WebhookDispatcher
 
+`WebhookDispatcher` has a single public method. Endpoints come from
+`affiliates.webhooks.endpoints.{type}`; there is no per-call endpoint argument
+and no `dispatchAttribution` / `dispatchConversion` / `dispatchPayout`
+shorthand.
+
 ```php
 use AIArmada\Affiliates\Support\Webhooks\WebhookDispatcher;
 
 $dispatcher = app(WebhookDispatcher::class);
 
-// Dispatch attribution webhook
-$dispatcher->dispatchAttribution($attribution);
-
-// Dispatch conversion webhook
-$dispatcher->dispatchConversion($conversion);
-
-// Dispatch payout webhook
-$dispatcher->dispatchPayout($payout);
-
-// Custom webhook
-$dispatcher->dispatch('custom-event', [
-    'data' => $customData,
-], ['https://endpoint.com/webhook']);
+// type must match a key under affiliates.webhooks.endpoints
+$dispatcher->dispatch('attribution', $payload);
+$dispatcher->dispatch('conversion', $payload);
+$dispatcher->dispatch('payout', $payload);
+$dispatcher->dispatch('custom-event', $payload);
 ```
+
+Dispatch is a no-op unless `affiliates.events.dispatch_webhooks` is `true` and
+`affiliates.webhooks.signature_secret` is a non-empty string. Each endpoint
+gets a durable `AffiliateWebhookDelivery` row and a queued
+`DispatchAffiliateWebhook` job.
 
 ### Webhook Signatures
 
@@ -284,8 +287,8 @@ class SendConversionToAnalytics implements ShouldQueue
         // Send to Google Analytics
         Analytics::trackEvent('affiliate_conversion', [
             'affiliate_code' => $conversion->affiliate_code,
-            'order_total' => $conversion->total_minor / 100,
-            'commission' => $conversion->commission_minor / 100,
+            'value_minor' => $conversion->value_minor,
+            'commission_minor' => $conversion->commission_minor,
         ]);
     }
 }

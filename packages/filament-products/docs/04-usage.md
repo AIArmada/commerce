@@ -102,10 +102,14 @@ The Options relation manager follows the same capability rule. If `supports_vari
 
 ### Bulk Actions
 
-Available bulk actions on the product table:
+Available bulk actions on the product table (see [Bulk Edit](#bulk-edit)):
 
-- **Delete Selected**: Delete multiple products
-- **Bulk Edit**: Opens bulk edit modal (if enabled)
+- **Delete Selected**
+- **Activate**
+- **Set to Draft**
+- **Update Price**
+- **Update Visibility**
+- **Assign Categories**
 
 ---
 
@@ -124,10 +128,11 @@ Categories display in a hierarchical tree structure showing parent-child relatio
 
 ### Managing Products
 
-Use the Products relation manager to:
-- View products in category
-- Attach/detach products
-- Quick-create products
+`CategoryResource::getRelations()` returns `[]` — there is no products relation
+manager. The category table exposes a products count column, a parent filter,
+and an **Add Child** row action. Assign products to a category from the product
+side (Categories tab on the product form, or the **Assign Categories** bulk
+action).
 
 ---
 
@@ -136,7 +141,8 @@ Use the Products relation manager to:
 ### Manual Collections
 
 1. Create collection with type "Manual"
-2. Use Products relation manager to add products
+2. Add products from the collection form (owner-scoped `products` select,
+   validated in `CreateCollection` / `EditCollection`)
 
 ### Automatic Collections
 
@@ -187,29 +193,45 @@ Combine groups into sets for product types:
 
 ---
 
-## Import/Export Page
+## Import / Export
+
+There is no import/export page. Import, export, and template download are
+header actions on the product list table (`ProductsTable::configure()`):
 
 ### Exporting Products
 
-1. Navigate to "Import/Export Products"
-2. Select export format (CSV)
-3. Choose fields to export
-4. Click "Export"
+1. Open the product list (`/admin/products`)
+2. Click **Export**
+3. Tick the fields to export (name, SKU, slug, description, short description,
+   currency, price, compare price, cost, weight, status, type, visibility,
+   is_featured, is_taxable, requires_shipping, tax_class)
+4. Optionally filter by status
+5. Click **Export** to stream the CSV
 
 ### Importing Products
 
-1. Navigate to "Import/Export Products"
-2. Upload CSV file
-3. Map columns to fields
-4. Preview and confirm
-5. Click "Import"
+1. Open the product list
+2. Click **Import**
+3. Upload a CSV file (max size from `filament-products.import.max_file_kb`)
+4. Toggle **Update Existing Products** to match rows by SKU
+5. Toggle **Skip Errors** to continue past bad rows
+6. Click **Import**
 
 **CSV Format Requirements**:
 - UTF-8 encoding
 - Header row required
 - Prices in cents
 
-**Import guards**: files larger than `import.max_rows` are rejected before any row is written. New rows require a name and a numeric price; invalid status, type, visibility, or currency cells are reported as row errors instead of silently defaulting. Updates match by SKU and leave blank cells unchanged. With "Skip Errors" off, the whole import runs in one transaction and rolls back on the first bad row. Exports stream row by row, so large catalogs do not exhaust memory.
+**Import guards**: files with more rows than `filament-products.import.max_rows`
+are rejected before any row is written. New rows require a name and a numeric
+price; invalid status, type, visibility, or currency cells are reported as row
+errors instead of silently defaulting. Updates match by SKU and leave blank
+cells unchanged. With "Skip Errors" off, the whole import runs in one
+transaction and rolls back on the first bad row. Exports stream row by row, so
+large catalogs do not exhaust memory.
+
+A **Download CSV Template** header action emits a starter CSV with the expected
+header row.
 
 ---
 
@@ -230,25 +252,26 @@ Each prefix supports `viewAny`, `view`, `create`, `update`, and `delete`. Bulk a
 
 ---
 
-## Bulk Edit Page
+## Bulk Edit
 
-### Using Bulk Edit
+There is no bulk edit page. Bulk updates are table bulk actions on the product
+list, available after selecting rows.
 
-1. Navigate to "Bulk Edit Products"
-2. Filter products to edit
-3. Select products
-4. Choose field to update
-5. Enter new value
-6. Click "Apply"
+### Using Bulk Actions
 
-### Editable Fields
+1. Open the product list (`/admin/products`)
+2. Select the products to edit
+3. Choose a bulk action
+4. Fill in any required values and confirm
 
-- Status
-- Visibility
-- Price
-- Categories
-- Is Featured
-- Is Taxable
+### Available Bulk Actions
+
+- **Delete Selected**
+- **Activate** — sets `status` to Active
+- **Set to Draft** — sets `status` to Draft
+- **Update Price** — set, increase/decrease by percentage, or increase by amount
+- **Update Visibility**
+- **Assign Categories** — owner-scoped category assignment
 
 ---
 
@@ -277,8 +300,8 @@ public function panel(Panel $panel): Panel
 |--------|-------------|
 | ProductStatsWidget | Total products, active count, draft count |
 | ProductTypeDistributionWidget | Products by type distribution |
-| CategoryDistributionWidget | Categories with product counts |
-| RecentProductsWidget | Latest created products |
+| CategoryDistributionChart | Categories with product counts |
+| TopSellingProductsWidget | Best-selling products by quantity |
 
 ---
 
@@ -299,13 +322,14 @@ public static function getEloquentQuery(): Builder
 
 ### Validating Foreign IDs
 
-The `OwnerScope` helper validates submitted IDs:
+`AIArmada\CommerceSupport\Support\Filament\OwnerScopedIds::ensureAllowed()`
+validates submitted IDs:
 
 ```php
 // In CreateProduct page
 protected function mutateFormDataBeforeCreate(array $data): array
 {
-    $data['categories'] = OwnerScope::ensureAllowed(
+    $data['categories'] = OwnerScopedIds::ensureAllowed(
         'categories',
         Category::class,
         $data['categories'] ?? null

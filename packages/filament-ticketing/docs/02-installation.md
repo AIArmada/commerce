@@ -8,7 +8,7 @@ title: Installation
 
 - PHP 8.4+
 - Laravel 13+
-- Filament 5.6+
+- Filament 5.8+
 - `aiarmada/ticketing`
 - `aiarmada/commerce-support`
 
@@ -77,7 +77,7 @@ Or restrict to specific types:
 ## Publish Config
 
 ```bash
-php artisan vendor:publish --provider="AIArmada\FilamentTicketing\FilamentTicketingServiceProvider" --tag="filament-ticketing-config"
+php artisan vendor:publish --tag=filament-ticketing-config
 ```
 
 This creates the Filament adapter configuration. Ticketable types are configured

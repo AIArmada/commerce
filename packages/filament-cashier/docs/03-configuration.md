@@ -14,93 +14,82 @@ Publish the configuration:
 php artisan vendor:publish --tag=filament-cashier-config
 ```
 
-This creates `config/filament-cashier.php`:
+This creates `config/filament-cashier.php`. Its top-level sections are:
 
 ```php
-<?php
+// config/filament-cashier.php (fragment — merge into the published file)
+'navigation' => [
+    'group' => 'Billing',
+    'sort' => 50,
+],
 
-return [
-    /*
-    |--------------------------------------------------------------------------
-    | Navigation
-    |--------------------------------------------------------------------------
-    */
-    'navigation' => [
-        'group' => 'Billing',
-        'sort' => 50,
+// Tables
+'tables' => [
+    'polling_interval' => '45s',
+    'date_format' => 'M d, Y',
+],
+
+// Features
+'features' => [
+    'dashboard' => true,
+    'subscriptions' => true,
+    'invoices' => true,
+    'gateway_management' => false,
+    'customer_portal' => false,
+],
+
+// Resources
+'resources' => [
+    'navigation_sort' => [
+        'subscriptions' => 10,
+        'invoices' => 20,
     ],
+],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Tables
-    |--------------------------------------------------------------------------
-    */
-    'tables' => [
-        'polling_interval' => '45s',
-        'date_format' => 'M d, Y',
+// Pages
+'pages' => [
+    'navigation_sort' => [
+        'billing_dashboard' => 0,
+        'gateway_management' => 50,
+        'gateway_setup' => 100,
     ],
+],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Features
-    |--------------------------------------------------------------------------
-    */
+// Currency Conversion
+'currency' => [
+    'base' => 'MYR',
+    'display_converted' => false,
+    'conversion_rates' => [
+        'MYR' => 4.70,
+        'USD' => 1.00,
+    ],
+],
+
+// Customer Portal (Billing Panel)
+'billing_portal' => [
+    'panel_id' => 'billing',
+    'path' => 'billing',
+    'brand_name' => 'Billing Portal',
+    'primary_color' => '#6366f1',
+    'auth_guard' => 'web',
+    'login_enabled' => true,
+    'navigation_sort' => [
+        'overview' => 0,
+        'subscriptions' => 1,
+        'payment_methods' => 2,
+        'invoices' => 3,
+    ],
     'features' => [
-        'dashboard' => true,
         'subscriptions' => true,
-        'invoices' => true,
-        'gateway_management' => false,
-        'customer_portal' => false,
     ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Resources
-    |--------------------------------------------------------------------------
-    */
-    'resources' => [
-        'navigation_sort' => [
-            'subscriptions' => 10,
-            'invoices' => 20,
-        ],
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Currency Conversion
-    |--------------------------------------------------------------------------
-    */
-    'currency' => [
-        'base' => 'USD',
-        'display_converted' => false,
-        'conversion_rates' => [
-            'MYR' => 4.70,
-            'USD' => 1.00,
-        ],
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Customer Portal (Billing Panel)
-    |--------------------------------------------------------------------------
-    */
-    'billing_portal' => [
-        'enabled' => false,
-        'panel_id' => 'billing',
-        'path' => 'billing',
-        'brand_name' => 'Billing Portal',
-        'primary_color' => '#6366f1',
-        'auth_guard' => 'web',
-        'login_enabled' => true,
-        'features' => [
-            'subscriptions' => true,
-            'payment_methods' => true,
-            'invoices' => true,
-            'gateway_switching' => false,
-        ],
-    ],
-];
+],
 ```
+
+> **info**
+> `billing_portal` has no `enabled` flag. The portal only exists once
+> `BillingPanelProvider` is registered. `features.subscriptions` is the only
+> `features.*` key the code reads (it gates the "new subscription" header
+> action on `ManageSubscriptions`).
 
 ## Navigation Configuration
 
@@ -204,7 +193,6 @@ Configure the customer-facing billing portal:
 
 ```php
 'billing_portal' => [
-    'enabled' => true,                    // Enable the portal
     'panel_id' => 'billing',              // Filament panel ID
     'path' => 'billing',                  // URL path (/billing)
     'brand_name' => 'My App Billing',     // Brand name
@@ -212,10 +200,7 @@ Configure the customer-facing billing portal:
     'auth_guard' => 'web',                // Auth guard to use
     'login_enabled' => true,              // Register the panel login route
     'features' => [
-        'subscriptions' => true,          // Show subscriptions
-        'payment_methods' => true,        // Show payment methods
-        'invoices' => true,               // Show invoices
-        'gateway_switching' => false,     // Allow gateway switching
+        'subscriptions' => true,          // Show the "new subscription" header action
     ],
 ],
 ```
@@ -269,13 +254,13 @@ Both policies ensure users can only manage their own resources.
 
 ## Multitenancy
 
-For multi-tenant applications, the package uses `CashierOwnerScope` to enforce tenant boundaries.
+For multi-tenant applications, the package uses `AIArmada\Cashier\Support\OwnerScopedQuery` to enforce tenant boundaries.
 
 If your billable model supports `scopeForOwner()`, all queries will be automatically scoped to the current owner context.
 
 ```php
 // Your User model
-public function scopeForOwner(Builder $query, Model $owner): Builder
+public function scopeForOwner(Builder $query, Model $owner, bool $includeGlobal = false): Builder
 {
     return $query->where('team_id', $owner->getKey());
 }

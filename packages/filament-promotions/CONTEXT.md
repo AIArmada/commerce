@@ -39,9 +39,11 @@ keywords:
 - Owner/security: Filament adapter.
 
 ## Key surfaces
-- Resources: `PromotionResource`
-- Actions/Services: `Actions/IssuePromotionVouchersAction`, `Actions/IssuePromotionVouchersFromListAction`
-- Config `filament-promotions.php`: `navigation`, `group`, `resources`, `navigation_sort`, `promotions`
+- Resources: `PromotionResource` (declared `final` — not subclassable)
+- Relation managers: `PromotionResource/RelationManagers/IssuedVouchersRelationManager`
+- Widgets: `Widgets/PromotionStatsWidget` (panel-level), `Widgets/TopPromotionsUsageChart` (`ListPromotions::getHeaderWidgets()`)
+- Actions/Support: `Actions/IssuePromotionVouchersAction`, `Actions/IssuePromotionVouchersFromListAction`, `Support/CachedPromotionInsights`
+- Config `filament-promotions.php` keys (navigation only): `navigation.group`, `resources.navigation_sort.promotions` — no `tables` or `features` key ships or is read
 
 ## Docs map
 - Start: `01-overview` → `03-configuration` → `04-usage` → `99-troubleshooting`

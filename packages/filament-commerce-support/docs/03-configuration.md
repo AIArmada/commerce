@@ -20,6 +20,11 @@ return [
             'timezones' => 'heroicon-o-globe-alt',
         ],
     ],
+    'exchange_rates' => [
+        'enabled' => env('FILAMENT_COMMERCE_EXCHANGE_RATES_ENABLED', true),
+        'permission' => 'manage-exchange-rates',
+        'sort' => 101,
+    ],
     'resources' => [
         'currencies' => ['enabled' => true, 'read_only' => true],
         'languages' => ['enabled' => true, 'read_only' => true],
@@ -32,11 +37,23 @@ return [
 
 Set to `false` to disable the navigation override system and omit the settings page from the panel.
 
+> **warning**
+The plugin registers the `currencies`, `languages`, and `timezones` reference-data
+resources inside the same `navigation.enabled` branch. Turning it off removes
+those resources from the panel too, not just the settings page.
+:::
+
+### `exchange_rates.*`
+
+- `exchange_rates.enabled` — register the **Settings → Exchange Rates** page.
+- `exchange_rates.permission` — Gate ability required to access the page. Default `manage-exchange-rates`.
+- `exchange_rates.sort` — navigation order inside `navigation.settings_group`.
+
 ### Access and placement
 
 - `navigation.group` controls the reference-data resources navigation group.
 - `navigation.settings_group` controls the settings page navigation group.
-- `navigation.sort` controls its navigation order.
+- `navigation.sort` controls the navigation page's navigation order.
 - `navigation.permission` is the Gate ability required to access the page. The default is `manage-commerce-navigation`.
 - `navigation.icons.*` override the reference-data resource icons.
 

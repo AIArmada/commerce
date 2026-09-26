@@ -54,7 +54,7 @@ public function panel(Panel $panel): Panel
 |-------------|---------|
 | PHP | 8.4+ |
 | Laravel | 13.0+ |
-| Filament | 5.0+ |
+| Filament | 5.8+ |
 | aiarmada/docs | Required |
 | aiarmada/commerce-support | Required |
 

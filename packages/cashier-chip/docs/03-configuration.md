@@ -22,8 +22,10 @@ These keys control package-owned schema naming:
 | Key | Purpose |
 | --- | --- |
 | `database.table_prefix` | Prefix used for the package-owned billing tables |
+| `database.json_column_type` | JSON column type for package JSON columns (default `jsonb`) |
 | `database.tables.subscriptions` | Subscription table name |
 | `database.tables.subscription_items` | Subscription items table name |
+| `database.tables.payment_methods` | Stored payment method table name |
 | `database.tables.renewal_attempts` | Renewal attempts table name |
 
 ## Defaults
@@ -51,30 +53,38 @@ owner context as the subscription. The package migrations add the owner columns 
 legacy attempts from their parent subscriptions.
 
 Billable customer models (`User`, `Team`) usually carry no owner tuple, so customer lists
-cannot always use owner-column constraints. The default customer resolver proves
-ownership via the model's own owner tuple when it defines one, self-identity
-(owner IS the customer), an owned CHIP customer link, or an owned subscription,
-and fails closed with no rows when none apply. Explicit global context sees
-global-only rows on tuple models and all rows on billables without an owner
-tuple. Point `customer_resolver` at a custom
-`AIArmada\CashierChip\Contracts\CustomerOwnerResolverInterface` implementation to map
-customers to owners differently:
+cannot always use owner-column constraints. The built-in
+`AIArmada\CashierChip\Support\DefaultCustomerOwnerResolver` proves ownership via the model's own
+owner tuple when it defines one, self-identity (owner IS the customer), an owned CHIP customer
+link, or an owned subscription, and fails closed with no rows when none apply. Explicit global
+context sees global-only rows on tuple models and all rows on billables without an owner tuple.
 
-```php
-use App\Billing\TeamCustomerResolver;
-
-'features' => [
-    'owner' => [
-        'customer_resolver' => TeamCustomerResolver::class,
-    ],
-],
-```
+> **warning**: `features.owner.customer_resolver` is present in the shipped config but is not
+> consulted by the code. The built-in `DefaultCustomerOwnerResolver` is always used. To change
+> customer-to-owner mapping, bind `AIArmada\CashierChip\Contracts\CustomerOwnerResolverInterface`
+> in a service provider rather than setting this key.
 
 ## Rate limits
 
 | Key | Purpose | Default |
 | --- | --- | --- |
 | `rate_limits.charges_per_minute` | Maximum charge attempts accepted per minute by package throttles | `30` |
+
+## Billing guardrails
+
+| Key | Purpose | Default |
+| --- | --- | --- |
+| `billing.max_amount_minor` | Upper bound for a single package charge, in minor units | `100000000` |
+
+## Renewals
+
+The renewal command reads two keys that the shipped config does not define. They fall back to the
+values below, so define them in your published config if you need different behaviour.
+
+| Key | Purpose | Fallback |
+| --- | --- | --- |
+| `renewals.chunk_size` | `chunkById` size when scanning due subscriptions | `100` |
+| `renewals.lease_minutes` | Minutes a claimed renewal attempt stays leased | `30` |
 
 ## Integrations
 
@@ -106,7 +116,8 @@ Signature verification is owned by the `chip` package: use `chip.webhooks.verify
 | `invoices.paper` | Paper size for rendered invoices |
 | `invoices.vendor_address` | Vendor address rendered on invoices |
 
-The package currently does not expose additional notification-specific settings.
+> **warning**: `invoices.vendor_address` is defined in the shipped config but never read by the
+> package. Set the vendor address on the invoice record or renderer instead.
 
 ## Example environment values
 

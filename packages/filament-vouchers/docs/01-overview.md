@@ -62,22 +62,52 @@ Filament Vouchers provides a complete admin interface for:
 
 ```
 filament-vouchers/
-├── Resources/
-│   ├── VoucherResource        # Main voucher CRUD
-│   ├── VoucherUsageResource   # Usage tracking
-│   └── VoucherWalletResource  # Saved vouchers
-├── Pages/
-│   ├── StackingConfigurationPage   # Stacking rule config
-│   └── TargetingConfigurationPage  # Targeting presets
-├── Widgets/
-│   ├── VoucherStatsWidget          # Overview stats
-│   ├── RedemptionTrendChart        # Usage trends
-│   └── (Cart integration widgets)
-└── Actions/
-    ├── ActivateVoucherAction
-    ├── PauseVoucherAction
-    └── BulkGenerateVouchersAction
+├── src/
+│   ├── Actions/                    # Filament actions
+│   │   ├── ActivateVoucherAction.php
+│   │   ├── AddToMyWalletAction.php
+│   │   ├── ApplyVoucherToCartAction.php
+│   │   ├── BulkGenerateVouchersAction.php
+│   │   ├── ManualRedeemVoucherAction.php
+│   │   └── PauseVoucherAction.php
+│   ├── Exports/
+│   │   └── VoucherUsageExporter.php
+│   ├── Extensions/
+│   │   └── CartVoucherActions.php
+│   ├── Integrations/
+│   │   └── FilamentCartBridge.php
+│   ├── Pages/
+│   │   ├── StackingConfigurationPage.php
+│   │   └── TargetingConfigurationPage.php
+│   ├── Resources/
+│   │   ├── VoucherResource.php
+│   │   ├── VoucherUsageResource.php
+│   │   ├── VoucherWalletResource.php
+│   │   └── VoucherResource/       # Pages/Schemas/Tables/RelationManagers
+│   ├── Support/
+│   │   ├── ConditionTargetDisplay.php
+│   │   ├── ConditionTargetFormData.php
+│   │   ├── ConditionTargetPreset.php
+│   │   ├── MoneyHelper.php
+│   │   ├── OwnerTypeRegistry.php
+│   │   └── VoucherStatsAggregator.php
+│   ├── Widgets/
+│   │   ├── VoucherStatsWidget.php
+│   │   ├── RedemptionTrendChart.php
+│   │   ├── AppliedVouchersWidget.php
+│   │   ├── QuickApplyVoucherWidget.php
+│   │   ├── VoucherCartStatsWidget.php
+│   │   ├── VoucherSuggestionsWidget.php
+│   │   ├── VoucherUsageTimelineWidget.php
+│   │   └── VoucherWalletStatsWidget.php
+│   ├── FilamentVouchersPlugin.php
+│   └── FilamentVouchersServiceProvider.php
 ```
+
+`FilamentVouchersPlugin` registers `VoucherStatsWidget` and
+`RedemptionTrendChart` panel-wide. The remaining widgets are cart-integration
+widgets registered through `Integrations/FilamentCartBridge` when
+`aiarmada/filament-cart` is installed.
 
 ## Quick Start
 

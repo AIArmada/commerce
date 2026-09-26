@@ -112,7 +112,7 @@ return [
         'group' => 'Vouchers & Discounts',
     ],
     'default_currency' => 'MYR',
-    'polling_interval' => 30,
+    'polling_interval' => '30s',
 
     'resources' => [
         'navigation_sort' => [

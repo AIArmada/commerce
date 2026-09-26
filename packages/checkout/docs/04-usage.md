@@ -74,8 +74,11 @@ For single-offer or landing-page checkouts, `EnsureCheckoutOfferProduct` can cre
 ```php
 use AIArmada\Checkout\Actions\EnsureCheckoutOfferProduct;
 use AIArmada\Checkout\Data\CheckoutOfferProductData;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 
-$product = app(EnsureCheckoutOfferProduct::class)->handle(
+// handle() throws an AuthorizationException unless the caller is already in an
+// explicit global owner context, so the whole call must be wrapped.
+$product = OwnerContext::withOwner(null, fn () => app(EnsureCheckoutOfferProduct::class)->handle(
     new CheckoutOfferProductData(
         productSlug: 'founders-pass',
         priceListSlug: 'public-offers',
@@ -88,12 +91,12 @@ $product = app(EnsureCheckoutOfferProduct::class)->handle(
         compareAmount: 12900,
         minimumOnHand: 25,
     ),
-);
+));
 ```
 
 The action:
 
-- runs inside explicit global owner context so public offers stay ownerless unless your app wraps it differently
+- requires an explicit global owner context (`OwnerContext::withOwner(null, ...)`) so public offers stay ownerless unless your app wraps it differently
 - creates or updates the `Product`, `PriceList`, and `Price` rows by slug
 - seeds inventory only when inventory integration is enabled **and** the inventory package/tables are actually available
 
@@ -250,12 +253,14 @@ if ($session->status->isTerminal()) {
 States enforce valid transitions:
 
 ```
-Pending → Processing → AwaitingPayment → Completed
-                    → PaymentProcessing → Completed
-                                       → PaymentFailed → Processing (retry)
-                    → Cancelled
-                    → Expired
+Pending    → Processing | PaymentFailed | Cancelled | Expired
+Processing → AwaitingPayment | PaymentProcessing | Completed | PaymentFailed | Cancelled | Expired
+AwaitingPayment   → Processing | PaymentProcessing | Completed | PaymentFailed | Cancelled | Expired
+PaymentProcessing → Processing | AwaitingPayment | Completed | PaymentFailed
+PaymentFailed     → Processing | AwaitingPayment | PaymentProcessing | Cancelled
 ```
+
+`Completed`, `Cancelled`, and `Expired` are terminal — no outgoing transitions are configured.
 
 ### Checking Status
 

@@ -41,9 +41,10 @@ keywords:
 - Owner/security: No owner scope.
 
 ## Key surfaces
+- Pages: `Pages/ManageCommerceNavigation`, `Pages/ManageExchangeRates`
 - Resources: `CurrencyResource`, `LanguageResource`, `TimezoneResource`
-- Actions/Services: `Support/NavigationConfigurator`
-- Config `filament-commerce-support.php`: `navigation`, `enabled`, `group`, `settings_group`, `sort`, `permission`, `icons`, `currencies`, `languages`, `timezones`
+- Actions/Services: `Support/NavigationConfigurator`, `Settings/CommerceNavigationSettings`, `Concerns/AuditsRelatedStateChanges`
+- Config `filament-commerce-support.php`: `navigation`, `enabled`, `group`, `settings_group`, `sort`, `permission`, `icons`, `exchange_rates`, `currencies`, `languages`, `timezones`
 
 ## Docs map
 - Start: `01-overview` → `03-configuration` → `04-usage` → `99-troubleshooting`

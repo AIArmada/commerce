@@ -44,7 +44,7 @@ If queries return unexpected results:
 
 1. Confirm the recipient model uses `HasInbox`
 2. Confirm `communications.features.owner.enabled` matches your owner context
-3. Check that the inbox was created through `DispatchInboxNotificationAction` or `NotificationInboxService`
+3. Check that the inbox was created through `DispatchInboxNotificationAction` or `AIArmada\Communications\Services\NotificationInboxService`
 4. Verify the `communications.inbox-index` component is registered when you expect the Livewire screen
 
 ## Inbox pruning is not deleting rows

@@ -172,7 +172,8 @@ $paymentMethod = $user->gatewayPaymentMethods('stripe')
 $paymentMethod?->delete();
 ```
 
-> **Note:** Attaching payment methods, updating default methods, or using setup intents remains
+> **info**
+> Attaching payment methods, updating default methods, or using setup intents remains
 > gateway-native behavior. Use the installed gateway package directly when you need those write APIs.
 
 ### CHIP Setup Intents
@@ -238,8 +239,10 @@ if ($invoice) {
     foreach ($invoice->items() as $item) {
         $item->description();
         $item->quantity();
-        $item->unitAmount();
-        $item->amount();
+        $item->unitAmount();   // formatted string
+        $item->rawUnitAmount(); // integer minor units
+        $item->total();        // formatted string
+        $item->rawTotal();     // integer minor units
     }
 }
 ```
@@ -251,6 +254,10 @@ return $invoice->download();
 
 return $invoice->view();
 ```
+
+> **info**
+> On CHIP both `download()` and `view()` redirect to the invoice's `hostedUrl()` (falling back to
+> `/` when CHIP has none) — they do not render a PDF locally. Only Stripe returns the file bytes.
 
 ## Customer Sync
 

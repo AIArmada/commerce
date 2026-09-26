@@ -144,25 +144,33 @@ invitation can be created after the previous invitation reaches a terminal
 status. Re-inviting after the expiry deadline transitions the stale row to
 `expired` and creates a fresh invitation with a new event.
 
-Past-due invitations stay `pending` until they are re-invited or swept. Run
-the sweep command from a scheduler when reporting or downstream jobs need the
-persisted `expired` status:
+Acceptance is gated on the date, not the stored status: `isValid()` consults
+`isExpired()`, so a past-due invitation is refused whether or not anything has
+written `expired`. There is no sweep command.
 
-```bash
-php artisan membership:expire-invitations
-```
-
-The package does not register a scheduler entry automatically. If the
-application wants a periodic sweep, schedule the command in its application
-scheduler:
+`expireIfDue()` performs the transition on demand and returns whether it did.
+`InviteMemberAction` already calls it, which is why re-inviting a past-due
+subject replaces the stale invitation instead of returning it.
 
 ```php
-use Illuminate\Console\Scheduling\Schedule;
+$invitation->expireIfDue(); // true when it transitioned pending → expired
+```
 
-protected function schedule(Schedule $schedule): void
-{
-    $schedule->command('membership:expire-invitations')->daily();
-}
+To bulk-normalise rows for reporting, iterate inside an explicit owner scope:
+
+```php
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Membership\Enums\InvitationStatus;
+use AIArmada\Membership\Models\MembershipInvitation;
+
+OwnerContext::withOwner(null, function (): void {
+    MembershipInvitation::query()
+        ->where('status', InvitationStatus::Pending)
+        ->whereNotNull('expires_at')
+        ->where('expires_at', '<=', now())
+        ->get()
+        ->each(fn (MembershipInvitation $invitation) => $invitation->expireIfDue());
+});
 ```
 
 The command processes each owner scope explicitly; it does not rely on ambient

@@ -48,8 +48,8 @@ composer require aiarmada/cashier
 **Solution**: Ensure cart has items before starting checkout:
 
 ```php
-$cart = Cart::find($cartId);
-if ($cart->isEmpty()) {
+$cart = Cart::getById($cartId);
+if ($cart === null || $cart->isEmpty()) {
     return redirect()->route('cart.index')
         ->with('error', 'Your cart is empty');
 }
@@ -166,7 +166,7 @@ Event::listen(CheckoutStepCompleted::class, function ($event) {
     Log::channel('checkout')->debug('Step completed', [
         'session_id' => $event->session->id,
         'step' => $event->stepIdentifier,
-        'data' => $event->result->data,
+        'data' => $event->data,
     ]);
 });
 ```
@@ -216,6 +216,10 @@ $mock->shouldReceive('createPayment')->andReturn(
 app(PaymentGatewayResolverInterface::class)
     ->register('mock', $mock);
 ```
+
+`PaymentProcessorInterface` also requires `handleCallback()`, `getRedirectUrl()`,
+`refund()`, and `checkStatus()`; stub them too if the mock is type-checked against
+the full interface.
 
 ### Test Checkout Flow
 

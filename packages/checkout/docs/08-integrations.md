@@ -14,11 +14,11 @@ When the `aiarmada/inventory` package is installed, checkout automatically manag
 
 1. **Stock Validation**: Before reserving, the `ReserveInventoryStep` validates that sufficient stock exists for all cart items.
 
-2. **Reservation**: Stock is reserved using the checkout session ID as the reference. Reservations prevent overselling while the customer completes payment.
+2. **Reservation**: Stock is reserved using the cart ID (`$session->cart_id`) as the reference. Reservations prevent overselling while the customer completes payment.
 
-3. **Commitment**: After successful payment, reservations are committed (converted to actual stock deductions).
+3. **Commitment**: Checkout does not commit reservations. `aiarmada/inventory` commits the allocation itself — `CommitInventoryOnPayment` listens for `PaymentConfirmed`, and `DeductInventoryFromOrder` listens for the orders package's `InventoryDeductionRequired`. `InventoryAdapter::commit()` exists as a seam but has no checkout caller.
 
-4. **Rollback**: If checkout fails or is cancelled, reservations are automatically released.
+4. **Rollback**: If checkout fails or is cancelled, `ReserveInventoryStep::compensate()` releases the reservation group (honouring `release_on_failure`).
 
 ### Configuration
 
@@ -49,8 +49,9 @@ When the `aiarmada/inventory` package is installed, checkout automatically manag
 
 When the inventory package isn't installed:
 
-- The `ReserveInventoryStep` automatically skips
-- All stock checks return unlimited availability
+- `InventoryAdapter::isInventoryPackageInstalled()` returns false and every call
+  returns a `ReservationOutcome` with state `not_managed`
+- The `ReserveInventoryStep` is never registered (see `RegisterCheckoutOptionalSteps`)
 - No reservations are created
 - `EnsureCheckoutOfferProduct` also skips inventory seeding unless inventory integration is enabled **and** the inventory tables are present
 
@@ -58,62 +59,80 @@ This allows checkout to work standalone without inventory management.
 
 ### Manual Inventory Integration
 
-For custom inventory systems, you can replace the `InventoryAdapter`:
+`AIArmada\Checkout\Integrations\InventoryAdapter` is `final`, so it is not
+extensible. For custom inventory systems, bind your own implementation of the
+inventory package's reservation contract and let the adapter resolve it:
 
 ```php
 <?php
 
 namespace App\Checkout\Integrations;
 
-use AIArmada\Checkout\Integrations\InventoryAdapter;
+use AIArmada\Inventory\Contracts\CheckoutReservationServiceInterface;
+use AIArmada\Inventory\Data\ReservationLine;
+use AIArmada\Inventory\Data\ReservationOutcome;
 
-class CustomInventoryAdapter extends InventoryAdapter
+class CustomReservationService implements CheckoutReservationServiceInterface
 {
-    public function getAvailableStock(string $productId, ?string $variantId = null): int
+    /** @param  list<ReservationLine>  $lines */
+    public function reserve(string $reference, array $lines, int $ttlSeconds): ReservationOutcome
     {
-        // Your custom inventory lookup
-        return YourInventorySystem::getStock($productId, $variantId);
-    }
-
-    public function reserve(
-        string $productId,
-        ?string $variantId,
-        int $quantity,
-        string $reference,
-        int $ttl = 900,
-    ): array {
         // Your custom reservation logic
-        $reservation = YourInventorySystem::reserve($productId, $quantity, $reference);
-
-        return [
-            'id' => $reservation->id,
-            'expires_at' => $reservation->expires_at->toIso8601String(),
-        ];
+        return new ReservationOutcome(
+            reference: $reference,
+            state: 'reserved',
+            expiresAt: now()->addSeconds($ttlSeconds)->toIso8601String(),
+        );
     }
 
-    // Implement other methods as needed...
+    public function release(string $reference): ReservationOutcome
+    {
+        return new ReservationOutcome(reference: $reference, state: 'released');
+    }
+
+    public function commit(string $reference, string $orderId): ReservationOutcome
+    {
+        return new ReservationOutcome(reference: $reference, state: 'committed');
+    }
+
+    public function extend(string $reference, int $ttlSeconds): ReservationOutcome
+    {
+        return new ReservationOutcome(reference: $reference, state: 'reserved');
+    }
+
+    public function find(string $reference): ReservationOutcome
+    {
+        return new ReservationOutcome(reference: $reference, state: 'reserved');
+    }
 }
 ```
 
-Register your adapter in a service provider:
+Register your service in a service provider:
 
 ```php
-use App\Checkout\Integrations\CustomInventoryAdapter;
-use AIArmada\Checkout\Integrations\InventoryAdapter;
+use AIArmada\Inventory\Contracts\CheckoutReservationServiceInterface;
+use App\Checkout\Integrations\CustomReservationService;
 
 public function register(): void
 {
-    $this->app->bind(InventoryAdapter::class, CustomInventoryAdapter::class);
+    $this->app->bind(CheckoutReservationServiceInterface::class, CustomReservationService::class);
 }
 ```
 
+> **warning**
+> `InventoryAdapter` short-circuits to `not_managed` whenever
+> `CheckoutReservationServiceInterface` is not bound. Binding a stub is what
+> turns the integration on.
+
 ### Events
 
-The inventory integration respects checkout events:
+The inventory integration is driven by the step executor, not by checkout events:
 
-- **CheckoutCompleted**: Reservations are committed
-- **CheckoutCancelled**: Reservations are released
-- **CheckoutFailed**: Reservations are released (if `release_on_failure` is true)
+- `CheckoutFailed` / `CheckoutCancelled` / any later step failure — the executor
+  calls `ReserveInventoryStep::compensate()`, which releases the whole reference
+  group when `integrations.inventory.release_on_failure` is true
+- `CheckoutCompleted` — checkout does not release or commit; the inventory
+  package reacts to the orders package's payment events instead
 
 ## Shipping Integration
 
@@ -151,7 +170,7 @@ When the `aiarmada/tax` package is installed, checkout calculates applicable tax
 ```php
 'integrations' => [
     'tax' => [
-        'enabled' => true,  // Enable tax calculation
+        'enabled' => false, // Enable tax calculation
     ],
 ],
 ```
@@ -279,11 +298,10 @@ normalizes the provider reference at the boundary, and supplies the mandatory
 You can check if integrations are available:
 
 ```php
-use AIArmada\Checkout\Integrations\InventoryAdapter;
-use AIArmada\Inventory\Contracts\CheckoutInventoryServiceInterface;
+use AIArmada\Inventory\Contracts\CheckoutReservationServiceInterface;
 
 // Check if inventory package is installed
-$hasInventory = interface_exists(CheckoutInventoryServiceInterface::class);
+$hasInventory = interface_exists(CheckoutReservationServiceInterface::class);
 
 // Check if shipping is enabled
 $shippingEnabled = config('checkout.integrations.shipping.enabled', false);

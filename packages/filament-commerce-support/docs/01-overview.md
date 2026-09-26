@@ -29,8 +29,9 @@ Group/item overrides applied to navigation
 
 ## What else ships here
 
+- `ManageExchangeRates` settings page — base currency and a dated snapshot history of exchange rates (reporting only)
 - Read-only reference-data resources: `CurrencyResource`, `LanguageResource`, `TimezoneResource` (browse `commerce-support` seed data; edits belong to seeds/config, not here)
-- Config `filament-commerce-support.php`: `navigation`, `resources`
+- Config `filament-commerce-support.php`: `navigation`, `exchange_rates`, `resources`
 
 ## What this package does not own
 

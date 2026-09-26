@@ -50,7 +50,7 @@ keywords:
 ## Key surfaces
 - Models: `Affiliation`, `AffiliationRole`, `CredentialAssignment`, `CredentialDefinition`, `Person`, `PersonName`, `Title`, `TitleAssignment`, `TitleCategory`, `TitleIssuer`
 - Actions/Services: `Actions/CreatePersonAction`, `Actions/AssignTitleAction`, `Actions/AssignCredentialAction`, `Actions/ReorderTitleAction`, `Support/ModelResolver`, `Support/PersonsModelReferenceGuard`
-- Config `persons.php`: `database`, `table_prefix`, `json_column_type`, `tables`, `models`, `persons`, `person_names`, `title_categories`, `titles`, `title_issuers`, `title_assignments`
+- Config `persons.php`: `database` (`table_prefix`, `json_column_type`, and 10 `tables.*` keys: `persons`, `person_names`, `title_categories`, `titles`, `title_issuers`, `title_assignments`, `credential_definitions`, `credential_assignments`, `affiliations`, `affiliation_roles`), `models` (`person`, `country`, `institution`), `integrations.addressing.enabled`
 
 ## Docs map
 - Start: `01-overview` → `03-configuration` → `04-usage` → `99-troubleshooting`

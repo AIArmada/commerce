@@ -29,7 +29,7 @@ The `aiarmada/filament-signals` package is the Filament analytics UI for `aiarma
 ## Main models services or surfaces
 
 - **Pages** — dashboard and report pages for page views, funnels, acquisition, journeys, retention, content performance, live activity, goals, and devices
-- **Resources** — tracked properties, goals, segments, saved reports, alert rules, and alert logs
+- **Resources** — tracked properties, goals, segments, saved reports, alert rules, alert logs, and interaction rules
 - **Widgets** — summary stats, event trends, and pending alerts
 - **UI behaviors** — feature-flagged resources/widgets, saved-report state sanitization, and monetary-aware UI suppression when revenue analytics are disabled
 

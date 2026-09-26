@@ -36,8 +36,11 @@ Pages are feature-gated through `filament-affiliates.portal.features`:
 
 - `dashboard` -> `PortalDashboard`
 - `profile` -> `PortalProfile`
-- `links` -> `PortalLinks`
+- `links` -> `PortalLinks`, which also nests:
+  - `creatives` -> `PortalCreatives`
+  - `vouchers` -> `PortalVouchers`
 - `programs` -> `PortalPrograms`
+- `downlines` -> `PortalDownlines`
 - `conversions` -> `PortalConversions`
 - `payouts` -> `PortalPayouts`
 - `support_compliance` -> `PortalSupport`

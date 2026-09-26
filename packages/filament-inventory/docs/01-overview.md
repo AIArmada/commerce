@@ -78,9 +78,9 @@ The `aiarmada/filament-inventory` package is the Filament admin adapter for `aia
 ```
 filament-inventory/
 ├── Actions/           # Reusable Filament actions
+├── Policies/          # InventoryLevel/Allocation/ReorderSuggestion policies
 ├── Resources/         # Filament resources with Pages/Schemas/Tables
 ├── Services/          # Stats aggregation and caching
-├── Support/           # Multitenancy helpers
 └── Widgets/           # Dashboard widgets
 ```
 
@@ -88,7 +88,7 @@ filament-inventory/
 
 - PHP 8.4+
 - Laravel 13+
-- Filament 5.0+
+- Filament 5.8+
 - `aiarmada/inventory` (core inventory package)
 
 ## Quick Start

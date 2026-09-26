@@ -17,7 +17,7 @@ It provides:
 ## What this package owns
 
 - Filament resources and relation managers for affiliate operations surfaces
-- Admin workflow pages (`FraudReviewPage`, `PayoutBatchPage`, `ReportsPage`)
+- Admin workflow pages (`FraudReviewPage`, `PayoutBatchPage`, `ReportsPage`, `PerformanceBonusesPage`, and the commission/bonus/payout settings pages)
 - Portal pages (`PortalDashboard`, `PortalProfile`, `PortalLinks`, `PortalPrograms`, `PortalConversions`, `PortalPayouts`, `PortalSupport`, and optional `PortalRegistration`)
 - Widget surfaces (`AffiliateStatsWidget`, `PerformanceOverviewWidget`, `RealTimeActivityWidget`, plus feature-gated widgets)
 
@@ -35,9 +35,9 @@ It provides:
 
 ## Main surfaces
 
-- **Resources** — affiliates, conversions, payouts, programs, commission templates, links, touchpoints, ranks, rank history, support tickets, tax documents, fraud signals, network
-- **Pages** — fraud review, payout batching, reports, and portal pages
-- **Widgets** — stats, performance, activity, fraud alerts, payout queue, network visualization
+- **Resources** — affiliates, conversions, payouts, programs, commission templates, volume tiers, links, touchpoints, creatives, ranks, rank history, upline, support tickets, tax documents, and fraud signals
+- **Pages** — commission/bonus/payout settings, fraud review, payout batching, performance bonuses, reports, and portal pages
+- **Widgets** — stats, performance, activity, fraud alerts, payout queue, upline visualization
 
 ## Owner scoping and security notes
 

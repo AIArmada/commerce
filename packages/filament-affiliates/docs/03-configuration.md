@@ -51,6 +51,7 @@ return [
             'fraud_monitoring' => true,
             'reports' => true,
             'upline_visualization' => true,
+            'creatives' => true,
         ],
     ],
 
@@ -118,21 +119,27 @@ return [
             'affiliate_payouts' => 62,
             'affiliate_programs' => 63,
             'affiliate_commission_templates' => 64,
-            'affiliate_fraud_signals' => 65,
-            'affiliate_links' => 66,
-            'affiliate_touchpoints' => 67,
-            'affiliate_ranks' => 68,
-            'affiliate_upline' => 69,
-            'affiliate_rank_histories' => 70,
-            'affiliate_support_tickets' => 71,
-            'affiliate_tax_documents' => 72,
+            'affiliate_creatives' => 65,
+            'affiliate_fraud_signals' => 66,
+            'affiliate_links' => 67,
+            'affiliate_touchpoints' => 68,
+            'affiliate_ranks' => 69,
+            'affiliate_upline' => 70,
+            'affiliate_rank_histories' => 71,
+            'affiliate_support_tickets' => 72,
+            'affiliate_tax_documents' => 73,
+            'affiliate_volume_tiers' => 74,
         ],
     ],
 
     'pages' => [
         'navigation_sort' => [
+            'commission_settings' => 5,
+            'bonus_settings' => 6,
             'reports' => 10,
             'payout_batch' => 12,
+            'payout_settings' => 13,
+            'performance_bonuses' => 14,
             'fraud_review' => 15,
         ],
     ],
@@ -186,8 +193,14 @@ Enable/disable specific portal pages:
     'conversions' => true,   // Conversion history
     'payouts' => true,       // Payout history
     'support_compliance' => true, // Support tickets and tax document tracking
+    'creatives' => true,     // Creative library
+    'vouchers' => true,      // Voucher access
 ],
 ```
+
+`creatives` and `vouchers` are nested under `links` — both pages register only
+when `links` is enabled. `downlines` is a separate feature that the shipped
+config does not define; `AffiliatePanelProvider` defaults it to `true`.
 
 ### Integration Settings
 
@@ -219,6 +232,7 @@ Auto-detect and enable integrations:
         'fraud_monitoring' => true,
         'reports' => true,
         'upline_visualization' => true,
+        'creatives' => true,
     ],
 ],
 ```
@@ -237,14 +251,16 @@ Control the order of resources in navigation:
         'affiliate_payouts' => 62,
         'affiliate_programs' => 63,
         'affiliate_commission_templates' => 64,
-        'affiliate_fraud_signals' => 65,
-        'affiliate_links' => 66,
-        'affiliate_touchpoints' => 67,
-        'affiliate_ranks' => 68,
-        'affiliate_network' => 69,
-        'affiliate_rank_histories' => 70,
-        'affiliate_support_tickets' => 71,
-        'affiliate_tax_documents' => 72,
+        'affiliate_creatives' => 65,
+        'affiliate_fraud_signals' => 66,
+        'affiliate_links' => 67,
+        'affiliate_touchpoints' => 68,
+        'affiliate_ranks' => 69,
+        'affiliate_upline' => 70,
+        'affiliate_rank_histories' => 71,
+        'affiliate_support_tickets' => 72,
+        'affiliate_tax_documents' => 73,
+        'affiliate_volume_tiers' => 74,
     ],
 ],
 ```
@@ -256,9 +272,12 @@ Control navigation order for non-resource pages:
 ```php
 'pages' => [
     'navigation_sort' => [
-        'reports' => 10,
         'commission_settings' => 5,
+        'bonus_settings' => 6,
+        'reports' => 10,
         'payout_batch' => 12,
+        'payout_settings' => 13,
+        'performance_bonuses' => 14,
         'fraud_review' => 15,
     ],
 ],
@@ -290,6 +309,9 @@ Control affiliate portal page ordering:
 Available environment variables:
 
 ```env
+# Widgets
+AFFILIATES_DEFAULT_CURRENCY=MYR
+
 # Portal
 AFFILIATES_PORTAL_PANEL_ID=affiliate
 AFFILIATES_PORTAL_PATH=affiliate

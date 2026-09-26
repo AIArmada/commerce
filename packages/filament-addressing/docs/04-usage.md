@@ -184,9 +184,8 @@ Only enable this for trusted admin panels.
 
 If `features.address_export` is enabled, the central Address resource also shows a built-in export action.
 
-:::warning
-If addresses are owner-scoped, verify `getEloquentQuery()` and action handlers are owner-safe before enabling this resource.
-:::
+> **warning**
+> If addresses are owner-scoped, verify `getEloquentQuery()` and action handlers are owner-safe before enabling this resource.
 
 ## Snapshot Resource
 

@@ -9,6 +9,7 @@ title: Configuration
 ```php
 'database' => [
     'table_prefix' => '',
+    'json_column_type' => env('FEEDBACK_JSON_COLUMN_TYPE', 'jsonb'),
     'tables' => [
         'forms' => 'feedback_forms',
         'sections' => 'feedback_sections',
@@ -30,7 +31,7 @@ title: Configuration
 'owner' => [
     'enabled' => true,
     'auto_assign_on_create' => true,
-        'include_global' => false,
+    'include_global' => false,
 ],
 ```
 

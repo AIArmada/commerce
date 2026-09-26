@@ -295,7 +295,7 @@ $action = app(DispatchChipWebhookAction::class);
 $action->execute(string $event, array $payload, ?Model $owner = null): WebhookResult
 ```
 
-Dispatches a webhook event through the `WebhookRouter` with optional owner scoping. Returns a `WebhookResult` with `wasHandled(): bool` and `wasSkipped(): bool`.
+Dispatches a webhook event through the `WebhookRouter` with optional owner scoping. Returns a `WebhookResult` with `isHandled(): bool`, `isSkipped(): bool`, `isSuccess(): bool`, and `isFailed(): bool`.
 
 ### SendWebhookReceived
 

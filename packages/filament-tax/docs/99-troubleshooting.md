@@ -163,7 +163,7 @@ Common issues and solutions for the Filament Tax plugin.
    {
        public static function canView(): bool
        {
-           return auth()->user()->can('view', TaxZone::class);
+           return auth()->user()->can('viewAny', TaxZone::class);
        }
    }
    ```
@@ -403,7 +403,7 @@ dd(DB::getQueryLog());
 ### Check Component Registration
 
 ```bash
-php artisan filament:list-components
+php artisan optimize:clear
 ```
 
 ### Inspect Livewire State

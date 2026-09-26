@@ -39,7 +39,7 @@ Overview statistics showing counts of tax entities.
 ├──────────────┬──────────────┬──────────────┬────────────────┤
 │ 🌍 5         │ 📊 12        │ 🏷️ 4        │ 🛡️ 8          │
 │ Tax Zones    │ Tax Rates    │ Tax Classes  │ Exemptions     │
-│ Active       │ Configured   │ Configured   │ Active         │
+│ Active zones │ Configured   │ Product cats │ Approved & valid │
 └──────────────┴──────────────┴──────────────┴────────────────┘
 ```
 
@@ -47,12 +47,15 @@ Overview statistics showing counts of tax entities.
 
 | Stat | Description | Query |
 |------|-------------|-------|
-| Tax Zones | Count of active zones | `TaxZone::active()->count()` |
-| Tax Rates | Count of active rates | `TaxRate::active()->count()` |
-| Tax Classes | Count of active classes | `TaxClass::active()->count()` |
-| Exemptions | Count of active exemptions | `TaxExemption::approved()->active()->count()` |
+| Tax Zones | Count of active zones | `TaxZone::query()->where('is_active', 1)->count()` |
+| Tax Rates | Count of active rates | `TaxRate::query()->where('is_active', 1)->count()` |
+| Tax Classes | Count of active classes | `TaxClass::query()->where('is_active', 1)->count()` |
+| Active Exemptions | Count of approved exemptions inside their validity window | `TaxExemption::query()->where('status', 'approved')` plus `starts_at`/`expires_at` bounds |
 
 ### Implementation
+
+`AIArmada\FilamentTax\Widgets\TaxStatsWidget` is `final`; read it as reference, not as a
+base class to extend:
 
 ```php
 namespace AIArmada\FilamentTax\Widgets;
@@ -60,26 +63,34 @@ namespace AIArmada\FilamentTax\Widgets;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
-class TaxStatsWidget extends StatsOverviewWidget
+final class TaxStatsWidget extends StatsOverviewWidget
 {
+    protected ?string $pollingInterval = '30s';
+    
+    protected static ?int $sort = 1;
+    
     protected function getStats(): array
     {
         return [
-            Stat::make('Tax Zones', TaxZone::active()->count())
+            Stat::make('Tax Zones', number_format($stats['zones']))
                 ->description('Active zones')
-                ->icon('heroicon-o-globe-alt'),
-                
-            Stat::make('Tax Rates', TaxRate::active()->count())
+                ->descriptionIcon('heroicon-m-globe-alt')
+                ->color('info'),
+            
+            Stat::make('Tax Rates', number_format($stats['rates']))
                 ->description('Configured rates')
-                ->icon('heroicon-o-calculator'),
-                
-            Stat::make('Tax Classes', TaxClass::active()->count())
-                ->description('Configured classes')
-                ->icon('heroicon-o-tag'),
-                
-            Stat::make('Exemptions', TaxExemption::approved()->active()->count())
-                ->description('Active exemptions')
-                ->icon('heroicon-o-shield-check'),
+                ->descriptionIcon('heroicon-m-receipt-percent')
+                ->color('success'),
+            
+            Stat::make('Tax Classes', number_format($stats['classes']))
+                ->description('Product categories')
+                ->descriptionIcon('heroicon-m-tag')
+                ->color('warning'),
+            
+            Stat::make('Active Exemptions', number_format($stats['exemptions']))
+                ->description('Approved & valid')
+                ->descriptionIcon('heroicon-m-shield-check')
+                ->color('gray'),
         ];
     }
 }
@@ -94,99 +105,98 @@ Table widget showing exemptions that will expire within the next 30 days.
 ### Display
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│ Expiring Exemptions                                          │
-├──────────────────┬───────────────┬─────────────┬────────────┤
-│ Customer         │ Zone          │ Expires     │ Actions    │
-├──────────────────┼───────────────┼─────────────┼────────────┤
-│ Acme Corp        │ Malaysia      │ Jan 15, 2025│ [View]     │
-│ Tech Solutions   │ All Zones     │ Jan 20, 2025│ [View]     │
-│ Global Trade Ltd │ Singapore     │ Feb 1, 2025 │ [View]     │
-└──────────────────┴───────────────┴─────────────┴────────────┘
+┌───────────────────────────────────────────────────────────────────┐
+│ Expiring Exemptions (30 Days)                                     │
+├──────────────────┬──────────────────┬────────────┬─────────────────┤
+│ Customer         │ Certificate #    │ Reason     │ Expires         │
+├──────────────────┼──────────────────┼────────────┼─────────────────┤
+│ Acme Corp        │ GOV-2024-001234  │ Non-profit │ 15 Jan 2025     │
+│ Tech Solutions   │ CHAR-2024-12345  │ Charity    │ 20 Jan 2025     │
+│ Global Trade Ltd │ RES-2024-00077   │ Reseller   │ 1 Feb 2025      │
+└──────────────────┴──────────────────┴────────────┴─────────────────┘
 ```
 
 ### Columns
 
 | Column | Description |
 |--------|-------------|
-| Customer | Exemptable entity identifier |
-| Zone | Tax zone name or "All Zones" |
-| Expires | Expiration date |
-| Actions | View exemption link |
+| Customer | Exemptable entity name (`exemptable.full_name`) |
+| Certificate # | `certificate_number` |
+| Reason | `reason`, truncated |
+| Expires | `expires_at` as `d M Y`, with a `diffForHumans` description |
+
+The widget has no `Zone` column and no row actions.
 
 ### Implementation
 
 ```php
 namespace AIArmada\FilamentTax\Widgets;
 
-use Filament\Tables;
-use Filament\Widgets\TableWidget;
+use AIArmada\Tax\Models\TaxExemption;
+use Carbon\CarbonImmutable;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Table;
+use Filament\Widgets\TableWidget as BaseWidget;
 use Illuminate\Database\Eloquent\Builder;
 
-class ExpiringExemptionsWidget extends TableWidget
+final class ExpiringExemptionsWidget extends BaseWidget
 {
+    protected static ?string $heading = 'Expiring Exemptions (30 Days)';
+    
     protected int | string | array $columnSpan = 'full';
     
-    protected static ?string $heading = 'Expiring Exemptions';
+    public function table(Table $table): Table
+    {
+        return $table
+            ->query($this->getTableQuery())
+            ->columns([
+                TextColumn::make('exemptable.full_name')->label('Customer'),
+                TextColumn::make('certificate_number')->label('Certificate #'),
+                TextColumn::make('reason')->limit(30),
+                TextColumn::make('expires_at')->label('Expires')->date('d M Y'),
+            ]);
+    }
     
     protected function getTableQuery(): Builder
     {
+        $now = CarbonImmutable::now();
+        
         return TaxExemption::query()
-            ->approved()
-            ->where('expires_at', '<=', now()->addDays(30))
-            ->where('expires_at', '>=', now())
+            ->with('exemptable')
+            ->whereNotNull('expires_at')
+            ->where('expires_at', '<=', $now->addDays(30))
+            ->where('expires_at', '>=', $now)
+            ->where('status', 'approved')
             ->orderBy('expires_at');
-    }
-    
-    protected function getTableColumns(): array
-    {
-        return [
-            Tables\Columns\TextColumn::make('exemptable_id')
-                ->label('Customer'),
-                
-            Tables\Columns\TextColumn::make('zone.name')
-                ->label('Zone')
-                ->default('All Zones'),
-                
-            Tables\Columns\TextColumn::make('expires_at')
-                ->label('Expires')
-                ->date(),
-        ];
-    }
-    
-    protected function getTableActions(): array
-    {
-        return [
-            Tables\Actions\Action::make('view')
-                ->url(fn ($record) => TaxExemptionResource::getUrl('edit', ['record' => $record])),
-        ];
     }
 }
 ```
 
+> **info**
+> Filament v5 removed `getTableColumns()` and `getTableActions()`. Configure the table through the `table(Table $table): Table` method. Row actions live in `->recordActions([...])`, and `Filament\Tables\Actions\*` is the v3 namespace — use `Filament\Actions\*`.
+
 ### Configuration
 
-The 30-day window is hardcoded. To customize, extend the widget:
+The 30-day window is hardcoded. Replace the widget with your own `TableWidget`:
 
 ```php
 namespace App\Filament\Widgets;
 
-use AIArmada\FilamentTax\Widgets\ExpiringExemptionsWidget as BaseWidget;
+use AIArmada\Tax\Models\TaxExemption;
+use Filament\Widgets\TableWidget;
 
-class ExpiringExemptionsWidget extends BaseWidget
+class ExpiringExemptionsWidget extends TableWidget
 {
-    protected int $daysAhead = 60; // Extend to 60 days
+    protected static ?string $heading = 'Expiring Exemptions (60 Days)';
     
-    protected function getTableQuery(): Builder
-    {
-        return TaxExemption::query()
-            ->approved()
-            ->where('expires_at', '<=', now()->addDays($this->daysAhead))
-            ->where('expires_at', '>=', now())
-            ->orderBy('expires_at');
-    }
+    protected int | string | array $columnSpan = 'full';
+    
+    // ... table() / getTableQuery() as above, with addDays(60)
 }
 ```
+
+> **warning**
+> Do not `extend` the package widget. `AIArmada\FilamentTax\Widgets\ExpiringExemptionsWidget` is `final`, as are `TaxStatsWidget` and `ZoneCoverageWidget`. Register your own widget class with `Livewire::component('...')` or in the panel's `->widgets([...])` instead.
 
 ---
 
@@ -238,8 +248,7 @@ Visual overview of all tax zones and their configured rates.
 - Shows all active zones with their geographic criteria
 - Lists all rates per zone with tax class and percentage
 - Indicates default zone
-- Shows active/inactive status
-- Priority-ordered display
+- Priority-ordered display, capped at 50 zones
 
 ### Implementation
 
@@ -248,67 +257,75 @@ The widget uses a Blade view for flexible rendering:
 ```php
 namespace AIArmada\FilamentTax\Widgets;
 
+use AIArmada\Tax\Models\TaxZone;
 use Filament\Widgets\Widget;
-use Illuminate\Contracts\View\View;
 
-class ZoneCoverageWidget extends Widget
+final class ZoneCoverageWidget extends Widget
 {
-    protected static string $view = 'filament-tax::widgets.zone-coverage';
+    /** @var view-string */
+    protected string $view = 'filament-tax::widgets.zone-coverage';
     
     protected int | string | array $columnSpan = 'full';
     
-    public function getZones(): Collection
+    /**
+     * @return array<string, mixed>
+     */
+    protected function getViewData(): array
     {
-        return TaxZone::query()
-            ->with(['rates' => fn ($q) => $q->active()])
+        $zones = TaxZone::query()
+            ->with('rates')
+            ->active()
             ->orderBy('priority', 'desc')
+            ->limit(50)
             ->get();
+
+        // formatZones() maps each zone to a plain array; rates are preformatted
+        return ['zones' => $this->formatZones($zones)];
     }
 }
 ```
 
+The view receives `$zones` as an array of shaped arrays (`id`, `name`, `code`, `type`,
+`countries`, `states`, `priority`, `is_default`, `rates`, `rate_count`), not Eloquent
+models. `type` is already ucfirst'd, and each rate is `['name', 'class', 'rate', 'is_compound']`
+with `rate` preformatted as a percentage string (basis points ÷ 100).
+
 ### Blade Template
 
-Located at `resources/views/widgets/zone-coverage.blade.php`:
+Published to `resources/views/vendor/filament-tax/widgets/zone-coverage.blade.php`:
 
 ```blade
 <x-filament-widgets::widget>
     <x-filament::section heading="Zone Coverage">
         <div class="space-y-4">
-            @foreach ($this->getZones() as $zone)
-                <div class="border rounded-lg p-4 {{ $zone->is_active ? '' : 'opacity-50' }}">
+            @foreach ($zones as $zone)
+                <div class="border rounded-lg p-4">
                     <div class="flex justify-between items-center mb-2">
                         <h3 class="font-bold">
-                            🌍 {{ $zone->name }} ({{ $zone->code }})
+                            🌍 {{ $zone['name'] }} ({{ $zone['code'] }})
                         </h3>
                         <div class="flex gap-2">
-                            @if ($zone->is_default)
+                            @if ($zone['is_default'])
                                 <span class="badge badge-primary">Default</span>
                             @endif
-                            <span class="{{ $zone->is_active ? 'text-success' : 'text-danger' }}">
-                                {{ $zone->is_active ? '✓' : '✗' }}
-                            </span>
                         </div>
                     </div>
                     
                     <div class="text-sm text-gray-600 mb-2">
-                        <div>Countries: {{ collect($zone->countries)->join(', ') ?: '—' }}</div>
-                        @if ($zone->states)
-                            <div>States: {{ collect($zone->states)->join(', ') }}</div>
-                        @endif
-                        @if ($zone->postcodes)
-                            <div>Postcodes: {{ collect($zone->postcodes)->join(', ') }}</div>
+                        <div>Countries: {{ collect($zone['countries'])->join(', ') ?: '—' }}</div>
+                        @if ($zone['states'])
+                            <div>States: {{ collect($zone['states'])->join(', ') }}</div>
                         @endif
                     </div>
                     
-                    @if ($zone->rates->isNotEmpty())
+                    @if ($zone['rates'])
                         <div class="mt-2">
                             <div class="font-medium">Rates:</div>
                             <ul class="list-disc list-inside text-sm">
-                                @foreach ($zone->rates as $rate)
+                                @foreach ($zone['rates'] as $rate)
                                     <li>
-                                        {{ $rate->name }} ({{ $rate->tax_class }}) - {{ $rate->getFormattedRate() }}
-                                        @if ($rate->is_compound) [compound] @endif
+                                        {{ $rate['name'] }} ({{ $rate['class'] }}) - {{ $rate['rate'] }}
+                                        @if ($rate['is_compound']) [compound] @endif
                                     </li>
                                 @endforeach
                             </ul>
@@ -331,8 +348,12 @@ Widgets appear on the dashboard by default. To control placement:
 
 ### Dashboard Sort
 
+The package sets `$sort` on all three widgets: `TaxStatsWidget` = 1,
+`ExpiringExemptionsWidget` = 2, `ZoneCoverageWidget` = 3. Override in your own widget
+class rather than editing the package:
+
 ```php
-class TaxStatsWidget extends StatsOverviewWidget
+class MyTaxStatsWidget extends StatsOverviewWidget
 {
     protected static ?int $sort = 10; // Lower = higher on dashboard
 }
@@ -368,37 +389,45 @@ public static function canView(): bool
 
 ## Custom Widgets
 
-Extend or replace widgets by registering your own:
+`TaxStatsWidget` exposes `$sort`, `$pollingInterval`, and `getStats()`. Because it is
+`final`, replace it rather than extend it — turn the built-ins off and register your own:
 
 ```php
-// AppServiceProvider
-use AIArmada\FilamentTax\Widgets\TaxStatsWidget;
-use Livewire\Livewire;
+// Admin panel provider
+use AIArmada\FilamentTax\FilamentTaxPlugin;
 
-public function boot(): void
+public function panel(Panel $panel): Panel
 {
-    // Replace the default widget
-    Livewire::component('tax-stats-widget', App\Filament\Widgets\CustomTaxStatsWidget::class);
+    return $panel
+        ->plugins([
+            FilamentTaxPlugin::make()->widgets(false), // Disable all built-in widgets
+        ])
+        ->widgets([
+            App\Filament\Widgets\CustomTaxStatsWidget::class,
+        ]);
 }
 ```
 
-Or extend the existing widget:
+Or write a standalone `StatsOverviewWidget`:
 
 ```php
 namespace App\Filament\Widgets;
 
-use AIArmada\FilamentTax\Widgets\TaxStatsWidget as BaseWidget;
+use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
-class CustomTaxStatsWidget extends BaseWidget
+class CustomTaxStatsWidget extends StatsOverviewWidget
 {
     protected function getStats(): array
     {
-        return array_merge(parent::getStats(), [
+        return [
             Stat::make('Revenue Collected', '$45,230')
                 ->description('This month')
                 ->icon('heroicon-o-currency-dollar'),
-        ]);
+        ];
     }
 }
 ```
+
+All count queries in the package widgets go through Eloquent, so the `OwnerScope`
+global scope keeps them tenant-safe when `tax.features.owner.enabled` is `true`.

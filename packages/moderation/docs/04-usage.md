@@ -92,24 +92,21 @@ $activeBlocks = Block::query()->active()->get();
 $expiredBlocks = Block::query()->expired()->get();
 ```
 
-Expired blocks are excluded from `active()` queries as soon as `expires_at` passes, and the `expired()` scope includes both transitioned rows and past-due active rows. Run the sweep command from a scheduler when you need persisted `expired` status and lifecycle timestamps updated:
+Expired blocks are excluded from `active()` queries as soon as `expires_at` passes, and the `expired()` scope includes both transitioned rows and past-due active rows. Enforcement is therefore correct without any sweep: `active()` is the only scope that gates access, and it is date-aware.
 
-```bash
-php artisan moderation:expire-blocks
-```
-
-The package does not register a scheduler entry automatically. If the application wants a periodic sweep, schedule the command in its application scheduler:
+The `status` column is retained for display and audit purposes only. To transition past-due rows to `expired` in bulk, call the model directly:
 
 ```php
-use Illuminate\Console\Scheduling\Schedule;
+use AIArmada\Moderation\Enums\BlockStatus;
+use AIArmada\Moderation\Models\Block;
 
-protected function schedule(Schedule $schedule): void
-{
-    $schedule->command('moderation:expire-blocks')->daily();
-}
+Block::query()->active()->where('expires_at', '<=', now())->get()
+    ->each(fn (Block $block) => $block->transitionTo(BlockStatus::Expired)->save());
 ```
 
-The command processes each owner scope explicitly; it does not rely on ambient web authentication.
+Deleting a blockable subject expires its active blocks automatically via the `HasBlocks` trait's delete hook.
+
+Run any bulk transition inside an explicit owner scope; do not rely on ambient web authentication.
 
 ```php
 use Illuminate\Database\Eloquent\Model;

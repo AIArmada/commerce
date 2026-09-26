@@ -41,7 +41,11 @@ keywords:
 
 ## Key surfaces
 - Resources: `PriceListResource`
-- Config `filament-pricing.php`: `navigation`, `group`, `settings_group`, `resources`, `navigation_sort`, `price_lists`, `pages`, `navigation_sort`, `settings`, `price_simulator`
+- Pages: `Pages/ManagePricingSettings`, `Pages/PriceSimulator`
+- Widgets: `Widgets/PricingStatsWidget`
+- Relation managers: `PricesRelationManager`, `TiersRelationManager`
+- Policies: `PriceListPolicy`, `PricePolicy`, `PriceTierPolicy`
+- Config `filament-pricing.php` keys: `navigation.group`, `navigation.settings_group`, `authorization.settings_ability`, `resources.navigation_sort.price_lists`, `pages.navigation_sort.{settings,price_simulator}`
 
 ## Docs map
 - Start: `01-overview` → `03-configuration` → `04-usage` → `99-troubleshooting`

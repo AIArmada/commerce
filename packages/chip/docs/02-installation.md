@@ -134,7 +134,7 @@ QUEUE_CONNECTION=redis
 Run the health check command:
 
 ```bash
-php artisan chip:health-check
+php artisan chip:health
 ```
 
 This verifies:
@@ -145,11 +145,8 @@ This verifies:
 
 ## Multi-Tenant Setup
 
-import Aside from "@components/Aside.astro"
-
-<Aside variant="warning">
-  Owner scoping is **disabled by default** (`CHIP_OWNER_ENABLED=false`). In a multi-tenant deployment every tenant will see all CHIP purchases and payments unless you enable it. Set `CHIP_OWNER_ENABLED=true` and bind `OwnerResolverInterface` before going live.
-</Aside>
+> **warning**
+> Owner scoping is **disabled by default** (`CHIP_OWNER_ENABLED=false`). In a multi-tenant deployment every tenant will see all CHIP purchases and payments unless you enable it. Set `CHIP_OWNER_ENABLED=true` and bind `OwnerResolverInterface` before going live.
 
 ```env
 CHIP_OWNER_ENABLED=true

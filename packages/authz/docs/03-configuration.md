@@ -4,42 +4,51 @@ title: Authz Configuration
 
 ## Main Settings
 
+The shipped `config/authz.php` top-level keys, with their default values:
+
 ```php
-return [
-    'database' => [
-        'table_prefix' => '',
-        'tables' => [
-            'roles' => 'roles',
-            'permissions' => 'permissions',
-            'model_has_permissions' => 'model_has_permissions',
-            'model_has_roles' => 'model_has_roles',
-            'role_has_permissions' => 'role_has_permissions',
-            'scopes' => 'authz_scopes',
-        ],
+'database' => [
+    'table_prefix' => '',
+    'tables' => [
+        'roles' => 'roles',
+        'permissions' => 'permissions',
+        'model_has_permissions' => 'model_has_permissions',
+        'model_has_roles' => 'model_has_roles',
+        'role_has_permissions' => 'role_has_permissions',
+        'scopes' => 'authz_scopes',
     ],
-    'super_admin_role' => 'super_admin',
-    'guards' => ['web'],
-    'users' => [
-        'email_column' => 'email',
-        'name_column' => 'name',
-    ],
-    'wildcard_permissions' => true,
-    'permissions' => [
-        'separator' => '.',
-        'case' => 'camel',
-    ],
-    'scopes' => [
-        'enabled' => false,
-        'auto_create' => true,
-        'enforce' => true,
-    ],
-    'impersonate' => [
-        'guard' => 'web',
-    ],
-];
+],
+'super_admin_role' => 'super_admin',
+'guards' => ['web'],
+'users' => [
+    'email_column' => 'email',
+    'name_column' => 'name',
+],
+'wildcard_permissions' => true,
+'permissions' => [
+    'separator' => '.',
+    'case' => 'camel',
+],
+'custom_permissions' => [],
+'sync' => [
+    'permissions' => [],
+    'roles' => [],
+],
+'scopes' => [
+    'enabled' => false,
+    'auto_create' => true,
+    'enforce' => true,
+],
+'impersonate' => [
+    'guard' => 'web',
+],
 ```
 
 The `authz.guards` list is the shared default consumed by core commands and the Filament adapter. Every listed guard must exist in `config/auth.php`.
+
+`authz.custom_permissions` seeds extra permission definitions at boot, and
+`authz.sync` (`permissions`, `roles`) is the declaration set reconciled by
+`php artisan authz:sync`. Both ship empty.
 
 The `authz.permissions.separator` value must be exactly one non-alphanumeric
 character. The service provider rejects invalid values during application boot.

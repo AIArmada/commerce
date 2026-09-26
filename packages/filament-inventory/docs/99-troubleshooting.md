@@ -52,21 +52,21 @@ php artisan filament:clear-cached-components
 
 ### Resources not visible
 
-**Problem:** Some resources don't appear in navigation.
+**Problem:** Batches or Serial Numbers don't appear in navigation.
 
-**Solution:** Check feature toggles in config:
+**Solution:** Only those two resources are feature-flagged, and both default to
+enabled. Check the toggles in config:
 
 ```php
 // config/filament-inventory.php
 'features' => [
-    'locations_resource' => true,  // Must be true
-    'levels_resource' => true,
-    'movements_resource' => true,
-    'allocations_resource' => true,
-    'batches_resource' => false,   // Disabled by default
-    'serials_resource' => false,   // Disabled by default
+    'batch_resource' => true,  // InventoryBatchResource
+    'serial_resource' => true, // InventorySerialResource
 ],
 ```
+
+Locations, Levels, Movements, and Allocations are always registered — they have
+no toggle.
 
 ### Widgets not showing
 
@@ -83,18 +83,17 @@ php artisan filament:clear-cached-components
 ],
 ```
 
-2. Register widgets with your dashboard:
+2. Widgets are registered by the plugin; to place one on a custom page add it
+via the page's widgets array:
 ```php
 use AIArmada\FilamentInventory\Widgets\InventoryStatsWidget;
 
-class Dashboard extends BaseDashboard
+// Filament v5: a Page/Livewire component returns widgets from getHeaderWidgets()
+protected function getHeaderWidgets(): array
 {
-    protected function getWidgets(): array
-    {
-        return [
-            InventoryStatsWidget::class,
-        ];
-    }
+    return [
+        InventoryStatsWidget::class,
+    ];
 }
 ```
 
@@ -135,8 +134,10 @@ php artisan cache:clear
 **Solution:** Ensure owner binding is set in request context:
 
 ```php
-// In middleware or service provider
-OwnerResolver::setOwner($currentTeam);
+use AIArmada\CommerceSupport\Support\OwnerContext;
+
+// In middleware
+OwnerContext::setForRequest($currentTeam);
 ```
 
 ## Performance Issues
@@ -170,11 +171,14 @@ OwnerResolver::setOwner($currentTeam);
 
 1. Check database indexes on frequently filtered columns
 2. Reduce default items per page
-3. Disable real-time polling:
+3. Disable real-time polling in the table definition (there is no
+   `filament-inventory.tables.poll` config key — `tables` only holds
+   `expiry_warning_days`):
 ```php
-'tables' => [
-    'poll' => false,
-],
+public static function table(Table $table): Table
+{
+    return parent::table($table)->poll(false);
+}
 ```
 
 ## Action Errors
@@ -186,10 +190,10 @@ OwnerResolver::setOwner($currentTeam);
 **Solution:** Check actual available quantity:
 
 ```php
-$level = InventoryStockLevel::query()
+$level = InventoryLevel::query()
     ->where('location_id', $locationId)
-    ->where('product_type', Product::class)
-    ->where('product_id', $productId)
+    ->where('inventoryable_type', Product::class)
+    ->where('inventoryable_id', $productId)
     ->first();
 
 dump([
@@ -206,9 +210,10 @@ dump([
 **Solution:** Ensure all required fields are provided:
 
 - `location_id`
-- `product_type` (full class name)
-- `product_id`
-- `movement_type` (receipt, shipment, adjustment, transfer_in, transfer_out)
+- `inventoryable_type` (full class name)
+- `inventoryable_id`
+- `movement_type` — one of `AIArmada\Inventory\Enums\MovementType`: `receipt`,
+  `shipment`, `transfer`, `adjustment`, `allocation`, `release`
 - `quantity`
 
 ## Debug Mode

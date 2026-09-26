@@ -103,9 +103,9 @@ CHIP is a Malaysian fintech payment gateway that offers:
 │  └─ WebhookOwnerBatchRunner                                  │
 ├─────────────────────────────────────────────────────────────┤
 │  Clients          │  Builders           │  Events           │
-│  ├─ CollectClient │  └─ PurchaseBuilder │  ├─ PurchasePaid  │
-│  └─ SendClient    │                     │  ├─ Refunded      │
-│                   │                     │  └─ 20+ more...   │
+│  ├─ ChipCollectClient    │  PurchaseBuilder │  ├─ PurchasePaid  │
+│  └─ ChipSendClient       │                  │  ├─ Refunded      │
+│                         │                  │  └─ 20+ more...   │
 ├─────────────────────────────────────────────────────────────┤
 │                      CHIP API (gate.chip-in.asia)           │
 └─────────────────────────────────────────────────────────────┘

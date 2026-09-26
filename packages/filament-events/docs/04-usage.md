@@ -8,14 +8,17 @@ title: Usage
 
 `EventResource` manages event definitions with lifecycle actions on the list page, and Create/Edit forms for event configuration.
 
-**Table columns:** title (searchable), status (badge, color-coded), visibility (badge), delivery_mode (badge), occurrences_count, published_at, updated_at.
+**Table columns:** title (searchable), status (badge, color-coded), visibility (badge), delivery_mode (badge), occurrences_count, published_at, last_state_change_at, updated_at.
 
 **Filters:** status, visibility, delivery_mode.
 
-**Lifecycle actions (table header):**
-- **Publish** — promotes draft events to published (calls `EventLifecycleWorkflow::publish()`)
-- **Archive** — archives published events
+**Row actions:**
+- **Publish** — promotes draft/pending events to published (calls `EventLifecycleWorkflow::publish()`)
+- **Archive** — archives approved events
 - **Cancel** — cancels an event with a reason
+- **Clone** — duplicates the event without its occurrences and redirects to the new edit page
+
+The table header carries a single **Export Events** action using the built-in Filament exporter.
 
 **Create/Edit form sections:**
 - **Pricing & Registration** — `pricing_mode` (select: paid/free/mixed), `registration_mode` (select: required/optional/none), `issue_passes_for_free` (tri-state select)
@@ -23,7 +26,7 @@ title: Usage
 
 **Infolist sections:** Identity, Lifecycle, Ownership, Metadata.
 
-**Relation managers (on View page):** Occurrences, Sessions, Locations, Involvements, Registrations, Attendances. All read-only.
+**Relation managers (on View page):** Occurrences, Sessions, Locations, Involvements, Registrations, Attendances, Classifications. All read-only.
 
 ### Occurrences
 
@@ -89,7 +92,7 @@ The Check-In Console page (`/events/check-in`) provides:
 
 - **Search by pass number or registration number** — via header action modal
 - **Pass table** — shows pass_no, registration_no, registrant type, status, issued_at
-- **Check In action** — delegates to `EventCheckInService::checkIn()` (visible for issued/active passes)
+- **Check In action** — delegates to `EventCheckInService::checkIn()`, visible only for passes where `Pass::isValid()` is true
 - **Walk-In Check-In** — header action with event select + attendee name/email
 
 ```php
@@ -103,14 +106,6 @@ app(EventCheckInService::class)->checkIn([
     'check_in_source' => 'qr',
 ]);
 ```
-
-## Notification Center
-
-The Notification Center page (`/events/notifications`) manages notification batches:
-
-- **Table:** event.title, title, audience_scope (badge), status (badge), scheduled_at, sent_at
-- **Row actions:** Send Now, Cancel, View Deliveries (modal)
-- **Header action:** New Notification — create a pending batch with event, subject, audience scope
 
 ## Approval Queue
 

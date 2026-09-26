@@ -101,27 +101,21 @@ public function panel(Panel $panel): Panel
 
 3. Run `php artisan filament:assets` to rebuild the Filament assets.
 
-### State Transition Action Missing
+### Changing a Pass State
 
-**Problem**: A pass state transition button (e.g., "Activate") is not visible.
+**Problem**: You need to activate, use, cancel, revoke, void, or expire a pass.
 
-**Solution**:
-
-1. Verify the pass is in the correct previous state
-2. Check the user has the required policy permissions
-3. Check owner context — the pass must belong to the current owner scope
-
-### "Action not available" on Pass
-
-**Problem**: A state transition action is listed but throws "action not available".
-
-**Solution**: This means the pass's current state does not allow that transition. Verify the pass's current state:
+**Solution**: `PassResource` is read-only and registers no state transition actions. Drive
+the change from your own application code through the core `aiarmada/ticketing` services,
+which own the allowed transitions, actor recording, and reason requirements. Confirm the
+pass's current status first:
 
 ```bash
-php artisan tinker --execute '$pass = \AIArmada\Ticketing\Models\Pass::find("pass-uuid"); echo $pass->state->getValue();'
+php artisan tinker --execute '$pass = \AIArmada\Ticketing\Models\Pass::find("pass-uuid"); echo $pass->status->value;'
 ```
 
-Allowed transitions are documented in the [Usage Guide](04-usage.md#pass-state-transitions).
+A pass status in `used`, `revoked`, `voided`, or `expired` is terminal and will not accept
+further transitions.
 
 ### Permission Denied
 
@@ -224,9 +218,10 @@ When reporting issues, include:
 - **Use** explicit owner context for cross-tenant operations
 
 ### State Actions
-- **Terminal** states cannot transition — create a new pass if needed
+- **Terminal** statuses cannot transition — issue a new pass instead
 - **Reasons** are required for most state transitions — always provide context
 - **Transfers** are logged immutably — no deletion of transfer records
+- The admin panel is read-only for pass state; drive transitions from application code
 
 ## Read next
 

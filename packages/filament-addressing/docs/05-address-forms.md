@@ -106,10 +106,9 @@ Omit `prefix:` when the schema was built without one. The same pattern applies
 on edit pages: update the record, then execute the sync with the fresh
 `state_id`.
 
-:::warning
-Calling `getState()` instead of `getRawState()` silently drops every area
-selection. The sync then deletes all of the address assignments.
-:::
+> **warning**
+> Calling `getState()` instead of `getRawState()` silently drops every area
+> selection. The sync then deletes all of the address assignments.
 
 ## Validation
 

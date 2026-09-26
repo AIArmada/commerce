@@ -16,7 +16,7 @@ translations, or product-specific permissions.
 - `OrganizationResource` (generic org CRUD; app-specific profile fields stay in the host app)
 - Member and invitation relation managers (backed by `aiarmada/membership` actions)
 - Lifecycle/ownership actions (archive, restore, suspend, visibility, ownership transfer — all delegated to `aiarmada/organizations` actions)
-- Config `filament-organizations.php`: `navigation`, `resources`
+- Config `filament-organizations.php`: `navigation`, `resources`, `rate_limits`
 
 ## Related packages
 

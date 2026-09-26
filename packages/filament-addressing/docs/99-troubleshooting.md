@@ -33,7 +33,7 @@ The Filament package does not seed countries.
 Run the core addressing command:
 
 ```bash
-php artisan address:seed-countries
+php artisan db:seed --class="AIArmada\Addressing\Database\Seeders\AddressCountrySeeder"
 ```
 
 ## Area Import Fails With Missing Country
@@ -41,7 +41,7 @@ php artisan address:seed-countries
 Seed countries first.
 
 ```bash
-php artisan address:seed-countries
+php artisan db:seed --class="AIArmada\Addressing\Database\Seeders\AddressCountrySeeder"
 ```
 
 Your CSV must use ISO2 country code:

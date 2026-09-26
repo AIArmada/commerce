@@ -80,7 +80,15 @@ The `Concerns\Billable` trait is the package-owned gateway management entrypoint
 
 Every new gateway must implement all 12 contracts. Missing implementations will break at runtime.
 
-## 6. Remember what this package does not own
+## 6. Console commands
+
+```bash
+# Replay a gateway webhook by re-fetching it from the provider
+php artisan cashier:webhook:replay evt_123 --gateway=stripe
+php artisan cashier:webhook:replay evt_123 --gateway=chip --dry-run
+```
+
+## 7. Remember what this package does not own
 
 - `laravel/cashier` still owns Stripe tables, controllers, and Stripe-native features
 - `aiarmada/cashier-chip` still owns CHIP billing persistence and renewals

@@ -35,7 +35,7 @@ $user->hasChipId(): bool
 $user->asChipCustomer(): ClientData
 
 // Update CHIP customer
-$user->updateChipCustomer(array $data): ClientData
+$user->updateChipCustomer(array $options = []): ClientData
 
 // Sync local data to CHIP
 $user->syncChipCustomerDetails(): ClientData
@@ -103,32 +103,35 @@ $user->chargeWithRecurringToken(
 
 ```php
 // Create checkout session
-$user->checkout(int $amount, array $options = []): Checkout
+$user->checkout(int $amount, array $sessionOptions = [], array $customerOptions = []): Checkout
 ```
 
 ### Subscriptions
 
 ```php
 // Create new subscription builder
-$user->newSubscription(string $type, string $price): SubscriptionBuilder
+$user->newSubscription(string $type, string|array $prices = []): SubscriptionBuilder
 
 // Get subscription by type
 $user->subscription(string $type = 'default'): ?Subscription
 
 // Get all subscriptions
-$user->subscriptions(): HasMany
+$user->subscriptions(): MorphMany
 
 // Check if subscribed
-$user->subscribed(string $type = 'default'): bool
+$user->subscribed(string $type = 'default', ?string $price = null): bool
 
 // Check if subscribed to specific price
-$user->subscribedToPrice(string $price, string $type = 'default'): bool
+$user->subscribedToPrice(string|array $prices, string $type = 'default'): bool
 
 // Check if on trial for any subscription
-$user->onTrial(string $type = 'default'): bool
+$user->onTrial(string $type = 'default', ?string $price = null): bool
 
-// Check if on grace period
-$user->onGracePeriod(string $type = 'default'): bool
+// Check if the trial for a type has expired
+$user->hasExpiredTrial(string $type = 'default', ?string $price = null): bool
+
+// Check if any subscription has an incomplete payment
+$user->hasIncompletePayment(string $type = 'default'): bool
 ```
 
 ---
@@ -237,9 +240,14 @@ $payment->checkoutUrl(): ?string
 $payment->recurringToken(): ?string
 
 // Check status
-$payment->isSuccessful(): bool
+$payment->isSucceeded(): bool
 $payment->isPending(): bool
 $payment->isFailed(): bool
+$payment->isExpired(): bool
+$payment->isRefunded(): bool
+$payment->isCancelled(): bool
+$payment->requiresRedirect(): bool
+$payment->requiresCapture(): bool
 
 // Get CHIP Purchase object
 $payment->asChipPurchase(): Purchase
@@ -320,9 +328,11 @@ $subscription->currentPeriodEnd(): ?CarbonInterface
 ### Relationships
 
 ```php
-$subscription->user(): BelongsTo
-$subscription->owner(): BelongsTo
+$subscription->user(): MorphTo
+$subscription->customer(): MorphTo
+$subscription->billable(): MorphTo
 $subscription->items(): HasMany
+$subscription->renewalAttempts(): HasMany
 ```
 
 ### Scopes
@@ -364,7 +374,7 @@ $builder->yearly(): self
 $builder->billingInterval(string $interval, int $count = 1): self
 
 // Set quantity
-$builder->quantity(int $quantity): self
+$builder->quantity(?int $quantity, ?string $price = null): self
 
 // Set metadata
 $builder->withMetadata(array $metadata): self
@@ -373,7 +383,7 @@ $builder->withMetadata(array $metadata): self
 $builder->create(?string $recurringToken = null): Subscription
 
 // Create via checkout
-$builder->checkout(array $options = []): Checkout
+$builder->checkout(array $sessionOptions = []): Checkout
 ```
 
 ---
@@ -432,14 +442,11 @@ Cashier::findBillableForWebhook(?string $chipId): ?Model
 ### Instance Methods
 
 ```php
-// Get CHIP instance
-$cashier = Cashier::chip();
+// Get the CHIP collect service
+$cashier = Cashier::chip(); // ChipCollectService | FakeChipCollectService
 
 // Access purchase builder
 $cashier->purchase(): PurchaseBuilder
-
-// Access client API
-$cashier->client(): ClientApi
 ```
 
 ---
@@ -448,24 +455,23 @@ $cashier->client(): ClientApi
 
 ### SubscriptionStatus
 
-```php
-SubscriptionStatus::Active
-SubscriptionStatus::Canceled
-SubscriptionStatus::Incomplete
-SubscriptionStatus::IncompleteExpired
-SubscriptionStatus::PastDue
-SubscriptionStatus::Trialing
-SubscriptionStatus::Unpaid
-SubscriptionStatus::Paused
-```
-
-### PaymentStatus
+`AIArmada\CashierChip\Enums\SubscriptionStatus` (stored in `chip_status`):
 
 ```php
-PaymentStatus::Success
-PaymentStatus::Pending
-PaymentStatus::Expired
-PaymentStatus::Failed
-PaymentStatus::Cancelled
-PaymentStatus::Refunded
+SubscriptionStatus::Active            // 'active'
+SubscriptionStatus::Canceled          // 'canceled'
+SubscriptionStatus::Incomplete        // 'incomplete'
+SubscriptionStatus::IncompleteExpired // 'incomplete_expired'
+SubscriptionStatus::PastDue           // 'past_due'
+SubscriptionStatus::Trialing          // 'trialing'
+SubscriptionStatus::Unpaid            // 'unpaid'
+SubscriptionStatus::Paused            // 'paused'
 ```
+
+### Payment Status
+
+There is no `PaymentStatus` enum in this package. `Payment::status()` returns the raw CHIP purchase
+status string, and the boolean predicates group those strings — see
+[One-off Charges](06-charges.md#payment-statuses).
+
+`AIArmada\Chip\Enums\WebhookEventType` holds the inbound CHIP webhook event types.

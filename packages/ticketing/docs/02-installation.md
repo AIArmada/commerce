@@ -38,12 +38,16 @@ This creates the following tables:
 
 | Table | Description |
 |-------|-------------|
-| `ticket_ticket_types` | Ticket type configurations |
-| `ticket_ticket_type_components` | Ticket pricing components |
-| `ticket_ticket_type_products` | Bundle products linked to ticket types |
+| `ticket_types` | Ticket type configurations |
+| `ticket_type_components` | Ticket pricing components |
+| `ticket_type_products` | Bundle products linked to ticket types |
+| `ticket_type_seating_options` | Per-ticket-type seating preferences |
 | `ticket_passes` | Issued passes with state and holder info |
 | `ticket_pass_holders` | Pass holder records |
 | `ticket_pass_transfers` | Pass transfer audit log |
+
+Only the `passes`, `pass_holders`, and `pass_transfers` tables are prefixed with
+`ticketing.database.table_prefix`; the four ticket-type tables are unprefixed by default.
 
 Table names can be overridden via config or environment variables.
 
@@ -57,12 +61,13 @@ This creates `config/ticketing.php` with all available options.
 
 ## Scheduled Tasks
 
-If you use auto-expiry, add to your `routes/console.php`:
+`ticketing:expire-transfers` is the package's only console command. It closes transfer
+windows that have lapsed; add it to `routes/console.php`:
 
 ```php
 use Illuminate\Support\Facades\Schedule;
 
-Schedule::command('ticketing:expire-passes')->hourly();
+Schedule::command('ticketing:expire-transfers')->daily();
 ```
 
 ## Optional Dependencies

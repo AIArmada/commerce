@@ -61,7 +61,7 @@ polymorphic involvement record; the events package owns the role and scope.
 - Family/group registration with per-participant answers
 - Seat-map associations and pass-triggered seat allocation through `aiarmada/seating`
 - Check-in console with generic pass/QR lookup
-- Change management with public updates and notification batches
+- Change management with public updates and a change-notice notification seam
 - Event submissions with approval workflows and reason codes
 - Series grouping and taxonomy/classification system
 - Relation-backed search document indexing for attributes, audiences, classifications, and time expressions across events, occurrences, and sessions

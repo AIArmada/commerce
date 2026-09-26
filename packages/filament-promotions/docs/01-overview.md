@@ -58,35 +58,42 @@ When this package is installed alongside `aiarmada/filament-pricing`, it is the 
 
 ```
 filament-promotions/
-├── Enums/
-│   └── PromotionType.php           # Filament-aware enum with HasColor/HasIcon/HasLabel
-├── Models/
-│   └── Promotion.php               # Extended model with Filament enum
-├── Resources/
-│   └── PromotionResource/
-│       ├── Pages/
-│       │   ├── CreatePromotion.php
-│       │   ├── EditPromotion.php
-│       │   ├── ListPromotions.php
-│       │   └── ViewPromotion.php
-│       ├── Schemas/
-│       │   ├── PromotionForm.php
-│       │   └── PromotionInfolist.php
-│       └── Tables/
-│           └── PromotionsTable.php
-├── Support/
-│   └── OwnerScopedQueries.php      # Owner scope helper
-├── Widgets/
-│   └── PromotionStatsWidget.php    # Dashboard stats
-├── FilamentPromotionsPlugin.php    # Plugin registration
-└── FilamentPromotionsServiceProvider.php
+├── src/
+│   ├── Actions/                       # Filament actions
+│   │   ├── IssuePromotionVouchersAction.php
+│   │   └── IssuePromotionVouchersFromListAction.php
+│   ├── Resources/
+│   │   ├── PromotionResource.php
+│   │   └── PromotionResource/
+│   │       ├── Pages/
+│   │       │   ├── CreatePromotion.php
+│   │       │   ├── EditPromotion.php
+│   │       │   ├── ListPromotions.php
+│   │       │   └── ViewPromotion.php
+│   │       ├── RelationManagers/
+│   │       │   └── IssuedVouchersRelationManager.php
+│   │       ├── Schemas/
+│   │       │   ├── PromotionForm.php
+│   │       │   └── PromotionInfolist.php
+│   │       └── Tables/
+│   │           └── PromotionsTable.php
+│   ├── Support/
+│   │   └── CachedPromotionInsights.php # Cached owner-scoped insights
+│   ├── Widgets/
+│   │   ├── PromotionStatsWidget.php    # Dashboard stats
+│   │   └── TopPromotionsUsageChart.php # List-page header widget
+│   ├── FilamentPromotionsPlugin.php    # Plugin registration
+│   └── FilamentPromotionsServiceProvider.php
 ```
+
+The `PromotionType` enum and the `Promotion` model live in the core
+`aiarmada/promotions` package, not in this adapter.
 
 ## Requirements
 
 - PHP 8.4+
 - Laravel 13+
-- Filament 5.0+
+- Filament 5.8+
 - aiarmada/promotions package
 
 ## Plugin Registration

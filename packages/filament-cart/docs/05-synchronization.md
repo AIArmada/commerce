@@ -212,7 +212,7 @@ use AIArmada\Cart\Facades\Cart;
 use AIArmada\Cart\Snapshots\CartSyncManager;
 
 // Get the cart
-$cart = Cart::instance('default');
+$cart = Cart::getCartInstance('default');
 
 // Force sync
 app(CartSyncManager::class)->sync($cart);
@@ -234,7 +234,7 @@ foreach ($items as $item) {
 }
 
 // Manually sync once at the end
-app(CartSyncManager::class)->sync(Cart::instance());
+app(CartSyncManager::class)->sync(Cart::getCartInstance('default'));
 
 // Re-register listeners
 // (or just let the next request boot fresh)
@@ -357,7 +357,7 @@ Syncs are idempotent — running the same sync multiple times produces the same 
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Cart\Snapshots\CartSnapshot;
 
-$cart = Cart::instance('default');
+$cart = Cart::getCartInstance('default');
 $identifier = $cart->getIdentifier();
 
 // Check if normalized record exists
@@ -377,16 +377,16 @@ if ($snapshot) {
 
 ```php
 // Force a fresh sync
-app(CartSyncManager::class)->sync(Cart::instance());
+app(CartSyncManager::class)->sync(Cart::getCartInstance('default'));
 ```
 
 ### Compare States
 
 ```php
-$cart = Cart::instance();
+$cart = Cart::getCartInstance('default');
 $snapshot = CartSnapshot::where('identifier', $cart->getIdentifier())->first();
 
-// Compare
+// Compare (total() is a Money object; getAmount() returns minor units as a string)
 $liveTotal = (int) $cart->total()->getAmount();
 $snapshotTotal = $snapshot->total;
 

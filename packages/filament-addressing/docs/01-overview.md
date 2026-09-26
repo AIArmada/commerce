@@ -18,9 +18,8 @@ It gives applications admin UI for:
 - Reusable address form schemas for other Filament resources.
 - An opt-in address relation manager.
 
-:::warning
-This package is not the address domain owner. The core `aiarmada/addressing` package owns models, migrations, import contracts, country data, formatting, normalization, and snapshots.
-:::
+> **warning**
+> This package is not the address domain owner. The core `aiarmada/addressing` package owns models, migrations, import contracts, country data, formatting, normalization, and snapshots.
 
 ## Default Resources
 

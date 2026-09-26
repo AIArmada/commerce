@@ -111,9 +111,11 @@ Generate a new key only when starting a genuinely new setup attempt.
 ### Invoices
 
 View and download invoice history:
-- List recent invoices (capped by `billing.invoices.limit`)
+- List recent invoices (capped by `billing.invoices.limit`, default 25)
 - View invoice details
-- Download PDF (if renderer configured)
+- Download PDF — **only if** a `cashier-chip` invoice renderer is bound. Without one,
+  `Invoice::pdf()` throws a `RuntimeException`. The admin `InvoiceResource` `download_pdf` action is
+  a stub that only shows a notification; it never renders a PDF.
 
 ## Configuration
 
@@ -209,7 +211,7 @@ Extend the built-in pages:
 ```php
 namespace App\Filament\Billing\Pages;
 
-use AIArmada\FilamentCashierChip\Pages\Subscriptions as BaseSubscriptions;
+use AIArmada\FilamentCashierChip\CustomerPortal\Pages\Subscriptions as BaseSubscriptions;
 
 class Subscriptions extends BaseSubscriptions
 {
@@ -221,6 +223,10 @@ class Subscriptions extends BaseSubscriptions
     }
 }
 ```
+
+The built-in pages render `filament-cashier-chip::pages.subscriptions`,
+`…::pages.payment-methods`, `…::pages.invoices`, and `…::pages.billing-dashboard`. Override `$view`
+only if you also publish the views.
 
 ### Custom Views
 

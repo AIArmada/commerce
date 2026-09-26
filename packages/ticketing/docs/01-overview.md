@@ -15,7 +15,7 @@ Use this package when you need to sell tickets for events, workshops, courses, o
 - Ticket types with pricing, quotas, and configurable sales windows
 - The `ticketable` polymorphic relationship — any model implementing `TicketableInterface` can have tickets
 - Pass issuance with unique pass numbers, QR codes, and barcodes
-- Pass state machine (Pending → Issued → Activated → Used / Cancelled / Revoked / Voided / Expired)
+- Pass state machine (Pending → Issued → Activated → Used / Cancelled / Revoked / Voided / Expired; see the transition table in [Usage](04-usage.md#pass-state-transitions))
 - Pass transfer with audit log, transfer window expiry, and notifications
 - Bulk transfer support
 - Bundle products (auto-add required products to cart)
@@ -59,22 +59,29 @@ Use this package when you need to sell tickets for events, workshops, courses, o
 - `IssuePassesAction` — Issue one or more passes from a ticket type
 - `TransferPassToHolderAction` — Transfer a single pass to a new holder
 - `BulkTransferPassesAction` — Transfer multiple passes at once
-- `ActivatePassAction` — Activate a pass (entry)
-- `UsePassAction` — Mark a pass as used
-- `CancelPassAction` — Cancel a pass
 - `RevokePassAction` — Revoke a pass
-- `VoidPassAction` — Void a pass
-- `ExpirePassAction` — Expire a pass (usually scheduled)
+- `AddTicketTypeToCartAction` — Add a ticket type to the cart
+- `AutoAddRequiredTicketBundlesAction` — Auto-add required bundle products
+- `ExpandTicketTypeComponentsAction` — Expand component ticket types by a multiplier
+
+Pass lifecycle transitions beyond `RevokePassAction` are driven by
+`$pass->status->transitionTo(...)` or the `PassState` transition config; there are no
+per-state action classes.
 
 ### Contracts
 
 - `TicketableInterface` — Interface for models that can have tickets
-- `PassDeliveryService` — Send pass to holder (email, SMS, etc.)
+- `PassDeliveryServiceInterface` — Send pass to holder (email, SMS, etc.)
+- `PassIssuerInterface` — Issue passes for a `PassIssuanceContext`
+- `PassTransferServiceInterface` — Perform the locked holder switch for one pass
 
 ### Enums
 
-- `PricingMode` — `Flat`, `Tiered`, `Dynamic`, `Free`, `Donation`
+- `PricingMode` — `Paid`, `Free`, `Mixed`
 - `PassStatus` — `Pending`, `Issued`, `Activated`, `Used`, `Cancelled`, `Revoked`, `Voided`, `Expired`
+- `TicketAccessType` — `General`, `GeneralAdmission`, `ReservedSeating`, `Vip`, `Complimentary`, `Entry`
+- `TicketTypeStatus` — `Draft`, `Active`, `Paused`, `SoldOut`, `Ended`, `Cancelled`
+- `TicketTypeVisibility` — `Public`, `Private`, `Hidden`
 
 ### States
 

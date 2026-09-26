@@ -34,15 +34,18 @@ Create payments with any `CheckoutableInterface` implementation:
 ```php
 use AIArmada\Chip\Gateways\ChipGateway;
 use AIArmada\CommerceSupport\Contracts\Payment\CheckoutableInterface;
-use AIArmada\CommerceSupport\Data\Customer;
+use AIArmada\CommerceSupport\Contracts\Payment\PaymentCustomerData;
 
 // Your custom order/invoice implementing CheckoutableInterface
 class Order implements CheckoutableInterface
 {
+    public function getCheckoutLineItems(): iterable { /* ... */ }
+    public function getCheckoutSubtotal(): Money { /* ... */ }
+    public function getCheckoutDiscount(): Money { /* ... */ }
+    public function getCheckoutTax(): Money { /* ... */ }
     public function getCheckoutTotal(): Money { /* ... */ }
     public function getCheckoutCurrency(): string { /* ... */ }
     public function getCheckoutReference(): string { /* ... */ }
-    public function getCheckoutLineItems(): array { /* ... */ }
     public function getCheckoutNotes(): ?string { /* ... */ }
     public function getCheckoutMetadata(): array { /* ... */ }
 }
@@ -50,10 +53,10 @@ class Order implements CheckoutableInterface
 $gateway = app(ChipGateway::class);
 $order = new Order($items);
 
-$customer = Customer::fromArray([
-    'email' => 'customer@example.com',
-    'name' => 'John Doe',
-]);
+$customer = new PaymentCustomerData(
+    email: 'customer@example.com',
+    name: 'John Doe',
+);
 
 $payment = $gateway->createPayment($order, $customer, [
     'success_url' => route('payment.success'),
@@ -63,13 +66,17 @@ $payment = $gateway->createPayment($order, $customer, [
 return redirect($payment->getCheckoutUrl());
 ```
 
+`PaymentCustomerData` is the ready-made `CustomerInterface` implementation shipped in
+`AIArmada\CommerceSupport\Contracts\Payment`; supply your own class to implement the interface
+directly.
+
 ## Cart Integration
 
 When `aiarmada/cart` is installed, Cart automatically implements `CheckoutableInterface` – no additional setup required:
 
 ```php
 use AIArmada\Chip\Gateways\ChipGateway;
-use AIArmada\CommerceSupport\Data\Customer;
+use AIArmada\CommerceSupport\Contracts\Payment\PaymentCustomerData;
 
 class CheckoutController extends Controller
 {
@@ -80,10 +87,10 @@ class CheckoutController extends Controller
         // Cart implements CheckoutableInterface
         $cart = app(\AIArmada\Cart\Cart::class);
         
-        $customer = Customer::fromArray([
-            'email' => $request->user()->email,
-            'name' => $request->user()->name,
-        ]);
+        $customer = new PaymentCustomerData(
+            email: $request->user()->email,
+            name: $request->user()->name,
+        );
         
         $payment = $this->gateway->createPayment($cart, $customer, [
             'success_url' => route('payment.success'),
@@ -122,7 +129,7 @@ $payment = $gateway->createPayment($cart, $customer, [
 ## Payment Intent
 
 ```php
-$payment->getId();           // 'pur_abc123'
+$payment->getPaymentId();    // 'pur_abc123'
 $payment->getStatus();       // PaymentStatus::PENDING
 $payment->getAmount();       // Money::MYR(9900)
 $payment->getCurrency();     // 'MYR'
@@ -151,13 +158,13 @@ $payment = $gateway->createPayment($cart, $customer, [
 ]);
 
 // 2. Capture later
-$gateway->capturePayment($payment->getId());
+$gateway->capturePayment($payment->getPaymentId());
 
 // Or partial capture
-$gateway->capturePayment($payment->getId(), Money::MYR(5000));
+$gateway->capturePayment($payment->getPaymentId(), Money::MYR(5000));
 
 // Or cancel
-$gateway->cancelPayment($payment->getId());
+$gateway->cancelPayment($payment->getPaymentId());
 ```
 
 ## Feature Support

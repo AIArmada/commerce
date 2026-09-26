@@ -41,9 +41,12 @@ keywords:
 - Owner/security: Filament adapter.
 
 ## Key surfaces
-- Resources: `VoucherResource`, `VoucherUsageResource`, `VoucherWalletResource`
-- Actions/Services: `Actions/ActivateVoucherAction`, `Actions/AddToMyWalletAction`, `Actions/ApplyVoucherToCartAction`, `Actions/BulkGenerateVouchersAction`, `Actions/ManualRedeemVoucherAction`, `Actions/PauseVoucherAction`, `Support/ConditionTargetFormData`, `Support/ConditionTargetPreset`
-- Config `filament-vouchers.php`: `navigation`, `group`, `resources`, `navigation_sort`, `vouchers`, `voucher_usage`, `voucher_wallets`, `pages`, `navigation_sort`, `stacking_configuration`
+- Resources: `VoucherResource`, `VoucherUsageResource`, `VoucherWalletResource` (all declared `final` — not subclassable)
+- Relation managers: `VoucherResource/RelationManagers/{VoucherUsagesRelationManager,WalletEntriesRelationManager}`
+- Pages: `Pages/StackingConfigurationPage`, `Pages/TargetingConfigurationPage`
+- Widgets (panel-registered): `VoucherStatsWidget`, `RedemptionTrendChart`; cart-integration: `AppliedVouchersWidget`, `QuickApplyVoucherWidget`, `VoucherCartStatsWidget`, `VoucherSuggestionsWidget`, `VoucherUsageTimelineWidget`, `VoucherWalletStatsWidget`
+- Actions/Support/Exports/Integrations: `Actions/{ActivateVoucherAction,AddToMyWalletAction,ApplyVoucherToCartAction,BulkGenerateVouchersAction,ManualRedeemVoucherAction,PauseVoucherAction}`, `Support/{ConditionTargetDisplay,ConditionTargetFormData,ConditionTargetPreset,MoneyHelper,OwnerTypeRegistry,VoucherStatsAggregator}`, `Exports/VoucherUsageExporter`, `Extensions/CartVoucherActions`, `Integrations/FilamentCartBridge`
+- Config `filament-vouchers.php` keys: `navigation.group`, `resources.navigation_sort.{vouchers,voucher_usage,voucher_wallets}`, `pages.navigation_sort.{stacking_configuration,targeting_configuration}`, `polling_interval`, `order_resource`, `owners`, `default_currency`
 
 ## Docs map
 - Start: `01-overview` → `03-configuration` → `04-usage` → `99-troubleshooting`

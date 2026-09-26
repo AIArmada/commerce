@@ -8,7 +8,7 @@ title: Installation
 
 - PHP 8.4+
 - Laravel 13+
-- Filament 5.0+
+- Filament 5.8+
 - `aiarmada/inventory` package
 
 ## Install via Composer

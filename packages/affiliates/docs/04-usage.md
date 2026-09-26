@@ -181,8 +181,8 @@ $conversion = RecordAffiliateConversion::run(
     cart: $cart,
     payload: [
         'external_reference' => 'ORD-12345',
-        'value_minor' => 15000,
-        'subtotal_minor' => 14000,
+        'total' => 15000,          // minor units
+        'subtotal' => 14000,       // minor units
         'conversion_type' => 'purchase',
         'subject_type' => 'product',
         'subject_key' => 'SKU-1001',
@@ -196,9 +196,13 @@ $conversion = RecordAffiliateConversion::run(
 );
 ```
 
+The payload keys are `total` and `subtotal` (minor units) — `value_minor` and `subtotal_minor`
+are **not** read and would be silently ignored. The persisted row uses `value_minor`,
+`subtotal_minor`, and `external_reference`.
+
 ## Conversion Rates and Reporting Currency
 
-Every conversion stamps the exchange rate effective at `occurred_at` (`commission_rate_to_base` + `commission_rate_base`), so historical reports never shift when current rates move. Use `$conversion->baseCommissionMinor()` for the stamped base-currency value, or convert explicitly with an as-of date:
+Every conversion stamps the exchange rate effective at `occurred_at` (`commission_rate_to_base` + `commission_rate_base`), so historical reports never shift when current rates move. Read the stamped base-currency value from the `AffiliateConversion` **model** (not the returned `AffiliateConversionData` DTO) with `baseCommissionMinor()`, or convert explicitly with an as-of date:
 
 ```php
 use AIArmada\CommerceSupport\Support\CurrencyConverter;
@@ -234,6 +238,7 @@ ConversionStatus::Pending;    // Awaiting review
 ConversionStatus::Qualified;  // Qualified and waiting for maturity processing
 ConversionStatus::Approved;   // Approved and released toward payout eligibility
 ConversionStatus::Rejected;   // Rejected (fraud, refund, etc.)
+ConversionStatus::Reversed;   // Reversed after payout
 ConversionStatus::Paid;       // Commission paid out
 ```
 
@@ -244,22 +249,24 @@ When the maturity workflow is enabled, conversions typically move from `Pending`
 
 ## Commission Calculation
 
-The `CommissionCalculator` service handles all commission logic:
+The `CommissionCalculator` service handles all commission logic. It takes the subtotal in minor
+units and returns the commission in minor units:
 
 ```php
+use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Services\CommissionCalculator;
 
 $calculator = app(CommissionCalculator::class);
 
-// Calculate commission for an order
-$commission = $calculator->calculate(
-    affiliate: $affiliate,
-    orderTotal: 15000,
-    orderSubtotal: 14000,
-);
+$affiliate->commission_type = CommissionType::Percentage;
+$affiliate->commission_rate = 1000; // 10% (basis points)
 
-// Returns commission in minor units (for example, 1500 = 15.00 in the affiliate currency)
+$commission = $calculator->calculate($affiliate, 14000); // 1400 = 14.00
 ```
+
+Percentage math uses `affiliates.currency.percentage_scale` (default `100`, so 1000 basis points
+= 10%). Fixed commissions ignore the amount entirely and return `commission_rate` as minor units.
+Both paths run through `CommissionCaps::clamp()`.
 
 ### Commission Types
 
@@ -404,3 +411,12 @@ use AIArmada\Affiliates\Facades\Affiliate;
 
 $affiliate = Affiliate::findByCode('PARTNER42');
 ```
+
+## Artisan Commands
+
+Scheduled work (daily stat aggregation, commission maturity, rank upgrades, performance bonuses,
+scheduled payouts, payout CSV export) is covered in [Artisan Commands](11-commands.md). The six
+commands are `affiliates:aggregate-daily`, `affiliates:process-maturity`,
+`affiliates:process-ranks`, `affiliates:award-bonuses`, `affiliates:process-payouts`, and
+`affiliates:payout:export`. With `affiliates.owner.enabled` on, each command iterates owner
+contexts automatically.

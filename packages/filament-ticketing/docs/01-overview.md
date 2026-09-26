@@ -14,7 +14,7 @@ Use this package when you need panel resources for ticket type management, pass 
 
 - `FilamentTicketingPlugin` — Panel plugin registration
 - `TicketTypeResource` — CRUD for ticket types
-- `PassResource` — View and state transition actions for passes
+- `PassResource` — Read-only pass viewing
 - `PassHolderResource` — Read-only pass holder lookup
 - `PassTransferResource` — Transfer audit log
 - Owner-safe query wiring for all resources
@@ -44,26 +44,24 @@ Use this package when you need panel resources for ticket type management, pass 
 
 ### Ticket Type Resource
 - **Full CRUD**: Create, edit, and manage ticket types
-- **Pricing Configuration**: Set prices, currencies, pricing modes
+- **Pricing Configuration**: Set price, currency, access type, and seating mode
+- **Quantities**: `admits_quantity`, `min_quantity`, `max_quantity`
 - **Sales Windows**: Configure sale start/end dates
-- **Components**: Manage pricing components inline
-- **Bundle Products**: Link products to ticket types
+- **Components**: Attach component ticket types with a quantity, in the Components relation manager
+- **Bundle Products**: Link products to ticket types in the Products relation manager
 
 ### Pass Resource
-- **View Passes**: See all issued passes with search and filters
-- **State Management**: Activate, use, cancel, revoke, void passes
-- **Transfer History**: View pass transfer history
-- **Holder Info**: See current and past holder details
+- **View Passes**: Search all issued passes and filter by status
+- **Pass Details**: Pass no, ticket type, current holder, QR code, barcode, status, and every lifecycle timestamp
+- **Read Only**: the resource registers no state transition, transfer, or delete actions — lifecycle changes go through the core `aiarmada/ticketing` services
 
-### Pass Holder Resource (Read-Only)
-- **Holder Lookup**: Search pass holders by name or email
-- **Pass History**: See all passes held by a person
-- **Relationship View**: Linked customer records (when `aiarmada/customers` is installed)
+### Pass Holder Resource (List Only)
+- **Holder Lookup**: Search pass holders by name, email, or pass number
+- **Pass Link**: Each row shows the holder's pass number and whether the record is the current holder
 
-### Pass Transfer Resource
-- **Audit Log**: Complete history of pass transfers
-- **Transfer Details**: See old/new holders, reason, authorizer
-- **Search**: Filter transfers by pass, holder, or date range
+### Pass Transfer Resource (List Only)
+- **Audit Log**: Every pass transfer in the current owner scope
+- **Transfer Details**: Pass number, from holder, to holder, reason, and timestamp
 
 ## Owner scoping and security notes
 
@@ -76,7 +74,7 @@ Use this package when you need panel resources for ticket type management, pass 
 ## Requirements
 
 - PHP 8.4+
-- Filament 5.6+
+- Filament 5.8+
 - `aiarmada/ticketing`
 - `aiarmada/commerce-support`
 

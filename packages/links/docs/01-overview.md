@@ -35,7 +35,7 @@ The `aiarmada/links` package is generic tracked-link management for Laravel. It 
 
 - **Models** — `Link`, `LinkClick`
 - **Actions** — `CreateLink`, `UpdateLink`, `DeactivateLink`, `ReactivateLink`, `ResolveLink`, `RecordLinkClick`, `RedirectToLink`
-- **Events** — `LinkCreated`, `LinkUpdated`, `LinkDeactivated`, `LinkReactivated`, `LinkClicked`, `LinkExpired`, `LinkClickLimitReached`
+- **Events** — `LinkCreated`, `LinkUpdated`, `LinkDeactivated`, `LinkReactivated`, `LinkClicked`, `LinkExpired`, `LinkClickLimitReached`, `LinkBlocked`
 - **Contracts** — `SlugGeneratorInterface`, `BotDetectorInterface`, `UserAgentParserInterface`, `LinkGateInterface`, each with a swappable default
 - **HTTP surface** — `GET /go/{slug}` redirect route (prefix, domain, and middleware are configurable); per-link signed URLs via `GenerateLinkUrl`
 - **Console** — `links:prune-clicks` retention command

@@ -21,10 +21,12 @@ title: Troubleshooting
 // 1. Verify plugin registration
 $panel->plugin(FilamentChipPlugin::make())
 
-// 2. Check config - ensure resource isn't null
-'resources' => [
-    'purchase' => PurchaseResource::class,  // Not null
-],
+// 2. Check config — resources are not individually switchable.
+//    The only registration switches are the plugin flags:
+//    ->operatorResources(false) and ->developerResources()
+FilamentChipPlugin::make()
+    ->operatorResources()
+    ->developerResources();
 
 // 3. Check resource permissions (if using policies)
 // Ensure canViewAny() returns true
@@ -71,7 +73,7 @@ DB::table('chip_purchases')->count();
 ```php
 // Check for paid purchases
 Purchase::where('status', 'paid')
-    ->forCurrentOwner()
+    ->forOwner()
     ->count();
 
 // Verify widget date range
@@ -83,22 +85,22 @@ Purchase::where('status', 'paid')
 **Symptom:** `/billing` returns 404.
 
 **Causes:**
-1. BillingPanelProvider not registered
+1. `AIArmada\FilamentCashierChip\CustomerPortal\BillingPanelProvider` not registered
 2. Wrong path configuration
-3. Cashier-chip not installed
+3. `aiarmada/filament-cashier-chip` not installed
 
 **Solutions:**
 
 ```php
 // 1. Register provider
 // bootstrap/providers.php
-AIArmada\FilamentChip\BillingPanelProvider::class,
+AIArmada\FilamentCashierChip\CustomerPortal\BillingPanelProvider::class,
 
 // 2. Clear route cache
 php artisan route:clear
 
-// 3. Check cashier-chip installed
-composer show aiarmada/cashier-chip
+// 3. Check the portal package is installed
+composer show aiarmada/filament-cashier-chip
 ```
 
 ### Permission Denied Errors
@@ -165,7 +167,7 @@ php artisan view:clear
 // In middleware:
 public function handle($request, $next)
 {
-    OwnerContext::set(auth()->user()->currentTeam);
+    OwnerContext::setForRequest(auth()->user()->currentTeam);
     return $next($request);
 }
 ```
@@ -221,9 +223,7 @@ dd($resources);
 
 // 3. Reduce polling frequency
 // config/filament-chip.php
-'tables' => [
-    'poll_interval' => '60s',  // Or null to disable
-],
+'polling_interval' => '60s',  // Or null to disable
 ```
 
 ### Widget Loading Slow

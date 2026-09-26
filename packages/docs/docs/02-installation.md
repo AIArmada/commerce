@@ -2,8 +2,6 @@
 title: Installation
 ---
 
-import Aside from "@components/Aside.astro"
-
 # Installation
 
 ## Requirements
@@ -73,9 +71,8 @@ DOCS_DUE_DAYS=30
 
 ## Multi-Tenant Setup
 
-<Aside variant="warning">
-  Owner scoping is **disabled by default** (`DOCS_OWNER_ENABLED=false`). In a multi-tenant deployment every tenant will see all invoices and documents unless you enable it. Set `DOCS_OWNER_ENABLED=true` and bind `OwnerResolverInterface` before going live.
-</Aside>
+> **warning**
+> Owner scoping is **disabled by default** (`DOCS_OWNER_ENABLED=false`). In a multi-tenant deployment every tenant will see all invoices and documents unless you enable it. Set `DOCS_OWNER_ENABLED=true` and bind `OwnerResolverInterface` before going live.
 
 ```env
 DOCS_OWNER_ENABLED=true

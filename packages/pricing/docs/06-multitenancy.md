@@ -16,6 +16,7 @@ Enable owner scoping in your configuration:
     'owner' => [
         'enabled' => env('PRICING_OWNER_ENABLED', false),
         'include_global' => false,
+        'auto_assign_on_create' => true,
     ],
 ],
 ```
@@ -37,17 +38,26 @@ When multitenancy is enabled:
 
 ## Owner Context
 
-The package uses `OwnerContext` from `commerce-support` to resolve the current owner:
+The package uses `AIArmada\CommerceSupport\Support\OwnerContext` to resolve the current owner. There is no `set()`/`clear()` — use `withOwner()` for scoped work and `setForRequest()` from middleware:
 
 ```php
 use AIArmada\CommerceSupport\Support\OwnerContext;
 
-// Set owner context (typically in middleware)
-OwnerContext::set($tenant);
+// Scoped work (any context: HTTP, console, queue)
+$priceLists = OwnerContext::withOwner($tenant, fn () => PriceList::all());
+
+// Explicit global work
+PriceList::all(); // inside OwnerContext::withOwner(null, fn () => ...)
+
+// HTTP middleware only
+OwnerContext::setForRequest($tenant);
 
 // Resolve current owner
 $owner = OwnerContext::resolve();
 ```
+
+> **warning**
+> `setForRequest()` throws a `RuntimeException` outside an active HTTP request. Never use it as a general escape hatch.
 
 ## Querying with Owner Scope
 
@@ -72,8 +82,11 @@ $lists = PriceList::forOwner($tenant)->get();
 // Include global (ownerless) records
 $lists = PriceList::forOwner($tenant, includeGlobal: true)->get();
 
-// Global records only
-$globalLists = PriceList::whereNull('owner_id')->get();
+// Global records only — owner = null means global-only, never "all owners"
+$globalLists = PriceList::globalOnly()->get();
+
+// Cross-tenant read: drop the global scope entirely (privileged)
+$allLists = PriceList::withoutOwnerScope()->get();
 ```
 
 ## Sharing config and owner context
@@ -81,7 +94,7 @@ $globalLists = PriceList::whereNull('owner_id')->get();
 Owner scoping is configured per package and resolved through `commerce-support`:
 
 ```php
-use AIArmada\CommerceSupport\Facades\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 
 // Check if owner scoping is enabled
 if (config('pricing.features.owner.enabled', false)) {
@@ -147,19 +160,19 @@ $price = Price::create([
 
 ## Global Records
 
-Global records (where `owner_type` and `owner_id` are `null`) can be shared across all tenants:
+Global records (where `owner_type` and `owner_id` are `null`) are shared only when a query opts in via `include_global`. Plain owner-scoped reads never see them, and `owner = null` never means "all owners":
 
 ```php
-// Create a global price list (requires null owner context)
-OwnerContext::clear();
+use AIArmada\CommerceSupport\Support\OwnerContext;
 
-$globalList = PriceList::create([
+// Create a global price list inside an explicit global context
+$globalList = OwnerContext::withOwner(null, fn () => PriceList::create([
     'name' => 'Default Retail',
     'slug' => 'default-retail',
     'is_default' => true,
-]);
+]));
 
-// Access global records with include_global
+// Tenants see it only with include_global
 PriceList::forOwner($tenant, includeGlobal: true)->get();
 ```
 
@@ -182,7 +195,7 @@ $result = $calculator->calculate($product, 1, [
 1. **Always set owner context** in middleware before processing requests
 2. **Use `forOwner()` scope** when querying across different contexts
 3. **Test cross-tenant protection** with regression tests
-4. **Be careful with global records** - they're accessible to all tenants
+4. **Be careful with global records** — they are only visible to a tenant that opts in with `include_global: true`
 5. **Validate foreign IDs** even in Filament forms (defense-in-depth)
 
 ## Example: Middleware Setup
@@ -191,18 +204,24 @@ $result = $calculator->calculate($product, 1, [
 namespace App\Http\Middleware;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use Closure;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 class SetOwnerContext
 {
-    public function handle($request, $next)
+    public function handle(Request $request, Closure $next): Response
     {
         $tenant = $request->user()?->tenant;
-        
+
         if ($tenant) {
-            OwnerContext::set($tenant);
+            OwnerContext::setForRequest($tenant);
         }
-        
+
         return $next($request);
     }
 }
 ```
+
+> **info**
+> `OwnerContext` stores HTTP state on the request attributes bag, which Octane clears between worker cycles. Console commands and queued jobs have no request, so they must use `OwnerContext::withOwner()` instead.

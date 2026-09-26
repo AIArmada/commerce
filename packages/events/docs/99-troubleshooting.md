@@ -18,9 +18,6 @@ Check that `EVENTS_SYNC_BUILD_SEARCH_DOCUMENTS=true` and that `events.search.ind
 
 If you changed event, occurrence, or session attribute, audience, classification, or time-expression records and expected the search document to move, make sure the relevant sync toggle is enabled:
 
-- `EVENTS_SYNC_ATTRIBUTES_TO_METADATA`
-- `EVENTS_SYNC_AUDIENCES_TO_METADATA`
-- `EVENTS_SYNC_TIME_EXPRESSIONS_TO_METADATA`
 - `EVENTS_SYNC_AUDIENCES_TO_FACETS`
 - `EVENTS_SYNC_CLASSIFICATIONS_TO_FACETS`
 
@@ -38,7 +35,19 @@ Ensure your owner model implements the required `OwnerResolverInterface` contrac
 
 Verify the registration has associated `registration_items` with valid `ticket_type_id` references. Passes are created through explicit action, not automatically on registration creation.
 
-### Registration refuses creation
+#### Change notices are published but nobody is notified
+
+`publishNotice()` only records the change and dispatches `EventChangeNoticePublished`. Delivery
+runs in `DispatchEventChangeNoticeNotifications`. Check that:
+
+- an `EventChangeNoticeNotificationDispatcher` is bound (the built-in
+  `EventNotificationDispatcher` requires `aiarmada/communications`)
+- `events.change_notices.audience_resolver` resolves recipients for the audience scope the
+  change log resolved to (`registrants` for `critical`/`high` impact, `followers` otherwise)
+- a matching `EventUpdate` record exists on the change log — without one the dispatcher has
+  no followers or notification content to work from
+
+## Registration refuses creation
 
 Check:
 
@@ -90,9 +99,3 @@ Status values stored in the database are unchanged. Allowed transitions are defi
 ### `DefaultEventRegistrationScopeResolver` TypeError on explicit mode
 
 When a session or occurrence has an explicit `pricing_mode` or `registration_mode` column value, the model cast may already return the enum instance. The resolver handles both cases (raw string and pre-cast enum). If you see `TypeError: ::from()` in the stack trace, ensure your package version includes the `instanceof` guard added in this feature.
-
-## A notification batch remains processing
-
-Inspect its delivery rows. `processing` with a fresh `leased_at` means a worker owns the attempt. A stale lease is reclaimable by a later job. `failed` is retryable; `dead` exhausted its automatic attempts and requires an explicit operator retry. Error storage is intentionally limited to `last_error_code`; raw transport exceptions are not persisted.
-
-If the batch has `MISSING_NOTIFICATION_ADAPTER`, either restrict `events.change_notices.channels` to `mail` or bind a dispatcher that implements every enabled channel.

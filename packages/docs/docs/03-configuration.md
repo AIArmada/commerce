@@ -11,6 +11,7 @@ Configuration lives in `config/docs.php`.
 ```php
 'database' => [
     'table_prefix' => env('DOCS_TABLE_PREFIX', 'docs_'),
+    'json_column_type' => env('DOCS_JSON_COLUMN_TYPE', 'jsonb'),
     'tables' => [
         'docs' => 'docs_docs',
         'doc_templates' => 'docs_doc_templates',
@@ -31,6 +32,9 @@ Configuration lives in `config/docs.php`.
 ```
 
 The package uses a dedicated `docs_` prefix by default. Table names can still be overridden individually when integrating into an existing schema.
+
+`commerce_json_column_type('docs')` resolves the JSON column type from `DOCS_JSON_COLUMN_TYPE`, then
+`COMMERCE_JSON_COLUMN_TYPE`, then `docs.database.json_column_type`, defaulting to `jsonb`.
 
 ## Defaults
 

@@ -26,9 +26,13 @@ Sections are ordered as:
     'sort' => 80,
     'icons' => [
         'countries' => 'heroicon-o-globe-alt',
+        'states' => 'heroicon-o-map',
+        'cities' => 'heroicon-o-building-office',
         'areas' => 'heroicon-o-map',
         'addresses' => 'heroicon-o-map-pin',
         'snapshots' => 'heroicon-o-document-text',
+        'postal_codes' => 'heroicon-o-envelope',
+        'resolution_gaps' => 'heroicon-o-exclamation-circle',
     ],
 ],
 ```
@@ -40,8 +44,7 @@ Each resource reads its icon from `navigation.icons.*`.
 
 ## Tables
 
-```php
-```
+This package has no `tables` config section. Table behaviour is configured per resource through the `resources.*` toggles below.
 
 ## Features
 
@@ -145,6 +148,5 @@ Enabled by default. Disable to hide the match-to-area and ignore row actions (pl
 ],
 ```
 
-:::danger
-Do not enable `addresses` or `snapshots` in a tenant-aware application until owner-safe queries and policies have been verified.
-:::
+> **danger**
+> Do not enable `addresses` or `snapshots` in a tenant-aware application until owner-safe queries and policies have been verified.

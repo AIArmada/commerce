@@ -7,7 +7,9 @@ title: Persons Troubleshooting
 The package does not hard-reference `AddressCountry`. Ensure:
 1. `aiarmada/addressing` is installed
 2. `PERSONS_ADDRESSING_ENABLED=true` is set
-3. Your `Person` subclass defines the `country()` / `nationality()` relation (see usage docs)
+3. `persons.models.country` is configured
+4. The row behind `nationality_country_id` exists (read through
+   `Person::nationalityCountry()`)
 
 ## Formatted name is empty
 
@@ -36,7 +38,9 @@ Each table name is configurable via `persons.database.tables.*` or env vars (`PE
 
 ```php
 // config/persons.php
-'table_prefix' => 'myapp_',
+'database' => [
+    'table_prefix' => 'myapp_',
+],
 ```
 
 ## Slug and primary uniqueness indexes

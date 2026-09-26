@@ -166,7 +166,7 @@ if ($result->success) {
 When payment fails at the gateway:
 
 1. The callback resolves and token-validates the checkout session inside the same transaction-safe path as success callbacks
-2. Failure handling only runs when the session is still in a pending-like state (`Pending`, `AwaitingPayment`, `PaymentProcessing`, or `Processing`)
+2. Failure handling only runs while the session is in a payment state (`AwaitingPayment`, `PaymentProcessing`, `Processing`, `PaymentFailed`) or still `Pending`
 3. Already-completed sessions short-circuit to the success response instead of mutating the session backward
 4. The user is redirected to the failure URL and the error message is flashed to session
 
@@ -183,7 +183,7 @@ if ($session->status->canRetryPayment()) {
 When user cancels at the gateway:
 
 1. The callback uses the same transaction + token validation path as success and failure
-2. Cancellation is only processed while the session is still pending-like
+2. Cancellation is only processed while the session is in a payment state or still `Pending`
 3. Completed sessions short-circuit to the success response
 4. Otherwise the user is redirected to the cancel URL and the session ID/message are flashed
 
@@ -305,38 +305,34 @@ Processing ─────────────▶ AwaitingPayment ◀──�
 
 ## Post-Payment Phase Steps
 
-After payment confirmation, the checkout step runs these irreversible operations in order:
+After payment confirmation, `CheckoutFinalizer::finalize()` runs:
 
-1. Persist `order_id` and `completed_at` on the session
-2. Redeem applied vouchers
-3. Transition the session status through `Processing` to `Completed`
-4. **Commit inventory reservations** (only when payment was confirmed or the order is free)
-5. Clear the cart
+1. Transition the session status to `Processing` (when it is not already there)
+2. Transition the session status to `Completed`
+3. Dispatch `CheckoutCompleted`
+4. Clear the cart
+
+Voucher redemption is not a step: `RedeemVouchersOnCheckoutCompleted` listens for
+`CheckoutCompleted` and redeems the recorded commitments.
 
 ### Inventory Timing
 
-Inventory reservation commitment happens **after** payment registration and session status transition but **before** the cart is cleared. For paid orders with confirmation enabled:
+Checkout does **not** commit inventory reservations. `ReserveInventoryStep`
+places a reservation; the inventory package owns the commit path:
 
-| Payment outcome | Inventory committed? | Checkout completes? |
-|----------------|-------------------|-------------------|
-| Confirmed | Yes, exactly once | Yes, after payment registration |
-| Failed or throws | No | No, step returns `StepResult::failed` |
+- `aiarmada/inventory` listens for `PaymentConfirmed` and commits the
+  allocation (`CommitInventoryOnPayment`).
+- Separately, `PaymentConfirmed` in the orders package dispatches an
+  `InventoryDeductionRequired` event for its own deduction path
+  (`DeductInventoryOnOrder`).
 
-The `shouldCommitInventoryReservations()` helper implements this table:
+Both paths coexist — the inventory package is responsible for idempotent
+handling. `InventoryAdapter::commit()` exists on the checkout adapter but has
+no checkout caller; reaching it is the host's decision.
 
-```php
-private function shouldCommitInventoryReservations(
-    bool $isFreeOrder,
-    bool $paymentConfirmationEnabled,
-    bool $paymentWasConfirmed,
-): bool {
-    if ($isFreeOrder) { return true; }
-    if (! $paymentConfirmationEnabled) { return true; }
-    return $paymentWasConfirmed; // authoritatively: commit only when payment succeeded
-}
-```
-
-The checkout package commits **reservations** (pending holds placed by `ReserveInventoryStep`). Separately, `PaymentConfirmed` in the orders package dispatches an `InventoryDeductionRequired` event for its own deduction path. Both paths coexist — the inventory package is responsible for idempotent handling.
+`ReserveInventoryStep::compensate()` releases the whole reference group and is
+invoked by the step executor when a later step fails or throws. It honours
+`integrations.inventory.release_on_failure`.
 
 ## Error Handling
 

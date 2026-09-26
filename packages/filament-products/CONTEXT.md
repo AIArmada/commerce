@@ -40,9 +40,12 @@ keywords:
 - Owner/security: Owner revalidation everywhere.
 
 ## Key surfaces
-- Resources: `AttributeGroupResource`, `AttributeResource`, `AttributeSetResource`, `BaseAttributeResource`, `BaseCatalogResource`, `BaseProductResource`, `CategoryResource`, `CollectionResource`, `ProductResource`
-- Actions/Services: `Support/ProductStatsAggregator`
-- Config `filament-products.php`: `navigation`, `group`, `resources`, `products`, `categories`, `collections`, `attributes`, `attribute_groups`, `attribute_sets`, `features`
+- Resources: `ProductResource`, `CategoryResource`, `CollectionResource` (feature-flagged), `AttributeResource` (feature-flagged), `AttributeGroupResource`, `AttributeSetResource`
+- Abstract resource bases: `BaseProductResource`, `BaseCatalogResource`, `BaseAttributeResource`
+- Widgets: `ProductStatsWidget`, `ProductTypeDistributionWidget`, `CategoryDistributionChart`, `TopSellingProductsWidget`
+- Product relation managers: `VariantsRelationManager`, `OptionsRelationManager`, `PricesRelationManager` (pricing installed)
+- Actions/Services: `Support/ProductStatsAggregator`, `Support/ProductStatsCache`
+- Config `filament-products.php` keys: `navigation.group`, `navigation.resources.{products,categories,collections,attributes,attribute_groups,attribute_sets}`, `features.{collections,attributes}`, `import.{max_rows,max_file_kb}`
 
 ## Docs map
 - Start: `01-overview` → `03-configuration` → `04-usage` → `99-troubleshooting`

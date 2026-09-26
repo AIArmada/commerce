@@ -12,7 +12,7 @@ title: Troubleshooting
 
 ## Expired Blocks Still Look Active
 
-Read paths use the `active()` scope, which excludes rows whose `expires_at` is in the past. Run `php artisan moderation:expire-blocks` to persist the `expired` status and lifecycle transition for reporting or downstream jobs.
+Read paths use the `active()` scope, which excludes rows whose `expires_at` is in the past, so enforcement is correct even when a row still carries `status = active`. To persist the `expired` status for reporting, transition the rows directly — there is no sweep command.
 
 ## Unknown block reason error
 

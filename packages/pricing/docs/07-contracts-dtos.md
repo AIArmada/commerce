@@ -29,6 +29,15 @@ interface PriceCalculatorInterface
         int $quantity = 1, 
         array $context = []
     ): PriceResultData;
+
+    /**
+     * Calculate prices for many lines sharing one context.
+     *
+     * @param  array<int, array{item: Priceable, quantity?: int}>  $lines
+     * @param  array<string, mixed>  $context
+     * @return array<int, PriceResultData>
+     */
+    public function calculateMany(array $lines, array $context = []): array;
 }
 ```
 
@@ -230,10 +239,10 @@ $result = $calculator->calculate($product, 1);
 // Check for discount
 $result->hasDiscount(); // bool
 
-// Formatted prices
-$result->getFormattedOriginalPrice(); // "RM 50.00"
-$result->getFormattedFinalPrice();    // "RM 45.00"
-$result->getFormattedSavings();       // "RM 5.00"
+// Formatted prices — MoneyFormatter::prefixSymbol() concatenates without a space
+$result->getFormattedOriginalPrice(); // "RM50.00"
+$result->getFormattedFinalPrice();    // "RM45.00"
+$result->getFormattedSavings();       // "RM5.00"
 ```
 
 #### Breakdown Structure
@@ -307,6 +316,11 @@ final class TierPriceResultData extends Data
 The package registers the following bindings:
 
 ```php
+// Resolver interfaces
+$this->app->singleton(TierResolverInterface::class, TierResolver::class);
+$this->app->singleton(CustomerPriceResolverInterface::class, CustomerPriceResolver::class);
+$this->app->singleton(SegmentPriceResolverInterface::class, SegmentPriceResolver::class);
+
 // Singleton binding
 $this->app->singleton(Services\PriceCalculator::class);
 

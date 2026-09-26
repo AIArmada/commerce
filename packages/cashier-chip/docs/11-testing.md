@@ -170,24 +170,33 @@ public function test_subscription_trial(): void
 ### Simulating Webhooks
 
 ```php
-public function test_webhook_updates_payment_status(): void
+use AIArmada\Chip\Testing\SimulatesWebhooks;
+
+class WebhookTest extends TestCase
 {
-    $user = User::factory()->create();
-    
-    // Create a pending purchase
-    // ...
-    
-    // Simulate webhook
-    $response = $this->postJson('/chip/webhooks', [
-        'event_type' => 'purchase.payment_successful',
-        'id' => $purchaseId,
-        'client_id' => $user->chipId(),
-        'status' => 'paid',
-    ]);
-    
-    $response->assertOk();
+    use SimulatesWebhooks;
+
+    public function test_webhook_updates_payment_status(): void
+    {
+        withoutWebhookSignatureVerification();
+
+        $user = User::factory()->create();
+        $purchaseId = 'purchase-123';
+
+        $response = $this->postWebhook('/chip/webhooks', [
+            'event_type' => 'purchase.paid',
+            'id' => $purchaseId,
+            'client_id' => $user->chipId(),
+            'status' => 'paid',
+        ]);
+
+        $response->assertOk();
+    }
 }
 ```
+
+The `event_type` must be one of the real CHIP values (`purchase.paid`,
+`purchase.payment_failure`, `purchase.preauthorized`, …), not Stripe-style names.
 
 ### Testing Webhook Events
 
@@ -198,13 +207,14 @@ use Illuminate\Support\Facades\Event;
 public function test_payment_event_is_dispatched(): void
 {
     Event::fake([PaymentSucceeded::class]);
-    
-    $this->postJson('/chip/webhooks', [
-        'event_type' => 'purchase.payment_successful',
+    withoutWebhookSignatureVerification();
+
+    $this->postWebhook('/chip/webhooks', [
+        'event_type' => 'purchase.paid',
         'id' => 'purchase-123',
         'status' => 'paid',
     ]);
-    
+
     Event::assertDispatched(PaymentSucceeded::class);
 }
 ```
@@ -280,36 +290,47 @@ $this->assertTrue($user->hasDefaultPaymentMethod());
 
 ## Mocking the Gateway
 
-For more control, mock the underlying CHIP gateway:
+For more control, mock the underlying CHIP gateway. Resolve the service the package actually uses
+(`Cashier::chip()` → `ChipCollectService`) and swap the binding:
 
 ```php
-use AIArmada\Chip\ChipCollect;
+use AIArmada\CashierChip\Billing\Cashier;
+use AIArmada\Chip\Services\ChipCollectService;
 use Mockery;
 
 public function test_with_mocked_gateway(): void
 {
-    $mockChip = Mockery::mock(ChipCollect::class);
-    $mockChip->shouldReceive('createPurchase')
+    $mockChip = Mockery::mock(ChipCollectService::class);
+    $mockChip->shouldReceive('purchase')
         ->once()
-        ->andReturn([
-            'id' => 'purchase-123',
-            'checkout_url' => 'https://chip.test/checkout',
-        ]);
-    
-    $this->app->instance(ChipCollect::class, $mockChip);
-    
+        ->andReturn($purchaseBuilder);
+
+    $mockChip->shouldReceive('chargePurchase')
+        ->once()
+        ->andReturn($purchaseData);
+
+    $this->app->instance(ChipCollectService::class, $mockChip);
+
     // Your test...
 }
 ```
+
+`Cashier::fake()` is usually simpler — it swaps in `FakeChipCollectService` and returns it so you
+can assert on recorded calls.
 
 ## Configuration for Testing
 
 ```php
 // phpunit.xml
-<env name="CHIP_BRAND_ID" value="test-brand"/>
+<env name="CHIP_COLLECT_BRAND_ID" value="test-brand"/>
 <env name="CHIP_COLLECT_API_KEY" value="test-secret"/>
 <env name="CHIP_WEBHOOK_VERIFY_SIGNATURE" value="false"/>
 ```
+
+> **info**
+> `CHIP_BRAND_ID` without the `COLLECT_` prefix is the `aiarmada/cashier` unified-gateway config key
+> (`cashier.gateways.chip.brand_id`). The `aiarmada/chip` package reads `CHIP_COLLECT_BRAND_ID` and
+> `CHIP_COLLECT_API_KEY`.
 
 ## Database Setup
 

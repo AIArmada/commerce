@@ -8,22 +8,39 @@ This guide covers how to extend and customize the Filament Tax plugin.
 
 ## Extending Resources
 
-### Override Resource Classes
+### Replace Resource Classes
 
-Create your own resource extending the base:
+`AIArmada\FilamentTax\Resources\TaxZoneResource` is `final`, so it cannot be extended.
+Write your own `Resource` instead and disable the built-in one:
 
 ```php
 namespace App\Filament\Resources;
 
-use AIArmada\FilamentTax\Resources\TaxZoneResource as BaseResource;
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\Tax\Models\TaxZone;
+use Filament\Resources\Resource;
+use UnitEnum;
 
-class TaxZoneResource extends BaseResource
+class TaxZoneResource extends Resource
 {
-    protected static ?string $navigationIcon = 'heroicon-o-map';
+    protected static ?string $model = TaxZone::class;
     
-    protected static ?string $navigationGroup = 'Store Settings';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-map';
     
-    protected static ?int $navigationSort = 5;
+    public static function getNavigationGroup(): string|UnitEnum|null
+    {
+        return config('filament-tax.navigation.group');
+    }
+    
+    public static function getNavigationSort(): ?int
+    {
+        return config('filament-tax.resources.navigation_sort.zones');
+    }
+    
+    public static function getEloquentQuery(): Builder
+    {
+        return OwnerUiScope::apply(parent::getEloquentQuery(), includeGlobal: false);
+    }
 }
 ```
 
@@ -43,67 +60,95 @@ public function panel(Panel $panel): Panel
 }
 ```
 
+> **warning**
+> Never set `protected static ?string $navigationGroup`. It is forbidden by the repo's
+> Filament rules because it blocks the `CommerceNavigation` runtime override engine, which
+> reads a resource's config default and then merges
+> `commerce-support.filament.navigation.items.{FQCN}` on top. Always implement
+> `getNavigationGroup()` and read `config('filament-tax.navigation.group')` inside it —
+> otherwise `config/filament-tax.php` `navigation.group` changes have no effect.
+
 ### Custom Form Schema
 
-Extend the form with additional fields:
+The package form classes are `final` and expose `configure(Schema $schema): Schema`
+(the v5 schema entry point), not a static `make(): array`. To add fields, write your
+own `Filament\Schemas\Schema` and register it on the resource:
 
 ```php
 namespace App\Filament\Resources\TaxZoneResource\Schemas;
 
-use AIArmada\FilamentTax\Resources\TaxZoneResource\Schemas\TaxZoneForm as BaseForm;
+use AIArmada\Tax\Models\TaxZone;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Schemas\Schema;
 
-class TaxZoneForm extends BaseForm
+class TaxZoneForm
 {
-    public static function make(): array
+    public static function configure(Schema $schema): Schema
     {
-        return array_merge(parent::make(), [
-            Select::make('tax_authority')
-                ->label('Tax Authority')
-                ->options([
-                    'federal' => 'Federal',
-                    'state' => 'State',
-                    'local' => 'Local',
-                ]),
+        return $schema
+            ->schema([
+                // ... the package schema from
+                // AIArmada\FilamentTax\Resources\TaxZoneResource\Schemas\TaxZoneForm
                 
-            TextInput::make('authority_id')
-                ->label('Authority ID'),
-        ]);
+                Select::make('tax_authority')
+                    ->label('Tax Authority')
+                    ->options([
+                        'federal' => 'Federal',
+                        'state' => 'State',
+                        'local' => 'Local',
+                    ]),
+                
+                TextInput::make('authority_id')
+                    ->label('Authority ID'),
+            ]);
     }
 }
 ```
 
+> **info**
+> `getFormSchema()` and `getTableColumns()` were removed in Filament v4. Use the
+> `form(Schema $schema): Schema` and `table(Table $table): Table` methods. `Section`
+> lives in `Filament\Schemas\Components\Section`, not `Filament\Forms\Components\Section`.
+
 ### Custom Table Columns
 
-Add columns to the table:
+Add columns through `table()`:
 
 ```php
 namespace App\Filament\Resources\TaxZoneResource\Tables;
 
-use AIArmada\FilamentTax\Resources\TaxZoneResource\Tables\TaxZonesTable as BaseTable;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Table;
 
-class TaxZonesTable extends BaseTable
+class TaxZonesTable
 {
-    public static function make(): array
+    public static function configure(Table $table): Table
     {
-        return array_merge(parent::make(), [
-            TextColumn::make('tax_authority')
-                ->badge()
-                ->colors([
-                    'primary' => 'federal',
-                    'success' => 'state',
-                    'warning' => 'local',
-                ]),
+        return $table
+            ->columns([
+                // ... the package columns
                 
-            TextColumn::make('total_collected')
-                ->money('MYR')
-                ->label('Total Collected'),
-        ]);
+                TextColumn::make('tax_authority')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'federal' => 'primary',
+                        'state' => 'success',
+                        'local' => 'warning',
+                        default => 'gray',
+                    }),
+                
+                TextColumn::make('total_collected')
+                    ->money('MYR')
+                    ->label('Total Collected'),
+            ]);
     }
 }
 ```
+
+> **info**
+> `TextColumn::colors([...])` is a deprecated v3 alias. In v5 use `->color(...)`, which
+> accepts a string, array, or closure.
 
 ## Custom Actions
 
@@ -128,7 +173,7 @@ class ListTaxZones extends BaseListPage
             Actions\Action::make('import')
                 ->label('Import Zones')
                 ->icon('heroicon-o-arrow-up-tray')
-                ->form([
+                ->schema([
                     FileUpload::make('file')
                         ->label('CSV File')
                         ->acceptedFileTypes(['text/csv']),
@@ -151,13 +196,19 @@ class ListTaxZones extends BaseListPage
 
 ### Add Table Actions
 
+Row actions in Filament v5 use `Filament\Actions\Action` and the `recordActions()`
+method:
+
 ```php
-use Filament\Tables\Actions\Action;
+use AIArmada\Tax\Models\TaxZone;
+use Filament\Actions\Action;
+use Filament\Tables\Table;
+use Filament\Forms\Components\TextInput;
 
 public function table(Table $table): Table
 {
     return $table
-        ->actions([
+        ->recordActions([
             Action::make('duplicate')
                 ->icon('heroicon-o-document-duplicate')
                 ->action(function (TaxZone $record) {
@@ -177,7 +228,7 @@ public function table(Table $table): Table
                 
             Action::make('test')
                 ->icon('heroicon-o-beaker')
-                ->form([
+                ->schema([
                     TextInput::make('country')->required(),
                     TextInput::make('state'),
                     TextInput::make('postcode'),
@@ -197,6 +248,12 @@ public function table(Table $table): Table
         ]);
 }
 ```
+
+> **info**
+> `Filament\Tables\Actions\Action`, `->actions([...])`, and `->form([...])` are all v3
+> APIs. In v5 use `Filament\Actions\Action`, `->recordActions([...])`, and
+> `->schema([...])`. The v3 names still exist as `@deprecated` aliases and will emit
+> deprecation notices.
 
 ## Custom Widgets
 
@@ -237,16 +294,23 @@ class TaxRatesChartWidget extends ChartWidget
 
 ### Replace Built-in Widget
 
-```php
-// In a service provider
-use Livewire\Livewire;
+`FilamentTaxPlugin` has a `widgets(bool)` toggle. Turn the built-ins off and register
+your own instead of trying to extend the `final` package widgets:
 
-public function boot(): void
+```php
+// Admin panel provider
+use AIArmada\FilamentTax\FilamentTaxPlugin;
+
+public function panel(Panel $panel): Panel
 {
-    Livewire::component(
-        'filament-tax-stats-widget',
-        App\Filament\Widgets\CustomTaxStatsWidget::class
-    );
+    return $panel
+        ->plugins([
+            FilamentTaxPlugin::make()->widgets(false),
+        ])
+        ->widgets([
+            App\Filament\Widgets\TaxRatesChartWidget::class,
+            App\Filament\Widgets\CustomTaxStatsWidget::class,
+        ]);
 }
 ```
 
@@ -254,19 +318,22 @@ public function boot(): void
 
 ### Add to Existing Resource
 
+Resources are `final`, so add the relation manager to your own replacement resource
+registered in place of the built-in one (see [Replace Resource Classes](#replace-resource-classes)):
+
 ```php
-namespace App\Filament\Resources\TaxZoneResource;
+namespace App\Filament\Resources;
 
-use AIArmada\FilamentTax\Resources\TaxZoneResource as BaseResource;
 use App\Filament\Resources\TaxZoneResource\RelationManagers\AuditLogsRelationManager;
+use Filament\Resources\Resource;
 
-class TaxZoneResource extends BaseResource
+class TaxZoneResource extends Resource
 {
     public static function getRelations(): array
     {
-        return array_merge(parent::getRelations(), [
+        return [
             AuditLogsRelationManager::class,
-        ]);
+        ];
     }
 }
 ```
@@ -278,6 +345,7 @@ namespace App\Filament\Resources\TaxZoneResource\RelationManagers;
 
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
+use Filament\Tables\Table;
 
 class AuditLogsRelationManager extends RelationManager
 {
@@ -299,6 +367,11 @@ class AuditLogsRelationManager extends RelationManager
     }
 }
 ```
+
+> **info**
+> `TaxZone` has no `activities` relation. Add one with the `LogsActivity` concern from
+> `commerce-support` (or your own `HasActivities` implementation) before pointing a
+> relation manager at it.
 
 ## Custom Pages
 
@@ -348,18 +421,22 @@ public static function getPages(): array
 
 ### Custom Permission Names
 
-Customize permissions via `filament-authz` config:
+Permission names are hardcoded in the package's policies
+(`AIArmada\FilamentTax\Policies\*`) and in the resource tables. `filament-authz` has no
+`resources.prefix` key, and its `pages`/`widgets`/`panels` prefixes do not apply to
+permissions declared inside a policy. To rename an ability, override the policy in your
+own `AuthServiceProvider`:
 
 ```php
-// config/filament-authz.php
-return [
-    'resources' => [
-        'prefix' => 'commerce.tax',
-    ],
-];
+use AIArmada\Tax\Models\TaxZone;
+
+Gate::policy(TaxZone::class, App\Policies\TaxZonePolicy::class);
 ```
 
 ### Gate-based Authorization
+
+The shipped policies already gate on `tax.zones.*` abilities, so defining those gates is
+enough — you do not need to override the resource's `canViewAny()`:
 
 ```php
 // AuthServiceProvider
@@ -367,7 +444,11 @@ Gate::define('tax.zones.view', fn ($user) => $user->hasAnyRole(['admin', 'accoun
 Gate::define('tax.zones.create', fn ($user) => $user->hasRole('admin'));
 Gate::define('tax.zones.update', fn ($user) => $user->hasRole('admin'));
 Gate::define('tax.zones.delete', fn ($user) => $user->hasRole('admin'));
+```
 
+Resource-level overrides still work if you need them:
+
+```php
 // In resource
 public static function canViewAny(): bool
 {
@@ -503,16 +584,30 @@ The plugin respects the base tax package's owner scoping:
 
 ### Per-Panel Tenant Context
 
+`FilamentTaxPlugin` exposes only `zones()`, `classes()`, `rates()`, `exemptions()`,
+`widgets()`, and `settingsPage()`. There is no `modifyResourceQuery()` hook. For
+per-panel tenant scoping, register your own resource (see
+[Replace Resource Classes](#replace-resource-classes)) and return an owner-scoped
+query:
+
 ```php
-FilamentTaxPlugin::make()
-    ->modifyResourceQuery(function ($query) {
-        // Custom scoping per panel
-        if (filament()->getCurrentPanel()->getId() === 'store') {
-            return $query->where('owner_id', filament()->getTenant()->id);
-        }
-        return $query;
-    });
+public static function getEloquentQuery(): Builder
+{
+    $query = parent::getEloquentQuery();
+
+    if (filament()->getCurrentPanel()?->getId() === 'store') {
+        $query->forOwner(filament()->getTenant());
+    }
+
+    return $query;
+}
 ```
+
+> **info**
+> `filament()->getTenant()` returns `Model|null`, not `HasTenant`. Read the tenant ID
+> from the model (`->getKey()`) or use `getTenantOwnershipRelationshipName()` when you
+> need a relation name. A Filament tenant is not a security boundary — keep the
+> `OwnerUiScope`/`forOwner()` boundary in place on every read and write.
 
 ## Event Hooks
 
@@ -520,27 +615,29 @@ FilamentTaxPlugin::make()
 
 ```php
 // EventServiceProvider
+use AIArmada\Tax\Models\TaxRate;
 use AIArmada\Tax\Models\TaxZone;
 
 TaxZone::created(function (TaxZone $zone) {
     Log::info('Tax zone created', ['zone' => $zone->toArray()]);
     
-    // Create default rate for new zone
-    if ($zone->is_default) {
-        $zone->rates()->create([
-            'name' => 'Default Rate',
-            'tax_class' => 'standard',
-            'rate' => config('tax.defaults.default_tax_rate'),
-            'is_active' => true,
-        ]);
-    }
-});
-
-TaxZone::updated(function (TaxZone $zone) {
-    // Clear cache when zone changes
-    Cache::forget("tax-zone:{$zone->id}");
+    // Create a default rate for a new zone
+    TaxRate::create([
+        'zone_id' => $zone->id,
+        'name' => 'Default Rate',
+        'tax_class' => 'standard',
+        'rate' => (int) round(app(\AIArmada\Tax\Settings\TaxSettings::class)->defaultTaxRate * 100),
+        'is_active' => true,
+    ]);
 });
 ```
+
+> **warning**
+> `TaxRate::$rate` is an integer in **basis points**, while `TaxSettings::$defaultTaxRate`
+> is a **percentage** (`6` = 6%). Multiply by 100 when bridging the two — never write
+> `config('tax.defaults.default_tax_rate')`, which does not exist. The real
+> `config/tax.php` keys are `tax.defaults.currency`, `tax.defaults.prices_include_tax`,
+> `tax.defaults.calculate_tax_on_shipping`, and `tax.defaults.round_per_rate`.
 
 ### Filament Lifecycle Hooks
 

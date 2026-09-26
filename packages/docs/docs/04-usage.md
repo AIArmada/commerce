@@ -40,12 +40,17 @@ $document = $docService->create(DocData::from([
 
 ## Document Types
 
-The package supports multiple document types:
+`DocType` ships six document types:
 
-- **invoice** - Full invoice with line items, taxes, discounts
-- **receipt** - Payment receipts
+- `invoice` — full invoice with line items, tax, and discounts
+- `quotation` — pre-sales quote
+- `receipt` — payment receipt
+- `credit_note` — credit note against a prior invoice
+- `delivery_note` — delivery/shipping note
+- `proforma_invoice` — proforma invoice
 
-Configure types in `config/docs.php`:
+Anything not in the enum throws — a document is never silently coerced into a different type.
+Configure numbering per type in `config/docs.php`:
 
 ```php
 'types' => [
@@ -90,20 +95,25 @@ The package automatically calculates totals:
 ```php
 $document = $docService->create(DocData::from([
     'doc_type' => 'invoice',
+    'currency' => 'MYR',
     'items' => [
-        ['name' => 'Item 1', 'quantity' => 2, 'unit_price_minor' => 10_000],  // $200
-        ['name' => 'Item 2', 'quantity' => 1, 'unit_price_minor' => 15_000],  // $150
+        ['name' => 'Item 1', 'quantity' => 2, 'unit_price_minor' => 10_000], // 2 x 100.00 = 200.00
+        ['name' => 'Item 2', 'quantity' => 1, 'unit_price_minor' => 15_000], // 150.00
     ],
     'tax_rate_basis_points' => 600,           // 6% tax
-    'discount_amount_minor' => 2_500,      // $25 discount
+    'discount_amount_minor' => 2_500,         // 25.00 discount
 ]));
 
-// Automatically calculated:
-// Subtotal: $350
-// Tax: $21 (6% of $350)
-// Discount: -$25
-// Total: $346
+// Derived in MYR minor units (minor_units are sen for MYR):
+// subtotal_minor:           35_000   (350.00)
+// tax_amount_minor:           2_100   ( 21.00)
+// discount_amount_minor:      2_500   ( 25.00)
+// total_minor:               34_600   (346.00)
 ```
+
+Amounts are always integer minor units plus an explicit ISO currency code (`currency` here, or
+`docs.defaults.currency` = `MYR`). `tax_rate_basis_points` is integer basis points, not a
+decimal fraction.
 
 When items are present, any explicitly supplied `subtotal_minor`, `tax_amount_minor`, or `total_minor` must match the items-derived values; mismatches throw `InvalidArgumentException` instead of persisting contradictory totals. Document types must be members of the `DocType` enum, and unknown status strings throw instead of silently becoming drafts.
 
@@ -161,7 +171,7 @@ $document = app(DocService::class)->update($document, [
     'items' => [
         ['name' => 'Item 1', 'quantity' => 2, 'unit_price_minor' => 10_000],
     ],
-    'status' => Sent::class,
+    'status' => \AIArmada\Docs\States\Sent::class,
 ]);
 ```
 

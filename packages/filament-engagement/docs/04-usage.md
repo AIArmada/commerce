@@ -80,13 +80,22 @@ use AIArmada\FilamentEngagement\Actions\FollowAction;
 use AIArmada\FilamentEngagement\Actions\BookmarkAction;
 use AIArmada\FilamentEngagement\Actions\ReactAction;
 use AIArmada\FilamentEngagement\Actions\RespondAction;
+use AIArmada\FilamentEngagement\Actions\SubscribeAction;
+use AIArmada\FilamentEngagement\Actions\SetReminderAction;
+use AIArmada\FilamentEngagement\Actions\UnfollowAction;
+use AIArmada\FilamentEngagement\Actions\RemoveBookmarkAction;
+use Filament\Actions\ActionGroup;
 
 // On any resource table:
-Tables\Actions\ActionGroup::make([
+ActionGroup::make([
     FollowAction::make(),
+    UnfollowAction::make(),
     BookmarkAction::make(),
-    ReactAction::make()->reactionType('like'),
-    RespondAction::make()->responseType('going'),
+    RemoveBookmarkAction::make(),
+    ReactAction::make(),
+    RespondAction::make(),
+    SubscribeAction::make(),
+    SetReminderAction::make(),
 ]),
 ```
 
@@ -95,10 +104,10 @@ Available actions:
 - `UnfollowAction::make()` — removes an existing follow
 - `BookmarkAction::make()` — bookmarks the record
 - `RemoveBookmarkAction::make()` — removes a bookmark
-- `ReactAction::make()->reactionType('like')` — records a reaction with configurable type
-- `RespondAction::make()->responseType('going')` — records an RSVP with configurable type
+- `ReactAction::make()` — records a reaction; the reaction type is picked in the action's own form (`like`, `love`, `useful`, `support`, `insightful`)
+- `RespondAction::make()` — records an RSVP; the response type is picked in the action's own form (`interested`, `going`, `maybe`, `not_going`)
 - `SubscribeAction::make()` — subscribes to updates on the record
-- `SetReminderAction::make()` — opens a form to set a reminder with offset
+- `SetReminderAction::make()` — opens a form to pick a reminder type (`before_start`, `when_live_starts`, `custom`) and the `remind_at` datetime
 
 ## Relation Managers
 

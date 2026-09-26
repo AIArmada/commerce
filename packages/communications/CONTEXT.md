@@ -40,10 +40,10 @@ keywords:
 ## Decide fast
 - Use when: Sending/recording messages or managing preferences/suppressions.
 - Skip when: Contact data itself (emails/phones) — see contacting.
-- Owner/security: Owner-scoped (10 models).
+- Owner/security: Owner-scoped (17 models, all `HasOwner`).
 
 ## Key surfaces
-- Models: `Communication`, `CommunicationAttachment`, `CommunicationAttempt`, `CommunicationBatch`, `CommunicationContent`, `CommunicationDelivery`, `CommunicationDestination`, `CommunicationEvent`, `CommunicationPreference`, `CommunicationRecipient`
+- Models: `Communication`, `CommunicationAttachment`, `CommunicationAttempt`, `CommunicationBatch`, `CommunicationContent`, `CommunicationDelivery`, `CommunicationDestination`, `CommunicationEvent`, `CommunicationPreference`, `CommunicationRecipient`, `CommunicationReference`, `CommunicationSuppression`, `CommunicationTemplate`, `CommunicationTemplateVersion`, `CommunicationThread`, `CommunicationTrackingToken`, `NotificationInbox`
 - Actions/Services: `Actions/AddCommunicationRecipientAction`, `Actions/ApplyProviderEventAction`, `Actions/AttachCommunicationReferenceAction`, `Actions/CancelCommunicationAction`, `Actions/CancelCommunicationDeliveryAction`, `Actions/CompleteDeliveryAttemptAction`, `Actions/CreateCommunicationAction`, `Actions/CreateCommunicationBatchAction`
 - Config `communications.php`: `database`, `table_prefix`, `json_column_type`, `tables`, `batches`, `threads`, `communications`, `recipients`, `contents`, `deliveries`
 

@@ -20,14 +20,15 @@ Dynamic conditions enable scenarios like:
 
 ```php
 use AIArmada\Cart\Conditions\Presets\ConditionPresets;
+use AIArmada\Cart\Contracts\RulesFactoryInterface;
 use AIArmada\Cart\Services\RulePresets;
 
 Cart::setRulesFactory(app(RulesFactoryInterface::class));
 
 Cart::registerDynamicCondition(
     condition: ConditionPresets::percentageDiscount(
-        name: 'Bulk Discount',
-        percentage: 15
+        percentage: 15,
+        name: 'Bulk Discount'
     ),
     rules: RulePresets::minimumCartValue(10000) // $100 minimum
 );
@@ -39,7 +40,7 @@ Factory keys allow rules to be persisted and restored across requests:
 
 ```php
 Cart::registerDynamicCondition(
-    condition: ConditionPresets::percentageDiscount('VIP Discount', 20),
+    condition: ConditionPresets::percentageDiscount(percentage: 20, name: 'VIP Discount'),
     ruleFactoryKey: 'customer-tag',
     metadata: ['tag' => 'vip']
 );
@@ -49,7 +50,7 @@ Cart::registerDynamicCondition(
 
 ```php
 Cart::registerDynamicCondition(
-    condition: ConditionPresets::freeShippingOver('Free Shipping', 0),
+    condition: ConditionPresets::freeShippingOver(minimumCents: 0, name: 'Free Shipping'),
     rules: array_merge(
         RulePresets::minimumCartValue(5000),
         RulePresets::requireWeekend()
@@ -192,13 +193,13 @@ The `BuiltInRulesFactory` provides 40+ factory keys for persistence:
 
 ```php
 Cart::registerDynamicCondition(
-    condition: ConditionPresets::percentageDiscount('Weekend Sale', 20),
+    condition: ConditionPresets::percentageDiscount(percentage: 20, name: 'Weekend Sale'),
     ruleFactoryKey: 'day-of-week',
     metadata: ['days' => ['saturday', 'sunday']]
 );
 
 Cart::registerDynamicCondition(
-    condition: ConditionPresets::freeShippingOver('Free Ship', 0),
+    condition: ConditionPresets::freeShippingOver(minimumCents: 0, name: 'Free Ship'),
     ruleFactoryKey: 'subtotal-at-least',
     metadata: ['amount' => 7500] // $75
 );
@@ -208,7 +209,7 @@ Cart::registerDynamicCondition(
 
 ```php
 Cart::registerDynamicCondition(
-    condition: ConditionPresets::percentageDiscount('VIP Weekend', 25),
+    condition: ConditionPresets::percentageDiscount(percentage: 25, name: 'VIP Weekend'),
     ruleFactoryKey: ['customer-tag', 'day-of-week'],
     metadata: [
         'tag' => 'vip',
@@ -268,7 +269,7 @@ Dynamic conditions with factory keys are persisted to metadata:
 ```php
 // Conditions are automatically persisted when using factory keys
 Cart::registerDynamicCondition(
-    condition: ConditionPresets::percentageDiscount('Member Discount', 10),
+    condition: ConditionPresets::percentageDiscount(percentage: 10, name: 'Member Discount'),
     ruleFactoryKey: 'customer-tag',
     metadata: ['tag' => 'member']
 );
@@ -311,7 +312,7 @@ Cart::onDynamicConditionFailure(function ($operation, $condition, $exception, $c
 
 ```php
 use AIArmada\Cart\Facades\Cart;
-use AIArmada\Cart\Conditions\Presets\ConditionPresets;
+use AIArmada\Cart\Conditions\ConditionPresets;
 use AIArmada\Cart\Services\RulePresets;
 use AIArmada\Cart\Services\BuiltInRulesFactory;
 
@@ -320,18 +321,18 @@ Cart::setRulesFactory(new BuiltInRulesFactory());
 
 // Register multiple dynamic conditions
 Cart::registerDynamicCondition(
-    condition: ConditionPresets::percentageDiscount('Bulk Discount', 15),
+    condition: ConditionPresets::percentageDiscount(percentage: 15, name: 'Bulk Discount'),
     rules: RulePresets::minimumQuantity(10)
 );
 
 Cart::registerDynamicCondition(
-    condition: ConditionPresets::freeShippingOver('Free Shipping', 0),
+    condition: ConditionPresets::freeShippingOver(minimumCents: 0, name: 'Free Shipping'),
     ruleFactoryKey: 'subtotal-at-least',
     metadata: ['amount' => 10000]
 );
 
 Cart::registerDynamicCondition(
-    condition: ConditionPresets::percentageDiscount('Happy Hour', 20),
+    condition: ConditionPresets::percentageDiscount(percentage: 20, name: 'Happy Hour'),
     rules: RulePresets::all(
         RulePresets::timeWindow('15:00', '17:00'),
         RulePresets::requireWeekday()

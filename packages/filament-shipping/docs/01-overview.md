@@ -70,7 +70,7 @@ The `aiarmada/filament-shipping` package provides a complete Filament v5 admin p
 
 - PHP 8.4+
 - Laravel 13+
-- Filament 5.0+
+- Filament 5.8+
 - `aiarmada/shipping` package
 
 ## Package Structure
@@ -85,17 +85,15 @@ packages/filament-shipping/
 │   ├── Actions/                 # Filament actions (ShipAction, CancelShipmentAction, etc.)
 │   ├── Pages/                   # Custom Filament pages
 │   ├── Resources/               # Filament resources
-│   │   ├── ShipmentResource/
-│   │   │   ├── Schemas/         # ShipmentForm, ShipmentInfolist
-│   │   │   └── Tables/          # ShipmentsTable
+│   │   ├── ShipmentResource.php
+│   │   ├── ShippingZoneResource.php
+│   │   ├── ShippingRateResource.php
+│   │   ├── ReturnAuthorizationResource.php
+│   │   ├── ShipmentResource/    # Schemas/, Tables/, RelationManagers/
 │   │   ├── ShippingZoneResource/
-│   │   │   ├── Schemas/         # ShippingZoneForm
-│   │   │   └── Tables/          # ShippingZonesTable
+│   │   ├── ShippingRateResource/
 │   │   └── ReturnAuthorizationResource/
-│   │       ├── Schemas/         # ReturnAuthorizationForm
-│   │       └── Tables/          # ReturnAuthorizationsTable
-│   ├── Services/                # Bridge services (CartBridge)
-│   ├── Support/                 # ShippingStatsAggregator
+│   ├── Support/                 # MoneyInput, ShippingStatsAggregator
 │   ├── Widgets/                 # Dashboard widgets
 │   ├── FilamentShippingPlugin.php
 │   └── FilamentShippingServiceProvider.php

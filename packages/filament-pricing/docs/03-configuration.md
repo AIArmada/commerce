@@ -30,6 +30,19 @@ The admin navigation is configured in `config/filament-pricing.php`:
 ],
 ```
 
+## Authorization
+
+Pricing settings are global (shared by every tenant), so the settings page
+gates on a single ability:
+
+```php
+'authorization' => [
+    'settings_ability' => 'pricing.manage-settings',
+],
+```
+
+Define that ability with a Gate in the host app.
+
 ## Base Package Configuration
 
 See [Pricing Package Configuration](../../pricing/docs/03-configuration.md) for all configuration options.
@@ -149,25 +162,28 @@ PRICING_OWNER_ENABLED=true
 
 ## Extending Resources
 
-You can extend the default resources by creating your own and registering them:
+`PriceListResource` is declared `final`, so it cannot be subclassed. Register
+your own resource instead and decorate the shipped one with Filament's
+resource-override mechanism:
 
 ```php
 // app/Filament/Resources/CustomPriceListResource.php
 namespace App\Filament\Resources;
 
-use AIArmada\FilamentPricing\Resources\PriceListResource;
+use AIArmada\Pricing\Models\PriceList;
+use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
 
-class CustomPriceListResource extends PriceListResource
+class CustomPriceListResource extends Resource
 {
-    // Override methods as needed
-    
+    protected static ?string $model = PriceList::class;
+
     public static function form(Schema $schema): Schema
     {
-        return parent::form($schema)->schema([
-            // Add custom fields
-        ]);
+        // Build your own schema
     }
 }
 ```
 
-Then register your custom resource instead of using the plugin, or use Filament's resource overriding mechanisms.
+Then register it in your panel provider, or use Filament's resource
+overriding mechanisms to layer your own schema on top of the shipped resource.

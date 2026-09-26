@@ -50,7 +50,8 @@ All settings live in `config/links.php`.
 | `features.security.allowed_hosts` | `[]` | When non-empty, destinations must match one of these hosts (`LINKS_ALLOWED_HOSTS`, comma-separated). |
 | `features.security.reserved_slugs` | admin/api/app/... | Slugs that cannot be registered. |
 
-> [!WARNING]
+> **warning**
+>
 > The redirect route is a public open redirector for admin-created destinations. Keep link management behind authentication, and set `allowed_hosts` when links should only point at known merchants.
 
 ## Retention

@@ -4,9 +4,9 @@ title: Usage
 
 # Usage
 
-This guide covers the shipped marketplace resources and the admin flows around them.
+This guide covers the shipped admin resources and the flows around them.
 
-The plugin provides four Filament resources (sites, offers, categories, applications), a merchant dashboard page, and two network reporting widgets.
+The plugin provides four Filament resources (sites, offers, categories, applications), a merchant dashboard page, and two network reporting widgets. There is no marketplace page in this package.
 
 The site, offer, category, application, merchant dashboard, and network widget surfaces require the configured `affiliate-network.admin` ability.
 
@@ -256,35 +256,65 @@ Approve, reject, revoke, and bulk-approve run each mutation inside the owning af
 
 ## Extending Resources
 
-### Add Custom Resource
+### Add a Custom Resource
+
+Every shipped resource is `final`. Write your own resource and reuse the
+shipped schema/table classes:
 
 ```php
 namespace App\Filament\Resources;
 
-use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource as BaseResource;
+use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Schemas\AffiliateOfferForm;
+use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Tables\AffiliateOffersTable;
+use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
+use Filament\Schemas\Schema;
+use Filament\Tables\Table;
 
-class AffiliateOfferResource extends BaseResource
+class AffiliateOfferResource extends Resource
 {
-    // Override navigation
-    protected static ?string $navigationIcon = 'heroicon-o-megaphone';
-    
-    // Add custom relation managers
+    protected static ?string $model = AffiliateOffer::class;
+
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-megaphone';
+
+    public static function getNavigationGroup(): string | \UnitEnum | null
+    {
+        return config('filament-affiliate-network.navigation.group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        return config('filament-affiliate-network.navigation.sort', 50) + 1;
+    }
+
+    public static function form(Schema $schema): Schema
+    {
+        return AffiliateOfferForm::configure($schema);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return AffiliateOffersTable::configure($table);
+    }
+
     public static function getRelations(): array
     {
         return [
-            RelationManagers\CreativesRelationManager::class,
             RelationManagers\LinksRelationManager::class,
+            RelationManagers\LegsRelationManager::class,
         ];
     }
 }
 ```
 
-### Register Custom Resource
+### Register the Custom Resource
+
+`FilamentAffiliateNetworkPlugin` registers a fixed set and exposes no
+`resources()` method. Register your own resource from the panel provider
+instead:
 
 ```php
-FilamentAffiliateNetworkPlugin::make()
-    ->resources([
-        \App\Filament\Resources\AffiliateOfferResource::class,
-        // Other default resources...
-    ]);
+$panel->resources([
+    \App\Filament\Resources\AffiliateOfferResource::class,
+    // ...plus any default resources you still want
+]);
 ```

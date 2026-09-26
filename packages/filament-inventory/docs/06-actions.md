@@ -22,17 +22,17 @@ ReceiveStockAction::make()
 
 | Field | Type | Description |
 |-------|------|-------------|
-| product_type | Select | Morphable product class |
-| product_id | TextInput | Product identifier |
-| quantity | TextInput (numeric) | Quantity to receive |
-| unit_cost | TextInput (numeric) | Cost per unit |
-| reference | TextInput | PO number, return ref, etc. |
-| reason | Textarea | Notes |
+| location_id | Select | Receiving location (owner-scoped, searchable) |
+| quantity | TextInput (numeric) | Quantity received, min 1 |
+| purchase_order | TextInput | PO number |
+| supplier | TextInput | Supplier name |
+| received_at | DatePicker | Movement date, defaults to now |
+| notes | Textarea | Quality notes, inspection results |
 
-**Events Dispatched:**
-- Creates `receipt` movement
-- Updates stock level
-- May trigger allocation fulfillment
+**Behavior:**
+- Creates a `receipt` movement
+- `purchase_order` and `supplier` are joined into the movement `reason`
+- Rejects a location outside the current owner scope
 
 ### Ship Stock
 
@@ -48,19 +48,21 @@ ShipStockAction::make()
 
 | Field | Type | Description |
 |-------|------|-------------|
-| product_type | Select | Morphable product class |
-| product_id | TextInput | Product identifier |
-| quantity | TextInput (numeric) | Quantity to ship |
-| reference | TextInput | Order number, transfer ref |
-| reason | Textarea | Notes |
+| location_id | Select | Shipping location (owner-scoped, searchable) |
+| quantity | TextInput (numeric) | Quantity to ship, min 1 |
+| order_number | TextInput | Order number |
+| customer | TextInput | Customer name |
+| tracking_number | TextInput | Carrier tracking number |
+| shipped_at | DatePicker | Movement date, defaults to now |
+| notes | Textarea | Shipping notes, special instructions |
 
 **Validation:**
-- Quantity must be ≤ available stock
-- Displayed available quantity updates live
+- Throws `InsufficientInventoryException` on overship, surfaced as a danger notification
 
-**Events Dispatched:**
-- Creates `shipment` movement
-- Updates stock level
+**Behavior:**
+- Creates a `shipment` movement
+- `order_number`, `customer` and `tracking_number` are joined into the movement `reason`
+- Rejects a location outside the current owner scope
 
 ### Transfer Stock
 
@@ -76,18 +78,14 @@ TransferStockAction::make()
 
 | Field | Type | Description |
 |-------|------|-------------|
-| product_type | Select | Morphable product class |
-| product_id | TextInput | Product identifier |
-| from_location_id | Select | Source location |
-| to_location_id | Select | Destination location |
+| from_location_id | Select | Source location (owner-scoped, searchable) |
+| to_location_id | Select | Destination location, reset when source changes |
 | quantity | TextInput (numeric) | Quantity to transfer |
-| reference | TextInput | Transfer number |
-| reason | Textarea | Notes |
+| notes | Textarea | Transfer notes |
 
 **Behavior:**
 - Creates paired movements (out/in)
-- Available quantity updates live when source changes
-- Cannot transfer to same location
+- Both locations are validated against the current owner scope
 
 ### Adjust Stock
 
@@ -103,17 +101,18 @@ AdjustStockAction::make()
 
 | Field | Type | Description |
 |-------|------|-------------|
-| adjustment_type | Radio | `add` or `remove` |
-| quantity | TextInput (numeric) | Adjustment amount |
-| reference | TextInput | Adjustment reference |
-| reason | Textarea | Required explanation |
+| location_id | Select | Location (owner-scoped, searchable) |
+| new_quantity | TextInput (numeric) | Absolute stock level to set, min 0 |
+| reason | Select | `cycle_count`, `damaged`, `expired`, `lost`, `found`, `correction`, `initial_stock`, `other` |
+| notes | Textarea | Optional notes |
 
 **Validation:**
-- Cannot remove more than available
-- Reason is mandatory
+- `location_id`, `new_quantity` and `reason` are required
+- `reason` defaults to `correction`
 
-**Events Dispatched:**
-- Creates `adjustment` movement
+**Behavior:**
+- Creates an `adjustment` movement
+- Rejects a location outside the current owner scope
 
 ## Cycle Count
 
@@ -129,15 +128,15 @@ CycleCountAction::make()
 
 | Field | Type | Description |
 |-------|------|-------------|
-| counted_quantity | TextInput (numeric) | Physical count result |
-| reference | TextInput | Count sheet reference |
-| notes | Textarea | Discrepancy explanation |
+| location_id | Select | Location being counted; live, auto-fills `system_quantity` |
+| system_quantity | TextInput (numeric) | Disabled, prefilled from `InventoryLevel` |
+| counted_quantity | TextInput (numeric) | Physical count result, autofocus |
+| counter | TextInput | Who performed the count |
 
 **Behavior:**
-- Displays current system quantity
-- Auto-calculates variance
-- Creates adjustment if variance ≠ 0
-- Updates inventory accuracy metrics
+- Selecting a location populates the current system quantity
+- Creating an adjustment if the variance is non-zero
+- Rejects a location outside the current owner scope
 
 ## Allocation Management
 
@@ -153,15 +152,13 @@ ReleaseAllocationAction::make()
 
 **Fields:**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| quantity | TextInput (numeric) | Quantity to release |
-| reason | Textarea | Release reason |
+None. The action is a confirmation-only record action that releases the whole
+allocation.
 
 **Behavior:**
-- Cannot release more than allocated
-- Updates stock level available quantity
-- Changes allocation status to `released`
+- Calls `ReleaseStock::make()->releaseAllocation($record)` and releases the full allocated quantity
+- A non-positive return (already released, or outside the owner scope) surfaces a danger notification
+- Danger-colored, `requiresConfirmation()`
 
 ## Reorder Management
 
@@ -197,19 +194,20 @@ RejectReorderSuggestionAction::make()
 
 ## Using Actions Programmatically
 
-All actions use the underlying inventory package services:
+Every Filament action delegates to an `AIArmada\Inventory\Actions\*` action that
+exposes `run()` through the `AsAction` trait:
 
 ```php
-use AIArmada\Inventory\Actions\ReceiveStock;
+use AIArmada\Inventory\Actions\ReceiveInventory;
 
-app(ReceiveStock::class)->execute(
-    location: $location,
-    productType: Product::class,
-    productId: $product->id,
+ReceiveInventory::run(
+    model: $product,            // the inventoryable record
+    locationId: $location->id,
     quantity: 100,
-    unitCost: 10.00,
-    reference: 'PO-001',
-    reason: 'Initial stock',
+    reason: 'PO-001',
+    note: 'Initial stock',
+    userId: auth()->id(),
+    occurredAt: now(),
 );
 ```
 
@@ -223,31 +221,37 @@ Actions respect Filament's authorization system via the following policies:
 | `InventoryLevelPolicy` | `InventoryLevel` |
 | `InventoryReorderSuggestionPolicy` | `InventoryReorderSuggestion` |
 
-```php
-// In your policy
-public function receiveStock(User $user, InventoryLocation $location): bool
-{
-    return $user->can('manage inventory');
-}
-```
+Each policy only declares the standard CRUD set (`viewAny`, `view`, `create`,
+`update`, `delete`) — there are no per-operation abilities such as
+`receiveStock`. Customise those methods to gate stock operations.
 
 ## Customizing Actions
 
-Extend the base action classes:
+The packaged actions are `final` factories: `XXXAction::make(string $name = '...')`
+returns a configured `Filament\Actions\Action`, so they cannot be extended. Compose
+your own action instead:
 
 ```php
-use AIArmada\FilamentInventory\Actions\ReceiveStockAction;
+use AIArmada\Inventory\Actions\ReceiveInventory;
+use Filament\Actions\Action;
+use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
+use Illuminate\Database\Eloquent\Model;
 
-class CustomReceiveStockAction extends ReceiveStockAction
-{
-    protected function afterReceive(array $data): void
-    {
-        // Custom logic after stock received
-        Notification::make()
-            ->title('Stock received')
-            ->sendToDatabase($this->getRecord()->location->manager);
-    }
-}
+Action::make('receive_stock')
+    ->form([
+        TextInput::make('location_id')->required(),
+        TextInput::make('quantity')->numeric()->required(),
+    ])
+    ->action(function (Model $record, array $data): void {
+        ReceiveInventory::run(
+            model: $record,
+            locationId: $data['location_id'],
+            quantity: (int) $data['quantity'],
+        );
+
+        Notification::make()->title('Stock received')->success()->send();
+    });
 ```
 
 ## Multitenancy

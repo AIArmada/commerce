@@ -68,8 +68,7 @@ private function resolveOwner(): ?Model
         (bool) config('products.features.owner.include_global', false)
     );
 
-    return $query
-        ->where('name', 'like', '%'.LikePattern::escape($search).'%')
+    return LikeSearch::whereLike($query, 'name', LikeSearch::contains($search))
         ->limit(50)
         ->pluck('name', 'id')
         ->toArray();
@@ -88,27 +87,24 @@ private function resolveOwner(): ?Model
     return OwnerContext::resolve();
 }
 
-private function scopeQueryForOwner(Builder $query, ?Model $owner): Builder
+private function customerIncludesGlobal(): bool
 {
-    return OwnerQuery::applyToEloquentBuilder(
-        $query,
-        $owner,
-        (bool) config('products.features.owner.include_global', false),
-    );
+    return (bool) config('customers.features.owner.include_global', false);
 }
 ```
 
 This is applied to:
-- Product searches
-- Variant searches
-- Customer searches (if package installed)
+- Product searches (`products.features.owner.include_global`)
+- Variant searches, via `whereHas('product', ...)` on the owning product
+- Customer searches, which use `customers.features.owner.include_global` instead
 
 ## Widget Scoping
 
 The `PricingStatsWidget` applies owner scoping:
 
 ```php
-$activePriceLists = PriceList::forOwner($owner)->active()->count();
+// The global OwnerScope on the model does the scoping; the widget adds no extra filter
+$activePriceLists = PriceList::query()->active()->count();
 
 // Promotion administration is scoped by aiarmada/filament-promotions.
 ```
@@ -143,17 +139,20 @@ namespace App\Http\Middleware;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Closure;
 use Filament\Facades\Filament;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 class SetOwnerContext
 {
-    public function handle($request, Closure $next)
+    public function handle(Request $request, Closure $next): Response
     {
         $tenant = Filament::getTenant();
-        
+
         if ($tenant) {
-            OwnerContext::set($tenant);
+            // HTTP-only API. There is no OwnerContext::set() or ::clear().
+            OwnerContext::setForRequest($tenant);
         }
-        
+
         return $next($request);
     }
 }
@@ -168,15 +167,15 @@ Verify scoping works correctly:
 it('scopes price lists to current owner', function () {
     $tenant1 = Tenant::factory()->create();
     $tenant2 = Tenant::factory()->create();
-    
+
     $list1 = PriceList::factory()->for($tenant1, 'owner')->create();
     $list2 = PriceList::factory()->for($tenant2, 'owner')->create();
-    
-    OwnerContext::set($tenant1);
-    
-    livewire(ListPriceLists::class)
-        ->assertCanSeeTableRecords([$list1])
-        ->assertCanNotSeeTableRecords([$list2]);
+
+    OwnerContext::withOwner($tenant1, function () use ($list1, $list2): void {
+        livewire(ListPriceLists::class)
+            ->assertCanSeeTableRecords([$list1])
+            ->assertCanNotSeeTableRecords([$list2]);
+    });
 });
 ```
 
@@ -190,6 +189,7 @@ Enable multitenancy via config or environment:
     'owner' => [
         'enabled' => env('PRICING_OWNER_ENABLED', false),
         'include_global' => false,
+        'auto_assign_on_create' => true,
     ],
 ],
 ```
@@ -201,20 +201,21 @@ PRICING_OWNER_ENABLED=true
 
 ## Global Records
 
-When `include_global` is `true`, queries include records where `owner_type` and `owner_id` are both `null`.
+`owner = null` means global-only — it never means "all owners". When `include_global` is
+`true`, an owner-scoped query returns that owner's rows *plus* the ownerless ones; with
+`include_global` false they stay invisible. `PriceList::globalOnly()` returns only the
+ownerless rows, and `->withoutOwnerScope()` drops the global scope entirely for privileged
+reads.
 
-This is useful for:
-- Default price lists shared across all tenants
-- Global pricing records applicable to everyone
-
-To create global records, clear the owner context first:
+To create global records, run the write inside an explicit global context:
 
 ```php
-OwnerContext::clear();
+use AIArmada\CommerceSupport\Support\OwnerContext;
 
-$globalList = PriceList::create([
+$globalList = OwnerContext::withOwner(null, fn () => PriceList::create([
     'name' => 'Global Default',
+    'slug' => 'global-default',
     'is_default' => true,
     // owner_type and owner_id remain null
-]);
+]));
 ```

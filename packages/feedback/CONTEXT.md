@@ -42,7 +42,7 @@ keywords:
 - Owner/security: Owner-scoped (all models; feedback.owner).
 
 ## Key surfaces
-- Models: `FeedbackAnswer`, `FeedbackForm`, `FeedbackInvitation`, `FeedbackQuestion`, `FeedbackQuestionOption`, `FeedbackResponse`, `FeedbackSection`, `FeedbackTemplate`, `FeedbackTestimonial`
+- Models: `FeedbackAnswer`, `FeedbackForm`, `FeedbackFormAnalytics`, `FeedbackInvitation`, `FeedbackQuestion`, `FeedbackQuestionOption`, `FeedbackResponse`, `FeedbackSection`, `FeedbackTemplate`, `FeedbackTestimonial`
 - Actions/Services: `Actions/ApproveFeedbackTestimonialAction`, `Actions/ArchiveFeedbackFormAction`, `Actions/CalculateFeedbackAnswerScoreAction`, `Actions/CalculateFeedbackFormAnalyticsAction`, `Actions/CalculateFeedbackResponseScoreAction`, `Actions/CloseFeedbackFormAction`, `Actions/CreateFeedbackFormAction`, `Actions/CreateFeedbackFormFromTemplateAction`
 - Config `feedback.php`: `database`, `table_prefix`, `json_column_type`, `tables`, `forms`, `sections`, `questions`, `question_options`, `responses`, `answers`
 

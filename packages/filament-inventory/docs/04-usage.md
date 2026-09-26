@@ -105,7 +105,6 @@ Monitor active cart allocations.
 - View allocated quantity and cart ID
 - Expiration time tracking
 - Bulk release action
-- "Cleanup Expired" header action
 - Navigation badge showing expired allocation count
 
 ### Fields
@@ -126,7 +125,7 @@ Track lot/batch numbers with expiry management.
 - Batch and lot number tracking
 - Expiry date management
 - Quantity tracking (initial, current, reserved)
-- Status management (Active, Quarantined, Expired, Depleted)
+- Status management (Active, Quarantined, Expired, Depleted, Recalled, On Hold)
 - Navigation badge showing batches expiring soon
 
 ### Fields
@@ -200,7 +199,9 @@ All resources automatically apply owner scoping when multitenancy is enabled:
 ],
 ```
 
-The `InventoryOwnerScope` helper ensures:
+The `InventoryOwnerScope` helper in `aiarmada/inventory` (with
+`AIArmada\CommerceSupport\Support\Filament\OwnerUiScope` on the Filament side)
+ensures:
 1. Queries are filtered to the current owner context
 2. Location relationship selects are scoped
 3. Action handlers validate location ownership

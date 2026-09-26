@@ -8,6 +8,9 @@ The checkout process is divided into modular steps that can be customized, reord
 
 ## Built-in Steps
 
+The default order comes from `config('checkout.steps.order')` and is listed
+below in that order.
+
 ### ValidateCartStep
 
 Validates the cart before checkout:
@@ -23,14 +26,6 @@ Resolves customer information:
 - Resolves existing customer or billable subjects before payment
 - Associates any existing subject with the checkout session
 - Leaves direct-capable guest flows side-effect free before payment
-
-### PersistCustomerStep
-
-Persists customer information after payment succeeds:
-
-- Creates or syncs the customer record from checkout payload data
-- Merges or promotes guest customers when an authenticated actor is known
-- Updates the checkout session before `CreateOrderStep` runs
 
 ### CalculatePricingStep
 
@@ -48,14 +43,6 @@ Applies promotions and vouchers:
 - Applies voucher codes
 - Calculates discount amounts
 
-### CalculateTaxStep
-
-Computes applicable taxes:
-
-- Determines tax zone
-- Applies tax rates
-- Calculates tax totals
-
 ### CalculateShippingStep
 
 Calculates shipping costs:
@@ -63,6 +50,14 @@ Calculates shipping costs:
 - Evaluates shipping methods
 - Calculates shipping rates
 - Updates session with costs
+
+### CalculateTaxStep
+
+Computes applicable taxes:
+
+- Determines tax zone
+- Applies tax rates
+- Calculates tax totals
 
 ### ReserveInventoryStep
 
@@ -82,6 +77,14 @@ Processes the payment:
 - Calls payment gateway
 - Handles payment result
 
+### PersistCustomerStep
+
+Persists customer information after payment succeeds:
+
+- Creates or syncs the customer record from checkout payload data
+- Merges or promotes guest customers when an authenticated actor is known
+- Updates the checkout session before `CreateOrderStep` runs
+
 ### CreateOrderStep
 
 Creates the order record:
@@ -98,7 +101,7 @@ Dispatches document generation:
 - Triggers receipt creation when checkout document generation is explicitly enabled
 - Dispatches notifications
 
-## Optional Package-Contributed Steps
+### Optional Package-Contributed Steps
 
 Event-ticketing steps are not part of checkout's core defaults. When the events
 integration is installed, its tagged `StepContributor` may add
@@ -270,8 +273,8 @@ Steps can skip execution based on conditions:
 ```php
 public function canSkip(CheckoutSession $session): bool
 {
-    // Skip when there are no physical items.
-    return ! $session->cart->hasPhysicalItems();
+    // Skip when the cart snapshot has no line items.
+    return ($session->cart_snapshot['items'] ?? []) === [];
 }
 ```
 
@@ -286,10 +289,10 @@ public function compensate(CheckoutSession $session): StepResult
 {
     // Called when a later step fails or throws
     // Undo this step's changes and report the outcome.
-    
-    $reservation = $session->pricing_data['inventory_reservation'] ?? null;
-    if ($reservation) {
-        InventoryReservation::release($reservation);
+
+    $reference = data_get($session->pricing_data ?? [], 'inventory_reservation.reference');
+    if (is_string($reference) && $reference !== '') {
+        app(\AIArmada\Checkout\Integrations\InventoryAdapter::class)->release($reference);
     }
 
     return StepResult::compensated($this->getIdentifier(), 'Reservation released');

@@ -230,7 +230,7 @@ public static function getEloquentQuery(): Builder
 ```php
 // In migration
 $table->index(['status', 'created_at']);
-$table->index('lifetime_value');
+$table->index('accepts_marketing');
 ```
 
 ### Widget Query Timeouts
@@ -256,7 +256,7 @@ protected function getStats(): array
 // Instead of loading all records
 $stats = Customer::query()
     ->selectRaw('COUNT(*) as total')
-    ->selectRaw('SUM(lifetime_value) as ltv')
+    ->selectRaw('SUM(CASE WHEN accepts_marketing THEN 1 ELSE 0 END) as opted_in')
     ->first();
 ```
 
@@ -285,9 +285,8 @@ php artisan customers:rebuild-segments --dry-run
 
 3. **Optimize segment conditions**:
 ```php
-// Use indexed fields in conditions
-// Good: lifetime_value, total_orders, status
-// Avoid: metadata, custom JSON fields
+// Only accepts_marketing, status, and created_days_ago are supported fields.
+// An unknown field matches nothing and empties the segment.
 ```
 
 ## Debugging Tips

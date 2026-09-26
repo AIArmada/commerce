@@ -30,7 +30,7 @@ Also ensure `standalone_resources` is `true`:
 Add the plugin to your Panel provider:
 
 ```php
-use AiArmada\FilamentContacting\FilamentContactingPlugin;
+use AIArmada\FilamentContacting\FilamentContactingPlugin;
 
 $panel->plugins([
     FilamentContactingPlugin::make(),
@@ -46,8 +46,8 @@ Standalone resources are off by default to prevent accidental cross-owner access
 If the relation manager shows "Relationship [contactMethods] not found", ensure the parent model uses:
 
 ```php
-use AiArmada\Contacting\Concerns\HasContactMethods;
-use AiArmada\Contacting\Concerns\HasSocialProfiles;
+use AIArmada\Contacting\Concerns\HasContactMethods;
+use AIArmada\Contacting\Concerns\HasSocialProfiles;
 ```
 
 ## No Create Button on Standalone Resources
@@ -82,4 +82,4 @@ of updating them because imports are insert-only.
 
 ## Filament Method Signature Mismatch
 
-If you see method signature errors, check that your installed Filament version matches `^5.0`. The components in this package use Filament v5 APIs.
+If you see method signature errors, check that your installed Filament version matches `^5.8.1`. The components in this package use Filament v5 APIs.

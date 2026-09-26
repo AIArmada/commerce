@@ -26,7 +26,7 @@ This package allows any model to have:
 |---|---|
 | `aiarmada/contacting` | How to reach or follow an entity |
 | `aiarmada/addressing` | Where the entity is physically/geographically |
-| `aiarmada/engagement` or `aiarmada/sharing` | How content/entity is shared by users |
+| `aiarmada/engagement` | How content/entity is shared by users |
 
 ## Main Tables
 
@@ -76,4 +76,4 @@ class Customer extends Model
 
 ## Owner scoping
 
-All three models (`ContactMethod`, `SocialProfile`, `ContactSnapshot`) are owner-scoped via `HasOwner`. Behavior is controlled by `contacting.features.owner` (`enabled`, `include_global`, `auto_assign`). Cross-tenant reads must opt out explicitly; `DB::table()` paths need `OwnerQuery` handling.
+All three models (`ContactMethod`, `SocialProfile`, `ContactSnapshot`) are owner-scoped via `HasOwner`. Behavior is controlled by `contacting.features.owner` (`enabled`, `include_global`, `auto_assign_on_create`). Cross-tenant reads must opt out explicitly; `DB::table()` paths need `OwnerQuery` handling.

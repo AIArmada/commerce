@@ -45,7 +45,7 @@ Verify the class exists:
 class_exists(\Laravel\Cashier\Cashier::class); // Should return true
 
 // For CHIP
-class_exists(\AIArmada\CashierChip\Cashier::class); // Should return true
+class_exists(\AIArmada\CashierChip\Facades\CashierChip::class); // Should return true
 ```
 
 ## Dashboard Issues
@@ -68,7 +68,7 @@ class_exists(\AIArmada\CashierChip\Cashier::class); // Should return true
    ```
 
 3. **Multitenancy scoping is too restrictive**
-   - Check if `CashierOwnerScope` is filtering out all records
+   - Check if `AIArmada\Cashier\Support\OwnerScopedQuery` is filtering out all records
    - Verify owner context is properly set
 
 4. **Database connection issues**
@@ -100,7 +100,7 @@ class_exists(\AIArmada\CashierChip\Cashier::class); // Should return true
 **Possible Causes:**
 
 1. **Subscriptions exist but aren't active**
-   - Check the "All" tab instead of "Active"
+   - Clear the **Status** `SelectFilter` (it defaults to no filter)
    
 2. **User scoping**
    - In admin panels, all subscriptions should be visible
@@ -163,20 +163,13 @@ class_exists(\AIArmada\CashierChip\Cashier::class); // Should return true
 **Symptoms:** `/billing` returns 404.
 
 **Solution:**
-1. Enable portal in config:
-   ```php
-   'billing_portal' => [
-       'enabled' => true,
-   ],
-   ```
-
-2. Register the panel provider:
+1. Register the panel provider — there is no `enabled` config flag:
    ```php
    // config/app.php or bootstrap/providers.php
    AIArmada\FilamentCashier\CustomerPortal\BillingPanelProvider::class,
    ```
 
-3. Clear route cache:
+2. Clear route cache:
    ```bash
    php artisan route:clear
    ```
@@ -201,7 +194,7 @@ Check auth guard configuration:
 **This is a serious security issue!**
 
 **Solution:**
-1. Verify `CashierOwnerScope` is applied
+1. Verify `AIArmada\Cashier\Support\OwnerScopedQuery` is applied
 2. Check that the gateway's ownership columns match the installed package:
    - Stripe subscriptions use `user_id`
    - CHIP subscriptions use `billable_type` + `billable_id`
@@ -242,8 +235,8 @@ Check auth guard configuration:
 
 **Solutions:**
 1. The list uses collection-based pagination, which loads all data
-2. Consider filtering by gateway tab to reduce dataset
-3. Use "Active" or "Issues" tabs for smaller datasets
+2. Consider filtering by the **Gateway** or **Status** filter to reduce the dataset
+3. Lower the poll frequency via `tables.polling_interval`
 
 ## Translation Issues
 
@@ -281,7 +274,7 @@ php artisan vendor:publish --tag=filament-cashier-translations
    ```
 
 2. Check webhook URL in Stripe Dashboard
-3. See [cashier webhook docs](../../../cashier/docs/05-webhooks.md)
+3. See [cashier webhook docs](../../cashier/docs/08-webhooks.md)
 
 ### CHIP Subscription Renewals Not Working
 
@@ -319,7 +312,7 @@ Add to your logging config to capture cashier-related logs:
 Use the Gateway Management page or check programmatically:
 
 ```php
-use AIArmada\FilamentCashier\Support\GatewayDetector;
+use AIArmada\Cashier\Support\GatewayDetector;
 
 $detector = app(GatewayDetector::class);
 $detector->availableGateways();  // Collection of available gateways
@@ -336,10 +329,10 @@ $user = User::first();
 
 // Check Stripe
 $user->stripe_id;              // Should have value if using Stripe
-$user->stripeId();             // Method should work
+$user->stripeId();             // Provided by Laravel\Cashier\Billable
 
 // Check CHIP  
-$user->chipId();               // Method should work if the model uses Billable
+$user->chipId();               // Provided by AIArmada\CashierChip\Billing\Billable
 ```
 
 ## Getting Help

@@ -121,11 +121,12 @@ Batches expiring within this number of days will appear in the "Expiring Batches
 ],
 ```
 
-Options:
+Options (`AIArmada\Inventory\Enums\CostingMethod`):
 - `fifo` — First In, First Out
 - `lifo` — Last In, First Out
-- `average` — Weighted Average Cost
-- `specific` — Specific Identification
+- `weighted_average` — Weighted Average Cost
+- `standard` — Standard Cost
+- `specific_identification` — Specific Identification
 
 ### Feature Toggles
 
@@ -162,7 +163,8 @@ Lower numbers appear first in navigation.
 ],
 ```
 
-Dashboard stats are cached for this many seconds. Set to `0` to disable caching.
+Dashboard stats are cached for this many seconds. Set to `0` or lower to
+bypass the cache entirely.
 
 ## Resource overrides
 

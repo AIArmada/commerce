@@ -87,31 +87,25 @@ TextInput::make('domain')->unique(ignoreRecord: true)
 
 3. Check foreign key relationships exist.
 
-## Marketplace Issues
+## Page Issues
 
-### Marketplace Returns 404
+### Merchant Dashboard Returns 404
 
-**Symptoms:** `/affiliate-network/marketplace` not found.
+**Symptoms:** `/affiliate-network/merchant-dashboard` not found.
 
 **Solutions:**
 
-1. Verify feature is enabled:
-```php
-'marketplace' => [
-    'show_commission_rates' => true,
-    'show_cookie_duration' => true,
-],
-```
+1. Verify the plugin is registered on the panel, then re-check routes:
+   ```bash
+   php artisan route:list | grep merchant-dashboard
+   php artisan route:clear
+   ```
 
-2. Check routes:
-```bash
-php artisan route:list | grep marketplace
-```
-
-3. Clear route cache:
-```bash
-php artisan route:clear
-```
+> **info**
+> This package ships no affiliate marketplace page. If you are looking for
+> `/affiliate-network/marketplace`, it belongs to another package or to a
+> custom page of your own. The `marketplace.*` config keys are placeholders —
+> nothing in the code reads them.
 
 ### Can't Apply to Offers
 
@@ -279,7 +273,7 @@ composer require --dev barryvdh/laravel-debugbar
 
 If issues persist:
 
-1. Check [core package troubleshooting](../affiliate-network/99-troubleshooting.md)
+1. Check [core package troubleshooting](../../affiliate-network/docs/99-troubleshooting.md)
 2. Review Filament v5 documentation
 3. Open an issue with:
    - PHP/Laravel/Filament versions

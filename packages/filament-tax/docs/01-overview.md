@@ -55,7 +55,7 @@ The `aiarmada/filament-tax` package is the Filament admin adapter for `aiarmada/
 
 - PHP 8.4+
 - Laravel 13+
-- Filament 5.0+
+- Filament 5.8+
 - `aiarmada/tax` package
 
 ## Quick Start
@@ -106,14 +106,18 @@ filament-tax/
 │   │   └── DownloadTaxExemptionCertificateAction.php
 │   ├── Pages/
 │   │   └── ManageTaxSettings.php   # Settings page
-│   ├── Plugin/
-│   │   └── FilamentTaxPlugin.php   # Main plugin class
+│   ├── FilamentTaxPlugin.php       # Main plugin class
+│   ├── Policies/                   # Model policies (registered by the provider)
+│   │   ├── TaxZonePolicy.php
+│   │   ├── TaxClassPolicy.php
+│   │   ├── TaxRatePolicy.php
+│   │   └── TaxExemptionPolicy.php
 │   ├── Resources/
-│   │   ├── TaxZoneResource/
-│   │   │   ├── Pages/             # List, Create, Edit, View
-│   │   │   ├── RelationManagers/ # RatesRelationManager
-│   │   │   ├── Schemas/          # Form schema
-│   │   │   └── Tables/           # Table schema
+│   │   ├── TaxZoneResource.php
+│   │   ├── TaxClassResource.php
+│   │   ├── TaxRateResource.php
+│   │   ├── TaxExemptionResource.php
+│   │   ├── TaxZoneResource/        # Pages/RelationManagers/Schemas/Tables
 │   │   ├── TaxClassResource/
 │   │   ├── TaxRateResource/
 │   │   └── TaxExemptionResource/
@@ -148,7 +152,7 @@ FilamentTaxPlugin::make()
 
 ## Filament Version
 
-This plugin is built for **Filament 5.0** which uses Livewire 4. The API is compatible with Filament v4, so v4 documentation examples work with minor adjustments.
+This plugin is built for **Filament 5.8** (`filament/filament: ^5.8.1`), which uses Livewire 4.
 
 ## Related Packages
 

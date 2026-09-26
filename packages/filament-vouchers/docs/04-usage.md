@@ -23,12 +23,15 @@ The main resource for managing vouchers.
 - Type (fixed, percentage, free shipping)
 - Value (in cents for fixed, basis points for percentage)
 - Currency
-- Usage limits (total and per-user)
-- Date range (starts_at, expires_at)
-- Minimum order amount
-- Stacking rules
-- Targeting configuration
-- **Affiliate linking** — when `aiarmada/affiliates` is installed, a collapsible "Affiliate" section appears for linking a voucher to an affiliate for conversion tracking
+- Condition targeting (preset selector + optional raw DSL)
+- Usage limits (total and per-user), min cart value, max discount,
+  allows manual redemption
+- Date range (`starts_at`, `expires_at`) and status
+- Ownership (`owner_type` / `owner_id`) and metadata
+- **Affiliate linking** — when `aiarmada/affiliates` is installed, extra affiliate sections (link, commission override, program, upline levels) appear for conversion tracking
+
+Stacking rules are not edited on the voucher form; they live on the
+[StackingConfigurationPage](#stackingconfigurationpage).
 
 ### Condition Targeting
 
@@ -103,6 +106,9 @@ use AIArmada\FilamentVouchers\Actions\ActivateVoucherAction;
 ActivateVoucherAction::make()
 ```
 
+Visible only when the stored status is `Paused` **and** the voucher is not past
+`expires_at`.
+
 ### PauseVoucherAction
 
 Temporarily pause an active voucher:
@@ -112,6 +118,16 @@ use AIArmada\FilamentVouchers\Actions\PauseVoucherAction;
 
 PauseVoucherAction::make()
 ```
+
+Visible only when the stored status is `Active` **and** the voucher is not past
+`expires_at`.
+
+> **info**
+> The voucher table and infolist read `effective_status`, not `status`, so a past-due voucher
+> displays as `Expired` even when no sweep has written the transition. The status filter
+> special-cases `Expired` to match the same set the accessor reports — stored `Expired`, plus
+> anything else whose `expires_at` has passed. See `Voucher::effective_status` in
+> `aiarmada/vouchers` for the accessor itself.
 
 ### ManualRedeemVoucherAction
 
@@ -155,40 +171,35 @@ ApplyVoucherToCartAction::make()
 
 ## Customizing Resources
 
-### Extending VoucherResource
+### Navigation overrides
+
+`VoucherResource` is declared `final`, so it cannot be subclassed. The
+navigation group and sort come from config, which the
+`CommerceNavigation` engine can also override at runtime:
 
 ```php
-namespace App\Filament\Resources;
-
-use AIArmada\FilamentVouchers\Resources\VoucherResource as BaseVoucherResource;
-
-class VoucherResource extends BaseVoucherResource
-{
-    protected static function getNavigationGroup(): ?string
-    {
-        return 'Marketing';
-    }
-
-    protected static function getNavigationSort(): ?int
-    {
-        return 5;
-    }
-}
+// config/filament-vouchers.php
+'navigation' => [
+    'group' => 'Marketing',
+],
+'resources' => [
+    'navigation_sort' => [
+        'vouchers' => 5,
+    ],
+],
 ```
 
 ### Custom Table Actions
 
-Add custom actions to the voucher table:
+For extra columns or actions, register your own resource against
+`AIArmada\Vouchers\Models\Voucher` in your panel provider:
 
 ```php
-// In your extended resource
 public static function table(Table $table): Table
 {
-    return parent::table($table)
-        ->actions([
-            ...parent::table($table)->getActions(),
-            // Add your custom actions
-        ]);
+    return $table->actions([
+        // ... your custom actions
+    ]);
 }
 ```
 

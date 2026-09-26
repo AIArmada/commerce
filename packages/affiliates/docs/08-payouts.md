@@ -26,10 +26,14 @@ use AIArmada\Affiliates\Actions\Payouts\UpdatePayoutStatus;
 $payout = CreatePayout::run($conversionIds, [
     'payee_type' => $affiliate->getMorphClass(),
     'payee_id' => $affiliate->getKey(),
-    'method' => PayoutMethodType::PayPal,
-    'notes' => 'Monthly payout for January',
+    'metadata' => ['note' => 'Monthly payout for January'],
 ]);
 ```
+
+`CreatePayout` reads only `reference`, `status`, `currency`, `metadata`,
+`payee_type`, `payee_id`, `scheduled_at`, `paid_at`, `owner_type`, and
+`owner_id` from `$attributes`. There is no `method` or `notes` key — both are
+silently ignored. The payout method is chosen later at processing time.
 
 ### One Currency Per Payout
 
@@ -77,7 +81,8 @@ $payout = AffiliatePayout::create([
 $conversions->each(fn ($c) => $c->update(['affiliate_payout_id' => $payout->id]));
 ```
 
-> **Warning:** manual linking bypasses the one-currency-per-payout guard in `CreatePayout`. Only attach conversions whose `commission_currency` matches the payout `currency`, and prefer the action so balance reservation stays consistent.
+> **warning**
+> Manual linking bypasses the one-currency-per-payout guard in `CreatePayout`. Only attach conversions whose `commission_currency` matches the payout `currency`, and prefer the action so balance reservation stays consistent.
 
 ## Payout Statuses
 
@@ -106,7 +111,7 @@ AffiliatePayoutMethod::create([
     'affiliate_id' => $affiliate->id,
     'type' => PayoutMethodType::PayPal,
     'is_default' => true,
-    'is_verified' => true,
+    'verified_at' => now(),
     'details' => [
         'email' => 'affiliate@paypal.com',
     ],
@@ -128,25 +133,35 @@ AffiliatePayoutMethod::create([
 // Stripe Connect
 AffiliatePayoutMethod::create([
     'affiliate_id' => $affiliate->id,
-    'type' => PayoutMethodType::Stripe,
+    'type' => PayoutMethodType::StripeConnect,
     'details' => [
         'account_id' => 'acct_1234567890',
     ],
 ]);
 ```
 
+> **warning:**
+> `is_verified` is not a column. Verification is the `verified_at` timestamp;
+> `create()` would drop an `is_verified` key silently.
+
 ### Available Method Types
 
 ```php
 use AIArmada\Affiliates\Enums\PayoutMethodType;
 
-PayoutMethodType::PayPal;
-PayoutMethodType::Stripe;
-PayoutMethodType::BankTransfer;
-PayoutMethodType::Check;
-PayoutMethodType::Crypto;
-PayoutMethodType::Manual;
+PayoutMethodType::BankTransfer;  // 'bank_transfer'
+PayoutMethodType::PayPal;        // 'paypal'
+PayoutMethodType::StripeConnect; // 'stripe_connect'
+PayoutMethodType::Wise;          // 'wise'
+PayoutMethodType::Payoneer;      // 'payoneer'
+PayoutMethodType::Check;         // 'check'
+PayoutMethodType::Wire;          // 'wire'
+PayoutMethodType::Crypto;        // 'crypto'
 ```
+
+There is no `Stripe` or `Manual` case. Manual payouts go through
+`Services\Payouts\ManualPayoutProcessor`, which is selected by type string, not
+by an enum case.
 
 ## Payout Holds
 
@@ -159,14 +174,15 @@ use AIArmada\Affiliates\Models\AffiliatePayoutHold;
 $hold = AffiliatePayoutHold::create([
     'affiliate_id' => $affiliate->id,
     'reason' => 'Fraud investigation pending',
-    'amount_minor' => 50000, // $500 on hold
-    'held_at' => now(),
+    'notes' => 'Ticket FR-42',
+    'expires_at' => now()->addDays(30),
+    'placed_by' => 'admin-1',
 ]);
 
 // Release hold
 $hold->update([
     'released_at' => now(),
-    'release_notes' => 'Investigation complete, no issues found',
+    'notes' => 'Investigation complete, no issues found',
 ]);
 
 // Check for active holds
@@ -174,6 +190,11 @@ $hasHolds = $affiliate->payoutHolds()
     ->whereNull('released_at')
     ->exists();
 ```
+
+> **warning:**
+> A hold is a gate, not an amount. `amount_minor` and `held_at` are not
+> columns and would be silently dropped. Use `expires_at` for the hold
+> deadline and `notes` for the release note.
 
 ## Maturity Period
 
@@ -260,25 +281,32 @@ The current maturity flow uses `holding_minor` for pre-payout commission state. 
 
 ```php
 use AIArmada\Affiliates\Services\Payouts\PayoutProcessorFactory;
+use AIArmada\Affiliates\Enums\PayoutMethodType;
 
 $factory = app(PayoutProcessorFactory::class);
 
-// Get processor for payout method
-$processor = $factory->make($payout->method);
+// Get a processor by method type (or its string value)
+$processor = $factory->make($method->type);
+$processor = $factory->make('stripe_connect');
 
 // Process payout
 $result = $processor->process($payout);
 
-if ($result->isSuccessful()) {
+if ($result->isSuccess()) {
     $payout->update([
         'status' => PayoutStatus::Completed,
         'paid_at' => now(),
         'metadata' => array_merge($payout->metadata ?? [], [
-            'transaction_id' => $result->getTransactionId(),
+            'transaction_id' => $result->getStatus(),
         ]),
     ]);
 }
 ```
+
+`AffiliatePayout` has no `method` column — resolve the method from the
+affiliate's `payoutMethods` relation. `PayoutResult` exposes
+`isSuccess()` / `isPending()` / `isUnknown()` and `getStatus()`; there is no
+`isSuccessful()` or `getTransactionId()`.
 
 ## Payout Events
 
@@ -293,13 +321,19 @@ $events = $payout->events()->orderBy('created_at')->get();
 // Manual event recording
 AffiliatePayoutEvent::create([
     'affiliate_payout_id' => $payout->id,
-    'event_type' => 'processing_started',
+    'from_status' => PayoutStatus::Pending,
+    'to_status' => PayoutStatus::Processing,
+    'notes' => 'Sent to provider',
     'metadata' => [
         'processor' => 'paypal',
         'batch_id' => 'BATCH-123',
     ],
 ]);
 ```
+
+> **warning:**
+> There is no `event_type` column; the transition is recorded as
+> `from_status` / `to_status`. An `event_type` key would be dropped silently.
 
 ## Reconciliation
 
@@ -357,8 +391,12 @@ php artisan affiliates:process-maturity
 ### Export Payout Data
 
 ```bash
-php artisan affiliates:export-payouts --from=2024-01-01 --to=2024-01-31
+php artisan affiliates:payout:export PAY-REF-1234
+php artisan affiliates:payout:export 2d8ce0f4-... --path=/path/to/payout.csv
 ```
+
+Exports a single payout (reference or ID) with its linked conversions. There is
+no `affiliates:export-payouts` command and no `--from`/`--to` date range.
 
 ## Multi-Level Payouts
 

@@ -13,7 +13,11 @@ Complete reference for all table and form actions provided by the plugin.
 | Action | Icon | Color | Visibility | Description |
 |--------|------|-------|------------|-------------|
 | Edit | - | - | Always | Open edit form |
+| Sync catalog | `heroicon-o-arrow-path` | Info | Always | Pull the merchant catalog now (requires confirmation) |
 | Verify | `heroicon-o-check-badge` | Success | When `isPending()` | Manually verify site |
+| Reject | `heroicon-o-x-mark` | Danger | When `isPending()` | Reject site |
+| Suspend | `heroicon-o-pause` | Warning | When `isVerified()` | Suspend site |
+| Reinstate | `heroicon-o-play` | Success | When `isSuspended()` | Restore to verified |
 
 ### Verify Action Implementation
 
@@ -24,18 +28,22 @@ Tables\Actions\Action::make('verify')
     ->requiresConfirmation()
     ->visible(fn (AffiliateSite $record): bool => $record->isPending())
     ->action(function (AffiliateSite $record): void {
-        $record->update([
+        self::transitionSite($record, [
             'status' => AffiliateSite::STATUS_VERIFIED,
-            'verified_at' => now(),
+            'verified_at' => CarbonImmutable::now(),
         ]);
     });
 ```
+
+Every status transition goes through the table's private
+`transitionSite()` helper, which re-reads the row under a lock and re-checks
+site verification before writing.
 
 ### Bulk Actions
 
 | Action | Description |
 |--------|-------------|
-| Delete | Delete selected sites |
+| Delete | Delete selected sites (in a `BulkActionGroup`) |
 
 ---
 
@@ -63,7 +71,7 @@ event.
 
 | Manager | Tab | Actions |
 |---------|-----|---------|
-| `LinksRelationManager` | Links | Reconcile (prove legs posted to the merchant ledger exactly once) |
+| `LinksRelationManager` | Links | Reconcile offer, Reconcile (prove legs posted to the merchant ledger exactly once) |
 | `LegsRelationManager` | Legs | Reverse (posted legs only; records a reason and posts the negated companion leg) |
 
 ```php
@@ -89,6 +97,7 @@ The site edit page carries two header actions besides save/delete:
 |--------|------|-------|-------------|
 | Sync catalog | `heroicon-o-arrow-path` | Info | Pull the merchant catalog now (requires confirmation) |
 | Rotate catalog token | `heroicon-o-key` | Warning | Issue a fresh postback token (requires confirmation) |
+| Delete | - | Danger | Delete the site |
 
 ```php
 Actions\Action::make('rotate_catalog_token')
@@ -151,7 +160,7 @@ Tables\Actions\Action::make('approve')
     ->action(function (AffiliateOfferApplication $record): void {
         app(OfferManagementService::class)->approveApplication(
             $record,
-            static::getReviewerName()
+            self::getReviewerName()
         );
 
         Notification::make()
@@ -177,7 +186,7 @@ Tables\Actions\Action::make('reject')
         app(OfferManagementService::class)->rejectApplication(
             $record,
             $data['reason'],
-            static::getReviewerName()
+            self::getReviewerName()
         );
 
         Notification::make()
@@ -203,7 +212,7 @@ Tables\Actions\Action::make('revoke')
         app(OfferManagementService::class)->revokeApplication(
             $record,
             $data['reason'],
-            static::getReviewerName()
+            self::getReviewerName()
         );
 
         Notification::make()
@@ -217,7 +226,7 @@ Tables\Actions\Action::make('revoke')
 
 | Action | Icon | Color | Description |
 |--------|------|-------|-------------|
-| Approve Selected | `heroicon-o-check` | Success | Bulk approve pending applications |
+| Approve Selected | `heroicon-o-check` | Success | Bulk approve pending applications (in a `BulkActionGroup`) |
 
 ### Bulk Approve Implementation
 
@@ -229,7 +238,7 @@ Tables\Actions\BulkAction::make('approve_selected')
     ->requiresConfirmation()
     ->action(function ($records): void {
         $service = app(OfferManagementService::class);
-        $reviewer = static::getReviewerName();
+        $reviewer = self::getReviewerName();
 
         foreach ($records as $record) {
             if ($record->isPending()) {
@@ -246,136 +255,125 @@ Tables\Actions\BulkAction::make('approve_selected')
 
 ---
 
-## AffiliateMarketplacePage Actions
-
-### Page Actions
-
-| Action | Method | Description |
-|--------|--------|-------------|
-| Apply for Offer | `applyForOffer($offerId, $reason)` | Submit application |
-| Generate Link | `generateLink($offerId)` | Create tracking link |
-
-### Apply Action Usage
-
-```php
-// In Blade view
-<x-filament::button wire:click="applyForOffer('{{ $offer->id }}', 'I want to promote this')">
-    Apply Now
-</x-filament::button>
-```
-
-### Generate Link Action Usage
-
-```php
-// In Blade view (only for approved affiliates)
-@if ($this->getApplicationStatus($offer) === 'approved')
-    <x-filament::button wire:click="generateLink('{{ $offer->id }}')" color="success">
-        Get Link
-    </x-filament::button>
-@endif
-```
-
----
-
 ## Adding Custom Actions
 
-### Add Action to Site Resource
+> **warning:**
+> `AffiliateSiteResource`, `AffiliateOfferResource`,
+> `AffiliateOfferCategoryResource`, and `AffiliateOfferApplicationResource` are
+> all `final`. You cannot bolt a `suspend` action onto the shipped site table by
+> subclassing it. In Filament v5, `table()` is an **instance** method and
+> columns/actions live in a `Tables\XTable` class — override the table class on
+> your own resource instead.
+
+### Add Action to a Site Table
 
 ```php
 <?php
 
-namespace App\Filament\Resources;
+namespace App\Filament\Resources\AffiliateSiteResource\Tables;
 
-use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource as BaseResource;
+use AIArmada\AffiliateNetwork\Models\AffiliateSite;
+use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource;
 use Filament\Tables;
 use Filament\Tables\Table;
 
-class AffiliateSiteResource extends BaseResource
+class AffiliateSitesTable
 {
-    public static function table(Table $table): Table
+    public static function configure(Table $table): Table
     {
-        return parent::table($table)
+        return $table
             ->actions([
                 Tables\Actions\EditAction::make(),
-                
+
                 // Add suspend action
                 Tables\Actions\Action::make('suspend')
                     ->icon('heroicon-o-pause-circle')
-                    ->color('danger')
+                    ->color('warning')
                     ->requiresConfirmation()
-                    ->visible(fn ($record) => $record->isVerified())
-                    ->action(function ($record) {
-                        $record->update(['status' => 'suspended']);
-                    }),
-                    
+                    ->visible(fn (AffiliateSite $record): bool => $record->isVerified())
+                    ->action(fn (AffiliateSite $record) => $record->update([
+                        'status' => AffiliateSite::STATUS_SUSPENDED,
+                    ])),
+
                 // Add reinstate action
                 Tables\Actions\Action::make('reinstate')
                     ->icon('heroicon-o-arrow-path')
                     ->color('success')
                     ->requiresConfirmation()
-                    ->visible(fn ($record) => $record->status === 'suspended')
-                    ->action(function ($record) {
-                        $record->update([
-                            'status' => 'verified',
-                            'verified_at' => now(),
-                        ]);
-                    }),
+                    ->visible(fn (AffiliateSite $record): bool => $record->isSuspended())
+                    ->action(fn (AffiliateSite $record) => $record->update([
+                        'status' => AffiliateSite::STATUS_VERIFIED,
+                    ])),
             ]);
     }
 }
 ```
 
-### Add Action to Offer Resource
+Note: the shipped table already provides `suspend` and `reinstate`. This
+example is only meaningful for a resource you own.
+
+### Add Action to an Offer Table
 
 ```php
 <?php
 
-namespace App\Filament\Resources;
+namespace App\Filament\Resources\AffiliateOfferResource\Tables;
 
-use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource as BaseResource;
+use AIArmada\AffiliateNetwork\Enums\OfferStatus;
+use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use Filament\Notifications\Notification;
 use Filament\Tables;
 use Filament\Tables\Table;
 
-class AffiliateOfferResource extends BaseResource
+class AffiliateOffersTable
 {
-    public static function table(Table $table): Table
+    public static function configure(Table $table): Table
     {
-        return parent::table($table)
+        return $table
             ->actions([
                 Tables\Actions\EditAction::make(),
-                
+
                 // Add duplicate action
                 Tables\Actions\Action::make('duplicate')
                     ->icon('heroicon-o-document-duplicate')
-                    ->action(function ($record) {
+                    ->action(function (AffiliateOffer $record) {
                         $newOffer = $record->replicate();
                         $newOffer->name = $record->name . ' (Copy)';
                         $newOffer->slug = $record->slug . '-copy-' . time();
-                        $newOffer->status = 'draft';
+                        $newOffer->status = OfferStatus::Draft;
                         $newOffer->save();
-                        
+
                         Notification::make()
                             ->title('Offer duplicated')
                             ->success()
                             ->send();
                     }),
-                    
+
                 // Add export stats action
                 Tables\Actions\Action::make('export_stats')
                     ->icon('heroicon-o-arrow-down-tray')
-                    ->action(function ($record) {
-                        // Generate CSV export
-                        return response()->streamDownload(function () use ($record) {
+                    ->action(fn (AffiliateOffer $record) => response()->streamDownload(
+                        function () use ($record) {
                             echo "Link Slug,Clicks,Conversions,Revenue\n";
                             foreach ($record->links as $link) {
-                                echo "{$link->link?->slug},{$link->clicks},{$link->conversions},{$link->revenue}\n";
+                                echo $link->link?->slug
+                                    . ',' . $link->clicks
+                                    . ',' . $link->conversions
+                                    . ',' . $link->revenue . "\n";
                             }
-                        }, "{$record->slug}-stats.csv");
-                    }),
+                        },
+                        "{$record->slug}-stats.csv"
+                    )),
             ]);
     }
 }
 ```
+
+> **warning:**
+> Do not spread money in a string concat or divide by 100. Use
+> `MoneyFormatter::formatMinor($link->revenue, $link->currency)` — the
+> minor-unit scale is currency-dependent.
 
 ---
 

@@ -10,7 +10,7 @@ Cashier CHIP provides local subscription management. Unlike Stripe, CHIP doesn't
 
 1. Customer subscribes → Creates local subscription record
 2. Subscription stores → Price, interval, next billing date, recurring token
-3. Scheduled job → Charges recurring token on billing date
+3. Scheduled command → Claims a `RenewalAttempt` and charges the recurring token
 4. Webhook confirms → Updates subscription status
 
 ## Renewal ownership
@@ -40,6 +40,14 @@ Renewal claims that expire without an outcome fail closed instead of wedging the
 subscription: the attempt is marked failed with `last_error_code = CLAIM_EXPIRED`, the
 subscription moves to Past Due, and a warning is logged. Recovery happens through the
 webhook path, and the claim-level guard means an expired claim is never re-executed.
+
+### Renewal tuning keys
+
+> **warning**
+> `cashier-chip.renewals.chunk_size` and `cashier-chip.renewals.lease_minutes` are read by
+> `cashier-chip:renew-subscriptions` and `ClaimRenewalAttempt`, but they are **not** in the shipped
+> `config/cashier-chip.php`. The only effective values are the inline fallbacks — `chunk_size` 100
+> and `lease_minutes` 30 — unless you publish the config and add the keys yourself.
 
 ## Settled-period reconciliation hook
 
@@ -422,22 +430,34 @@ echo $subscription->next_billing_at->format('M d, Y');
 
 ## Charging Subscriptions
 
-Subscriptions are charged via a scheduled job:
+Renewals run from the package's console command, scheduled by your app:
 
 ```php
-// app/Console/Kernel.php
-$schedule->job(new ChargeSubscriptions)->daily();
+// routes/console.php (Laravel 11+) or app/Console/Kernel.php
+$schedule->command('cashier-chip:renew-subscriptions')->hourly()->withoutOverlapping();
 ```
 
 Or manually:
 
+```bash
+php artisan cashier-chip:renew-subscriptions --dry-run
+php artisan cashier-chip:renew-subscriptions --grace-hours=2
+```
+
+To charge a specific subscription directly (bypassing the claim/lease/idempotency path), use the
+model helper:
+
 ```php
-// Charge a specific subscription
+// Charge the current renewal amount
 $payment = $subscription->charge();
 
-// Charge with custom amount
+// Charge an explicit amount instead
 $payment = $subscription->charge(9900);
 ```
+
+> **warning**
+> `Subscription::charge()` throws when the amount would be derived from items with unknown
+> (i.e. `null`) `unit_amount` values. See [Unknown Prices Fail Closed](#unknown-prices-fail-closed).
 
 ## Unknown Prices Fail Closed
 
@@ -456,18 +476,23 @@ An explicit `0` `unit_amount` is genuinely free and renews without payment (see 
 use AIArmada\CashierChip\Events\SubscriptionCreated;
 use AIArmada\CashierChip\Events\SubscriptionCanceled;
 use AIArmada\CashierChip\Events\SubscriptionResumed;
+use AIArmada\CashierChip\Events\SubscriptionUpdated;
 use AIArmada\CashierChip\Events\SubscriptionRenewed;
-use AIArmada\CashierChip\Events\SubscriptionPaymentFailed;
+use AIArmada\CashierChip\Events\SubscriptionRenewalFailed;
 
 protected $listen = [
     SubscriptionCreated::class => [
         SendWelcomeEmail::class,
     ],
-    SubscriptionPaymentFailed::class => [
+    SubscriptionRenewalFailed::class => [
         NotifyPaymentFailure::class,
     ],
 ];
 ```
+
+There is no `SubscriptionPaymentFailed` event — renewal failures dispatch
+`SubscriptionRenewalFailed`, and inbound CHIP payment failures dispatch
+`AIArmada\CashierChip\Events\PaymentFailed` and move the subscription to Past Due.
 
 ## Scopes
 
@@ -510,7 +535,8 @@ $ended = Subscription::ended()->get();
 | `ends_at` | timestamp | Cancellation date |
 | `next_billing_at` | timestamp | Next charge date |
 | `billing_interval` | string | Interval (day, week, month, year) |
-| `recurring_token` | string | Payment method |
+| `billing_interval_count` | int | Interval multiplier (default 1) |
+| `recurring_token` | text nullable | Payment method |
 
 ### cashier_chip_subscription_items
 
@@ -532,7 +558,9 @@ $ended = Subscription::ended()->get();
 | `subscription_id` | uuid | Parent subscription identifier |
 | `status` | string | Renewal state |
 | `amount_minor` | int | Amount claimed in minor currency units |
-| `period_key` | string nullable | Billing-period idempotency key |
+| `period_key` | string nullable | Billing-period idempotency key (unique per subscription) |
+| `purchase_id` | string nullable | CHIP purchase id; also the webhook dedup key |
+| `last_error_code` | string nullable | e.g. `CLAIM_EXPIRED`, `INVALID_RENEWAL_AMOUNT` |
 | `owner_type` | string nullable | Owner scope morph type |
 | `owner_id` | uuid nullable | Owner scope morph key |
 | `lease_expires_at` | timestamp nullable | Claim lease expiry |

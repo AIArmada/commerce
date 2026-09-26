@@ -51,12 +51,14 @@ JNT_PASSWORD=your-password
 ### Database
 
 ```env
-COMMERCE_JSON_COLUMN_TYPE=json
+COMMERCE_JSON_COLUMN_TYPE=jsonb
 ```
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `COMMERCE_JSON_COLUMN_TYPE` | `json` or `jsonb` (PostgreSQL) | `json` |
+| `COMMERCE_JSON_COLUMN_TYPE` | `json` or `jsonb` (PostgreSQL) | Falls back to each package's `database.json_column_type`, which defaults to `jsonb` |
+
+`commerce_json_column_type()` resolves in this order: `<PACKAGE>_JSON_COLUMN_TYPE`, then `COMMERCE_JSON_COLUMN_TYPE`, then `config('<package>.database.json_column_type')`, then the migration default. Leaving the variable unset therefore leaves every package on its own `jsonb` default.
 
 Per-package overrides:
 
@@ -70,98 +72,95 @@ DOCS_JSON_COLUMN_TYPE=jsonb
 
 ### Cart
 
+Keys from `config/cart.php` (the file has further top-level keys such as `migration`, `events`, `snapshots`, and `performance`):
+
 ```php
-// config/cart.php
-return [
-    'database' => [
-        'json_column_type' => env('CART_JSON_COLUMN_TYPE', 'jsonb'),
-        'table' => env('CART_DB_TABLE', 'carts'),
-        'conditions_table' => env('CART_CONDITIONS_TABLE', 'conditions'),
-        'tables' => [
-            'snapshots' => env('CART_SNAPSHOTS_TABLE', 'cart_snapshots'),
-            'snapshot_items' => env('CART_SNAPSHOT_ITEMS_TABLE', 'cart_snapshot_items'),
-            'snapshot_conditions' => env('CART_SNAPSHOT_CONDITIONS_TABLE', 'cart_snapshot_conditions'),
-        ],
+'database' => [
+    'json_column_type' => env('CART_JSON_COLUMN_TYPE', 'jsonb'),
+    'table' => env('CART_DB_TABLE', 'carts'),
+    'conditions_table' => env('CART_CONDITIONS_TABLE', 'conditions'),
+    'tables' => [
+        'snapshots' => env('CART_SNAPSHOTS_TABLE', 'cart_snapshots'),
+        'snapshot_items' => env('CART_SNAPSHOT_ITEMS_TABLE', 'cart_snapshot_items'),
+        'snapshot_conditions' => env('CART_SNAPSHOT_CONDITIONS_TABLE', 'cart_snapshot_conditions'),
     ],
-    'money' => [
-        'default_currency' => env('CART_DEFAULT_CURRENCY', 'MYR'),
-        'rounding_mode' => env('CART_ROUNDING_MODE', 'half_up'),
-    ],
-    'owner' => [
-        'enabled' => env('CART_OWNER_ENABLED', false),
-        'include_global' => env('CART_OWNER_INCLUDE_GLOBAL', false),
-        'auto_assign_on_create' => env('CART_OWNER_AUTO_ASSIGN_ON_CREATE', true),
-    ],
-    'limits' => [
-        'max_items' => env('CART_MAX_ITEMS', 1000),
-        'max_item_quantity' => env('CART_MAX_QUANTITY', 10000),
-    ],
-];
+],
+'money' => [
+    'default_currency' => env('CART_DEFAULT_CURRENCY', 'MYR'),
+    'rounding_mode' => env('CART_ROUNDING_MODE', 'half_up'),
+],
+'owner' => [
+    'enabled' => env('CART_OWNER_ENABLED', false),
+    'include_global' => env('CART_OWNER_INCLUDE_GLOBAL', false),
+    'auto_assign_on_create' => env('CART_OWNER_AUTO_ASSIGN_ON_CREATE', true),
+],
+'limits' => [
+    'max_items' => env('CART_MAX_ITEMS', 1000),
+    'max_item_quantity' => env('CART_MAX_QUANTITY', 10000),
+],
 ```
 
 ### Vouchers
 
+Keys from `config/vouchers.php` (the file also defines `stacking`, `validation`, `tracking`, `cache`, `redemption`, `reservation`, `checkout`, and `affiliates`):
+
 ```php
-// config/vouchers.php
-return [
-    'database' => [
-        'table_prefix' => env('VOUCHERS_TABLE_PREFIX', env('COMMERCE_TABLE_PREFIX', '')),
-        'tables' => [
-            'vouchers' => 'vouchers',
-            'voucher_usage' => 'voucher_usage',
-            'voucher_wallets' => 'voucher_wallets',
-        ],
-        'json_column_type' => env('VOUCHERS_JSON_COLUMN_TYPE', 'jsonb'),
+'database' => [
+    'table_prefix' => env('VOUCHERS_TABLE_PREFIX', env('COMMERCE_TABLE_PREFIX', '')),
+    'tables' => [
+        'vouchers' => 'vouchers',
+        'voucher_usage' => 'voucher_usage',
+        'voucher_wallets' => 'voucher_wallets',
     ],
-    'code' => [
-        'prefix' => env('VOUCHERS_CODE_PREFIX', ''),
-        'length' => (int) env('VOUCHERS_CODE_LENGTH', 8),
-        'auto_uppercase' => true,
-    ],
-];
+    'json_column_type' => env('VOUCHERS_JSON_COLUMN_TYPE', 'jsonb'),
+],
+'code' => [
+    'prefix' => env('VOUCHERS_CODE_PREFIX', ''),
+    'length' => (int) env('VOUCHERS_CODE_LENGTH', 8),
+    'auto_uppercase' => true,
+],
 ```
 
 ### CHIP
 
+Keys from `config/chip.php` (the file also defines `database`, `defaults`, `cache`, and `logging`):
+
 ```php
-// config/chip.php
-return [
-    'environment' => env('CHIP_ENVIRONMENT', 'sandbox'),
-    'collect' => [
-        'base_url' => env('CHIP_COLLECT_BASE_URL', 'https://gate.chip-in.asia/api/v1/'),
-        'api_key' => env('CHIP_COLLECT_API_KEY'),
-        'brand_id' => env('CHIP_COLLECT_BRAND_ID'),
-        'public_key' => env('CHIP_COLLECT_PUBLIC_KEY'),
+'environment' => env('CHIP_ENVIRONMENT', 'sandbox'),
+'collect' => [
+    'base_url' => env('CHIP_COLLECT_BASE_URL', 'https://gate.chip-in.asia/api/v1/'),
+    'api_key' => env('CHIP_COLLECT_API_KEY'),
+    'brand_id' => env('CHIP_COLLECT_BRAND_ID'),
+    'public_key' => env('CHIP_COLLECT_PUBLIC_KEY'),
+],
+'send' => [
+    'base_url' => [
+        'sandbox' => env('CHIP_SEND_SANDBOX_URL', 'https://staging-api.chip-in.asia/api'),
+        'production' => env('CHIP_SEND_PRODUCTION_URL', 'https://api.chip-in.asia/api'),
     ],
-    'send' => [
-        'base_url' => [
-            'sandbox' => env('CHIP_SEND_SANDBOX_URL', 'https://staging-api.chip-in.asia/api'),
-            'production' => env('CHIP_SEND_PRODUCTION_URL', 'https://api.chip-in.asia/api'),
-        ],
-        'api_key' => env('CHIP_SEND_API_KEY'),
-        'api_secret' => env('CHIP_SEND_API_SECRET'),
-    ],
-    'owner' => [
-        'enabled' => env('CHIP_OWNER_ENABLED', false),
-        'include_global' => env('CHIP_OWNER_INCLUDE_GLOBAL', false),
-        'auto_assign_on_create' => env('CHIP_OWNER_AUTO_ASSIGN', true),
-    ],
-    'http' => [
-        'timeout' => env('CHIP_HTTP_TIMEOUT', 30),
-    ],
-    'webhooks' => [
-        'enabled' => env('CHIP_WEBHOOKS_ENABLED', true),
-        'route' => env('CHIP_WEBHOOK_ROUTE', '/chip/webhooks'),
-    ],
-];
+    'api_key' => env('CHIP_SEND_API_KEY'),
+    'api_secret' => env('CHIP_SEND_API_SECRET'),
+],
+'owner' => [
+    'enabled' => env('CHIP_OWNER_ENABLED', false),
+    'include_global' => env('CHIP_OWNER_INCLUDE_GLOBAL', false),
+    'auto_assign_on_create' => env('CHIP_OWNER_AUTO_ASSIGN', true),
+],
+'http' => [
+    'timeout' => env('CHIP_HTTP_TIMEOUT', 30),
+],
+'webhooks' => [
+    'enabled' => env('CHIP_WEBHOOKS_ENABLED', true),
+    'route' => env('CHIP_WEBHOOK_ROUTE', '/chip/webhooks'),
+],
 ```
 
 ### Docs
 
+Keys from `config/docs.php`:
+
 ```php
-// config/docs.php
-return [
-    'database' => [
+'database' => [
         'table_prefix' => env('DOCS_TABLE_PREFIX', 'docs_'),
         'json_column_type' => env('DOCS_JSON_COLUMN_TYPE', 'jsonb'),
         'tables' => [
@@ -215,7 +214,6 @@ return [
         'delivery_note' => ['numbering' => ['prefix' => 'DN']],
         'proforma_invoice' => ['numbering' => ['prefix' => 'PI']],
     ],
-];
 ```
 
 ## Filament Configuration
@@ -264,65 +262,62 @@ Each Filament package has its own configuration:
 
 ### filament-cart
 
+Keys from `config/filament-cart.php` (which also defines `pages`, `polling_interval`, `widgets`, and `notifications`):
+
 ```php
-// config/filament-cart.php
-return [
-    'navigation' => [
-        'group' => 'E-Commerce',
-        'sort' => 30,
+'navigation' => [
+    'group' => 'E-Commerce',
+    'sort' => 30,
+],
+'resources' => [
+    'navigation_sort' => [
+        'carts' => 30,
+        'cart_items' => 31,
+        'conditions' => 33,
     ],
-    'resources' => [
-        'navigation_sort' => [
-            'carts' => 30,
-            'cart_items' => 31,
-            'conditions' => 33,
-        ],
-    ],
-    'features' => [
-        'dashboard' => true,
-        'monitoring' => true,
-    ],
-];
+],
+'features' => [
+    'dashboard' => true,
+    'monitoring' => true,
+],
 ```
 
 ### filament-vouchers
 
+Keys from `config/filament-vouchers.php` (which also defines `pages`, `polling_interval`, and integration keys):
+
 ```php
-// config/filament-vouchers.php
-return [
-    'navigation' => [
-        'group' => 'Vouchers & Discounts',
+'navigation' => [
+    'group' => 'Vouchers & Discounts',
+],
+'resources' => [
+    'navigation_sort' => [
+        'vouchers' => 10,
+        'voucher_usage' => 20,
+        'voucher_wallets' => 30,
     ],
-    'resources' => [
-        'navigation_sort' => [
-            'vouchers' => 10,
-            'voucher_usage' => 20,
-            'voucher_wallets' => 30,
-        ],
-    ],
-];
+],
 ```
 
 ### filament-docs
 
+Keys from `config/filament-docs.php`:
+
 ```php
-// config/filament-docs.php
-return [
-    'navigation' => [
-        'group' => 'Documents',
+'navigation' => [
+    'group' => 'Documents',
+],
+'features' => [
+    'auto_generate_pdf' => false,
+],
+'resources' => [
+    'navigation_sort' => [
+        'docs' => 10,
+        'doc_templates' => 20,
+        'sequences' => 90,
+        'email_templates' => 91,
     ],
-    'features' => [
-        'auto_generate_pdf' => false,
-    ],
-    'resources' => [
-        'navigation_sort' => [
-            'docs' => 10,
-            'doc_templates' => 20,
-            'sequences' => 90,
-            'email_templates' => 91,
-        ],
-    ],
-];
+],
 ```
 
 ## Publishing Configurations

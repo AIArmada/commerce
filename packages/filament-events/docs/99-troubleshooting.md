@@ -14,7 +14,7 @@ The Filament resources apply `OwnerUiScope::apply(..., includeGlobal: false)` by
 
 ### Check-in action not visible
 
-The check-in action only appears for passes with `issued` or `active` status. Ensure the pass has been issued and the registration is confirmed.
+The check-in action is gated on `Pass::isValid()`. The pass status must not be `used`, `cancelled`, `revoked`, `voided`, or `expired`, and the linked registration status must not be `refund_pending`, `refunded`, `cancelled`, `canceled`, `rejected`, or `expired`. A `pending`, `issued`, or `activated` pass with a healthy registration is check-in eligible.
 
 ### "Model not found" relation manager
 

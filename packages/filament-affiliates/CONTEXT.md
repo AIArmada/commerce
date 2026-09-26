@@ -41,8 +41,8 @@ keywords:
 - Owner/security: Filament adapter; validate IDs server-side.
 
 ## Key surfaces
-- Resources: `AffiliateCommissionTemplateResource`, `AffiliateConversionResource`, `AffiliateCreativeResource`, `AffiliateFraudSignalResource`, `AffiliateLinkResource`, `AffiliateUplineResource`, `AffiliatePayoutResource`, `AffiliateProgramResource`, `AffiliateRankHistoryResource`, `AffiliateRankResource`
-- Actions/Services: `Actions/BulkFraudReviewAction`, `Actions/BulkPayoutAction`, `Actions/ProcessAffiliatePayout`, `Actions/UpdateAffiliateFraudSignalStatus`, `Actions/ValidateAffiliateParentAssignment`, `Services/AffiliateStatsAggregator`, `Services/PayoutExportService`
+- Resources: `AffiliateCommissionTemplateResource`, `AffiliateConversionResource`, `AffiliateCreativeResource`, `AffiliateFraudSignalResource`, `AffiliateLinkResource`, `AffiliatePayoutResource`, `AffiliateProgramResource`, `AffiliateRankHistoryResource`, `AffiliateRankResource`, `AffiliateResource`, `AffiliateSupportTicketResource`, `AffiliateTaxDocumentResource`, `AffiliateTouchpointResource`, `AffiliateUplineResource`, `AffiliateVolumeTierResource`
+- Actions/Services: `Actions/BulkFraudReviewAction`, `Actions/BulkPayoutAction`, `Actions/ProcessAffiliatePayout`, `Actions/ResolveAffiliateLinkedOwner`, `Actions/RunScheduledPayoutSweep`, `Actions/UpdateAffiliateFraudSignalStatus`, `Actions/ValidateAffiliateParentAssignment`, `Services/AffiliateStatsAggregator`, `Services/PayoutExportService`
 - Conversions table: origin/source-ref provenance columns + reverse row action (`Tables/AffiliateConversionsTable::reverse`)
 - Config `filament-affiliates.php`: `navigation`, `group`, `widgets`, `currency`, `features`, `admin`, `conversions`, `payouts`, `programs`, `commission_management`
 

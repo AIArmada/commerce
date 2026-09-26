@@ -16,23 +16,24 @@ The `Cart` facade provides static access to all cart functionality.
 use AIArmada\Cart\Facades\Cart;
 
 // Instance management
-Cart::instance('wishlist');          // Switch to named instance
-Cart::instance();                    // Get current instance name
+Cart::setInstance('wishlist');        // Switch the current named instance
+Cart::instance();                    // Get current instance name (string)
 
 // Item operations
 Cart::add(
     id: 'SKU-001',
     name: 'Product Name',
-    price: 1999,                     // Price in cents
+    price: 1999,                     // Price in minor units
     quantity: 1,
     attributes: ['size' => 'M'],
-    options: ['model_type' => Product::class, 'model_id' => '...']
+    associatedModel: $product        // Eloquent model instance or class-string
 );
 Cart::update('SKU-001', ['quantity' => 2]);
 Cart::remove('SKU-001');
 Cart::get('SKU-001');                // Get single item
 Cart::has('SKU-001');                // Check if item exists
-Cart::content();                     // Get all items
+Cart::getItems();                    // CartCollection of CartItem
+Cart::getContent();                  // Full cart snapshot as array
 Cart::countItems();                  // Count unique items
 Cart::getTotalQuantity();            // Sum of all quantities
 Cart::clear();                       // Remove all items
@@ -40,30 +41,35 @@ Cart::destroy();                     // Destroy cart completely
 
 // Totals
 Cart::subtotal();                    // Subtotal as Money object
-Cart::getRawSubtotal();              // Subtotal in cents
+Cart::getRawSubtotal();              // Subtotal in minor units
 Cart::total();                       // Total as Money object
-Cart::getRawTotal();                 // Total in cents
+Cart::getRawTotal();                 // Total in minor units
 ```
 
 ### Condition Operations
 
 ```php
 // Cart-level conditions
-Cart::addCondition($condition);
-Cart::addConditions([$condition1, $condition2]);
+Cart::addCondition($condition);      // CartCondition or condition array
 Cart::getCondition('condition-name');
 Cart::getConditions();
+Cart::getConditionsByType('discount');
 Cart::removeCondition('condition-name');
+Cart::removeConditionsByType('discount');
 Cart::clearConditions();
 
-// Type-specific helpers
-Cart::shipping($name, $value, $attributes);
-Cart::tax($name, $value, $attributes);
-Cart::discount($name, $value, $attributes);
+// Convenience factories (target is ConditionTarget|DSL string|array|null)
+Cart::addDiscount(string $name, string $value, $target = null);
+Cart::addTax(string $name, string $value, $target = null);
+Cart::addFee(string $name, string $value, $target = null);
+Cart::addShipping(string $name, string|int|float $value, $target = null, string $method = 'standard', array $attributes = []);
+Cart::removeShipping();
+Cart::getShipping();
+Cart::getShippingMethod();
+Cart::getShippingValue();
 
 // Item-level conditions
 Cart::addItemCondition('SKU-001', $condition);
-Cart::getItemConditions('SKU-001');
 Cart::removeItemCondition('SKU-001', 'condition-name');
 Cart::clearItemConditions('SKU-001');
 ```
@@ -72,19 +78,22 @@ Cart::clearItemConditions('SKU-001');
 
 ```php
 // Registration
-Cart::registerDynamicCondition($condition, callable $rule, $metadata);
-Cart::registerDynamicCondition($condition, 'subtotal-at-least', ['amount' => 5000]);
+Cart::registerDynamicCondition(condition: $condition, rules: RulePresets::minimumCartValue(5000));
+Cart::registerDynamicCondition(condition: $condition, ruleFactoryKey: 'subtotal-at-least', metadata: ['amount' => 5000]);
 
 // Management
 Cart::getDynamicConditions();
-Cart::unregisterDynamicCondition('condition-name');
+Cart::removeDynamicCondition('condition-name');
 Cart::clearDynamicConditions();
 
 // Evaluation
 Cart::evaluateDynamicConditions();
 Cart::isDynamicConditionsDirty();
 Cart::markDynamicConditionsDirty();
-Cart::markDynamicConditionsClean();
+Cart::evaluateDynamicConditionsIfDirty();
+Cart::restoreDynamicConditions();
+Cart::getDynamicConditionMetadata();
+Cart::onDynamicConditionFailure(fn ($operation, $condition, $exception, $context) => report($exception));
 
 // Factory
 Cart::setRulesFactory($factory);
@@ -107,9 +116,11 @@ Cart::clearMetadata();
 ### Multi-tenancy
 
 ```php
-Cart::forOwner($owner);              // Set owner context
-Cart::forOwner(null);                // Clear owner context
+Cart::forOwner($owner);              // CartManager::forOwner(Model $owner) — non-nullable
 ```
+
+There is no `Cart::forOwner(null)`. For explicit global work use
+`OwnerContext::withOwner(null, fn () => ...)` or `Cart::storage()->withOwner(null)`.
 
 ### Pipeline Control
 
@@ -119,6 +130,7 @@ Cart::withLazyPipeline();
 Cart::withoutLazyPipeline();
 Cart::isLazyPipelineEnabled();
 Cart::getPipelineCacheStats();
+Cart::evaluateConditionPipeline();   // ConditionPipelineResult (evaluatePipelineWithCaching() is protected)
 ```
 
 ### Identifiers
@@ -133,35 +145,41 @@ Cart::getVersion();                  // Optimistic lock version
 
 ## CartCondition
 
-The core condition class for price modifications.
+The core condition class for price modifications. It is immutable; use
+`with()` to derive a modified copy.
 
 ### Constructor
 
 ```php
 use AIArmada\Cart\Conditions\CartCondition;
+use AIArmada\Cart\Conditions\Enums\ConditionPhase;
+use AIArmada\Cart\Conditions\Target;
 
 $condition = new CartCondition(
     name: 'discount-10-percent',
-    type: ConditionType::Discount,
-    target: ConditionTarget::Cart,
+    type: 'discount',
+    target: Target::cart()->phase(ConditionPhase::CART_SUBTOTAL)->build(),
     value: '-10%',
     attributes: [
         'description' => '10% Off',
         'priority' => 100,
-    ]
+    ],
+    order: 10
 );
 ```
 
 ### Value Formats
 
+Values are set through the constructor or `with()`. There is no `setValue()`.
+
 ```php
-// Fixed amount (cents)
-$condition->setValue(500);           // +$5.00
-$condition->setValue(-500);          // -$5.00
+// Fixed amount (minor units)
+new CartCondition(name: 'x', type: 'fee', target: $target, value: 500);
+new CartCondition(name: 'x', type: 'discount', target: $target, value: -500);
 
 // Percentage
-$condition->setValue('10%');         // +10%
-$condition->setValue('-10%');        // -10%
+new CartCondition(name: 'x', type: 'fee', target: $target, value: '+10%');
+new CartCondition(name: 'x', type: 'discount', target: $target, value: '-10%');
 ```
 
 ### Methods
@@ -172,30 +190,32 @@ $condition->getName();
 $condition->getType();
 $condition->getValue();
 $condition->getTargetDefinition();
+$condition->getOrder();
 $condition->getAttributes();
 $condition->getAttribute('key', 'default');
+$condition->hasAttribute('key');
 
 // Calculated values
-$condition->getCalculatedValue(10000);      // Apply to base value
-$condition->apply(10000);                   // Same as above
+$condition->getCalculatedValue(10000);      // Adjustment relative to base
+$condition->apply(10000);                   // Resulting amount
 
 // Type checks
 $condition->isPercentage();
 $condition->isDiscount();
-$condition->isTax();
-$condition->isShipping();
-$condition->isFee();
+$condition->isCharge();
+$condition->isDynamic();
+$condition->getRules();
+$condition->shouldApply($cart, $item);      // Evaluate rule closures
+$condition->getPercentageRate();            // PercentageRate (basis points)
 
-// Targeting
-$condition->target();                       // Get ConditionTarget enum
-$condition->appliesToCart();
-$condition->appliesToSubtotal();
-$condition->appliesToItem();
+// Derivation
+$condition->with(['value' => '-20%']);
+$condition->withoutRules();                 // Static copy for direct application
 
 // Serialization
 $condition->toArray();
-$condition->toStorageArray();
-CartCondition::fromStorage($array);
+$condition->toJson();
+CartCondition::fromArray($data);
 ```
 
 ---
@@ -207,29 +227,36 @@ Read-only item representation.
 ### Properties
 
 ```php
-$item->id;                           // Item ID (SKU)
+$item->id;                           // Item ID (SKU), string
 $item->name;                         // Item name
-$item->price;                        // Price in cents (int)
+$item->price;                        // Unit price in minor units (int)
 $item->quantity;                     // Quantity (int)
-$item->attributes;                   // Custom attributes (array)
-$item->associatedModel;              // Related Eloquent model or null
+$item->conditions;                   // CartConditionCollection
+$item->attributes;                   // Illuminate\Support\Collection
+$item->associatedModel;              // Related Eloquent model or class-string or null
 ```
 
 ### Methods
 
 ```php
 // Totals
-$item->subtotal();                   // Money object
-$item->getRawSubtotal();             // Cents
-$item->total();                      // With conditions, Money
-$item->getRawTotal();                // With conditions, cents
+$item->subtotal();                   // Money, price × quantity incl. conditions
+$item->getRawSubtotal();             // Same in minor units
+$item->getSubtotal();                // Money
+$item->getSubtotalWithoutConditions();
+$item->total();                      // Money, alias of subtotal()
+$item->getPrice();                   // Money
+$item->getRawPrice();                // Minor units
+$item->discountAmount();             // Money
 
 // Conditions
 $item->getConditions();
 $item->hasConditions();
+$item->getCondition('name');
 
 // Model association
 $item->getAssociatedModel();
+$item->isAssociatedWith(Product::class);
 ```
 
 ---
@@ -241,14 +268,21 @@ $item->getAssociatedModel();
 Collection of CartItem objects.
 
 ```php
-$collection = Cart::content();
+$collection = Cart::getItems();
 
 // Methods
-$collection->totalQuantity();        // Sum of quantities
-$collection->subtotal();             // Sum of subtotals
-$collection->findById('SKU-001');    // Find specific item
-$collection->toStorageArray();       // Serialize for storage
+$collection->getTotalQuantity();     // Sum of quantities
+$collection->subtotal();             // Sum of subtotals (Money)
+$collection->total();                // Sum of totals (Money)
+$collection->getItem('SKU-001');     // Find specific item
+$collection->hasItem('SKU-001');
+$collection->getTotalDiscount();
+$collection->filterByAttribute('size', 'M');
+$collection->toArray();              // Serialize for storage
 ```
+
+`Cart::content()` and `Cart::getContent()` are the full cart snapshot arrays
+(items, conditions, totals, metadata, timestamps), not item collections.
 
 ### CartConditionCollection
 
@@ -257,21 +291,26 @@ Collection of CartCondition objects.
 ```php
 $conditions = Cart::getConditions();
 
-// Filter by type
-$conditions->ofType(ConditionType::Discount);
+// Filter by type / target / phase
+$conditions->byType('discount');
+$conditions->byTarget('cart@cart_subtotal/aggregate');
+$conditions->byPhase(ConditionPhase::CART_SUBTOTAL);
 $conditions->discounts();
-$conditions->taxes();
-$conditions->shipping();
-$conditions->fees();
+$conditions->charges();
+$conditions->percentages();
 
 // Get specific
-$conditions->getByName('condition-name');
+$conditions->getCondition('condition-name');
+$conditions->hasCondition('condition-name');
 
 // Sort
-$conditions->sortByPriority();
+$conditions->sortByOrder();
 
 // Totals
-$conditions->calculateTotal(10000);  // Apply all to base
+$conditions->applyAll(10000);              // Money, all conditions applied to base
+$conditions->getTotalDiscount(10000);      // Minor units
+$conditions->getTotalCharges(10000);       // Minor units
+$conditions->getSummary(10000);
 ```
 
 ---
@@ -280,40 +319,47 @@ $conditions->calculateTotal(10000);  // Apply all to base
 
 ### StorageInterface Methods
 
+The full contract is documented in [08-storage.md](08-storage.md). Signatures that
+are most commonly used:
+
 ```php
+use AIArmada\Cart\Storage\StorageInterface;
+
 interface StorageInterface
 {
-    // Configuration
-    public function forOwner(Model|string|null $owner): static;
-    public function setTableName(string $table): static;
+    // Owner scoping
+    public function withOwner(?Model $owner): static;
+    public function getOwnerType(): ?string;
+    public function getOwnerId(): string|int|null;
 
     // Items CRUD
     public function getItems(string $identifier, string $instance): array;
-    public function putItems(string $identifier, string $instance, array $items): bool;
+    public function putItems(string $identifier, string $instance, array $items): void;
 
     // Conditions CRUD
     public function getConditions(string $identifier, string $instance): array;
-    public function putConditions(string $identifier, string $instance, array $conditions): bool;
-
-    // Dynamic conditions CRUD
-    public function getDynamicConditions(string $identifier, string $instance): array;
-    public function putDynamicConditions(string $identifier, string $instance, array $dynamicConditions): bool;
+    public function putConditions(string $identifier, string $instance, array $conditions): void;
+    public function putBoth(string $identifier, string $instance, array $items, array $conditions): void;
 
     // Metadata CRUD
     public function getAllMetadata(string $identifier, string $instance): array;
-    public function setMetadata(string $identifier, string $instance, string $key, mixed $value): bool;
-    public function getMetadata(string $identifier, string $instance, string $key, mixed $default = null): mixed;
-    public function removeMetadata(string $identifier, string $instance, string $key): bool;
-    public function clearMetadata(string $identifier, string $instance): bool;
+    public function putMetadata(string $identifier, string $instance, string $key, mixed $value): void;
+    public function getMetadata(string $identifier, string $instance, string $key): mixed;
+    public function clearMetadata(string $identifier, string $instance): void;
 
-    // Existence
+    // Existence and lifecycle
     public function has(string $identifier, string $instance): bool;
-    public function getCartId(string $identifier, string $instance): ?string;
+    public function getId(string $identifier, string $instance): ?string;
+    public function getVersion(string $identifier, string $instance): ?int;
+    public function isExpired(string $identifier, string $instance): bool;
+    public function clearAll(string $identifier, string $instance): void;
+    public function forget(string $identifier, string $instance): void;
+    public function forgetIdentifier(string $identifier): void;
+    public function flush(): void;
 
-    // Lifecycle
-    public function clear(string $identifier, string $instance): bool;
-    public function destroy(string $identifier, string $instance): bool;
-    public function getVersion(string $identifier, string $instance): int;
+    // Migration
+    public function swapIdentifier(string $oldId, string $newId, string $instance): bool;
+    public function getInstances(string $identifier): array;
 }
 ```
 
@@ -329,8 +375,9 @@ $event->getCartIdentifier();         // Cart identifier
 $event->getCartInstance();           // Instance name
 $event->getCartId();                 // UUID or null
 $event->getEventId();                // Unique event UUID
-$event->getEventTimestamp();         // CarbonImmutable
-$event->toArray();                   // Serializable data
+$event->getOccurredAt();              // DateTimeImmutable
+$event->toEventPayload();             // Serializable data
+$event->getEventMetadata();           // Request context (event_id, occurred_at, user_agent, ip_address, correlation_id)
 ```
 
 ### Event Classes
@@ -411,57 +458,69 @@ Thrown when associated model class is unknown.
 
 ## Enums
 
-### ConditionType
+There is no `ConditionType` enum. A condition's `type` is a free-form string
+(`discount`, `tax`, `fee`, `shipping`, `shipping_discount`, `item_discount`,
+`surcharge`, `tax_exemption`, ...) that handlers and `getConditionsByType()`
+match on. The real condition enums live in `AIArmada\Cart\Conditions\Enums`.
+
+### ConditionScope
 
 ```php
-enum ConditionType: string
+enum ConditionScope: string
 {
-    case Tax = 'tax';
-    case Shipping = 'shipping';
-    case Discount = 'discount';
-    case Fee = 'fee';
-    case Other = 'other';
+    case CART = 'cart';
+    case ITEMS = 'items';
+    case CUSTOM = 'custom';
 }
 ```
 
-### ConditionTarget
+### ConditionPhase
 
 ```php
-enum ConditionTarget: string
+enum ConditionPhase: string
 {
-    case Cart = 'cart';
-    case Item = 'item';
-    case Subtotal = 'subtotal';
+    case PRE_ITEM = 'pre_item';
+    case ITEM_DISCOUNT = 'item_discount';
+    case ITEM_POST = 'item_post';
+    case CART_SUBTOTAL = 'cart_subtotal';
+    case SHIPPING = 'shipping';
+    case TAXABLE = 'taxable';
+    case TAX = 'tax';
+    case PAYMENT = 'payment';
+    case GRAND_TOTAL = 'grand_total';
+    case CUSTOM = 'custom';
 }
 ```
 
-### ApplicationStrategy
+### ConditionApplication
 
 ```php
-enum ApplicationStrategy: string
+enum ConditionApplication: string
 {
-    case Aggregate = 'aggregate';
-    case PerItem = 'per_item';
-    case PerUnit = 'per_unit';
-    case PerGroup = 'per_group';
+    case AGGREGATE = 'aggregate';
+    case PER_ITEM = 'per-item';
+    case PER_UNIT = 'per-unit';
+    case PER_GROUP = 'per-group';
 }
 ```
 
-### PipelinePhase
+### ConditionFilterOperator
 
 ```php
-enum PipelinePhase: string
+enum ConditionFilterOperator: string
 {
-    case PreItem = 'pre_item';
-    case ItemDiscount = 'item_discount';
-    case ItemPost = 'item_post';
-    case CartSubtotal = 'cart_subtotal';
-    case Shipping = 'shipping';
-    case Taxable = 'taxable';
-    case Tax = 'tax';
-    case Payment = 'payment';
-    case GrandTotal = 'grand_total';
-    case Custom = 'custom';
+    case EQ = '=';
+    case NEQ = '!=';
+    case GT = '>';
+    case GTE = '>=';
+    case LT = '<';
+    case LTE = '<=';
+    case IN = 'in';
+    case NOT_IN = 'not-in';
+    case CONTAINS = '~';
+    case NOT_CONTAINS = '!~';
+    case STARTS_WITH = 'starts_with';
+    case ENDS_WITH = 'ends_with';
 }
 ```
 
@@ -474,6 +533,17 @@ enum CartMergeStrategy: string
     case KEEP_HIGHEST_QUANTITY = 'keep_highest_quantity';
     case KEEP_USER_CART = 'keep_user_cart';
     case REPLACE_WITH_GUEST = 'replace_with_guest';
+}
+```
+
+### EmptyCartBehavior
+
+```php
+enum EmptyCartBehavior: string
+{
+    case Destroy = 'destroy';   // Remove cart row entirely
+    case Clear = 'clear';       // Keep row, clear items/conditions/metadata
+    case Preserve = 'preserve'; // Keep row, conditions, and metadata
 }
 ```
 
@@ -538,10 +608,10 @@ use AIArmada\Cart\Actions\MigrateCartOnLoginAction;
 
 $action = app(MigrateCartOnLoginAction::class);
 
-$result = $action->execute(user: $user, instance: 'default');
-// $result['success'], $result['itemsMerged'], $result['message']
-
+// The guest session id is required; without it the action returns
+// ['success' => false, 'itemsMerged' => 0, ...]
 $result = $action->execute(user: $user, instance: 'default', sessionId: 'session-abc');
+// $result['success'], $result['itemsMerged'], $result['message']
 ```
 
 ---
@@ -576,54 +646,74 @@ use AIArmada\Cart\Services\BuiltInRulesFactory;
 
 $factory = app(BuiltInRulesFactory::class);
 
-// Get rule from key
-$rule = $factory->make('subtotal-at-least', ['amount' => 5000]);
+// Get rules for a key (returns an array of closures)
+$rules = $factory->createRules('subtotal-at-least', ['amount' => 5000]);
 
 // Check if key is supported
-$factory->supports('subtotal-at-least'); // true
+$factory->canCreateRules('subtotal-at-least'); // true
+
+// Every supported key
+$factory->getAvailableKeys();
 ```
 
 ### RulePresets
 
-Static factory methods for common rules.
+Static factory methods for common rules. Each returns an array of closures, and
+`all()` / `any()` are variadic over those arrays.
 
 ```php
 use AIArmada\Cart\Services\RulePresets;
 
 // Value rules
-$rule = RulePresets::subtotalAtLeast(5000);
-$rule = RulePresets::subtotalBetween(1000, 10000);
-$rule = RulePresets::totalAtMost(50000);
+$rules = RulePresets::minimumCartValue(5000);
+$rules = RulePresets::maximumCartValue(100000);
+$rules = RulePresets::cartValueBetween(1000, 10000);
 
 // Quantity rules
-$rule = RulePresets::quantityAtLeast(3);
-$rule = RulePresets::itemCountAtLeast(2);
+$rules = RulePresets::minimumQuantity(3);
+$rules = RulePresets::maximumQuantity(20);
+$rules = RulePresets::minimumItems(2);
+$rules = RulePresets::maximumItems(10);
 
 // Product rules
-$rule = RulePresets::hasAnyProduct(['SKU-1', 'SKU-2']);
-$rule = RulePresets::hasAllProducts(['SKU-1', 'SKU-2']);
-$rule = RulePresets::hasProductCategory('electronics');
+$rules = RulePresets::requireProduct('SKU-1');
+$rules = RulePresets::excludeProduct('SKU-1');
+$rules = RulePresets::requireAnyProduct(['SKU-1', 'SKU-2']);
+$rules = RulePresets::requireAllProducts(['SKU-1', 'SKU-2']);
+$rules = RulePresets::requireProductPrefix('PROMO-');
 
 // Time rules
-$rule = RulePresets::onWeekdays();
-$rule = RulePresets::onWeekends();
-$rule = RulePresets::duringHours(9, 17);
-$rule = RulePresets::duringDateRange($start, $end);
+$rules = RulePresets::dateRange('2024-01-01', '2024-01-31');
+$rules = RulePresets::timeWindow('15:00', '17:00');
+$rules = RulePresets::requireWeekday();
+$rules = RulePresets::requireWeekend();
+$rules = RulePresets::requireDaysOfWeek(['monday', 'wednesday']);
 
 // Customer rules
-$rule = RulePresets::forAuthenticatedUsers();
-$rule = RulePresets::forGuests();
-$rule = RulePresets::forCustomerTier('premium');
-$rule = RulePresets::isFirstTimeCustomer();
+$rules = RulePresets::requireCustomerTag('vip');
+$rules = RulePresets::requireAnyCustomerTag(['gold', 'platinum']);
+$rules = RulePresets::requireVip();
+$rules = RulePresets::requireAuthenticated();
 
 // Metadata rules
-$rule = RulePresets::hasMetadata('coupon_code');
-$rule = RulePresets::metadataEquals('channel', 'mobile');
+$rules = RulePresets::requireMetadata('coupon_code');
+$rules = RulePresets::requireMetadataValue('channel', 'mobile');
+$rules = RulePresets::requireFlag('first_order');
+$rules = RulePresets::blockIfFlag('discount_used');
+
+// Cart-state rules
+$rules = RulePresets::requireNonEmpty();
+$rules = RulePresets::blockIfConditionExists('OTHER-DISCOUNT');
+$rules = RulePresets::requireCondition('SHIPPING-SELECTED');
+$rules = RulePresets::blockIfConditionTypeExists('discount');
+$rules = RulePresets::requireConditionType('tax');
 
 // Combinators
-$rule = RulePresets::all($rule1, $rule2);    // AND
-$rule = RulePresets::any($rule1, $rule2);    // OR
-$rule = RulePresets::not($rule);             // NOT
+$rules = RulePresets::always();
+$rules = RulePresets::never();
+$rules = RulePresets::all($rulesA, $rulesB);    // AND
+$rules = RulePresets::any($rulesA, $rulesB);    // OR
+$rules = RulePresets::not($rulesA);              // NOT
 ```
 
 ### CartMergeStrategyRegistry

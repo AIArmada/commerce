@@ -28,10 +28,10 @@ The `aiarmada/filament-chip` package is the Filament admin adapter for `aiarmada
 
 ## Main models services or surfaces
 
-- **Resources** — purchase and client administration by default
+- **Resources** — purchase, client, payment, send-instruction, and bank-account administration
 - **Pages** — analytics dashboard
 - **Widgets** — stats, revenue chart, and recent transactions
-- **Optional surfaces** — payment, bank account, payout, and statement resources available outside the default registration set
+- **Optional surfaces** — the company-statement resource, available when `developerResources()` is enabled
 
 ## Owner scoping and security notes
 
@@ -65,11 +65,11 @@ $panel->plugin(FilamentChipPlugin::make());
 ### Component Discovery
 
 The plugin registers by default:
-- **2 Resources**: `PurchaseResource`, `ClientResource`
+- **5 Resources**: `PurchaseResource`, `ClientResource`, `PaymentResource`, `SendInstructionResource`, `BankAccountResource`
 - **1 Page**: `AnalyticsDashboardPage`
 - **3 Widgets**: `ChipStatsWidget`, `RevenueChartWidget`, `RecentTransactionsWidget`
 
-Additional resources and widgets are available in the package but not registered by default.
+`CompanyStatementResource` and the remaining widgets ship in the package but are not registered by default.
 
 ## Available Resources
 
@@ -77,10 +77,10 @@ Additional resources and widgets are available in the package but not registered
 |----------|------------|-------------|
 | `PurchaseResource` | ✅ Default | Payment transactions with status, refunds, capture |
 | `ClientResource` | ✅ Default | Customer records from CHIP |
-| `PaymentResource` | Optional | Individual payment records |
-| `BankAccountResource` | Optional | Payout recipient bank accounts |
-| `SendInstructionResource` | Optional | Payout instructions |
-| `CompanyStatementResource` | Optional | Company account statements |
+| `PaymentResource` | ✅ Default | Individual payment records |
+| `BankAccountResource` | ✅ Default | Payout recipient bank accounts |
+| `SendInstructionResource` | ✅ Default | Payout instructions |
+| `CompanyStatementResource` | Optional (`developerResources()`) | Company account statements |
 
 ## Available Pages
 

@@ -10,11 +10,18 @@ The docs package uses Spatie Laravel PDF and Browsershot, so standard Tailwind-f
 
 ## Basic Setup
 
-The default template includes Tailwind CSS via CDN:
+The package render template does **not** load Tailwind from a CDN. It pulls your
+application stylesheet through Vite, so the classes in the template resolve from
+your own build:
 
-```html
-<script src="https://cdn.tailwindcss.com"></script>
+```blade
+<head>
+    @vite(['resources/css/app.css'])
+</head>
 ```
+
+If you have no `resources/css/app.css`, either create one or replace the `@vite`
+line in the published template.
 
 ## Advanced Setup: Build Process
 
@@ -138,9 +145,9 @@ module.exports = {
 3. **Use Absolute Units** - Prefer fixed dimensions for consistent PDF rendering.
 4. **Optimize Images** - Keep PDF file size reasonable.
 5. **Print Consideration** - Use appropriate colors and contrast.
-6. **Page Breaks** - For multi-page documents:
+6. **Page Breaks** - For multi-page documents, use the `page_break` block in the template layout, or the print utility:
    ```blade
-   <div class="page-break-after:always"></div>
+   <div class="break-after-page"></div>
    ```
 
 ## Practical advice

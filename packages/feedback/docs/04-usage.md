@@ -92,6 +92,21 @@ send the returned URL immediately; only its hash is persisted. Sending an
 invitation marks it `sent` (with `sent_at`) and dispatches
 `FeedbackInvitationSent` in addition to `FeedbackInvitationCreated`.
 
+### Reading invitation status
+
+`status` is only rewritten when something explicitly transitions it, so a past-due
+invitation can still read as `pending` or `sent`. Derive the truth from the date instead:
+
+```php
+$invitation->effective_status; // AIArmada\Feedback\Enums\FeedbackInvitationStatus
+$invitation->isExpired();       // bool — expires_at has passed
+```
+
+`effective_status` returns `Expired` when `isExpired()` is true and the stored status is not
+already `Submitted`, `Cancelled`, or `Expired`. Use it for anything user-facing — there is no
+scheduled sweep to keep the column honest. `isExpired()` is the same date check the token
+resolver and the submission guard use.
+
 ## Invitation URL route
 
 This package generates invitation URLs (`/{prefix}/invitations/{token}`, prefix
@@ -207,13 +222,34 @@ Question keys are unique per form (enforced in code and by a unique index), and
 unknown or disabled question types (e.g. `file_upload`, `signature`) are
 rejected. Choice answers are validated against the question's defined options.
 
-## Prune expired invitations
+## Expired invitations
 
-`feedback:prune-expired-invitations` marks past-due invitations `expired` across
-all owners (schedule it nightly; pass `--dry-run` to preview):
+Expiry is derived from `expires_at`, not from the stored `status`. `isExpired()`
+is the authority, and `effective_status` reports what a reader should see, so a
+past-due invitation reads as `expired` in the admin list and status filter
+without any sweep having written the transition. `FeedbackSubmissionGuard` and
+`ResolveFeedbackInvitationTokenAction` both refuse a past-due invitation on the
+date and write the `expired` status as they do so.
 
-```bash
-php artisan feedback:prune-expired-invitations
+There is no sweep command. To normalise rows for reporting, iterate inside an
+explicit owner scope:
+
+```php
+use AIArmada\Feedback\Enums\FeedbackInvitationStatus;
+use AIArmada\Feedback\Models\FeedbackInvitation;
+
+FeedbackInvitation::query()
+    ->whereNotIn('status', [
+        FeedbackInvitationStatus::Submitted->value,
+        FeedbackInvitationStatus::Cancelled->value,
+        FeedbackInvitationStatus::Expired->value,
+    ])
+    ->whereNotNull('expires_at')
+    ->where('expires_at', '<=', now())
+    ->get()
+    ->each(fn (FeedbackInvitation $invitation) => $invitation->forceFill([
+        'status' => FeedbackInvitationStatus::Expired,
+    ])->save());
 ```
 
 ## Invitation tokens

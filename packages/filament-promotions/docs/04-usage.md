@@ -101,7 +101,7 @@ $type->color();  // "success"
 | Type | Label | Icon | Color |
 |------|-------|------|-------|
 | `Percentage` | Percentage Off | receipt-percent | success (green) |
-| `Fixed` | Fixed Amount | currency-dollar | info (blue) |
+| `Fixed` | Fixed Amount | currency-dollar | primary |
 
 ## Stats Widget
 
@@ -130,44 +130,55 @@ When the Orders package is installed, these widgets use `order.metadata.discount
 
 ## Customizing the Resource
 
-### Extend the Resource
+`PromotionResource` and `PromotionForm` are both declared `final`, so neither
+can be subclassed. To change the navigation group, use the config key the
+resource already reads — do not hardcode a group string:
+
+```php
+// config/filament-promotions.php
+'navigation' => [
+    'group' => 'Sales',
+],
+```
+
+To add columns, filters, or fields, register your own resource against
+`AIArmada\Promotions\Models\Promotion` in your panel provider, or extend the
+table/form classes through composition:
 
 ```php
 namespace App\Filament\Resources;
 
-use AIArmada\FilamentPromotions\Resources\PromotionResource as BaseResource;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\Promotions\Models\Promotion;
+use Filament\Resources\Resource;
+use Filament\Tables\Table;
+use Filament\Tables\Columns\TextColumn;
 
-class PromotionResource extends BaseResource
+class PromotionResource extends Resource
 {
-    public static function getNavigationGroup(): ?string
+    protected static ?string $model = Promotion::class;
+
+    public static function getNavigationGroup(): string | \UnitEnum | null
     {
-        return 'Sales';
+        return config('filament-promotions.navigation.group');
     }
 
-    public static function getRelations(): array
+    public static function getNavigationSort(): ?int
     {
-        return [
-            // Add custom relation managers
-        ];
+        return (int) config('filament-promotions.resources.navigation_sort.promotions');
     }
-}
-```
 
-### Custom Form Fields
-
-Extend the form schema:
-
-```php
-use AIArmada\FilamentPromotions\Resources\PromotionResource\Schemas\PromotionForm;
-
-class CustomPromotionForm extends PromotionForm
-{
-    public static function configure(Schema $schema): Schema
+    public static function table(Table $table): Table
     {
-        return parent::configure($schema)
-            ->components([
-                // Add custom components
-            ]);
+        // `type` is cast to AIArmada\Promotions\Enums\PromotionType
+        return $table->columns([
+            TextColumn::make('name')->searchable(),
+            TextColumn::make('discount_value')
+                ->label('Discount')
+                ->formatStateUsing(fn ($state, Promotion $record): string => $record->type->value === 'percentage'
+                    ? $state . '%'
+                    : MoneyFormatter::formatMinor($state, 'MYR')),
+        ]);
     }
 }
 ```

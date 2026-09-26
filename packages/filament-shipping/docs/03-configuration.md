@@ -11,7 +11,7 @@ All configuration is in `config/filament-shipping.php`.
 ```php
 'navigation' => [
     'group' => 'Shipping',
-    'sort' => 50,
+    'sort' => 40,
 ],
 
 'pages' => [
@@ -38,28 +38,26 @@ Define available shipping methods for dropdowns:
 
 ```php
 'shipping_methods' => [
-    'standard' => 'Standard Shipping',
-    'express' => 'Express Shipping',
+    'standard' => 'Standard',
+    'express' => 'Express',
     'overnight' => 'Overnight',
-    'pickup' => 'Store Pickup',
+    'pickup' => 'Self Pickup',
 ],
 ```
 
 ## Carriers
 
-Configure carrier options for the UI:
+The shipped config ships an empty `carriers` array:
 
 ```php
 'carriers' => [
-    'manual' => ['name' => 'Manual'],
-    'poslaju' => ['name' => 'Pos Laju'],
-    'jnt' => ['name' => 'J&T Express'],
-    'dhl' => ['name' => 'DHL'],
-    'fedex' => ['name' => 'FedEx'],
+    // Will use shipping.drivers if empty
 ],
 ```
 
-If empty, carriers are loaded from `config/shipping.php` drivers.
+Note: no code in this package reads `filament-shipping.carriers`. Carrier
+options come from `config/shipping.php` `drivers` instead, so populating this
+key has no effect.
 
 ## Features
 
@@ -91,22 +89,15 @@ Settings for the fulfillment queue page:
 <?php
 
 return [
-    'navigation' => [
-        'group' => 'Shipping',
-        'sort' => 50,
-    ],
-
     'shipping_methods' => [
-        'standard' => 'Standard Shipping',
-        'express' => 'Express Shipping',
+        'standard' => 'Standard',
+        'express' => 'Express',
         'overnight' => 'Overnight',
-        'pickup' => 'Store Pickup',
+        'pickup' => 'Self Pickup',
     ],
 
     'carriers' => [
-        'manual' => ['name' => 'Manual'],
-        'poslaju' => ['name' => 'Pos Laju'],
-        'jnt' => ['name' => 'J&T Express'],
+        // Will use shipping.drivers if empty
     ],
 
     'features' => [
@@ -116,6 +107,11 @@ return [
     'fulfillment' => [
         'urgent_threshold_hours' => 48,
         'old_threshold_hours' => 24,
+    ],
+
+    'navigation' => [
+        'group' => 'Shipping',
+        'sort' => 40,
     ],
 
     'pages' => [

@@ -32,6 +32,7 @@ title: Feedback Package Overview
 - `FeedbackInvitation` — private invitation link with hashed token
 - `FeedbackTemplate` — reusable form blueprint stored as JSON
 - `FeedbackTestimonial` — moderated public testimonial extracted from responses
+- `FeedbackFormAnalytics` — per-form rollup of scores, NPS/CSAT, completion rate, and comment counts
 
 Public testimonial consumers must use `FeedbackTestimonial::published()` or the
 `publishedFeedbackTestimonials()` relation. Both require the Published status,

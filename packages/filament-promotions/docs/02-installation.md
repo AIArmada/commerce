@@ -8,7 +8,7 @@ title: Installation
 
 - PHP 8.4+
 - Laravel 13+
-- Filament 5.0+
+- Filament 5.8+
 - aiarmada/promotions package
 
 ## Composer Installation
@@ -55,7 +55,9 @@ use AIArmada\FilamentPromotions\FilamentPromotionsPlugin;
 ])
 ```
 
-When both are present, the promotions navigation/resource comes from `aiarmada/filament-promotions`. Filament Pricing suppresses its fallback `PromotionResource` to avoid duplicate admin surfaces.
+When both are present, the promotions navigation/resource comes from
+`aiarmada/filament-promotions`. Filament Pricing never registers a promotion
+resource, so there is nothing to suppress.
 
 See [Filament Pricing Installation](../../filament-pricing/docs/02-installation.md) for the matching pricing-side notes.
 

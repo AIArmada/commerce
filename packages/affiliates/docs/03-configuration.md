@@ -11,11 +11,12 @@ The package is configured via `config/affiliates.php`. This document reflects th
 ```php
 'database' => [
     'table_prefix' => env('AFFILIATES_TABLE_PREFIX', 'affiliate_'),
+    'json_column_type' => env('AFFILIATES_JSON_COLUMN_TYPE', 'jsonb'),
     'tables' => [
         'affiliates' => 'affiliate_affiliates',
         'attributions' => 'affiliate_attributions',
         'conversions' => 'affiliate_conversions',
-        // ... 25+ tables
+        // ... 28 entries
     ],
 ],
 ```
@@ -23,8 +24,12 @@ The package is configured via `config/affiliates.php`. This document reflects th
 | Key | Description |
 |-----|-------------|
 | `table_prefix` | Prefix for all affiliate tables |
-| `json_column_type` | Column type for JSON fields. Defaults to `jsonb` and inherits from `COMMERCE_JSON_COLUMN_TYPE` when set. |
+| `json_column_type` | Column type for JSON fields. Defaults to `jsonb`; `commerce_json_column_type('affiliates')` also honours `AFFILIATES_JSON_COLUMN_TYPE` and `COMMERCE_JSON_COLUMN_TYPE`. |
 | `tables` | Override individual table names |
+
+> **warning**: `tables.payout_operations` and `tables.webhook_deliveries` are read by their models
+> and migrations but are missing from the shipped `tables` map, and they ignore `table_prefix`.
+> Setting `AFFILIATES_TABLE_PREFIX` alone will not rename those two tables.
 
 ## Defaults
 
@@ -57,6 +62,18 @@ The package is configured via `config/affiliates.php`. This document reflects th
 ```
 
 `commission_tracking.enabled` is also used by the Filament plugin to hide payout and program surfaces when commission tracking is disabled.
+
+## Notifications
+
+```php
+'notifications' => [
+    'enabled' => env('AFFILIATES_NOTIFICATIONS_ENABLED', true),
+],
+```
+
+Managed notifications are dispatched through `aiarmada/communications` when that package is
+installed (program joins, conversions). The package is silent when it is absent, regardless of
+this flag.
 
 ## Multi-Tenancy (Owner Scoping)
 
@@ -222,7 +239,7 @@ Every commission path funnels through `CommissionCaps::clamp()`, so these bounds
 'tracking' => [
     'attribution_ttl_days' => env('AFFILIATES_ATTRIBUTION_TTL_DAYS', 30),
     'max_attributions_per_identifier' => env('AFFILIATES_ATTRIBUTION_MAX', 5),
-    'block_self_referral' => env('AFFILIATES_BLOCK_SELF_REFERRAL', false),
+    'block_self_referral' => env('AFFILIATES_BLOCK_SELF_REFERRAL', true),
     'ip_rate_limit' => [
         'enabled' => env('AFFILIATES_IP_RATE_LIMIT_ENABLED', false),
         'max' => env('AFFILIATES_IP_RATE_LIMIT_MAX', 20),
@@ -241,7 +258,7 @@ Every commission path funnels through `CommissionCaps::clamp()`, so these bounds
 |-----|-------------|
 | `attribution_ttl_days` | How long attributions remain valid |
 | `attribution_model` | `last_touch`, `first_touch`, or `linear` |
-| `block_self_referral` | Prevent affiliates from crediting themselves |
+| `block_self_referral` | Prevent affiliates from crediting themselves (default `true`) |
 
 ## Fraud Detection
 
@@ -265,10 +282,13 @@ Every commission path funnels through `CommissionCaps::clamp()`, so these bounds
 
 ```php
 'upline' => [
-    'enabled' => env('AFFILIATES_UPLINE_ENABLED', false),
+    'enabled' => env('AFFILIATES_UPLINE_ENABLED', true),
     'max_depth' => env('AFFILIATES_UPLINE_MAX_DEPTH', 10),
 ],
 ```
+
+> **warning**: `upline.enabled` ships as `true`, so upline commissions are allocated by default.
+> Set `AFFILIATES_UPLINE_ENABLED=false` unless you want multi-level payouts.
 
 ## Registration & Approval
 
@@ -299,12 +319,48 @@ Every commission path funnels through `CommissionCaps::clamp()`, so these bounds
 'webhooks' => [
     'signature_secret' => env('AFFILIATES_WEBHOOK_SIGNATURE_SECRET'),
     'endpoints' => [
-        'attribution' => [],
-        'conversion' => [],
-        'payout' => [],
+        'attribution' => explode(',', (string) env('AFFILIATES_WEBHOOKS_ATTRIBUTION', '')),
+        'conversion' => explode(',', (string) env('AFFILIATES_WEBHOOKS_CONVERSION', '')),
+        'payout' => explode(',', (string) env('AFFILIATES_WEBHOOKS_PAYOUT', '')),
+    ],
+    'headers' => [
+        'X-Affiliates-Signature' => env('AFFILIATES_WEBHOOKS_SIGNATURE'),
     ],
 ],
 ```
+
+`signature_secret` signs the outgoing `X-Affiliates-Signature` header; it is separate from the
+`headers` value, which carries the literal header value to send.
+
+## Merchant Network SDK
+
+```php
+'merchant' => [
+    'network_url' => env('AFFILIATE_NETWORK_URL'),
+    'prefix' => env('AFFILIATE_NETWORK_PREFIX', 'api/affiliate-network'),
+    'site' => env('AFFILIATE_NETWORK_SITE'),
+    'token' => env('AFFILIATE_NETWORK_TOKEN'),
+    'referral_param' => env('AFFILIATE_NETWORK_REFERRAL_PARAM', 'anl'),
+    'session_key' => env('AFFILIATE_NETWORK_SESSION_KEY', 'affiliate_network.link_code'),
+    'timeout_seconds' => env('AFFILIATE_NETWORK_TIMEOUT', 8),
+],
+```
+
+Only needed on merchant stores that sell through an `aiarmada/affiliate-network` marketplace.
+`network_url` + `site` + `token` let `NetworkPostbackClient` report paid orders; `referral_param`
+and `session_key` drive `CaptureNetworkReferral` middleware.
+
+## Program Catalog
+
+```php
+'catalog' => [
+    'enabled' => env('AFFILIATES_CATALOG_ENABLED', true),
+    'max_subjects' => env('AFFILIATES_CATALOG_MAX_SUBJECTS', 500),
+],
+```
+
+Read-only snapshot that `aiarmada/affiliate-network` pulls (shared DB) or fetches over HTTP.
+`max_subjects` caps subjects returned per program.
 
 ## Links
 
@@ -331,7 +387,7 @@ Every commission path funnels through `CommissionCaps::clamp()`, so these bounds
     'enabled' => env('AFFILIATES_API_ENABLED', false),
     'prefix' => env('AFFILIATES_API_PREFIX', 'api/affiliates'),
     'middleware' => ['api', 'throttle:60,1'],
-    'token' => env('AFFILIATES_API_TOKEN'), // required Bearer [REDACTED]
+    'token' => env('AFFILIATES_API_TOKEN'), // static bearer token, required
 ],
 ```
 
@@ -373,10 +429,31 @@ Every commission path funnels through `CommissionCaps::clamp()`, so these bounds
 
 ```php
 'bonuses' => [
-    'top_performer' => ['enabled' => true],
-    'recruitment' => ['enabled' => true],
-    'consistency' => ['enabled' => true],
-    'growth' => ['enabled' => true],
+    'top_performer' => [
+        'enabled' => env('AFFILIATES_BONUS_TOP_PERFORMER_ENABLED', true),
+        'positions' => [1 => 50000, 2 => 25000, 3 => 10000], // minor units
+        'min_revenue' => env('AFFILIATES_BONUS_TOP_PERFORMER_MIN_REVENUE_MINOR', 100000),
+        'min_revenue_currency' => env('AFFILIATES_BONUS_TOP_PERFORMER_MIN_REVENUE_CURRENCY', 'MYR'),
+    ],
+    'recruitment' => [
+        'enabled' => env('AFFILIATES_BONUS_RECRUITMENT_ENABLED', true),
+        'bonus_per_recruit' => env('AFFILIATES_BONUS_RECRUITMENT_PER_RECRUIT_MINOR', 2500),
+        'min_recruits' => env('AFFILIATES_BONUS_RECRUITMENT_MIN_RECRUITS', 3),
+        'max_bonus' => env('AFFILIATES_BONUS_RECRUITMENT_MAX_MINOR', 25000),
+    ],
+    'consistency' => [
+        'enabled' => env('AFFILIATES_BONUS_CONSISTENCY_ENABLED', true),
+        'bonus_amount' => env('AFFILIATES_BONUS_CONSISTENCY_AMOUNT_MINOR', 5000),
+        'min_weeks' => env('AFFILIATES_BONUS_CONSISTENCY_MIN_WEEKS', 4),
+        'min_conversions_per_week' => env('AFFILIATES_BONUS_CONSISTENCY_MIN_CONVERSIONS_PER_WEEK', 1),
+    ],
+    'growth' => [
+        'enabled' => env('AFFILIATES_BONUS_GROWTH_ENABLED', true),
+        'bonus_amount' => env('AFFILIATES_BONUS_GROWTH_AMOUNT_MINOR', 10000),
+        'min_growth_percent' => env('AFFILIATES_BONUS_GROWTH_MIN_PERCENT', 25),
+        'min_previous_revenue' => env('AFFILIATES_BONUS_GROWTH_MIN_PREVIOUS_REVENUE_MINOR', 50000),
+        'min_previous_revenue_currency' => env('AFFILIATES_BONUS_GROWTH_MIN_PREVIOUS_REVENUE_CURRENCY', 'MYR'),
+    ],
 ],
 ```
 

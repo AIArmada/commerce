@@ -240,10 +240,11 @@ Widgets are automatically registered with the panel. To customize placement:
 
 ```php
 use AIArmada\FilamentInventory\Widgets\InventoryStatsWidget;
+use Filament\Pages\Dashboard;
 
-class Dashboard extends BaseDashboard
+class AdminDashboard extends Dashboard
 {
-    protected function getWidgets(): array
+    public function getWidgets(): array
     {
         return [
             InventoryStatsWidget::class,

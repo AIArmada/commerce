@@ -43,7 +43,7 @@ keywords:
 ## Key surfaces
 - Resources: `BaseJntResource`, `JntOrderResource`, `JntTrackingEventResource`, `JntWebhookLogResource`
 - Actions/Services: `Actions/CancelOrderAction`, `Actions/PrintAwbTableAction`, `Actions/SyncTrackingAction`, `Support/JntStatsAggregator`, `Support/NavigationBadgeHelper`
-- Config `filament-jnt.php`: `navigation`, `group`, `badge_color`, `polling_interval`, `tables`, `datetime_format`, `features`, `orders`, `tracking_events`, `webhook_logs`
+- Config `filament-jnt.php`: `navigation`, `group`, `badge_color`, `polling_interval`, `tables`, `datetime_format`, `infolist`, `tracking_events_limit`, `items_limit`, `features`, `orders`, `tracking_events`, `webhook_logs`, `widgets`, `show_raw_payloads`, `resources`, `navigation_sort`
 
 ## Docs map
 - Start: `01-overview` → `03-configuration` → `04-usage` → `99-troubleshooting`

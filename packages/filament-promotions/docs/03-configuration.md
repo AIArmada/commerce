@@ -4,9 +4,8 @@ title: Configuration
 
 # Configuration
 
-The filament-promotions plugin provides configuration for navigation, table behavior, and feature toggles.
-
-## Full Configuration
+`config/filament-promotions.php` only covers navigation. That is the full
+shipped file:
 
 ```php
 // config/filament-promotions.php
@@ -33,29 +32,12 @@ return [
             'promotions' => 10,
         ],
     ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Tables
-    |--------------------------------------------------------------------------
-    */
-
-    'tables' => [
-        'poll' => null,
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Features
-    |--------------------------------------------------------------------------
-    */
-
-    'features' => [
-        'widgets' => true,
-    ],
-
 ];
 ```
+
+Section order per the package convention is Navigation → Resources. There is no
+`tables` or `features` key in the shipped config, and no code in this package
+reads one.
 
 ## Navigation Configuration
 
@@ -83,31 +65,23 @@ Control the order of the resource in navigation:
 ],
 ```
 
-## Table Configuration
+## Table polling
 
-### Polling
-
-Enable real-time table updates:
-
-```php
-'tables' => [
-    'poll' => '30s', // Refresh every 30 seconds
-],
-```
-
-Set to `null` to disable polling.
-
-## Feature Toggles
-
-### Widgets
-
-Enable or disable the stats widget:
+There is no config key for table polling. `PromotionResource` is `final`, so
+override `getHeaderActions()` in an app-level resource subclass or disable
+polling in the table definition:
 
 ```php
-'features' => [
-    'widgets' => true,
-],
+public static function table(Table $table): Table
+{
+    return PromotionsTable::configure($table)->poll(null);
+}
 ```
+
+## Widgets
+
+`PromotionStatsWidget` is registered by `FilamentPromotionsPlugin`
+unconditionally; there is no feature toggle for it.
 
 ## Owner Scoping
 
@@ -127,22 +101,12 @@ The Filament resource respects these settings automatically.
 
 ## Extending Configuration
 
-To add custom configuration values, publish the config and add your keys:
+The package exposes no custom-config extension points. Published keys outside
+`navigation.group` and `resources.navigation_sort.promotions` are not read by
+any code in this package, so adding your own keys only helps code you write
+yourself:
 
 ```php
 // config/filament-promotions.php
-return [
-    // ... existing config
-
-    'custom' => [
-        'show_expired' => false,
-        'default_type' => 'percentage',
-    ],
-];
-```
-
-Access in code:
-
-```php
 $showExpired = config('filament-promotions.custom.show_expired');
 ```

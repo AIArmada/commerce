@@ -7,9 +7,9 @@ title: Filament Contacting Installation
 ## Requirements
 
 - PHP 8.4+
-- Laravel 10+
+- Laravel 13+
 - `aiarmada/contacting` (with migrations run)
-- `filament/filament` ^5.0
+- `filament/filament` ^5.8.1
 
 ## Install via Composer
 

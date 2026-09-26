@@ -10,7 +10,28 @@ The main catalog model. `Product` is owner-aware, media-aware, slugged, and impl
 
 Prices are integer minor units end to end. `getBuyablePrice()` and `getCalculatedPrice()` both return the canonical minor-unit integer consumed by downstream cart, pricing, inventory, and checkout integrations.
 
-`currency` must be a supported ISO 4217 code (validated on save, stored uppercase); anything else throws `InvalidArgumentException` instead of failing later in formatting. `ProductCreated`/`ProductUpdated` fire exactly once per action call via `$dispatchesEvents`. Deleting a product removes its variants, options, option values, and variant pivots in a transaction with model events. Returning to draft via `UpdateProductStatus` clears `published_at`.
+`currency` must be a supported ISO 4217 code (validated on save, stored uppercase); anything else throws `InvalidArgumentException` instead of failing later in formatting. `ProductCreated`/`ProductUpdated` fire exactly once per action call via `$dispatchesEvents` (which also maps `deleted` → `ProductDeleted`). Deleting a product removes its variants, options, option values, and variant pivots in a transaction with model events. Returning to draft via `UpdateProductStatus` clears `published_at` (and `archived_at` / `deactivated_at`).
+
+> **warning**
+> `products` does **not** use `spatie/laravel-model-states`. `Product::$status` is a plain backed
+> enum cast via `casts()` → `'status' => ProductStatus::class`.
+
+### Lifecycle status
+
+`AIArmada\Products\Enums\ProductStatus` has exactly four cases and is set through
+`AIArmada\Products\Actions\UpdateProductStatus::execute($product, ProductStatus $x)`, which keeps
+the lifecycle timestamps in sync:
+
+| Status | Value | `isVisible()` / `isPurchasable()` | Timestamps written |
+|--------|-------|-----------------------------------|-------------------|
+| `Draft` | `draft` | No | clears `published_at`, `archived_at`, `deactivated_at` (default attribute) |
+| `Active` | `active` | Yes | sets `published_at` if null; clears `archived_at`, `deactivated_at` |
+| `Disabled` | `disabled` | No | sets `deactivated_at`; clears `archived_at` |
+| `Archived` | `archived` | No | sets `archived_at`; clears `deactivated_at` |
+
+`Variant` has **no** `status` column and there is no `VariantStatus` enum. Its lifecycle is the
+`is_enabled` boolean plus a `deactivated_at` toggle, kept in sync by a `saving` hook in
+`Variant::booted()` — see `isEnabled()` and `scopeEnabled()`.
 
 ### Common relationships
 
@@ -32,16 +53,32 @@ Prices are integer minor units end to end. `getBuyablePrice()` and `getCalculate
 - `isDraft()`
 - `isVisible()`
 - `isPurchasable()`
+- `isBuyable()`
 - `isOnSale()`
+- `hasDiscount()`
 - `getDiscountPercentage()`
+- `getProfitMargin()`
 - `activate()`
+- `disable()`
 - `archive()`
+- `hasVariants()`
+- `supportsVariants()`
+- `isPhysical()` / `isDigital()` / `isSubscription()`
 
 ## Variant
 
-Variants belong to a product and optional option values. `product_id` and the owner tuple are immutable after creation; updates are owner-guarded like products.
+Variants belong to a product and optional option values. The owner tuple is immutable after
+creation (`HasOwner` blocks reassignment, demotion, and promotion); updates are owner-guarded
+like products.
 
-When the inventory package is installed but a lookup fails, `getStockQuantity()` logs a warning and falls back to local stock instead of reporting zero.
+> **warning**
+> `product_id` is **not** immutable. It is in `Variant::$fillable` and no `updating` guard
+> rejects a change, so a variant can be re-parented. Guard it yourself if re-parenting is not
+> a supported operation in your domain.
+
+When the inventory package is installed but the lookup throws (for example the inventory tables
+do not exist), `getStockQuantity()` silently falls back to the local `stock` attribute. It does
+**not** log a warning.
 
 ### Common relationships
 
@@ -115,8 +152,10 @@ These models are owner-aware and use config-driven table resolution like the res
 `AIArmada\Products\Concerns\IsCatalogEntity` is shared by catalog taxonomy models to provide:
 
 - `scopeOrdered()` — orders by `position`
-- `scopeVisible()` — filters by the catalog entity's `visible` value
-- `resolveProductTable()` — resolves the table name from package config
+- `scopeVisible()` — `where('visibility', 'visible')`
+- `resolveProductTable(string $key, string $default)` — `protected`; resolves
+  `config('products.database.tables.{key}')` and falls back to
+  `config('products.database.table_prefix', 'product_') . $default`
 
 `ProductVisibility`, `CatalogStatus`, and `AttributeType` remain the canonical typed taxonomy enums. The former generic `Visibility` enum and the duplicate `IsAttributeEntity`/`IsOptionEntity` concerns were removed.
 
@@ -150,6 +189,12 @@ Identity is enforced in `EnforcesOwnerUniqueIdentity::bootEnforcesOwnerUniqueIde
 ```php
 use AIArmada\Products\Models\Product;
 
+// `slug` is a NOT NULL string with no DB default and is NOT generated in
+// Product::booted() — you must supply it (or slug it yourself from the name).
 $existing = Product::query()->forOwner($team)->where('sku', 'TSHIRT-001')->first()
-    ?? Product::query()->create(['name' => 'Tee', 'sku' => 'TSHIRT-001']);
+    ?? Product::query()->create([
+        'name' => 'Tee',
+        'slug' => 'tee',
+        'sku' => 'TSHIRT-001',
+    ]);
 ```

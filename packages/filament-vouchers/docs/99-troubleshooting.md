@@ -72,7 +72,8 @@ app()->bind(OwnerResolverInterface::class, YourOwnerResolver::class);
 
 ### Cross-tenant data visible
 
-Resources use `OwnerScopedQueries::scopeVoucherLike()` (or `voucherIds()` for related resources) for scoping. Ensure:
+Resources scope through `AIArmada\CommerceSupport\Support\OwnerUiScope` and the
+`HasOwner` global scope on the core voucher models. Ensure:
 
 1. Owner columns (`owner_type`, `owner_id`) are populated
 2. The resolver returns the correct owner
@@ -123,10 +124,10 @@ try {
 Check that the `VoucherStatsAggregator` can query data:
 
 ```php
-use AIArmada\FilamentVouchers\Services\VoucherStatsAggregator;
+use AIArmada\FilamentVouchers\Support\VoucherStatsAggregator;
 
 $aggregator = app(VoucherStatsAggregator::class);
-$stats = $aggregator->getOverview();
+$stats = $aggregator->overview();
 dd($stats);
 ```
 
@@ -173,7 +174,8 @@ Reduce polling interval or disable:
 'polling_interval' => null, // Disable polling
 ```
 
-Add indexes to frequently queried columns:
+Add indexes to frequently queried columns (table name comes from
+`config/vouchers.php` `database.tables.vouchers`, default `vouchers`):
 
 ```php
 Schema::table('vouchers', function (Blueprint $table) {

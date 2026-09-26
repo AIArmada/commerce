@@ -4,44 +4,45 @@ title: Membership Configuration
 
 ## Main Settings
 
+The shipped `config/membership.php` top-level keys, with their default values:
+
 ```php
-return [
-    'database' => [
-        'tables' => [
-            'applications' => 'membership_applications',
-            'invitations' => 'membership_invitations',
-        ],
+'database' => [
+    'json_column_type' => env('MEMBERSHIP_JSON_COLUMN_TYPE', 'jsonb'),
+    'tables' => [
+        'applications' => env('MEMBERSHIP_TABLE_APPLICATIONS', 'membership_applications'),
+        'invitations' => env('MEMBERSHIP_TABLE_INVITATIONS', 'membership_invitations'),
     ],
-    'invitations' => [
-        'token_length' => 64,
-        'default_expiry_days' => 14,
-    ],
-    'pivot' => [
-        'table_suffix' => '_members',
-    ],
-    'role_mapping' => [
-        'owner' => env('MEMBERSHIP_ROLE_OWNER_NAME', 'owner'),
-        'admin' => env('MEMBERSHIP_ROLE_ADMIN_NAME', 'admin'),
-        'editor' => env('MEMBERSHIP_ROLE_EDITOR_NAME', 'editor'),
-        'viewer' => env('MEMBERSHIP_ROLE_VIEWER_NAME', 'viewer'),
-    ],
-    'role_permissions' => [
-        'owner' => ['*'],
-        'admin' => ['update', 'manage-members'],
-        'editor' => ['update'],
-        'viewer' => ['view'],
-    ],
-    'owner' => [
-        'enabled' => true,
-        'include_global' => false,
-        'auto_assign_on_create' => true,
-        'owner_type_column' => 'owner_type',
-        'owner_id_column' => 'owner_id',
-    ],
-    'features' => [
-        'team_scoped_roles' => true,
-    ],
-];
+],
+'invitations' => [
+    'token_length' => 64,
+    'default_expiry_days' => 14,
+],
+'pivot' => [
+    'table_suffix' => env('MEMBERSHIP_PIVOT_SUFFIX', '_members'),
+],
+'role_mapping' => [
+    'owner' => env('MEMBERSHIP_ROLE_OWNER_NAME', 'owner'),
+    'admin' => env('MEMBERSHIP_ROLE_ADMIN_NAME', 'admin'),
+    'editor' => env('MEMBERSHIP_ROLE_EDITOR_NAME', 'editor'),
+    'viewer' => env('MEMBERSHIP_ROLE_VIEWER_NAME', 'viewer'),
+],
+'role_permissions' => [
+    'owner' => ['*'],
+    'admin' => ['update', 'manage-members'],
+    'editor' => ['update'],
+    'viewer' => ['view'],
+],
+'owner' => [
+    'enabled' => true,
+    'include_global' => false,
+    'auto_assign_on_create' => true,
+    'owner_type_column' => 'owner_type',
+    'owner_id_column' => 'owner_id',
+],
+'features' => [
+    'team_scoped_roles' => env('MEMBERSHIP_TEAM_SCOPED', true),
+],
 ```
 
 ## Role mapping

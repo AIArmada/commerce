@@ -153,7 +153,7 @@ The Segment Resource manages customer segmentation with support for automatic ru
 - Type badge (Loyalty, Behavior, Demographic, Custom)
 - Customer count (relation count)
 - Automatic indicator (boolean icon)
-- Active indicator (boolean icon)
+- Status badge (Active/Deactivated)
 - Priority (sortable, hidden by default)
 - Created date (hidden by default)
 
@@ -166,7 +166,8 @@ The Segment Resource manages customer segmentation with support for automatic ru
 - View segment
 - Edit segment
 - Rebuild (automatic segments only)
-- Delete segment
+
+Delete is a bulk action only; there is no per-row delete.
 
 ### Form View
 
@@ -188,11 +189,14 @@ The Segment Resource manages customer segmentation with support for automatic ru
 
 **Available Condition Fields:**
 - Accepts Marketing (boolean)
-- Days Since Registration
+- Customer Status (Active/Inactive/Suspended/Pending Verification)
+- Days Since Registration (numeric)
+
+Any other field name matches nothing, so the segment resolves to zero members.
 
 **Settings Sidebar:**
 ```php
-- Active (toggle, default true)
+- Deactivated At (datetime; leave empty for active)
 - Priority (numeric, for pricing)
 ```
 
@@ -259,8 +263,15 @@ use AIArmada\FilamentCustomers\Resources\CustomerResource as BaseCustomerResourc
 class CustomerResource extends BaseCustomerResource
 {
     // Override navigation
-    protected static ?string $navigationGroup = 'Sales';
-    protected static ?int $navigationSort = 5;
+    public static function getNavigationGroup(): ?string
+    {
+        return 'Sales';
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        return 5;
+    }
     
     // Add custom columns
     public static function table(Table $table): Table

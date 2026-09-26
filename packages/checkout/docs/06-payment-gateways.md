@@ -25,7 +25,7 @@ provider reads both config values directly, so config is the precedence source.
 // config/checkout.php
 'payment' => [
     'default_gateway' => 'chip',
-    'gateway_priority' => ['cashier', 'cashier-chip', 'chip'],
+    'gateway_priority' => ['chip', 'cashier-chip', 'cashier'],
 ],
 ```
 

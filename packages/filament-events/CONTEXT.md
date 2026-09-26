@@ -40,9 +40,9 @@ keywords:
 - Owner/security: Owner queries; global preview surfaces intentional.
 
 ## Key surfaces
-- Resources: `EventAttendanceResource`, `EventChangeLogResource`, `EventOccurrenceResource`, `EventRegistrationParticipantResource`, `EventRegistrationResource`, `EventResource`, `EventSessionResource`, `EventTaxonomyResource`, `EventTemplateResource`, `EventTermResource`
-- Actions/Services: `Actions/Exporter/EventAttendanceExporter`, `Actions/Exporter/EventExporter`, `Actions/Exporter/EventOccurrenceExporter`, `Actions/Exporter/EventRegistrationExporter`, `Actions/Exporter/EventSessionExporter`, `Actions/Exporter/VenueExporter`, `Actions/Importer/EventRegistrationImporter`, `Actions/Importer/EventSessionImporter`
-- Config `filament-events.php`: `navigation`, `group`, `resources`, `enabled`, `event`, `occurrence`, `session`, `venue`, `venue_space`, `registration`
+- Resources: `EventAttendanceResource`, `EventChangeLogResource`, `EventOccurrenceResource`, `EventRegistrationParticipantResource`, `EventRegistrationResource`, `EventResource`, `EventSessionResource`, `EventTaxonomyResource`, `EventTemplateResource`, `EventTermResource`, `VenueResource`, `VenueSpaceResource`
+- Actions/Services: `Actions/Exporter/EventAttendanceExporter`, `Actions/Exporter/EventExporter`, `Actions/Exporter/EventOccurrenceExporter`, `Actions/Exporter/EventRegistrationExporter`, `Actions/Exporter/EventSessionExporter`, `Actions/Exporter/VenueExporter`, `Actions/Importer/EventRegistrationImporter`, `Actions/Importer/EventSessionImporter`, `Actions/Importer/VenueImporter`
+- Config `filament-events.php`: `navigation`, `group`, `resources`, `enabled`, `event`, `occurrence`, `session`, `venue`, `venue_space`, `registration`, `registration_participant`, `attendance`, `change_log`, `event_template`, `event_taxonomy`, `event_term`, `navigation_sort`, `event_form_extensions`, `event_relation_managers`, `occurrence_relation_managers`, `session_relation_managers`
 
 ## Docs map
 - Start: `01-overview` → `03-configuration` → `04-usage` → `99-troubleshooting`

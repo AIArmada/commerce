@@ -73,7 +73,7 @@ FilamentJntPlugin::make()
     ->orders()           // Enable orders resource (default: true)
     ->trackingEvents()   // Enable tracking events resource (default: true)
     ->webhookLogs()      // Enable webhook logs resource (default: true)
-    ->widgets(),         // Enable dashboard widgets (default: true)
+    ->widgets();         // Enable dashboard widgets (default: true)
 ```
 
 Disable specific features:
@@ -83,7 +83,7 @@ FilamentJntPlugin::make()
     ->orders(true)
     ->trackingEvents(true)
     ->webhookLogs(false)    // Disable webhook logs
-    ->widgets(false),       // Disable widgets
+    ->widgets(false);       // Disable widgets
 ```
 
 Or configure via config file:
@@ -120,7 +120,7 @@ Ensure the core JNT package is properly configured:
 
 3. **Verify configuration**:
    ```bash
-    php artisan jnt:config:check
+    php artisan jnt:health
    ```
 
 See the [JNT package installation](../../jnt/docs/02-installation.md) for detailed setup.
@@ -186,7 +186,9 @@ JNT_OWNER_ENABLED=true
 JNT_OWNER_INCLUDE_GLOBAL=false
 ```
 
-Resources are automatically filtered by the current tenant.
+Resources are filtered by the owner resolved from `commerce-support`, not by the Filament
+tenant. Filament tenancy is a UI concern only — action handlers still revalidate the
+record against the current owner scope.
 
 ---
 

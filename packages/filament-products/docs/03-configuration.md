@@ -4,21 +4,6 @@ title: Configuration
 
 # Configuration
 
-## Published config
-
-```php
-return [
-    'features' => [
-        'collections' => true,
-        'attributes' => true,
-    ],
-    'import' => [
-        'max_rows' => 1000,
-        'max_file_kb' => 10240,
-    ],
-];
-```
-
 ## Navigation Configuration
 
 Configure navigation group and resource sort order:
@@ -39,6 +24,13 @@ Configure navigation group and resource sort order:
 
 ## Feature flags
 
+```php
+'features' => [
+    'collections' => true,
+    'attributes' => true,
+],
+```
+
 ### `features.collections`
 
 Controls whether `CollectionResource` is registered.
@@ -48,6 +40,13 @@ Controls whether `CollectionResource` is registered.
 Controls whether `AttributeResource` is registered.
 
 ## Import limits
+
+```php
+'import' => [
+    'max_rows' => 1000,
+    'max_file_kb' => 10240,
+],
+```
 
 ### `import.max_rows`
 

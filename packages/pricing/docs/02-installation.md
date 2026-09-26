@@ -37,19 +37,21 @@ This creates the following tables:
 - `prices` - Stores individual prices
 - `price_tiers` - Stores tiered pricing rules
 
-## Publish Settings Migrations (Optional)
+## Settings Migrations (Optional)
 
-If you want to manage pricing settings via Spatie Laravel Settings:
-
-```bash
-php artisan vendor:publish --tag=pricing-settings
-```
-
-Then run the settings migration:
+If you want to manage pricing settings via Spatie Laravel Settings, publish the
+package's settings migration into your app and run it:
 
 ```bash
+php artisan vendor:publish --tag="pricing-settings"
 php artisan migrate
 ```
+
+> **info**
+> `PricingServiceProvider` appends the package's settings path to
+> `settings.migrations_paths` at boot, so the migration already runs on
+> `php artisan migrate` without publishing. Publishing is only needed when you
+> want to edit the migration file.
 
 ## Database Tables
 

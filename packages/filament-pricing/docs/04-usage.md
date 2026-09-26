@@ -19,12 +19,12 @@ The table displays:
 | Prices | Count of prices in list |
 | Priority | Numeric, sortable |
 | Default | Boolean icon |
-| Active | Boolean icon |
+| Status | Badge derived from `deactivated_at` (Active/Deactivated) |
 | Starts | Date (toggleable) |
 | Ends | Date (toggleable) |
 
 **Filters**:
-- Active status (ternary)
+- Status (ternary on `deactivated_at`: Active/Deactivated)
 - Default status (ternary)
 
 **Actions**:
@@ -47,7 +47,7 @@ The form is organized into sections:
 - End Date (datetime picker)
 
 **Settings** (sidebar):
-- Active toggle
+- Deactivated At (datetime picker — leave empty for an active price list)
 - Default Price List toggle
 - Priority number
 

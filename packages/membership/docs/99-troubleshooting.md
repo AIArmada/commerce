@@ -15,7 +15,7 @@ Confirm the invitation is pending, unexpired, and its normalized email matches t
 
 ## Re-invite Returns a Stale Invitation
 
-Re-inviting the same subject, email, and role returns the existing pending invitation without a new event. If that invitation is past its expiry deadline, it is transitioned to `expired` and a fresh invitation is created instead. Run `php artisan membership:expire-invitations` to persist expiry for reporting without waiting for a re-invite.
+Re-inviting the same subject, email, and role returns the existing pending invitation without a new event. If that invitation is past its expiry deadline, it is transitioned to `expired` and a fresh invitation is created instead. To persist expiry for reporting without waiting for a re-invite, call `$invitation->expireIfDue()` on the past-due rows.
 
 ## Pivot Table Is Missing
 

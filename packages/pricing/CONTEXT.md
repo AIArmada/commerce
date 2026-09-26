@@ -42,7 +42,7 @@ keywords:
 ## Key surfaces
 - Models: `Price`, `PriceList`, `PriceTier`
 - Actions/Services: `Actions/ApplyPromotionalAdjustment`, `Services/PriceCalculator`, `Support/CustomerPriceResolver`, `Support/PromotionalPriceResolver`, `Support/SegmentPriceResolver`, `Support/TierResolver`
-- Config `pricing.php`: `database`, `tables`, `prices`, `price_lists`, `price_tiers`, `defaults`, `currency`, `features`, `promotional`, `enabled`
+- Config `pricing.php`: `database` (→ `tables.prices`, `tables.price_lists`, `tables.price_tiers`), `defaults` (→ `currency`), `features` (→ `promotional.enabled`, `owner.enabled`, `owner.include_global`, `owner.auto_assign_on_create`)
 
 ## Docs map
 - Start: `01-overview` → `03-configuration` → `04-usage` → `99-troubleshooting`

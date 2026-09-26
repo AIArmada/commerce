@@ -58,16 +58,22 @@ The Checkout package provides a unified checkout flow for the AIArmada Commerce 
 
 ## How It Works
 
-The checkout process follows these high-level steps:
+The checkout process follows these high-level steps. The shipped default is
+`steps.order` in `config/checkout.php`; when
+`integrations.inventory.reserve_before_payment` is `false`, `reserve_inventory`
+moves to the start of the post-payment phase instead.
 
-1. **Start Checkout**: Create a checkout session from a cart
-2. **Validate Cart**: Ensure items are valid and in stock
-3. **Calculate Pricing**: Apply pricing rules and discounts
-4. **Calculate Tax**: Compute applicable taxes
-5. **Process Payment**: Collect payment via configured gateway
-6. **Create Order**: Generate the order record
-7. **Reserve Inventory**: Decrement stock (if enabled)
-8. **Complete**: Dispatch post-checkout events and notifications
+1. **Validate cart**: Ensure items are valid and in stock
+2. **Resolve customer**: Resolve the billable subject used for payment
+3. **Calculate pricing**: Apply pricing rules
+4. **Apply discounts**: Apply vouchers and promotions
+5. **Calculate shipping**: Resolve rates and the selected method
+6. **Calculate tax**: Compute applicable taxes
+7. **Reserve inventory**: Reserve stock (when the inventory integration is enabled)
+8. **Process payment**: Collect payment via the configured gateway
+9. **Persist customer**: Create or sync the `Customer` record after payment
+10. **Create order**: Generate the order record
+11. **Dispatch documents**: Queue invoice/receipt generation (skipped when both document flags are off)
 
 ## Package Dependencies
 

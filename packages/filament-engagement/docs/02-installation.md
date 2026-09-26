@@ -11,7 +11,7 @@ composer require aiarmada/filament-engagement
 ## Publish configuration
 
 ```bash
-php artisan vendor:publish --provider="AIArmada\FilamentEngagement\FilamentEngagementServiceProvider" --tag="config"
+php artisan vendor:publish --tag=filament-engagement-config
 ```
 
 ## Register the plugin

@@ -6,82 +6,8 @@ title: Pages & Widgets
 
 ## Pages
 
-### AffiliateMarketplacePage
-
-A discovery page where affiliates browse and apply for offers.
-
-This page is intentionally available to non-admin affiliates. Public offer
-reads use explicit global discovery context; apply and link actions resolve the
-affiliate and write only inside that affiliate's owner context. Local imported
-offers enroll through the core `affiliates` program service.
-
-Affiliate identity resolves by email match, so users whose host account tracks
-email verification must have a verified email to resolve. State-changing
-actions are rate-limited per user (10 applications and 30 link generations per
-minute), and application reasons are capped at 2000 characters.
-
-**Features:**
-- Search offers by name/description
-- Filter by category
-- Sort by featured, newest, or commission
-- View commission rates and cookie duration
-- Apply to offers directly
-- Generate links for approved offers
-
-**URL:** `/affiliate-network/marketplace`
-
-**Livewire Properties:**
-- `$search` - Search query
-- `$categoryFilter` - Selected category ID
-- `$sortBy` - Sort option (featured, newest, commission)
-
-**Methods:**
-
-```php
-// Get active categories
-$this->getCategories();
-
-// Get filtered offers
-$this->getOffers();
-
-// Get current user's affiliate
-$this->getAffiliate();
-
-// Check if applied to offer
-$this->hasApplied($offer);
-
-// Get application status
-$this->getApplicationStatus($offer); // pending, approved, rejected, null
-
-// Apply to an offer
-$this->applyForOffer($offerId, $reason);
-
-// Generate tracking link (for approved)
-$this->generateLink($offerId);
-```
-
-Generated links are `AffiliateOfferLink` records from the affiliate-network package. They are separate from the core affiliates package's public link API and subject-aware tracking link records.
-
-**Customization:**
-
-```php
-namespace App\Filament\Pages;
-
-use AIArmada\FilamentAffiliateNetwork\Pages\AffiliateMarketplacePage as BasePage;
-
-class AffiliateMarketplacePage extends BasePage
-{
-    protected static ?string $title = 'Partner Opportunities';
-    
-    public function getOffers(): Collection
-    {
-        return parent::getOffers()
-            ->filter(fn ($offer) => ($offer->rate_base_bp ?? 0) >= 500);
-    }
-}
-```
-
----
+The plugin registers exactly one page: `MerchantDashboardPage`. There is no
+marketplace/discovery page in this package.
 
 ### MerchantDashboardPage
 
@@ -92,12 +18,28 @@ network-wide widgets, so its counts and pending applications cannot mix
 merchants.
 
 **Features:**
-- Site overview
-- Offer performance
-- Application statistics
-- Click/conversion metrics
+- Stats overview: Sites, Verified Sites, Active Offers, Pending Applications
+- 5 most recent pending applications
+- Top 5 offers by application count
+
+**Methods:**
+
+```php
+$this->getSitesCount();              // int
+$this->getVerifiedSitesCount();      // int
+$this->getActiveOffersCount();       // int
+$this->getPendingApplicationsCount();// int
+$this->getRecentApplications();      // Collection<AffiliateOfferApplication>
+$this->getTopOffers();               // Collection<AffiliateOffer>
+$this->getStats();                   // Stat[]
+```
 
 **URL:** `/affiliate-network/merchant-dashboard`
+
+Access is gated by `NetworkAdminAccess::allows()` — it reads
+`filament-affiliate-network.authorization.admin_ability` (default
+`affiliate-network.admin`). `canAccess()` also enforces the panel's own
+authorization.
 
 **Customization:**
 
@@ -127,8 +69,9 @@ Overview statistics for the entire network.
 
 **Sort Order:** 1 (appears first on dashboard)
 
-This is a network-wide admin report. It uses the explicit global context and a
-30-second owner-keyed cache.
+This is a network-wide admin report gated by
+`NetworkAdminAccess::allows()`. It uses `OwnerCache::remember(null, ...)` for a
+30-second cache.
 
 Total Revenue groups link revenue by link currency. Single-currency networks
 show the raw sum; mixed networks convert to
@@ -161,24 +104,34 @@ class Dashboard extends BaseDashboard
 
 **Customization:**
 
+`NetworkStatsWidget` is `final` — it cannot be extended. Build your own widget
+instead and reuse the shared aggregator:
+
 ```php
 namespace App\Filament\Widgets;
 
-use AIArmada\FilamentAffiliateNetwork\Widgets\NetworkStatsWidget as BaseWidget;
+use AIArmada\FilamentAffiliateNetwork\Support\NetworkStatsAggregator;
+use AIArmada\FilamentAffiliateNetwork\Support\NetworkAdminAccess;
+use Filament\Widgets\StatsOverviewWidget;
+use Filament\Widgets\StatsOverviewWidget\Stat;
 
-class NetworkStatsWidget extends BaseWidget
+class NetworkStatsWidget extends StatsOverviewWidget
 {
     protected static ?int $sort = 5;
-    
+
+    public static function canView(): bool
+    {
+        return NetworkAdminAccess::allows();
+    }
+
     protected function getStats(): array
     {
-        $stats = parent::getStats();
-        
-        // Add custom stat
-        $stats[] = Stat::make('Custom', $this->customValue())
-            ->icon('heroicon-o-star');
-            
-        return $stats;
+        $aggregated = NetworkStatsAggregator::aggregate();
+
+        return [
+            Stat::make('Custom', number_format($aggregated['activeSites']))
+                ->icon('heroicon-o-star'),
+        ];
     }
 }
 ```
@@ -189,8 +142,12 @@ class NetworkStatsWidget extends BaseWidget
 
 Display top performing offers.
 
-This is a network-wide admin leaderboard with the same explicit-global and
-30-second owner-keyed cache policy as `NetworkStatsWidget`.
+This is a network-wide admin leaderboard gated by
+`NetworkAdminAccess::allows()`, with the same `OwnerCache::remember(null, ...)`
+30-second cache policy as `NetworkStatsWidget`. It is `final` — build your own
+widget rather than extending it.
+
+**Sort Order:** 2
 
 **Features:**
 - Top 10 offers by clicks, with per-offer conversions and revenue
@@ -204,16 +161,18 @@ set and hide the true leaders outside it.
 
 ## Widget Authorization
 
-Control widget visibility:
+Both shipped widgets delegate to `NetworkAdminAccess::allows()`. A custom
+widget should do the same so it matches:
 
 ```php
+use AIArmada\FilamentAffiliateNetwork\Support\NetworkAdminAccess;
 use Filament\Widgets\Widget;
 
-class NetworkStatsWidget extends Widget
+class MyWidget extends Widget
 {
     public static function canView(): bool
     {
-        return auth()->user()->hasRole('admin');
+        return NetworkAdminAccess::allows();
     }
 }
 ```

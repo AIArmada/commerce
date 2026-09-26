@@ -19,6 +19,7 @@ individually:
 ```php
 'database' => [
     'table_prefix' => '',
+    'json_column_type' => env('PERSONS_JSON_COLUMN_TYPE', 'jsonb'),
     'tables' => [
         'persons' => env('PERSONS_TABLE_PERSONS', $tablePrefix . 'persons'),
         'person_names' => env('PERSONS_TABLE_PERSON_NAMES', $tablePrefix . 'person_names'),

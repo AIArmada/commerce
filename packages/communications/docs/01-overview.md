@@ -17,6 +17,9 @@ The `aiarmada/communications` package provides a production-grade communications
 - **Thread** — groups related communications
 - **Batch** — business-level grouping for bulk operations
 - **Template** — reusable content definition with versioning
+- **Attachment** — a file attached to a content snapshot
+- **Reference** — an outbound link to a related model row (invoice, order, event)
+- **Tracking token** — a hashed, single-purpose token for open/click tracking on a delivery
 - **Destination** — persisted channel address for a notifiable (email, phone, external id), resolved before delivery
 - **Preference** — recipient-level channel/category preference, optionally scoped by `scope_type` / `scope_key`
 - **Suppression** — hard or temporary prohibition against sending
@@ -32,7 +35,7 @@ The package complements Laravel Notifications in two modes:
 
 ## Scale
 
-The domain ships 17 models, 31 actions, and 14 services (see `src/Actions/`, `src/Services/`). Channel integrations resolve through null-driver defaults (`NullContentRenderer`, `NullDestinationResolver`, `NullCommunicationAuditRecorder`, `NullRecipientSnapshotResolver`) and the shared `PermissiveEligibilityResolver` — override only what the host app needs.
+The domain ships 17 models, 31 actions, and 10 services (see `src/Models/`, `src/Actions/`, `src/Services/`). Unconfigured channels resolve through null-driver defaults (`NullContentRenderer`, `NullCommunicationAuditRecorder`, `NullRecipientSnapshotResolver`, `NullProviderEventNormalizer`) and the shared `PermissiveEligibilityResolver` — override only what the host app needs. `DestinationResolver` defaults to `CommunicationDestinationResolver`; bind `NullDestinationResolver` or `NotifiableDestinationResolver` to resolve without the destinations table.
 
 ## Related packages
 

@@ -25,11 +25,9 @@ title: Troubleshooting
 
 ```php
 // Check config/filament-products.php
-'resources' => [
-    'product' => [
-        'class' => \AIArmada\FilamentProducts\Resources\ProductResource::class,
-        // Not null
-    ],
+'features' => [
+    'collections' => true, // false hides CollectionResource
+    'attributes' => true,  // false hides AttributeResource
 ],
 ```
 
@@ -195,9 +193,9 @@ dd($resolver->resolve());
 ### Verify Resource Registration
 
 ```php
-// Check what resources are registered
-$plugin = app(FilamentProductsPlugin::class);
-dd($plugin->getResources());
+// Check what resources the panel actually has
+$panel = Filament::getPanel();
+dd($panel->getResources());
 ```
 
 ### Test Form Data Mutation

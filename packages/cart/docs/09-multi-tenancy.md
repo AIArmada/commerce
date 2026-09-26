@@ -38,7 +38,8 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 $tenantCart = Cart::forOwner($tenant);
 
 // Or get a scoped cart instance
-$cart = $tenantCart->instance('default');
+// CartManager::instance() has no arguments and returns the current name
+$cart = $tenantCart->getCartInstance('default');
 
 // For non-request operations, use explicit owner context
 OwnerContext::withOwner($tenant, function () {
@@ -174,6 +175,8 @@ For jobs, commands, listeners, and other non-request surfaces, use `OwnerContext
 - without resolved owner context: command fails
 - with explicit global context: command operates on global rows only
 - with `--all-owners`: command iterates owner tuples intentionally
+- with `--all-owners` in `--mark-only` mode: `--confirm-all-owners` is also
+  required before any snapshot row is mutated
 - with malformed tuples: command warns and skips by default
 - with `--strict-owner-tuples`: command aborts on malformed tuples
 

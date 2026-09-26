@@ -45,7 +45,7 @@ keywords:
 ## Key surfaces
 - Models: `CheckoutSession`
 - Actions/Services: `Actions/BuildCheckoutSessionViewData`, `Actions/CheckoutFinalizer`, `Actions/EnsureCheckoutOfferProduct`, `Actions/HandleCheckoutPaymentCallback`, `Actions/ProcessCheckoutPaymentNotification`, `Actions/ValidatePromoCodeAction`, `Services/CheckoutService`, `Services/CheckoutStepRegistry`
-- Config `checkout.php`: `database`, `tables`, `owner`, `payment`, `routes`, `checkout_sessions`, `defaults`, `currency`, `session_ttl`, `session_query_param`, `shipping_rate`
+- Config `checkout.php`: `database`, `defaults`, `models`, `transformers`, `steps`, `create_order`, `owner`, `checkout_actor`, `integrations`, `payment`, `routes`, `redirects`, `response_mode`, `views`, `webhooks`, `documents`
 
 ## Docs map
 - Start: `01-overview` → `03-configuration` → `04-usage` → `99-troubleshooting`

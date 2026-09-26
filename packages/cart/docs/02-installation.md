@@ -36,6 +36,13 @@ This creates the following tables:
 
 1. **carts** - Main cart storage with JSON columns for items, conditions, metadata
 2. **conditions** - Reusable condition definitions
+3. **cart_snapshots** - Normalized cart snapshots plus checkout abandonment timestamps
+4. **cart_snapshot_items** - Per-line snapshot rows
+5. **cart_snapshot_conditions** - Per-condition snapshot rows
+
+> **info**
+> Migrations are auto-discovered, so `php artisan migrate` is enough. To copy them
+> into your app instead, run `php artisan vendor:publish --tag=cart-migrations`.
 
 ## Verify Installation
 
@@ -155,4 +162,7 @@ Clear config cache: `php artisan config:clear`
 
 **4. JSON column errors on SQLite**
 
-SQLite has limited JSON support. Use `json` type (default) or upgrade to MySQL/PostgreSQL for production.
+`cart.database.json_column_type` defaults to `jsonb`. SQLite does not support
+`jsonb`, so set `CART_JSON_COLUMN_TYPE=json` (or `database.json_column_type => 'json'`)
+in `.env` before migrating on SQLite. MySQL and PostgreSQL can use the default.
+

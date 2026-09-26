@@ -43,7 +43,7 @@ keywords:
 ## Key surfaces
 - Models: `Attribute`, `AttributeGroup`, `AttributeSet`, `AttributeValue`, `Category`, `Collection`, `Option`, `OptionValue`, `Product`, `Variant`
 - Actions/Services: `Actions/ApplyAttributeChanges`, `Actions/CreateProduct`, `Actions/GenerateVariants`, `Actions/UpdateProduct`, `Actions/UpdateProductStatus`
-- Config `products.php`: `database`, `table_prefix`, `json_column_type`, `tables`, `products`, `variants`, `options`, `option_values`, `variant_options`, `categories`
+- Config `products.php`: `database` (→ `table_prefix`, `json_column_type`, `tables.*`), `defaults` (→ `currency`), `features` (→ `owner.*`, `variants.sku_pattern`, `variants.max_generated`, `variants.queue_threshold`), `media` (→ `collections.*`, `conversions.*`), `seo` (→ `slug_max_length`)
 
 ## Docs map
 - Start: `01-overview` → `03-configuration` → `04-usage` → `99-troubleshooting`

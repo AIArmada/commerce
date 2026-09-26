@@ -43,8 +43,11 @@ keywords:
 ## Key surfaces
 - Models: none; resources consume `AIArmada\\Cart\\Snapshots\\CartSnapshot`, `CartSnapshotItem`, and `CartSnapshotCondition`
 - Actions/Services: `Actions/ApplyConditionAction`, `Actions/RemoveConditionAction`, `Services/CartDownloadService`
-- Resources: `CartItemResource`, `CartResource`, `ConditionResource`
-- Config `filament-cart.php`: `navigation`, `resources`, `pages`, `polling_interval`, `features`, `widgets`, `notifications`
+- Resources: `CartResource`, `CartItemResource`, `ConditionResource`
+- Relation managers: `CartResource/RelationManagers/{ItemsRelationManager,ConditionsRelationManager}` — snapshot conditions are shown here, not as a separate resource
+- Pages: `Pages/CartDashboard`, `Pages/LiveDashboardPage`
+- Widgets: `Widgets/CartStatsWidget`, `Widgets/AbandonedCartsWidget`, `Widgets/RecentActivityWidget`
+- Config `filament-cart.php` keys: `navigation.group`, `navigation.sort`, `resources.navigation_sort.{carts,cart_items,conditions}`, `pages.navigation_sort.{dashboard,live_dashboard}`, `polling_interval`, `features.{dashboard,monitoring,monitoring_permission}`, `widgets.{stats_overview,abandoned_carts}`, `notifications.abandoned_cart.*`
 
 ## Docs map
 - Start: `01-overview` → `03-configuration` → `04-usage` → `99-troubleshooting`

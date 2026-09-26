@@ -109,6 +109,8 @@ Configure which features are available to affiliates:
         'conversions' => true,
         'payouts' => true,
         'support_compliance' => true,
+        'creatives' => true,
+        'vouchers' => true,
     ],
 ],
 ```

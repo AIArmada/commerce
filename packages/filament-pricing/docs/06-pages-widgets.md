@@ -8,7 +8,7 @@ title: Pages & Widgets
 
 Settings page for configuring pricing defaults. Pricing settings are a single global row shared by every tenant, so the page requires the `filament-pricing.authorization.settings_ability` ability (default `pricing.manage-settings`, defined via a `Gate` in the host app). Saves are validated server-side against the form rules.
 
-> [!WARNING]
+> **warning**
 > Any ability holder changes pricing defaults for all tenants. Keep the ability narrowly assigned.
 
 ### Location
@@ -41,9 +41,9 @@ Uses a simple form view:
 
 ```blade
 <x-filament-panels::page>
-    <x-filament-panels::form wire:submit="save">
+    <form wire:submit="save">
         {{ $this->form }}
-    </x-filament-panels::form>
+    </form>
 </x-filament-panels::page>
 ```
 
@@ -152,23 +152,49 @@ public static function getNavigationSort(): ?int
 ```php
 public function calculate(): void
 {
-    // Get priceable based on type
-    $priceable = $data['product_type'] === 'product'
-        ? Product::find($data['product_id'])
-        : Variant::find($data['variant_id']);
+    // Input is re-validated server-side (bypassable through direct Livewire calls)
+    $input = self::validatedSimulationInput($this->data ?? []);
+
+    if ($input === null) {
+        $this->result = null;
+
+        return;
+    }
+
+    $owner = OwnerContext::resolve();
+    $includeGlobal = (bool) config('products.features.owner.include_global', false);
+
+    // Get priceable based on type — always owner-scoped
+    $priceable = $input['product_type'] === 'product'
+        ? OwnerQuery::applyToEloquentBuilder(Product::query(), $owner, $includeGlobal)->find($input['id'])
+        : Variant::query()
+            ->whereHas('product', fn ($q) => OwnerQuery::applyToEloquentBuilder($q, $owner, $includeGlobal))
+            ->find($input['id']);
+
+    if (! $priceable) {
+        $this->result = null;
+
+        return;
+    }
 
     // Build context
     $context = [];
+
     if ($customer) {
-        $context['customer_id'] = $customer->id;
+        $context['customer_id'] = (string) $customer->getKey();
     }
-    if ($effectiveAt) {
+
+    if ($effectiveAt instanceof DateTimeInterface) {
         $context['effective_at'] = $effectiveAt;
     }
 
-    // Calculate
+    // Calculate — named arguments, item must implement Priceable
     $calculator = app(PriceCalculatorInterface::class);
-    $result = $calculator->calculate($priceable, $quantity, $context);
+    $result = $calculator->calculate(
+        item: $priceable,
+        quantity: $input['quantity'],
+        context: $context,
+    );
 
     // Store result for display
     $this->result = [
@@ -200,9 +226,9 @@ Displays calculation results using Filament Infolist components:
 
 ```blade
 <x-filament-panels::page>
-    <x-filament-panels::form wire:submit="calculate">
+    <form wire:submit="calculate">
         {{ $this->form }}
-    </x-filament-panels::form>
+    </form>
 
     @if ($result)
         <div class="mt-6">
@@ -210,7 +236,10 @@ Displays calculation results using Filament Infolist components:
         </div>
     @else
         <div class="mt-6">
-            <!-- Ready state with calculator icon -->
+            <x-filament::section>
+                <x-slot name="heading">Ready to Calculate</x-slot>
+                <!-- inline calculator icon + hint copy -->
+            </x-filament::section>
         </div>
     @endif
 </x-filament-panels::page>
@@ -308,26 +337,29 @@ protected function getStats(): array
 
 ### Customization
 
-To customize the widget, extend it:
+> **warning**
+> `PricingStatsWidget` is `final`. `class CustomPricingStatsWidget extends PricingStatsWidget` is a fatal error.
+
+Write your own `StatsOverviewWidget` and register it on the panel instead:
 
 ```php
 namespace App\Filament\Widgets;
 
-use AIArmada\FilamentPricing\Widgets\PricingStatsWidget as BaseWidget;
+use Filament\Widgets\StatsOverviewWidget;
+use Filament\Widgets\StatsOverviewWidget\Stat;
 
-class CustomPricingStatsWidget extends BaseWidget
+class CustomPricingStatsWidget extends StatsOverviewWidget
 {
     protected ?string $pollingInterval = '60s';
 
     protected function getStats(): array
     {
-        $stats = parent::getStats();
-
-        // Add custom stats
-        $stats[] = Stat::make('Custom Stat', '100')
-            ->description('Custom description');
-
-        return $stats;
+        return [
+            Stat::make('Active Price Lists', number_format(\AIArmada\Pricing\Models\PriceList::query()->active()->count()))
+                ->description('Currently active')
+                ->descriptionIcon('heroicon-m-currency-dollar')
+                ->color('info'),
+        ];
     }
 }
 ```

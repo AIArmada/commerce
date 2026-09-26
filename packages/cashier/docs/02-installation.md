@@ -215,7 +215,8 @@ $allSubscriptions = $user->allSubscriptions();
 
 ### CHIP Subscription Scheduler
 
-> **Important:** CHIP doesn't have native subscriptions. Your app must schedule renewals.
+> **warning**
+> CHIP doesn't have native subscriptions. Your app must schedule renewals.
 
 Add this to your `app/Console/Kernel.php`:
 

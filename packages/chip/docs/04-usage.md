@@ -401,8 +401,10 @@ $result = app(DispatchChipWebhookAction::class)->execute(
     owner: $tenant, // optional; resolved from payload when omitted
 );
 
-$result->wasHandled(); // true if the event was routed to a handler
-$result->wasSkipped(); // true if no handler matched
+$result->isHandled(); // true if the event was routed to a handler
+$result->isSkipped(); // true if no handler matched
+$result->isFailed();  // true if routing threw
+$result->isSuccess(); // handled or skipped
 ```
 
 When an `owner` model is provided, the webhook envelope is enriched with owner context before routing, and the handler runs inside `OwnerContext::withOwner()`. When omitted, the action attempts to resolve the owner from the enriched payload's brand-to-owner map.
@@ -453,8 +455,16 @@ When owner scoping is enabled, pass `owner:` (or `--owner-type` / `--owner-id` o
 
 | Command | Description |
 |---------|-------------|
-| `chip:health-check` | Check CHIP API connectivity and credentials |
-| `chip:retry-webhooks` | Retry failed webhooks |
-| `chip:clean-webhooks` | Clean old webhook records |
-| `chip:sync-from-api --purchase-id=<id>` | Sync explicitly supplied CHIP purchase IDs |
-| `chip:prune-idempotency-stubs` | Delete expired unrecorded purchase idempotency reservations |
+| `chip:health [--collect] [--send]` | Check CHIP API connectivity and credentials |
+| `chip:retry-webhooks [--limit=] [--dry-run]` | Retry failed webhooks |
+| `chip:clean-webhooks [--days=] [--status=] [--dry-run]` | Clean old webhook records |
+| `chip:sync-from-api` | Sync `chip_clients`, `chip_purchases`, and `chip_payments` from the CHIP API |
+| `chip:prune-idempotency-stubs [--limit=] [--dry-run]` | Delete expired unrecorded purchase idempotency reservations |
+
+`chip:sync-from-api` accepts repeatable and scope options:
+
+```bash
+php artisan chip:sync-from-api --purchase-id=purchase_abc --purchase-id=purchase_def
+php artisan chip:sync-from-api --status=paid --status=refunded --overwrite-existing
+php artisan chip:sync-from-api --dry-run --owner-type='App\Models\Tenant' --owner-id=tenant-uuid-1
+```

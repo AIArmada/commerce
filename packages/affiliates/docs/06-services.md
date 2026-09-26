@@ -17,18 +17,24 @@ The canonical orchestration surface for affiliates is the `Actions` tree. Prefer
 | `AttachAffiliateFromCookie::run($cart, $cookieValue, $context)` | Attach from cookie tracking |
 | `CapturePublicAffiliateReferral::run($request)` | Capture public referral |
 | `CreateAffiliate::run($data, $owner)` | Create a new affiliate |
-| `CreateTrackingLink::run($affiliate, $url, $attributes)` | Create a tracking link |
+| `CreateTrackingLink::run($affiliate, $destinationUrl, $attributes)` | Create a tracking link |
 | `GenerateAffiliateCode::run($name)` | Generate a unique code |
 | `RejectAffiliate::run($affiliate)` | Reject an affiliate |
+| `DisableAffiliate::run($affiliate)` | Disable an affiliate |
+| `PauseAffiliate::run($affiliate)` | Pause an affiliate |
+| `DetachAffiliateFromCart::run($cart)` | Detach the affiliate from a cart |
 | `ResolvePublicAffiliateReferralContext::run($request)` | Resolve referral context |
 | `TouchAffiliateAttribution::run($cookieValue, $context)` | Touch cookie attribution |
 | `TrackAffiliateVisit::run($code, $context, $cookieValue)` | Track a visit by code |
+
+`CapturePublicAffiliateReferral::run($request, $affiliateCode)` takes two
+arguments and returns a `RedirectResponse`.
 
 ### Conversions Actions (`Actions/Conversions/`)
 
 | Action | Purpose |
 |--------|---------|
-| `AllocateUplineCommissions::run($conversions, $config)` | Distribute upline commissions |
+| `AllocateUplineCommissions::run($baseConversions, $autoApprove, $statusEnum, $attributionId)` | Distribute upline commissions |
 | `MatureConversion::run($conversion)` | Mature a single conversion |
 | `ProcessConversionMaturity::run()` | Process batch maturity |
 | `RecordAffiliateConversion::run($cart, $payload)` | Record a conversion |
@@ -49,35 +55,23 @@ companion conversion posts, so sum-based readers stay correct.
 
 ## CommissionCalculator
 
-Calculates commissions based on affiliate settings, rules, and tiers.
+Calculates a commission from a single affiliate and a subtotal. It has exactly
+one method.
 
 ```php
 use AIArmada\Affiliates\Services\CommissionCalculator;
 
 $calculator = app(CommissionCalculator::class);
+
+// calculate(Affiliate $affiliate, int $subtotalMinor): int
+$commissionMinor = $calculator->calculate($affiliate, 14000);
 ```
 
-### Methods
-
-```php
-// Calculate commission for an order
-$commission = $calculator->calculate(
-    affiliate: $affiliate,
-    orderTotal: 15000,
-    orderSubtotal: 14000,
-    context: ['product_category' => 'electronics'],
-);
-
-// Calculate with specific program
-$commission = $calculator->calculateForProgram(
-    affiliate: $affiliate,
-    program: $program,
-    orderTotal: 15000,
-);
-
-// Get applicable volume tier bonus
-$bonus = $calculator->getVolumeTierBonus($affiliate, $periodVolume);
-```
+A fixed-rate affiliate returns `commission_rate` verbatim; a percentage
+affiliate multiplies by `commission_rate / affiliates.currency.percentage_scale`
+(default `100`, so `1000` = 10%). Multi-level/upline allocation, volume tiers,
+promotions, and rule context live in `Services\Commissions\CommissionRuleEngine`
+and `AllocateUplineCommissions`, not here.
 
 ## PayoutReconciliationService
 
@@ -88,8 +82,11 @@ use AIArmada\Affiliates\Services\PayoutReconciliationService;
 
 $service = app(PayoutReconciliationService::class);
 
-// Reconcile with provider
-$changed = $service->reconcilePayout($payout, $externalStatus, $externalData);
+// Reconcile with provider — true when the payout actually changed
+$changed = $service->reconcilePayout($payout, 'paid', ['reference' => 'TXN-456']);
+
+// Release funds still reserved by a failed/cancelled payout
+$service->releaseReservedFunds($payout);
 
 // Get payouts still needing reconciliation
 $pending = $service->getPayoutsNeedingReconciliation();
@@ -97,35 +94,27 @@ $pending = $service->getPayoutsNeedingReconciliation();
 
 ## FraudDetectionService
 
-Real-time fraud detection and scoring.
+Real-time fraud detection. Rules are tagged `affiliates.fraud_rule`; both
+entrypoints return the same `['allowed' => bool, 'score' => int, 'signals' => array]`
+shape where each signal is a persisted `AffiliateFraudSignal`.
 
 ```php
 use AIArmada\Affiliates\Services\FraudDetectionService;
 
 $service = app(FraudDetectionService::class);
-```
 
-### Methods
+// Analyze an inbound click
+$result = $service->analyzeClick($affiliate, request());
+$result['allowed'];  // false once score >= affiliates.fraud.blocking_threshold
+$result['score'];
+$result['signals'];   // AffiliateFraudSignal[]
 
-```php
-// Analyze attribution for fraud
-$signals = $service->analyzeAttribution($attribution);
+// Analyze a recorded conversion
+$result = $service->analyzeConversion($conversion);
 
-// Analyze conversion for fraud
-$signals = $service->analyzeConversion($conversion);
-
-// Get fraud score for affiliate
-$score = $service->getFraudScore($affiliate);
-
-// Check velocity limits
-$exceeded = $service->checkVelocityLimits($affiliate, 'clicks');
-
-// Record fraud signal
-$signal = $service->recordSignal($affiliate, [
-    'type' => 'velocity_exceeded',
-    'severity' => FraudSeverity::High,
-    'details' => ['clicks_per_hour' => 150],
-]);
+// 30-day rolling risk profile for an affiliate
+$profile = $service->getRiskProfile($affiliate);
+// ['total_score', 'severity', 'signal_count', 'by_rule', 'pending_review', 'confirmed']
 ```
 
 ## UplineService
@@ -191,22 +180,26 @@ Manages affiliate programs and memberships.
 use AIArmada\Affiliates\Services\ProgramService;
 
 $service = app(ProgramService::class);
-```
 
-### Methods
+// Join (enroll) an affiliate in a program
+$membership = $service->joinProgram($affiliate, $program);
 
-```php
-// Enroll affiliate in program
-$membership = $service->enroll($affiliate, $program);
+if ($membership !== null) {
+    $service->leaveProgram($affiliate, $program);
+}
 
-// Check eligibility
-$eligible = $service->checkEligibility($affiliate, $program);
+// Approve a pending membership
+$service->approveMembership($membership, approvedBy: 'admin-1');
 
-// Get available programs for affiliate
-$programs = $service->getAvailablePrograms($affiliate);
+// Upgrade tier — takes the affiliate + program, not the membership
+$service->upgradeTier($affiliate, $program, $goldTier);
 
-// Upgrade membership tier
-$service->upgradeTier($membership, $newTier);
+// Membership lookups
+$service->isMember($affiliate, $program);            // bool
+$service->getMembership($affiliate, $program);       // ?AffiliateProgramMembership
+$service->getAffiliatePrograms($affiliate);          // Collection
+$service->getAvailablePrograms();                    // Collection — no affiliate argument
+$service->processTierUpgrades($program);             // int
 ```
 
 ## DailyAggregationService
@@ -280,11 +273,20 @@ use AIArmada\Affiliates\Services\CohortAnalyzer;
 
 $analyzer = app(CohortAnalyzer::class);
 
-// Analyze cohort retention
-$retention = $analyzer->analyzeRetention($cohort, $periods);
+// Monthly cohort breakdown over a window
+$monthly = $analyzer->analyzeMonthly($from, $to, monthsToTrack: 12);
 
-// Compare cohorts
-$comparison = $analyzer->compare($cohortA, $cohortB);
+// Retention curve
+$retention = $analyzer->calculateRetentionCurve($from, $to, maxMonths: 12);
+
+// Lifetime value per affiliate
+$ltv = $analyzer->calculateLtv($from, $to);
+
+// Compare cohorts over a window
+$comparison = $analyzer->compareCohorts($from, $to);
+
+// Acquisition-source breakdown
+$sources = $analyzer->analyzeBySource($from, $to);
 ```
 
 ## PerformanceBonusService
@@ -317,11 +319,15 @@ use AIArmada\Affiliates\Services\AttributionModel;
 
 $model = app(AttributionModel::class);
 
-// Get credited affiliate for conversion
-$affiliate = $model->getCreditedAffiliate($cart);
+// Registered strategies (last_touch, first_touch, linear)
+$model->strategies();
 
-// Distribute credit (for linear attribution)
-$distribution = $model->distributeCredit($touchpoints, $total);
+// Resolve a strategy, or the configured default
+$strategy = $model->resolve();          // e.g. resolve('first_touch')
+$strategy = $model->resolve('linear');
+
+// Distribute credit across a touchpoint collection
+$distribution = $model->distribute($touchpoints);
 ```
 
 ## Merchant Seam Contracts

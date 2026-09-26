@@ -11,6 +11,7 @@ Programs allow you to create structured affiliate offerings with different commi
 ```php
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Enums\ProgramStatus;
+use AIArmada\Affiliates\Enums\ProgramVisibility;
 
 $program = AffiliateProgram::create([
     'name' => 'Premium Partners',
@@ -18,9 +19,9 @@ $program = AffiliateProgram::create([
     'description' => 'Our exclusive partner program with higher commissions',
     'status' => ProgramStatus::Active,
     'requires_approval' => true,
-    'is_public' => true,
+    'visibility' => ProgramVisibility::Public,
     'default_commission_rate_basis_points' => 1500, // 15%
-    'commission_type' => 'percentage',
+    'commission_type' => CommissionType::Percentage,
     'cookie_lifetime_days' => 60,
     'starts_at' => now(),
     'ends_at' => now()->addYear(),
@@ -32,15 +33,19 @@ $program = AffiliateProgram::create([
 ]);
 ```
 
+> **warning:**
+> There is no `is_public` column. `create()` would silently drop it. Use
+> `visibility` (`ProgramVisibility::Public` / `Private`).
+
 ## Program Statuses
 
 ```php
 use AIArmada\Affiliates\Enums\ProgramStatus;
 
-ProgramStatus::Draft;   // Not yet published
-ProgramStatus::Active;  // Accepting enrollments
-ProgramStatus::Paused;  // Temporarily closed
-ProgramStatus::Ended;   // Permanently closed
+ProgramStatus::Draft;     // Not yet published
+ProgramStatus::Active;    // Accepting enrollments
+ProgramStatus::Paused;    // Temporarily closed
+ProgramStatus::Archived;  // Permanently closed
 ```
 
 ## Creating Program Tiers
@@ -87,17 +92,22 @@ AffiliateProgramTier::create([
 
 ```php
 use AIArmada\Affiliates\Services\ProgramService;
-use AIArmada\Affiliates\Enums\MembershipStatus;
 
 $programService = app(ProgramService::class);
 
-// Check eligibility first
-if ($programService->checkEligibility($affiliate, $program)) {
-    $membership = $programService->enroll($affiliate, $program);
+// Join (enroll). Returns null when the affiliate is not eligible or the
+// program is not open; membership status is Pending when approval is required.
+$membership = $programService->joinProgram($affiliate, $program);
+
+if ($membership !== null) {
+    $service->approveMembership($membership, 'admin-1');
 }
 
-// Or enroll directly (if approval required, status will be Pending)
-$membership = $programService->enroll($affiliate, $program);
+// Program listings
+$service->getAvailablePrograms();              // Collection — no arguments
+$service->getAffiliatePrograms($affiliate);    // Collection
+$service->isMember($affiliate, $program);      // bool
+$service->getMembership($affiliate, $program); // ?AffiliateProgramMembership
 ```
 
 ## Membership Statuses
@@ -119,18 +129,22 @@ Provide affiliates with promotional materials:
 use AIArmada\Affiliates\Models\AffiliateProgramCreative;
 
 AffiliateProgramCreative::create([
-    'affiliate_program_id' => $program->id,
+    'program_id' => $program->id,
     'name' => 'Summer Sale Banner',
     'type' => 'banner',
-    'url' => 'https://cdn.example.com/banners/summer-sale.jpg',
-    'dimensions' => '728x90',
-    'is_active' => true,
+    'asset_url' => 'https://cdn.example.com/banners/summer-sale.jpg',
+    'width' => 728,
+    'height' => 90,
+    'destination_url' => 'https://example.com/summer-sale',
     'metadata' => [
         'alt_text' => 'Summer Sale - 20% Off',
-        'click_url' => 'https://example.com/summer-sale',
     ],
 ]);
 ```
+
+`affiliate_program_id`, `url`, `dimensions`, and `is_active` are not fillable
+and are silently dropped. There is no `is_active` column; gate visibility with
+`AffiliateProgram::status` or the parent program.
 
 ## Using the ProgramService
 
@@ -139,21 +153,22 @@ use AIArmada\Affiliates\Services\ProgramService;
 
 $service = app(ProgramService::class);
 
-// Get available programs for affiliate
-$programs = $service->getAvailablePrograms($affiliate);
-
-// Check eligibility
-$eligible = $service->checkEligibility($affiliate, $program);
+// Get available programs (no affiliate argument)
+$programs = $service->getAvailablePrograms();
 
 // Enroll affiliate
-$membership = $service->enroll($affiliate, $program);
+$membership = $service->joinProgram($affiliate, $program);
 
-// Upgrade tier
-$service->upgradeTier($membership, $goldTier);
+// Leave
+$service->leaveProgram($affiliate, $program);
 
-// Get affiliate's programs
-$memberships = $affiliate->programMemberships()
+// Upgrade tier — takes affiliate + program + tier, not the membership
+$service->upgradeTier($affiliate, $program, $goldTier);
+
+// Get affiliate's memberships
+$memberships = AffiliateProgramMembership::query()
     ->with('program', 'tier')
+    ->where('affiliate_id', $affiliate->id)
     ->get();
 ```
 
@@ -198,25 +213,31 @@ $template->applyToProgram($program);
 
 ## Volume Tiers
 
-Independent of programs, affiliates can have volume-based commission bonuses:
+Independent of a specific offer, programs can have volume-based commission
+bonuses. `AffiliateVolumeTier` is program-scoped (`program_id`), not
+affiliate-scoped.
 
 ```php
 use AIArmada\Affiliates\Models\AffiliateVolumeTier;
 
 AffiliateVolumeTier::create([
-    'affiliate_id' => $affiliate->id,
+    'program_id' => $program->id,
+    'name' => 'Base',
+    'period' => 'monthly',
+    'currency' => 'MYR',
     'min_volume_minor' => 0,
     'max_volume_minor' => 100000,
-    'bonus_rate_basis_points' => 0, // No bonus
-    'is_active' => true,
+    'commission_rate_basis_points' => 0, // No bonus
 ]);
 
 AffiliateVolumeTier::create([
-    'affiliate_id' => $affiliate->id,
+    'program_id' => $program->id,
+    'name' => 'Scale',
+    'period' => 'monthly',
+    'currency' => 'MYR',
     'min_volume_minor' => 100001,
     'max_volume_minor' => null, // Unlimited
-    'bonus_rate_basis_points' => 100, // +1% bonus
-    'is_active' => true,
+    'commission_rate_basis_points' => 100, // +1% bonus
 ]);
 ```
 
@@ -227,19 +248,25 @@ Custom rules for specific conditions:
 ```php
 use AIArmada\Affiliates\Models\AffiliateCommissionRule;
 use AIArmada\Affiliates\Enums\CommissionRuleType;
+use AIArmada\Affiliates\Enums\CommissionType;
 
 AffiliateCommissionRule::create([
-    'affiliate_id' => $affiliate->id,
-    'rule_type' => CommissionRuleType::Product,
-    'commission_type' => 'percentage',
-    'rate_basis_points' => 2000, // 20% for specific products
+    'program_id' => $program->id,
+    'name' => 'Electronics boost',
+    'rule_type' => CommissionRuleType::Category,
+    'priority' => 10,
+    'commission_type' => CommissionType::Percentage,
+    'commission_value' => 2000, // 20% in basis points
     'conditions' => [
         'product_categories' => ['electronics', 'software'],
     ],
     'is_active' => true,
-    'priority' => 10,
 ]);
 ```
+
+> **warning:**
+> `affiliate_id` and `rate_basis_points` are not fillable. Rules hang off
+> `program_id` and the rate lives in `commission_value`.
 
 ## Commission Promotions
 
@@ -247,13 +274,22 @@ Time-limited commission boosts:
 
 ```php
 use AIArmada\Affiliates\Models\AffiliateCommissionPromotion;
+use AIArmada\Affiliates\Enums\CommissionType;
 
 AffiliateCommissionPromotion::create([
-    'affiliate_id' => $affiliate->id,
+    'program_id' => $program->id,
     'name' => 'Holiday Bonus',
-    'bonus_rate_basis_points' => 500, // +5% bonus
+    'bonus_type' => CommissionType::Percentage,
+    'bonus_value' => 500, // +5% in basis points
     'starts_at' => now(),
     'ends_at' => now()->addMonth(),
-    'is_active' => true,
+    'max_uses' => 100,
+    'affiliate_ids' => [], // Empty = applies to all program affiliates
 ]);
 ```
+
+> **warning:**
+> `affiliate_id`, `bonus_rate_basis_points`, and `is_active` are not fillable.
+> Promotions are program-scoped; opt individual affiliates in through the
+> `affiliate_ids` array, and there is no `is_active` column — window it with
+> `starts_at` / `ends_at` and `max_uses` / `current_uses`.

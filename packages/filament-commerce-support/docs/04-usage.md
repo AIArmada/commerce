@@ -71,6 +71,10 @@ Override navigation settings for any registered resource or page by its fully qu
 ```
 
 The settings page is removed from the panel and overrides are not applied.
+Because the plugin registers the `currencies`, `languages`, and `timezones`
+reference-data resources in the same branch, those resources are also removed.
+Use `exchange_rates.enabled` separately if you only want to drop the exchange
+rates page.
 
 ## Auditing related state changes
 

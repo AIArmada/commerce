@@ -10,34 +10,44 @@ All resources extend `BaseChipResource` which provides owner scoping, consistent
 
 ## Registered Resources
 
-These resources are registered automatically:
+These resources are registered automatically by the default plugin setup:
 
 | Resource | Model | Description |
 |----------|-------|-------------|
 | `PurchaseResource` | `Purchase` | Payment transactions |
 | `ClientResource` | `Client` | Customer records |
+| `PaymentResource` | `Payment` | Payment records |
+| `SendInstructionResource` | `SendInstruction` | Payout instructions |
+| `BankAccountResource` | `BankAccount` | Payout bank accounts |
+
+Turn the whole operator set off (or back on) with:
+
+```php
+FilamentChipPlugin::make()->operatorResources(false);
+```
 
 ## Optional Resources
 
-These resources exist but are not registered by default:
+This resource exists but is not registered by default:
 
 | Resource | Model | Description |
 |----------|-------|-------------|
-| `BankAccountResource` | `BankAccount` | Payout bank accounts |
-| `PaymentResource` | `Payment` | Payment records |
-| `SendInstructionResource` | `SendInstruction` | Payout instructions |
 | `CompanyStatementResource` | `CompanyStatement` | Company statements |
 
-### Registering Optional Resources
+### Registering the Optional Resource
 
 ```php
 // In your PanelProvider
-use AIArmada\FilamentChip\Resources\BankAccountResource;
-use AIArmada\FilamentChip\Resources\SendInstructionResource;
+use AIArmada\FilamentChip\FilamentChipPlugin;
 
+$panel->plugin(FilamentChipPlugin::make()->developerResources());
+```
+
+Or register the class directly:
+
+```php
 $panel->resources([
-    BankAccountResource::class,
-    SendInstructionResource::class,
+    AIArmada\FilamentChip\Resources\CompanyStatementResource::class,
 ]);
 ```
 
@@ -49,25 +59,29 @@ The primary resource for viewing payment transactions.
 
 | Column | Description |
 |--------|-------------|
-| External ID | CHIP reference |
-| Amount | Transaction amount |
-| Currency | Currency code |
-| Status | Payment status |
-| Email | Customer email |
-| Created | Creation timestamp |
-| Paid At | Payment timestamp |
+| Reference | CHIP purchase reference |
+| Client Email | Customer email |
+| Invoice Reference | `purchase.reference` (hidden by default) |
+| Grand Total | Formatted purchase total in minor units |
+| Discount override | `purchase.total_discount_override` |
+| Tax override | `purchase.total_tax_override` |
+| Fee | `payment.fee_amount` |
+| Status | Payment status badge |
+| Created | `created_on` |
+| Due | `due` |
+| Test Mode | `is_test` |
 
 ### Filters
 
-- **Status** - Filter by purchase status (pending, paid, cancelled, refunded)
-- **Date Range** - Filter by creation date
-- **Currency** - Filter by currency code
+- **Status** - `SelectFilter` over `PurchaseStatus` cases
+- **Test Mode** - toggle for `is_test`
+- **High Value (≥ 5,000)** - JSON total filter
 
 ### Actions
 
-- **View** - Modal with full purchase details
-- **Refund** - Full or partial refund (for paid purchases)
-- **Cancel** - Cancel pending purchases
+- **View** - Opens the purchase infolist page
+
+The list ships no refund or cancel actions; those belong to `aiarmada/chip`.
 
 ## ClientResource
 
@@ -75,13 +89,16 @@ Customer records synchronized from CHIP.
 
 ### Features
 
-- View client details
-- List client's purchases
-- Delete client (with confirmation)
+- List and view client details (name, contact, company, and tax identifiers)
+- Filter by country, phone presence, shipping address, and company details
+- Global search over email, name, phone, legal name, brand name, registration
+  number, and tax number
+
+Actions are view-only.
 
 ## BankAccountResource
 
-Manage payout recipient bank accounts (optional).
+Manage payout recipient bank accounts.
 
 ### Status Badges
 
@@ -91,7 +108,7 @@ Manage payout recipient bank accounts (optional).
 
 ## SendInstructionResource
 
-Manage disbursements and payouts (optional).
+Manage disbursements and payouts.
 
 ### Status States
 
@@ -107,38 +124,43 @@ Manage disbursements and payouts (optional).
 
 ## Extending Resources
 
-### Override Table
+Every shipped resource is `final`, so extend `BaseChipResource` and register
+your own resource. `getTableColumns()` is a v3-era hook that no longer exists in
+Filament v5 — build the column list explicitly:
 
 ```php
 <?php
 
 namespace App\Filament\Resources;
 
-use AIArmada\FilamentChip\Resources\PurchaseResource as BasePurchaseResource;
-use Filament\Tables\Table;
+use AIArmada\FilamentChip\Resources\BaseChipResource;
+use AIArmada\Chip\Models\Purchase;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Table;
 
-class PurchaseResource extends BasePurchaseResource
+class PurchaseResource extends BaseChipResource
 {
+    protected static ?string $model = Purchase::class;
+
     public static function table(Table $table): Table
     {
-        return parent::table($table)
-            ->columns([
-                ...parent::getTableColumns(),
-                TextColumn::make('custom_field'),
-            ]);
+        return $table->columns([
+            TextColumn::make('reference')->label('Reference'),
+            TextColumn::make('status')->badge(),
+            TextColumn::make('custom_field'),
+        ]);
+    }
+
+    protected static function navigationSortKey(): string
+    {
+        return 'purchases';
     }
 }
 ```
 
 ## Owner Scoping
 
-All resources respect owner scoping from `commerce-support`:
-
-```php
-public static function getEloquentQuery(): Builder
-{
-    return parent::getEloquentQuery()
-        ->forCurrentOwner();
-}
-```
+`BaseChipResource::getEloquentQuery()` calls the model's `scopeForOwner()`
+(applied automatically by `HasOwner`), or fails closed with `1 = 0` when the
+model cannot be owner-scoped. Owner scoping itself is enabled in
+`config/chip.php` via `chip.owner.enabled`.

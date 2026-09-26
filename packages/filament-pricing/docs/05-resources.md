@@ -72,12 +72,15 @@ Three-column layout:
 |--------|------|----------|
 | name | TextColumn | searchable, sortable |
 | currency | TextColumn | badge |
-| prices_count | TextColumn | counts relation |
+| prices_count | TextColumn | `counts('prices')`, alignEnd |
 | priority | TextColumn | numeric, sortable |
 | is_default | IconColumn | boolean |
-| is_active | IconColumn | boolean |
-| starts_at | TextColumn | datetime, toggleable |
-| ends_at | TextColumn | datetime, toggleable |
+| deactivated_at | TextColumn | badge, `Active`/`Deactivated` via `formatStateUsing` + `->color()` closure |
+| starts_at | TextColumn | `dateTime('d M Y')`, toggleable (hidden by default) |
+| ends_at | TextColumn | `dateTime('d M Y')`, toggleable (hidden by default) |
+
+Default sort is `priority` descending. Filters: a `TernaryFilter` on `deactivated_at`
+(Active/Deactivated) and one on `is_default`.
 
 ### Pages
 
@@ -114,48 +117,55 @@ Promotion administration is provided by `aiarmada/filament-promotions`. This pac
 
 ## Extending Resources
 
-### Custom PriceListResource
+> **warning**
+> `PriceListResource`, `PricesRelationManager`, `TiersRelationManager`, `PriceListForm`, `PriceListInfolist`, and `PriceListsTable` are all declared `final`. `class CustomPriceListResource extends PriceListResource` is a fatal error, not a style violation.
+
+The resource delegates its schema and table to `final` support classes, so there is no
+`extends` seam. The supported customization points are:
+
+| Seam | Where |
+|------|-------|
+| Navigation group / sort | `config/filament-pricing.php` → `navigation.group`, `resources.navigation_sort.price_lists` |
+| Settings page ability | `config/filament-pricing.php` → `authorization.settings_ability` |
+| Page navigation sort | `config/filament-pricing.php` → `pages.navigation_sort.*` |
+| App-specific pricing screens | Register your own `Resource` on the panel alongside this one |
 
 ```php
-namespace App\Filament\Resources;
-
-use AIArmada\FilamentPricing\Resources\PriceListResource as BaseResource;
-use Filament\Schemas\Schema;
-
-class CustomPriceListResource extends BaseResource
-{
-    public static function form(Schema $schema): Schema
-    {
-        $baseSchema = parent::form($schema);
-        
-        // Add custom fields
-        return $baseSchema;
-    }
-
-    public static function table(Table $table): Table
-    {
-        return parent::table($table)
-            ->columns([
-                // Add custom columns
-            ]);
-    }
-}
+// In your own FilamentServiceProvider — a new Resource, not a subclass
+$panel->resources([
+    \AIArmada\FilamentPricing\Resources\PriceListResource::class,
+    \App\Filament\Resources\PriceMarkupResource::class,
+]);
 ```
 
 ### Custom Relation Manager
 
+Write a standalone `RelationManager` for the relationship you need:
+
 ```php
 namespace App\Filament\Resources\PriceListResource\RelationManagers;
 
-use AIArmada\FilamentPricing\Resources\PriceListResource\RelationManagers\PricesRelationManager as BaseManager;
+use AIArmada\Pricing\Models\PriceList;
+use Filament\Forms;
+use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Schemas\Schema;
 
-class CustomPricesRelationManager extends BaseManager
+final class PromotionalPricesRelationManager extends RelationManager
 {
+    protected static string $relationship = 'prices';
+
+    protected static ?string $title = 'Promotional Prices';
+
     public function form(Schema $schema): Schema
     {
-        return parent::form($schema)->schema([
-            // Override form fields
-        ]);
+        return $schema
+            ->schema([
+                Forms\Components\TextInput::make('amount')
+                    ->label('Price (cents)')
+                    ->numeric()
+                    ->required(),
+            ])
+            ->columns(2);
     }
 }
 ```

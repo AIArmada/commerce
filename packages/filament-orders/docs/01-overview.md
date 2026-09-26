@@ -69,11 +69,16 @@ packages/filament-orders/
 └── src/
     ├── FilamentOrdersPlugin.php        # Filament plugin
     ├── FilamentOrdersServiceProvider.php
+    ├── Pages/                          # Standalone pages
+    │   ├── OrderFulfillmentPage.php
+    │   └── OrderTimelinePage.php
     ├── Resources/
+    │   ├── OrderResource.php           # Main resource
     │   └── OrderResource/
-    │       ├── OrderResource.php       # Main resource
     │       ├── Pages/                  # CRUD pages
-    │       └── RelationManagers/       # Relation managers
+    │       ├── RelationManagers/       # Relation managers
+    │       ├── Schemas/                # Form + infolist
+    │       └── Tables/                 # Table definition
     ├── Support/
     │   └── FilamentOrdersCache.php     # Cache management
     └── Widgets/

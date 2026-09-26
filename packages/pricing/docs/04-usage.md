@@ -142,10 +142,10 @@ if ($result->hasDiscount()) {
     echo "You save: " . $result->getFormattedSavings();
 }
 
-// Formatted prices
-echo $result->getFormattedOriginalPrice(); // "RM 50.00"
-echo $result->getFormattedFinalPrice();    // "RM 45.00"
-echo $result->getFormattedSavings();       // "RM 5.00"
+// Formatted prices (symbol is prefixed with no separating space)
+echo $result->getFormattedOriginalPrice(); // "RM50.00"
+echo $result->getFormattedFinalPrice();    // "RM45.00"
+echo $result->getFormattedSavings();       // "RM5.00"
 ```
 
 ## Working with Price Lists

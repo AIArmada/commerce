@@ -25,27 +25,39 @@ Customize the navigation group label for all event resources and pages.
         'occurrence' => true,
         'session' => true,
         'venue' => true,
+        'venue_space' => true,
         'registration' => true,
         'registration_participant' => true,
         'ticket_type' => true,
         'attendance' => true,
         'change_log' => true,
+        'event_template' => true,
+        'event_taxonomy' => true,
+        'event_term' => true,
     ],
     'navigation_sort' => [
         'event' => 1,
         'occurrence' => 2,
         'session' => 3,
         'venue' => 4,
+        'venue_space' => 5,
         'registration' => 10,
         'ticket_type' => 11,
         'registration_participant' => 11,
         'attendance' => 12,
+        'event_taxonomy' => 20,
+        'event_term' => 21,
         'change_log' => 99,
+        'event_template' => 98,
     ],
 ],
 ```
 
 Each resource can be individually disabled by setting its key to `false`. The resource will not be registered in the Filament panel or appear in navigation.
+
+> **info**
+> `ticket_type` ships in the config for cross-package symmetry, but this plugin does not
+> register a ticket type resource. Ticket administration lives in `aiarmada/filament-ticketing`.
 
 ### Relation manager extensions
 

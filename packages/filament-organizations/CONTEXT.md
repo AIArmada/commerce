@@ -42,7 +42,7 @@ keywords:
 
 ## Key surfaces
 - Resources: `OrganizationResource`
-- Config `filament-organizations.php`: `navigation`, `group`, `sort`, `resources`, `enabled`
+- Config `filament-organizations.php`: `navigation`, `group`, `sort`, `resources`, `enabled`, `rate_limits`, `create_per_hour`
 
 ## Docs map
 - Start: `01-overview` → `03-configuration` → `04-usage` → `99-troubleshooting`

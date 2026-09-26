@@ -1,7 +1,7 @@
 ---
 title: Filament Persons Context
 package: filament-persons
-status: planned
+status: current
 surface: filament
 family: catalog-and-identity
 keywords:

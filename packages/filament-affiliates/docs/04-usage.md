@@ -23,6 +23,7 @@ Registration is config-driven:
 - `AffiliatePayoutResource` (`features.admin.payouts` + commission tracking enabled)
 - `AffiliateProgramResource` (`features.admin.programs` + commission tracking enabled)
 - `AffiliateCommissionTemplateResource` (`features.admin.commission_management` + commission tracking enabled)
+- `AffiliateVolumeTierResource` (`features.admin.commission_management` + commission tracking enabled)
 - `AffiliateLinkResource` (`features.admin.links`)
 - `AffiliateTouchpointResource` (`features.admin.attribution`)
 - `AffiliateRankResource` (`features.admin.ranks`)
@@ -31,9 +32,11 @@ Registration is config-driven:
 - `AffiliateTaxDocumentResource` (`features.admin.support_compliance`)
 - `AffiliateUplineResource` (`features.admin.upline_visualization`)
 - `AffiliateFraudSignalResource` (`features.admin.fraud_monitoring`)
+- `AffiliateCreativeResource` (`features.admin.creatives`)
 
 ## Admin pages
 
+- `ManageAffiliateCommissionSettings` (always registered)
 - `FraudReviewPage` (`features.admin.fraud_monitoring`)
 - `PayoutBatchPage` (`features.admin.payouts`)
 - `ManageAffiliatePayoutSettings` (`features.admin.payouts`)

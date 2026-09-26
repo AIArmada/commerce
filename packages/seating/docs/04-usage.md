@@ -21,6 +21,7 @@ $section = SeatSection::query()->create([
     'code' => 'A',
     'name' => 'Orchestra',
     'sort_order' => 1,
+    'capacity' => 120, // required: the column is NOT NULL with no default
 ]);
 
 Seat::query()->create([
@@ -38,10 +39,12 @@ Seat::query()->create([
 
 ```php
 use AIArmada\Seating\Contracts\SeatAllocatorInterface;
+use AIArmada\Seating\Enums\SeatingMode;
 
 $results = app(SeatAllocatorInterface::class)->allocate(
     map: $map,
     quantity: 2,
+    mode: SeatingMode::Assigned,
     heldByType: 'cart',
     heldById: $cartId,
     reference: 'checkout-' . $checkoutId,

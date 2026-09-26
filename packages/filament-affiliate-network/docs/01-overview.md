@@ -11,7 +11,7 @@ The `aiarmada/filament-affiliate-network` package is the Filament admin and mark
 ## What this package owns
 
 - Filament resources for sites, offers, categories, and applications
-- Merchant-facing dashboard and affiliate marketplace pages
+- Merchant-facing dashboard page
 - Network stats and top-offers widgets
 - Filament action workflows for verification, application review, and offer state changes
 
@@ -30,7 +30,7 @@ The `aiarmada/filament-affiliate-network` package is the Filament admin and mark
 ## Main models services or surfaces
 
 - **Resources** — sites, offers, offer categories, and offer applications
-- **Pages** — merchant dashboard and affiliate marketplace
+- **Pages** — merchant dashboard
 - **Widgets** — network stats and top offers
 
 ## Owner scoping and security notes
@@ -48,7 +48,6 @@ The `aiarmada/filament-affiliate-network` plugin provides a complete Filament v5
 - **Offer Management** - Create and manage affiliate offers with commission configuration
 - **Category Management** - Organize offers in hierarchical categories
 - **Application Review** - Approve/reject/revoke affiliate applications with workflow actions
-- **Marketplace Page** - Affiliates browse, search, and apply for offers
 - **Merchant Dashboard** - Analytics with pending applications and top offers
 - **Network Stats Widget** - Overview statistics (sites, offers, clicks, conversions, revenue)
 - **Top Offers Widget** - Performance table of best-performing offers
@@ -75,23 +74,32 @@ filament-affiliate-network/
 ├── resources/
 │   └── views/
 │       └── pages/
-│           ├── affiliate-marketplace.blade.php
 │           └── merchant-dashboard.blade.php
 └── src/
     ├── FilamentAffiliateNetworkPlugin.php
     ├── FilamentAffiliateNetworkServiceProvider.php
+    ├── Actions/
+    │   └── SyncSiteCatalog.php
     ├── Pages/
-    │   ├── AffiliateMarketplacePage.php
     │   └── MerchantDashboardPage.php
+    ├── Policies/
+    │   ├── AffiliateOfferApplicationPolicy.php
+    │   ├── AffiliateOfferCategoryPolicy.php
+    │   ├── AffiliateOfferPolicy.php
+    │   └── AffiliateSitePolicy.php
     ├── Resources/
     │   ├── AffiliateSiteResource.php
     │   │   └── Pages/ (List, Create, Edit)
     │   ├── AffiliateOfferResource.php
-    │   │   └── Pages/ (List, Create, Edit)
+    │   │   ├── Pages/ (List, Create, Edit)
+    │   │   └── RelationManagers/ (Links, Legs)
     │   ├── AffiliateOfferCategoryResource.php
     │   │   └── Pages/ (List, Create, Edit)
     │   └── AffiliateOfferApplicationResource.php
     │       └── Pages/ (List, View)
+    ├── Support/
+    │   ├── NetworkAdminAccess.php
+    │   └── NetworkStatsAggregator.php
     └── Widgets/
         ├── NetworkStatsWidget.php
         └── TopOffersWidget.php
@@ -113,7 +121,6 @@ filament-affiliate-network/
 | Page | URL | Description |
 |------|-----|-------------|
 | `MerchantDashboardPage` | `/affiliate-network/merchant-dashboard` | Merchant analytics dashboard |
-| `AffiliateMarketplacePage` | `/affiliate-network/marketplace` | Offer discovery for affiliates |
 
 ### Widgets
 
@@ -148,15 +155,6 @@ The application resource provides:
 - One-click approve/reject with reasons
 - Revoke action for approved applications
 - Bulk approve capability
-
-### Marketplace
-
-The marketplace page provides:
-- Search by name/description
-- Category filtering
-- Sort by featured, newest, or commission
-- Apply to offers with reason
-- Generate tracking links for approved offers
 
 ## Requirements
 

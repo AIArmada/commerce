@@ -80,27 +80,22 @@ Pdf::html('<h1>Test</h1>')->save('/tmp/test.pdf');
 ```php
 // Confirm Payment requires:
 // - transaction_id (string)
-// - gateway (from config options)
+// - gateway (from config('filament-orders.payment_gateways') options)
 
 // Ship Order requires:
-// - carrier (from config options)  
-// - tracking_number (string, max 100 chars)
+// - carrier (text, or a select of AIArmada\Orders\Contracts\FulfillmentHandler
+//   availableCarriers() when a handler is bound)
+// - tracking_number (string) — only when no fulfillment handler is bound
+// - service (string) — only when a fulfillment handler is bound
 ```
 
 ### Table polling causing performance issues
 
 **Cause**: Poll interval too aggressive or expensive queries.
 
-**Solution**: Adjust poll interval in config:
-
-```php
-// config/filament-orders.php
-'tables' => [
-    'poll_interval' => '60s', // Increase from 30s
-],
-```
-
-Or disable polling entirely in custom page:
+**Solution**: No table in this package polls by default, so there is no
+`filament-orders` poll-interval config key. If you added polling in a custom
+page, tune or disable it there:
 
 ```php
 public function table(Table $table): Table
@@ -149,17 +144,24 @@ if (config('app.debug')) {
 
 ## Cache Keys
 
-The package uses these cache keys:
+`AIArmada\FilamentOrders\Support\FilamentOrdersCache` writes owner-scoped keys
+through `AIArmada\CommerceSupport\Support\OwnerCache`:
 
-| Key Pattern | TTL | Description |
+| Logical key | TTL | Description |
 |-------------|-----|-------------|
-| `filament-orders.stats.*` | 15s | Stats widget data |
-| `filament-orders.status-distribution.*` | 30s | Status chart data |
+| `filament-orders.stats.owner-only` | 15s | Stats widget + status distribution widget data |
+| `filament-orders.stats.with-global` | 15s | Same, including global orders |
 
-Clear specific cache:
+There is no separate `status-distribution` key — the status chart reads the
+stats cache. Full cache keys are prefixed with `owner:{ownerScopeKey}:v{N}:`,
+so forget them by logical key rather than by string:
 
 ```php
-Cache::forget('filament-orders.stats.tenant:1.owner-only.2024-01-15');
+use AIArmada\CommerceSupport\Support\OwnerCache;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+
+OwnerCache::forget(OwnerContext::resolve(), 'filament-orders.stats.owner-only');
+OwnerCache::forget(OwnerContext::resolve(), 'filament-orders.stats.with-global');
 ```
 
 ## Getting Help

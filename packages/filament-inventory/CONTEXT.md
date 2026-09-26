@@ -41,9 +41,11 @@ keywords:
 - Owner/security: InventoryOwnerScope + revalidation.
 
 ## Key surfaces
-- Resources: `InventoryAllocationResource`, `InventoryBatchResource`, `InventoryLevelResource`, `InventoryLocationResource`, `InventoryMovementResource`, `InventorySerialResource`
-- Actions/Services: `Actions/AdjustStockAction`, `Actions/ApproveReorderSuggestionAction`, `Actions/CycleCountAction`, `Actions/ReceiveStockAction`, `Actions/RejectReorderSuggestionAction`, `Actions/ReleaseAllocationAction`, `Actions/ShipStockAction`, `Actions/TransferStockAction`
-- Config `filament-inventory.php`: `navigation`, `group`, `tables`, `expiry_warning_days`, `defaults`, `costing_method`, `features`, `stats_widget`, `low_stock_widget`, `expiring_batches_widget`
+- Resources: `InventoryLocationResource`, `InventoryLevelResource`, `InventoryMovementResource`, `InventoryAllocationResource`, `InventoryBatchResource` (feature-flagged), `InventorySerialResource` (feature-flagged)
+- Policies: `InventoryLevelPolicy`, `InventoryAllocationPolicy`, `InventoryReorderSuggestionPolicy`
+- Widgets: `InventoryStatsWidget`, `LowInventoryAlertsWidget`, `ExpiringBatchesWidget`, `ReorderSuggestionsWidget`, `BackordersWidget`, `InventoryValuationWidget`, `InventoryKpiWidget`, `MovementTrendsChart`, `AbcAnalysisChart`
+- Actions/Support: `Actions/{ReceiveStockAction,ShipStockAction,TransferStockAction,AdjustStockAction,CycleCountAction,ReleaseAllocationAction,ApproveReorderSuggestionAction,RejectReorderSuggestionAction}`, `Services/InventoryStatsAggregator` (`clearCache()`)
+- Config `filament-inventory.php` keys: `navigation.group`, `tables.expiry_warning_days`, `defaults.costing_method`, `features.{stats_widget,low_stock_widget,expiring_batches_widget,reorder_suggestions_widget,backorders_widget,valuation_widget,kpi_widget,movement_trends_chart,abc_analysis_chart,batch_resource,serial_resource}`, `resources.navigation_sort.{locations,levels,movements,allocations,batches,serials}`, `cache.stats_ttl`
 
 ## Docs map
 - Start: `01-overview` → `03-configuration` → `04-usage` → `99-troubleshooting`

@@ -9,12 +9,19 @@ The package publishes a config file at `config/contacting.php`.
 ## Table Names
 
 ```php
-'tables' => [
-    'contact_methods' => 'contact_methods',
-    'social_profiles' => 'social_profiles',
-    'contact_snapshots' => 'contact_snapshots',
+'database' => [
+    'table_prefix' => env('CONTACTING_TABLE_PREFIX', ''),
+    'json_column_type' => env('CONTACTING_JSON_COLUMN_TYPE', 'json'),
+    'tables' => [
+        'contact_methods' => env('CONTACTING_TABLE_CONTACT_METHODS', $tablePrefix . 'contact_methods'),
+        'social_profiles' => env('CONTACTING_TABLE_SOCIAL_PROFILES', $tablePrefix . 'social_profiles'),
+        'contact_snapshots' => env('CONTACTING_TABLE_CONTACT_SNAPSHOTS', $tablePrefix . 'contact_snapshots'),
+    ],
 ],
 ```
+
+All three keys sit under `contacting.database`. `table_prefix` is the shared
+fallback for the three table names; each table can be overridden individually.
 
 Override with environment variables:
 
@@ -27,7 +34,10 @@ CONTACTING_TABLE_PREFIX=org_
 
 ## JSON Column Type
 
-JSON column type is controlled by `commerce_json_column_type('contacting', 'json')` and inherits from `COMMERCE_JSON_COLUMN_TYPE` when set.
+The shipped `contacting.database.json_column_type` defaults to `json`. Migrations
+resolve the column type through `commerce_json_column_type('contacting', 'json')`,
+which prefers `CONTACTING_JSON_COLUMN_TYPE`, then `COMMERCE_JSON_COLUMN_TYPE`,
+then the config value.
 
 ## Defaults
 
@@ -86,7 +96,7 @@ required.
         'facebook' => ['label' => 'Facebook', 'prefix' => 'www.facebook.com/'],
         'instagram' => ['label' => 'Instagram', 'prefix' => 'www.instagram.com/'],
         'tiktok' => ['label' => 'TikTok', 'prefix' => 'www.tiktok.com/@'],
-        'youtube' => ['label' => 'YouTube', 'prefix' => 'www.youtube.com/@'],
+        'youtube' => ['label' => 'YouTube', 'prefix' => 'www.youtube.com/'],
         'linkedin' => ['label' => 'LinkedIn', 'prefix' => 'www.linkedin.com/in/'],
         'x' => ['label' => 'X / Twitter', 'prefix' => 'x.com/'],
         'threads' => ['label' => 'Threads', 'prefix' => 'www.threads.net/@'],

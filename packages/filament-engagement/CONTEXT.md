@@ -41,7 +41,7 @@ keywords:
 ## Key surfaces
 - Resources: `BookmarkCollectionResource`, `BookmarkResource`, `FollowResource`, `ReactionResource`, `ReminderResource`, `ResponseResource`, `SubscriptionResource`
 - Actions/Services: `Actions/BookmarkAction`, `Actions/FollowAction`, `Actions/ReactAction`, `Actions/RemoveBookmarkAction`, `Actions/RespondAction`, `Actions/SetReminderAction`, `Actions/SubscribeAction`, `Actions/UnfollowAction`
-- Config `filament-engagement.php`: `navigation`, `group`, `resources`, `enabled`, `follow`, `bookmark`, `collection`, `response`, `reaction`, `subscription`
+- Config `filament-engagement.php`: `navigation`, `group`, `resources`, `enabled`, `follow`, `bookmark`, `collection`, `response`, `reaction`, `subscription`, `reminder`, `navigation_sort`
 
 ## Docs map
 - Start: `01-overview` → `03-configuration` → `04-usage` → `99-troubleshooting`

@@ -29,11 +29,16 @@ This provider is used by search adapters for eager loading only. It does not own
 ```php
 $event = Event::create([
     'title' => 'Free Workshop',
+    'status' => 'draft',        // NOT NULL
+    'visibility' => 'public',   // NOT NULL
     'pricing_mode' => PricingMode::Free,
     'registration_mode' => RegistrationMode::Required,
     'issue_passes_for_free' => true,
 ]);
 ```
+
+`status` and `visibility` are `NOT NULL` with no database default, so every `Event::create()`
+call must set both.
 
 ### Primary classifications
 
@@ -122,6 +127,8 @@ Sessions and occurrences can override the parent's mode:
 ```php
 $session = $occurrence->sessions()->create([
     'title' => 'Premium Workshop',
+    'status' => 'scheduled',     // NOT NULL
+    'visibility' => 'public',    // NOT NULL
     'pricing_mode' => PricingMode::Paid,     // Override free event
     'registration_mode' => RegistrationMode::Required,
     'capacity' => 50,
@@ -395,13 +402,18 @@ $ticketType = app(EnsureTicketTypeAction::class)->handle($occurrence, [
     'access_type' => 'entry',
     'price' => 50000,
     'currency' => 'MYR',
-    'quota' => 100,
+    'max_quantity' => 10, // per-purchase cap
     'status' => 'active',
     'visibility' => 'public',
     'sales_starts_at' => now()->subMonth(),
     'sales_ends_at' => $occurrence->starts_at,
 ]);
 ```
+
+`EnsureTicketTypeAction` whitelists attributes explicitly, and `ticket_types` has no `quota`
+or `capacity` column — anything outside that whitelist is silently dropped. Per-scope
+capacity lives on the occurrence/session, and remaining-quota checks count
+`EventRegistrationItem` quantity across capacity-blocking statuses.
 
 ## Check-in and Attendance
 
@@ -467,10 +479,6 @@ $event->involvements()->public()->get();
 // Featured / headliner
 $event->involvements()->featured()->get();
 $event->involvements()->headliner()->get();
-
-// Convenience methods on the Event model
-$event->featuredInvolvements();
-$event->headliners();
 ```
 
 ### Organizer vs createdBy
@@ -662,25 +670,25 @@ Set `events.search.queue_indexing=true` to queue rebuilds instead of writing the
 
 ## Dispatching an event change notice
 
-Create, send, retry, and cancel batches through the dispatcher so delivery rows remain the source of truth:
+Publishing a notice goes through the workflow contract, which records the change and
+dispatches `EventChangeNoticePublished`. Delivery is a separate listener step, reached by
+binding `EventChangeNoticeNotificationDispatcher`:
 
 ```php
-use AIArmada\Events\Services\EventNotificationDispatcher;
+use AIArmada\Events\Contracts\EventChangeNoticeWorkflow;
 
-$dispatcher = app(EventNotificationDispatcher::class);
-$batch = $dispatcher->createBatch([
-    'event_id' => $event->id,
-    'title' => 'Schedule changed',
-    'message' => 'The event now starts at 10:00.',
-    'audience_scope' => 'registrants',
-    'channels' => ['mail'],
+app(EventChangeNoticeWorkflow::class)->publishNotice($changeLog, [
+    'reason' => 'Venue unavailable',
 ]);
 
-$dispatcher->dispatch($batch);
-// $dispatcher->cancel($batch);
+app(EventChangeNoticeWorkflow::class)->retractNotice($changeLog);
 ```
 
-Dispatch is idempotent for the tuple `(batch, recipient type, recipient id, channel)`. A manual retry resets only terminal failed deliveries; already-sent deliveries are never resent.
+The built-in `AIArmada\Events\Services\EventNotificationDispatcher` resolves recipients
+through the bound `EventChangeNoticeAudienceResolver` and sends an
+`EventChangeNoticeNotification` through `aiarmada/communications`. The audience scope comes
+from the change log's `impact_level`: `critical` or `high` targets `registrants`, anything
+else targets `followers`.
 
 ## Deleting events
 
@@ -688,13 +696,24 @@ Deleting an event cascades through the owned subtree in application logic: occur
 
 ## Finalizing event orders
 
-```bash
-php artisan events:finalize-orders --global --dry-run
-php artisan events:finalize-orders --owner-type="App\Models\Team" --owner-id=<uuid>
-php artisan events:finalize-orders --global --occurrence=<uuid>
+Order finalization runs on the event path, not from the console. When a registration is checked in,
+`SyncEventOrderCompletionOnRegistrationCheckedIn` dispatches `SyncEventOrderCompletionAction`, which
+fulfils every order item through `FulfillEventOrderItemAction`. Payment and cancellation transitions
+(`SyncEventOrderRegistrationsOnOrderPaid`, `…OnOrderCanceled`, `…OnOrderRefunded`,
+`…OnOrderRefundFailed`) drive the same fulfilment for order-backed registrations.
+
+Per-occurrence finalization is available to applications through the action, which must run inside a
+resolved owner context:
+
+```php
+use AIArmada\Events\Actions\FinalizeOccurredEventOrdersAction;
+use AIArmada\Events\Models\EventOccurrence;
+
+app(FinalizeOccurredEventOrdersAction::class)->handle(EventOccurrence::query()->findOrFail($id));
 ```
 
-The finalize command processes completed occurrences in chunks. It runs under `--owner-type`/`--owner-id`, `--global`, or an already resolved owner context, and refuses to run when none is available.
+Item fulfilment is delegated to the bound `EventOrderItemFulfillmentResolver`. The package default
+resolves contact details and returns them without persisting; bind your own resolver to write them.
 
 ## Ownership model
 

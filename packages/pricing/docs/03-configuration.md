@@ -129,7 +129,7 @@ $currency = $settings->defaultCurrency;
 $isTieredEnabled = $settings->tieredPricingEnabled;
 
 // Format amount using settings
-$formatted = $settings->formatAmount(1999); // "RM 19.99"
+$formatted = $settings->formatAmount(1999); // "RM19.99"
 
 // Get currency symbol
 $symbol = $settings->getCurrencySymbol(); // "RM"

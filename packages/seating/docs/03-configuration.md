@@ -6,32 +6,34 @@ title: Seating Configuration
 
 Published to `config/seating.php`.
 
+Keys from `config/seating.php` (the file also ships a commented-out, empty `modes` array
+that documents the accepted `SeatingMode` values):
+
 ```php
-return [
-    'database' => [
-        'tables' => [
-            'seat_maps' => env('SEATING_TABLE_SEAT_MAPS', 'seat_maps'),
-            'seat_sections' => env('SEATING_TABLE_SEAT_SECTIONS', 'seat_sections'),
-            'seats' => env('SEATING_TABLE_SEATS', 'seats'),
-            'seat_holds' => env('SEATING_TABLE_SEAT_HOLDS', 'seat_holds'),
-            'seat_allocations' => env('SEATING_TABLE_SEAT_ALLOCATIONS', 'seat_allocations'),
-        ],
+'database' => [
+    'json_column_type' => env('SEATING_JSON_COLUMN_TYPE', 'json'),
+    'tables' => [
+        'seat_maps' => env('SEATING_TABLE_SEAT_MAPS', 'seat_maps'),
+        'seat_sections' => env('SEATING_TABLE_SEAT_SECTIONS', 'seat_sections'),
+        'seats' => env('SEATING_TABLE_SEATS', 'seats'),
+        'seat_holds' => env('SEATING_TABLE_SEAT_HOLDS', 'seat_holds'),
+        'seat_allocations' => env('SEATING_TABLE_SEAT_ALLOCATIONS', 'seat_allocations'),
     ],
+],
 
-    'holds' => [
-        'ttl_minutes' => (int) env('SEATING_HOLD_TTL_MINUTES', 15),
-    ],
+'holds' => [
+    'ttl_minutes' => (int) env('SEATING_HOLD_TTL_MINUTES', 15),
+],
 
-    'owner' => [
-        'enabled' => env('SEATING_OWNER_ENABLED', true),
-        'include_global' => env('SEATING_OWNER_INCLUDE_GLOBAL', false),
-        'auto_assign_on_create' => env('SEATING_OWNER_AUTO_ASSIGN_ON_CREATE', true),
-    ],
+'owner' => [
+    'enabled' => env('SEATING_OWNER_ENABLED', true),
+    'include_global' => env('SEATING_OWNER_INCLUDE_GLOBAL', false),
+    'auto_assign_on_create' => env('SEATING_OWNER_AUTO_ASSIGN_ON_CREATE', true),
+],
 
-    'scheduling' => [
-        'release_expired_holds' => env('SEATING_RELEASE_EXPIRED_HOLDS', true),
-    ],
-];
+'scheduling' => [
+    'release_expired_holds' => env('SEATING_RELEASE_EXPIRED_HOLDS', true),
+],
 ```
 
 ## `holds.ttl_minutes`

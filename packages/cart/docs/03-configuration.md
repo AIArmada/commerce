@@ -10,12 +10,22 @@ The cart config is intentionally small. If a key is present, it is actively used
 
 ```php
 'database' => [
+    'json_column_type' => env('CART_JSON_COLUMN_TYPE', 'jsonb'),
     'table' => env('CART_DB_TABLE', 'carts'),
     'conditions_table' => env('CART_CONDITIONS_TABLE', 'conditions'),
+    'tables' => [
+        'snapshots' => env('CART_SNAPSHOTS_TABLE', 'cart_snapshots'),
+        'snapshot_items' => env('CART_SNAPSHOT_ITEMS_TABLE', 'cart_snapshot_items'),
+        'snapshot_conditions' => env('CART_SNAPSHOT_CONDITIONS_TABLE', 'cart_snapshot_conditions'),
+    ],
     'ttl' => env('CART_DB_TTL', 60 * 60 * 24 * 30),
     'lock_for_update' => env('CART_DB_LOCK_FOR_UPDATE', false),
 ],
 ```
+
+`json_column_type` is read by every cart migration, including the carts and
+conditions tables. Set it to `json` when the driver does not support `jsonb`.
+`ttl` is expressed in seconds; pass `null` to disable expiry.
 
 ## Defaults
 
@@ -42,7 +52,40 @@ user-facing values.
 ],
 
 'events' => env('CART_EVENTS_ENABLED', true),
+
+'dynamic_rules_factory' => null,
+
+'conditions' => [
+    'apply_global' => env('CART_APPLY_GLOBAL_CONDITIONS', true),
+],
+
+'snapshots' => [
+    'analytics' => [
+        'high_value_threshold_minor' => env('CART_HIGH_VALUE_THRESHOLD_MINOR', 10000),
+    ],
+    'abandonment_tracking' => env('CART_ABANDONMENT_TRACKING', true),
+    'abandonment_detection_minutes' => env('CART_ABANDONMENT_DETECTION_MINUTES', 30),
+    'synchronization' => [
+        'queue_sync' => env('CART_QUEUE_SNAPSHOT_SYNC', true),
+        'queue_connection' => env('CART_SNAPSHOT_QUEUE_CONNECTION'),
+        'queue_name' => env('CART_SNAPSHOT_QUEUE_NAME', 'cart-sync'),
+    ],
+],
 ```
+
+- `dynamic_rules_factory` defaults to `null`, which resolves to
+  `AIArmada\Cart\Services\BuiltInRulesFactory`. Set it to a class name to replace
+  the factory.
+- `conditions.apply_global` gates the `ApplyGlobalConditions` listener that applies
+  globally applicable conditions on cart create and item changes. See
+  [Conditions](05-conditions.md).
+- `snapshots.analytics.high_value_threshold_minor` is an integer minor-unit
+  amount. A `HighValueCartDetected` event fires when a sync pushes the cart total
+  from below the threshold to at or above it. Set it to `0` to disable.
+- `snapshots.abandonment_tracking` gates the `cart:clear-abandoned --mark-only`
+  snapshot marking path.
+- `snapshots.synchronization.queue_connection` is `null` by default, so snapshot
+  sync uses the application's default queue connection.
 
 ## Owner scoping
 

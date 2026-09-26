@@ -17,14 +17,18 @@ Configure navigation group and sort order:
 ],
 ```
 
-## Navigation
+## Pages
 
-Configure navigation group and sort order:
+Toggle the standalone order pages and control their sort order:
 
 ```php
-'navigation' => [
-    'group' => 'Sales',
-    'sort' => 1,
+'pages' => [
+    'timeline' => true,
+    'fulfillment' => true,
+    'navigation_sort' => [
+        'fulfillment' => 5,
+        'timeline' => 6,
+    ],
 ],
 ```
 
@@ -55,11 +59,9 @@ Toggle optional features:
 
 ## Full Configuration Example
 
+The shipped `config/filament-orders.php` contains only these four top-level keys:
+
 ```php
-<?php
-
-declare(strict_types=1);
-
 return [
     /* Navigation */
     'navigation' => [
@@ -67,10 +69,14 @@ return [
         'sort' => 1,
     ],
 
-    /* Tables */
-    'tables' => [
-        'poll_interval' => '30s',
-        'date_format' => 'd M Y, H:i',
+    /* Pages */
+    'pages' => [
+        'timeline' => true,
+        'fulfillment' => true,
+        'navigation_sort' => [
+            'fulfillment' => 5,
+            'timeline' => 6,
+        ],
     ],
 
     /* Payment Gateways */
@@ -86,6 +92,9 @@ return [
     ],
 ];
 ```
+
+There is no `tables` key: no table in this package polls, so poll interval and
+date format are not configurable here.
 
 ## Core Package Configuration
 

@@ -54,4 +54,4 @@ php artisan db:seed --class="AIArmada\Persons\Database\Seeders\TitleCategorySeed
 php artisan db:seed --class="AIArmada\Persons\Database\Seeders\TitleSeeder"
 ```
 
-> Language seed data is provided by `aiarmada/commerce-support`. Run `php artisan commerce:seed-languages` after installing that package.
+> Language seed data is provided by `aiarmada/commerce-support`. Run `php artisan db:seed --class="AIArmada\CommerceSupport\Database\Seeders\LanguageSeeder"` after installing that package.

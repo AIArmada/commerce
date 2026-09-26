@@ -134,7 +134,7 @@ By default, the shipped portal does not redirect non-affiliate users in a loop. 
 
 ```php
 // Verify owner context is set
-app(OwnerResolverInterface::class)->getOwner();
+app(OwnerResolverInterface::class)->resolve();
 ```
 
 2. Check database has records:
@@ -235,13 +235,16 @@ public static function getEloquentQuery(): Builder
 2. Limit default records per page:
 
 ```php
-protected static int $defaultPaginationPageOption = 25;
+public static function table(Table $table): Table
+{
+    return $table->defaultPaginationPageOption(25);
+}
 ```
 
 3. Use table polling only when necessary:
 
 ```php
-protected static ?string $pollingInterval = null; // Disable auto-refresh
+protected ?string $pollingInterval = null; // Disable auto-refresh
 ```
 
 ### Memory Issues with Large Exports
@@ -253,7 +256,7 @@ protected static ?string $pollingInterval = null; // Disable auto-refresh
 1. Use chunked exports:
 
 ```php
-Tables\Actions\ExportBulkAction::make()
+Filament\Actions\ExportBulkAction::make()
     ->chunkSize(1000);
 ```
 

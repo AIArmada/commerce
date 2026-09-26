@@ -47,7 +47,7 @@ public function getWidgets(): array
 ```
 
 Features:
-- 7-day, 30-day, 90-day filter options
+- 7-day, 14-day, 30-day, 90-day filter options
 - Owner-scoped when multi-tenancy is enabled
 - Uses Filament ChartWidget
 
@@ -216,7 +216,7 @@ Monetary values use the configured default currency:
 'default_currency' => 'MYR',
 ```
 
-Widgets use `Akaunting\Money\Money` for proper currency formatting.
+Widgets format money through `AIArmada\FilamentVouchers\Support\MoneyHelper::formatMoney($cents, $currency)`, which delegates to `AIArmada\CommerceSupport\Support\MoneyFormatter` so the currency's own minor-unit precision is respected.
 
 ## Owner Scoping
 

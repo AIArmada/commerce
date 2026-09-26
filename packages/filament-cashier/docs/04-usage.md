@@ -25,15 +25,10 @@ The subscription list shows:
 
 ### Filtering Subscriptions
 
-Use the tabs to filter by:
-- **All** - All subscriptions
-- **Stripe** / **CHIP** - Filter by gateway
-- **Active** - Only active subscriptions
-- **Needs Attention** - Past due or incomplete
+The table exposes two `SelectFilter`s (not tabs):
 
-Use the dropdown filters for:
-- Gateway
-- Status (Active, On Trial, Past Due, Canceled, etc.)
+- **Gateway** — any detected gateway (e.g. `stripe`, `chip`)
+- **Status** — every `SubscriptionStatus` case
 
 ### Subscription Actions
 
@@ -106,15 +101,15 @@ Shows monthly cancellations with trend indicator.
 
 ### Enabling the Portal
 
-1. Enable in config:
+1. Configure the portal:
 ```php
 'billing_portal' => [
-    'enabled' => true,
     'path' => 'billing',
 ],
 ```
 
-2. Register the panel provider:
+2. Register the panel provider — registration is what makes the portal exist;
+   there is no `enabled` flag:
 ```php
 // config/app.php
 'providers' => [
@@ -141,7 +136,7 @@ The overview page can surface three customer-facing preview widgets:
 - `PaymentMethodsPreviewWidget`
 - `RecentInvoicesWidget`
 
-These widgets only show records for the authenticated user and rely on `CashierOwnerScope` plus the current auth identifier when loading Stripe and CHIP data.
+These widgets only show records for the authenticated user and rely on `AIArmada\Cashier\Support\OwnerScopedQuery` plus the current auth identifier when loading Stripe and CHIP data.
 
 ### Manage Subscriptions Behavior
 
@@ -193,8 +188,11 @@ FilamentCashierPlugin::make()
 
 ### Custom Gateway Labels
 
+Gateway labels, icons, colors, and dashboard URLs are read from the core
+`cashier` config, not from `filament-cashier`:
+
 ```php
-// config/filament-cashier.php
+// config/cashier.php
 'gateways' => [
     'stripe' => [
         'label' => 'International Cards',
@@ -230,7 +228,7 @@ The package uses DTOs to normalize data across gateways.
 ### UnifiedSubscription
 
 ```php
-use AIArmada\FilamentCashier\Support\UnifiedSubscription;
+use AIArmada\Cashier\Support\UnifiedSubscription;
 
 // Properties
 $sub->id           // Subscription ID
@@ -268,7 +266,7 @@ Normalization details that matter in practice:
 ### UnifiedInvoice
 
 ```php
-use AIArmada\FilamentCashier\Support\UnifiedInvoice;
+use AIArmada\Cashier\Support\UnifiedInvoice;
 
 // Properties
 $invoice->id       // Invoice ID
@@ -292,7 +290,7 @@ $invoice->externalDashboardUrl() // Gateway dashboard URL
 ### Status Enums
 
 ```php
-use AIArmada\FilamentCashier\Support\SubscriptionStatus;
+use AIArmada\Cashier\Support\SubscriptionStatus;
 
 SubscriptionStatus::Active
 SubscriptionStatus::OnTrial
@@ -338,4 +336,4 @@ Listen to events from `aiarmada/cashier`:
 - `SubscriptionCanceled`
 - etc.
 
-See the [cashier package documentation](../../../cashier/docs/05-webhooks.md) for details.
+See the [cashier package documentation](../../cashier/docs/08-webhooks.md) for details.

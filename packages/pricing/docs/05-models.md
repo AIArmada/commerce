@@ -22,10 +22,11 @@ The `PriceList` model represents a collection of prices, such as "Retail", "Whol
 | `priority` | int | Priority (higher = more priority) |
 | `is_default` | bool | Whether this is the default price list |
 | `is_active` | bool | Active status |
+| `deactivated_at` | CarbonImmutable\|null | Set when deactivated via `deactivate()` |
 | `customer_id` | string\|null | Assigned to specific customer |
 | `segment_id` | string\|null | Assigned to customer segment |
-| `starts_at` | Carbon\|null | Activation start date |
-| `ends_at` | Carbon\|null | Activation end date |
+| `starts_at` | CarbonImmutable\|null | Activation start date |
+| `ends_at` | CarbonImmutable\|null | Activation end date |
 
 ### Relationships
 
@@ -56,12 +57,20 @@ PriceList::forOwner($owner, includeGlobal: true)->get();
 $priceList = PriceList::find($id);
 
 // Check if currently active
-$priceList->isActive(); // Considers is_active, starts_at, ends_at
+$priceList->isActive(); // Considers is_active, deactivated_at, starts_at, ends_at
+
+// Transition helpers keep is_active and deactivated_at in sync
+$priceList->deactivate();
+$priceList->activate();
 ```
+
+Setting `is_default` on a price list demotes the other defaults for the same
+owner inside the same transaction (see `clearOtherDefaults()`). Deleting a
+price list deletes its `prices()` and `tiers()` in a transaction.
 
 ### Activity Logging
 
-Price lists are logged with these fields: `name`, `priority`, `is_active`, `starts_at`, `ends_at`
+Price lists are logged with these fields: `name`, `priority`, `is_active`, `deactivated_at`, `starts_at`, `ends_at`
 
 ---
 
@@ -82,9 +91,10 @@ The `Price` model represents an individual price for a priceable item within a p
 | `amount` | int | Price in minor units (cents) |
 | `compare_amount` | int\|null | Original/compare price |
 | `currency` | string | Currency code |
-| `min_quantity` | int | Minimum quantity for this price |
-| `starts_at` | Carbon\|null | Price start date |
-| `ends_at` | Carbon\|null | Price end date |
+| `min_quantity` | int | Minimum quantity for this price (default `1`) |
+| `deactivated_at` | CarbonImmutable\|null | Set when the price is retired |
+| `starts_at` | CarbonImmutable\|null | Price start date |
+| `ends_at` | CarbonImmutable\|null | Price end date |
 
 ### Relationships
 
@@ -117,11 +127,11 @@ $price->isActive();
 // Check if has discount (compare_amount > amount)
 $price->hasDiscount();
 
-// Get discount percentage
+// Get discount percentage (null when there is no discount)
 $price->getDiscountPercentage(); // e.g., 10.0
 
-// Format price
-$price->getFormattedAmount(); // "RM 45.00"
+// Format price — MoneyFormatter::prefixSymbol() concatenates without a space
+$price->getFormattedAmount(); // "RM45.00"
 ```
 
 ### Activity Logging
@@ -149,6 +159,7 @@ The `PriceTier` model represents quantity-based tiered pricing.
 | `amount` | int | Price for this tier |
 | `discount_type` | string\|null | 'percentage' or 'fixed' |
 | `discount_value` | int\|null | Discount value |
+| `is_active` | bool | Tier must be active for `TierResolver` to use it |
 | `currency` | string | Currency code |
 
 ### Relationships
@@ -182,8 +193,8 @@ $tier->appliesTo(25); // true/false
 // Get tier description
 $tier->getDescription(); // "10-49 units" or "50+ units"
 
-// Get discount description
-$tier->getDiscountDescription(); // "10% off" or "RM 5.00 off"
+// Get discount description (null when discount_type/value is missing)
+$tier->getDiscountDescription(); // "10% off" or "RM5.00 off"
 ```
 
 ### Activity Logging

@@ -46,7 +46,7 @@ keywords:
 ## Key surfaces
 - Models: `Event`, `EventAccessPolicy`, `EventApprovalRequest`, `EventAttendance`, `EventAttendanceLog`, `EventAttribute`, `EventAudience`, `EventAudienceProfile`, `EventAvailabilityBlock`, `EventChangeLog`
 - Actions/Services: `Actions/AddEventTicketTypeToCartAction`, `Actions/AllocateEventSeatsOnPassIssued`, `Actions/ApproveAssignmentRequestAction`, `Actions/ArchiveEventRegistrationQuestionAction`, `Actions/CreateEventComponentRegistrationsAction`, `Actions/BatchCreateOccurrencesAction`, `Actions/CancelAssignmentRequestAction`, `Actions/SynchronizeEventContent`
-- Config `events.php`: `enabled`, `include_global`, `auto_assign_on_create`, `models`, `event`, `registration`, `attendance`, `submission`, `registration_question`, `database`
+- Config `events.php`: `models`, `database`, `defaults`, `features` (with `features.owner.enabled` / `include_global` / `auto_assign_on_create`), `lifecycle` (`lifecycle.event`, `lifecycle.session`, `lifecycle.occurrence`, `lifecycle.registration`), `media`, `shares`, `codes`, `sync`, `attribute_sync`, `search`, `change_notices`, `integrations`, `notifications`
 
 ## Docs map
 - Start: `01-overview` → `03-configuration` → `04-usage` → `99-troubleshooting`

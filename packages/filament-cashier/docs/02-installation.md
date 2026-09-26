@@ -55,7 +55,7 @@ Each gateway has its own migrations:
 
 **For Stripe:**
 ```bash
-php artisan vendor:publish --tag=cashier-migrations
+php artisan vendor:publish --tag=cashier-stripe-migrations
 php artisan migrate
 ```
 
@@ -216,20 +216,17 @@ For a customer-facing billing portal, use the `BillingPanelProvider`:
 ```php
 // config/filament-cashier.php
 'billing_portal' => [
-    'enabled' => true,
     'panel_id' => 'billing',
     'path' => 'billing',
     'brand_name' => 'My App Billing',
     'primary_color' => '#6366f1',
     'auth_guard' => 'web',
     'login_enabled' => true,
-    'features' => [
-        'subscriptions' => true,
-        'payment_methods' => true,
-        'invoices' => true,
-    ],
 ],
 ```
+
+There is no `enabled` flag — registering the panel provider below is what
+activates the portal.
 
 Then register the panel provider:
 
