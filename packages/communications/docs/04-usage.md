@@ -123,16 +123,17 @@ Store channel addresses on notifiables when you need explicit routing (multiple 
 ```php
 use AIArmada\Communications\Models\CommunicationDestination;
 
-CommunicationDestination::query()->create([
-    'recipient_type' => $user->getMorphClass(),
-    'recipient_id' => (string) $user->getKey(),
+$destination = CommunicationDestination::query()->make([
     'channel' => 'mail',
     'address' => 'billing@example.com',
-    'status' => 'active',
     'is_primary' => true,
     'verified_at' => now(),
 ]);
+$destination->recipient()->associate($user);
+$destination->save();
 ```
+
+New destinations default to `active` status.
 
 Resolution order for the default `CommunicationDestinationResolver`:
 

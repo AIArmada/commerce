@@ -28,7 +28,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $content
  * @property string|null $affiliate_link_id
  * @property string|null $touchpoint_type
- * @property string|null $interaction_type
  * @property string|null $visitor_key
  * @property string|null $channel
  * @property string|null $origin
@@ -70,7 +69,6 @@ class AffiliateTouchpoint extends Model
         'content',
         'affiliate_link_id',
         'touchpoint_type',
-        'interaction_type',
         'visitor_key',
         'channel',
         'origin',

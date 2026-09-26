@@ -75,7 +75,6 @@ class Affiliate extends Model
 - `AffiliateProgram`
 - `AffiliateRank`
 - `AffiliateCommissionTemplate`
-- `AffiliateTrainingModule`
 
 ### Derived Models (Scope via Affiliate)
 
@@ -103,7 +102,7 @@ These models:
 - `AffiliateVolumeTier`
 
 Direct affiliate, attribution, conversion, payout, program, rank, template,
-training-module, daily-stat, touchpoint, and upline roots use `HasOwner` and
+daily-stat, touchpoint, and upline roots use `HasOwner` and
 the shared `OwnerScope`. Derived rows without owner columns use a relational
 `ScopesBy*` concern: affiliate-owned rows join through `affiliate_id`,
 program-owned rows through `program_id`, and support messages through their

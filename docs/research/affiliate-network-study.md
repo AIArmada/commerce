@@ -144,8 +144,8 @@ All from `packages/affiliate-network/config/affiliate-network.php`:
 - `AffiliateOfferCreative`
   (`packages/affiliate-network/src/Models/AffiliateOfferCreative.php`,
   migration `2000_01_01_000004_...`): types `banner`, `text`, `email`,
-  `html`, `video`; fields name/description/url/file_path/width/height/
-  alt_text/html_code/is_active/sort_order/metadata.
+  `html`, `video`; fields name/description/url/width/height/
+  html_code/is_active/sort_order/metadata.
 - `AffiliateOfferCategory`
   (`packages/affiliate-network/src/Models/AffiliateOfferCategory.php`,
   migration `2000_01_01_000002_...`): owner-scoped, self-parented tree

@@ -24,7 +24,6 @@ return new class extends Migration
             $table->string('subject_title_snapshot', 200)->nullable();
             $table->uuid('affiliate_link_id')->nullable()->index();
             $table->string('touchpoint_type', 32)->nullable()->index();
-            $table->string('interaction_type', 32)->nullable()->index();
             $table->string('visitor_key', 160)->nullable()->index();
             $table->string('channel', 64)->nullable()->index();
             $table->string('origin', 32)->nullable()->index();

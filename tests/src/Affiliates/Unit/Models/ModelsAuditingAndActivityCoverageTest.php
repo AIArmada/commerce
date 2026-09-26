@@ -22,8 +22,6 @@ use AIArmada\Affiliates\Models\AffiliateRankHistory;
 use AIArmada\Affiliates\Models\AffiliateSupportMessage;
 use AIArmada\Affiliates\Models\AffiliateSupportTicket;
 use AIArmada\Affiliates\Models\AffiliateTaxDocument;
-use AIArmada\Affiliates\Models\AffiliateTrainingModule;
-use AIArmada\Affiliates\Models\AffiliateTrainingProgress;
 use AIArmada\Affiliates\Models\AffiliateUpline;
 use AIArmada\Affiliates\Models\AffiliateVolumeTier;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
@@ -51,8 +49,6 @@ it('affiliate core and financial models are auditable and activity loggable', fu
         AffiliateRankHistory::class,
         AffiliateSupportTicket::class,
         AffiliateTaxDocument::class,
-        AffiliateTrainingModule::class,
-        AffiliateTrainingProgress::class,
         AffiliateVolumeTier::class,
     ];
 

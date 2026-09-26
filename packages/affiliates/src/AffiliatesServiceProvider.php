@@ -39,8 +39,6 @@ use AIArmada\Affiliates\Models\AffiliateSupportMessage;
 use AIArmada\Affiliates\Models\AffiliateSupportTicket;
 use AIArmada\Affiliates\Models\AffiliateTaxDocument;
 use AIArmada\Affiliates\Models\AffiliateTouchpoint;
-use AIArmada\Affiliates\Models\AffiliateTrainingModule;
-use AIArmada\Affiliates\Models\AffiliateTrainingProgress;
 use AIArmada\Affiliates\Models\AffiliateUpline;
 use AIArmada\Affiliates\Models\AffiliateVolumeTier;
 use AIArmada\Affiliates\Resolvers\DatabaseAffiliateLookup;
@@ -220,8 +218,6 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
             'affiliate_support_ticket' => AffiliateSupportTicket::class,
             'affiliate_tax_document' => AffiliateTaxDocument::class,
             'affiliate_touchpoint' => AffiliateTouchpoint::class,
-            'affiliate_training_module' => AffiliateTrainingModule::class,
-            'affiliate_training_progress' => AffiliateTrainingProgress::class,
             'affiliate_volume_tier' => AffiliateVolumeTier::class,
         ]);
     }

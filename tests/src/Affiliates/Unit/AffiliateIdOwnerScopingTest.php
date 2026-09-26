@@ -8,8 +8,6 @@ use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Models\AffiliateSupportTicket;
 use AIArmada\Affiliates\Models\AffiliateTaxDocument;
-use AIArmada\Affiliates\Models\AffiliateTrainingModule;
-use AIArmada\Affiliates\Models\AffiliateTrainingProgress;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -164,37 +162,11 @@ it('scopes affiliate-derived rows by affiliate_id through the affiliate owner sc
         'currency' => 'USD',
     ]);
 
-    $module = AffiliateTrainingModule::create([
-        'title' => 'Intro',
-        'type' => 'article',
-        'duration_minutes' => 5,
-        'sort_order' => 1,
-        'is_required' => false,
-        'is_active' => true,
-    ]);
-
-    $setOwner($ownerA);
-
-    AffiliateTrainingProgress::create([
-        'affiliate_id' => $affiliateA->getKey(),
-        'module_id' => $module->getKey(),
-        'progress_percent' => 50,
-    ]);
-
-    $setOwner($ownerB);
-
-    AffiliateTrainingProgress::create([
-        'affiliate_id' => $affiliateB->getKey(),
-        'module_id' => $module->getKey(),
-        'progress_percent' => 50,
-    ]);
-
     $setOwner($ownerA);
 
     expect(AffiliateLink::query()->count())->toBe(1)
         ->and(AffiliateSupportTicket::query()->count())->toBe(1)
         ->and(AffiliateTaxDocument::query()->count())->toBe(1)
-        ->and(AffiliateTrainingProgress::query()->count())->toBe(1)
         ->and(AffiliateProgramMembership::query()->count())->toBe(1);
 
     $setOwner($ownerB);
@@ -202,7 +174,6 @@ it('scopes affiliate-derived rows by affiliate_id through the affiliate owner sc
     expect(AffiliateLink::query()->count())->toBe(1)
         ->and(AffiliateSupportTicket::query()->count())->toBe(1)
         ->and(AffiliateTaxDocument::query()->count())->toBe(1)
-        ->and(AffiliateTrainingProgress::query()->count())->toBe(1)
         ->and(AffiliateProgramMembership::query()->count())->toBe(1);
 });
 

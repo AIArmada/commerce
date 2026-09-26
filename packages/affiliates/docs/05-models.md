@@ -340,15 +340,7 @@ Rank definitions (Bronze, Silver, Gold, etc.).
 
 Rank change history for affiliates.
 
-## Training & Support Models
-
-### AffiliateTrainingModule
-
-Training content for affiliates.
-
-### AffiliateTrainingProgress
-
-Affiliate progress through training.
+## Support Models
 
 ### AffiliateSupportTicket / AffiliateSupportMessage
 

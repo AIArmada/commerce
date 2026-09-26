@@ -46,7 +46,7 @@ keywords:
 - Models: `Affiliate`, `AffiliateAttribution`, `AffiliateBalance`, `AffiliateCommissionPromotion`, `AffiliateCommissionRule`, `AffiliateCommissionTemplate`, `AffiliateConversion`, `AffiliateDailyStat`, `AffiliateFraudSignal`, `AffiliateLink`
 - Actions/Services: `Actions/Affiliates/ApproveAffiliate`, `Actions/Affiliates/AttachAffiliateFromCookie`, `Actions/Affiliates/AttachAffiliateToCart`, `Actions/Affiliates/CapturePublicAffiliateReferral`, `Actions/Affiliates/CreateAffiliate`, `Actions/Affiliates/CreateTrackingLink`, `Actions/Affiliates/DetachAffiliateFromCart`, `Actions/Affiliates/DisableAffiliate`, `Actions/Conversions/RecordAffiliateConversion`, `Actions/Conversions/ReverseAffiliateConversion`
 - Seams: `Contracts/MerchantLedger`, `Contracts/MerchantIdentity`, `Contracts/MerchantCatalog` (network-facing; merchant vocabulary only)
-- Config `affiliates.php`: `affiliates`, `attributions`, `conversions`, `payouts`, `payout_events`, `support_tickets`, `support_messages`, `training_modules`, `training_progress`, `tax_documents`
+- Config `affiliates.php`: `affiliates`, `attributions`, `conversions`, `payouts`, `payout_events`, `support_tickets`, `support_messages`, `tax_documents`
 
 ## Docs map
 - Start: `01-overview` → `03-configuration` → `04-usage` → `99-troubleshooting`
