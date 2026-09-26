@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource\RelationManagers;
 
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
@@ -87,7 +88,7 @@ final class TiersRelationManager extends RelationManager
 
                 TextColumn::make('min_revenue')
                     ->label('Min Revenue')
-                    ->money(fn ($record): string => $record->revenueCurrency(), 100)
+                    ->formatStateUsing(fn ($record): string => MoneyFormatter::formatMinor($record->min_revenue, $record->revenueCurrency()))
                     ->sortable(),
             ])
             ->headerActions([

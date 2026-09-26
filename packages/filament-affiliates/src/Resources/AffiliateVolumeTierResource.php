@@ -7,6 +7,7 @@ namespace AIArmada\FilamentAffiliates\Resources;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateVolumeTier;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\FilamentAffiliates\Resources\AffiliateVolumeTierResource\Pages\CreateAffiliateVolumeTier;
 use AIArmada\FilamentAffiliates\Resources\AffiliateVolumeTierResource\Pages\EditAffiliateVolumeTier;
 use AIArmada\FilamentAffiliates\Resources\AffiliateVolumeTierResource\Pages\ListAffiliateVolumeTiers;
@@ -147,7 +148,7 @@ final class AffiliateVolumeTierResource extends Resource
 
                 Tables\Columns\TextColumn::make('min_volume_minor')
                     ->label('Min Volume')
-                    ->money(fn ($record): string => $record->currencyCode(), 100)
+                    ->formatStateUsing(fn ($record): string => MoneyFormatter::formatMinor($record->min_volume_minor, $record->currencyCode()))
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('currency')

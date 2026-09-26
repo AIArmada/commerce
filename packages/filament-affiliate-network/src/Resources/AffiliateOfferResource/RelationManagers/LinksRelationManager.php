@@ -7,6 +7,7 @@ namespace AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Rel
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
 use AIArmada\AffiliateNetwork\Services\NetworkLedgerReconciliationService;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Filament\Actions\Action;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
@@ -54,7 +55,7 @@ final class LinksRelationManager extends RelationManager
                     ->sortable(),
 
                 TextColumn::make('revenue')
-                    ->money(fn (AffiliateOfferLink $record): string => mb_strtoupper((string) ($record->currency ?? config('affiliate-network.currency.default', 'MYR'))), 100)
+                    ->formatStateUsing(fn (AffiliateOfferLink $record): string => MoneyFormatter::formatMinor($record->revenue, $record->currency ?? config('affiliate-network.currency.default', 'MYR')))
                     ->sortable(),
 
                 TextColumn::make('currency')

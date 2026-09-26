@@ -7,6 +7,7 @@ namespace AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Rel
 use AIArmada\AffiliateNetwork\Enums\LegStatus;
 use AIArmada\AffiliateNetwork\Models\NetworkConversionLeg;
 use AIArmada\AffiliateNetwork\Services\NetworkBooks;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Filament\Actions\Action;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -49,25 +50,25 @@ final class LegsRelationManager extends RelationManager
 
                 TextColumn::make('revenue_minor')
                     ->label('Revenue')
-                    ->money(fn (NetworkConversionLeg $record): string => mb_strtoupper($record->revenue_currency ?? $record->commission_currency), 100)
+                    ->formatStateUsing(fn (NetworkConversionLeg $record): string => MoneyFormatter::formatMinor($record->revenue_minor, $record->revenue_currency ?? $record->commission_currency))
                     ->sortable(),
 
                 TextColumn::make('commission_minor')
                     ->label('Commission')
-                    ->money(fn (NetworkConversionLeg $record): string => mb_strtoupper($record->commission_currency), 100)
+                    ->formatStateUsing(fn (NetworkConversionLeg $record): string => MoneyFormatter::formatMinor($record->commission_minor, $record->commission_currency))
                     ->badge()
                     ->color('success')
                     ->sortable(),
 
                 TextColumn::make('fee_minor')
                     ->label('Fee')
-                    ->money(fn (NetworkConversionLeg $record): string => mb_strtoupper($record->commission_currency), 100)
+                    ->formatStateUsing(fn (NetworkConversionLeg $record): string => MoneyFormatter::formatMinor($record->fee_minor, $record->commission_currency))
                     ->toggleable()
                     ->sortable(),
 
                 TextColumn::make('payout_minor')
                     ->label('Payout')
-                    ->money(fn (NetworkConversionLeg $record): string => mb_strtoupper($record->commission_currency), 100)
+                    ->formatStateUsing(fn (NetworkConversionLeg $record): string => MoneyFormatter::formatMinor($record->payout_minor, $record->commission_currency))
                     ->badge()
                     ->color('info')
                     ->sortable(),
