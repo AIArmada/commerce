@@ -80,8 +80,8 @@ $result = JntExpress::batchTrackParcels(
 );
 
 foreach ($result['successful'] as $tracking) {
-    echo "{$tracking->trackingNumber}: {$tracking->lastStatus}\n";
-    
+    echo "{$tracking->trackingNumber}: {$tracking->getLatestStatus()}\n";
+
     if ($tracking->isDelivered()) {
         // Handle delivery
     }
@@ -115,18 +115,14 @@ echo "Failed: " . count($result['failed']) . " orders\n";
 ## Batch Print Waybills
 
 ```php
-// By order IDs
+// By order IDs, with an optional template name
 $result = JntExpress::batchPrintWaybills(
-    orderIds: ['ORDER-1', 'ORDER-2']
-);
-
-// By tracking numbers
-$result = JntExpress::batchPrintWaybills(
-    trackingNumbers: ['JT123456', 'JT789012']
+    orderIds: ['ORDER-1', 'ORDER-2'],
+    templateName: null,
 );
 
 foreach ($result['successful'] as $label) {
-    $pdfUrl = $label['urlContent'];
+    $pdfUrl = $label['data']['urlContent'] ?? null;
 }
 ```
 

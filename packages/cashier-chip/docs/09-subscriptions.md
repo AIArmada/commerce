@@ -426,7 +426,9 @@ Subscriptions are charged via a scheduled job:
 
 ```php
 // app/Console/Kernel.php
-$schedule->job(new ChargeSubscriptions)->daily();
+$schedule->command('cashier-chip:renew-subscriptions')
+    ->hourly()
+    ->withoutOverlapping();
 ```
 
 Or manually:
@@ -457,13 +459,13 @@ use AIArmada\CashierChip\Events\SubscriptionCreated;
 use AIArmada\CashierChip\Events\SubscriptionCanceled;
 use AIArmada\CashierChip\Events\SubscriptionResumed;
 use AIArmada\CashierChip\Events\SubscriptionRenewed;
-use AIArmada\CashierChip\Events\SubscriptionPaymentFailed;
+use AIArmada\CashierChip\Events\SubscriptionRenewalFailed;
 
 protected $listen = [
     SubscriptionCreated::class => [
         SendWelcomeEmail::class,
     ],
-    SubscriptionPaymentFailed::class => [
+    SubscriptionRenewalFailed::class => [
         NotifyPaymentFailure::class,
     ],
 ];

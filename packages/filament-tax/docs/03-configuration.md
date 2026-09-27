@@ -248,7 +248,7 @@ The plugin doesn't define its own environment variables. Use the base tax packag
 ```env
 # Base tax package configuration
 TAX_ENABLED=true
-TAX_DEFAULT_RATE=600
+TAX_DEFAULT_CURRENCY=MYR
 TAX_PRICES_INCLUDE_TAX=false
 TAX_OWNER_ENABLED=true
 ```

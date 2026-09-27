@@ -103,22 +103,21 @@ public function panel(Panel $panel): Panel
 
 ### State Transition Action Missing
 
-**Problem**: A pass state transition button (e.g., "Activate") is not visible.
+**Problem**: There is no pass state transition button (e.g., "Activate") in the panel.
 
-**Solution**:
+**Solution**: This is expected — the pass pages are read-only. Run transitions through the ticketing domain (`$pass->markActivated(); $pass->save();` or `RevokePassAction`). Verify the pass first:
 
 1. Verify the pass is in the correct previous state
-2. Check the user has the required policy permissions
-3. Check owner context — the pass must belong to the current owner scope
+2. Check owner context — the pass must belong to the current owner scope
 
 ### "Action not available" on Pass
 
-**Problem**: A state transition action is listed but throws "action not available".
+**Problem**: A domain transition throws because the pass's current state does not allow it.
 
-**Solution**: This means the pass's current state does not allow that transition. Verify the pass's current state:
+**Solution**: Verify the pass's current state:
 
 ```bash
-php artisan tinker --execute '$pass = \AIArmada\Ticketing\Models\Pass::find("pass-uuid"); echo $pass->state->getValue();'
+php artisan tinker --execute '$pass = \AIArmada\Ticketing\Models\Pass::find("pass-uuid"); echo $pass->status->getValue();'
 ```
 
 Allowed transitions are documented in the [Usage Guide](04-usage.md#pass-state-transitions).
@@ -225,7 +224,7 @@ When reporting issues, include:
 
 ### State Actions
 - **Terminal** states cannot transition — create a new pass if needed
-- **Reasons** are required for most state transitions — always provide context
+- **Reasons** are optional on transitions (`markCancelled/markRevoked/markVoided`, `RevokePassAction`) — always provide context anyway
 - **Transfers** are logged immutably — no deletion of transfer records
 
 ## Read next

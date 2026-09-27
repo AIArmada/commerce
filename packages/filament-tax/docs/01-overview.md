@@ -106,8 +106,9 @@ filament-tax/
 │   │   └── DownloadTaxExemptionCertificateAction.php
 │   ├── Pages/
 │   │   └── ManageTaxSettings.php   # Settings page
-│   ├── Plugin/
-│   │   └── FilamentTaxPlugin.php   # Main plugin class
+│   ├── FilamentTaxPlugin.php       # Main plugin class
+│   ├── Policies/                   # Model policies
+│   ├── Support/                    # Authz helpers
 │   ├── Resources/
 │   │   ├── TaxZoneResource/
 │   │   │   ├── Pages/             # List, Create, Edit, View

@@ -4,7 +4,7 @@ title: Targeting Engine
 
 # Targeting Engine
 
-The Targeting Engine provides a powerful rule-based system for evaluating whether entities (promotions, vouchers, shipping methods, etc.) are applicable to a given context. It supports 22 built-in rule types, three evaluation modes, and custom boolean expressions.
+The Targeting Engine provides a powerful rule-based system for evaluating whether entities (promotions, vouchers, shipping methods, etc.) are applicable to a given context. It supports 23 built-in rule types, three evaluation modes, and custom boolean expressions.
 
 ## Overview
 
@@ -16,14 +16,14 @@ The Targeting Engine provides a powerful rule-based system for evaluating whethe
 │   TargetingContext ────► TargetingEngine ────► bool             │
 │        │                       │                                │
 │        ▼                       ▼                                │
-│   - Cart value            22 Evaluators                         │
+│   - Cart value            23 Evaluators                         │
 │   - User segments         - CartValueEvaluator                  │
 │   - Channel/Device        - UserSegmentEvaluator                │
 │   - Geographic data       - ProductQuantityEvaluator            │
 │   - Date/Time             - PaymentMethodEvaluator              │
 │   - Products/Categories   - CouponUsageLimitEvaluator           │
 │   - Payment methods       - ReferralSourceEvaluator             │
-│   - UTM/Attribution       - ... and 16 more                     │
+│   - UTM/Attribution       - ... and 17 more                     │
 │                                                                 │
 └────────────────────────────────────────────────────────────────┘
 ```

@@ -82,8 +82,8 @@ Or disable specific features:
 
 ```php
 FilamentShippingPlugin::make()
-    ->disableFulfillmentQueue()
-    ->disableManifestPage()
+    ->fulfillmentQueue(false)
+    ->manifestPage(false)
 ```
 
 ## Required Permissions

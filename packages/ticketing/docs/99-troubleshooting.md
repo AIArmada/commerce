@@ -42,26 +42,26 @@ $context = new PassIssuanceContext(
 
 ### Pass Won't Transfer
 
-**Problem**: `$pass->canTransfer()` returns false.
+**Problem**: `PassTransferServiceInterface::canTransfer($pass)` returns false.
 
-**Solution**: Check the pass is in a non-terminal state:
+**Solution**: Check the pass is valid and within its transfer window:
 
 ```php
-// Must not be Used, Revoked, Voided, or Expired
-if ($pass->state->isTerminal()) {
-    // Cannot transfer terminal passes
+// Must be valid (not Used, Cancelled, Revoked, Voided, or Expired)
+if (! $pass->isValid()) {
+    // Cannot transfer invalid passes
 }
 
 // Must not be past transfer deadline
-if ($pass->transferExpired()) {
+if ($pass->transfer_expires_at !== null && now()->isAfter($pass->transfer_expires_at)) {
     // Transfer window has closed
 }
 ```
 
-Check `transfer_expires_at` on the ticketable model:
+Check `transfer_expires_at` on the pass:
 
 ```php
-// The ticketable model's transferWindowEndsAt() is the source of truth
+// The ticketable model's transferWindowEndsAt() is the source of truth at issuance
 $deadline = $workshop->transferWindowEndsAt();
 ```
 
@@ -231,18 +231,19 @@ When reporting issues, include:
 - **Use** `forOwner()` explicitly when owner context is ambiguous
 
 ### State Machine
-- **Terminal** states (Used, Revoked, Voided, Expired) cannot transition
+- **Terminal** states are Voided and Expired — they cannot transition
+- **Used** and **Cancelled** passes can still transition to Revoked; **Revoked** passes can transition to Voided
 - **Cancelled** passes cannot be re-issued — create a new pass instead
 - **Pending** passes must be issued before they can be used
 
 ### Transfers
 - **Bulk** transfers respect `bulk_max_size` — batch larger operations
-- **Grace** period extends the transfer window in seconds
+- **Grace** period extends the transfer window in minutes
 - **Notifications** require holder email to be set
 
 ### Pricing
 - **All** prices are in minor units (e.g., cents/sen)
-- **Components** must sum to the total price
+- **Components** link child ticket types with a quantity multiplier (expanded via `ExpandTicketTypeComponentsAction`)
 - **Currency** is per-ticket-type, not inherited
 
 ## Read next

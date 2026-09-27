@@ -12,7 +12,7 @@ All package options live in `config/growth.php`.
 return [
     'database' => [
         'table_prefix' => 'growth_',
-        'json_column_type' => commerce_json_column_type('growth', 'jsonb'),
+        'json_column_type' => env('GROWTH_JSON_COLUMN_TYPE', 'jsonb'),
         'tables' => [
             'experiments' => 'growth_experiments',
             'variants' => 'growth_variants',
@@ -30,7 +30,7 @@ return [
 
     'features' => [
         'owner' => [
-            'enabled' => true,
+            'enabled' => false,
             'include_global' => false,
             'auto_assign_on_create' => true,
         ],
@@ -63,6 +63,11 @@ return [
             'session_identifier_key' => 'sig_sid',
         ],
     ],
+
+    'metrics' => [
+        'max_assignment_rows' => 50000,
+        'max_event_rows' => 50000,
+    ],
 ];
 ```
 
@@ -74,7 +79,7 @@ The table prefix used when a table name is not overridden in the `tables` map.
 
 ### `database.json_column_type`
 
-Controls the JSON column type used by growth migrations. Leave this as `commerce_json_column_type('growth', 'jsonb')` unless you need package-specific `jsonb` behavior on PostgreSQL.
+Controls the JSON column type used by growth migrations. Override with `GROWTH_JSON_COLUMN_TYPE` (defaults to `jsonb`).
 
 ### `database.tables`
 
@@ -244,7 +249,7 @@ The built-in resolver does **not** need this key when `session_identifier_source
 return [
     'database' => [
         'table_prefix' => 'growth_',
-        'json_column_type' => commerce_json_column_type('growth', 'jsonb'),
+        'json_column_type' => env('GROWTH_JSON_COLUMN_TYPE', 'jsonb'),
         'tables' => [
             'experiments' => 'growth_experiments',
             'variants' => 'growth_variants',
@@ -311,4 +316,4 @@ return [
 
 - [Installation](./02-installation.md)
 - [Usage](./04-usage.md)
-- [`commerce-support` owner scoping docs](../../commerce-support/docs/04-multi-tenancy.md)
+- [`commerce-support` owner scoping docs](../../commerce-support/docs/14-multi-tenancy.md)

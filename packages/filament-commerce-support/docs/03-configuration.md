@@ -20,6 +20,11 @@ return [
             'timezones' => 'heroicon-o-globe-alt',
         ],
     ],
+    'exchange_rates' => [
+        'enabled' => env('FILAMENT_COMMERCE_EXCHANGE_RATES_ENABLED', true),
+        'permission' => 'manage-exchange-rates',
+        'sort' => 101,
+    ],
     'resources' => [
         'currencies' => ['enabled' => true, 'read_only' => true],
         'languages' => ['enabled' => true, 'read_only' => true],

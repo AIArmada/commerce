@@ -503,16 +503,7 @@ The plugin respects the base tax package's owner scoping:
 
 ### Per-Panel Tenant Context
 
-```php
-FilamentTaxPlugin::make()
-    ->modifyResourceQuery(function ($query) {
-        // Custom scoping per panel
-        if (filament()->getCurrentPanel()->getId() === 'store') {
-            return $query->where('owner_id', filament()->getTenant()->id);
-        }
-        return $query;
-    });
-```
+Resource queries follow the base tax package's owner scope in every panel. The plugin does not offer a per-panel query override; scope differences between panels should be handled by the host app's owner resolution.
 
 ## Event Hooks
 
@@ -530,7 +521,7 @@ TaxZone::created(function (TaxZone $zone) {
         $zone->rates()->create([
             'name' => 'Default Rate',
             'tax_class' => 'standard',
-            'rate' => config('tax.defaults.default_tax_rate'),
+            'rate' => (int) (app(\AIArmada\Tax\Settings\TaxSettings::class)->defaultTaxRate * 100),
             'is_active' => true,
         ]);
     }

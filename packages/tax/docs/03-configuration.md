@@ -299,13 +299,7 @@ The `CompositeZoneResolver` is the default binding for `TaxZoneResolverInterface
 
 ```php
 // In TaxServiceProvider
-$this->app->singleton(TaxZoneResolverInterface::class, function ($app) {
-    return new CompositeZoneResolver([
-        $app->make(ZoneIdResolver::class),
-        $app->make(AddressZoneResolver::class),
-        $app->make(DefaultZoneResolver::class),
-    ]);
-});
+$this->app->scoped(TaxZoneResolverInterface::class, CompositeZoneResolver::class);
 ```
 
 ### Customizing the Chain

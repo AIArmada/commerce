@@ -15,18 +15,21 @@ use AIArmada\Orders\Actions\CreateOrder;
 use AIArmada\Orders\Actions\CreateOrderFromCart;
 
 // Basic creation
-$order = CreateOrder::run([
-    'currency' => 'MYR',
-    'notes' => 'Customer special instructions',
-]);
+$order = app(CreateOrder::class)->execute(
+    [
+        'currency' => 'MYR',
+        'notes' => 'Customer special instructions',
+    ],
+    [
+        ['name' => 'Product Name', 'sku' => 'SKU-001', 'quantity' => 2, 'unit_price' => 9900],
+    ],
+);
 
 // From cart
-use AIArmada\Cart\Models\Cart;
+use AIArmada\Cart\Facades\Cart;
 
-$cart = Cart::find($cartId);
-$order = CreateOrderFromCart::run($cart, [
-    'notes' => 'Optional notes',
-]);
+$cart = Cart::getById($cartId);
+$order = app(CreateOrderFromCart::class)->execute($cart, $customer);
 ```
 
 ### Durable Intake Identity
@@ -37,18 +40,18 @@ Prevent duplicate orders from retries and concurrent submissions using intake id
 use AIArmada\Orders\Actions\CreateOrder;
 
 // Idempotent creation — same intake identity returns the existing order
-$order = CreateOrder::run([
+$order = app(CreateOrder::class)->execute([
     'currency' => 'MYR',
     'subtotal' => 5000,
     'grand_total' => 5000,
-], intakeSource: 'checkout', intakeId: 'sess_abc123');
+], [], intakeSource: 'checkout', intakeId: 'sess_abc123');
 
 // Exact retry — returns the same order, no duplicate
-$retry = CreateOrder::run([
+$retry = app(CreateOrder::class)->execute([
     'currency' => 'MYR',
     'subtotal' => 5000,
     'grand_total' => 5000,
-], intakeSource: 'checkout', intakeId: 'sess_abc123');
+], [], intakeSource: 'checkout', intakeId: 'sess_abc123');
 
 assert($retry->id === $order->id); // Same order
 ```
@@ -69,7 +72,7 @@ use AIArmada\Orders\Actions\RegisterOrderPayment;
 use AIArmada\Orders\Actions\RegisterOrderRefund;
 
 // Confirm payment
-RegisterOrderPayment::run(
+app(RegisterOrderPayment::class)->execute(
     order: $order,
     transactionId: 'txn_abc123',
     gateway: 'stripe',
@@ -77,11 +80,11 @@ RegisterOrderPayment::run(
 );
 
 // Process refund
-RegisterOrderRefund::run(
+app(RegisterOrderRefund::class)->execute(
     order: $order,
     amount: 5000, // cents
-    reason: 'Customer requested refund',
     transactionId: 'ref_xyz789',
+    reason: 'Customer requested refund',
 );
 ```
 
@@ -92,14 +95,14 @@ use AIArmada\Orders\Actions\CancelOrder;
 use AIArmada\Orders\Actions\CompleteOrder;
 
 // Cancel
-CancelOrder::run(
+app(CancelOrder::class)->execute(
     order: $order,
     reason: 'Customer requested cancellation',
     canceledBy: auth()->id(),
 );
 
-// Complete (marks as delivered)
-CompleteOrder::run($order);
+// Complete (marks as completed)
+app(CompleteOrder::class)->execute($order);
 ```
 
 ### Deleting Orders (Prefer Cancel/Refund)
@@ -134,11 +137,12 @@ Available through the service:
 |--------|-------------|
 | `createOrder()` | `CreateOrder` |
 | `createFromCart()` | `CreateOrderFromCart` |
-| `cancel()` | `CancelOrder` |
+| `cancel()` | `OrderCanceled` transition |
 | `confirmPayment()` | `RegisterOrderPayment` |
 | `processRefund()` | `RegisterOrderRefund` |
-| `ship()` | Via `OrderHandlerRegistrar` |
-| `confirmDelivery()` | `CompleteOrder` |
+| `ship()` | `ShipmentCreated` transition |
+| `confirmDelivery()` | `DeliveryConfirmed` transition |
+| `complete()` | `OrderCompleted` transition |
 
 ## Working with Models Directly
 
@@ -157,7 +161,7 @@ $orders = Order::query()
 // Get specific order
 $order = Order::query()
     ->forOwner()
-    ->with(['items', 'billingAddress', 'shippingAddress', 'payments'])
+    ->with(['items', 'addresses', 'payments'])
     ->findOrFail($orderId);
 ```
 
@@ -192,8 +196,8 @@ if ($order->status->isFinal()) {
 
 ```php
 // Format currency values
-echo $order->formattedSubtotal();    // "MYR 99.00"
-echo $order->formattedGrandTotal();  // "MYR 119.00"
+echo $order->getFormattedSubtotal();    // "MYR 99.00"
+echo $order->getFormattedGrandTotal();  // "MYR 119.00"
 
 // Check payment status
 if ($order->isPaid()) {
@@ -211,7 +215,7 @@ if ($order->isFullyPaid()) {
 
 ## Fulfillment & Addresses
 
-Orders are carrier-agnostic: pass an explicit carrier string to `ship()` — no carrier is hardcoded. Fulfillment resolves through the `AIArmada\Orders\Contracts\FulfillmentHandler` contract registered via `AIArmada\Orders\Support\OrderHandlerRegistrar` (the shipping package auto-registers its handler when installed).
+Orders are carrier-agnostic: pass an explicit carrier string to `ship()` — no carrier is hardcoded. `ship()` runs the `ShipmentCreated` transition, which records the carrier and tracking number in order metadata. Carrier API operations go through the `AIArmada\Orders\Contracts\FulfillmentHandler` contract, which the shipping package binds in the container when installed.
 
 ```php
 use AIArmada\Orders\Services\OrderService;
@@ -236,7 +240,7 @@ The package dispatches events during order lifecycle:
 | `OrderCanceled` | Order was canceled |
 | `OrderRefunded` | Refund was processed |
 | `OrderPaymentFailed` | Payment attempt failed |
-| `InventoryDeductionRequired` | Inventory reservation needed |
+| `InventoryDeductionRequired` | Inventory deduction needed |
 | `InventoryReleaseRequired` | Inventory release needed |
 | `CommissionAttributionRequired` | Commission attribution needed |
 
@@ -325,8 +329,8 @@ $generator = app(GenerateInvoice::class);
 // Get PDF response for download
 return $generator->download($order);
 
-// Get PDF content as string
-$pdfContent = $generator->generate($order);
+// Save PDF to disk
+$path = $generator->save($order, storage_path('app/invoices/order.pdf'));
 ```
 
 Use `GenerateInvoice` for ad-hoc PDF generation and download responses. Use `CreateOrderInvoiceDoc` / `CreateOrderReceiptDoc` when you want persisted Docs records that integrate with the Docs package.

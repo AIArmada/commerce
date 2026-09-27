@@ -58,7 +58,7 @@ The `aiarmada/filament-inventory` package is the Filament admin adapter for `aia
 | **KPI Widget** | Turnover ratio, days on hand, fill rate, accuracy |
 | **Low Inventory Alerts** | Items below reorder point |
 | **Expiring Batches** | Batches approaching expiry |
-| **Reorder Suggestions** | AI-generated reorder recommendations |
+| **Reorder Suggestions** | Auto-generated reorder recommendations |
 | **Backorders** | Open backorder tracking |
 | **Valuation** | Total inventory value by costing method |
 | **Movement Trends** | Daily receipts/shipments/transfers chart |
@@ -78,9 +78,9 @@ The `aiarmada/filament-inventory` package is the Filament admin adapter for `aia
 ```
 filament-inventory/
 ├── Actions/           # Reusable Filament actions
+├── Policies/          # Resource authorization policies
 ├── Resources/         # Filament resources with Pages/Schemas/Tables
-├── Services/          # Stats aggregation and caching
-├── Support/           # Multitenancy helpers
+├── Services/          # Stats aggregation
 └── Widgets/           # Dashboard widgets
 ```
 

@@ -88,6 +88,8 @@ Cart::registerDynamicCondition(
 
 **Solution:**
 ```php
+use AIArmada\Cart\Contracts\RulesFactoryInterface;
+
 // Ensure factory is set
 Cart::setRulesFactory(app(RulesFactoryInterface::class));
 

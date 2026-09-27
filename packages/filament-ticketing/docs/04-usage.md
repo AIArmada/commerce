@@ -18,23 +18,24 @@ The form includes:
 - **Ticketable** — Specific record (select the workshop/course/event)
 - **Price** — Ticket price in major units (e.g., `500.00` for RM500.00); stored as integer minor units
 - **Currency** — ISO 4217 currency code (uppercased automatically, defaults to MYR)
-- **Max Quantity** — Max per purchase (optional)
-- **Capacity** — Total capacity for this type (optional)
+- **Admits Quantity** — How many admissions this type grants (minimum 1)
+- **Min/Max Quantity** — Min/max per purchase (optional)
 - **Sales Window** — Start and end dates for sales
 
 ### Managing Pricing Components
 
-On the ticket type edit form, add pricing components to split the total price:
+The components relation manager lists linked child ticket types read-only:
 
-- **Name** — Component name (e.g., "Base Price", "Processing Fee")
-- **Amount** — Component amount in minor units (must sum to total price)
+- **Component** — Linked child ticket type name
+- **Quantity** — Multiplier applied when expanding via `ExpandTicketTypeComponentsAction`
 
 ### Linking Bundle Products
 
-When `aiarmada/products` and `aiarmada/cart` are installed, you can link products:
+The bundle products relation manager lists linked products read-only (requires `aiarmada/products`):
 
-- **Product** — Select a product from the dropdown
+- **Product** — Linked product name
 - **Quantity** — How many to auto-add to cart
+- **Inclusion Mode** — Required or optional bundle behavior
 
 ### Managing ticket types on host resources
 
@@ -73,45 +74,41 @@ Columns include:
 
 Filters:
 - **State** — Filter by pass status
-- **Ticket Type** — Filter by ticket type
-- **Holder Email** — Search by email
 
 ### Pass State Transitions
 
-On the pass view page, available actions depend on the current state:
+The pass list and view pages are read-only (view action only). Run state transitions through the ticketing domain:
 
-| Current State | Available Actions |
-|---------------|-------------------|
-| `Issued` | Activate, Cancel, Void |
-| `Activated` | Use, Void |
-| `Used` | *(no state transitions)* |
-| `Cancelled` | *(no state transitions)* |
-| `Revoked` | *(no state transitions)* |
-| `Voided` | *(no state transitions)* |
-| `Expired` | *(no state transitions)* |
+```php
+$pass->markActivated();
+$pass->save();
 
-Each action records the actor and reason.
+app(\AIArmada\Ticketing\Actions\RevokePassAction::class)->handle($pass, reason: 'Fraud detected');
+```
+
+Allowed transitions are defined in `AIArmada\Ticketing\States\PassState::config()`: `Pending` → `Issued`/`Expired`, `Issued`/`Activated` → `Activated`/`Used`/`Cancelled`/`Revoked`/`Expired`, `Used`/`Cancelled` → `Revoked`, `Revoked` → `Voided`; `Voided` and `Expired` are terminal.
 
 ### Pass Transfer
 
-To transfer a pass from the admin panel:
+Passes are transferred through the ticketing domain, not a panel action:
 
-1. Open the pass detail view
-2. Click **Transfer**
-3. Enter the new holder's name and email
-4. Add a reason for the transfer
-5. Submit
+```php
+app(\AIArmada\Ticketing\Actions\TransferPassToHolderAction::class)->handle(
+    pass: $pass,
+    newHolder: $newHolder,
+    reason: 'Gift',
+);
+```
 
-Transfer authorization must be enforced by your application before invoking ticketing actions.
+Transfer authorization must be enforced by your application before invoking ticketing actions (pass `authorizedBy:` to enforce `PassTransferPolicy`).
 
 ### Viewing Transfer History
 
-The pass detail page includes a **Transfer History** section showing all past transfers with:
+Use **Ticketing > Pass Transfers** for the transfer audit log showing all past transfers with:
 
 - Previous holder
 - New holder
 - Reason
-- Transferred by
 - Timestamp
 
 ## Viewing Pass Holders
@@ -120,22 +117,20 @@ Navigate to **Ticketing > Pass Holders** (read-only).
 
 Search by name or email to find a holder and see:
 
-- All passes (current and past) associated with them
-- Linked customer record (when `aiarmada/customers` is installed)
-- Transfer history
+- The linked pass number and whether the holder row is current (`is_current`)
+- Holder type/id, transfer timestamp, and metadata on the detail view
 
 ## Viewing Transfer Log
 
 Navigate to **Ticketing > Pass Transfers** to see the complete audit log:
 
-- **Pass** — Linked pass
+- **Pass** — Linked pass (searchable by pass number)
 - **From** — Previous holder
 - **To** — New holder
 - **Reason** — Transfer reason
-- **Authorized By** — Admin who authorized (if overridden)
-- **Date** — Transfer timestamp
+- **Date** — Transfer timestamp (sortable)
 
-Filter transfers by date range, pass, or holder.
+The transfer log has no filters; search by pass number.
 
 ## Customizing Resources
 

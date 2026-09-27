@@ -35,6 +35,10 @@ final class InvoicePaid extends BaseCommunicationNotification
 
 Alternatively, add the notification class to
 `communications.features.auto_capture_allowlist`. The denylist always wins.
+Channels listed in `communications.features.auto_capture_ignored_channels`
+are skipped. The listener also guards against re-entrant capture through
+`AutoCaptureState`, so recording a notification never triggers an infinite
+capture loop.
 
 ### Managed notification
 
@@ -72,6 +76,10 @@ class InvoicePaid extends BaseCommunicationNotification
     }
 }
 ```
+
+The `HasCommunicationContext` context carries scalar identifiers only (a
+`communicationId` plus a `deliveryIdsByChannel` map), keeping notifications
+serialization-safe for queued dispatch.
 
 ## Inbox notifications
 
@@ -195,6 +203,8 @@ php artisan communications:reconcile
 php artisan communications:prune-inboxes
 ```
 
+Pruning hard-deletes eligible records; communications models use no soft deletes.
+
 ## Owner scoping
 
 All tenant-owned queries are automatically scoped to the current owner when `communications.features.owner.enabled` is true. Use `OwnerContext::withOwner()` for scoped operations. Inbox records follow the same owner boundary as the rest of the communications data.
@@ -252,3 +262,18 @@ without regressing the delivery status.
 
 Expiring a communication dispatches `CommunicationExpired` and expires its
 pending deliveries; the original `expires_at` deadline is preserved.
+
+Legal transitions come from a single `ALLOWED_TRANSITIONS` table on the
+action; anything else throws unless the `force` flag is passed. Each
+transition stamps its `*_at` column only when it is still null, so lifecycle
+timestamps are never cleared or overwritten.
+
+Aggregate status is derived by `RecalculateCommunicationStatusAction`: all
+deliveries terminal with no failures or cancellations means `Completed`;
+terminal with failures but no success means `Failed`; terminal with both
+means `PartiallyCompleted`; terminal with cancellations but no successes or
+failures means `Cancelled`; anything else stays `Processing`. Only the
+`Completed` and `Failed` outcomes dispatch `CommunicationCompleted` /
+`CommunicationFailed`, and first entry stamps `completed_at` / `failed_at`.
+After mass delivery changes, run `php artisan communications:reconcile` to
+resynchronize aggregates.

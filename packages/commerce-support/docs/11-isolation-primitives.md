@@ -539,7 +539,7 @@ class ExportOrdersJob implements ShouldQueue
 
 ## Related Documentation
 
-- [Multi-Tenancy Overview](./04-multi-tenancy.md)
-- [OwnerContext and Query Scoping](./04-multi-tenancy.md#ownercontext-and-query-scoping)
+- [Multi-Tenancy Overview](./14-multi-tenancy.md)
+- [OwnerContext and Query Scoping](./14-multi-tenancy.md#ownercontext-and-query-scoping)
 - [Traits & Utilities](./10-traits-utilities.md)
 - [Troubleshooting](./99-troubleshooting.md)

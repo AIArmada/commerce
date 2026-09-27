@@ -35,9 +35,9 @@ constructing currency-specific static Money factories.
 
 Displays normalized items for visible cart snapshots. Queries are scoped through the parent cart owner boundary.
 
-## CartConditionResource
+## Cart conditions display
 
-Displays normalized cart/item conditions for visible cart snapshots.
+There is no separate cart-conditions resource. Normalized cart/item conditions for visible cart snapshots are shown through the cart's Conditions relation manager.
 
 ## ConditionResource
 

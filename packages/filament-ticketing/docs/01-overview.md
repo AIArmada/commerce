@@ -50,20 +50,20 @@ Use this package when you need panel resources for ticket type management, pass 
 - **Bundle Products**: Link products to ticket types
 
 ### Pass Resource
-- **View Passes**: See all issued passes with search and filters
-- **State Management**: Activate, use, cancel, revoke, void passes
-- **Transfer History**: View pass transfer history
-- **Holder Info**: See current and past holder details
+- **View Passes**: See all issued passes with search and a status filter
+- **Read-Only Detail**: Pass detail view shows holder, ticket type, state, and lifecycle timestamps; state transitions run through the ticketing domain (`Pass::mark*()`, `RevokePassAction`), not panel actions
+- **Transfer History**: Use the Pass Transfer resource audit log; the pass view has no embedded transfer history
+- **Holder Info**: See the current holder name and email
 
 ### Pass Holder Resource (Read-Only)
 - **Holder Lookup**: Search pass holders by name or email
-- **Pass History**: See all passes held by a person
-- **Relationship View**: Linked customer records (when `aiarmada/customers` is installed)
+- **Pass Link**: Each row links to its pass number with a current/past (`is_current`) flag
+- **Holder Detail**: Infolist shows holder type/id, transfer timestamp, and metadata
 
 ### Pass Transfer Resource
 - **Audit Log**: Complete history of pass transfers
-- **Transfer Details**: See old/new holders, reason, authorizer
-- **Search**: Filter transfers by pass, holder, or date range
+- **Transfer Details**: See old/new holders, reason, and timestamp
+- **Search**: Search transfers by pass number
 
 ## Owner scoping and security notes
 

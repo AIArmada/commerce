@@ -107,7 +107,7 @@ SELECT * FROM settings WHERE group = 'pricing';
 ```php
 // In PriceListResource::getRelations()
 // Only returns managers if products package exists
-if (! class_exists('\\AIArmada\\Products\\Models\\Product')) {
+if (! class_exists('\\AIArmada\\Products\\Models\\Product') || ! class_exists('\\AIArmada\\Products\\Models\\Variant')) {
     return [];
 }
 ```
@@ -161,7 +161,7 @@ class_exists(Promotion::class);
 
 **Solution**: This is expected behavior. Ensure correct owner context:
 ```php
-OwnerContext::set($correctTenant);
+OwnerContext::setForRequest($correctTenant);
 ```
 
 ---
@@ -177,7 +177,7 @@ OwnerContext::set($correctTenant);
 1. Add database indexes:
 ```sql
 CREATE INDEX idx_products_name ON products (name);
-CREATE INDEX idx_variants_sku ON variants (sku);
+CREATE INDEX idx_variants_sku ON product_variants (sku);
 ```
 
 2. Limit search results (already set to 50)

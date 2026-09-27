@@ -15,7 +15,7 @@ The canonical orchestration surface for affiliates is the `Actions` tree. Prefer
 | `ApproveAffiliate::run($affiliate)` | Approve a pending affiliate |
 | `AttachAffiliateToCart::run($affiliate, $cart, $context)` | Attach an affiliate to a cart |
 | `AttachAffiliateFromCookie::run($cart, $cookieValue, $context)` | Attach from cookie tracking |
-| `CapturePublicAffiliateReferral::run($request)` | Capture public referral |
+| `CapturePublicAffiliateReferral::run($request, $affiliateCode)` | Capture public referral |
 | `CreateAffiliate::run($data, $owner)` | Create a new affiliate |
 | `CreateTrackingLink::run($affiliate, $url, $attributes)` | Create a tracking link |
 | `GenerateAffiliateCode::run($name)` | Generate a unique code |
@@ -28,7 +28,7 @@ The canonical orchestration surface for affiliates is the `Actions` tree. Prefer
 
 | Action | Purpose |
 |--------|---------|
-| `AllocateUplineCommissions::run($conversions, $config)` | Distribute upline commissions |
+| `AllocateUplineCommissions::run($baseConversions, $autoApprove, $status, $attributionId)` | Distribute upline commissions |
 | `MatureConversion::run($conversion)` | Mature a single conversion |
 | `ProcessConversionMaturity::run()` | Process batch maturity |
 | `RecordAffiliateConversion::run($cart, $payload)` | Record a conversion |
@@ -60,24 +60,13 @@ $calculator = app(CommissionCalculator::class);
 ### Methods
 
 ```php
-// Calculate commission for an order
-$commission = $calculator->calculate(
-    affiliate: $affiliate,
-    orderTotal: 15000,
-    orderSubtotal: 14000,
-    context: ['product_category' => 'electronics'],
-);
-
-// Calculate with specific program
-$commission = $calculator->calculateForProgram(
-    affiliate: $affiliate,
-    program: $program,
-    orderTotal: 15000,
-);
-
-// Get applicable volume tier bonus
-$bonus = $calculator->getVolumeTierBonus($affiliate, $periodVolume);
+// Calculate commission for an order subtotal (affiliate rate applied)
+$commission = $calculator->calculate($affiliate, 14000);
 ```
+
+Per-program rules, volume tiers, and promotions are evaluated by
+`CommissionRuleEngine::calculate()` with the affiliate's program rules;
+see [Programs](07-programs.md).
 
 ## PayoutReconciliationService
 
@@ -108,25 +97,20 @@ $service = app(FraudDetectionService::class);
 ### Methods
 
 ```php
-// Analyze attribution for fraud
-$signals = $service->analyzeAttribution($attribution);
+// Analyze a click for fraud; returns ['allowed', 'score', 'signals']
+$result = $service->analyzeClick($affiliate, $request);
 
-// Analyze conversion for fraud
-$signals = $service->analyzeConversion($conversion);
+// Analyze a conversion for fraud; persists signals and returns the same shape
+$result = $service->analyzeConversion($affiliate, $conversion);
 
-// Get fraud score for affiliate
-$score = $service->getFraudScore($affiliate);
-
-// Check velocity limits
-$exceeded = $service->checkVelocityLimits($affiliate, 'clicks');
-
-// Record fraud signal
-$signal = $service->recordSignal($affiliate, [
-    'type' => 'velocity_exceeded',
-    'severity' => FraudSeverity::High,
-    'details' => ['clicks_per_hour' => 150],
-]);
+// Aggregated risk profile for an affiliate
+$profile = $service->getRiskProfile($affiliate);
+// ['total_score', 'severity', 'signal_count', 'by_rule', 'pending_review', 'confirmed']
 ```
+
+Individual checks live in `Rules/` (velocity, self-referral, device
+fingerprint, geo anomaly, unusual amount, rapid conversion). See
+[Fraud Detection](09-fraud-detection.md).
 
 ## UplineService
 
@@ -196,17 +180,17 @@ $service = app(ProgramService::class);
 ### Methods
 
 ```php
-// Enroll affiliate in program
-$membership = $service->enroll($affiliate, $program);
+// Join a program (creates a membership; honors requires_approval)
+$membership = $service->joinProgram($affiliate, $program);
 
-// Check eligibility
-$eligible = $service->checkEligibility($affiliate, $program);
+// Check eligibility (open, not already a member, rules pass)
+$eligible = $program->canJoin($affiliate);
 
-// Get available programs for affiliate
-$programs = $service->getAvailablePrograms($affiliate);
+// Get available programs
+$programs = $service->getAvailablePrograms();
 
-// Upgrade membership tier
-$service->upgradeTier($membership, $newTier);
+// Upgrade an affiliate to a new tier within a program
+$service->upgradeTier($affiliate, $program, $newTier);
 ```
 
 ## DailyAggregationService
@@ -280,11 +264,20 @@ use AIArmada\Affiliates\Services\CohortAnalyzer;
 
 $analyzer = app(CohortAnalyzer::class);
 
-// Analyze cohort retention
-$retention = $analyzer->analyzeRetention($cohort, $periods);
+// Monthly cohort table for a period
+$monthly = $analyzer->analyzeMonthly($from, $to);
 
-// Compare cohorts
-$comparison = $analyzer->compare($cohortA, $cohortB);
+// Retention curve across cohorts
+$curve = $analyzer->calculateRetentionCurve($from, $to);
+
+// Lifetime value by cohort
+$ltv = $analyzer->calculateLtv($from, $to);
+
+// Compare cohorts side by side
+$comparison = $analyzer->compareCohorts($from, $to);
+
+// Break cohorts down by acquisition source
+$bySource = $analyzer->analyzeBySource($from, $to);
 ```
 
 ## PerformanceBonusService
@@ -317,11 +310,11 @@ use AIArmada\Affiliates\Services\AttributionModel;
 
 $model = app(AttributionModel::class);
 
-// Get credited affiliate for conversion
-$affiliate = $model->getCreditedAffiliate($cart);
+// Resolve the configured strategy (first_touch, last_touch, linear)
+$strategy = $model->resolve(); // defaults to affiliates.tracking.attribution_model
 
-// Distribute credit (for linear attribution)
-$distribution = $model->distributeCredit($touchpoints, $total);
+// Distribute credit across touchpoints with the configured strategy
+$distribution = $model->distribute($touches);
 ```
 
 ## Merchant Seam Contracts

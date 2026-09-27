@@ -9,63 +9,51 @@ The Orders package uses `spatie/laravel-model-states` for robust order state man
 ## State Diagram
 
 ```
-                                    ┌─────────────┐
-                                    │   Created   │
-                                    └──────┬──────┘
-                                           │
-                                           ▼
-                          ┌────────────────────────────────┐
-                          │        PendingPayment          │
-                          └────────┬──────────┬────────────┘
-                                   │          │
-            ┌──────────────────────┘          └───────────────────┐
-            │                                                      │
-            ▼                                                      ▼
-    ┌───────────────┐                                      ┌─────────────────┐
-    │  Processing   │                                      │  PaymentFailed  │
-    └───────┬───────┘                                      │    (final)      │
-            │                                              └─────────────────┘
-            ├─────────────────────────────────┐
-            │                                 │
-            ▼                                 ▼
-    ┌───────────────┐                 ┌───────────────┐
-    │    Shipped    │                 │    OnHold     │
-    └───────┬───────┘                 └───────────────┘
-            │
-            ▼
-    ┌───────────────┐
-    │   Delivered   │
-    └───────┬───────┘
-            │
-    ┌───────┴───────┐
-    │               │
-    ▼               ▼
-┌──────────┐  ┌──────────┐
-│Completed │  │ Returned │───────┐
-│ (final)  │  └──────────┘       │
-└──────────┘                     ▼
-                          ┌──────────┐
-                          │ Refunded │
-                          │ (final)  │
-                          └──────────┘
-
-       ┌─────────────────────────────────┐
-       │ Cancelable from:                │
-       │ • PendingPayment                │
-       │ • Processing                    │
-       │ • OnHold                        │
-       └───────────────┬─────────────────┘
-                       ▼
-               ┌───────────────┐
-               │   Canceled    │
-               │   (final)     │
-               └───────────────┘
-
-               ┌───────────────┐
-               │     Fraud     │
-               │   (final)     │
-               └───────────────┘
+              ┌─────────────┐
+              │   Created   │
+              └──────┬──────┘
+                     ▼
+         ┌─────────────────────┐
+         │    PendingPayment   │
+         └──┬───────┬───────┬──┘
+            ▼       ▼       ▼
+     ┌────────────┐ ┌───────────┐ ┌─────────────┐
+     │ Processing │ │ Canceled  │ │PaymentFailed│
+     └─────┬──────┘ │  (final)  │ │   (final)   │
+           ▼        └───────────┘ └─────────────┘
+    ┌────────────┐
+    │  Shipped   │──┐
+    └─────┬──────┘  │ (Shipped → Returned)
+          ▼         ▼
+   ┌─────────────┐ ┌──────────┐
+   │  Delivered  │ │ Returned │──┐
+   └──────┬──────┘ └──────────┘  ▼
+          ▼               ┌────────────┐
+   ┌──────────┐           │  Refunded  │
+   │Completed │──────────▶│  (final)   │
+   │ (final)  │           └────────────┘
+   └──────────┘
+   ┌─────────┐    ┌─────────┐
+   │ OnHold  │    │  Fraud  │
+   └─────────┘    │ (final) │
+   (Processing    └─────────┘
+    ↔ OnHold)
 ```
+
+The sketch above shows the primary flow. The complete edge list
+(`OrderStatus::config()`) is authoritative:
+
+- Created → PendingPayment, Processing
+- PendingPayment → Processing, Canceled, PaymentFailed
+- Processing → OnHold, Fraud, Shipped, Completed, Canceled, Refunded
+- OnHold → Processing, Canceled
+- Shipped → Delivered, Returned
+- Delivered → Completed, Returned, Refunded
+- Completed → Refunded
+- Canceled → Refunded
+- Returned → Refunded
+
+Cancelable from: Created, PendingPayment, Processing, OnHold.
 
 ## States
 
@@ -73,9 +61,9 @@ The Orders package uses `spatie/laravel-model-states` for robust order state man
 |-------|-------------|-------|------------|------------|
 | `Created` | Initial state | No | Yes | No |
 | `PendingPayment` | Awaiting payment | No | Yes | No |
-| `Processing` | Payment received, preparing | No | Yes | No |
+| `Processing` | Payment received, preparing | No | Yes | Yes |
 | `Shipped` | Order shipped | No | No | No |
-| `Delivered` | Order delivered | No | No | No |
+| `Delivered` | Order delivered | No | No | Yes |
 | `Completed` | Fully completed | Yes | No | Yes |
 | `Canceled` | Order canceled | Yes | No | No |
 | `Refunded` | Fully refunded | Yes | No | No |
@@ -253,7 +241,7 @@ $service->confirmPayment($order, 'txn_123', 'stripe', 9900);
 $service->ship($order, 'DHL', 'DHL123');
 $service->confirmDelivery($order);
 $service->cancel($order, 'Customer requested', auth()->id());
-$service->processRefund($order, 5000, 'Returned items');
+$service->processRefund($order, 5000, 'ref_456', 'Returned items');
 ```
 
 ## Custom State Logic
@@ -293,22 +281,24 @@ final class AwaitingPickup extends OrderStatus
 
 ### Registering Custom States
 
-Register in the Order model or via configuration:
+States are registered centrally in `AIArmada\Orders\States\OrderStatus::config()`,
+which is `final`. The package does not offer a runtime hook for adding states:
+to introduce one, extend the `OrderStatus` hierarchy in a fork or package
+override and register the new state plus its edges on the `StateConfig`:
 
 ```php
-// Extend the Order model
+use AIArmada\Orders\States\OrderStatus;
 use Spatie\ModelStates\StateConfig;
 
-public function registerStates(): void
-{
-    parent::registerStates();
-    
-    // Add custom state
-    $this->addState(AwaitingPickup::class)
-        ->allowTransition(Processing::class, AwaitingPickup::class)
-        ->allowTransition(AwaitingPickup::class, Delivered::class);
-}
+OrderStatus::config()
+    ->registerState(AwaitingPickup::class)
+    ->allowTransition(Processing::class, AwaitingPickup::class)
+    ->allowTransition(AwaitingPickup::class, Delivered::class);
 ```
+
+Note that `OrderStatus::config()` builds a fresh `StateConfig` on every call,
+so registrations must live in the state class itself — there is no
+model-level `registerStates()` hook in this package.
 
 ## Querying by State
 

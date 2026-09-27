@@ -15,7 +15,7 @@ use AIArmada\Products\Actions\CreateProduct;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
 
-$product = CreateProduct::run([
+$product = app(CreateProduct::class)->execute([
     'name' => 'Basic T-Shirt',
     'slug' => 'basic-t-shirt',
     'sku' => 'TSHIRT-001',
@@ -30,7 +30,7 @@ $product = CreateProduct::run([
 ```php
 use AIArmada\Products\Actions\UpdateProduct;
 
-$product = UpdateProduct::run($product, [
+$product = app(UpdateProduct::class)->execute($product, [
     'name' => 'Updated T-Shirt',
     'price' => 2499,
 ]);
@@ -42,7 +42,7 @@ $product = UpdateProduct::run($product, [
 use AIArmada\Products\Actions\UpdateProductStatus;
 use AIArmada\Products\Enums\ProductStatus;
 
-UpdateProductStatus::run($product, ProductStatus::Active);
+app(UpdateProductStatus::class)->execute($product, ProductStatus::Active);
 ```
 
 ### GenerateVariants
@@ -50,7 +50,7 @@ UpdateProductStatus::run($product, ProductStatus::Active);
 ```php
 use AIArmada\Products\Actions\GenerateVariants;
 
-$variants = GenerateVariants::run($product);
+$variants = app(GenerateVariants::class)->execute($product);
 // Returns Collection<int, Variant>
 ```
 
@@ -61,13 +61,13 @@ Generation caps at `features.variants.max_generated` (default 200) and throws `V
 ```php
 use AIArmada\Products\Actions\ApplyAttributeChanges;
 
-ApplyAttributeChanges::run($product, [
+app(ApplyAttributeChanges::class)->execute($product, [
     'material' => 'Cotton',
     'care_instructions' => 'Cold wash only',
 ]);
 
 // Also supports variant-level application:
-ApplyAttributeChanges::make()->forVariant($variant, [
+app(ApplyAttributeChanges::class)->forVariant($variant, [
     'color' => 'Red',
 ]);
 ```

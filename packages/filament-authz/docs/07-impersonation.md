@@ -22,6 +22,10 @@ Filament Authz provides a secure user impersonation feature that allows administ
 // config/filament-authz.php
 'impersonate' => [
     'enabled' => true,
+],
+
+// config/authz.php
+'impersonate' => [
     'guard' => 'web', // Authentication guard to use
 ],
 ```

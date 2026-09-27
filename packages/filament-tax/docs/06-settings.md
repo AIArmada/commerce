@@ -25,9 +25,9 @@ Or via configuration:
 ## Navigation
 
 The settings page appears at:
-- **Path:** `/admin/tax/settings`
-- **Navigation:** Tax > Tax Settings
-- **Icon:** `heroicon-o-cog`
+- **Path:** `/admin/manage-tax-settings` (default slug)
+- **Navigation:** Settings > Tax Settings
+- **Icon:** `heroicon-o-receipt-percent`
 
 ## Settings Overview
 
@@ -47,8 +47,8 @@ The page manages the `TaxSettings` class from the base tax package using Spatie 
 │ Default Tax Rate (%)   [6.00___________]                    │
 │   Used when no zone-specific rate is found                   │
 │                                                              │
-│ Rounding Precision     [2___]                               │
-│   Decimal places for tax amounts                             │
+│ Default Tax Name       [SST_____________]                   │
+│   Tax name displayed on invoices                             │
 │                                                              │
 │ ─────────────────────────────────────────────────────────── │
 │ Price Configuration                                          │
@@ -57,18 +57,27 @@ The page manages the `TaxSettings` class from the base tax package using Spatie 
 │ ☐ Prices Include Tax                                        │
 │   Enable if product prices already include tax               │
 │                                                              │
-│ ☐ Display Prices with Tax                                   │
-│   Show tax-inclusive prices to customers                     │
+│ ☑ Tax Based on Shipping Address                             │
+│   Calculate tax based on shipping address                    │
+│                                                              │
+│ ☑ Digital Goods Taxable                                     │
+│   Apply tax to digital products                              │
 │                                                              │
 │ ─────────────────────────────────────────────────────────── │
-│ Shipping & Exemptions                                        │
+│ Shipping & Tax IDs                                           │
 │ ─────────────────────────────────────────────────────────── │
 │                                                              │
-│ ☑ Shipping is Taxable                                       │
+│ ☐ Shipping is Taxable                                       │
 │   Apply tax to shipping charges                              │
 │                                                              │
-│ ☑ Enable Tax Exemptions                                     │
-│   Allow customers to apply for tax exemptions                │
+│ Tax ID Label           [SST Number        ▼]                │
+│   Label for customer tax identification numbers              │
+│                                                              │
+│ ☐ Validate Tax IDs                                          │
+│   Validate customer tax IDs                                  │
+│                                                              │
+│ ☐ Require Exemption Certificate                             │
+│   Require certificate for B2B tax exemptions                 │
 │                                                              │
 │                                   [Cancel]  [Save Settings]  │
 └─────────────────────────────────────────────────────────────┘
@@ -79,12 +88,15 @@ The page manages the `TaxSettings` class from the base tax package using Spatie 
 | Setting | Type | Default | Description |
 |---------|------|---------|-------------|
 | `enabled` | bool | `true` | Master switch for tax calculation |
-| `defaultTaxRate` | int | `0` | Fallback rate in basis points |
-| `roundingPrecision` | int | `2` | Decimal places for rounding |
+| `defaultTaxRate` | float | `6.0` | Fallback rate as a percentage (e.g., 6 for 6%) |
+| `defaultTaxName` | string | `'SST'` | Tax name on invoices |
 | `pricesIncludeTax` | bool | `false` | Whether catalog prices include tax |
-| `displayWithTax` | bool | `false` | Show tax-inclusive prices to customers |
-| `shippingTaxable` | bool | `true` | Apply tax to shipping |
-| `exemptionsEnabled` | bool | `true` | Allow tax exemptions |
+| `taxBasedOnShippingAddress` | bool | `true` | Use shipping address for zone |
+| `digitalGoodsTaxable` | bool | `true` | Tax digital products |
+| `shippingTaxable` | bool | `false` | Apply tax to shipping |
+| `taxIdLabel` | string | `'SST Number'` | Label for tax ID field |
+| `validateTaxIds` | bool | `false` | Validate customer tax IDs |
+| `requireExemptionCertificate` | bool | `false` | Require certificate for exemptions |
 
 ## Implementation
 
@@ -94,68 +106,57 @@ The settings page extends Filament's settings page with custom form fields:
 namespace AIArmada\FilamentTax\Pages;
 
 use AIArmada\Tax\Settings\TaxSettings;
-use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
-use Filament\Forms\Form;
-use Filament\Pages\SettingsPage;
+use Filament\Pages\Page;
+use Filament\Schemas\Schema;
 
-class ManageTaxSettings extends SettingsPage
+final class ManageTaxSettings extends Page
 {
-    protected static string $settings = TaxSettings::class;
-    
-    protected static ?string $navigationIcon = 'heroicon-o-cog';
-    
-    protected static ?string $navigationGroup = 'Tax';
-    
-    protected static ?string $title = 'Tax Settings';
-    
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
             ->schema([
-                Section::make('General Settings')
-                    ->schema([
-                        Toggle::make('enabled')
-                            ->label('Enable Tax Calculation')
-                            ->helperText('When enabled, taxes are calculated on orders'),
-                            
-                        TextInput::make('defaultTaxRate')
-                            ->label('Default Tax Rate (%)')
-                            ->numeric()
-                            ->suffix('%')
-                            ->helperText('Used when no zone-specific rate is found'),
-                            
-                        TextInput::make('roundingPrecision')
-                            ->label('Rounding Precision')
-                            ->numeric()
-                            ->minValue(0)
-                            ->maxValue(8)
-                            ->helperText('Decimal places for tax amounts'),
+                Toggle::make('enabled')
+                    ->label('Enable Tax Calculation'),
+
+                TextInput::make('defaultTaxRate')
+                    ->label('Default Tax Rate')
+                    ->numeric()
+                    ->suffix('%'),
+
+                TextInput::make('defaultTaxName')
+                    ->label('Default Tax Name'),
+
+                Toggle::make('pricesIncludeTax')
+                    ->label('Prices Include Tax'),
+
+                Toggle::make('taxBasedOnShippingAddress')
+                    ->label('Tax Based on Shipping Address'),
+
+                Toggle::make('digitalGoodsTaxable')
+                    ->label('Digital Goods Taxable'),
+
+                Toggle::make('shippingTaxable')
+                    ->label('Shipping Taxable'),
+
+                Select::make('taxIdLabel')
+                    ->label('Tax ID Label')
+                    ->options([
+                        'VAT Number' => 'VAT Number',
+                        'GST Number' => 'GST Number',
+                        'SST Number' => 'SST Number',
+                        'Tax ID' => 'Tax ID',
                     ]),
-                    
-                Section::make('Price Configuration')
-                    ->schema([
-                        Toggle::make('pricesIncludeTax')
-                            ->label('Prices Include Tax')
-                            ->helperText('Enable if product prices already include tax'),
-                            
-                        Toggle::make('displayWithTax')
-                            ->label('Display Prices with Tax')
-                            ->helperText('Show tax-inclusive prices to customers'),
-                    ]),
-                    
-                Section::make('Shipping & Exemptions')
-                    ->schema([
-                        Toggle::make('shippingTaxable')
-                            ->label('Shipping is Taxable')
-                            ->helperText('Apply tax to shipping charges'),
-                            
-                        Toggle::make('exemptionsEnabled')
-                            ->label('Enable Tax Exemptions')
-                            ->helperText('Allow customers to apply for tax exemptions'),
-                    ]),
-            ]);
+
+                Toggle::make('validateTaxIds')
+                    ->label('Validate Tax IDs'),
+
+                Toggle::make('requireExemptionCertificate')
+                    ->label('Require Exemption Certificate'),
+            ])
+            ->statePath('data');
     }
 }
 ```
@@ -261,16 +262,17 @@ use App\Settings\TaxSettings;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Toggle;
+use Filament\Schemas\Schema;
 
 class ManageTaxSettings extends BaseSettingsPage
 {
-    protected static string $settings = TaxSettings::class;
-    
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
-        return $form->schema([
-            ...parent::form($form)->getComponents(),
-            
+        $schema = parent::form($schema);
+
+        return $schema->schema([
+            ...$schema->getComponents(),
+
             Section::make('Zone Detection')
                 ->schema([
                     Toggle::make('autoDetectZone')

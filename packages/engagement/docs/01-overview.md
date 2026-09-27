@@ -73,7 +73,7 @@ title: Engagement Overview
 | `Response` | RSVP intent | active, changed, cancelled, expired |
 | `Reaction` | Lightweight feedback | active, removed |
 | `Subscription` | Rule/filter interest | active, muted, unsubscribed, expired |
-| `Reminder` | Scheduled notification | pending, scheduled, sent, failed, cancelled |
+| `Reminder` | Scheduled notification | pending, scheduled, sent, failed, cancelled, expired |
 | `Share` | Tracked share action | created, shared, revoked, expired, failed |
 | `EngagementCounter` | Cached interaction counts | — |
 

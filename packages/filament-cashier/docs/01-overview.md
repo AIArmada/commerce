@@ -132,7 +132,7 @@ The package automatically detects installed gateways and enables features accord
 | `UnifiedInvoice` | DTO normalizing invoice data |
 | `SubscriptionStatus` | Normalized status enum |
 | `InvoiceStatus` | Normalized invoice status enum |
-| `CashierOwnerScope` | Owner/tenant scoping for queries |
+| `OwnerScopedQuery` | Owner/tenant scoping for queries (from `aiarmada/cashier`) |
 
 ### Design Principles
 

@@ -37,13 +37,12 @@ php artisan vendor:publish --tag="filament-cart-config"
 
 ## Resources
 
-The plugin registers four Filament resources under the **E-Commerce** navigation group:
+The plugin registers three Filament resources under the **E-Commerce** navigation group:
 
 | Resource | Model | Purpose |
 |----------|-------|---------|
 | Carts | `AIArmada\\Cart\\Snapshots\\CartSnapshot` | View normalized cart snapshots |
 | Cart Items | `AIArmada\\Cart\\Snapshots\\CartSnapshotItem` | Browse individual line items |
-| Cart Conditions | `AIArmada\\Cart\\Snapshots\\CartSnapshotCondition` | View conditions applied to carts |
 | Conditions | `AIArmada\\Cart\\Models\\Condition` | Manage reusable condition templates |
 
 ### Cart Resource
@@ -64,14 +63,9 @@ Read-only resource for line item analysis:
 - Parent cart navigation
 - JSON-searchable metadata
 
-### Cart Condition Resource
+### Cart Conditions Display
 
-Read-only resource showing applied conditions:
-
-- Type badges (discount, fee, tax, shipping)
-- Target visualization (subtotal, total, item)
-- Value display (percentage or fixed)
-- Calculation order
+Applied conditions are not a separate resource. They are shown on each cart through the Conditions relation manager with type badges, target visualization, value display, and calculation order.
 
 ### Condition Resource
 
@@ -86,8 +80,9 @@ Full CRUD for reusable condition templates:
 
 The `CartStatsWidget` displays key metrics on your dashboard:
 
-- Active cart count
-- Total cart items
+- Active carts (with items count)
+- Checkouts in progress
+- Recent abandonments
 - Total cart value
 
 ## Configuration

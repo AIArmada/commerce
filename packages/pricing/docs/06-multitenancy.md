@@ -43,7 +43,7 @@ The package uses `OwnerContext` from `commerce-support` to resolve the current o
 use AIArmada\CommerceSupport\Support\OwnerContext;
 
 // Set owner context (typically in middleware)
-OwnerContext::set($tenant);
+OwnerContext::setForRequest($tenant);
 
 // Resolve current owner
 $owner = OwnerContext::resolve();
@@ -73,7 +73,7 @@ $lists = PriceList::forOwner($tenant)->get();
 $lists = PriceList::forOwner($tenant, includeGlobal: true)->get();
 
 // Global records only
-$globalLists = PriceList::whereNull('owner_id')->get();
+$globalLists = PriceList::globalOnly()->get();
 ```
 
 ## Sharing config and owner context
@@ -81,7 +81,7 @@ $globalLists = PriceList::whereNull('owner_id')->get();
 Owner scoping is configured per package and resolved through `commerce-support`:
 
 ```php
-use AIArmada\CommerceSupport\Facades\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 
 // Check if owner scoping is enabled
 if (config('pricing.features.owner.enabled', false)) {
@@ -150,14 +150,12 @@ $price = Price::create([
 Global records (where `owner_type` and `owner_id` are `null`) can be shared across all tenants:
 
 ```php
-// Create a global price list (requires null owner context)
-OwnerContext::clear();
-
-$globalList = PriceList::create([
+// Create a global price list (requires explicit null owner context)
+$globalList = OwnerContext::withOwner(null, fn () => PriceList::create([
     'name' => 'Default Retail',
     'slug' => 'default-retail',
     'is_default' => true,
-]);
+]));
 
 // Access global records with include_global
 PriceList::forOwner($tenant, includeGlobal: true)->get();
@@ -199,7 +197,7 @@ class SetOwnerContext
         $tenant = $request->user()?->tenant;
         
         if ($tenant) {
-            OwnerContext::set($tenant);
+            OwnerContext::setForRequest($tenant);
         }
         
         return $next($request);

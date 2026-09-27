@@ -174,7 +174,7 @@ try {
         'affiliate_id' => $otherTenantAffiliate->id, // Different owner
     ]);
 } catch (RuntimeException $e) {
-    // "Cannot create record for an affiliate owned by a different owner."
+    // "Cannot create or update {Class} for an inaccessible or missing owner relation."
 }
 ```
 

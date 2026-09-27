@@ -126,7 +126,7 @@ Track lot/batch numbers with expiry management.
 - Batch and lot number tracking
 - Expiry date management
 - Quantity tracking (initial, current, reserved)
-- Status management (Active, Quarantined, Expired, Depleted)
+- Status management (Active, Quarantined, Expired, Depleted, Recalled, OnHold)
 - Navigation badge showing batches expiring soon
 
 ### Fields
@@ -137,9 +137,9 @@ Track lot/batch numbers with expiry management.
 | `lot_number` | string | Secondary lot identifier |
 | `location_id` | uuid | Storage location |
 | `status` | enum | Batch status |
-| `initial_quantity` | integer | Original quantity |
-| `current_quantity` | integer | Remaining quantity |
-| `reserved_quantity` | integer | Reserved units |
+| `quantity_received` | integer | Original quantity |
+| `quantity_on_hand` | integer | Remaining quantity |
+| `quantity_reserved` | integer | Reserved units |
 | `manufactured_at` | date | Production date |
 | `expires_at` | date | Expiry date |
 | `received_at` | date | Receipt date |
@@ -160,7 +160,7 @@ Individual unit tracking with warranty management.
 ### Features
 
 - Unique serial number tracking
-- Status management (Available, Allocated, Sold, Returned, etc.)
+- Status management (Available, Reserved, Sold, Returned, etc.)
 - Condition tracking (New, Refurbished, Damaged, etc.)
 - Warranty expiration tracking
 - Order/customer association

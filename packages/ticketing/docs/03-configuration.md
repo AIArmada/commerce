@@ -14,10 +14,10 @@ The ticketing package configuration is located in `config/ticketing.php`.
 'database' => [
     'table_prefix' => 'ticket_',
     'tables' => [
-        'ticket_types' => 'ticket_ticket_types',
-        'ticket_type_components' => 'ticket_ticket_type_components',
-        'ticket_type_products' => 'ticket_ticket_type_products',
-        'ticket_type_seating_options' => 'ticket_ticket_type_seating_options',
+        'ticket_types' => 'ticket_types',
+        'ticket_type_components' => 'ticket_type_components',
+        'ticket_type_products' => 'ticket_type_products',
+        'ticket_type_seating_options' => 'ticket_type_seating_options',
         'passes' => 'ticket_passes',
         'pass_holders' => 'ticket_pass_holders',
         'pass_transfers' => 'ticket_pass_transfers',
@@ -82,7 +82,7 @@ registrations.
 | Key | Description |
 |-----|-------------|
 | `bulk_max_size` | Maximum passes per bulk transfer operation |
-| `expiry_grace_period` | Additional seconds after transfer window closes during which transfers are still allowed |
+| `expiry_grace_period` | Additional minutes after transfer window closes during which transfers are still allowed |
 
 ## Issuance Settings
 

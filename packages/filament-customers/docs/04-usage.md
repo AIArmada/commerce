@@ -61,7 +61,7 @@ Contact methods are edited in the Contact Methods relation manager supplied by
 
 **Status Sidebar:**
 ```php
-- Status dropdown (Active/Inactive/Suspended/Pending)
+- Status dropdown (Active/Inactive/Suspended/Pending Verification)
 ```
 
 **Segments Sidebar:**
@@ -188,7 +188,8 @@ The Segment Resource manages customer segmentation with support for automatic ru
 
 **Available Condition Fields:**
 - Accepts Marketing (boolean)
-- Days Since Registration
+- Customer Status
+- Customer for X Days (days since registration)
 
 **Settings Sidebar:**
 ```php

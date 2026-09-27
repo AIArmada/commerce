@@ -18,9 +18,6 @@ Check that `EVENTS_SYNC_BUILD_SEARCH_DOCUMENTS=true` and that `events.search.ind
 
 If you changed event, occurrence, or session attribute, audience, classification, or time-expression records and expected the search document to move, make sure the relevant sync toggle is enabled:
 
-- `EVENTS_SYNC_ATTRIBUTES_TO_METADATA`
-- `EVENTS_SYNC_AUDIENCES_TO_METADATA`
-- `EVENTS_SYNC_TIME_EXPRESSIONS_TO_METADATA`
 - `EVENTS_SYNC_AUDIENCES_TO_FACETS`
 - `EVENTS_SYNC_CLASSIFICATIONS_TO_FACETS`
 
@@ -63,7 +60,7 @@ The Filament resources apply `OwnerUiScope::apply(..., includeGlobal: false)` by
 
 Free registrations created via `RegisterForFreeAction` do not have registration items. `IssueEventRegistrationPassesAction` handles this by ensuring a hidden zero-priced `TicketType` for the resolved event scope, then issuing a single generic pass. Verify `issue_passes_for_free` is enabled at the event/occurrence/session level, or left `null` so it can inherit the parent or configured default.
 
-### `RegisterForFreeAction` throws `UseRecordWalkInActionException` or `UseRecordHeadcountLogActionException`
+### `RegisterForFreeAction` throws `UseRecordWalkInActionException` or `UseRecordHeadcountActionException`
 
 The event's `registration_mode` is `None`, and `open_door_mode` is set to `walk_in` or `headcount`. Use `RecordWalkInAction` or `RecordHeadcountLogAction` instead.
 
@@ -91,8 +88,6 @@ Status values stored in the database are unchanged. Allowed transitions are defi
 
 When a session or occurrence has an explicit `pricing_mode` or `registration_mode` column value, the model cast may already return the enum instance. The resolver handles both cases (raw string and pre-cast enum). If you see `TypeError: ::from()` in the stack trace, ensure your package version includes the `instanceof` guard added in this feature.
 
-## A notification batch remains processing
+## A change notice was not delivered
 
-Inspect its delivery rows. `processing` with a fresh `leased_at` means a worker owns the attempt. A stale lease is reclaimable by a later job. `failed` is retryable; `dead` exhausted its automatic attempts and requires an explicit operator retry. Error storage is intentionally limited to `last_error_code`; raw transport exceptions are not persisted.
-
-If the batch has `MISSING_NOTIFICATION_ADAPTER`, either restrict `events.change_notices.channels` to `mail` or bind a dispatcher that implements every enabled channel.
+Change notices publish via `EventChangeNoticeWorkflow::publishNotice($changeLog)` and deliver through the `aiarmada/communications` manager. If recipients did not receive a notice, check the `EventChangeLog` record exists, the audience resolver returned recipients, each recipient has a mail destination (a valid `email` attribute or `routeNotificationForMail()`), and the communications outbox/logs for transport errors.

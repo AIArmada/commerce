@@ -17,7 +17,7 @@ The bundle deliberately does not include every Commerce package. Install these s
 - `signals` and `growth` — analytics, tracking, and growth workflows
 - `membership` — customer membership and entitlements
 - `moderation` — block and moderation workflows
-- `references` — reference-number and reference-part management
+- `references` — bibliographic references, citations, and structured reference parts
 
 This policy keeps the metapackage predictable and avoids pulling unrelated domain features into every checkout installation.
 

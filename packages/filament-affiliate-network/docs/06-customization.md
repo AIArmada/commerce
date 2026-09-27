@@ -70,31 +70,6 @@ public function panel(Panel $panel): Panel
 
 ## Extending Pages
 
-### Custom Marketplace Page
-
-```php
-<?php
-
-namespace App\Filament\Pages;
-
-use AIArmada\FilamentAffiliateNetwork\Pages\AffiliateMarketplacePage as BasePage;
-use Illuminate\Support\Collection;
-
-class AffiliateMarketplacePage extends BasePage
-{
-    protected static ?string $title = 'Partner Opportunities';
-    protected static ?string $navigationLabel = 'Find Offers';
-    
-    public function getOffers(): Collection
-    {
-        // Only show featured offers with high commission
-        return parent::getOffers()
-            ->filter(fn ($offer) => $offer->is_featured)
-            ->filter(fn ($offer) => ($offer->rate_base_bp ?? 0) >= 1000);
-    }
-}
-```
-
 ### Custom Merchant Dashboard
 
 ```php
@@ -221,49 +196,9 @@ php artisan vendor:publish --tag=filament-affiliate-network-views
 
 Files published to `resources/views/vendor/filament-affiliate-network/`.
 
-### Customize Marketplace View
+### Customize Merchant Dashboard View
 
-Edit `resources/views/vendor/filament-affiliate-network/pages/affiliate-marketplace.blade.php`:
-
-```blade
-<x-filament-panels::page>
-    {{-- Custom header --}}
-    <div class="mb-8 text-center">
-        <h1 class="text-3xl font-bold">Discover Partner Opportunities</h1>
-        <p class="text-gray-500">Browse and apply for affiliate programs</p>
-    </div>
-    
-    {{-- Existing search & filters --}}
-    <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        {{-- Search and filter controls --}}
-    </div>
-    
-    {{-- Custom offer cards --}}
-    <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-        @foreach ($this->getOffers() as $offer)
-            <x-filament::section>
-                {{-- Custom card layout --}}
-                <div class="space-y-4">
-                    <h3 class="text-lg font-semibold">{{ $offer->name }}</h3>
-                    <p class="text-sm text-gray-600">{{ $offer->site->name }}</p>
-                    
-                    {{-- Commission badge --}}
-                    <x-filament::badge color="success">
-                        {{ $offer->formattedRate() }}
-                    </x-filament::badge>
-                    
-                    {{-- Apply button --}}
-                    @if (!$this->hasApplied($offer))
-                        <x-filament::button wire:click="applyForOffer('{{ $offer->id }}')">
-                            Apply Now
-                        </x-filament::button>
-                    @endif
-                </div>
-            </x-filament::section>
-        @endforeach
-    </div>
-</x-filament-panels::page>
-```
+Edit `resources/views/vendor/filament-affiliate-network/pages/merchant-dashboard.blade.php` to restyle the stats, top offers, and pending applications sections.
 
 ---
 
@@ -372,7 +307,7 @@ public function panel(Panel $panel): Panel
         ->id('affiliate')
         ->path('affiliate')
         ->pages([
-            AffiliateMarketplacePage::class,
+            MerchantDashboardPage::class,
             // Affiliate-specific pages
         ]);
 }

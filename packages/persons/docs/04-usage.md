@@ -167,8 +167,9 @@ $affiliation->roles()->create([
 `PersonName::is_primary` is exclusive within `(person_id, name_type,
 language_code)`. `Affiliation::is_primary` is exclusive within its person.
 Saving a primary record locks the parent and clears the matching siblings,
-including writes made through Filament relation managers. The database partial
-unique backstop is scheduled for the next permitted index migration.
+including writes made through Filament relation managers. The
+`person_names_primary_unique` and `affiliations_primary_unique` partial
+unique indexes are the database backstop.
 
 ## Linking a customer profile
 

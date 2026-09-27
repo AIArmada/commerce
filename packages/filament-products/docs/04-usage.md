@@ -105,7 +105,9 @@ The Options relation manager follows the same capability rule. If `supports_vari
 Available bulk actions on the product table:
 
 - **Delete Selected**: Delete multiple products
-- **Bulk Edit**: Opens bulk edit modal (if enabled)
+- **Activate** / **Set to Draft**: Update status
+- **Update Price**: Adjust prices
+- **Change Visibility**: Update visibility
 
 ---
 
@@ -124,10 +126,7 @@ Categories display in a hierarchical tree structure showing parent-child relatio
 
 ### Managing Products
 
-Use the Products relation manager to:
-- View products in category
-- Attach/detach products
-- Quick-create products
+There is no Products relation manager on categories. Assign categories from the product form's multi-select instead.
 
 ---
 
@@ -136,7 +135,7 @@ Use the Products relation manager to:
 ### Manual Collections
 
 1. Create collection with type "Manual"
-2. Use Products relation manager to add products
+2. Attach products in code via `$collection->products()->sync([...])` (there is no Products relation manager)
 
 ### Automatic Collections
 
@@ -152,8 +151,8 @@ Use the Products relation manager to:
 ]
 ```
 
-**Supported Fields**: Any product database column
-**Supported Operators**: `=`, `!=`, `>`, `<`, `>=`, `<=`, `like`
+**Supported Fields**: The six named rules only — `price_min`, `price_max`, `type`, `category`, `tag`, `is_featured`.
+**Supported Operators**: The form has no operator input; conditions default to `=`.
 
 ---
 
@@ -166,7 +165,7 @@ Use the Products relation manager to:
 3. Configure:
    - **Code**: Unique identifier (e.g., `material`, `fabric_weight`)
    - **Name**: Display name
-   - **Type**: Text, Textarea, Number, Boolean, Select, MultiSelect, Date, DateTime
+   - **Type**: Text, Textarea, Number, Boolean, Select, Multiselect, Date, Color, Media
    - **Options**: For Select/MultiSelect types
    - **Validation**: Required, filterable, visible flags
 
@@ -182,32 +181,32 @@ Organize attributes into logical groups:
 Combine groups into sets for product types:
 
 1. Create set (e.g., "Apparel", "Electronics")
-2. Assign groups to set
-3. Assign set to products
+2. Assign attributes and groups to the set
 
 ---
 
-## Import/Export Page
+## Import/Export Actions
+
+Import and export live as header actions on the products table, not a separate page.
 
 ### Exporting Products
 
-1. Navigate to "Import/Export Products"
-2. Select export format (CSV)
-3. Choose fields to export
-4. Click "Export"
+1. Open the products list
+2. Click "Export"
+3. Choose fields to export (CSV)
 
 ### Importing Products
 
-1. Navigate to "Import/Export Products"
-2. Upload CSV file
-3. Map columns to fields
-4. Preview and confirm
-5. Click "Import"
+1. Open the products list
+2. Click "Import"
+3. Upload the CSV file
+4. Toggle "Update Existing Products" (match by SKU) and "Skip Errors" as needed
+5. Confirm to run the import
 
 **CSV Format Requirements**:
 - UTF-8 encoding
 - Header row required
-- Prices in cents
+- Prices in major units (converted to cents on import)
 
 **Import guards**: files larger than `import.max_rows` are rejected before any row is written. New rows require a name and a numeric price; invalid status, type, visibility, or currency cells are reported as row errors instead of silently defaulting. Updates match by SKU and leave blank cells unchanged. With "Skip Errors" off, the whole import runs in one transaction and rolls back on the first bad row. Exports stream row by row, so large catalogs do not exhaust memory.
 
@@ -230,25 +229,15 @@ Each prefix supports `viewAny`, `view`, `create`, `update`, and `delete`. Bulk a
 
 ---
 
-## Bulk Edit Page
+## Bulk Updates
 
-### Using Bulk Edit
+There is no separate bulk-edit page. Select rows on the products table and choose a bulk action:
 
-1. Navigate to "Bulk Edit Products"
-2. Filter products to edit
-3. Select products
-4. Choose field to update
-5. Enter new value
-6. Click "Apply"
+- **Activate** / **Set to Draft**: update status
+- **Update Price**: adjust prices
+- **Change Visibility**: update visibility
 
-### Editable Fields
-
-- Status
-- Visibility
-- Price
-- Categories
-- Is Featured
-- Is Taxable
+Categories, featured, and taxable flags are edited per product.
 
 ---
 
@@ -277,8 +266,8 @@ public function panel(Panel $panel): Panel
 |--------|-------------|
 | ProductStatsWidget | Total products, active count, draft count |
 | ProductTypeDistributionWidget | Products by type distribution |
-| CategoryDistributionWidget | Categories with product counts |
-| RecentProductsWidget | Latest created products |
+| CategoryDistributionChart | Categories with product counts |
+| TopSellingProductsWidget | Latest created products |
 
 ---
 
@@ -299,13 +288,13 @@ public static function getEloquentQuery(): Builder
 
 ### Validating Foreign IDs
 
-The `OwnerScope` helper validates submitted IDs:
+The `OwnerScopedIds` helper validates submitted IDs:
 
 ```php
 // In CreateProduct page
 protected function mutateFormDataBeforeCreate(array $data): array
 {
-    $data['categories'] = OwnerScope::ensureAllowed(
+    $data['categories'] = OwnerScopedIds::ensureAllowed(
         'categories',
         Category::class,
         $data['categories'] ?? null

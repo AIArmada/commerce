@@ -40,7 +40,7 @@ php artisan vendor:publish --tag=filament-affiliates-config
 
 | Resource | Highlights |
 | --- | --- |
-| **AffiliateResource** | Hero sections for partner context, commission policy editor, relation managers for attributions & conversions, and scoped filters. |
+| **AffiliateResource** | Hero sections for partner context, commission policy editor, relation managers for conversions, programs, payouts, payout methods/holds, downlines, and vouchers, and scoped filters. |
 | **AffiliateConversionResource** | Moderation queue with status badges, payout actions, and optional deep links to carts/vouchers. |
 
 ## Widgets

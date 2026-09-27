@@ -85,8 +85,8 @@ use AIArmada\FilamentEngagement\Actions\RespondAction;
 Tables\Actions\ActionGroup::make([
     FollowAction::make(),
     BookmarkAction::make(),
-    ReactAction::make()->reactionType('like'),
-    RespondAction::make()->responseType('going'),
+    ReactAction::make(),
+    RespondAction::make(),
 ]),
 ```
 
@@ -95,8 +95,8 @@ Available actions:
 - `UnfollowAction::make()` — removes an existing follow
 - `BookmarkAction::make()` — bookmarks the record
 - `RemoveBookmarkAction::make()` — removes a bookmark
-- `ReactAction::make()->reactionType('like')` — records a reaction with configurable type
-- `RespondAction::make()->responseType('going')` — records an RSVP with configurable type
+- `ReactAction::make()` — opens a form to record a reaction with a selectable type
+- `RespondAction::make()` — opens a form to record an RSVP with a selectable type
 - `SubscribeAction::make()` — subscribes to updates on the record
 - `SetReminderAction::make()` — opens a form to set a reminder with offset
 

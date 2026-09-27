@@ -226,7 +226,7 @@ Use the `ValidateVoucherCode` action for checkout-aware programmatic validation 
 use AIArmada\Vouchers\Actions\ValidateVoucherCode;
 use AIArmada\Cart\Facades\Cart;
 
-$result = ValidateVoucherCode::run('SUMMER2024', Cart::session($sessionKey));
+$result = ValidateVoucherCode::run('SUMMER2024', Cart::getCartInstance('default', $sessionKey));
 
 if ($result->isValid) {
     // Proceed with redemption

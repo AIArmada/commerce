@@ -82,30 +82,22 @@ Pdf::html('<h1>Test</h1>')->save('/tmp/test.pdf');
 // - transaction_id (string)
 // - gateway (from config options)
 
-// Ship Order requires:
-// - carrier (from config options)  
-// - tracking_number (string, max 100 chars)
+// Ship Order requires (manual tracking mode):
+// - carrier (string; or a select from FulfillmentHandler::availableCarriers()
+//   plus a service field when a fulfillment handler is bound)
+// - tracking_number (string)
 ```
 
-### Table polling causing performance issues
+### Table performance issues
 
-**Cause**: Poll interval too aggressive or expensive queries.
+**Cause**: Expensive queries on large order datasets. (The package does not poll tables automatically.)
 
-**Solution**: Adjust poll interval in config:
-
-```php
-// config/filament-orders.php
-'tables' => [
-    'poll_interval' => '60s', // Increase from 30s
-],
-```
-
-Or disable polling entirely in custom page:
+**Solution**: Reduce query cost with eager loading and indexed filters:
 
 ```php
-public function table(Table $table): Table
+public static function getEloquentQuery(): Builder
 {
-    return parent::table($table)->poll(null);
+    return parent::getEloquentQuery()->with(['items', 'payments']);
 }
 ```
 
@@ -119,7 +111,7 @@ public function table(Table $table): Table
 
 ### Slow Dashboard Widgets
 
-1. Widgets use 15-30 second cache by default.
+1. The stats widget uses a 15-second owner-scoped cache by default.
 2. For larger datasets, increase cache duration.
 3. Consider reducing query complexity.
 
@@ -153,13 +145,15 @@ The package uses these cache keys:
 
 | Key Pattern | TTL | Description |
 |-------------|-----|-------------|
-| `filament-orders.stats.*` | 15s | Stats widget data |
-| `filament-orders.status-distribution.*` | 30s | Status chart data |
+| `filament-orders.stats.owner-only` | 15s | Stats widget data (owner scope) |
+| `filament-orders.stats.with-global` | 15s | Stats widget data (with global rows) |
 
-Clear specific cache:
+Keys are owner-scoped via `OwnerCache`. Clear an order's cached stats with:
 
 ```php
-Cache::forget('filament-orders.stats.tenant:1.owner-only.2024-01-15');
+use AIArmada\FilamentOrders\Support\FilamentOrdersCache;
+
+FilamentOrdersCache::forgetForOrder($order);
 ```
 
 ## Getting Help

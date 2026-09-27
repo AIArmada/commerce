@@ -51,31 +51,30 @@ Cart::addCondition($condition);
 ### Using Presets
 
 ```php
-use AIArmada\Cart\Conditions\Presets\ConditionPresets;
+use AIArmada\Cart\Conditions\ConditionPresets;
 
 // Percentage discount
 $discount = ConditionPresets::percentageDiscount(
-    name: 'Member Discount',
     percentage: 15,
-    target: Target::items()->build()
+    name: 'Member Discount'
 );
 
 // Fixed discount
 $fixed = ConditionPresets::fixedDiscount(
-    name: '$5 Off',
-    amountCents: 500
+    amountCents: 500,
+    name: '$5 Off'
 );
 
 // Tax
-$tax = ConditionPresets::tax(
-    name: 'Sales Tax',
-    percentage: 7
+$tax = ConditionPresets::taxRate(
+    percentage: 7,
+    name: 'Sales Tax'
 );
 
 // Shipping
-$shipping = ConditionPresets::flatShipping(
-    name: 'Standard',
-    amountCents: 599
+$shipping = ConditionPresets::flatRateShipping(
+    amountCents: 599,
+    name: 'Standard'
 );
 
 Cart::addCondition($discount);
@@ -136,7 +135,7 @@ Target::items()->applyPerItem()->build();
 Target::items()->applyPerUnit()->build();
 
 // PER_GROUP: Apply to grouped items
-Target::items()->applyPerGroup('category')->build();
+Target::items()->applyPerGroup()->groupBy('category')->build();
 ```
 
 ### Application Examples
@@ -221,7 +220,7 @@ $condition = new CartCondition(
     name: 'Category Discount',
     type: 'discount',
     target: Target::items()
-        ->where('category', ConditionFilterOperator::EQUALS, 'electronics')
+        ->where('category', ConditionFilterOperator::EQ, 'electronics')
         ->build(),
     value: '-15%'
 );
@@ -232,7 +231,7 @@ $condition = new CartCondition(
     type: 'discount',
     target: Target::items()
         ->where('category', ConditionFilterOperator::IN, ['premium', 'gold'])
-        ->where('price', ConditionFilterOperator::GREATER_THAN, 5000)
+        ->where('price', ConditionFilterOperator::GT, 5000)
         ->build(),
     value: '-20%'
 );
@@ -266,41 +265,41 @@ $condition = new CartCondition(
 
 ## Condition Presets
 
-The `ConditionPresets` class provides 30+ ready-to-use conditions:
+The `ConditionPresets` class provides 20+ ready-to-use conditions:
 
 ### Discounts
 
 ```php
-ConditionPresets::percentageDiscount('Sale', 10);
-ConditionPresets::fixedDiscount('$5 Off', 500);
-ConditionPresets::tieredDiscount('Volume', [[100, 5], [500, 10], [1000, 15]]);
-ConditionPresets::buyXGetYFree('BOGO', 2, 1);
-ConditionPresets::percentageDiscountCapped('Max $50', 20, 5000);
-ConditionPresets::flashSaleDiscount('Flash', 25, '2024-01-15', '2024-01-16');
+ConditionPresets::percentageDiscount(10, 'Sale');
+ConditionPresets::fixedDiscount(500, '$5 Off');
+ConditionPresets::tieredDiscount([100 => 5, 500 => 10, 1000 => 15], 'Volume');
+ConditionPresets::bulkQuantityDiscount(3, 15, 'Bulk');
+ConditionPresets::percentageDiscountWithMinimum(20, 5000, 'Min $50');
+ConditionPresets::flashSaleDiscount(25, '2024-01-15', '2024-01-16', 'Flash');
 ```
 
 ### Fees & Charges
 
 ```php
-ConditionPresets::fixedFee('Handling', 199);
-ConditionPresets::percentageFee('Commission', 2.5);
+ConditionPresets::serviceFee(199, 'Handling');
+ConditionPresets::surcharge(2.5, 'Commission');
 ```
 
 ### Shipping
 
 ```php
-ConditionPresets::flatShipping('Standard', 599);
-ConditionPresets::freeShippingOver('Free Ship', 5000);
-ConditionPresets::percentageShipping('Rate', 5);
-ConditionPresets::tieredShipping('Weight', [[1000, 599], [5000, 999], [10000, 1499]]);
+ConditionPresets::flatRateShipping(599, 'Standard');
+ConditionPresets::freeShippingOver(5000, 'Free Ship');
+ConditionPresets::shippingDiscount(5, 'Rate');
+ConditionPresets::freeShipping('Free Shipping');
 ```
 
 ### Tax
 
 ```php
-ConditionPresets::tax('Sales Tax', 7);
-ConditionPresets::inclusiveTax('VAT', 20);
-ConditionPresets::compoundTax('Combined', [['State', 6], ['Local', 2]]);
+ConditionPresets::taxRate(7, 'Sales Tax');
+ConditionPresets::taxExempt('Tax Exempt');
+ConditionPresets::taxRate(8, 'Combined');
 ```
 
 ## Condition Providers (Integrations)
@@ -369,7 +368,7 @@ $rate->isCharge(); // false
 Get detailed breakdown of condition calculations:
 
 ```php
-$result = Cart::evaluatePipelineWithCaching();
+$result = Cart::evaluateConditionPipeline();
 
 $result->initialAmount; // Starting amount
 $result->finalAmount;   // After all conditions
@@ -377,7 +376,7 @@ $result->subtotal();    // After subtotal phase
 $result->total();       // Grand total
 
 // Per-phase breakdown
-foreach ($result->phaseResults as $phase => $phaseResult) {
-    echo "{$phase}: {$phaseResult->inputAmount} → {$phaseResult->outputAmount}";
+foreach ($result->phases() as $phase => $phaseResult) {
+    echo "{$phase}: {$phaseResult->baseAmount} → {$phaseResult->finalAmount}";
 }
 ```

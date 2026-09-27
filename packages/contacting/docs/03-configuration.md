@@ -9,10 +9,12 @@ The package publishes a config file at `config/contacting.php`.
 ## Table Names
 
 ```php
-'tables' => [
-    'contact_methods' => 'contact_methods',
-    'social_profiles' => 'social_profiles',
-    'contact_snapshots' => 'contact_snapshots',
+'database' => [
+    'tables' => [
+        'contact_methods' => 'contact_methods',
+        'social_profiles' => 'social_profiles',
+        'contact_snapshots' => 'contact_snapshots',
+    ],
 ],
 ```
 
@@ -86,7 +88,7 @@ required.
         'facebook' => ['label' => 'Facebook', 'prefix' => 'www.facebook.com/'],
         'instagram' => ['label' => 'Instagram', 'prefix' => 'www.instagram.com/'],
         'tiktok' => ['label' => 'TikTok', 'prefix' => 'www.tiktok.com/@'],
-        'youtube' => ['label' => 'YouTube', 'prefix' => 'www.youtube.com/@'],
+        'youtube' => ['label' => 'YouTube', 'prefix' => 'www.youtube.com/'],
         'linkedin' => ['label' => 'LinkedIn', 'prefix' => 'www.linkedin.com/in/'],
         'x' => ['label' => 'X / Twitter', 'prefix' => 'x.com/'],
         'threads' => ['label' => 'Threads', 'prefix' => 'www.threads.net/@'],
@@ -97,4 +99,4 @@ required.
 ],
 ```
 
-You can add more platforms by adding a `label`, and optionally a `prefix` or `suffix` for URL normalization. Platforms without a URL pattern are still valid for manual entry and display only.
+The snippet above is trimmed; the published config ships a fuller platform list. You can add more platforms by adding a `label`, and optionally a `prefix` or `suffix` for URL normalization. Platforms without a URL pattern are still valid for manual entry and display only.

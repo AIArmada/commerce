@@ -95,15 +95,6 @@ $type->color();  // "success"
 
 ## Widget Not Displaying
 
-### Check Feature Toggle
-
-```php
-// config/filament-promotions.php
-'features' => [
-    'widgets' => true, // Must be true
-],
-```
-
 ### Register Widget
 
 Ensure the widget is registered in your panel:

@@ -90,15 +90,15 @@ $affiliate?->isActive(); // Should be true
 1. **Affiliate has commission rate set:**
 ```php
 $affiliate->commission_rate; // Should be > 0
-$affiliate->commission_type; // 'percentage' or 'fixed_amount'
+$affiliate->commission_type; // 'percentage' or 'fixed'
 ```
 
 2. **Order total is provided:**
 ```php
-$service->recordConversion($cart, [
+RecordAffiliateConversion::run($cart, [
     'external_reference' => 'ORD-123',
-    'value_minor' => 15000, // Required for percentage commissions
-    'value_minor' => 15000,
+    'total' => 15000, // Required for percentage commissions
+    'subtotal' => 14000,
 ]);
 ```
 
@@ -112,12 +112,12 @@ $service->recordConversion($cart, [
 
 2. **Volume tiers are configured correctly:**
 ```php
-$affiliate->volumeTiers()->get();
+AffiliateVolumeTier::where('program_id', $program->id)->get();
 ```
 
 3. **Commission rules priority:**
 ```php
-$affiliate->commissionRules()
+$program->commissionRules()
     ->orderBy('priority', 'desc')
     ->get();
 ```
@@ -130,7 +130,7 @@ $affiliate->commissionRules()
 
 1. **Conversion status is Approved:**
 ```php
-$conversion->status; // Should be ConversionStatus::Approved
+$conversion->status; // Should be an ApprovedConversion state
 ```
 
 If you are using the maturity workflow, a conversion may sit in `Qualified` until `php artisan affiliates:process-maturity` promotes it.
@@ -171,7 +171,7 @@ $affiliate->balanceFor('USD')?->available_minor >= 5000;
 1. **Payout method is configured:**
 ```php
 $affiliate->payoutMethods()
-    ->where('is_verified', true)
+    ->whereNotNull('verified_at')
     ->exists();
 ```
 

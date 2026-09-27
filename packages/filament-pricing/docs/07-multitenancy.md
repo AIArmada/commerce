@@ -68,8 +68,7 @@ private function resolveOwner(): ?Model
         (bool) config('products.features.owner.include_global', false)
     );
 
-    return $query
-        ->where('name', 'like', '%'.LikePattern::escape($search).'%')
+    return LikeSearch::whereLike($query, 'name', LikeSearch::contains($search))
         ->limit(50)
         ->pluck('name', 'id')
         ->toArray();
@@ -88,14 +87,12 @@ private function resolveOwner(): ?Model
     return OwnerContext::resolve();
 }
 
-private function scopeQueryForOwner(Builder $query, ?Model $owner): Builder
-{
-    return OwnerQuery::applyToEloquentBuilder(
-        $query,
-        $owner,
-        (bool) config('products.features.owner.include_global', false),
-    );
-}
+// Each simulator search applies owner scoping inline:
+$query = OwnerQuery::applyToEloquentBuilder(
+    Product::query(),
+    $owner,
+    (bool) config('products.features.owner.include_global', false),
+);
 ```
 
 This is applied to:
@@ -108,7 +105,7 @@ This is applied to:
 The `PricingStatsWidget` applies owner scoping:
 
 ```php
-$activePriceLists = PriceList::forOwner($owner)->active()->count();
+$activePriceLists = PriceList::query()->active()->count(); // OwnerScope global scope applies
 
 // Promotion administration is scoped by aiarmada/filament-promotions.
 ```
@@ -151,7 +148,7 @@ class SetOwnerContext
         $tenant = Filament::getTenant();
         
         if ($tenant) {
-            OwnerContext::set($tenant);
+            OwnerContext::setForRequest($tenant);
         }
         
         return $next($request);
@@ -169,10 +166,10 @@ it('scopes price lists to current owner', function () {
     $tenant1 = Tenant::factory()->create();
     $tenant2 = Tenant::factory()->create();
     
-    $list1 = PriceList::factory()->for($tenant1, 'owner')->create();
-    $list2 = PriceList::factory()->for($tenant2, 'owner')->create();
-    
-    OwnerContext::set($tenant1);
+    $list1 = OwnerContext::withOwner($tenant1, fn () => PriceList::create(['name' => 'T1', 'slug' => 't1']));
+    $list2 = OwnerContext::withOwner($tenant2, fn () => PriceList::create(['name' => 'T2', 'slug' => 't2']));
+
+    OwnerContext::setForRequest($tenant1);
     
     livewire(ListPriceLists::class)
         ->assertCanSeeTableRecords([$list1])
@@ -210,11 +207,9 @@ This is useful for:
 To create global records, clear the owner context first:
 
 ```php
-OwnerContext::clear();
-
-$globalList = PriceList::create([
+$globalList = OwnerContext::withOwner(null, fn () => PriceList::create([
     'name' => 'Global Default',
     'is_default' => true,
     // owner_type and owner_id remain null
-]);
+]));
 ```

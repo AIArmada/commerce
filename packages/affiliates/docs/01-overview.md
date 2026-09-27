@@ -108,10 +108,17 @@ src/
 ├── Facades/           # Laravel facades
 ├── Http/              # Controllers for API routes
 ├── Listeners/         # Event listeners
-├── Models/            # Eloquent models (28 models)
-├── Services/          # Business logic services (16 services)
-├── Support/           # Helpers, middleware, webhooks
-└── Traits/            # Reusable model traits
+├── Models/            # Eloquent models (28 models; reusable concerns live in Models/Concerns)
+├── Services/          # Business logic services (24 services)
+├── States/            # Spatie model states
+├── Strategies/        # Attribution strategies
+├── Jobs/              # Queued jobs (webhooks)
+├── Merchant/          # Network merchant SDK (postbacks, referral capture)
+├── Notifications/     # Mail notifications
+├── Resolvers/         # Owner/subject resolvers
+├── Rules/             # Fraud detection rules
+├── Settings/          # Spatie settings classes
+└── Support/           # Helpers, middleware, webhooks
 ```
 
 ## Multi-Tenancy
@@ -127,12 +134,12 @@ The package fully supports multi-tenant architectures using the `commerce-suppor
 
 | Package | Integration |
 |---------|-------------|
-| `aiarmada/cart` | Automatic cart metadata, fluent helpers, conversion recording |
+| `aiarmada/cart` | Attribution from cart identity, discount conditions, conversion recording |
 | `aiarmada/vouchers` | Auto-attach affiliates from voucher metadata |
 | `aiarmada/filament-affiliates` | Full admin UI with resources, widgets, portal |
 | `aiarmada/affiliate-network` | Network seam adapters: identity resolution, ledger posting, program bridge, local catalog reader |
 
-All integrations are detected via `class_exists()` and enabled automatically. When the network package is present, this package binds its seam contracts (`AffiliateIdentityResolver`, `NetworkLedger`, the local catalog reader) and points `affiliate-network.models.affiliate` at the core `Affiliate` model; without it, nothing network-related loads. The identity adapter resolves merchant affiliate rows first and falls back to the host user — joining never requires or provisions a merchant-side account.
+All integrations are detected via `class_exists()` and enabled automatically. When the network package is present, it binds its seam adapters (`AffiliateIdentityResolver`, `NetworkLedger`, the local catalog reader) onto this package's models and points `affiliate-network.models.affiliate` at the core `Affiliate` model; without it, nothing network-related loads. The identity adapter resolves merchant affiliate rows first and falls back to the host user — joining never requires or provisions a merchant-side account.
 
 ## Requirements
 

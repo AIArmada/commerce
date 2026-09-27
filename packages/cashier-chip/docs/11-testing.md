@@ -179,7 +179,7 @@ public function test_webhook_updates_payment_status(): void
     
     // Simulate webhook
     $response = $this->postJson('/chip/webhooks', [
-        'event_type' => 'purchase.payment_successful',
+        'event_type' => 'purchase.paid',
         'id' => $purchaseId,
         'client_id' => $user->chipId(),
         'status' => 'paid',
@@ -200,7 +200,7 @@ public function test_payment_event_is_dispatched(): void
     Event::fake([PaymentSucceeded::class]);
     
     $this->postJson('/chip/webhooks', [
-        'event_type' => 'purchase.payment_successful',
+        'event_type' => 'purchase.paid',
         'id' => 'purchase-123',
         'status' => 'paid',
     ]);
@@ -283,12 +283,12 @@ $this->assertTrue($user->hasDefaultPaymentMethod());
 For more control, mock the underlying CHIP gateway:
 
 ```php
-use AIArmada\Chip\ChipCollect;
+use AIArmada\Chip\Services\ChipCollectService;
 use Mockery;
 
 public function test_with_mocked_gateway(): void
 {
-    $mockChip = Mockery::mock(ChipCollect::class);
+    $mockChip = Mockery::mock(ChipCollectService::class);
     $mockChip->shouldReceive('createPurchase')
         ->once()
         ->andReturn([
@@ -296,7 +296,7 @@ public function test_with_mocked_gateway(): void
             'checkout_url' => 'https://chip.test/checkout',
         ]);
     
-    $this->app->instance(ChipCollect::class, $mockChip);
+    $this->app->instance(ChipCollectService::class, $mockChip);
     
     // Your test...
 }

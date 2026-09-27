@@ -48,8 +48,8 @@ composer require aiarmada/cashier
 **Solution**: Ensure cart has items before starting checkout:
 
 ```php
-$cart = Cart::find($cartId);
-if ($cart->isEmpty()) {
+$cart = Cart::getById($cartId);
+if ($cart === null || $cart->isEmpty()) {
     return redirect()->route('cart.index')
         ->with('error', 'Your cart is empty');
 }
@@ -166,7 +166,7 @@ Event::listen(CheckoutStepCompleted::class, function ($event) {
     Log::channel('checkout')->debug('Step completed', [
         'session_id' => $event->session->id,
         'step' => $event->stepIdentifier,
-        'data' => $event->result->data,
+        'data' => $event->data,
     ]);
 });
 ```

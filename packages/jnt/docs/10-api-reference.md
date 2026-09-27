@@ -95,7 +95,7 @@ echo $details['trackingNumber'];
 
 ## Batch Operations
 
-Process multiple orders efficiently. See [batch-operations.md](batch-operations.md) for details.
+Process multiple orders efficiently. See [batch operations guide](07-batch-operations.md) for details.
 
 ```php
 // Batch create
@@ -116,7 +116,7 @@ $results = JntExpress::batchCancelOrders(
 // Batch print
 $results = JntExpress::batchPrintWaybills(
     orderIds: ['ORDER-1'],
-    trackingNumbers: ['JT123'],
+    templateName: null,
 );
 ```
 
@@ -195,13 +195,13 @@ $order->chargeableWeight;  // Billable weight
 ### TrackingData (Response)
 
 ```php
-$tracking->trackingNumber;  // J&T tracking number
-$tracking->orderId;         // Your order reference
-$tracking->lastStatus;      // Latest status
-$tracking->scanTime;        // Latest timestamp
-$tracking->details;         // All tracking events
-$tracking->isDelivered();   // Check if delivered
-$tracking->hasProblem();    // Check for issues
+$tracking->trackingNumber;   // J&T tracking number
+$tracking->orderId;          // Your order reference
+$tracking->details;          // All tracking events
+$tracking->getLatestDetail();   // Most recent event
+$tracking->getLatestStatus();   // Latest status
+$tracking->getLatestLocation(); // Latest location
+$tracking->isDelivered();    // Check if delivered
 ```
 
 ---
@@ -215,6 +215,8 @@ $tracking->hasProblem();    // Check for issues
 | `DOMESTIC` | `EZ` | Standard delivery |
 | `NEXT_DAY` | `EX` | Express next day |
 | `FRESH` | `FD` | Cold chain delivery |
+| `DOOR_TO_DOOR` | `DO` | Door to door |
+| `SAME_DAY` | `JS` | Same day |
 
 ### ServiceType
 
@@ -241,11 +243,14 @@ $tracking->hasProblem();    // Check for issues
 ### CancellationReason
 
 ```php
+CancellationReason::CUSTOMER_REQUEST
+CancellationReason::CUSTOMER_CHANGED_MIND
 CancellationReason::OUT_OF_STOCK
-CancellationReason::CUSTOMER_CANCELLED
-CancellationReason::WRONG_ADDRESS
 CancellationReason::DUPLICATE_ORDER
-CancellationReason::PRICE_ERROR
+CancellationReason::INCORRECT_ADDRESS
+CancellationReason::PAYMENT_FAILED
+CancellationReason::SYSTEM_ERROR
+CancellationReason::OTHER
 ```
 
 ---
@@ -266,10 +271,10 @@ use AIArmada\Jnt\Exceptions\{
 try {
     $order = JntExpress::createOrderFromArray($data);
 } catch (JntValidationException $e) {
-    $errors = $e->getErrors();
+    $errors = $e->errors;
 } catch (JntApiException $e) {
-    $statusCode = $e->getStatusCode();
-    $response = $e->getResponseData();
+    $statusCode = $e->getCode();
+    $response = $e->apiResponse;
 } catch (JntNetworkException $e) {
     Log::error('Network error', ['exception' => $e]);
 } catch (JntException $e) {

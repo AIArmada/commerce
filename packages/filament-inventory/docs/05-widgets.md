@@ -120,7 +120,7 @@ Batches approaching expiry date.
 
 ## Reorder Suggestions Widget
 
-AI-generated reorder recommendations.
+Auto-generated reorder recommendations.
 
 ```php
 'features' => [
@@ -176,7 +176,7 @@ Total inventory value by costing method.
 ],
 
 'defaults' => [
-    'costing_method' => 'fifo', // fifo, lifo, average, specific
+    'costing_method' => 'fifo', // fifo, lifo, weighted_average, standard, specific_identification
 ],
 ```
 

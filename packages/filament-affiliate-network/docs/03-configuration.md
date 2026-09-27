@@ -51,8 +51,8 @@ Gate::define('affiliate-network.admin', fn (User $user): bool => $user->is_admin
 
 | Key | Description | Default |
 |-----|-------------|---------|
-| `show_commission_rates` | Show commission rates on marketplace cards | `true` |
-| `show_cookie_duration` | Show cookie duration on marketplace cards | `true` |
+| `show_commission_rates` | Reserved: no marketplace page ships in this version | `true` |
+| `show_cookie_duration` | Reserved: no marketplace page ships in this version | `true` |
 
 ## Customizing Resources
 
@@ -80,7 +80,7 @@ public static function table(Table $table): Table
 {
     return parent::table($table)
         ->columns([
-            ...parent::getTableColumns(),
+            // Re-declare the parent columns you want to keep, then add yours:
             Tables\Columns\TextColumn::make('custom_field'),
         ]);
 }
@@ -93,7 +93,7 @@ public static function form(Schema $schema): Schema
 {
     return parent::form($schema)
         ->components([
-            ...parent::getFormSchema(),
+            // Re-declare the parent components you want to keep, then add yours:
             Section::make('Custom')
                 ->schema([
                     TextInput::make('custom_field'),
@@ -104,24 +104,18 @@ public static function form(Schema $schema): Schema
 
 ## Customizing Pages
 
-### Override Marketplace Page
+### Override Merchant Dashboard Page
 
 Create your own page:
 
 ```php
 namespace App\Filament\Pages;
 
-use AIArmada\FilamentAffiliateNetwork\Pages\AffiliateMarketplacePage as BasePage;
+use AIArmada\FilamentAffiliateNetwork\Pages\MerchantDashboardPage as BasePage;
 
-class AffiliateMarketplacePage extends BasePage
+class MerchantDashboardPage extends BasePage
 {
-    protected static ?string $title = 'Offer Discovery';
-    
-    protected function getOffers(): Collection
-    {
-        return parent::getOffers()
-            ->filter(fn ($offer) => $offer->is_featured);
-    }
+    protected static ?string $title = 'Network Overview';
 }
 ```
 

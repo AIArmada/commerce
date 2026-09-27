@@ -59,12 +59,9 @@ php artisan filament:clear-cached-components
 ```php
 // config/filament-inventory.php
 'features' => [
-    'locations_resource' => true,  // Must be true
-    'levels_resource' => true,
-    'movements_resource' => true,
-    'allocations_resource' => true,
-    'batches_resource' => false,   // Disabled by default
-    'serials_resource' => false,   // Disabled by default
+    // Only these two resource toggles exist, and both default to true.
+    'batch_resource' => true,   // Set false to hide batches
+    'serial_resource' => true,  // Set false to hide serials
 ],
 ```
 
@@ -135,8 +132,10 @@ php artisan cache:clear
 **Solution:** Ensure owner binding is set in request context:
 
 ```php
-// In middleware or service provider
-OwnerResolver::setOwner($currentTeam);
+use AIArmada\CommerceSupport\Support\OwnerContext;
+
+// In middleware
+OwnerContext::setForRequest($currentTeam);
 ```
 
 ## Performance Issues
@@ -170,12 +169,7 @@ OwnerResolver::setOwner($currentTeam);
 
 1. Check database indexes on frequently filtered columns
 2. Reduce default items per page
-3. Disable real-time polling:
-```php
-'tables' => [
-    'poll' => false,
-],
-```
+3. Slow down widget polling by extending the widget and overriding `$pollingInterval` (there is no global `tables.poll` toggle).
 
 ## Action Errors
 
@@ -186,16 +180,16 @@ OwnerResolver::setOwner($currentTeam);
 **Solution:** Check actual available quantity:
 
 ```php
-$level = InventoryStockLevel::query()
+$level = InventoryLevel::query()
     ->where('location_id', $locationId)
-    ->where('product_type', Product::class)
-    ->where('product_id', $productId)
+    ->where('inventoryable_type', Product::class)
+    ->where('inventoryable_id', $productId)
     ->first();
 
 dump([
     'on_hand' => $level->quantity_on_hand,
     'reserved' => $level->quantity_reserved,
-    'available' => $level->quantity_available,
+    'available' => $level->available,
 ]);
 ```
 
@@ -205,10 +199,10 @@ dump([
 
 **Solution:** Ensure all required fields are provided:
 
-- `location_id`
-- `product_type` (full class name)
-- `product_id`
-- `movement_type` (receipt, shipment, adjustment, transfer_in, transfer_out)
+- `inventoryable_type` (full class name)
+- `inventoryable_id`
+- `from_location_id` / `to_location_id` (nullable)
+- `type` (receipt, shipment, transfer, adjustment, allocation, release)
 - `quantity`
 
 ## Debug Mode

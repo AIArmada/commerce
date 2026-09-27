@@ -105,9 +105,9 @@ try {
     Cart::add('SKU-001', 'Product', 999, 1);
 } catch (CartConflictException $e) {
     // Cart was modified by another request
-    $e->expectedVersion; // What we expected
-    $e->actualVersion;   // What we found
-    
+    $e->getAttemptedVersion(); // What we expected
+    $e->getCurrentVersion();   // What we found
+
     // Retry or inform user
 }
 ```

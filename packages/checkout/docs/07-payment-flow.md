@@ -166,7 +166,7 @@ if ($result->success) {
 When payment fails at the gateway:
 
 1. The callback resolves and token-validates the checkout session inside the same transaction-safe path as success callbacks
-2. Failure handling only runs when the session is still in a pending-like state (`Pending`, `AwaitingPayment`, `PaymentProcessing`, or `Processing`)
+2. Failure handling only runs when the session is still in a pending-like state (`Pending`, `AwaitingPayment`, `PaymentProcessing`, `Processing`, or `PaymentFailed`)
 3. Already-completed sessions short-circuit to the success response instead of mutating the session backward
 4. The user is redirected to the failure URL and the error message is flashed to session
 
@@ -307,36 +307,15 @@ Processing ─────────────▶ AwaitingPayment ◀──�
 
 After payment confirmation, the checkout step runs these irreversible operations in order:
 
-1. Persist `order_id` and `completed_at` on the session
-2. Redeem applied vouchers
-3. Transition the session status through `Processing` to `Completed`
-4. **Commit inventory reservations** (only when payment was confirmed or the order is free)
+1. Persist `order_id` on the session (before payment confirmation, so retries reuse the same order)
+2. Confirm payment on the order when `create_order.confirm_payment` is enabled (paid orders only)
+3. Redeem applied vouchers via the `CheckoutCompleted` listener
+4. Transition the session status through `Processing` to `Completed` (which stamps `completed_at`)
 5. Clear the cart
 
 ### Inventory Timing
 
-Inventory reservation commitment happens **after** payment registration and session status transition but **before** the cart is cleared. For paid orders with confirmation enabled:
-
-| Payment outcome | Inventory committed? | Checkout completes? |
-|----------------|-------------------|-------------------|
-| Confirmed | Yes, exactly once | Yes, after payment registration |
-| Failed or throws | No | No, step returns `StepResult::failed` |
-
-The `shouldCommitInventoryReservations()` helper implements this table:
-
-```php
-private function shouldCommitInventoryReservations(
-    bool $isFreeOrder,
-    bool $paymentConfirmationEnabled,
-    bool $paymentWasConfirmed,
-): bool {
-    if ($isFreeOrder) { return true; }
-    if (! $paymentConfirmationEnabled) { return true; }
-    return $paymentWasConfirmed; // authoritatively: commit only when payment succeeded
-}
-```
-
-The checkout package commits **reservations** (pending holds placed by `ReserveInventoryStep`). Separately, `PaymentConfirmed` in the orders package dispatches an `InventoryDeductionRequired` event for its own deduction path. Both paths coexist — the inventory package is responsible for idempotent handling.
+Checkout does not commit inventory reservations itself. `ReserveInventoryStep` places a group reservation before payment (or first in the post-payment phase when `reserve_before_payment` is `false`), and releases it on failure or cancellation through step compensation. Stock deduction flows through the orders package instead: its `PaymentConfirmed` transition dispatches `OrderProcessingStarted`, which the `DeductInventoryOnPaymentConfirmed` listener turns into an `InventoryDeductionRequired` event for the inventory package to handle idempotently.
 
 ## Error Handling
 

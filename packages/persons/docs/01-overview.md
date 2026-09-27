@@ -49,10 +49,9 @@ maintaining `published_at`.
 
 `PersonName` primary status is scoped by `(person_id, name_type,
 language_code)`. The model transaction locks the parent person before
-demoting siblings. A database partial unique index and the
-`(person_id, is_primary)` covering index remain a separately gated index
-migration because the current migration track permits only the customers
-link migration.
+demoting siblings. The `person_names` migration also creates the
+`person_names_primary_unique` partial unique index and the
+`(person_id, is_primary)` covering index as a database backstop.
 
 ## Media
 
@@ -109,7 +108,7 @@ This stores short, stable type strings (`person`) instead of FQCNs in assignment
 - `aiarmada/addressing` — optional, for country resolution
 - `aiarmada/events` — links persons via `involveable` (application-level wiring)
 - `aiarmada/customers` — owner-scoped commercial profiles with an explicit `person_id` link
-- Future `aiarmada/filament-persons` — Filament admin UI
+- `aiarmada/filament-persons` — Filament admin UI
 
 ## Requirements
 

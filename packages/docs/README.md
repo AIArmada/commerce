@@ -36,7 +36,7 @@ $doc = app(DocService::class)->create(DocData::from([
         [
             'name' => 'Consulting',
             'quantity' => 2,
-            'price' => 150.00,
+            'unit_price_minor' => 15000,
         ],
     ],
     'customer_data' => [

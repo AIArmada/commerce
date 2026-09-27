@@ -11,7 +11,7 @@ The `aiarmada/filament-affiliate-network` package is the Filament admin and mark
 ## What this package owns
 
 - Filament resources for sites, offers, categories, and applications
-- Merchant-facing dashboard and affiliate marketplace pages
+- Merchant-facing dashboard page
 - Network stats and top-offers widgets
 - Filament action workflows for verification, application review, and offer state changes
 
@@ -30,14 +30,13 @@ The `aiarmada/filament-affiliate-network` package is the Filament admin and mark
 ## Main models services or surfaces
 
 - **Resources** — sites, offers, offer categories, and offer applications
-- **Pages** — merchant dashboard and affiliate marketplace
+- **Pages** — merchant dashboard
 - **Widgets** — network stats and top offers
 
 ## Owner scoping and security notes
 
 - The plugin should mirror the owner and relationship-scoping rules defined by `aiarmada/affiliate-network`
-- Marketplace and admin filters are not authorization; action handlers still need the backing domain package to validate application, offer, and site ownership before mutating records
-- The marketplace is intentionally public discovery. Its mutations resolve the affiliate and re-enter that affiliate's owner context; local imported offers enroll through `affiliates`' existing core program and never create a duplicate program or application
+- Admin filters are not authorization; action handlers still need the backing domain package to validate application, offer, and site ownership before mutating records
 - Merchant dashboard aggregates are current-owner scoped. Network stats and top offers are deliberate network-wide admin widgets with owner-keyed 30-second caches
 
 The `aiarmada/filament-affiliate-network` plugin provides a complete Filament v5 admin interface for managing the affiliate network marketplace.
@@ -48,14 +47,13 @@ The `aiarmada/filament-affiliate-network` plugin provides a complete Filament v5
 - **Offer Management** - Create and manage affiliate offers with commission configuration
 - **Category Management** - Organize offers in hierarchical categories
 - **Application Review** - Approve/reject/revoke affiliate applications with workflow actions
-- **Marketplace Page** - Affiliates browse, search, and apply for offers
 - **Merchant Dashboard** - Analytics with pending applications and top offers
 - **Network Stats Widget** - Overview statistics (sites, offers, clicks, conversions, revenue)
 - **Top Offers Widget** - Performance table of best-performing offers
 
 ## Relationship to Core Affiliates
 
-This plugin sits on top of `aiarmada/affiliate-network`, which in turn depends on the `Affiliate` model from `aiarmada/affiliates`.
+This plugin sits on top of `aiarmada/affiliate-network`, which optionally integrates with the `Affiliate` model from `aiarmada/affiliates` when that package is installed.
 
 The UI surfaces here manage network-specific entities such as:
 
@@ -64,7 +62,7 @@ The UI surfaces here manage network-specific entities such as:
 - offer applications
 - offer links and their aggregated metrics
 
-They do not directly write core commission or payout records. Local program enrollment delegates to `affiliates`' `ProgramService`; network discovery metrics remain separate from core commission execution.
+They do not directly write core commission or payout records; network discovery metrics remain separate from core commission execution.
 
 ## Plugin Architecture
 
@@ -75,13 +73,11 @@ filament-affiliate-network/
 ├── resources/
 │   └── views/
 │       └── pages/
-│           ├── affiliate-marketplace.blade.php
 │           └── merchant-dashboard.blade.php
 └── src/
     ├── FilamentAffiliateNetworkPlugin.php
     ├── FilamentAffiliateNetworkServiceProvider.php
     ├── Pages/
-    │   ├── AffiliateMarketplacePage.php
     │   └── MerchantDashboardPage.php
     ├── Resources/
     │   ├── AffiliateSiteResource.php
@@ -113,7 +109,6 @@ filament-affiliate-network/
 | Page | URL | Description |
 |------|-----|-------------|
 | `MerchantDashboardPage` | `/affiliate-network/merchant-dashboard` | Merchant analytics dashboard |
-| `AffiliateMarketplacePage` | `/affiliate-network/marketplace` | Offer discovery for affiliates |
 
 ### Widgets
 
@@ -137,7 +132,7 @@ The site resource provides:
 The offer resource provides:
 - Site and category selection
 - Commission configuration (percentage or fixed amount)
-- Featured and public toggles
+- Featured toggle and visibility selection (public/private/unlisted)
 - Date range scheduling
 - Quick activate/pause actions
 
@@ -149,22 +144,13 @@ The application resource provides:
 - Revoke action for approved applications
 - Bulk approve capability
 
-### Marketplace
-
-The marketplace page provides:
-- Search by name/description
-- Category filtering
-- Sort by featured, newest, or commission
-- Apply to offers with reason
-- Generate tracking links for approved offers
-
 ## Requirements
 
 - PHP 8.4+
 - Laravel 13+
 - Filament v5
 - `aiarmada/affiliate-network` package
-- `aiarmada/affiliates` package
+- `aiarmada/affiliates` package (optional; enables the engine-backed network seams)
 - `aiarmada/filament-affiliates` package (optional complementary UI)
 
 ## Read next

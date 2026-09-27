@@ -58,10 +58,8 @@ $offer = AffiliateOffer::factory()->create();
 
 // Status variants
 $offer = AffiliateOffer::factory()->draft()->create();
-$offer = AffiliateOffer::factory()->pending()->create();
-$offer = AffiliateOffer::factory()->active()->create();
-$offer = AffiliateOffer::factory()->paused()->create();
-$offer = AffiliateOffer::factory()->expired()->create();
+$offer = AffiliateOffer::factory()->published()->create();
+$offer = AffiliateOffer::factory()->archived()->create();
 
 // Featured offer
 $offer = AffiliateOffer::factory()->featured()->create();
@@ -91,7 +89,7 @@ $offer = AffiliateOffer::factory()
 $offer = AffiliateOffer::factory()
     ->forSite($site)
     ->forCategory($category)
-    ->active()
+    ->published()
     ->featured()
     ->percentage(2000)
     ->withDateRange(now(), now()->addYear())
@@ -376,7 +374,7 @@ use AIArmada\AffiliateNetwork\Services\OfferManagementService;
 use Illuminate\Support\Str;
 
 it('creates application for offer', function () {
-    $offer = AffiliateOffer::factory()->active()->create();
+    $offer = AffiliateOffer::factory()->published()->create();
     $affiliateId = (string) Str::uuid();
     $service = app(OfferManagementService::class);
 
@@ -422,7 +420,7 @@ use AIArmada\AffiliateNetwork\Services\OfferLinkService;
 use Illuminate\Support\Str;
 
 it('creates tracking link', function () {
-    $offer = AffiliateOffer::factory()->active()->create();
+    $offer = AffiliateOffer::factory()->published()->create();
     $affiliateId = (string) Str::uuid();
     $service = app(OfferLinkService::class);
 
@@ -562,7 +560,7 @@ beforeEach(function () {
     $this->affiliate = Affiliate::factory()->create();
     $this->offer = AffiliateOffer::factory()
         ->forSite($this->site)
-        ->active()
+        ->published()
         ->create();
 });
 ```

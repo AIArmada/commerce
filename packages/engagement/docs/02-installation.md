@@ -11,14 +11,14 @@ composer require aiarmada/engagement
 ## Publish and run migrations
 
 ```bash
-php artisan vendor:publish --provider="AIArmada\Engagement\EngagementServiceProvider" --tag="migrations"
+php artisan vendor:publish --provider="AIArmada\Engagement\EngagementServiceProvider" --tag="engagement-migrations"
 php artisan migrate
 ```
 
 ## Publish configuration
 
 ```bash
-php artisan vendor:publish --provider="AIArmada\Engagement\EngagementServiceProvider" --tag="config"
+php artisan vendor:publish --provider="AIArmada\Engagement\EngagementServiceProvider" --tag="engagement-config"
 ```
 
 ## Schedule console commands
@@ -47,7 +47,9 @@ Schedule::command('engagement:match-subscriptions')->hourly();
 
 ```php
 use AIArmada\Engagement\Traits\CanFollow;
+use AIArmada\Engagement\Traits\HasBookmarks;
 use AIArmada\Engagement\Traits\HasFollowers;
+use AIArmada\Engagement\Traits\HasReactions;
 
 class User extends Model
 {

@@ -22,12 +22,14 @@ ReceiveStockAction::make()
 
 | Field | Type | Description |
 |-------|------|-------------|
-| product_type | Select | Morphable product class |
-| product_id | TextInput | Product identifier |
+| location_id | Select | Receiving location (owner-scoped) |
 | quantity | TextInput (numeric) | Quantity to receive |
-| unit_cost | TextInput (numeric) | Cost per unit |
-| reference | TextInput | PO number, return ref, etc. |
-| reason | Textarea | Notes |
+| purchase_order | TextInput | PO number |
+| supplier | TextInput | Supplier name |
+| received_at | DatePicker | Received date |
+| notes | Textarea | Notes |
+
+The action runs against the current record as the inventoryable model. The location is revalidated server-side; the reason is built from PO/supplier.
 
 **Events Dispatched:**
 - Creates `receipt` movement
@@ -48,15 +50,16 @@ ShipStockAction::make()
 
 | Field | Type | Description |
 |-------|------|-------------|
-| product_type | Select | Morphable product class |
-| product_id | TextInput | Product identifier |
+| location_id | Select | Shipping location (owner-scoped) |
 | quantity | TextInput (numeric) | Quantity to ship |
-| reference | TextInput | Order number, transfer ref |
-| reason | Textarea | Notes |
+| order_number | TextInput | Order number |
+| customer | TextInput | Customer name |
+| tracking_number | TextInput | Tracking number |
+| shipped_at | DatePicker | Ship date |
+| notes | Textarea | Notes |
 
 **Validation:**
-- Quantity must be ≤ available stock
-- Displayed available quantity updates live
+- Quantity must be ≥ 1; insufficient stock surfaces as a danger notification via `InsufficientInventoryException`
 
 **Events Dispatched:**
 - Creates `shipment` movement
@@ -76,17 +79,14 @@ TransferStockAction::make()
 
 | Field | Type | Description |
 |-------|------|-------------|
-| product_type | Select | Morphable product class |
-| product_id | TextInput | Product identifier |
 | from_location_id | Select | Source location |
 | to_location_id | Select | Destination location |
 | quantity | TextInput (numeric) | Quantity to transfer |
-| reference | TextInput | Transfer number |
-| reason | Textarea | Notes |
+| notes | Textarea | Notes |
 
 **Behavior:**
 - Creates paired movements (out/in)
-- Available quantity updates live when source changes
+- Changing the source resets the destination and excludes it from destination options
 - Cannot transfer to same location
 
 ### Adjust Stock
@@ -103,13 +103,13 @@ AdjustStockAction::make()
 
 | Field | Type | Description |
 |-------|------|-------------|
-| adjustment_type | Radio | `add` or `remove` |
-| quantity | TextInput (numeric) | Adjustment amount |
-| reference | TextInput | Adjustment reference |
-| reason | Textarea | Required explanation |
+| location_id | Select | Location |
+| new_quantity | TextInput (numeric) | New absolute quantity |
+| reason | Select | cycle_count, damaged, expired, lost, found, correction (default), initial_stock, other |
+| notes | Textarea | Notes |
 
 **Validation:**
-- Cannot remove more than available
+- Sets the stock to an absolute count (not a delta)
 - Reason is mandatory
 
 **Events Dispatched:**
@@ -129,9 +129,10 @@ CycleCountAction::make()
 
 | Field | Type | Description |
 |-------|------|-------------|
+| location_id | Select | Location |
+| system_quantity | TextInput (numeric) | Current system quantity (auto-filled) |
 | counted_quantity | TextInput (numeric) | Physical count result |
-| reference | TextInput | Count sheet reference |
-| notes | Textarea | Discrepancy explanation |
+| counter | TextInput | Counted by |
 
 **Behavior:**
 - Displays current system quantity
@@ -151,17 +152,11 @@ use AIArmada\FilamentInventory\Actions\ReleaseAllocationAction;
 ReleaseAllocationAction::make()
 ```
 
-**Fields:**
-
-| Field | Type | Description |
-|-------|------|-------------|
-| quantity | TextInput (numeric) | Quantity to release |
-| reason | Textarea | Release reason |
+The action has no form fields; it shows a confirmation modal and releases the full allocation record.
 
 **Behavior:**
-- Cannot release more than allocated
-- Updates stock level available quantity
-- Changes allocation status to `released`
+- Deletes the allocation and restores its quantity to available stock
+- Dispatches `InventoryReleased`
 
 ## Reorder Management
 
@@ -200,16 +195,14 @@ RejectReorderSuggestionAction::make()
 All actions use the underlying inventory package services:
 
 ```php
-use AIArmada\Inventory\Actions\ReceiveStock;
+use AIArmada\Inventory\Actions\ReceiveInventory;
 
-app(ReceiveStock::class)->execute(
-    location: $location,
-    productType: Product::class,
-    productId: $product->id,
+ReceiveInventory::run(
+    model: $product,
+    locationId: $location->id,
     quantity: 100,
-    unitCost: 10.00,
-    reference: 'PO-001',
-    reason: 'Initial stock',
+    reason: 'PO-001',
+    note: 'Initial stock',
 );
 ```
 
@@ -233,21 +226,20 @@ public function receiveStock(User $user, InventoryLocation $location): bool
 
 ## Customizing Actions
 
-Extend the base action classes:
+The shipped action classes are `final` and expose no `afterReceive`-style hooks. Build your own `Action::make(...)` copying the field pattern above and calling the core `aiarmada/inventory` action inside `->action()`:
 
 ```php
-use AIArmada\FilamentInventory\Actions\ReceiveStockAction;
+use AIArmada\Inventory\Actions\ReceiveInventory;
+use Filament\Actions\Action;
 
-class CustomReceiveStockAction extends ReceiveStockAction
-{
-    protected function afterReceive(array $data): void
-    {
-        // Custom logic after stock received
-        Notification::make()
-            ->title('Stock received')
-            ->sendToDatabase($this->getRecord()->location->manager);
-    }
-}
+Action::make('receive_stock')
+    ->label('Receive Stock')
+    ->form([...])
+    ->action(function (Model $record, array $data): void {
+        ReceiveInventory::run($record, $data['location_id'], (int) $data['quantity']);
+
+        Notification::make()->title('Stock received')->success()->send();
+    });
 ```
 
 ## Multitenancy

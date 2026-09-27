@@ -64,7 +64,7 @@ Use `VOUCHERS_TABLE_PREFIX` when you need a package-specific prefix. JSON column
 
 ### Default Registered Rules
 
-The service provider auto-registers these rules from `stacking.rules`:
+The policy builds these rules from `stacking.rules` via `StackingPolicy::fromConfig()`:
 
 | Type key | Class | Purpose |
 |----------|-------|---------|
@@ -79,7 +79,11 @@ The service provider auto-registers these rules from `stacking.rules`:
 ### Registering Custom Rules
 
 ```php
+use AIArmada\Cart\Cart;
+use AIArmada\Vouchers\Conditions\VoucherCondition;
 use AIArmada\Vouchers\Stacking\Contracts\StackingRuleInterface;
+use AIArmada\Vouchers\Stacking\StackingDecision;
+use Illuminate\Support\Collection;
 
 class MyCustomRule implements StackingRuleInterface
 {
@@ -88,9 +92,19 @@ class MyCustomRule implements StackingRuleInterface
         return 'my_custom';
     }
 
-    public function evaluate(StackingContext $context): StackingDecision
+    public function getPriority(): int
     {
+        return 100;
+    }
+
+    public function evaluate(
+        VoucherCondition $newVoucher,
+        Collection $existingVouchers,
+        Cart $cart,
+        array $config
+    ): StackingDecision {
         // Your logic here
+        return StackingDecision::allow();
     }
 }
 
@@ -98,7 +112,7 @@ class MyCustomRule implements StackingRuleInterface
 
 ### Provider Binding
 
-The registry is bound as a singleton so all stacking consumers see the same rule set. If you need to override the built-in policy, rebind the `StackingPolicyInterface` contract in your own service provider.
+The policy is resolved through the `StackingPolicyInterface` contract binding, so all stacking consumers see the same rule set. If you need to override the built-in policy, rebind the `StackingPolicyInterface` contract in your own service provider.
 
 ## Validation
 

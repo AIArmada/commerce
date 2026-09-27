@@ -49,7 +49,7 @@ $this->app->bind(OwnerResolverInterface::class, function () {
 
 When `owner.enabled` is `true`:
 
-1. `ChipPurchase` and `ChipPayment` queries are automatically scoped to the resolved owner
+1. `Purchase` and `Payment` queries are automatically scoped to the resolved owner
 2. New records get `owner_type` / `owner_id` set automatically
 3. If the owner cannot be resolved, queries fail closed (return zero rows)
 4. Webhook handlers resolve the owner from `webhook_brand_id_map` if configured
@@ -58,9 +58,9 @@ When `owner.enabled` is `true`:
 
 | Model | Owner Columns |
 |-------|--------------|
-| `ChipPurchase` | `owner_type`, `owner_id` |
-| `ChipPayment` | `owner_type`, `owner_id` |
-| `ChipSendInstruction` | `owner_type`, `owner_id` |
+| `Purchase` | `owner_type`, `owner_id` |
+| `Payment` | `owner_type`, `owner_id` |
+| `SendInstruction` | `owner_type`, `owner_id` |
 
 ## Webhook Brand ID Mapping
 
@@ -71,8 +71,8 @@ In multi-tenant setups where each tenant has their own CHIP Brand ID, map brand 
 'owner' => [
     'enabled' => true,
     'webhook_brand_id_map' => [
-        'brand-uuid-tenant-a' => ['type' => App\Models\Merchant::class, 'id' => 'merchant-a-uuid'],
-        'brand-uuid-tenant-b' => ['type' => App\Models\Merchant::class, 'id' => 'merchant-b-uuid'],
+        'brand-uuid-tenant-a' => ['owner_type' => App\Models\Merchant::class, 'owner_id' => 'merchant-a-uuid'],
+        'brand-uuid-tenant-b' => ['owner_type' => App\Models\Merchant::class, 'owner_id' => 'merchant-b-uuid'],
     ],
 ],
 ```
@@ -82,16 +82,16 @@ When a webhook arrives, the package resolves the owner from the `brand_id` in th
 ## Querying with Owner Scope
 
 ```php
-use AIArmada\Chip\Models\ChipPurchase;
+use AIArmada\Chip\Models\Purchase;
 
 // Automatically scoped (global scope applied)
-$purchases = ChipPurchase::query()->get();
+$purchases = Purchase::query()->get();
 
 // Explicit owner
-$purchases = ChipPurchase::forOwner($merchant)->get();
+$purchases = Purchase::forOwner($merchant)->get();
 
 // Include global records
-$purchases = ChipPurchase::forOwner($merchant, includeGlobal: true)->get();
+$purchases = Purchase::forOwner($merchant, includeGlobal: true)->get();
 ```
 
 ## Background Commands
@@ -106,7 +106,7 @@ class RetryWebhooksCommand extends Command
     public function handle(): void
     {
         // Enumerate all distinct owners without scope
-        $owners = ChipPurchase::withoutOwnerScope()
+        $owners = Purchase::withoutOwnerScope()
             ->select('owner_type', 'owner_id')
             ->distinct()
             ->get();
@@ -125,6 +125,7 @@ class RetryWebhooksCommand extends Command
 ## Testing
 
 ```php
+use AIArmada\Chip\Models\Purchase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 
 it('scopes chip purchases to owner', function () {
@@ -138,9 +139,21 @@ it('scopes chip purchases to owner', function () {
         public function resolve(): ?\Illuminate\Database\Eloquent\Model { return $this->owner; }
     });
 
-    ChipPurchase::factory()->create(['owner_type' => $merchantA->getMorphClass(), 'owner_id' => $merchantA->id]);
-    ChipPurchase::factory()->create(['owner_type' => $merchantB->getMorphClass(), 'owner_id' => $merchantB->id]);
+    foreach ([$merchantA, $merchantB] as $owner) {
+        (new Purchase)->forceFill([
+            'created_on' => time(),
+            'updated_on' => time(),
+            'client' => [],
+            'purchase' => [],
+            'brand_id' => (string) \Illuminate\Support\Str::uuid(),
+            'issuer_details' => [],
+            'transaction_data' => [],
+            'status_history' => [],
+            'owner_type' => $owner->getMorphClass(),
+            'owner_id' => $owner->getKey(),
+        ])->save();
+    }
 
-    expect(ChipPurchase::query()->count())->toBe(1);
+    expect(Purchase::query()->count())->toBe(1);
 });
 ```

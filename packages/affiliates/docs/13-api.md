@@ -20,6 +20,8 @@ title: Public API
 - `GET /api/affiliates/{code}/summary`
 - `POST /api/affiliates/{code}/links`
 - `GET /api/affiliates/{code}/creatives`
+- `POST /api/affiliates/{code}/programs/{id}/join`
+- `GET /api/affiliates/{code}/programs/{id}/membership`
 - `GET /api/affiliates/programs`
 - `GET /api/affiliates/programs/{id}/catalog`
 

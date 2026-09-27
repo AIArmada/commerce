@@ -129,7 +129,7 @@ Cancel a shipping order from the view page:
 - Payment Issues (payment failed, fraud suspected)
 - Other (system error, custom reason)
 
-**Visibility**: Only shown for non-delivered, non-cancelled orders.
+**Visibility**: Only shown for cancellable orders (hidden once delivered, cancelled, or returned).
 
 ### Sync Tracking Action
 
@@ -162,26 +162,6 @@ Print the Air Waybill (shipping label) for an order:
 - Shows error notification if generation fails
 
 **Visibility**: Available on all orders in the table view.
-
-### Bulk Print AWBs Action
-
-Print multiple shipping labels at once:
-
-1. Select orders using checkboxes
-2. Click **Bulk actions** dropdown
-3. Select **Print AWBs**
-4. Confirm the action
-5. Wait for all labels to generate
-6. Success notification shows download link
-
-**Features**:
-- Generates labels for all selected orders
-- Caches labels temporarily with signed URLs
-- Shows progress during generation
-- Reports success/failure count
-- Opens combined PDF in new tab
-
-**Visibility**: Available when one or more orders are selected.
 
 ---
 
@@ -303,15 +283,21 @@ use AIArmada\FilamentJnt\Resources\JntOrderResource;
 use AIArmada\Jnt\Models\JntOrder;
 
 it('can list orders', function () {
-    $orders = JntOrder::factory()->count(3)->create();
-    
+    $orders = collect(range(1, 3))->map(fn (int $i) => JntOrder::create([
+        'order_id' => "ORDER-{$i}",
+        'customer_code' => 'TEST',
+    ]));
+
     livewire(ListJntOrders::class)
         ->assertCanSeeTableRecords($orders);
 });
 
 it('can view order details', function () {
-    $order = JntOrder::factory()->create();
-    
+    $order = JntOrder::create([
+        'order_id' => 'ORDER-1',
+        'customer_code' => 'TEST',
+    ]);
+
     livewire(ViewJntOrder::class, ['record' => $order->getKey()])
         ->assertSuccessful();
 });
@@ -323,14 +309,18 @@ it('can view order details', function () {
 use AIArmada\FilamentJnt\Actions\CancelOrderAction;
 
 it('can cancel order', function () {
-    $order = JntOrder::factory()->create(['status' => 'pending']);
-    
+    $order = JntOrder::create([
+        'order_id' => 'ORDER-1',
+        'customer_code' => 'TEST',
+        'status' => 'pending',
+    ]);
+
     livewire(ViewJntOrder::class, ['record' => $order->getKey()])
         ->callAction('cancelOrder', [
-            'reason' => 'CUSTOMER_CHANGED_MIND',
+            'reason' => 'customer_changed_mind',
         ])
         ->assertHasNoActionErrors();
-    
+
     expect($order->fresh()->status)->toBe('cancelled');
 });
 ```
@@ -341,12 +331,16 @@ it('can cancel order', function () {
 use AIArmada\FilamentJnt\Widgets\JntStatsWidget;
 
 it('displays order stats', function () {
-    JntOrder::factory()->count(5)->create();
-    JntOrder::factory()->delivered()->count(3)->create();
-    
+    foreach (range(1, 5) as $i) {
+        JntOrder::create(['order_id' => "ORDER-{$i}", 'customer_code' => 'TEST']);
+    }
+    foreach (range(6, 8) as $i) {
+        JntOrder::create(['order_id' => "ORDER-{$i}", 'customer_code' => 'TEST', 'delivered_at' => now()]);
+    }
+
     livewire(JntStatsWidget::class)
         ->assertSee('Total Orders')
-        ->assertSee('5')
+        ->assertSee('8')
         ->assertSee('Delivered')
         ->assertSee('3');
 });

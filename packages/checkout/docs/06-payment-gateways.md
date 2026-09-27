@@ -331,9 +331,9 @@ Use test/sandbox modes:
 
 ```env
 # Chip sandbox
-CHIP_BRAND_ID=test_brand_id
-CHIP_API_KEY=test_api_key
-CHIP_SANDBOX=true
+CHIP_COLLECT_BRAND_ID=test_brand_id
+CHIP_COLLECT_API_KEY=test_api_key
+CHIP_ENVIRONMENT=sandbox
 
 # Stripe test mode
 STRIPE_KEY=pk_test_xxx

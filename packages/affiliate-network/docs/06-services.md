@@ -12,7 +12,7 @@ The canonical orchestration surface for affiliate-network is the `Actions` tree.
 |--------|---------|
 | `app(CreateOffer::class)->execute($site, $data)` | Create a new offer |
 | `app(UpdateOffer::class)->execute($offer, $data)` | Update an existing offer |
-| `app(ApplyToOffer::class)->execute($offer, $affiliate, $message)` | Apply to an offer |
+| `app(ApplyToOffer::class)->execute($offer, $affiliateId, $message)` | Apply to an offer |
 | `app(ApproveApplication::class)->execute($application, $reviewerId)` | Approve/reject applications |
 | `app(RecordNetworkConversion::class)->execute($link, $amount, $currency, $reference)` | Record a conversion (posts a leg when `$reference` is set) |
 
@@ -129,7 +129,7 @@ $offer = $offerService->createOffer($site, [
 ]);
 ```
 
-Auto-generates slug if not provided. Sets status based on `offers.require_approval` config.
+Auto-generates slug if not provided. New offers always land as `draft`; publishing stays an explicit operator decision.
 
 #### applyForOffer
 
@@ -138,7 +138,7 @@ Apply for an offer as an affiliate.
 ```php
 $application = $offerService->applyForOffer(
     $offer,
-    $affiliate,
+    (string) $affiliate->getKey(),
     'I have relevant traffic for this offer'
 );
 ```

@@ -43,7 +43,6 @@ Total count of active subscribers.
 **Counts subscriptions with status:**
 - Active
 - Trialing
-- Past Due (still active)
 
 ### ChurnRateWidget
 
@@ -78,14 +77,15 @@ Conversion Rate = (Trials Converted / Trials Expired) × 100
 Count of subscriptions needing attention.
 
 **Displays:**
-- Past due subscription count
-- Incomplete payment count
-- Click to view problem subscriptions
+- A single "Attention Required" total with a breakdown description
+  (trials ending, past due, grace ending, incomplete, unpaid)
 
 **Flags subscriptions with:**
+- Trial ending within 3 days
 - Past due status
+- Grace period ending within 3 days
 - Incomplete status
-- Failed renewal attempts
+- Unpaid status
 
 ### RevenueChartWidget
 
@@ -93,7 +93,7 @@ Revenue trend visualization over time.
 
 **Displays:**
 - Line chart of monthly revenue
-- 6 or 12 month history
+- 12 month history
 - Hover for exact values
 
 ### SubscriptionDistributionWidget
@@ -101,7 +101,7 @@ Revenue trend visualization over time.
 Subscriptions by plan/type distribution.
 
 **Displays:**
-- Pie or bar chart
+- Doughnut chart
 - Breakdown by subscription type
 - Percentage of each plan
 
@@ -168,10 +168,10 @@ Default sort order:
 1. MRRWidget
 2. ActiveSubscribersWidget
 3. ChurnRateWidget
-4. AttentionRequiredWidget
-5. TrialConversionsWidget
-6. RevenueChartWidget
-7. SubscriptionDistributionWidget
+4. RevenueChartWidget
+5. SubscriptionDistributionWidget
+6. TrialConversionsWidget
+7. AttentionRequiredWidget
 
 ### Column Span
 
@@ -184,55 +184,47 @@ protected function getColumns(): int
 }
 ```
 
-Chart widgets span multiple columns:
+Chart widgets span multiple columns via the `$columnSpan` property:
 
 ```php
-protected function getColumns(): int
-{
-    return 2;
-}
+protected int|string|array $columnSpan = 2;
 ```
 
 ## Customizing Widgets
 
-### Extend a Widget
+Package widgets are `final` with `private` calculation methods, so build
+your own widget for custom metrics instead of extending them:
+
+### Custom Stats Widget
 
 ```php
 namespace App\Filament\Widgets;
 
-use AIArmada\FilamentCashierChip\Widgets\MRRWidget as BaseMRRWidget;
+use AIArmada\CashierChip\Subscription\Subscription;
+use Filament\Widgets\StatsOverviewWidget as BaseWidget;
+use Filament\Widgets\StatsOverviewWidget\Stat;
 
-class MRRWidget extends BaseMRRWidget
+class CustomMRRWidget extends BaseWidget
 {
     protected static ?int $sort = 0; // First widget
-    
+
     protected function getStats(): array
     {
-        $stats = parent::getStats();
-        
-        // Add custom stat
-        $stats[] = Stat::make('Target', '$10,000')
-            ->description('Monthly goal');
-            
-        return $stats;
+        return [
+            Stat::make('Target', '$10,000')
+                ->description('Monthly goal'),
+        ];
     }
-}
-```
 
-### Custom Calculations
-
-Override calculation methods:
-
-```php
-class MRRWidget extends BaseMRRWidget
-{
     private function calculateMRR(): int
     {
         // Custom MRR calculation
-        return Subscription::query()
+        return (int) Subscription::query()
             ->whereActive()
             ->whereNull('trial_ends_at') // Exclude trials
-            ->sum('monthly_amount');
+            ->withSum('items', 'unit_amount')
+            ->get()
+            ->sum('items_sum_unit_amount');
     }
 }
 ```

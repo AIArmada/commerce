@@ -43,7 +43,7 @@ keywords:
 ## Key surfaces
 - Resources: `VoucherResource`, `VoucherUsageResource`, `VoucherWalletResource`
 - Actions/Services: `Actions/ActivateVoucherAction`, `Actions/AddToMyWalletAction`, `Actions/ApplyVoucherToCartAction`, `Actions/BulkGenerateVouchersAction`, `Actions/ManualRedeemVoucherAction`, `Actions/PauseVoucherAction`, `Support/ConditionTargetFormData`, `Support/ConditionTargetPreset`
-- Config `filament-vouchers.php`: `navigation`, `group`, `resources`, `navigation_sort`, `vouchers`, `voucher_usage`, `voucher_wallets`, `pages`, `navigation_sort`, `stacking_configuration`
+- Config `filament-vouchers.php`: `navigation`, `resources`, `pages`, `polling_interval`, `order_resource`, `owners`, `default_currency`
 
 ## Docs map
 - Start: `01-overview` → `03-configuration` → `04-usage` → `99-troubleshooting`

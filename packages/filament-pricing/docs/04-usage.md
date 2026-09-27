@@ -19,7 +19,7 @@ The table displays:
 | Prices | Count of prices in list |
 | Priority | Numeric, sortable |
 | Default | Boolean icon |
-| Active | Boolean icon |
+| Status | Badge (Active/Deactivated from deactivated_at) |
 | Starts | Date (toggleable) |
 | Ends | Date (toggleable) |
 

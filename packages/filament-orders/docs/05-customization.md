@@ -177,16 +177,19 @@ Update config to add your gateways:
 Override the form in your custom resource:
 
 ```php
-public static function form(Form $form): Form
+use AIArmada\FilamentOrders\Resources\OrderResource\Schemas\OrderForm;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
+
+public static function form(Schema $schema): Schema
 {
-    return $form
+    return $schema
         ->schema([
-            Forms\Components\Section::make('Order Details')
+            ...OrderForm::schema(),
+
+            // Add custom fields
+            Section::make('Custom Details')
                 ->schema([
-                    Forms\Components\TextInput::make('order_number')
-                        ->disabled(),
-                        
-                    // Add custom fields
                     Forms\Components\Select::make('sales_rep_id')
                         ->relationship('salesRep', 'name')
                         ->label('Sales Representative'),

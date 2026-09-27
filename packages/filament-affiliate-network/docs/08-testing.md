@@ -149,6 +149,7 @@ it('hides verify action for verified sites', function () {
 ### AffiliateOfferResource Tests
 
 ```php
+use AIArmada\AffiliateNetwork\Enums\OfferStatus;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource;
@@ -176,7 +177,7 @@ it('can create offer', function () {
             'name' => 'Summer Sale',
             'slug' => 'summer-sale',
             'rate_base_bp' => 1000,
-            'status' => AffiliateOffer::STATUS_DRAFT,
+            'status' => OfferStatus::Draft->value,
         ])
         ->call('create')
         ->assertHasNoFormErrors();
@@ -185,37 +186,38 @@ it('can create offer', function () {
 });
 
 it('can activate offer via action', function () {
-    $offer = AffiliateOffer::factory()->paused()->create();
+    $offer = AffiliateOffer::factory()->archived()->create();
 
     livewire(AffiliateOfferResource\Pages\ListAffiliateOffers::class)
         ->callTableAction('activate', $offer);
 
-    expect($offer->fresh()->status)->toBe(AffiliateOffer::STATUS_ACTIVE);
+    expect($offer->fresh()->status)->toBe(OfferStatus::Published);
 });
 
 it('can pause offer via action', function () {
-    $offer = AffiliateOffer::factory()->active()->create();
+    $offer = AffiliateOffer::factory()->published()->create();
 
     livewire(AffiliateOfferResource\Pages\ListAffiliateOffers::class)
         ->callTableAction('pause', $offer);
 
-    expect($offer->fresh()->status)->toBe(AffiliateOffer::STATUS_PAUSED);
+    expect($offer->fresh()->status)->toBe(OfferStatus::Archived);
 });
 
 it('filters offers by status', function () {
-    $active = AffiliateOffer::factory()->active()->create();
-    $paused = AffiliateOffer::factory()->paused()->create();
+    $published = AffiliateOffer::factory()->published()->create();
+    $archived = AffiliateOffer::factory()->archived()->create();
 
     livewire(AffiliateOfferResource\Pages\ListAffiliateOffers::class)
-        ->filterTable('status', AffiliateOffer::STATUS_ACTIVE)
-        ->assertCanSeeTableRecords([$active])
-        ->assertCanNotSeeTableRecords([$paused]);
+        ->filterTable('status', OfferStatus::Published->value)
+        ->assertCanSeeTableRecords([$published])
+        ->assertCanNotSeeTableRecords([$archived]);
 });
 ```
 
 ### AffiliateOfferApplicationResource Tests
 
 ```php
+use AIArmada\AffiliateNetwork\Enums\ApplicationStatus;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferApplicationResource;
 
@@ -233,7 +235,7 @@ it('can approve pending application', function () {
         ->callTableAction('approve', $application);
 
     expect($application->fresh())
-        ->status->toBe(AffiliateOfferApplication::STATUS_APPROVED)
+        ->status->toBe(ApplicationStatus::Approved)
         ->reviewed_at->not->toBeNull();
 });
 
@@ -246,7 +248,7 @@ it('can reject application with reason', function () {
         ]);
 
     expect($application->fresh())
-        ->status->toBe(AffiliateOfferApplication::STATUS_REJECTED)
+        ->status->toBe(ApplicationStatus::Rejected)
         ->rejection_reason->toBe('Traffic sources not aligned');
 });
 
@@ -259,7 +261,7 @@ it('can revoke approved application', function () {
         ]);
 
     expect($application->fresh())
-        ->status->toBe(AffiliateOfferApplication::STATUS_REVOKED)
+        ->status->toBe(ApplicationStatus::Revoked)
         ->rejection_reason->toBe('Policy violation');
 });
 
@@ -273,7 +275,7 @@ it('can bulk approve applications', function () {
         ->callTableBulkAction('approve_selected', $applications);
 
     foreach ($applications as $application) {
-        expect($application->fresh()->status)->toBe(AffiliateOfferApplication::STATUS_APPROVED);
+        expect($application->fresh()->status)->toBe(ApplicationStatus::Approved);
     }
 });
 ```
@@ -281,86 +283,6 @@ it('can bulk approve applications', function () {
 ---
 
 ## Testing Pages
-
-### Marketplace Page Tests
-
-```php
-use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferCategory;
-use AIArmada\FilamentAffiliateNetwork\Pages\AffiliateMarketplacePage;
-use AIArmada\Affiliates\Models\Affiliate;
-
-use function Pest\Livewire\livewire;
-
-it('can render marketplace page', function () {
-    livewire(AffiliateMarketplacePage::class)
-        ->assertSuccessful();
-});
-
-it('lists active public offers', function () {
-    $activePublic = AffiliateOffer::factory()->active()->create(['is_public' => true]);
-    $activePrivate = AffiliateOffer::factory()->active()->create(['is_public' => false]);
-    $pausedPublic = AffiliateOffer::factory()->paused()->create(['is_public' => true]);
-
-    $offers = livewire(AffiliateMarketplacePage::class)
-        ->call('getOffers');
-
-    expect($offers->contains($activePublic))->toBeTrue();
-    expect($offers->contains($activePrivate))->toBeFalse();
-    expect($offers->contains($pausedPublic))->toBeFalse();
-});
-
-it('can search offers', function () {
-    AffiliateOffer::factory()->active()->create([
-        'name' => 'Summer Sale Campaign',
-        'is_public' => true,
-    ]);
-    AffiliateOffer::factory()->active()->create([
-        'name' => 'Winter Promo',
-        'is_public' => true,
-    ]);
-
-    $component = livewire(AffiliateMarketplacePage::class)
-        ->set('search', 'Summer');
-
-    $offers = $component->call('getOffers');
-    expect($offers)->toHaveCount(1);
-    expect($offers->first()->name)->toBe('Summer Sale Campaign');
-});
-
-it('can filter by category', function () {
-    $category = AffiliateOfferCategory::factory()->create();
-    
-    $inCategory = AffiliateOffer::factory()->active()->create([
-        'category_id' => $category->id,
-        'is_public' => true,
-    ]);
-    $noCategory = AffiliateOffer::factory()->active()->create([
-        'category_id' => null,
-        'is_public' => true,
-    ]);
-
-    $component = livewire(AffiliateMarketplacePage::class)
-        ->set('categoryFilter', $category->id);
-
-    $offers = $component->call('getOffers');
-    expect($offers)->toHaveCount(1);
-    expect($offers->first()->id)->toBe($inCategory->id);
-});
-
-it('can apply for offer', function () {
-    $offer = AffiliateOffer::factory()->active()->create(['is_public' => true]);
-    $affiliate = Affiliate::factory()->create(['contact_email' => $this->admin->email]);
-
-    livewire(AffiliateMarketplacePage::class)
-        ->call('applyForOffer', $offer->id, 'I want to promote this');
-
-    expect(AffiliateOfferApplication::where([
-        'offer_id' => $offer->id,
-        'affiliate_id' => $affiliate->id,
-    ])->exists())->toBeTrue();
-});
-```
 
 ### Merchant Dashboard Page Tests
 
@@ -388,8 +310,8 @@ it('shows correct site counts', function () {
 });
 
 it('shows correct offer counts', function () {
-    AffiliateOffer::factory()->active()->count(5)->create();
-    AffiliateOffer::factory()->paused()->count(3)->create();
+    AffiliateOffer::factory()->published()->count(5)->create();
+    AffiliateOffer::factory()->archived()->count(3)->create();
 
     $component = livewire(MerchantDashboardPage::class);
 
@@ -428,7 +350,7 @@ it('can render network stats widget', function () {
 
 it('displays correct statistics', function () {
     AffiliateSite::factory()->verified()->count(3)->create();
-    AffiliateOffer::factory()->active()->count(5)->create();
+    AffiliateOffer::factory()->published()->count(5)->create();
     AffiliateOfferApplication::factory()->pending()->count(2)->create();
     AffiliateOfferLink::factory()->withStats(1000, 50, 250000)->create();
 
@@ -455,10 +377,10 @@ it('can render top offers widget', function () {
 });
 
 it('displays offers ordered by clicks', function () {
-    $lowClicks = AffiliateOffer::factory()->active()->create();
+    $lowClicks = AffiliateOffer::factory()->published()->create();
     AffiliateOfferLink::factory()->forOffer($lowClicks)->withStats(100, 5, 5000)->create();
 
-    $highClicks = AffiliateOffer::factory()->active()->create();
+    $highClicks = AffiliateOffer::factory()->published()->create();
     AffiliateOfferLink::factory()->forOffer($highClicks)->withStats(1000, 50, 50000)->create();
 
     livewire(TopOffersWidget::class)

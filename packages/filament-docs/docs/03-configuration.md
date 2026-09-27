@@ -71,7 +71,7 @@ return [
     ],
 
     'features' => [
-        'auto_generate_pdf' => true,
+        'auto_generate_pdf' => false,
     ],
 
     'resources' => [

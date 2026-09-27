@@ -87,7 +87,7 @@ The `nullableMorphs('owner')` creates:
 use AIArmada\CommerceSupport\Support\OwnerContext;
 
 // Set the current owner for all operations
-OwnerContext::set($tenant);
+OwnerContext::setForRequest($tenant);
 
 // Now all queries are automatically scoped
 $orders = JntOrder::query()->get(); // Only this tenant's orders
@@ -147,7 +147,7 @@ When `owner.enabled` is `true`, all queries are automatically scoped:
 $orders = JntOrder::query()->get();
 
 // Same as
-$orders = JntOrder::query()->forOwner(OwnerContext::get())->get();
+$orders = JntOrder::query()->forOwner(OwnerContext::resolve())->get();
 ```
 
 ### Explicit Owner Scoping
@@ -178,7 +178,7 @@ $orders = JntOrder::query()
 For admin or system operations, bypass the owner scope:
 
 ```php
-use AIArmada\CommerceSupport\Scopes\OwnerScope;
+use AIArmada\CommerceSupport\Support\OwnerScope;
 
 // Bypass owner scope (use with caution!)
 $allOrders = JntOrder::query()
@@ -202,7 +202,7 @@ $allOrders = JntOrder::query()
 When `auto_assign_on_create` is enabled:
 
 ```php
-OwnerContext::set($tenant);
+OwnerContext::setForRequest($tenant);
 
 // Owner is automatically set
 $order = JntExpress::createOrder($orderData);
@@ -250,7 +250,7 @@ The service respects owner context:
 use AIArmada\Jnt\Facades\JntExpress;
 
 // Set owner context
-OwnerContext::set($tenant);
+OwnerContext::setForRequest($tenant);
 
 // All operations are scoped to this owner
 $order = JntExpress::createOrder($data);
@@ -272,7 +272,8 @@ $orders = $service->getOrdersNeedingTrackingUpdateForOwner(
 );
 
 // Sync tracking for owner
-$results = $service->syncBatchForOwner($tenant, limit: 50);
+$orders = $service->getOrdersNeedingTrackingUpdateForOwner($tenant, limit: 50);
+$results = $service->batchSyncTracking($orders);
 ```
 
 ---
@@ -329,11 +330,11 @@ class SyncJntTracking implements ShouldQueue
         );
         
         // Set context for this job
-        OwnerContext::set($owner);
-        
+        OwnerContext::setForRequest($owner);
+
         // Now operations are scoped
         $service = app(JntTrackingService::class);
-        $service->syncBatch(limit: 100);
+        $service->batchSyncTracking($service->getOrdersNeedingTrackingUpdate(100));
     }
 }
 ```
@@ -351,11 +352,11 @@ class SyncAllJntTracking extends Command
         Team::query()->chunk(100, function ($teams) {
             foreach ($teams as $team) {
                 // Set owner context
-                OwnerContext::set($team);
-                
+                OwnerContext::setForRequest($team);
+
                 // Sync this owner's orders
                 $service = app(JntTrackingService::class);
-                $results = $service->syncBatch(limit: 50);
+                $results = $service->batchSyncTracking($service->getOrdersNeedingTrackingUpdate(50));
                 
                 $this->info("Synced {$team->name}: " . count($results['successful']));
             }
@@ -389,7 +390,7 @@ class HandleStatusChanged
         
         if ($owner !== null) {
             // Set context for any further operations
-            OwnerContext::set($owner);
+            OwnerContext::setForRequest($owner);
         }
     }
 }
@@ -489,7 +490,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 
 it('creates orders for the current owner', function () {
     $team = Team::factory()->create();
-    OwnerContext::set($team);
+    OwnerContext::setForRequest($team);
     
     $order = JntExpress::createOrder($data);
     
@@ -502,11 +503,11 @@ it('isolates orders between owners', function () {
     $team2 = Team::factory()->create();
     
     // Create order for team1
-    OwnerContext::set($team1);
+    OwnerContext::setForRequest($team1);
     JntExpress::createOrder($data);
-    
+
     // Query from team2 context
-    OwnerContext::set($team2);
+    OwnerContext::setForRequest($team2);
     $orders = JntOrder::query()->get();
     
     expect($orders)->toBeEmpty();

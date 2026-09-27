@@ -49,4 +49,4 @@ keywords:
 
 ## Docs map
 - Start: `01-overview` → `03-configuration` → `04-usage` → `99-troubleshooting`
-- Deep dives: `05-multitenancy.md`, `api-reference.md`, `chip-collect.md`, `chip-send.md`, `index.md`, `payment-gateway.md`, `webhooks.md`
+- Deep dives: `05-multitenancy.md`, `06-payment-gateway.md`, `07-chip-collect.md`, `08-chip-send.md`, `09-webhooks.md`, `10-api-reference.md`

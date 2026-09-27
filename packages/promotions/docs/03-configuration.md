@@ -12,25 +12,35 @@ The promotions package exposes database and owner-scoping settings.
 // config/promotions.php
 return [
     'database' => [
+        'json_column_type' => env('PROMOTIONS_JSON_COLUMN_TYPE', 'jsonb'),
         'tables' => [
             'promotions' => 'promotions',
             'promotionables' => 'promotionables',
         ],
     ],
 
+    'defaults' => [
+        'promotion_type' => 'percentage',
+        'currency' => 'MYR',
+    ],
+
     'features' => [
-        'owner' => [
-            'enabled' => env('PROMOTIONS_OWNER_ENABLED', false),
-            'include_global' => env('PROMOTIONS_OWNER_INCLUDE_GLOBAL', false),
-            'auto_assign_on_create' => env('PROMOTIONS_OWNER_AUTO_ASSIGN_ON_CREATE', true),
-        ],
+        'evaluate_deleted_products' => env('PROMOTIONS_EVALUATE_DELETED_PRODUCTS', false),
+        'stack_evaluation' => env('PROMOTIONS_STACK_EVALUATION', 'best-only'),
+        'promotion_limit' => env('PROMOTIONS_PROMOTION_LIMIT', 200),
+    ],
+
+    'owner' => [
+        'enabled' => false,
+        'include_global' => false,
+        'auto_assign_on_create' => true,
     ],
 ];
 ```
 
 ## Owner defaults
 
-- The package ships with `enabled = false`; set `PROMOTIONS_OWNER_ENABLED=true` for owner-scoped promotions. Once enabled, reads and writes are owner-aware.
+- The package ships with `enabled = false`; set `'owner.enabled' => true` in the published config for owner-scoped promotions. Once enabled, reads and writes are owner-aware.
 - `include_global = false` is fail-closed; owner-scoped queries do not include global rows unless explicitly requested.
 - `auto_assign_on_create = true` assigns owner automatically when an owner context exists.
 
@@ -48,8 +58,8 @@ If needed, override in your app-level published config. The package itself does 
 
 ```php
 $table = config('promotions.database.tables.promotions');
-$ownerEnabled = config('promotions.features.owner.enabled');
-$includeGlobal = config('promotions.features.owner.include_global');
+$ownerEnabled = config('promotions.owner.enabled');
+$includeGlobal = config('promotions.owner.include_global');
 ```
 
 ## Evaluation time and usage limits

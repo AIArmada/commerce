@@ -30,7 +30,7 @@ Also ensure `standalone_resources` is `true`:
 Add the plugin to your Panel provider:
 
 ```php
-use AiArmada\FilamentContacting\FilamentContactingPlugin;
+use AIArmada\FilamentContacting\FilamentContactingPlugin;
 
 $panel->plugins([
     FilamentContactingPlugin::make(),
@@ -46,8 +46,8 @@ Standalone resources are off by default to prevent accidental cross-owner access
 If the relation manager shows "Relationship [contactMethods] not found", ensure the parent model uses:
 
 ```php
-use AiArmada\Contacting\Concerns\HasContactMethods;
-use AiArmada\Contacting\Concerns\HasSocialProfiles;
+use AIArmada\Contacting\Concerns\HasContactMethods;
+use AIArmada\Contacting\Concerns\HasSocialProfiles;
 ```
 
 ## No Create Button on Standalone Resources
@@ -70,7 +70,7 @@ Snapshots are always read-only (`read_only: true`).
 
 ## Cross-Tenant Records Visible
 
-If your app uses owner scoping from `commerce-support` and standalone resources are enabled, ensure the resource query applies owner scoping. The resource uses `parent::getEloquentQuery()` which respects the core model's global scope.
+If your app uses owner scoping from `commerce-support` and standalone resources are enabled, ensure the resource query applies owner scoping. The resources wrap `parent::getEloquentQuery()` with `OwnerUiScope::apply(..., includeGlobal: false)`, which respects the core model's global scope and excludes global rows.
 
 ## Import Failing
 

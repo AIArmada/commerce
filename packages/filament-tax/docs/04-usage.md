@@ -78,10 +78,10 @@ Zone bulk mutations are revalidated server-side with `OwnerWriteGuard` using own
 | name | TextInput | Yes | Display name for the zone |
 | code | TextInput | Yes | Unique identifier (uppercase) |
 | description | Textarea | No | Optional description |
-| countries | Select | No | Multi-select of ISO country codes |
+| countries | TagsInput | No | ISO country codes |
 | states | TagsInput | No | State/province codes |
 | postcodes | TagsInput | No | Postcode patterns (`43*`, `40000-49999`) |
-| priority | TextInput | No | Resolution priority (default: 10) |
+| priority | TextInput | No | Resolution priority (default: 0) |
 | is_active | Toggle | No | Enable/disable zone |
 | is_default | Toggle | No | Use as fallback zone |
 
@@ -188,7 +188,7 @@ Manages tax percentages applied to products and shipping.
 
 - **Icon:** `heroicon-o-calculator`
 - **Group:** Tax
-- **Sort:** 3
+- **Sort:** 2
 
 ### List View
 
@@ -270,9 +270,9 @@ Manages customer tax exemptions with approval workflow.
 
 ### Navigation
 
-- **Icon:** `heroicon-o-shield-check`
+- **Icon:** `heroicon-o-shield-exclamation`
 - **Group:** Tax
-- **Badge:** Count of pending exemptions
+- **Badge:** Count of exemptions expiring within 30 days
 
 ### List View
 
@@ -344,15 +344,15 @@ Exemption bulk mutations are revalidated server-side with `OwnerWriteGuard` usin
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | exemptable_type | Select | Yes | Model class (e.g., Customer) |
-| exemptable_id | TextInput | Yes | Entity ID |
+| exemptable_id | Select | Yes | Entity ID |
 | tax_zone_id | Select | No | Limit to specific zone (null = all) |
 | starts_at | DatePicker | No | Start of validity period |
 | expires_at | DatePicker | No | End of validity period |
 | reason | Textarea | Yes | Justification for exemption |
 | certificate_number | TextInput | No | External certificate reference |
-| certificate_path | FileUpload | No | Supporting documentation |
+| document_path | FileUpload | No | Supporting documentation |
 | status | Select | Yes | pending, approved, rejected |
-| notes | Textarea | No | Internal admin notes |
+| rejection_reason | Textarea | No | Internal rejection notes |
 
 ### Approval Workflow
 
@@ -372,7 +372,7 @@ The `DownloadTaxExemptionCertificateAction` provides secure certificate download
 ```php
 // Path is validated to prevent directory traversal
 // Downloads file from storage
-DownloadTaxExemptionCertificateAction::run($exemption);
+app(DownloadTaxExemptionCertificateAction::class)->execute($exemption);
 ```
 
 Security features:

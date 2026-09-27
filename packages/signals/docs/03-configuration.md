@@ -179,7 +179,7 @@ When no explicit date range is passed, reports default to the trailing `default_
 ],
 ```
 
-When enabled, the currently authenticated Laravel user is automatically linked during identity capture. You can also pass `auth_user_type` / `auth_user_id` explicitly in the identify payload.
+When enabled, the currently authenticated Laravel user is automatically linked during identity capture. Auth linkage is never accepted from the payload itself.
 
 ### Geolocation
 

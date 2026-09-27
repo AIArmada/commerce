@@ -11,7 +11,7 @@ All configuration is in `config/filament-shipping.php`.
 ```php
 'navigation' => [
     'group' => 'Shipping',
-    'sort' => 50,
+    'sort' => 40,
 ],
 
 'pages' => [
@@ -38,10 +38,10 @@ Define available shipping methods for dropdowns:
 
 ```php
 'shipping_methods' => [
-    'standard' => 'Standard Shipping',
-    'express' => 'Express Shipping',
+    'standard' => 'Standard',
+    'express' => 'Express',
     'overnight' => 'Overnight',
-    'pickup' => 'Store Pickup',
+    'pickup' => 'Self Pickup',
 ],
 ```
 
@@ -51,15 +51,11 @@ Configure carrier options for the UI:
 
 ```php
 'carriers' => [
-    'manual' => ['name' => 'Manual'],
-    'poslaju' => ['name' => 'Pos Laju'],
-    'jnt' => ['name' => 'J&T Express'],
-    'dhl' => ['name' => 'DHL'],
-    'fedex' => ['name' => 'FedEx'],
+    // Will use shipping.drivers if empty
 ],
 ```
 
-If empty, carriers are loaded from `config/shipping.php` drivers.
+Carriers default to empty; when empty, carriers are loaded from `config/shipping.php` drivers.
 
 ## Features
 
@@ -93,20 +89,18 @@ Settings for the fulfillment queue page:
 return [
     'navigation' => [
         'group' => 'Shipping',
-        'sort' => 50,
+        'sort' => 40,
     ],
 
     'shipping_methods' => [
-        'standard' => 'Standard Shipping',
-        'express' => 'Express Shipping',
+        'standard' => 'Standard',
+        'express' => 'Express',
         'overnight' => 'Overnight',
-        'pickup' => 'Store Pickup',
+        'pickup' => 'Self Pickup',
     ],
 
     'carriers' => [
-        'manual' => ['name' => 'Manual'],
-        'poslaju' => ['name' => 'Pos Laju'],
-        'jnt' => ['name' => 'J&T Express'],
+        // Will use shipping.drivers if empty
     ],
 
     'features' => [

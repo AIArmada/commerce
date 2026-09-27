@@ -52,8 +52,8 @@ keywords:
 ## Key surfaces
 - Models: `Address`, `AddressArea`, `AddressAreaAssignment`, `AddressAreaName`, `AddressAreaPostalCode`, `AddressAreaRelationship`, `AddressAreaRole`, `AddressAreaStateLink`, `AddressCountry`
 - Actions/Services: `Actions/BuildAddressNavigationLinksAction`, `Actions/CreateAddressSnapshotAction`, `Actions/FormatAddressAction`, `Actions/ImportAddressAreasAction`, `Actions/ImportPostalCodesAction`, `Actions/NormalizeAddressDataAction`, `Actions/SaveAddressAreaAction`, `Actions/SearchAddressAreasAction`
-- Config `addressing.php`: `database.tables`, `database.json_column_type`, `models`, `countries`, `areas`, `addresses`, `addressables`, `snapshots`, `states`, `cities`
+- Config `addressing.php`: `database` (`json_column_type`, `tables`), `models`, `features.owner`, `fields`, `geography` (`providers`, `indonesia`), `formatters`, `defaults`, `seed`, `area_sources`, `onemap`
 
 ## Docs map
 - Start: `01-overview` → `03-configuration` → `04-usage` → `99-troubleshooting`
-- Deep dives: `05-country-data.md`, `06-consuming-packages.md`, `07-adoption-levels.md`, `08-package-playbooks.md`, `09-migration-recipes.md`, `10-contracts-and-examples.md`, `11-agent-rollout-checklists.md`, `12-navigation-links.md`
+- Deep dives: `05-country-data.md`, `06-consuming-packages.md`, `07-adoption-levels.md`, `08-package-playbooks.md`, `09-migration-recipes.md`, `10-contracts-and-examples.md`, `12-navigation-links.md`

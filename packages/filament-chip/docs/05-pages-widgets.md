@@ -54,27 +54,28 @@ class AnalyticsDashboardPage extends BasePage
 
 Core metrics stats overview:
 
-- Total Revenue (sum of paid purchases)
-- Transaction Count
-- Average Transaction Value
+- Today's Revenue
+- This Week's Revenue
+- This Month's Revenue
 - Success Rate
 
 **Customization:**
+
+Package widgets are `final`, so build your own widget for custom metrics:
 
 ```php
 <?php
 
 namespace App\Filament\Widgets;
 
-use AIArmada\FilamentChip\Widgets\ChipStatsWidget as BaseWidget;
+use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
-class ChipStatsWidget extends BaseWidget
+class CustomChipStatsWidget extends BaseWidget
 {
     protected function getStats(): array
     {
         return [
-            ...parent::getStats(),
             Stat::make('Custom Metric', $this->calculateCustomMetric())
                 ->icon('heroicon-o-star'),
         ];
@@ -147,7 +148,9 @@ class Dashboard extends BaseDashboard
 Control widget column span:
 
 ```php
-class ChipStatsWidget extends BaseWidget
+use Filament\Widgets\StatsOverviewWidget as BaseWidget;
+
+class CustomStatsWidget extends BaseWidget
 {
     protected int|string|array $columnSpan = 'full';
     // Options: 1, 2, 3, 'full', ['md' => 2, 'xl' => 3]
@@ -159,12 +162,10 @@ class ChipStatsWidget extends BaseWidget
 Control widget display order:
 
 ```php
-class ChipStatsWidget extends BaseWidget
+use Filament\Widgets\StatsOverviewWidget as BaseWidget;
+
+class CustomStatsWidget extends BaseWidget
 {
     protected static ?int $sort = 1;
 }
-
-class RevenueChartWidget extends BaseWidget
-{
-    protected static ?int $sort = 2;
-}
+```

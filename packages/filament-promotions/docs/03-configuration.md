@@ -4,7 +4,7 @@ title: Configuration
 
 # Configuration
 
-The filament-promotions plugin provides configuration for navigation, table behavior, and feature toggles.
+The filament-promotions plugin provides configuration for navigation and resource ordering.
 
 ## Full Configuration
 
@@ -32,26 +32,6 @@ return [
         'navigation_sort' => [
             'promotions' => 10,
         ],
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Tables
-    |--------------------------------------------------------------------------
-    */
-
-    'tables' => [
-        'poll' => null,
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Features
-    |--------------------------------------------------------------------------
-    */
-
-    'features' => [
-        'widgets' => true,
     ],
 
 ];
@@ -83,43 +63,15 @@ Control the order of the resource in navigation:
 ],
 ```
 
-## Table Configuration
-
-### Polling
-
-Enable real-time table updates:
-
-```php
-'tables' => [
-    'poll' => '30s', // Refresh every 30 seconds
-],
-```
-
-Set to `null` to disable polling.
-
-## Feature Toggles
-
-### Widgets
-
-Enable or disable the stats widget:
-
-```php
-'features' => [
-    'widgets' => true,
-],
-```
-
 ## Owner Scoping
 
 Owner scoping is configured in the core promotions package:
 
 ```php
 // config/promotions.php
-'features' => [
-    'owner' => [
-        'enabled' => true,
-        'include_global' => true,
-    ],
+'owner' => [
+    'enabled' => true,
+    'include_global' => true,
 ],
 ```
 

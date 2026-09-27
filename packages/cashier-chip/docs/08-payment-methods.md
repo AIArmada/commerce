@@ -164,23 +164,6 @@ if ($user->hasDefaultPaymentMethod()) {
 }
 ```
 
-## Payment Method Events
-
-Listen for payment method changes:
-
-```php
-use AIArmada\CashierChip\Events\PaymentMethodAdded;
-use AIArmada\CashierChip\Events\PaymentMethodRemoved;
-use AIArmada\CashierChip\Events\DefaultPaymentMethodChanged;
-
-// In EventServiceProvider
-protected $listen = [
-    PaymentMethodAdded::class => [
-        SendPaymentMethodAddedNotification::class,
-    ],
-];
-```
-
 ## Database Schema
 
 Payment methods are stored in `cashier_chip_payment_methods`:
@@ -188,12 +171,14 @@ Payment methods are stored in `cashier_chip_payment_methods`:
 | Column | Type | Description |
 |--------|------|-------------|
 | `id` | uuid | Primary key |
+| `owner_type` | string nullable | Owner scope morph type when multitenancy is enabled |
+| `owner_id` | uuid nullable | Owner scope morph key when multitenancy is enabled |
 | `billable_id` | uuid | Foreign key to billable |
 | `billable_type` | string | Billable model class |
 | `recurring_token` | text | CHIP recurring token (encrypted at rest) |
 | `type` | string nullable | Payment-method type |
 | `brand` | string nullable | Card or payment-method brand |
-| `last_four` | string | Last 4 digits |
+| `last_four` | string nullable | Last 4 digits |
 | `is_default` | boolean | Default flag |
 | `metadata` | json nullable | Minimal token identifiers (purchase/token id, method, description) |
 | `created_at` | timestamp | |

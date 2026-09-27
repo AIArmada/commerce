@@ -42,7 +42,7 @@ See `ProgramCatalogService::snapshot()` for the implementation.
 
 ## Contribute promotables
 
-Register a `PromotableProviderInterface` (tagged `affiliates.promotable`).
+Register a `PromotableProviderInterface` on the `PromotableRegistry`.
 Without one, subjects fall back to active product/category rule `in` lists
 with `/` placeholder URLs.
 

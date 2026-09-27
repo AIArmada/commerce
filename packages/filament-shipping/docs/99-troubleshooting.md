@@ -89,7 +89,7 @@ use AIArmada\Shipping\Services\ShipmentService;
 $service = app(ShipmentService::class);
 
 try {
-    $result = $service->ship($shipment, 'jnt');
+    $result = $service->ship($shipment);
 } catch (\Throwable $e) {
     dd($e->getMessage());
 }
@@ -153,8 +153,8 @@ Shipping widgets use fixed polling intervals in their widget classes. If polling
 2. Ensure `OwnerContext` is set in middleware:
    ```php
    use AIArmada\CommerceSupport\Support\OwnerContext;
-   
-   OwnerContext::set($tenant);
+
+   OwnerContext::setForRequest($tenant);
    ```
 
 3. Check resource query is owner-safe:
@@ -186,7 +186,7 @@ Cache::forget('filament-shipping.fulfillment-queue.badge.*');
 
 2. Add database indexes:
    ```php
-   Schema::table('shipping_shipments', function (Blueprint $table) {
+   Schema::table('shipments', function (Blueprint $table) {
        $table->index('status');
        $table->index(['owner_type', 'owner_id']);
    });
@@ -236,5 +236,5 @@ Check carrier is configured in shipping drivers:
 
 1. Check Laravel logs: `storage/logs/laravel.log`
 2. Enable Filament debug mode
-3. Review the [shipping package docs](../shipping/01-overview.md)
+3. Review the [shipping package docs](../../shipping/docs/01-overview.md)
 4. Open an issue on [GitHub](https://github.com/aiarmada/commerce/issues)

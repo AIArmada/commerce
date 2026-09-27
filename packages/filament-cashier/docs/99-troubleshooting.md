@@ -45,7 +45,7 @@ Verify the class exists:
 class_exists(\Laravel\Cashier\Cashier::class); // Should return true
 
 // For CHIP
-class_exists(\AIArmada\CashierChip\Cashier::class); // Should return true
+class_exists(\AIArmada\CashierChip\Billing\Cashier::class); // Should return true
 ```
 
 ## Dashboard Issues
@@ -68,7 +68,7 @@ class_exists(\AIArmada\CashierChip\Cashier::class); // Should return true
    ```
 
 3. **Multitenancy scoping is too restrictive**
-   - Check if `CashierOwnerScope` is filtering out all records
+   - Check if `OwnerScopedQuery` is filtering out all records
    - Verify owner context is properly set
 
 4. **Database connection issues**
@@ -201,7 +201,7 @@ Check auth guard configuration:
 **This is a serious security issue!**
 
 **Solution:**
-1. Verify `CashierOwnerScope` is applied
+1. Verify `OwnerScopedQuery` is applied
 2. Check that the gateway's ownership columns match the installed package:
    - Stripe subscriptions use `user_id`
    - CHIP subscriptions use `billable_type` + `billable_id`
@@ -281,7 +281,7 @@ php artisan vendor:publish --tag=filament-cashier-translations
    ```
 
 2. Check webhook URL in Stripe Dashboard
-3. See [cashier webhook docs](../../../cashier/docs/05-webhooks.md)
+3. See [cashier webhook docs](../../cashier/docs/08-webhooks.md)
 
 ### CHIP Subscription Renewals Not Working
 
@@ -319,7 +319,7 @@ Add to your logging config to capture cashier-related logs:
 Use the Gateway Management page or check programmatically:
 
 ```php
-use AIArmada\FilamentCashier\Support\GatewayDetector;
+use AIArmada\Cashier\Support\GatewayDetector;
 
 $detector = app(GatewayDetector::class);
 $detector->availableGateways();  // Collection of available gateways

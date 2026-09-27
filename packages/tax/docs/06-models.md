@@ -279,9 +279,9 @@ Schema::create('tax_exemptions', function (Blueprint $table) {
     $table->string('status')->default('pending');
     $table->text('rejection_reason')->nullable();
     $table->timestamp('verified_at')->nullable();
-    $table->uuid('verified_by')->nullable();
     $table->timestamp('starts_at')->nullable();
     $table->timestamp('expires_at')->nullable();
+    $table->timestamp('revoked_at')->nullable();
     $table->timestamps();
 });
 ```
@@ -300,9 +300,9 @@ Schema::create('tax_exemptions', function (Blueprint $table) {
 | `status` | string | `pending`, `approved`, `rejected` |
 | `rejection_reason` | string\|null | Why rejected |
 | `verified_at` | datetime\|null | Verification timestamp |
-| `verified_by` | string\|null | Verifier UUID |
 | `starts_at` | datetime\|null | Validity start |
 | `expires_at` | datetime\|null | Validity end |
+| `revoked_at` | datetime\|null | Revocation timestamp |
 
 ### Relationships
 

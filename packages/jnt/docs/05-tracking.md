@@ -170,7 +170,7 @@ echo $updatedOrder->last_status;       // Latest status description
 echo $updatedOrder->last_status_code;  // Latest scan type code
 echo $updatedOrder->last_tracked_at;   // Sync timestamp
 echo $updatedOrder->delivered_at;      // Delivery timestamp (if delivered)
-echo $updatedOrder->has_problem;       // true if issues detected
+echo $updatedOrder->hasProblem();      // true if issues detected
 ```
 
 ### Batch Sync
@@ -297,12 +297,12 @@ class OrderStatusListener
 {
     public function handle(JntOrderStatusChanged $event): void
     {
-        $order = $event->order;
-        $newStatus = $event->status;        // TrackingStatus
+        $order = $event->resolveOrder();
+        $newStatus = $event->currentStatus; // TrackingStatus
         $previousCode = $event->previousStatusCode;
-        
+
         // Notify customer
-        if ($newStatus === TrackingStatus::Delivered) {
+        if ($newStatus === TrackingStatus::Delivered && $order !== null) {
             $order->customer->notify(new OrderDeliveredNotification($order));
         }
     }

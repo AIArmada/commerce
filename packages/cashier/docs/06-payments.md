@@ -239,7 +239,7 @@ if ($invoice) {
         $item->description();
         $item->quantity();
         $item->unitAmount();
-        $item->amount();
+        $item->total();
     }
 }
 ```

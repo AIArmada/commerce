@@ -75,7 +75,7 @@ $zones = ShippingZone::forOwner($owner, includeGlobal: true)->get();
 ```
 
 <Aside variant="info">
-  `include_global` has no env override — set it in `config/shipping.php` directly if your deployment uses platform-wide shared zones.
+  `include_global` can be set via `SHIPPING_OWNER_INCLUDE_GLOBAL` or directly in `config/shipping.php`. Enable it if your deployment uses platform-wide shared zones.
 </Aside>
 
 ## Querying with Owner Scope

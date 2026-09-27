@@ -63,7 +63,7 @@ Visit your Filament admin panel. You should see:
 
 ## Configuration surface
 
-`filament-customers` does not publish its own config file. Configuration happens through:
+`filament-customers` publishes `config/filament-customers.php` for navigation and optional page toggles (see [Configuration](03-configuration.md)). Further configuration happens through:
 
 - panel plugin registration with `FilamentCustomersPlugin::make()`,
 - extending or replacing the package resources/widgets in your application,
@@ -135,14 +135,15 @@ If using multi-tenancy, ensure your application resolves owner context before th
 Create a test customer to verify installation:
 
 ```php
+use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Customers\Models\Customer;
 
-Customer::create([
+$customer = Customer::create([
     'first_name' => 'Test',
     'last_name' => 'Customer',
-    'email' => 'test@example.com',
-    'status' => 'active',
 ]);
+
+$customer->addContactMethod(ContactMethodData::email('test@example.com'));
 ```
 
 Then visit the Customers resource in your Filament panel.

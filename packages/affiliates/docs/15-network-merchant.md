@@ -16,7 +16,7 @@ $router->pushMiddlewareToGroup('web', CaptureNetworkReferral::class);
 
 // 2. Report the paid order from checkout
 $result = app(NetworkPostbackClient::class)->report(
-    $request->session()->get(config('affiliates.merchant.session_key')),
+    (string) $request->session()->get(config('affiliates.merchant.session_key')),
     $order->number,
     $order->total_minor,
     $order->currency,

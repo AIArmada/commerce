@@ -84,7 +84,8 @@ The package uses Laravel's authorization system. Ensure your user model has the 
 'update_order'
 'delete_order'
 'cancel_order'    // For cancel action
-'add_note_order'  // For adding notes
+'refund_order'    // For refund action
+'add_order_note'  // For adding notes (or update_order)
 ```
 
 ### Using Spatie Permission

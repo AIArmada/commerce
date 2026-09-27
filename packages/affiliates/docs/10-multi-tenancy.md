@@ -71,9 +71,13 @@ class Affiliate extends Model
 - `Affiliate`
 - `AffiliateAttribution`
 - `AffiliateConversion`
+- `AffiliateDailyStat`
 - `AffiliatePayout`
+- `AffiliatePayoutOperation`
 - `AffiliateProgram`
 - `AffiliateRank`
+- `AffiliateTouchpoint`
+- `AffiliateUpline`
 - `AffiliateCommissionTemplate`
 
 ### Derived Models (Scope via Affiliate)
@@ -91,15 +95,26 @@ class AffiliateFraudSignal extends Model
 }
 ```
 
-These models:
-- `AffiliateFraudSignal`
+Via affiliate (`ScopesByAffiliateOwner`):
 - `AffiliateBalance`
-- `AffiliateDailyStat`
-- `AffiliatePayoutMethod`
-- `AffiliatePayoutHold`
+- `AffiliateFraudSignal`
 - `AffiliateLink`
+- `AffiliatePayoutHold`
+- `AffiliatePayoutMethod`
+- `AffiliateProgramMembership`
+- `AffiliateRankHistory`
+- `AffiliateSupportTicket`
+- `AffiliateTaxDocument`
+
+Via program (`ScopesByProgramOwner`):
+- `AffiliateCommissionPromotion`
 - `AffiliateCommissionRule`
+- `AffiliateProgramCreative`
+- `AffiliateProgramTier`
 - `AffiliateVolumeTier`
+
+Via ticket (`ScopesByTicketAffiliateOwner`):
+- `AffiliateSupportMessage`
 
 Direct affiliate, attribution, conversion, payout, program, rank, template,
 daily-stat, touchpoint, and upline roots use `HasOwner` and

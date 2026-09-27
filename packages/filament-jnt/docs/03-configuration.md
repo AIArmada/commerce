@@ -30,9 +30,9 @@ return [
     |--------------------------------------------------------------------------
     */
     'navigation' => [
-        'group' => 'Shipping'
+        'group' => 'Shipping',
+        'badge_color' => 'primary',
     ],
-    'navigation_badge_color' => 'primary',
 
     /*
     |--------------------------------------------------------------------------
@@ -87,14 +87,14 @@ return [
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | `navigation.group` | `string` | `'Shipping'` | Navigation group label |
-| `navigation_badge_color` | `string` | `'primary'` | Badge color for counts |
+| `navigation.badge_color` | `string` | `'primary'` | Badge color for counts |
 
 **Example**:
 ```php
 'navigation' => [
-        'group' => 'Shipping'
-    ],
-'navigation_badge_color' => 'success',
+    'group' => 'Shipping',
+    'badge_color' => 'success',
+],
 ```
 
 ### Tables
@@ -262,7 +262,9 @@ Available colors for navigation badges:
 - `gray`
 
 ```php
-'navigation_badge_color' => 'info',
+'navigation' => [
+    'badge_color' => 'info',
+],
 ```
 
 ---

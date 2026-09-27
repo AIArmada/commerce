@@ -61,7 +61,7 @@ composer require aiarmada/inventory aiarmada/filament-inventory
 ```bash
 # All configs at once
 php artisan vendor:publish --provider="AIArmada\\Cart\\CartServiceProvider"
-php artisan vendor:publish --provider="AIArmada\\Vouchers\\VouchersServiceProvider"
+php artisan vendor:publish --provider="AIArmada\\Vouchers\\VoucherServiceProvider"
 php artisan vendor:publish --provider="AIArmada\\Chip\\ChipServiceProvider"
 php artisan vendor:publish --provider="AIArmada\\Docs\\DocsServiceProvider"
 

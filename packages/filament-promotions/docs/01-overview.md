@@ -58,29 +58,32 @@ When this package is installed alongside `aiarmada/filament-pricing`, it is the 
 
 ```
 filament-promotions/
-├── Enums/
-│   └── PromotionType.php           # Filament-aware enum with HasColor/HasIcon/HasLabel
-├── Models/
-│   └── Promotion.php               # Extended model with Filament enum
+├── Actions/
+│   ├── IssuePromotionVouchersAction.php
+│   └── IssuePromotionVouchersFromListAction.php
 ├── Resources/
 │   └── PromotionResource/
 │       ├── Pages/
 │       │   ├── CreatePromotion.php
 │       │   ├── EditPromotion.php
-│       │   ├── ListPromotions.php
-│       │   └── ViewPromotion.php
+│       │   └── ListPromotions.php
+│       ├── RelationManagers/
+│       │   └── VouchersRelationManager.php
 │       ├── Schemas/
-│       │   ├── PromotionForm.php
-│       │   └── PromotionInfolist.php
+│       │   └── PromotionForm.php
 │       └── Tables/
 │           └── PromotionsTable.php
 ├── Support/
-│   └── OwnerScopedQueries.php      # Owner scope helper
+│   └── CachedPromotionInsights.php  # Cached performance-insights helper
 ├── Widgets/
-│   └── PromotionStatsWidget.php    # Dashboard stats
-├── FilamentPromotionsPlugin.php    # Plugin registration
+│   ├── PromotionStatsWidget.php     # Dashboard stats
+│   └── TopPromotionsUsageChart.php  # Usage chart
+├── FilamentPromotionsPlugin.php     # Plugin registration
 └── FilamentPromotionsServiceProvider.php
 ```
+
+This package ships no `Enums/` or `Models/` directories; it reuses the
+`PromotionType` enum and `Promotion` model from `aiarmada/promotions`.
 
 ## Requirements
 

@@ -139,11 +139,10 @@ Controls multi-tenancy behavior. When enabled, event roots and children, series/
 ```php
 'codes' => [
     'registration_prefix' => env('EVENTS_REGISTRATION_PREFIX', 'REG'),
-    'registration_length' => (int) env('EVENTS_REGISTRATION_LENGTH', 10),
 ]
 ```
 
-Controls auto-generated registration number format.
+Controls the auto-generated registration number prefix.
 
 ### Lifecycle
 
@@ -210,7 +209,6 @@ These flags control the search document rebuild pipeline for events, occurrences
 ],
 'change_notices' => [
     'audience_resolver' => null,
-    'notification_dispatcher' => null,
 ],
 ```
 
@@ -257,14 +255,7 @@ The welcome notification is sent when a registration is approved.
 ```php
 'change_notices' => [
     'audience_resolver' => null,
-    'notification_dispatcher' => null,
-    'channels' => ['mail'],
-    'delivery' => [
-        'max_attempts' => 5,
-        'lease_seconds' => 120,
-        'backoff_seconds' => [10, 30, 120, 300],
-    ],
 ],
 ```
 
-The default dispatcher currently has a concrete adapter for `mail` only. Enabling another channel without installing a replacement `EventChangeNoticeNotificationDispatcher` marks the batch failed with `MISSING_NOTIFICATION_ADAPTER`; it never reports a false success.
+Change notices are published through `EventChangeNoticeWorkflow::publishNotice($changeLog)`. The default dispatcher resolves recipients via the configured audience resolver and delivers through the `aiarmada/communications` manager, skipping recipients without a mail destination. Bind a custom `EventChangeNoticeAudienceResolver` to change who receives notices.

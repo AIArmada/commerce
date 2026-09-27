@@ -10,7 +10,7 @@ title: Installation
 - Laravel 13+
 - Filament v5
 - `aiarmada/affiliate-network` package
-- `aiarmada/affiliates` package
+- `aiarmada/affiliates` package (optional; enables the engine-backed network seams)
 
 ## Install via Composer
 
@@ -18,8 +18,8 @@ title: Installation
 composer require aiarmada/filament-affiliate-network
 ```
 
-The core packages `aiarmada/affiliate-network` and `aiarmada/affiliates` are
-installed as dependencies. `aiarmada/filament-affiliates` remains optional.
+The core package `aiarmada/affiliate-network` is installed as a dependency.
+`aiarmada/affiliates` and `aiarmada/filament-affiliates` remain optional.
 
 ## Publish Configuration
 
@@ -45,7 +45,7 @@ public function panel(Panel $panel): Panel
 
 ## Publish Views (Optional)
 
-To customize the marketplace or dashboard views:
+To customize the merchant dashboard view:
 
 ```bash
 php artisan vendor:publish --tag=filament-affiliate-network-views
@@ -71,7 +71,6 @@ The plugin automatically registers:
 
 ### Pages
 - `MerchantDashboardPage` - Merchant analytics
-- `AffiliateMarketplacePage` - Offer discovery
 
 ### Widgets
 - `NetworkStatsWidget` - Network overview stats
@@ -96,4 +95,4 @@ To change the group:
 1. Configure [settings](03-configuration.md)
 2. Create merchant sites
 3. Publish offers
-4. Let affiliates browse the marketplace
+4. Review affiliate applications

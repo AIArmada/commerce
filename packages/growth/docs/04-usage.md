@@ -31,7 +31,7 @@ $experiment = OwnerContext::withOwner($store, function () use ($trackedProperty)
         'traffic_percentage' => 50,
         'position' => 1,
         'is_control' => true,
-        'is_active' => true,
+        'status' => 'active',
     ]);
 
     Variant::query()->create([
@@ -41,7 +41,7 @@ $experiment = OwnerContext::withOwner($store, function () use ($trackedProperty)
         'traffic_percentage' => 50,
         'position' => 2,
         'is_control' => false,
-        'is_active' => true,
+        'status' => 'active',
     ]);
 
     return $experiment->fresh(['variants']) ?? $experiment;
@@ -359,9 +359,9 @@ php artisan growth:archive-experiments --older-than=60
 
 The command runs per owner when owner scoping is enabled and sets the experiment status to `archived` with an `archived_at` timestamp.
 
-### Recompute orphaned assignments
+### Recompute assignments
 
-Recompute assignments that have a missing or empty `variant_id`:
+Recompute every assignment with the canonical deterministic allocator, repairing records whose stored variant drifted:
 
 ```bash
 php artisan growth:recompute-assignments
@@ -377,7 +377,7 @@ Options:
 php artisan growth:recompute-assignments --dry-run
 ```
 
-The command picks a random active variant from the assignment's experiment for each orphaned record.
+The command replays the canonical deterministic allocator for each assignment and reports changed, quarantined, and unchanged counts.
 
 ## Optional Filament admin UI
 

@@ -14,6 +14,10 @@ Complete reference for all table and form actions provided by the plugin.
 |--------|------|-------|------------|-------------|
 | Edit | - | - | Always | Open edit form |
 | Verify | `heroicon-o-check-badge` | Success | When `isPending()` | Manually verify site |
+| Sync catalog | - | - | Always | Pull the merchant catalog now |
+| Reject | - | Danger | When actionable | Reject a site |
+| Suspend | - | Danger | When actionable | Suspend a site |
+| Reinstate | - | Success | When suspended/rejected | Reinstate a site |
 
 ### Verify Action Implementation
 
@@ -242,37 +246,6 @@ Tables\Actions\BulkAction::make('approve_selected')
             ->success()
             ->send();
     });
-```
-
----
-
-## AffiliateMarketplacePage Actions
-
-### Page Actions
-
-| Action | Method | Description |
-|--------|--------|-------------|
-| Apply for Offer | `applyForOffer($offerId, $reason)` | Submit application |
-| Generate Link | `generateLink($offerId)` | Create tracking link |
-
-### Apply Action Usage
-
-```php
-// In Blade view
-<x-filament::button wire:click="applyForOffer('{{ $offer->id }}', 'I want to promote this')">
-    Apply Now
-</x-filament::button>
-```
-
-### Generate Link Action Usage
-
-```php
-// In Blade view (only for approved affiliates)
-@if ($this->getApplicationStatus($offer) === 'approved')
-    <x-filament::button wire:click="generateLink('{{ $offer->id }}')" color="success">
-        Get Link
-    </x-filament::button>
-@endif
 ```
 
 ---

@@ -87,66 +87,6 @@ TextInput::make('domain')->unique(ignoreRecord: true)
 
 3. Check foreign key relationships exist.
 
-## Marketplace Issues
-
-### Marketplace Returns 404
-
-**Symptoms:** `/affiliate-network/marketplace` not found.
-
-**Solutions:**
-
-1. Verify feature is enabled:
-```php
-'marketplace' => [
-    'show_commission_rates' => true,
-    'show_cookie_duration' => true,
-],
-```
-
-2. Check routes:
-```bash
-php artisan route:list | grep marketplace
-```
-
-3. Clear route cache:
-```bash
-php artisan route:clear
-```
-
-### Can't Apply to Offers
-
-**Symptoms:** Apply button doesn't work or shows error.
-
-**Solutions:**
-
-1. User must have affiliate record:
-```php
-$user->affiliate; // Must not be null
-```
-
-2. Check affiliate email matches user:
-```php
-Affiliate::where('contact_email', $user->email)->first();
-```
-
-3. Check cooldown period for rejected applications.
-
-### Links Not Generating
-
-**Symptoms:** "Get Link" button fails.
-
-**Solutions:**
-
-1. Verify application is approved:
-```php
-$application->status === 'approved';
-```
-
-2. Check OfferLinkService is registered:
-```php
-app(\AIArmada\AffiliateNetwork\Services\OfferLinkService::class);
-```
-
 ## Widget Issues
 
 ### Widgets Not Displaying
@@ -279,7 +219,7 @@ composer require --dev barryvdh/laravel-debugbar
 
 If issues persist:
 
-1. Check [core package troubleshooting](../affiliate-network/99-troubleshooting.md)
+1. Check [core package troubleshooting](../../affiliate-network/docs/99-troubleshooting.md)
 2. Review Filament v5 documentation
 3. Open an issue with:
    - PHP/Laravel/Filament versions

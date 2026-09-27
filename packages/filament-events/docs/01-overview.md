@@ -9,7 +9,7 @@ title: Overview
 ## What this package owns
 
 - Filament resources for events, occurrences, sessions, venues, registrations, and attendance
-- Custom pages: check-in console, notification center, approval queue, and public event preview
+- Custom pages: check-in console, approval queue, and public event preview
 - Owner-scoped resource queries using `OwnerUiScope`
 - Lifecycle workflow actions (publish, cancel, postpone, delay, archive)
 - Relation managers on the event detail page (occurrences, sessions, locations, involvements, registrations, attendances)
@@ -50,7 +50,7 @@ Use this package for:
 | `EventRegistrationResource` | `EventRegistration` | View registrations and participant data |
 | `EventAttendanceResource` | `EventAttendance` | View check-in and attendance records |
 | `VenueSpaceResource` | `VenueSpace` | Manage bookable spaces within a venue |
-| `EventParticipantResource` | `EventRegistrationParticipant` | Manage registration participants |
+| `EventRegistrationParticipantResource` | `EventRegistrationParticipant` | Manage registration participants |
 | `EventChangeLogResource` | `EventChangeLog` | Audit log of event changes |
 | `EventTemplateResource` | `EventTemplate` | Reusable event templates |
 | `EventTaxonomyResource` / `EventTermResource` | `EventTaxonomy` / `EventTerm` | Classification taxonomies and terms |
@@ -62,7 +62,6 @@ Bulk import/export is supported via `Actions\Importer\*` (registrations, session
 | Page | Purpose |
 |---|---|
 | **Check-In Console** | Search passes, check-in attendees, record walk-ins |
-| **Notification Center** | Create and send notification batches, view deliveries |
 | **Approval Queue** | Review and process event submission approvals |
 | **Event Public Preview** | View an event as the public would see it |
 

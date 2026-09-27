@@ -36,6 +36,7 @@ Each feature flag controls whether corresponding pages/resources/widgets are reg
     'saved_reports' => true,
     'alert_rules' => true,
     'alert_logs' => true,
+    'interaction_rules' => true,
     'widgets' => true,
     'trend_chart' => true,
     'pending_alerts_widget' => true,

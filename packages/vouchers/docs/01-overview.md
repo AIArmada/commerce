@@ -34,7 +34,7 @@ The `aiarmada/vouchers` package owns voucher and coupon issuance, redemption rul
 - **Models and records** — vouchers, voucher usage, and voucher wallets
 - **Actions** — `CreateVoucher`, `UpdateVoucher`, `ExpireVoucher`, `ApplyVoucherToCart`, `RemoveVoucherFromCart`, `RecordVoucherUsage`, `ValidateVoucherCode`. Each is a `lorisleiva/laravel-actions` action callable via `::run()`.
 - **Events** — `VoucherCreated`, `VoucherExpired`, `VoucherRefilled`, `VoucherUsageRecorded`, `VoucherApplied`, `VoucherRemoved`. Dispatched by the corresponding actions and services.
-- **Stacking** — `StackingPolicy` (configurable strategy), `StackingRuleRegistry` (extensible rule lookup), and built-in rules (max vouchers, max discount percentage, type restriction, value threshold, mutual exclusion, category/campaign exclusion). Controlled by `StackingEngine`.
+- **Stacking** — `StackingPolicy` (configurable strategy built via `StackingPolicy::fromConfig()`), `StackingDecision` (immutable result), and built-in rules (max vouchers, max discount percentage, type restriction, value threshold, mutual exclusion, category/campaign exclusion).
 - **Core surface** — cart-condition powered voucher application, validation, redemption, and usage bookkeeping
 - **Companion docs** — creation, cart integration, voucher wallet, multitenancy, manual redemption, usage tracking, and API reference pages
 

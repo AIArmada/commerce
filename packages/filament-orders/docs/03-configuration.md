@@ -17,14 +17,18 @@ Configure navigation group and sort order:
 ],
 ```
 
-## Navigation
+## Pages
 
-Configure navigation group and sort order:
+Toggle the bundled list pages and their navigation sort order:
 
 ```php
-'navigation' => [
-    'group' => 'Sales',
-    'sort' => 1,
+'pages' => [
+    'timeline' => true,
+    'fulfillment' => true,
+    'navigation_sort' => [
+        'fulfillment' => 5,
+        'timeline' => 6,
+    ],
 ],
 ```
 
@@ -67,10 +71,14 @@ return [
         'sort' => 1,
     ],
 
-    /* Tables */
-    'tables' => [
-        'poll_interval' => '30s',
-        'date_format' => 'd M Y, H:i',
+    /* Pages */
+    'pages' => [
+        'timeline' => true,
+        'fulfillment' => true,
+        'navigation_sort' => [
+            'fulfillment' => 5,
+            'timeline' => 6,
+        ],
     ],
 
     /* Payment Gateways */
@@ -96,7 +104,7 @@ Remember to also configure the core orders package:
 return [
     'database' => [
         'tables' => [...],
-        'json_column_type' => 'json',
+        'json_column_type' => 'jsonb',
     ],
     
     'currency' => [

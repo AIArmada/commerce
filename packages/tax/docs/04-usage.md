@@ -145,8 +145,10 @@ By default, shipping address is used. Configure via:
 
 ```php
 // config/tax.php
-'zone_resolution' => [
-    'address_priority' => 'shipping', // or 'billing'
+'features' => [
+    'zone_resolution' => [
+        'address_priority' => 'shipping', // or 'billing'
+    ],
 ],
 ```
 
@@ -506,7 +508,7 @@ OwnerContext::withOwner($tenant, function () {
 Owner scoping is applied automatically via the global scope on `HasOwner` models. For explicit queries:
 
 ```php
-use AIArmada\CommerceSupport\Facades\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 
 // Query only the current owner's records:
 $zones = TaxZone::forOwner($owner)->get();

@@ -207,7 +207,7 @@ activity()
 
 ### Commerce-specific Helpers
 
-The trait provides convenience methods:
+The trait configures automatic model-event logging; log explicit business events with the `activity()` helper:
 
 ```php
 class Order extends Model
@@ -218,10 +218,13 @@ class Order extends Model
     {
         $this->update(['status' => 'paid']);
 
-        $this->logCommerceActivity('paid', [
-            'payment_id' => $intent->getId(),
-            'amount' => $intent->getAmount(),
-        ]);
+        activity('commerce:payments')
+            ->performedOn($this)
+            ->withProperties([
+                'payment_id' => $intent->getId(),
+                'amount' => $intent->getAmount(),
+            ])
+            ->log('paid');
     }
 }
 ```

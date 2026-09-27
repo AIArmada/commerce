@@ -18,10 +18,10 @@ Actions are ideal for:
 
 | Action | Purpose | Entry Point |
 |--------|---------|------------|
-| [ResolveOwnedModelOrFailAction](#resolveownedmodelorfailaction) | Owner-scoped model lookup with authorization | `::run(modelClass, value, owner, includeGlobal)` |
+| [ResolveOwnedModelOrFailAction](#resolveownedmodelorfailaction) | Owner-scoped model lookup with authorization | `::run(modelClass, id, owner, includeGlobal)` |
 | [ResolveOwnerJobContextAction](#resolveownerjobcontextaction) | Extract owner context from queued jobs | `::run(job)` |
-| [ProcessWebhookCallAction](#processwebhookcallaction) | Webhook transaction, deduplication, event extraction | `::run(webhookCall, extractEventType, isDuplicateProcessedEvent, processEvent)` |
-| [UpsertEnvVariablesAction](#upsertenvvariablesaction) | Parse and upsert .env file key-value pairs | `::run(updates, force, basePath)` |
+| [ProcessWebhookCallAction](#processwebhookcallaction) | Webhook transaction, deduplication, event extraction | `::run(webhookCall, extractEventType, extractEventId, isDuplicateProcessedEvent, processEvent)` |
+| [UpsertEnvVariablesAction](#upsertenvvariablesaction) | Parse and upsert .env file key-value pairs | `::run(updates, force, warn, info)` |
 | [DiscoverCommercePublishTagsAction](#discovercommercepublishtagsaction) | Discover publish tags for configs + migrations | `::run(includeConfig)` |
 | [DiscoverCommerceMigrationPublishTagsAction](#discovercommercemigrationpublishtagsaction) | Discover publish tags for migrations only | `::run()` |
 | [ResolveProjectRootAction](#resolveprojectrootaction) | Detect project root in monorepo/testbench context | `::run()` |
@@ -42,7 +42,7 @@ use AIArmada\Products\Models\Product;
 
 $product = ResolveOwnedModelOrFailAction::run(
     modelClass: Product::class,
-    value: $productId,
+    id: $productId,
     owner: auth()->user(),
     includeGlobal: false // Set true to also include global (owner = null) records
 );
@@ -58,7 +58,7 @@ $product = ResolveOwnedModelOrFailAction::run(
 
 ## ResolveOwnerJobContextAction
 
-**Purpose:** Extract owner context from queued job payloads for [OwnerScopedJob](./04-multi-tenancy.md) contract compliance.
+**Purpose:** Extract owner context from queued job payloads for [OwnerScopedJob](./14-multi-tenancy.md) contract compliance.
 
 **Use case:** Job processing, ensuring jobs restore the correct owner context before execution.
 
@@ -94,9 +94,10 @@ use AIArmada\CommerceSupport\Actions\ProcessWebhookCallAction;
 $result = ProcessWebhookCallAction::run(
     webhookCall: $webhookCall,
     extractEventType: fn($payload) => $payload['event'],
-    isDuplicateProcessedEvent: function($eventType, $eventId) {
-        return Event::where('event_type', $eventType)
-            ->where('external_id', $eventId)
+    extractEventId: fn($payload) => $payload['event_id'] ?? null,
+    isDuplicateProcessedEvent: function($current, $payload, $eventType) {
+        return ProcessedEvent::where('event_type', $eventType)
+            ->where('external_id', $payload['event_id'] ?? null)
             ->exists();
     },
     processEvent: function($eventType, $eventPayload) {
@@ -131,7 +132,8 @@ UpsertEnvVariablesAction::run(
         'COMMERCE_DEBUG' => 'false',
     ],
     force: $this->option('force'), // Overwrite existing values
-    basePath: base_path()
+    warn: fn($message) => $this->components->warn($message),
+    info: fn($message) => $this->components->info($message),
 );
 ```
 
@@ -255,14 +257,14 @@ $runner = new OwnerBatchRunner(
     modelClass: Product::class,
     ownerConfig: null, // Uses package config for owner scope settings
 );
-$counts = $runner->run(function ($owner) {
-    // Runs inside OwnerContext::withOwner($owner)
-    return Product::forOwner($owner)->count();
+$counts = $runner->run(function () {
+    // Runs inside OwnerContext::withOwner($owner); reads are owner-scoped
+    return Product::all()->count();
 });
 
 // ForEach returns collection with one entry per owner
-$allResults = $runner->forEach(function ($owner) {
-    return Product::forOwner($owner)->count();
+$allResults = $runner->forEach(function () {
+    return Product::all()->count();
 });
 ```
 
@@ -295,7 +297,7 @@ class EditProductAction extends Action
     {
         $product = $this->resolveModel->run(
             modelClass: Product::class,
-            value: $this->record->id,
+            id: $this->record->id,
             owner: auth()->user(),
             includeGlobal: false
         );
@@ -325,7 +327,7 @@ class ResolveOwnedModelActionTest extends TestCase
 
         $resolved = ResolveOwnedModelOrFailAction::run(
             modelClass: Product::class,
-            value: $product->id,
+            id: $product->id,
             owner: $owner,
             includeGlobal: false
         );
@@ -344,7 +346,7 @@ class ResolveOwnedModelActionTest extends TestCase
 
         ResolveOwnedModelOrFailAction::run(
             modelClass: Product::class,
-            value: $product->id,
+            id: $product->id,
             owner: $owner2,
             includeGlobal: false
         );
@@ -356,7 +358,7 @@ class ResolveOwnedModelActionTest extends TestCase
 
 ## Related Documentation
 
-- [Multi-Tenancy & Owner Scoping](./04-multi-tenancy.md)
+- [Multi-Tenancy & Owner Scoping](./14-multi-tenancy.md)
 - [Traits & Utilities](./10-traits-utilities.md)
 - [Isolation Primitives](./11-isolation-primitives.md)
 - [Webhooks](./08-webhooks.md)

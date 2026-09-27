@@ -9,12 +9,10 @@ Promotions are owner-aware via `commerce-support`.
 ## Default posture
 
 ```php
-'features' => [
-    'owner' => [
-        'enabled' => true,
-        'include_global' => false,
-        'auto_assign_on_create' => true,
-    ],
+'owner' => [
+    'enabled' => false,
+    'include_global' => false,
+    'auto_assign_on_create' => true,
 ],
 ```
 

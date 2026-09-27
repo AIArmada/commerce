@@ -101,7 +101,7 @@ $type->color();  // "success"
 | Type | Label | Icon | Color |
 |------|-------|------|-------|
 | `Percentage` | Percentage Off | receipt-percent | success (green) |
-| `Fixed` | Fixed Amount | currency-dollar | info (blue) |
+| `Fixed` | Fixed Amount | currency-dollar | primary (blue) |
 
 ## Stats Widget
 

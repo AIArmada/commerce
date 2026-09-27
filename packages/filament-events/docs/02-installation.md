@@ -11,7 +11,7 @@ composer require aiarmada/filament-events
 ## Publish configuration
 
 ```bash
-php artisan vendor:publish --provider="AIArmada\FilamentEvents\FilamentEventsServiceProvider" --tag="config"
+php artisan vendor:publish --provider="AIArmada\FilamentEvents\FilamentEventsServiceProvider" --tag="filament-events-config"
 ```
 
 ## Register the plugin

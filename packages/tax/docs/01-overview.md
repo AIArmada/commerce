@@ -162,9 +162,16 @@ packages/tax/
     ├── Contracts/
     │   ├── TaxCalculatorInterface.php
     │   ├── TaxRateApplierInterface.php
+    │   ├── TaxZoneResolverCacheInterface.php
     │   └── TaxZoneResolverInterface.php
     ├── Data/
     │   └── TaxResultData.php        # Result DTO
+    ├── Enums/
+    │   └── ZoneType.php
+    ├── Events/
+    │   ├── TaxCalculated.php
+    │   ├── TaxExemptionApplied.php
+    │   └── TaxZoneResolved.php
     ├── Exceptions/
     │   └── TaxZoneNotFoundException.php
     ├── Facades/
@@ -176,6 +183,7 @@ packages/tax/
     │   └── TaxZone.php
     ├── Services/
     │   ├── TaxCalculator.php        # Main calculation engine
+    │   ├── TaxOwnerScope.php
     │   ├── RateApplier/
     │   │   └── StandardRateApplier.php
     │   └── ZoneResolver/
@@ -186,8 +194,8 @@ packages/tax/
     ├── Settings/
     │   ├── TaxSettings.php          # Runtime settings
     │   └── TaxZoneSettings.php      # Zone resolution settings
-    ├── Support/
-    │   └── OwnerQuery.php           # Query-scoping utilities
+    ├── States/
+    │   └── TaxExemptionState/       # Exemption state machine
     └── TaxServiceProvider.php
 ```
 
@@ -196,7 +204,7 @@ packages/tax/
 | Requirement | Version |
 |-------------|---------|
 | PHP | 8.4+ |
-| Laravel | 11+ |
+| Laravel | 13+ |
 | `aiarmada/commerce-support` | Required |
 | `spatie/laravel-data` | Required (for DTOs) |
 | `spatie/laravel-settings` | Optional (for runtime config) |

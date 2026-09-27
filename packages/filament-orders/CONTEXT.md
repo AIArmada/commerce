@@ -43,7 +43,7 @@ keywords:
 ## Key surfaces
 - Resources: `OrderResource`
 - Actions/Services: `Support/FilamentOrdersCache`
-- Config `filament-orders.php`: `navigation`, `group`, `sort`, `pages`, `timeline`, `fulfillment`, `navigation_sort`, `fulfillment`, `timeline`, `payment_gateways`
+- Config `filament-orders.php`: `navigation`, `pages`, `payment_gateways`, `features`
 
 ## Docs map
 - Start: `01-overview` → `03-configuration` → `04-usage` → `99-troubleshooting`

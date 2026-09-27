@@ -281,8 +281,8 @@ Dispatched by `RecordVoucherUsage::run()` after a usage record is persisted.
 use AIArmada\Vouchers\Events\VoucherUsageRecorded;
 
 Event::listen(VoucherUsageRecorded::class, function ($event) {
-    $voucherData = $event->voucherData;  // VoucherData DTO
-    $usage = $event->usage;              // VoucherUsage model
+    $voucherData = $event->voucher;  // VoucherData DTO
+    $usage = $event->usage;          // VoucherUsage model
 
     Analytics::track('voucher_redeemed', [
         'voucher_code' => $voucherData->code,
@@ -301,7 +301,7 @@ Dispatched by `ExpireVoucher::run()`.
 use AIArmada\Vouchers\Events\VoucherExpired;
 
 Event::listen(VoucherExpired::class, function ($event) {
-    $voucherData = $event->voucherData;
+    $voucherData = $event->voucher;
 
     Log::info("Voucher {$voucherData->code} has expired");
 });
@@ -315,7 +315,7 @@ Dispatched when a depleted voucher's usage count is reset or its usage limit is 
 use AIArmada\Vouchers\Events\VoucherRefilled;
 
 Event::listen(VoucherRefilled::class, function ($event) {
-    $voucherData = $event->voucherData;
+    $voucherData = $event->voucher;
 
     Log::info("Voucher {$voucherData->code} has been refilled");
 });
@@ -329,7 +329,7 @@ Dispatched by `CreateVoucher::run()` after successful creation.
 use AIArmada\Vouchers\Events\VoucherCreated;
 
 Event::listen(VoucherCreated::class, function ($event) {
-    $voucherData = $event->voucherData;
+    $voucherData = $event->voucher;
 
     Log::info("New voucher created: {$voucherData->code}");
 });

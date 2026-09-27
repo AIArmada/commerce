@@ -229,9 +229,11 @@ Panels registered with Filament are auto-discovered. Each panel generates a perm
 
 ### Custom Permissions
 
-Additional permissions beyond discovered entities.
+Additional permissions beyond discovered entities. Configure them in the core
+`authz.custom_permissions` setting; the role editor reads them from there.
 
 ```php
+// config/authz.php
 'custom_permissions' => [
     'export-reports' => 'Export Reports',     // key => label
     'view-analytics',                          // auto-generates label
@@ -314,12 +316,19 @@ Run sync with: `php artisan authz:sync --flush-cache`
 
 ### Impersonation
 
-Configure user impersonation behavior in `config/authz.php`:
+Configure user impersonation behavior across both config files:
 
 ```php
+// config/authz.php
 'impersonate' => [
-    'enabled' => env('AUTHZ_IMPERSONATE_ENABLED', true),
     'guard' => env('AUTHZ_IMPERSONATE_GUARD', 'web'),
+],
+```
+
+```php
+// config/filament-authz.php
+'impersonate' => [
+    'enabled' => true,
 ],
 ```
 

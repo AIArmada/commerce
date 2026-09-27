@@ -34,7 +34,7 @@ Create payments with any `CheckoutableInterface` implementation:
 ```php
 use AIArmada\Chip\Gateways\ChipGateway;
 use AIArmada\CommerceSupport\Contracts\Payment\CheckoutableInterface;
-use AIArmada\CommerceSupport\Data\Customer;
+use AIArmada\CommerceSupport\Contracts\Payment\PaymentCustomerData;
 
 // Your custom order/invoice implementing CheckoutableInterface
 class Order implements CheckoutableInterface
@@ -50,10 +50,10 @@ class Order implements CheckoutableInterface
 $gateway = app(ChipGateway::class);
 $order = new Order($items);
 
-$customer = Customer::fromArray([
-    'email' => 'customer@example.com',
-    'name' => 'John Doe',
-]);
+$customer = new PaymentCustomerData(
+    email: 'customer@example.com',
+    name: 'John Doe',
+);
 
 $payment = $gateway->createPayment($order, $customer, [
     'success_url' => route('payment.success'),
@@ -69,7 +69,7 @@ When `aiarmada/cart` is installed, Cart automatically implements `CheckoutableIn
 
 ```php
 use AIArmada\Chip\Gateways\ChipGateway;
-use AIArmada\CommerceSupport\Data\Customer;
+use AIArmada\CommerceSupport\Contracts\Payment\PaymentCustomerData;
 
 class CheckoutController extends Controller
 {
@@ -80,10 +80,10 @@ class CheckoutController extends Controller
         // Cart implements CheckoutableInterface
         $cart = app(\AIArmada\Cart\Cart::class);
         
-        $customer = Customer::fromArray([
-            'email' => $request->user()->email,
-            'name' => $request->user()->name,
-        ]);
+        $customer = new PaymentCustomerData(
+            email: $request->user()->email,
+            name: $request->user()->name,
+        );
         
         $payment = $this->gateway->createPayment($cart, $customer, [
             'success_url' => route('payment.success'),
@@ -181,7 +181,7 @@ try {
     $payment = $gateway->createPayment($cart, $customer, $options);
 } catch (PaymentGatewayException $e) {
     Log::error('Payment failed', [
-        'gateway' => $e->getGatewayName(),
+        'gateway' => $e->gatewayName,
         'message' => $e->getMessage(),
         'context' => $e->getContext(),
     ]);
@@ -211,5 +211,5 @@ public function checkout(PaymentGatewayInterface $gateway)
 
 ## Next Steps
 
-- [CHIP Collect](chip-collect.md) – Purchase operations
-- [Webhooks](webhooks.md) – Event handling
+- [CHIP Collect](07-chip-collect.md) – Purchase operations
+- [Webhooks](09-webhooks.md) – Event handling

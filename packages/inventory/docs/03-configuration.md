@@ -24,6 +24,7 @@ After publishing the config file (`php artisan vendor:publish --tag=inventory-co
 |--------|---------|-------------|
 | `table_prefix` | `inventory_` | Prefix for all inventory tables |
 | `tables` | Array | Override individual table names |
+| `json_column_type` | `jsonb` | JSON column type for JSON-capable columns |
 
 ## Defaults
 
@@ -127,6 +128,18 @@ When enabled, all inventory operations are automatically scoped to the current o
 | `events` | `[]` | Custom payment events to listen for |
 
 By default, the package listens to Cashier/CashierChip payment events. Add custom events to the `events` array.
+
+## Orders Integration
+
+```php
+'orders' => [
+    'enabled' => true,
+],
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `enabled` | `true` | Listen for order inventory deduction/release events |
 
 ## Events
 

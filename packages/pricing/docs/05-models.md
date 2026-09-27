@@ -22,6 +22,7 @@ The `PriceList` model represents a collection of prices, such as "Retail", "Whol
 | `priority` | int | Priority (higher = more priority) |
 | `is_default` | bool | Whether this is the default price list |
 | `is_active` | bool | Active status |
+| `deactivated_at` | Carbon\|null | Deactivation timestamp, synced with `is_active` |
 | `customer_id` | string\|null | Assigned to specific customer |
 | `segment_id` | string\|null | Assigned to customer segment |
 | `starts_at` | Carbon\|null | Activation start date |
@@ -61,7 +62,7 @@ $priceList->isActive(); // Considers is_active, starts_at, ends_at
 
 ### Activity Logging
 
-Price lists are logged with these fields: `name`, `priority`, `is_active`, `starts_at`, `ends_at`
+Price lists are logged with these fields: `name`, `priority`, `is_active`, `deactivated_at`, `starts_at`, `ends_at`
 
 ---
 
@@ -83,6 +84,7 @@ The `Price` model represents an individual price for a priceable item within a p
 | `compare_amount` | int\|null | Original/compare price |
 | `currency` | string | Currency code |
 | `min_quantity` | int | Minimum quantity for this price |
+| `deactivated_at` | Carbon\|null | Deactivation timestamp |
 | `starts_at` | Carbon\|null | Price start date |
 | `ends_at` | Carbon\|null | Price end date |
 
@@ -121,7 +123,7 @@ $price->hasDiscount();
 $price->getDiscountPercentage(); // e.g., 10.0
 
 // Format price
-$price->getFormattedAmount(); // "RM 45.00"
+$price->getFormattedAmount(); // "RM45.00"
 ```
 
 ### Activity Logging
@@ -149,6 +151,7 @@ The `PriceTier` model represents quantity-based tiered pricing.
 | `amount` | int | Price for this tier |
 | `discount_type` | string\|null | 'percentage' or 'fixed' |
 | `discount_value` | int\|null | Discount value |
+| `is_active` | bool | Active status |
 | `currency` | string | Currency code |
 
 ### Relationships
@@ -183,7 +186,7 @@ $tier->appliesTo(25); // true/false
 $tier->getDescription(); // "10-49 units" or "50+ units"
 
 // Get discount description
-$tier->getDiscountDescription(); // "10% off" or "RM 5.00 off"
+$tier->getDiscountDescription(); // "10% off" or "RM5.00 off"
 ```
 
 ### Activity Logging

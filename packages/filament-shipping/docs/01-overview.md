@@ -86,7 +86,7 @@ packages/filament-shipping/
 │   ├── Pages/                   # Custom Filament pages
 │   ├── Resources/               # Filament resources
 │   │   ├── ShipmentResource/
-│   │   │   ├── Schemas/         # ShipmentForm, ShipmentInfolist
+│   │   │   ├── Schemas/         # ShipmentForm
 │   │   │   └── Tables/          # ShipmentsTable
 │   │   ├── ShippingZoneResource/
 │   │   │   ├── Schemas/         # ShippingZoneForm
@@ -94,7 +94,6 @@ packages/filament-shipping/
 │   │   └── ReturnAuthorizationResource/
 │   │       ├── Schemas/         # ReturnAuthorizationForm
 │   │       └── Tables/          # ReturnAuthorizationsTable
-│   ├── Services/                # Bridge services (CartBridge)
 │   ├── Support/                 # ShippingStatsAggregator
 │   ├── Widgets/                 # Dashboard widgets
 │   ├── FilamentShippingPlugin.php

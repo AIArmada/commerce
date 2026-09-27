@@ -75,7 +75,7 @@ Three-column layout:
 | prices_count | TextColumn | counts relation |
 | priority | TextColumn | numeric, sortable |
 | is_default | IconColumn | boolean |
-| is_active | IconColumn | boolean |
+| deactivated_at | TextColumn | badge, Active/Deactivated status |
 | starts_at | TextColumn | datetime, toggleable |
 | ends_at | TextColumn | datetime, toggleable |
 

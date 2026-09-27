@@ -16,7 +16,7 @@ keywords:
 
 ## Snapshot
 - Composer: `aiarmada/orders`
-- Role: Order records, payments/refunds, notes, invoices, 13-state machine.
+- Role: Order records, payments/refunds, notes, invoices, 12-state machine.
 - Triggers: order, refund, payment, invoice, state-machine
 - Search first: `src/Models, src/Actions, src/States, config, docs`
 - Related: `filament-orders`, `checkout`, `shipping`, `docs`
@@ -43,7 +43,7 @@ keywords:
 ## Key surfaces
 - Models: `Order`, `OrderItem`, `OrderNote`, `OrderPayment`, `OrderRefund`
 - Actions/Services: `Actions/CancelOrder`, `Actions/CompleteOrder`, `Actions/Concerns/AssertsOrderOwnerBoundary`, `Actions/Concerns/BuildsOrderDocs`, `Actions/Concerns/BuildsOrderPdf`, `Actions/CreateOrder`, `Actions/CreateOrderFromCart`, `Actions/CreateOrderInvoiceDoc`
-- Config `orders.php`: `database`, `json_column_type`, `tables`, `orders`, `order_items`, `order_payments`, `order_refunds`, `order_notes`, `currency`
+- Config `orders.php`: `database`, `currency`, `company`, `owner`, `address_snapshots`, `order_number`, `invoice`, `integrations`, `audit`, `notifications`
 
 ## Docs map
 - Start: `01-overview` → `03-configuration` → `04-usage` → `99-troubleshooting`

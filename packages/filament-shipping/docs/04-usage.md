@@ -181,10 +181,10 @@ public static function table(Table $table): Table
             SyncTrackingAction::make(),
         ])
         ->bulkActions([
-            BulkShipAction::make(),
-            BulkCancelAction::make(),
-            BulkPrintLabelsAction::make(),
-            BulkSyncTrackingAction::make(),
+            ShipAction::bulkAction(),
+            CancelShipmentAction::bulkAction(),
+            PrintLabelAction::bulkAction(),
+            SyncTrackingAction::bulkAction(),
         ]);
 }
 ```

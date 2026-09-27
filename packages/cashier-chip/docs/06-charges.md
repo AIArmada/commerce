@@ -28,7 +28,7 @@ $payment = ChargeChipCustomer::run(
 $payment = $user->charge(10000);
 
 // Check payment status
-if ($payment->isSuccessful()) {
+if ($payment->isSucceeded()) {
     // Payment completed
 }
 ```
@@ -36,7 +36,7 @@ if ($payment->isSuccessful()) {
 ### Charge with Description
 
 ```php
-$payment = $user->charge(10000, [
+$payment = $user->charge(10000, null, [
     'reference' => 'Product Purchase - Order #123',
 ]);
 ```
@@ -44,9 +44,7 @@ $payment = $user->charge(10000, [
 ### Charge with Specific Payment Method
 
 ```php
-$payment = $user->charge(10000, [
-    'recurring_token' => $recurringToken,
-]);
+$payment = $user->charge(10000, $recurringToken);
 ```
 
 ## Recurring Token Charges
@@ -94,7 +92,7 @@ $id = $payment->id();
 $status = $payment->status();
 
 // Check status methods
-$payment->isSuccessful();   // Payment completed
+$payment->isSucceeded();    // Payment completed
 $payment->isPending();      // Awaiting payment
 $payment->isFailed();       // Payment failed
 
@@ -121,11 +119,11 @@ $purchase = $payment->asChipPurchase();
 ## Handling Failures
 
 ```php
-use AIArmada\CashierChip\Exceptions\PaymentFailure;
+use AIArmada\CashierChip\Exceptions\IncompletePayment;
 
 try {
     $payment = $user->charge(10000);
-} catch (PaymentFailure $e) {
+} catch (IncompletePayment $e) {
     // Handle payment failure
     $message = $e->getMessage();
 }
@@ -149,12 +147,9 @@ CHIP refunds can also be processed through the CHIP dashboard or lower-level API
 
 ```php
 // Using the CHIP package directly
-use AIArmada\Chip\Facades\ChipCollect;
+use AIArmada\Chip\Facades\Chip;
 
-ChipCollect::refund($purchaseId, [
-    'amount' => 5000, // Partial refund in cents
-    'reason' => 'Customer request',
-]);
+Chip::refundPurchase($purchaseId, 5000); // Partial refund in cents
 ```
 
 ## Receipts
@@ -162,7 +157,7 @@ ChipCollect::refund($purchaseId, [
 Configure automatic receipt sending:
 
 ```php
-$payment = $user->charge(10000, [
+$payment = $user->charge(10000, null, [
     'send_receipt' => true,
 ]);
 ```
@@ -170,9 +165,9 @@ $payment = $user->charge(10000, [
 Or send manually after payment:
 
 ```php
-use AIArmada\Chip\Facades\ChipCollect;
+use AIArmada\Chip\Facades\Chip;
 
-ChipCollect::sendReceipt($purchaseId);
+Chip::resendInvoice($purchaseId);
 ```
 
 ## Currency

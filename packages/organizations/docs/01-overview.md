@@ -36,7 +36,7 @@ without that explicit configuration.
 ## What this package owns
 
 - Model `Organization` (the org IS the tenant — no `HasOwner` on the model itself)
-- Actions `CreateOrganization`, `ArchiveOrganization`, `RestoreOrganization`, `SuspendOrganization`, `MakeOrganizationPublic`, `MakeOrganizationPrivate`, `TransferOrganizationOwnership`
+- Actions `CreateOrganizationAction`, `ArchiveOrganizationAction`, `RestoreOrganizationAction`, `SuspendOrganizationAction`, `MakeOrganizationPublicAction`, `MakeOrganizationPrivateAction`, `TransferOrganizationOwnershipAction`
 - `Resolvers/*` + `CurrentOrganizationMiddleware` — establishes the `OwnerContext` consumed by owner-aware packages
 - Config `organizations.php`: `database`, `resolver`, `middleware` (`require_context`)
 

@@ -92,41 +92,33 @@ ownerless rows are not included in tenant reads.
 | `max_quantity` | `?int` | Max tickets per purchase (null = unlimited) |
 | `sales_starts_at` | `?CarbonImmutable` | When sales open (null = immediately) |
 | `sales_ends_at` | `?CarbonImmutable` | When sales close (null = no end) |
-| `capacity` | `?int` | Total capacity for this ticket type |
-| `pricing_mode` | `?PricingMode` | Override pricing mode (defaults to ticketable's mode) |
+| `admits_quantity` | `int` | How many admissions this ticket type grants (default `1`) |
+| `min_quantity` | `?int` | Min tickets per purchase (null = no minimum) |
 
 Ticket types support `public`, `private`, and `hidden` visibility. Hidden ticket types remain manageable in administrative queries but cannot be added to a cart and are excluded by `TicketType::public()`.
 
 ### Pricing Components
 
-Split pricing into components:
+Link child ticket types as priced components of a parent type:
 
 ```php
-$ticketType = app(EnsureTicketTypeAction::class)->handle($workshop, [
-    'name' => 'General Admission',
-    'code' => 'GA',
-    'price' => 55000,
-    'currency' => 'MYR',
-    'components' => [
-        ['name' => 'Base Ticket', 'amount' => 50000],
-        ['name' => 'Processing Fee', 'amount' => 5000],
-    ],
+$ticketType->components()->create([
+    'component_ticket_type_id' => $feeTicketType->getKey(),
+    'quantity' => 1,
 ]);
 ```
+
+Use `ExpandTicketTypeComponentsAction` to expand `components → componentTicketType` by `quantity × multiplier`.
 
 ### Bundle Products
 
 Link products that should be auto-added to cart when this ticket type is selected:
 
 ```php
-$ticketType = app(EnsureTicketTypeAction::class)->handle($workshop, [
-    'name' => 'VIP with Merch',
-    'code' => 'VIP',
-    'price' => 150000,
-    'currency' => 'MYR',
-    'products' => [
-        ['product_id' => $tShirt->getKey(), 'quantity' => 1],
-    ],
+$ticketType->bundleProducts()->create([
+    'product_type' => $tShirt->getMorphClass(),
+    'product_id' => $tShirt->getKey(),
+    'quantity' => 1,
 ]);
 ```
 
@@ -138,7 +130,7 @@ Use `IssuePassesAction` to issue passes:
 
 ```php
 use AIArmada\Ticketing\Actions\IssuePassesAction;
-use AIArmada\Ticketing\Data\PassIssuanceContext;
+use AIArmada\Ticketing\Support\PassIssuanceContext;
 
 $context = new PassIssuanceContext(
     ticketType: $ticketType,
@@ -194,16 +186,18 @@ app(TransferPassToHolderAction::class)->handle(
 ### Checking Transfer Eligibility
 
 ```php
-if ($pass->canTransfer()) {
-    // Pass is in a non-terminal state and within transfer window
+use AIArmada\Ticketing\Contracts\PassTransferServiceInterface;
+
+if (app(PassTransferServiceInterface::class)->canTransfer($pass)) {
+    // Pass is valid and within transfer window
 }
 
-if ($pass->transferExpired()) {
+if ($pass->transfer_expires_at !== null && now()->isAfter($pass->transfer_expires_at)) {
     // Past the transfer window deadline
 }
 ```
 
-A pass can transfer when it is in a non-terminal state (not Used, Revoked, Voided, or Expired) and not past its `transfer_expires_at` date.
+A pass can transfer when `isValid()` passes (not Used, Cancelled, Revoked, Voided, or Expired, and no blocked registration status) and it is not past its `transfer_expires_at` date.
 
 ## Bulk Transfer
 
@@ -235,64 +229,68 @@ States and allowed transitions:
 
 | Current State | Can transition to |
 |---------------|-------------------|
-| `Pending` | `Issued`, `Cancelled` |
-| `Issued` | `Activated`, `Cancelled`, `Voided`, `Expired` |
-| `Activated` | `Used`, `Voided`, `Expired` |
-| `Used` | *(terminal — no transitions)* |
-| `Cancelled` | *(terminal — no transitions)* |
-| `Revoked` | *(terminal — no transitions)* |
+| `Pending` | `Issued`, `Expired` |
+| `Issued` | `Activated`, `Cancelled`, `Revoked`, `Expired` |
+| `Activated` | `Used`, `Cancelled`, `Revoked`, `Expired` |
+| `Used` | `Revoked` |
+| `Cancelled` | `Revoked` |
+| `Revoked` | `Voided` |
 | `Voided` | *(terminal — no transitions)* |
 | `Expired` | *(terminal — no transitions)* |
 
 ### Transition Actions
 
 ```php
-use AIArmada\Ticketing\Actions\ActivatePassAction;
-use AIArmada\Ticketing\Actions\UsePassAction;
-use AIArmada\Ticketing\Actions\CancelPassAction;
 use AIArmada\Ticketing\Actions\RevokePassAction;
-use AIArmada\Ticketing\Actions\VoidPassAction;
-use AIArmada\Ticketing\Actions\ExpirePassAction;
 
 // Activate at entry
-app(ActivatePassAction::class)->handle($pass, scannedBy: $staffUser);
+$pass->markActivated();
+$pass->save();
 
 // Mark as used
-app(UsePassAction::class)->handle($pass);
+$pass->markUsed();
+$pass->save();
 
-// Cancel before issuance
-app(CancelPassAction::class)->handle($pass, reason: 'Order refunded');
+// Cancel
+$pass->markCancelled('Order refunded');
+$pass->save();
 
 // Revoke for policy violation
 app(RevokePassAction::class)->handle($pass, reason: 'Fraud detected');
 
-// Void (admin action)
-app(VoidPassAction::class)->handle($pass, reason: 'Duplicate issuance');
+// Void (admin action, only from Revoked)
+$pass->markVoided('Duplicate issuance');
+$pass->save();
 
-// Expire (scheduled task)
-app(ExpirePassAction::class)->handle($pass);
+// Expire
+$pass->markExpired();
+$pass->save();
 ```
+
+`RevokePassAction` persists the pass itself; the `mark*()` methods only transition state and timestamps, so call `save()` afterwards.
 
 ## Pass Delivery
 
 The package dispatches `PassIssued` and `PassTransferred` events. When `aiarmada/orders` is installed, passes are automatically issued when an order transitions to `paid`.
 
-To send passes via email, implement `PassDeliveryService`:
+To send passes via email, implement `PassDeliveryServiceInterface`:
 
 ```php
-use AIArmada\Ticketing\Contracts\PassDeliveryService;
+use AIArmada\Ticketing\Contracts\PassDeliveryServiceInterface;
 use AIArmada\Ticketing\Models\Pass;
 use Illuminate\Support\Facades\Mail;
 
-class EmailPassDeliveryService implements PassDeliveryService
+class EmailPassDeliveryService implements PassDeliveryServiceInterface
 {
     public function deliver(Pass $pass): void
     {
-        if ($pass->holder_email === null) {
+        $email = $pass->holder?->email;
+
+        if ($email === null) {
             return;
         }
 
-        Mail::to($pass->holder_email)->send(new TicketMail($pass));
+        Mail::to($email)->send(new TicketMail($pass));
     }
 }
 ```
@@ -301,11 +299,11 @@ Bind your implementation:
 
 ```php
 // AppServiceProvider
-use AIArmada\Ticketing\Contracts\PassDeliveryService;
+use AIArmada\Ticketing\Contracts\PassDeliveryServiceInterface;
 
 public function boot(): void
 {
-    $this->app->bind(PassDeliveryService::class, EmailPassDeliveryService::class);
+    $this->app->bind(PassDeliveryServiceInterface::class, EmailPassDeliveryService::class);
 }
 ```
 
@@ -346,7 +344,7 @@ $allPasses = Pass::withoutOwnerScope()->get();
 | Event | Payload | Description |
 |-------|---------|-------------|
 | `PassIssued` | `$pass` | Fired when a pass is issued |
-| `PassTransferred` | `$pass, $oldHolder, $newHolder` | Fired after transfer completes |
+| `PassTransferred` | `$pass, $previousHolder, $newHolder` | Fired after transfer completes |
 
 Listen to events as usual:
 

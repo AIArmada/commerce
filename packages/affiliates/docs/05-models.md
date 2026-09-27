@@ -47,8 +47,11 @@ $affiliate->children;         // HasMany<Affiliate>
 $affiliate->programs;         // BelongsToMany<AffiliateProgram>
 $affiliate->fraudSignals;     // HasMany<AffiliateFraudSignal>
 $affiliate->dailyStats;       // HasMany<AffiliateDailyStat>
-$affiliate->commissionRules;  // HasMany<AffiliateCommissionRule>
-$affiliate->volumeTiers;      // HasMany<AffiliateVolumeTier>
+$affiliate->balance;          // HasOne<AffiliateBalance>
+
+// Commission rules and volume tiers belong to programs, not affiliates:
+$program->commissionRules;    // HasMany<AffiliateCommissionRule>
+AffiliateVolumeTier::where('program_id', $program->id)->get();
 ```
 
 **Key Methods:**
@@ -130,7 +133,7 @@ use AIArmada\Affiliates\Models\AffiliateConversion;
 | `value_minor` | int | Neutral conversion value in minor units |
 | `commission_minor` | int | Commission amount in minor units |
 | `commission_currency` | string | Required. Denominates both `value_minor` and `commission_minor`; no database default — writers must set it explicitly |
-| `status` | ConversionStatus | Pending, Qualified, Approved, Rejected, Paid |
+| `status` | ConversionStatus | Pending, Qualified, Approved, Rejected, Reversed, Paid |
 | `occurred_at` | timestamp | When conversion occurred |
 | `approved_at` | timestamp | When approved or matured into the payout-eligible state |
 
@@ -198,9 +201,9 @@ use AIArmada\Affiliates\Models\AffiliateProgram;
 |-----------|------|-------------|
 | `name` | string | Program name |
 | `slug` | string | URL-friendly slug |
-| `status` | ProgramStatus | Draft, Active, Paused, Ended |
+| `status` | ProgramStatus | Draft, Active, Paused, Archived |
 | `requires_approval` | bool | Manual approval required |
-| `is_public` | bool | Publicly visible |
+| `visibility` | ProgramVisibility | Public or Private |
 | `default_commission_rate_basis_points` | int | Default commission |
 | `commission_type` | string | Percentage or fixed |
 | `cookie_lifetime_days` | int | Attribution window |
@@ -266,9 +269,9 @@ use AIArmada\Affiliates\Models\AffiliatePayoutMethod;
 
 | Attribute | Type | Description |
 |-----------|------|-------------|
-| `type` | PayoutMethodType | PayPal, Stripe, BankTransfer |
+| `type` | PayoutMethodType | BankTransfer, PayPal, StripeConnect, Wise, Payoneer, Check, Wire, Crypto |
 | `is_default` | bool | Primary method |
-| `is_verified` | bool | Verified by system |
+| `verified_at` | timestamp | Verification timestamp (null until verified) |
 | `details` | array | Encrypted payout details |
 
 ### AffiliatePayoutHold
@@ -282,7 +285,9 @@ use AIArmada\Affiliates\Models\AffiliatePayoutHold;
 | Attribute | Type | Description |
 |-----------|------|-------------|
 | `reason` | string | Hold reason |
-| `amount_minor` | int | Amount on hold |
+| `notes` | string | Operator notes |
+| `expires_at` | timestamp | Hold expiry |
+| `placed_by` | string | Who placed the hold |
 | `released_at` | timestamp | When released |
 
 ## Fraud & Analytics Models
@@ -298,11 +303,11 @@ use AIArmada\Affiliates\Models\AffiliateFraudSignal;
 | Attribute | Type | Description |
 |-----------|------|-------------|
 | `affiliate_id` | uuid | The affiliate |
-| `signal_type` | string | Type of fraud signal |
+| `rule_code` | string | Detecting rule code |
 | `severity` | FraudSeverity | Low, Medium, High, Critical |
-| `status` | FraudSignalStatus | Pending, Reviewed, Dismissed |
-| `score` | int | Fraud score (0-100) |
-| `details` | array | Signal details |
+| `status` | FraudSignalStatus | Detected, Reviewed, Dismissed, Confirmed |
+| `risk_points` | int | Risk points contributed |
+| `evidence` | array | Signal evidence |
 
 ### AffiliateDailyStat
 

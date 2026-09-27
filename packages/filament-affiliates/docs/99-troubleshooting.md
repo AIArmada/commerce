@@ -134,7 +134,7 @@ By default, the shipped portal does not redirect non-affiliate users in a loop. 
 
 ```php
 // Verify owner context is set
-app(OwnerResolverInterface::class)->getOwner();
+app(OwnerResolverInterface::class)->resolve();
 ```
 
 2. Check database has records:

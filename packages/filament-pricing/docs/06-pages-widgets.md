@@ -41,9 +41,9 @@ Uses a simple form view:
 
 ```blade
 <x-filament-panels::page>
-    <x-filament-panels::form wire:submit="save">
+    <form wire:submit="save">
         {{ $this->form }}
-    </x-filament-panels::form>
+    </form>
 </x-filament-panels::page>
 ```
 
@@ -106,7 +106,7 @@ Interactive price calculation testing tool.
 
 ### Requirements
 
-- `aiarmada/products` is optional. When it is unavailable, the page renders a disabled state instead of attempting product or variant queries.
+- `aiarmada/products` is optional. When it is unavailable, the plugin does not register the page (the page also ships a disabled placeholder for manual registration).
 - Optional: `aiarmada/customers` for customer selection
 
 ### Location
@@ -200,9 +200,9 @@ Displays calculation results using Filament Infolist components:
 
 ```blade
 <x-filament-panels::page>
-    <x-filament-panels::form wire:submit="calculate">
+    <form wire:submit="calculate">
         {{ $this->form }}
-    </x-filament-panels::form>
+    </form>
 
     @if ($result)
         <div class="mt-6">

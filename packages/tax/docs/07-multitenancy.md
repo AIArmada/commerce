@@ -89,11 +89,11 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Tax\Facades\Tax;
 
 // Owner context already set (e.g. via middleware) — just calculate
-$result = Tax::calculate($taxable);
+$result = Tax::calculateTax(10000, 'standard');
 
 // Explicit context for background processing
-OwnerContext::withOwner($tenant, function () use ($taxable): void {
-    $result = Tax::calculate($taxable);
+OwnerContext::withOwner($tenant, function (): void {
+    $result = Tax::calculateTax(10000, 'standard');
 });
 ```
 

@@ -35,7 +35,7 @@ Current cards include:
 Currency display uses:
 
 ```php
-config('filament-affiliates.widgets.currency', 'USD')
+config('filament-affiliates.widgets.currency', 'MYR')
 ```
 
 ## PerformanceOverviewWidget

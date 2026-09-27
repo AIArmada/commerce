@@ -40,7 +40,7 @@ keywords:
 ## Decide fast
 - Use when: Sending/recording messages or managing preferences/suppressions.
 - Skip when: Contact data itself (emails/phones) — see contacting.
-- Owner/security: Owner-scoped (10 models).
+- Owner/security: Owner-scoped (17 models).
 
 ## Key surfaces
 - Models: `Communication`, `CommunicationAttachment`, `CommunicationAttempt`, `CommunicationBatch`, `CommunicationContent`, `CommunicationDelivery`, `CommunicationDestination`, `CommunicationEvent`, `CommunicationPreference`, `CommunicationRecipient`

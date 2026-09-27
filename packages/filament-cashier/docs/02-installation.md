@@ -94,10 +94,10 @@ These methods work consistently across all installed gateways:
 
 - **Gateway Management**: `preferredGateway()`, `setPreferredGateway()`
 - **Customer Management**: `createOrGetCustomer()`, `updateCustomer()`, `syncCustomer()`
-- **Charging**: `chargeWithGateway($gateway, ...)`
-- **Subscriptions**: `newGatewaySubscription($gateway, ...)`, `allGatewaySubscriptions()`, `subscribedViaGateway($gateway)`
+- **Charging**: `chargeWithGateway($amount, $paymentMethod, $gateway = null, ...)`
+- **Subscriptions**: `newGatewaySubscription($type, $prices, $gateway = null)`, `allGatewaySubscriptions()`, `subscribedViaGateway($type, $price = null, $gateway = null)`
 - **Payment Methods**: `allGatewayPaymentMethods()`, `defaultGatewayPaymentMethod()`
-- **Invoices**: `allGatewayInvoices()`, `gatewayBillingPortalUrl($gateway)`
+- **Invoices**: `allGatewayInvoices()`, `gatewayBillingPortalUrl($returnUrl, $gateway = null)`
 
 #### Gateway-Native Hooks (Optional)
 For advanced use cases, gateway implementations may call optional native methods on your billable model:
@@ -115,11 +115,11 @@ Once configured, you can use any installed gateway:
 $user = User::first();
 
 // Use default gateway
-$subscription = $user->newGatewaySubscription($user->preferredGateway(), 'price_123');
+$subscription = $user->newGatewaySubscription('default', 'price_123');
 
 // Switch to a different gateway
 $user->setPreferredGateway('chip');
-$subscription = $user->newGatewaySubscription('chip', 'plan-id');
+$subscription = $user->newGatewaySubscription('default', 'plan-id', 'chip');
 
 // Access all subscriptions across all gateways
 $allSubscriptions = $user->allGatewaySubscriptions();
@@ -246,8 +246,8 @@ Then register the panel provider:
 After installation, verify everything works:
 
 1. Navigate to `/admin/billing-dashboard` - you should see the dashboard
-2. Navigate to `/admin/subscriptions` - you should see the subscriptions list
-3. Navigate to `/admin/invoices` - you should see the invoices list
+2. Navigate to `/admin/unified-subscriptions` - you should see the subscriptions list
+3. Navigate to `/admin/unified-invoices` - you should see the invoices list
 
 If no gateways are installed, you'll see the Gateway Setup page with installation instructions.
 

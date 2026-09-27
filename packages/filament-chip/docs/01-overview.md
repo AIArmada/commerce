@@ -28,7 +28,7 @@ The `aiarmada/filament-chip` package is the Filament admin adapter for `aiarmada
 
 ## Main models services or surfaces
 
-- **Resources** — purchase and client administration by default
+- **Resources** — purchase, client, payment, payout, and bank-account administration by default
 - **Pages** — analytics dashboard
 - **Widgets** — stats, revenue chart, and recent transactions
 - **Optional surfaces** — payment, bank account, payout, and statement resources available outside the default registration set
@@ -42,7 +42,7 @@ A Filament admin panel plugin for managing CHIP payment gateway data. Provides e
 
 ## Key Features
 
-- **Essential Resources** - Purchase and Client management (more available optionally)
+- **Essential Resources** - Purchase, Client, Payment, SendInstruction, and BankAccount management (plus CompanyStatement via developer resources)
 - **Analytics Dashboard** - Revenue metrics and transaction insights
 - **Key Widgets** - Revenue charts, stats, recent transactions
 - **Owner Scoping** - Multi-tenancy ready with owner-based isolation
@@ -65,11 +65,11 @@ $panel->plugin(FilamentChipPlugin::make());
 ### Component Discovery
 
 The plugin registers by default:
-- **2 Resources**: `PurchaseResource`, `ClientResource`
+- **5 Resources**: `PurchaseResource`, `ClientResource`, `PaymentResource`, `SendInstructionResource`, `BankAccountResource`
 - **1 Page**: `AnalyticsDashboardPage`
 - **3 Widgets**: `ChipStatsWidget`, `RevenueChartWidget`, `RecentTransactionsWidget`
 
-Additional resources and widgets are available in the package but not registered by default.
+`CompanyStatementResource` (via `->developerResources()`) and additional widgets are available in the package but not registered by default.
 
 ## Available Resources
 
@@ -77,10 +77,10 @@ Additional resources and widgets are available in the package but not registered
 |----------|------------|-------------|
 | `PurchaseResource` | ✅ Default | Payment transactions with status, refunds, capture |
 | `ClientResource` | ✅ Default | Customer records from CHIP |
-| `PaymentResource` | Optional | Individual payment records |
-| `BankAccountResource` | Optional | Payout recipient bank accounts |
-| `SendInstructionResource` | Optional | Payout instructions |
-| `CompanyStatementResource` | Optional | Company account statements |
+| `PaymentResource` | ✅ Default | Individual payment records |
+| `BankAccountResource` | ✅ Default | Payout recipient bank accounts |
+| `SendInstructionResource` | ✅ Default | Payout instructions |
+| `CompanyStatementResource` | Optional | Company account statements (via `->developerResources()`) |
 
 ## Available Pages
 
@@ -97,8 +97,12 @@ Additional resources and widgets are available in the package but not registered
 | `RecentTransactionsWidget` | ✅ Default | Latest purchases table |
 | `AccountBalanceWidget` | Optional | CHIP account balance |
 | `AccountTurnoverWidget` | Optional | Account turnover stats |
+| `BankAccountStatusWidget` | Optional | Bank account verification status |
+| `PaymentMethodsWidget` | Optional | Payment method distribution chart |
+| `PayoutAmountWidget` | Optional | Total payout amounts |
 | `PayoutStatsWidget` | Optional | Payout statistics |
 | `RecentPayoutsWidget` | Optional | Latest payouts table |
+| `TokenStatsWidget` | Optional | Saved token statistics |
 
 ## Requirements
 

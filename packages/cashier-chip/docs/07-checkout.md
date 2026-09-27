@@ -201,22 +201,24 @@ This creates a CHIP purchase with:
 
 ### Via Billable Trait
 
-Override the `createCheckout` method:
+Override the `checkout` method:
 
 ```php
+use AIArmada\CashierChip\Billing\Checkout;
+
 class User extends Authenticatable implements BillableContract
 {
     use Billable;
-    
-    protected function createCheckout(int $amount, array $options = []): Checkout
+
+    public function checkout(int $amount, array $sessionOptions = [], array $customerOptions = []): Checkout
     {
         // Add default options
-        $options = array_merge([
+        $sessionOptions = array_merge([
             'reference' => "Order for {$this->name}",
             'send_receipt' => true,
-        ], $options);
-        
-        return Checkout::create($this, $amount, $options);
+        ], $sessionOptions);
+
+        return Checkout::create($this, $amount, array_merge($sessionOptions, $customerOptions));
     }
 }
 ```
@@ -224,11 +226,11 @@ class User extends Authenticatable implements BillableContract
 ## Error Handling
 
 ```php
-use AIArmada\CashierChip\Exceptions\CheckoutFailure;
+use AIArmada\Chip\Exceptions\ChipApiException;
 
 try {
     $checkout = $user->checkout(10000);
-} catch (CheckoutFailure $e) {
+} catch (ChipApiException $e) {
     return back()->withErrors([
         'checkout' => $e->getMessage(),
     ]);

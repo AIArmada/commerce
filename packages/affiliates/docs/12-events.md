@@ -13,13 +13,15 @@ The package dispatches events for key actions and supports webhook delivery to e
 Dispatched when a cart or session is attributed to an affiliate.
 
 ```php
+use AIArmada\Affiliates\Data\AffiliateAttributionData;
+use AIArmada\Affiliates\Data\AffiliateData;
 use AIArmada\Affiliates\Events\AffiliateAttributed;
 
 class AffiliateAttributed
 {
     public function __construct(
-        public readonly Affiliate $affiliate,
-        public readonly AffiliateAttribution $attribution,
+        public readonly AffiliateData $affiliate,
+        public readonly AffiliateAttributionData $attribution,
     ) {}
 }
 ```
@@ -33,15 +35,11 @@ class SendAttributionNotification
 {
     public function handle(AffiliateAttributed $event): void
     {
-        $affiliate = $event->affiliate;
-        $attribution = $event->attribution;
+        $affiliate = $event->affiliate;       // AffiliateData DTO
+        $attribution = $event->attribution;   // AffiliateAttributionData DTO
 
-        // Send notification
-        Notification::send($affiliate->contact_email, new NewVisitorAttributed(
-            affiliate: $affiliate,
-            landingUrl: $attribution->landing_url,
-            source: $attribution->source,
-        ));
+        // DTO fields: $affiliate->code, $affiliate->name,
+        // $attribution->source, $attribution->campaign, ...
     }
 }
 ```
@@ -51,13 +49,13 @@ class SendAttributionNotification
 Dispatched when a conversion is recorded.
 
 ```php
+use AIArmada\Affiliates\Data\AffiliateConversionData;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
 
 class AffiliateConversionRecorded
 {
     public function __construct(
-        public readonly Affiliate $affiliate,
-        public readonly AffiliateConversion $conversion,
+        public readonly AffiliateConversionData $conversion,
     ) {}
 }
 ```
@@ -79,13 +77,13 @@ class SendConversionToAnalytics
 {
     public function handle(AffiliateConversionRecorded $event): void
     {
-        $conversion = $event->conversion;
+        $conversion = $event->conversion; // AffiliateConversionData DTO
 
         Analytics::trackEvent('affiliate_conversion_recorded', [
-            'affiliate_code' => $conversion->affiliate_code,
-            'external_reference' => $conversion->external_reference,
-            'value_minor' => $conversion->value_minor,
-            'commission_minor' => $conversion->commission_minor,
+            'affiliate_code' => $conversion->affiliateCode,
+            'external_reference' => $conversion->externalReference,
+            'value_minor' => $conversion->valueMinor,
+            'commission_minor' => $conversion->commissionMinor,
         ]);
     }
 }
@@ -94,20 +92,32 @@ class SendConversionToAnalytics
 ### Other Events
 
 ```php
-// Affiliate status changed
-AffiliateStatusChanged::class
+use AIArmada\Affiliates\Events\AffiliateActivated;
+use AIArmada\Affiliates\Events\AffiliateCreated;
+use AIArmada\Affiliates\Events\AffiliateProgramJoined;
+use AIArmada\Affiliates\Events\AffiliateProgramLeft;
+use AIArmada\Affiliates\Events\AffiliateRankChanged;
+use AIArmada\Affiliates\Events\AffiliateTierUpgraded;
+use AIArmada\Affiliates\Events\DailyStatsAggregated;
+use AIArmada\Affiliates\Events\FraudSignalDetected;
 
-// Payout created
-AffiliatePayoutCreated::class
+// Affiliate created (model hook) / activated
+AffiliateCreated::class;        // (Affiliate $affiliate)
+AffiliateActivated::class;      // (Affiliate $affiliate)
 
-// Payout completed
-AffiliatePayoutCompleted::class
+// Program membership changes
+AffiliateProgramJoined::class;  // (AffiliateProgramMembership $membership)
+AffiliateProgramLeft::class;    // (AffiliateProgramMembership $membership)
 
-// Fraud threshold reached
-FraudThresholdReached::class
+// Rank and tier upgrades
+AffiliateRankChanged::class;    // (Affiliate $affiliate, AffiliateRank $newRank, ?AffiliateRank $previousRank)
+AffiliateTierUpgraded::class;   // (AffiliateProgramMembership $membership, AffiliateProgramTier $newTier, ?AffiliateProgramTier $previousTier, Affiliate $affiliate)
 
-// Rank upgraded
-AffiliateRankUpgraded::class
+// Daily aggregation finished
+DailyStatsAggregated::class;    // (CarbonImmutable $date, int $affiliateCount)
+
+// Fraud signal recorded
+FraudSignalDetected::class;     // (Affiliate $affiliate, AffiliateFraudSignal $signal, string $severity)
 ```
 
 ## Registering Listeners
@@ -171,49 +181,23 @@ The package can dispatch webhooks to external endpoints for real-time integratio
 
 ### Webhook Payloads
 
-**Attribution Webhook:**
+Every webhook shares one envelope; only `type` and `data` vary:
 
 ```json
 {
-    "event": "affiliate.attributed",
-    "timestamp": "2024-01-15T10:30:00Z",
+    "type": "conversion",
+    "id": "uuid",
     "data": {
-        "attribution_id": "uuid",
-        "affiliate": {
-            "id": "uuid",
-            "code": "PARTNER42",
-            "name": "Partner Name"
-        },
-        "cart_identifier": "cart-123",
-        "landing_url": "https://example.com/products",
-        "source": "instagram",
-        "medium": "social",
-        "campaign": "summer-sale"
-    }
-}
-```
-
-**Conversion Webhook:**
-
-```json
-{
-    "event": "affiliate.conversion",
-    "timestamp": "2024-01-15T10:30:00Z",
-    "data": {
-        "conversion_id": "uuid",
-        "affiliate": {
-            "id": "uuid",
-            "code": "PARTNER42",
-            "name": "Partner Name"
-        },
         "external_reference": "ORD-12345",
         "value_minor": 15000,
         "commission_minor": 1500,
-        "currency": "USD",
-        "status": "pending"
-    }
+        "currency": "USD"
+    },
+    "sent_at": "2024-01-15T10:30:00Z"
 }
 ```
+
+`type` selects the endpoint list from `affiliates.webhooks.endpoints.{type}` (e.g. `attribution`, `conversion`, `payout`).
 
 ### Using WebhookDispatcher
 
@@ -222,19 +206,14 @@ use AIArmada\Affiliates\Support\Webhooks\WebhookDispatcher;
 
 $dispatcher = app(WebhookDispatcher::class);
 
-// Dispatch attribution webhook
-$dispatcher->dispatchAttribution($attribution);
+// Dispatch to the endpoints configured under webhooks.endpoints.conversion
+$dispatcher->dispatch('conversion', [
+    'external_reference' => 'ORD-12345',
+    'value_minor' => 15000,
+]);
 
-// Dispatch conversion webhook
-$dispatcher->dispatchConversion($conversion);
-
-// Dispatch payout webhook
-$dispatcher->dispatchPayout($payout);
-
-// Custom webhook
-$dispatcher->dispatch('custom-event', [
-    'data' => $customData,
-], ['https://endpoint.com/webhook']);
+$dispatcher->dispatch('attribution', ['attribution_id' => $id]);
+$dispatcher->dispatch('payout', ['reference' => $reference]);
 ```
 
 ### Webhook Signatures
@@ -244,7 +223,7 @@ Webhooks are signed for verification:
 ```php
 // Receiving webhook
 $payload = file_get_contents('php://input');
-$signature = $_SERVER['HTTP_X_AFFILIATES_SIGNATURE'] ?? '';
+$signature = $_SERVER['HTTP_X_AFFILIATES_WEBHOOK_SIGNATURE'] ?? '';
 $secret = config('affiliates.webhooks.signature_secret');
 
 $expected = hash_hmac('sha256', $payload, $secret);
@@ -256,14 +235,7 @@ if (!hash_equals($expected, $signature)) {
 
 ### Retry Logic
 
-Failed webhooks are queued for retry:
-
-```php
-// WebhookDispatcher uses Laravel's HTTP client with retry
-Http::retry(3, 100)
-    ->withHeaders($headers)
-    ->post($endpoint, $payload);
-```
+Failed webhooks retry through the queued `DispatchAffiliateWebhook` job (attempts from `webhooks.delivery.max_attempts`, default 5, with `webhooks.delivery.backoff_seconds` between tries, default `[10, 30, 120, 300]`).
 
 ## Custom Event Listeners
 
@@ -279,13 +251,13 @@ class SendConversionToAnalytics implements ShouldQueue
 {
     public function handle(AffiliateConversionRecorded $event): void
     {
-        $conversion = $event->conversion;
+        $conversion = $event->conversion; // AffiliateConversionData DTO
 
         // Send to Google Analytics
         Analytics::trackEvent('affiliate_conversion', [
-            'affiliate_code' => $conversion->affiliate_code,
-            'order_total' => $conversion->total_minor / 100,
-            'commission' => $conversion->commission_minor / 100,
+            'affiliate_code' => $conversion->affiliateCode,
+            'order_total' => $conversion->valueMinor / 100,
+            'commission' => $conversion->commissionMinor / 100,
         ]);
     }
 }

@@ -36,14 +36,13 @@ Each installed gateway keeps its own customer identifier on the billable model.
 ```php
 Schema::table('users', function (Blueprint $table) {
     $table->string('stripe_id')->nullable()->index();
-    $table->string('chip_id')->nullable()->index();
 });
 ```
 
-Those columns come from the gateway packages:
-
-- `laravel/cashier` owns `stripe_id`
-- `aiarmada/cashier-chip` owns `chip_id`
+The `stripe_id` column comes from `laravel/cashier`. CHIP needs no extra
+column on your billable model: `aiarmada/cashier-chip` links billables to
+CHIP client IDs through the `chip_customers` table (owned by `aiarmada/chip`)
+and exposes the link as `$billable->chipId()`.
 
 ### Creating / Syncing Customers
 
@@ -152,7 +151,7 @@ $stripeCheckout = $user->checkoutWithGateway('stripe')
     ->create();
 
 $chipCheckout = $user->checkoutWithGateway('chip')
-    ->price('price_local')
+    ->product('Local Plan', 250000)
     ->successUrl(route('checkout.success'))
     ->cancelUrl(route('checkout.cancel'))
     ->create();
@@ -215,9 +214,9 @@ subscription_items
 users.stripe_id
 
 // CHIP schema comes from aiarmada/cashier-chip
-chip_subscriptions
-chip_subscription_items
-users.chip_id
+cashier_chip_subscriptions
+cashier_chip_subscription_items
+chip_customers (link table from aiarmada/chip; no users column needed)
 ```
 
 `aiarmada/cashier` does not create a unified `gateway_subscriptions` table. It wraps the

@@ -8,13 +8,15 @@ Cashier CHIP handles incoming CHIP webhooks to update payment statuses, save rec
 
 ## Webhook Route
 
-The package registers a webhook route at:
+The `aiarmada/chip` package registers a webhook route at:
 
 ```
 POST /chip/webhooks
 ```
 
-Configure your CHIP dashboard to send webhooks to this URL.
+Configure your CHIP dashboard to send webhooks to this URL. Cashier CHIP
+registers no webhook route or controller of its own; it subscribes to the
+typed events CHIP dispatches from that route (see Handled Events below).
 
 ## Configuration
 
@@ -44,42 +46,33 @@ CHIP_WEBHOOK_SECRET=your-webhook-secret
 Enable/disable signature verification:
 
 ```php
-// config/chip.php (the chip package owns signature verification)
+// config/cashier-chip.php (stored for display; verification lives in the chip package)
 'webhooks' => [
     'secret' => env('CHIP_WEBHOOK_SECRET'),
+],
+
+// config/chip.php (the chip package owns signature verification)
+'webhooks' => [
     'verify_signature' => true,  // Set to false for testing
 ],
 ```
 
 ## Handled Events
 
-The webhook controller handles these CHIP events:
+The package subscribes to these typed CHIP events:
 
-| Event | Handler | Description |
+| CHIP event | Listener | Description |
 |-------|---------|-------------|
-| `purchase.payment_successful` | `handlePurchasePaymentSuccess` | Payment completed |
-| `purchase.payment_failed` | `handlePurchasePaymentFailed` | Payment failed |
-| `purchase.expired` | `handlePurchaseExpired` | Purchase expired |
-| `purchase.refunded` | `handlePurchaseRefunded` | Payment refunded |
-| `recurring_token.created` | `handleRecurringTokenCreated` | Card saved |
-| `recurring_token.deleted` | `handleRecurringTokenDeleted` | Card removed |
+| `purchase.paid` | `HandlePurchasePaid` | Payment completed; syncs status and renewals |
+| `purchase.payment_failure` | `HandlePurchasePaymentFailure` | Payment failed |
+| `purchase.preauthorized` | `HandlePurchasePreauthorized` | Preauthorization complete (setup purchases) |
+
+The listeners resolve the billable from the purchase's CHIP client ID and
+run `SyncChipPurchaseStatus`, which dispatches the Cashier CHIP events below.
 
 ## Events Dispatched
 
-Each webhook dispatches Laravel events you can listen for:
-
-### Generic Events
-
-```php
-use AIArmada\CashierChip\Events\WebhookReceived;
-use AIArmada\CashierChip\Events\WebhookHandled;
-
-// Fired for every webhook
-WebhookReceived::class
-
-// Fired after successful processing
-WebhookHandled::class
-```
+Each handled webhook dispatches Laravel events you can listen for:
 
 ### Payment Events
 
@@ -104,68 +97,32 @@ protected $listen = [
 ```php
 use AIArmada\CashierChip\Events\SubscriptionCreated;
 use AIArmada\CashierChip\Events\SubscriptionRenewed;
-use AIArmada\CashierChip\Events\SubscriptionPaymentFailed;
+use AIArmada\CashierChip\Events\SubscriptionRenewalFailed;
 ```
 
-### Payment Method Events
+## Custom Webhook Handling
+
+Cashier CHIP ships no webhook controller to extend. Add custom handling
+with your own listeners on the Cashier CHIP events above (or on the
+underlying `AIArmada\Chip\Events\PurchasePaid` and related CHIP events):
 
 ```php
-use AIArmada\CashierChip\Events\PaymentMethodAdded;
-use AIArmada\CashierChip\Events\PaymentMethodRemoved;
-```
+use AIArmada\CashierChip\Events\PaymentSucceeded;
 
-## Custom Webhook Handlers
-
-Extend the webhook controller for custom handling:
-
-```php
-<?php
-
-namespace App\Http\Controllers;
-
-use Illuminate\Http\Response;
-use AIArmada\CashierChip\Http\Controllers\WebhookController as CashierWebhookController;
-
-class WebhookController extends CashierWebhookController
+class NotifyTeamOfPayment
 {
-    /**
-     * Handle successful payments.
-     */
-    protected function handlePurchasePaymentSuccess(array $payload): Response
+    public function handle(PaymentSucceeded $event): void
     {
-        // Your custom logic
-        $purchaseId = $payload['id'];
-        
-        // Call parent to handle default logic
-        $response = parent::handlePurchasePaymentSuccess($payload);
-        
-        // Additional processing
+        $purchaseId = $event->purchase['id'];
+
         $this->notifyTeam($purchaseId);
-        
-        return $response;
-    }
-    
-    /**
-     * Handle unknown events.
-     */
-    protected function handleUnknownEvent(array $payload): Response
-    {
-        Log::info('Unknown CHIP event', $payload);
-        
-        return new Response('Webhook received', 200);
     }
 }
 ```
 
-Register your custom controller:
-
-```php
-// routes/web.php
-use App\Http\Controllers\WebhookController;
-
-Route::post('chip/webhooks', [WebhookController::class, 'handleWebhook'])
-    ->name('chip.webhook');
-```
+To customize the HTTP route itself (path, middleware), configure the
+`aiarmada/chip` webhook route instead; see the
+[CHIP webhooks documentation](../../chip/docs/09-webhooks.md).
 
 ## Payload Structure
 
@@ -175,7 +132,7 @@ All monetary amounts are integers in the smallest currency unit (for MYR, this i
 
 ```json
 {
-    "event_type": "purchase.payment_successful",
+    "event_type": "purchase.paid",
     "id": "purchase-uuid",
     "client_id": "client-uuid",
     "status": "paid",
@@ -204,12 +161,12 @@ class HandlePaymentSuccess
 {
     public function handle(PaymentSucceeded $event): void
     {
-        $payload = $event->payload;
+        $purchase = $event->purchase;
         $billable = $event->billable;
-        
+
         // Access purchase data
-        $purchaseId = $payload['id'];
-        $amount = $payload['purchase']['total'];
+        $purchaseId = $purchase['id'];
+        $amount = $purchase['purchase']['total'];
         
         // Access billable (user)
         if ($billable) {
@@ -243,7 +200,7 @@ $user->charge(10000);
 
 // Simulate a webhook
 $response = $this->postJson('/chip/webhooks', [
-    'event_type' => 'purchase.payment_successful',
+    'event_type' => 'purchase.paid',
     'id' => 'purchase-123',
     'status' => 'paid',
 ]);
@@ -267,61 +224,59 @@ CHIP_WEBHOOK_VERIFY_SIGNATURE=false
 
 ## Webhook Queues
 
-For high-volume applications, queue webhook processing:
+The package listeners run synchronously. For high-volume applications,
+queue your own heavy work from a listener instead of doing it inline:
 
 ```php
-class WebhookController extends CashierWebhookController
+use AIArmada\CashierChip\Events\PaymentSucceeded;
+use Illuminate\Contracts\Queue\ShouldQueue;
+
+class ProcessPaymentWebhook implements ShouldQueue
 {
-    protected function handlePurchasePaymentSuccess(array $payload): Response
+    public function handle(PaymentSucceeded $event): void
     {
-        // Queue the processing
-        dispatch(new ProcessPaymentWebhook($payload));
-        
-        return new Response('Queued', 200);
+        $this->processPayment($event->purchase);
     }
 }
 ```
 
 ## Error Handling
 
-### Retry Logic
+### Listener Failures
 
-Return appropriate status codes:
+Throwing from a queued listener releases the job back onto the queue for
+retry with the queue's backoff policy. Log and skip events you cannot
+handle instead of retrying forever:
 
 ```php
-protected function handlePurchasePaymentSuccess(array $payload): Response
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+
+public function handle(PaymentSucceeded $event): void
 {
     try {
-        $this->processPayment($payload);
-        return new Response('OK', 200);
+        $this->processPayment($event->purchase);
     } catch (ModelNotFoundException $e) {
-        // Customer not found - log but don't retry
-        Log::warning('Webhook customer not found', ['id' => $payload['id']]);
-        return new Response('Ignored', 200);
-    } catch (\Exception $e) {
-        // Other error - retry
-        Log::error('Webhook error', ['error' => $e->getMessage()]);
-        return new Response('Error', 500);
+        // Unknown local reference: log and skip instead of retrying forever.
+        Log::warning('Webhook reference not found', ['id' => $event->purchase['id']]);
     }
 }
 ```
 
 ### Logging
 
-Enable webhook logging:
+Enable webhook logging from a listener:
 
 ```php
-// In a custom webhook controller
-protected function handleWebhook(): Response
+use AIArmada\CashierChip\Events\PaymentSucceeded;
+
+class LogChipWebhook
 {
-    $payload = $this->getPayload();
-    
-    Log::channel('webhooks')->info('CHIP webhook received', [
-        'event' => $payload['event_type'] ?? 'unknown',
-        'id' => $payload['id'] ?? null,
-    ]);
-    
-    return parent::handleWebhook();
+    public function handle(PaymentSucceeded $event): void
+    {
+        Log::channel('webhooks')->info('CHIP webhook received', [
+            'id' => $event->purchase['id'] ?? null,
+        ]);
+    }
 }
 ```
 

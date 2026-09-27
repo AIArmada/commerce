@@ -32,14 +32,16 @@ OwnerContext::withOwner($owner, function () use ($institution) {
 
 ## Phone Normalization Surprises
 
-Phone normalization in v1 is conservative:
+Phone normalization uses `propaganistas/laravel-phone` when available: parsed
+numbers are stored as E.164 in `normalized_value` with an international-format
+`display_value`. When parsing fails, a lightweight fallback strips separators,
+preserves a leading `+`, and prefixes the calling code for the given
+`country_code` (AU, CA, GB, ID, MY, NZ, PH, SG, TH, US, VN); other country
+codes pass the digits through unchanged.
 
-- Only supports basic MY (Malaysia) number conversion (`0xx` -> `+60xx`)
-- Spaces, dashes, and parentheses are stripped
-- International numbers starting with `+` are preserved as-is
-- No E.164 compliance is guaranteed without a dedicated phone library
-
-If your app needs robust international phone validation, add a phone library and extend `NormalizeContactMethodAction`.
+If a number normalizes unexpectedly, check the `country_code` on the contact
+method first — it selects both the parser region and the fallback calling
+code.
 
 ## Social URL Not Parsed
 
@@ -57,7 +59,7 @@ If the URL uses a regional domain (e.g., `facebook.co.id`), it may not match. In
 ## Public/Private Visibility Confusion
 
 - `is_public` controls whether the contact is shown on public-facing pages
-- Default is `true` (public)
+- Default is `contacting.defaults.public_by_default` (`true`), except `email`, `phone`, `mobile`, `whatsapp`, and `fax` contact methods, which default to private
 - Set `is_public: false` for internal/admin-only contacts
 - The `publicContactMethods()` trait method respects this flag
 - Snapshots preserve the public/private state at capture time

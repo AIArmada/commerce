@@ -44,53 +44,47 @@ Fraud detection operates at multiple levels:
 ## Using FraudDetectionService
 
 ```php
+use AIArmada\Affiliates\Enums\FraudSeverity;
 use AIArmada\Affiliates\Services\FraudDetectionService;
 
 $service = app(FraudDetectionService::class);
 ```
 
-### Analyzing Attributions
+### Analyzing Clicks
 
 ```php
-// Analyze new attribution for fraud signals
-$signals = $service->analyzeAttribution($attribution);
+// Analyze a click for fraud signals; returns ['allowed', 'score', 'signals']
+$result = $service->analyzeClick($affiliate, $request);
 
-foreach ($signals as $signal) {
+foreach ($result['signals'] as $signal) {
     // Each signal is an AffiliateFraudSignal model
-    echo $signal->signal_type; // e.g., 'velocity_exceeded'
+    echo $signal->rule_code;   // e.g., 'velocity_exceeded'
     echo $signal->severity;    // Low, Medium, High, Critical
-    echo $signal->score;       // 0-100
+    echo $signal->risk_points; // points contributed
 }
 ```
 
 ### Analyzing Conversions
 
 ```php
-// Check conversion for suspicious patterns
-$signals = $service->analyzeConversion($conversion);
+// Check conversion for suspicious patterns (persists signals)
+$result = $service->analyzeConversion($affiliate, $conversion);
 ```
 
-### Getting Fraud Score
+### Getting the Risk Profile
 
 ```php
-// Aggregate fraud score for affiliate
-$score = $service->getFraudScore($affiliate);
+// Aggregated risk profile for affiliate
+$profile = $service->getRiskProfile($affiliate);
+// ['total_score', 'severity', 'signal_count', 'by_rule', 'pending_review', 'confirmed']
 
-if ($score >= 100) {
+if (($profile['severity'] ?? null) === FraudSeverity::Critical) {
     // Consider pausing or disabling this affiliate in your application workflow
 }
 ```
 
-### Velocity Checks
-
-```php
-// Check if velocity limits exceeded
-$exceeded = $service->checkVelocityLimits($affiliate, 'clicks');
-
-if ($exceeded) {
-    // Block further attributions
-}
-```
+Velocity, self-referral, and the other built-in checks run inside
+`analyzeClick()`/`analyzeConversion()`; individual rules live in `Rules/`.
 
 ## Fraud Signal Types
 
@@ -110,10 +104,10 @@ if ($exceeded) {
 ```php
 use AIArmada\Affiliates\Enums\FraudSeverity;
 
-FraudSeverity::Low;       // Score: 10 - Minor concern
-FraudSeverity::Medium;    // Score: 25 - Investigate
-FraudSeverity::High;      // Score: 50 - Likely fraud
-FraudSeverity::Critical;  // Score: 100 - Immediate action needed
+FraudSeverity::Low;       // Threshold: 20 - Minor concern
+FraudSeverity::Medium;    // Threshold: 50 - Investigate
+FraudSeverity::High;      // Threshold: 80 - Likely fraud
+FraudSeverity::Critical;  // Threshold: 100 - Immediate action needed
 ```
 
 ## Fraud Signal Statuses
@@ -130,12 +124,15 @@ FraudSignalStatus::Confirmed; // Fraud confirmed
 ## Recording Signals Manually
 
 ```php
-$signal = $service->recordSignal($affiliate, [
-    'type' => 'suspicious_pattern',
+use AIArmada\Affiliates\Models\AffiliateFraudSignal;
+
+$signal = AffiliateFraudSignal::create([
+    'affiliate_id' => $affiliate->id,
+    'rule_code' => 'suspicious_pattern',
     'severity' => FraudSeverity::High,
-    'score' => 50,
-    'details' => [
-        'reason' => 'Unusual conversion pattern detected',
+    'risk_points' => 50,
+    'description' => 'Unusual conversion pattern detected',
+    'evidence' => [
         'conversions_today' => 47,
         'average_daily' => 5,
     ],
@@ -149,7 +146,7 @@ Enable fingerprint-based duplicate detection:
 ```php
 'tracking' => [
     'fingerprint' => [
-        'enabled' => env('AFFILIATES_FINGERPRINT_ENABLED', false),
+        'enabled' => env('AFFILIATES_FINGERPRINT_ENABLED', true),
         'block_duplicates' => env('AFFILIATES_FINGERPRINT_BLOCK_DUPLICATES', false),
         'threshold' => env('AFFILIATES_FINGERPRINT_THRESHOLD', 5),
     ],
@@ -190,16 +187,18 @@ When an affiliate's cumulative fraud score reaches the blocking threshold, autom
 Implement automatic suspension:
 
 ```php
-use AIArmada\Affiliates\Events\FraudThresholdReached;
+use AIArmada\Affiliates\Events\FraudSignalDetected;
 
 // In your EventServiceProvider
 protected $listen = [
-    FraudThresholdReached::class => [
+    FraudSignalDetected::class => [
         SuspendAffiliate::class,
         NotifyFraudTeam::class,
     ],
 ];
 ```
+
+The event carries the `Affiliate`, the `AffiliateFraudSignal`, and the severity string.
 
 ## Fraud Review in Filament
 
@@ -217,7 +216,7 @@ $signal->update([
     'status' => FraudSignalStatus::Reviewed,
     'reviewed_at' => now(),
     'reviewed_by' => auth()->id(),
-    'notes' => 'Investigated - appears legitimate',
+    'description' => 'Investigated - appears legitimate',
 ]);
 
 // Confirm fraud

@@ -43,7 +43,7 @@ use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
 
 try {
     $condition = ApplyVoucherToCart::run(
-        cart: Cart::session($sessionKey),
+        cart: Cart::getCartInstance('default', $sessionKey),
         code: 'SUMMER2024',
     );
 
@@ -76,7 +76,7 @@ use AIArmada\Vouchers\Actions\RemoveVoucherFromCart;
 use AIArmada\Cart\Facades\Cart;
 
 RemoveVoucherFromCart::run(
-    cart: Cart::session($sessionKey),
+    cart: Cart::getCartInstance('default', $sessionKey),
     code: 'SUMMER2024',
 );
 ```
@@ -258,7 +258,7 @@ try {
 ```php
 // Get totals
 $subtotal = Cart::subtotal();       // Before conditions
-$total = Cart::getTotal();           // After all conditions
+$total = Cart::total();              // After all conditions
 $voucherDiscount = Cart::getVoucherDiscount();
 
 // Display

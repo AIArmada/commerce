@@ -61,7 +61,6 @@ $exemption = TaxExemption::create([
 | `status` | string | `pending`, `approved`, `rejected` |
 | `rejection_reason` | string\|null | Reason for rejection |
 | `verified_at` | datetime\|null | When verified |
-| `verified_by` | string\|null | Who verified (UUID) |
 | `starts_at` | datetime\|null | When exemption begins |
 | `expires_at` | datetime\|null | When exemption ends |
 

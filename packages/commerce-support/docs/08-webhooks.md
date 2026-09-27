@@ -257,6 +257,7 @@ class ProcessPaymentWebhook extends CommerceWebhookProcessor
     {
         if (! isset($payload['payment_id'])) {
             throw WebhookVerificationException::invalidPayload(
+                'payment-gateway',
                 'Missing payment_id in webhook payload'
             );
         }
@@ -290,12 +291,12 @@ use AIArmada\CommerceSupport\Contracts\Payment\PaymentStatus;
 
 $payload = new WebhookPayload(
     eventType: 'payment.completed',
-    eventId: 'evt_abc123',
     paymentId: 'pi_xyz789',
     status: PaymentStatus::PAID,
-    amount: 10000,
-    currency: 'USD',
-    rawPayload: $webhookCall->payload
+    reference: 'order_123',
+    gatewayName: 'payment-gateway',
+    occurredAt: now(),
+    rawData: $webhookCall->payload
 );
 
 // Use in handler

@@ -8,7 +8,7 @@ Filament Cart widgets focus on live cart operations.
 
 ## CartStatsWidget
 
-Displays total carts, active carts, item quantity, and cart value.
+Displays active carts (with items count), checkouts in progress, recent abandonments with a 24h abandonment rate, and total cart value.
 
 ## CartStatsOverviewWidget
 

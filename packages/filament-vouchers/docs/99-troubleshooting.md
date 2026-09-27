@@ -72,7 +72,7 @@ app()->bind(OwnerResolverInterface::class, YourOwnerResolver::class);
 
 ### Cross-tenant data visible
 
-Resources use `OwnerScopedQueries::scopeVoucherLike()` (or `voucherIds()` for related resources) for scoping. Ensure:
+Resources scope through `OwnerQuery::applyToEloquentBuilder()` (related resources constrain by the scoped voucher IDs). Ensure:
 
 1. Owner columns (`owner_type`, `owner_id`) are populated
 2. The resolver returns the correct owner
@@ -123,10 +123,10 @@ try {
 Check that the `VoucherStatsAggregator` can query data:
 
 ```php
-use AIArmada\FilamentVouchers\Services\VoucherStatsAggregator;
+use AIArmada\FilamentVouchers\Support\VoucherStatsAggregator;
 
 $aggregator = app(VoucherStatsAggregator::class);
-$stats = $aggregator->getOverview();
+$stats = $aggregator->overview();
 dd($stats);
 ```
 

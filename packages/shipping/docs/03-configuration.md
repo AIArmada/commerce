@@ -10,17 +10,17 @@ All configuration is in `config/shipping.php`. Below is a complete reference.
 
 ```php
 'database' => [
-    // Table name prefix
-    'table_prefix' => 'shipping_',
-    
+    // Table name prefix (SHIPPING_TABLE_PREFIX, default none)
+    'table_prefix' => '',
+
     // Override individual table names
     'tables' => [
         'shipments' => null,           // Uses prefix + 'shipments'
         'shipment_items' => null,
         'shipment_events' => null,
         'shipment_labels' => null,
-        'zones' => null,
-        'rates' => null,
+        'shipping_zones' => null,
+        'shipping_rates' => null,
         'return_authorizations' => null,
         'return_authorization_items' => null,
     ],
@@ -31,7 +31,7 @@ All configuration is in `config/shipping.php`. Below is a complete reference.
 
 ```php
 'defaults' => [
-    'currency' => env('SHIPPING_DEFAULT_CURRENCY', 'MYR'),
+    'currency' => 'MYR',
     'weight_unit' => 'g',
     'origin' => [
         'name' => env('SHIPPING_ORIGIN_NAME', env('APP_NAME', 'Store')),
@@ -86,8 +86,10 @@ For manual fulfillment without carrier integration:
 ```php
 'drivers' => [
     'manual' => [
-        'name' => 'Manual',
-        'base_rate' => 1000, // RM10.00 (in cents)
+        'name' => 'Manual Shipping',
+        'default_rate' => 1000, // RM10.00 (in cents)
+        'estimated_days' => 3,
+        'free_shipping_threshold' => null,
     ],
 ],
 ```
@@ -99,19 +101,17 @@ Tiered flat-rate shipping:
 ```php
 'drivers' => [
     'flat_rate' => [
-        'name' => 'Flat Rate',
+        'name' => 'Flat Rate Shipping',
         'rates' => [
             'standard' => [
-                'name' => 'Standard Shipping',
-                'amount' => 800,           // RM8.00
-                'days_min' => 3,
-                'days_max' => 5,
+                'name' => 'Standard Delivery',
+                'rate' => 800,           // RM8.00
+                'estimated_days' => 3,
             ],
             'express' => [
-                'name' => 'Express Shipping',
-                'amount' => 1500,          // RM15.00
-                'days_min' => 1,
-                'days_max' => 2,
+                'name' => 'Express Delivery',
+                'rate' => 1500,          // RM15.00
+                'estimated_days' => 1,
             ],
         ],
     ],
@@ -149,7 +149,7 @@ use AIArmada\Shipping\Services\ShippingZoneResolver;
 use AIArmada\Shipping\Data\AddressData;
 
 $zone = app(ShippingZoneResolver::class)->resolve(
-    AddressData::from(['country' => 'MY', 'state' => 'Selangor', 'postcode' => '47800']),
+    AddressData::from(['name' => 'John Doe', 'phone' => '+60123456789', 'line1' => '456 Customer Ave', 'country' => 'MY', 'state' => 'Selangor', 'postcode' => '47800']),
 );
 ```
 
@@ -185,13 +185,12 @@ $zone = app(ShippingZoneResolver::class)->resolve(
 'free_shipping' => [
     // Enable free shipping threshold
     'enabled' => false,
-    
+
     // Minimum cart value for free shipping (in cents)
     'threshold' => 15000, // RM150.00
-    
-    // Currency symbol for messages
-    'currency' => 'RM',
 ],
+// Note: the threshold policy resolves its display currency from
+// `shipping.defaults.currency`, not from this section.
 ```
 
 ## Zone Resolution Strategy Registry
@@ -233,23 +232,25 @@ $policy = $registry->get('threshold');
 'tracking' => [
     // Sync interval in seconds
     'sync_interval' => 3600, // 1 hour
-    
+
     // Maximum shipment age to sync (days)
-    'max_sync_age_days' => 30,
-    
-    // Batch size for bulk sync
-    'batch_size' => 100,
+    'max_tracking_age' => 30,
 ],
 ```
 
-## API Settings
+## HTTP Settings
 
 ```php
-// API timeout in seconds
-'api_timeout' => 30,
+'http' => [
+    // API timeout in seconds
+    'timeout' => env('SHIPPING_API_TIMEOUT', 30),
 
-// Number of retry attempts
-'api_retries' => 3,
+    // Number of retry attempts
+    'retries' => env('SHIPPING_API_RETRIES', 3),
+
+    // Base delay between retries in milliseconds
+    'base_delay_ms' => env('SHIPPING_API_BASE_DELAY_MS', 100),
+],
 ```
 
 ## Complete Example
@@ -259,14 +260,13 @@ $policy = $registry->get('threshold');
 
 return [
     'database' => [
-        'table_prefix' => 'shipping_',
+        'table_prefix' => '',
         'tables' => [],
     ],
 
     'defaults' => [
-        'currency' => env('SHIPPING_CURRENCY', 'MYR'),
+        'currency' => 'MYR',
         'weight_unit' => 'g',
-        'dimension_unit' => 'cm',
         'origin' => [
             'line1' => env('SHIPPING_ORIGIN_LINE1'),
             'city' => env('SHIPPING_ORIGIN_CITY'),
@@ -286,42 +286,43 @@ return [
     'drivers' => [
         'default' => 'manual',
         'manual' => [
-            'name' => 'Manual',
-            'base_rate' => 1000,
+            'name' => 'Manual Shipping',
+            'default_rate' => 1000,
+            'estimated_days' => 3,
         ],
         'flat_rate' => [
-            'name' => 'Flat Rate',
+            'name' => 'Flat Rate Shipping',
             'rates' => [
                 'standard' => [
-                    'name' => 'Standard',
-                    'amount' => 800,
-                    'days_min' => 3,
-                    'days_max' => 5,
+                    'name' => 'Standard Delivery',
+                    'rate' => 800,
+                    'estimated_days' => 3,
                 ],
             ],
         ],
     ],
 
     'rate_shopping' => [
-        'enabled' => true,
         'strategy' => 'cheapest',
-        'cache_ttl' => 5,
-        'fallback_driver' => 'manual',
+        'cache_ttl' => 300,
+        'fallback_to_manual' => true,
+        'carrier_priority' => [],
     ],
 
     'free_shipping' => [
         'enabled' => true,
         'threshold' => 15000,
-        'currency' => 'RM',
     ],
 
     'tracking' => [
         'sync_interval' => 3600,
-        'max_sync_age_days' => 30,
-        'batch_size' => 100,
+        'max_tracking_age' => 30,
     ],
 
-    'api_timeout' => 30,
-    'api_retries' => 3,
+    'http' => [
+        'timeout' => 30,
+        'retries' => 3,
+        'base_delay_ms' => 100,
+    ],
 ];
 ```

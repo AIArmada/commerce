@@ -37,7 +37,7 @@ return [
     |--------------------------------------------------------------------------
     */
     'defaults' => [
-        // Costing method for valuation: fifo, lifo, average, specific
+        // Costing method for valuation: fifo, lifo, weighted_average, standard, specific_identification
         'costing_method' => env('FILAMENT_INVENTORY_COSTING_METHOD', 'fifo'),
     ],
 
@@ -121,11 +121,12 @@ Batches expiring within this number of days will appear in the "Expiring Batches
 ],
 ```
 
-Options:
+Options (anything else falls back to `fifo`):
 - `fifo` — First In, First Out
 - `lifo` — Last In, First Out
-- `average` — Weighted Average Cost
-- `specific` — Specific Identification
+- `weighted_average` — Weighted Average Cost
+- `standard` — Standard Cost
+- `specific_identification` — Specific Identification
 
 ### Feature Toggles
 

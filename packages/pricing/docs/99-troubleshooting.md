@@ -112,7 +112,7 @@ $price = Price::where('price_list_id', $list->id)
 
 ```php
 // Set owner context
-OwnerContext::set($tenant);
+OwnerContext::setForRequest($tenant);
 ```
 
 2. **Mismatched owner**: Trying to update record belonging to different owner.

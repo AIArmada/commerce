@@ -71,7 +71,7 @@ return [
     |--------------------------------------------------------------------------
     */
     'currency' => [
-        'base' => 'USD',
+        'base' => 'MYR',
         'display_converted' => false,
         'conversion_rates' => [
             'MYR' => 4.70,
@@ -156,7 +156,7 @@ For multi-currency setups:
 
 ```php
 'currency' => [
-    'base' => 'USD',                // Base currency for totals
+    'base' => 'MYR',                // Base currency for totals
     'display_converted' => false,   // Convert all amounts to base currency
     'conversion_rates' => [
         'MYR' => 4.70,
@@ -269,7 +269,7 @@ Both policies ensure users can only manage their own resources.
 
 ## Multitenancy
 
-For multi-tenant applications, the package uses `CashierOwnerScope` to enforce tenant boundaries.
+For multi-tenant applications, the package uses `OwnerScopedQuery` (from `aiarmada/cashier`) to enforce tenant boundaries.
 
 If your billable model supports `scopeForOwner()`, all queries will be automatically scoped to the current owner context.
 

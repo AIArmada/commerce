@@ -12,7 +12,7 @@ Navigate to `/admin/orders` to view the order list.
 
 ### Order List Features
 
-- **Search**: Search by order number, customer name, or email
+- **Search**: Search by order number or customer name
 - **Filters**: Filter by status, date range, payment status
 - **Sorting**: Sort by any column
 - **Quick Actions**: View, edit, or delete orders
@@ -36,6 +36,7 @@ On the order view page, header actions are contextual based on order state:
 | Confirm Payment | `PendingPayment` state | Record payment details |
 | Ship Order | `Processing` state | Enter carrier and tracking |
 | Confirm Delivery | `Shipped` state | Mark as delivered |
+| Complete Order | `Processing` or `Delivered` state | Complete with optional note |
 | Cancel Order | Cancelable states | Cancel with reason |
 | Download Invoice | Paid orders | Download PDF invoice |
 
@@ -87,12 +88,18 @@ View payment records:
 - Payment status with color badges
 - Payment timestamp
 
+### Refunds Relation Manager
+
+Read-only view of refund records:
+- Gateway and transaction ID
+- Amount and currency
+- Refund status with color badges
+
 ### Notes Relation Manager
 
 Manage order notes:
-- **Create**: Add new notes
-- **Toggle Visibility**: Mark notes as customer-visible
-- **Edit/Delete**: Modify existing notes
+- **Create**: Add new notes (content plus `internal` or `customer` visibility)
+- **Edit/Delete**: Modify existing notes, including visibility
 
 ## Keyboard Shortcuts
 

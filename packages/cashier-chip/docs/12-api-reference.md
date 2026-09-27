@@ -116,7 +116,7 @@ $user->newSubscription(string $type, string $price): SubscriptionBuilder
 $user->subscription(string $type = 'default'): ?Subscription
 
 // Get all subscriptions
-$user->subscriptions(): HasMany
+$user->subscriptions(): MorphMany
 
 // Check if subscribed
 $user->subscribed(string $type = 'default'): bool
@@ -126,9 +126,6 @@ $user->subscribedToPrice(string $price, string $type = 'default'): bool
 
 // Check if on trial for any subscription
 $user->onTrial(string $type = 'default'): bool
-
-// Check if on grace period
-$user->onGracePeriod(string $type = 'default'): bool
 ```
 
 ---
@@ -168,7 +165,7 @@ $checkout->redirect(): RedirectResponse
 $checkout->owner(): ?Model
 
 // Get CHIP Purchase object
-$checkout->asChipPurchase(): Purchase
+$checkout->asChipPurchase(): PurchaseData
 
 // Convert to Payment object
 $checkout->asPayment(): Payment
@@ -237,12 +234,12 @@ $payment->checkoutUrl(): ?string
 $payment->recurringToken(): ?string
 
 // Check status
-$payment->isSuccessful(): bool
+$payment->isSucceeded(): bool
 $payment->isPending(): bool
 $payment->isFailed(): bool
 
 // Get CHIP Purchase object
-$payment->asChipPurchase(): Purchase
+$payment->asChipPurchase(): PurchaseData
 
 // Serialize
 $payment->toArray(): array
@@ -320,8 +317,8 @@ $subscription->currentPeriodEnd(): ?CarbonInterface
 ### Relationships
 
 ```php
-$subscription->user(): BelongsTo
-$subscription->owner(): BelongsTo
+$subscription->user(): MorphTo
+$subscription->billable(): MorphTo
 $subscription->items(): HasMany
 ```
 
@@ -437,9 +434,6 @@ $cashier = Cashier::chip();
 
 // Access purchase builder
 $cashier->purchase(): PurchaseBuilder
-
-// Access client API
-$cashier->client(): ClientApi
 ```
 
 ---
@@ -459,13 +453,6 @@ SubscriptionStatus::Unpaid
 SubscriptionStatus::Paused
 ```
 
-### PaymentStatus
-
-```php
-PaymentStatus::Success
-PaymentStatus::Pending
-PaymentStatus::Expired
-PaymentStatus::Failed
-PaymentStatus::Cancelled
-PaymentStatus::Refunded
-```
+`Payment::status()` returns the underlying CHIP purchase status string
+(`paid`, `pending_refund`, `error`, …); there is no `PaymentStatus` enum in this
+package.

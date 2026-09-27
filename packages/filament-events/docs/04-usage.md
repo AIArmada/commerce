@@ -89,7 +89,7 @@ The Check-In Console page (`/events/check-in`) provides:
 
 - **Search by pass number or registration number** — via header action modal
 - **Pass table** — shows pass_no, registration_no, registrant type, status, issued_at
-- **Check In action** — delegates to `EventCheckInService::checkIn()` (visible for issued/active passes)
+- **Check In action** — delegates to `EventCheckInService::checkInWithResult()` (visible for issued/active passes)
 - **Walk-In Check-In** — header action with event select + attendee name/email
 
 ```php
@@ -104,19 +104,11 @@ app(EventCheckInService::class)->checkIn([
 ]);
 ```
 
-## Notification Center
-
-The Notification Center page (`/events/notifications`) manages notification batches:
-
-- **Table:** event.title, title, audience_scope (badge), status (badge), scheduled_at, sent_at
-- **Row actions:** Send Now, Cancel, View Deliveries (modal)
-- **Header action:** New Notification — create a pending batch with event, subject, audience scope
-
 ## Approval Queue
 
 The Approval Queue page (`/events/approvals`) processes event submissions:
 
-- **Table:** approvable_type (badge), approvable_id, status (badge), requested_by, assigned_to, created_at, approved_at, rejected_at
+- **Table:** approvable_type (badge), approvable_id, status (badge), requested_by_type, assigned_to_type, created_at, approved_at, rejected_at
 - **Row actions:** Approve (optional notes), Reject (required reason), Assign to Me
 
 ## Event Public Preview

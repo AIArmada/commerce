@@ -38,9 +38,10 @@ This creates the following tables:
 
 | Table | Description |
 |-------|-------------|
-| `ticket_ticket_types` | Ticket type configurations |
-| `ticket_ticket_type_components` | Ticket pricing components |
-| `ticket_ticket_type_products` | Bundle products linked to ticket types |
+| `ticket_types` | Ticket type configurations |
+| `ticket_type_components` | Ticket pricing components |
+| `ticket_type_products` | Bundle products linked to ticket types |
+| `ticket_type_seating_options` | Per-ticket-type seating preferences |
 | `ticket_passes` | Issued passes with state and holder info |
 | `ticket_pass_holders` | Pass holder records |
 | `ticket_pass_transfers` | Pass transfer audit log |
@@ -57,12 +58,12 @@ This creates `config/ticketing.php` with all available options.
 
 ## Scheduled Tasks
 
-If you use auto-expiry, add to your `routes/console.php`:
+If you use transfer-window expiry, add to your `routes/console.php`:
 
 ```php
 use Illuminate\Support\Facades\Schedule;
 
-Schedule::command('ticketing:expire-passes')->hourly();
+Schedule::command('ticketing:expire-transfers')->hourly();
 ```
 
 ## Optional Dependencies

@@ -11,6 +11,7 @@ Programs allow you to create structured affiliate offerings with different commi
 ```php
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Enums\ProgramStatus;
+use AIArmada\Affiliates\Enums\ProgramVisibility;
 
 $program = AffiliateProgram::create([
     'name' => 'Premium Partners',
@@ -18,7 +19,7 @@ $program = AffiliateProgram::create([
     'description' => 'Our exclusive partner program with higher commissions',
     'status' => ProgramStatus::Active,
     'requires_approval' => true,
-    'is_public' => true,
+    'visibility' => ProgramVisibility::Public,
     'default_commission_rate_basis_points' => 1500, // 15%
     'commission_type' => 'percentage',
     'cookie_lifetime_days' => 60,
@@ -37,10 +38,10 @@ $program = AffiliateProgram::create([
 ```php
 use AIArmada\Affiliates\Enums\ProgramStatus;
 
-ProgramStatus::Draft;   // Not yet published
-ProgramStatus::Active;  // Accepting enrollments
-ProgramStatus::Paused;  // Temporarily closed
-ProgramStatus::Ended;   // Permanently closed
+ProgramStatus::Draft;    // Not yet published
+ProgramStatus::Active;   // Accepting enrollments
+ProgramStatus::Paused;   // Temporarily closed
+ProgramStatus::Archived; // Retired
 ```
 
 ## Creating Program Tiers
@@ -92,12 +93,12 @@ use AIArmada\Affiliates\Enums\MembershipStatus;
 $programService = app(ProgramService::class);
 
 // Check eligibility first
-if ($programService->checkEligibility($affiliate, $program)) {
-    $membership = $programService->enroll($affiliate, $program);
+if ($program->canJoin($affiliate)) {
+    $membership = $programService->joinProgram($affiliate, $program);
 }
 
-// Or enroll directly (if approval required, status will be Pending)
-$membership = $programService->enroll($affiliate, $program);
+// Or join directly (if approval required, status will be Pending)
+$membership = $programService->joinProgram($affiliate, $program);
 ```
 
 ## Membership Statuses
@@ -119,12 +120,12 @@ Provide affiliates with promotional materials:
 use AIArmada\Affiliates\Models\AffiliateProgramCreative;
 
 AffiliateProgramCreative::create([
-    'affiliate_program_id' => $program->id,
+    'program_id' => $program->id,
     'name' => 'Summer Sale Banner',
     'type' => 'banner',
-    'url' => 'https://cdn.example.com/banners/summer-sale.jpg',
-    'dimensions' => '728x90',
-    'is_active' => true,
+    'asset_url' => 'https://cdn.example.com/banners/summer-sale.jpg',
+    'width' => 728,
+    'height' => 90,
     'metadata' => [
         'alt_text' => 'Summer Sale - 20% Off',
         'click_url' => 'https://example.com/summer-sale',
@@ -135,24 +136,25 @@ AffiliateProgramCreative::create([
 ## Using the ProgramService
 
 ```php
+use AIArmada\Affiliates\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Services\ProgramService;
 
 $service = app(ProgramService::class);
 
-// Get available programs for affiliate
-$programs = $service->getAvailablePrograms($affiliate);
+// Get available programs
+$programs = $service->getAvailablePrograms();
 
 // Check eligibility
-$eligible = $service->checkEligibility($affiliate, $program);
+$eligible = $program->canJoin($affiliate);
 
-// Enroll affiliate
-$membership = $service->enroll($affiliate, $program);
+// Join a program
+$membership = $service->joinProgram($affiliate, $program);
 
 // Upgrade tier
-$service->upgradeTier($membership, $goldTier);
+$service->upgradeTier($affiliate, $program, $goldTier);
 
 // Get affiliate's programs
-$memberships = $affiliate->programMemberships()
+$memberships = AffiliateProgramMembership::where('affiliate_id', $affiliate->id)
     ->with('program', 'tier')
     ->get();
 ```
@@ -198,25 +200,25 @@ $template->applyToProgram($program);
 
 ## Volume Tiers
 
-Independent of programs, affiliates can have volume-based commission bonuses:
+Programs can define volume-based commission tiers:
 
 ```php
 use AIArmada\Affiliates\Models\AffiliateVolumeTier;
 
 AffiliateVolumeTier::create([
-    'affiliate_id' => $affiliate->id,
+    'program_id' => $program->id,
+    'name' => 'Starter',
     'min_volume_minor' => 0,
     'max_volume_minor' => 100000,
-    'bonus_rate_basis_points' => 0, // No bonus
-    'is_active' => true,
+    'commission_rate_basis_points' => 0, // No bonus
 ]);
 
 AffiliateVolumeTier::create([
-    'affiliate_id' => $affiliate->id,
+    'program_id' => $program->id,
+    'name' => 'High Volume',
     'min_volume_minor' => 100001,
     'max_volume_minor' => null, // Unlimited
-    'bonus_rate_basis_points' => 100, // +1% bonus
-    'is_active' => true,
+    'commission_rate_basis_points' => 100, // +1% bonus
 ]);
 ```
 
@@ -229,10 +231,11 @@ use AIArmada\Affiliates\Models\AffiliateCommissionRule;
 use AIArmada\Affiliates\Enums\CommissionRuleType;
 
 AffiliateCommissionRule::create([
-    'affiliate_id' => $affiliate->id,
+    'program_id' => $program->id,
+    'name' => 'Electronics boost',
     'rule_type' => CommissionRuleType::Product,
     'commission_type' => 'percentage',
-    'rate_basis_points' => 2000, // 20% for specific products
+    'commission_value' => 2000, // 20% for specific products (basis points; minor units when fixed)
     'conditions' => [
         'product_categories' => ['electronics', 'software'],
     ],
@@ -249,11 +252,11 @@ Time-limited commission boosts:
 use AIArmada\Affiliates\Models\AffiliateCommissionPromotion;
 
 AffiliateCommissionPromotion::create([
-    'affiliate_id' => $affiliate->id,
+    'program_id' => $program->id,
     'name' => 'Holiday Bonus',
-    'bonus_rate_basis_points' => 500, // +5% bonus
+    'bonus_type' => 'percentage', // percentage, flat, or multiplier
+    'bonus_value' => 500, // +5% bonus
     'starts_at' => now(),
     'ends_at' => now()->addMonth(),
-    'is_active' => true,
 ]);
 ```

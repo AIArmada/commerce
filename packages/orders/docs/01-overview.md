@@ -49,7 +49,7 @@ The Orders package provides a complete order management system for e-commerce ap
 
 ## Features
 
-- **State Machine**: 13 order states with configurable transitions using `spatie/laravel-model-states`
+- **State Machine**: 12 order states with configurable transitions using `spatie/laravel-model-states`
 - **Multi-tenancy**: Full owner scoping support via `HasOwner` trait
 - **Payment Tracking**: Record payments, refunds, and payment status tracking
 - **Address Management**: Billing and shipping address support
@@ -89,7 +89,7 @@ The Orders package provides a complete order management system for e-commerce ap
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                   State Machine (13 States)                  │
+│                   State Machine (12 States)                  │
 │  Created → PendingPayment → Processing → Shipped            │
 │  → Delivered → Completed                                     │
 │  + Canceled, Refunded, Returned, OnHold, Fraud, PaymentFailed│
@@ -139,7 +139,7 @@ packages/orders/
 - PHP 8.4+
 - Laravel 13+
 - `spatie/laravel-model-states` ^2.0
-- `spatie/laravel-pdf` ^1.0 (for invoices)
+- `spatie/laravel-pdf` ^2.0 (for invoices)
 - `aiarmada/commerce-support` (for multi-tenancy)
 
 ## Quick Start
@@ -148,10 +148,15 @@ packages/orders/
 use AIArmada\Orders\Services\OrderService;
 
 // Create an order
-$order = app(OrderService::class)->createOrder([
-    'currency' => 'MYR',
-    'notes' => 'Customer notes',
-]);
+$order = app(OrderService::class)->createOrder(
+    [
+        'currency' => 'MYR',
+        'notes' => 'Customer notes',
+    ],
+    [
+        ['name' => 'Product Name', 'sku' => 'SKU-001', 'quantity' => 1, 'unit_price' => 9900],
+    ],
+);
 
 // Add items
 app(OrderService::class)->addItem($order, [

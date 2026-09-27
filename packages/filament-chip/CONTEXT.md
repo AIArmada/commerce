@@ -46,4 +46,4 @@ keywords:
 
 ## Docs map
 - Start: `01-overview` → `03-configuration` → `04-usage` → `99-troubleshooting`
-- Deep dives: `05-pages-widgets.md`, `index.md`
+- Deep dives: `05-pages-widgets.md`

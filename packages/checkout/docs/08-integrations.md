@@ -16,9 +16,9 @@ When the `aiarmada/inventory` package is installed, checkout automatically manag
 
 2. **Reservation**: Stock is reserved using the checkout session ID as the reference. Reservations prevent overselling while the customer completes payment.
 
-3. **Commitment**: After successful payment, reservations are committed (converted to actual stock deductions).
+3. **Deduction**: After successful payment, stock deduction flows through the orders package (`PaymentConfirmed` → `OrderProcessingStarted` → `InventoryDeductionRequired`), not through checkout.
 
-4. **Rollback**: If checkout fails or is cancelled, reservations are automatically released.
+4. **Rollback**: If checkout fails or is cancelled, reservations are automatically released via step compensation.
 
 ### Configuration
 
@@ -58,52 +58,62 @@ This allows checkout to work standalone without inventory management.
 
 ### Manual Inventory Integration
 
-For custom inventory systems, you can replace the `InventoryAdapter`:
+For custom inventory systems, bind your own implementation of the inventory package's reservation contract. Checkout's `InventoryAdapter` resolves it from the container:
 
 ```php
 <?php
 
 namespace App\Checkout\Integrations;
 
-use AIArmada\Checkout\Integrations\InventoryAdapter;
+use AIArmada\Inventory\Contracts\CheckoutReservationServiceInterface;
+use AIArmada\Inventory\Data\ReservationLine;
+use AIArmada\Inventory\Data\ReservationOutcome;
 
-class CustomInventoryAdapter extends InventoryAdapter
+class CustomReservationService implements CheckoutReservationServiceInterface
 {
-    public function getAvailableStock(string $productId, ?string $variantId = null): int
+    /** @param list<ReservationLine> $lines */
+    public function reserve(string $reference, array $lines, int $ttlSeconds): ReservationOutcome
     {
-        // Your custom inventory lookup
-        return YourInventorySystem::getStock($productId, $variantId);
+        // Your custom group-reservation logic (one reference for the whole cart)
+        $reservation = YourInventorySystem::reserve($reference, $lines, $ttlSeconds);
+
+        return new ReservationOutcome(
+            reference: $reference,
+            state: 'reserved',
+        );
     }
 
-    public function reserve(
-        string $productId,
-        ?string $variantId,
-        int $quantity,
-        string $reference,
-        int $ttl = 900,
-    ): array {
-        // Your custom reservation logic
-        $reservation = YourInventorySystem::reserve($productId, $quantity, $reference);
-
-        return [
-            'id' => $reservation->id,
-            'expires_at' => $reservation->expires_at->toIso8601String(),
-        ];
+    public function release(string $reference): ReservationOutcome
+    {
+        // Your custom release logic
     }
 
-    // Implement other methods as needed...
+    public function commit(string $reference, string $orderId): ReservationOutcome
+    {
+        // Your custom commit logic
+    }
+
+    public function extend(string $reference, int $ttlSeconds): ReservationOutcome
+    {
+        // Your custom extend logic
+    }
+
+    public function find(string $reference): ReservationOutcome
+    {
+        // Your custom lookup logic
+    }
 }
 ```
 
-Register your adapter in a service provider:
+Register your service in a service provider:
 
 ```php
-use App\Checkout\Integrations\CustomInventoryAdapter;
-use AIArmada\Checkout\Integrations\InventoryAdapter;
+use AIArmada\Inventory\Contracts\CheckoutReservationServiceInterface;
+use App\Checkout\Integrations\CustomReservationService;
 
 public function register(): void
 {
-    $this->app->bind(InventoryAdapter::class, CustomInventoryAdapter::class);
+    $this->app->bind(CheckoutReservationServiceInterface::class, CustomReservationService::class);
 }
 ```
 
@@ -111,9 +121,9 @@ public function register(): void
 
 The inventory integration respects checkout events:
 
-- **CheckoutCompleted**: Reservations are committed
-- **CheckoutCancelled**: Reservations are released
-- **CheckoutFailed**: Reservations are released (if `release_on_failure` is true)
+- **CheckoutCompleted**: Stock deduction flows through the orders package (`InventoryDeductionRequired`)
+- **CheckoutCancelled**: Reservations are released via step compensation
+- **CheckoutFailed**: Reservations are released via step compensation (if `release_on_failure` is true)
 
 ## Shipping Integration
 
@@ -280,10 +290,10 @@ You can check if integrations are available:
 
 ```php
 use AIArmada\Checkout\Integrations\InventoryAdapter;
-use AIArmada\Inventory\Contracts\CheckoutInventoryServiceInterface;
+use AIArmada\Inventory\Contracts\CheckoutReservationServiceInterface;
 
 // Check if inventory package is installed
-$hasInventory = interface_exists(CheckoutInventoryServiceInterface::class);
+$hasInventory = interface_exists(CheckoutReservationServiceInterface::class);
 
 // Check if shipping is enabled
 $shippingEnabled = config('checkout.integrations.shipping.enabled', false);

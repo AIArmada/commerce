@@ -209,7 +209,7 @@ Extend the built-in pages:
 ```php
 namespace App\Filament\Billing\Pages;
 
-use AIArmada\FilamentCashierChip\Pages\Subscriptions as BaseSubscriptions;
+use AIArmada\FilamentCashierChip\CustomerPortal\Pages\Subscriptions as BaseSubscriptions;
 
 class Subscriptions extends BaseSubscriptions
 {

@@ -11,14 +11,14 @@ composer require aiarmada/events
 ## Publish and run migrations
 
 ```bash
-php artisan vendor:publish --provider="AIArmada\Events\EventsServiceProvider" --tag="migrations"
+php artisan vendor:publish --provider="AIArmada\Events\EventsServiceProvider" --tag="events-migrations"
 php artisan migrate
 ```
 
 ## Publish configuration
 
 ```bash
-php artisan vendor:publish --provider="AIArmada\Events\EventsServiceProvider" --tag="config"
+php artisan vendor:publish --provider="AIArmada\Events\EventsServiceProvider" --tag="events-config"
 ```
 
 ## Environment variables

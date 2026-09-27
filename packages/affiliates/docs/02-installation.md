@@ -31,7 +31,7 @@ php artisan vendor:publish --tag=affiliates-migrations
 php artisan migrate
 ```
 
-The package includes 33 migrations creating all necessary tables with proper indexes.
+The package includes 27 migrations creating 28 tables with proper indexes.
 
 ## Optional: Filament Admin Panel
 

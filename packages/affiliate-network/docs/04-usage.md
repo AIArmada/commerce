@@ -27,10 +27,10 @@ $result = app(OfferImportService::class)->sync($site, $programId);
 - Imported rates are the fully-resolved **base** (product/category/program
   rules folded); volume/promotions ride along in `volume_tiers` /
   `active_promotions` columns.
-- **Rate lock:** editing any rate field on an offer flips `source` to
+- **Rate lock:** editing any rate-block field on an offer (`rate_base_bp`, `rate_fixed_minor`, `currency`, `cookie_days`, `volume_tiers`, `active_promotions`) flips `source` to
   `manual`, and sync holds those rates back (reported as `locked`) instead
   of silently reverting them. Non-rate fields still mirror. Flip
-  `source` back to `synced` to re-apply catalog rates on next sync.
+  `source` back to `mirrored` to re-apply catalog rates on next sync.
 - One bad subject never aborts the run: failures are counted as `failed`
   and the site is stamped `partial`. Runs are capped by
   `sync.max_subjects` (per program) and `sync.max_programs` (per `syncAll`).
@@ -38,9 +38,9 @@ $result = app(OfferImportService::class)->sync($site, $programId);
 The importer has one `resolveField(source, local, remote)` precedence helper:
 local syncs prefer the local value and remote syncs prefer the remote value,
 with null fallback. Imported local offers retain the core program ID in
-`external_program_id`; marketplace enrollment links to that existing program
-through `affiliates` and never creates a duplicate program or network
-application. Remote offers use the network application flow.
+`external_program_id` for reference, but enrollment for every offer —
+mirrored or hand-written — is a network application; joining never
+requires, resolves, or creates a merchant-side account.
 
 Catalog reads are scoped to the synced site's owner: local syncs only see
 that owner's programs, never whatever ambient context the caller runs in.
@@ -55,6 +55,7 @@ The canonical orchestration surface is the `Actions` tree. Prefer these over dir
 
 ```php
 use AIArmada\AffiliateNetwork\Actions\CreateOffer;
+use AIArmada\AffiliateNetwork\Enums\OfferVisibility;
 
 $offer = app(CreateOffer::class)->execute($site, [
     'name' => 'Summer Sale Campaign',
@@ -62,7 +63,7 @@ $offer = app(CreateOffer::class)->execute($site, [
     'rate_base_bp' => 1000, // 10% in basis points
     'cookie_days' => 30,
     'landing_url' => 'https://mystore.com/summer-sale',
-    'is_public' => true,
+    'visibility' => OfferVisibility::Public,
     'requires_approval' => true,
 ]);
 ```
@@ -71,10 +72,11 @@ $offer = app(CreateOffer::class)->execute($site, [
 
 ```php
 use AIArmada\AffiliateNetwork\Actions\UpdateOffer;
+use AIArmada\AffiliateNetwork\Enums\OfferVisibility;
 
 app(UpdateOffer::class)->execute($offer, [
     'rate_base_bp' => 1500,
-    'is_public' => false,
+    'visibility' => OfferVisibility::Private,
 ]);
 ```
 
@@ -86,7 +88,7 @@ use AIArmada\AffiliateNetwork\Actions\ApproveApplication;
 
 $application = app(ApplyToOffer::class)->execute(
     $offer,
-    $affiliate,
+    (string) $affiliate->getKey(),
     'I have a fashion blog with 100k monthly visitors'
 );
 
@@ -128,9 +130,9 @@ and reconciliation all derive from them:
   `{min_volume_minor, rate_bp, currency?}`. The highest tier whose floor
   the affiliate's cumulative offer revenue clears wins; otherwise the
   base rate applies.
-- **Reversals:** `NetworkBooks::reverse($leg, $reason)` marks the leg
+- **Reversals:** `app(NetworkBooks::class)->reverse($leg, $reason)` marks the leg
   reversed and posts a negated companion leg. Reversed legs never pay.
-- **Balances:** `CreatorBalances::for($affiliateId)` sums posted-leg
+- **Balances:** `app(CreatorBalances::class)->for($affiliateId)` sums posted-leg
   payouts per currency at read time — no balance rows to drift.
 - **Fulfillment:** posted legs go to exactly one payer. With
   `aiarmada/affiliates` installed the engine fulfills merchant payouts;

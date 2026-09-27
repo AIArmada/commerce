@@ -26,8 +26,7 @@ use AIArmada\Affiliates\Actions\Payouts\UpdatePayoutStatus;
 $payout = CreatePayout::run($conversionIds, [
     'payee_type' => $affiliate->getMorphClass(),
     'payee_id' => $affiliate->getKey(),
-    'method' => PayoutMethodType::PayPal,
-    'notes' => 'Monthly payout for January',
+    'metadata' => ['note' => 'Monthly payout for January'],
 ]);
 ```
 
@@ -61,11 +60,11 @@ UpdatePayoutStatus::run($payout, 'completed', 'Processed successfully');
 
 ```php
 use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\Enums\PayoutStatus;
+use AIArmada\Affiliates\States\PendingPayout;
 
 $payout = AffiliatePayout::create([
     'reference' => 'PO-' . now()->format('Ymd') . '-' . str_pad($sequence, 4, '0', STR_PAD_LEFT),
-    'status' => PayoutStatus::Pending,
+    'status' => PendingPayout::class,
     'total_minor' => $totalAmount,
     'currency' => $affiliate->currency,
     'payee_type' => $affiliate->getMorphClass(),
@@ -81,17 +80,23 @@ $conversions->each(fn ($c) => $c->update(['affiliate_payout_id' => $payout->id])
 
 ## Payout Statuses
 
-```php
-use AIArmada\Affiliates\Enums\PayoutStatus;
+Payout status is a Spatie state (`States\PayoutStatus`); assign state classes on write:
 
-PayoutStatus::Pending;     // Awaiting processing
-PayoutStatus::Processing;  // Currently being processed
-PayoutStatus::Completed;   // Successfully paid
-PayoutStatus::Failed;      // Payment failed
-PayoutStatus::Cancelled;   // Cancelled by admin
+```php
+use AIArmada\Affiliates\States\CancelledPayout;
+use AIArmada\Affiliates\States\CompletedPayout;
+use AIArmada\Affiliates\States\FailedPayout;
+use AIArmada\Affiliates\States\PendingPayout;
+use AIArmada\Affiliates\States\ProcessingPayout;
+
+PendingPayout::class;     // Awaiting processing
+ProcessingPayout::class;  // Currently being processed
+CompletedPayout::class;   // Successfully paid
+FailedPayout::class;      // Payment failed
+CancelledPayout::class;   // Cancelled by admin
 ```
 
-`scheduled_at` is still available on the model and used by the scheduled-payout command, but there is no separate `Scheduled` enum state.
+`scheduled_at` is still available on the model and used by the scheduled-payout command, but there is no separate `Scheduled` state. The `Enums\PayoutStatus` enum mirrors these cases for reads and interop.
 
 ## Payout Methods
 
@@ -106,7 +111,7 @@ AffiliatePayoutMethod::create([
     'affiliate_id' => $affiliate->id,
     'type' => PayoutMethodType::PayPal,
     'is_default' => true,
-    'is_verified' => true,
+    'verified_at' => now(),
     'details' => [
         'email' => 'affiliate@paypal.com',
     ],
@@ -128,7 +133,7 @@ AffiliatePayoutMethod::create([
 // Stripe Connect
 AffiliatePayoutMethod::create([
     'affiliate_id' => $affiliate->id,
-    'type' => PayoutMethodType::Stripe,
+    'type' => PayoutMethodType::StripeConnect,
     'details' => [
         'account_id' => 'acct_1234567890',
     ],
@@ -140,12 +145,14 @@ AffiliatePayoutMethod::create([
 ```php
 use AIArmada\Affiliates\Enums\PayoutMethodType;
 
-PayoutMethodType::PayPal;
-PayoutMethodType::Stripe;
 PayoutMethodType::BankTransfer;
+PayoutMethodType::PayPal;
+PayoutMethodType::StripeConnect;
+PayoutMethodType::Wise;
+PayoutMethodType::Payoneer;
 PayoutMethodType::Check;
+PayoutMethodType::Wire;
 PayoutMethodType::Crypto;
-PayoutMethodType::Manual;
 ```
 
 ## Payout Holds
@@ -159,14 +166,14 @@ use AIArmada\Affiliates\Models\AffiliatePayoutHold;
 $hold = AffiliatePayoutHold::create([
     'affiliate_id' => $affiliate->id,
     'reason' => 'Fraud investigation pending',
-    'amount_minor' => 50000, // $500 on hold
-    'held_at' => now(),
+    'notes' => '$500 under review',
+    'placed_by' => $admin->id,
 ]);
 
 // Release hold
 $hold->update([
     'released_at' => now(),
-    'release_notes' => 'Investigation complete, no issues found',
+    'notes' => 'Investigation complete, no issues found',
 ]);
 
 // Check for active holds
@@ -188,8 +195,8 @@ use AIArmada\Affiliates\Actions\Conversions\MatureConversion;
 // Promote all qualified conversions that have reached maturity
 $results = ProcessConversionMaturity::run();
 
-// Mature a specific conversion
-$conversion = MatureConversion::run($conversion);
+// Mature a specific conversion (returns bool)
+$matured = MatureConversion::run($conversion);
 ```
 
 Configure in `config/affiliates.php`:
@@ -259,22 +266,24 @@ The current maturity flow uses `holding_minor` for pre-payout commission state. 
 ### Processing with PayoutProcessorFactory
 
 ```php
+use AIArmada\Affiliates\Enums\PayoutMethodType;
 use AIArmada\Affiliates\Services\Payouts\PayoutProcessorFactory;
+use AIArmada\Affiliates\States\CompletedPayout;
 
 $factory = app(PayoutProcessorFactory::class);
 
-// Get processor for payout method
-$processor = $factory->make($payout->method);
+// Get processor for a payout method type
+$processor = $factory->make(PayoutMethodType::PayPal);
 
 // Process payout
 $result = $processor->process($payout);
 
-if ($result->isSuccessful()) {
+if ($result->isSuccess()) {
     $payout->update([
-        'status' => PayoutStatus::Completed,
+        'status' => CompletedPayout::class,
         'paid_at' => now(),
         'metadata' => array_merge($payout->metadata ?? [], [
-            'transaction_id' => $result->getTransactionId(),
+            'transaction_id' => $result->externalReference,
         ]),
     ]);
 }
@@ -293,7 +302,9 @@ $events = $payout->events()->orderBy('created_at')->get();
 // Manual event recording
 AffiliatePayoutEvent::create([
     'affiliate_payout_id' => $payout->id,
-    'event_type' => 'processing_started',
+    'from_status' => 'pending',
+    'to_status' => 'processing',
+    'notes' => 'Processing started',
     'metadata' => [
         'processor' => 'paypal',
         'batch_id' => 'BATCH-123',
@@ -357,7 +368,7 @@ php artisan affiliates:process-maturity
 ### Export Payout Data
 
 ```bash
-php artisan affiliates:export-payouts --from=2024-01-01 --to=2024-01-31
+php artisan affiliates:payout:export PAY-REF-1234 --path=/path/to/payout.csv
 ```
 
 ## Multi-Level Payouts

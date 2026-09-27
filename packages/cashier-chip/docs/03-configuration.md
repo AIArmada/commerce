@@ -24,6 +24,7 @@ These keys control package-owned schema naming:
 | `database.table_prefix` | Prefix used for the package-owned billing tables |
 | `database.tables.subscriptions` | Subscription table name |
 | `database.tables.subscription_items` | Subscription items table name |
+| `database.tables.payment_methods` | Stored payment-method table name |
 | `database.tables.renewal_attempts` | Renewal attempts table name |
 
 ## Defaults

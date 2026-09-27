@@ -270,8 +270,8 @@ Steps can skip execution based on conditions:
 ```php
 public function canSkip(CheckoutSession $session): bool
 {
-    // Skip when there are no physical items.
-    return ! $session->cart->hasPhysicalItems();
+    // Skip when the cart snapshot has no items.
+    return ($session->cart_snapshot['item_count'] ?? 0) === 0;
 }
 ```
 

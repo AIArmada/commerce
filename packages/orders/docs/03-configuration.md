@@ -12,6 +12,7 @@ Configure table names and JSON column types:
 
 ```php
 'database' => [
+    'json_column_type' => env('ORDERS_JSON_COLUMN_TYPE', 'jsonb'),
     'tables' => [
         'orders' => 'orders',
         'order_items' => 'order_items',
@@ -113,11 +114,11 @@ Enable/disable integrations with other Commerce packages:
 ```php
 'integrations' => [
     'inventory' => [
-        'enabled' => true, // Auto-reserve/release inventory
+        'enabled' => env('ORDERS_INTEGRATIONS_INVENTORY_ENABLED', true), // Auto-reserve/release inventory
     ],
 
     'affiliates' => [
-        'enabled' => true, // Track affiliate commissions
+        'enabled' => env('ORDERS_INTEGRATIONS_AFFILIATES_ENABLED', true), // Track affiliate commissions
     ],
 
     'docs' => [
@@ -126,25 +127,6 @@ Enable/disable integrations with other Commerce packages:
     ],
 ],
 ```
-
-## Order Status Defaults
-
-Define which order states are allowed as initial values and the default used when no status is provided:
-
-```php
-'status' => [
-    'allowed' => [
-        'created',
-        'pending_payment',
-        'processing',
-    ],
-    'default' => 'created',
-],
-```
-
-Recommended usage:
-- **E-commerce flow**: keep `processing` as default (order created after payment).
-- **Traditional flow**: set default to `created` or pass an explicit status on create.
 
 The Docs integration is disabled by default. Enable it only when you want `OrderPaid` to auto-create persisted Docs invoices.
 
@@ -168,9 +150,9 @@ Configure audit logging behavior:
 'notifications' => [
     'payment_confirmation' => [
         'enabled' => env('ORDERS_PAYMENT_CONFIRMATION_ENABLED', true),
-        'from_address' => env('ORDERS_PAYMENT_CONFIRMATION_FROM', 'sales@unfairadvantage.my'),
+        'from_address' => env('ORDERS_PAYMENT_CONFIRMATION_FROM', env('MAIL_FROM_ADDRESS', '')),
         'from_name' => env('ORDERS_PAYMENT_CONFIRMATION_FROM_NAME'),
-        'event_name' => env('ORDERS_PAYMENT_CONFIRMATION_EVENT_NAME', 'AI Awakening'),
+        'event_name' => env('ORDERS_PAYMENT_CONFIRMATION_EVENT_NAME', 'Order Confirmation'),
     ],
 ],
 ```
@@ -192,6 +174,8 @@ The payment confirmation notification is sent when an order transitions to paid.
 | `ORDERS_ORDER_NUMBER_USE_DATE` | `true` | Include date in order number |
 | `ORDERS_ORDER_NUMBER_DATE_FORMAT` | `Ymd` | Date format for order numbers |
 | `ORDERS_INVOICE_PREFIX` | `INV` | Invoice number prefix |
+| `ORDERS_INTEGRATIONS_INVENTORY_ENABLED` | `true` | Enable inventory auto-reserve/release |
+| `ORDERS_INTEGRATIONS_AFFILIATES_ENABLED` | `true` | Enable affiliate commission tracking |
 | `ORDERS_COMPANY_ADDRESS` | empty | Sender address rendered on invoices |
 | `ORDERS_COMPANY_PHONE` | empty | Sender phone rendered on invoices |
 | `ORDERS_COMPANY_EMAIL` | empty | Sender email rendered on invoices |
@@ -200,9 +184,9 @@ The payment confirmation notification is sent when an order transitions to paid.
 | `ORDERS_AUDIT_ENABLED` | `true` | Enable audit logging |
 | `ORDERS_AUDIT_THRESHOLD` | `500` | Audit threshold in cents |
 | `ORDERS_PAYMENT_CONFIRMATION_ENABLED` | `true` | Enable payment confirmation emails on `OrderPaid` |
-| `ORDERS_PAYMENT_CONFIRMATION_FROM` | `sales@unfairadvantage.my` | Mail sender address for payment confirmations |
+| `ORDERS_PAYMENT_CONFIRMATION_FROM` | `MAIL_FROM_ADDRESS` | Mail sender address for payment confirmations |
 | `ORDERS_PAYMENT_CONFIRMATION_FROM_NAME` | `null` | Mail sender name for payment confirmations |
-| `ORDERS_PAYMENT_CONFIRMATION_EVENT_NAME` | `AI Awakening` | Event name used in the payment confirmation email |
+| `ORDERS_PAYMENT_CONFIRMATION_EVENT_NAME` | `Order Confirmation` | Event name used in the payment confirmation email |
 
 ## Full Configuration Example
 
@@ -211,6 +195,7 @@ The payment confirmation notification is sent when an order transitions to paid.
 
 return [
     'database' => [
+        'json_column_type' => env('ORDERS_JSON_COLUMN_TYPE', 'jsonb'),
         'tables' => [
             'orders' => 'orders',
             'order_items' => 'order_items',
@@ -241,15 +226,6 @@ return [
         'enabled' => env('ORDERS_ADDRESS_SNAPSHOTS_ENABLED', false),
     ],
 
-    'status' => [
-        'allowed' => [
-            'created',
-            'pending_payment',
-            'processing',
-        ],
-        'default' => 'created',
-    ],
-
     'order_number' => [
         'prefix' => env('ORDERS_ORDER_NUMBER_PREFIX', 'ORD'),
         'separator' => env('ORDERS_ORDER_NUMBER_SEPARATOR', '-'),
@@ -266,8 +242,8 @@ return [
     ],
 
     'integrations' => [
-        'inventory' => ['enabled' => true],
-        'affiliates' => ['enabled' => true],
+        'inventory' => ['enabled' => env('ORDERS_INTEGRATIONS_INVENTORY_ENABLED', true)],
+        'affiliates' => ['enabled' => env('ORDERS_INTEGRATIONS_AFFILIATES_ENABLED', true)],
         'docs' => [
             'enabled' => env('ORDERS_INTEGRATIONS_DOCS_ENABLED', false),
             'generate_pdf' => env('ORDERS_INTEGRATIONS_DOCS_GENERATE_PDF', false),
@@ -277,6 +253,15 @@ return [
     'audit' => [
         'enabled' => env('ORDERS_AUDIT_ENABLED', true),
         'threshold' => env('ORDERS_AUDIT_THRESHOLD', 500),
+    ],
+
+    'notifications' => [
+        'payment_confirmation' => [
+            'enabled' => env('ORDERS_PAYMENT_CONFIRMATION_ENABLED', true),
+            'from_address' => env('ORDERS_PAYMENT_CONFIRMATION_FROM', env('MAIL_FROM_ADDRESS', '')),
+            'from_name' => env('ORDERS_PAYMENT_CONFIRMATION_FROM_NAME'),
+            'event_name' => env('ORDERS_PAYMENT_CONFIRMATION_EVENT_NAME', 'Order Confirmation'),
+        ],
     ],
 ];
 ```

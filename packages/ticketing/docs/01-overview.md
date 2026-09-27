@@ -59,21 +59,17 @@ Use this package when you need to sell tickets for events, workshops, courses, o
 - `IssuePassesAction` — Issue one or more passes from a ticket type
 - `TransferPassToHolderAction` — Transfer a single pass to a new holder
 - `BulkTransferPassesAction` — Transfer multiple passes at once
-- `ActivatePassAction` — Activate a pass (entry)
-- `UsePassAction` — Mark a pass as used
-- `CancelPassAction` — Cancel a pass
 - `RevokePassAction` — Revoke a pass
-- `VoidPassAction` — Void a pass
-- `ExpirePassAction` — Expire a pass (usually scheduled)
+- `Pass::markActivated()`, `markUsed()`, `markCancelled()`, `markVoided()`, `markExpired()` — Model methods for the remaining lifecycle transitions (call `save()` after `mark*()` except when using `RevokePassAction`)
 
 ### Contracts
 
 - `TicketableInterface` — Interface for models that can have tickets
-- `PassDeliveryService` — Send pass to holder (email, SMS, etc.)
+- `PassDeliveryServiceInterface` — Send pass to holder (email, SMS, etc.)
 
 ### Enums
 
-- `PricingMode` — `Flat`, `Tiered`, `Dynamic`, `Free`, `Donation`
+- `PricingMode` — `Paid`, `Free`, `Mixed`
 - `PassStatus` — `Pending`, `Issued`, `Activated`, `Used`, `Cancelled`, `Revoked`, `Voided`, `Expired`
 
 ### States
@@ -88,7 +84,7 @@ Use this package when you need to sell tickets for events, workshops, courses, o
 
 ### Ticket Types
 
-- **Pricing**: Flat, tiered, dynamic, free, or donation pricing modes
+- **Pricing**: Paid, free, or mixed pricing modes
 - **Sales Windows**: Configure when tickets go on and off sale
 - **Quotas**: Set max quantity per purchase and total capacity
 - **Components**: Split pricing into components (e.g., base price + processing fee)

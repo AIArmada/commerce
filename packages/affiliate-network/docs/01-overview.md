@@ -80,12 +80,14 @@ The `aiarmada/affiliate-network` package provides a complete multi-merchant affi
 Build an affiliate marketplace where merchants list offers and affiliates browse/apply:
 
 ```php
+use AIArmada\AffiliateNetwork\Enums\OfferStatus;
+use AIArmada\AffiliateNetwork\Enums\OfferVisibility;
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 
-// Get active public offers for marketplace display
+// Get published public offers for marketplace display
 $offers = AffiliateOffer::query()
-    ->where('status', AffiliateOffer::STATUS_ACTIVE)
-    ->where('is_public', true)
+    ->where('status', OfferStatus::Published)
+    ->where('visibility', OfferVisibility::Public)
     ->orderByDesc('is_featured')
     ->orderByDesc('created_at')
     ->with(['site', 'category', 'creatives'])
@@ -97,13 +99,15 @@ $offers = AffiliateOffer::query()
 Run a private network with invite-only offers:
 
 ```php
+use AIArmada\AffiliateNetwork\Enums\OfferStatus;
+use AIArmada\AffiliateNetwork\Enums\OfferVisibility;
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 
 // Private offers requiring manual approval
 $offers = AffiliateOffer::query()
     ->where('requires_approval', true)
-    ->where('is_public', false)
-    ->where('status', AffiliateOffer::STATUS_ACTIVE)
+    ->where('visibility', OfferVisibility::Private)
+    ->where('status', OfferStatus::Published)
     ->get();
 ```
 
@@ -152,7 +156,7 @@ affiliate-network/
 ├── config/
 │   └── affiliate-network.php        # Package configuration
 ├── database/
-│   ├── factories/                   # 6 model factories
+│   ├── factories/                   # 7 model factories
 │   ├── migrations/                  # 7 migration files
 ├── routes/
 │   └── api.php                      # Merchant postback route
@@ -162,10 +166,19 @@ affiliate-network/
     │   ├── ApproveApplication.php        # Approve/reject applications
     │   ├── CreateOffer.php               # Create a new offer
     │   ├── RecordNetworkConversion.php   # Record a conversion
+    │   ├── RegisterSite.php              # Merchant self-service signup
+    │   ├── SubmitOffer.php               # Merchant offer submission
     │   └── UpdateOffer.php               # Update an existing offer
+    ├── Adapters/Affiliates/         # Local engine adapters (identity, ledger, catalog, fulfillment)
     ├── Console/Commands/
-    │   └── ArchiveExpiredOffersCommand.php # Batch archive expired offers
+    │   ├── ArchiveExpiredOffersCommand.php  # Batch archive expired offers
+    │   ├── ReconcileNetworkLedgerCommand.php # Prove legs/counters/ledger agree
+    │   └── SyncSiteOffersCommand.php        # Sync merchant catalogs
     ├── Contracts/
+    │   ├── AffiliateIdentityResolver.php
+    │   ├── CatalogReaderInterface.php
+    │   ├── Fulfillment.php
+    │   ├── NetworkLedger.php
     │   └── SiteVerificationStrategyInterface.php
     ├── Events/
     │   ├── ApplicationApproved.php
@@ -174,6 +187,7 @@ affiliate-network/
     │   ├── OfferCreated.php
     │   └── OfferUpdated.php
     ├── Exceptions/
+    │   ├── AffiliatesNotInstalled.php
     │   ├── ApplicationAlreadySubmittedException.php
     │   ├── OfferNotFoundException.php
     │   └── SiteVerificationFailedException.php
@@ -183,8 +197,12 @@ affiliate-network/
     │   └── Middleware/
     │       └── TrackNetworkLinkCookie.php
     ├── Listeners/
+    │   ├── FinalizeNetworkAttribution.php
     │   ├── IncrementNetworkLinkClicks.php
-    │   └── RecordNetworkConversionForOrder.php
+    │   ├── NotifyApplicationApproved.php
+    │   ├── NotifyApplicationSubmitted.php
+    │   ├── NotifyNetworkConversion.php
+    │   └── RecordProvisionalNetworkConversion.php
     ├── Models/
     │   ├── AffiliateSite.php
     │   ├── AffiliateOffer.php
@@ -192,9 +210,16 @@ affiliate-network/
     │   ├── AffiliateOfferCreative.php
     │   ├── AffiliateOfferApplication.php
     │   ├── AffiliateOfferLink.php
+    │   ├── NetworkConversionLeg.php
     │   └── Concerns/
     │       └── ScopesByBelongsToOwner.php
     ├── Services/
+    │   ├── Catalog/                     # Local + remote catalog readers
+    │   ├── CreatorBalances.php
+    │   ├── HostManualFulfillment.php
+    │   ├── NetworkBooks.php
+    │   ├── NetworkLedgerReconciliationService.php
+    │   ├── OfferImportService.php
     │   ├── SiteVerificationService.php
     │   ├── OfferManagementService.php
     │   └── OfferLinkService.php

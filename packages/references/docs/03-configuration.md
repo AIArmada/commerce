@@ -14,9 +14,6 @@ title: Configuration
     'tables' => [
         'references' => env('REFERENCES_TABLE_REFERENCES', 'references'),
     ],
-    'media' => [
-        'disk' => 'public',
-    ],
 ],
 ```
 

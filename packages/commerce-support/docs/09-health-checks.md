@@ -66,31 +66,20 @@ class CartHealthCheck extends CommerceHealthCheck
 
 ### Implement HasHealthCheck Interface
 
-For models that need health monitoring:
+For services that provide health checks:
 
 ```php
 use AIArmada\CommerceSupport\Contracts\HasHealthCheck;
-use Spatie\Health\Checks\Result;
+use Spatie\Health\Checks\Check;
 
-class PaymentGateway implements HasHealthCheck
+class PaymentGatewayService implements HasHealthCheck
 {
-    public function healthCheck(): Result
+    /** @return array<int, Check> */
+    public function getHealthChecks(): array
     {
-        try {
-            $response = Http::timeout(5)
-                ->get($this->getApiStatusUrl());
-
-            if ($response->successful()) {
-                return Result::make()->ok('Gateway operational');
-            }
-
-            return Result::make()
-                ->failed("Gateway returned: {$response->status()}");
-
-        } catch (\Exception $e) {
-            return Result::make()
-                ->failed("Gateway unreachable: {$e->getMessage()}");
-        }
+        return [
+            PaymentGatewayHealthCheck::new(),
+        ];
     }
 }
 ```

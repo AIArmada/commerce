@@ -231,9 +231,9 @@ $result = $calculator->calculate($product, 1);
 $result->hasDiscount(); // bool
 
 // Formatted prices
-$result->getFormattedOriginalPrice(); // "RM 50.00"
-$result->getFormattedFinalPrice();    // "RM 45.00"
-$result->getFormattedSavings();       // "RM 5.00"
+$result->getFormattedOriginalPrice(); // "RM50.00"
+$result->getFormattedFinalPrice();    // "RM45.00"
+$result->getFormattedSavings();       // "RM5.00"
 ```
 
 #### Breakdown Structure

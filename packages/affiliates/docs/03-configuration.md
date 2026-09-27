@@ -23,7 +23,7 @@ The package is configured via `config/affiliates.php`. This document reflects th
 | Key | Description |
 |-----|-------------|
 | `table_prefix` | Prefix for all affiliate tables |
-| `json_column_type` | Column type for JSON fields. Defaults to `jsonb` and inherits from `COMMERCE_JSON_COLUMN_TYPE` when set. |
+| `json_column_type` | Column type for JSON fields. Defaults to `jsonb` and reads `AFFILIATES_JSON_COLUMN_TYPE` when set. |
 | `tables` | Override individual table names |
 
 ## Defaults
@@ -143,12 +143,14 @@ The package is configured via `config/affiliates.php`. This document reflects th
 | `enabled` | Enable package-owned public referral helpers and shared view data |
 | `view_data_key` | View variable populated by the public referral middleware / view composer |
 | `auto_register_middleware` | Push `HydratePublicAffiliateReferralContext` into the `web` middleware group |
-| `route.enabled` | Enable the package-owned referral entry route |
-| `route.path` | Referral landing path, default `r/{affiliateCode}` |
-| `route.name` | Route name used when generating entry URLs |
-| `route.middleware` | Middleware stack applied to the entry route |
+| `route.enabled` | Reserved: entry capture is middleware-based (see below), no route is registered |
+| `route.path` | Referral suffix pattern captured by the middleware, default `r/{affiliateCode}` |
+| `route.name` | Reserved entry-route name (no route is registered) |
+| `route.middleware` | Reserved entry-route middleware stack (no route is registered) |
 | `route.destination_parameter` | Query-string key used to choose a configured destination |
-| `route.destinations` | Allowed redirect destinations, keyed by public destination name |
+| `route.destinations` | Allowed destinations, keyed by public destination name; feeds the referral payload links |
+
+Entry capture is handled by the `CaptureAffiliateReferralFromPath` middleware (alias `affiliates.referral_path`), which is prepended globally when `enabled` and `auto_register_middleware` are both true. It captures any URL ending in the referral suffix and redirects back to the prefix path.
 
 ## Voucher Integration
 
@@ -195,7 +197,7 @@ Every commission path funnels through `CommissionCaps::clamp()`, so these bounds
     'currency' => env('AFFILIATES_PAYOUT_CURRENCY', env('AFFILIATES_DEFAULT_CURRENCY', 'MYR')),
     'reference_prefix' => env('AFFILIATES_PAYOUT_REF_PREFIX', 'PO-'),
     'minimum_amount' => env('AFFILIATES_PAYOUT_MINIMUM_AMOUNT', 5000),
-    'minimum_amounts_by_currency' => ['USD' => 1000], // per-currency minor-unit floors; falls back to minimum_amount
+    'minimum_amounts_by_currency' => [], // per-currency minor-unit floors, e.g. ['USD' => 1000]; falls back to minimum_amount
     'maturity_days' => env('AFFILIATES_PAYOUT_MATURITY_DAYS', 30),
     'multi_level' => [
         'enabled' => env('AFFILIATES_MULTI_LEVEL_ENABLED', true),
@@ -222,7 +224,7 @@ Every commission path funnels through `CommissionCaps::clamp()`, so these bounds
 'tracking' => [
     'attribution_ttl_days' => env('AFFILIATES_ATTRIBUTION_TTL_DAYS', 30),
     'max_attributions_per_identifier' => env('AFFILIATES_ATTRIBUTION_MAX', 5),
-    'block_self_referral' => env('AFFILIATES_BLOCK_SELF_REFERRAL', false),
+    'block_self_referral' => env('AFFILIATES_BLOCK_SELF_REFERRAL', true),
     'ip_rate_limit' => [
         'enabled' => env('AFFILIATES_IP_RATE_LIMIT_ENABLED', false),
         'max' => env('AFFILIATES_IP_RATE_LIMIT_MAX', 20),
@@ -265,7 +267,7 @@ Every commission path funnels through `CommissionCaps::clamp()`, so these bounds
 
 ```php
 'upline' => [
-    'enabled' => env('AFFILIATES_UPLINE_ENABLED', false),
+    'enabled' => env('AFFILIATES_UPLINE_ENABLED', true),
     'max_depth' => env('AFFILIATES_UPLINE_MAX_DEPTH', 10),
 ],
 ```

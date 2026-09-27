@@ -53,8 +53,8 @@ To use custom table names:
 'environment' => env('JNT_ENVIRONMENT', 'testing'),
 
 'base_urls' => [
-    'testing' => 'https://uat-openapi.jtexpress.my/openplatformweb',
-    'production' => 'https://openapi.jtexpress.my/openplatformweb',
+    'testing' => env('JNT_BASE_URL_TESTING', 'https://demoopenapi.jtexpress.my/webopenplatformapi'),
+    'production' => env('JNT_BASE_URL_PRODUCTION', 'https://ylopenapi.jtexpress.my/webopenplatformapi'),
 ],
 ```
 
@@ -67,41 +67,20 @@ To use custom table names:
 | `local` | Alias for testing |
 | `development` | Alias for testing |
 
-## Default Order Values
+## Notifications
+
+Toggle built-in shipment notifications:
 
 ```php
-'defaults' => [
-    // Default express type for new orders
-    'express_type' => \AIArmada\Jnt\Enums\ExpressType::DOMESTIC,
-    
-    // Default service type
-    'service_type' => \AIArmada\Jnt\Enums\ServiceType::DOOR_TO_DOOR,
-    
-    // Default payment type
-    'payment_type' => \AIArmada\Jnt\Enums\PaymentType::PREPAID_POSTPAID,
-    
-    // Default goods type
-    'goods_type' => \AIArmada\Jnt\Enums\GoodsType::PACKAGE,
-    
-    // Country code for addresses
-    'country_code' => 'MYS',
-],
-```
-
-## Features
-
-Toggle package features:
-
-```php
-'features' => [
+'notifications' => [
     // Enable built-in notifications
-    'notifications' => true,
-    
-    // Store orders in database
-    'persist_orders' => true,
-    
-    // Log tracking updates
-    'log_tracking' => true,
+    'enabled' => env('JNT_NOTIFICATIONS_ENABLED', true),
+
+    // Dispatch notifications to the queue
+    'queue' => env('JNT_NOTIFICATIONS_QUEUE', true),
+
+    // Support contact included in notifications
+    'support_contact' => env('JNT_SUPPORT_CONTACT'),
 ],
 ```
 
@@ -295,18 +274,9 @@ public function boot(): void
 }
 ```
 
-### Configuring the JntStatusMapper Carrier Code
+### JntStatusMapper Carrier Code
 
-To change the carrier code used by the built-in J&T strategy (default: `jnt`), set it in your config:
-
-```php
-// config/jnt.php
-'status_mapping' => [
-    'carrier_code' => 'jnt',
-],
-```
-
-When omitted, the default carrier code `jnt` is used. The carrier code must match the value returned by `getCarrierCode()` on the registered strategy.
+The built-in J&T strategy always reports carrier code `jnt` via `getCarrierCode()`; it is not configurable. Custom strategies are keyed in the registry by whatever their own `getCarrierCode()` returns.
 
 ## Complete Configuration Example
 
@@ -336,32 +306,19 @@ return [
     'environment' => env('JNT_ENVIRONMENT', 'testing'),
     
     'base_urls' => [
-        'testing' => 'https://uat-openapi.jtexpress.my/openplatformweb',
-        'production' => 'https://openapi.jtexpress.my/openplatformweb',
+        'testing' => env('JNT_BASE_URL_TESTING', 'https://demoopenapi.jtexpress.my/webopenplatformapi'),
+        'production' => env('JNT_BASE_URL_PRODUCTION', 'https://ylopenapi.jtexpress.my/webopenplatformapi'),
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | Defaults
+    | Notifications
     |--------------------------------------------------------------------------
     */
-    'defaults' => [
-        'express_type' => \AIArmada\Jnt\Enums\ExpressType::DOMESTIC,
-        'service_type' => \AIArmada\Jnt\Enums\ServiceType::DOOR_TO_DOOR,
-        'payment_type' => \AIArmada\Jnt\Enums\PaymentType::PREPAID_POSTPAID,
-        'goods_type' => \AIArmada\Jnt\Enums\GoodsType::PACKAGE,
-        'country_code' => 'MYS',
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Features
-    |--------------------------------------------------------------------------
-    */
-    'features' => [
-        'notifications' => true,
-        'persist_orders' => true,
-        'log_tracking' => true,
+    'notifications' => [
+        'enabled' => env('JNT_NOTIFICATIONS_ENABLED', true),
+        'queue' => env('JNT_NOTIFICATIONS_QUEUE', true),
+        'support_contact' => env('JNT_SUPPORT_CONTACT'),
     ],
 
     /*

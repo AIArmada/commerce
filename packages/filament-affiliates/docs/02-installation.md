@@ -106,9 +106,12 @@ Configure which features are available to affiliates:
         'profile' => true,
         'links' => true,
         'programs' => true,
+        'downlines' => true,
         'conversions' => true,
         'payouts' => true,
         'support_compliance' => true,
+        'creatives' => true,
+        'vouchers' => true,
     ],
 ],
 ```

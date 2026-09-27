@@ -23,7 +23,7 @@ composer require aiarmada/jnt
 Publish the configuration file:
 
 ```bash
-php artisan vendor:publish --provider="AIArmada\Jnt\JntServiceProvider" --tag="config"
+php artisan vendor:publish --tag="jnt-config"
 ```
 
 This creates `config/jnt.php` with all configurable options.
@@ -72,7 +72,7 @@ JNT_OWNER_AUTO_ASSIGN=true
 
 # Optional - HTTP Settings
 JNT_HTTP_TIMEOUT=30
-JNT_HTTP_RETRY_TIMES=3
+JNT_HTTP_CONNECT_TIMEOUT=10
 ```
 
 ## Obtaining API Credentials
@@ -91,8 +91,8 @@ J&T provides separate environments:
 
 | Environment | Base URL |
 |-------------|----------|
-| Testing | `https://uat-openapi.jtexpress.my/openplatformweb` |
-| Production | `https://openapi.jtexpress.my/openplatformweb` |
+| Testing | `https://demoopenapi.jtexpress.my/webopenplatformapi` |
+| Production | `https://ylopenapi.jtexpress.my/webopenplatformapi` |
 
 The package automatically uses the correct URL based on `JNT_ENVIRONMENT`.
 
@@ -102,10 +102,10 @@ All Artisan commands extend the abstract `JntCommand` base class (`src/Console/J
 
 | Subdirectory | Command(s) |
 |-------------|------------|
-| `health/` | `jnt:health` |
-| `orders/` | `jnt:order:create`, `jnt:order:track`, `jnt:order:cancel`, `jnt:order:print` |
-| `tracking/` | `jnt:order:track` |
-| `webhooks/` | `jnt:webhook:test` |
+| `Health/` | `jnt:health` |
+| `Orders/` | `jnt:order:create`, `jnt:order:cancel`, `jnt:order:print`, `jnt:config:check` |
+| `Tracking/` | `jnt:order:track` |
+| `Webhooks/` | `jnt:webhook:test` |
 
 ## Verify Installation
 

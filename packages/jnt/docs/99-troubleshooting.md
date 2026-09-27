@@ -111,12 +111,12 @@ JNT_CUSTOMER_CODE=your_customer_code
 **Checklist**:
 1. Verify webhook URL is publicly accessible:
    ```bash
-   curl -X POST https://yourdomain.com/api/jnt/webhook
+   curl -X POST https://yourdomain.com/webhooks/jnt/status
    ```
 
-2. Check webhook secret matches:
+2. Check the signing key matches (webhooks are signed with the private key):
    ```env
-   JNT_WEBHOOK_SECRET=your_webhook_secret
+   JNT_PRIVATE_KEY=your_private_key
    ```
 
 3. Verify routes are published:
@@ -186,7 +186,7 @@ JNT_CUSTOMER_CODE=your_customer_code
 
 3. Check network connectivity to J&T servers:
    ```bash
-   curl -v https://uat-open.jtexpress.my
+   curl -v https://demoopenapi.jtexpress.my/webopenplatformapi
    ```
 
 ---
@@ -223,8 +223,8 @@ $address = AddressData::from([
 1. Verify owner is set:
    ```php
    use AIArmada\CommerceSupport\Support\OwnerContext;
-   
-   $owner = OwnerContext::get();
+
+   $owner = OwnerContext::resolve();
    dd($owner); // Should not be null
    ```
 
@@ -236,7 +236,7 @@ $address = AddressData::from([
 3. Bypass scope for debugging (temporarily):
    ```php
    $allOrders = JntOrder::query()
-       ->withoutGlobalScope(\AIArmada\CommerceSupport\Scopes\OwnerScope::class)
+       ->withoutGlobalScope(\AIArmada\CommerceSupport\Support\OwnerScope::class)
        ->get();
    ```
 
@@ -323,7 +323,7 @@ try {
     dd([
         'message' => $e->getMessage(),
         'code' => $e->getCode(),
-        'response' => $e->getResponse(),
+        'response' => $e->apiResponse,
     ]);
 }
 ```
@@ -335,10 +335,10 @@ try {
 $logs = JntWebhookLog::query()
     ->latest()
     ->take(10)
-    ->get(['id', 'bill_code', 'processed_at', 'exception']);
+    ->get(['id', 'tracking_number', 'processed_at', 'processing_error']);
 
 foreach ($logs as $log) {
-    echo "{$log->bill_code}: " . ($log->exception ?? 'OK') . "\n";
+    echo "{$log->tracking_number}: " . ($log->processing_error ?? 'OK') . "\n";
 }
 ```
 
@@ -386,17 +386,17 @@ JNT_PASSWORD=test_password
 ### Mock API for Unit Tests
 
 ```php
-use AIArmada\Jnt\Facades\JntExpress;
+use AIArmada\Jnt\Exceptions\JntApiException;
+use AIArmada\Jnt\Services\JntExpressService;
 
 it('handles API errors gracefully', function () {
-    JntExpress::fake([
-        'createOrder' => JntExpress::response([
-            'code' => 999001010,
-            'msg' => 'Customer code is required',
-        ]),
-    ]);
-    
-    expect(fn() => JntExpress::createOrder($data))
+    $service = Mockery::mock(JntExpressService::class);
+    $service->shouldReceive('createOrderFromArray')
+        ->andThrow(JntApiException::orderCreationFailed('Customer code is required'));
+
+    app()->instance(JntExpressService::class, $service);
+
+    expect(fn () => app(JntExpressService::class)->createOrderFromArray($data))
         ->toThrow(JntApiException::class);
 });
 ```

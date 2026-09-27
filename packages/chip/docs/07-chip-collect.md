@@ -229,5 +229,11 @@ $publicKey = Chip::getPublicKey();
 
 ## Next Steps
 
-- [CHIP Send](chip-send.md) – Disbursements
-- [Webhooks](webhooks.md) – Event handling
+- [CHIP Send](08-chip-send.md) – Disbursements
+- [Webhooks](09-webhooks.md) – Event handling
+
+## Official references
+
+- [CHIP Collect documentation](https://docs.chip-in.asia/)
+- [Collect API keys](https://portal.chip-in.asia/collect/developers/api-keys)
+- [Collect Brand IDs](https://portal.chip-in.asia/collect/developers/brands)

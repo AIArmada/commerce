@@ -72,6 +72,7 @@ use AIArmada\Cart\Facades\Cart;
 
 Cart::setMetadata('shipping_address', [
     'name' => 'John Doe',
+    'phone' => '+60123456789',
     'line1' => '456 Customer Ave',
     'city' => 'Petaling Jaya',
     'state' => 'Selangor',
@@ -93,7 +94,19 @@ $total = Cart::total();
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\PackageData;
 
+$origin = AddressData::from([
+    'name' => 'My Warehouse',
+    'phone' => '+60312345678',
+    'line1' => '123 Warehouse St',
+    'city' => 'Kuala Lumpur',
+    'state' => 'Kuala Lumpur',
+    'postcode' => '50000',
+    'country' => 'MY',
+]);
+
 $destination = AddressData::from([
+    'name' => 'John Doe',
+    'phone' => '+60123456789',
     'line1' => '456 Customer Ave',
     'city' => 'Petaling Jaya',
     'state' => 'Selangor',
@@ -111,10 +124,10 @@ $packages = [
 ];
 
 // Get rates from default driver
-$rates = Shipping::getRates($destination, $packages);
+$rates = Shipping::getRates($origin, $destination, $packages);
 
 // Get rates from specific driver
-$rates = Shipping::driver('flat_rate')->getRates($destination, $packages);
+$rates = Shipping::driver('flat_rate')->getRates($origin, $destination, $packages);
 ```
 
 ### Rate Shopping (Best Rate)
@@ -125,10 +138,10 @@ use AIArmada\Shipping\Services\RateShoppingEngine;
 $engine = app(RateShoppingEngine::class);
 
 // Get best rate across all carriers
-$bestRate = $engine->getBestRate($destination, $packages);
+$bestRate = $engine->getBestRate($origin, $destination, $packages);
 
 // Get all rates from all carriers
-$allRates = $engine->getAllRates($destination, $packages);
+$allRates = $engine->getAllRates($origin, $destination, $packages);
 ```
 
 ## Creating Shipments
@@ -148,6 +161,7 @@ $shipmentData = ShipmentData::from([
     'service_code' => 'standard',
     'origin' => AddressData::from([
         'name' => 'My Warehouse',
+        'phone' => '+60312345678',
         'line1' => '123 Warehouse St',
         'city' => 'Kuala Lumpur',
         'state' => 'Kuala Lumpur',
@@ -171,18 +185,16 @@ $shipmentData = ShipmentData::from([
             'weight' => 250, // grams
         ]),
     ],
-    'total_weight' => 500,
 ]);
 
 // Create shipment (Draft status)
 $shipment = $service->create($shipmentData);
 
 // Ship the shipment (transitions to Shipped)
-$result = $service->ship($shipment, 'jnt');
+$shipment = $service->ship($shipment);
 
-// The result includes tracking info
-echo $result->trackingNumber; // "JT1234567890"
-echo $result->labelUrl;       // URL to label PDF
+// The shipment carries the carrier result
+echo $shipment->tracking_number; // "JT1234567890"
 ```
 
 ### Creating Shipment for an Order
@@ -199,8 +211,8 @@ $shipment = Shipment::create([
     'shippable_id' => $order->id,
     'carrier_code' => 'jnt',
     'service_code' => 'express',
-    'origin' => [...],
-    'destination' => [...],
+    'origin_address' => [...],
+    'destination_address' => [...],
     'status' => Draft::class,
     'total_weight' => 1500,
 ]);
@@ -229,12 +241,13 @@ use AIArmada\Shipping\Services\TrackingAggregator;
 
 $aggregator = app(TrackingAggregator::class);
 
-// Sync all active shipments
-$results = $aggregator->syncAll();
+// Sync all shipments needing an update
+$shipments = $aggregator->getShipmentsNeedingUpdate();
+$results = $aggregator->syncBatch($shipments);
 
 // Sync specific shipments
 $shipments = Shipment::whereIn('id', $ids)->get();
-$results = $aggregator->sync($shipments);
+$results = $aggregator->syncBatch($shipments);
 ```
 
 ## Generating Labels
@@ -247,11 +260,11 @@ $service = app(ShipmentService::class);
 // Generate label for existing shipment
 $label = $service->generateLabel($shipment);
 
-echo $label->format;        // 'pdf' or 'zpl'
-echo $label->contentBase64; // Base64-encoded label content
+echo $label->format;  // 'pdf' or 'zpl'
+echo $label->content; // Base64-encoded label content
 
 // Save to disk
-file_put_contents('label.pdf', base64_decode($label->contentBase64));
+file_put_contents('label.pdf', $label->getDecodedContent());
 ```
 
 ## Cancelling Shipments
@@ -277,27 +290,30 @@ use AIArmada\Shipping\Models\ShippingZone;
 // Country-based zone
 $zone = ShippingZone::create([
     'name' => 'Malaysia',
+    'code' => 'MY',
     'type' => 'country',
     'countries' => ['MY'],
-    'is_active' => true,
+    'active' => true,
 ]);
 
 // State-based zone
 $zone = ShippingZone::create([
     'name' => 'West Malaysia',
+    'code' => 'MY-WEST',
     'type' => 'state',
     'countries' => ['MY'],
     'states' => ['Selangor', 'Kuala Lumpur', 'Penang'],
-    'is_active' => true,
+    'active' => true,
 ]);
 
 // Postcode-based zone
 $zone = ShippingZone::create([
     'name' => 'Klang Valley',
+    'code' => 'MY-KLANG-VALLEY',
     'type' => 'postcode',
     'countries' => ['MY'],
-    'postcodes' => '40000-48000, 50000-59999, 68000-68100',
-    'is_active' => true,
+    'postcode_ranges' => [['from' => '40000', 'to' => '48000'], ['from' => '50000', 'to' => '59999']],
+    'active' => true,
 ]);
 ```
 
@@ -305,35 +321,35 @@ $zone = ShippingZone::create([
 
 ```php
 use AIArmada\Shipping\Models\ShippingRate;
-use AIArmada\Shipping\Enums\RateType;
+
+// Calculation types: 'flat', 'per_kg', 'per_item', 'percentage', 'table'
 
 // Flat rate
 $rate = $zone->rates()->create([
     'name' => 'Standard Shipping',
     'carrier_code' => 'manual',
-    'service_code' => 'standard',
-    'rate_type' => RateType::Flat,
+    'method_code' => 'standard',
+    'calculation_type' => 'flat',
     'base_rate' => 800, // RM8.00
-    'min_weight' => 0,
-    'max_weight' => 5000, // 5kg
-    'delivery_days_min' => 3,
-    'delivery_days_max' => 5,
-    'is_active' => true,
+    'estimated_days_min' => 3,
+    'estimated_days_max' => 5,
+    'active' => true,
 ]);
 
 // Per-kg rate
 $rate = $zone->rates()->create([
     'name' => 'Heavy Items',
-    'rate_type' => RateType::PerKg,
-    'base_rate' => 500,    // RM5.00 base
-    'per_kg_rate' => 200,  // RM2.00 per kg
-    'min_weight' => 5001,
-    'is_active' => true,
+    'method_code' => 'heavy',
+    'calculation_type' => 'per_kg',
+    'base_rate' => 500,     // RM5.00 base (covers the first kg)
+    'per_unit_rate' => 200, // RM2.00 per additional kg
+    'active' => true,
 ]);
 
 // Table-based rate (weight tiers)
 $rate = $zone->rates()->create([
     'name' => 'Tiered Shipping',
+    'method_code' => 'tiered',
     'calculation_type' => 'table',
     'base_rate' => 500, // Fallback rate
     'rate_table' => [
@@ -343,7 +359,7 @@ $rate = $zone->rates()->create([
         ['min_weight' => 2001, 'max_weight' => 5000, 'rate' => 1800], // 2-5kg: RM18
         ['min_weight' => 5001, 'max_weight' => null, 'rate' => 2500], // 5kg+: RM25
     ],
-    'is_active' => true,
+    'active' => true,
 ]);
 ```
 
@@ -356,6 +372,9 @@ use AIArmada\Shipping\Data\AddressData;
 $resolver = app(ShippingZoneResolver::class);
 
 $address = AddressData::from([
+    'name' => 'John Doe',
+    'phone' => '+60123456789',
+    'line1' => '456 Customer Ave',
     'city' => 'Petaling Jaya',
     'state' => 'Selangor',
     'postcode' => '47800',

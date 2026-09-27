@@ -121,7 +121,7 @@ The widget will require the permission `widget.revenueWidget`.
 
 ## Custom Permissions
 
-Define custom permissions beyond resources/pages/widgets in `config/filament-authz.php`:
+Define custom permissions beyond resources/pages/widgets in `config/authz.php`:
 
 ```php
 'custom_permissions' => [
@@ -253,7 +253,7 @@ Wildcards support multiple patterns:
 Users with the super admin role bypass **all** permission checks:
 
 ```php
-// config/filament-authz.php
+// config/authz.php
 'super_admin_role' => 'super_admin',
 ```
 
@@ -299,6 +299,10 @@ class User extends Authenticatable
 // config/filament-authz.php
 'impersonate' => [
     'enabled' => true,
+],
+
+// config/authz.php — guard used for impersonation
+'impersonate' => [
     'guard' => 'web',
 ],
 ```
@@ -413,7 +417,7 @@ Use in Blade templates:
 
 @canBeImpersonated($targetUser)
     <button>Impersonate</button>
-@endcanImpersonate
+@endCanBeImpersonated
 ```
 
 ### Events

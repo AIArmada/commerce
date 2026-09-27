@@ -453,7 +453,7 @@ When owner scoping is enabled, pass `owner:` (or `--owner-type` / `--owner-id` o
 
 | Command | Description |
 |---------|-------------|
-| `chip:health-check` | Check CHIP API connectivity and credentials |
+| `chip:health` | Check CHIP API connectivity and credentials |
 | `chip:retry-webhooks` | Retry failed webhooks |
 | `chip:clean-webhooks` | Clean old webhook records |
 | `chip:sync-from-api --purchase-id=<id>` | Sync explicitly supplied CHIP purchase IDs |

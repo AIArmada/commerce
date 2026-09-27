@@ -45,7 +45,6 @@ The Filament Orders package provides a complete admin interface for managing ord
 - **Dashboard Widgets**: Stats, charts, timelines, and recent orders
 - **Invoice Downloads**: One-click PDF invoice generation
 - **Order Timeline**: Visual history of all order events
-- **Real-time Updates**: Automatic polling for live data
 - **Multi-tenancy**: Full owner scoping support
 
 ## Screenshots
@@ -70,10 +69,15 @@ packages/filament-orders/
     ├── FilamentOrdersPlugin.php        # Filament plugin
     ├── FilamentOrdersServiceProvider.php
     ├── Resources/
+    │   ├── OrderResource.php           # Main resource
     │   └── OrderResource/
-    │       ├── OrderResource.php       # Main resource
     │       ├── Pages/                  # CRUD pages
-    │       └── RelationManagers/       # Relation managers
+    │       ├── RelationManagers/       # Relation managers
+    │       ├── Schemas/                # Form/infolist schemas
+    │       └── Tables/                 # Table definitions
+    ├── Pages/
+    │   ├── OrderTimelinePage.php       # Timeline list page
+    │   └── OrderFulfillmentPage.php    # Fulfillment list page
     ├── Support/
     │   └── FilamentOrdersCache.php     # Cache management
     └── Widgets/

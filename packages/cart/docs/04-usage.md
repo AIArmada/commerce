@@ -204,7 +204,7 @@ Cart::clearConditions();
 
 ## Cart Snapshot Contract
 
-Use `Cart::content()` (or `Cart::getContent()`) to capture a normalized snapshot of the cart state. Checkout sessions store this snapshot as `cart_snapshot`.
+Use `Cart::content()` (or `Cart::getContent()`) to capture the base normalized snapshot of the cart state. Checkout sessions augment it with `item_count`, `totals`, and `captured_at`, then store it as `cart_snapshot`.
 
 ```json
 {
@@ -235,7 +235,7 @@ Use `Cart::content()` (or `Cart::getContent()`) to capture a normalized snapshot
     "total": 9998,
     "quantity": 2,
     "count": 1,
-    "item_count": 2,
+    "item_count": 1,
     "totals": {
         "subtotal": 9998,
         "total": 9998,
@@ -252,7 +252,7 @@ Notes:
 - `price` and totals are stored in the smallest currency unit (cents).
 - String prices: integers are minor units (`'999'` is 999 minor); decimals are major units (`'9.99'` is 999 minor). Thousand separators always imply major units (`'1,000'` is 100000 minor, same as `'1,000.00'`).
 - `attributes.weight` is in grams when provided.
-- `item_count` reflects total quantity; `count` reflects unique line items.
+- `item_count` mirrors `count` (unique line items); `quantity` reflects total quantity.
 - `associated_model` is populated when cart items are linked to Eloquent models.
 
 ## Working with Metadata
@@ -298,16 +298,16 @@ use AIArmada\Cart\Facades\Cart;
 Cart::add('SKU-001', 'Product', 999, 1);
 
 // Wishlist
-Cart::instance('wishlist')->add('SKU-002', 'Wishlist Item', 1999, 1);
+Cart::setInstance('wishlist')->add('SKU-002', 'Wishlist Item', 1999, 1);
 
 // Compare list
-Cart::instance('compare')->add('SKU-003', 'Compare Item', 2999, 1);
+Cart::setInstance('compare')->add('SKU-003', 'Compare Item', 2999, 1);
 
 // Get current instance name
 $name = Cart::instance(); // 'default'
 
 // Switch back to default
-Cart::instance('default');
+Cart::setInstance('default');
 ```
 
 ## Cart Content

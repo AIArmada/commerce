@@ -18,6 +18,7 @@ return [
     */
     'database' => [
         'table_prefix' => env('CHECKOUT_TABLE_PREFIX', env('COMMERCE_TABLE_PREFIX', '')),
+        'json_column_type' => env('CHECKOUT_JSON_COLUMN_TYPE', 'jsonb'),
         'tables' => [
             'checkout_sessions' => 'checkout_sessions',
         ],
@@ -147,6 +148,7 @@ return [
     'payment' => [
         'default_gateway' => env('CHECKOUT_DEFAULT_GATEWAY', 'chip'),
         'gateway_priority' => ['chip', 'cashier-chip', 'cashier'],
+        'prefer_actor' => (bool) env('CHECKOUT_PREFER_ACTOR', false),
         'retry_limit' => 3,
         'callback_token_ttl' => 60 * 60 * 24,
         'callback_rate_limit' => [
@@ -343,6 +345,7 @@ Checkout validates core step invariants during provider boot.
 |-----|------|---------|-------------|
 | `payment.default_gateway` | string | `chip` | Default payment gateway |
 | `payment.gateway_priority` | array | `['chip', 'cashier-chip', 'cashier']` | Gateway resolution order |
+| `payment.prefer_actor` | bool | `false` | Prefer the authenticated actor during customer resolution |
 | `payment.retry_limit` | int | `3` | Max payment retry attempts |
 | `payment.callback_token_ttl` | int | `86400` | Callback-token lifetime in seconds; provider validation caps it at 24 hours |
 | `payment.callback_rate_limit.max_attempts` | int | `10` | Callback attempts allowed per session during the decay window |
@@ -485,6 +488,7 @@ CHECKOUT_JSON_COLUMN_TYPE=jsonb
 
 # Payment gateway
 CHECKOUT_DEFAULT_GATEWAY=chip
+CHECKOUT_PREFER_ACTOR=false
 CHECKOUT_STRIPE_WEBHOOK_SECRET=
 
 # Routes
