@@ -127,7 +127,7 @@ class Pass extends Model
 
     public function getTable(): string
     {
-        return config('ticketing.database.tables.passes', 'passes');
+        return config('ticketing.database.tables.passes', 'ticket_passes');
     }
 
     protected function casts(): array

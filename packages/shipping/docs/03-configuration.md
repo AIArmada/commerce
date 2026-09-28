@@ -23,6 +23,7 @@ All configuration is in `config/shipping.php`. Below is a complete reference.
         'shipping_rates' => null,
         'return_authorizations' => null,
         'return_authorization_items' => null,
+        'shipment_operations' => null,
     ],
 ],
 ```

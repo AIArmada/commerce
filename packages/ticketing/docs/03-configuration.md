@@ -25,6 +25,16 @@ The ticketing package configuration is located in `config/ticketing.php`.
 ],
 ```
 
+> [!warning]
+> `TICKETING_TABLE_PREFIX` now applies to all seven tables. Installs that
+> customized the prefix while relying on the four type-table defaults must
+> rename those tables — or pin the previous names via
+> `TICKETING_TICKET_TYPES_TABLE`,
+> `TICKETING_TICKET_TYPE_COMPONENTS_TABLE`,
+> `TICKETING_TICKET_TYPE_PRODUCTS_TABLE`, and
+> `TICKETING_TICKET_TYPE_SEATING_OPTIONS_TABLE`. Per-table overrides keep
+> working unchanged and take precedence.
+
 Override any table name via environment variables:
 
 ```

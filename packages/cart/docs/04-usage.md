@@ -154,6 +154,30 @@ $count = Cart::count();
 shared money primitive. Money objects remain useful for arithmetic and return
 minor-unit amounts.
 
+### Checkout integration
+
+`Cart` implements `CheckoutableInterface`, so gateways such as CHIP accept it
+directly:
+
+```php
+use AIArmada\Chip\Gateways\ChipGateway;
+
+$gateway = app(ChipGateway::class);
+
+$payment = $gateway->createPayment($cart, $customer, [
+    'success_url' => route('checkout.success'),
+    'failure_url' => route('checkout.failed'),
+]);
+```
+
+The mapping always reconciles (`total = subtotal - discount + tax`):
+
+- Line items report condition-adjusted unit prices with zero line discounts.
+- The discount term holds net cart-level price reductions; net surcharges
+  surface on the tax term instead, so gateways never receive negative money.
+- The reference is the stored cart id, falling back to `identifier:instance`.
+- The cart must contain at least one item; gateways reject empty checkouts.
+
 ## Working with Conditions
 
 ### Simple Conditions

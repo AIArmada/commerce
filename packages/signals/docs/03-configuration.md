@@ -23,6 +23,7 @@ Signals configuration lives in `config/signals.php`.
         'saved_reports'      => 'signal_saved_reports',
         'alert_rules'        => 'signal_alert_rules',
         'alert_logs'         => 'signal_alert_logs',
+        'alert_deliveries'   => 'signal_alert_deliveries',
     ],
 ],
 ```

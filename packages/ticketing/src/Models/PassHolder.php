@@ -79,7 +79,7 @@ class PassHolder extends Model
 
     public function getTable(): string
     {
-        return config('ticketing.database.tables.pass_holders', 'pass_holders');
+        return config('ticketing.database.tables.pass_holders', 'ticket_pass_holders');
     }
 
     protected function casts(): array

@@ -10,12 +10,14 @@ use AIArmada\Organizations\Contracts\OrganizationAuthorization;
 use AIArmada\Organizations\Contracts\OrganizationLifecycleHook;
 use AIArmada\Organizations\Contracts\OrganizationPresentation;
 use AIArmada\Organizations\Contracts\OrganizationVisibilityTransitionAuthorizer;
+use AIArmada\Organizations\Http\Middleware\CurrentOrganizationMiddleware;
 use AIArmada\Organizations\Resolvers\DefaultOrganizationAuthorization;
 use AIArmada\Organizations\Resolvers\DefaultOrganizationPresentation;
 use AIArmada\Organizations\Resolvers\DefaultOrganizationVisibilityTransitionAuthorizer;
 use AIArmada\Organizations\Resolvers\NullCurrentOrganizationResolver;
 use AIArmada\Organizations\Resolvers\NullOrganizationLifecycleHook;
 use Illuminate\Foundation\Application;
+use Illuminate\Routing\Router;
 use LogicException;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -75,5 +77,9 @@ final class OrganizationsServiceProvider extends PackageServiceProvider
             OwnerResolverInterface::class,
             fn (Application $app): CurrentOrganizationResolver => $app->make(CurrentOrganizationResolver::class),
         );
+
+        /** @var Router $router */
+        $router = $this->app['router'];
+        $router->aliasMiddleware('current.organization', CurrentOrganizationMiddleware::class);
     }
 }

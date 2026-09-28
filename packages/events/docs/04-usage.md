@@ -609,7 +609,10 @@ StartOccurrenceCheckoutAction::make()->handle($target, $registration);
 // Returns CheckoutSession from the commerce pipeline
 ```
 
-The first argument can be either an occurrence or a session.
+The first argument can be either an occurrence or a session. The resolver
+binding itself requires the Orders fulfillment integration; without the
+checkout pipeline the null resolver is bound and the action returns null
+instead of a session.
 
 Override via config `events.integrations.checkout_intent_resolver` or by binding `EventCheckoutIntentResolver`.
 
