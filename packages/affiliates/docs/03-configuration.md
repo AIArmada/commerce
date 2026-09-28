@@ -280,14 +280,23 @@ Every commission path funnels through `CommissionCaps::clamp()`, so these bounds
     'approval_mode' => env('AFFILIATES_REGISTRATION_APPROVAL_MODE', 'admin'),
     'default_commission_type' => env('AFFILIATES_REGISTRATION_COMMISSION_TYPE', 'percentage'),
     'default_commission_rate' => env('AFFILIATES_REGISTRATION_COMMISSION_RATE', 1000),
+    'open_approval_min_commission_minor' => env('AFFILIATES_OPEN_APPROVAL_MIN_COMMISSION', 0),
 ],
 ```
 
 | Approval Mode | Behavior |
 |---------------|----------|
 | `auto` | Immediately activate new affiliates |
-| `open` | Create as pending, auto-approve on first conversion |
+| `open` | Create as pending, auto-activate on the first qualifying conversion (real attribution, above the minimum commission, no unresolved fraud) |
 | `admin` | Require manual admin approval |
+
+The mode is read at signup and snapshotted onto each affiliate
+(`registration_approval_mode`); changing the setting later only affects
+future registrations. The stored mode is immutable. Open-pending affiliates
+can be attributed and earn held commission but cannot grant customer
+discounts until activated. Note: payout creation does not currently gate
+on affiliate status, so operator-driven payouts are the backstop until a
+status-aware payout gate ships.
 
 ## Events & Webhooks
 

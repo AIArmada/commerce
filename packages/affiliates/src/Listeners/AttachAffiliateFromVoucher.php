@@ -52,7 +52,7 @@ final class AttachAffiliateFromVoucher
         if ($voucher->affiliateId !== null) {
             $affiliate = $this->affiliateLookup->findById($voucher->affiliateId);
 
-            if ($affiliate !== null && $affiliate->isActive()) {
+            if ($affiliate !== null && $affiliate->canBeAttributed()) {
                 $this->attachAffiliateToCart->handle($affiliate, $event->cart, $context);
 
                 return;

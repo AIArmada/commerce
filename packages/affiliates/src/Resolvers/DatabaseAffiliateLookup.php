@@ -53,7 +53,7 @@ final class DatabaseAffiliateLookup implements AffiliateLookup
         $attribution = $this->findActiveAttributionByCookie($cookieValue);
         $affiliate = $attribution?->affiliate;
 
-        return $affiliate instanceof Affiliate && $affiliate->isActive() ? $affiliate : null;
+        return $affiliate instanceof Affiliate && $affiliate->canBeAttributed() ? $affiliate : null;
     }
 
     public function findActiveAttributionByCookie(string $cookieValue): ?AffiliateAttribution

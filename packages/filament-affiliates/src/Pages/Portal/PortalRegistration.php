@@ -6,6 +6,7 @@ namespace AIArmada\FilamentAffiliates\Pages\Portal;
 
 use AIArmada\Affiliates\Actions\Affiliates\CreateAffiliate;
 use AIArmada\Affiliates\Contracts\AffiliateLookup;
+use AIArmada\Affiliates\Enums\RegistrationApprovalMode;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Services\UplineService;
 use AIArmada\Authz\Models\Permission;
@@ -20,6 +21,7 @@ use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Component;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Model;
+use InvalidArgumentException;
 use Spatie\Permission\PermissionRegistrar;
 use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
 use Ysfkaya\FilamentPhoneInput\PhoneInputNumberType;
@@ -51,6 +53,10 @@ class PortalRegistration extends FilamentRegister
     {
         $this->registrationEnabled = (bool) config('affiliates.registration.enabled', true);
         $this->approvalMode = (string) config('affiliates.registration.approval_mode', 'admin');
+
+        if (RegistrationApprovalMode::tryFrom($this->approvalMode) === null) {
+            throw new InvalidArgumentException("Unknown affiliates registration approval mode [{$this->approvalMode}].");
+        }
 
         if (! $this->registrationEnabled) {
             $this->redirect(filament()->getLoginUrl());
@@ -118,7 +124,7 @@ class PortalRegistration extends FilamentRegister
 
         return match ($this->approvalMode) {
             'auto' => null,
-            'open' => __('Your account will be created with pending status.'),
+            'open' => __('Your account will be created with pending status and activated automatically after your first qualifying conversion.'),
             'admin' => __('Your application will be reviewed by an administrator.'),
             default => null,
         };

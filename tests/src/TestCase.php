@@ -246,6 +246,9 @@ abstract class TestCase extends Orchestra
         // Set USD currency for consistent test formatting
         $app['config']->set('cart.money.default_currency', 'USD');
 
+        // Pin registration mode so suites never inherit ambient env values
+        $app['config']->set('affiliates.registration.approval_mode', 'admin');
+
         // Use in-memory SQLite for testing
         $app['config']->set('database.connections.testing', [
             'driver' => 'sqlite',

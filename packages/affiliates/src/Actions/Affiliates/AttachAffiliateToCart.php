@@ -36,8 +36,8 @@ final class AttachAffiliateToCart
 
     public function handle(Affiliate $affiliate, Cart $cart, array $context = []): ?AffiliateAttributionData
     {
-        if (! $affiliate->isActive()) {
-            throw new AffiliateNotFoundException("Affiliate {$affiliate->code} is not active.");
+        if (! $affiliate->canBeAttributed()) {
+            throw new AffiliateNotFoundException("Affiliate {$affiliate->code} cannot receive attribution.");
         }
 
         if ($this->isSelfReferral($affiliate)) {

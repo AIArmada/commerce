@@ -44,17 +44,19 @@ final class CreateAffiliate
 
         $codeProvided = array_key_exists('code', $data) && $data['code'] !== null;
         $attempts = $codeProvided ? 1 : 3;
+        $mode = $this->getApprovalMode();
 
         for ($attempt = 1; $attempt <= $attempts; $attempt++) {
             try {
-                return DB::transaction(function () use ($data, $owner, $name, $commissionType, $commissionRate, $parentId): Affiliate {
-                    $status = $this->getApprovalMode()->defaultStatus();
+                return DB::transaction(function () use ($data, $owner, $name, $commissionType, $commissionRate, $parentId, $mode): Affiliate {
+                    $status = $mode->defaultStatus();
 
                     $affiliate = new Affiliate([
                         'code' => $data['code'] ?? $this->generateCode->handle($name),
                         'name' => $name,
                         'description' => $data['description'] ?? null,
                         'status' => $status,
+                        'registration_approval_mode' => $mode->value,
                         'commission_type' => $commissionType,
                         'commission_rate' => $commissionRate,
                         'currency' => $data['currency'] ?? config('affiliates.currency.default', 'MYR'),
@@ -99,9 +101,10 @@ final class CreateAffiliate
 
     private function getApprovalMode(): RegistrationApprovalMode
     {
-        $mode = config('affiliates.registration.approval_mode', 'admin');
+        $mode = (string) config('affiliates.registration.approval_mode', 'admin');
 
-        return RegistrationApprovalMode::tryFrom($mode) ?? RegistrationApprovalMode::Admin;
+        return RegistrationApprovalMode::tryFrom($mode)
+            ?? throw new InvalidArgumentException("Unknown affiliates registration approval mode [{$mode}].");
     }
 
     /**

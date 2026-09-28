@@ -24,6 +24,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 | `code` | string | Unique affiliate code |
 | `name` | string | Affiliate name |
 | `status` | AffiliateStatus | Current status |
+| `registration_approval_mode` | string | Snapshotted approval mode (auto/open/admin), immutable |
 | `commission_type` | CommissionType | Percentage or fixed |
 | `commission_rate` | int | Rate in basis points or minor units |
 | `currency` | string | ISO currency code |
@@ -58,6 +59,7 @@ AffiliateVolumeTier::where('program_id', $program->id)->get();
 
 ```php
 $affiliate->isActive();                // Check if status is Active
+$affiliate->canBeAttributed();         // Active, or pending under open registration
 $affiliate->hasActivePayoutHold();     // Check for unreleased payout holds
 $affiliate->canRequestPayout();        // True when any balance meets its minimum payout
 $affiliate->canRequestPayout('USD');   // True when the USD balance meets its minimum

@@ -29,7 +29,7 @@ final class CapturePublicAffiliateReferral
 
         $affiliate = $this->affiliateLookup->findByCode($affiliateCode);
 
-        if ($affiliate === null || ! $affiliate->isActive()) {
+        if ($affiliate === null || ! $affiliate->canBeAttributed()) {
             throw new NotFoundHttpException;
         }
 

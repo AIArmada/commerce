@@ -30,7 +30,7 @@ final class CaptureAffiliateReferralFromPath
 
         $affiliate = $this->affiliateLookup->findByCode($code);
 
-        if ($affiliate === null || ! $affiliate->isActive()) {
+        if ($affiliate === null || ! $affiliate->canBeAttributed()) {
             return $next($request);
         }
 

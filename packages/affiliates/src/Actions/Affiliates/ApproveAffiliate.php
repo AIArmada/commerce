@@ -6,6 +6,7 @@ namespace AIArmada\Affiliates\Actions\Affiliates;
 
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\Pending;
 use Carbon\CarbonImmutable;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -22,6 +23,10 @@ final class ApproveAffiliate
     public function handle(Affiliate $affiliate): Affiliate
     {
         if ($affiliate->status->equals(Active::class)) {
+            return $affiliate;
+        }
+
+        if (! $affiliate->status instanceof Pending) {
             return $affiliate;
         }
 

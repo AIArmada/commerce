@@ -121,6 +121,10 @@ FraudSignalStatus::Dismissed; // False positive
 FraudSignalStatus::Confirmed; // Fraud confirmed
 ```
 
+Reviewed and Dismissed both clear the signal: gates that count unresolved
+fraud (such as open-registration auto-approval) only treat Detected and
+Confirmed as blocking.
+
 ## Recording Signals Manually
 
 ```php

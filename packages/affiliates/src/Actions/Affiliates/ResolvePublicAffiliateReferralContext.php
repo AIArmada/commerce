@@ -73,7 +73,7 @@ final class ResolvePublicAffiliateReferralContext
 
             $affiliate = $this->affiliateLookup->findByCode($affiliateCode);
 
-            if ($affiliate === null || ! $affiliate->isActive()) {
+            if ($affiliate === null || ! $affiliate->canBeAttributed()) {
                 continue;
             }
 
@@ -101,7 +101,7 @@ final class ResolvePublicAffiliateReferralContext
 
         $affiliate = $this->affiliateLookup->findActiveAffiliateByCookie($cookieValue);
 
-        if ($affiliate === null || ! $affiliate->isActive()) {
+        if ($affiliate === null || ! $affiliate->canBeAttributed()) {
             return null;
         }
 

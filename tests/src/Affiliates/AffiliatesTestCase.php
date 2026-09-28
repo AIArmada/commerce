@@ -96,6 +96,7 @@ abstract class AffiliatesTestCase extends Orchestra
 
         $app['config']->set('affiliates.owner.enabled', false);
         $app['config']->set('affiliates.owner.include_global', false);
+        $app['config']->set('affiliates.registration.approval_mode', 'admin');
     }
 
     protected function getPackageProviders($app): array
