@@ -139,10 +139,21 @@ Available through the service:
 | `createFromCart()` | `CreateOrderFromCart` |
 | `cancel()` | `OrderCanceled` transition |
 | `confirmPayment()` | `RegisterOrderPayment` |
+| `confirmFreeOrder()` | `FreeOrderConfirmed` transition |
 | `processRefund()` | `RegisterOrderRefund` |
 | `ship()` | `ShipmentCreated` transition |
 | `confirmDelivery()` | `DeliveryConfirmed` transition |
 | `complete()` | `OrderCompleted` transition |
+
+### Confirming free orders
+
+```php
+use AIArmada\Orders\Contracts\OrderServiceInterface;
+
+$order = $orderService->confirmFreeOrder($order); // Created/PendingPayment → Processing
+```
+
+Use this only for orders with `grand_total <= 0` and `paid_total === 0`. Paid, partially paid, and balance-owing Processing orders are rejected with `InvalidArgumentException`; held, canceled, or failed orders throw the `OrderNotAwaitingPayment` subclass. On success the order moves to Processing and stock deduction is scheduled after commit; no payment record, `paid_at`, or `OrderPaid` event is produced. See the [state machine](05-state-machine.md) for the full contract and known limitations.
 
 ## Working with Models Directly
 

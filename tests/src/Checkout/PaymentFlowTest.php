@@ -507,6 +507,7 @@ describe('CreateOrderStep', function (): void {
 
         $orderService->shouldReceive('createOrder')->andReturn($order);
 
+        $orderService->shouldReceive('confirmFreeOrder')->once()->andReturn($order);
         app()->instance(OrderServiceInterface::class, $orderService);
 
         $session = CheckoutSession::forceCreate([
@@ -756,6 +757,7 @@ describe('CreateOrderStep', function (): void {
         $orderService->shouldReceive('createOrder')->once()->andReturn($order);
         $orderService->shouldReceive('confirmPayment')->never();
 
+        $orderService->shouldReceive('confirmFreeOrder')->once()->andReturn($order);
         app()->instance(OrderServiceInterface::class, $orderService);
 
         $session = CheckoutSession::forceCreate([
@@ -829,6 +831,7 @@ describe('CreateOrderStep', function (): void {
             })
             ->andReturn($order);
 
+        $orderService->shouldReceive('confirmFreeOrder')->once()->andReturn($order);
         app()->instance(OrderServiceInterface::class, $orderService);
 
         $session = CheckoutSession::forceCreate([
@@ -892,6 +895,7 @@ describe('CreateOrderStep', function (): void {
             })
             ->andReturn($order);
 
+        $orderService->shouldReceive('confirmFreeOrder')->once()->andReturn($order);
         app()->instance(OrderServiceInterface::class, $orderService);
 
         $session = CheckoutSession::forceCreate([
@@ -944,6 +948,7 @@ describe('CreateOrderStep', function (): void {
             })
             ->andReturn($order);
 
+        $orderService->shouldReceive('confirmFreeOrder')->once()->andReturn($order);
         app()->instance(OrderServiceInterface::class, $orderService);
 
         $session = CheckoutSession::forceCreate([
@@ -994,6 +999,7 @@ describe('CreateOrderStep', function (): void {
             })
             ->andReturn($order);
 
+        $orderService->shouldReceive('confirmFreeOrder')->once()->andReturn($order);
         app()->instance(OrderServiceInterface::class, $orderService);
 
         $session = CheckoutSession::forceCreate([

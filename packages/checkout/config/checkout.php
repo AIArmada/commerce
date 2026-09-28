@@ -99,6 +99,12 @@ return [
     | confirm_payment: When true, triggers PaymentConfirmed transition on the
     |                  order after creation. This creates a Payment record and
     |                  dispatches the OrderPaid event (for notifications, etc).
+    |                  Free orders are always confirmed via FreeOrderConfirmed:
+    |                  there is no payment to verify, and the operator-facing
+    |                  manual confirm action cannot process a zero amount, so
+    |                  gating them would strand free orders outside
+    |                  operator-facing paths, leaving a direct confirmFreeOrder
+    |                  service call as the only recourse.
     |
     */
     'create_order' => [

@@ -315,7 +315,7 @@ After payment confirmation, the checkout step runs these irreversible operations
 
 ### Inventory Timing
 
-Checkout does not commit inventory reservations itself. `ReserveInventoryStep` places a group reservation before payment (or first in the post-payment phase when `reserve_before_payment` is `false`), and releases it on failure or cancellation through step compensation. Stock deduction flows through the orders package instead: its `PaymentConfirmed` transition dispatches `OrderProcessingStarted`, which the `DeductInventoryOnPaymentConfirmed` listener turns into an `InventoryDeductionRequired` event for the inventory package to handle idempotently.
+Checkout does not commit inventory reservations itself. `ReserveInventoryStep` places a group reservation before payment (or first in the post-payment phase when `reserve_before_payment` is `false`), and releases it on failure or cancellation through step compensation. Stock deduction flows through the orders package instead: its `PaymentConfirmed` transition dispatches `OrderProcessingStarted`, which the `DeductInventoryOnPaymentConfirmed` listener turns into an `InventoryDeductionRequired` event for the inventory package to handle idempotently. Free orders (`payment_data.type === 'free_order'`) use the dedicated `FreeOrderConfirmed` transition, which dispatches the same `OrderProcessingStarted` event without a payment record, paid timestamp, or `OrderPaid` event — and rejects the order when it no longer qualifies as free (for example after a live-cart reprice), recording a `free_order_reconciliation` mismatch on the session.
 
 ## Error Handling
 

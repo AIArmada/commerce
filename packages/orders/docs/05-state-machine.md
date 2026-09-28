@@ -337,6 +337,24 @@ PaymentConfirmed transition completes
 
 Inventory deduction is not dispatched synchronously from the transition itself. This guarantees one logical deduction per payment confirmation, even under duplicate event delivery.
 
+Free orders reach the same consumer through a dedicated `FreeOrderConfirmed` transition: it moves the order to Processing and dispatches `OrderProcessingStarted` after commit. It is deliberately not `PaymentConfirmed` — there is no payment record, no paid timestamp, no `OrderPaid` event, and no affiliate attribution.
+
+A free confirmation requires all of the following, checked in order:
+
+1. `grand_total <= 0` — nothing is owed. A zero *balance* alone is not enough: a fully paid order also owes nothing.
+2. `paid_total === 0` — nothing was paid, including partial or out-of-band payments.
+3. The order is not already Processing (idempotent no-op when it is and the money guards pass).
+4. The current state is `Created` or `PendingPayment`. Held, canceled, and failed orders are rejected instead of being dragged back into Processing.
+
+Violations throw `InvalidArgumentException` before any state change. State rejections (check 4) use the `OrderNotAwaitingPayment` subclass so callers can classify the cause from the exception instead of re-reading the row.
+
+> [!WARNING]
+> Known limitations of the free path, shared with the paid path where noted:
+>
+> - No `OrderPaid` means `OrderPaid` consumers never run for free orders: no pass issuance (ticketing), no event registration sync, no promotion usage counting, no invoice, and no payment confirmation email. This matches pre-existing behavior — free orders never emitted `OrderPaid` — but those integrations stay dark for free orders until a fulfillment contract for them is designed.
+> - Like `PaymentConfirmed`, the dispatch is commit-then-event with no durable outbox. If the process dies between commit and the after-commit callbacks, or the queued deduction listener is lost, retrying the seam is a silent no-op and the reservation expires undeducted. Recovery needs an outbox or reconciliation sweep, which does not exist yet.
+> - A free order in Processing reports `isPaid() === false` and appears in the "Unpaid Orders" Filament filter. Revenue sums keyed on `paid_at IS NOT NULL` correctly exclude it.
+
 ### Release (Order Canceled)
 
 ```

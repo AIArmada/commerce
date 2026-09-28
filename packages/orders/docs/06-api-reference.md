@@ -279,6 +279,7 @@ interface OrderServiceInterface
     public function addAddress(Order $order, array $addressData, string $type): void;
     public function cancel(Order $order, string $reason, ?string $canceledBy = null): Order;
     public function confirmPayment(Order $order, string $transactionId, string $gateway, int $amount, array $metadata = []): Order;
+    public function confirmFreeOrder(Order $order): Order;
     public function ship(Order $order, string $carrier, string $trackingNumber, ?string $shipmentId = null, array $metadata = []): Order;
     public function confirmDelivery(Order $order, array $metadata = []): Order;
     public function complete(Order $order, array $metadata = []): Order;

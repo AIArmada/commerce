@@ -1166,6 +1166,7 @@ describe('pricing join by item id', function (): void {
 
                 return $order;
             });
+        $orderService->shouldReceive('confirmFreeOrder')->once()->andReturn($order);
         app()->instance(OrderServiceInterface::class, $orderService);
 
         $result = app(CreateOrderStep::class)->handle($session);
