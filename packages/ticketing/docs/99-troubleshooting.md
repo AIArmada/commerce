@@ -161,7 +161,7 @@ $enabled = config('ticketing.features.auto_issue_passes');
 Check the listener is registered:
 
 ```bash
-php artisan event:list | grep IssuePassesOnOrderPaid
+php artisan event:list | grep IssuePassesOnFulfillment
 ```
 
 ### Migration Issues

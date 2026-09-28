@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Actions\Payouts;
 
+use AIArmada\Affiliates\Exceptions\PayoutCompletionBlockedException;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliatePayoutEvent;
+use AIArmada\Affiliates\Models\AffiliatePayoutOperation;
 use AIArmada\Affiliates\Services\PayoutReconciliationService;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\CancelledPayout;
@@ -14,6 +16,7 @@ use AIArmada\Affiliates\States\FailedPayout;
 use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\States\PayoutStatus;
 use AIArmada\Affiliates\Support\Webhooks\WebhookDispatcher;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -56,6 +59,15 @@ final class UpdatePayoutStatus
                 return $locked->refresh();
             }
 
+            $overrideReason = null;
+
+            if ($newStatus->equals(CompletedPayout::class)) {
+                // Mirror PayoutReconciliationService: the gate checks WHO
+                // may be paid, this checks the linked legs are sane.
+                $locked->assertHomogeneousConversions();
+                $overrideReason = AssertPayoutCompletable::run($locked);
+            }
+
             $locked->status->transitionTo($newStatus::class);
 
             if ($newStatus->equals(CompletedPayout::class) && $locked->paid_at === null) {
@@ -79,7 +91,7 @@ final class UpdatePayoutStatus
                 'from_status' => $from?->getValue(),
                 'to_status' => $newStatus->getValue(),
                 'metadata' => $metadata ?: null,
-                'notes' => $notes,
+                'notes' => $notes ?? ($overrideReason !== null ? 'Completed under payout override: ' . $overrideReason : null),
             ]);
 
             $fresh = $locked->refresh();
@@ -98,34 +110,79 @@ final class UpdatePayoutStatus
 
     private function syncConversions(AffiliatePayout $payout, PayoutStatus $newStatus): void
     {
-        if ($newStatus->equals(CompletedPayout::class)) {
-            $payout->conversions()->update([
-                'status' => PaidConversion::value(),
-                'paid_at' => CarbonImmutable::now(),
-            ]);
+        // Same contract as AssertPayoutCompletable: conversion and
+        // operation reads/writes evaluate in the payout's own owner
+        // scope, never the ambient one, so a mismatched ambient owner
+        // cannot turn the count check into a silent 0 === 0 pass — and
+        // the operation save (model write, owner-guarded) cannot trip
+        // a cross-owner refusal for the payout's own rows.
+        $owner = $payout->owner;
 
-            $this->syncOperation($payout, 'completed', CarbonImmutable::now());
+        if ($newStatus->equals(CompletedPayout::class)) {
+            OwnerContext::withOwner($owner, function () use ($payout, $owner): void {
+                $this->syncCompletedConversions($payout, $owner);
+            });
 
             return;
         }
 
         if ($newStatus->equals(FailedPayout::class) || $newStatus->equals(CancelledPayout::class)) {
-            if ($this->reconciliation->releaseReservedFunds($payout)) {
-                $this->syncOperation($payout, $newStatus->equals(FailedPayout::class) ? 'failed' : 'cancelled', CarbonImmutable::now());
-
-                return;
-            }
-
-            $payout->conversions()->update([
-                'status' => ApprovedConversion::value(),
-                'affiliate_payout_id' => null,
-            ]);
+            OwnerContext::withOwner($owner, function () use ($payout, $owner, $newStatus): void {
+                $this->syncReleasedConversions($payout, $owner, $newStatus);
+            });
         }
+    }
+
+    private function syncCompletedConversions(AffiliatePayout $payout, mixed $owner): void
+    {
+        // Approved-only plus a count check: a conversion that left
+        // Approved out of band (raced reversal) fails the completion
+        // instead of being silently rewritten to paid.
+        $expected = $payout->conversions()->forOwner($owner)->count();
+
+        $affected = $payout->conversions()->forOwner($owner)
+            ->where('status', ApprovedConversion::value())
+            ->update([
+                'status' => PaidConversion::value(),
+                'paid_at' => CarbonImmutable::now(),
+            ]);
+
+        if ($affected !== $expected) {
+            throw new PayoutCompletionBlockedException(sprintf(
+                'Payout [%s] cannot complete: %d of %d linked conversions left Approved out of band.',
+                (string) $payout->getKey(),
+                $expected - $affected,
+                $expected,
+            ));
+        }
+
+        $this->syncOperation($payout, 'completed', CarbonImmutable::now());
+    }
+
+    private function syncReleasedConversions(AffiliatePayout $payout, mixed $owner, PayoutStatus $newStatus): void
+    {
+        if ($this->reconciliation->releaseReservedFunds($payout)) {
+            $this->syncOperation($payout, $newStatus->equals(FailedPayout::class) ? 'failed' : 'cancelled', CarbonImmutable::now());
+
+            return;
+        }
+
+        $payout->conversions()->forOwner($owner)->update([
+            'status' => ApprovedConversion::value(),
+            'affiliate_payout_id' => null,
+        ]);
     }
 
     private function syncOperation(AffiliatePayout $payout, string $status, CarbonImmutable $at): void
     {
-        $operation = $payout->operation;
+        if ($payout->affiliate_payout_operation_id === null) {
+            return;
+        }
+
+        $operation = AffiliatePayoutOperation::query()
+            ->forOwner($payout->owner)
+            ->whereKey($payout->affiliate_payout_operation_id)
+            ->first();
 
         if ($operation === null) {
             return;

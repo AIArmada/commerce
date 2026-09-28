@@ -107,6 +107,27 @@ Configure invoice number generation:
 ],
 ```
 
+## Outbox
+
+The transactional outbox recovers fulfillment events lost to a crash between commit and dispatch. Rows are staged in the same transaction as the order state change; the relay re-dispatches rows the live path never marked.
+
+```php
+'outbox' => [
+    'enabled' => env('ORDERS_OUTBOX_ENABLED', true), // Stage rows on confirm
+    'relay_grace_seconds' => env('ORDERS_OUTBOX_RELAY_GRACE_SECONDS', 60), // Live dispatch window
+    'batch_limit' => env('ORDERS_OUTBOX_BATCH_LIMIT', 100), // Max rows per relay run
+    'max_attempts' => env('ORDERS_OUTBOX_MAX_ATTEMPTS', 10), // Attempts before dead
+    'retry_base_seconds' => env('ORDERS_OUTBOX_RETRY_BASE_SECONDS', 60), // Linear backoff base
+    'retry_max_seconds' => env('ORDERS_OUTBOX_RETRY_MAX_SECONDS', 3600), // Backoff cap
+    'claim_timeout_seconds' => env('ORDERS_OUTBOX_CLAIM_TIMEOUT_SECONDS', 600), // Stuck relay requeue
+    'retention_days' => env('ORDERS_OUTBOX_RETENTION_DAYS', 30), // Relayed history purge
+],
+```
+
+Only `OrderProcessingStarted` and `OrderFulfillmentRequired` are replayable. `OrderPaid` is never staged: invoice creation and payment confirmation emails are not idempotent.
+
+Dead rows are never purged by the sweep: they stay for operator forensics until removed manually.
+
 ## Integrations
 
 Enable/disable integrations with other Commerce packages:
@@ -174,6 +195,14 @@ The payment confirmation notification is sent when an order transitions to paid.
 | `ORDERS_ORDER_NUMBER_USE_DATE` | `true` | Include date in order number |
 | `ORDERS_ORDER_NUMBER_DATE_FORMAT` | `Ymd` | Date format for order numbers |
 | `ORDERS_INVOICE_PREFIX` | `INV` | Invoice number prefix |
+| `ORDERS_OUTBOX_ENABLED` | `true` | Stage outbox rows on confirm |
+| `ORDERS_OUTBOX_RELAY_GRACE_SECONDS` | `60` | Live dispatch window before relay |
+| `ORDERS_OUTBOX_BATCH_LIMIT` | `100` | Max rows per relay run |
+| `ORDERS_OUTBOX_MAX_ATTEMPTS` | `10` | Attempts before a row goes dead |
+| `ORDERS_OUTBOX_RETRY_BASE_SECONDS` | `60` | Linear backoff base |
+| `ORDERS_OUTBOX_RETRY_MAX_SECONDS` | `3600` | Backoff cap |
+| `ORDERS_OUTBOX_CLAIM_TIMEOUT_SECONDS` | `600` | Stuck relay requeue threshold |
+| `ORDERS_OUTBOX_RETENTION_DAYS` | `30` | Relayed history retention |
 | `ORDERS_INTEGRATIONS_INVENTORY_ENABLED` | `true` | Enable inventory auto-reserve/release |
 | `ORDERS_INTEGRATIONS_AFFILIATES_ENABLED` | `true` | Enable affiliate commission tracking |
 | `ORDERS_COMPANY_ADDRESS` | empty | Sender address rendered on invoices |
@@ -202,6 +231,7 @@ return [
             'order_payments' => 'order_payments',
             'order_refunds' => 'order_refunds',
             'order_notes' => 'order_notes',
+            'order_outbox' => 'order_outbox_messages',
         ],
     ],
 
@@ -239,6 +269,17 @@ return [
         'separator' => env('ORDERS_INVOICE_SEPARATOR', '-'),
         'random_length' => env('ORDERS_INVOICE_RANDOM_LENGTH', 6),
         'date_format' => env('ORDERS_INVOICE_DATE_FORMAT', 'Ymd'),
+    ],
+
+    'outbox' => [
+        'enabled' => env('ORDERS_OUTBOX_ENABLED', true),
+        'relay_grace_seconds' => env('ORDERS_OUTBOX_RELAY_GRACE_SECONDS', 60),
+        'batch_limit' => env('ORDERS_OUTBOX_BATCH_LIMIT', 100),
+        'max_attempts' => env('ORDERS_OUTBOX_MAX_ATTEMPTS', 10),
+        'retry_base_seconds' => env('ORDERS_OUTBOX_RETRY_BASE_SECONDS', 60),
+        'retry_max_seconds' => env('ORDERS_OUTBOX_RETRY_MAX_SECONDS', 3600),
+        'claim_timeout_seconds' => env('ORDERS_OUTBOX_CLAIM_TIMEOUT_SECONDS', 600),
+        'retention_days' => env('ORDERS_OUTBOX_RETENTION_DAYS', 30),
     ],
 
     'integrations' => [

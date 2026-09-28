@@ -100,6 +100,7 @@ use AIArmada\Affiliates\Events\AffiliateRankChanged;
 use AIArmada\Affiliates\Events\AffiliateTierUpgraded;
 use AIArmada\Affiliates\Events\DailyStatsAggregated;
 use AIArmada\Affiliates\Events\FraudSignalDetected;
+use AIArmada\Affiliates\Events\HoldingShortfallDetected;
 
 // Affiliate created (model hook) / activated
 AffiliateCreated::class;        // (Affiliate $affiliate)
@@ -116,9 +117,16 @@ AffiliateTierUpgraded::class;   // (AffiliateProgramMembership $membership, Affi
 // Daily aggregation finished
 DailyStatsAggregated::class;    // (CarbonImmutable $date, int $affiliateCount)
 
-// Fraud signal recorded
-FraudSignalDetected::class;     // (Affiliate $affiliate, AffiliateFraudSignal $signal, string $severity)
+// Fraud signal recorded (dispatched after commit; rolled-back signals never dispatch)
+FraudSignalDetected::class;     // (AffiliateFraudSignal $signal)
+
+// Holding pool carried less than a conversion recorded (release/void clamped;
+// the affiliate was still made whole — ledger hygiene signal, after commit)
+HoldingShortfallDetected::class; // (AffiliateConversion $conversion, string $operation, int $requestedMinor, int $appliedMinor)
 ```
+
+> [!NOTE]
+> `FraudSignalDetected` implements `ShouldDispatchAfterCommit`: host listeners such as auto-suspend run after the signal transaction commits. A listener failure therefore never rolls back the recorded signal.
 
 ## Registering Listeners
 

@@ -30,7 +30,7 @@ describe('ReverseAffiliateConversion', function (): void {
     test('reversing marks the original and posts a negated leg', function (): void {
         $conversion = reversalConversion();
 
-        $reversal = app(ReverseAffiliateConversion::class)->execute($conversion, 'chargeback');
+        $reversal = ReverseAffiliateConversion::run($conversion, 'chargeback');
 
         expect($reversal->commission_minor)->toBe(-13485)
             ->and($reversal->conversion_type)->toBe('reversal')
@@ -43,8 +43,8 @@ describe('ReverseAffiliateConversion', function (): void {
         $conversion = reversalConversion();
         $action = app(ReverseAffiliateConversion::class);
 
-        $first = $action->execute($conversion, 'refund');
-        $second = $action->execute($conversion->refresh(), 'refund');
+        $first = $action->handle($conversion, 'refund');
+        $second = $action->handle($conversion->refresh(), 'refund');
 
         expect($second->getKey())->toBe($first->getKey())
             ->and(AffiliateConversion::query()->where('conversion_type', 'reversal')->count())->toBe(1);
@@ -53,7 +53,7 @@ describe('ReverseAffiliateConversion', function (): void {
     test('zero-commission conversions reverse without a leg', function (): void {
         $conversion = reversalConversion(0);
 
-        app(ReverseAffiliateConversion::class)->execute($conversion, 'cancelled');
+        ReverseAffiliateConversion::run($conversion, 'cancelled');
 
         expect($conversion->refresh()->status->equals(ReversedConversion::class))->toBeTrue()
             ->and(AffiliateConversion::query()->where('conversion_type', 'reversal')->exists())->toBeFalse();

@@ -135,6 +135,7 @@ use AIArmada\Affiliates\Models\AffiliateConversion;
 | `value_minor` | int | Neutral conversion value in minor units |
 | `commission_minor` | int | Commission amount in minor units |
 | `commission_currency` | string | Required. Denominates both `value_minor` and `commission_minor`; no database default — writers must set it explicitly |
+| `held_minor` | int | Amount this conversion recorded in the balance holding pool (0 when off-record); approval releases from it and credits any uncovered remainder, then zeroes it |
 | `status` | ConversionStatus | Pending, Qualified, Approved, Rejected, Reversed, Paid |
 | `occurred_at` | timestamp | When conversion occurred |
 | `approved_at` | timestamp | When approved or matured into the payout-eligible state |
@@ -156,6 +157,23 @@ Balance side effects are handled by the model hooks:
 - pending or qualified conversions add commission to `holding_minor`
 - approved conversions release commission into `available_minor`
 - paid conversions deduct the commission from `available_minor`
+
+A conversion linked to an open (non-terminal) payout is reserved:
+`$conversion->assertNotReservedByOpenPayout()` throws until the payout
+reaches a terminal state, so reverse/void/reject paths cannot move
+money out from under a payout in flight. Cancel or fail the payout
+first to release its conversions.
+
+Legacy `held_minor` values are a deploy-time heuristic, not ground
+truth: a pre-existing pending/qualified row is credited with its
+commission only when its affiliate's balance pool actually carries
+that much, because whether creation recorded the row is unknowable
+after the fact. The accounting does not depend on the heuristic being
+right — residuals derive from applied mutator amounts, so every
+approval credits exactly `commission_minor` to available regardless
+of pool state. Only the display-only lifetime total can drift on
+divergent legacy rows, and any pool shortfall is reported via
+`HoldingShortfallDetected` (see [Events](12-events.md)).
 
 ### AffiliatePayout
 

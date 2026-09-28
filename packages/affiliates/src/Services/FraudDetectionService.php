@@ -6,7 +6,6 @@ namespace AIArmada\Affiliates\Services;
 
 use AIArmada\Affiliates\Enums\FraudSeverity;
 use AIArmada\Affiliates\Enums\FraudSignalStatus;
-use AIArmada\Affiliates\Events\FraudSignalDetected;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateFraudSignal;
@@ -14,7 +13,6 @@ use AIArmada\Affiliates\Support\IpHasher;
 use Carbon\CarbonImmutable;
 use Illuminate\Container\Attributes\Tag;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Event;
 
 final class FraudDetectionService
 {
@@ -52,7 +50,6 @@ final class FraudDetectionService
             $signal = $rule->analyzeClick($affiliate, $request, $context);
 
             if ($signal !== null) {
-                Event::dispatch(new FraudSignalDetected($signal));
                 $signals[] = $signal;
             }
         }
@@ -87,7 +84,6 @@ final class FraudDetectionService
             $signal = $rule->analyzeConversion($conversion, $context);
 
             if ($signal !== null) {
-                Event::dispatch(new FraudSignalDetected($signal));
                 $signals[] = $signal;
             }
         }

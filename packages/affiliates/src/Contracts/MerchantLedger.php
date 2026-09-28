@@ -24,6 +24,13 @@ interface MerchantLedger
 
     public function findPosted(string $source, string $sourceRef): ?PostedConversion;
 
+    /**
+     * Retract a posting (merchant refund/void). Settles the posted
+     * conversion as not payable with balanced money. Idempotent:
+     * re-voiding returns the settled view. Null when never posted.
+     */
+    public function voidPosted(string $source, string $sourceRef, string $externalReference, string $reason): ?PostedConversion;
+
     public function findPosting(string $source, string $sourceRef, string $externalReference): ?PostedConversion;
 
     /**

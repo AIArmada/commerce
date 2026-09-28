@@ -5,13 +5,17 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Models;
 
 use AIArmada\Affiliates\States\ApprovedConversion;
+use AIArmada\Affiliates\States\CancelledPayout;
+use AIArmada\Affiliates\States\CompletedPayout;
 use AIArmada\Affiliates\States\ConversionStatus;
+use AIArmada\Affiliates\States\FailedPayout;
 use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\Affiliates\States\RejectedConversion;
 use AIArmada\Affiliates\States\ReversedConversion;
 use AIArmada\CommerceSupport\Contracts\ExchangeRateProvider;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Carbon\CarbonImmutable;
@@ -46,6 +50,7 @@ use Spatie\ModelStates\HasStates;
  * @property int $subtotal_minor
  * @property int $value_minor
  * @property int $commission_minor
+ * @property int $held_minor
  * @property string $commission_currency
  * @property float|null $commission_rate_to_base
  * @property string|null $commission_rate_base
@@ -103,6 +108,9 @@ class AffiliateConversion extends Model
         'subtotal_minor',
         'value_minor',
         'commission_minor',
+        // held_minor is deliberately absent: it is an internal
+        // accounting counter written only via forceFill by
+        // ApplyConversionAccounting, never from input.
         'commission_currency',
         'commission_rate_to_base',
         'commission_rate_base',
@@ -154,6 +162,39 @@ class AffiliateConversion extends Model
     public function payout(): BelongsTo
     {
         return $this->belongsTo(AffiliatePayout::class, 'affiliate_payout_id');
+    }
+
+    /**
+     * Refuse to leave Approved while an open payout reserves this row.
+     *
+     * The payout lookup is unscoped by id and non-locking: scope
+     * visibility must not change reservation facts, and completion
+     * couples through the payout lock plus an Approved-only count
+     * check, so a raced reversal fails closed instead of deadlocking.
+     */
+    public function assertNotReservedByOpenPayout(): void
+    {
+        if ($this->affiliate_payout_id === null) {
+            return;
+        }
+
+        $payout = $this->payout()->withoutGlobalScope(OwnerScope::class)->first();
+
+        if (! $payout instanceof AffiliatePayout) {
+            return;
+        }
+
+        if ($payout->status->equals(CompletedPayout::class)
+            || $payout->status->equals(FailedPayout::class)
+            || $payout->status->equals(CancelledPayout::class)) {
+            return;
+        }
+
+        throw new InvalidArgumentException(sprintf(
+            'Conversion [%s] is reserved by open payout [%s]; cancel or fail that payout first to release the funds.',
+            (string) $this->getKey(),
+            (string) $this->affiliate_payout_id,
+        ));
     }
 
     public function scopeForOwner(Builder $query, Model | string | null $owner = OwnerContext::CURRENT, bool $includeGlobal = false): Builder
@@ -298,6 +339,7 @@ class AffiliateConversion extends Model
             'reversed_at' => 'immutable_datetime',
             'paid_at' => 'immutable_datetime',
             'value_minor' => 'integer',
+            'held_minor' => 'integer',
             'commission_rate_to_base' => 'float',
             'status' => ConversionStatus::class,
         ];

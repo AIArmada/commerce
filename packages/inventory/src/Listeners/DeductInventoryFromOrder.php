@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Listeners;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryOperation;
 use AIArmada\Inventory\Services\InventoryService;
@@ -38,11 +39,23 @@ final class DeductInventoryFromOrder
 
     public function handle(InventoryDeductionRequired $event): void
     {
-        $order = $event->order;
-
         if (! config('inventory.orders.enabled', true)) {
             return;
         }
+
+        // This chain runs on the queue worker, where no ambient owner
+        // survives serialization. Restore the order's owner from the
+        // event tuple so owner-scoped lookups resolve correctly.
+        $owner = OwnerContext::fromTypeAndId($event->owner_type, $event->owner_id);
+
+        OwnerContext::withOwner($owner, function () use ($event): void {
+            $this->handleScoped($event);
+        });
+    }
+
+    private function handleScoped(InventoryDeductionRequired $event): void
+    {
+        $order = $event->order;
 
         $operation = $this->resolveOrCreateOperation($order, InventoryOperation::KIND_DEDUCTION);
 

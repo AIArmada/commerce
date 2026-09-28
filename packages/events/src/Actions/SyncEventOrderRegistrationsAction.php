@@ -7,6 +7,7 @@ namespace AIArmada\Events\Actions;
 use AIArmada\Events\Contracts\RegistrationServiceInterface;
 use AIArmada\Events\Models\EventRegistration;
 use AIArmada\Events\Support\ModelResolver;
+use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 final class SyncEventOrderRegistrationsAction
@@ -52,8 +53,15 @@ final class SyncEventOrderRegistrationsAction
 
     private function syncPaid(EventRegistration $registration): void
     {
-        $this->registrationService->approve($registration);
-        $this->setPaymentStatus($registration, 'paid');
+        DB::transaction(function () use ($registration): void {
+            // Serialize overlapping fulfillment deliveries per
+            // registration: approve on a locked fresh copy so only the
+            // delivery that performs the transition emits the approval.
+            $locked = $registration->newQuery()->whereKey($registration->getKey())->lockForUpdate()->firstOrFail();
+
+            $this->registrationService->approve($locked);
+            $this->setPaymentStatus($locked, 'paid');
+        });
     }
 
     private function syncCancelled(EventRegistration $registration): void

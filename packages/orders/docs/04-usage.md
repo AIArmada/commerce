@@ -286,6 +286,34 @@ class SendOrderConfirmation
 }
 ```
 
+## Outbox (Relay & Sweep)
+
+`PaymentConfirmed` and `FreeOrderConfirmed` stage one outbox row per replayable event in the same transaction as the state change. The live after-commit dispatch marks rows relayed; anything it misses (crash between commit and dispatch) is recovered by the relay. Delivery is at-least-once, so every consumer of the replayable events is idempotent: inventory deduction, pass issuance, event registration sync, promotion usage counting, and commission attribution.
+
+Run the relay frequently (every minute) and the sweep less often (hourly):
+
+```php
+// routes/console.php
+use AIArmada\Orders\Actions\Outbox\RelayOrderOutbox;
+use AIArmada\Orders\Actions\Outbox\SweepOrderOutbox;
+
+Schedule::command(RelayOrderOutbox::class)->everyMinute();
+Schedule::command(SweepOrderOutbox::class)->hourly();
+```
+
+Or run them directly:
+
+```bash
+php artisan orders:outbox-relay --limit=100
+php artisan orders:outbox-sweep
+```
+
+Both entrypoints are [Laravel Actions](https://www.laravelactions.com/): call `RelayOrderOutbox::run()` / `SweepOrderOutbox::run()` from code to get result counts, or run the artisan signatures above (same class, command entrypoint).
+
+The sweep requeues rows stuck in `relaying` past the claim timeout, purges `relayed` history past retention, and reports `dead` rows. Dead rows need operator review — the sweep never repairs or invents rows.
+
+Lifecycle suppression: cancelling an order, completing a full refund, or flagging it as fraud terminally suppresses that order's unrelayed rows in the same transaction (`suppressed`, with the reason in `last_error`), so replay can never fulfill after cancel/refund cleanup ran or while an order is under investigation. Partial refunds leave staged rows untouched. The relay additionally re-validates the order lifecycle under a row lock after claiming each row and holds that lock through dispatch, so a cancel landing mid-relay either suppresses first or cleans up after — replay can never overtake cleanup. Suppressed rows are terminal and need no operator review.
+
 ## Order Documents
 
 ### Persisted Invoice Documents

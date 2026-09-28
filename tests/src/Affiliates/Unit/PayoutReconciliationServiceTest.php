@@ -8,6 +8,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
+use AIArmada\Affiliates\Models\AffiliatePayoutOperation;
 use AIArmada\Affiliates\Services\PayoutReconciliationService;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\CompletedPayout;
@@ -201,6 +202,73 @@ describe('PayoutReconciliationService', function (): void {
                 'method' => 'bank_transfer',
                 'external_reference' => 'EXT-123',
             ]);
+
+            AffiliatePayout::where('id', $payout->id)
+                ->update(['updated_at' => now()->subHours(2)]);
+
+            $result = $this->service->getPayoutsNeedingReconciliation();
+
+            expect($result)->toHaveCount(1);
+        });
+
+        test('excludes gate-blocked payouts from reconciliation', function (): void {
+            $payout = AffiliatePayout::create([
+                'reference' => 'PAY-BLOCKED-' . uniqid(),
+                'payee_type' => Affiliate::class,
+                'payee_id' => $this->affiliate->id,
+                'amount_minor' => 5000,
+                'currency' => 'USD',
+                'status' => ProcessingPayout::class,
+                'method' => 'bank_transfer',
+                'external_reference' => 'EXT-BLOCKED',
+            ]);
+
+            $operation = AffiliatePayoutOperation::create([
+                'affiliate_id' => $this->affiliate->id,
+                'affiliate_payout_id' => $payout->id,
+                'operation_key' => 'manual:' . uniqid(),
+                'status' => 'unknown',
+                'amount_minor' => 5000,
+                'currency' => 'USD',
+                'claimed_at' => now(),
+                'last_error_code' => 'PAYOUT_COMPLETION_BLOCKED',
+            ]);
+
+            $payout->forceFill(['affiliate_payout_operation_id' => $operation->id])->save();
+
+            AffiliatePayout::where('id', $payout->id)
+                ->update(['updated_at' => now()->subHours(2)]);
+
+            // The provider outcome is known (completed) and the local
+            // gate refuses it: re-polling would spam a provider call and
+            // a fresh timeline event per cycle. Operator action, not
+            // reconciliation, unblocks it.
+            expect($this->service->getPayoutsNeedingReconciliation())->toBeEmpty();
+        });
+
+        test('includes unknown payouts that are not gate-blocked', function (): void {
+            $payout = AffiliatePayout::create([
+                'reference' => 'PAY-UNKNOWN-' . uniqid(),
+                'payee_type' => Affiliate::class,
+                'payee_id' => $this->affiliate->id,
+                'amount_minor' => 5000,
+                'currency' => 'USD',
+                'status' => ProcessingPayout::class,
+                'method' => 'bank_transfer',
+                'external_reference' => 'EXT-UNKNOWN',
+            ]);
+
+            $operation = AffiliatePayoutOperation::create([
+                'affiliate_id' => $this->affiliate->id,
+                'affiliate_payout_id' => $payout->id,
+                'operation_key' => 'manual:' . uniqid(),
+                'status' => 'unknown',
+                'amount_minor' => 5000,
+                'currency' => 'USD',
+                'claimed_at' => now(),
+            ]);
+
+            $payout->forceFill(['affiliate_payout_operation_id' => $operation->id])->save();
 
             AffiliatePayout::where('id', $payout->id)
                 ->update(['updated_at' => now()->subHours(2)]);

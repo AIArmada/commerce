@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\Orders\Transitions;
 
+use AIArmada\Orders\Events\OrderFulfillmentRequired;
 use AIArmada\Orders\Events\OrderProcessingStarted;
 use AIArmada\Orders\Exceptions\OrderNotAwaitingPayment;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Created;
 use AIArmada\Orders\States\PendingPayment;
 use AIArmada\Orders\States\Processing;
+use AIArmada\Orders\Support\OrderOutbox;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use Spatie\ModelStates\Transition;
@@ -53,8 +55,18 @@ final class FreeOrderConfirmed extends Transition
 
             $this->syncCallerOrder($order);
 
-            DB::afterCommit(function () use ($order): void {
-                event(new OrderProcessingStarted($order, (string) $order->getKey(), 'free'));
+            // Stage outbox rows in-transaction so a crash between commit and
+            // dispatch stays recoverable.
+            $outboxIds = [
+                OrderOutbox::stage($order, OrderProcessingStarted::class, (string) $order->getKey(), 'free'),
+                OrderOutbox::stage($order, OrderFulfillmentRequired::class, (string) $order->getKey(), 'free'),
+            ];
+
+            DB::afterCommit(function () use ($order, $outboxIds): void {
+                OrderOutbox::dispatchReplayable($order, $outboxIds, static function () use ($order): void {
+                    event(new OrderProcessingStarted($order, (string) $order->getKey(), 'free'));
+                    event(new OrderFulfillmentRequired($order, (string) $order->getKey(), 'free'));
+                });
             });
 
             return $order;

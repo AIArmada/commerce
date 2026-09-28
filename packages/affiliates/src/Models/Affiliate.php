@@ -361,6 +361,11 @@ class Affiliate extends Model implements Auditable
         return $this->isActive() || $this->isOpenPending();
     }
 
+    public function canReceivePayout(): bool
+    {
+        return $this->status instanceof Active && ! $this->isPaused();
+    }
+
     public function isDeactivated(): bool
     {
         return $this->deactivated_at !== null;

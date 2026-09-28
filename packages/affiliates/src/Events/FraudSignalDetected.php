@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Events;
 
 use AIArmada\Affiliates\Models\AffiliateFraudSignal;
+use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-final class FraudSignalDetected
+final class FraudSignalDetected implements ShouldDispatchAfterCommit
 {
     use Dispatchable;
     use SerializesModels;

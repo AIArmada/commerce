@@ -123,6 +123,23 @@ final class FakeNetworkLedger implements NetworkLedger
         return null;
     }
 
+    public function voidPosting(string $linkId, string $externalReference, string $reason): ?NetworkPostedConversion
+    {
+        $found = $this->findPosted($linkId, $externalReference);
+
+        if ($found === null) {
+            return null;
+        }
+
+        return new NetworkPostedConversion(
+            id: $found->id,
+            affiliateCode: $found->affiliateCode,
+            commissionMinor: $found->commissionMinor,
+            commissionCurrency: $found->commissionCurrency,
+            status: 'voided',
+        );
+    }
+
     public function rowsForLink(string $linkId): array
     {
         $rows = [];

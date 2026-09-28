@@ -163,7 +163,7 @@ final class AffiliateConversionsTable
             ? OwnerWriteGuard::findOrFailForOwner(AffiliateConversion::class, $record->getKey())
             : AffiliateConversion::findOrFail($record->getKey());
 
-        app(ReverseConversion::class)->execute($conversion, $reason);
+        ReverseConversion::run($conversion, $reason);
     }
 
     public static function updateStatus(AffiliateConversion $record, ConversionStatus | string $status): bool
@@ -184,6 +184,12 @@ final class AffiliateConversionsTable
 
             if ($locked->status->equals($statusClass)) {
                 return true;
+            }
+
+            if ($statusClass === RejectedConversion::class
+                || $statusClass === ReversedConversion::class
+                || $statusClass === PaidConversion::class) {
+                $locked->assertNotReservedByOpenPayout();
             }
 
             $previousStatus = $locked->status;

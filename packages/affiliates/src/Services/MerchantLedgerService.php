@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Services;
 
 use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
+use AIArmada\Affiliates\Actions\Conversions\VoidAffiliateConversion;
 use AIArmada\Affiliates\Contracts\MerchantIdentity;
 use AIArmada\Affiliates\Contracts\MerchantLedger;
 use AIArmada\Affiliates\Data\AffiliateConversionData;
@@ -16,6 +17,7 @@ use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Services\Commissions\CommissionCaps;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\RejectedConversion;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\Eloquent\Builder;
@@ -34,6 +36,7 @@ final class MerchantLedgerService implements MerchantLedger
         private readonly ApplyConversionAccounting $accounting,
         private readonly FraudDetectionService $fraud,
         private readonly Dispatcher $events,
+        private readonly VoidAffiliateConversion $void,
     ) {}
 
     public function postExternalConversion(ExternalConversion $draft): ?PostedConversion
@@ -107,6 +110,24 @@ final class MerchantLedgerService implements MerchantLedger
         $conversion = $this->queryPosted($source, $sourceRef, $externalReference)->first();
 
         return $conversion instanceof AffiliateConversion ? self::toPostedConversion($conversion) : null;
+    }
+
+    public function voidPosted(string $source, string $sourceRef, string $externalReference, string $reason): ?PostedConversion
+    {
+        $conversion = $this->queryPosted($source, $sourceRef, $externalReference)->first();
+
+        if (! $conversion instanceof AffiliateConversion) {
+            return null;
+        }
+
+        // The lookup above is deliberately cross-tenant, but the void
+        // action re-reads owner-scoped: restore the row's own owner so
+        // the void resolves on ownerless (network) call paths too.
+        OwnerContext::withOwner($conversion->owner ?? null, fn (): AffiliateConversion => $this->void->handle($conversion, $reason));
+
+        $settled = AffiliateConversion::query()->withoutOwnerScope()->whereKey($conversion->getKey())->firstOrFail();
+
+        return self::toPostedConversion($settled);
     }
 
     public function postingsForSourceRef(string $source, string $sourceRef): array

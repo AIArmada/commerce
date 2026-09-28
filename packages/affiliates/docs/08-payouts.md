@@ -266,9 +266,9 @@ The current maturity flow uses `holding_minor` for pre-payout commission state. 
 ### Processing with PayoutProcessorFactory
 
 ```php
+use AIArmada\Affiliates\Actions\Payouts\UpdatePayoutStatus;
 use AIArmada\Affiliates\Enums\PayoutMethodType;
 use AIArmada\Affiliates\Services\Payouts\PayoutProcessorFactory;
-use AIArmada\Affiliates\States\CompletedPayout;
 
 $factory = app(PayoutProcessorFactory::class);
 
@@ -279,15 +279,26 @@ $processor = $factory->make(PayoutMethodType::PayPal);
 $result = $processor->process($payout);
 
 if ($result->isSuccess()) {
-    $payout->update([
-        'status' => CompletedPayout::class,
-        'paid_at' => now(),
-        'metadata' => array_merge($payout->metadata ?? [], [
-            'transaction_id' => $result->externalReference,
-        ]),
+    $payout = UpdatePayoutStatus::run($payout, 'completed', 'Provider outcome: completed', [
+        'provider' => $result->metadata['provider'] ?? null,
+        'provider_status' => $result->getStatus(),
     ]);
+
+    // The 4th argument lands ONLY on the payout event. Persist the
+    // provider reference on the payout itself, like the real
+    // ProcessAffiliatePayout path does.
+    $payout->forceFill([
+        'external_reference' => $result->externalReference,
+        'metadata' => array_merge($payout->metadata ?? [], [
+            'provider' => $result->metadata['provider'] ?? null,
+            'provider_status' => $result->getStatus(),
+        ]),
+    ])->save();
 }
 ```
+
+> [!WARNING]
+> Never complete a payout with a direct status write (`$payout->update(['status' => ...])`): it bypasses the completion eligibility gate, the Approved-only conversion sync, the payout event, and the operation sync — leaving conversions linked-but-approved against a payout that reported the money as sent. Always complete through `UpdatePayoutStatus::run($payout, 'completed', ...)` (or `ProcessAffiliatePayout::handle($payout)` for the full claim/processor flow).
 
 ## Payout Events
 

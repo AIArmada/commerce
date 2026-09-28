@@ -5,9 +5,9 @@ declare(strict_types=1);
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Orders\Events\OrderPaid;
+use AIArmada\Orders\Events\OrderFulfillmentRequired;
 use AIArmada\Orders\Models\Order;
-use AIArmada\Promotions\Listeners\MarkPromotionAsUsedOnOrderPlaced;
+use AIArmada\Promotions\Listeners\MarkPromotionAsUsedOnFulfillment;
 use AIArmada\Promotions\Models\Promotion;
 use Illuminate\Support\Str;
 
@@ -63,10 +63,32 @@ it('counts each order only once when payment events are redelivered', function (
     $promotion = OwnerContext::withOwner($owner, fn (): Promotion => Promotion::factory()->active()->create());
 
     $order = persistedOrderWithPromotion($owner, $promotion);
-    $listener = new MarkPromotionAsUsedOnOrderPlaced;
+    $listener = new MarkPromotionAsUsedOnFulfillment;
 
-    $listener->handle(new OrderPaid(order: $order, transactionId: 'txn_1', gateway: 'chip'));
-    $listener->handle(new OrderPaid(order: $order->fresh(), transactionId: 'txn_1', gateway: 'chip'));
+    $listener->handle(new OrderFulfillmentRequired(order: $order, transactionId: 'txn_1', gateway: 'chip'));
+    $listener->handle(new OrderFulfillmentRequired(order: $order->fresh(), transactionId: 'txn_1', gateway: 'chip'));
 
     expect($promotion->fresh()->usage_count)->toBe(1);
+});
+
+test('stamp persistence failure aborts instead of being swallowed', function (): void {
+    $owner = User::factory()->create();
+
+    $order = new class extends Order
+    {
+        public function saveQuietly(array $options = []): bool
+        {
+            throw new RuntimeException('disk on fire');
+        }
+    };
+    $order->forceFill([
+        'id' => (string) Str::uuid(),
+        'metadata' => [],
+    ]);
+    $order->exists = true;
+
+    $method = new ReflectionMethod(MarkPromotionAsUsedOnFulfillment::class, 'persistCountedPromotionIds');
+
+    expect(fn (): mixed => $method->invoke(new MarkPromotionAsUsedOnFulfillment, $order, $owner, ['promo-1']))
+        ->toThrow(RuntimeException::class, 'disk on fire');
 });

@@ -389,7 +389,7 @@ When a network-attributed order converts, the listener stores network attributio
 
 1. **Tracking**: When a user visits your site with a network link parameter (default: `anl`), the `TrackNetworkLinkCookie` middleware captures the link identifier and stores it in an encrypted cookie.
 2. **Attribution**: The cookie persists based on the configured lifetime (default: 30 days).
-3. **Conversion**: When an order is completed, the orders side triggers a `CommissionAttributionRequired` event.
+3. **Conversion**: When order fulfillment is required (paid and free orders alike), the orders side triggers a `CommissionAttributionRequired` event.
 4. **Provisional leg**: `RecordProvisionalNetworkConversion` reads the attribution cookie and posts a `provisional` leg — money sketched, nothing payable yet.
 5. **Last-touch decider**: `FinalizeNetworkAttribution` compares the engine touch against the network touch. An engine win supersedes the provisional leg; a network win confirms and fulfills it. When the engine abstains — or isn't installed — the network wins by default. Every decision is recorded, so exactly one side ever pays.
 

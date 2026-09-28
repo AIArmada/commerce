@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Promotions;
 
-use AIArmada\Orders\Events\OrderPaid;
+use AIArmada\Orders\Events\OrderFulfillmentRequired;
 use AIArmada\Promotions\Console\Commands\DeactivateExpiredPromotionsCommand;
 use AIArmada\Promotions\Contracts\PromotionServiceInterface;
-use AIArmada\Promotions\Listeners\MarkPromotionAsUsedOnOrderPlaced;
+use AIArmada\Promotions\Listeners\MarkPromotionAsUsedOnFulfillment;
 use AIArmada\Promotions\Services\PromotionService;
 use AIArmada\Promotions\Support\IssuedVoucherTrackingState;
 use Illuminate\Support\Facades\Event;
@@ -36,8 +36,8 @@ class PromotionsServiceProvider extends ServiceProvider
 
     private function registerEventListeners(): void
     {
-        if (class_exists(OrderPaid::class)) {
-            Event::listen(OrderPaid::class, MarkPromotionAsUsedOnOrderPlaced::class);
+        if (class_exists(OrderFulfillmentRequired::class)) {
+            Event::listen(OrderFulfillmentRequired::class, MarkPromotionAsUsedOnFulfillment::class);
         }
     }
 

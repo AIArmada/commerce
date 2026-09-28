@@ -18,6 +18,7 @@ use AIArmada\Affiliates\Support\IpHasher;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 
 beforeEach(function (): void {
@@ -383,4 +384,96 @@ describe('FraudDetectionService', function (): void {
             expect($result['severity'])->toBeInstanceOf(FraudSeverity::class);
         });
     });
+});
+
+test('directly created fraud signals dispatch the detected event', function (): void {
+    Event::fake([FraudSignalDetected::class]);
+
+    $signal = AffiliateFraudSignal::create([
+        'affiliate_id' => $this->affiliate->id,
+        'rule_code' => 'MANUAL_REVIEW',
+        'risk_points' => 80,
+        'severity' => FraudSeverity::High,
+        'description' => 'Manually flagged by analyst',
+        'status' => FraudSignalStatus::Detected,
+        'detected_at' => now(),
+    ]);
+
+    Event::assertDispatched(FraudSignalDetected::class, fn (FraudSignalDetected $event): bool => $event->signal->is($signal));
+});
+
+test('service analysis dispatches exactly once per created signal', function (): void {
+    config(['affiliates.fraud.velocity.max_conversions_per_day' => 0]); // Force flag
+
+    $conversion = AffiliateConversion::create([
+        'commission_currency' => 'USD',
+        'affiliate_id' => $this->affiliate->id,
+        'affiliate_code' => $this->affiliate->code,
+        'order_reference' => 'EVENT-COUNT-001',
+        'subtotal_minor' => 10000,
+        'total_minor' => 10000,
+        'commission_minor' => 1000,
+        'status' => PendingConversion::class,
+        'occurred_at' => now(),
+    ]);
+
+    Event::fake([FraudSignalDetected::class]);
+
+    $this->service->analyzeConversion($conversion);
+
+    $created = AffiliateFraudSignal::query()->where('affiliate_id', $this->affiliate->id)->count();
+
+    expect($created)->toBeGreaterThan(0);
+
+    Event::assertDispatchedTimes(FraudSignalDetected::class, $created);
+});
+
+test('manual signal dispatch waits for commit', function (): void {
+    $seen = [];
+    Event::listen(FraudSignalDetected::class, function (FraudSignalDetected $event) use (&$seen): void {
+        $seen[] = $event;
+    });
+
+    DB::beginTransaction();
+
+    AffiliateFraudSignal::create([
+        'affiliate_id' => $this->affiliate->id,
+        'rule_code' => 'MANUAL_DEFER',
+        'risk_points' => 10,
+        'severity' => FraudSeverity::Low,
+        'description' => 'Deferred dispatch probe',
+        'status' => FraudSignalStatus::Detected,
+        'detected_at' => now(),
+    ]);
+
+    expect($seen)->toBeEmpty();
+
+    DB::commit();
+
+    expect($seen)->toHaveCount(1);
+});
+
+test('manual signal dispatch is discarded on rollback', function (): void {
+    $seen = [];
+    Event::listen(FraudSignalDetected::class, function (FraudSignalDetected $event) use (&$seen): void {
+        $seen[] = $event;
+    });
+
+    DB::beginTransaction();
+
+    AffiliateFraudSignal::create([
+        'affiliate_id' => $this->affiliate->id,
+        'rule_code' => 'MANUAL_DISCARD',
+        'risk_points' => 10,
+        'severity' => FraudSeverity::Low,
+        'description' => 'Discarded dispatch probe',
+        'status' => FraudSignalStatus::Detected,
+        'detected_at' => now(),
+    ]);
+
+    expect($seen)->toBeEmpty();
+
+    DB::rollBack();
+
+    expect($seen)->toBeEmpty();
 });

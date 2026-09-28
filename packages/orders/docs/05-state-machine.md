@@ -337,7 +337,7 @@ PaymentConfirmed transition completes
 
 Inventory deduction is not dispatched synchronously from the transition itself. This guarantees one logical deduction per payment confirmation, even under duplicate event delivery.
 
-Free orders reach the same consumer through a dedicated `FreeOrderConfirmed` transition: it moves the order to Processing and dispatches `OrderProcessingStarted` after commit. It is deliberately not `PaymentConfirmed` — there is no payment record, no paid timestamp, no `OrderPaid` event, and no affiliate attribution.
+Free orders reach the same consumers through a dedicated `FreeOrderConfirmed` transition: it moves the order to Processing and dispatches `OrderProcessingStarted` plus `OrderFulfillmentRequired` after commit. It is deliberately not `PaymentConfirmed` — there is no payment record, no paid timestamp, and no `OrderPaid` event. Affiliate attribution still runs (and abstains on the zero value); pass issuance, event registration sync, and promotion usage counting all run for free orders. Only invoice creation and payment confirmation emails stay paid-only.
 
 A free confirmation requires all of the following, checked in order:
 
@@ -351,9 +351,9 @@ Violations throw `InvalidArgumentException` before any state change. State rejec
 > [!WARNING]
 > Known limitations of the free path, shared with the paid path where noted:
 >
-> - No `OrderPaid` means `OrderPaid` consumers never run for free orders: no pass issuance (ticketing), no event registration sync, no promotion usage counting, no invoice, and no payment confirmation email. This matches pre-existing behavior — free orders never emitted `OrderPaid` — but those integrations stay dark for free orders until a fulfillment contract for them is designed.
-> - Like `PaymentConfirmed`, the dispatch is commit-then-event with no durable outbox. If the process dies between commit and the after-commit callbacks, or the queued deduction listener is lost, retrying the seam is a silent no-op and the reservation expires undeducted. Recovery needs an outbox or reconciliation sweep, which does not exist yet.
-> - A free order in Processing reports `isPaid() === false` and appears in the "Unpaid Orders" Filament filter. Revenue sums keyed on `paid_at IS NOT NULL` correctly exclude it.
+> - No `OrderPaid` means `OrderPaid` consumers never run for free orders: no invoice and no payment confirmation email. Pass issuance, event registration sync, promotion usage counting, and commission attribution run through the fulfillment event instead.
+> - Like `PaymentConfirmed`, the dispatch is commit-then-event backed by the transactional outbox. If the process dies between commit and the after-commit callbacks, the `orders:outbox-relay` command re-dispatches the staged rows; `orders:outbox-sweep` reconciles stuck rows and purges relayed history.
+> - A free order in Processing reports `isPaid() === false` and is excluded from the "Unpaid Orders" Filament filter (zero-total orders are neither paid nor unpaid). Revenue sums keyed on `paid_at IS NOT NULL` correctly exclude it.
 
 ### Release (Order Canceled)
 

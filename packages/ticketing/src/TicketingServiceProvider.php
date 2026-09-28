@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Ticketing;
 
-use AIArmada\Orders\Events\OrderPaid;
+use AIArmada\Orders\Events\OrderFulfillmentRequired;
 use AIArmada\Seating\Actions\ReleaseAllocationsAction;
 use AIArmada\Ticketing\Console\Commands\ExpireTransfersCommand;
 use AIArmada\Ticketing\Contracts\PassDeliveryServiceInterface;
@@ -14,7 +14,7 @@ use AIArmada\Ticketing\Events\PassCancelled;
 use AIArmada\Ticketing\Events\PassExpired;
 use AIArmada\Ticketing\Events\PassRevoked;
 use AIArmada\Ticketing\Events\PassVoided;
-use AIArmada\Ticketing\Listeners\IssuePassesOnOrderPaid;
+use AIArmada\Ticketing\Listeners\IssuePassesOnFulfillment;
 use AIArmada\Ticketing\Listeners\ReleaseSeatsOnPassCancelled;
 use AIArmada\Ticketing\Listeners\ReleaseSeatsOnPassExpired;
 use AIArmada\Ticketing\Listeners\ReleaseSeatsOnPassRevoked;
@@ -78,8 +78,8 @@ final class TicketingServiceProvider extends PackageServiceProvider
             return;
         }
 
-        if (TicketingIntegration::ordersAvailable() && class_exists(OrderPaid::class)) {
-            Event::listen(OrderPaid::class, IssuePassesOnOrderPaid::class);
+        if (TicketingIntegration::ordersAvailable() && class_exists(OrderFulfillmentRequired::class)) {
+            Event::listen(OrderFulfillmentRequired::class, IssuePassesOnFulfillment::class);
         }
     }
 

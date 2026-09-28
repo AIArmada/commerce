@@ -119,6 +119,11 @@ final class AffiliatePayoutResource extends Resource
                     Forms\Components\Textarea::make('notes')
                         ->label('Notes')
                         ->rows(3),
+
+                    Forms\Components\Textarea::make('payout_override_reason')
+                        ->label('Payout override reason')
+                        ->helperText('Only for disabled affiliates: records an audited reason so the completion gate accepts this payout. Ignored for payable affiliates.')
+                        ->rows(2),
                 ])
                 ->columns(2),
         ]);

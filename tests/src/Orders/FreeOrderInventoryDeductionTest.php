@@ -13,6 +13,7 @@ use AIArmada\Inventory\Models\InventoryMovement;
 use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Inventory\Services\Stock\CheckoutReservationService;
 use AIArmada\Orders\Events\InventoryDeductionRequired;
+use AIArmada\Orders\Events\OrderFulfillmentRequired;
 use AIArmada\Orders\Events\OrderPaid;
 use AIArmada\Orders\Events\OrderProcessingStarted;
 use AIArmada\Orders\Exceptions\OrderNotAwaitingPayment;
@@ -254,7 +255,7 @@ it('is idempotent for orders already processing', function (): void {
 it('schedules the processing-started dispatch after commit', function (): void {
     $order = createFreeTestOrder('ORD-FREE-004');
 
-    Event::fake([OrderPaid::class, OrderProcessingStarted::class]);
+    Event::fake([OrderPaid::class, OrderProcessingStarted::class, OrderFulfillmentRequired::class]);
 
     $invokeCommitHooks = captureAfterCommit();
 
@@ -265,6 +266,10 @@ it('schedules the processing-started dispatch after commit', function (): void {
     Event::assertDispatched(
         OrderProcessingStarted::class,
         fn (OrderProcessingStarted $event): bool => $event->order->is($order) && $event->gateway === 'free'
+    );
+    Event::assertDispatched(
+        OrderFulfillmentRequired::class,
+        fn (OrderFulfillmentRequired $event): bool => $event->order->is($order) && $event->gateway === 'free'
     );
     Event::assertNotDispatched(OrderPaid::class);
 });

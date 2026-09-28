@@ -78,7 +78,7 @@ Use this package when you need to sell tickets for events, workshops, courses, o
 
 ### Listeners
 
-- `IssuePassesOnOrderPaid` — Auto-issue when order is paid (requires `aiarmada/orders`)
+- `IssuePassesOnFulfillment` — Auto-issue when order fulfillment is required, including free orders (requires `aiarmada/orders`)
 
 ## Features
 
