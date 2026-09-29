@@ -182,9 +182,9 @@ Test-drive any checkout with a test purchase and these cards (any cardholder nam
 - `4444 3333 2222 1111` — non-3D Secure
 - `5555 5555 5555 4444` — 3D Secure enrolled
 
-Use any expiry at or after the current month/year. For a failed payment, change the CVC or expiry — but the failure modes differ in S2S checkout: a wrong CVC on the 3D card fails authorization after the customer returns from the test ACS, while a wrong expiry fails data validation immediately.
+The testing docs allow any expiry at or after the current month/year, while the purchase-create spec prose says "greater than now". The live Direct Post card attempt was inconclusive: it returned the JS-gated form and the purchase stayed `viewed`, so current-month expiry acceptance remains unverified. For a failed payment, change the CVC or expiry — but the failure modes differ in S2S checkout: a wrong CVC on the 3D card fails authorization after the customer returns from the test ACS, while a wrong expiry fails data validation immediately.
 
-Expiry-format conflict: the testing prose allows any expiry at or after the current month/year, but the Direct Post `expires` field only accepts strict `MM/YY` (5 chars). Test expiries must satisfy both — well-formed `MM/YY` at or after the current month/year. A malformed value fails form validation; a well-formed wrong one fails server-side.
+Expiry-format conflict: the testing prose allows any expiry at or after the current month/year, but the Direct Post `expires` field only accepts strict `MM/YY` (5 chars). Use well-formed `MM/YY` in a future month to satisfy both expiry passages while current-month acceptance remains unverified. A malformed value fails form validation; a well-formed wrong one fails server-side.
 
 ### From Checkoutable
 

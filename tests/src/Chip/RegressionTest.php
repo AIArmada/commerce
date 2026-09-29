@@ -685,7 +685,7 @@ describe('half-up minor-unit math', function (): void {
             Money::MYR(100),
         );
 
-        // Server formula (P25): 199 x 1.5 - 100 = 198.5, single half-up.
+        // Server formula: 199 x 1.5 - 100 = 198.5, single half-up.
         expect($product->getTotalPriceInCents())->toBe(199);
     });
 

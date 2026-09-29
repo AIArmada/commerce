@@ -54,13 +54,13 @@ describe('FakeChipCollectService refunds', function (): void {
         $service = new FakeChipCollectService;
         $client = ClientDetailsData::from(['email' => 'buyer@example.com']);
 
-        // P17: fractional quantity must not truncate (149, not 99).
+        // Fractional quantity must not truncate (149, not 99).
         $fractional = $service->createCheckoutPurchase(
             [ProductData::from(['name' => 'Disc', 'price' => 100, 'quantity' => '1.5', 'discount' => 1, 'currency' => 'MYR'])],
             $client,
         );
 
-        // disctax: tax applies to the net line.
+        // Tax applies to the net line.
         $taxed = $service->createCheckoutPurchase(
             [ProductData::from(['name' => 'DT', 'price' => 100, 'quantity' => '1.5', 'discount' => 1, 'tax_percent' => 6.0, 'currency' => 'MYR'])],
             $client,
@@ -98,7 +98,7 @@ describe('FakeChipCollectService refunds', function (): void {
     it('rejects a fake checkout discount above the line gross like the server', function (): void {
         $service = new FakeChipCollectService;
 
-        // P25g: the server 400s product_subtotal_negative; the fake must
+        // The server 400s product_subtotal_negative; the fake must
         // throw instead of storing a zero-total purchase.
         expect(fn () => $service->createCheckoutPurchase(
             [ProductData::from(['name' => 'DG', 'price' => 100, 'quantity' => 3, 'discount' => 500, 'currency' => 'MYR'])],

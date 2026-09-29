@@ -54,7 +54,7 @@ final readonly class ChipPurchasePayloadBuilder
                 'city' => $billingData['city'] ?? null,
                 'state' => $billingData['state'] ?? null,
                 'zip_code' => $billingData['postcode'] ?? null,
-                // ISO 3166-1 alpha-2 code: sandbox proof accepts the full country name too (P10),
+                // ISO 3166-1 alpha-2 code: the sandbox accepts the full country name too,
                 // but the code is the documented/choice-field-safe form.
                 'country' => $billingData['country_code'] ?? null,
             ], static fn (mixed $value): bool => $value !== null

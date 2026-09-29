@@ -880,7 +880,7 @@ final class PurchasesApi extends CollectApi
 
             $idempotencyKey = mb_trim($idempotencyKey);
         } else {
-            // C2.13 invariant: this fingerprint default IS the resolved key,
+            // Fingerprint invariant: this fingerprint default IS the resolved key,
             // so the header carries it like any explicit key (local and server
             // collapse together). The keyless checkout-builder path is a
             // separate route that must never gain fingerprinting: without a
@@ -1021,7 +1021,7 @@ final class PurchasesApi extends CollectApi
                 : null;
 
             // Discount is per-line: the server bound is discount <= price x quantity
-            // (400 product_subtotal_negative beyond it, sandbox-proven P25f/g).
+            // (400 product_subtotal_negative beyond it, sandbox-proven).
             // Exact comparison: float64 misplaces valid boundary lines
             // (200 x "1.005" with discount 201 must pass).
             if ($price < 0 || $discount < 0 || ProductData::discountExceedsLineGross($discount, $price, $quantity)) {

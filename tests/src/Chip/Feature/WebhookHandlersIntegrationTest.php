@@ -211,6 +211,28 @@ describe('Webhook Handlers Integration', function (): void {
             expect($purchase->refresh()->failure_reason)->toBe('card_declined');
         });
 
+        it('stores the live failed-attempt message shape', function (): void {
+            Event::fake();
+
+            // Live sandbox shape (failed card pay): attempts carry an
+            // error object with code + message, and no top-level
+            // error_code is present.
+            $purchase = createTestPurchase(['status' => 'pending_execute']);
+            $payload = createPayloadWithPurchase('purchase.payment_failure', $purchase, [
+                'status' => 'error',
+                'transaction_data' => ['attempts' => [[
+                    'type' => 'execute',
+                    'successful' => false,
+                    'payment_method' => 'visa',
+                    'error' => ['code' => 'validation_cvc_invalid', 'message' => '`cvc` is invalid'],
+                ]]],
+            ]);
+
+            app(PaymentFailedHandler::class)->handle($payload);
+
+            expect($purchase->refresh()->failure_reason)->toBe('`cvc` is invalid');
+        });
+
         it('falls back to unknown without attempt detail or error_code', function (): void {
             Event::fake();
 

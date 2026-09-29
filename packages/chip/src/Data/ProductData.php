@@ -109,8 +109,8 @@ final class ProductData extends ChipData
 
     /**
      * Get the line discount total in cents: the per-line discount,
-     * passed through unmultiplied (sandbox-proven P25a/f: the
-     * server subtracts it once per line, not per unit).
+     * passed through unmultiplied (sandbox-proven: the server
+     * subtracts it once per line, not per unit).
      */
     public function getDiscountTotalInCents(): int
     {
@@ -121,9 +121,9 @@ final class ProductData extends ChipData
      * Get the total price as Money, or the total price override
      * when set.
      *
-     * Sandbox-proven server parity (P17/P25a–g): discount is
-     * per-line, tax applies to the net line, and rounding is a
-     * single half-up per line — one round, not gross-then-tax.
+     * Sandbox-proven server parity: discount is per-line, tax
+     * applies to the net line, and rounding is a single half-up
+     * per line — one round, not gross-then-tax.
      */
     public function getTotalPrice(): Money
     {
@@ -142,13 +142,13 @@ final class ProductData extends ChipData
      * single half-up round of
      * (price × quantity − discount) × (1 + tax/100).
      *
-     * Sandbox-proven 2026-09-29 (P17, P25a–g, disctax, taxcombo):
-     * per-line discount, net-base tax, once-per-line rounding, TPO
-     * final even with tax. Exact decimal math (BCMath): float64
-     * misrounds valid half-cent lines (100 × "1.005" must be 101).
-     * A discount above the line gross throws, mirroring the
-     * server's 400 `product_subtotal_negative` (P25g) — checked
-     * before TPO, since the server validates first (P25h).
+     * Sandbox-proven 2026-09-29: per-line discount, net-base tax,
+     * once-per-line rounding, TPO final even with tax. Exact
+     * decimal math (BCMath): float64 misrounds valid half-cent
+     * lines (100 × "1.005" must be 101). A discount above the
+     * line gross throws, mirroring the server's 400
+     * `product_subtotal_negative` — checked before TPO, since
+     * the server validates first.
      */
     public static function lineTotalMinorUnits(
         int $priceMinor,
@@ -266,7 +266,7 @@ final class ProductData extends ChipData
         if ($digits === '') {
             // Zero keeps its decimal places in the denominator so
             // precision checks see them ('0.000' is 3dp, rejected
-            // like the server's max_decimal_places, P26d).
+            // like the server's max_decimal_places).
             return ['0', $shift >= 0 ? '1' : '1' . str_repeat('0', -$shift)];
         }
 

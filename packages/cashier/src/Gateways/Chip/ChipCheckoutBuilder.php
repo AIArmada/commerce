@@ -292,7 +292,7 @@ class ChipCheckoutBuilder implements CheckoutBuilderContract
             $options['force_recurring'] = true;
         }
 
-        // C2.13 invariant: this path stays keyless — there is no stable
+        // Keyless-path invariant: this path stays keyless — there is no stable
         // operation identity, and fingerprinting here would collapse
         // buy-twice-identical. The fingerprinted checkout route is the
         // separate PurchasesApi::createCheckoutPurchase, which emits the

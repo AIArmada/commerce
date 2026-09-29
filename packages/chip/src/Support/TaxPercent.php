@@ -15,7 +15,7 @@ use InvalidArgumentException;
  * as-given form. Payload builders should emit the return value;
  * in-place validators may discard it.
  *
- * Precision mirrors the server (sandbox-proven P26): at most 5
+ * Precision mirrors the server (sandbox-proven): at most 5
  * digits in total with no more than 2 decimal places
  * (`max_digits` / `max_decimal_places`).
  */

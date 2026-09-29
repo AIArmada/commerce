@@ -387,11 +387,11 @@ describe('PaymentCallbackController', function (): void {
 
     it('does not verify payment via user-controlled query params (prevents forged status=paid)', function () use ($setConfig): void {
         $setConfig();
-        // Regression test for P0: callback controller must NOT pass $request->query() to
+        // The callback controller must NOT pass $request->query() to
         // verifyAndCompletePayment, as attacker could append &status=paid to the success URL
         // (the callback_token is visible in their browser bar after the gateway redirect).
         $session = CheckoutSession::forceCreate([
-            'cart_id' => 'test-cart-p0-exploit',
+            'cart_id' => 'test-cart-forged-payment',
             'selected_payment_gateway' => 'chip',
             'grand_total' => 5000,
             'currency' => 'MYR',
@@ -457,8 +457,8 @@ describe('ProcessPaymentStep', function (): void {
             ->and($session->fresh()->payment_data['type'] ?? null)->toBe('free_order');
     });
 
-    it('preserves callback_token in payment_data after payment initiation (P1 regression)', function (): void {
-        // Regression test for P1: ProcessPaymentStep was replacing the entire payment_data
+    it('preserves callback_token in payment_data after payment initiation', function (): void {
+        // ProcessPaymentStep was replacing the entire payment_data
         // JSON, silently wiping the callback_token that ensureCallbackToken() had just stored.
         // Without the token, every redirect-based callback would be rejected by resolveSession().
         $mockProcessor = mock(PaymentProcessorInterface::class);
@@ -474,7 +474,7 @@ describe('ProcessPaymentStep', function (): void {
         app()->instance(PaymentGatewayResolverInterface::class, $mockResolver);
 
         $session = CheckoutSession::forceCreate([
-            'cart_id' => 'test-cart-p1',
+            'cart_id' => 'test-cart-callback-token',
             'selected_payment_gateway' => 'chip',
             'grand_total' => 1000,
             'currency' => 'MYR',

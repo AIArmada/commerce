@@ -54,7 +54,7 @@ This keeps authenticated billing flows and guest checkout flows on the same proc
 
 - `street_address` ← non-empty `line1`/`line2`/`line3` joined with `, `
 - `city` ← `city`, `state` ← `state`, `zip_code` ← `postcode`
-- `country` ← `country_code` only (ISO 3166-1 alpha-2; the code is the documented/choice-field-safe form even though the sandbox also accepts the full country name — probe P10)
+- `country` ← `country_code` only (ISO 3166-1 alpha-2; the code is the documented/choice-field-safe form even though the sandbox also accepts the full country name)
 
 ## Cashier Pre-Payment Requirement
 

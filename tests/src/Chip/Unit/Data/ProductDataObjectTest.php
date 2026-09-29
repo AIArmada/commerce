@@ -19,7 +19,7 @@ describe('Product data object', function (): void {
 
         expect($product->getPriceInCents())->toBe(19900);
         expect($product->getDiscountInCents())->toBe(990);
-        // Server formula (P25): (39800 - 990) x 1.06 = 41138.6, half-up.
+        // Server formula: (39800 - 990) x 1.06 = 41138.6, half-up.
         expect($product->getTotalPrice()->getAmount())->toEqual(41139);
         expect($product->getTotalPriceInCents())->toBe(41139);
     });
@@ -94,14 +94,14 @@ describe('Product data object', function (): void {
     it('mirrors the server line-total formula on probe cases', function (): void {
         // (price x qty - discount) x (1 + tax/100), single half-up per line.
         $cases = [
-            'P17' => [100, '1.5', 1, 0.0, null, 149],
-            'P25a per-line discount' => [100, '3', 1, 0.0, null, 299],
-            'P25c net-base tax' => [100, '1', 10, 10.0, null, 99],
-            'P25d single round' => [100, '1.555', 0, 10.0, null, 171],
-            'P25e TPO final with tax' => [1000, '3', 0, 10.0, 2500, 2500],
-            'P25f discount above unit price' => [100, '3', 150, 0.0, null, 150],
-            'disctax' => [100, '1.5', 1, 6.0, null, 158],
-            'taxcombo' => [100, '3', 0, 6.0, null, 318],
+            'fractional quantity with discount' => [100, '1.5', 1, 0.0, null, 149],
+            'per-line discount' => [100, '3', 1, 0.0, null, 299],
+            'net-base tax' => [100, '1', 10, 10.0, null, 99],
+            'single round' => [100, '1.555', 0, 10.0, null, 171],
+            'TPO final with tax' => [1000, '3', 0, 10.0, 2500, 2500],
+            'discount above unit price' => [100, '3', 150, 0.0, null, 150],
+            'discount with tax' => [100, '1.5', 1, 6.0, null, 158],
+            'tax without discount' => [100, '3', 0, 6.0, null, 318],
             'half-cent exact (float64 misrounds)' => [100, '1.005', 0, 0.0, null, 101],
             'exponent quantity' => [100, '1e2', 0, 0.0, null, 10000],
             'zero quantity line' => [100, '0.0000', 0, 0.0, null, 0],
@@ -123,7 +123,7 @@ describe('Product data object', function (): void {
     });
 
     it('validates the discount bound even when a total price override is set', function (): void {
-        // P25h: the server 400s product_subtotal_negative here (validation first).
+        // The server 400s product_subtotal_negative here (validation first).
         expect(fn () => ProductData::lineTotalMinorUnits(100, '3', 500, 0.0, 2500))
             ->toThrow(ChipValidationException::class, 'discount cannot be larger than price times quantity');
     });

@@ -12,7 +12,7 @@ use AIArmada\Chip\Support\PurchaseIdempotencyLedger;
 use Illuminate\Support\Facades\Cache;
 
 /**
- * Deploy-boundary pins: idempotency entries stored BEFORE the Batch A wire
+ * Deploy-boundary pins: idempotency entries stored BEFORE the wire
  * cleanup (which removed `purchase.total` and null product fields from the
  * request payload) must still match retries issued AFTER it.
  *

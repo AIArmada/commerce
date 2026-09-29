@@ -42,7 +42,7 @@ describe('ProductCollection', function (): void {
 
         $collection = new ProductCollection($products);
 
-        // Discount is per-line (P25a): passed through unmultiplied.
+        // Discount is per-line: passed through unmultiplied.
         // Product A: 100 cents discount
         // Product B: 50 cents discount
         // Total: 150 cents

@@ -610,7 +610,7 @@ class FakeChipClient
             [$price, $quantity, $discount, $taxPercent, $totalPriceOverride] = self::validatedLine($product);
 
             // Over-gross discounts throw from the primitive, mirroring
-            // the server's 400 product_subtotal_negative (P25g).
+            // the server's 400 product_subtotal_negative.
             $total += ProductData::lineTotalMinorUnits($price, $quantity, $discount, $taxPercent, $totalPriceOverride);
         }
 
@@ -619,7 +619,7 @@ class FakeChipClient
 
     /**
      * Mirror the server's product validation for fake totals: integer
-     * minor amounts, a numeric zero-or-greater quantity (P24), and a
+     * minor amounts, a numeric zero-or-greater quantity, and a
      * tax percent within the shared rule — instead of silently
      * casting malformed input to zeros.
      *

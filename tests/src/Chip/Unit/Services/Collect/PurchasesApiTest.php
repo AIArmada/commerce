@@ -255,7 +255,7 @@ it('accepts a per-line discount above the unit price', function (): void {
         ->once()
         ->andReturn(chipPurchaseResponse());
 
-    // P25f: the server bound is discount <= price x quantity (201, total 150).
+    // The server bound is discount <= price x quantity (201, total 150).
     $purchase = $this->apiWithoutCache->create(chipValidCreatePayload([
         'purchase' => [
             'products' => [['name' => 'Item', 'price' => 100, 'discount' => 150, 'quantity' => 3]],

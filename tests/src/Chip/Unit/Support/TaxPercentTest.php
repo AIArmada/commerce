@@ -23,14 +23,14 @@ describe('TaxPercent', function (): void {
     });
 
     it('mirrors the server precision rule: 5 digits, 2 decimal places', function (): void {
-        // P26a/b: the server 400s max_decimal_places / max_digits.
+        // The server 400s max_decimal_places / max_digits here.
         expect(fn () => TaxPercent::normalize('6.555'))->toThrow(ChipValidationException::class, 'at most 5 digits')
             ->and(fn () => TaxPercent::normalize('99.9999'))->toThrow(ChipValidationException::class, 'at most 5 digits')
             ->and(fn () => TaxPercent::normalize('1e-2000'))->toThrow(ChipValidationException::class, 'at most 5 digits');
     });
 
     it('counts decimal places on zero values like the server', function (): void {
-        // P26d: the server 400s '0.000' with max_decimal_places.
+        // The server 400s '0.000' with max_decimal_places.
         expect(TaxPercent::normalize('0.00'))->toBe('0.00')
             ->and(fn () => TaxPercent::normalize('0.000'))->toThrow(ChipValidationException::class, 'at most 5 digits')
             ->and(fn () => TaxPercent::normalize('0.' . str_repeat('0', 1025)))->toThrow(ChipValidationException::class, 'at most 5 digits');

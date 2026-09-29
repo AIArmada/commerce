@@ -203,7 +203,8 @@ abstract class BaseHttpClient
 
     /**
      * Mutations carry Idempotency-Key when a key is resolved, but CHIP
-     * ignores it (sandbox replay P4: identical body + key created a
+     * ignores it for purchase creation (sandbox replay:
+     * identical body + key created a
      * second purchase, so the local ledger is the only dedupe), so
      * automatic retries stay restricted to methods that do not create
      * or change a remote resource: a connection failure must not
