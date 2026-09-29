@@ -22,8 +22,9 @@ final class ProductData extends ChipData
         #[WithCast(MoneyCast::class)]
         #[WithTransformer(MoneyTransformer::class)]
         public readonly Money $discount,
-        public readonly float $tax_percent,
+        public readonly float | string $tax_percent,
         public readonly ?string $category,
+        public readonly ?int $total_price_override = null,
     ) {}
 
     /**
@@ -44,6 +45,7 @@ final class ProductData extends ChipData
             discount: Money::{$currency}((int) ($data['discount'] ?? 0)),
             tax_percent: (float) ($data['tax_percent'] ?? 0.0),
             category: $data['category'] ?? null,
+            total_price_override: isset($data['total_price_override']) ? (int) $data['total_price_override'] : null,
         );
     }
 
@@ -55,8 +57,9 @@ final class ProductData extends ChipData
         Money $price,
         string | float | int $quantity = 1,
         ?Money $discount = null,
-        float $taxPercent = 0.0,
+        float | string $taxPercent = 0.0,
         ?string $category = null,
+        ?int $totalPriceOverride = null,
     ): self {
         $currency = $price->getCurrency()->getCurrency();
 
@@ -67,6 +70,7 @@ final class ProductData extends ChipData
             discount: $discount ?? Money::{$currency}(0),
             tax_percent: $taxPercent,
             category: $category,
+            total_price_override: $totalPriceOverride,
         );
     }
 
@@ -111,10 +115,15 @@ final class ProductData extends ChipData
     }
 
     /**
-     * Get the total price as Money (price - discount) × quantity.
+     * Get the total price as Money (price - discount) × quantity,
+     * or the total price override when set.
      */
     public function getTotalPrice(): Money
     {
+        if ($this->total_price_override !== null) {
+            return Money::{$this->getCurrency()}($this->total_price_override);
+        }
+
         $netUnitMinor = $this->getPriceInCents() - $this->getDiscountInCents();
         $currency = $this->getCurrency();
 
@@ -158,6 +167,24 @@ final class ProductData extends ChipData
             'discount' => $this->getDiscountInCents(),
             'tax_percent' => $this->tax_percent,
             'category' => $this->category,
+            'total_price_override' => $this->total_price_override,
         ];
+    }
+
+    /**
+     * Convert to array for outbound CHIP requests.
+     *
+     * Same shape as toArray() but omits nulls: the spec types `category`
+     * as a non-nullable string, so a null must never reach the wire.
+     * Zeros are preserved.
+     *
+     * @return array<string, mixed>
+     */
+    public function toRequestArray(): array
+    {
+        return array_filter(
+            $this->toArray(),
+            fn (mixed $value): bool => $value !== null
+        );
     }
 }

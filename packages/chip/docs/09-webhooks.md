@@ -119,6 +119,12 @@ If `chip.webhooks.store_webhooks` is enabled, `AIArmada\Chip\Listeners\StoreWebh
 
 The typed events emitted by `WebhookEventDispatcher` are the integration seam for downstream packages. `PurchaseEvent` and payment events expose stable IDs, amounts, currencies, statuses, customer details, references, metadata, and the original payload. CHIP does not generate documents or link checkout customers; those subscribers belong to their owning packages.
 
+## Retry protocol
+
+A server `429 Too Many Requests` throws `ChipRateLimitException` (a `RuntimeException`, not a `ChipApiException`) with the wait in `$e->getRetryAfter()`. The delay comes from the `Retry-After` header: numeric seconds map to a delay directly; HTTP-dates (IMF-fixdate, RFC 850, ANSI C asctime) convert to seconds-until; a missing or malformed header defaults to 60; a past date clamps to 0 (retry immediately).
+
+HTTP-dates require the weekday to match the date (two-digit RFC 850 years accept a weekday matching either the rule-resolved or the tentative century); a two-digit year more than 50 years out takes the past century. The client logs one warning per 429 and does not auto-retry mutations — only safe methods retry automatically, and the local rate limiter throws before the pipeline. Catch and schedule the retry yourself; see [Errors](04-usage.md#errors).
+
 ## Manual gateway handling
 
 If you need the universal payment-gateway adapter instead of the built-in queued processor, use `ChipGateway`'s webhook handler:
@@ -205,6 +211,32 @@ The package currently handles these CHIP Collect webhook events:
 | `purchase.pending_recurring_token_delete` | Purchase | Recurring-token removal pending |
 | `purchase.recurring_token_deleted` | Purchase | Recurring token removed |
 | `payment.refunded` | Payment | Refund completed |
+
+## Registering webhooks
+
+```php
+$webhook = Chip::createWebhook([
+    'title' => 'Order events',
+    'callback' => 'https://example.com/webhooks/chip',
+    'events' => ['purchase.paid', 'payment.refunded'],
+]);
+
+// Or subscribe to everything. The prose says either `events` or
+// `all_events` suffices, but `required` lists `events`
+// unconditionally — include both until CHIP clarifies:
+$webhook = Chip::createWebhook([
+    'title' => 'All events',
+    'callback' => 'https://example.com/webhooks/chip',
+    'events' => ['purchase.paid'],
+    'all_events' => true,
+]);
+
+// Partial update (PATCH) and full replace (PUT):
+Chip::partialUpdateWebhook($webhook['id'], ['events' => ['purchase.paid']]);
+Chip::updateWebhook($webhook['id'], ['title' => 'Order events', 'callback' => 'https://example.com/new', 'events' => ['purchase.paid']]);
+```
+
+Each registered webhook carries its own `public_key` (`WebhookData::$public_key`) — registered-webhook deliveries verify against that per-webhook key, while purchase success callbacks verify against the company key from `GET /public_key/`. See [Signature verification](#signature-verification).
 
 ## Testing
 

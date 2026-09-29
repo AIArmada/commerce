@@ -52,7 +52,7 @@ A comprehensive Laravel integration for the [CHIP](https://chip-in.asia) payment
 CHIP is a Malaysian fintech payment gateway that offers:
 - **FPX** (Financial Process Exchange) - Direct bank transfers
 - **Credit/Debit Cards** - Visa, Mastercard, Maestro
-- **E-Wallets** - DuitNow, Touch 'n Go, GrabPay, ShopeePay
+- **E-Wallets** - DuitNow, Touch 'n Go, GrabPay, ShopeePay, Atome
 - **Payouts** - Send money to bank accounts (CHIP Send)
 
 ## Package Features

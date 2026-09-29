@@ -15,7 +15,10 @@ final class PurchaseIdempotencyLedger
 {
     private const METADATA_KEY = 'chip_idempotency';
 
-    public function find(string $brandId, string $idempotencyKey, string $fingerprint): ?PurchaseData
+    /**
+     * @param  list<string>  $legacyFingerprints
+     */
+    public function find(string $brandId, string $idempotencyKey, string $fingerprint, array $legacyFingerprints = []): ?PurchaseData
     {
         $ledger = $this->findLedger($brandId, $idempotencyKey);
 
@@ -24,7 +27,7 @@ final class PurchaseIdempotencyLedger
         }
 
         $entry = $this->entry($ledger);
-        $this->assertFingerprint($entry, $fingerprint);
+        $this->assertFingerprint($entry, $fingerprint, $legacyFingerprints);
 
         $response = $entry['response'] ?? null;
         if ($response === null) {
@@ -264,10 +267,15 @@ final class PurchaseIdempotencyLedger
     /**
      * @param  array{idempotency_key: string, fingerprint: string, response: mixed, reserved_at?: mixed}  $entry
      */
-    private function assertFingerprint(array $entry, string $fingerprint): void
+    /**
+     * @param  list<string>  $legacyFingerprints
+     */
+    private function assertFingerprint(array $entry, string $fingerprint, array $legacyFingerprints = []): void
     {
-        if (hash_equals($fingerprint, $entry['fingerprint'])) {
-            return;
+        foreach ([$fingerprint, ...$legacyFingerprints] as $candidate) {
+            if (hash_equals($candidate, $entry['fingerprint'])) {
+                return;
+            }
         }
 
         throw new ChipValidationException(

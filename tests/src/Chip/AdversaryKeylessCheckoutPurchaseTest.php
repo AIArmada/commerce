@@ -60,7 +60,9 @@ it('refuses to create a keyless checkout purchase instead of posting it unprotec
     $client->shouldReceive('getBrandId')->zeroOrMoreTimes()->andReturn('brand_test');
     $client->shouldReceive('post')
         ->zeroOrMoreTimes()
-        ->with('purchases/', Mockery::any())
+        ->with('purchases/', Mockery::any(), Mockery::on(function ($headers): bool {
+            return str_starts_with($headers['Idempotency-Key'] ?? '', 'checkout-');
+        }))
         ->andReturnUsing(function () use (&$posts): array {
             $posts++;
 

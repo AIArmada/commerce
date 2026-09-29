@@ -64,6 +64,7 @@ describe('PurchaseDetails data object', function (): void {
                 'discount' => 0,
                 'tax_percent' => 0.0,
                 'category' => null,
+                'total_price_override' => null,
             ]],
             'total' => 1000,
             'language' => 'en',

@@ -8,6 +8,7 @@ use AIArmada\Cart\Collections\CartConditionCollection;
 use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Conditions\ConditionProviderRegistry;
 use AIArmada\Cart\Conditions\Handlers\ConditionTypeHandlerRegistry;
+use AIArmada\Cart\Conditions\PercentageRate;
 use AIArmada\Cart\Conditions\Pipeline\ConditionPipeline;
 use AIArmada\Cart\Conditions\Pipeline\ConditionPipelineContext;
 use AIArmada\Cart\Conditions\Pipeline\ConditionPipelineFactory;
@@ -161,18 +162,24 @@ final class Cart implements CheckoutableInterface
     }
 
     /**
-     * Net cart-level surcharge above the line-item subtotal. The cart prices
-     * adjustments through conditions, so this is the positive part of the net
+     * Net cart-level surcharge above the line-item subtotal, plus any
+     * attribute-declared line taxes the gateway applies on top of the
+     * condition-adjusted total. The cart prices adjustments through
+     * conditions, so the first term is the positive part of the net
      * adjustment rather than a separately computed tax figure.
      */
     public function getCheckoutTax(): Money
     {
-        return $this->checkoutMoney(max(0, $this->checkoutTotalMinor() - $this->checkoutSubtotalMinor()));
+        return $this->checkoutMoney(max(0, $this->checkoutTotalMinor() - $this->checkoutSubtotalMinor()) + $this->checkoutAttributeTaxMinor());
     }
 
+    /**
+     * Condition-adjusted total plus attribute-declared line taxes, matching
+     * what the gateway charges for the yielded line items.
+     */
     public function getCheckoutTotal(): Money
     {
-        return $this->checkoutMoney($this->checkoutTotalMinor());
+        return $this->checkoutMoney($this->checkoutTotalMinor() + $this->checkoutAttributeTaxMinor());
     }
 
     public function getCheckoutCurrency(): string
@@ -226,6 +233,30 @@ final class Cart implements CheckoutableInterface
         // Custom pipeline processors may return negative amounts; gateways
         // only ever receive a non-negative total.
         return max(0, (int) $this->total()->getAmount());
+    }
+
+    /**
+     * Attribute-declared line taxes the gateway applies. Uses each checkout
+     * line's gateway-facing rate, so lines with a tax condition (already
+     * baked into the price and reported as 0.0) contribute nothing. The
+     * declared rate is mirrored verbatim per line, half-up.
+     */
+    private function checkoutAttributeTaxMinor(): int
+    {
+        $minor = 0;
+
+        foreach ($this->getCheckoutLineItems() as $item) {
+            $percent = $item->getLineItemTaxPercent();
+
+            if ($percent === 0.0) {
+                continue;
+            }
+
+            $lineMinor = (int) $item->getLineItemSubtotal()->getAmount();
+            $minor += PercentageRate::fromDecimal($percent / 100)->calculateAdjustment($lineMinor);
+        }
+
+        return $minor;
     }
 
     private function checkoutMoney(int $amount): Money

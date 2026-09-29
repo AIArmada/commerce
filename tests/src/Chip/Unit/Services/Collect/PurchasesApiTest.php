@@ -83,6 +83,20 @@ function chipPaymentResponse(array $overrides = []): array
     return array_replace_recursive($base, $overrides);
 }
 
+function chipValidCreatePayload(array $overrides = []): array
+{
+    $base = [
+        'client' => ['email' => 'buyer@example.com'],
+        'purchase' => [
+            'currency' => 'MYR',
+            'products' => [['name' => 'Item', 'price' => 1000]],
+        ],
+        'brand_id' => 'brand_123',
+    ];
+
+    return array_replace_recursive($base, $overrides);
+}
+
 beforeEach(function (): void {
     $this->client = Mockery::mock(ChipCollectClient::class);
     $this->cache = Mockery::mock(CacheRepository::class);
@@ -135,10 +149,111 @@ it('rejects an unreconciled stable total contract', function (): void {
             'total_discount_override' => 0,
             'total_tax_override' => 0,
             'total_override' => 999,
-            'total' => 999,
         ],
         'brand_id' => 'brand_123',
     ]))->toThrow(ChipValidationException::class, 'total overrides do not reconcile');
+});
+
+it('rejects client and client_id set together', function (): void {
+    expect(fn () => $this->apiWithoutCache->create([
+        'client' => ['email' => 'buyer@example.com'],
+        'client_id' => 'client_123',
+        'purchase' => [
+            'currency' => 'MYR',
+            'products' => [['name' => 'Item', 'price' => 1000]],
+        ],
+        'brand_id' => 'brand_123',
+    ]))->toThrow(ChipValidationException::class, 'Only one of client or client_id may be provided');
+});
+
+it('rejects client paired with an empty client_id', function (): void {
+    expect(fn () => $this->apiWithoutCache->create([
+        'client' => ['email' => 'buyer@example.com'],
+        'client_id' => '',
+        'purchase' => [
+            'currency' => 'MYR',
+            'products' => [['name' => 'Item', 'price' => 1000]],
+        ],
+        'brand_id' => 'brand_123',
+    ]))->toThrow(ChipValidationException::class, 'Only one of client or client_id may be provided');
+});
+
+it('rejects client_id paired with an empty client array', function (): void {
+    expect(fn () => $this->apiWithoutCache->create([
+        'client' => [],
+        'client_id' => 'client_123',
+        'purchase' => [
+            'currency' => 'MYR',
+            'products' => [['name' => 'Item', 'price' => 1000]],
+        ],
+        'brand_id' => 'brand_123',
+    ]))->toThrow(ChipValidationException::class, 'Only one of client or client_id may be provided');
+});
+
+it('treats an explicit null client_id as absent', function (): void {
+    $this->client->shouldReceive('post')
+        ->once()
+        ->andReturn(chipPurchaseResponse());
+
+    $purchase = $this->apiWithoutCache->create([
+        'client' => ['email' => 'buyer@example.com'],
+        'client_id' => null,
+        'purchase' => [
+            'currency' => 'MYR',
+            'products' => [['name' => 'Item', 'price' => 1000]],
+        ],
+        'brand_id' => 'brand_123',
+    ]);
+
+    expect($purchase->id)->toBe('purchase_123');
+});
+
+it('rejects a response total that differs from total_override', function (): void {
+    $this->client->shouldReceive('post')
+        ->once()
+        ->andReturn(chipPurchaseResponse(['purchase' => ['total' => 999]]));
+
+    expect(fn () => $this->apiWithoutCache->create([
+        'client' => ['email' => 'buyer@example.com'],
+        'purchase' => [
+            'currency' => 'MYR',
+            'products' => [['name' => 'Item', 'price' => 1000]],
+            'subtotal_override' => 1000,
+            'total_discount_override' => 0,
+            'total_tax_override' => 0,
+            'total_override' => 1000,
+        ],
+        'brand_id' => 'brand_123',
+    ]))->toThrow(ChipValidationException::class, 'unexpected total');
+});
+
+it('ignores a differing response total when no total_override is set', function (): void {
+    $this->client->shouldReceive('post')
+        ->once()
+        ->andReturn(chipPurchaseResponse(['purchase' => ['total' => 999]]));
+
+    $purchase = $this->apiWithoutCache->create([
+        'client' => ['email' => 'buyer@example.com'],
+        'purchase' => [
+            'currency' => 'MYR',
+            'products' => [['name' => 'Item', 'price' => 1000]],
+        ],
+        'brand_id' => 'brand_123',
+    ]);
+
+    expect($purchase->id)->toBe('purchase_123');
+});
+
+it('rejects purchase.total on the create path', function (): void {
+    expect(fn () => $this->apiWithoutCache->create([
+        'client' => ['email' => 'buyer@example.com'],
+        'purchase' => [
+            'currency' => 'MYR',
+            'products' => [['name' => 'Item', 'price' => 1000]],
+            'total' => 1000,
+        ],
+        'brand_id' => 'brand_123',
+    ]))->toThrow(ChipValidationException::class, 'server-calculated');
 });
 
 describe('Collect Purchases API', function (): void {
@@ -182,7 +297,7 @@ describe('Collect Purchases API', function (): void {
 
         $this->client->shouldReceive('post')
             ->once()
-            ->with('purchases/', $requestData)
+            ->with('purchases/', $requestData, ['Idempotency-Key' => 'checkout-session-123'])
             ->andReturn(chipPurchaseResponse([
                 'reference' => 'checkout-session-123',
             ]));
@@ -212,7 +327,7 @@ describe('Collect Purchases API', function (): void {
             ->once()
             ->with('purchases/', Mockery::on(function (array $payload): bool {
                 return ! array_key_exists('idempotency_key', $payload);
-            }))
+            }), ['Idempotency-Key' => 'checkout-session-123'])
             ->andReturn(chipPurchaseResponse());
 
         $api->create($requestData);
@@ -227,6 +342,65 @@ describe('Collect Purchases API', function (): void {
             ChipValidationException::class,
             'Idempotency key has already been used for a different purchase payload.'
         );
+    });
+
+    it('sends the explicit idempotency key as a header', function (): void {
+        $requestData = [
+            'client' => ['email' => 'buyer@example.com'],
+            'purchase' => [
+                'currency' => 'MYR',
+                'products' => [['name' => 'Item', 'price' => 1000]],
+            ],
+            'brand_id' => 'brand_123',
+        ];
+
+        $this->client->shouldReceive('post')
+            ->once()
+            ->with('purchases/', $requestData, ['Idempotency-Key' => 'explicit-key-1'])
+            ->andReturn(chipPurchaseResponse());
+
+        $purchase = $this->apiWithoutCache->create($requestData, 'explicit-key-1');
+
+        expect($purchase->id)->toBe('purchase_123');
+    });
+
+    it('sends no idempotency header for keyless creates', function (): void {
+        $requestData = [
+            'client' => ['email' => 'buyer@example.com'],
+            'purchase' => [
+                'currency' => 'MYR',
+                'products' => [['name' => 'Item', 'price' => 1000]],
+            ],
+            'brand_id' => 'brand_123',
+        ];
+
+        // Two-arg expectation: any header would fail the arity match.
+        $this->client->shouldReceive('post')
+            ->once()
+            ->with('purchases/', $requestData)
+            ->andReturn(chipPurchaseResponse());
+
+        $purchase = $this->apiWithoutCache->create($requestData);
+
+        expect($purchase->id)->toBe('purchase_123');
+    });
+
+    it('sends the key as a header on purchase mutations', function (): void {
+        $this->client->shouldReceive('post')
+            ->once()
+            ->with('purchases/purchase_123/cancel/', [], ['Idempotency-Key' => 'cancel-key-1'])
+            ->andReturn(chipPurchaseResponse(['id' => 'purchase_123']));
+
+        $purchase = $this->apiWithoutCache->cancel('purchase_123', 'cancel-key-1');
+
+        expect($purchase->id)->toBe('purchase_123');
+    });
+
+    it('rejects a blank mutation idempotency key', function (): void {
+        $this->client->shouldNotReceive('post');
+
+        expect(fn () => $this->apiWithoutCache->cancel('purchase_123', '  '))
+            ->toThrow(ChipValidationException::class, 'non-empty string');
     });
 
     it('fills brand id from client when missing', function (): void {
@@ -308,6 +482,9 @@ describe('Collect Purchases API', function (): void {
                     && $payload['send_receipt'] === false
                     && $payload['payment_method_whitelist'] === ['fpx', 'grabpay']
                     && $payload['success_redirect'] === 'https://example.com/success';
+            }), Mockery::on(function ($headers) {
+                return ($headers['Idempotency-Key'] ?? null) !== null
+                    && str_starts_with($headers['Idempotency-Key'], 'checkout-');
             }))
             ->andReturn(chipPurchaseResponse(['brand_id' => 'brand_checkout']));
 
@@ -321,6 +498,26 @@ describe('Collect Purchases API', function (): void {
         );
 
         expect($purchase->brand_id)->toBe('brand_checkout');
+    });
+
+    it('omits null product fields from checkout payloads', function (): void {
+        $client = ClientDetailsData::from(['email' => 'buyer@example.com']);
+        $products = [ProductData::from(['name' => 'Service', 'price' => 2000, 'quantity' => '1'])];
+
+        $this->client->shouldReceive('getBrandId')
+            ->andReturn('brand_checkout');
+
+        $this->client->shouldReceive('post')
+            ->once()
+            ->with('purchases/', Mockery::on(function ($payload) {
+                return ! array_key_exists('category', $payload['purchase']['products'][0])
+                    && $payload['purchase']['products'][0]['discount'] === 0;
+            }), Mockery::on(function ($headers) {
+                return str_starts_with($headers['Idempotency-Key'] ?? '', 'checkout-');
+            }))
+            ->andReturn(chipPurchaseResponse(['brand_id' => 'brand_checkout']));
+
+        $this->apiWithoutCache->createCheckoutPurchase($products, $client);
     });
 
     it('provides the PEM public key returned by the API', function (): void {
@@ -457,6 +654,45 @@ describe('Collect Purchases API', function (): void {
         expect($refund->getAmountInCents())->toBe(500);
     });
 
+    it('returns PurchaseData for typed purchase refund responses', function (): void {
+        $response = chipPurchaseResponse(['type' => 'purchase']);
+        unset($response['purchase']);
+
+        $this->client->shouldReceive('post')
+            ->once()
+            ->with('purchases/purchase_123/refund/', ['amount' => 500])
+            ->andReturn($response);
+
+        $refund = $this->apiWithoutCache->refund('purchase_123', 500);
+
+        expect($refund)->toBeInstanceOf(PurchaseData::class);
+    });
+
+    it('returns PurchaseData for untyped purchase-keyed refund responses', function (): void {
+        $response = chipPurchaseResponse();
+        unset($response['type']);
+
+        $this->client->shouldReceive('post')
+            ->once()
+            ->with('purchases/purchase_123/refund/', ['amount' => 500])
+            ->andReturn($response);
+
+        $refund = $this->apiWithoutCache->refund('purchase_123', 500);
+
+        expect($refund)->toBeInstanceOf(PurchaseData::class);
+        expect($refund->id)->toBe('purchase_123');
+    });
+
+    it('rejects refund responses with no purchase key or known type', function (): void {
+        $this->client->shouldReceive('post')
+            ->once()
+            ->with('purchases/purchase_123/refund/', ['amount' => 500])
+            ->andReturn(['id' => 'unknown_1', 'status' => 'created']);
+
+        expect(fn () => $this->apiWithoutCache->refund('purchase_123', 500))
+            ->toThrow(ChipValidationException::class, 'unsupported resource type');
+    });
+
     it('returns PurchaseData for pending refund responses and marks purchases as paid', function (): void {
         $this->client->shouldReceive('post')
             ->once()
@@ -475,5 +711,145 @@ describe('Collect Purchases API', function (): void {
 
         $marked = $this->apiWithoutCache->markAsPaid('purchase_123', 1704067200);
         expect($marked->status)->toBe('paid');
+    });
+});
+
+describe('PurchasesApi E4 shared validation', function (): void {
+    it('accepts numeric tax forms on the raw path', function (): void {
+        $this->client->shouldReceive('post')
+            ->times(3)
+            ->andReturn(chipPurchaseResponse());
+
+        foreach (['6', 6, 6.0] as $tax) {
+            $purchase = $this->apiWithoutCache->create(chipValidCreatePayload([
+                'purchase' => ['products' => [['tax_percent' => $tax]]],
+            ]));
+
+            expect($purchase)->toBeInstanceOf(PurchaseData::class);
+        }
+    });
+
+    it('rejects non-numeric, negative, and oversized tax percents', function (): void {
+        foreach (['abc', -1, '-1', 101, []] as $tax) {
+            expect(fn () => $this->apiWithoutCache->create(chipValidCreatePayload([
+                'purchase' => ['products' => [['tax_percent' => $tax]]],
+            ])))->toThrow(ChipValidationException::class, 'Product tax percent must be a number between 0 and 100.');
+        }
+    });
+
+    it('rejects over-length purchase fields', function (): void {
+        expect(fn () => $this->apiWithoutCache->create(chipValidCreatePayload([
+            'purchase' => ['notes' => str_repeat('n', 10001)],
+        ])))->toThrow(ChipValidationException::class, 'Purchase notes must be a string of at most 10000 characters.');
+
+        expect(fn () => $this->apiWithoutCache->create(chipValidCreatePayload([
+            'purchase' => ['language' => 'eng'],
+        ])))->toThrow(ChipValidationException::class, 'Purchase language must be a string of at most 2 characters.');
+
+        expect(fn () => $this->apiWithoutCache->create(chipValidCreatePayload([
+            'purchase' => ['email_message' => str_repeat('e', 513)],
+        ])))->toThrow(ChipValidationException::class, 'Purchase email message must be a string of at most 512 characters.');
+    });
+
+    it('rejects over-length product fields', function (): void {
+        expect(fn () => $this->apiWithoutCache->create(chipValidCreatePayload([
+            'purchase' => ['products' => [['name' => str_repeat('n', 257)]]],
+        ])))->toThrow(ChipValidationException::class, 'Product name must be a string of at most 256 characters.');
+
+        expect(fn () => $this->apiWithoutCache->create(chipValidCreatePayload([
+            'purchase' => ['products' => [['category' => str_repeat('c', 257)]]],
+        ])))->toThrow(ChipValidationException::class, 'Product category must be a string of at most 256 characters.');
+    });
+
+    it('rejects over-length client fields', function (): void {
+        $cases = [
+            'legal_name' => 1000,
+            'brand_name' => 128,
+            'registration_number' => 32,
+            'tax_number' => 32,
+            'bank_account' => 64,
+            'bank_code' => 32,
+        ];
+
+        foreach ($cases as $field => $max) {
+            expect(fn () => $this->apiWithoutCache->create(chipValidCreatePayload([
+                'client' => [$field => str_repeat('x', $max + 1)],
+            ])))->toThrow(ChipValidationException::class, 'must be a string of at most');
+        }
+    });
+
+    it('rejects over-length and non-array cc/bcc entries', function (): void {
+        expect(fn () => $this->apiWithoutCache->create(chipValidCreatePayload([
+            'client' => ['cc' => [str_repeat('a', 250).'@b.co']],
+        ])))->toThrow(ChipValidationException::class, 'Client cc entries must be a string of at most 254 characters.');
+
+        expect(fn () => $this->apiWithoutCache->create(chipValidCreatePayload([
+            'client' => ['bcc' => 'not-an-array'],
+        ])))->toThrow(ChipValidationException::class, 'Client bcc must be an array of email addresses.');
+    });
+
+    it('rejects null, blank, and unknown platforms', function (): void {
+        expect(fn () => $this->apiWithoutCache->create(chipValidCreatePayload(['platform' => null])))
+            ->toThrow(ChipValidationException::class, 'Platform cannot be null.');
+        expect(fn () => $this->apiWithoutCache->create(chipValidCreatePayload(['platform' => ''])))
+            ->toThrow(ChipValidationException::class, 'Platform must be one of: web, api, ios, android, macos, windows.');
+        expect(fn () => $this->apiWithoutCache->create(chipValidCreatePayload(['platform' => 'beos'])))
+            ->toThrow(ChipValidationException::class, 'Platform must be one of: web, api, ios, android, macos, windows.');
+    });
+
+    it('rejects null and over-length creator agents but allows empty', function (): void {
+        expect(fn () => $this->apiWithoutCache->create(chipValidCreatePayload(['creator_agent' => null])))
+            ->toThrow(ChipValidationException::class, 'Creator agent cannot be null.');
+        expect(fn () => $this->apiWithoutCache->create(chipValidCreatePayload(['creator_agent' => str_repeat('c', 33)])))
+            ->toThrow(ChipValidationException::class, 'Creator agent must be a string of at most 32 characters.');
+
+        $this->client->shouldReceive('post')->once()->andReturn(chipPurchaseResponse());
+
+        $purchase = $this->apiWithoutCache->create(chipValidCreatePayload([
+            'platform' => 'web',
+            'creator_agent' => '',
+        ]));
+
+        expect($purchase)->toBeInstanceOf(PurchaseData::class);
+    });
+
+    it('accepts boundary-valid lengths across the payload', function (): void {
+        $this->client->shouldReceive('post')->once()->andReturn(chipPurchaseResponse());
+
+        $purchase = $this->apiWithoutCache->create(chipValidCreatePayload([
+            'client' => [
+                'legal_name' => str_repeat('l', 1000),
+                'cc' => [str_repeat('a', 249).'@b.co'],
+            ],
+            'purchase' => [
+                'notes' => str_repeat('n', 10000),
+                'language' => 'en',
+                'products' => [[
+                    'name' => str_repeat('n', 256),
+                    'category' => str_repeat('c', 256),
+                    'tax_percent' => '100',
+                ]],
+            ],
+        ]));
+
+        expect($purchase)->toBeInstanceOf(PurchaseData::class);
+    });
+
+    it('rejects an empty platform from config on the checkout path', function (): void {
+        config(['chip.defaults.platform' => '']);
+
+        $this->client->shouldReceive('getBrandId')->andReturn('brand_123');
+
+        $client = ClientDetailsData::from(['email' => 'buyer@example.com']);
+        $products = [ProductData::from(['name' => 'MYR item', 'price' => 1000, 'currency' => 'MYR'])];
+
+        expect(fn () => $this->apiWithoutCache->createCheckoutPurchase($products, $client))
+            ->toThrow(ChipValidationException::class, 'Platform must be one of: web, api, ios, android, macos, windows.');
+    });
+
+    it('rejects fractional quantities on the raw path', function (): void {
+        expect(fn () => $this->apiWithoutCache->create(chipValidCreatePayload([
+            'purchase' => ['products' => [['quantity' => 1.5]]],
+        ])))->toThrow(ChipValidationException::class, 'Product quantity must be an integer.');
     });
 });

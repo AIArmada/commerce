@@ -11,8 +11,13 @@ use Akaunting\Money\Money;
  * Checkout view of a cart item.
  *
  * Item-level conditions are already baked into the item price, so the
- * discount is reported as zero here: cart-level adjustments surface on the
- * cart's own discount term instead of being double-counted per line.
+ * discount is reported as zero here and the tax percent is zeroed whenever
+ * a tax condition is present: cart-level adjustments surface on the cart's
+ * own discount and tax terms instead of being double-counted per line (a
+ * gateway receiving the baked price plus a nonzero tax percent would apply
+ * the tax a second time). An attribute-declared tax rate touches neither
+ * the price nor the cart tax term, so it passes through for the gateway
+ * to apply.
  */
 final readonly class CartCheckoutLineItem implements LineItemInterface
 {
@@ -45,6 +50,12 @@ final readonly class CartCheckoutLineItem implements LineItemInterface
 
     public function getLineItemTaxPercent(): float
     {
+        foreach ($this->item->getConditions() as $condition) {
+            if ($condition->getType() === 'tax') {
+                return 0.0;
+            }
+        }
+
         return $this->item->getLineItemTaxPercent();
     }
 

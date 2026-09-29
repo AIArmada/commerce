@@ -33,4 +33,38 @@ describe('EWallet Enum', function (): void {
         expect($wallet)->toBeNull();
     });
 
+    it('finds wallet by preferred value case-insensitively', function (): void {
+        expect(EWallet::fromPreferred('RAZER_GRABPAY'))->toBe(EWallet::GRABPAY)
+            ->and(EWallet::fromPreferred('Shopee_Pay'))->toBe(EWallet::SHOPEEPAY);
+    });
+
+    it('builds razer URL params with a bank code', function (): void {
+        expect(EWallet::GRABPAY->urlParams())->toBe([
+            'preferred' => 'razer_grabpay',
+            'razer_bank_code' => 'GrabPay',
+        ])->and(EWallet::ATOME->urlParams())->toBe([
+            'preferred' => 'razer_atome',
+            'razer_bank_code' => 'Atome',
+        ]);
+    });
+
+    it('builds ShopeePay URL params without a bank code', function (): void {
+        expect(EWallet::SHOPEEPAY->urlParams())->toBe(['preferred' => 'shopee_pay']);
+    });
+
+    it('maps Atome through every accessor', function (): void {
+        expect(EWallet::ATOME->preferred())->toBe('razer_atome')
+            ->and(EWallet::ATOME->label())->toBe('Atome')
+            ->and(EWallet::fromPreferred('razer_atome'))->toBe(EWallet::ATOME)
+            ->and(EWallet::fromCode('Atome'))->toBe(EWallet::ATOME);
+    });
+
+    it('reports a null code for ShopeePay in the array form', function (): void {
+        $wallets = EWallet::toArray();
+
+        expect($wallets['SHOPEEPAY']['code'])->toBeNull()
+            ->and($wallets['SHOPEEPAY']['preferred'])->toBe('shopee_pay')
+            ->and($wallets['ATOME']['code'])->toBe('Atome');
+    });
+
 });

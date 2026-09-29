@@ -6,6 +6,7 @@ namespace AIArmada\Chip\Clients;
 
 use AIArmada\Chip\Clients\Http\BaseHttpClient;
 use AIArmada\Chip\Exceptions\ChipApiException;
+use AIArmada\Chip\Exceptions\ChipRateLimitException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -125,12 +126,37 @@ class ChipCollectClient extends BaseHttpClient
     protected function handleFailedResponse(Response $response): never
     {
         $statusCode = $response->status();
-        $responseData = $response->json() ?? [];
-        $message = $responseData['message'] ?? $responseData['error'] ?? "API request failed with status {$statusCode}";
 
-        // Only log if logging is enabled, and mask sensitive data
+        if ($statusCode === 429) {
+            $retryAfter = $this->retryAfterSeconds($response);
+
+            if ($this->loggingEnabled()) {
+                $decoded = $response->json();
+
+                Log::channel($this->logChannel())->warning('CHIP API rate limited', [
+                    'retry_after' => $retryAfter,
+                    'source' => 'server',
+                    'response_data' => $this->maskSensitiveData(is_array($decoded) ? $decoded : []),
+                ]);
+            }
+
+            throw new ChipRateLimitException($retryAfter);
+        }
+
+        $responseData = ChipApiException::normalizeErrorData($response->json());
+        $allError = ChipApiException::extractAllError($responseData);
+        $message = $responseData['message'] ?? $responseData['error'] ?? $allError['message'] ?? "API request failed with status {$statusCode}";
+
+        if ($allError !== null && $allError['code'] !== null && ! isset($responseData['code'])) {
+            $responseData['code'] = $allError['code'];
+        }
+
+        // Demoted duplicate: handleException logs the authoritative error
+        // line (Send relies on it); this keeps the Collect response context
+        // at warning so a failure still emits exactly one error line at
+        // this layer (service-level attempt() logging is separate).
         if ($this->loggingEnabled()) {
-            Log::channel($this->logChannel())->error('CHIP API Error Response', [
+            Log::channel($this->logChannel())->warning('CHIP API Error Response', [
                 'status' => $statusCode,
                 'message' => $message,
                 'response_data' => $this->maskSensitiveData($responseData),

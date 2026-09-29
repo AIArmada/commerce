@@ -25,6 +25,17 @@ describe('Collect Account API', function (): void {
         expect($balance)->toBe($expected);
     });
 
+    it('fetches balance with filters', function (): void {
+        $response = ['balance' => 1000];
+
+        $this->client->shouldReceive('get')
+            ->once()
+            ->with('account/json/balance/?currency=MYR')
+            ->andReturn($response);
+
+        expect($this->api->balance(['currency' => 'MYR']))->toBe($response);
+    });
+
     it('fetches turnover with filters', function (): void {
         $filters = ['date_from' => '2024-01-01'];
         $response = ['turnover' => 5000];
@@ -75,5 +86,18 @@ describe('Collect Account API', function (): void {
 
         expect($this->api->cancelCompanyStatement('statement_123'))
             ->toBe(['id' => 'statement_123', 'status' => 'cancelled']);
+    });
+
+    it('schedules a company statement with filters as query string', function (): void {
+        $statement = ['format' => 'csv', 'timezone' => 'UTC'];
+        $filters = ['status' => 'paid'];
+
+        $this->client->shouldReceive('post')
+            ->once()
+            ->with('company_statements/?status=paid', $statement)
+            ->andReturn(['id' => 'statement_123', 'status' => 'queued']);
+
+        expect($this->api->scheduleCompanyStatement($statement, $filters))
+            ->toBe(['id' => 'statement_123', 'status' => 'queued']);
     });
 });

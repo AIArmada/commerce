@@ -211,6 +211,94 @@ describe('ChipPurchasePayloadBuilder', function (): void {
 
         expect($payload['client']['phone'])->toBe('+60123456789');
     });
+
+    it('maps billing address fields into the client', function (): void {
+        $session = new CheckoutSession;
+        $session->id = 'session_with_address';
+        $session->billing_data = [
+            'line1' => ' 1 Jalan Ampang ',
+            'line2' => 'Suite 5',
+            'line3' => '',
+            'city' => 'Kuala Lumpur',
+            'state' => 'Wilayah Persekutuan',
+            'postcode' => '50450',
+            'country_code' => 'MY',
+            'country' => 'Malaysia',
+        ];
+
+        $request = new PaymentRequest(
+            amount: 1000,
+            currency: 'MYR',
+            gateway: 'chip',
+            description: 'Test payment',
+            customerEmail: 'test@example.com',
+            customerName: 'Test User',
+            customerPhone: null,
+            successUrl: 'https://example.com/success',
+            failureUrl: 'https://example.com/failure',
+            cancelUrl: 'https://example.com/cancel',
+        );
+
+        $payload = (new ChipPurchasePayloadBuilder)->build($session, $request);
+
+        expect($payload['client'])->toBe([
+            'email' => 'test@example.com',
+            'full_name' => 'Test User',
+            'street_address' => '1 Jalan Ampang, Suite 5',
+            'city' => 'Kuala Lumpur',
+            'state' => 'Wilayah Persekutuan',
+            'zip_code' => '50450',
+            'country' => 'MY',
+        ]);
+    });
+
+    it('omits address keys when billing data is absent', function (): void {
+        $session = new CheckoutSession;
+        $session->id = 'session_no_address';
+
+        $request = new PaymentRequest(
+            amount: 1000,
+            currency: 'MYR',
+            gateway: 'chip',
+            description: 'Test payment',
+            customerEmail: 'test@example.com',
+            customerName: 'Test User',
+            customerPhone: null,
+            successUrl: 'https://example.com/success',
+            failureUrl: 'https://example.com/failure',
+            cancelUrl: 'https://example.com/cancel',
+        );
+
+        $payload = (new ChipPurchasePayloadBuilder)->build($session, $request);
+
+        expect($payload['client'])->toBe([
+            'email' => 'test@example.com',
+            'full_name' => 'Test User',
+        ]);
+    });
+
+    it('never sends a full country name without its code', function (): void {
+        $session = new CheckoutSession;
+        $session->id = 'session_country_name';
+        $session->billing_data = ['country' => 'Malaysia'];
+
+        $request = new PaymentRequest(
+            amount: 1000,
+            currency: 'MYR',
+            gateway: 'chip',
+            description: 'Test payment',
+            customerEmail: 'test@example.com',
+            customerName: 'Test User',
+            customerPhone: null,
+            successUrl: 'https://example.com/success',
+            failureUrl: 'https://example.com/failure',
+            cancelUrl: 'https://example.com/cancel',
+        );
+
+        $payload = (new ChipPurchasePayloadBuilder)->build($session, $request);
+
+        expect($payload['client'])->not->toHaveKey('country');
+    });
 });
 
 describe('CheckoutResult', function (): void {

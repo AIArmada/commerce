@@ -105,6 +105,53 @@ it('reports net surcharges on the tax term without negative money', function ():
     expect((int) $this->cart->getCheckoutTotal()->getAmount())->toBe(2750);
 });
 
+it('includes attribute-declared line taxes in the tax and total terms', function (): void {
+    $this->cart->add('sku-3', 'Taxed Widget', 1000, 2, ['tax_percent' => 8.0]);
+
+    $subtotal = (int) $this->cart->getCheckoutSubtotal()->getAmount();
+    $discount = (int) $this->cart->getCheckoutDiscount()->getAmount();
+    $tax = (int) $this->cart->getCheckoutTax()->getAmount();
+    $total = (int) $this->cart->getCheckoutTotal()->getAmount();
+
+    expect($subtotal)->toBe(4500);
+    expect($discount)->toBe(0);
+    expect($tax)->toBe(160);
+    expect($total)->toBe(4660);
+    expect($total)->toBe($subtotal - $discount + $tax);
+});
+
+it('keeps attribute tax on the tax term when discounts pull the total below the subtotal', function (): void {
+    $this->cart->add('sku-3', 'Taxed Widget', 1000, 2, ['tax_percent' => 8.0]);
+    $this->cart->addDiscount('SAVE10', '10%');
+
+    $subtotal = (int) $this->cart->getCheckoutSubtotal()->getAmount();
+    $discount = (int) $this->cart->getCheckoutDiscount()->getAmount();
+    $tax = (int) $this->cart->getCheckoutTax()->getAmount();
+    $total = (int) $this->cart->getCheckoutTotal()->getAmount();
+
+    expect($subtotal)->toBe(4500);
+    expect($discount)->toBe(450);
+    expect($tax)->toBe(160);
+    expect($total)->toBe(4210);
+    expect($total)->toBe($subtotal - $discount + $tax);
+});
+
+it('adds attribute tax on top of condition surcharges without double counting', function (): void {
+    $this->cart->add('sku-3', 'Taxed Widget', 1000, 2, ['tax_percent' => 8.0]);
+    $this->cart->addTax('VAT', '10%');
+
+    $subtotal = (int) $this->cart->getCheckoutSubtotal()->getAmount();
+    $discount = (int) $this->cart->getCheckoutDiscount()->getAmount();
+    $tax = (int) $this->cart->getCheckoutTax()->getAmount();
+    $total = (int) $this->cart->getCheckoutTotal()->getAmount();
+
+    expect($subtotal)->toBe(4500);
+    expect($discount)->toBe(0);
+    expect($tax)->toBe(610);
+    expect($total)->toBe(5110);
+    expect($total)->toBe($subtotal - $discount + $tax);
+});
+
 it('reports conditioned line prices with zero line discounts', function (): void {
     $discount = new CartCondition(
         name: 'half-off',

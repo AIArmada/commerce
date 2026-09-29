@@ -158,6 +158,70 @@ describe('Webhook Handlers Integration', function (): void {
             Event::assertDispatched(PurchasePaymentFailure::class);
         });
 
+        it('prefers attempt detail over top-level error_code', function (): void {
+            Event::fake();
+
+            $purchase = createTestPurchase(['status' => 'pending_execute']);
+            $payload = createPayloadWithPurchase('purchase.payment_failure', $purchase, [
+                'status' => 'error',
+                'error_code' => 'card_declined',
+                'transaction_data' => [
+                    'attempts' => [
+                        ['error' => ['message' => 'Insufficient funds', 'code' => 'insufficient_funds']],
+                    ],
+                ],
+            ]);
+
+            app(PaymentFailedHandler::class)->handle($payload);
+
+            expect($purchase->refresh()->failure_reason)->toBe('Insufficient funds');
+        });
+
+        it('persists the newest attempt error when several attempts exist', function (): void {
+            Event::fake();
+
+            $purchase = createTestPurchase(['status' => 'pending_execute']);
+            $payload = createPayloadWithPurchase('purchase.payment_failure', $purchase, [
+                'status' => 'error',
+                'transaction_data' => [
+                    'attempts' => [
+                        ['error' => ['message' => 'Newest failure', 'code' => 'newest_code']],
+                        ['error' => ['message' => 'Oldest failure', 'code' => 'oldest_code']],
+                    ],
+                ],
+            ]);
+
+            app(PaymentFailedHandler::class)->handle($payload);
+
+            expect($purchase->refresh()->failure_reason)->toBe('Newest failure');
+        });
+
+        it('falls back to top-level error_code without attempt detail', function (): void {
+            Event::fake();
+
+            $purchase = createTestPurchase(['status' => 'pending_execute']);
+            $payload = createPayloadWithPurchase('purchase.payment_failure', $purchase, [
+                'status' => 'error',
+                'error_code' => 'card_declined',
+                'transaction_data' => ['attempts' => [['error' => []]]],
+            ]);
+
+            app(PaymentFailedHandler::class)->handle($payload);
+
+            expect($purchase->refresh()->failure_reason)->toBe('card_declined');
+        });
+
+        it('falls back to unknown without attempt detail or error_code', function (): void {
+            Event::fake();
+
+            $purchase = createTestPurchase(['status' => 'pending_execute']);
+            $payload = createPayloadWithPurchase('purchase.payment_failure', $purchase, ['status' => 'error']);
+
+            app(PaymentFailedHandler::class)->handle($payload);
+
+            expect($purchase->refresh()->failure_reason)->toBe('Unknown payment failure');
+        });
+
         it('PurchaseRefundedHandler updates purchase', function (): void {
             Event::fake();
 

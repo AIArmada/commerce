@@ -58,6 +58,16 @@ describe('Product data object with Money', function (): void {
             ->and($totalPrice->getAmount())->toBe(37820); // (19900 - 990) * 2
     });
 
+    it('honors the total price override in local totals', function (): void {
+        $zeroed = ProductData::make('Free', Money::MYR(5000), 1, null, 0.0, null, 0);
+        $reduced = ProductData::make('Reduced', Money::MYR(5000), 2, null, 0.0, null, 250);
+        $plain = ProductData::make('Plain', Money::MYR(5000), 2);
+
+        expect($zeroed->getTotalPriceInCents())->toBe(0)
+            ->and($reduced->getTotalPriceInCents())->toBe(250)
+            ->and($plain->getTotalPriceInCents())->toBe(10000);
+    });
+
     it('exports to array with prices in cents for API', function (): void {
         $product = ProductData::make(
             name: 'One-time Item',
@@ -71,6 +81,7 @@ describe('Product data object with Money', function (): void {
             'discount' => 0,
             'tax_percent' => 0.0,
             'category' => null,
+            'total_price_override' => null,
         ]);
     });
 

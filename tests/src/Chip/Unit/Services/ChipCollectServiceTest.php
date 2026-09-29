@@ -9,9 +9,11 @@ use AIArmada\Chip\Data\CompanyStatementData;
 use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Chip\Data\ProductData;
 use AIArmada\Chip\Data\PurchaseData;
+use AIArmada\Chip\Exceptions\ChipValidationException;
 use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\Chip\Services\SubscriptionService;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
+use Illuminate\Support\Facades\Cache;
 
 beforeEach(function (): void {
     $this->client = Mockery::mock(ChipCollectClient::class);
@@ -205,7 +207,7 @@ describe('ChipCollectService Purchase Management', function (): void {
         ];
 
         $this->client->shouldReceive('post')
-            ->with('purchases/', $requestData)
+            ->with('purchases/', $requestData, ['Idempotency-Key' => 'ORDER_001'])
             ->andReturn($purchaseData);
 
         $purchase = $this->service->createPurchase($requestData);
@@ -214,6 +216,31 @@ describe('ChipCollectService Purchase Management', function (): void {
         expect($purchase->id)->toBe('purchase_123');
         expect($purchase->status)->toBe('created');
         expect($purchase->reference)->toBe('ORDER_001');
+    });
+
+    it('dedupes repeat creates on the separate idempotency argument', function (): void {
+        $cache = Cache::store('array');
+        $cache->clear();
+        $service = new ChipCollectService($this->client, $cache);
+        $requestData = [
+            'client' => ['email' => 'test@example.com'],
+            'purchase' => [
+                'currency' => 'MYR',
+                'products' => [
+                    ['name' => 'Test Product', 'price' => 10000, 'quantity' => 1],
+                ],
+            ],
+            'brand_id' => 'test_brand_id',
+        ];
+
+        $this->client->shouldReceive('post')
+            ->once()
+            ->andReturn(chipCollectPurchaseResponse());
+
+        $first = $service->createPurchase($requestData, 'idem-key-1');
+        $second = $service->createPurchase($requestData, 'idem-key-1');
+
+        expect($second->id)->toBe($first->id);
     });
 
     it('accepts an existing client reference without client payload', function (): void {
@@ -722,6 +749,15 @@ describe('ChipCollectService Account & Reporting', function (): void {
         expect($this->service->getAccountBalance())->toBe(['balance' => 10000]);
     });
 
+    it('retrieves account balance with filters', function (): void {
+        $this->client->shouldReceive('get')
+            ->once()
+            ->with('account/json/balance/?currency=MYR')
+            ->andReturn(['balance' => 10000]);
+
+        expect($this->service->getAccountBalance(['currency' => 'MYR']))->toBe(['balance' => 10000]);
+    });
+
     it('retrieves account turnover with filters', function (): void {
         $this->client->shouldReceive('get')
             ->once()
@@ -798,6 +834,45 @@ describe('ChipCollectService Account & Reporting', function (): void {
 
         expect($cancelled)->toBeInstanceOf(CompanyStatementData::class);
         expect($cancelled->isCancelled())->toBeTrue();
+    });
+
+    it('schedules a company statement', function (): void {
+        $this->client->shouldReceive('post')
+            ->once()
+            ->with('company_statements/?status=paid', ['format' => 'csv', 'timezone' => 'UTC'])
+            ->andReturn([
+                'id' => 'statement_123',
+                'type' => 'statement',
+                'format' => 'csv',
+                'timezone' => 'UTC',
+                'is_test' => false,
+                'company_uid' => 'company_456',
+                'status' => 'queued',
+                'created_on' => 1712070000,
+                'updated_on' => 1712073600,
+            ]);
+
+        $statement = $this->service->scheduleCompanyStatement(
+            ['format' => 'csv', 'timezone' => 'UTC'],
+            ['status' => 'paid']
+        );
+
+        expect($statement)->toBeInstanceOf(CompanyStatementData::class);
+        expect($statement->status)->toBe('queued');
+    });
+
+    it('rejects an unsupported statement format without calling the api', function (): void {
+        $this->client->shouldNotReceive('post');
+
+        expect(fn () => $this->service->scheduleCompanyStatement(['format' => 'pdf']))
+            ->toThrow(ChipValidationException::class, 'csv or xlsx');
+    });
+
+    it('rejects a blank statement timezone without calling the api', function (): void {
+        $this->client->shouldNotReceive('post');
+
+        expect(fn () => $this->service->scheduleCompanyStatement(['format' => 'csv', 'timezone' => '  ']))
+            ->toThrow(ChipValidationException::class, 'non-empty string');
     });
 });
 
@@ -912,6 +987,8 @@ describe('ChipCollectService Utilities', function (): void {
                 return $payload['brand_id'] === 'brand_checkout'
                     && $payload['client']['email'] === 'checkout@example.com'
                     && $payload['purchase']['products'][0]['name'] === 'Subscription';
+            }), Mockery::on(function ($headers) {
+                return str_starts_with($headers['Idempotency-Key'] ?? '', 'checkout-');
             }))
             ->andReturn(chipCollectPurchaseResponse(['brand_id' => 'brand_checkout']));
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Testing;
 
+use AIArmada\Chip\Exceptions\ChipValidationException;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
 
@@ -21,6 +22,12 @@ class FakeChipClient
     protected array $clients = [];
 
     protected array $purchases = [];
+
+    protected array $purchasesByKey = [];
+
+    protected array $purchaseFingerprintsByKey = [];
+
+    protected bool $pendingRefundOnce = false;
 
     protected array $recurringTokens = [];
 
@@ -110,8 +117,26 @@ class FakeChipClient
         unset($this->clients[$clientId]);
     }
 
-    public function createPurchase(array $data): array
+    public function createPurchase(array $data, ?string $idempotencyKey = null): array
     {
+        $idempotencyKey ??= $data['idempotency_key'] ?? null;
+
+        if ($idempotencyKey !== null && ! is_string($idempotencyKey)) {
+            throw new ChipValidationException('Idempotency key must be a string.');
+        }
+
+        if ($idempotencyKey !== null && isset($this->purchasesByKey[$idempotencyKey])) {
+            $fingerprint = $this->fingerprintPayload($data);
+
+            if (! hash_equals($this->purchaseFingerprintsByKey[$idempotencyKey], $fingerprint)) {
+                throw new ChipValidationException(
+                    'Idempotency key has already been used for a different purchase payload.'
+                );
+            }
+
+            return $this->purchasesByKey[$idempotencyKey];
+        }
+
         $id = 'pur_' . Str::random(20);
 
         $purchase = array_merge([
@@ -154,9 +179,50 @@ class FakeChipClient
             'notes' => $purchase['purchase']['notes'] ?? null,
         ], is_array($purchase['purchase'] ?? null) ? $purchase['purchase'] : []);
 
+        if ($idempotencyKey !== null) {
+            $purchase['idempotency_key'] = $idempotencyKey;
+            $this->purchasesByKey[$idempotencyKey] = $purchase;
+            $this->purchaseFingerprintsByKey[$idempotencyKey] = $this->fingerprintPayload($data);
+        }
+
         $this->purchases[$id] = $purchase;
 
         return $purchase;
+    }
+
+    /**
+     * Payload identity for the keyed store. Mirrors production semantics:
+     * keys are sorted recursively and the staged idempotency key is not part
+     * of the fingerprinted payload, so reordered but equivalent payloads —
+     * and the same key supplied either staged or as the second argument —
+     * collapse instead of conflicting.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function fingerprintPayload(array $data): string
+    {
+        unset($data['idempotency_key']);
+
+        return sha1((string) json_encode($this->sortForFingerprint($data)));
+    }
+
+    private function sortForFingerprint(mixed $value): mixed
+    {
+        if (! is_array($value)) {
+            return $value;
+        }
+
+        if (array_is_list($value)) {
+            return array_map(fn (mixed $item): mixed => $this->sortForFingerprint($item), $value);
+        }
+
+        ksort($value);
+
+        foreach ($value as $key => $item) {
+            $value[$key] = $this->sortForFingerprint($item);
+        }
+
+        return $value;
     }
 
     public function getPurchase(string $purchaseId): ?array
@@ -176,6 +242,16 @@ class FakeChipClient
         return $this->purchases[$purchaseId];
     }
 
+    /**
+     * Arm the next refundPurchase() call to return a pending_refund
+     * purchase instead of a completed refund payment. One-shot: the flag is
+     * consumed by the next refund of a known purchase.
+     */
+    public function pendingRefundOnce(): void
+    {
+        $this->pendingRefundOnce = true;
+    }
+
     public function refundPurchase(string $purchaseId, ?int $amount = null): ?array
     {
         if (! isset($this->purchases[$purchaseId])) {
@@ -185,6 +261,14 @@ class FakeChipClient
         $purchase = $this->purchases[$purchaseId];
         $refundAmount = $amount ?? $purchase['purchase']['total'];
         $now = CarbonImmutable::now()->getTimestamp();
+
+        if ($this->pendingRefundOnce) {
+            $this->pendingRefundOnce = false;
+            $this->purchases[$purchaseId]['status'] = 'pending_refund';
+            $this->purchases[$purchaseId]['updated_on'] = $now;
+
+            return $this->purchases[$purchaseId];
+        }
 
         $this->purchases[$purchaseId]['status'] = 'refunded';
         $this->purchases[$purchaseId]['refunded_amount'] = $refundAmount;
@@ -344,7 +428,7 @@ class FakeChipClient
         return "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0...(fake)\n-----END PUBLIC KEY-----";
     }
 
-    public function getAccountBalance(): array
+    public function getAccountBalance(array $filters = []): array
     {
         return [
             'balance' => 1000000,
@@ -509,6 +593,9 @@ class FakeChipClient
     {
         $this->clients = [];
         $this->purchases = [];
+        $this->purchasesByKey = [];
+        $this->purchaseFingerprintsByKey = [];
+        $this->pendingRefundOnce = false;
         $this->recurringTokens = [];
         $this->webhooks = [];
     }

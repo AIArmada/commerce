@@ -55,7 +55,7 @@ it('does not re-post a purchase when the idempotency cache is lost after a succe
 
     $client->shouldReceive('post')
         ->zeroOrMoreTimes()
-        ->with('purchases/', Mockery::any())
+        ->with('purchases/', Mockery::any(), ['Idempotency-Key' => 'adversary-crash-session-1'])
         ->andReturnUsing(function () use (&$posts): array {
             $posts++;
 

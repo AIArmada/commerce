@@ -48,6 +48,21 @@ final class WebhooksApi extends CollectApi
         );
     }
 
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public function partialUpdate(string $webhookId, array $data): array
+    {
+        $this->assertSafePathSegment($webhookId, 'Webhook id');
+
+        return $this->attempt(
+            fn () => $this->client->patch("webhooks/{$webhookId}/", $data),
+            'Failed to partially update CHIP webhook',
+            ['webhook_id' => $webhookId, 'data' => $data]
+        );
+    }
+
     public function delete(string $webhookId): void
     {
         $this->assertSafePathSegment($webhookId, 'Webhook id');
