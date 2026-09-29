@@ -117,8 +117,7 @@ To pre-select FPX without skipping the gateway page, use `?active=` instead of `
 
 ```php
 $checkoutRedirect = $purchase->checkout_url
-    .'?active='.FpxType::B2C->value
-    .'&fpx_bank_code='.FpxBank::MAYBANK2U->value;
+    .'?active='.FpxType::B2C->value;
 ```
 
 To collect raw card details instead of redirecting, POST a card form to `direct_post_url` — see [Card payments](#card-payments).

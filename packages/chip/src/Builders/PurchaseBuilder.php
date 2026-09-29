@@ -984,8 +984,8 @@ final class PurchaseBuilder
 
         $asFloat = (float) $normalized;
 
-        if ($asFloat <= 0) {
-            throw new ChipValidationException('Product quantity must be greater than zero.');
+        if ($asFloat < 0) {
+            throw new ChipValidationException('Product quantity must be zero or greater.');
         }
 
         if ($asFloat >= 2 ** 53) {

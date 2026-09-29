@@ -267,7 +267,7 @@ $product->getTotalPrice(): Money
 $product->getTotalPriceInCents(): int
 ```
 
-Construct with `ProductData::from(...)` or `make(...)`. Two serializers, different contracts: `toArray()` is the full local shape and emits `'category' => null` when unset (plus `discount: 0`, `tax_percent: 0.0`); `toRequestArray()` is the CHIP wire shape — it omits null fields but keeps zeros. CHIP request sites must use `toRequestArray()` (the spec types `category` as non-nullable `string`). `total_price_override` (`?int`, cents) overrides the line total when non-null — zero is emittable. `tax_percent` accepts a float or numeric string outbound and emits as given; responses parse to float.
+Construct with `ProductData::from(...)` or `make(...)`. Two serializers, different contracts: `toArray()` is the full local shape and emits `'category' => null` when unset (plus `discount: 0`, `tax_percent: 0.0`); `toRequestArray()` is the CHIP wire shape — it omits null fields but keeps zeros. CHIP request sites must use `toRequestArray()` (the spec types `category` as non-nullable `string`). `total_price_override` (`?int`, cents) overrides the line total when non-null — zero is emittable. `tax_percent` accepts a float or numeric string outbound and emits as given; `from()` preserves numeric strings as given (no float cast, so long decimal strings keep full precision).
 
 ### Payment
 

@@ -8,6 +8,7 @@
     "source": "https://github.com/aiarmada/commerce"
   },
   "require": {
+    "ext-bcmath": "*",
     "ext-curl": "*",
     "aiarmada/commerce-support": "self.version",
     "illuminate/http": "^13.31.0",

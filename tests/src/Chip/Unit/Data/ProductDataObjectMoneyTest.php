@@ -55,7 +55,7 @@ describe('Product data object with Money', function (): void {
         $totalPrice = $product->getTotalPrice();
 
         expect($totalPrice)->toBeInstanceOf(Money::class)
-            ->and($totalPrice->getAmount())->toBe(37820); // (19900 - 990) * 2
+            ->and($totalPrice->getAmount())->toBe(41139); // (39800 - 990) x 1.06, half-up (P25)
     });
 
     it('honors the total price override in local totals', function (): void {

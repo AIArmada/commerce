@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Testing;
 
+use AIArmada\Chip\Data\ProductData;
 use AIArmada\Chip\Exceptions\ChipValidationException;
+use AIArmada\Chip\Support\TaxPercent;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
 
@@ -605,14 +607,69 @@ class FakeChipClient
         $total = 0;
 
         foreach ($products as $product) {
-            $price = (int) ($product['price'] ?? 0);
-            $qty = (int) ($product['quantity'] ?? 1);
-            $discount = (int) ($product['discount'] ?? 0);
+            [$price, $quantity, $discount, $taxPercent, $totalPriceOverride] = self::validatedLine($product);
 
-            $lineTotal = $price * $qty;
-            $total += max(0, $lineTotal - $discount);
+            // Over-gross discounts throw from the primitive, mirroring
+            // the server's 400 product_subtotal_negative (P25g).
+            $total += ProductData::lineTotalMinorUnits($price, $quantity, $discount, $taxPercent, $totalPriceOverride);
         }
 
         return $total;
+    }
+
+    /**
+     * Mirror the server's product validation for fake totals: integer
+     * minor amounts, a numeric zero-or-greater quantity (P24), and a
+     * tax percent within the shared rule — instead of silently
+     * casting malformed input to zeros.
+     *
+     * @return array{int, string, int, float|int|string, ?int}
+     */
+    private static function validatedLine(mixed $product): array
+    {
+        if (! is_array($product)) {
+            throw new ChipValidationException('Fake purchase products must be arrays.');
+        }
+
+        $price = $product['price'] ?? 0;
+        $quantity = $product['quantity'] ?? 1;
+        $discount = $product['discount'] ?? 0;
+        $taxPercent = $product['tax_percent'] ?? 0.0;
+        $totalPriceOverride = $product['total_price_override'] ?? null;
+
+        foreach (['price' => $price, 'discount' => $discount, 'total_price_override' => $totalPriceOverride] as $field => $amount) {
+            if ($amount !== null && ! self::isMinorAmount($amount)) {
+                throw new ChipValidationException("Fake purchase product {$field} must be an integer minor amount.");
+            }
+        }
+
+        if (! is_numeric($quantity) || $quantity < 0) {
+            throw new ChipValidationException('Fake purchase product quantity must be zero or greater.');
+        }
+
+        if ($price < 0 || $discount < 0 || ($totalPriceOverride !== null && $totalPriceOverride < 0)) {
+            throw new ChipValidationException('Fake purchase product amounts must be non-negative.');
+        }
+
+        return [
+            (int) $price,
+            (string) $quantity,
+            (int) $discount,
+            TaxPercent::normalize($taxPercent),
+            $totalPriceOverride !== null ? (int) $totalPriceOverride : null,
+        ];
+    }
+
+    private static function isMinorAmount(mixed $value): bool
+    {
+        if (is_int($value)) {
+            return true;
+        }
+
+        if (is_float($value) && floor($value) === $value) {
+            return true;
+        }
+
+        return is_string($value) && preg_match('/^[+-]?\d+$/', $value) === 1;
     }
 }

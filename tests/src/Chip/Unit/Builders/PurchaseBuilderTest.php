@@ -386,11 +386,20 @@ describe('PurchaseBuilder', function (): void {
             ->and($data['purchase']['products'][2]['quantity'])->toBe('0.3');
     });
 
-    it('rejects non-numeric and non-positive product quantities', function (): void {
-        expect(fn () => $this->builder->currency('MYR')->addProductCents('P', 100, 0))
-            ->toThrow(ChipValidationException::class, 'greater than zero');
+    it('accepts a zero product quantity', function (): void {
+        $data = $this->builder
+            ->currency('MYR')
+            ->addProductCents('Zero', 100, 0)
+            ->toArray();
+
+        expect($data['purchase']['products'][0]['quantity'])->toBe('0');
+    });
+
+    it('rejects non-numeric and negative product quantities', function (): void {
         expect(fn () => $this->builder->currency('MYR')->addProductCents('P', 100, -2))
-            ->toThrow(ChipValidationException::class, 'greater than zero');
+            ->toThrow(ChipValidationException::class, 'zero or greater');
+        expect(fn () => $this->builder->currency('MYR')->addProductCents('P', 100, '-0.5'))
+            ->toThrow(ChipValidationException::class, 'zero or greater');
         expect(fn () => $this->builder->currency('MYR')->addProductCents('P', 100, 'abc'))
             ->toThrow(ChipValidationException::class, 'must be numeric');
     });

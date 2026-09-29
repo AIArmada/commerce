@@ -250,6 +250,44 @@ it('rejects a negative per-product total price override', function (): void {
     ])))->toThrow(ChipValidationException::class, 'total price override must be non-negative');
 });
 
+it('accepts a per-line discount above the unit price', function (): void {
+    $this->client->shouldReceive('post')
+        ->once()
+        ->andReturn(chipPurchaseResponse());
+
+    // P25f: the server bound is discount <= price x quantity (201, total 150).
+    $purchase = $this->apiWithoutCache->create(chipValidCreatePayload([
+        'purchase' => [
+            'products' => [['name' => 'Item', 'price' => 100, 'discount' => 150, 'quantity' => 3]],
+        ],
+    ]));
+
+    expect($purchase->id)->toBe('purchase_123');
+});
+
+it('accepts a discount equal to a fractional line gross', function (): void {
+    $this->client->shouldReceive('post')
+        ->once()
+        ->andReturn(chipPurchaseResponse());
+
+    // 200 x "1.005" is exactly 201; float64 lands just below and would reject.
+    $purchase = $this->apiWithoutCache->create(chipValidCreatePayload([
+        'purchase' => [
+            'products' => [['name' => 'Item', 'price' => 200, 'discount' => 201, 'quantity' => '1.005']],
+        ],
+    ]));
+
+    expect($purchase->id)->toBe('purchase_123');
+});
+
+it('rejects a discount above the line gross', function (): void {
+    expect(fn () => $this->apiWithoutCache->create(chipValidCreatePayload([
+        'purchase' => [
+            'products' => [['name' => 'Item', 'price' => 100, 'discount' => 500, 'quantity' => 3]],
+        ],
+    ])))->toThrow(ChipValidationException::class, 'discount no greater than price times quantity');
+});
+
 it('rejects client and client_id set together', function (): void {
     expect(fn () => $this->apiWithoutCache->create([
         'client' => ['email' => 'buyer@example.com'],
@@ -973,10 +1011,25 @@ describe('PurchasesApi E4 shared validation', function (): void {
         expect($purchase->id)->toBe('purchase_123');
     });
 
-    it('rejects non-numeric and non-positive quantities on the raw path', function (): void {
+    it('accepts a zero-quantity line on the raw path', function (): void {
+        $this->client->shouldReceive('post')
+            ->once()
+            ->andReturn(chipPurchaseResponse());
+
+        $purchase = $this->apiWithoutCache->create(chipValidCreatePayload([
+            'purchase' => ['products' => [
+                ['name' => 'Zero', 'price' => 100, 'quantity' => 0],
+                ['name' => 'Normal', 'price' => 100, 'quantity' => 1],
+            ]],
+        ]));
+
+        expect($purchase->id)->toBe('purchase_123');
+    });
+
+    it('rejects non-numeric and negative quantities on the raw path', function (): void {
         expect(fn () => $this->apiWithoutCache->create(chipValidCreatePayload([
-            'purchase' => ['products' => [['name' => 'P', 'price' => 100, 'quantity' => 0]]],
-        ])))->toThrow(ChipValidationException::class, 'greater than zero');
+            'purchase' => ['products' => [['name' => 'P', 'price' => 100, 'quantity' => -1]]],
+        ])))->toThrow(ChipValidationException::class, 'zero or greater');
         expect(fn () => $this->apiWithoutCache->create(chipValidCreatePayload([
             'purchase' => ['products' => [['name' => 'P', 'price' => 100, 'quantity' => 'abc']]],
         ])))->toThrow(ChipValidationException::class, 'must be numeric');

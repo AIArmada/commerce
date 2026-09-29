@@ -1020,8 +1020,12 @@ final class PurchasesApi extends CollectApi
                 ? $this->normalizeMinorAmount($product['total_price_override'], 'product total price override')
                 : null;
 
-            if ($price < 0 || $discount < 0 || $discount > $price) {
-                throw new ChipValidationException('Product price and discount must be non-negative, with discount no greater than price.');
+            // Discount is per-line: the server bound is discount <= price x quantity
+            // (400 product_subtotal_negative beyond it, sandbox-proven P25f/g).
+            // Exact comparison: float64 misplaces valid boundary lines
+            // (200 x "1.005" with discount 201 must pass).
+            if ($price < 0 || $discount < 0 || ProductData::discountExceedsLineGross($discount, $price, $quantity)) {
+                throw new ChipValidationException('Product price and discount must be non-negative, with discount no greater than price times quantity.');
             }
 
             if ($totalPriceOverride !== null && $totalPriceOverride < 0) {
@@ -1154,8 +1158,8 @@ final class PurchasesApi extends CollectApi
 
         $asFloat = (float) $normalized;
 
-        if ($asFloat <= 0) {
-            throw new ChipValidationException('Product quantity must be greater than zero.');
+        if ($asFloat < 0) {
+            throw new ChipValidationException('Product quantity must be zero or greater.');
         }
 
         if ($asFloat >= 2 ** 53) {

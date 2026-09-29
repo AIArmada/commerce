@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Testing;
 
+use AIArmada\Chip\Data\ProductData;
 use AIArmada\Chip\Enums\WebhookEventType;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
@@ -486,7 +487,7 @@ final class WebhookFactory
     }
 
     /**
-     * @param  array<array{name: string, price: int, quantity?: string, category?: string}>  $products
+     * @param  array<array{name: string, price: int, quantity?: string, category?: string, discount?: int, tax_percent?: string, total_price_override?: ?int}>  $products
      */
     public function products(array $products): self
     {
@@ -495,9 +496,9 @@ final class WebhookFactory
             'price' => $product['price'],
             'quantity' => $product['quantity'] ?? '1.0000',
             'category' => $product['category'] ?? 'product',
-            'discount' => 0,
-            'tax_percent' => '0.00',
-            'total_price_override' => null,
+            'discount' => $product['discount'] ?? 0,
+            'tax_percent' => $product['tax_percent'] ?? '0.00',
+            'total_price_override' => $product['total_price_override'] ?? null,
         ], $products);
 
         return $this;
@@ -613,9 +614,22 @@ final class WebhookFactory
             ];
         }
 
+        // Product overrides merge before the total is computed, so the
+        // total always matches the products in the final payload.
+        $overrideProducts = $this->overrides['purchase']['products'] ?? null;
+        $mergedProducts = is_array($overrideProducts)
+            ? array_replace_recursive($products, $overrideProducts)
+            : $products;
+
         $total = array_sum(array_map(
-            fn (array $p) => (int) $p['price'] * (int) (float) $p['quantity'],
-            $products
+            fn (array $p) => ProductData::lineTotalMinorUnits(
+                (int) ($p['price'] ?? 0),
+                (string) ($p['quantity'] ?? '1.0000'),
+                (int) ($p['discount'] ?? 0),
+                $p['tax_percent'] ?? 0.0,
+                isset($p['total_price_override']) ? (int) $p['total_price_override'] : null,
+            ),
+            $mergedProducts
         ));
 
         $statusHistory = $this->buildStatusHistory($now);

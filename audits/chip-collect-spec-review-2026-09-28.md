@@ -535,11 +535,13 @@ vs SDK object).
 - P16 no-client create → 400 `purchase_client_or_id_required`
   (`__all__` array): client XOR client_id IS required
   server-side — answers draft Q4 (dropped from the ticket).
-- P17 price 100 / discount 1 / qty 1.5 → total 149: server
-  rounds NET per line, matching `ProductData::getTotalPrice`
-  exactly. The ±1 gap vs subtotal-minus-discount-total is
-  inherent half-up parts behavior, documented on the
-  accessor; no local check mixes the pair.
+- P17 price 100 / discount 1 / qty 1.5 → total 149.
+  CORRECTION (P25, 2026-09-29): this case coincides under
+  both per-unit and per-line discount math
+  ((100−1)×1.5=148.5→149 vs 150−1=149), so the original
+  "matching exactly" claim never distinguished them. P25a
+  settles it: discount is per-line. The ±1 note is retired
+  with the old accessor.
 - P18 quantity forms: `"1e2"`, `" 2 "`, `"+2"` accepted;
   `"1.55555"` → 400 `max_decimal_places`. Local 4dp rule
   mirrors the server; float dust below 14 significant
@@ -667,6 +669,13 @@ probes P1–P23, brand in `~/Herd/unfair/.env`):
   tokenless charge → 400 `invalid_recurring_token`
   (token check fires first — charge wrong-status
   untested, needs a valid token). No 409 anywhere.
+- P24 quantity bound: `quantity: 0` line → purchase
+  created (`created`, id echoed, qty `0.0000` —
+  `zeroline.*`); `quantity: -1` → 400 `min_value`
+  "Ensure this value is greater than or equal to 0."
+  (`negqty.*`). Server bound is zero-or-greater;
+  client `normalizeQuantity` and the docs rule updated
+  to match (`< 0` rejects, `zero or greater` message).
 - 403/409/422: still unobserved (~40 calls). The errors
   guide DOES document all three (403 scopes, 409 state,
   422 semantics) plus a 401 `unauthorized` code that
@@ -728,3 +737,157 @@ probes P1–P23, brand in `~/Herd/unfair/.env`):
   verbatim; all prior rounds' findings closed across
   R6+R7). Probe program complete: P1–P23 resolved,
   4-question support draft approved sendable.
+
+## Addendum 2026-09-29 (cont. 3): branch-vs-intro verification pass
+
+- Coordinator re-verified the full branch diff against
+  the live intro/conventions prose (fresh spec re-fetch:
+  prose-only delta). 6 findings raised; 4 fixed, 2
+  self-invalidated on re-check:
+- FIXED: quantity `<= 0` client reject contradicted
+  live (P24: `quantity: 0` → `created`, qty echoed
+  `0.0000`; `-1` → 400 `min_value` "greater than or
+  equal to 0"). Both `normalizeQuantity` copies now
+  `< 0` with `zero or greater` message; tests + docs
+  rule updated.
+- FIXED: stale `Idempotency-Key "honoring unverified"`
+  comment in `BaseHttpClient` — sandbox P4 proved it
+  ignored; comment now says so.
+- FIXED: country `maxLength 2` rationale in checkout
+  builder comment + `06-payment-gateways.md:57` —
+  sandbox P10 accepts the full name; code kept
+  (code is the safe form), rationale corrected.
+- FIXED: `?active=` FPX example carried an
+  `fpx_bank_code` param the docs never specify for
+  `?active=` — dropped to the bare form.
+- INVALID (own misread, reverted): whitelist docblock
+  is accurate — `visa`/`mastercard` ARE in the list
+  and `EWallet` (incl. Atome) is a genuinely different
+  direct-post key space.
+- INVALID (diff read backwards): the branch REMOVED
+  the `array_reverse` from `PaymentFailedHandler`
+  (bb4b16971); newest-first + top-level `error_code`
+  fallback is the current, correct state. No change.
+- Luna verify-review BLOCKed (1 finding, verified with
+  commands before acting): the branch removed the
+  caller-computed total from
+  `FakeChipCollectService::createCheckoutPurchase`,
+  exposing `FakeChipClient::calculateTotal`, which
+  int-casts quantity and ignores tax/TPO (P17 case:
+  fake 99 vs server 149). Coordinator-confirmed via
+  `git show bb4b16971` + artifact read; the int-cast
+  itself is pre-existing, the exposure is branch-caused.
+- P25 line-total formula probes (all 201 except g):
+  P25a 100/1/3 → 299 (discount PER-LINE, overturns the
+  P17 "matching exactly" note above); P25b two 10/6%
+  lines → 22 (rounding per-line); P25c 100/10/1/10% →
+  99 (tax on the NET line); P25d 100/1.555/10% → 171
+  (SINGLE round, not gross-then-tax); P25e TPO
+  2500+10% → 2500 (TPO final even with tax); P25f
+  100/150/3 → 150 (discount above unit price
+  accepted); P25g 100/500/3 → 400
+  `product_subtotal_negative` ("Discount can't be
+  larger than price * quantity!", `__all__` array —
+  12th array-form sighting). Server formula:
+  TPO ?? round_half_up((price×qty−discount)×(1+tax/100))
+  per line. Artifacts `p25a–g.*`.
+- Fix: shared `ProductData::lineTotalMinorUnits`
+  (proven formula); `getTotalPrice` rewritten on it;
+  `getDiscountTotalInCents` now pass-through (per-line);
+  API discount bound `discount > price` →
+  `discount > price×qty` (old bound rejected
+  server-accepted P25f payloads); fake
+  `calculateTotal` uses the shared primitive. Tests:
+  8 probe-mirror line cases, accept/reject bound
+  cases, fake 149/158/2500 cases; repinned 37820→41139
+  (×2), 250→150, 149→199. Docs rule rewritten.
+  Verify: Pint clean; PHPStan L6 clean (chip,
+  checkout, cashier-chip); Chip 898, CashierChip 536,
+  Checkout 262 passed.
+- Luna R2 BLOCKed (2 findings, both reproduced before
+  fixing): (1) float64 misrounds 100 × "1.005" to 100
+  (true 100.5 → 101) — confirmed via `php -r`;
+  (2) the fake clamped P25g over-discounts to a
+  zero-total purchase instead of rejecting. Fix: exact
+  BCMath decimal math in a shared `decimalParts`
+  parser (ints, decimal + exponent strings);
+  `lineTotalMinorUnits` + `multiplyMinorUnits` exact;
+  negative nets throw `ChipValidationException`
+  (mirrors `product_subtotal_negative`, inherited by
+  the fake); API bound uses exact
+  `discountExceedsLineGross` (200 × "1.005" = 201
+  boundary proven misplaced by float, now passes);
+  `ext-bcmath` added to `packages/chip/composer.json`
+  (precedent: ext-curl/ext-intl). Tests: half-cent +
+  exponent + throw + boundary-accept + fake-reject
+  cases. Verify: Pint clean; PHPStan L6 clean; Chip
+  901, CashierChip 537, Checkout 262 passed. R3
+  dispatched.
+- Luna R3 BLOCKed (5 findings, all verified before
+  fixing): (1) int overflow — 1025 × (2^53−1)
+  saturated to PHP_INT_MAX with a warning
+  (reproduced via autoload); (2) unbounded exponent
+  — TaxPercent accepts '1e-1000000000' (reproduced),
+  which would str_repeat a billion zeros; (3a) fake
+  silently substituted non-numeric qty/tax
+  (code-read, own code); (3b) TPO-before-net order —
+  P25h probe: server 400s `product_subtotal_negative`
+  for TPO+overdiscount, so validation runs first;
+  (3c) negative rounding truncated toward zero;
+  (4) from() float-cast tax strings (22dp
+  '0.4999…' became 0.5); (5) WebhookFactory int-cast
+  qty totals (code-read). Luna confirmed all
+  recomputed cases, the parser on ordinary forms,
+  and ext-bcmath correct. Fix: shared sign-aware
+  `roundHalfUp` (away from zero, throws past int
+  range); net check before TPO (P25h); 1024-digit
+  precision guard in `decimalParts`; from()
+  preserves string tax; fake throws on non-numeric;
+  WebhookFactory uses the shared primitive. Tests:
+  P25h-order, overflow ×2, precision ×2, sign-aware,
+  string-tax, fake-reject, factory-fractional cases.
+  Verify: Pint clean; PHPStan L6 clean; Chip 906,
+  CashierChip 538, Checkout 262 passed. R4
+  dispatched.
+- Luna R4 BLOCKed (3 items + 1 docs catch; P25h
+  order, parser forms, and ext-bcmath confirmed):
+  (1) `roundHalfUp` rejected valid PHP_INT_MIN
+  (own conservative guard, flagged in the brief);
+  (2) the 1024-digit guard vs TaxPercent-accepted
+  values — settled by probe, not dispute: P26a/b/c
+  prove the server caps tax at max_digits=5 /
+  max_decimal_places=2 / max_string_length, so the
+  local rule now mirrors that (Luna's '1.'+1024-zeros
+  example is server-rejected); (3) fake/factory
+  validation gaps. Fix: exact PHP_INT_MIN edge;
+  `TaxPercent` precision mirror via shared public
+  `decimalParts`; fake `validatedLine` (integer
+  minors ≥ 0, qty numeric ≥ 0, shared tax rule —
+  all ChipValidationException); factory setter
+  passes discount/tax/TPO through and merges
+  product overrides before computing the total;
+  stale "responses parse tax to float" doc line
+  corrected. Tests: TaxPercent suite (accept/range/
+  precision), int64 edges, 8-case fake-reject
+  dataset, factory setter + override consistency.
+  Verify: Pint clean; PHPStan L6 clean; Chip 912,
+  CashierChip 545, Checkout 262 passed. R5
+  dispatched.
+- Luna R5 BLOCKed (1 item; MIN edge, fake/factory,
+  and P26 verdicts confirmed): `decimalParts`
+  returned ['0','1'] before computing shift/guard,
+  so TaxPercent accepted '0.000' and thousand-zero
+  strings. Fix direction probed first: P26d tax
+  '0.000' → 400 `max_decimal_places`, so reject is
+  the faithful mirror. Fix: shift/guard computed
+  before the zero return; zero keeps its decimals
+  in the denominator. Tests: zero-dp accept/reject
+  + zero-qty line-total case. Verify: Pint clean;
+  PHPStan L6 clean; Chip 913, CashierChip 545,
+  Checkout 262 passed. R6 dispatched.
+- Luna R6 APPROVEd: blocking findings resolved,
+  all changes lean back to the official CHIP API.
+  Verification loop closed (verify → BLOCK → R2 →
+  BLOCK → R3 → BLOCK → R4 → BLOCK → R5 → BLOCK →
+  R6 APPROVE). Support draft (4 questions) and P6
+  card-flow probe remain the only open externals.

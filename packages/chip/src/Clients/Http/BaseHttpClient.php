@@ -203,9 +203,11 @@ abstract class BaseHttpClient
 
     /**
      * Mutations carry Idempotency-Key when a key is resolved, but CHIP
-     * honoring is unverified, so automatic retries stay restricted to
-     * methods that do not create or change a remote resource: a connection
-     * failure must not repeat a mutation on an assumption.
+     * ignores it (sandbox replay P4: identical body + key created a
+     * second purchase, so the local ledger is the only dedupe), so
+     * automatic retries stay restricted to methods that do not create
+     * or change a remote resource: a connection failure must not
+     * repeat a mutation on an assumption.
      */
     protected function isRetryableMethod(string $method): bool
     {
