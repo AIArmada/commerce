@@ -64,6 +64,10 @@ final class PurchasesApi extends CollectApi
         $this->validatePurchaseData($data);
 
         if ($idempotencyKey === null) {
+            // AGENTS: null key = no duplicate protection at all (plain POST).
+            // Keyless callers accept double-create risk; see the keyless-path
+            // invariant in cashier's ChipCheckoutBuilder for why one path
+            // stays keyless deliberately.
             return $this->postCreate($data);
         }
 
@@ -133,6 +137,11 @@ final class PurchasesApi extends CollectApi
         }
 
         if ($this->cache === null) {
+            // AGENTS: no cache = no lock. Concurrent same-key requests can
+            // both miss the ledger and both POST (the ledger has no DB
+            // unique constraint to backstop the race). Production MUST use a
+            // shared lock-capable store (e.g. redis); per-instance
+            // file/array caches do NOT protect across servers/workers.
             return $this->createAndRecord($data, $idempotencyKey, $fingerprint);
         }
 

@@ -297,6 +297,12 @@ class ChipCheckoutBuilder implements CheckoutBuilderContract
         // buy-twice-identical. The fingerprinted checkout route is the
         // separate PurchasesApi::createCheckoutPurchase, which emits the
         // header for its resolved key.
+        //
+        // AGENTS: keyless means ZERO duplicate protection — a double-click
+        // or retried request here creates a second CHIP purchase (CHIP
+        // ignores Idempotency-Key on creates; see PurchasesApi). UI callers
+        // MUST add their own double-submit guard (disable the button,
+        // redirect-after-POST). Do NOT "fix" this by adding a key here.
         $purchase = $this->gateway->client()->createPurchase($options);
 
         return new ChipCheckout($purchase);

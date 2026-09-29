@@ -11,6 +11,19 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
 
+/**
+ * Local create-dedupe ledger. CHIP ignores Idempotency-Key on purchase
+ * creation (sandbox-proven), so this ledger is the ONLY create dedupe.
+ *
+ * AGENTS — crash window + reconcile runbook: if the process dies after the
+ * CHIP POST succeeds but before record(), the key stays reserved with a null
+ * response and retries fail closed ("requires reconciliation") — no
+ * duplicate, but the purchase is unknown locally. Before retrying with a
+ * fresh key, expiring the stub, or running chip:prune-idempotency-stubs,
+ * reconcile first: look the purchase up at CHIP by `reference`; if it
+ * exists, adopt it instead of re-creating. Pruning/expiry followed by a
+ * blind retry creates a SECOND remote purchase and orphans the first.
+ */
 final class PurchaseIdempotencyLedger
 {
     private const METADATA_KEY = 'chip_idempotency';
