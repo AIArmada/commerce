@@ -2,32 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Data\AddressData;
-use AIArmada\Addressing\Geography\Nicaragua\NicaraguaAddressFormatter;
 use AIArmada\Addressing\Geography\Nicaragua\NicaraguaGeographyProvider;
 use AIArmada\Addressing\Models\AddressCountry;
-
-it('formats Nicaraguan addresses with the postcode above the municipality', function (): void {
-    $formatted = app(NicaraguaAddressFormatter::class)->format(AddressData::from([
-        'line1' => 'Portón Cementerio General 1c Este, 1/2c Norte. Barrio Santa Ana Sur.',
-        'city' => 'Managua',
-        'state' => 'Managua',
-        'postcode' => '12005',
-        'country_code' => 'NI',
-    ]));
-
-    expect($formatted)->toBe("Portón Cementerio General 1c Este, 1/2c Norte. Barrio Santa Ana Sur.\n12005\nManagua\nNicaragua");
-});
-it('formats Nicaraguan Granada addresses with the town postcode', function (): void {
-    $formatted = app(NicaraguaAddressFormatter::class)->format(AddressData::from([
-        'line1' => 'Calle La Calzada 4',
-        'city' => 'Granada',
-        'postcode' => '43000',
-        'country_code' => 'NI',
-    ]));
-
-    expect($formatted)->toBe("Calle La Calzada 4\n43000\nGranada\nNicaragua");
-});
 
 it('names the autonomous regions Costa Caribe with English aliases', function (): void {
     $areas = app(NicaraguaGeographyProvider::class)->addressAreaSource()->areas()->collect()->keyBy->sourceId;
@@ -43,23 +19,4 @@ it('names the autonomous regions Costa Caribe with English aliases', function ()
 
     expect($names['ni:autonomous_region:costa-caribe-norte'][0]['name'])->toBe('North Caribbean Coast')
         ->and($names['ni:autonomous_region:costa-caribe-sur'][0]['name'])->toBe('South Caribbean Coast');
-});
-
-it('ships 153 municipalities under departments with parent links', function (): void {
-    $areas = app(NicaraguaGeographyProvider::class)->addressAreaSource()->areas()->collect();
-    $byId = $areas->keyBy->sourceId;
-    $l2 = $areas->where('type', 'municipality');
-
-    expect($l2)->toHaveCount(153)
-        ->and($l2->pluck('parentSourceId')->every(fn ($p) => $byId->has($p)))->toBeTrue()
-        ->and($byId->get('ni:municipality:managua')->name)->toBe('Managua')
-        ->and($byId->get('ni:municipality:granada')->name)->toBe('Granada')
-        ->and($byId->get('ni:municipality:bluefields')->name)->toBe('Bluefields');
-});
-
-it('labels tiers Departamento, Región Autónoma and Municipio', function (): void {
-    $provider = app(NicaraguaGeographyProvider::class);
-
-    expect($provider->areaTypeLabels())->toBe(['department' => 'Departamento', 'autonomous_region' => 'Región Autónoma', 'municipality' => 'Municipio'])
-        ->and($provider->stateAreaTypeLabels())->toBe([]);
 });

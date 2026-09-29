@@ -2,30 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Data\AddressData;
-use AIArmada\Addressing\Geography\Lithuania\LithuaniaAddressFormatter;
 use AIArmada\Addressing\Geography\Lithuania\LithuaniaGeographyProvider;
-
-it('formats Lithuanian inbound addresses with the LT postcode prefix', function (): void {
-    $formatted = app(LithuaniaAddressFormatter::class)->format(AddressData::from([
-        'line1' => 'Laisvės pr. 40-12',
-        'city' => 'Vilnius',
-        'postcode' => 'LT-04340',
-        'country_code' => 'LT',
-    ]));
-
-    expect($formatted)->toBe("Laisvės pr. 40-12\nLT-04340 Vilnius\nLithuania");
-});
-it('formats Lithuanian domestic addresses with a bare postcode', function (): void {
-    $formatted = app(LithuaniaAddressFormatter::class)->format(AddressData::from([
-        'line1' => 'Laisvės al. 60',
-        'city' => 'Kaunas',
-        'postcode' => '44280',
-        'country_code' => 'LT',
-    ]));
-
-    expect($formatted)->toBe("Laisvės al. 60\n44280 Kaunas\nLithuania");
-});
 
 it('types the seven city municipalities with miestas names', function (): void {
     $areas = app(LithuaniaGeographyProvider::class)->addressAreaSource()->areas()->collect();
@@ -56,11 +33,4 @@ it('ships 60 municipalities under counties with parent links', function (): void
         ->and($byId->get('lt:district_municipality:alytus-03')->parentSourceId)->toBe('lt:county:alytus')
         ->and($byId->get('lt:municipality:marijampole')->type)->toBe('municipality')
         ->and($byId->get('lt:municipality:marijampole')->parentSourceId)->toBe('lt:county:marijampole');
-});
-
-it('labels tiers Apskritis, Rajono Savivaldybė, Miesto Savivaldybė and Savivaldybė', function (): void {
-    $provider = app(LithuaniaGeographyProvider::class);
-
-    expect($provider->areaTypeLabels())->toBe(['county' => 'Apskritis', 'district_municipality' => 'Rajono Savivaldybė', 'city_municipality' => 'Miesto Savivaldybė', 'municipality' => 'Savivaldybė'])
-        ->and($provider->stateAreaTypeLabels())->toBe([]);
 });

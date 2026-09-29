@@ -2,30 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Data\AddressData;
-use AIArmada\Addressing\Geography\Mali\MaliAddressFormatter;
 use AIArmada\Addressing\Geography\Mali\MaliGeographyProvider;
-
-it('formats Malian addresses without a postcode system', function (): void {
-    $formatted = app(MaliAddressFormatter::class)->format(AddressData::from([
-        'line1' => 'Rue 406 – porte 39',
-        'line2' => 'Magnabougou',
-        'city' => 'BAMAKO',
-        'country_code' => 'ML',
-    ]));
-
-    expect($formatted)->toBe("Rue 406 – porte 39\nMagnabougou\nBAMAKO\nMali");
-});
-it('prints matching Malian city and region once', function (): void {
-    $formatted = app(MaliAddressFormatter::class)->format(AddressData::from([
-        'line1' => 'Rue 10',
-        'city' => 'Sikasso',
-        'state' => 'Sikasso',
-        'country_code' => 'ML',
-    ]));
-
-    expect($formatted)->toBe("Rue 10\nSikasso\nMali");
-});
 
 it('ships 19 regions plus Bamako with the national 9/10 numbering', function (): void {
     $areas = app(MaliGeographyProvider::class)->addressAreaSource()->areas();
@@ -54,11 +31,4 @@ it('ships 159 cercles under regions with parent links', function (): void {
         ->and($byId->get('ml:cercle:kayes')->code)->toBe('0101')
         ->and($byId->get('ml:cercle:sadiola')->code)->toBe('0110')
         ->and($byId->get('ml:cercle:ansongo')->code)->toBe('0703');
-});
-
-it('labels tiers District, Région and Cercle', function (): void {
-    $provider = app(MaliGeographyProvider::class);
-
-    expect($provider->areaTypeLabels())->toBe(['district' => 'District', 'region' => 'Région', 'cercle' => 'Cercle'])
-        ->and($provider->stateAreaTypeLabels())->toBe([]);
 });

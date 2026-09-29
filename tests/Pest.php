@@ -10,6 +10,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Authz\Models\Role;
 use AIArmada\Cart\Conditions\ConditionTarget;
 use AIArmada\Commerce\Tests\Addressing\AddressingDatabaseTestCase;
+use AIArmada\Commerce\Tests\Addressing\AddressingGeographyDataTestCase;
 use AIArmada\Commerce\Tests\Addressing\AddressingGeographyTestCase;
 use AIArmada\Commerce\Tests\AffiliateNetwork\AffiliateNetworkTestCase;
 use AIArmada\Commerce\Tests\Affiliates\AffiliatesTestCase;
@@ -124,6 +125,11 @@ pest()->extend(FilamentAuthzTestCase::class)->in('src/FilamentAuthzScoped');
 pest()->extend(FeedbackTestCase::class)->in('src/Feedback');
 
 pest()->extend(AddressingGeographyTestCase::class)->in('src/Addressing/Geography');
+
+// The consolidated country datasets assert pure provider logic (formatter output,
+// type labels, area names) and never touch persisted rows, so they sit in their
+// own folder bound to a case that skips the per-test schema rebuild.
+pest()->extend(AddressingGeographyDataTestCase::class)->in('src/Addressing/GeographyData');
 
 pest()->extend(AddressingDatabaseTestCase::class)->in(
     'src/Addressing/Actions',

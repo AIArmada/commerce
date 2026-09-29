@@ -2,31 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Data\AddressData;
-use AIArmada\Addressing\Geography\Hungary\HungaryAddressFormatter;
 use AIArmada\Addressing\Geography\Hungary\HungaryGeographyProvider;
 use AIArmada\Addressing\Models\AddressCountry;
-
-it('formats Hungarian addresses with the postcode and town on one line', function (): void {
-    $formatted = app(HungaryAddressFormatter::class)->format(AddressData::from([
-        'line1' => 'VIRÁG TÉR 3. IV. 61',
-        'city' => 'BUDAPEST',
-        'postcode' => '1037',
-        'country_code' => 'HU',
-    ]));
-
-    expect($formatted)->toBe("VIRÁG TÉR 3. IV. 61\n1037 BUDAPEST\nHungary");
-});
-it('formats Hungarian post box addresses with the box postcode', function (): void {
-    $formatted = app(HungaryAddressFormatter::class)->format(AddressData::from([
-        'line1' => 'PF. 83',
-        'city' => 'DABAS',
-        'postcode' => '2380',
-        'country_code' => 'HU',
-    ]));
-
-    expect($formatted)->toBe("PF. 83\n2380 DABAS\nHungary");
-});
 
 it('renames Csongrád County and types Zalaegerszeg as a city', function (): void {
     $areas = app(HungaryGeographyProvider::class)->addressAreaSource()->areas()->collect()->keyBy->sourceId;
@@ -50,11 +27,4 @@ it('ships 197 districts under counties with parent links', function (): void {
         ->and($byId->get('hu:district:varkerulet')->name)->toBe('Várkerület')
         ->and($byId->get('hu:district:debrecen')->name)->toBe('Debrecen')
         ->and($byId->get('hu:district:ajka')->parentSourceId)->toBe('hu:county:veszprem-county');
-});
-
-it('labels tiers Vármegye, Megyei Jogú Város, Főváros and Járás', function (): void {
-    $provider = app(HungaryGeographyProvider::class);
-
-    expect($provider->areaTypeLabels())->toBe(['county' => 'Vármegye', 'city_with_county_rights' => 'Megyei Jogú Város', 'capital_city' => 'Főváros', 'district' => 'Járás'])
-        ->and($provider->stateAreaTypeLabels())->toBe([]);
 });

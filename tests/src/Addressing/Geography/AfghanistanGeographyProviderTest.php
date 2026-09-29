@@ -2,21 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Data\AddressData;
-use AIArmada\Addressing\Geography\Afghanistan\AfghanistanAddressFormatter;
 use AIArmada\Addressing\Geography\Afghanistan\AfghanistanGeographyProvider;
-
-it('formats Afghan addresses with the postcode left of the province', function (): void {
-    $formatted = app(AfghanistanAddressFormatter::class)->format(AddressData::from([
-        'line1' => 'House No 123, Street 5',
-        'city' => 'HESARAK',
-        'state' => 'NANGARHAR',
-        'postcode' => '265101',
-        'country_code' => 'AF',
-    ]));
-
-    expect($formatted)->toBe("House No 123, Street 5\nHESARAK\n265101 NANGARHAR\nAfghanistan");
-});
 
 it('spells the province Uruzgan per the list page (ISO AF-URU)', function (): void {
     $areas = app(AfghanistanGeographyProvider::class)->addressAreaSource()->areas()->collect()->keyBy->sourceId;

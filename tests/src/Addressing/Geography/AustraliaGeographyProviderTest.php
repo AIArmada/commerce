@@ -2,22 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Data\AddressData;
-use AIArmada\Addressing\Geography\Australia\AustraliaAddressFormatter;
 use AIArmada\Addressing\Geography\Australia\AustraliaGeographyProvider;
 use AIArmada\Addressing\Models\AddressCountry;
-
-it('formats Australian addresses with double-spaced parts', function (): void {
-    $formatted = app(AustraliaAddressFormatter::class)->format(AddressData::from([
-        'line1' => '113 BOND ST',
-        'city' => 'MELBOURNE',
-        'state' => 'Victoria',
-        'postcode' => '3000',
-        'country_code' => 'AU',
-    ]));
-
-    expect($formatted)->toBe("113 BOND ST\nMELBOURNE  VIC  3000\nAustralia");
-});
 
 it('ships 537 local government areas under states with parent links', function (): void {
     $areas = app(AustraliaGeographyProvider::class)->addressAreaSource()->areas()->collect();

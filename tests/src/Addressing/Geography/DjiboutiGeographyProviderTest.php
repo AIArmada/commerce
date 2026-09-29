@@ -2,31 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Data\AddressData;
-use AIArmada\Addressing\Geography\Djibouti\DjiboutiAddressFormatter;
 use AIArmada\Addressing\Geography\Djibouti\DjiboutiGeographyProvider;
-
-it('formats Djiboutian addresses with the postcode left of the locality', function (): void {
-    $formatted = app(DjiboutiAddressFormatter::class)->format(AddressData::from([
-        'line1' => 'BP 1663',
-        'city' => 'DJIBOUTI VILLE',
-        'postcode' => '77101',
-        'country_code' => 'DJ',
-    ]));
-
-    expect($formatted)->toBe("BP 1663\n77101 DJIBOUTI VILLE\nDjibouti");
-});
-it('prints matching Djiboutian city and region once', function (): void {
-    $formatted = app(DjiboutiAddressFormatter::class)->format(AddressData::from([
-        'line1' => 'BP 12',
-        'city' => 'Arta',
-        'state' => 'Arta',
-        'postcode' => '77201',
-        'country_code' => 'DJ',
-    ]));
-
-    expect($formatted)->toBe("BP 12\n77201 Arta\nDjibouti");
-});
 
 it('ships 20 sub-prefectures under regions with parent links', function (): void {
     $areas = app(DjiboutiGeographyProvider::class)->addressAreaSource()->areas()->collect();
@@ -44,11 +20,4 @@ it('ships 20 sub-prefectures under regions with parent links', function (): void
         ->and($byId->get('dj:subprefecture:holhol')->parentSourceId)->toBe('dj:region:ali-sabieh')
         ->and($byId->get('dj:subprefecture:lac-assal')->parentSourceId)->toBe('dj:region:arta')
         ->and($byId->get('dj:subprefecture:adailou')->parentSourceId)->toBe('dj:region:tadjourah');
-});
-
-it('labels tiers Région, Ville and Sous-préfecture', function (): void {
-    $provider = app(DjiboutiGeographyProvider::class);
-
-    expect($provider->areaTypeLabels())->toBe(['region' => 'Région', 'city' => 'Ville', 'subprefecture' => 'Sous-préfecture'])
-        ->and($provider->stateAreaTypeLabels())->toBe([]);
 });

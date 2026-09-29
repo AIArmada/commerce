@@ -2,43 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Data\AddressData;
-use AIArmada\Addressing\Geography\China\ChinaAddressFormatter;
 use AIArmada\Addressing\Geography\China\ChinaGeographyProvider;
-
-it('formats Chinese addresses with the postcode left of the province', function (): void {
-    $formatted = app(ChinaAddressFormatter::class)->format(AddressData::from([
-        'line1' => 'No.1 Jianguomenwai Avenue',
-        'state' => 'BEIJING',
-        'postcode' => '100004',
-        'country_code' => 'CN',
-    ]));
-
-    expect($formatted)->toBe("No.1 Jianguomenwai Avenue\n100004 BEIJING\nChina");
-});
-it('formats Chinese addresses with the sub-province above the postcode province line', function (): void {
-    $formatted = app(ChinaAddressFormatter::class)->format(AddressData::from([
-        'line1' => 'No.12 Zhichun Road',
-        'city' => 'Haidian District',
-        'state' => 'BEIJING',
-        'postcode' => '100191',
-        'country_code' => 'CN',
-    ]));
-
-    expect($formatted)->toBe("No.12 Zhichun Road\nHaidian District\n100191 BEIJING\nChina");
-});
-
-it('ships 33 province-level divisions without Taiwan', function (): void {
-    $areas = app(ChinaGeographyProvider::class)->addressAreaSource()->areas()->collect();
-    $l1 = $areas->where('level', 1);
-
-    expect($l1)->toHaveCount(33)
-        ->and($l1->where('type', 'province'))->toHaveCount(22)
-        ->and($l1->where('type', 'autonomous_region'))->toHaveCount(5)
-        ->and($l1->where('type', 'municipality'))->toHaveCount(4)
-        ->and($l1->where('type', 'special_administrative_region'))->toHaveCount(2)
-        ->and($l1->pluck('name')->contains('Taiwan'))->toBeFalse();
-});
 
 it('ships 333 prefecture-level divisions under provinces with parent links', function (): void {
     $areas = app(ChinaGeographyProvider::class)->addressAreaSource()->areas()->collect();

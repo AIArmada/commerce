@@ -2,22 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Data\AddressData;
-use AIArmada\Addressing\Geography\Thailand\ThailandAddressFormatter;
 use AIArmada\Addressing\Geography\Thailand\ThailandGeographyProvider;
 use AIArmada\Addressing\Models\AddressCountry;
-
-it('formats Thai addresses with district, province and postcode below', function (): void {
-    $formatted = app(ThailandAddressFormatter::class)->format(AddressData::from([
-        'line1' => '199/63 Moo 1, Tumbol Bangtalad',
-        'city' => 'Amphoe Pak Kret',
-        'state' => 'Nonthaburi',
-        'postcode' => '11120',
-        'country_code' => 'TH',
-    ]));
-
-    expect($formatted)->toBe("199/63 Moo 1, Tumbol Bangtalad\nAmphoe Pak Kret, Nonthaburi\n11120\nThailand");
-});
 
 it('ships 76 provinces plus Bangkok and Pattaya', function (): void {
     $areas = app(ThailandGeographyProvider::class)->addressAreaSource()->areas()->collect()->keyBy->sourceId;
@@ -40,13 +26,6 @@ it('ships 928 amphoe and khet under provinces with parent links', function (): v
         ->and($byId->get('th:amphoe:mueang-bueng-kan')->code)->toBe('3801')
         ->and($byId->get('th:khet:bang-kapi')->code)->toBe('1006')
         ->and($byId->get('th:amphoe:galyani-vadhana')->code)->toBe('5026');
-});
-
-it('labels provinces Changwat with no per-state overrides', function (): void {
-    $provider = app(ThailandGeographyProvider::class);
-
-    expect($provider->areaTypeLabels())->toBe(['province' => 'Changwat'])
-        ->and($provider->stateAreaTypeLabels())->toBe([]);
 });
 
 it('declares Bangkok official Thai name and Pattaya ISO spelling', function (): void {

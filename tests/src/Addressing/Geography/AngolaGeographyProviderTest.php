@@ -2,19 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Data\AddressData;
-use AIArmada\Addressing\Geography\Angola\AngolaAddressFormatter;
 use AIArmada\Addressing\Geography\Angola\AngolaGeographyProvider;
-
-it('formats Angolan addresses without a postcode line', function (): void {
-    $formatted = app(AngolaAddressFormatter::class)->format(AddressData::from([
-        'line1' => 'Rua Ndunduma 51',
-        'city' => 'LUANDA',
-        'country_code' => 'AO',
-    ]));
-
-    expect($formatted)->toBe("Rua Ndunduma 51\nLUANDA\nAngola");
-});
 
 it('ships the 21 operational provinces with Cuando Cubango retired', function (): void {
     $areas = app(AngolaGeographyProvider::class)->addressAreaSource()->areas();
@@ -43,11 +31,4 @@ it('ships 326 municipalities under provinces with parent links', function (): vo
         ->and($l2->where('parentSourceId', 'ao:province:icolo-e-bengo'))->toHaveCount(7)
         ->and($byId->get('ao:municipality:viana')->parentSourceId)->toBe('ao:province:luanda')
         ->and($byId->get('ao:municipality:quelo')->parentSourceId)->toBe('ao:province:zaire');
-});
-
-it('labels tiers Província and Município with no per-state overrides', function (): void {
-    $provider = app(AngolaGeographyProvider::class);
-
-    expect($provider->areaTypeLabels())->toBe(['province' => 'Província', 'municipality' => 'Município'])
-        ->and($provider->stateAreaTypeLabels())->toBe([]);
 });

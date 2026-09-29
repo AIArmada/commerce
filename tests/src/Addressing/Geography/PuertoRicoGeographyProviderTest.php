@@ -2,32 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Data\AddressData;
-use AIArmada\Addressing\Geography\PuertoRico\PuertoRicoAddressFormatter;
 use AIArmada\Addressing\Geography\PuertoRico\PuertoRicoGeographyProvider;
-
-it('formats Puerto Rican addresses as locality PR ZIP', function (): void {
-    $formatted = app(PuertoRicoAddressFormatter::class)->format(AddressData::from([
-        'line1' => 'URB LAS GLADIOLAS',
-        'line2' => '150 CALLE A',
-        'city' => 'SAN JUAN',
-        'postcode' => '00926-0221',
-        'country_code' => 'PR',
-    ]));
-
-    expect($formatted)->toBe("URB LAS GLADIOLAS\n150 CALLE A\nSAN JUAN PR 00926-0221\nPuerto Rico");
-});
-it('formats Puerto Rican addresses keeping the barrio above the ZIP line', function (): void {
-    $formatted = app(PuertoRicoAddressFormatter::class)->format(AddressData::from([
-        'line1' => 'Calle Luna 10',
-        'city' => 'Santurce',
-        'state' => 'San Juan',
-        'postcode' => '00907',
-        'country_code' => 'PR',
-    ]));
-
-    expect($formatted)->toBe("Calle Luna 10\nSanturce\nSan Juan PR 00907\nPuerto Rico");
-});
 
 it('types all 78 municipios as municipality with FIPS codes', function (): void {
     $areas = app(PuertoRicoGeographyProvider::class)->addressAreaSource()->areas()->collect()->keyBy->sourceId;
@@ -67,11 +42,4 @@ it('ships 901 barrios under municipios with parent links', function (): void {
         ->and($l2->where('type', 'barrio_pueblo'))->toHaveCount(74)
         ->and($byId->get('pr:barrio:santurce')->parentSourceId)->toBe('pr:municipality:san-juan')
         ->and($byId->get('pr:barrio_pueblo:adjuntas')->parentSourceId)->toBe('pr:municipality:adjuntas');
-});
-
-it('labels tiers Municipio, Barrio-Pueblo and Barrio', function (): void {
-    $provider = app(PuertoRicoGeographyProvider::class);
-
-    expect($provider->areaTypeLabels())->toBe(['municipality' => 'Municipio', 'barrio_pueblo' => 'Barrio-Pueblo', 'barrio' => 'Barrio'])
-        ->and($provider->stateAreaTypeLabels())->toBe([]);
 });

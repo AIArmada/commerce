@@ -2,21 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Data\AddressData;
-use AIArmada\Addressing\Geography\Vietnam\VietnamAddressFormatter;
 use AIArmada\Addressing\Geography\Vietnam\VietnamGeographyProvider;
-
-it('formats Vietnamese addresses with the postcode right of the province', function (): void {
-    $formatted = app(VietnamAddressFormatter::class)->format(AddressData::from([
-        'line1' => 'No 5, Pham Hung Road',
-        'city' => 'My Dinh 2 Ward',
-        'state' => 'HANOI',
-        'postcode' => '11517',
-        'country_code' => 'VN',
-    ]));
-
-    expect($formatted)->toBe("No 5, Pham Hung Road\nMy Dinh 2 Ward\nHANOI 11517\nVietnam");
-});
 
 it('transliterates Đ to d in province slugs', function (): void {
     $areas = app(VietnamGeographyProvider::class)->addressAreaSource()->areas()->collect()->keyBy->sourceId;
@@ -55,11 +41,4 @@ it('ships 3321 communes, wards and special zones under provinces', function (): 
         ->and($l2->where('type', 'special_zone'))->toHaveCount(13)
         ->and($byId->get('vn:ward:ba-dinh')->parentSourceId)->toBe('vn:municipality:ha-noi')
         ->and($byId->get('vn:special_zone:hoang-sa')->parentSourceId)->toBe('vn:municipality:da-nang');
-});
-
-it('labels tiers Tỉnh, Thành phố, Xã, Phường and Đặc khu', function (): void {
-    $provider = app(VietnamGeographyProvider::class);
-
-    expect($provider->areaTypeLabels())->toBe(['province' => 'Tỉnh', 'municipality' => 'Thành phố', 'commune' => 'Xã', 'ward' => 'Phường', 'special_zone' => 'Đặc khu'])
-        ->and($provider->stateAreaTypeLabels())->toBe([]);
 });
