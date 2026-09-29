@@ -1,8 +1,5 @@
 # Testing Guidelines
 
-## Goal
-- Eliminate bugs.
-
 ## Parallelism
 - Every Pest or PHPUnit invocation must include `--parallel`.
 - This applies to single files, directories, package sweeps, and final verification runs.

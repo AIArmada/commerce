@@ -14,6 +14,7 @@
 ## Migrations
 - Keep migrations safe and idempotent.
 - No `down()` method is required.
+- Evolve schema by editing the owning migration in place; do not add a new migration file per schema change and do not drop and recreate tables to alter them.
 
 ## Verification
 - Ensure no constraints or cascades slipped in: `rg -n -- "constrained\(|cascadeOnDelete\(" packages/*/database`

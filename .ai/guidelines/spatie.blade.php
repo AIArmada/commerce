@@ -8,6 +8,3 @@
 - Settings: `spatie/laravel-settings`
 - Tags: `spatie/laravel-tags`
 - States: `spatie/laravel-model-states`
-
-## Rule Of Thumb
-- If one of these packages solves the problem, use it instead of inventing a custom subsystem.

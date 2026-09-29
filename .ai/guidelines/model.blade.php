@@ -21,6 +21,3 @@
 - Do not bury lifecycle events in JSON or booleans when the timestamp matters operationally.
 - Keep the state-to-timestamp mapping centralised in the transition method or supporting trait.
 - Use immutable date casts for lifecycle timestamps when the model supports them.
-
-## Verification
-- Search for forbidden DB cascades or constraints in migrations: `rg -n -- "constrained\(|cascadeOnDelete\(" packages/*/database`
