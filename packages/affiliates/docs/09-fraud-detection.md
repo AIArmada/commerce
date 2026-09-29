@@ -202,7 +202,7 @@ protected $listen = [
 ];
 ```
 
-The event carries the `Affiliate`, the `AffiliateFraudSignal`, and the severity string.
+The event carries the `AffiliateFraudSignal` (reach the affiliate and severity through it). It fires from the model on every create — detection rules, manual analyst flags, and host integrations — and implements `ShouldDispatchAfterCommit`, so listeners run after the signal transaction commits.
 
 ## Fraud Review in Filament
 

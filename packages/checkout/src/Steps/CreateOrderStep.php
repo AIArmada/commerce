@@ -598,13 +598,15 @@ final class CreateOrderStep extends AbstractCheckoutStep
                 : 'The order total changed during checkout and payment is now required.',
         ]);
 
-        Log::warning('Free order confirmation aborted because the order no longer qualifies as free', [
-            'session_id' => $session->id,
-            'order_id' => $order->getKey(),
-            'session_grand_total' => (int) $session->grand_total,
-            'order_grand_total' => (int) $order->grand_total,
-            'order_paid_total' => $order->getTotalPaid(),
-        ]);
+        Log::warning($stateRejection
+            ? 'Free order confirmation aborted because the order cannot be confirmed in its current state'
+            : 'Free order confirmation aborted because the order no longer qualifies as free', [
+                'session_id' => $session->id,
+                'order_id' => $order->getKey(),
+                'session_grand_total' => (int) $session->grand_total,
+                'order_grand_total' => (int) $order->grand_total,
+                'order_paid_total' => $order->getTotalPaid(),
+            ]);
     }
 
     private function minorAmount(mixed $amount): ?int

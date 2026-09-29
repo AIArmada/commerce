@@ -21,7 +21,7 @@ final class SyncEventOrderRegistrationsAction
      */
     public function handle(string $orderId, string $orderType, string $eventType, ?array $registrationIds = null): int
     {
-        if (! in_array($eventType, ['paid', 'cancelled', 'refunded', 'refund_failed'], true)) {
+        if (! in_array($eventType, ['paid', 'free', 'cancelled', 'refunded', 'refund_failed'], true)) {
             throw new InvalidArgumentException("Unsupported event order lifecycle type: {$eventType}.");
         }
 
@@ -41,6 +41,7 @@ final class SyncEventOrderRegistrationsAction
         foreach ($registrations as $registration) {
             match ($eventType) {
                 'paid' => $this->syncPaid($registration),
+                'free' => $this->syncFree($registration),
                 'cancelled' => $this->syncCancelled($registration),
                 'refunded' => $this->syncRefunded($registration),
                 'refund_failed' => $this->syncRefundFailed($registration),
@@ -61,6 +62,17 @@ final class SyncEventOrderRegistrationsAction
 
             $this->registrationService->approve($locked);
             $this->setPaymentStatus($locked, 'paid');
+        });
+    }
+
+    private function syncFree(EventRegistration $registration): void
+    {
+        DB::transaction(function () use ($registration): void {
+            // Same locked approve as the paid path, but the payment
+            // status is already 'free' from creation: never write it.
+            $locked = $registration->newQuery()->whereKey($registration->getKey())->lockForUpdate()->firstOrFail();
+
+            $this->registrationService->approve($locked);
         });
     }
 

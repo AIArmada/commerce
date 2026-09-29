@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\Orders\Models;
 
+use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Orders\Enums\OutboxStatus;
 use AIArmada\Orders\Events\OrderFulfillmentRequired;
 use AIArmada\Orders\Events\OrderProcessingStarted;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -98,5 +100,44 @@ final class OrderOutboxMessage extends Model
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class, 'order_id');
+    }
+
+    /**
+     * System operations run cross-tenant and re-scope per row: the
+     * relay and sweep share this entry point instead of repeating
+     * the opt-out at every call site.
+     */
+    public function scopeSystem(Builder $query): Builder
+    {
+        return $query->withoutGlobalScope(OwnerScope::class);
+    }
+
+    public function scopePendingRelayable(Builder $query, CarbonImmutable $graceCutoff): Builder
+    {
+        return $query->where('status', OutboxStatus::Pending->value)
+            ->where('created_at', '<', $graceCutoff);
+    }
+
+    public function scopeFailedRetryable(Builder $query, CarbonImmutable $now): Builder
+    {
+        return $query->where('status', OutboxStatus::Failed->value)
+            ->where('next_retry_at', '<=', $now);
+    }
+
+    public function scopeStuckRelaying(Builder $query, CarbonImmutable $cutoff): Builder
+    {
+        return $query->where('status', OutboxStatus::Relaying->value)
+            ->where('claimed_at', '<', $cutoff);
+    }
+
+    public function scopeRelayedBefore(Builder $query, CarbonImmutable $cutoff): Builder
+    {
+        return $query->where('status', OutboxStatus::Relayed->value)
+            ->where('relayed_at', '<', $cutoff);
+    }
+
+    public function scopeDead(Builder $query): Builder
+    {
+        return $query->where('status', OutboxStatus::Dead->value);
     }
 }

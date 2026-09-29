@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Orders\Actions\Outbox;
 
-use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\Orders\Enums\OutboxStatus;
 use AIArmada\Orders\Models\OrderOutboxMessage;
 use Carbon\CarbonImmutable;
@@ -32,11 +31,8 @@ final class SweepOrderOutbox
         // Intentionally cross-tenant: the sweep is a system operation over
         // row state, not owner data.
         $requeued = OrderOutboxMessage::query()
-            ->withoutGlobalScope(OwnerScope::class)
-            ->where('status', OutboxStatus::Relaying->value)
-            ->where(
-                'claimed_at',
-                '<',
+            ->system()
+            ->stuckRelaying(
                 CarbonImmutable::now()->subSeconds((int) config('orders.outbox.claim_timeout_seconds', 600))
             )
             ->update([
@@ -50,15 +46,14 @@ final class SweepOrderOutbox
 
         if ($retentionDays > 0) {
             $purged = OrderOutboxMessage::query()
-                ->withoutGlobalScope(OwnerScope::class)
-                ->where('status', OutboxStatus::Relayed->value)
-                ->where('relayed_at', '<', CarbonImmutable::now()->subDays($retentionDays))
+                ->system()
+                ->relayedBefore(CarbonImmutable::now()->subDays($retentionDays))
                 ->delete();
         }
 
         $dead = OrderOutboxMessage::query()
-            ->withoutGlobalScope(OwnerScope::class)
-            ->where('status', OutboxStatus::Dead->value)
+            ->system()
+            ->dead()
             ->count();
 
         return ['requeued' => $requeued, 'purged' => $purged, 'dead' => $dead];

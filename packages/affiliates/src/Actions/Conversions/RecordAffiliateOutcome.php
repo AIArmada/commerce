@@ -55,7 +55,7 @@ final class RecordAffiliateOutcome
             ->first();
 
         if ($existing instanceof AffiliateConversion) {
-            return AffiliateConversionData::fromModel($existing);
+            return $this->dispatchReplay($existing, $payload);
         }
 
         $metadata = Arr::get($payload, 'metadata', []);
@@ -124,7 +124,7 @@ final class RecordAffiliateOutcome
                 ->first();
 
             if ($existing instanceof AffiliateConversion) {
-                return AffiliateConversionData::fromModel($existing);
+                return $this->dispatchReplay($existing, $payload);
             }
 
             throw $exception;
@@ -143,6 +143,24 @@ final class RecordAffiliateOutcome
         }
 
         return $conversionData;
+    }
+
+    /**
+     * Retry-safe delivery for replays: a first attempt may have saved
+     * the row but crashed before dispatching. Consumers are idempotent
+     * (keyed notifications, locked policy re-checks).
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    private function dispatchReplay(AffiliateConversion $existing, array $payload): AffiliateConversionData
+    {
+        $existingData = AffiliateConversionData::fromModel($existing);
+
+        if (Arr::get($payload, 'dispatch_event', true)) {
+            $this->events->dispatch(new AffiliateConversionRecorded($existingData));
+        }
+
+        return $existingData;
     }
 
     private function isUniqueViolation(QueryException $exception): bool

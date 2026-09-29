@@ -164,15 +164,13 @@ reaches a terminal state, so reverse/void/reject paths cannot move
 money out from under a payout in flight. Cancel or fail the payout
 first to release its conversions.
 
-Legacy `held_minor` values are a deploy-time heuristic, not ground
-truth: a pre-existing pending/qualified row is credited with its
-commission only when its affiliate's balance pool actually carries
-that much, because whether creation recorded the row is unknowable
-after the fact. The accounting does not depend on the heuristic being
-right — residuals derive from applied mutator amounts, so every
-approval credits exactly `commission_minor` to available regardless
-of pool state. Only the display-only lifetime total can drift on
-divergent legacy rows, and any pool shortfall is reported via
+Pre-existing rows keep `held_minor = 0`: the migration adds the
+column without a data update, and the approval arithmetic credits
+the full commission from the applied mutator amounts instead.
+Residuals derive from applied amounts, so every approval credits
+exactly `commission_minor` to available regardless of pool state.
+Only the display-only lifetime total can drift on divergent legacy
+rows, and any pool shortfall is reported via
 `HoldingShortfallDetected` (see [Events](12-events.md)).
 
 ### AffiliatePayout

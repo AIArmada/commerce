@@ -12,7 +12,10 @@ use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Orders\Events\InventoryDeductionRequired;
 use AIArmada\Orders\Events\InventoryReleaseRequired;
 use AIArmada\Orders\Models\Order;
+use AIArmada\Orders\States\Canceled;
+use AIArmada\Orders\States\Fraud;
 use AIArmada\Orders\States\PendingPayment;
+use AIArmada\Orders\States\Refunded;
 use Illuminate\Database\QueryException;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -255,4 +258,60 @@ describe('ReleaseInventoryFromOrder idempotency', function (): void {
         expect($operation)->not->toBeNull();
         expect($operation->status)->toBe(InventoryOperation::STATUS_COMPLETED);
     });
+});
+
+describe('DeductInventoryFromOrder lifecycle guard', function (): void {
+    it('skips terminal orders without touching stock', function (string $status): void {
+        Schema::dropIfExists('inventory_test_products');
+        Schema::create('inventory_test_products', function (Blueprint $table): void {
+            $table->uuid('id')->primary();
+            $table->string('name');
+            $table->timestamps();
+        });
+
+        $item = InventoryItem::create(['name' => 'Terminal Guard SKU']);
+        $location = InventoryLocation::factory()->create([
+            'name' => 'WH-TERMINAL',
+            'code' => 'WH-TERMINAL',
+            'priority' => 100,
+        ]);
+
+        $inventoryService = app(InventoryService::class);
+        $inventoryService->receive($item, $location->id, 10);
+
+        $order = Order::create([
+            'order_number' => 'ORD-IDM-TERM-' . uniqid(),
+            'status' => $status,
+            'currency' => 'MYR',
+            'subtotal' => 5000,
+            'grand_total' => 5000,
+        ]);
+
+        $order->items()->create([
+            'name' => 'Test Line',
+            'quantity' => 3,
+            'unit_price' => 5000,
+            'currency' => 'MYR',
+            'purchasable_type' => $item->getMorphClass(),
+            'purchasable_id' => $item->getKey(),
+        ]);
+
+        $movementsBefore = InventoryMovement::count();
+
+        app(DeductInventoryFromOrder::class)->handle(new InventoryDeductionRequired($order));
+
+        expect(InventoryMovement::count())->toBe($movementsBefore)
+            ->and($inventoryService->getLevel($item, $location->id)?->fresh()->quantity_on_hand)->toBe(10);
+
+        $operation = InventoryOperation::where('order_id', $order->id)
+            ->where('kind', InventoryOperation::KIND_DEDUCTION)
+            ->first();
+
+        expect($operation)->not->toBeNull();
+        expect($operation->status)->toBe(InventoryOperation::STATUS_COMPLETED);
+    })->with([
+        'cancelled' => Canceled::class,
+        'refunded' => Refunded::class,
+        'fraud' => Fraud::class,
+    ]);
 });

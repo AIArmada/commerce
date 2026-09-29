@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace AIArmada\Orders\Actions\Outbox;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\Orders\Enums\OutboxStatus;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderOutboxMessage;
 use AIArmada\Orders\States\Canceled;
 use AIArmada\Orders\States\Fraud;
 use AIArmada\Orders\States\Refunded;
+use AIArmada\Orders\Support\OutboxRelayOptions;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -39,27 +39,21 @@ final class RelayOrderOutbox
     {
         $limit ??= (int) config('orders.outbox.batch_limit', 100);
         $graceCutoff = CarbonImmutable::now()->subSeconds((int) config('orders.outbox.relay_grace_seconds', 60));
-        $maxAttempts = (int) config('orders.outbox.max_attempts', 10);
-        $retryBaseSeconds = (int) config('orders.outbox.retry_base_seconds', 60);
-        $retryMaxSeconds = (int) config('orders.outbox.retry_max_seconds', 3600);
+        $options = OutboxRelayOptions::fromConfig();
 
         $counts = ['relayed' => 0, 'failed' => 0, 'dead' => 0, 'skipped' => 0, 'suppressed' => 0];
 
         // Intentionally cross-tenant: the relay is a system operation that
         // re-scopes per row to the row's order owner before dispatching.
         $rows = OrderOutboxMessage::query()
-            ->withoutGlobalScope(OwnerScope::class)
+            ->system()
             ->where(function ($query) use ($graceCutoff): void {
                 $query
                     ->where(function ($pending) use ($graceCutoff): void {
-                        $pending
-                            ->where('status', OutboxStatus::Pending->value)
-                            ->where('created_at', '<', $graceCutoff);
+                        $pending->pendingRelayable($graceCutoff);
                     })
                     ->orWhere(function ($failed): void {
-                        $failed
-                            ->where('status', OutboxStatus::Failed->value)
-                            ->where('next_retry_at', '<=', CarbonImmutable::now());
+                        $failed->failedRetryable(CarbonImmutable::now());
                     });
             })
             ->orderBy('created_at')
@@ -67,7 +61,7 @@ final class RelayOrderOutbox
             ->get();
 
         foreach ($rows as $row) {
-            $counts[$this->relayRow($row, $maxAttempts, $retryBaseSeconds, $retryMaxSeconds)]++;
+            $counts[$this->relayRow($row, $options)]++;
         }
 
         return $counts;
@@ -93,7 +87,7 @@ final class RelayOrderOutbox
     /**
      * @return 'relayed'|'failed'|'dead'|'skipped'|'suppressed'
      */
-    private function relayRow(OrderOutboxMessage $row, int $maxAttempts, int $retryBaseSeconds, int $retryMaxSeconds): string
+    private function relayRow(OrderOutboxMessage $row, OutboxRelayOptions $options): string
     {
         // Fail closed: never instantiate a class that is not on the allowlist.
         if (! in_array($row->event_class, OrderOutboxMessage::REPLAYABLE_EVENTS, true)) {
@@ -103,7 +97,7 @@ final class RelayOrderOutbox
         }
 
         $order = Order::query()
-            ->withoutGlobalScope(OwnerScope::class)
+            ->withoutOwnerScope()
             ->find($row->order_id);
 
         if ($order === null) {
@@ -117,7 +111,7 @@ final class RelayOrderOutbox
         // sweep requeue landing between the batch read and the claim
         // cannot inject a stale-derived count.
         $claimed = OrderOutboxMessage::query()
-            ->withoutGlobalScope(OwnerScope::class)
+            ->system()
             ->whereKey($row->getKey())
             ->whereIn('status', [OutboxStatus::Pending->value, OutboxStatus::Failed->value])
             ->update([
@@ -132,7 +126,7 @@ final class RelayOrderOutbox
         }
 
         $attempts = (int) OrderOutboxMessage::query()
-            ->withoutGlobalScope(OwnerScope::class)
+            ->system()
             ->whereKey($row->getKey())
             ->value('attempts');
 
@@ -148,7 +142,7 @@ final class RelayOrderOutbox
                 // after, same as the live path). A deadlock here fails
                 // the row into retry like any other dispatch error.
                 $locked = Order::query()
-                    ->withoutGlobalScope(OwnerScope::class)
+                    ->withoutOwnerScope()
                     ->whereKey($order->getKey())
                     ->lockForUpdate()
                     ->first();
@@ -184,21 +178,21 @@ final class RelayOrderOutbox
                 'message' => $exception->getMessage(),
             ]);
 
-            if ($attempts >= $maxAttempts) {
+            if ($attempts >= $options->maxAttempts) {
                 $this->markDead($row, $exception->getMessage());
 
                 return 'dead';
             }
 
             OrderOutboxMessage::query()
-                ->withoutGlobalScope(OwnerScope::class)
+                ->system()
                 ->whereKey($row->getKey())
                 ->where('status', OutboxStatus::Relaying->value)
                 ->update([
                     'status' => OutboxStatus::Failed->value,
                     'claimed_at' => null,
                     'next_retry_at' => CarbonImmutable::now()->addSeconds(
-                        min($retryMaxSeconds, $retryBaseSeconds * $attempts)
+                        min($options->retryMaxSeconds, $options->retryBaseSeconds * $attempts)
                     ),
                     'last_error' => $exception->getMessage(),
                     'updated_at' => CarbonImmutable::now(),
@@ -208,7 +202,7 @@ final class RelayOrderOutbox
         }
 
         OrderOutboxMessage::query()
-            ->withoutGlobalScope(OwnerScope::class)
+            ->system()
             ->whereKey($row->getKey())
             ->where('status', OutboxStatus::Relaying->value)
             ->update([
@@ -226,7 +220,7 @@ final class RelayOrderOutbox
     private function markSuppressed(OrderOutboxMessage $row, string $reason): void
     {
         OrderOutboxMessage::query()
-            ->withoutGlobalScope(OwnerScope::class)
+            ->system()
             ->whereKey($row->getKey())
             ->where('status', OutboxStatus::Relaying->value)
             ->update([
@@ -241,7 +235,7 @@ final class RelayOrderOutbox
     private function markDead(OrderOutboxMessage $row, string $reason): void
     {
         OrderOutboxMessage::query()
-            ->withoutGlobalScope(OwnerScope::class)
+            ->system()
             ->whereKey($row->getKey())
             ->whereIn('status', [
                 OutboxStatus::Pending->value,

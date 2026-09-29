@@ -164,7 +164,16 @@ final class RecordAffiliateConversion
             $conversion = $this->createIdempotent($conversionAttributes);
 
             if (! $conversion->wasRecentlyCreated) {
-                $firstConversion ??= AffiliateConversionData::fromModel($conversion);
+                // Retry-safe delivery: the ledger row already exists but
+                // a prior attempt may never have dispatched (see the
+                // outcome path). Webhooks stay first-write-only: hosts
+                // must not receive duplicate external calls on retry.
+                $existingData = AffiliateConversionData::fromModel($conversion);
+                $firstConversion ??= $existingData;
+
+                if ($this->shouldDispatch('dispatch_conversion')) {
+                    $this->events?->dispatch(new AffiliateConversionRecorded($existingData));
+                }
 
                 continue;
             }

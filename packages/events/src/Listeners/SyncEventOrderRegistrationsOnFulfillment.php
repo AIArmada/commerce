@@ -20,7 +20,9 @@ final class SyncEventOrderRegistrationsOnFulfillment
 
         OwnerContext::withOwner($event->order->owner ?? null, function () use ($event): void {
             $action = app(SyncEventOrderRegistrationsAction::class);
-            $action->handle($event->order->id, Order::class, 'paid');
+            // The event carries no payment claim: free orders must not
+            // relabel their 'free' registrations as paid.
+            $action->handle($event->order->id, Order::class, $event->gateway === 'free' ? 'free' : 'paid');
         });
     }
 }

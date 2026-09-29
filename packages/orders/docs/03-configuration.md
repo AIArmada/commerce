@@ -126,6 +126,8 @@ The transactional outbox recovers fulfillment events lost to a crash between com
 
 Only `OrderProcessingStarted` and `OrderFulfillmentRequired` are replayable. `OrderPaid` is never staged: invoice creation and payment confirmation emails are not idempotent.
 
+The relay and sweep ship unscheduled: the host app must schedule them (relay every minute, sweep hourly — snippet in [Usage](04-usage.md)) or staged rows never replay and crash recovery silently does nothing.
+
 Dead rows are never purged by the sweep: they stay for operator forensics until removed manually.
 
 ## Integrations

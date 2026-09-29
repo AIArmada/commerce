@@ -257,6 +257,8 @@ return [
 
     'events' => [
         'dispatch_attributed' => env('AFFILIATES_EVENT_ATTRIBUTED', true),
+        // Open-registration auto-approval listens for this event: disabling
+        // it leaves open-mode affiliates pending forever.
         'dispatch_conversion' => env('AFFILIATES_EVENT_CONVERSION', true),
         'dispatch_webhooks' => env('AFFILIATES_EVENT_WEBHOOKS', false),
     ],
