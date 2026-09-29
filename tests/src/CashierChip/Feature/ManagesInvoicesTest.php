@@ -38,4 +38,24 @@ describe('ManagesInvoices', function (): void {
         $this->assertInstanceOf(Collection::class, $invoices);
         $this->assertCount(0, $invoices);
     });
+
+    it('dedupes invoicing on the idempotency key', function (): void {
+        $this->user->tab('Item', 1000);
+        $first = $this->user->invoice(['idempotency_key' => 'invoice-key-1']);
+
+        $this->user->tab('Item', 1000);
+        $second = $this->user->invoice(['idempotency_key' => 'invoice-key-1']);
+
+        $this->assertEquals($first->id(), $second->id());
+    });
+
+    it('creates distinct invoices for distinct keys', function (): void {
+        $this->user->tab('Item', 1000);
+        $first = $this->user->invoice(['idempotency_key' => 'invoice-key-a']);
+
+        $this->user->tab('Item', 1000);
+        $second = $this->user->invoice(['idempotency_key' => 'invoice-key-b']);
+
+        $this->assertNotEquals($first->id(), $second->id());
+    });
 });

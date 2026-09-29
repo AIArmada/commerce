@@ -173,8 +173,14 @@ $payment = $gateway->createPayment($cart, $customer, [
 The mapping always reconciles (`total = subtotal - discount + tax`):
 
 - Line items report condition-adjusted unit prices with zero line discounts.
+  A line with a tax condition reports a zero tax percent (its tax is already
+  baked into the price); an attribute-declared `tax_percent` with no tax
+  condition passes through for the gateway to apply.
 - The discount term holds net cart-level price reductions; net surcharges
   surface on the tax term instead, so gateways never receive negative money.
+- The tax and total terms include attribute-declared line taxes, computed
+  per line from the gateway-facing rate and the line subtotal, so the
+  overrides match what the gateway charges for the yielded lines.
 - The reference is the stored cart id, falling back to `identifier:instance`.
 - The cart must contain at least one item; gateways reject empty checkouts.
 

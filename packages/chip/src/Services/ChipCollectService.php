@@ -12,6 +12,7 @@ use AIArmada\Chip\Data\CompanyStatementData;
 use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Chip\Data\ProductData;
 use AIArmada\Chip\Data\PurchaseData;
+use AIArmada\Chip\Exceptions\ChipValidationException;
 use AIArmada\Chip\Services\Collect\AccountApi;
 use AIArmada\Chip\Services\Collect\ClientsApi;
 use AIArmada\Chip\Services\Collect\PurchasesApi;
@@ -48,9 +49,9 @@ class ChipCollectService
     /**
      * @param  array<string, mixed>  $data
      */
-    public function createPurchase(array $data): PurchaseData
+    public function createPurchase(array $data, ?string $idempotencyKey = null): PurchaseData
     {
-        return $this->purchases->create($data);
+        return $this->purchases->create($data, $idempotencyKey);
     }
 
     public function getPurchase(string $purchaseId): PurchaseData
@@ -58,14 +59,14 @@ class ChipCollectService
         return $this->purchases->find($purchaseId);
     }
 
-    public function cancelPurchase(string $purchaseId): PurchaseData
+    public function cancelPurchase(string $purchaseId, ?string $idempotencyKey = null): PurchaseData
     {
-        return $this->purchases->cancel($purchaseId);
+        return $this->purchases->cancel($purchaseId, $idempotencyKey);
     }
 
-    public function refundPurchase(string $purchaseId, ?int $amount = null): PurchaseData | PaymentData
+    public function refundPurchase(string $purchaseId, ?int $amount = null, ?string $idempotencyKey = null): PurchaseData | PaymentData
     {
-        return $this->purchases->refund($purchaseId, $amount);
+        return $this->purchases->refund($purchaseId, $amount, $idempotencyKey);
     }
 
     /**
@@ -87,34 +88,34 @@ class ChipCollectService
         return $this->purchases->paymentMethods($filters);
     }
 
-    public function chargePurchase(string $purchaseId, string $recurringToken): PurchaseData
+    public function chargePurchase(string $purchaseId, string $recurringToken, ?string $idempotencyKey = null): PurchaseData
     {
-        return $this->purchases->charge($purchaseId, $recurringToken);
+        return $this->purchases->charge($purchaseId, $recurringToken, $idempotencyKey);
     }
 
-    public function capturePurchase(string $purchaseId, ?int $amount = null): PurchaseData
+    public function capturePurchase(string $purchaseId, ?int $amount = null, ?string $idempotencyKey = null): PurchaseData
     {
-        return $this->purchases->capture($purchaseId, $amount);
+        return $this->purchases->capture($purchaseId, $amount, $idempotencyKey);
     }
 
-    public function releasePurchase(string $purchaseId): PurchaseData
+    public function releasePurchase(string $purchaseId, ?string $idempotencyKey = null): PurchaseData
     {
-        return $this->purchases->release($purchaseId);
+        return $this->purchases->release($purchaseId, $idempotencyKey);
     }
 
-    public function markPurchaseAsPaid(string $purchaseId, ?int $paidOn = null): PurchaseData
+    public function markPurchaseAsPaid(string $purchaseId, ?int $paidOn = null, ?string $idempotencyKey = null): PurchaseData
     {
-        return $this->purchases->markAsPaid($purchaseId, $paidOn);
+        return $this->purchases->markAsPaid($purchaseId, $paidOn, $idempotencyKey);
     }
 
-    public function resendInvoice(string $purchaseId): PurchaseData
+    public function resendInvoice(string $purchaseId, ?string $idempotencyKey = null): PurchaseData
     {
-        return $this->purchases->resendInvoice($purchaseId);
+        return $this->purchases->resendInvoice($purchaseId, $idempotencyKey);
     }
 
-    public function deleteRecurringToken(string $purchaseId): PurchaseData
+    public function deleteRecurringToken(string $purchaseId, ?string $idempotencyKey = null): PurchaseData
     {
-        return $this->purchases->deleteRecurringToken($purchaseId);
+        return $this->purchases->deleteRecurringToken($purchaseId, $idempotencyKey);
     }
 
     public function getBrandId(): string
@@ -201,11 +202,12 @@ class ChipCollectService
     }
 
     /**
+     * @param  array<string, mixed>  $filters
      * @return array<string, mixed>
      */
-    public function getAccountBalance(): array
+    public function getAccountBalance(array $filters = []): array
     {
-        return $this->account->balance();
+        return $this->account->balance($filters);
     }
 
     /**
@@ -252,6 +254,41 @@ class ChipCollectService
     }
 
     /**
+     * @param  array{format?: string, timezone?: string}  $statement
+     * @param  array<string, mixed>  $filters
+     */
+    public function scheduleCompanyStatement(array $statement, array $filters = []): CompanyStatementData
+    {
+        $this->assertValidStatementRequest($statement);
+
+        $response = $this->account->scheduleCompanyStatement($statement, $filters);
+
+        return CompanyStatementData::from($response);
+    }
+
+    /**
+     * @param  array<string, mixed>  $statement
+     */
+    private function assertValidStatementRequest(array $statement): void
+    {
+        $format = $statement['format'] ?? null;
+
+        if ($format !== null && ! in_array($format, ['csv', 'xlsx'], true)) {
+            throw new ChipValidationException('Company statement format must be csv or xlsx.', [
+                'format' => $format,
+            ]);
+        }
+
+        $timezone = $statement['timezone'] ?? null;
+
+        if ($timezone !== null && (! is_string($timezone) || mb_trim($timezone) === '')) {
+            throw new ChipValidationException('Company statement timezone must be a non-empty string.', [
+                'timezone' => $timezone,
+            ]);
+        }
+    }
+
+    /**
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
@@ -275,6 +312,15 @@ class ChipCollectService
     public function updateWebhook(string $webhookId, array $data): array
     {
         return $this->webhooks->update($webhookId, $data);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public function partialUpdateWebhook(string $webhookId, array $data): array
+    {
+        return $this->webhooks->partialUpdate($webhookId, $data);
     }
 
     public function deleteWebhook(string $webhookId): void

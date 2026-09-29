@@ -7,13 +7,18 @@ namespace AIArmada\Chip\Services\Collect;
 final class AccountApi extends CollectApi
 {
     /**
+     * @param  array<string, mixed>  $filters
      * @return array<string, mixed>
      */
-    public function balance(): array
+    public function balance(array $filters = []): array
     {
+        $queryString = http_build_query($filters);
+        $endpoint = 'account/json/balance/' . ($queryString !== '' ? '?' . $queryString : '');
+
         return $this->attempt(
-            fn () => $this->client->get('account/json/balance/'),
-            'Failed to get CHIP account balance'
+            fn () => $this->client->get($endpoint),
+            'Failed to get CHIP account balance',
+            ['filters' => $filters]
         );
     }
 
@@ -60,6 +65,23 @@ final class AccountApi extends CollectApi
             fn () => $this->client->get("company_statements/{$statementId}/"),
             'Failed to get CHIP company statement',
             ['statement_id' => $statementId]
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $statement
+     * @param  array<string, mixed>  $filters
+     * @return array<string, mixed>
+     */
+    public function scheduleCompanyStatement(array $statement, array $filters = []): array
+    {
+        $queryString = http_build_query($filters);
+        $endpoint = 'company_statements/' . ($queryString ? '?' . $queryString : '');
+
+        return $this->attempt(
+            fn () => $this->client->post($endpoint, $statement),
+            'Failed to schedule CHIP company statement',
+            ['statement' => $statement, 'filters' => $filters]
         );
     }
 

@@ -11,6 +11,13 @@ use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
 use Illuminate\Console\Command;
 
+/**
+ * AGENTS: only expired stubs are deleted, but an expired stub may still
+ * cover a purchase that WAS created at CHIP (crash after POST, before
+ * record). If anyone plans to retry the operation after pruning, reconcile
+ * by `reference` at CHIP first — prune + blind retry = second purchase.
+ * See PurchaseIdempotencyLedger for the full runbook.
+ */
 final class PruneIdempotencyStubsCommand extends Command
 {
     protected $signature = 'chip:prune-idempotency-stubs

@@ -50,6 +50,86 @@ describe('ChipApiException', function (): void {
         expect($exception->getErrorDetails())->toBe($responseData);
     });
 
+    it('extracts object-shaped __all__ errors', function (): void {
+        $exception = ChipApiException::fromResponse([
+            '__all__' => ['message' => 'descriptive error message', 'code' => 'error_code'],
+        ], 400);
+
+        expect($exception->getMessage())->toBe('descriptive error message')
+            ->and($exception->getErrorCode())->toBe('error_code')
+            ->and($exception->getErrorMessage())->toBe('descriptive error message');
+    });
+
+    it('extracts list-shaped __all__ errors', function (): void {
+        $exception = ChipApiException::fromResponse([
+            '__all__' => [
+                ['message' => 'Invalid or inactive recurring token!', 'code' => 'invalid_recurring_token'],
+            ],
+        ], 400);
+
+        expect($exception->getMessage())->toBe('Invalid or inactive recurring token!')
+            ->and($exception->getErrorCode())->toBe('invalid_recurring_token')
+            ->and($exception->getErrorMessage())->toBe('Invalid or inactive recurring token!');
+    });
+
+    it('prefers top-level error fields over __all__', function (): void {
+        $exception = ChipApiException::fromResponse([
+            'error' => 'Top level',
+            'code' => 'TOP_LEVEL',
+            '__all__' => ['message' => 'Nested', 'code' => 'NESTED'],
+        ], 400);
+
+        expect($exception->getMessage())->toBe('Top level')
+            ->and($exception->getErrorCode())->toBe('TOP_LEVEL');
+    });
+
+    it('extracts a message-only error from a string __all__ item', function (): void {
+        $exception = ChipApiException::fromResponse([
+            '__all__' => ['plain failure'],
+        ], 400);
+
+        expect($exception->getMessage())->toBe('plain failure')
+            ->and($exception->getErrorCode())->toBeNull()
+            ->and($exception->getErrorMessage())->toBe('plain failure');
+    });
+
+    it('ignores a malformed __all__ payload', function (): void {
+        $exception = ChipApiException::fromResponse([
+            '__all__' => 42,
+        ], 400);
+
+        expect($exception->getMessage())->toBe('Unknown API error')
+            ->and($exception->getErrorCode())->toBeNull();
+    });
+
+    it('ignores a non-string __all__ error object', function (): void {
+        $exception = ChipApiException::fromResponse([
+            '__all__' => ['message' => 42, 'code' => 99],
+        ], 400);
+
+        expect($exception->getMessage())->toBe('Unknown API error')
+            ->and($exception->getErrorCode())->toBeNull();
+    });
+
+    it('uses a scalar string body as the message', function (): void {
+        $exception = ChipApiException::fromResponse('Too many requests', 502);
+
+        expect($exception->getMessage())->toBe('Too many requests')
+            ->and($exception->getErrorCode())->toBeNull();
+    });
+
+    it('falls back to an unknown error on a non-string scalar body', function (): void {
+        $exception = ChipApiException::fromResponse(42, 502);
+
+        expect($exception->getMessage())->toBe('Unknown API error')
+            ->and($exception->getErrorCode())->toBeNull();
+    });
+
+    it('returns null extracting __all__ from a scalar body', function (): void {
+        expect(ChipApiException::extractAllError('Too many requests'))->toBeNull()
+            ->and(ChipApiException::extractAllError(42))->toBeNull();
+    });
+
 });
 
 describe('ChipValidationException', function (): void {

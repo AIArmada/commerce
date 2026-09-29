@@ -73,17 +73,22 @@ final class AccountTurnoverWidget extends ChartWidget
                 $labels[] = $date->format('M d');
 
                 $response = $service->getAccountTurnover([
-                    'date_from' => $date->startOfDay()->getTimestamp(),
-                    'date_to' => $date->endOfDay()->getTimestamp(),
+                    'from' => $date->startOfDay()->getTimestamp(),
+                    'to' => $date->endOfDay()->getTimestamp(),
+                    'currency' => 'MYR',
                 ]);
 
-                $dayRevenue = (float) ($response['total_income'] ?? $response['revenue'] ?? 0);
-                $dayFees = (float) ($response['total_fees'] ?? $response['fees'] ?? 0);
+                $dayRevenue = (float) ($response['incoming']['turnover'] ?? 0);
+                $dayFees = (float) ($response['incoming']['fee_sell'] ?? 0);
 
                 $revenue[] = round($dayRevenue / 100, 2);
                 $fees[] = round($dayFees / 100, 2);
             }
         } catch (Throwable) {
+            $labels = [];
+            $revenue = [];
+            $fees = [];
+
             for ($i = 29; $i >= 0; $i--) {
                 $date = CarbonImmutable::now()->subDays($i);
                 $labels[] = $date->format('M d');

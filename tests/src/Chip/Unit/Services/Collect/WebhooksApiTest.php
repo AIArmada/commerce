@@ -49,6 +49,18 @@ describe('Collect Webhooks API', function (): void {
         expect(fn () => $this->api->delete('wh_123'))->not->toThrow(Exception::class);
     });
 
+    it('partially updates a webhook', function (): void {
+        $payload = ['callback' => 'https://example.com/webhook-v2'];
+
+        $this->client->shouldReceive('patch')
+            ->once()
+            ->with('webhooks/wh_123/', $payload)
+            ->andReturn(['id' => 'wh_123'] + $payload);
+
+        expect($this->api->partialUpdate('wh_123', $payload))
+            ->toBe(['id' => 'wh_123'] + $payload);
+    });
+
     it('lists webhooks with filters and logs errors', function (): void {
         $filters = ['status' => 'active'];
         $expected = ['data' => [['id' => 'wh_active']]];

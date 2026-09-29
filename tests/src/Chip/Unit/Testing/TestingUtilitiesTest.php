@@ -196,6 +196,33 @@ describe('WebhookFactory', function (): void {
         expect($payload['purchase']['total'])->toBe(25000);
     });
 
+    it('computes product totals with the server line-total formula', function (): void {
+        $payload = WebhookFactory::make()
+            ->products([['name' => 'Disc', 'price' => 100, 'quantity' => '1.5']])
+            ->toArray();
+
+        // Fractional quantities must not truncate (150, not 100).
+        expect($payload['purchase']['total'])->toBe(150);
+    });
+
+    it('accepts product discount, tax, and override through the setter', function (): void {
+        $payload = WebhookFactory::make()
+            ->products([['name' => 'DT', 'price' => 100, 'quantity' => '1.5', 'discount' => 1, 'tax_percent' => '6']])
+            ->toArray();
+
+        expect($payload['purchase']['total'])->toBe(158)
+            ->and($payload['purchase']['products'][0]['discount'])->toBe(1);
+    });
+
+    it('keeps the total consistent with product overrides', function (): void {
+        $payload = WebhookFactory::make()
+            ->products([['name' => 'Base', 'price' => 100]])
+            ->with(['purchase' => ['products' => [0 => ['quantity' => '1.5']]]])
+            ->toArray();
+
+        expect($payload['purchase']['total'])->toBe(150);
+    });
+
     it('sets payment method via fpx helper', function (): void {
         $factory = WebhookFactory::make()->paid()->fpx();
         $payload = $factory->toArray();

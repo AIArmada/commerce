@@ -63,15 +63,16 @@ use AIArmada\Chip\Facades\Chip;
 
 // Purchases
 Chip::purchase(): PurchaseBuilder
-Chip::createPurchase(array $data): PurchaseData
+Chip::createPurchase(array $data, ?string $idempotencyKey = null): PurchaseData
 Chip::getPurchase(string $id): PurchaseData
-Chip::cancelPurchase(string $id): PurchaseData
-Chip::refundPurchase(string $id, ?int $amount = null): PaymentData|PurchaseData
-Chip::capturePurchase(string $id, ?int $amount = null): PurchaseData
-Chip::releasePurchase(string $id): PurchaseData
-Chip::markPurchaseAsPaid(string $id, ?int $paidOn = null): PurchaseData
-Chip::resendInvoice(string $id): PurchaseData
-Chip::deleteRecurringToken(string $id): PurchaseData
+Chip::cancelPurchase(string $id, ?string $idempotencyKey = null): PurchaseData
+Chip::refundPurchase(string $id, ?int $amount = null, ?string $idempotencyKey = null): PaymentData|PurchaseData
+Chip::chargePurchase(string $id, string $recurringToken, ?string $idempotencyKey = null): PurchaseData
+Chip::capturePurchase(string $id, ?int $amount = null, ?string $idempotencyKey = null): PurchaseData
+Chip::releasePurchase(string $id, ?string $idempotencyKey = null): PurchaseData
+Chip::markPurchaseAsPaid(string $id, ?int $paidOn = null, ?string $idempotencyKey = null): PurchaseData
+Chip::resendInvoice(string $id, ?string $idempotencyKey = null): PurchaseData
+Chip::deleteRecurringToken(string $id, ?string $idempotencyKey = null): PurchaseData
 Chip::getPaymentMethods(array $filters = []): array
 
 // Clients
@@ -83,16 +84,18 @@ Chip::partialUpdateClient(string $id, array $data): ClientData
 Chip::deleteClient(string $id): void
 
 // Account
-Chip::getAccountBalance(): array
+Chip::getAccountBalance(array $filters = []): array
 Chip::getAccountTurnover(array $filters = []): array
 Chip::listCompanyStatements(array $filters = []): array
 Chip::getCompanyStatement(string $id): CompanyStatementData
 Chip::cancelCompanyStatement(string $id): CompanyStatementData
+Chip::scheduleCompanyStatement(array $statement, array $filters = []): CompanyStatementData
 
 // Webhooks
 Chip::createWebhook(array $data): array
 Chip::getWebhook(string $id): array
 Chip::updateWebhook(string $id, array $data): array
+Chip::partialUpdateWebhook(string $id, array $data): array
 Chip::deleteWebhook(string $id): void
 Chip::listWebhooks(array $filters = []): array
 
@@ -100,6 +103,8 @@ Chip::listWebhooks(array $filters = []): array
 Chip::getPublicKey(): string
 Chip::getBrandId(): string
 ```
+
+Idempotency invariant: a resolved key (explicit argument, payload `idempotency_key`, `reference` fallback, or the checkout fingerprint default) is always sent as an `Idempotency-Key` header. Caller-supplied keys are sent as given (trimmed; empty throws) — never generated, never derived; the fingerprint default (`checkout-` + payload hash) is the deliberate exception for keyless creates. Keys are scoped to purchase operations. The checkout-builder path stays keyless: it has no stable operation identity.
 
 ## ChipSendService (ChipSend Facade)
 
@@ -167,10 +172,10 @@ Chip::purchase()
     ->customer(string $email, ?string $fullName, ?string $phone, ?string $country): self
     ->email(string $email): self
     ->clientId(string $clientId): self
-    ->billingAddress(string $street, string $city, string $zip, ?string $state, ?string $country): self
-    ->shippingAddress(string $street, string $city, string $zip, ?string $state, ?string $country): self
-    ->addProductCents(string $name, int $price, string|float|int $quantity = 1, int $discount = 0, float $taxPercent = 0): self
-    ->addProductMoney(string $name, Money $price, string|float|int $quantity = 1, ?Money $discount = null, float $taxPercent = 0): self
+    ->billingAddress(string $street, string $city, string $zip, ?string $state = null, ?string $country = null): self
+    ->shippingAddress(string $street, string $city, string $zip, ?string $state = null, ?string $country = null): self
+    ->addProductCents(string $name, int $price, string|float|int $quantity = 1, int $discount = 0, float|string $taxPercent = 0, ?string $category = null, ?int $totalPriceOverride = null): self
+    ->addProductMoney(string $name, Money $price, string|float|int $quantity = 1, ?Money $discount = null, float|string $taxPercent = 0, ?string $category = null, ?int $totalPriceOverride = null): self
     ->addProductObject(ProductData $product): self
     ->addLineItem(LineItemInterface $item): self
     ->fromCheckoutable(CheckoutableInterface $checkoutable): self
@@ -186,8 +191,25 @@ Chip::purchase()
     ->preAuthorize(bool $skipCapture = true): self
     ->forceRecurring(bool $force = true): self
     ->due(int $timestamp, bool $strict = false): self
+    ->discount(int $amount): self
     ->notes(string $notes): self
     ->metadata(array $metadata): self
+    ->issued(string $date): self
+    ->paymentMethodWhitelist(array $methods): self
+    ->tags(array $tags): self
+    ->language(string $language): self
+    ->debt(int $cents): self
+    ->timezone(string $timezone): self
+    ->emailMessage(string $message): self
+    ->requestClientDetails(array $fields): self
+    ->cc(array $emails): self
+    ->bcc(array $emails): self
+    ->legalName(string $legalName): self
+    ->brandName(string $brandName): self
+    ->registrationNumber(string $registrationNumber): self
+    ->taxNumber(string $taxNumber): self
+    ->bankAccount(string $bankAccount): self
+    ->bankCode(string $bankCode): self
     ->toArray(): array
     ->create(): PurchaseData
     ->save(): PurchaseData
@@ -224,6 +246,28 @@ $purchase->getRefundableAmount(): Money
 $purchase->getCreatedAt(): CarbonImmutable
 $purchase->getUpdatedAt(): CarbonImmutable
 ```
+
+### Product
+
+```php
+$product->name: string
+$product->quantity: string
+$product->price: Money
+$product->discount: Money
+$product->tax_percent: float|string
+$product->category: ?string
+$product->total_price_override: ?int
+
+$product->getCurrency(): string
+$product->getPriceInCents(): int
+$product->getDiscountInCents(): int
+$product->getSubtotalInCents(): int
+$product->getDiscountTotalInCents(): int
+$product->getTotalPrice(): Money
+$product->getTotalPriceInCents(): int
+```
+
+Construct with `ProductData::from(...)` or `make(...)`. Two serializers, different contracts: `toArray()` is the full local shape and emits `'category' => null` when unset (plus `discount: 0`, `tax_percent: 0.0`); `toRequestArray()` is the CHIP wire shape — it omits null fields but keeps zeros. CHIP request sites must use `toRequestArray()` (the spec types `category` as non-nullable `string`). `total_price_override` (`?int`, cents) overrides the line total when non-null — zero is emittable. `tax_percent` accepts a float or numeric string outbound and emits as given; `from()` preserves numeric strings as given (no float cast, so long decimal strings keep full precision).
 
 ### Payment
 
@@ -390,3 +434,7 @@ Iterates over distinct owner tuples from the webhooks table, running the callbac
 - Use `Money` objects for type-safe calculations
 - Timestamps as Unix epoch or ISO8601
 - Omit optional fields rather than send empty strings
+- `Retry-After`: numeric seconds, or HTTP-date (IMF-fixdate / RFC 850 / asctime with matching weekday; two-digit years more than 50 years out take the past century). Missing or malformed → 60s default; past dates → 0. See [Retry protocol](09-webhooks.md#retry-protocol).
+- `__all__` errors: object, first-of-list, or bare message-only string (live: 11/11 lists; spec object example unconfirmed). The extracted code merges only when no top-level code exists. See [Errors](04-usage.md#errors).
+- Field bounds (enforced before any request): `tax_percent` 0–100 (numeric); `notes` ≤10000, `language` ≤2, `email_message` ≤512 chars; product `name`/`category` ≤256; client `legal_name` ≤1000, `brand_name` ≤128, `registration_number`/`tax_number`/`bank_code` ≤32, `bank_account` ≤64, `cc`/`bcc` members ≤254; `platform` ∈ {web, api, ios, android, macos, windows}; `creator_agent` ≤32. Explicit nulls rejected on `platform`/`creator_agent`.
+- `paymentMethodWhitelist()` validates members locally and throws on unknown values; the `createCheckoutPurchase()` options/config path forwards its whitelist unvalidated (a typo'd `chip.defaults.payment_method_whitelist` fails at CHIP, not locally). Two paths, one wire key, divergent validation.

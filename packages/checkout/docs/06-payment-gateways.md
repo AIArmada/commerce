@@ -48,6 +48,14 @@ The `cashier-chip` processor now bridges checkout, customers, and CHIP billing i
 
 This keeps authenticated billing flows and guest checkout flows on the same processor without requiring separate gateway selection logic.
 
+## CHIP Purchase Payload
+
+`ChipPurchasePayloadBuilder::build()` assembles the CHIP purchase from the `PaymentRequest` and the `CheckoutSession`. The customer triple (email, name, phone) comes from the request; billing-address fields come from the session's `billing_data` and are omitted when absent:
+
+- `street_address` ← non-empty `line1`/`line2`/`line3` joined with `, `
+- `city` ← `city`, `state` ← `state`, `zip_code` ← `postcode`
+- `country` ← `country_code` only (ISO 3166-1 alpha-2; the code is the documented/choice-field-safe form even though the sandbox also accepts the full country name)
+
 ## Cashier Pre-Payment Requirement
 
 The generic `cashier` processor still requires a persisted, chargeable billable subject before payment is created. Checkout therefore preserves the pre-payment customer materialization path for that gateway while deferring guest/direct customer creation for gateways that can pay from normalized checkout payload data.

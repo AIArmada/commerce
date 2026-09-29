@@ -76,7 +76,7 @@ it('does not re-fire the recurring-token charge when a token charge is retried',
 
     $client->shouldReceive('post')
         ->zeroOrMoreTimes()
-        ->with('purchases/', Mockery::any())
+        ->with('purchases/', Mockery::any(), ['Idempotency-Key' => 'adversary-twostep-key-1'])
         ->andReturnUsing(function () use (&$creates): array {
             $creates++;
 

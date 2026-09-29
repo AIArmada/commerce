@@ -11,11 +11,27 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
 
+/**
+ * Local create-dedupe ledger. CHIP ignores Idempotency-Key on purchase
+ * creation (sandbox-proven), so this ledger is the ONLY create dedupe.
+ *
+ * AGENTS — crash window + reconcile runbook: if the process dies after the
+ * CHIP POST succeeds but before record(), the key stays reserved with a null
+ * response and retries fail closed ("requires reconciliation") — no
+ * duplicate, but the purchase is unknown locally. Before retrying with a
+ * fresh key, expiring the stub, or running chip:prune-idempotency-stubs,
+ * reconcile first: look the purchase up at CHIP by `reference`; if it
+ * exists, adopt it instead of re-creating. Pruning/expiry followed by a
+ * blind retry creates a SECOND remote purchase and orphans the first.
+ */
 final class PurchaseIdempotencyLedger
 {
     private const METADATA_KEY = 'chip_idempotency';
 
-    public function find(string $brandId, string $idempotencyKey, string $fingerprint): ?PurchaseData
+    /**
+     * @param  list<string>  $legacyFingerprints
+     */
+    public function find(string $brandId, string $idempotencyKey, string $fingerprint, array $legacyFingerprints = []): ?PurchaseData
     {
         $ledger = $this->findLedger($brandId, $idempotencyKey);
 
@@ -24,7 +40,7 @@ final class PurchaseIdempotencyLedger
         }
 
         $entry = $this->entry($ledger);
-        $this->assertFingerprint($entry, $fingerprint);
+        $this->assertFingerprint($entry, $fingerprint, $legacyFingerprints);
 
         $response = $entry['response'] ?? null;
         if ($response === null) {
@@ -264,10 +280,15 @@ final class PurchaseIdempotencyLedger
     /**
      * @param  array{idempotency_key: string, fingerprint: string, response: mixed, reserved_at?: mixed}  $entry
      */
-    private function assertFingerprint(array $entry, string $fingerprint): void
+    /**
+     * @param  list<string>  $legacyFingerprints
+     */
+    private function assertFingerprint(array $entry, string $fingerprint, array $legacyFingerprints = []): void
     {
-        if (hash_equals($fingerprint, $entry['fingerprint'])) {
-            return;
+        foreach ([$fingerprint, ...$legacyFingerprints] as $candidate) {
+            if (hash_equals($candidate, $entry['fingerprint'])) {
+                return;
+            }
         }
 
         throw new ChipValidationException(

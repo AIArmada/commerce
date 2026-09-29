@@ -66,7 +66,7 @@ it('honours the idempotency_key option instead of posting twice', function (): v
     $posts = 0;
     $client->shouldReceive('post')
         ->zeroOrMoreTimes()
-        ->with('purchases/', Mockery::any())
+        ->with('purchases/', Mockery::any(), ['Idempotency-Key' => 'adversary-action-key-1'])
         ->andReturnUsing(function () use (&$posts): array {
             $posts++;
 

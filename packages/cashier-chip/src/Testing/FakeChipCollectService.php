@@ -53,9 +53,9 @@ class FakeChipCollectService extends ChipCollectService
         return $this->fakeClient->getBrandId();
     }
 
-    public function createPurchase(array $data): PurchaseData
+    public function createPurchase(array $data, ?string $idempotencyKey = null): PurchaseData
     {
-        $response = $this->fakeClient->createPurchase($data);
+        $response = $this->fakeClient->createPurchase($data, $idempotencyKey);
 
         return PurchaseData::from($response);
     }
@@ -67,14 +67,14 @@ class FakeChipCollectService extends ChipCollectService
         return PurchaseData::from($response ?? []);
     }
 
-    public function cancelPurchase(string $purchaseId): PurchaseData
+    public function cancelPurchase(string $purchaseId, ?string $idempotencyKey = null): PurchaseData
     {
         $response = $this->fakeClient->cancelPurchase($purchaseId);
 
         return PurchaseData::from($response ?? []);
     }
 
-    public function refundPurchase(string $purchaseId, ?int $amount = null): PurchaseData | PaymentData
+    public function refundPurchase(string $purchaseId, ?int $amount = null, ?string $idempotencyKey = null): PurchaseData | PaymentData
     {
         $response = $this->fakeClient->refundPurchase($purchaseId, $amount);
 
@@ -90,42 +90,42 @@ class FakeChipCollectService extends ChipCollectService
         return $this->fakeClient->getPaymentMethods($filters);
     }
 
-    public function chargePurchase(string $purchaseId, string $recurringToken): PurchaseData
+    public function chargePurchase(string $purchaseId, string $recurringToken, ?string $idempotencyKey = null): PurchaseData
     {
         $response = $this->fakeClient->chargePurchase($purchaseId, $recurringToken);
 
         return PurchaseData::from($response ?? []);
     }
 
-    public function capturePurchase(string $purchaseId, ?int $amount = null): PurchaseData
+    public function capturePurchase(string $purchaseId, ?int $amount = null, ?string $idempotencyKey = null): PurchaseData
     {
         $response = $this->fakeClient->capturePurchase($purchaseId, $amount);
 
         return PurchaseData::from($response ?? []);
     }
 
-    public function releasePurchase(string $purchaseId): PurchaseData
+    public function releasePurchase(string $purchaseId, ?string $idempotencyKey = null): PurchaseData
     {
         $response = $this->fakeClient->releasePurchase($purchaseId);
 
         return PurchaseData::from($response ?? []);
     }
 
-    public function markPurchaseAsPaid(string $purchaseId, ?int $paidOn = null): PurchaseData
+    public function markPurchaseAsPaid(string $purchaseId, ?int $paidOn = null, ?string $idempotencyKey = null): PurchaseData
     {
         $response = $this->fakeClient->markPurchaseAsPaid($purchaseId, $paidOn);
 
         return PurchaseData::from($response ?? []);
     }
 
-    public function resendInvoice(string $purchaseId): PurchaseData
+    public function resendInvoice(string $purchaseId, ?string $idempotencyKey = null): PurchaseData
     {
         $response = $this->fakeClient->getPurchase($purchaseId);
 
         return PurchaseData::from($response ?? []);
     }
 
-    public function deleteRecurringToken(string $purchaseId): PurchaseData
+    public function deleteRecurringToken(string $purchaseId, ?string $idempotencyKey = null): PurchaseData
     {
         $this->fakeClient->deleteRecurringToken($purchaseId);
 
@@ -192,15 +192,10 @@ class FakeChipCollectService extends ChipCollectService
     public function createCheckoutPurchase(array $products, ClientDetailsData $clientDetails, array $options = []): PurchaseData
     {
         $data = array_merge([
-            'client' => [
-                'email' => $clientDetails->email,
-                'phone' => $clientDetails->phone,
-                'full_name' => $clientDetails->full_name,
-            ],
+            'client' => $clientDetails->toArray(),
             'purchase' => [
-                'products' => array_map(fn ($p) => $p->toArray(), $products),
+                'products' => array_map(fn ($p) => $p->toRequestArray(), $products),
                 'currency' => $options['currency'] ?? 'MYR',
-                'total' => array_sum(array_map(fn ($p) => $p->getTotalPriceInCents(), $products)),
             ],
         ], $options);
 
@@ -214,9 +209,9 @@ class FakeChipCollectService extends ChipCollectService
         return $this->fakeClient->getPublicKey();
     }
 
-    public function getAccountBalance(): array
+    public function getAccountBalance(array $filters = []): array
     {
-        return $this->fakeClient->getAccountBalance();
+        return $this->fakeClient->getAccountBalance($filters);
     }
 
     public function getAccountTurnover(array $filters = []): array
@@ -256,6 +251,18 @@ class FakeChipCollectService extends ChipCollectService
         ]);
     }
 
+    public function scheduleCompanyStatement(array $statement, array $filters = []): CompanyStatementData
+    {
+        return CompanyStatementData::from([
+            'id' => 'statement_scheduled',
+            'url' => 'http://example.com/statement.pdf',
+            'period_start' => time(),
+            'period_end' => time(),
+            'created_on' => time(),
+            'status' => 'queued',
+        ]);
+    }
+
     public function createWebhook(array $data): array
     {
         return $this->fakeClient->createWebhook($data);
@@ -268,6 +275,12 @@ class FakeChipCollectService extends ChipCollectService
 
     public function updateWebhook(string $webhookId, array $data): array
     {
+        return $this->fakeClient->updateWebhook($webhookId, $data) ?? [];
+    }
+
+    public function partialUpdateWebhook(string $webhookId, array $data): array
+    {
+        // PATCH collapses onto the fake's PUT path; partiality is unobservable here.
         return $this->fakeClient->updateWebhook($webhookId, $data) ?? [];
     }
 

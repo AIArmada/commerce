@@ -261,3 +261,117 @@ it('requires either trial days or registration fee when creating monthly subscri
         'brand_id' => 'brand_invalid',
     ]);
 })->throws(InvalidArgumentException::class);
+
+it('forwards the leaf reference verbatim as the idempotency key', function (): void {
+    $this->chipService->shouldReceive('createPurchase')
+        ->once()
+        ->withArgs(function (array $payload, ?string $key): bool {
+            return $key === 'sub-ref-1';
+        })
+        ->andReturn(subscriptionFakePurchase('trial_purchase'));
+
+    $this->service->createWithFreeTrial([
+        'client' => ['email' => 'ref@example.com'],
+        'trial_days' => 7,
+        'brand_id' => 'brand_ref',
+        'reference' => 'sub-ref-1',
+    ]);
+});
+
+it('prefers the explicit leaf key over the reference', function (): void {
+    $this->chipService->shouldReceive('createPurchase')
+        ->once()
+        ->withArgs(function (array $payload, ?string $key): bool {
+            return $key === 'explicit-leaf-1';
+        })
+        ->andReturn(subscriptionFakePurchase('trial_purchase'));
+
+    $this->service->createWithFreeTrial([
+        'client' => ['email' => 'ref@example.com'],
+        'trial_days' => 7,
+        'brand_id' => 'brand_ref',
+        'reference' => 'sub-ref-1',
+    ], 'explicit-leaf-1');
+});
+
+it('rejects a non-string leaf reference', function (): void {
+    $this->chipService->shouldReceive('createPurchase')->never();
+
+    $this->service->createWithFreeTrial([
+        'client' => ['email' => 'ref@example.com'],
+        'trial_days' => 7,
+        'brand_id' => 'brand_ref',
+        'reference' => 42,
+    ]);
+})->throws(ChipValidationException::class);
+
+it('derives monthly child keys from the reference', function (): void {
+    $data = [
+        'client' => ['email' => 'child@example.com'],
+        'trial_days' => 14,
+        'amount' => 4500,
+        'brand_id' => 'brand_child',
+        'reference' => 'sub-monthly-1',
+    ];
+
+    $this->chipService->shouldReceive('createPurchase')
+        ->once()
+        ->ordered()
+        ->withArgs(function (array $payload, ?string $key): bool {
+            return ($payload['skip_capture'] ?? null) === true
+                && $key === 'sub-monthly-1-initial'
+                && ! array_key_exists('reference', $payload);
+        })
+        ->andReturn(subscriptionFakePurchase('trial_purchase', ['brand_id' => 'brand_child']));
+
+    $this->chipService->shouldReceive('createPurchase')
+        ->once()
+        ->ordered()
+        ->withArgs(function (array $payload, ?string $key): bool {
+            return ($payload['purchase']['products'][0]['price'] ?? null) === 4500
+                && $key === 'sub-monthly-1-subscription'
+                && ! array_key_exists('reference', $payload);
+        })
+        ->andReturn(subscriptionFakePurchase('subscription_purchase', ['brand_id' => 'brand_child']));
+
+    $result = $this->service->createMonthlySubscription($data);
+
+    expect($result['initial_purchase']->id)->toBe('trial_purchase');
+    expect($result['subscription_purchase']->id)->toBe('subscription_purchase');
+});
+
+it('forwards the caller currency into the built payload', function (): void {
+    $this->chipService->shouldReceive('createPurchase')
+        ->once()
+        ->withArgs(function (array $payload): bool {
+            return ($payload['purchase']['currency'] ?? null) === 'MYR';
+        })
+        ->andReturn(subscriptionFakePurchase('trial_purchase'));
+
+    $this->service->createWithFreeTrial([
+        'client' => ['email' => 'cur@example.com'],
+        'trial_days' => 7,
+        'brand_id' => 'brand_cur',
+        'currency' => 'MYR',
+    ]);
+});
+
+it('keeps monthly purchases keyless without a reference', function (): void {
+    $data = [
+        'client' => ['email' => 'nokey@example.com'],
+        'trial_days' => 14,
+        'amount' => 4500,
+        'brand_id' => 'brand_nokey',
+    ];
+
+    $this->chipService->shouldReceive('createPurchase')
+        ->twice()
+        ->withArgs(function (array $payload, ?string $key): bool {
+            return $key === null;
+        })
+        ->andReturn(subscriptionFakePurchase('purchase_nokey', ['brand_id' => 'brand_nokey']));
+
+    $result = $this->service->createMonthlySubscription($data);
+
+    expect($result['initial_purchase']->id)->toBe('purchase_nokey');
+});

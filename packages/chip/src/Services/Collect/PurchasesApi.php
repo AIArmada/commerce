@@ -11,6 +11,7 @@ use AIArmada\Chip\Data\ProductData;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Exceptions\ChipValidationException;
 use AIArmada\Chip\Support\PurchaseIdempotencyLedger;
+use AIArmada\Chip\Support\TaxPercent;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScopeKey;
 use Illuminate\Contracts\Cache\LockProvider;
@@ -37,6 +38,8 @@ final class PurchasesApi extends CollectApi
         'delete_recurring_token',
     ];
 
+    private const string IDEMPOTENCY_HEADER = 'Idempotency-Key';
+
     protected ?CacheRepository $cache;
 
     private PurchaseIdempotencyLedger $purchaseIdempotencyLedger;
@@ -61,6 +64,10 @@ final class PurchasesApi extends CollectApi
         $this->validatePurchaseData($data);
 
         if ($idempotencyKey === null) {
+            // AGENTS: null key = no duplicate protection at all (plain POST).
+            // Keyless callers accept double-create risk; see the keyless-path
+            // invariant in cashier's ChipCheckoutBuilder for why one path
+            // stays keyless deliberately.
             return $this->postCreate($data);
         }
 
@@ -70,10 +77,16 @@ final class PurchasesApi extends CollectApi
     /**
      * @param  array<string, mixed>  $data
      */
-    private function postCreate(array $data): PurchaseData
+    private function postCreate(array $data, ?string $idempotencyKey = null): PurchaseData
     {
+        $headers = $idempotencyKey !== null && $idempotencyKey !== ''
+            ? [self::IDEMPOTENCY_HEADER => $idempotencyKey]
+            : [];
+
         $response = $this->attempt(
-            fn () => $this->client->post('purchases/', $data),
+            fn () => $headers === []
+                ? $this->client->post('purchases/', $data)
+                : $this->client->post('purchases/', $data, $headers),
             'Failed to create CHIP purchase',
             ['data' => $data]
         );
@@ -88,7 +101,7 @@ final class PurchasesApi extends CollectApi
             ]);
         }
 
-        $expectedTotal = $data['purchase']['total_override'] ?? $data['purchase']['total'] ?? null;
+        $expectedTotal = $data['purchase']['total_override'] ?? null;
         if ($expectedTotal !== null && $purchase->getAmountInCents() !== $this->normalizeMinorAmount($expectedTotal, 'purchase total')) {
             throw new ChipValidationException('CHIP returned a purchase with an unexpected total.', [
                 'expected_total' => $expectedTotal,
@@ -106,8 +119,9 @@ final class PurchasesApi extends CollectApi
     {
         $cacheKey = $this->idempotencyCacheKey((string) $data['brand_id'], $idempotencyKey);
         $fingerprint = $this->payloadFingerprint($data);
+        $legacyFingerprints = $this->legacyIdempotencyFingerprints($data);
 
-        $cachedPurchase = $this->resolveCachedPurchase($this->cache?->get($cacheKey), $fingerprint);
+        $cachedPurchase = $this->resolveCachedPurchase($this->cache?->get($cacheKey), $fingerprint, $legacyFingerprints);
         if ($cachedPurchase !== null) {
             return $cachedPurchase;
         }
@@ -116,12 +130,18 @@ final class PurchasesApi extends CollectApi
             (string) $data['brand_id'],
             $idempotencyKey,
             $fingerprint,
+            $legacyFingerprints,
         );
         if ($ledgerPurchase !== null) {
             return $ledgerPurchase;
         }
 
         if ($this->cache === null) {
+            // AGENTS: no cache = no lock. Concurrent same-key requests can
+            // both miss the ledger and both POST (the ledger has no DB
+            // unique constraint to backstop the race). Production MUST use a
+            // shared lock-capable store (e.g. redis); per-instance
+            // file/array caches do NOT protect across servers/workers.
             return $this->createAndRecord($data, $idempotencyKey, $fingerprint);
         }
 
@@ -140,8 +160,8 @@ final class PurchasesApi extends CollectApi
 
         return $lock->block(
             max(1, (int) config('chip.http.timeout', 30)),
-            function () use ($cache, $cacheKey, $data, $fingerprint, $idempotencyKey): PurchaseData {
-                $cachedPurchase = $this->resolveCachedPurchase($cache->get($cacheKey), $fingerprint);
+            function () use ($cache, $cacheKey, $data, $fingerprint, $idempotencyKey, $legacyFingerprints): PurchaseData {
+                $cachedPurchase = $this->resolveCachedPurchase($cache->get($cacheKey), $fingerprint, $legacyFingerprints);
                 if ($cachedPurchase !== null) {
                     return $cachedPurchase;
                 }
@@ -150,6 +170,7 @@ final class PurchasesApi extends CollectApi
                     (string) $data['brand_id'],
                     $idempotencyKey,
                     $fingerprint,
+                    $legacyFingerprints,
                 );
                 if ($ledgerPurchase !== null) {
                     return $ledgerPurchase;
@@ -182,13 +203,16 @@ final class PurchasesApi extends CollectApi
             $fingerprint,
             $data,
         );
-        $purchase = $this->postCreate($data);
+        $purchase = $this->postCreate($data, $idempotencyKey);
         $this->purchaseIdempotencyLedger->record($ledger, $purchase);
 
         return $purchase;
     }
 
-    private function resolveCachedPurchase(mixed $cached, string $fingerprint): ?PurchaseData
+    /**
+     * @param  list<string>  $legacyFingerprints
+     */
+    private function resolveCachedPurchase(mixed $cached, string $fingerprint, array $legacyFingerprints = []): ?PurchaseData
     {
         if ($cached === null) {
             return null;
@@ -200,16 +224,18 @@ final class PurchasesApi extends CollectApi
             throw new ChipValidationException('Cached idempotent purchase response is invalid.');
         }
 
-        if (! hash_equals($fingerprint, $cached['fingerprint'])) {
-            throw new ChipValidationException(
-                'Idempotency key has already been used for a different purchase payload.'
-            );
+        foreach ([$fingerprint, ...$legacyFingerprints] as $candidate) {
+            if (hash_equals($candidate, $cached['fingerprint'])) {
+                /** @var array<string, mixed> $purchase */
+                $purchase = $cached['purchase'];
+
+                return PurchaseData::from($purchase);
+            }
         }
 
-        /** @var array<string, mixed> $purchase */
-        $purchase = $cached['purchase'];
-
-        return PurchaseData::from($purchase);
+        throw new ChipValidationException(
+            'Idempotency key has already been used for a different purchase payload.'
+        );
     }
 
     private function idempotencyCacheKey(string $brandId, string $idempotencyKey): string
@@ -262,9 +288,10 @@ final class PurchasesApi extends CollectApi
         string $message,
         array $context,
         bool $sendEmptyPayload = false,
+        ?string $idempotencyKey = null,
     ): array {
         if (! in_array($operation, self::CACHED_MUTATION_OPERATIONS, true)) {
-            return $this->performMutation($endpoint, $payload, $message, $context, $sendEmptyPayload);
+            return $this->performMutation($endpoint, $payload, $message, $context, $sendEmptyPayload, $idempotencyKey);
         }
 
         $fingerprint = $this->payloadFingerprint([
@@ -276,7 +303,7 @@ final class PurchasesApi extends CollectApi
         $cache = $this->cache;
 
         if ($cache === null) {
-            return $this->performMutation($endpoint, $payload, $message, $context, $sendEmptyPayload);
+            return $this->performMutation($endpoint, $payload, $message, $context, $sendEmptyPayload, $idempotencyKey);
         }
 
         $cachedResponse = $this->resolveCachedMutation($cache->get($cacheKey), $fingerprint);
@@ -298,13 +325,13 @@ final class PurchasesApi extends CollectApi
 
         return $lock->block(
             max(1, (int) config('chip.http.timeout', 30)),
-            function () use ($cache, $cacheKey, $fingerprint, $endpoint, $payload, $message, $context, $sendEmptyPayload): array {
+            function () use ($cache, $cacheKey, $fingerprint, $endpoint, $payload, $message, $context, $sendEmptyPayload, $idempotencyKey): array {
                 $cachedResponse = $this->resolveCachedMutation($cache->get($cacheKey), $fingerprint);
                 if ($cachedResponse !== null) {
                     return $cachedResponse;
                 }
 
-                $response = $this->performMutation($endpoint, $payload, $message, $context, $sendEmptyPayload);
+                $response = $this->performMutation($endpoint, $payload, $message, $context, $sendEmptyPayload, $idempotencyKey);
 
                 $cache->put($cacheKey, [
                     'fingerprint' => $fingerprint,
@@ -327,14 +354,37 @@ final class PurchasesApi extends CollectApi
         string $message,
         array $context,
         bool $sendEmptyPayload,
+        ?string $idempotencyKey = null,
     ): array {
+        if ($idempotencyKey !== null && mb_trim($idempotencyKey) === '') {
+            throw new ChipValidationException('Idempotency key must be a non-empty string.');
+        }
+
+        $headers = $idempotencyKey !== null ? [self::IDEMPOTENCY_HEADER => $idempotencyKey] : [];
+
         return $this->attempt(
-            fn () => $payload === [] && ! $sendEmptyPayload
-                ? $this->client->post($endpoint)
-                : $this->client->post($endpoint, $payload),
+            fn () => $this->postMutationPayload($endpoint, $payload, $sendEmptyPayload, $headers),
             $message,
             $context,
         );
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @param  array<string, string>  $headers
+     * @return array<string, mixed>
+     */
+    private function postMutationPayload(string $endpoint, array $payload, bool $sendEmptyPayload, array $headers): array
+    {
+        if ($payload === [] && ! $sendEmptyPayload) {
+            return $headers === []
+                ? $this->client->post($endpoint)
+                : $this->client->post($endpoint, [], $headers);
+        }
+
+        return $headers === []
+            ? $this->client->post($endpoint, $payload)
+            : $this->client->post($endpoint, $payload, $headers);
     }
 
     /**
@@ -369,6 +419,116 @@ final class PurchasesApi extends CollectApi
      */
     private function payloadFingerprint(array $data): string
     {
+        return hash('sha256', json_encode($this->sortForFingerprint($this->canonicalIdempotencyPayload($data)), JSON_THROW_ON_ERROR));
+    }
+
+    /**
+     * Normalize the payload for idempotency matching.
+     *
+     * Strips the fields the request cleanup removed (`purchase.total`, null
+     * product categories) so equivalent payloads share one fingerprint
+     * regardless of which serialization path produced them. Pre-cleanup
+     * shapes are covered by legacyIdempotencyFingerprints().
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function canonicalIdempotencyPayload(array $data): array
+    {
+        if (! isset($data['purchase']) || ! is_array($data['purchase'])) {
+            return $data;
+        }
+
+        unset($data['purchase']['total']);
+
+        if (! isset($data['purchase']['products']) || ! is_array($data['purchase']['products'])) {
+            return $data;
+        }
+
+        foreach ($data['purchase']['products'] as $index => $product) {
+            if (is_array($product) && ($product['category'] ?? null) === null) {
+                unset($data['purchase']['products'][$index]['category']);
+            }
+        }
+
+        return $data;
+    }
+
+    /**
+     * Fingerprints matching pre-cleanup entry shapes. Match-only: new entries
+     * are always recorded under payloadFingerprint().
+     *
+     * Pre-cleanup payloads carried two now-removed fields in path-dependent
+     * combinations: `purchase.total` (builder paths, always equal to
+     * `total_override`) and null product categories (object serialization
+     * paths; the cents/line-item paths omitted the key). A retry cannot tell
+     * which path stored the entry, so every combination is tried. The forms
+     * are disjoint by field presence, so a genuine same-version conflict can
+     * never match a legacy form.
+     *
+     * @param  array<string, mixed>  $data
+     * @return list<string>
+     */
+    private function legacyIdempotencyFingerprints(array $data): array
+    {
+        $base = $this->canonicalIdempotencyPayload($data);
+
+        $withNulls = $base;
+        if (isset($withNulls['purchase']['products']) && is_array($withNulls['purchase']['products'])) {
+            foreach ($withNulls['purchase']['products'] as $index => $product) {
+                if (is_array($product) && ! array_key_exists('category', $product)) {
+                    $withNulls['purchase']['products'][$index]['category'] = null;
+                }
+            }
+        }
+
+        $forms = [$withNulls];
+
+        $override = $data['purchase']['total_override'] ?? null;
+        if ($override !== null && isset($base['purchase']) && is_array($base['purchase'])) {
+            $withTotal = $base;
+            $withTotal['purchase']['total'] = $override;
+
+            $withBoth = $withNulls;
+            $withBoth['purchase']['total'] = $override;
+
+            $forms[] = $withTotal;
+            $forms[] = $withBoth;
+        }
+
+        $fingerprints = array_map(
+            fn (array $form): string => hash('sha256', json_encode($this->sortForFingerprint($form), JSON_THROW_ON_ERROR)),
+            $forms
+        );
+
+        return array_values(array_unique($fingerprints));
+    }
+
+    /**
+     * Keyless-checkout key derivation. PERMANENTLY FROZEN.
+     *
+     * Re-adds `category: null` to products lacking the key (the pre-cleanup
+     * object-serialization shape) and never adds `purchase.total` (the
+     * checkout path never carried it). Keyless entries recorded before the
+     * wire cleanup were keyed under this exact projection, so deriving the
+     * retry key any other way would miss them and double-post.
+     *
+     * Do NOT "simplify" this to payloadFingerprint(), and do NOT evolve it
+     * alongside canonicalIdempotencyPayload(): the duplication is the point.
+     * Pinned by literal-hash tests in PurchaseIdempotencyCompatTest.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function frozenCheckoutKeyFingerprint(array $data): string
+    {
+        if (isset($data['purchase']['products']) && is_array($data['purchase']['products'])) {
+            foreach ($data['purchase']['products'] as $index => $product) {
+                if (is_array($product) && ! array_key_exists('category', $product)) {
+                    $data['purchase']['products'][$index]['category'] = null;
+                }
+            }
+        }
+
         return hash('sha256', json_encode($this->sortForFingerprint($data), JSON_THROW_ON_ERROR));
     }
 
@@ -446,7 +606,7 @@ final class PurchasesApi extends CollectApi
         return PurchaseData::from($response);
     }
 
-    public function cancel(string $purchaseId): PurchaseData
+    public function cancel(string $purchaseId, ?string $idempotencyKey = null): PurchaseData
     {
         $this->assertSafePathSegment($purchaseId, 'Purchase id');
 
@@ -457,12 +617,13 @@ final class PurchasesApi extends CollectApi
             payload: [],
             message: 'Failed to cancel CHIP purchase',
             context: ['purchase_id' => $purchaseId],
+            idempotencyKey: $idempotencyKey,
         );
 
         return PurchaseData::from($response);
     }
 
-    public function refund(string $purchaseId, ?int $amount = null): PurchaseData | PaymentData
+    public function refund(string $purchaseId, ?int $amount = null, ?string $idempotencyKey = null): PurchaseData | PaymentData
     {
         $this->assertSafePathSegment($purchaseId, 'Purchase id');
 
@@ -479,9 +640,14 @@ final class PurchasesApi extends CollectApi
             message: 'Failed to refund CHIP purchase',
             context: ['purchase_id' => $purchaseId, 'amount' => $amount],
             sendEmptyPayload: true,
+            idempotencyKey: $idempotencyKey,
         );
 
         if (($response['status'] ?? null) === 'pending_refund') {
+            return PurchaseData::from($response);
+        }
+
+        if (array_key_exists('purchase', $response)) {
             return PurchaseData::from($response);
         }
 
@@ -492,7 +658,7 @@ final class PurchasesApi extends CollectApi
         };
     }
 
-    public function charge(string $purchaseId, string $recurringToken): PurchaseData
+    public function charge(string $purchaseId, string $recurringToken, ?string $idempotencyKey = null): PurchaseData
     {
         $this->assertSafePathSegment($purchaseId, 'Purchase id');
 
@@ -505,12 +671,13 @@ final class PurchasesApi extends CollectApi
             ],
             message: 'Failed to charge CHIP purchase',
             context: ['purchase_id' => $purchaseId, 'recurring_token' => $recurringToken],
+            idempotencyKey: $idempotencyKey,
         );
 
         return PurchaseData::from($response);
     }
 
-    public function capture(string $purchaseId, ?int $amount = null): PurchaseData
+    public function capture(string $purchaseId, ?int $amount = null, ?string $idempotencyKey = null): PurchaseData
     {
         $this->assertSafePathSegment($purchaseId, 'Purchase id');
 
@@ -527,12 +694,13 @@ final class PurchasesApi extends CollectApi
             message: 'Failed to capture CHIP purchase',
             context: ['purchase_id' => $purchaseId, 'amount' => $amount],
             sendEmptyPayload: true,
+            idempotencyKey: $idempotencyKey,
         );
 
         return PurchaseData::from($response);
     }
 
-    public function release(string $purchaseId): PurchaseData
+    public function release(string $purchaseId, ?string $idempotencyKey = null): PurchaseData
     {
         $this->assertSafePathSegment($purchaseId, 'Purchase id');
 
@@ -543,12 +711,13 @@ final class PurchasesApi extends CollectApi
             payload: [],
             message: 'Failed to release CHIP purchase',
             context: ['purchase_id' => $purchaseId],
+            idempotencyKey: $idempotencyKey,
         );
 
         return PurchaseData::from($response);
     }
 
-    public function markAsPaid(string $purchaseId, ?int $paidOn = null): PurchaseData
+    public function markAsPaid(string $purchaseId, ?int $paidOn = null, ?string $idempotencyKey = null): PurchaseData
     {
         $this->assertSafePathSegment($purchaseId, 'Purchase id');
 
@@ -565,12 +734,13 @@ final class PurchasesApi extends CollectApi
             message: 'Failed to mark CHIP purchase as paid',
             context: ['purchase_id' => $purchaseId, 'paid_on' => $paidOn],
             sendEmptyPayload: true,
+            idempotencyKey: $idempotencyKey,
         );
 
         return PurchaseData::from($response);
     }
 
-    public function resendInvoice(string $purchaseId): PurchaseData
+    public function resendInvoice(string $purchaseId, ?string $idempotencyKey = null): PurchaseData
     {
         $this->assertSafePathSegment($purchaseId, 'Purchase id');
 
@@ -581,12 +751,13 @@ final class PurchasesApi extends CollectApi
             payload: [],
             message: 'Failed to resend CHIP purchase invoice',
             context: ['purchase_id' => $purchaseId],
+            idempotencyKey: $idempotencyKey,
         );
 
         return PurchaseData::from($response);
     }
 
-    public function deleteRecurringToken(string $purchaseId): PurchaseData
+    public function deleteRecurringToken(string $purchaseId, ?string $idempotencyKey = null): PurchaseData
     {
         $this->assertSafePathSegment($purchaseId, 'Purchase id');
 
@@ -597,6 +768,7 @@ final class PurchasesApi extends CollectApi
             payload: [],
             message: 'Failed to delete CHIP recurring token',
             context: ['purchase_id' => $purchaseId],
+            idempotencyKey: $idempotencyKey,
         );
 
         return PurchaseData::from($response);
@@ -656,7 +828,7 @@ final class PurchasesApi extends CollectApi
             'client' => $client->toArray(),
             'purchase' => [
                 'products' => array_map(
-                    fn (ProductData $product) => $product->toArray(),
+                    fn (ProductData $product) => $product->toRequestArray(),
                     $products
                 ),
                 'currency' => $currency,
@@ -717,7 +889,12 @@ final class PurchasesApi extends CollectApi
 
             $idempotencyKey = mb_trim($idempotencyKey);
         } else {
-            $idempotencyKey = 'checkout-' . $this->payloadFingerprint($data);
+            // Fingerprint invariant: this fingerprint default IS the resolved key,
+            // so the header carries it like any explicit key (local and server
+            // collapse together). The keyless checkout-builder path is a
+            // separate route that must never gain fingerprinting: without a
+            // stable operation identity it would break buy-twice-identical.
+            $idempotencyKey = 'checkout-' . $this->frozenCheckoutKeyFingerprint($data);
         }
 
         $data['idempotency_key'] = $idempotencyKey;
@@ -764,8 +941,35 @@ final class PurchasesApi extends CollectApi
             throw new ChipValidationException('brand_id is required');
         }
 
+        if (array_key_exists('platform', $data)) {
+            if ($data['platform'] === null) {
+                throw new ChipValidationException('Platform cannot be null.');
+            }
+
+            if (! in_array($data['platform'], ['web', 'api', 'ios', 'android', 'macos', 'windows'], true)) {
+                throw new ChipValidationException('Platform must be one of: web, api, ios, android, macos, windows.');
+            }
+        }
+
+        if (array_key_exists('creator_agent', $data)) {
+            if ($data['creator_agent'] === null) {
+                throw new ChipValidationException('Creator agent cannot be null.');
+            }
+
+            if (! is_string($data['creator_agent']) || mb_strlen($data['creator_agent']) > 32) {
+                throw new ChipValidationException('Creator agent must be a string of at most 32 characters.');
+            }
+        }
+
         $hasClientPayload = isset($data['client']) && is_array($data['client']);
         $hasClientId = isset($data['client_id']) && ! empty($data['client_id']);
+
+        $clientPresent = array_key_exists('client', $data) && $data['client'] !== null;
+        $clientIdPresent = array_key_exists('client_id', $data) && $data['client_id'] !== null;
+
+        if ($clientPresent && $clientIdPresent) {
+            throw new ChipValidationException('Only one of client or client_id may be provided');
+        }
 
         if (! $hasClientPayload && ! $hasClientId) {
             throw new ChipValidationException('Either client or client_id must be provided');
@@ -773,6 +977,37 @@ final class PurchasesApi extends CollectApi
 
         if ($hasClientPayload && empty($data['client']['email'])) {
             throw new ChipValidationException('client.email is required when client payload is provided');
+        }
+
+        if ($hasClientPayload) {
+            $this->assertCappedLength($data['client'], 'legal_name', 1000, 'Client legal name');
+            $this->assertCappedLength($data['client'], 'brand_name', 128, 'Client brand name');
+            $this->assertCappedLength($data['client'], 'registration_number', 32, 'Client registration number');
+            $this->assertCappedLength($data['client'], 'tax_number', 32, 'Client tax number');
+            $this->assertCappedLength($data['client'], 'bank_account', 64, 'Client bank account');
+            $this->assertCappedLength($data['client'], 'bank_code', 32, 'Client bank code');
+            $this->assertCappedLength($data['client'], 'street_address', 128, 'Client street address');
+            $this->assertCappedLength($data['client'], 'city', 128, 'Client city');
+            $this->assertCappedLength($data['client'], 'zip_code', 32, 'Client ZIP code');
+            $this->assertCappedLength($data['client'], 'state', 128, 'Client state');
+            $this->assertCappedLength($data['client'], 'shipping_street_address', 128, 'Client shipping street address');
+            $this->assertCappedLength($data['client'], 'shipping_city', 128, 'Client shipping city');
+            $this->assertCappedLength($data['client'], 'shipping_zip_code', 32, 'Client shipping ZIP code');
+            $this->assertCappedLength($data['client'], 'shipping_state', 128, 'Client shipping state');
+
+            foreach (['cc', 'bcc'] as $list) {
+                if (! array_key_exists($list, $data['client'])) {
+                    continue;
+                }
+
+                if (! is_array($data['client'][$list])) {
+                    throw new ChipValidationException("Client {$list} must be an array of email addresses.");
+                }
+
+                foreach ($data['client'][$list] as $email) {
+                    $this->assertMaxLength($email, 254, "Client {$list} entries");
+                }
+            }
         }
 
         if (! isset($data['purchase']['products']) || ! is_array($data['purchase']['products']) || empty($data['purchase']['products'])) {
@@ -790,12 +1025,41 @@ final class PurchasesApi extends CollectApi
             $price = $this->normalizeMinorAmount($product['price'], 'product price');
             $quantity = $this->normalizeQuantity($product['quantity'] ?? 1);
             $discount = $this->normalizeMinorAmount($product['discount'] ?? 0, 'product discount');
+            $totalPriceOverride = ($product['total_price_override'] ?? null) !== null
+                ? $this->normalizeMinorAmount($product['total_price_override'], 'product total price override')
+                : null;
 
-            if ($price < 0 || $discount < 0 || $discount > $price) {
-                throw new ChipValidationException('Product price and discount must be non-negative, with discount no greater than price.');
+            // Discount is per-line: the server bound is discount <= price x quantity
+            // (400 product_subtotal_negative beyond it, sandbox-proven).
+            // Exact comparison: float64 misplaces valid boundary lines
+            // (200 x "1.005" with discount 201 must pass).
+            if ($price < 0 || $discount < 0 || ProductData::discountExceedsLineGross($discount, $price, $quantity)) {
+                throw new ChipValidationException('Product price and discount must be non-negative, with discount no greater than price times quantity.');
             }
 
-            $subtotal += $price * $quantity;
+            if ($totalPriceOverride !== null && $totalPriceOverride < 0) {
+                throw new ChipValidationException('Product total price override must be non-negative.');
+            }
+
+            $this->assertMaxLength($product['name'], 256, 'Product name');
+
+            if (array_key_exists('category', $product) && $product['category'] !== null) {
+                $this->assertMaxLength($product['category'], 256, 'Product category');
+            }
+
+            if (array_key_exists('tax_percent', $product)) {
+                TaxPercent::normalize($product['tax_percent']);
+            }
+
+            $subtotal += $totalPriceOverride ?? ProductData::multiplyMinorUnits($price, (string) $quantity);
+        }
+
+        $this->assertCappedLength($data['purchase'], 'notes', 10000, 'Purchase notes');
+        $this->assertCappedLength($data['purchase'], 'language', 2, 'Purchase language');
+        $this->assertCappedLength($data['purchase'], 'email_message', 512, 'Purchase email message');
+
+        if (array_key_exists('total', $data['purchase'])) {
+            throw new ChipValidationException('purchase.total is server-calculated; use total_override.');
         }
 
         $subtotalOverride = $this->nullableMinorAmount($data['purchase']['subtotal_override'] ?? null, 'subtotal override');
@@ -823,17 +1087,6 @@ final class PurchasesApi extends CollectApi
                 ]);
             }
         }
-
-        if (isset($data['purchase']['total'])) {
-            $total = $this->normalizeMinorAmount($data['purchase']['total'], 'purchase total');
-
-            if ($totalOverride !== null && $total !== $totalOverride) {
-                throw new ChipValidationException('Purchase total must match the total override.', [
-                    'total' => $total,
-                    'total_override' => $totalOverride,
-                ]);
-            }
-        }
     }
 
     private function normalizeCurrency(mixed $currency): string
@@ -849,6 +1102,20 @@ final class PurchasesApi extends CollectApi
         }
 
         return $currency;
+    }
+
+    private function assertMaxLength(mixed $value, int $max, string $field): void
+    {
+        if (! is_string($value) || mb_strlen($value) > $max) {
+            throw new ChipValidationException("{$field} must be a string of at most {$max} characters.");
+        }
+    }
+
+    private function assertCappedLength(array $data, string $key, int $max, string $field): void
+    {
+        if (array_key_exists($key, $data) && $data[$key] !== null) {
+            $this->assertMaxLength($data[$key], $max, $field);
+        }
     }
 
     private function normalizeMinorAmount(mixed $amount, string $field): int
@@ -873,22 +1140,69 @@ final class PurchasesApi extends CollectApi
         return $amount === null ? null : $this->normalizeMinorAmount($amount, $field);
     }
 
-    private function normalizeQuantity(mixed $quantity): int
+    private function normalizeQuantity(mixed $quantity): int | string
     {
         if (is_int($quantity)) {
             $normalized = $quantity;
-        } elseif (is_float($quantity) && is_finite($quantity) && floor($quantity) === $quantity) {
-            $normalized = (int) $quantity;
-        } elseif (is_string($quantity) && filter_var(mb_trim($quantity), FILTER_VALIDATE_INT) !== false) {
-            $normalized = (int) mb_trim($quantity);
+        } elseif (is_float($quantity)) {
+            if (! is_finite($quantity)) {
+                throw new ChipValidationException('Product quantity must be numeric.');
+            }
+
+            // 2**53 is the float64-exactness boundary; larger whole floats
+            // would silently narrow on (int) cast, so they stay strings
+            // for the range check below.
+            $normalized = floor($quantity) === $quantity && $quantity < 2 ** 53 ? (int) $quantity : (string) $quantity;
+        } elseif (is_string($quantity)) {
+            $value = mb_trim($quantity);
+
+            if ($value === '' || ! is_numeric($value) || ! is_finite((float) $value)) {
+                throw new ChipValidationException('Product quantity must be numeric.');
+            }
+
+            $normalized = $value;
         } else {
-            throw new ChipValidationException('Product quantity must be an integer.');
+            throw new ChipValidationException('Product quantity must be numeric.');
         }
 
-        if ($normalized < 1) {
-            throw new ChipValidationException('Product quantity must be an integer greater than zero.');
+        $asFloat = (float) $normalized;
+
+        if ($asFloat < 0) {
+            throw new ChipValidationException('Product quantity must be zero or greater.');
+        }
+
+        if ($asFloat >= 2 ** 53) {
+            throw new ChipValidationException('Product quantity is out of range.');
+        }
+
+        if ($this->decimalPlaces((string) $normalized) > 4) {
+            throw new ChipValidationException('Product quantity must have at most 4 decimal places.');
         }
 
         return $normalized;
+    }
+
+    /**
+     * Count decimal places in a numeric string, mirroring how a decimal
+     * field parses it: fraction digits minus the exponent, floored at 0.
+     * String-counted (not float-rounded) so precision-collapsed forms
+     * like "1.0000000000000001" cannot slip through a float cast.
+     */
+    private function decimalPlaces(string $value): int
+    {
+        $value = mb_ltrim($value, '+-');
+        $exponent = 0;
+
+        $ePos = mb_stripos($value, 'e');
+
+        if ($ePos !== false) {
+            $exponent = (int) mb_substr($value, $ePos + 1);
+            $value = mb_substr($value, 0, $ePos);
+        }
+
+        $dotPos = mb_strpos($value, '.');
+        $fractionDigits = $dotPos === false ? 0 : mb_strlen($value) - $dotPos - 1;
+
+        return max(0, $fractionDigits - $exponent);
     }
 }
