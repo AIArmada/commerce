@@ -108,34 +108,26 @@ Ticket types support `public`, `private`, and `hidden` visibility. Hidden ticket
 
 ### Pricing Components
 
-Split pricing into components:
+Link child ticket types as priced components of a parent type:
 
 ```php
-$ticketType = app(EnsureTicketTypeAction::class)->handle($workshop, [
-    'name' => 'General Admission',
-    'code' => 'GA',
-    'price' => 55000,
-    'currency' => 'MYR',
-    'components' => [
-        ['name' => 'Base Ticket', 'amount' => 50000],
-        ['name' => 'Processing Fee', 'amount' => 5000],
-    ],
+$ticketType->components()->create([
+    'component_ticket_type_id' => $feeTicketType->getKey(),
+    'quantity' => 1,
 ]);
 ```
+
+Use `ExpandTicketTypeComponentsAction` to expand `components → componentTicketType` by `quantity × multiplier`.
 
 ### Bundle Products
 
 Link products that should be auto-added to cart when this ticket type is selected:
 
 ```php
-$ticketType = app(EnsureTicketTypeAction::class)->handle($workshop, [
-    'name' => 'VIP with Merch',
-    'code' => 'VIP',
-    'price' => 150000,
-    'currency' => 'MYR',
-    'products' => [
-        ['product_id' => $tShirt->getKey(), 'quantity' => 1],
-    ],
+$ticketType->bundleProducts()->create([
+    'product_type' => $tShirt->getMorphClass(),
+    'product_id' => $tShirt->getKey(),
+    'quantity' => 1,
 ]);
 ```
 
@@ -264,27 +256,32 @@ the package; every other transition goes through the state machine:
 
 ```php
 use AIArmada\Ticketing\Actions\RevokePassAction;
-use AIArmada\Ticketing\Models\Pass;
-use AIArmada\Ticketing\States\Activated;
-use AIArmada\Ticketing\States\Cancelled;
-use AIArmada\Ticketing\States\Expired;
-use AIArmada\Ticketing\States\Used;
-use AIArmada\Ticketing\States\Voided;
 
-// Revoke (sets revoked_at, status_reason, and dispatches PassRevoked)
+// Activate at entry
+$pass->markActivated();
+$pass->save();
+
+// Mark as used
+$pass->markUsed();
+$pass->save();
+
+// Cancel
+$pass->markCancelled('Order refunded');
+$pass->save();
+
+// Revoke for policy violation
 app(RevokePassAction::class)->handle($pass, reason: 'Fraud detected');
 
-// The rest transition directly and persist the matching lifecycle timestamp
-$pass->status->transitionTo(Activated::class);   // activated_at
-$pass->status->transitionTo(Used::class);        // used_at
-$pass->status->transitionTo(Cancelled::class);   // cancelled_at
-$pass->status->transitionTo(Expired::class);     // expired_at
-$pass->status->transitionTo(Voided::class);      // voided_at
+// Void (admin action, only from Revoked)
+$pass->markVoided('Duplicate issuance');
+$pass->save();
+
+// Expire
+$pass->markExpired();
 $pass->save();
 ```
 
-Voiding is only reachable from `Revoked`, so revoke first. An unsupported transition
-throws `spatie/laravel-model-states`' `TransitionNotFoundException`.
+`RevokePassAction` persists the pass itself; the `mark*()` methods only transition state and timestamps, so call `save()` afterwards.
 
 ## Pass Delivery
 
@@ -362,7 +359,7 @@ $allPasses = Pass::withoutOwnerScope()->get();
 | Event | Payload | Description |
 |-------|---------|-------------|
 | `PassIssued` | `$pass` | Fired when a pass is issued |
-| `PassTransferred` | `$pass, $oldHolder, $newHolder` | Fired after transfer completes |
+| `PassTransferred` | `$pass, $previousHolder, $newHolder` | Fired after transfer completes |
 
 Listen to events as usual:
 

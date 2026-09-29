@@ -21,6 +21,7 @@ This index intentionally points only to **current** documentation.
 - [AI Retrieval Layer](ai/01-overview.md)
 - [AI Package Manifests](ai/package-manifests.json)
 - [Affiliate Routing Across Packages](affiliates.md)
+- [CHIP Collect Support Questions (Full Context)](chip-collect-support-questions.md)
 
 ## Canonical package documentation
 

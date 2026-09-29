@@ -11,6 +11,7 @@ use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliatePayoutOperation;
 use AIArmada\Affiliates\States\ApprovedConversion;
+use AIArmada\Affiliates\States\Disabled;
 use AIArmada\Affiliates\States\PayoutStatus;
 use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Affiliates\States\ProcessingPayout;
@@ -67,6 +68,8 @@ final class CreatePayout
             }
 
             $affiliate = Affiliate::query()->forOwner()->lockForUpdate()->findOrFail((string) $affiliateIds->first());
+
+            $payoutOverride = $this->resolvePayoutOverride($affiliate, $attributes);
 
             $ownerTuples = $conversions
                 ->map(fn (AffiliateConversion $conversion): string => ($conversion->owner_type ?? '') . '|' . ($conversion->owner_id ?? ''))
@@ -140,7 +143,7 @@ final class CreatePayout
                 'total_minor' => $total,
                 'conversion_count' => $conversions->count(),
                 'currency' => $currency,
-                'metadata' => $attributes['metadata'] ?? null,
+                'metadata' => $this->payoutMetadata($attributes, $payoutOverride),
                 'payee_type' => $attributes['payee_type'] ?? $affiliate->getMorphClass(),
                 'payee_id' => $attributes['payee_id'] ?? $affiliate->getKey(),
                 'scheduled_at' => $attributes['scheduled_at'] ?? null,
@@ -175,6 +178,61 @@ final class CreatePayout
 
             return $payout;
         }, attempts: 3);
+    }
+
+    /**
+     * Enforce affiliate payout eligibility.
+     *
+     * Pending affiliates were never approved: approval (not an
+     * override) is the unblock path. Paused affiliates are reversibly
+     * halted: unpause to pay. Only disabled/closed affiliates —
+     * terminal, with legitimately earned balances and no other release
+     * path — accept an audited override reason.
+     *
+     * @param  array<string, mixed>  $attributes
+     * @return array<string, mixed>|null The recorded override, or null when none was needed.
+     */
+    private function resolvePayoutOverride(Affiliate $affiliate, array $attributes): ?array
+    {
+        if ($affiliate->canReceivePayout()) {
+            return null;
+        }
+
+        $reason = $attributes['payout_override_reason'] ?? null;
+
+        if (! $affiliate->status instanceof Disabled || ! is_string($reason) || mb_trim($reason) === '') {
+            throw new InvalidArgumentException(sprintf(
+                'Affiliate "%s" cannot receive payouts (status: %s). Pending affiliates must be approved first; paused affiliates must be unpaused; disabled affiliates require a payout_override_reason to release earned balances with an audited reason.',
+                (string) $affiliate->code,
+                $affiliate->status->getValue(),
+            ));
+        }
+
+        return [
+            'reason' => mb_trim($reason),
+            'affiliate_status' => $affiliate->status->getValue(),
+            'overridden_at' => CarbonImmutable::now()->toIso8601String(),
+            'overridden_by' => auth()->user()?->getAuthIdentifier(),
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     * @param  array<string, mixed>|null  $payoutOverride
+     */
+    private function payoutMetadata(array $attributes, ?array $payoutOverride): ?array
+    {
+        $metadata = $attributes['metadata'] ?? [];
+
+        // Reserved key: only the validated override below may set it, so
+        // caller-supplied metadata can never forge an audited override.
+        unset($metadata['payout_override']);
+
+        if ($payoutOverride !== null) {
+            $metadata['payout_override'] = $payoutOverride;
+        }
+
+        return $metadata === [] ? null : $metadata;
     }
 
     /**

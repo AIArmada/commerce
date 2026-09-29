@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAddressing\RelationManagers;
 
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\FilamentAddressing\Resources\AddressStateResource;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Columns\TextColumn;
@@ -11,6 +12,8 @@ use Filament\Tables\Table;
 
 final class StatesRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'states';
 
     protected static ?string $relatedResource = AddressStateResource::class;

@@ -9,10 +9,12 @@ use AIArmada\Checkout\Enums\PaymentStatus;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\Support\CheckoutCartResolver;
 use AIArmada\Orders\Contracts\OrderServiceInterface;
+use AIArmada\Orders\Exceptions\OrderNotAwaitingPayment;
 use AIArmada\Orders\Models\Order;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
+use InvalidArgumentException;
 use Throwable;
 
 final class CreateOrderStep extends AbstractCheckoutStep
@@ -126,7 +128,39 @@ final class CreateOrderStep extends AbstractCheckoutStep
         $paymentConfirmationEnabled = ! $isFreeOrder && config('checkout.create_order.confirm_payment', true);
         $paymentWasConfirmed = false;
 
-        if ($paymentConfirmationEnabled) {
+        if ($isFreeOrder) {
+            try {
+                $orderService->confirmFreeOrder($order);
+            } catch (OrderNotAwaitingPayment $e) {
+                // Classified from the exception, not the step's copy of
+                // the row: the seam judged the locked row, which may have
+                // moved since this copy was loaded.
+                $this->recordFreeOrderReconciliationMismatch($session, $order, $e->getMessage(), true);
+
+                return $this->failed('Free order confirmation failed', [
+                    'order' => 'The order cannot be confirmed for processing in its current state.',
+                ]);
+            } catch (InvalidArgumentException $e) {
+                // The session marked this checkout free but the order no
+                // longer money-qualifies — typically a live-cart reprice
+                // between pricing and order creation. Record the mismatch
+                // so the failure is diagnosable instead of a silent wedge.
+                $this->recordFreeOrderReconciliationMismatch($session, $order, $e->getMessage());
+
+                return $this->failed('Free order confirmation failed', [
+                    'order' => 'The order total changed during checkout and payment is now required. Please restart checkout.',
+                ]);
+            } catch (Throwable $e) {
+                Log::warning('Free order confirmation failed.', [
+                    'order_id' => $order->getKey(),
+                    'error' => $e->getMessage(),
+                ]);
+
+                return $this->failed('Free order confirmation failed', [
+                    'order' => 'The order was created but could not be confirmed for processing.',
+                ]);
+            }
+        } elseif ($paymentConfirmationEnabled) {
             $paymentWasConfirmed = $this->confirmPayment($orderService, $order, $session, $paymentData);
 
             if (! $paymentWasConfirmed) {
@@ -538,6 +572,41 @@ final class CreateOrderStep extends AbstractCheckoutStep
                 'received_currency' => $receivedCurrency,
             ]
         );
+    }
+
+    private function recordFreeOrderReconciliationMismatch(
+        CheckoutSession $session,
+        Order $order,
+        string $detail,
+        bool $stateRejection = false,
+    ): void {
+        $paymentData = $session->payment_data ?? [];
+        $paymentData['free_order_reconciliation'] = [
+            'status' => 'mismatch',
+            'reason' => $stateRejection ? 'order_state_not_confirmable' : 'session_free_order_mismatch',
+            'session_grand_total' => (int) $session->grand_total,
+            'order_grand_total' => (int) $order->grand_total,
+            'order_paid_total' => $order->getTotalPaid(),
+            'detail' => $detail,
+            'recorded_at' => CarbonImmutable::now()->toIso8601String(),
+        ];
+
+        $session->persistState([
+            'payment_data' => $paymentData,
+            'error_message' => $stateRejection
+                ? 'The order cannot be confirmed for processing in its current state.'
+                : 'The order total changed during checkout and payment is now required.',
+        ]);
+
+        Log::warning($stateRejection
+            ? 'Free order confirmation aborted because the order cannot be confirmed in its current state'
+            : 'Free order confirmation aborted because the order no longer qualifies as free', [
+                'session_id' => $session->id,
+                'order_id' => $order->getKey(),
+                'session_grand_total' => (int) $session->grand_total,
+                'order_grand_total' => (int) $order->grand_total,
+                'order_paid_total' => $order->getTotalPaid(),
+            ]);
     }
 
     private function minorAmount(mixed $amount): ?int

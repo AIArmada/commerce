@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Resources\ProductResource\RelationManagers;
 
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
 use AIArmada\Products\Actions\GenerateVariants;
@@ -33,6 +34,8 @@ use Illuminate\Validation\Rules\Unique;
 
 final class VariantsRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'variants';
 
     protected static ?string $recordTitleAttribute = 'sku';

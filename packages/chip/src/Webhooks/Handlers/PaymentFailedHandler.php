@@ -23,7 +23,10 @@ class PaymentFailedHandler implements WebhookHandler
             return WebhookResult::skipped('Purchase not found locally');
         }
 
-        $failureReason = $this->failureReason($payload->get('transaction_data.attempts'));
+        $failureReason = $this->failureReason(
+            $payload->get('transaction_data.attempts'),
+            $payload->get('error_code'),
+        );
 
         // Update local status
         $localPurchase->forceFill([
@@ -40,10 +43,11 @@ class PaymentFailedHandler implements WebhookHandler
         return WebhookResult::handled("Purchase {$localPurchase->id} marked as failed");
     }
 
-    private function failureReason(mixed $attempts): string
+    private function failureReason(mixed $attempts, mixed $errorCode): string
     {
+        // Attempts arrive newest-first; the first usable error wins.
         if (is_array($attempts)) {
-            foreach (array_reverse($attempts) as $attempt) {
+            foreach ($attempts as $attempt) {
                 if (! is_array($attempt) || ! is_array($attempt['error'] ?? null)) {
                     continue;
                 }
@@ -61,6 +65,10 @@ class PaymentFailedHandler implements WebhookHandler
                     return $code;
                 }
             }
+        }
+
+        if (is_string($errorCode) && $errorCode !== '') {
+            return $errorCode;
         }
 
         return 'Unknown payment failure';

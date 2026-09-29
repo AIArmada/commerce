@@ -6,8 +6,10 @@ namespace AIArmada\Chip\Builders;
 
 use AIArmada\Chip\Data\ProductData;
 use AIArmada\Chip\Data\PurchaseData;
+use AIArmada\Chip\Enums\RequestClientDetail;
 use AIArmada\Chip\Exceptions\ChipValidationException;
 use AIArmada\Chip\Services\ChipCollectService;
+use AIArmada\Chip\Support\TaxPercent;
 use AIArmada\CommerceSupport\Contracts\Payment\CheckoutableInterface;
 use AIArmada\CommerceSupport\Contracts\Payment\CustomerInterface;
 use AIArmada\CommerceSupport\Contracts\Payment\LineItemInterface;
@@ -21,6 +23,32 @@ final class PurchaseBuilder
     private array $data = [];
 
     private ?string $idempotencyKey = null;
+
+    /**
+     * Payment method names CHIP accepts in `payment_method_whitelist`,
+     * as returned by `GET /payment_methods/`. Deliberately hardcoded:
+     * `EWallet` covers a different (direct-post) key space.
+     *
+     * @var list<string>
+     */
+    private const array PAYMENT_METHOD_WHITELIST = [
+        'fpx',
+        'fpx_b2b1',
+        'crypto_coin',
+        'dnqr',
+        'duitnow_qr',
+        'maestro',
+        'mastercard',
+        'mpgs_apple_pay',
+        'mpgs_google_pay',
+        'razer_atome',
+        'razer_grabpay',
+        'razer_maybankqr',
+        'razer_shopeepay',
+        'razer_tng',
+        'shopee_pay',
+        'visa',
+    ];
 
     public function __construct(
         private ChipCollectService $service
@@ -71,8 +99,9 @@ final class PurchaseBuilder
         Money $price,
         string | float | int $quantity = 1,
         ?Money $discount = null,
-        float $taxPercent = 0,
-        ?string $category = null
+        float | string $taxPercent = 0,
+        ?string $category = null,
+        ?int $totalPriceOverride = null
     ): self {
         $priceAmount = (int) $price->getAmount();
 
@@ -109,12 +138,22 @@ final class PurchaseBuilder
             $product['discount'] = (int) $discount->getAmount();
         }
 
+        $taxPercent = TaxPercent::normalize($taxPercent);
+
         if ($taxPercent > 0) {
             $product['tax_percent'] = $taxPercent;
         }
 
         if ($category !== null) {
             $product['category'] = $category;
+        }
+
+        if ($totalPriceOverride !== null) {
+            if ($totalPriceOverride < 0) {
+                throw new ChipValidationException('Product total price override cannot be negative.');
+            }
+
+            $product['total_price_override'] = $totalPriceOverride;
         }
 
         $this->data['purchase']['products'][] = $product;
@@ -136,7 +175,7 @@ final class PurchaseBuilder
             ]);
         }
 
-        $productData = $product->toArray();
+        $productData = $product->toRequestArray();
         $productData['quantity'] = (string) $this->normalizeQuantity($product->quantity);
 
         $this->data['purchase']['products'][] = $productData;
@@ -172,8 +211,9 @@ final class PurchaseBuilder
         int $priceInCents,
         string | float | int $quantity = 1,
         int $discountInCents = 0,
-        float $taxPercent = 0,
-        ?string $category = null
+        float | string $taxPercent = 0,
+        ?string $category = null,
+        ?int $totalPriceOverride = null
     ): self {
         $currency = $this->purchaseCurrency();
 
@@ -183,7 +223,8 @@ final class PurchaseBuilder
             quantity: $quantity,
             discount: $discountInCents > 0 ? Money::{$currency}($discountInCents) : null,
             taxPercent: $taxPercent,
-            category: $category
+            category: $category,
+            totalPriceOverride: $totalPriceOverride
         );
     }
 
@@ -220,7 +261,7 @@ final class PurchaseBuilder
             $this->assertMoneyCurrency($price, $currency, 'line item price');
             $this->assertMoneyCurrency($lineItemDiscount, $currency, 'line item discount');
 
-            $lineItemsSubtotal += (int) $price->getAmount() * $quantity;
+            $lineItemsSubtotal += ProductData::multiplyMinorUnits((int) $price->getAmount(), (string) $quantity);
         }
 
         $subtotalAmount = (int) $subtotal->getAmount();
@@ -252,7 +293,6 @@ final class PurchaseBuilder
         $this->data['purchase']['total_discount_override'] = $discountAmount;
         $this->data['purchase']['total_tax_override'] = $taxAmount;
         $this->data['purchase']['total_override'] = $totalAmount;
-        $this->data['purchase']['total'] = $totalAmount;
 
         if ($checkoutable->getCheckoutNotes() !== null) {
             $this->notes($checkoutable->getCheckoutNotes());
@@ -284,6 +324,15 @@ final class PurchaseBuilder
      */
     public function fromCustomer(CustomerInterface $customer): self
     {
+        // Gateway-linked customers resolve to the linked CHIP Client record,
+        // so skip the client build entirely: its output would be discarded
+        // by clientId() below.
+        $gatewayCustomerId = $customer->getGatewayCustomerId();
+
+        if ($gatewayCustomerId !== null) {
+            return $this->clientId($gatewayCustomerId);
+        }
+
         $this->customer(
             email: $customer->getCustomerEmail(),
             fullName: $customer->getCustomerName(),
@@ -313,11 +362,6 @@ final class PurchaseBuilder
             );
         }
 
-        // Use existing gateway customer ID if available
-        if ($customer->getGatewayCustomerId() !== null) {
-            $this->clientId($customer->getGatewayCustomerId());
-        }
-
         return $this;
     }
 
@@ -326,6 +370,8 @@ final class PurchaseBuilder
      */
     public function email(string $email): self
     {
+        unset($this->data['client_id']);
+
         $this->data['client']['email'] = $email;
 
         return $this;
@@ -340,6 +386,8 @@ final class PurchaseBuilder
         ?string $phone = null,
         ?string $country = null
     ): self {
+        unset($this->data['client_id']);
+
         $this->data['client']['email'] = $email;
 
         if ($fullName !== null) {
@@ -378,6 +426,8 @@ final class PurchaseBuilder
         ?string $state = null,
         ?string $country = null
     ): self {
+        unset($this->data['client_id']);
+
         $this->data['client']['street_address'] = $streetAddress;
         $this->data['client']['city'] = $city;
         $this->data['client']['zip_code'] = $zipCode;
@@ -403,6 +453,8 @@ final class PurchaseBuilder
         ?string $state = null,
         ?string $country = null
     ): self {
+        unset($this->data['client_id']);
+
         $this->data['client']['shipping_street_address'] = $streetAddress;
         $this->data['client']['shipping_city'] = $city;
         $this->data['client']['shipping_zip_code'] = $zipCode;
@@ -554,10 +606,17 @@ final class PurchaseBuilder
     }
 
     /**
-     * Set a discount override for the entire purchase.
+     * Set a display-only discount override for the entire purchase.
      *
-     * This applies a cart-level discount that reduces the total amount charged.
-     * The discount is applied after product prices are summed.
+     * Writes `purchase.total_discount_override`, which is visual-only:
+     * CHIP calculates `total` from `products`, so this field does not
+     * change the amount charged. A lone discount neither throws nor
+     * reduces anything — the local total checks only run when
+     * `total_override` is also present, and `total_override` without
+     * the other three overrides throws. Only set this as part of a
+     * reconciling four-override set
+     * (`subtotal - discount + tax === total`). Amounts of zero or
+     * less write nothing.
      *
      * @param  int  $amount  Discount amount in cents (e.g., 5000 for RM 50.00)
      */
@@ -583,6 +642,280 @@ final class PurchaseBuilder
     }
 
     /**
+     * Set the invoice-issued date (display-only; CHIP generates the
+     * current date when omitted).
+     */
+    public function issued(string $date): self
+    {
+        if (mb_trim($date) === '') {
+            throw new ChipValidationException('Issued date cannot be blank.');
+        }
+
+        $this->data['issued'] = $date;
+
+        return $this;
+    }
+
+    /**
+     * Restrict the purchase to specific payment methods.
+     *
+     * @param  list<string>  $methods
+     */
+    public function paymentMethodWhitelist(array $methods): self
+    {
+        if ($methods === []) {
+            throw new ChipValidationException('Payment method whitelist cannot be empty.');
+        }
+
+        foreach ($methods as $method) {
+            if (! is_string($method) || ! in_array($method, self::PAYMENT_METHOD_WHITELIST, true)) {
+                throw new ChipValidationException('Unknown payment method in whitelist.', ['method' => $method]);
+            }
+        }
+
+        $this->data['payment_method_whitelist'] = array_values($methods);
+
+        return $this;
+    }
+
+    /**
+     * Tag the purchase.
+     *
+     * @param  list<string>  $tags
+     */
+    public function tags(array $tags): self
+    {
+        foreach ($tags as $tag) {
+            if (! is_string($tag) || mb_trim($tag) === '') {
+                throw new ChipValidationException('Purchase tags must be non-blank strings.');
+            }
+        }
+
+        $this->data['tags'] = array_values($tags);
+
+        return $this;
+    }
+
+    /**
+     * Set the invoice/payment-form language (ISO 639-1).
+     */
+    public function language(string $language): self
+    {
+        $this->data['purchase']['language'] = $language;
+
+        return $this;
+    }
+
+    /**
+     * Set an invoice-total adjustment in cents. May be negative
+     * (subtracted from the total).
+     */
+    public function debt(int $cents): self
+    {
+        $this->data['purchase']['debt'] = $cents;
+
+        return $this;
+    }
+
+    /**
+     * Set the timezone for invoice-specific timestamps.
+     */
+    public function timezone(string $timezone): self
+    {
+        if (mb_trim($timezone) === '') {
+            throw new ChipValidationException('Timezone cannot be blank.');
+        }
+
+        $this->data['purchase']['timezone'] = $timezone;
+
+        return $this;
+    }
+
+    /**
+     * Set the message included with the invoice email.
+     */
+    public function emailMessage(string $message): self
+    {
+        $this->data['purchase']['email_message'] = $message;
+
+        return $this;
+    }
+
+    /**
+     * Request client details from the payer before payment.
+     *
+     * @param  list<RequestClientDetail|string>  $fields
+     */
+    public function requestClientDetails(array $fields): self
+    {
+        $values = [];
+
+        foreach ($fields as $field) {
+            $value = $field instanceof RequestClientDetail ? $field->value : $field;
+
+            if (! is_string($value) || RequestClientDetail::tryFrom($value) === null) {
+                throw new ChipValidationException('Unknown request client details field.', ['field' => $field]);
+            }
+
+            $values[] = $value;
+        }
+
+        if (count($values) !== count(array_unique($values))) {
+            throw new ChipValidationException('Request client details must not contain duplicates.');
+        }
+
+        $this->data['purchase']['request_client_details'] = $values;
+
+        return $this;
+    }
+
+    /**
+     * Carbon-copy notification emails.
+     *
+     * @param  list<string>  $emails
+     */
+    public function cc(array $emails): self
+    {
+        $normalized = $this->normalizeEmailList($emails, 'cc');
+
+        unset($this->data['client_id']);
+
+        $this->data['client']['cc'] = $normalized;
+
+        return $this;
+    }
+
+    /**
+     * Blind-carbon-copy notification emails.
+     *
+     * @param  list<string>  $emails
+     */
+    public function bcc(array $emails): self
+    {
+        $normalized = $this->normalizeEmailList($emails, 'bcc');
+
+        unset($this->data['client_id']);
+
+        $this->data['client']['bcc'] = $normalized;
+
+        return $this;
+    }
+
+    /**
+     * Set the client company legal name.
+     */
+    public function legalName(string $legalName): self
+    {
+        if (mb_trim($legalName) === '') {
+            throw new ChipValidationException('Client legal name cannot be blank.');
+        }
+
+        unset($this->data['client_id']);
+
+        $this->data['client']['legal_name'] = $legalName;
+
+        return $this;
+    }
+
+    /**
+     * Set the client company brand name.
+     */
+    public function brandName(string $brandName): self
+    {
+        if (mb_trim($brandName) === '') {
+            throw new ChipValidationException('Client brand name cannot be blank.');
+        }
+
+        unset($this->data['client_id']);
+
+        $this->data['client']['brand_name'] = $brandName;
+
+        return $this;
+    }
+
+    /**
+     * Set the client company registration number.
+     */
+    public function registrationNumber(string $registrationNumber): self
+    {
+        if (mb_trim($registrationNumber) === '') {
+            throw new ChipValidationException('Client registration number cannot be blank.');
+        }
+
+        unset($this->data['client_id']);
+
+        $this->data['client']['registration_number'] = $registrationNumber;
+
+        return $this;
+    }
+
+    /**
+     * Set the client tax number.
+     */
+    public function taxNumber(string $taxNumber): self
+    {
+        if (mb_trim($taxNumber) === '') {
+            throw new ChipValidationException('Client tax number cannot be blank.');
+        }
+
+        unset($this->data['client_id']);
+
+        $this->data['client']['tax_number'] = $taxNumber;
+
+        return $this;
+    }
+
+    /**
+     * Set the client bank account number.
+     */
+    public function bankAccount(string $bankAccount): self
+    {
+        if (mb_trim($bankAccount) === '') {
+            throw new ChipValidationException('Client bank account cannot be blank.');
+        }
+
+        unset($this->data['client_id']);
+
+        $this->data['client']['bank_account'] = $bankAccount;
+
+        return $this;
+    }
+
+    /**
+     * Set the client bank SWIFT/BIC code.
+     */
+    public function bankCode(string $bankCode): self
+    {
+        if (mb_trim($bankCode) === '') {
+            throw new ChipValidationException('Client bank code cannot be blank.');
+        }
+
+        unset($this->data['client_id']);
+
+        $this->data['client']['bank_code'] = $bankCode;
+
+        return $this;
+    }
+
+    /**
+     * @param  list<string>  $emails
+     * @return list<string>
+     */
+    private function normalizeEmailList(array $emails, string $field): array
+    {
+        foreach ($emails as $email) {
+            if (! is_string($email) || mb_trim($email) === '') {
+                throw new ChipValidationException("Client {$field} entries must be non-blank strings.");
+            }
+        }
+
+        return array_values(array_map(
+            fn (string $email): string => mb_trim($email),
+            $emails
+        ));
+    }
+
+    /**
      * Get the built data array (for inspection)
      *
      * @return array<string, mixed>
@@ -604,13 +937,7 @@ final class PurchaseBuilder
             $this->data['brand_id'] = config('chip.collect.brand_id');
         }
 
-        $data = $this->data;
-
-        if ($this->idempotencyKey !== null) {
-            $data['idempotency_key'] = $this->idempotencyKey;
-        }
-
-        return $this->service->createPurchase($data);
+        return $this->service->createPurchase($this->data, $this->idempotencyKey);
     }
 
     /**
@@ -632,32 +959,68 @@ final class PurchaseBuilder
         return $currency;
     }
 
-    private function normalizeQuantity(string | float | int $quantity): int
+    private function normalizeQuantity(string | float | int $quantity): int | string
     {
-        if (is_float($quantity) && (! is_finite($quantity) || floor($quantity) !== $quantity)) {
-            throw new ChipValidationException('Product quantity must be an integer.');
-        }
-
         if (is_int($quantity)) {
             $normalized = $quantity;
         } elseif (is_float($quantity)) {
-            $normalized = (int) $quantity;
-        } else {
-            $value = mb_trim($quantity);
-            $validated = filter_var($value, FILTER_VALIDATE_INT);
-
-            if ($value === '' || $validated === false) {
-                throw new ChipValidationException('Product quantity must be an integer.');
+            if (! is_finite($quantity)) {
+                throw new ChipValidationException('Product quantity must be numeric.');
             }
 
-            $normalized = (int) $validated;
+            // 2**53 is the float64-exactness boundary; larger whole floats
+            // would silently narrow on (int) cast, so they stay strings
+            // for the range check below.
+            $normalized = floor($quantity) === $quantity && $quantity < 2 ** 53 ? (int) $quantity : (string) $quantity;
+        } else {
+            $value = mb_trim($quantity);
+
+            if ($value === '' || ! is_numeric($value) || ! is_finite((float) $value)) {
+                throw new ChipValidationException('Product quantity must be numeric.');
+            }
+
+            $normalized = $value;
         }
 
-        if ($normalized < 1) {
-            throw new ChipValidationException('Product quantity must be an integer.');
+        $asFloat = (float) $normalized;
+
+        if ($asFloat < 0) {
+            throw new ChipValidationException('Product quantity must be zero or greater.');
+        }
+
+        if ($asFloat >= 2 ** 53) {
+            throw new ChipValidationException('Product quantity is out of range.');
+        }
+
+        if ($this->decimalPlaces((string) $normalized) > 4) {
+            throw new ChipValidationException('Product quantity must have at most 4 decimal places.');
         }
 
         return $normalized;
+    }
+
+    /**
+     * Count decimal places in a numeric string, mirroring how a decimal
+     * field parses it: fraction digits minus the exponent, floored at 0.
+     * String-counted (not float-rounded) so precision-collapsed forms
+     * like "1.0000000000000001" cannot slip through a float cast.
+     */
+    private function decimalPlaces(string $value): int
+    {
+        $value = mb_ltrim($value, '+-');
+        $exponent = 0;
+
+        $ePos = mb_stripos($value, 'e');
+
+        if ($ePos !== false) {
+            $exponent = (int) mb_substr($value, $ePos + 1);
+            $value = mb_substr($value, 0, $ePos);
+        }
+
+        $dotPos = mb_strpos($value, '.');
+        $fractionDigits = $dotPos === false ? 0 : mb_strlen($value) - $dotPos - 1;
+
+        return max(0, $fractionDigits - $exponent);
     }
 
     private function assertMoneyCurrency(Money $money, string $currency, string $field): void

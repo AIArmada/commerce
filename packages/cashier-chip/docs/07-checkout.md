@@ -207,6 +207,8 @@ There is no `createCheckout()` hook on the `Billable` trait. `checkout()` forwar
 alias the trait method and add your defaults on top:
 
 ```php
+use AIArmada\CashierChip\Billing\Checkout;
+
 class User extends Authenticatable implements BillableContract
 {
     use Billable {

@@ -188,7 +188,7 @@ If you have `aiarmada/filament-authz` installed, authorization is automatic:
 
 ### Without filament-authz
 
-The plugin uses Laravel's standard policies. Create policies for each model:
+The plugin already registers Laravel policies for each model. Only create your own to override them:
 
 ```bash
 php artisan make:policy TaxZonePolicy --model=TaxZone

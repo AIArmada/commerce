@@ -129,7 +129,7 @@ echo "Failed: " . count($result['failed']) . " orders\n";
 ## Batch Print Waybills
 
 ```php
-// By order IDs
+// By order IDs, with an optional template name
 $result = JntExpress::batchPrintWaybills(
     orderIds: ['ORDER-1', 'ORDER-2']
 );

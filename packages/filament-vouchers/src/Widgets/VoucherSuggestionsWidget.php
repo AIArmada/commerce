@@ -6,6 +6,7 @@ namespace AIArmada\FilamentVouchers\Widgets;
 
 use AIArmada\Cart\Snapshots\CartInstanceManager;
 use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRecordOwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\FilamentVouchers\Support\MoneyHelper;
@@ -22,6 +23,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Lazy;
+use Livewire\Attributes\Locked;
 use Throwable;
 
 /**
@@ -30,6 +32,9 @@ use Throwable;
 #[Lazy]
 final class VoucherSuggestionsWidget extends Widget
 {
+    use VerifiesRecordOwnerContext;
+
+    #[Locked]
     public ?Model $record = null;
 
     /** @var view-string */

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource\Tables;
 
 use AIArmada\Affiliates\Actions\Payouts\UpdatePayoutStatus;
+use AIArmada\Affiliates\Exceptions\PayoutCompletionBlockedException;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\CompletedPayout;
 use AIArmada\Affiliates\States\FailedPayout;
@@ -17,6 +18,7 @@ use AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource;
 use AIArmada\FilamentAffiliates\Services\PayoutExportService;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
+use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -70,13 +72,7 @@ final class AffiliatePayoutsTable
                     ->authorize(fn (): bool => (Filament::auth()->user() ?? auth()->user())?->can('affiliates.payout.update') ?? false)
                     ->visible(fn (AffiliatePayout $record): bool => ! $record->status->equals(CompletedPayout::class))
                     ->action(function (AffiliatePayout $record): void {
-                        Gate::authorize('update', $record);
-
-                        $payout = (bool) config('affiliates.owner.enabled', false)
-                            ? OwnerWriteGuard::findOrFailForOwner(AffiliatePayout::class, $record->getKey())
-                            : AffiliatePayout::findOrFail($record->getKey());
-
-                        app(UpdatePayoutStatus::class)->handle($payout, CompletedPayout::value());
+                        self::markCompleted($record);
                     }),
                 Action::make('queue')
                     ->label('Mark Processing')
@@ -126,5 +122,30 @@ final class AffiliatePayoutsTable
                     }),
             ])
             ->bulkActions([]);
+    }
+
+    /**
+     * Complete a payout from the Mark Completed row action.
+     *
+     * Completion-gate refusals surface as a danger notification
+     * carrying the gate message instead of a raw exception.
+     */
+    public static function markCompleted(AffiliatePayout $record): void
+    {
+        Gate::authorize('update', $record);
+
+        $payout = (bool) config('affiliates.owner.enabled', false)
+            ? OwnerWriteGuard::findOrFailForOwner(AffiliatePayout::class, $record->getKey())
+            : AffiliatePayout::findOrFail($record->getKey());
+
+        try {
+            app(UpdatePayoutStatus::class)->handle($payout, CompletedPayout::value());
+        } catch (PayoutCompletionBlockedException $exception) {
+            Notification::make()
+                ->danger()
+                ->title('Payout cannot be completed')
+                ->body($exception->getMessage())
+                ->send();
+        }
     }
 }

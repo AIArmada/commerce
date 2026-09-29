@@ -229,6 +229,10 @@ The only shipped view is `pages/merchant-dashboard.blade.php`; it publishes to
 
 There is no marketplace view to override — the package has no marketplace page.
 
+### Customize Merchant Dashboard View
+
+Edit `resources/views/vendor/filament-affiliate-network/pages/merchant-dashboard.blade.php` to restyle the stats, top offers, and pending applications sections.
+
 ---
 
 ## Authorization
@@ -333,6 +337,7 @@ public function panel(Panel $panel): Panel
         ->id('affiliate')
         ->path('affiliate')
         ->pages([
+            MerchantDashboardPage::class,
             // Affiliate-specific pages
         ]);
 }

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Chip\Builders\PurchaseBuilder;
+use AIArmada\Chip\Data\ProductData;
 use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\CommerceSupport\Contracts\Payment\CheckoutableInterface;
 use AIArmada\CommerceSupport\Contracts\Payment\CustomerInterface;
@@ -165,6 +166,76 @@ describe('PurchaseBuilder Interface Integration', function (): void {
 
             expect($data['purchase'])->not->toHaveKey('notes');
         });
+
+        it('reconciles fractional line-item quantities half-up', function (): void {
+            $lineItem = Mockery::mock(LineItemInterface::class);
+            $lineItem->shouldReceive('getLineItemName')->andReturn('Bulk');
+            $lineItem->shouldReceive('getLineItemPrice')->andReturn(Money::MYR(100));
+            $lineItem->shouldReceive('getLineItemQuantity')->andReturn(1.555);
+            $lineItem->shouldReceive('getLineItemDiscount')->andReturn(Money::MYR(0));
+            $lineItem->shouldReceive('getLineItemTaxPercent')->andReturn(0.0);
+            $lineItem->shouldReceive('getLineItemCategory')->andReturn(null);
+
+            $checkoutable = Mockery::mock(CheckoutableInterface::class);
+            $checkoutable->shouldReceive('getCheckoutCurrency')->andReturn('MYR');
+            $checkoutable->shouldReceive('getCheckoutLineItems')->andReturn([$lineItem]);
+            $checkoutable->shouldReceive('getCheckoutSubtotal')->andReturn(Money::MYR(156));
+            $checkoutable->shouldReceive('getCheckoutDiscount')->andReturn(Money::MYR(0));
+            $checkoutable->shouldReceive('getCheckoutTax')->andReturn(Money::MYR(0));
+            $checkoutable->shouldReceive('getCheckoutTotal')->andReturn(Money::MYR(156));
+            $checkoutable->shouldReceive('getCheckoutReference')->andReturn('REF-FRAC');
+            $checkoutable->shouldReceive('getCheckoutNotes')->andReturn(null);
+            $checkoutable->shouldReceive('getCheckoutMetadata')->andReturn([]);
+
+            $data = $this->builder
+                ->fromCheckoutable($checkoutable)
+                ->email('test@example.com')
+                ->toArray();
+
+            expect($data['purchase']['products'][0]['quantity'])->toBe('1.555')
+                ->and($data['purchase']['subtotal_override'])->toBe(156);
+        });
+
+        it('omits the spec-absent total field while keeping total_override', function (): void {
+            $lineItem = Mockery::mock(LineItemInterface::class);
+            $lineItem->shouldReceive('getLineItemName')->andReturn('Product');
+            $lineItem->shouldReceive('getLineItemPrice')->andReturn(Money::MYR(1000));
+            $lineItem->shouldReceive('getLineItemQuantity')->andReturn(1);
+            $lineItem->shouldReceive('getLineItemDiscount')->andReturn(Money::MYR(0));
+            $lineItem->shouldReceive('getLineItemTaxPercent')->andReturn(0.0);
+            $lineItem->shouldReceive('getLineItemCategory')->andReturn(null);
+
+            $checkoutable = Mockery::mock(CheckoutableInterface::class);
+            $checkoutable->shouldReceive('getCheckoutCurrency')->andReturn('MYR');
+            $checkoutable->shouldReceive('getCheckoutLineItems')->andReturn([$lineItem]);
+            $checkoutable->shouldReceive('getCheckoutSubtotal')->andReturn(Money::MYR(1000));
+            $checkoutable->shouldReceive('getCheckoutDiscount')->andReturn(Money::MYR(0));
+            $checkoutable->shouldReceive('getCheckoutTax')->andReturn(Money::MYR(0));
+            $checkoutable->shouldReceive('getCheckoutTotal')->andReturn(Money::MYR(1000));
+            $checkoutable->shouldReceive('getCheckoutReference')->andReturn('REF-001');
+            $checkoutable->shouldReceive('getCheckoutNotes')->andReturn(null);
+            $checkoutable->shouldReceive('getCheckoutMetadata')->andReturn([]);
+
+            $data = $this->builder
+                ->fromCheckoutable($checkoutable)
+                ->email('test@example.com')
+                ->toArray();
+
+            expect($data['purchase'])->not->toHaveKey('total')
+                ->and($data['purchase'])->toHaveKey('total_override', 1000);
+        });
+    });
+
+    describe('addProductObject', function (): void {
+        it('serializes product objects without null fields', function (): void {
+            $data = $this->builder
+                ->currency('MYR')
+                ->addProductObject(ProductData::from(['name' => 'X', 'price' => 1000]))
+                ->toArray();
+
+            expect($data['purchase']['products'][0])->not->toHaveKey('category')
+                ->and($data['purchase']['products'][0]['discount'])->toBe(0);
+        });
     });
 
     describe('fromCustomer', function (): void {
@@ -196,6 +267,35 @@ describe('PurchaseBuilder Interface Integration', function (): void {
                 ->and($data['client']['city'])->toBe('Kuala Lumpur')
                 ->and($data['client']['zip_code'])->toBe('50000')
                 ->and($data['client']['state'])->toBe('Selangor');
+        });
+
+        it('skips the client build when a gateway customer ID is present', function (): void {
+            $customer = Mockery::mock(CustomerInterface::class);
+            $customer->shouldReceive('getGatewayCustomerId')->andReturn('client_123');
+            $customer->shouldReceive('getCustomerEmail')->never();
+            $customer->shouldReceive('getCustomerName')->never();
+            $customer->shouldReceive('getCustomerPhone')->never();
+            $customer->shouldReceive('getCustomerCountry')->never();
+            $customer->shouldReceive('getBillingStreetAddress')->never();
+            $customer->shouldReceive('getBillingCity')->never();
+            $customer->shouldReceive('getBillingState')->never();
+            $customer->shouldReceive('getBillingPostalCode')->never();
+            $customer->shouldReceive('getBillingCountry')->never();
+            $customer->shouldReceive('hasShippingAddress')->never();
+            $customer->shouldReceive('getShippingStreetAddress')->never();
+            $customer->shouldReceive('getShippingCity')->never();
+            $customer->shouldReceive('getShippingState')->never();
+            $customer->shouldReceive('getShippingPostalCode')->never();
+            $customer->shouldReceive('getShippingCountry')->never();
+
+            $data = $this->builder
+                ->currency('MYR')
+                ->addProductCents('Test Product', 1000)
+                ->fromCustomer($customer)
+                ->toArray();
+
+            expect($data)->toHaveKey('client_id', 'client_123')
+                ->and($data)->not->toHaveKey('client');
         });
 
         it('handles customer with shipping address', function (): void {

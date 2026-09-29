@@ -19,6 +19,8 @@ POST /chip/webhooks   (route name: chip.webhook)
 
 The path comes from `chip.webhooks.route` (`CHIP_WEBHOOK_ROUTE`, default `/chip/webhooks`).
 Point your CHIP dashboard at that URL.
+Cashier CHIP registers no webhook route or controller of its own; it subscribes to the
+typed events CHIP dispatches from that route (see Handled Events below).
 
 ## Configuration
 
@@ -148,6 +150,10 @@ class LogPurchasePaid
     }
 }
 ```
+
+To customize the HTTP route itself (path, middleware), configure the
+`aiarmada/chip` webhook route instead; see the
+[CHIP webhooks documentation](../../chip/docs/09-webhooks.md).
 
 ## Payload Structure
 

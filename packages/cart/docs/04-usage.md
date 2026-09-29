@@ -154,6 +154,36 @@ $count = Cart::count();
 shared money primitive. Money objects remain useful for arithmetic and return
 minor-unit amounts.
 
+### Checkout integration
+
+`Cart` implements `CheckoutableInterface`, so gateways such as CHIP accept it
+directly:
+
+```php
+use AIArmada\Chip\Gateways\ChipGateway;
+
+$gateway = app(ChipGateway::class);
+
+$payment = $gateway->createPayment($cart, $customer, [
+    'success_url' => route('checkout.success'),
+    'failure_url' => route('checkout.failed'),
+]);
+```
+
+The mapping always reconciles (`total = subtotal - discount + tax`):
+
+- Line items report condition-adjusted unit prices with zero line discounts.
+  A line with a tax condition reports a zero tax percent (its tax is already
+  baked into the price); an attribute-declared `tax_percent` with no tax
+  condition passes through for the gateway to apply.
+- The discount term holds net cart-level price reductions; net surcharges
+  surface on the tax term instead, so gateways never receive negative money.
+- The tax and total terms include attribute-declared line taxes, computed
+  per line from the gateway-facing rate and the line subtotal, so the
+  overrides match what the gateway charges for the yielded lines.
+- The reference is the stored cart id, falling back to `identifier:instance`.
+- The cart must contain at least one item; gateways reject empty checkouts.
+
 ## Working with Conditions
 
 ### Simple Conditions
@@ -204,7 +234,7 @@ Cart::clearConditions();
 
 ## Cart Snapshot Contract
 
-Use `Cart::content()` (or `Cart::getContent()`) to capture a normalized snapshot of the cart state. Checkout sessions store this snapshot as `cart_snapshot`.
+Use `Cart::content()` (or `Cart::getContent()`) to capture the base normalized snapshot of the cart state. Checkout sessions augment it with `item_count`, `totals`, and `captured_at`, then store it as `cart_snapshot`.
 
 ```json
 {
@@ -235,7 +265,7 @@ Use `Cart::content()` (or `Cart::getContent()`) to capture a normalized snapshot
     "total": 9998,
     "quantity": 2,
     "count": 1,
-    "item_count": 2,
+    "item_count": 1,
     "totals": {
         "subtotal": 9998,
         "total": 9998,
@@ -252,7 +282,7 @@ Notes:
 - `price` and totals are stored in the smallest currency unit (cents).
 - String prices: integers are minor units (`'999'` is 999 minor); decimals are major units (`'9.99'` is 999 minor). Thousand separators always imply major units (`'1,000'` is 100000 minor, same as `'1,000.00'`).
 - `attributes.weight` is in grams when provided.
-- `item_count` reflects total quantity; `count` reflects unique line items.
+- `item_count` mirrors `count` (unique line items); `quantity` reflects total quantity.
 - `associated_model` is populated when cart items are linked to Eloquent models.
 
 ## Working with Metadata

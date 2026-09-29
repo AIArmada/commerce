@@ -64,9 +64,7 @@ Use this package when you need to sell tickets for events, workshops, courses, o
 - `AutoAddRequiredTicketBundlesAction` — Auto-add required bundle products
 - `ExpandTicketTypeComponentsAction` — Expand component ticket types by a multiplier
 
-Pass lifecycle transitions beyond `RevokePassAction` are driven by
-`$pass->status->transitionTo(...)` or the `PassState` transition config; there are no
-per-state action classes.
+- `Pass::markActivated()`, `markUsed()`, `markCancelled()`, `markVoided()`, `markExpired()` — Model methods for the remaining lifecycle transitions (call `save()` after `mark*()` except when using `RevokePassAction`)
 
 ### Contracts
 
@@ -89,13 +87,13 @@ per-state action classes.
 
 ### Listeners
 
-- `IssuePassesOnOrderPaid` — Auto-issue when order is paid (requires `aiarmada/orders`)
+- `IssuePassesOnFulfillment` — Auto-issue when order fulfillment is required, including free orders (requires `aiarmada/orders`)
 
 ## Features
 
 ### Ticket Types
 
-- **Pricing**: Flat, tiered, dynamic, free, or donation pricing modes
+- **Pricing**: Paid, free, or mixed pricing modes
 - **Sales Windows**: Configure when tickets go on and off sale
 - **Quotas**: Set max quantity per purchase and total capacity
 - **Components**: Split pricing into components (e.g., base price + processing fee)

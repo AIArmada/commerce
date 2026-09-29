@@ -46,11 +46,11 @@ public function panel(Panel $panel): Panel
 return [
     // Navigation group for all J&T resources
     'navigation' => [
-        'group' => 'Shipping'
-    ],
+        'group' => 'Shipping',
 
-    // Badge color for navigation items
-    'navigation_badge_color' => 'primary',
+        // Badge color for navigation items
+        'badge_color' => 'primary',
+    ],
 
     // Auto-refresh interval for tables
     'polling_interval' => '30s',

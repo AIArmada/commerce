@@ -331,6 +331,13 @@ authenticates against is core config.
 ],
 ```
 
+```php
+// config/filament-authz.php
+'impersonate' => [
+    'enabled' => true,
+],
+```
+
 When impersonation is enabled:
 - A modal allows selecting which panel to redirect to after impersonating
 - A banner shows at the top of the page while impersonating

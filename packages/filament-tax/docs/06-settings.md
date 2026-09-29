@@ -114,6 +114,7 @@ use AIArmada\Tax\Settings\TaxSettings;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Pages\Page;
 use Filament\Schemas\Schema;
 
 final class ManageTaxSettings extends Page

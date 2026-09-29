@@ -9,7 +9,7 @@ to choose the right primitive, contract, or helper before diving into the deeper
 
 ## 1. Pick the right support surface
 
-- [Multi-tenancy](04-multi-tenancy.md) — owner scoping, explicit global context, route binding, and write guards
+- [Multi-tenancy](14-multi-tenancy.md) — owner scoping, explicit global context, route binding, and write guards
 - [Payment Contracts](05-payment-contracts.md) — common payment abstractions for gateway packages
 - [Targeting Engine](06-targeting-engine.md) — rule evaluation and eligibility checks
 - [Auditing & Logging](07-auditing-logging.md) — shared business logging and compliance auditing

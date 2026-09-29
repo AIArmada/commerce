@@ -199,7 +199,7 @@ $level = InventoryLevel::query()
 dump([
     'on_hand' => $level->quantity_on_hand,
     'reserved' => $level->quantity_reserved,
-    'available' => $level->quantity_available,
+    'available' => $level->available,
 ]);
 ```
 
@@ -209,11 +209,10 @@ dump([
 
 **Solution:** Ensure all required fields are provided:
 
-- `location_id`
 - `inventoryable_type` (full class name)
 - `inventoryable_id`
-- `movement_type` — one of `AIArmada\Inventory\Enums\MovementType`: `receipt`,
-  `shipment`, `transfer`, `adjustment`, `allocation`, `release`
+- `from_location_id` / `to_location_id` (nullable)
+- `type` (receipt, shipment, transfer, adjustment, allocation, release)
 - `quantity`
 
 ## Debug Mode
@@ -238,7 +237,7 @@ Log::channel('inventory')->debug('Stock received', $data);
 
 ## Getting Help
 
-1. Check the [core inventory package documentation](../inventory/docs/)
+1. Check the [core inventory package documentation](../../inventory/docs/)
 2. Review the [source code](https://github.com/aiarmada/commerce/packages/filament-inventory)
 3. Open an issue on GitHub with:
    - PHP version

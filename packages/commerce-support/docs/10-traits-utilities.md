@@ -265,13 +265,13 @@ class CartServiceProvider extends ServiceProvider
 }
 ```
 
-### Behaviour
+Each key is resolved in dot notation against the named config file. A missing
+(`null`) value throws a `RuntimeException` naming the full key and the publish
+tag that provides it.
 
-- Returns `void` and throws `RuntimeException` naming the missing key and the
-  `vendor:publish --tag={configFile}-config` command
-- Skipped entirely unless `config('{configFile}.validate_config')` is `true`;
-  outside production the default is to skip even when the key is set
-- Call `shouldSkipConfigurationValidation()` in your provider to override the gate
+Validation is skipped outside production unless the package opts in with a
+`<package>.validate_config` flag, and it is skipped for console runs unless
+that flag is set.
 
 ## HasOwnerScopeConfig
 
@@ -704,7 +704,10 @@ Payment-specific errors. Static factories:
 ```php
 use AIArmada\CommerceSupport\Exceptions\PaymentGatewayException;
 
-throw PaymentGatewayException::refundFailed('stripe', 'pi_123', 'Card already refunded');
+throw PaymentGatewayException::creationFailed('stripe', 'Connection timeout');
+throw PaymentGatewayException::notFound('stripe', $paymentId);
+throw PaymentGatewayException::refundFailed('stripe', $paymentId, 'Already refunded');
+throw PaymentGatewayException::invalidConfiguration('stripe', 'Missing API key');
 throw PaymentGatewayException::currencyMismatch('stripe', 'MYR', 'USD');
 ```
 
@@ -722,6 +725,7 @@ Webhook handling errors. Every factory takes a `$gatewayName` argument:
 ```php
 use AIArmada\CommerceSupport\Exceptions\WebhookVerificationException;
 
+throw WebhookVerificationException::missingSignature('chip');
 throw WebhookVerificationException::invalidSignature('chip');
 throw WebhookVerificationException::invalidPayload('chip', 'Missing event_id');
 ```

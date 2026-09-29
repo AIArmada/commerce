@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource\RelationManagers;
 
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
@@ -22,6 +23,8 @@ use Illuminate\Support\Str;
 
 final class CreativesRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'creatives';
 
     public function form(Schema $schema): Schema

@@ -43,7 +43,7 @@ On each subscription row:
 
 ### Creating Subscriptions
 
-Click **Create Subscription** and follow the wizard:
+Click **Create Subscription** and fill in the form:
 
 1. **Customer** - Select the user
 2. **Gateway** - Choose Stripe or CHIP
@@ -63,10 +63,10 @@ The unified invoices resource is list-first: it aggregates invoice records acros
 
 ### Scoping Notes
 
-- The admin subscription and invoice lists delegate to the per-billable
-  gateway clients, so they show the signed-in staff member's own records —
-  not an owner-wide view. An owner-wide admin list needs gateway support that
-  does not exist yet.
+- The admin subscription list queries the gateway subscription models
+  directly through `OwnerScopedQuery`, so staff see every billable's
+  subscriptions in the current owner scope. The invoice list is per-billable:
+  it loads invoices through the signed-in staff member's own gateway clients.
 - The customer portal shows the signed-in customer's records only.
 - Gateway health probes are cached per owner for 60 seconds. Probe failures
   surface a generic message; details go to the log.

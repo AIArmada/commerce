@@ -27,7 +27,7 @@ enum RegistrationApprovalMode: string
     {
         return match ($this) {
             self::Auto => 'Affiliates are automatically approved and activated upon registration.',
-            self::Open => 'Affiliates can register freely but start in pending status.',
+            self::Open => 'Affiliates can register freely, start in pending status, and are automatically activated on their first qualifying conversion.',
             self::Admin => 'Affiliates must be manually approved by an administrator.',
         };
     }

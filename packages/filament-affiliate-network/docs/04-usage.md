@@ -67,6 +67,10 @@ Manage merchant sites/domains.
 |--------|-------------|
 | Edit | Edit site details |
 | Verify | Manually verify a pending site (runs inside the site's owner context) |
+| Sync catalog | Pull the merchant catalog now |
+| Reject | Reject a site |
+| Suspend | Suspend a site |
+| Reinstate | Reinstate a suspended/rejected site |
 | Delete | Delete site |
 
 The edit page adds two header actions: **Sync catalog** (pull the
@@ -97,7 +101,7 @@ Manage affiliate offers.
 - Status (badge)
 - Commission (formatted)
 - Fee in basis points (toggleable; blank uses the configured default)
-- Source (badge: synced/manual)
+- Source (badge: mirrored/manual)
 - Featured (icon)
 - Visibility (badge)
 - Applications count
@@ -118,7 +122,7 @@ Manage affiliate offers.
 - Fixed amount in minor units (per conversion; takes precedence when set)
 - Currency (three-letter code)
 - Cookie duration (whole days; negatives rejected)
-- Source (synced/manual; editing any rate field flips to manual)
+- Source (mirrored/manual; editing any rate-block field flips to manual)
 - Network fee in basis points (marketplace take-rate; empty uses the configured default)
 - Volume tiers (repeater: floor in minor units + rate in basis points)
 
@@ -205,13 +209,12 @@ Review affiliate applications.
 
 ### Table Columns
 
-- Affiliate code (searchable, sortable)
-- Affiliate email (display-only; it is a virtual accessor, not a column)
+- Affiliate ID (searchable, copyable, toggleable)
 - Offer name (searchable, sortable)
 - Status (badge)
-- Reason (toggleable)
-- Submitted at
+- Reviewed by (toggleable)
 - Reviewed at (toggleable)
+- Submitted at
 
 Approve, reject, revoke, and bulk-approve run each mutation inside the owning affiliate's owner context so cross-tenant review works when owner scoping is enabled.
 
@@ -241,7 +244,6 @@ Approve, reject, revoke, and bulk-approve run each mutation inside the owning af
 
 - Status (pending, approved, rejected, revoked)
 - Offer
-- Date range
 
 ### Status Colors
 
@@ -250,7 +252,7 @@ Approve, reject, revoke, and bulk-approve run each mutation inside the owning af
 | `pending` | Warning (yellow) |
 | `approved` | Success (green) |
 | `rejected` | Danger (red) |
-| `revoked` | Gray |
+| `revoked` | Danger (red, default) |
 
 ---
 
@@ -311,6 +313,8 @@ class AffiliateOfferResource extends Resource
 `FilamentAffiliateNetworkPlugin` registers a fixed set and exposes no
 `resources()` method. Register your own resource from the panel provider
 instead:
+
+The plugin registers a fixed set, so register overrides on the panel:
 
 ```php
 $panel->resources([

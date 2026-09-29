@@ -62,7 +62,7 @@ Cart::update('laptop-001', ['quantity' => 2]);
 Cart::remove('laptop-001');
 
 // Multiple instances
-Cart::instance('wishlist')->add('monitor-001', 'Display', 59900);
+Cart::setInstance('wishlist')->add('monitor-001', 'Display', 59900);
 ```
 
 ## Storage
@@ -84,7 +84,7 @@ Apply discounts, taxes, and fees at different calculation phases:
 
 ```php
 use AIArmada\Cart\Conditions\CartCondition;
-use AIArmada\Cart\Conditions\ConditionPhase;
+use AIArmada\Cart\Conditions\Enums\ConditionPhase;
 use AIArmada\Cart\Conditions\Target;
 
 // Percentage discount
@@ -148,7 +148,7 @@ Listen to cart lifecycle events:
 use AIArmada\Cart\Events\ItemAdded;
 
 Event::listen(ItemAdded::class, function ($event) {
-    Log::info('Item added', ['item' => $event->cartItem->id]);
+    Log::info('Item added', ['item' => $event->item->id]);
 });
 ```
 

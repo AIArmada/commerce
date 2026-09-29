@@ -9,7 +9,6 @@ These files are intentionally split by concern for easier maintenance. Read and 
 
 - Follow the strictest rule when guidance overlaps: security > data isolation > correctness > style.
 - If instructions conflict or cannot both be satisfied, say so explicitly, explain the conflict, and choose the safest alternative.
-- Never assume UI scoping is security. Server-side enforcement and validation are mandatory.
 
 ## Runtime Baseline
 
@@ -92,6 +91,7 @@ These files are intentionally split by concern for easier maintenance. Read and 
 
 - Keep migrations safe and idempotent.
 - No `down()` method is required.
+- Evolve schema by editing the owning migration in place; do not add a new migration file per schema change and do not drop and recreate tables to alter them.
 
 ## Verification
 
@@ -106,7 +106,6 @@ These files are intentionally split by concern for easier maintenance. Read and 
 - Run tools such as Pint, PHPStan, and Pest only on modified packages.
 - If touching `packages/*/src/**`, run Pint only on the changed files or at least only on the changed packages.
 - Never run Pint repo-wide "just to be safe"; it creates noisy diffs across unrelated packages.
-- Do not open style-only PRs.
 - Prefer the standard project-local binaries directly (`./vendor/bin/pest`, `./vendor/bin/phpstan`, `./vendor/bin/rector`, `./vendor/bin/pint`) in a normal local shell.
 - Do not add or commit machine-specific launcher files or symlinks such as `php-local`; personal PHP/Herd wrappers belong in local shell config, not the repository.
 - Keep tracked agent and MCP config repo-safe. Local development credential files like `auth.json` may exist on your machine, but they must stay ignored and never be committed.
@@ -114,29 +113,13 @@ These files are intentionally split by concern for easier maintenance. Read and 
 
 ## Code Conventions
 
-- Prefer Laravel-native helpers, collections, and the service container when the framework already provides the right abstraction.
-- Use modern PHP 8.4 features and explicit typing.
 - Use `CarbonImmutable` or other immutable date/time objects wherever possible; avoid mutable `Carbon` unless you have a strong reason.
-- Keep business logic out of controllers and models. Put orchestration in Actions.
-- Use SOLID principles, repositories for data access, and factories for object creation when those abstractions improve clarity.
-
-## Naming
-
-- Classes: `PascalCase`.
-- Methods and variables: `camelCase`.
-- Constants: `SCREAMING_SNAKE`.
-- Database tables and columns: `snake_case`.
-- Boolean names: `is_`, `has_`, `can_`.
-
-## Team Roles
-
-- Auditor: strict auditing/security (`.github/agents/Auditor.agent.md`).
-- QC: QA/testing (`.github/agents/QC.agent.md`).
-- Visionary: architecture (`.github/agents/Visionary.agent.md`).
 
 ## Compatibility Policy
 
 - Breaking changes are allowed when they improve the system. Backward compatibility is not required unless a task explicitly asks for it.
+- Do not add backward-compatibility shims, legacy aliases, or deprecated-code paths; remove the old path instead of keeping both.
+- Do not write data backfills or migrations that reinterpret legacy semantics; new columns start clean with no legacy null meaning.
 
 === .ai/docs rules ===
 
@@ -150,7 +133,6 @@ These files are intentionally split by concern for easier maintenance. Read and 
 
 ## Writing Rules
 
-- Use `##` for main sections and `###` for subsections.
 - Examples must be copy-paste ready, including imports and namespaces where relevant.
 - Cross-reference related docs using relative links.
 - Call out breaking changes explicitly and explain the migration path.
@@ -166,14 +148,13 @@ These files are intentionally split by concern for easier maintenance. Read and 
 
 ## Platform Rules
 
-- Use Filament v5 APIs.
 - Filament v5 is the target surface. If v5 documentation is thin, the equivalent v4 examples are acceptable because the APIs are compatible.
 - Use the official Filament plugins for Tags, Settings, Media, and Fonts when those capabilities are needed.
 - Use the built-in `Import` and `Export` actions only.
 
 ## Tenancy
 
-- Filament tenancy is not a security boundary. All queries and all action handlers must still obey the owner-scoping contract.
+- All queries and all action handlers must still obey the owner-scoping contract.
 
 ## Navigation
 
@@ -216,16 +197,8 @@ public static function getNavigationSort(): ?int
 
 The `CommerceNavigation` engine (from `commerce-support`) supports overriding any navigation setting at runtime via `commerce-support.filament.navigation.items.{FQCN}`. Config-driven navigation is the foundation that makes this work — the engine reads a resource's config default, then merges runtime overrides on top.
 
-### What NOT to do
-
-- Do NOT use `$navigationGroup` static property on a Resource or Page (blocks runtime override)
-- Do NOT use flat config keys like `navigation_group` (use nested `navigation.group`)
-- Do NOT hardcode a group string in `getNavigationGroup()` — always read from config
-- Do NOT delegate through a plugin (avoid `Plugin::get()->getNavigationGroup()` pattern) — resources should read `config()` directly
-
 ## Verification
 
-- Double-check method signatures in the installed Filament version before shipping.
 - Verify no static `$navigationGroup` remains: `rg "static.*\$navigationGroup" packages/filament-*/src`
 - Verify config uses nested key: `rg "'navigation_group'" packages/filament-*/config` (should be empty)
 
@@ -239,33 +212,27 @@ Use this file for cross-cutting judgment, planning, and change execution.
 
 - When the user asks a question or raises a concern, answer it directly. Do not jump to editing files unless they explicitly ask for changes.
 - If you start editing before the user finishes their thought, stop. Revert the premature edit and let them finish.
-- Waiting for direction is better than acting on assumption.
 
 ## Plan Before Coding
 
 - For non-trivial work such as multi-step changes, architecture decisions, or risky edits, write a brief plan before coding.
-- If new evidence invalidates the plan, stop and re-plan.
 - State assumptions explicitly. If there are multiple interpretations, name them and ask instead of guessing.
 - Push back when a request is unclear, internally inconsistent, or overcomplicated.
 
 ## Choose the Right Shape of Change
 
-- Start codebase-aware by default: inspect sibling files, follow established conventions, and prefer the smallest change that fits the package boundary.
 - Switch to architecture-first when copying the existing pattern would spread a known design problem, duplicate shared logic across packages, or create a fix that is locally correct but systemically wrong.
 - When you switch, say so explicitly: name the local pattern you are not copying, explain why, propose the smallest shared correction, and list the surfaces that need verification.
 - Stay architecture-first in scope, not in blast radius: prefer one well-placed shared primitive or boundary correction over a broad rewrite.
-- Preserve extension seams where they help the codebase stay adaptable: hooks, domain events, metadata, contracts, resolvers, and support classes.
 
 ## Keep the Change Surgical
 
-- Use the smallest correct change.
 - Do not add speculative abstractions, configurability, or error handling for impossible cases.
 - If a 50-line fix is enough, do not write 200.
 - Match existing style; do not refactor adjacent code, comments, or formatting.
 - Clean up only your own mess.
 - Mention unrelated dead code instead of deleting it.
 - Remove only imports, variables, or functions your change makes unused.
-- Never "cleanup" or mass-revert without permission.
 
 ## Runtime Extension Safety
 
@@ -278,12 +245,6 @@ Use this file for cross-cutting judgment, planning, and change execution.
 - Prefer Laravel Actions for reusable orchestration that spans transactions, side effects, normalization, or multiple entry points.
 - Keep trivial single-step handlers inline when extraction adds no clarity.
 - Reuse existing Actions before creating new ones.
-
-## Behavioral Changes
-
-- When a task changes user behavior such as entry points, forms, actions, or meaningful workflow transitions, evaluate whether product tracking should be updated.
-- Prefer high-signal events over noisy click logs.
-- Prefer server-confirmed events for backend outcomes.
 
 ## Proof
 
@@ -331,10 +292,6 @@ Use this file for cross-cutting judgment, planning, and change execution.
 - Do not bury lifecycle events in JSON or booleans when the timestamp matters operationally.
 - Keep the state-to-timestamp mapping centralised in the transition method or supporting trait.
 - Use immutable date casts for lifecycle timestamps when the model supports them.
-
-## Verification
-
-- Search for forbidden DB cascades or constraints in migrations: `rg -n -- "constrained\(|cascadeOnDelete\(" packages/*/database`
 
 === .ai/multitenancy rules ===
 
@@ -440,12 +397,7 @@ Use this file for cross-cutting judgment, planning, and change execution.
 
 - Treat money as integer minor units plus an explicit currency code.
 - Use `commerce-support` money primitives before rolling your own: `MoneyNormalizer` for normalization, `FormatsMoney` or Akaunting `money(..., ..., false)` for display or value formatting, and package or domain `Money` objects where contracts already expect them.
-- Do not hand-roll currency display with raw `number_format()` and string concatenation when a shared formatter is available.
 - No soft deletes (`SoftDeletes`).
-
-## Verification
-
-- Verify both standalone install and integrated behavior.
 
 === .ai/phpstan rules ===
 
@@ -458,9 +410,7 @@ Use this file for cross-cutting judgment, planning, and change execution.
 
 ## Rules
 
-- Respect `phpstan.neon`.
 - Do not add new `ignoreErrors` entries unless root-cause fixes are exhausted.
-- Prefer real fixes over suppression.
 
 ## Verification
 
@@ -480,17 +430,9 @@ Use this file for cross-cutting judgment, planning, and change execution.
 - Tags: `spatie/laravel-tags`
 - States: `spatie/laravel-model-states`
 
-## Rule Of Thumb
-
-- If one of these packages solves the problem, use it instead of inventing a custom subsystem.
-
 === .ai/test rules ===
 
 # Testing Guidelines
-
-## Goal
-
-- Eliminate bugs.
 
 ## Parallelism
 

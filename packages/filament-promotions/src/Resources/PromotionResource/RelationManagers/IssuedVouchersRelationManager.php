@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentPromotions\Resources\PromotionResource\RelationManagers;
 
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\FilamentVouchers\Support\MoneyHelper;
 use AIArmada\Promotions\Models\Promotion;
 use AIArmada\Vouchers\Enums\VoucherType;
@@ -21,6 +22,8 @@ use Illuminate\Database\Eloquent\Model;
 
 final class IssuedVouchersRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'issuedVouchers';
 
     protected static ?string $title = 'Issued Vouchers';

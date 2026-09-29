@@ -137,7 +137,7 @@ $offer = $offerService->createOffer($site, [
 ]);
 ```
 
-Auto-generates slug if not provided. `status` defaults to `draft`.
+Auto-generates slug if not provided. New offers always land as `draft`; publishing stays an explicit operator decision.
 
 > **warning:**
 > `affiliate-network.offers.require_approval` is defined in the shipped config

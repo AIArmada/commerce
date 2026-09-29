@@ -7,6 +7,7 @@ namespace AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Rel
 use AIArmada\AffiliateNetwork\Enums\LegStatus;
 use AIArmada\AffiliateNetwork\Models\NetworkConversionLeg;
 use AIArmada\AffiliateNetwork\Services\NetworkBooks;
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Filament\Actions\Action;
 use Filament\Forms\Components\TextInput;
@@ -25,6 +26,8 @@ use Filament\Tables\Table;
  */
 final class LegsRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'legs';
 
     public function form(Schema $schema): Schema

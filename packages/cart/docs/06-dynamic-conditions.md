@@ -150,7 +150,7 @@ RulePresets::not(RulePresets::requireWeekend()); // NOT weekend
 
 ## Built-In Rules Factory
 
-The `BuiltInRulesFactory` provides 40+ factory keys for persistence:
+The `BuiltInRulesFactory` provides 40 factory keys for persistence:
 
 ```php
 // Value-based

@@ -15,8 +15,4 @@
 ## Money And Storage
 - Treat money as integer minor units plus an explicit currency code.
 - Use `commerce-support` money primitives before rolling your own: `MoneyNormalizer` for normalization, `FormatsMoney` or Akaunting `money(..., ..., false)` for display or value formatting, and package or domain `Money` objects where contracts already expect them.
-- Do not hand-roll currency display with raw `number_format()` and string concatenation when a shared formatter is available.
 - No soft deletes (`SoftDeletes`).
-
-## Verification
-- Verify both standalone install and integrated behavior.

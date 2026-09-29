@@ -125,7 +125,7 @@ Voucher::validate(string $code, mixed $cart): VoucherValidationResult
 Returns `VoucherValidationResult` with:
 - `isValid` - Boolean
 - `reason` - String (when invalid)
-- `voucher` - VoucherData (when valid)
+- `details` - Array with extra context (when invalid)
 
 ---
 
@@ -359,7 +359,7 @@ class VoucherValidationResult
 {
     public bool $isValid;
     public ?string $reason;
-    public ?VoucherData $voucher;
+    public ?array $details;
 }
 ```
 

@@ -315,8 +315,8 @@ $result = JntExpress::printOrder(
 );
 
 // For single parcels
-if (isset($result['base64Content'])) {
-    $pdfContent = base64_decode($result['base64Content']);
+if (isset($result['base64EncodeContent'])) {
+    $pdfContent = base64_decode($result['base64EncodeContent']);
     file_put_contents('waybill.pdf', $pdfContent);
 }
 
@@ -430,7 +430,7 @@ try {
     $message = $e->getMessage();
 } catch (JntApiException $e) {
     // API returned an error
-    $errorCode = $e->getErrorCode();
+    $errorCode = $e->errorCode;
     $response = $e->apiResponse;
     $endpoint = $e->endpoint;
 } catch (JntNetworkException $e) {

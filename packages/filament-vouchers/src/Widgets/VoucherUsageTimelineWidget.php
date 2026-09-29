@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Widgets;
 
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRecordOwnerContext;
 use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
@@ -18,6 +19,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Lazy;
+use Livewire\Attributes\Locked;
 
 /**
  * Displays voucher usage history as a timeline
@@ -26,6 +28,9 @@ use Livewire\Attributes\Lazy;
 #[Lazy]
 final class VoucherUsageTimelineWidget extends Widget
 {
+    use VerifiesRecordOwnerContext;
+
+    #[Locked]
     public ?Model $record = null;
 
     /** @var view-string */

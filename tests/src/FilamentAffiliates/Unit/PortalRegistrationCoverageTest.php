@@ -28,7 +28,7 @@ it('renders the correct subheading for each approval mode', function (): void {
     expect($page->getSubheading())->toBeNull();
 
     $approvalMode->setValue($page, 'open');
-    expect($page->getSubheading())->toBe('Your account will be created with pending status.');
+    expect($page->getSubheading())->toBe('Your account will be created with pending status and activated automatically after your first qualifying conversion.');
 
     $approvalMode->setValue($page, 'admin');
     expect($page->getSubheading())->toBe('Your application will be reviewed by an administrator.');

@@ -162,9 +162,16 @@ packages/tax/
     ├── Contracts/
     │   ├── TaxCalculatorInterface.php
     │   ├── TaxRateApplierInterface.php
+    │   ├── TaxZoneResolverCacheInterface.php
     │   └── TaxZoneResolverInterface.php
     ├── Data/
     │   └── TaxResultData.php        # Result DTO
+    ├── Enums/
+    │   └── ZoneType.php
+    ├── Events/
+    │   ├── TaxCalculated.php
+    │   ├── TaxExemptionApplied.php
+    │   └── TaxZoneResolved.php
     ├── Exceptions/
     │   └── TaxZoneNotFoundException.php
     ├── Facades/

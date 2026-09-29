@@ -117,9 +117,9 @@ dd(Shipping::getAvailableDrivers());
    ```php
    // Correct
    Shipment::forOwner($owner)->get();
-   
+
    // Wrong - bypasses owner scope
-   Shipment::all();
+   Shipment::withoutOwnerScope()->get();
    ```
 
 ### Labels Not Generating
@@ -162,17 +162,17 @@ dd(Shipping::getAvailableDrivers());
    ```
 2. Verify zone configuration:
    - Country zones need correct ISO codes (e.g., 'MY', not 'Malaysia')
-   - Postcode ranges need proper formatting: '40000-48000, 50000-59999'
+   - Postcode ranges use `postcode_ranges` entries shaped like `['from' => '40000', 'to' => '48000']`
    - State names must match exactly
 
-### Table Rate Returns Zero
+### Table Rate Returns Unexpected Value
 
 **Cause**: The `rate_table` tiers do not cover the parcel weight, or
 `calculation_type` is not `table`.
 
 `ShippingRate::calculateTableRate()` matches a tier when
 `min_weight <= weightGrams <= max_weight` and falls back to `base_rate` when
-`rate_table` is null or empty.
+`rate_table` is null or empty. When no tier matches, it falls back to the last tier rate.
 
 **Solution**: Make sure the tiers span the weights you ship, and that
 `calculation_type` is `table`:
@@ -219,7 +219,7 @@ Use `rate_shopping.carrier_priority` to influence selection; there is no
 Add indexes for frequently filtered columns:
 
 ```php
-Schema::table('shipping_shipments', function (Blueprint $table) {
+Schema::table('shipments', function (Blueprint $table) {
     $table->index('status');
     $table->index('carrier_code');
     $table->index(['owner_type', 'owner_id']);

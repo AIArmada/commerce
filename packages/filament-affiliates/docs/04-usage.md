@@ -24,6 +24,7 @@ Registration is config-driven:
 - `AffiliateProgramResource` (`features.admin.programs` + commission tracking enabled)
 - `AffiliateCommissionTemplateResource` (`features.admin.commission_management` + commission tracking enabled)
 - `AffiliateVolumeTierResource` (`features.admin.commission_management` + commission tracking enabled)
+- `AffiliateCreativeResource` (`features.admin.creatives`)
 - `AffiliateLinkResource` (`features.admin.links`)
 - `AffiliateTouchpointResource` (`features.admin.attribution`)
 - `AffiliateRankResource` (`features.admin.ranks`)

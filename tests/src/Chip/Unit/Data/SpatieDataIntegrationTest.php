@@ -42,10 +42,11 @@ describe('ProductCollection', function (): void {
 
         $collection = new ProductCollection($products);
 
-        // Product A: 100 * 2 = 200 cents discount
-        // Product B: 50 * 1 = 50 cents discount
-        // Total: 250 cents
-        expect($collection->getTotalDiscountInCents())->toBe(250);
+        // Discount is per-line: passed through unmultiplied.
+        // Product A: 100 cents discount
+        // Product B: 50 cents discount
+        // Total: 150 cents
+        expect($collection->getTotalDiscountInCents())->toBe(150);
     });
 
     it('returns Money object for total price', function (): void {

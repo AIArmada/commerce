@@ -40,7 +40,7 @@ trait.
 
 ## 3. Keep CHIP-specific ownership clear
 
-- `aiarmada/cashier-chip` owns the CHIP billable columns and `cashier_chip_*` tables
+- `aiarmada/cashier-chip` owns the `cashier_chip_*` tables and the CHIP billable APIs (customer links live in the `chip_customers` table; no billable columns needed)
 - `aiarmada/chip` still owns the lower-level gateway API integration and purchase primitives
 - `aiarmada/cashier` owns the gateway-agnostic wrapper when you need multi-gateway flows
 

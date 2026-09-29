@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Resources\DocResource\RelationManagers;
 
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocPayment;
@@ -26,6 +27,8 @@ use InvalidArgumentException;
 
 final class PaymentsRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'payments';
 
     protected static ?string $recordTitleAttribute = 'reference';

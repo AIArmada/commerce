@@ -24,6 +24,7 @@ Signals configuration lives in `config/signals.php`.
         'saved_reports'      => 'signal_saved_reports',
         'alert_rules'        => 'signal_alert_rules',
         'alert_logs'         => 'signal_alert_logs',
+        'alert_deliveries'   => 'signal_alert_deliveries',
     ],
 ],
 ```
@@ -181,7 +182,7 @@ with one of them would drop the sibling keys.
 ],
 ```
 
-When enabled, the currently authenticated Laravel user is automatically linked during identity capture. You can also pass `auth_user_type` / `auth_user_id` explicitly in the identify payload.
+When enabled, the currently authenticated Laravel user is automatically linked during identity capture. Auth linkage is never accepted from the payload itself.
 
 ### Geolocation
 

@@ -191,15 +191,28 @@ The directory stores links in `chip_customers` and applies owner scoping through
 // Get account balance
 $balance = Chip::getAccountBalance();
 
-// Get turnover report
+// Get turnover report (from/to are Unix timestamps; exactly one currency)
 $turnover = Chip::getAccountTurnover([
-    'from' => '2024-01-01',
-    'to' => '2024-12-31',
+    'from' => strtotime('2024-01-01'),
+    'to' => strtotime('2024-12-31'),
+    'currency' => 'MYR',
 ]);
 
 // List company statements
 $statements = Chip::listCompanyStatements();
+
+// Schedule a company statement (format must be csv or xlsx when given;
+// from/to are Unix timestamps; currency is required)
+$statement = Chip::scheduleCompanyStatement(
+    ['format' => 'csv', 'timezone' => 'UTC'],
+    ['from' => strtotime('2024-01-01'), 'to' => strtotime('2024-12-31'), 'currency' => 'MYR'],
+);
+
+// Company public key (PEM) for verifying success callbacks
+$publicKey = Chip::getPublicKey();
 ```
+
+Use the PEM with [signature verification](09-webhooks.md#signature-verification).
 
 ## CHIP Send Facade (Payouts)
 
@@ -320,6 +333,8 @@ class CompleteOrder
 - `PayoutSuccess` - Payout completed
 - `PayoutFailed` - Payout failed
 
+A registered webhook with `all_events: true` receives every event type — `WebhookData::handlesEvent($type)` returns true regardless of the `events` list. Omit it (default `false`) to subscribe to listed events only.
+
 ### Webhook envelope contract
 
 Every Collect webhook dispatches the generic `WebhookReceived` envelope first, then the typed purchase/payout event. Prefer the typed events; use the envelope only for raw routing. No consumer in `packages/customers` subscribes yet.
@@ -349,9 +364,44 @@ All typed purchase events extend abstract `AIArmada\Chip\Events\PurchaseEvent` (
 
 Canonical statuses live in `AIArmada\Chip\Enums\PurchaseStatus` (`paid`, `cleared`, `settled` are success; `pending_refund` is still processing — wait for `payment.refunded`). When mapping webhooks, the recognized event type wins over the payload status (`ChipPaymentStatusMapper::mapWebhook()`).
 
-Currency must be a three-letter ISO 4217 code, amounts are integer minor units, and quantities are integers greater than zero. Subtotal/total overrides must reconcile (`subtotal - discount + tax === total`) or creation throws `ChipValidationException`.
+Currency must be a three-letter ISO 4217 code, amounts are integer minor units, and quantities are finite numerics zero or greater, below 2^53, with at most 4 decimal places. The upper bound is a local safety limit, not a proven server maximum. The sandbox accepted a zero-quantity line in a nonzero purchase and `"1.5000"`; exponent, padded, and plus-prefixed spellings had no field errors in a mixed request that failed on a 5-decimal line (`max_decimal_places`). The client trims numeric strings and stringifies floats before emission. Line totals follow the server formula — a single half-up round per line of `(price × quantity − discount) × (1 + tax/100)` in minor units, sandbox-proven (100 x 1.555 + 100 x 1.555 totals 312). Discount is per-line: a 100/1-discount/3 line totals 299, and a discount above the unit price is accepted up to the line gross — beyond it the server 400s `product_subtotal_negative`, mirrored locally. Tax applies to the net line (0–100 with at most 5 digits and 2 decimal places — server 400s `max_digits`/`max_decimal_places` beyond that, mirrored locally), and `total_price_override` is final even with tax. Subtotal/total overrides must reconcile (`subtotal - discount + tax === total`) or creation throws `ChipValidationException`.
 
 `AIArmada\Chip\Support\PurchaseIdempotencyLedger` fails closed: replaying a key with a different payload fingerprint throws, and a key reserved without a recorded response throws until reconciled. Reserving requires an owner context when `chip.owner.enabled` is set.
+
+Breaking change: `purchase.total` is rejected on the create path. It was previously accepted when no `total_override` was set; now any create payload containing it throws `ChipValidationException` (`purchase.total is server-calculated; use total_override.`). The response field is unchanged — CHIP still calculates and returns `purchase.total`.
+
+- To pin the total, send all four overrides (`subtotal_override`, `total_discount_override`, `total_tax_override`, `total_override`); they must reconcile or creation throws. The line-item subtotal honors per-product `total_price_override` (used as-is, not multiplied by quantity) and rejects negative overrides.
+- WARNING: `->discount()` alone is a silent no-op. `total_discount_override` is visual-only — CHIP calculates `total` from `products`, so the field never changes the amount charged. The local total checks only run when `total_override` is also present; without it, a lone discount neither throws nor reduces anything. Conversely, `total_override` without the other three overrides throws `ChipValidationException`. Amounts of zero or less write nothing either.
+- Keyless checkout derivation is frozen: retries of checkouts created before this change still dedupe under their original derived key.
+- Retries of pre-change entries stored with `total` plus overrides still dedupe under the same key. Entries stored with `total` but without overrides cannot be retried under the same key (both the old and the cleaned payload throw loudly, never double-post): drop `total`, retry with a new idempotency key, and reconcile the original purchase via retrieve.
+- Whenever a key is resolved — explicit argument, `idempotency_key` payload field, `reference` fallback, or the checkout fingerprint default — the request carries it as an `Idempotency-Key` header. Keyless requests send no header. Purchase mutations accept an optional caller-supplied key the same way; statement and client operations take no key.
+- Subscription leaves forward `$data['reference']` verbatim as the key when no explicit key is passed; monthly subscriptions derive `{reference}-initial` / `{reference}-subscription` child keys. Invoices accept `idempotency_key` in `$options` (no-op when omitted). The checkout-builder path stays keyless by design.
+- Retry with the SAME key: the local ledger fails closed (same key + different payload throws instead of double-posting). The header is sent opportunistically — a 2026-09-29 sandbox probe proved the server ignores `Idempotency-Key` for purchase creation (identical replay under one key created a second purchase), so the ledger is the guarantee. Other mutation endpoints were not replay-probed.
+- `country` / `shipping_country` are deliberately NOT length-capped locally even though the spec says `maxLength: 2`: live probes show the server accepts full names (`"Malaysia"` → stored `"MY"`, `"United States of America"` → `"US"`) and rejects unknown values with `invalid_choice`, so length is not the server's rule. Prefer sending ISO alpha-2 codes (the checkout path does this by construction).
+- `debt` on responses (`PurchaseDetailsData::$debt`, a Money object) is the invoice-total adjustment CHIP applied. Request-side `debt` (`->debt()`, any sign) is added to or subtracted from the invoice total.
+
+Breaking change: a server `429 Too Many Requests` response now throws `ChipRateLimitException` (a `RuntimeException`) instead of `ChipApiException`. A `catch (ChipApiException $e)` around create/refund/charge no longer catches rate limiting. Migrate it to:
+
+```php
+use AIArmada\Chip\Exceptions\ChipApiException;
+use AIArmada\Chip\Exceptions\ChipRateLimitException;
+
+try {
+    $purchase = Chip::purchase()->customer($email)->currency('MYR')->create();
+} catch (ChipRateLimitException $e) {
+    $retryAfterSeconds = $e->getRetryAfter(); // from Retry-After, or 60
+} catch (ChipApiException $e) {
+    // ...
+}
+```
+
+HTTP-date `Retry-After` values require the weekday to match the date; a mismatched weekday falls back to 60 like any malformed value. Two-digit RFC 850 years are the exception: a weekday matching either the rule-resolved century or the tentative current-century date is accepted.
+
+### Errors
+
+Three exception types: `ChipValidationException` for local validation (bad payload, unreconciled overrides) plus server 400s on the Send path, `ChipApiException` for API failures, and `ChipRateLimitException` (a `RuntimeException`) for server 429s — catch it separately, as above.
+
+`ChipApiException` message precedence on the live clients: top-level `message`, then `error`, then CHIP's `__all__` payload, else `API request failed with status {code}`. `__all__` parses in three forms — object (`{"message", "code"}`), first-of-list, or bare message-only string. All 11 live errors sampled (2026-09-29 sandbox) carried lists; the spec's object example (:1269) is accepted but unconfirmed. The extracted `code` merges into the error data only when no top-level code is present on the Collect path (Send 400s throw before the merge). Scalar bodies (proxy text, numeric codes) degrade gracefully: a non-blank string becomes the message, anything else behaves like an empty body.
 
 ## Testing
 
@@ -465,6 +515,6 @@ When owner scoping is enabled, pass `owner:` (or `--owner-type` / `--owner-id` o
 
 ```bash
 php artisan chip:sync-from-api --purchase-id=purchase_abc --purchase-id=purchase_def
-php artisan chip:sync-from-api --status=paid --status=refunded --overwrite-existing
-php artisan chip:sync-from-api --dry-run --owner-type='App\Models\Tenant' --owner-id=tenant-uuid-1
+php artisan chip:sync-from-api --purchase-id=purchase_abc --status=paid --status=refunded --overwrite-existing
+php artisan chip:sync-from-api --purchase-id=purchase_abc --dry-run --owner-type='App\Models\Tenant' --owner-id=tenant-uuid-1
 ```

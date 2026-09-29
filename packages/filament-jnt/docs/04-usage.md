@@ -132,7 +132,7 @@ Cancel a shipping order from the view page:
 - Payment Issues (payment failed, fraud suspected)
 - Other (system error, custom reason)
 
-**Visibility**: Only shown for non-delivered, non-cancelled orders.
+**Visibility**: Only shown for cancellable orders (hidden once delivered, cancelled, or returned).
 
 ### Sync Tracking Action
 

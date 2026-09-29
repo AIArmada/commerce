@@ -155,4 +155,4 @@ That means:
 
 If an experiment and its tracked property no longer line up, the owner-safe queries intentionally hide that record from the Filament layer.
 
-For multi-tenant applications, make sure your owner resolver is configured through [`commerce-support`](../../commerce-support/docs/04-multi-tenancy.md).
+For multi-tenant applications, make sure your owner resolver is configured through [`commerce-support`](../../commerce-support/docs/14-multi-tenancy.md).

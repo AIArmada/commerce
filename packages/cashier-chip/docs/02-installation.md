@@ -31,10 +31,11 @@ return [
     // Database
     'database' => [
         'table_prefix' => env('CASHIER_CHIP_TABLE_PREFIX', 'cashier_chip_'),
-        'json_column_type' => env('CASHIER_CHIP_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'json')),
+        'json_column_type' => env('CASHIER_CHIP_JSON_COLUMN_TYPE', 'jsonb'),
         'tables' => [
             'subscriptions' => 'cashier_chip_subscriptions',
             'subscription_items' => 'cashier_chip_subscription_items',
+            'payment_methods' => 'cashier_chip_payment_methods',
             'renewal_attempts' => 'cashier_chip_renewal_attempts',
         ],
     ],
@@ -46,7 +47,7 @@ return [
     // Owner scope behavior
     'features' => [
         'owner' => [
-            'enabled' => env('CASHIER_CHIP_OWNER_ENABLED', true),
+            'enabled' => env('CASHIER_CHIP_OWNER_ENABLED', false),
             'include_global' => env('CASHIER_CHIP_OWNER_INCLUDE_GLOBAL', false),
             'auto_assign_on_create' => env('CASHIER_CHIP_OWNER_AUTO_ASSIGN_ON_CREATE', true),
             'validate_billable_owner' => env('CASHIER_CHIP_OWNER_VALIDATE_BILLABLE_OWNER', true),
@@ -153,13 +154,15 @@ longer requires gateway-specific billing columns on that model.
 
 ## Webhook Route
 
-The package automatically registers a webhook route at:
+The `aiarmada/chip` package automatically registers a webhook route at:
 
 ```
 POST /chip/webhooks
 ```
 
-Configure your CHIP dashboard to send webhooks to this URL.
+Configure your CHIP dashboard to send webhooks to this URL. Cashier CHIP
+subscribes to the typed events CHIP dispatches from that route (see
+[Webhooks](10-webhooks.md)); it registers no webhook route of its own.
 
 ### CSRF Protection
 

@@ -39,11 +39,4 @@ public function panel(Panel $panel): Panel
 ### Merchant Portal
 - Dashboard with site/offer performance
 - Offer management
-- Creative asset uploads
 - Affiliate approval workflow
-
-### Affiliate Marketplace
-- Browse available offers
-- Apply for offers
-- Generate deep tracking links
-- View performance statistics

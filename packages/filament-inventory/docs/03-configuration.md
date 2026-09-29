@@ -37,7 +37,7 @@ return [
     |--------------------------------------------------------------------------
     */
     'defaults' => [
-        // Costing method for valuation: fifo, lifo, average, specific
+        // Costing method for valuation: fifo, lifo, weighted_average, standard, specific_identification
         'costing_method' => env('FILAMENT_INVENTORY_COSTING_METHOD', 'fifo'),
     ],
 

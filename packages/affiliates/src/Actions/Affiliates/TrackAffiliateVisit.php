@@ -34,7 +34,7 @@ final class TrackAffiliateVisit
     {
         $affiliate = $this->affiliateLookup->findByCode($code);
 
-        if (! $affiliate || ! $affiliate->isActive()) {
+        if (! $affiliate || ! $affiliate->canBeAttributed()) {
             return null;
         }
 

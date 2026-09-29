@@ -48,4 +48,4 @@ keywords:
 
 ## Docs map
 - Start: `01-overview` → `03-configuration` → `04-usage` → `99-troubleshooting`
-- Deep dives: `05-pdf-generation.md`, `06-status-management.md`, `07-templates.md`, `08-tailwind-usage.md`, `index.md`
+- Deep dives: `05-pdf-generation.md`, `06-status-management.md`, `07-templates.md`, `08-tailwind-usage.md`

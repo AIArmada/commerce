@@ -68,6 +68,11 @@ return [
             'session_identifier_key' => 'sig_sid',
         ],
     ],
+
+    'metrics' => [
+        'max_assignment_rows' => 50000,
+        'max_event_rows' => 50000,
+    ],
 ];
 ```
 
@@ -322,4 +327,4 @@ return [
 
 - [Installation](./02-installation.md)
 - [Usage](./04-usage.md)
-- [`commerce-support` owner scoping docs](../../commerce-support/docs/04-multi-tenancy.md)
+- [`commerce-support` owner scoping docs](../../commerce-support/docs/14-multi-tenancy.md)

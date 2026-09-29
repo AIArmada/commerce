@@ -87,6 +87,14 @@ Invoice and receipt generation with PDF.
 composer require aiarmada/docs
 ```
 
+### authz
+
+Authorization contracts and role/permission support backing the bundled admin surfaces.
+
+```bash
+composer require aiarmada/authz
+```
+
 ## Payment & Shipping
 
 ### chip

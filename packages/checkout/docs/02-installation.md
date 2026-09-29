@@ -149,11 +149,7 @@ And enable in config:
 
 ## Verifying Installation
 
-```bash
-php artisan checkout:status
-```
-
-Or via Tinker:
+Via Tinker:
 
 ```php
 // Check service binding

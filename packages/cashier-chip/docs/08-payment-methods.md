@@ -176,6 +176,8 @@ Payment methods are stored in `cashier_chip_payment_methods` (rename via
 | Column | Type | Description |
 |--------|------|-------------|
 | `id` | uuid | Primary key |
+| `owner_type` | string nullable | Owner scope morph type when multitenancy is enabled |
+| `owner_id` | uuid nullable | Owner scope morph key when multitenancy is enabled |
 | `billable_id` | uuid | Foreign key to billable |
 | `billable_type` | string | Billable model class |
 | `owner_id` | uuid nullable | Owner scope morph key when multitenancy is enabled |

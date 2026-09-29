@@ -8,14 +8,18 @@ use AIArmada\Cart\Collections\CartConditionCollection;
 use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Conditions\ConditionProviderRegistry;
 use AIArmada\Cart\Conditions\Handlers\ConditionTypeHandlerRegistry;
+use AIArmada\Cart\Conditions\PercentageRate;
 use AIArmada\Cart\Conditions\Pipeline\ConditionPipeline;
 use AIArmada\Cart\Conditions\Pipeline\ConditionPipelineContext;
 use AIArmada\Cart\Conditions\Pipeline\ConditionPipelineFactory;
 use AIArmada\Cart\Conditions\Pipeline\ConditionPipelineResult;
 use AIArmada\Cart\Contracts\RulesFactoryInterface;
+use AIArmada\Cart\Models\CartCheckoutLineItem;
+use AIArmada\Cart\Models\CartItem;
 use AIArmada\Cart\Services\CartConditionResolver;
 use AIArmada\Cart\Services\CartFactory;
 use AIArmada\Cart\Storage\StorageInterface;
+use AIArmada\Cart\Support\CartMoney;
 use AIArmada\Cart\Traits\CalculatesTotals;
 use AIArmada\Cart\Traits\DispatchesEvents;
 use AIArmada\Cart\Traits\HasLazyPipeline;
@@ -26,9 +30,12 @@ use AIArmada\Cart\Traits\ManagesInstances;
 use AIArmada\Cart\Traits\ManagesItems;
 use AIArmada\Cart\Traits\ManagesMetadata;
 use AIArmada\Cart\Traits\ManagesStorage;
+use AIArmada\CommerceSupport\Contracts\Payment\CheckoutableInterface;
+use Akaunting\Money\Currency;
+use Akaunting\Money\Money;
 use Illuminate\Contracts\Events\Dispatcher;
 
-final class Cart
+final class Cart implements CheckoutableInterface
 {
     use CalculatesTotals;
     use DispatchesEvents;
@@ -121,6 +128,140 @@ final class Cart
             $this->eventsEnabled,
             $this->conditionResolver
         );
+    }
+
+    /**
+     * Line items for checkout. Each wrapper reports its condition-adjusted
+     * price with a zero line discount; cart-level adjustments surface on the
+     * cart's own discount term instead of being double-counted per line.
+     *
+     * @return iterable<CartCheckoutLineItem>
+     */
+    public function getCheckoutLineItems(): iterable
+    {
+        return $this->getItems()->map(
+            fn (CartItem $item): CartCheckoutLineItem => new CartCheckoutLineItem($item)
+        );
+    }
+
+    /**
+     * Subtotal over the yielded line items (price x quantity).
+     */
+    public function getCheckoutSubtotal(): Money
+    {
+        return $this->checkoutMoney($this->checkoutSubtotalMinor());
+    }
+
+    /**
+     * Net cart-level price reduction. Non-negative by construction; net
+     * surcharges surface on the tax term instead.
+     */
+    public function getCheckoutDiscount(): Money
+    {
+        return $this->checkoutMoney(max(0, $this->checkoutSubtotalMinor() - $this->checkoutTotalMinor()));
+    }
+
+    /**
+     * Net cart-level surcharge above the line-item subtotal, plus any
+     * attribute-declared line taxes the gateway applies on top of the
+     * condition-adjusted total. The cart prices adjustments through
+     * conditions, so the first term is the positive part of the net
+     * adjustment rather than a separately computed tax figure.
+     */
+    public function getCheckoutTax(): Money
+    {
+        return $this->checkoutMoney(max(0, $this->checkoutTotalMinor() - $this->checkoutSubtotalMinor()) + $this->checkoutAttributeTaxMinor());
+    }
+
+    /**
+     * Condition-adjusted total plus attribute-declared line taxes, matching
+     * what the gateway charges for the yielded line items.
+     */
+    public function getCheckoutTotal(): Money
+    {
+        return $this->checkoutMoney($this->checkoutTotalMinor() + $this->checkoutAttributeTaxMinor());
+    }
+
+    public function getCheckoutCurrency(): string
+    {
+        return CartMoney::currency();
+    }
+
+    public function getCheckoutReference(): string
+    {
+        if ($this->getId() !== null) {
+            return $this->getId();
+        }
+
+        return self::escapeReferencePart($this->getIdentifier()) . ':' . self::escapeReferencePart($this->getInstanceName());
+    }
+
+    private static function escapeReferencePart(string $part): string
+    {
+        return str_replace(['%', ':'], ['%25', '%3A'], $part);
+    }
+
+    public function getCheckoutNotes(): ?string
+    {
+        return null;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function getCheckoutMetadata(): array
+    {
+        return array_merge(
+            $this->getAllMetadata(),
+            ['identifier' => $this->getIdentifier(), 'instance' => $this->getInstanceName()]
+        );
+    }
+
+    private function checkoutSubtotalMinor(): int
+    {
+        $minor = 0;
+
+        foreach ($this->getCheckoutLineItems() as $item) {
+            $minor += (int) $item->getLineItemPrice()->getAmount() * $item->getLineItemQuantity();
+        }
+
+        return $minor;
+    }
+
+    private function checkoutTotalMinor(): int
+    {
+        // Custom pipeline processors may return negative amounts; gateways
+        // only ever receive a non-negative total.
+        return max(0, (int) $this->total()->getAmount());
+    }
+
+    /**
+     * Attribute-declared line taxes the gateway applies. Uses each checkout
+     * line's gateway-facing rate, so lines with a tax condition (already
+     * baked into the price and reported as 0.0) contribute nothing. The
+     * declared rate is mirrored verbatim per line, half-up.
+     */
+    private function checkoutAttributeTaxMinor(): int
+    {
+        $minor = 0;
+
+        foreach ($this->getCheckoutLineItems() as $item) {
+            $percent = $item->getLineItemTaxPercent();
+
+            if ($percent === 0.0) {
+                continue;
+            }
+
+            $lineMinor = (int) $item->getLineItemSubtotal()->getAmount();
+            $minor += PercentageRate::fromDecimal($percent / 100)->calculateAdjustment($lineMinor);
+        }
+
+        return $minor;
+    }
+
+    private function checkoutMoney(int $amount): Money
+    {
+        return new Money($amount, new Currency(CartMoney::currency()), false);
     }
 
     public function getConditionResolver(): CartConditionResolver

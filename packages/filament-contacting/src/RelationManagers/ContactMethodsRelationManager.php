@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentContacting\RelationManagers;
 
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\FilamentContacting\Schemas\ContactMethodFormSchema;
 use AIArmada\FilamentContacting\Support\ContactingRelationOwnerScope;
 use AIArmada\FilamentContacting\Support\GuardsContactingUi;
@@ -15,6 +16,8 @@ use Illuminate\Database\Eloquent\Builder;
 
 final class ContactMethodsRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'contactMethods';
 
     protected static ?string $title = 'Contact Methods';

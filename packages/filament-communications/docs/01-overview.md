@@ -11,10 +11,10 @@ The `aiarmada/filament-communications` package provides a Filament v5 admin inte
 - **CommunicationResource** — list and view communications with status, category, direction, and priority filters
 - **CommunicationDeliveryResource** — operational delivery list with timeline of attempts and events plus a guarded retry action for failed deliveries
 - **CommunicationThreadResource** — thread list and timeline view
-- **CommunicationTemplateResource** — create/edit templates with version management
-- **CommunicationPreferenceResource** — manage recipient channel/category preferences
-- **CommunicationSuppressionResource** — create, inspect, and lift suppressions
-- **CommunicationBatchResource** — batch progress and cancellation
+- **CommunicationTemplateResource** — list and view templates
+- **CommunicationPreferenceResource** — list and view recipient channel/category preferences
+- **CommunicationSuppressionResource** — list and inspect suppressions
+- **CommunicationBatchResource** — batch progress and cancellation status
 
 ## Principles
 

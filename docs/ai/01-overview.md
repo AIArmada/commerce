@@ -155,7 +155,7 @@ Each manifest entry is intentionally small and retrieval-friendly.
 
 - read `CONTEXT.md`,
 - read `CONTEXT-MAP.md`,
-- read `packages/commerce-support/docs/04-multi-tenancy.md`,
+- read `packages/commerce-support/docs/14-multi-tenancy.md`,
 - then read the target package overview and configuration docs.
 
 ## Notes on legacy numbering

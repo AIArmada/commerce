@@ -21,6 +21,7 @@ use AIArmada\Customers\Models\Customer;
 use AIArmada\Orders\Contracts\OrderServiceInterface;
 use AIArmada\Orders\Events\OrderPaid;
 use AIArmada\Orders\Events\OrderProcessingStarted;
+use AIArmada\Orders\Exceptions\OrderNotAwaitingPayment;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
@@ -111,6 +112,7 @@ it('prefers the typed live cart bridge and never calls the snapshot builder path
         })
         ->andReturn($order);
     $orderService->shouldReceive('createOrder')->never();
+    $orderService->shouldReceive('confirmFreeOrder')->once()->with($order)->andReturn($order);
     app()->instance(OrderServiceInterface::class, $orderService);
 
     $result = app(CreateOrderStep::class)->handle($session);
@@ -163,6 +165,7 @@ it('falls back to the snapshot builder only when the live cart is gone', functio
             return $order;
         });
     $orderService->shouldReceive('createFromCart')->never();
+    $orderService->shouldReceive('confirmFreeOrder')->once()->with($order)->andReturn($order);
     app()->instance(OrderServiceInterface::class, $orderService);
 
     $result = app(CreateOrderStep::class)->handle($session);
@@ -273,6 +276,7 @@ it('refreshes voucher-driven affiliate overrides before creating order metadata'
 
             return $order;
         });
+    $orderService->shouldReceive('confirmFreeOrder')->once()->andReturnUsing(fn (Order $order): Order => $order);
 
     app()->instance(OrderServiceInterface::class, $orderService);
 
@@ -431,4 +435,149 @@ it('fails closed when the payment amount is missing', function (): void {
 
     Event::assertNotDispatched(OrderPaid::class);
     Event::assertNotDispatched(OrderProcessingStarted::class);
+});
+
+it('confirms free orders for processing without payment', function (): void {
+    $order = new Order;
+    $order->forceFill([
+        'id' => (string) Str::uuid(),
+        'order_number' => 'ORD-FREE-CONFIRM',
+    ]);
+
+    $orderService = mock(OrderServiceInterface::class);
+    $orderService->shouldReceive('createOrder')->once()->andReturn($order);
+    $orderService->shouldReceive('confirmFreeOrder')->once()->with($order)->andReturn($order);
+    $orderService->shouldReceive('confirmPayment')->never();
+    app()->instance(OrderServiceInterface::class, $orderService);
+
+    $cartManager = mock(CartManagerInterface::class);
+    $cartManager->shouldReceive('getById')->andReturnNull();
+    app()->instance(CartManagerInterface::class, $cartManager);
+
+    $session = CheckoutSession::forceCreate([
+        'cart_id' => 'cart-free-confirm',
+        'cart_snapshot' => ['items' => []],
+        'payment_data' => ['type' => 'free_order'],
+        'subtotal' => 0,
+        'grand_total' => 0,
+        'currency' => 'MYR',
+    ]);
+    $session->transitionStatus(Processing::class);
+
+    $result = app(CreateOrderStep::class)->handle($session);
+
+    expect($result->isSuccessful())->toBeTrue();
+});
+
+it('fails the step when free order confirmation throws', function (): void {
+    $order = new Order;
+    $order->forceFill([
+        'id' => (string) Str::uuid(),
+        'order_number' => 'ORD-FREE-CONFIRM-FAIL',
+    ]);
+
+    $orderService = mock(OrderServiceInterface::class);
+    $orderService->shouldReceive('createOrder')->once()->andReturn($order);
+    $orderService->shouldReceive('confirmFreeOrder')->once()->andThrow(new RuntimeException('boom'));
+    app()->instance(OrderServiceInterface::class, $orderService);
+
+    $cartManager = mock(CartManagerInterface::class);
+    $cartManager->shouldReceive('getById')->andReturnNull();
+    app()->instance(CartManagerInterface::class, $cartManager);
+
+    $session = CheckoutSession::forceCreate([
+        'cart_id' => 'cart-free-confirm-fail',
+        'cart_snapshot' => ['items' => []],
+        'payment_data' => ['type' => 'free_order'],
+        'subtotal' => 0,
+        'grand_total' => 0,
+        'currency' => 'MYR',
+    ]);
+    $session->transitionStatus(Processing::class);
+
+    $result = app(CreateOrderStep::class)->handle($session);
+
+    expect($result->isSuccessful())->toBeFalse();
+});
+
+it('records a reconciliation mismatch when a session-marked free order owes a balance', function (): void {
+    $order = new Order;
+    $order->forceFill([
+        'id' => (string) Str::uuid(),
+        'order_number' => 'ORD-FREE-DIVERGED',
+        'grand_total' => 1000,
+        'paid_total' => 0,
+    ]);
+
+    $orderService = mock(OrderServiceInterface::class);
+    $orderService->shouldReceive('createOrder')->once()->andReturn($order);
+    $orderService->shouldReceive('confirmFreeOrder')->once()->andThrow(
+        new InvalidArgumentException('Only orders with no total can be confirmed as free orders.')
+    );
+    app()->instance(OrderServiceInterface::class, $orderService);
+
+    $cartManager = mock(CartManagerInterface::class);
+    $cartManager->shouldReceive('getById')->andReturnNull();
+    app()->instance(CartManagerInterface::class, $cartManager);
+
+    $session = CheckoutSession::forceCreate([
+        'cart_id' => 'cart-free-diverged',
+        'cart_snapshot' => ['items' => []],
+        'payment_data' => ['type' => 'free_order'],
+        'subtotal' => 0,
+        'grand_total' => 0,
+        'currency' => 'MYR',
+    ]);
+    $session->transitionStatus(Processing::class);
+
+    $result = app(CreateOrderStep::class)->handle($session);
+
+    $freshSession = $session->fresh();
+
+    expect($result->isSuccessful())->toBeFalse()
+        ->and(data_get($freshSession?->payment_data, 'free_order_reconciliation.status'))->toBe('mismatch')
+        ->and(data_get($freshSession?->payment_data, 'free_order_reconciliation.reason'))->toBe('session_free_order_mismatch')
+        ->and(data_get($freshSession?->payment_data, 'free_order_reconciliation.order_grand_total'))->toBe(1000)
+        ->and($freshSession?->error_message)->toBe('The order total changed during checkout and payment is now required.');
+});
+
+it('classifies state rejections from the exception rather than its copy of the row', function (): void {
+    $order = new Order;
+    $order->forceFill([
+        'id' => (string) Str::uuid(),
+        'order_number' => 'ORD-FREE-STATE',
+        // Deliberately stale-looking: classification must follow the
+        // exception the seam threw, not this copy of the row.
+        'grand_total' => 1000,
+        'paid_total' => 0,
+    ]);
+
+    $orderService = mock(OrderServiceInterface::class);
+    $orderService->shouldReceive('createOrder')->once()->andReturn($order);
+    $orderService->shouldReceive('confirmFreeOrder')->once()->andThrow(
+        OrderNotAwaitingPayment::forState('OnHold')
+    );
+    app()->instance(OrderServiceInterface::class, $orderService);
+
+    $cartManager = mock(CartManagerInterface::class);
+    $cartManager->shouldReceive('getById')->andReturnNull();
+    app()->instance(CartManagerInterface::class, $cartManager);
+
+    $session = CheckoutSession::forceCreate([
+        'cart_id' => 'cart-free-state',
+        'cart_snapshot' => ['items' => []],
+        'payment_data' => ['type' => 'free_order'],
+        'subtotal' => 0,
+        'grand_total' => 0,
+        'currency' => 'MYR',
+    ]);
+    $session->transitionStatus(Processing::class);
+
+    $result = app(CreateOrderStep::class)->handle($session);
+
+    $freshSession = $session->fresh();
+
+    expect($result->isSuccessful())->toBeFalse()
+        ->and(data_get($freshSession?->payment_data, 'free_order_reconciliation.reason'))->toBe('order_state_not_confirmable')
+        ->and($freshSession?->error_message)->toBe('The order cannot be confirmed for processing in its current state.');
 });

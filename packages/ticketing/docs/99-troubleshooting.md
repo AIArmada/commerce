@@ -46,34 +46,26 @@ $context = new PassIssuanceContext(
 
 ### Pass Won't Transfer
 
-**Problem**: A transfer throws `RuntimeException: Pass cannot be transferred in its current state.`
+**Problem**: `PassTransferServiceInterface::canTransfer($pass)` returns false.
 
-**Solution**: `DefaultPassTransferService::canTransfer()` requires `Pass::isValid()` and a
-transfer window that has not closed:
+**Solution**: Check the pass is valid and within its transfer window:
 
 ```php
-use AIArmada\Ticketing\Contracts\PassTransferServiceInterface;
-use AIArmada\Ticketing\Enums\PassStatus;
-use AIArmada\Ticketing\Models\Pass;
-
-$pass = Pass::query()->firstOrFail();
-
-// Terminal statuses (Used, Revoked, Voided, Expired) make isValid() false
-$status = PassStatus::from($pass->status->getValue());
-
-if ($status->isTerminal()) {
-    // Cannot transfer terminal passes
+// Must be valid (not Used, Cancelled, Revoked, Voided, or Expired)
+if (! $pass->isValid()) {
+    // Cannot transfer invalid passes
 }
 
-$pass->isValid();                                  // bool
-app(PassTransferServiceInterface::class)->canTransfer($pass); // bool
+// Must not be past transfer deadline
+if ($pass->transfer_expires_at !== null && now()->isAfter($pass->transfer_expires_at)) {
+    // Transfer window has closed
+}
 ```
 
-Check `transfer_expires_at` on the pass — it is derived from the ticketable model's
-transfer window:
+Check `transfer_expires_at` on the pass:
 
 ```php
-// The ticketable model's transferWindowEndsAt() is the source of truth
+// The ticketable model's transferWindowEndsAt() is the source of truth at issuance
 $deadline = $workshop->transferWindowEndsAt();
 ```
 
@@ -173,7 +165,7 @@ $enabled = config('ticketing.features.auto_issue_passes');
 Check the listener is registered:
 
 ```bash
-php artisan event:list | grep IssuePassesOnOrderPaid
+php artisan event:list | grep IssuePassesOnFulfillment
 ```
 
 ### Migration Issues
@@ -249,12 +241,12 @@ When reporting issues, include:
 
 ### Transfers
 - **Bulk** transfers respect `bulk_max_size` — batch larger operations
-- **Grace** period extends the transfer window in seconds
+- **Grace** period extends the transfer window in minutes
 - **Notifications** require holder email to be set
 
 ### Pricing
 - **All** prices are in minor units (e.g., cents/sen)
-- **Components** must sum to the total price
+- **Components** link child ticket types with a quantity multiplier (expanded via `ExpandTicketTypeComponentsAction`)
 - **Currency** is per-ticket-type, not inherited
 
 ## Read next

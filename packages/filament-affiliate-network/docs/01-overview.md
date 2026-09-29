@@ -36,8 +36,7 @@ The `aiarmada/filament-affiliate-network` package is the Filament admin and mark
 ## Owner scoping and security notes
 
 - The plugin should mirror the owner and relationship-scoping rules defined by `aiarmada/affiliate-network`
-- Marketplace and admin filters are not authorization; action handlers still need the backing domain package to validate application, offer, and site ownership before mutating records
-- The marketplace is intentionally public discovery. Its mutations resolve the affiliate and re-enter that affiliate's owner context; local imported offers enroll through `affiliates`' existing core program and never create a duplicate program or application
+- Admin filters are not authorization; action handlers still need the backing domain package to validate application, offer, and site ownership before mutating records
 - Merchant dashboard aggregates are current-owner scoped. Network stats and top offers are deliberate network-wide admin widgets with owner-keyed 30-second caches
 
 The `aiarmada/filament-affiliate-network` plugin provides a complete Filament v5 admin interface for managing the affiliate network marketplace.
@@ -54,7 +53,7 @@ The `aiarmada/filament-affiliate-network` plugin provides a complete Filament v5
 
 ## Relationship to Core Affiliates
 
-This plugin sits on top of `aiarmada/affiliate-network`, which in turn depends on the `Affiliate` model from `aiarmada/affiliates`.
+This plugin sits on top of `aiarmada/affiliate-network`, which optionally integrates with the `Affiliate` model from `aiarmada/affiliates` when that package is installed.
 
 The UI surfaces here manage network-specific entities such as:
 
@@ -63,7 +62,7 @@ The UI surfaces here manage network-specific entities such as:
 - offer applications
 - offer links and their aggregated metrics
 
-They do not directly write core commission or payout records. Local program enrollment delegates to `affiliates`' `ProgramService`; network discovery metrics remain separate from core commission execution.
+They do not directly write core commission or payout records; network discovery metrics remain separate from core commission execution.
 
 ## Plugin Architecture
 
@@ -144,7 +143,7 @@ The site resource provides:
 The offer resource provides:
 - Site and category selection
 - Commission configuration (percentage or fixed amount)
-- Featured and public toggles
+- Featured toggle and visibility selection (public/private/unlisted)
 - Date range scheduling
 - Quick activate/pause actions
 
@@ -162,7 +161,7 @@ The application resource provides:
 - Laravel 13+
 - Filament v5
 - `aiarmada/affiliate-network` package
-- `aiarmada/affiliates` package
+- `aiarmada/affiliates` package (optional; enables the engine-backed network seams)
 - `aiarmada/filament-affiliates` package (optional complementary UI)
 
 ## Read next

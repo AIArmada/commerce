@@ -64,8 +64,8 @@ If needed, override in your app-level published config. The package itself does 
 
 ```php
 $table = config('promotions.database.tables.promotions');
-$ownerEnabled = config('promotions.features.owner.enabled');
-$includeGlobal = config('promotions.features.owner.include_global');
+$ownerEnabled = config('promotions.owner.enabled');
+$includeGlobal = config('promotions.owner.include_global');
 ```
 
 ## Evaluation time and usage limits

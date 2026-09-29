@@ -51,11 +51,6 @@ interface ShippingDriverInterface
     public function getAvailableMethods(): Collection;
 
     /**
-     * Check if carrier services this destination.
-     */
-    public function servicesDestination(AddressData $destination): bool;
-
-    /**
      * Get rate quotes for a shipment.
      *
      * @param  array<PackageData>  $packages
@@ -95,6 +90,11 @@ interface ShippingDriverInterface
      * Validate an address.
      */
     public function validateAddress(AddressData $address): AddressValidationResult;
+
+    /**
+     * Check if driver services a destination.
+     */
+    public function servicesDestination(AddressData $destination): bool;
 }
 ```
 

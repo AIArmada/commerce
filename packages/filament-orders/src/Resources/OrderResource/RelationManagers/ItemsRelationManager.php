@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentOrders\Resources\OrderResource\RelationManagers;
 
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
 
 final class ItemsRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'items';
 
     protected static ?string $title = 'Order Items';

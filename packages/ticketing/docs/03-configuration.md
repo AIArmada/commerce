@@ -25,8 +25,15 @@ The ticketing package configuration is located in `config/ticketing.php`.
 ],
 ```
 
-`table_prefix` is only applied to `passes`, `pass_holders`, and `pass_transfers`; the
-four ticket-type tables default to unprefixed names.
+> [!warning]
+> `TICKETING_TABLE_PREFIX` now applies to all seven tables. Installs that
+> customized the prefix while relying on the four type-table defaults must
+> rename those tables — or pin the previous names via
+> `TICKETING_TICKET_TYPES_TABLE`,
+> `TICKETING_TICKET_TYPE_COMPONENTS_TABLE`,
+> `TICKETING_TICKET_TYPE_PRODUCTS_TABLE`, and
+> `TICKETING_TICKET_TYPE_SEATING_OPTIONS_TABLE`. Per-table overrides keep
+> working unchanged and take precedence.
 
 Override any table name via environment variables:
 
@@ -85,7 +92,7 @@ registrations.
 | Key | Description |
 |-----|-------------|
 | `bulk_max_size` | Maximum passes per bulk transfer operation |
-| `expiry_grace_period` | Additional seconds after transfer window closes during which transfers are still allowed |
+| `expiry_grace_period` | Additional minutes after transfer window closes during which transfers are still allowed |
 
 ## Issuance Settings
 

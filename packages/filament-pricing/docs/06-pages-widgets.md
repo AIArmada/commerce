@@ -106,7 +106,7 @@ Interactive price calculation testing tool.
 
 ### Requirements
 
-- `aiarmada/products` is optional. When it is unavailable, the page renders a disabled state instead of attempting product or variant queries.
+- `aiarmada/products` is optional. When it is unavailable, the plugin does not register the page (the page also ships a disabled placeholder for manual registration).
 - Optional: `aiarmada/customers` for customer selection
 
 ### Location

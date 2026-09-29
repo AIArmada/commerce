@@ -72,7 +72,7 @@ class PassTransfer extends Model
 
     public function getTable(): string
     {
-        return config('ticketing.database.tables.pass_transfers', 'pass_transfers');
+        return config('ticketing.database.tables.pass_transfers', 'ticket_pass_transfers');
     }
 
     protected function casts(): array

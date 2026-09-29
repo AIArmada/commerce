@@ -71,10 +71,8 @@ DB::table('chip_purchases')->count();
 **Solutions:**
 
 ```php
-// Check for paid purchases
-Purchase::where('status', 'paid')
-    ->forOwner()
-    ->count();
+// Check for paid purchases (owner scope applies automatically)
+Purchase::where('status', 'paid')->count();
 
 // Verify widget date range
 // Some widgets filter by current period (30 days, etc.)
@@ -83,6 +81,8 @@ Purchase::where('status', 'paid')
 ### Billing Portal 404
 
 **Symptom:** `/billing` returns 404.
+
+The billing portal lives in `aiarmada/filament-cashier-chip`, not here.
 
 **Causes:**
 1. `AIArmada\FilamentCashierChip\CustomerPortal\BillingPanelProvider` not registered

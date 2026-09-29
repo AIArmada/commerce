@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Resources\AffiliateResource\RelationManagers;
 
 use AIArmada\Affiliates\Enums\PayoutMethodType;
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
@@ -22,6 +23,8 @@ use Filament\Tables\Table;
 
 final class PayoutMethodsRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'payoutMethods';
 
     public function form(Schema $schema): Schema

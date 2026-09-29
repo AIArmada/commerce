@@ -105,7 +105,7 @@ Remember to also configure the core orders package:
 return [
     'database' => [
         'tables' => [...],
-        'json_column_type' => 'json',
+        'json_column_type' => 'jsonb',
     ],
     
     'currency' => [

@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Models;
 
 use AIArmada\Affiliates\Enums\CommissionType;
+use AIArmada\Affiliates\Enums\RegistrationApprovalMode;
 use AIArmada\Affiliates\Events\AffiliateActivated;
 use AIArmada\Affiliates\Events\AffiliateCreated;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;
+use AIArmada\Affiliates\States\Pending;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -30,6 +32,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use LogicException;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\ModelStates\HasStates;
 
@@ -39,6 +42,7 @@ use Spatie\ModelStates\HasStates;
  * @property string $name
  * @property string|null $description
  * @property AffiliateStatus $status
+ * @property string $registration_approval_mode
  * @property CommissionType $commission_type
  * @property int $commission_rate
  * @property string $currency
@@ -108,6 +112,7 @@ class Affiliate extends Model implements Auditable
         'name',
         'description',
         'status',
+        'registration_approval_mode',
         'commission_type',
         'commission_rate',
         'currency',
@@ -345,6 +350,22 @@ class Affiliate extends Model implements Auditable
         return $this->status instanceof Active;
     }
 
+    public function isOpenPending(): bool
+    {
+        return $this->status instanceof Pending
+            && RegistrationApprovalMode::tryFrom((string) $this->registration_approval_mode) === RegistrationApprovalMode::Open;
+    }
+
+    public function canBeAttributed(): bool
+    {
+        return $this->isActive() || $this->isOpenPending();
+    }
+
+    public function canReceivePayout(): bool
+    {
+        return $this->status instanceof Active && ! $this->isPaused();
+    }
+
     public function isDeactivated(): bool
     {
         return $this->deactivated_at !== null;
@@ -394,6 +415,16 @@ class Affiliate extends Model implements Auditable
 
         self::created(function (self $affiliate): void {
             AffiliateCreated::dispatch($affiliate);
+        });
+
+        self::updating(function (self $affiliate): void {
+            if ($affiliate->isDirty('registration_approval_mode')) {
+                throw new LogicException('The registration approval mode is immutable after creation.');
+            }
+
+            if ($affiliate->isDirty('status') && $affiliate->status instanceof Active && $affiliate->activated_at === null) {
+                $affiliate->activated_at = CarbonImmutable::now();
+            }
         });
 
         self::updated(function (self $affiliate): void {

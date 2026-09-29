@@ -11,7 +11,7 @@ patterns on top of `aiarmada/chip`.
 
 ## What this package owns
 
-- CHIP-specific billable columns and subscription tables
+- CHIP subscription tables and billable-model billing APIs (no extra billable columns needed)
 - Cashier-style customer, charge, checkout, payment method, and subscription APIs for CHIP
 - Application-managed subscription renewals and recurring-token billing flows
 - CHIP billing webhooks and test utilities for the Cashier-style layer
@@ -33,7 +33,7 @@ patterns on top of `aiarmada/chip`.
 
 - **Actions** — `ChargeChipCustomer`, `RefundChipPayment`, `CreateChipSubscription`, `CancelChipSubscription`, `SyncChipPurchaseStatus` — canonical entry points for billing operations
 - **Billable surface** — trait-based customer, payment method, checkout, charge, and subscription APIs
-- **Persistence** — `cashier_chip_*` subscription, subscription-item, payment-method, and renewal-attempt tables plus CHIP billable columns
+- **Persistence** — `cashier_chip_*` subscription, subscription-item, payment-method, and renewal-attempt tables plus CHIP customer links (via the `chip_customers` table from `aiarmada/chip`)
 - **Runtime behavior** — application-managed renewals (via `RenewSubscriptionsCommand` with `OwnerBatchRunner`), webhook processing, and local billing workflows
 - **Testing surface** — helpers and patterns for billing flows, recurring tokens, and webhook handling
 

@@ -265,7 +265,7 @@ $result = $service->syncAll($site);
 ```
 
 Upserts by `(site_id, external_program_id, subject_key)` with checksum
-skips. Imported offers land as `draft` with `source = synced`.
+skips. Imported offers land as `draft` with `source = mirrored`.
 Operator rate edits flip the lock to `manual`; later syncs hold rates back
 (`locked`) until the operator flips it back. Artisan:
 
@@ -298,17 +298,17 @@ by the corresponding Action: `OfferCreated`, `OfferUpdated`,
 > hooks:
 
 ```php
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
+use AIArmada\AffiliateNetwork\Events\ApplicationApproved;
+use AIArmada\AffiliateNetwork\Events\ApplicationSubmitted;
+use AIArmada\AffiliateNetwork\Events\NetworkConversionRecorded;
+use AIArmada\AffiliateNetwork\Events\OfferCreated;
+use AIArmada\AffiliateNetwork\Events\OfferUpdated;
 
-AffiliateOfferApplication::created(function ($application) {
-    // Notify merchant of new application
-});
-
-AffiliateOfferApplication::updated(function ($application) {
-    if ($application->wasChanged('status')) {
-        // Notify affiliate of status change
-    }
-});
+OfferCreated::class;             // (AffiliateOffer $offer)
+OfferUpdated::class;             // (AffiliateOffer $offer)
+ApplicationSubmitted::class;     // (AffiliateOfferApplication $application)
+ApplicationApproved::class;      // (AffiliateOfferApplication $application)
+NetworkConversionRecorded::class; // (AffiliateOfferLink $link, int $revenueMinor, ?string $currency, ?NetworkConversionLeg $leg)
 ```
 
 ---

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentShipping\Resources\ShippingZoneResource\RelationManagers;
 
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\FilamentShipping\Support\MoneyInput;
 use AIArmada\Shipping\Models\ShippingRate;
@@ -23,6 +24,8 @@ use Filament\Tables\Table;
 
 class RatesRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'rates';
 
     protected static ?string $recordTitleAttribute = 'name';

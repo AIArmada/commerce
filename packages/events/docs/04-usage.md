@@ -496,10 +496,11 @@ Any model attached as an organizer involvement can implement `CanOrganizeEvents`
 
 ```php
 use AIArmada\Events\Contracts\CanOrganizeEvents;
+use AIArmada\Events\Traits\CanOrganizeEvents as OrganizesEvents;
 
 class User extends Model implements CanOrganizeEvents
 {
-    use CanOrganizeEvents; // provides sensible defaults
+    use OrganizesEvents; // provides sensible defaults
 
     public function eventOrganizerName(): string
     {
@@ -563,10 +564,6 @@ Pass revocation (cancel/refund/void/expire) automatically releases the associate
 | `events.features.auto_allocate_seats` | `true` | Allocate seats on pass issuance |
 | `events.features.auto_revoke_passes_on_cancel` | `true` | Revoke passes when registration is cancelled |
 
-## Stale slug redirects
-
-When a model's slug changes, the old slug automatically issues a 308 redirect to the new URL via spatie/laravel-sluggable's self-healing URLs.
-
 ## Selling Tickets via Commerce Checkout
 
 When `aiarmada/cart`, `aiarmada/checkout`, and `aiarmada/orders` are installed, ticket types can be sold through the standard commerce checkout pipeline alongside products.
@@ -590,7 +587,7 @@ AddEventTicketTypeToCartAction::make()->handle(
 );
 ```
 
-The action validates status, sales windows, min/max quantity, and remaining quota before adding. It handles cart merging — if the same ticket type is already in the cart, quantities and participants are merged rather than overwritten. Session-scoped ticket types preserve `event_session_id` in the cart item attributes.
+The action validates status, visibility, sales windows, min/max quantity, and inventory (when configured) before adding. It handles cart merging — if the same ticket type is already in the cart, quantities and participants are merged rather than overwritten. Session-scoped ticket types preserve `event_session_id` in the cart item attributes.
 
 ### Mixed carts (tickets + products)
 
@@ -607,7 +604,7 @@ One participant entry produces one registration with one ticket item — matchin
 
 ### Quota validation
 
-Quota is checked by counting `EventRegistrationItem` quantity across capacity-blocking statuses (`pending`, `confirmed`, `checked_in`, `no_show`). Quota is not checked during checkout intent (re-entering checkout for an existing registration). The inventory package is not required; ticket capacity is self-contained.
+Scope capacity is checked via `capacityRemaining()` on the occurrence or session: configured `capacity` minus the summed `total_participants` of registrations in capacity-blocking statuses (`pending`, `confirmed`, `refund_pending`, `checked_in`). Quota is not checked during checkout intent (re-entering checkout for an existing registration). The inventory package is not required; ticket capacity is self-contained.
 
 ### Checkout intent resolver
 
@@ -624,7 +621,10 @@ StartOccurrenceCheckoutAction::make()->handle($target, $registration);
 // Returns CheckoutSession from the commerce pipeline
 ```
 
-The first argument can be either an occurrence or a session.
+The first argument can be either an occurrence or a session. The resolver
+binding itself requires the Orders fulfillment integration; without the
+checkout pipeline the null resolver is bound and the action returns null
+instead of a session.
 
 Override via config `events.integrations.checkout_intent_resolver` or by binding `EventCheckoutIntentResolver`.
 

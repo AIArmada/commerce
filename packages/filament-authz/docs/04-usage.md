@@ -172,7 +172,6 @@ class Workspace extends Model
 
 class Project extends Model
 {
-    use HasAuthzScope;
 }
 ```
 

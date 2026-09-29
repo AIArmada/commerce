@@ -158,8 +158,8 @@ action).
 ]
 ```
 
-**Supported Fields**: Any product database column
-**Supported Operators**: `=`, `!=`, `>`, `<`, `>=`, `<=`, `like`
+**Supported Fields**: The six named rules only — `price_min`, `price_max`, `type`, `category`, `tag`, `is_featured`.
+**Supported Operators**: The form has no operator input; conditions default to `=`.
 
 ---
 
@@ -172,7 +172,7 @@ action).
 3. Configure:
    - **Code**: Unique identifier (e.g., `material`, `fabric_weight`)
    - **Name**: Display name
-   - **Type**: Text, Textarea, Number, Boolean, Select, MultiSelect, Date, DateTime
+   - **Type**: Text, Textarea, Number, Boolean, Select, Multiselect, Date, Color, Media
    - **Options**: For Select/MultiSelect types
    - **Validation**: Required, filterable, visible flags
 
@@ -188,8 +188,7 @@ Organize attributes into logical groups:
 Combine groups into sets for product types:
 
 1. Create set (e.g., "Apparel", "Electronics")
-2. Assign groups to set
-3. Assign set to products
+2. Assign attributes and groups to the set
 
 ---
 
@@ -220,7 +219,7 @@ header actions on the product list table (`ProductsTable::configure()`):
 **CSV Format Requirements**:
 - UTF-8 encoding
 - Header row required
-- Prices in cents
+- Prices in major units (converted to cents on import)
 
 **Import guards**: files with more rows than `filament-products.import.max_rows`
 are rejected before any row is written. New rows require a name and a numeric
@@ -301,7 +300,7 @@ public function panel(Panel $panel): Panel
 | ProductStatsWidget | Total products, active count, draft count |
 | ProductTypeDistributionWidget | Products by type distribution |
 | CategoryDistributionChart | Categories with product counts |
-| TopSellingProductsWidget | Best-selling products by quantity |
+| TopSellingProductsWidget | Latest created products |
 
 ---
 

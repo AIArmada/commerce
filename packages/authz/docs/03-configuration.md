@@ -61,9 +61,10 @@ the provider rejects that incompatible configuration during boot.
 
 When `authz.scopes.enabled` is true, Authz sets `permission.team_resolver` to
 its scope resolver so Spatie routes team ids through `AuthzScope` records. An
-explicit host-provided `permission.team_resolver` is never overwritten. Do not
-point `permission.team_resolver` at Spatie's default resolver while scopes are
-enabled, or team-scoped role lookups will silently miss.
+unset resolver — or one still pointing at Spatie's default resolver — is
+replaced automatically; only an explicit custom `permission.team_resolver` is
+left untouched. A custom resolver that bypasses `AuthzScope` records will make
+team-scoped role lookups silently miss.
 
 ## Session Guard
 

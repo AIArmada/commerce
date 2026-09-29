@@ -171,7 +171,7 @@ $checkout->redirect(): RedirectResponse
 $checkout->owner(): ?Model
 
 // Get CHIP Purchase object
-$checkout->asChipPurchase(): Purchase
+$checkout->asChipPurchase(): PurchaseData
 
 // Convert to Payment object
 $checkout->asPayment(): Payment
@@ -250,7 +250,7 @@ $payment->requiresRedirect(): bool
 $payment->requiresCapture(): bool
 
 // Get CHIP Purchase object
-$payment->asChipPurchase(): Purchase
+$payment->asChipPurchase(): PurchaseData
 
 // Serialize
 $payment->toArray(): array

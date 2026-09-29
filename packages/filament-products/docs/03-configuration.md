@@ -58,4 +58,4 @@ Maximum upload size (kilobytes) for the product CSV import file.
 
 ## What is not configurable here
 
-This package does not currently expose config-driven resource overrides, table polling, or navigation-group customization. Those details are defined in the shipped resource and page classes.
+This package does not currently expose config-driven resource overrides or table polling. Those details are defined in the shipped resource and page classes.

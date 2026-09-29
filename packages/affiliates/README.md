@@ -26,7 +26,7 @@ php artisan migrate
 
 | Package | Outcome |
 | --- | --- |
-| `aiarmada/cart` | Adds fluent helpers such as `Cart::attachAffiliate('CODE')`, automatic metadata persistence, and conversion recording utilities. |
+| `aiarmada/cart` | Attaches affiliates from cart identity, persists discount conditions, and records conversions through cart-aware actions. |
 | `aiarmada/vouchers` | Reads voucher metadata to auto-attach affiliates, enabling voucher-driven referral programs. |
 | `aiarmada/filament-affiliates` | Filament plugin for operating affiliate programs, approvals, and analytics. |
 
@@ -42,20 +42,20 @@ Both integrations are lazy – the service provider detects presence via `class_
 
 ### Cart helpers
 
-When `aiarmada/cart` is present the package registers a manager proxy so you can call these fluent methods via the `Cart` facade:
+When `aiarmada/cart` is present, attach affiliates and record conversions through the cart-aware actions:
 
 ```php
-Cart::attachAffiliate('AIARMADA42', [
+use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateToCart;
+use AIArmada\Affiliates\Actions\Conversions\RecordAffiliateConversion;
+
+AttachAffiliateToCart::run($affiliate, $cart, [
     'utm_source' => 'newsletter',
     'landing_url' => url()->current(),
 ]);
 
-Cart::hasAffiliate(); // true
-
-Cart::recordAffiliateConversion([
+RecordAffiliateConversion::run($cart, [
     'external_reference' => 'SO-100234',
     'subtotal' => $order->subtotal_minor, // optional
-    'value_minor' => $order->total_minor,
     'total' => $order->total_minor,
 ]);
 ```
@@ -123,7 +123,7 @@ Webhook + link utilities
 
 Key options exposed via `config/affiliates.php`:
 
-- `table_names` – override table names per tenant or schema layout.
+- `database.table_prefix` / `database.tables` – override table names per tenant or schema layout.
 - `owner` – plug in a resolver to scope queries per marketplace merchant.
 - `integrations.vouchers` – attach affiliates from the voucher's native `affiliate_id` or its configured default voucher code.
 - `tracking.block_self_referral` – prevent owners/tenants from crediting their own affiliate code when they are the active owner.

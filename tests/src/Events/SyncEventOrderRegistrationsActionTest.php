@@ -42,6 +42,25 @@ it('handles repeated order lifecycle events idempotently', function (): void {
         ->and($refunded->fresh()->refunded_at)->not->toBeNull();
 });
 
+it('keeps free registrations free on fulfillment sync', function (): void {
+    $event = Event::factory()->create();
+    $free = EventRegistration::factory()->create([
+        'event_id' => $event->id,
+        'status' => 'pending',
+        'payment_status' => 'free',
+        'external_order_id' => 'order-free',
+        'external_order_type' => 'order',
+    ]);
+
+    $action = app(SyncEventOrderRegistrationsAction::class);
+
+    expect($action->handle('order-free', 'order', 'free'))->toBe(1)
+        ->and($action->handle('order-free', 'order', 'free'))->toBe(1);
+
+    expect($free->fresh()->status->getValue())->toBe('confirmed')
+        ->and($free->fresh()->payment_status)->toBe('free');
+});
+
 it('rejects unsupported order event types', function (): void {
     expect(fn () => app(SyncEventOrderRegistrationsAction::class)->handle('order', 'order', 'unknown'))
         ->toThrow(InvalidArgumentException::class);

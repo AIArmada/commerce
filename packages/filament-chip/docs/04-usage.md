@@ -121,6 +121,7 @@ Manage disbursements and payouts.
 | accepted | Accepted |
 | completed | Completed |
 | rejected | Rejected |
+| deleted | Deleted |
 
 ## Extending Resources
 

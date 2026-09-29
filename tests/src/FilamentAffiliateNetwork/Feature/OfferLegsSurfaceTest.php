@@ -86,13 +86,16 @@ describe('offer legs surface', function (): void {
         $action->record($leg);
         $action->call(['data' => ['reason' => 'refund']]);
 
+        // Companions are keyed by original leg (reason lives in metadata),
+        // so look up by reverses_id like NetworkBooks::findCompanionLeg.
         $companion = NetworkConversionLeg::query()
-            ->where('external_reference', $leg->external_reference . ':reversal:refund')
+            ->where('metadata->reverses_id', (string) $leg->getKey())
             ->first();
 
         expect($leg->fresh()->status)->toBe(LegStatus::Reversed)
             ->and($companion)->not->toBeNull()
-            ->and($companion->metadata['reverses_id'] ?? null)->toBe((string) $leg->getKey());
+            ->and($companion->metadata['reverses_id'] ?? null)->toBe((string) $leg->getKey())
+            ->and($companion->metadata['reversal_reason'] ?? null)->toBe('refund');
     });
 
     test('offers table exposes the platform fee column', function (): void {

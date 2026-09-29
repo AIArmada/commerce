@@ -146,6 +146,7 @@ Create a test customer to verify installation:
 
 ```php
 use AIArmada\Customers\Enums\CustomerStatus;
+use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Customers\Models\Customer;
 
 $customer = Customer::create([
@@ -158,6 +159,8 @@ $customer = Customer::create([
 // `status` is not fillable and is cast to the CustomerStatus enum:
 $customer->status = CustomerStatus::Active;
 $customer->save();
+
+$customer->addContactMethod(ContactMethodData::email('test@example.com'));
 ```
 
 Then visit the Customers resource in your Filament panel.

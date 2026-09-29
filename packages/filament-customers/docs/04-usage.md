@@ -61,7 +61,7 @@ Contact methods are edited in the Contact Methods relation manager supplied by
 
 **Status Sidebar:**
 ```php
-- Status dropdown (Active/Inactive/Suspended/Pending)
+- Status dropdown (Active/Inactive/Suspended/Pending Verification)
 ```
 
 **Segments Sidebar:**

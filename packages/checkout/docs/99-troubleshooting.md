@@ -224,27 +224,42 @@ the full interface.
 ### Test Checkout Flow
 
 ```php
+use AIArmada\Cart\Facades\Cart;
+use AIArmada\Checkout\Facades\Checkout;
+
 test('completes checkout successfully', function () {
-    $cart = Cart::create([...]);
-    $session = Checkout::startCheckout($cart->id);
-    
+    Cart::setIdentifier('checkout-flow-cart');
+    Cart::add('sku-1', 'Test Item', 1500, 1);
+
+    $session = Checkout::startCheckout(Cart::getId());
     $result = Checkout::processCheckout($session);
-    
+
     expect($result->success)->toBeTrue()
         ->and($result->orderId)->not->toBeNull();
 });
 ```
 
+Carts are manager-backed: `setIdentifier()` plus `add()` is the create
+operation, and `getId()` returns the id `startCheckout()` resolves. Use a
+unique identifier per test (the manager holds process-global state), keep
+the cart non-empty (`startCheckout` rejects empty carts), and use
+database-backed cart storage (`getById()` short-circuits to null on
+other drivers, so `startCheckout` cannot resolve the cart).
+
 ### Test Step Failure
 
 ```php
+use AIArmada\Cart\Facades\Cart;
+use AIArmada\Checkout\Facades\Checkout;
+
 test('handles inventory exception gracefully', function () {
-    // Create cart with out-of-stock item
-    $cart = Cart::create([...]);
-    
-    $session = Checkout::startCheckout($cart->id);
-    
-    expect(fn() => Checkout::processCheckout($session))
+    // Seed a cart with an out-of-stock item
+    Cart::setIdentifier('out-of-stock-cart');
+    Cart::add('sku-oos', 'Out of Stock Item', 1500, 1);
+
+    $session = Checkout::startCheckout(Cart::getId());
+
+    expect(fn () => Checkout::processCheckout($session))
         ->toThrow(InventoryException::class);
 });
 ```

@@ -72,6 +72,7 @@ use AIArmada\Cart\Facades\Cart;
 
 Cart::setMetadata('shipping_address', [
     'name' => 'John Doe',
+    'phone' => '+60123456789',
     'line1' => '456 Customer Ave',
     'city' => 'Petaling Jaya',
     'state' => 'Selangor',
@@ -270,7 +271,7 @@ echo $label->url;      // label URL
 echo $label->content;  // raw label content (base64 for binary formats)
 
 // Save to disk
-file_put_contents('label.pdf', base64_decode((string) $label->content));
+file_put_contents('label.pdf', $label->getDecodedContent());
 ```
 
 ## Cancelling Shipments
@@ -296,6 +297,7 @@ use AIArmada\Shipping\Models\ShippingZone;
 // Country-based zone
 $zone = ShippingZone::create([
     'name' => 'Malaysia',
+    'code' => 'MY',
     'type' => 'country',
     'countries' => ['MY'],
     'active' => true,
@@ -304,6 +306,7 @@ $zone = ShippingZone::create([
 // State-based zone
 $zone = ShippingZone::create([
     'name' => 'West Malaysia',
+    'code' => 'MY-WEST',
     'type' => 'state',
     'countries' => ['MY'],
     'states' => ['Selangor', 'Kuala Lumpur', 'Penang'],
@@ -313,9 +316,10 @@ $zone = ShippingZone::create([
 // Postcode-based zone
 $zone = ShippingZone::create([
     'name' => 'Klang Valley',
+    'code' => 'MY-KLANG-VALLEY',
     'type' => 'postcode',
     'countries' => ['MY'],
-    'postcode_ranges' => '40000-48000, 50000-59999, 68000-68100',
+    'postcode_ranges' => [['from' => '40000', 'to' => '48000'], ['from' => '50000', 'to' => '59999']],
     'active' => true,
 ]);
 ```
@@ -348,15 +352,17 @@ $rate = $zone->rates()->create([
 // Per-kg rate
 $rate = $zone->rates()->create([
     'name' => 'Heavy Items',
+    'method_code' => 'heavy',
     'calculation_type' => 'per_kg',
-    'base_rate' => 500,     // RM5.00 base
-    'per_unit_rate' => 200, // RM2.00 per kg
+    'base_rate' => 500,     // RM5.00 base (covers the first kg)
+    'per_unit_rate' => 200, // RM2.00 per additional kg
     'active' => true,
 ]);
 
 // Table-based rate (weight tiers)
 $rate = $zone->rates()->create([
     'name' => 'Tiered Shipping',
+    'method_code' => 'tiered',
     'calculation_type' => 'table',
     'base_rate' => 500, // Fallback rate
     'rate_table' => [

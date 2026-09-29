@@ -67,7 +67,7 @@ windows that have lapsed; add it to `routes/console.php`:
 ```php
 use Illuminate\Support\Facades\Schedule;
 
-Schedule::command('ticketing:expire-transfers')->daily();
+Schedule::command('ticketing:expire-transfers')->hourly();
 ```
 
 ## Optional Dependencies

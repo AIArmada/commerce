@@ -257,6 +257,8 @@ return [
 
     'events' => [
         'dispatch_attributed' => env('AFFILIATES_EVENT_ATTRIBUTED', true),
+        // Open-registration auto-approval listens for this event: disabling
+        // it leaves open-mode affiliates pending forever.
         'dispatch_conversion' => env('AFFILIATES_EVENT_CONVERSION', true),
         'dispatch_webhooks' => env('AFFILIATES_EVENT_WEBHOOKS', false),
     ],
@@ -436,9 +438,10 @@ return [
 
     'registration' => [
         'enabled' => env('AFFILIATES_REGISTRATION_ENABLED', true),
-        'approval_mode' => env('AFFILIATES_REGISTRATION_APPROVAL_MODE', 'admin'), // auto | open | admin
+        'approval_mode' => env('AFFILIATES_REGISTRATION_APPROVAL_MODE', 'admin'), // auto | open | admin; read at signup, snapshotted per affiliate
         'default_commission_type' => env('AFFILIATES_REGISTRATION_COMMISSION_TYPE', 'percentage'),
         'default_commission_rate' => env('AFFILIATES_REGISTRATION_COMMISSION_RATE', 1000), // 10% in basis points
+        'open_approval_min_commission_minor' => env('AFFILIATES_OPEN_APPROVAL_MIN_COMMISSION', 0), // qualifying conversion must exceed this
     ],
 
     /*

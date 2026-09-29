@@ -121,10 +121,13 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 class User extends Authenticatable implements BillableContract
 {
     use Billable;
-    
+
     // ...
 }
 ```
+
+See the [filament-cashier-chip installation guide](../../filament-cashier-chip/docs/02-installation.md)
+for portal configuration (`config/filament-cashier-chip.php`).
 
 ## Multi-Panel Setup
 

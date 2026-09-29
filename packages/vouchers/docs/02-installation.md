@@ -79,7 +79,7 @@ Global commerce variables that also apply:
 |----------|---------|-------------|
 | `COMMERCE_TABLE_PREFIX` | `''` | Fallback table prefix when `VOUCHERS_TABLE_PREFIX` is unset |
 | `COMMERCE_JSON_COLUMN_TYPE` | unset | Overrides the JSON column type for every commerce package |
-| `COMMERCE_OWNER_RESOLVER` | `AIArmada\CommerceSupport\Contracts\NullOwnerResolver` | Owner resolver used when owner mode is enabled |
+| `COMMERCE_OWNER_RESOLVER` | `AIArmada\CommerceSupport\Support\NullOwnerResolver` | Owner resolver used when owner mode is enabled |
 
 ## Verification
 

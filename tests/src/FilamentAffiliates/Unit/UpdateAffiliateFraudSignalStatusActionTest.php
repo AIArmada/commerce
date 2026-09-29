@@ -2,15 +2,22 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
+use AIArmada\Affiliates\Actions\Payouts\CreatePayout;
 use AIArmada\Affiliates\Enums\FraudSeverity;
 use AIArmada\Affiliates\Enums\FraudSignalStatus;
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateFraudSignal;
 use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\ApprovedConversion;
+use AIArmada\Affiliates\States\PendingConversion;
+use AIArmada\Affiliates\States\RejectedConversion;
 use AIArmada\Authz\Models\Permission;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentAffiliates\Actions\UpdateAffiliateFraudSignalStatus;
+use Filament\Notifications\Notification;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Str;
@@ -255,4 +262,148 @@ it('confirms fraud signal with review notes when requested', function (): void {
     expect($signal->status)->toBe(FraudSignalStatus::Confirmed)
         ->and($signal->evidence)->toBeArray()
         ->and($signal->evidence['review_notes'])->toBe('Confirmed by risk analyst');
+});
+
+it('rejecting the linked conversion voids its holding', function (): void {
+    $owner = User::create([
+        'name' => 'Fraud Action Voider',
+        'email' => 'fraud-action-voider@example.com',
+        'password' => 'secret',
+    ]);
+
+    OwnerContext::withOwner($owner, function () use ($owner): void {
+        Permission::firstOrCreate(['name' => 'affiliates.fraud.update', 'guard_name' => 'web']);
+        $owner->givePermissionTo('affiliates.fraud.update');
+    });
+
+    $this->actingAs($owner);
+
+    [$signal, $conversion, $affiliate] = OwnerContext::withOwner($owner, function (): array {
+        $affiliate = Affiliate::create([
+            'code' => 'AFF-' . Str::uuid(),
+            'name' => 'Void Scoped Affiliate',
+            'status' => Active::class,
+            'commission_type' => 'percentage',
+            'commission_rate' => 500,
+            'currency' => 'USD',
+        ]);
+
+        $conversion = AffiliateConversion::create([
+            'affiliate_id' => $affiliate->getKey(),
+            'affiliate_code' => $affiliate->code,
+            'subtotal_minor' => 50000,
+            'value_minor' => 50000,
+            'commission_minor' => 5000,
+            'commission_currency' => 'USD',
+            'status' => PendingConversion::class,
+            'occurred_at' => now()->subDay(),
+        ]);
+
+        app(ApplyConversionAccounting::class)->handle($conversion);
+
+        $signal = AffiliateFraudSignal::create([
+            'affiliate_id' => $affiliate->getKey(),
+            'conversion_id' => $conversion->getKey(),
+            'rule_code' => 'pattern',
+            'risk_points' => 90,
+            'severity' => FraudSeverity::Critical,
+            'description' => 'Pattern anomaly',
+            'status' => FraudSignalStatus::Detected,
+            'detected_at' => now(),
+        ]);
+
+        return [$signal, $conversion, $affiliate];
+    });
+
+    OwnerContext::withOwner($owner, function () use ($signal, $conversion, $affiliate): void {
+        UpdateAffiliateFraudSignalStatus::run($signal, FraudSignalStatus::Confirmed, null, true);
+
+        expect($signal->fresh()->status)->toBe(FraudSignalStatus::Confirmed)
+            ->and($conversion->fresh()->status->equals(RejectedConversion::class))->toBeTrue();
+
+        $balance = $affiliate->balanceFor('USD')->fresh();
+
+        expect($balance->holding_minor)->toBe(0)
+            ->and($balance->available_minor)->toBe(0)
+            ->and($balance->lifetime_earnings_minor)->toBe(0);
+    });
+});
+
+it('keeps the review when the linked conversion is reserved by an open payout', function (): void {
+    $owner = User::create([
+        'name' => 'Fraud Action Reserved',
+        'email' => 'fraud-action-reserved@example.com',
+        'password' => 'secret',
+    ]);
+
+    OwnerContext::withOwner($owner, function () use ($owner): void {
+        Permission::firstOrCreate(['name' => 'affiliates.fraud.update', 'guard_name' => 'web']);
+        $owner->givePermissionTo('affiliates.fraud.update');
+    });
+
+    $this->actingAs($owner);
+
+    [$signal, $conversion, $payoutId] = OwnerContext::withOwner($owner, function (): array {
+        $affiliate = Affiliate::create([
+            'code' => 'AFF-' . Str::uuid(),
+            'name' => 'Reserved Scoped Affiliate',
+            'status' => Active::class,
+            'commission_type' => 'percentage',
+            'commission_rate' => 500,
+            'currency' => 'USD',
+        ]);
+
+        $conversion = AffiliateConversion::create([
+            'affiliate_id' => $affiliate->getKey(),
+            'affiliate_code' => $affiliate->code,
+            'subtotal_minor' => 50000,
+            'value_minor' => 50000,
+            'commission_minor' => 5000,
+            'commission_currency' => 'USD',
+            'status' => ApprovedConversion::class,
+            'occurred_at' => now()->subDay(),
+        ]);
+
+        app(ApplyConversionAccounting::class)->handle($conversion);
+
+        $signal = AffiliateFraudSignal::create([
+            'affiliate_id' => $affiliate->getKey(),
+            'conversion_id' => $conversion->getKey(),
+            'rule_code' => 'pattern',
+            'risk_points' => 90,
+            'severity' => FraudSeverity::Critical,
+            'description' => 'Pattern anomaly',
+            'status' => FraudSignalStatus::Detected,
+            'detected_at' => now(),
+        ]);
+
+        $payout = CreatePayout::run([$conversion->getKey()]);
+
+        return [$signal, $conversion, (string) $payout->getKey()];
+    });
+
+    OwnerContext::withOwner($owner, function () use ($signal, $conversion, $payoutId): void {
+        UpdateAffiliateFraudSignalStatus::run($signal, FraudSignalStatus::Confirmed, 'Analyst notes kept', true);
+
+        // The review commits; only the linked rejection is refused.
+        expect($signal->fresh()->status)->toBe(FraudSignalStatus::Confirmed)
+            ->and($signal->fresh()->evidence['review_notes'])->toBe('Analyst notes kept')
+            ->and($conversion->fresh()->status->equals(ApprovedConversion::class))->toBeTrue();
+
+        // Read the flash before assertNotified: mounting the
+        // notifications component consumes it.
+        $bodies = collect(session('filament.notifications', []))->pluck('body')->filter()->all();
+
+        expect($bodies)->not->toBeEmpty();
+
+        Notification::assertNotified('Review saved; linked conversion kept');
+
+        foreach ($bodies as $body) {
+            if (str_contains((string) $body, $payoutId)) {
+                return;
+            }
+        }
+
+        $this->fail('No notification body points at the blocking payout.');
+    });
 });

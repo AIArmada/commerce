@@ -221,3 +221,13 @@ Widgets format money through `AIArmada\FilamentVouchers\Support\MoneyHelper::for
 ## Owner Scoping
 
 All widgets respect owner scoping when `vouchers.owner.enabled` is `true`. They will only display data belonging to the resolved owner. Global vouchers use `null` owner columns (`owner_type` and `owner_id`), not empty strings.
+
+All five record widgets (`AppliedVouchersWidget`, `QuickApplyVoucherWidget`,
+`VoucherSuggestionsWidget`, `VoucherUsageTimelineWidget`,
+`VoucherCartStatsWidget`) additionally use `VerifiesRecordOwnerContext` (from
+`commerce-support`): each record is re-verified against the current owner scope
+on every Livewire request, and a mid-session owner change clears the record so
+the widget renders empty instead of stale cross-owner data. Record props are
+`#[Locked]` against client-side tampering. See
+[Multi-tenancy](../../commerce-support/docs/14-multi-tenancy.md#livewire-record-components)
+for the shared contract.

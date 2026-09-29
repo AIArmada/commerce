@@ -175,10 +175,12 @@ When owner mode is enabled, the attach record picker only offers addresses owned
 Only enable this for trusted admin panels.
 
 ```php
-'addresses' => [
-    'enabled' => true,
-    'read_only' => false,
-    'model' => \AIArmada\Addressing\Models\Address::class,
+'resources' => [
+    'addresses' => [
+        'enabled' => true,
+        'read_only' => false,
+        'model' => \AIArmada\Addressing\Models\Address::class,
+    ],
 ],
 ```
 

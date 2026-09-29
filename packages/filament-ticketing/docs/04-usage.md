@@ -26,20 +26,18 @@ The form includes:
 
 ### Managing Components
 
-The ticket type edit page has a **Components** relation manager (relationship `components`)
-that links the ticket type to other component ticket types:
+The components relation manager lists linked child ticket types read-only:
 
-- **Component** — The component ticket type
-- **Quantity** — How many of that component are included
+- **Component** — Linked child ticket type name
+- **Quantity** — Multiplier applied when expanding via `ExpandTicketTypeComponentsAction`
 
 ### Linking Bundle Products
 
-The ticket type edit page has a **Products** relation manager (relationship `bundleProducts`).
-It lists the linked products and requires `aiarmada/products` in the host application:
+The bundle products relation manager lists linked products read-only (requires `aiarmada/products`):
 
-- **Product** — The linked product
-- **Quantity** — How many are included
-- **Inclusion Mode** — `required` or `optional`
+- **Product** — Linked product name
+- **Quantity** — How many to auto-add to cart
+- **Inclusion Mode** — Required or optional bundle behavior
 
 ### Managing ticket types on host resources
 
@@ -92,6 +90,8 @@ The pass view page shows one `Pass Details` section with the pass no, ticket typ
 name and email, QR code, barcode, status, status reason, and the `issued_at`,
 `activated_at`, `used_at`, `cancelled_at`, `revoked_at`, `voided_at`, `expired_at`, and
 `transfer_expires_at` timestamps.
+
+Use **Ticketing > Pass Transfers** for the read-only transfer audit log.
 
 ## Viewing Pass Holders
 

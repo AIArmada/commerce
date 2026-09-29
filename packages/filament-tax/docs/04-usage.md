@@ -82,7 +82,7 @@ Zone bulk mutations are revalidated server-side with `OwnerWriteGuard` using own
 | countries | TagsInput | No | ISO country codes |
 | states | TagsInput | No | State/province codes |
 | postcodes | TagsInput | No | Postcode patterns (`43*`, `40000-49999`) |
-| priority | TextInput | No | Resolution priority (default: 10) |
+| priority | TextInput | No | Resolution priority (default: 0) |
 | is_active | Toggle | No | Enable/disable zone |
 | is_default | Toggle | No | Use as fallback zone |
 

@@ -14,11 +14,11 @@ When the `aiarmada/inventory` package is installed, checkout automatically manag
 
 1. **Stock Validation**: Before reserving, the `ReserveInventoryStep` validates that sufficient stock exists for all cart items.
 
-2. **Reservation**: Stock is reserved using the cart ID (`$session->cart_id`) as the reference. Reservations prevent overselling while the customer completes payment.
+2. **Reservation**: Stock is reserved using the cart ID as the reference. Reservations prevent overselling while the customer completes payment.
 
-3. **Commitment**: Checkout does not commit reservations. `aiarmada/inventory` commits the allocation itself — `CommitInventoryOnPayment` listens for `PaymentConfirmed`, and `DeductInventoryFromOrder` listens for the orders package's `InventoryDeductionRequired`. `InventoryAdapter::commit()` exists as a seam but has no checkout caller.
+3. **Deduction**: After successful payment, stock deduction flows through the orders package (`PaymentConfirmed` → `OrderProcessingStarted` → `InventoryDeductionRequired`), not through checkout. Free orders take the parallel `FreeOrderConfirmed` → `OrderProcessingStarted` path, which deducts stock without a payment record or `OrderPaid` event.
 
-4. **Rollback**: If checkout fails or is cancelled, `ReserveInventoryStep::compensate()` releases the reservation group (honouring `release_on_failure`).
+4. **Rollback**: If checkout fails or is cancelled, reservations are automatically released via step compensation.
 
 ### Configuration
 

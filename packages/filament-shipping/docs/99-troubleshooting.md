@@ -241,5 +241,5 @@ Check carrier is configured in shipping drivers:
 
 1. Check Laravel logs: `storage/logs/laravel.log`
 2. Enable Filament debug mode
-3. Review the [shipping package docs](../shipping/01-overview.md)
+3. Review the [shipping package docs](../../shipping/docs/01-overview.md)
 4. Open an issue on [GitHub](https://github.com/aiarmada/commerce/issues)

@@ -17,7 +17,7 @@ Add the wrapper trait and the traits from the gateway packages you actually inst
 namespace App\Models;
 
 use AIArmada\Cashier\Concerns\Billable as CashierBillable;
-use AIArmada\CashierChip\Billable as ChipBillable;
+use AIArmada\CashierChip\Billing\Billable as ChipBillable;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Cashier\Billable as StripeBillable;
 

@@ -124,7 +124,7 @@ app(CancelOrder::class)->execute(
     canceledBy: (string) auth()->id(),
 );
 
-// Complete (marks as delivered)
+// Complete (marks as completed)
 app(CompleteOrder::class)->execute($order);
 ```
 
@@ -160,11 +160,23 @@ Available through the service:
 |--------|-------------|
 | `createOrder()` | `CreateOrder` |
 | `createFromCart()` | `CreateOrderFromCart` |
-| `cancel()` | `CancelOrder` |
+| `cancel()` | `OrderCanceled` transition |
 | `confirmPayment()` | `RegisterOrderPayment` |
+| `confirmFreeOrder()` | `FreeOrderConfirmed` transition |
 | `processRefund()` | `RegisterOrderRefund` |
-| `ship()` | Via `OrderHandlerRegistrar` |
-| `confirmDelivery()` | `CompleteOrder` |
+| `ship()` | `ShipmentCreated` transition |
+| `confirmDelivery()` | `DeliveryConfirmed` transition |
+| `complete()` | `OrderCompleted` transition |
+
+### Confirming free orders
+
+```php
+use AIArmada\Orders\Contracts\OrderServiceInterface;
+
+$order = $orderService->confirmFreeOrder($order); // Created/PendingPayment → Processing
+```
+
+Use this only for orders with `grand_total <= 0` and `paid_total === 0`. Paid, partially paid, and balance-owing Processing orders are rejected with `InvalidArgumentException`; held, canceled, or failed orders throw the `OrderNotAwaitingPayment` subclass. On success the order moves to Processing and stock deduction is scheduled after commit; no payment record, `paid_at`, or `OrderPaid` event is produced. See the [state machine](05-state-machine.md) for the full contract and known limitations.
 
 ## Working with Models Directly
 
@@ -241,7 +253,7 @@ if ($order->isFullyPaid()) {
 
 ## Fulfillment & Addresses
 
-Orders are carrier-agnostic: pass an explicit carrier string to `ship()` — no carrier is hardcoded. Fulfillment resolves through the `AIArmada\Orders\Contracts\FulfillmentHandler` contract registered via `AIArmada\Orders\Support\OrderHandlerRegistrar` (the shipping package auto-registers its handler when installed).
+Orders are carrier-agnostic: pass an explicit carrier string to `ship()` — no carrier is hardcoded. `ship()` runs the `ShipmentCreated` transition, which records the carrier and tracking number in order metadata. Carrier API operations go through the `AIArmada\Orders\Contracts\FulfillmentHandler` contract, which the shipping package binds in the container when installed.
 
 ```php
 use AIArmada\Orders\Services\OrderService;
@@ -266,7 +278,7 @@ The package dispatches events during order lifecycle:
 | `OrderCanceled` | Order was canceled |
 | `OrderRefunded` | Refund was processed |
 | `OrderPaymentFailed` | Payment attempt failed |
-| `InventoryDeductionRequired` | Inventory reservation needed |
+| `InventoryDeductionRequired` | Inventory deduction needed |
 | `InventoryReleaseRequired` | Inventory release needed |
 | `CommissionAttributionRequired` | Commission attribution needed |
 
@@ -300,6 +312,34 @@ class SendOrderConfirmation
     }
 }
 ```
+
+## Outbox (Relay & Sweep)
+
+`PaymentConfirmed` and `FreeOrderConfirmed` stage one outbox row per replayable event in the same transaction as the state change. The live after-commit dispatch marks rows relayed; anything it misses (crash between commit and dispatch) is recovered by the relay. Delivery is at-least-once, so every consumer of the replayable events is idempotent: inventory deduction, pass issuance, event registration sync, promotion usage counting, and commission attribution.
+
+Run the relay frequently (every minute) and the sweep less often (hourly):
+
+```php
+// routes/console.php
+use AIArmada\Orders\Actions\Outbox\RelayOrderOutbox;
+use AIArmada\Orders\Actions\Outbox\SweepOrderOutbox;
+
+Schedule::command(RelayOrderOutbox::class)->everyMinute();
+Schedule::command(SweepOrderOutbox::class)->hourly();
+```
+
+Or run them directly:
+
+```bash
+php artisan orders:outbox-relay --limit=100
+php artisan orders:outbox-sweep
+```
+
+Both entrypoints are [Laravel Actions](https://www.laravelactions.com/): call `RelayOrderOutbox::run()` / `SweepOrderOutbox::run()` from code to get result counts, or run the artisan signatures above (same class, command entrypoint).
+
+The sweep requeues rows stuck in `relaying` past the claim timeout, purges `relayed` history past retention, and reports `dead` rows. Dead rows need operator review — the sweep never repairs or invents rows.
+
+Lifecycle suppression: cancelling an order, completing a full refund, or flagging it as fraud terminally suppresses that order's unrelayed rows in the same transaction (`suppressed`, with the reason in `last_error`), so replay can never fulfill after cancel/refund cleanup ran or while an order is under investigation. Partial refunds leave staged rows untouched. The relay additionally re-validates the order lifecycle under a row lock after claiming each row and holds that lock through dispatch, so a cancel landing mid-relay either suppresses first or cleans up after — replay can never overtake cleanup. Suppressed rows are terminal and need no operator review.
 
 ## Order Documents
 

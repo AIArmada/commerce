@@ -45,7 +45,7 @@ Verify the class exists:
 class_exists(\Laravel\Cashier\Cashier::class); // Should return true
 
 // For CHIP
-class_exists(\AIArmada\CashierChip\Facades\CashierChip::class); // Should return true
+class_exists(\AIArmada\CashierChip\Billing\Cashier::class); // Should return true
 ```
 
 ## Dashboard Issues

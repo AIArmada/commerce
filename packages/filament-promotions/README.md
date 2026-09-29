@@ -58,14 +58,6 @@ return [
             'promotions' => 10,
         ],
     ],
-
-    'tables' => [
-        'poll' => null,
-    ],
-
-    'features' => [
-        'widgets' => true,
-    ],
 ];
 ```
 
@@ -78,16 +70,15 @@ The plugin provides a `PromotionResource` with:
 - **List View** — Table with search, filters, and bulk actions
 - **Create View** — Form to create new promotions
 - **Edit View** — Update existing promotions
-- **View View** — Detailed promotion information
 
 ### Promotion Types
 
-The Filament-aware `PromotionType` enum includes:
+The domain `PromotionType` enum (`aiarmada/promotions`) includes:
 
 | Type | Label | Icon | Color |
 |------|-------|------|-------|
 | `Percentage` | Percentage Off | receipt-percent | success |
-| `Fixed` | Fixed Amount | currency-dollar | info |
+| `Fixed` | Fixed Amount | currency-dollar | primary |
 
 ### Stats Widget
 

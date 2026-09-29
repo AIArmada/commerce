@@ -246,6 +246,9 @@ abstract class TestCase extends Orchestra
         // Set USD currency for consistent test formatting
         $app['config']->set('cart.money.default_currency', 'USD');
 
+        // Pin registration mode so suites never inherit ambient env values
+        $app['config']->set('affiliates.registration.approval_mode', 'admin');
+
         // Use in-memory SQLite for testing
         $app['config']->set('database.connections.testing', [
             'driver' => 'sqlite',
@@ -399,11 +402,19 @@ abstract class TestCase extends Orchestra
             'manual_channel' => 'manual',
         ]);
 
+        // Pin stacking mode so suites never inherit ambient env values
+        // (VOUCHERS_STACKING_MODE from a local .env would otherwise change behavior).
+        $app['config']->set('vouchers.stacking.mode', 'sequential');
+
         // Configure affiliate-network settings for testing
         $app['config']->set('affiliate-network.owner.enabled', false);
         $app['config']->set('affiliate-network.owner.include_global', false);
         $app['config']->set('affiliate-network.owner.auto_assign_on_create', true);
         $app['config']->set('affiliate-network.database.table_prefix', 'affiliate_network_');
+
+        // Pin the default take-rate so suites never inherit ambient env values
+        // (AFFILIATE_NETWORK_FEE_BP from a local .env would otherwise change behavior).
+        $app['config']->set('affiliate-network.fees.default_bp', 0);
         // Configure moderation settings for testing
         $app['config']->set('moderation.owner.enabled', true);
 

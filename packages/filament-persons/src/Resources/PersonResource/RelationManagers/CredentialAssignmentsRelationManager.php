@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentPersons\Resources\PersonResource\RelationManagers;
 
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\Persons\Models\CredentialAssignment;
 use AIArmada\Persons\Models\CredentialDefinition;
 use Filament\Actions\CreateAction;
@@ -21,6 +22,8 @@ use Illuminate\Validation\ValidationException;
 
 final class CredentialAssignmentsRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'credentialAssignments';
 
     protected static ?string $title = 'Credentials';

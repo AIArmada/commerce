@@ -286,7 +286,7 @@ public function boot(): void
 }
 ```
 
-### Configuring the JntStatusMapper Carrier Code
+### JntStatusMapper Carrier Code
 
 The built-in J&T strategy hardcodes carrier code `jnt` in `JntStatusMapper::getCarrierCode()`.
 There is no config key for it — to change it, extend `JntStatusMapper` (or implement

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource\RelationManagers;
 
 use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Support\Icons\Heroicon;
@@ -13,6 +14,8 @@ use Filament\Tables\Table;
 
 final class ConversionsRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'conversions';
 
     public function table(Table $table): Table

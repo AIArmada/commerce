@@ -38,7 +38,22 @@ These 21 transitions — and only these — are allowed:
 
 Cancellable states are `PendingPayment`, `Processing`, and `OnHold` — there is no
 `Created → Canceled` transition. `Completed`, `Canceled`, `Fraud`, and `PaymentFailed`
-all report `isFinal() === true` while still allowing the outbound `→ Refunded` edge.
+all report `isFinal() === true`. `Completed` and `Canceled` still allow the outbound `→ Refunded` edge; `Fraud` and `PaymentFailed` have no outbound transitions.
+
+The sketch above shows the primary flow. The complete edge list
+(`OrderStatus::config()`) is authoritative:
+
+- Created → PendingPayment, Processing
+- PendingPayment → Processing, Canceled, PaymentFailed
+- Processing → OnHold, Fraud, Shipped, Completed, Canceled, Refunded
+- OnHold → Processing, Canceled
+- Shipped → Delivered, Returned
+- Delivered → Completed, Returned, Refunded
+- Completed → Refunded
+- Canceled → Refunded
+- Returned → Refunded
+
+Cancelable from: Created, PendingPayment, Processing, OnHold.
 
 ## States
 
@@ -400,6 +415,24 @@ PaymentConfirmed transition completes
 ```
 
 Inventory deduction is not dispatched synchronously from the transition itself. This guarantees one logical deduction per payment confirmation, even under duplicate event delivery.
+
+Free orders reach the same consumers through a dedicated `FreeOrderConfirmed` transition: it moves the order to Processing and dispatches `OrderProcessingStarted` plus `OrderFulfillmentRequired` after commit. It is deliberately not `PaymentConfirmed` — there is no payment record, no paid timestamp, and no `OrderPaid` event. Affiliate attribution still runs (and abstains on the zero value); pass issuance, event registration sync, and promotion usage counting all run for free orders. Only invoice creation and payment confirmation emails stay paid-only.
+
+A free confirmation requires all of the following, checked in order:
+
+1. `grand_total <= 0` — nothing is owed. A zero *balance* alone is not enough: a fully paid order also owes nothing.
+2. `paid_total === 0` — nothing was paid, including partial or out-of-band payments.
+3. The order is not already Processing (idempotent no-op when it is and the money guards pass).
+4. The current state is `Created` or `PendingPayment`. Held, canceled, and failed orders are rejected instead of being dragged back into Processing.
+
+Violations throw `InvalidArgumentException` before any state change. State rejections (check 4) use the `OrderNotAwaitingPayment` subclass so callers can classify the cause from the exception instead of re-reading the row.
+
+> [!WARNING]
+> Known limitations of the free path, shared with the paid path where noted:
+>
+> - No `OrderPaid` means `OrderPaid` consumers never run for free orders: no invoice and no payment confirmation email. Pass issuance, event registration sync, promotion usage counting, and commission attribution run through the fulfillment event instead.
+> - Like `PaymentConfirmed`, the dispatch is commit-then-event backed by the transactional outbox. If the process dies between commit and the after-commit callbacks, the `orders:outbox-relay` command re-dispatches the staged rows; `orders:outbox-sweep` reconciles stuck rows and purges relayed history.
+> - A free order in Processing reports `isPaid() === false` and is excluded from the "Unpaid Orders" Filament filter (zero-total orders are neither paid nor unpaid). Revenue sums keyed on `paid_at IS NOT NULL` correctly exclude it.
 
 ### Release (Order Canceled)
 

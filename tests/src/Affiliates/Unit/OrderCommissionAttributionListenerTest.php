@@ -8,6 +8,7 @@ use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Orders\Events\CommissionAttributionRequired;
 use AIArmada\Orders\Models\Order;
+use AIArmada\Orders\States\Processing as OrderProcessing;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -94,4 +95,47 @@ it('fails closed when an order carries a malformed owner tuple', function (): vo
                 && ($context['owner_type'] ?? null) === $bogusType
                 && array_key_exists('message', $context);
         }));
+});
+
+it('records zero-value conversions for free orders without phantom money', function (): void {
+    $affiliate = Affiliate::create([
+        'code' => 'ORDER-AFF-FREE',
+        'name' => 'Order Affiliate Free',
+        'status' => Active::class,
+        'commission_type' => 'percentage',
+        'commission_rate' => 100,
+        'currency' => 'MYR',
+    ]);
+
+    $cart = app('cart')->getCurrentCart();
+    app(AttachAffiliateToCart::class)->handle($affiliate, $cart);
+    $cart->add('free-item-1', 'Free item', 0.00, 1);
+
+    $cartId = $cart->getId();
+
+    expect($cartId)->not()->toBeNull();
+
+    $order = Order::factory()->create([
+        'order_number' => 'ORD-LISTENER-FREE-001',
+        'status' => OrderProcessing::class,
+        'subtotal' => 0,
+        'discount_total' => 0,
+        'shipping_total' => 0,
+        'tax_total' => 0,
+        'grand_total' => 0,
+        'currency' => 'MYR',
+        'metadata' => [
+            'cart_id' => $cartId,
+        ],
+    ]);
+
+    event(new CommissionAttributionRequired($order));
+
+    $conversion = AffiliateConversion::query()->sole();
+    $balance = $affiliate->balanceFor('MYR')->fresh();
+
+    expect($conversion->commission_minor)->toBe(0)
+        ->and($balance->holding_minor)->toBe(0)
+        ->and($balance->available_minor)->toBe(0)
+        ->and($balance->lifetime_earnings_minor)->toBe(0);
 });

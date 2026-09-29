@@ -58,12 +58,12 @@ subscription tables.
 Instead:
 
 - `laravel/cashier` owns Stripe tables such as `subscriptions` and `subscription_items`
-- `aiarmada/cashier-chip` owns CHIP tables such as `chip_subscriptions` and `chip_subscription_items`
+- `aiarmada/cashier-chip` owns CHIP tables such as `cashier_chip_subscriptions` and `cashier_chip_subscription_items`
 
 For Stripe, you may publish the vendor migrations when you need to customize them:
 
 ```bash
-php artisan vendor:publish --tag=cashier-stripe-migrations
+php artisan vendor:publish --tag=cashier-migrations
 php artisan migrate
 ```
 
@@ -76,10 +76,10 @@ For CHIP, install `aiarmada/cashier-chip` and run your normal migrations:
 php artisan migrate
 ```
 
-That gives you gateway-owned billable columns such as:
+That gives you gateway-owned billing state such as:
 
 - `stripe_id` from `laravel/cashier`
-- `chip_id` from `aiarmada/cashier-chip`
+- CHIP customer linkage from `aiarmada/cashier-chip` (via the `chip_customers` link table, exposed as `$billable->chipId()` — no extra column on your billable model)
 - gateway-specific subscription tables from the installed gateway packages
 
 ## Configuration
@@ -117,7 +117,7 @@ Add the wrapper trait **and** the traits from the gateway packages you install:
 namespace App\Models;
 
 use AIArmada\Cashier\Concerns\Billable as CashierBillable;
-use AIArmada\CashierChip\Billable as ChipBillable;
+use AIArmada\CashierChip\Billing\Billable as ChipBillable;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Cashier\Billable as StripeBillable;
 
@@ -170,11 +170,11 @@ if ($subscription->valid()) {
 // Charge $10.00 on the default configured gateway
 $payment = $user->chargeWithGateway(1000, $paymentMethodId);
 
-if ($payment->isSuccessful()) {
+if ($payment->isSucceeded()) {
     echo "Payment successful!";
 } elseif ($payment->requiresAction()) {
     // Redirect user for 3D Secure
-    return redirect($payment->actionUrl());
+    return redirect($payment->redirectUrl());
 }
 ```
 

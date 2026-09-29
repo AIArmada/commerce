@@ -212,6 +212,11 @@ $condition->getPercentageRate();            // PercentageRate (basis points)
 $condition->with(['value' => '-20%']);
 $condition->withoutRules();                 // Static copy for direct application
 
+// Targeting
+$condition->getTargetDefinition();           // ConditionTarget value object
+$condition->getTargetDefinition()->scope;    // ConditionScope enum
+$condition->getTargetDefinition()->phase;    // ConditionPhase enum
+
 // Serialization
 $condition->toArray();
 $condition->toJson();
@@ -248,6 +253,7 @@ $item->total();                      // Money, alias of subtotal()
 $item->getPrice();                   // Money
 $item->getRawPrice();                // Minor units
 $item->discountAmount();             // Money
+$item->getRawSubtotalWithoutConditions(); // Minor units before conditions
 
 // Conditions
 $item->getConditions();
@@ -323,7 +329,7 @@ The full contract is documented in [08-storage.md](08-storage.md). Signatures th
 are most commonly used:
 
 ```php
-use AIArmada\Cart\Storage\StorageInterface;
+use Illuminate\Database\Eloquent\Model;
 
 interface StorageInterface
 {
@@ -332,34 +338,42 @@ interface StorageInterface
     public function getOwnerType(): ?string;
     public function getOwnerId(): string|int|null;
 
-    // Items CRUD
+    // Cart operations
+    public function has(string $identifier, string $instance): bool;
+    public function forget(string $identifier, string $instance): void;
+    public function flush(): void;
+
+    // Items
     public function getItems(string $identifier, string $instance): array;
     public function putItems(string $identifier, string $instance, array $items): void;
 
-    // Conditions CRUD
+    // Conditions
     public function getConditions(string $identifier, string $instance): array;
     public function putConditions(string $identifier, string $instance, array $conditions): void;
+
+    // Combined
     public function putBoth(string $identifier, string $instance, array $items, array $conditions): void;
 
-    // Metadata CRUD
+    // Metadata
+    public function getMetadata(string $identifier, string $instance, string $key): mixed;
     public function getAllMetadata(string $identifier, string $instance): array;
     public function putMetadata(string $identifier, string $instance, string $key, mixed $value): void;
-    public function getMetadata(string $identifier, string $instance, string $key): mixed;
+    public function putMetadataBatch(string $identifier, string $instance, array $metadata): void;
     public function clearMetadata(string $identifier, string $instance): void;
-
-    // Existence and lifecycle
-    public function has(string $identifier, string $instance): bool;
-    public function getId(string $identifier, string $instance): ?string;
-    public function getVersion(string $identifier, string $instance): ?int;
-    public function isExpired(string $identifier, string $instance): bool;
     public function clearAll(string $identifier, string $instance): void;
-    public function forget(string $identifier, string $instance): void;
-    public function forgetIdentifier(string $identifier): void;
-    public function flush(): void;
+
+    // Versioning
+    public function getVersion(string $identifier, string $instance): ?int;
+    public function getId(string $identifier, string $instance): ?string;
+    public function getCreatedAt(string $identifier, string $instance): ?string;
+    public function getUpdatedAt(string $identifier, string $instance): ?string;
+    public function getExpiresAt(string $identifier, string $instance): ?string;
+    public function isExpired(string $identifier, string $instance): bool;
 
     // Migration
     public function swapIdentifier(string $oldId, string $newId, string $instance): bool;
     public function getInstances(string $identifier): array;
+    public function forgetIdentifier(string $identifier): void;
 }
 ```
 
@@ -466,6 +480,8 @@ match on. The real condition enums live in `AIArmada\Cart\Conditions\Enums`.
 ### ConditionScope
 
 ```php
+use AIArmada\Cart\Conditions\Enums\ConditionScope;
+
 enum ConditionScope: string
 {
     case CART = 'cart';
@@ -477,6 +493,8 @@ enum ConditionScope: string
 ### ConditionPhase
 
 ```php
+use AIArmada\Cart\Conditions\Enums\ConditionPhase;
+
 enum ConditionPhase: string
 {
     case PRE_ITEM = 'pre_item';
@@ -495,6 +513,8 @@ enum ConditionPhase: string
 ### ConditionApplication
 
 ```php
+use AIArmada\Cart\Conditions\Enums\ConditionApplication;
+
 enum ConditionApplication: string
 {
     case AGGREGATE = 'aggregate';
@@ -507,6 +527,8 @@ enum ConditionApplication: string
 ### ConditionFilterOperator
 
 ```php
+use AIArmada\Cart\Conditions\Enums\ConditionFilterOperator;
+
 enum ConditionFilterOperator: string
 {
     case EQ = '=';

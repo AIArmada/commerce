@@ -149,6 +149,7 @@ and are silently dropped. There is no `is_active` column; gate visibility with
 ## Using the ProgramService
 
 ```php
+use AIArmada\Affiliates\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Services\ProgramService;
 
 $service = app(ProgramService::class);

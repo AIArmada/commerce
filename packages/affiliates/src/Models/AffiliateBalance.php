@@ -100,6 +100,19 @@ class AffiliateBalance extends Model implements Auditable
         $this->decrement('lifetime_earnings_minor', min(max(0, $amountMinor), $this->lifetime_earnings_minor));
     }
 
+    public function clawbackFromAvailable(int $amountMinor): void
+    {
+        $amountMinor = max(0, $amountMinor);
+
+        // Unlike deductFromAvailable, a clawback is an exact debit: the
+        // money already left via payout, so recovery drives available
+        // negative against future earnings instead of flooring at zero.
+        // Lifetime floors at zero — recognition cannot un-count more
+        // than was counted; the floor signals pre-existing inconsistency.
+        $this->decrement('available_minor', $amountMinor);
+        $this->decrement('lifetime_earnings_minor', min($amountMinor, $this->lifetime_earnings_minor));
+    }
+
     public function formatHolding(): string
     {
         return $this->formatAmount($this->holding_minor);

@@ -58,7 +58,7 @@ $product = ResolveOwnedModelOrFailAction::run(
 
 ## ResolveOwnerJobContextAction
 
-**Purpose:** Extract owner context from queued job payloads for [OwnerScopedJob](./04-multi-tenancy.md) contract compliance.
+**Purpose:** Extract owner context from queued job payloads for [OwnerScopedJob](./14-multi-tenancy.md) contract compliance.
 
 **Use case:** Job processing, ensuring jobs restore the correct owner context before execution.
 
@@ -270,9 +270,9 @@ $runner = new OwnerBatchRunner(
         'include_global' => 'products.owner.include_global',
     ],
 );
-$counts = $runner->run(function ($owner) {
-    // Runs inside OwnerContext::withOwner($owner)
-    return Product::forOwner($owner)->count();
+$counts = $runner->run(function () {
+    // Runs inside OwnerContext::withOwner($owner); reads are owner-scoped
+    return Product::all()->count();
 });
 
 // forEach returns a collection with one entry per owner
@@ -372,7 +372,7 @@ class ResolveOwnedModelActionTest extends TestCase
 
 ## Related Documentation
 
-- [Multi-Tenancy & Owner Scoping](./04-multi-tenancy.md)
+- [Multi-Tenancy & Owner Scoping](./14-multi-tenancy.md)
 - [Traits & Utilities](./10-traits-utilities.md)
 - [Isolation Primitives](./11-isolation-primitives.md)
 - [Webhooks](./08-webhooks.md)

@@ -83,7 +83,7 @@ class OrdersTable
 
                 Tables\Filters\Filter::make('unpaid')
                     ->label('Unpaid Orders')
-                    ->query(fn (Builder $query) => $query->whereNull('paid_at')),
+                    ->query(fn (Builder $query) => $query->whereNull('paid_at')->where('grand_total', '>', 0)),
 
                 Tables\Filters\Filter::make('created_at')
                     ->form([

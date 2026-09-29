@@ -147,5 +147,5 @@ This verifies:
 ## Getting Help
 
 1. Check the [CHIP API Documentation](https://docs.chip-in.asia/)
-2. Review the [API Reference](api-reference.md)
+2. Review the [API Reference](10-api-reference.md)
 3. Enable debug logging to capture request/response details

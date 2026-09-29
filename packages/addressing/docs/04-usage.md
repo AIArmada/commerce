@@ -64,7 +64,7 @@ use AIArmada\Addressing\Models\Address;
 use AIArmada\Addressing\Models\City;
 use AIArmada\Addressing\Models\State;
 
-$state = State::query()->where('code', 'SGR')->first();
+$state = State::query()->where('code', '10')->first(); // Selangor
 $city = City::query()->where('country_id', $state->country_id)->where('name', 'Shah Alam')->first();
 
 $address = Address::query()->create([

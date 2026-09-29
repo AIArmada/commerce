@@ -51,7 +51,7 @@ ExpireVoucher::run('SUMMER2024');
 use AIArmada\Vouchers\Actions\ApplyVoucherToCart;
 use AIArmada\Cart\Facades\Cart;
 
-$condition = ApplyVoucherToCart::run(Cart::session($sessionKey), 'SUMMER2024');
+$condition = ApplyVoucherToCart::run(Cart::getCartInstance('default', $sessionKey), 'SUMMER2024');
 ```
 
 ### RemoveVoucherFromCart
@@ -60,7 +60,7 @@ $condition = ApplyVoucherToCart::run(Cart::session($sessionKey), 'SUMMER2024');
 use AIArmada\Vouchers\Actions\RemoveVoucherFromCart;
 use AIArmada\Cart\Facades\Cart;
 
-RemoveVoucherFromCart::run(Cart::session($sessionKey), 'SUMMER2024');
+RemoveVoucherFromCart::run(Cart::getCartInstance('default', $sessionKey), 'SUMMER2024');
 ```
 
 ### RecordVoucherUsage

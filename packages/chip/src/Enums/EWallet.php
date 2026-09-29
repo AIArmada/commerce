@@ -11,6 +11,7 @@ namespace AIArmada\Chip\Enums;
  * to automatically redirect customers to a specific e-wallet.
  *
  * Usage: ?preferred={preferred}&razer_bank_code={code}
+ * ShopeePay instead uses ?preferred=shopee_pay with no razer_bank_code.
  *
  * Source: https://docs.chip-in.asia/chip-collect/overview/direct-post/e-wallet
  */
@@ -20,11 +21,13 @@ enum EWallet: string
     case TOUCH_N_GO = 'TNG-EWALLET';
     case SHOPEEPAY = 'ShopeePay';
     case MAYBANK_QR = 'MB2U_QRPay-Push';
+    case ATOME = 'Atome';
 
     /**
-     * Get all wallets as array
+     * Get all wallets as array. The code is null where the wallet takes no
+     * razer_bank_code (ShopeePay).
      *
-     * @return array<string, array{label: string, preferred: string, code: string}>
+     * @return array<string, array{label: string, preferred: string, code: ?string}>
      */
     public static function toArray(): array
     {
@@ -33,7 +36,7 @@ enum EWallet: string
             $wallets[$wallet->name] = [
                 'label' => $wallet->label(),
                 'preferred' => $wallet->preferred(),
-                'code' => $wallet->value,
+                'code' => $wallet->razerBankCode(),
             ];
         }
 
@@ -55,12 +58,12 @@ enum EWallet: string
     }
 
     /**
-     * Get wallet by preferred value
+     * Get wallet by preferred value (case-insensitive)
      */
     public static function fromPreferred(string $preferred): ?self
     {
         foreach (self::cases() as $wallet) {
-            if ($wallet->preferred() === $preferred) {
+            if (strcasecmp($wallet->preferred(), $preferred) === 0) {
                 return $wallet;
             }
         }
@@ -76,8 +79,9 @@ enum EWallet: string
         return match ($this) {
             self::GRABPAY => 'razer_grabpay',
             self::TOUCH_N_GO => 'razer_tng',
-            self::SHOPEEPAY => 'razer_shopeepay',
+            self::SHOPEEPAY => 'shopee_pay',
             self::MAYBANK_QR => 'razer_maybankqr',
+            self::ATOME => 'razer_atome',
         };
     }
 
@@ -91,19 +95,35 @@ enum EWallet: string
             self::TOUCH_N_GO => "Touch 'n Go eWallet",
             self::SHOPEEPAY => 'ShopeePay',
             self::MAYBANK_QR => 'Maybank QR',
+            self::ATOME => 'Atome',
+        };
+    }
+
+    /**
+     * Get the razer_bank_code for the URL, or null where the wallet takes
+     * none (ShopeePay).
+     */
+    private function razerBankCode(): ?string
+    {
+        return match ($this) {
+            self::SHOPEEPAY => null,
+            default => $this->value,
         };
     }
 
     /**
      * Build direct post URL parameters
      *
-     * @return array{preferred: string, razer_bank_code: string}
+     * @return array{preferred: string, razer_bank_code?: string}
      */
     public function urlParams(): array
     {
-        return [
-            'preferred' => $this->preferred(),
-            'razer_bank_code' => $this->value,
-        ];
+        $params = ['preferred' => $this->preferred()];
+
+        if ($this->razerBankCode() !== null) {
+            $params['razer_bank_code'] = $this->razerBankCode();
+        }
+
+        return $params;
     }
 }

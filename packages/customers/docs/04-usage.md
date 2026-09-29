@@ -18,7 +18,7 @@ use AIArmada\Customers\Actions\LinkCustomerToPerson;
 use AIArmada\Customers\Actions\MergeCustomers;
 
 // Create a new customer
-$customer = CreateCustomer::run(
+$customer = app(CreateCustomer::class)->execute(
     email: 'john@example.com',
     billingData: ['first_name' => 'John', 'last_name' => 'Doe'],
     shippingData: [],
@@ -27,7 +27,7 @@ $customer = CreateCustomer::run(
 );
 
 // Update an existing customer's profile from checkout payloads
-UpdateCustomerProfile::run(
+app(UpdateCustomerProfile::class)->execute(
     customer: $customer,
     billingData: ['phone' => '+60123456789'],
     shippingData: [],
@@ -35,16 +35,16 @@ UpdateCustomerProfile::run(
 );
 
 // Assign a customer to a segment (validates owner context)
-AssignCustomerToSegment::run(customer: $customer, segment: $segment);
+app(AssignCustomerToSegment::class)->execute(customer: $customer, segment: $segment);
 
 // Remove a customer from a segment (validates owner context)
-RemoveCustomerFromSegment::run(customer: $customer, segment: $segment);
+app(RemoveCustomerFromSegment::class)->execute(customer: $customer, segment: $segment);
 
 // Rebuild automatic segments for a specific owner
-RebuildAllSegments::run()->forOwner($owner);
+app(RebuildAllSegments::class)->forOwner($owner);
 
 // Rebuild automatic segments across all owners
-RebuildAllSegments::run()->forAllOwners();
+app(RebuildAllSegments::class)->forAllOwners();
 
 // Link an existing owner-scoped customer profile to a shared person.
 $customer = app(LinkCustomerToPerson::class)->executeByKey($customer, $personId);

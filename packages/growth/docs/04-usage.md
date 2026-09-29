@@ -365,9 +365,9 @@ php artisan growth:archive-experiments --older-than=60
 
 The command runs per owner when owner scoping is enabled and sets the experiment status to `archived` with an `archived_at` timestamp.
 
-### Recompute orphaned assignments
+### Recompute assignments
 
-Recompute assignments that have a missing or empty `variant_id`:
+Recompute every assignment with the canonical deterministic allocator, repairing records whose stored variant drifted:
 
 ```bash
 php artisan growth:recompute-assignments
@@ -383,10 +383,9 @@ Options:
 php artisan growth:recompute-assignments --dry-run
 ```
 
-The command re-derives the variant with the same canonical deterministic allocator the resolver
-uses (`ExperimentAssignmentResolver::variantForSubject()`) and rewrites `variant_id` and `bucket`.
-It does not pick a random active variant. Assignments whose parent experiment is missing or not
-`active`, or whose `subject_key` is empty, are skipped.
+The command repairs assignments with the canonical deterministic allocator used by
+`ResolveExperimentAssignment::variantForSubject()`. It reports changed, quarantined,
+and unchanged counts; it does not pick a random active variant.
 
 ## Optional Filament admin UI
 

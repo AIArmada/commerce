@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Affiliates\AffiliatesServiceProvider;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
 use AIArmada\Affiliates\Events\AffiliateProgramJoined;
+use AIArmada\Affiliates\Listeners\AutoApproveOpenAffiliate;
 use AIArmada\Affiliates\Listeners\NotifyConversionRecorded;
 use AIArmada\Affiliates\Listeners\NotifyProgramJoined;
 use AIArmada\Affiliates\Listeners\RecordCommissionForOrder;
@@ -101,6 +102,9 @@ it('registers the commission listener only when commission tracking is enabled',
     Event::shouldReceive('listen')
         ->once()
         ->with(AffiliateConversionRecorded::class, NotifyConversionRecorded::class);
+    Event::shouldReceive('listen')
+        ->once()
+        ->with(AffiliateConversionRecorded::class, AutoApproveOpenAffiliate::class);
 
     $provider = new AffiliatesServiceProvider(app());
     $provider->packageBooted();
@@ -118,6 +122,9 @@ it('does not register the commission listener when commission tracking is disabl
     Event::shouldReceive('listen')
         ->once()
         ->with(AffiliateConversionRecorded::class, NotifyConversionRecorded::class);
+    Event::shouldReceive('listen')
+        ->once()
+        ->with(AffiliateConversionRecorded::class, AutoApproveOpenAffiliate::class);
 
     $provider = new AffiliatesServiceProvider(app());
     $provider->packageBooted();

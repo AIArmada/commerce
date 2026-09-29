@@ -24,6 +24,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 | `code` | string | Unique affiliate code |
 | `name` | string | Affiliate name |
 | `status` | `AIArmada\Affiliates\States\AffiliateStatus` | Spatie model state: `draft`, `pending`, `active`, `paused`, `disabled` |
+| `registration_approval_mode` | string | Snapshotted approval mode (auto/open/admin), immutable |
 | `commission_type` | CommissionType | Percentage or fixed |
 | `commission_rate` | int | Rate in basis points or minor units |
 | `currency` | string | ISO currency code |
@@ -51,6 +52,7 @@ $affiliate->rank;             // BelongsTo<AffiliateRank>
 $affiliate->payoutMethods;    // HasMany<AffiliatePayoutMethod>
 $affiliate->payoutHolds;      // HasMany<AffiliatePayoutHold>
 $affiliate->vouchers;         // HasMany<Voucher>
+$affiliate->balances;         // HasMany<AffiliateBalance>, one row per currency
 ```
 
 `commissionRules` and `volumeTiers` are **not** relationships on `Affiliate` —
@@ -61,6 +63,7 @@ those rows are program-scoped and reachable via `$program->commissionRules()` an
 
 ```php
 $affiliate->isActive();                // Check if status is Active
+$affiliate->canBeAttributed();         // Active, or pending under open registration
 $affiliate->hasActivePayoutHold();     // Check for unreleased payout holds
 $affiliate->canRequestPayout();        // True when any balance meets its minimum payout
 $affiliate->canRequestPayout('USD');   // True when the USD balance meets its minimum
@@ -136,6 +139,7 @@ use AIArmada\Affiliates\Models\AffiliateConversion;
 | `value_minor` | int | Neutral conversion value in minor units |
 | `commission_minor` | int | Commission amount in minor units |
 | `commission_currency` | string | Required. Denominates both `value_minor` and `commission_minor`; no database default — writers must set it explicitly |
+| `held_minor` | int | Amount this conversion recorded in the balance holding pool (0 when off-record); approval releases from it and credits any uncovered remainder, then zeroes it |
 | `status` | ConversionStatus | pending, qualified, approved, rejected, reversed, paid |
 | `occurred_at` | timestamp | When conversion occurred |
 | `approved_at` | timestamp | When approved or matured into the payout-eligible state |
@@ -157,6 +161,21 @@ Balance side effects are handled by the model hooks:
 - pending or qualified conversions add commission to `holding_minor`
 - approved conversions release commission into `available_minor`
 - paid conversions deduct the commission from `available_minor`
+
+A conversion linked to an open (non-terminal) payout is reserved:
+`$conversion->assertNotReservedByOpenPayout()` throws until the payout
+reaches a terminal state, so reverse/void/reject paths cannot move
+money out from under a payout in flight. Cancel or fail the payout
+first to release its conversions.
+
+Pre-existing rows keep `held_minor = 0`: the migration adds the
+column without a data update, and the approval arithmetic credits
+the full commission from the applied mutator amounts instead.
+Residuals derive from applied amounts, so every approval credits
+exactly `commission_minor` to available regardless of pool state.
+Only the display-only lifetime total can drift on divergent legacy
+rows, and any pool shortfall is reported via
+`HoldingShortfallDetected` (see [Events](12-events.md)).
 
 ### AffiliatePayout
 
@@ -288,8 +307,9 @@ use AIArmada\Affiliates\Models\AffiliatePayoutHold;
 | Attribute | Type | Description |
 |-----------|------|-------------|
 | `reason` | string | Hold reason |
-| `notes` | string | Hold notes |
-| `expires_at` | timestamp | When the hold lapses |
+| `notes` | string | Operator notes |
+| `expires_at` | timestamp | Hold expiry |
+| `placed_by` | string | Who placed the hold |
 | `released_at` | timestamp | When released |
 
 ## Fraud & Analytics Models

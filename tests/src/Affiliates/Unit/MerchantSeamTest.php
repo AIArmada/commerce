@@ -6,11 +6,16 @@ use AIArmada\Affiliates\Contracts\MerchantCatalog;
 use AIArmada\Affiliates\Contracts\MerchantIdentity;
 use AIArmada\Affiliates\Contracts\MerchantLedger;
 use AIArmada\Affiliates\Data\ExternalConversion;
+use AIArmada\Affiliates\Data\PostedConversion;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\ProgramVisibility;
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateProgram;
+use AIArmada\Affiliates\States\RejectedConversion;
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Support\Str;
 
 function merchantSeamProgram(array $attributes = []): AffiliateProgram
@@ -103,5 +108,67 @@ describe('merchant seam', function (): void {
             ->and($snapshot->payload['program_id'])->toBe((string) $program->getKey())
             ->and($catalog->snapshotById((string) Str::uuid()))->toBeNull()
             ->and($catalog->mirrorableProgramIds())->toContain((string) $program->getKey());
+    });
+
+    test('ledger voids a posting with balanced money', function (): void {
+        $affiliate = createTestAffiliate();
+        $draft = merchantSeamDraft((string) $affiliate->getKey());
+        $ledger = app(MerchantLedger::class);
+        $posted = $ledger->postExternalConversion($draft);
+
+        expect($posted)->not->toBeNull()
+            ->and($affiliate->balanceFor('MYR')->holding_minor)->toBe(13485);
+
+        $voided = $ledger->voidPosted('marketplace', $draft->sourceRef, $draft->externalReference, 'merchant refund');
+
+        expect($voided)->not->toBeNull()
+            ->and($voided->id)->toBe($posted->id)
+            ->and($voided->commissionMinor)->toBe(13485);
+
+        $conversion = AffiliateConversion::query()->withoutOwnerScope()->findOrFail($posted->id);
+        $balance = $affiliate->balanceFor('MYR')->fresh();
+
+        expect($conversion->status->equals(RejectedConversion::class))->toBeTrue()
+            ->and($balance->holding_minor)->toBe(0)
+            ->and($balance->available_minor)->toBe(0)
+            ->and($balance->lifetime_earnings_minor)->toBe(0);
+    });
+
+    test('ledger void returns null for unknown postings', function (): void {
+        expect(app(MerchantLedger::class)->voidPosted('marketplace', 'missing', 'missing', 'x'))->toBeNull();
+    });
+
+    test('ledger voids an owned posting without an ambient owner context', function (): void {
+        config()->set('affiliates.owner.enabled', true);
+        config()->set('affiliates.owner.include_global', false);
+
+        $owner = User::query()->create([
+            'name' => 'Ledger Owner',
+            'email' => 'ledger-owner-' . uniqid() . '@example.com',
+            'password' => 'secret',
+        ]);
+
+        $affiliate = OwnerContext::withOwner($owner, fn (): Affiliate => createTestAffiliate());
+        $draft = merchantSeamDraft((string) $affiliate->getKey());
+        $ledger = app(MerchantLedger::class);
+        $posted = OwnerContext::withOwner($owner, fn (): ?PostedConversion => $ledger->postExternalConversion($draft));
+
+        expect($posted)->not->toBeNull();
+
+        // The network reversal path is deliberately cross-tenant: no
+        // ambient owner is resolved when voidPosted runs.
+        $voided = OwnerContext::withOwner(null, fn (): ?PostedConversion => $ledger->voidPosted(
+            'marketplace',
+            $draft->sourceRef,
+            $draft->externalReference,
+            'network reversal'
+        ));
+
+        expect($voided)->not->toBeNull()
+            ->and($voided->id)->toBe($posted->id);
+
+        $conversion = AffiliateConversion::query()->withoutOwnerScope()->findOrFail($posted->id);
+
+        expect($conversion->status->equals(RejectedConversion::class))->toBeTrue();
     });
 });

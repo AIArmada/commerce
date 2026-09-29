@@ -380,7 +380,7 @@ owned by checkout:
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| `create_order.confirm_payment` | bool | `true` | Triggers the order payment-confirmed transition immediately after checkout creates the order |
+| `create_order.confirm_payment` | bool | `true` | Triggers the order payment-confirmed transition immediately after checkout creates the order. Free orders are always confirmed (there is no payment to verify and no operator-facing zero-amount path — only the `confirmFreeOrder` service API) |
 
 ### Routes
 
@@ -503,6 +503,7 @@ CHECKOUT_JSON_COLUMN_TYPE=jsonb
 
 # Payment gateway
 CHECKOUT_DEFAULT_GATEWAY=chip
+CHECKOUT_PREFER_ACTOR=false
 CHECKOUT_STRIPE_WEBHOOK_SECRET=
 
 # Routes

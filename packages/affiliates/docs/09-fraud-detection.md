@@ -44,6 +44,7 @@ Fraud detection operates at multiple levels:
 ## Using FraudDetectionService
 
 ```php
+use AIArmada\Affiliates\Enums\FraudSeverity;
 use AIArmada\Affiliates\Services\FraudDetectionService;
 
 $service = app(FraudDetectionService::class);
@@ -129,6 +130,10 @@ FraudSignalStatus::Dismissed; // False positive
 FraudSignalStatus::Confirmed; // Fraud confirmed
 ```
 
+Reviewed and Dismissed both clear the signal: gates that count unresolved
+fraud (such as open-registration auto-approval) only treat Detected and
+Confirmed as blocking.
+
 ## Recording Signals Manually
 
 There is no `FraudDetectionService::recordSignal()`. Persist the row directly —
@@ -211,10 +216,7 @@ protected $listen = [
 ];
 ```
 
-> **warning:**
-> There is no `FraudThresholdReached` event. `FraudDetectionService` dispatches
-> `FraudSignalDetected` per signal; the threshold is a boolean on the returned
-> `['allowed' => false]`, not an event.
+The event carries the `AffiliateFraudSignal` (reach the affiliate and severity through it). It fires from the model on every create — detection rules, manual analyst flags, and host integrations — and implements `ShouldDispatchAfterCommit`, so listeners run after the signal transaction commits.
 
 ## Fraud Review in Filament
 
@@ -232,6 +234,7 @@ $signal->update([
     'status' => FraudSignalStatus::Reviewed,
     'reviewed_at' => now(),
     'reviewed_by' => auth()->id(),
+    'description' => 'Investigated - appears legitimate',
 ]);
 
 // Confirm fraud

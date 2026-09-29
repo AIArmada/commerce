@@ -72,8 +72,10 @@ app.malaysia,MY-10-PETALING,MY-10
 Disable the central address resource:
 
 ```php
-'addresses' => [
-    'enabled' => false,
+'resources' => [
+    'addresses' => [
+        'enabled' => false,
+    ],
 ],
 ```
 

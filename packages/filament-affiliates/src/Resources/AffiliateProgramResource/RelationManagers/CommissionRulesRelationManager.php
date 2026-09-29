@@ -6,6 +6,7 @@ namespace AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource\Relatio
 
 use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Enums\CommissionType;
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventSession;
@@ -31,6 +32,8 @@ use Filament\Tables\Table;
 
 final class CommissionRulesRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'commissionRules';
 
     public function form(Schema $schema): Schema

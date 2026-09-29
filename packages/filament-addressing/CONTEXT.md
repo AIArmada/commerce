@@ -43,7 +43,7 @@ keywords:
 ## Key surfaces
 - Resources: `AddressAreaResource`, `AddressCityResource`, `AddressCountryResource`, `AddressResource`, `AddressSnapshotResource`, `AddressStateResource`, `PostalCodeResource`, `ResolutionGapResource`
 - Actions/Services: `Support/AddressingFilterOptions` (cached table-filter option lists); the reusable `SingleAddressAreaSource` now belongs to core `addressing`
-- Config `filament-addressing.php`: `navigation`, `enabled`, `group`, `sort`, `icons`, `features`, `countries`, `states`, `cities`, `areas`, `postal_codes`, `resolution_gaps`, `addresses`, `snapshots`
+- Config `filament-addressing.php`: `navigation` (`enabled`, `group`, `sort`, `icons`), `features`, `resources` (`countries`, `states`, `cities`, `areas`, `postal_codes`, `resolution_gaps`, `addresses`, `snapshots`)
 
 ## Docs map
 - Start: `01-overview` → `03-configuration` → `04-usage` → `99-troubleshooting`

@@ -91,29 +91,18 @@ Set the consent cookie when user accepts:
 Cookie::queue('affiliate_consent', '1', 60 * 24 * 365);
 ```
 
-## Public Referral Entry Routes
+## Public Referral Entry Capture
 
-When `affiliates.public_pages.enabled` and `affiliates.public_pages.route.enabled` are both `true`, the package registers a public referral entry route.
-
-Default behavior:
-
-- route path: `r/{affiliateCode}`
-- route name: `affiliate.referral.entry`
-- controller: `PublicAffiliateReferralController`
-- action: `CapturePublicAffiliateReferral`
+When `affiliates.public_pages.enabled` and `affiliates.public_pages.auto_register_middleware` are both `true`, the package prepends the `CaptureAffiliateReferralFromPath` middleware (alias `affiliates.referral_path`) globally. No entry route is registered; instead, any URL ending in `/r/{affiliateCode}` is captured:
 
 Examples:
 
-```php
-route('affiliate.referral.entry', ['affiliateCode' => 'PARTNER42']);
-
-route('affiliate.referral.entry', [
-    'affiliateCode' => 'PARTNER42',
-    'to' => 'checkout',
-]);
+```text
+https://shop.test/r/PARTNER42
+https://shop.test/offers/spring/r/PARTNER42?sort=new
 ```
 
-The entry action resolves the affiliate, records the visit context, persists the affiliate cookie/session metadata, and then redirects to one of the configured public destinations. By default the package recognizes `home` and `checkout`, but you can add your own destination keys under `affiliates.public_pages.route.destinations`.
+The middleware resolves the affiliate (active only), records the visit via `TrackAffiliateVisit`, persists the affiliate cookie, and redirects back to the prefix path with the incoming query string preserved. The `home` and `checkout` destinations under `affiliates.public_pages.route.destinations` feed the `entry_url`/`checkout_url` links in the public-page referral payload below.
 
 ## Public Page Referral Context
 
@@ -144,10 +133,10 @@ The package ships a ready-made banner view at `affiliates::components.public-ref
 ### From Cart
 
 ```php
-use AIArmada\Cart\Facades\Cart;
+use AIArmada\Affiliates\Actions\Conversions\RecordAffiliateConversion;
 
 // Record conversion when order is placed
-Cart::recordAffiliateConversion([
+RecordAffiliateConversion::run($cart, [
     'external_reference' => $order->reference,
     'subtotal' => $order->subtotal_minor,
     'total' => $order->total_minor,
@@ -216,7 +205,9 @@ Mixed-currency summaries return per-currency legs plus one converted total carry
 ## Creating Subject-Aware Tracking Links
 
 ```php
-$link = $service->createTrackingLink($affiliate, 'https://example.com/products/sku-1001', [
+use AIArmada\Affiliates\Actions\Affiliates\CreateTrackingLink;
+
+$link = CreateTrackingLink::run($affiliate, 'https://example.com/products/sku-1001', [
     'params' => ['utm_source' => 'affiliate-campaign'],
     'ttl_seconds' => 3600,
     'subject_type' => 'product',
@@ -238,9 +229,11 @@ ConversionStatus::Pending;    // Awaiting review
 ConversionStatus::Qualified;  // Qualified and waiting for maturity processing
 ConversionStatus::Approved;   // Approved and released toward payout eligibility
 ConversionStatus::Rejected;   // Rejected (fraud, refund, etc.)
-ConversionStatus::Reversed;   // Reversed after payout
+ConversionStatus::Reversed;   // Reversed after the fact (companion leg posted)
 ConversionStatus::Paid;       // Commission paid out
 ```
+
+Storage uses the matching Spatie states (`PendingConversion`, `QualifiedConversion`, `ApprovedConversion`, `RejectedConversion`, `ReversedConversion`, `PaidConversion`); assign state classes on write and use the enum for reads and interop.
 
 Use `total` and `subtotal` as the conversion amount inputs. The persisted conversion uses
 `value_minor` and `external_reference`; cart identity is resolved from the active attribution.

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Chip\Builders\PurchaseBuilder;
 use AIArmada\Chip\Data\PurchaseData;
+use AIArmada\Chip\Enums\RequestClientDetail;
 use AIArmada\Chip\Exceptions\ChipValidationException;
 use AIArmada\Chip\Services\ChipCollectService;
 use Akaunting\Money\Money;
@@ -239,7 +240,50 @@ describe('PurchaseBuilder', function (): void {
             ->clientId('existing-client-id')
             ->toArray();
 
-        expect($data)->toHaveKey('client_id', 'existing-client-id');
+        expect($data)->toHaveKey('client_id', 'existing-client-id')
+            ->and($data)->not->toHaveKey('client');
+    });
+
+    it('clears client_id when customer details are set after it', function (): void {
+        $data = $this->builder
+            ->currency('MYR')
+            ->addProductCents('Test', 1000)
+            ->clientId('existing-client-id')
+            ->customer('test@example.com')
+            ->toArray();
+
+        expect($data)->not->toHaveKey('client_id')
+            ->and($data)->toHaveKey('client');
+
+        $clientIdFirst = (new PurchaseBuilder($this->service))
+            ->currency('MYR')
+            ->addProductCents('Test', 1000)
+            ->clientId('existing-client-id')
+            ->email('test@example.com')
+            ->toArray();
+
+        expect($clientIdFirst)->not->toHaveKey('client_id')
+            ->and($clientIdFirst)->toHaveKey('client');
+
+        $billingFirst = (new PurchaseBuilder($this->service))
+            ->currency('MYR')
+            ->addProductCents('Test', 1000)
+            ->clientId('existing-client-id')
+            ->billingAddress('1 Main St', 'KL', '50000')
+            ->toArray();
+
+        expect($billingFirst)->not->toHaveKey('client_id')
+            ->and($billingFirst)->toHaveKey('client');
+
+        $shippingFirst = (new PurchaseBuilder($this->service))
+            ->currency('MYR')
+            ->addProductCents('Test', 1000)
+            ->clientId('existing-client-id')
+            ->shippingAddress('1 Main St', 'KL', '50000')
+            ->toArray();
+
+        expect($shippingFirst)->not->toHaveKey('client_id')
+            ->and($shippingFirst)->toHaveKey('client');
     });
 
     it('supports method chaining for fluent API', function (): void {
@@ -281,6 +325,28 @@ describe('PurchaseBuilder', function (): void {
             ->and($result->id)->toBe('test-purchase-id');
     });
 
+    it('passes the idempotency key separately from the payload', function (): void {
+        $purchaseData = PurchaseData::from([
+            'id' => 'test-purchase-id',
+            'client' => ['email' => 'test@example.com'],
+            'purchase' => ['total' => 1000, 'currency' => 'MYR', 'products' => []],
+        ]);
+
+        $this->service->shouldReceive('createPurchase')
+            ->once()
+            ->with(Mockery::on(fn ($data) => ! array_key_exists('idempotency_key', $data)), 'idem-key-1')
+            ->andReturn($purchaseData);
+
+        $result = $this->builder
+            ->currency('MYR')
+            ->addProductCents('Test', 1000)
+            ->email('test@example.com')
+            ->idempotencyKey('idem-key-1')
+            ->create();
+
+        expect($result->id)->toBe('test-purchase-id');
+    });
+
     it('can create purchase using save method alias', function (): void {
         $purchaseData = PurchaseData::from([
             'id' => 'test-purchase-id',
@@ -307,11 +373,55 @@ describe('PurchaseBuilder', function (): void {
             ->toThrow(ChipValidationException::class, 'Call currency() before adding purchase products.');
     });
 
-    it('rejects non-integral product quantities', function (): void {
-        expect(fn () => $this->builder
+    it('accepts fractional product quantities as given', function (): void {
+        $data = $this->builder
             ->currency('MYR')
-            ->addProductCents('Product', 1000, 1.5))
-            ->toThrow(ChipValidationException::class, 'Product quantity must be an integer.');
+            ->addProductCents('Half', 100, 0.5)
+            ->addProductCents('Frac', 100, '1.555')
+            ->addProductCents('Dust', 100, 0.1 + 0.2)
+            ->toArray();
+
+        expect($data['purchase']['products'][0]['quantity'])->toBe('0.5')
+            ->and($data['purchase']['products'][1]['quantity'])->toBe('1.555')
+            ->and($data['purchase']['products'][2]['quantity'])->toBe('0.3');
+    });
+
+    it('accepts a zero product quantity', function (): void {
+        $data = $this->builder
+            ->currency('MYR')
+            ->addProductCents('Zero', 100, 0)
+            ->toArray();
+
+        expect($data['purchase']['products'][0]['quantity'])->toBe('0');
+    });
+
+    it('rejects non-numeric and negative product quantities', function (): void {
+        expect(fn () => $this->builder->currency('MYR')->addProductCents('P', 100, -2))
+            ->toThrow(ChipValidationException::class, 'zero or greater');
+        expect(fn () => $this->builder->currency('MYR')->addProductCents('P', 100, '-0.5'))
+            ->toThrow(ChipValidationException::class, 'zero or greater');
+        expect(fn () => $this->builder->currency('MYR')->addProductCents('P', 100, 'abc'))
+            ->toThrow(ChipValidationException::class, 'must be numeric');
+    });
+
+    it('rejects quantities with more than 4 decimal places', function (): void {
+        expect(fn () => $this->builder->currency('MYR')->addProductCents('P', 100, '1.55555'))
+            ->toThrow(ChipValidationException::class, 'at most 4 decimal places');
+        expect(fn () => $this->builder->currency('MYR')->addProductCents('P', 100, 1.55555))
+            ->toThrow(ChipValidationException::class, 'at most 4 decimal places');
+        expect(fn () => $this->builder->currency('MYR')->addProductCents('P', 100, '1.0000000000000001'))
+            ->toThrow(ChipValidationException::class, 'at most 4 decimal places');
+        expect(fn () => $this->builder->currency('MYR')->addProductCents('P', 100, '1.5e-5'))
+            ->toThrow(ChipValidationException::class, 'at most 4 decimal places');
+    });
+
+    it('rejects out-of-range quantities', function (): void {
+        expect(fn () => $this->builder->currency('MYR')->addProductCents('P', 100, 1e30))
+            ->toThrow(ChipValidationException::class, 'out of range');
+        expect(fn () => $this->builder->currency('MYR')->addProductCents('P', 100, '1e30'))
+            ->toThrow(ChipValidationException::class, 'out of range');
+        expect(fn () => $this->builder->currency('MYR')->addProductCents('P', 100, '9007199254740993'))
+            ->toThrow(ChipValidationException::class, 'out of range');
     });
 
     it('normalizes integral float quantities to integer strings', function (): void {
@@ -328,5 +438,149 @@ describe('PurchaseBuilder', function (): void {
             ->currency('MYR')
             ->addProductMoney('USD Product', Money::USD(1000)))
             ->toThrow(ChipValidationException::class, 'Product price currency must match the purchase currency.');
+    });
+
+    it('nests top-level, purchase, and client setters exactly', function (): void {
+        $data = $this->builder
+            ->currency('MYR')
+            ->addProductCents('Product', 1000)
+            ->email('test@example.com')
+            ->issued('2026-01-01')
+            ->paymentMethodWhitelist(['fpx', 'visa'])
+            ->tags(['promo', 'vip'])
+            ->language('en')
+            ->debt(-500)
+            ->timezone('Asia/Kuala_Lumpur')
+            ->emailMessage('Thanks!')
+            ->requestClientDetails([RequestClientDetail::EMAIL, 'phone'])
+            ->cc(['cc@example.com'])
+            ->bcc(['bcc@example.com'])
+            ->legalName('Legal Co')
+            ->brandName('Brand')
+            ->registrationNumber('REG1')
+            ->taxNumber('TAX1')
+            ->bankAccount('1234567890')
+            ->bankCode('MBBEMYKL')
+            ->toArray();
+
+        expect($data['issued'])->toBe('2026-01-01')
+            ->and($data['payment_method_whitelist'])->toBe(['fpx', 'visa'])
+            ->and($data['tags'])->toBe(['promo', 'vip'])
+            ->and($data['purchase']['language'])->toBe('en')
+            ->and($data['purchase']['debt'])->toBe(-500)
+            ->and($data['purchase']['timezone'])->toBe('Asia/Kuala_Lumpur')
+            ->and($data['purchase']['email_message'])->toBe('Thanks!')
+            ->and($data['purchase']['request_client_details'])->toBe(['email', 'phone'])
+            ->and($data['client']['cc'])->toBe(['cc@example.com'])
+            ->and($data['client']['bcc'])->toBe(['bcc@example.com'])
+            ->and($data['client']['legal_name'])->toBe('Legal Co')
+            ->and($data['client']['brand_name'])->toBe('Brand')
+            ->and($data['client']['registration_number'])->toBe('REG1')
+            ->and($data['client']['tax_number'])->toBe('TAX1')
+            ->and($data['client']['bank_account'])->toBe('1234567890')
+            ->and($data['client']['bank_code'])->toBe('MBBEMYKL');
+    });
+
+    it('accepts all sixteen whitelisted payment methods', function (): void {
+        $methods = ['fpx', 'fpx_b2b1', 'crypto_coin', 'dnqr', 'duitnow_qr', 'maestro', 'mastercard', 'mpgs_apple_pay', 'mpgs_google_pay', 'razer_atome', 'razer_grabpay', 'razer_maybankqr', 'razer_shopeepay', 'razer_tng', 'shopee_pay', 'visa'];
+
+        $data = $this->builder->currency('MYR')->paymentMethodWhitelist($methods)->toArray();
+
+        expect($data['payment_method_whitelist'])->toBe($methods);
+    });
+
+    it('rejects unknown, empty, and non-string whitelist members', function (): void {
+        expect(fn () => $this->builder->paymentMethodWhitelist(['bogus']))
+            ->toThrow(ChipValidationException::class, 'Unknown payment method in whitelist.');
+        expect(fn () => $this->builder->paymentMethodWhitelist([]))
+            ->toThrow(ChipValidationException::class, 'Payment method whitelist cannot be empty.');
+        expect(fn () => $this->builder->paymentMethodWhitelist(['fpx', 42]))
+            ->toThrow(ChipValidationException::class, 'Unknown payment method in whitelist.');
+    });
+
+    it('rejects unknown and duplicate request client details', function (): void {
+        expect(fn () => $this->builder->requestClientDetails(['bogus']))
+            ->toThrow(ChipValidationException::class, 'Unknown request client details field.');
+        expect(fn () => $this->builder->requestClientDetails(['email', 'email']))
+            ->toThrow(ChipValidationException::class, 'must not contain duplicates.');
+        expect(fn () => $this->builder->requestClientDetails([RequestClientDetail::EMAIL, 'email']))
+            ->toThrow(ChipValidationException::class, 'must not contain duplicates.');
+    });
+
+    it('rejects blank issued, timezone, tags, and client setters', function (): void {
+        expect(fn () => $this->builder->issued('  '))->toThrow(ChipValidationException::class, 'Issued date cannot be blank.');
+        expect(fn () => $this->builder->timezone(''))->toThrow(ChipValidationException::class, 'Timezone cannot be blank.');
+        expect(fn () => $this->builder->tags(['ok', '  ']))->toThrow(ChipValidationException::class, 'Purchase tags must be non-blank strings.');
+        expect(fn () => $this->builder->cc(['a@b.c', '']))->toThrow(ChipValidationException::class, 'Client cc entries must be non-blank strings.');
+        expect(fn () => $this->builder->bcc([42]))->toThrow(ChipValidationException::class, 'Client bcc entries must be non-blank strings.');
+        expect(fn () => $this->builder->legalName(''))->toThrow(ChipValidationException::class, 'Client legal name cannot be blank.');
+        expect(fn () => $this->builder->brandName(' '))->toThrow(ChipValidationException::class, 'Client brand name cannot be blank.');
+        expect(fn () => $this->builder->registrationNumber(''))->toThrow(ChipValidationException::class, 'Client registration number cannot be blank.');
+        expect(fn () => $this->builder->taxNumber(''))->toThrow(ChipValidationException::class, 'Client tax number cannot be blank.');
+        expect(fn () => $this->builder->bankAccount(''))->toThrow(ChipValidationException::class, 'Client bank account cannot be blank.');
+        expect(fn () => $this->builder->bankCode(''))->toThrow(ChipValidationException::class, 'Client bank code cannot be blank.');
+    });
+
+    it('trims cc and bcc entries on emit', function (): void {
+        $data = $this->builder
+            ->cc(['  cc@example.com  '])
+            ->bcc(["\tbcc@example.com\n"])
+            ->toArray();
+
+        expect($data['client']['cc'])->toBe(['cc@example.com'])
+            ->and($data['client']['bcc'])->toBe(['bcc@example.com']);
+    });
+
+    it('unsets client_id when client setters write', function (): void {
+        $data = $this->builder
+            ->currency('MYR')
+            ->clientId('client_123')
+            ->legalName('Legal Co')
+            ->toArray();
+
+        expect($data)->not->toHaveKey('client_id')
+            ->and($data['client']['legal_name'])->toBe('Legal Co');
+    });
+
+    it('emits a total price override including zero and rejects negatives', function (): void {
+        $data = $this->builder
+            ->currency('MYR')
+            ->addProductCents('Override', 1000, 1, 0, 0.0, null, 250)
+            ->addProductCents('Zero', 1000, 1, 0, 0.0, null, 0)
+            ->addProductCents('Plain', 1000)
+            ->toArray();
+
+        expect($data['purchase']['products'][0]['total_price_override'])->toBe(250)
+            ->and($data['purchase']['products'][1]['total_price_override'])->toBe(0)
+            ->and($data['purchase']['products'][2])->not->toHaveKey('total_price_override');
+
+        expect(fn () => $this->builder->currency('MYR')->addProductCents('Bad', 1000, 1, 0, 0.0, null, -1))
+            ->toThrow(ChipValidationException::class, 'Product total price override cannot be negative.');
+    });
+
+    it('emits string tax percents as given and trims whitespace', function (): void {
+        $data = $this->builder
+            ->currency('MYR')
+            ->addProductCents('String', 1000, 1, 0, '6')
+            ->addProductCents('Padded', 1000, 1, 0, ' 6.5 ')
+            ->addProductCents('Float', 1000, 1, 0, 6.0)
+            ->addProductCents('ZeroString', 1000, 1, 0, '0.00')
+            ->toArray();
+
+        expect($data['purchase']['products'][0]['tax_percent'])->toBe('6')
+            ->and($data['purchase']['products'][1]['tax_percent'])->toBe('6.5')
+            ->and($data['purchase']['products'][2]['tax_percent'])->toBe(6.0)
+            ->and($data['purchase']['products'][3])->not->toHaveKey('tax_percent');
+    });
+
+    it('rejects negative, oversized, and non-numeric tax percents', function (): void {
+        expect(fn () => $this->builder->currency('MYR')->addProductCents('Neg', 1000, 1, 0, -1.0))
+            ->toThrow(ChipValidationException::class, 'Product tax percent must be a number between 0 and 100.');
+        expect(fn () => $this->builder->currency('MYR')->addProductCents('NegStr', 1000, 1, 0, '-1'))
+            ->toThrow(ChipValidationException::class, 'Product tax percent must be a number between 0 and 100.');
+        expect(fn () => $this->builder->currency('MYR')->addProductCents('Big', 1000, 1, 0, 101.0))
+            ->toThrow(ChipValidationException::class, 'Product tax percent must be a number between 0 and 100.');
+        expect(fn () => $this->builder->currency('MYR')->addProductCents('Garbage', 1000, 1, 0, 'abc'))
+            ->toThrow(ChipValidationException::class, 'Product tax percent must be a number between 0 and 100.');
     });
 });

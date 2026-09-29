@@ -64,7 +64,7 @@ Default webhook routes depend on the installed gateway packages:
 | Gateway | Owner | Default endpoint |
 |---------|-------|------------------|
 | Stripe | `laravel/cashier` | `/stripe/webhook` |
-| CHIP | `aiarmada/cashier-chip` | `/chip/webhooks` |
+| CHIP | `aiarmada/chip` (with `aiarmada/cashier-chip` listeners) | `/chip/webhooks` |
 
 If you customize the path in those packages, update your gateway dashboard to match.
 

@@ -114,7 +114,7 @@ JNT_CUSTOMER_CODE=your_customer_code
    curl -X POST https://yourdomain.com/webhooks/jnt/status
    ```
 
-2. Check webhook secret matches:
+2. Check the signing key matches (webhooks are signed with the private key):
    ```env
    JNT_PRIVATE_KEY=your_private_key
    ```
@@ -335,7 +335,7 @@ try {
 $logs = JntWebhookLog::query()
     ->latest()
     ->take(10)
-    ->get(['id', 'tracking_number', 'processing_status', 'processed_at']);
+    ->get(['id', 'tracking_number', 'processing_status', 'processed_at', 'processing_error']);
 
 foreach ($logs as $log) {
     echo "{$log->tracking_number}: " . ($log->processing_error ?? $log->processing_status) . "\n";

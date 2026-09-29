@@ -113,9 +113,10 @@ Each group creates a durable `InventoryReservation` record that retains its term
 ```php
 use AIArmada\Inventory\Actions\CreateBatch;
 use AIArmada\Inventory\Actions\RecordSerial;
+use Carbon\CarbonImmutable;
 
 // Create a batch/lot
-CreateBatch::run($product, batchNumber: 'LOT-2024-001', locationId: $locationId, quantity: 500, expiresAt: now()->addYear());
+CreateBatch::run($product, batchNumber: 'LOT-2024-001', locationId: $locationId, quantity: 500, expiresAt: CarbonImmutable::now()->addYear());
 
 // Record a serial number
 RecordSerial::run($product, serialNumber: 'SN-001-ABC', locationId: $locationId);
@@ -188,7 +189,7 @@ CreateValuationSnapshot::run(method: CostingMethod::Fifo);
 use AIArmada\Inventory\Facades\Inventory;
 
 // Basic receive
-Inventory::receive($product, 100, $location->id);
+Inventory::receive($product, $location->id, 100);
 
 // With options — the 4th argument is a reason string, then note/userId
 Inventory::receive(
@@ -205,7 +206,7 @@ Inventory::receive(
 
 ```php
 // Basic ship
-Inventory::ship($product, 10, $location->id);
+Inventory::ship($product, $location->id, 10);
 
 // With options
 Inventory::ship(
@@ -304,6 +305,7 @@ $available = InventoryAllocation::getTotalAvailable($product);
 
 ```php
 use AIArmada\Inventory\Services\Batch\BatchService;
+use Carbon\CarbonImmutable;
 
 $batchService = app(BatchService::class);
 
@@ -312,7 +314,7 @@ $batch = $batchService->createBatch(
     locationId: $location->id,
     quantity: 500,
     batchNumber: 'LOT-2024-001',
-    expiresAt: now()->addYear(),
+    expiresAt: CarbonImmutable::now()->addYear(),
     unitCostMinor: 1200
 );
 ```
@@ -350,10 +352,10 @@ $batchAllocationService->commitBatches($allocations);
 $batchService->quarantine($batch, 'Pending QC inspection');
 
 // Release from quarantine
-$batchService->releaseFromQuarantine($batch);
+$batch->releaseFromQuarantine();
 
-// Recall a batch
-$batchService->recall($batch, 'Product recall notice #123');
+// Recall batches
+$batchService->recallBatches([$batch], 'Product recall notice #123');
 ```
 
 ## Serial Number Tracking
@@ -375,14 +377,17 @@ $serial = $serialService->register(
 );
 
 // Bulk register
-$serials = $serialService->bulkRegister($product, [
-    'SN-001', 'SN-002', 'SN-003', 'SN-004', 'SN-005'
-], $location->id);
+$serials = [];
+foreach (['SN-001', 'SN-002', 'SN-003', 'SN-004', 'SN-005'] as $number) {
+    $serials[] = $serialService->register($product, $number, $location->id);
+}
 ```
 
 ### Serial Lifecycle
 
 ```php
+use AIArmada\Inventory\Enums\SerialCondition;
+
 // Reserve for order
 $serialService->reserve($serial, $orderId);
 
@@ -390,7 +395,7 @@ $serialService->reserve($serial, $orderId);
 $serialService->sell($serial, $orderId, $customerId);
 
 // Customer returns
-$serialService->return($serial, 'Customer changed mind');
+$serialService->processReturn($serial, $location->id, SerialCondition::Used, notes: 'Customer changed mind');
 
 // Mark as disposed
 $serialService->dispose($serial, 'Damaged beyond repair');
@@ -473,6 +478,7 @@ $avgCost = $wac->getCurrentAverageCost($product);
 
 ```php
 use AIArmada\Inventory\Services\Costing\StandardCostService;
+use Carbon\CarbonImmutable;
 
 $stdCost = app(StandardCostService::class);
 
@@ -480,7 +486,7 @@ $stdCost = app(StandardCostService::class);
 $stdCost->setStandardCost(
     $product,
     standardCostMinor: 1500,
-    effectiveFrom: now(),
+    effectiveFrom: CarbonImmutable::now(),
     approvedBy: auth()->id()
 );
 
@@ -499,8 +505,8 @@ $valuationService = app(ValuationService::class);
 // Create month-end snapshot
 $snapshot = $valuationService->createSnapshot(CostingMethod::Fifo);
 
-// Get historical snapshot
-$historicalSnapshot = $valuationService->getSnapshot($snapshotDate);
+// Get historical snapshots for a range
+$snapshots = $valuationService->getSnapshotsForRange(CostingMethod::Fifo, $from, $to);
 ```
 
 ## Demand Forecasting

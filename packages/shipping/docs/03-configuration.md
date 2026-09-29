@@ -16,6 +16,7 @@ at once.
 ```php
 $tablePrefix = env('SHIPPING_TABLE_PREFIX', env('COMMERCE_TABLE_PREFIX', ''));
 
+return [
 'database' => [
     'table_prefix' => $tablePrefix,
     'tables' => [
@@ -27,9 +28,11 @@ $tablePrefix = env('SHIPPING_TABLE_PREFIX', env('COMMERCE_TABLE_PREFIX', ''));
         'shipping_rates' => $tablePrefix . 'shipping_rates',
         'return_authorizations' => $tablePrefix . 'return_authorizations',
         'return_authorization_items' => $tablePrefix . 'return_authorization_items',
+        'shipment_operations' => $tablePrefix . 'shipment_operations',
     ],
     'json_column_type' => env('SHIPPING_JSON_COLUMN_TYPE', 'jsonb'),
 ],
+];
 ```
 
 > **info**
@@ -220,6 +223,8 @@ $zone = app(ShippingZoneResolver::class)->resolve(
     'enabled' => false,
     'threshold' => 15000, // RM150.00 in minor units
 ],
+// Note: the threshold policy resolves its display currency from
+// `shipping.defaults.currency`, not from this section.
 ```
 
 > **info**

@@ -21,7 +21,7 @@ title: Troubleshooting
 ])
 ```
 
-2. **Resources disabled in config**:
+2. **Feature-flagged resources disabled in config**:
 
 ```php
 // Check config/filament-products.php
@@ -150,24 +150,15 @@ tail -f storage/logs/laravel.log
 
 ---
 
-### Bulk Edit Not Applying Changes
+### Bulk Actions Not Applying Changes
 
-**Symptom**: Bulk edit appears to complete but products unchanged.
+**Symptom**: A bulk action appears to complete but products are unchanged.
 
 **Causes & Solutions**:
 
-1. **Mass assignment protection**: Ensure fields are in `$fillable`:
+1. **Missing authorization**: bulk price and visibility actions require the `product.update` ability, activate/draft require the `updateAny` policy check, and delete requires `product.delete`.
 
-```php
-// In Product model
-protected $fillable = [
-    'status',
-    'visibility',
-    // ...
-];
-```
-
-2. **Owner validation rejecting IDs**: Check the OwnerScope helper isn't filtering out all IDs.
+2. **Owner validation rejecting IDs**: Check the OwnerScopedIds helper isn't filtering out all IDs.
 
 ---
 

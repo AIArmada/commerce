@@ -92,6 +92,7 @@ public static function form(Schema $schema): Schema
 {
     return $schema
         ->components([
+            // Re-declare the parent components you want to keep, then add yours:
             Section::make('Custom')
                 ->schema([
                     TextInput::make('custom_field'),

@@ -293,7 +293,7 @@ $tier->appliesTo(25); // true/false
 $tier->getDescription(); // "10-49 units" or "50+ units"
 
 // Get discount description
-$tier->getDiscountDescription(); // "10% off" or "RM 5.00 off"
+$tier->getDiscountDescription(); // "10% off" or "RM5.00 off"
 ```
 
 ### Tier resolution rules
@@ -349,7 +349,7 @@ Promotions resolve via `PromotionServiceInterface::calculateDiscounts()` through
 - When `aiarmada/customers` is installed, `customer_id`/`segment_id` on a price list must reference an existing record; otherwise saving throws `AuthorizationException`.
 - `PriceResultData::getMoney()` (and the savings/original variants) throw `AIArmada\Pricing\Exceptions\InvalidCurrencyException` for unknown currency codes.
 - Deleting a price list removes its prices and tiers in one transaction; deletes outside the current owner scope throw.
-- The Filament `PriceSimulator` (`filament-pricing`) requires `aiarmada/products`; without it the page renders an unavailable state instead of simulating.
+- The Filament `PriceSimulator` (`filament-pricing`) requires `aiarmada/products`; without it the plugin does not register the page.
 
 ## Example: Complete Pricing Flow
 

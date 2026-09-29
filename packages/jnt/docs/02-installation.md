@@ -106,10 +106,10 @@ All Artisan commands extend the abstract `JntCommand` base class (`src/Console/J
 
 | Subdirectory | Command(s) |
 |-------------|------------|
-| `health/` | `jnt:health` |
-| `orders/` | `jnt:order:create`, `jnt:order:track`, `jnt:order:cancel`, `jnt:order:print` |
-| `tracking/` | `jnt:order:track` |
-| `webhooks/` | `jnt:webhook:test` |
+| `Health/` | `jnt:health` |
+| `Orders/` | `jnt:order:create`, `jnt:order:cancel`, `jnt:order:print`, `jnt:config:check` |
+| `Tracking/` | `jnt:order:track` |
+| `Webhooks/` | `jnt:webhook:test` |
 
 ## Verify Installation
 

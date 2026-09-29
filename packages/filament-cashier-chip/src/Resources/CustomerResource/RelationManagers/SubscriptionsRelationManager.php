@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCashierChip\Resources\CustomerResource\RelationManagers;
 
 use AIArmada\CashierChip\Subscription\Subscription;
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\FilamentCashierChip\Resources\SubscriptionResource;
 use AIArmada\FilamentCashierChip\Support\FormatsSubscriptionStatus;
 use Filament\Actions\Action;
@@ -19,6 +20,7 @@ use Filament\Tables\Table;
 final class SubscriptionsRelationManager extends RelationManager
 {
     use FormatsSubscriptionStatus;
+    use VerifiesRelationManagerOwnerContext;
 
     protected static string $relationship = 'subscriptions';
 

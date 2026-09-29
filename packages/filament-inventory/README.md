@@ -76,19 +76,19 @@ Monitor active cart allocations:
 ### Inventory Stats Widget
 
 Overview statistics:
-- Total locations
+- Active locations
 - Total SKUs tracked
 - Total units on hand
 - Total units reserved
-- Active allocations
+- Total available
+- Low stock items
 
 ### Low Inventory Alerts Widget
 
 Table of items below reorder point:
-- Product name
-- Location
-- Current available quantity
-- Reorder point threshold
+- Location, product type and product ID
+- On hand, reserved, available
+- Reorder point and deficit
 
 ## Configuration
 

@@ -25,8 +25,8 @@ final class CreateTrackingLink
 
     public function handle(Affiliate $affiliate, string $destinationUrl, array $attributes = []): AffiliateLink
     {
-        if (! $affiliate->isActive()) {
-            throw new AffiliateNotFoundException("Affiliate {$affiliate->code} is not active.");
+        if (! $affiliate->canBeAttributed()) {
+            throw new AffiliateNotFoundException("Affiliate {$affiliate->code} cannot receive attribution.");
         }
 
         $programId = Arr::get($attributes, 'program_id');

@@ -70,7 +70,7 @@ Snapshots are always read-only (`read_only: true`).
 
 ## Cross-Tenant Records Visible
 
-If your app uses owner scoping from `commerce-support` and standalone resources are enabled, ensure the resource query applies owner scoping. The resource uses `parent::getEloquentQuery()` which respects the core model's global scope.
+If your app uses owner scoping from `commerce-support` and standalone resources are enabled, ensure the resource query applies owner scoping. The resources wrap `parent::getEloquentQuery()` with `OwnerUiScope::apply(..., includeGlobal: false)`, which respects the core model's global scope and excludes global rows.
 
 ## Import Failing
 

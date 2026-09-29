@@ -6,9 +6,11 @@ namespace AIArmada\Chip\Clients;
 
 use AIArmada\Chip\Clients\Http\BaseHttpClient;
 use AIArmada\Chip\Exceptions\ChipApiException;
+use AIArmada\Chip\Exceptions\ChipRateLimitException;
 use AIArmada\Chip\Exceptions\ChipValidationException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
 
 class ChipSendClient extends BaseHttpClient
@@ -126,11 +128,33 @@ class ChipSendClient extends BaseHttpClient
     protected function handleFailedResponse(Response $response): never
     {
         $statusCode = $response->status();
-        $responseData = $response->json() ?? [];
-        $message = $responseData['message'] ?? $responseData['error'] ?? "API request failed with status {$statusCode}";
+
+        if ($statusCode === 429) {
+            $retryAfter = $this->retryAfterSeconds($response);
+
+            if ($this->loggingEnabled()) {
+                $decoded = $response->json();
+
+                Log::channel($this->logChannel())->warning('CHIP API rate limited', [
+                    'retry_after' => $retryAfter,
+                    'source' => 'server',
+                    'response_data' => $this->maskSensitiveData(is_array($decoded) ? $decoded : []),
+                ]);
+            }
+
+            throw new ChipRateLimitException($retryAfter);
+        }
+
+        $responseData = ChipApiException::normalizeErrorData($response->json());
+        $allError = ChipApiException::extractAllError($responseData);
+        $message = $responseData['message'] ?? $responseData['error'] ?? $allError['message'] ?? "API request failed with status {$statusCode}";
 
         if ($statusCode === 400) {
             throw new ChipValidationException($message, $responseData, $statusCode);
+        }
+
+        if ($allError !== null && $allError['code'] !== null && ! isset($responseData['code'])) {
+            $responseData['code'] = $allError['code'];
         }
 
         throw new ChipApiException($message, $statusCode, $responseData);

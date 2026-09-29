@@ -44,6 +44,7 @@ Moves matured commissions from holding to available balance.
 
 ```bash
 php artisan affiliates:process-maturity
+php artisan affiliates:process-maturity --dry-run
 ```
 
 This command:

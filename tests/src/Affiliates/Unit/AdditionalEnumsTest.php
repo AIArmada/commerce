@@ -210,7 +210,7 @@ test('RegistrationApprovalMode label returns correct labels', function (): void 
 
 test('RegistrationApprovalMode description returns correct descriptions', function (): void {
     expect(RegistrationApprovalMode::Auto->description())->toBe('Affiliates are automatically approved and activated upon registration.');
-    expect(RegistrationApprovalMode::Open->description())->toBe('Affiliates can register freely but start in pending status.');
+    expect(RegistrationApprovalMode::Open->description())->toBe('Affiliates can register freely, start in pending status, and are automatically activated on their first qualifying conversion.');
     expect(RegistrationApprovalMode::Admin->description())->toBe('Affiliates must be manually approved by an administrator.');
 });
 

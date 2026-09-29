@@ -6,6 +6,7 @@ namespace AIArmada\FilamentAffiliates\Actions;
 
 use AIArmada\Affiliates\Actions\Payouts\UpdatePayoutStatus;
 use AIArmada\Affiliates\Data\PayoutResult;
+use AIArmada\Affiliates\Exceptions\PayoutCompletionBlockedException;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliatePayoutOperation;
@@ -137,13 +138,26 @@ final class ProcessAffiliatePayout
         } catch (Throwable $throwable) {
             report($throwable);
 
+            // Completion-gate refusals (non-payable affiliate, drifted
+            // conversions) still park as unknown for operator retry, but
+            // the gate's reason rides the timeline instead of a generic
+            // exception code. Processor and programming errors keep the
+            // generic code: only the gate's own exception narrows here.
+            if ($throwable instanceof PayoutCompletionBlockedException) {
+                return $this->recordResult(
+                    $payout,
+                    PayoutResult::unknown(PayoutReconciliationService::COMPLETION_BLOCKED_CODE),
+                    'Completion blocked: ' . $throwable->getMessage()
+                );
+            }
+
             return $this->recordResult($payout, PayoutResult::unknown('PAYOUT_PROCESSING_EXCEPTION'));
         }
     }
 
-    private function recordResult(AffiliatePayout $payout, PayoutResult $result): PayoutResult
+    private function recordResult(AffiliatePayout $payout, PayoutResult $result, ?string $notes = null): PayoutResult
     {
-        DB::transaction(function () use ($payout, $result): void {
+        DB::transaction(function () use ($payout, $result, $notes): void {
             $lockedQuery = AffiliatePayout::query()->with('operation');
 
             if ((bool) config('affiliates.owner.enabled', false)) {
@@ -231,7 +245,7 @@ final class ProcessAffiliatePayout
                 $locked->events()->create([
                     'from_status' => $fromStatus,
                     'to_status' => $toStatus,
-                    'notes' => 'Provider outcome: ' . $result->getStatus() . ($result->failureCode !== null ? ' (' . $result->failureCode . ')' : ''),
+                    'notes' => $notes ?? 'Provider outcome: ' . $result->getStatus() . ($result->failureCode !== null ? ' (' . $result->failureCode . ')' : ''),
                 ]);
             }
         }, attempts: 3);

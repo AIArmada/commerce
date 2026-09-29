@@ -163,7 +163,7 @@ CHIP Send webhook payloads carry no brand attribution, so owner-enabled hosts co
 
 When owner scoping is enabled, Send deliveries are dispatched inside this owner context. If the tuple is missing or unresolvable, the delivery is rejected with "Owner resolution failed". The entry is validated at boot time like the brand map.
 
-See [Webhooks](webhooks.md) for detailed webhook handling.
+See [Webhooks](09-webhooks.md) for detailed webhook handling.
 
 ## Integration boundaries
 

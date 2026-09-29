@@ -22,7 +22,7 @@ Filament resources and UI behavior belong to `aiarmada/filament-authz`.
 - `Support\AuthzScopeContext`, `AuthzScopeResolver`, `AuthzScopeTeamResolver` — scope → team resolution
 - `Support\ImpersonationScopeGuard`, `Support\CommandProhibitor`, `Support\UserRoleChecker` — guard rails
 - `Models\Role`, `Models\Permission`, `Models\AuthzScope` — UUID-backed authz domain models
-- `Models\Concerns` — `HasAuthzScope`, `ScopesAuthzTenancy`, `SyncsRolePermissions` traits for hosts
+- `Concerns` — `HasAuthzScope`, `ScopesAuthzTenancy`, `SyncsRolePermissions` traits for hosts
 - Config `authz.php`: `database`, `super_admin_role`, `guards`, `users`, `wildcard_permissions`, `permissions`, `custom_permissions`, `sync`, `scopes`, `impersonate`
 
 ## What this package does not own

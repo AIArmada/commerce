@@ -68,7 +68,7 @@ config value.
 
 ### Default Registered Rules
 
-The service provider auto-registers these rules from `stacking.rules`:
+The policy builds these rules from `stacking.rules` via `StackingPolicy::fromConfig()`:
 
 | Type key | Class | Purpose |
 |----------|-------|---------|
@@ -108,6 +108,7 @@ class MyCustomRule implements StackingRuleInterface
         array $config,
     ): StackingDecision {
         // Your logic here
+        return StackingDecision::allow();
     }
 }
 
@@ -115,7 +116,7 @@ class MyCustomRule implements StackingRuleInterface
 
 ### Provider Binding
 
-The registry is bound as a singleton so all stacking consumers see the same rule set. If you need to override the built-in policy, rebind the `StackingPolicyInterface` contract in your own service provider.
+The policy is resolved through the `StackingPolicyInterface` contract binding, so all stacking consumers see the same rule set. If you need to override the built-in policy, rebind the `StackingPolicyInterface` contract in your own service provider.
 
 ## Validation
 

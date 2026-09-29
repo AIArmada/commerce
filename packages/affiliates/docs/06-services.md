@@ -15,7 +15,7 @@ The canonical orchestration surface for affiliates is the `Actions` tree. Prefer
 | `ApproveAffiliate::run($affiliate)` | Approve a pending affiliate |
 | `AttachAffiliateToCart::run($affiliate, $cart, $context)` | Attach an affiliate to a cart |
 | `AttachAffiliateFromCookie::run($cart, $cookieValue, $context)` | Attach from cookie tracking |
-| `CapturePublicAffiliateReferral::run($request)` | Capture public referral |
+| `CapturePublicAffiliateReferral::run($request, $affiliateCode)` | Capture public referral |
 | `CreateAffiliate::run($data, $owner)` | Create a new affiliate |
 | `CreateTrackingLink::run($affiliate, $destinationUrl, $attributes)` | Create a tracking link |
 | `GenerateAffiliateCode::run($name)` | Generate a unique code |
@@ -38,20 +38,49 @@ arguments and returns a `RedirectResponse`.
 | `MatureConversion::run($conversion)` | Mature a single conversion |
 | `ProcessConversionMaturity::run()` | Process batch maturity |
 | `RecordAffiliateConversion::run($cart, $payload)` | Record a conversion |
-| `app(ReverseAffiliateConversion::class)->execute($conversion, $reason)` | Reverse a conversion (negated companion) |
+| `ReverseAffiliateConversion::run($conversion, $reason)` | Reverse a conversion (negated companion) |
+| `VoidAffiliateConversion::run($conversion, $reason)` | Settle a conversion as not payable |
 
 `RecordAffiliateConversion` accepts `origin` and `source_ref` in the
 payload to stamp provenance (e.g. `origin: network` with the network
 link code in `source_ref`). `ReverseAffiliateConversion` is idempotent
 on (conversion, reason): the original is marked reversed and a negated
 companion conversion posts, so sum-based readers stay correct.
+`VoidAffiliateConversion` rejects holding/approved conversions
+(holding/available voided) and routes paid conversions through
+reversal (clawback leg); terminal states are idempotent no-ops. Both
+refuse conversions reserved by an open payout — see
+`AffiliateConversion::assertNotReservedByOpenPayout()` in
+[Models](05-models.md).
 
 ### Payouts Actions (`Actions/Payouts/`)
 
 | Action | Purpose |
 |--------|---------|
+| `AssertPayoutCompletable::run($payout)` | Completion gate (shared by manual + reconcile paths) |
 | `CreatePayout::run($conversionIds, $attributes)` | Create a payout batch |
 | `UpdatePayoutStatus::run($payout, $status, $notes, $metadata)` | Update payout status |
+
+Completion runs through a single eligibility gate.
+`AssertPayoutCompletable` resolves the affiliate from the linked
+conversions, or from the payout payee for manual-record payouts that
+link none; payouts whose conversions span more than one affiliate are
+refused outright, since a payout must belong to one affiliate. The gate
+then refuses affiliates that can no longer receive payouts
+(throwing `PayoutCompletionBlockedException`, an
+`InvalidArgumentException`) — unless the payout was created with a
+`payout_override_reason` for a disabled affiliate. The validated reason
+is stamped onto `metadata.payout_override` at creation, either via
+`CreatePayout::run($ids, ['payout_override_reason' => ...])` or via the
+payout create form's override field (caller-supplied metadata can never
+forge it), and the completion time is recorded as
+`override_completed_at`. Completing a reserved payout also asserts
+every linked conversion left `Approved` in the same write; a drifted
+conversion aborts the whole completion instead of paying a partial
+batch. Manual-record payouts complete as bookkeeping records: the
+eligibility gate applies, but no balance is debited because no funds
+were reserved — see the reconciliation caveat in
+[Troubleshooting](99-troubleshooting.md).
 
 ## CommissionCalculator
 
@@ -68,10 +97,14 @@ $commissionMinor = $calculator->calculate($affiliate, 14000);
 ```
 
 A fixed-rate affiliate returns `commission_rate` verbatim; a percentage
-affiliate multiplies by `commission_rate / affiliates.currency.percentage_scale`
+affiliate multiplies by `commission_rate / (affiliates.currency.percentage_scale * 100)`
 (default `100`, so `1000` = 10%). Multi-level/upline allocation, volume tiers,
 promotions, and rule context live in `Services\Commissions\CommissionRuleEngine`
 and `AllocateUplineCommissions`, not here.
+
+Per-program rules, volume tiers, and promotions are evaluated by
+`CommissionRuleEngine::calculate()` with the affiliate's program rules;
+see [Programs](07-programs.md).
 
 ## PayoutReconciliationService
 
@@ -116,6 +149,10 @@ $result = $service->analyzeConversion($conversion);
 $profile = $service->getRiskProfile($affiliate);
 // ['total_score', 'severity', 'signal_count', 'by_rule', 'pending_review', 'confirmed']
 ```
+
+Individual checks live in `Rules/` (velocity, self-referral, device
+fingerprint, geo anomaly, unusual amount, rapid conversion). See
+[Fraud Detection](09-fraud-detection.md).
 
 ## UplineService
 

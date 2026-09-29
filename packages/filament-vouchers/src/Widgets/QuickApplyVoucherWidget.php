@@ -6,6 +6,7 @@ namespace AIArmada\FilamentVouchers\Widgets;
 
 use AIArmada\Cart\Snapshots\CartInstanceManager;
 use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRecordOwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\Vouchers\Exceptions\VoucherException;
@@ -20,6 +21,7 @@ use Filament\Widgets\Widget;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Lazy;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Validate;
 use Throwable;
 
@@ -32,7 +34,9 @@ use Throwable;
 final class QuickApplyVoucherWidget extends Widget implements HasForms
 {
     use InteractsWithForms;
+    use VerifiesRecordOwnerContext;
 
+    #[Locked]
     public ?Model $record = null;
 
     #[Validate('required|string|max:255')]

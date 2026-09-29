@@ -51,10 +51,12 @@ Colors come from `FormatsSubscriptionStatus::getStatusColor()`:
 
 The view page shows:
 
-1. **Subscription Details** – Type, status, price, quantity
-2. **Billing Information** – Interval, next billing date, recurring token
-3. **Trial & Cancellation** – Trial end, grace period, cancellation dates
-4. **Timestamps** – Created and updated dates
+1. **Subscription Overview** – Type, CHIP ID, status, quantity
+2. **Plan Details** – Price, billing interval, recurring token
+3. **Customer** – Owning billable model
+4. **Billing Schedule** – Trial end, next billing date, grace period, cancellation dates
+5. **Discount** – Applied coupon details
+6. **Timestamps** – Created and updated dates
 
 ### Relation Manager
 
@@ -122,9 +124,10 @@ View billable models and their CHIP client information.
 
 ### Infolist Sections
 
-1. **Customer Information** – Name, email, phone
-2. **CHIP Details** – Client ID, default payment method
-3. **Subscriptions** – List of all subscriptions
+1. **Customer Details** – Name, email, phone
+2. **Billing Information** – CHIP client ID, default payment method
+3. **Subscription Status** – Trial state and subscription counts
+4. **Account Information** – Created and updated dates
 
 ### Customizing the Resource
 
@@ -134,8 +137,8 @@ runtime instead of subclassing:
 ```php
 use AIArmada\CashierChip\Billing\Cashier;
 
-// e.g. in a service provider boot()
-Cashier::useCustomerModel(App\Models\Team::class);
+// In AppServiceProvider::boot()
+Cashier::useCustomerModel(\App\Models\Team::class);
 ```
 
 ## InvoiceResource

@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\Disabled;
+use AIArmada\Affiliates\States\Draft;
+use AIArmada\Affiliates\States\Paused;
 use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -111,5 +114,103 @@ it('rejects affiliate ids outside the current owner scope during payout create',
             'total_minor' => 1000,
             'currency' => 'USD',
         ]))->toThrow(ValidationException::class, 'The selected affiliate is not accessible in the current owner scope.');
+    });
+});
+
+function createPayoutOverrideAffiliate(string $status): array
+{
+    $owner = User::create([
+        'name' => 'Payout Override Owner ' . uniqid(),
+        'email' => 'payout-override-' . uniqid() . '@example.com',
+        'password' => 'secret',
+    ]);
+
+    $affiliate = OwnerContext::withOwner($owner, function () use ($status): Affiliate {
+        return Affiliate::create([
+            'code' => 'AFF-' . Str::uuid(),
+            'name' => 'Payout Override Affiliate',
+            'status' => $status,
+            'commission_type' => 'percentage',
+            'commission_rate' => 500,
+            'currency' => 'USD',
+        ]);
+    });
+
+    return [$owner, $affiliate];
+}
+
+function invokePayoutMutate(array $data): array
+{
+    $page = new CreateAffiliatePayout;
+
+    $method = new ReflectionMethod(CreateAffiliatePayout::class, 'mutateFormDataBeforeCreate');
+    $method->setAccessible(true);
+
+    return $method->invoke($page, $data);
+}
+
+it('stamps a payout override for a disabled affiliate with a reason', function (): void {
+    [$owner, $affiliate] = createPayoutOverrideAffiliate(Disabled::class);
+
+    $mutated = OwnerContext::withOwner($owner, fn (): array => invokePayoutMutate([
+        'affiliate_id' => $affiliate->getKey(),
+        'total_minor' => 5500,
+        'currency' => 'USD',
+        'payout_override_reason' => 'Earned before closure',
+    ]));
+
+    expect($mutated['metadata']['payout_override']['reason'])->toBe('Earned before closure')
+        ->and($mutated['metadata']['payout_override']['affiliate_status'])->toBe('disabled')
+        ->and($mutated['metadata']['payout_override']['overridden_at'])->not->toBeNull();
+});
+
+it('ignores a payout override reason for a payable affiliate', function (): void {
+    [$owner, $affiliate] = createPayoutOverrideAffiliate(Active::class);
+
+    $mutated = OwnerContext::withOwner($owner, fn (): array => invokePayoutMutate([
+        'affiliate_id' => $affiliate->getKey(),
+        'total_minor' => 5500,
+        'currency' => 'USD',
+        'payout_override_reason' => 'Not needed',
+    ]));
+
+    expect($mutated['metadata'] ?? [])->not->toHaveKey('payout_override');
+});
+
+it('rejects a payout override reason for a paused affiliate', function (): void {
+    [$owner, $affiliate] = createPayoutOverrideAffiliate(Paused::class);
+
+    OwnerContext::withOwner($owner, function () use ($affiliate): void {
+        expect(fn () => invokePayoutMutate([
+            'affiliate_id' => $affiliate->getKey(),
+            'total_minor' => 5500,
+            'currency' => 'USD',
+            'payout_override_reason' => 'Should unpause instead',
+        ]))->toThrow(ValidationException::class, 'must be unpaused');
+    });
+});
+
+it('rejects creating a payout for a non-payable affiliate without a reason', function (): void {
+    [$owner, $affiliate] = createPayoutOverrideAffiliate(Draft::class);
+
+    OwnerContext::withOwner($owner, function () use ($affiliate): void {
+        expect(fn () => invokePayoutMutate([
+            'affiliate_id' => $affiliate->getKey(),
+            'total_minor' => 5500,
+            'currency' => 'USD',
+        ]))->toThrow(ValidationException::class, 'cannot receive payouts');
+    });
+});
+
+it('rejects a payout override reason for any other non-payable status', function (): void {
+    [$owner, $affiliate] = createPayoutOverrideAffiliate(Draft::class);
+
+    OwnerContext::withOwner($owner, function () use ($affiliate): void {
+        expect(fn () => invokePayoutMutate([
+            'affiliate_id' => $affiliate->getKey(),
+            'total_minor' => 5500,
+            'currency' => 'USD',
+            'payout_override_reason' => 'Still a draft',
+        ]))->toThrow(ValidationException::class, 'only disabled affiliates accept an audited override reason');
     });
 });

@@ -39,7 +39,6 @@ the lifecycle timestamps in sync:
 - `options()`
 - `categories()`
 - `collections()`
-- `attributeSet()`
 - `attributeValues()`
 - `prices()` when the pricing package is installed
 
@@ -184,7 +183,7 @@ Identity is enforced in `EnforcesOwnerUniqueIdentity::bootEnforcesOwnerUniqueIde
 
 - `Product::uniqueIdentityColumns()` returns `['slug', 'sku']`; `Variant` returns `['sku']`; `Category` returns `['slug']` scoped further by `parent_id` via `modifyUniqueIdentityQuery()`.
 - Owner-scoped rows match `(owner_type, owner_id, identity)`; global rows match `(identity)` with `owner_* IS NULL`. Category root/child rows use separate partials so `parent_id = null` stays a first-class identity value.
-- Conflicts throw `UniqueConstraintViolationException` on create and `InvalidArgumentException` on update. There is no `createOrFirst()` helper and no `parent_scope` column in `src/`; use `first()` + `create()` explicitly.
+- Conflicts throw `InvalidArgumentException` from the `saving` pre-check on both create and update; under concurrency the partial unique indexes surface as `QueryException`. There is no `createOrFirst()` helper and no `parent_scope` column in `src/`; use `first()` + `create()` explicitly.
 
 ```php
 use AIArmada\Products\Models\Product;

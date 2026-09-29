@@ -76,7 +76,7 @@ public function addressHierarchies(): array
 }
 ```
 
-- `kind` is `state` for the top level that mirrors `State` rows, `area` for everything below it. State-kind levels carry no `assignmentRole`: a `State` is selected through `state_id`, never as an area assignment. (Singapore is the exception that proves the rule: it has no states, so all its levels are `kind: 'area'`.)
+- `kind` is `state` for the top level that mirrors `State` rows, `area` for everything below it. State-kind levels carry no `assignmentRole`: a `State` is selected through `state_id`, never as an area assignment. (Singapore is the exception that proves the rule: it has no state-kind level, so all its levels are `kind: 'area'`.)
 - `areaTypes` / `areaType` constrain which CSV area `type` values may fill the level. Use the plural spelling; the singular exists only as a fallback and no bundled provider uses it. State-kind levels use `areaLevel: 1` (singular is the template norm here); area sub-levels use plural `areaLevels`.
 - `parentKey` names the parent level `key` within the same hierarchy. It is required on every `area` level except a hierarchy root: Singapore's root `postal_district` and `region` levels are `kind: 'area'` with no parent, and carry none.
 - `assignmentRole` is effectively required on every `area` level: without it the role falls back to `{hierarchy}_{level}` (e.g. `administrative_district`), but every bundled area level sets an explicit role. Use the level key as the role (`mukim`, `regency`, `district`, `province`); only prefix with the hierarchy key when one country needs distinct roles per hierarchy (`postal_locality` vs `administrative_district` in Malaysia).
@@ -320,7 +320,7 @@ Every assignment role and area type in use across the bundled providers, extract
 
 ### Area types by level
 
-Level 1 is always state-kind (one level per country, `areaLevel: 1`), except Singapore, which has no states: its level-1 `postal_district` and `region` are `kind: 'area'`.
+Level 1 is always state-kind (one level per country, `areaLevel: 1`), except Singapore, which has no state-kind level: its level-1 `postal_district` and `region` are `kind: 'area'`.
 
 State-level (kind `state`, level 1): administrative_precinct, administrative_region, arctic_region, area, atoll, autonomous_city, autonomous_community, autonomous_district, autonomous_oblast, autonomous_region, autonomous_republic, autonomous_sector, autonomous_territorial_unit, borough, canton, capital_city, capital_district, capital_territory, chain, city, city_with_county_rights, commune, county, department, dependency, district, districts_under_republic_administration, division, economic_prefecture, emirate, entity, federal_city, federal_dependency, federal_district, geographical_region, governorate, indigenous_region, island, island_council, krai, local_council, metropolitan_administration, metropolitan_city, municipality, nation, oblast, okrug, overseas_collectivity, overseas_region, parish, popularate, prefecture, province, quarter, region, republic, sheading, special_administrative_region, special_city, special_island_authority, special_municipality, special_self_governing_city, special_self_governing_province, state, state_city, territorial_unit, territory, town, town_council, union_territory, urban_community, urban_municipality, village, voivodeship, ward, wilaya, wilayah_persekutuan.
 

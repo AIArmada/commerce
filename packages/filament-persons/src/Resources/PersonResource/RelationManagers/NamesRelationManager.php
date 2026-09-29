@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentPersons\Resources\PersonResource\RelationManagers;
 
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\CommerceSupport\Models\Language;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
@@ -19,6 +20,8 @@ use Illuminate\Support\Facades\Cache;
 
 final class NamesRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'names';
 
     protected static ?string $title = 'Names';

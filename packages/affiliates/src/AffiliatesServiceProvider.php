@@ -10,8 +10,10 @@ use AIArmada\Affiliates\Contracts\AffiliateLookup;
 use AIArmada\Affiliates\Contracts\MerchantCatalog;
 use AIArmada\Affiliates\Contracts\MerchantIdentity;
 use AIArmada\Affiliates\Contracts\MerchantLedger;
+use AIArmada\Affiliates\Contracts\QualifiesForOpenApproval;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
 use AIArmada\Affiliates\Events\AffiliateProgramJoined;
+use AIArmada\Affiliates\Listeners\AutoApproveOpenAffiliate;
 use AIArmada\Affiliates\Listeners\NotifyConversionRecorded;
 use AIArmada\Affiliates\Listeners\NotifyProgramJoined;
 use AIArmada\Affiliates\Listeners\RecordCommissionForOrder;
@@ -56,6 +58,7 @@ use AIArmada\Affiliates\Services\FraudDetectionService;
 use AIArmada\Affiliates\Services\MerchantCatalogService;
 use AIArmada\Affiliates\Services\MerchantIdentityService;
 use AIArmada\Affiliates\Services\MerchantLedgerService;
+use AIArmada\Affiliates\Services\OpenApprovalPolicy;
 use AIArmada\Affiliates\Services\PayoutReconciliationService;
 use AIArmada\Affiliates\Services\Payouts\PayoutProcessorFactory;
 use AIArmada\Affiliates\Services\ProgramCatalogService;
@@ -109,6 +112,7 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
     {
         $this->app->singleton(CommissionCalculator::class);
         $this->app->singleton(AffiliateLookup::class, DatabaseAffiliateLookup::class);
+        $this->app->singleton(QualifiesForOpenApproval::class, OpenApprovalPolicy::class);
         $this->app->singleton(WebhookDispatcher::class);
         $this->app->singleton(AttributionModel::class);
         $this->app->singleton(UplineService::class);
@@ -182,6 +186,7 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
 
         Event::listen(AffiliateProgramJoined::class, NotifyProgramJoined::class);
         Event::listen(AffiliateConversionRecorded::class, NotifyConversionRecorded::class);
+        Event::listen(AffiliateConversionRecorded::class, AutoApproveOpenAffiliate::class);
 
         if (config('affiliates.cookies.enabled', true)) {
             $this->registerCookieTrackingMiddleware();

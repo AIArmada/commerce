@@ -69,6 +69,7 @@ php artisan migrate
 | `priority` | integer | Higher value = higher priority |
 | `is_default` | boolean | Default price list flag |
 | `is_active` | boolean | Active status |
+| `deactivated_at` | timestamp (nullable) | Deactivation timestamp, synced with `is_active` |
 | `customer_id` | uuid (nullable) | Specific customer assignment |
 | `segment_id` | uuid (nullable) | Customer segment assignment |
 | `starts_at` | timestamp (nullable) | Activation start date |
@@ -88,6 +89,7 @@ php artisan migrate
 | `compare_amount` | bigint (nullable) | Original/compare-at price |
 | `currency` | string(3) | Currency code |
 | `min_quantity` | integer | Minimum quantity for this price |
+| `deactivated_at` | timestamp (nullable) | Deactivation timestamp |
 | `starts_at` | timestamp (nullable) | Price start date |
 | `ends_at` | timestamp (nullable) | Price end date |
 
@@ -106,4 +108,5 @@ php artisan migrate
 | `amount` | bigint | Price for this tier |
 | `discount_type` | string (nullable) | 'percentage' or 'fixed' |
 | `discount_value` | bigint (nullable) | Discount value |
+| `is_active` | boolean | Active status |
 | `currency` | string(3) | Currency code |

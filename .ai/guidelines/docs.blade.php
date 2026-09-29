@@ -6,7 +6,6 @@
 - Use Markdown with YAML frontmatter. Every file must include a `title:` entry.
 
 ## Writing Rules
-- Use `##` for main sections and `###` for subsections.
 - Examples must be copy-paste ready, including imports and namespaces where relevant.
 - Cross-reference related docs using relative links.
 - Call out breaking changes explicitly and explain the migration path.

@@ -15,6 +15,7 @@ Complete reference for all table and form actions provided by the plugin.
 | Edit | - | - | Always | Open edit form |
 | Sync catalog | `heroicon-o-arrow-path` | Info | Always | Pull the merchant catalog now (requires confirmation) |
 | Verify | `heroicon-o-check-badge` | Success | When `isPending()` | Manually verify site |
+| Sync catalog | - | - | Always | Pull the merchant catalog now |
 | Reject | `heroicon-o-x-mark` | Danger | When `isPending()` | Reject site |
 | Suspend | `heroicon-o-pause` | Warning | When `isVerified()` | Suspend site |
 | Reinstate | `heroicon-o-play` | Success | When `isSuspended()` | Restore to verified |

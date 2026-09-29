@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCashierChip\Resources\SubscriptionResource\RelationManagers;
 
 use AIArmada\CashierChip\Subscription\SubscriptionItem;
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Filament\Actions\Action;
 use Filament\Forms\Components\TextInput;
@@ -15,6 +16,8 @@ use Filament\Tables\Table;
 
 final class SubscriptionItemsRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'items';
 
     protected static ?string $recordTitleAttribute = 'chip_price';

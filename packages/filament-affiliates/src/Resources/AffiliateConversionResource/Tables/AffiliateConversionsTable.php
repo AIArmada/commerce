@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource\Tables;
 
+use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
 use AIArmada\Affiliates\Actions\Conversions\ReverseAffiliateConversion as ReverseConversion;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\ApprovedConversion;
@@ -24,6 +25,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
 final class AffiliateConversionsTable
@@ -161,7 +163,7 @@ final class AffiliateConversionsTable
             ? OwnerWriteGuard::findOrFailForOwner(AffiliateConversion::class, $record->getKey())
             : AffiliateConversion::findOrFail($record->getKey());
 
-        app(ReverseConversion::class)->execute($conversion, $reason);
+        ReverseConversion::run($conversion, $reason);
     }
 
     public static function updateStatus(AffiliateConversion $record, ConversionStatus | string $status): bool
@@ -174,11 +176,31 @@ final class AffiliateConversionsTable
 
         $statusClass = ConversionStatus::resolveStateClassFor($status, $conversion);
 
-        $conversion->status->transitionTo($statusClass);
-        $conversion->approved_at = in_array($statusClass, [ApprovedConversion::class, PaidConversion::class], true)
-            ? ($conversion->approved_at ?? CarbonImmutable::now())
-            : null;
+        // The transition itself saves (DefaultTransition), so everything must
+        // happen inside one locked transaction: concurrent approves would
+        // otherwise double-credit from a stale previous status.
+        return DB::transaction(function () use ($conversion, $statusClass): bool {
+            $locked = AffiliateConversion::query()->whereKey($conversion->getKey())->lockForUpdate()->firstOrFail();
 
-        return $conversion->save();
+            if ($locked->status->equals($statusClass)) {
+                return true;
+            }
+
+            if ($statusClass === RejectedConversion::class
+                || $statusClass === ReversedConversion::class
+                || $statusClass === PaidConversion::class) {
+                $locked->assertNotReservedByOpenPayout();
+            }
+
+            $previousStatus = $locked->status;
+            $locked->approved_at = in_array($statusClass, [ApprovedConversion::class, PaidConversion::class], true)
+                ? ($locked->approved_at ?? CarbonImmutable::now())
+                : null;
+            $locked->status->transitionTo($statusClass);
+
+            app(ApplyConversionAccounting::class)->handle($locked, $previousStatus);
+
+            return true;
+        }, attempts: 3);
     }
 }

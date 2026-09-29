@@ -65,11 +65,11 @@ UpdatePayoutStatus::run($payout, 'completed', 'Processed successfully');
 
 ```php
 use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\Enums\PayoutStatus;
+use AIArmada\Affiliates\States\PendingPayout;
 
 $payout = AffiliatePayout::create([
     'reference' => 'PO-' . now()->format('Ymd') . '-' . str_pad($sequence, 4, '0', STR_PAD_LEFT),
-    'status' => PayoutStatus::Pending,
+    'status' => PendingPayout::class,
     'total_minor' => $totalAmount,
     'currency' => $affiliate->currency,
     'payee_type' => $affiliate->getMorphClass(),
@@ -86,17 +86,23 @@ $conversions->each(fn ($c) => $c->update(['affiliate_payout_id' => $payout->id])
 
 ## Payout Statuses
 
-```php
-use AIArmada\Affiliates\Enums\PayoutStatus;
+Payout status is a Spatie state (`States\PayoutStatus`); assign state classes on write:
 
-PayoutStatus::Pending;     // Awaiting processing
-PayoutStatus::Processing;  // Currently being processed
-PayoutStatus::Completed;   // Successfully paid
-PayoutStatus::Failed;      // Payment failed
-PayoutStatus::Cancelled;   // Cancelled by admin
+```php
+use AIArmada\Affiliates\States\CancelledPayout;
+use AIArmada\Affiliates\States\CompletedPayout;
+use AIArmada\Affiliates\States\FailedPayout;
+use AIArmada\Affiliates\States\PendingPayout;
+use AIArmada\Affiliates\States\ProcessingPayout;
+
+PendingPayout::class;     // Awaiting processing
+ProcessingPayout::class;  // Currently being processed
+CompletedPayout::class;   // Successfully paid
+FailedPayout::class;      // Payment failed
+CancelledPayout::class;   // Cancelled by admin
 ```
 
-`scheduled_at` is still available on the model and used by the scheduled-payout command, but there is no separate `Scheduled` enum state.
+`scheduled_at` is still available on the model and used by the scheduled-payout command, but there is no separate `Scheduled` state. The `Enums\PayoutStatus` enum mirrors these cases for reads and interop.
 
 ## Payout Methods
 
@@ -209,8 +215,8 @@ use AIArmada\Affiliates\Actions\Conversions\MatureConversion;
 // Promote all qualified conversions that have reached maturity
 $results = ProcessConversionMaturity::run();
 
-// Mature a specific conversion
-$conversion = MatureConversion::run($conversion);
+// Mature a specific conversion (returns bool)
+$matured = MatureConversion::run($conversion);
 ```
 
 Configure in `config/affiliates.php`:
@@ -280,8 +286,9 @@ The current maturity flow uses `holding_minor` for pre-payout commission state. 
 ### Processing with PayoutProcessorFactory
 
 ```php
-use AIArmada\Affiliates\Services\Payouts\PayoutProcessorFactory;
+use AIArmada\Affiliates\Actions\Payouts\UpdatePayoutStatus;
 use AIArmada\Affiliates\Enums\PayoutMethodType;
+use AIArmada\Affiliates\Services\Payouts\PayoutProcessorFactory;
 
 $factory = app(PayoutProcessorFactory::class);
 
@@ -293,13 +300,21 @@ $processor = $factory->make('stripe_connect');
 $result = $processor->process($payout);
 
 if ($result->isSuccess()) {
-    $payout->update([
-        'status' => PayoutStatus::Completed,
-        'paid_at' => now(),
-        'metadata' => array_merge($payout->metadata ?? [], [
-            'transaction_id' => $result->getStatus(),
-        ]),
+    $payout = UpdatePayoutStatus::run($payout, 'completed', 'Provider outcome: completed', [
+        'provider' => $result->metadata['provider'] ?? null,
+        'provider_status' => $result->getStatus(),
     ]);
+
+    // The 4th argument lands ONLY on the payout event. Persist the
+    // provider reference on the payout itself, like the real
+    // ProcessAffiliatePayout path does.
+    $payout->forceFill([
+        'external_reference' => $result->externalReference,
+        'metadata' => array_merge($payout->metadata ?? [], [
+            'provider' => $result->metadata['provider'] ?? null,
+            'provider_status' => $result->getStatus(),
+        ]),
+    ])->save();
 }
 ```
 
@@ -307,6 +322,9 @@ if ($result->isSuccess()) {
 affiliate's `payoutMethods` relation. `PayoutResult` exposes
 `isSuccess()` / `isPending()` / `isUnknown()` and `getStatus()`; there is no
 `isSuccessful()` or `getTransactionId()`.
+
+> [!WARNING]
+> Never complete a payout with a direct status write (`$payout->update(['status' => ...])`): it bypasses the completion eligibility gate, the Approved-only conversion sync, the payout event, and the operation sync — leaving conversions linked-but-approved against a payout that reported the money as sent. Always complete through `UpdatePayoutStatus::run($payout, 'completed', ...)` (or `ProcessAffiliatePayout::handle($payout)` for the full claim/processor flow).
 
 ## Payout Events
 

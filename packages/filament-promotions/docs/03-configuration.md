@@ -68,8 +68,7 @@ Control the order of the resource in navigation:
 ## Table polling
 
 There is no config key for table polling. `PromotionResource` is `final`, so
-override `getHeaderActions()` in an app-level resource subclass or disable
-polling in the table definition:
+build your own resource and disable polling in its table definition:
 
 ```php
 public static function table(Table $table): Table
@@ -89,11 +88,9 @@ Owner scoping is configured in the core promotions package:
 
 ```php
 // config/promotions.php
-'features' => [
-    'owner' => [
-        'enabled' => true,
-        'include_global' => true,
-    ],
+'owner' => [
+    'enabled' => true,
+    'include_global' => true,
 ],
 ```
 

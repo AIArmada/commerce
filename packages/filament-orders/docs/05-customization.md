@@ -205,7 +205,7 @@ namespace App\Filament\Resources\OrderResource\Schemas;
 
 use AIArmada\FilamentOrders\Resources\OrderResource\Schemas\OrderForm as BaseOrderForm;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Section;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 
 class OrderForm

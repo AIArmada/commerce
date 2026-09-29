@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEvents\Resources\EventResource\RelationManagers;
 
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\Events\States\OccurrenceStatus\OccurrenceStatus as OccurrenceStatusState;
 use Filament\Actions\ViewAction;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -13,6 +14,8 @@ use Filament\Tables\Table;
 
 final class SessionsRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'sessions';
 
     protected static ?string $title = 'Sessions';

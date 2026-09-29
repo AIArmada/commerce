@@ -42,7 +42,7 @@ A Filament admin panel plugin for managing CHIP payment gateway data. Provides e
 
 ## Key Features
 
-- **Essential Resources** - Purchase and Client management (more available optionally)
+- **Essential Resources** - Purchase, Client, Payment, SendInstruction, and BankAccount management (plus CompanyStatement via developer resources)
 - **Analytics Dashboard** - Revenue metrics and transaction insights
 - **Key Widgets** - Revenue charts, stats, recent transactions
 - **Owner Scoping** - Multi-tenancy ready with owner-based isolation
@@ -97,8 +97,12 @@ The plugin registers by default:
 | `RecentTransactionsWidget` | ✅ Default | Latest purchases table |
 | `AccountBalanceWidget` | Optional | CHIP account balance |
 | `AccountTurnoverWidget` | Optional | Account turnover stats |
+| `BankAccountStatusWidget` | Optional | Bank account verification status |
+| `PaymentMethodsWidget` | Optional | Payment method distribution chart |
+| `PayoutAmountWidget` | Optional | Total payout amounts |
 | `PayoutStatsWidget` | Optional | Payout statistics |
 | `RecentPayoutsWidget` | Optional | Latest payouts table |
+| `TokenStatsWidget` | Optional | Saved token statistics |
 
 ## Requirements
 

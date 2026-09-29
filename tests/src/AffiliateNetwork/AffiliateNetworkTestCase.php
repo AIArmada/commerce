@@ -90,6 +90,10 @@ abstract class AffiliateNetworkTestCase extends Orchestra
         $app['config']->set('affiliate-network.owner.enabled', false);
         $app['config']->set('affiliate-network.owner.include_global', false);
         $app['config']->set('affiliates.owner.enabled', false);
+
+        // Pin the default take-rate so suites never inherit ambient env values
+        // (AFFILIATE_NETWORK_FEE_BP from a local .env would otherwise change behavior).
+        $app['config']->set('affiliate-network.fees.default_bp', 0);
     }
 
     protected function getPackageProviders($app): array

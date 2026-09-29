@@ -98,7 +98,7 @@ The plugin automatically enables features based on installed packages:
 // Promotion administration is registered by aiarmada/filament-promotions.
 
 // PriceSimulator - only if products package is installed
-if (class_exists('\\AIArmada\\Products\\Models\\Product')) {
+if (class_exists('\\AIArmada\\Products\\Models\\Product') && class_exists('\\AIArmada\\Products\\Models\\Variant')) {
     $pages[] = Pages\PriceSimulator::class;
 }
 ```

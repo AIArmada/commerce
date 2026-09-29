@@ -56,4 +56,4 @@ keywords:
 
 ## Docs map
 - Start: `01-overview` → `03-configuration` → `04-usage` → `99-troubleshooting`
-- Deep dives: `05-country-data.md`, `06-consuming-packages.md`, `07-adoption-levels.md`, `08-package-playbooks.md`, `09-migration-recipes.md`, `10-contracts-and-examples.md`, `11-agent-rollout-checklists.md`, `12-navigation-links.md`
+- Deep dives: `05-country-data.md`, `06-consuming-packages.md`, `07-adoption-levels.md`, `08-package-playbooks.md`, `09-migration-recipes.md`, `10-contracts-and-examples.md`, `12-navigation-links.md`

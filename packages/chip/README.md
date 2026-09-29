@@ -130,11 +130,11 @@ php artisan chip:health
 
 ## Documentation
 
-- [Payment Gateway](docs/payment-gateway.md) – Universal gateway interface
-- [CHIP Collect](docs/chip-collect.md) – Payments and purchases
-- [CHIP Send](docs/chip-send.md) – Disbursements and payouts
-- [Webhooks](docs/webhooks.md) – Event handling
-- [API Reference](docs/api-reference.md) – Complete method reference
+- [Payment Gateway](docs/06-payment-gateway.md) – Universal gateway interface
+- [CHIP Collect](docs/07-chip-collect.md) – Payments and purchases
+- [CHIP Send](docs/08-chip-send.md) – Disbursements and payouts
+- [Webhooks](docs/09-webhooks.md) – Event handling
+- [API Reference](docs/10-api-reference.md) – Complete method reference
 
 ## License
 

@@ -13,6 +13,7 @@ use AIArmada\FilamentEvents\Pages\EventPublicPreview;
 use AIArmada\FilamentEvents\Resources\EventResource\Pages\ViewEvent;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 afterEach(function (): void {
     if (class_exists(Mockery::class)) {
@@ -82,12 +83,18 @@ it('scopes the special page queries to the current owner', function (): void {
     $ownerBPasses = OwnerContext::withOwner($ownerB, fn (): array => (new CheckInConsole)->table($makeTable())->getQuery()->pluck('id')->all());
 
     $previewPage = new EventPublicPreview;
-    OwnerContext::withOwner($ownerA, function () use ($previewPage, $ownerBGraph): void {
-        $previewPage->mount($ownerBGraph['event']->id);
-    });
+
+    // A cross-owner event id must not leak into the preview: mount aborts 404.
+    try {
+        OwnerContext::withOwner($ownerA, fn () => $previewPage->mount($ownerBGraph['event']->id));
+        $previewAborted = null;
+    } catch (NotFoundHttpException) {
+        $previewAborted = 404;
+    }
 
     expect($ownerAPasses)->toBe([$ownerAGraph['pass']->id])
         ->and($ownerBPasses)->toBe([$ownerBGraph['pass']->id])
+        ->and($previewAborted)->toBe(404)
         ->and($previewPage->event)->toBeNull();
 });
 

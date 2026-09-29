@@ -72,7 +72,7 @@ The Filament resources apply `OwnerUiScope::apply(..., includeGlobal: false)` by
 
 Free registrations created via `RegisterForFreeAction` do not have registration items. `IssueEventRegistrationPassesAction` handles this by ensuring a hidden zero-priced `TicketType` for the resolved event scope, then issuing a single generic pass. Verify `issue_passes_for_free` is enabled at the event/occurrence/session level, or left `null` so it can inherit the parent or configured default.
 
-### `RegisterForFreeAction` throws `UseRecordWalkInActionException` or `UseRecordHeadcountLogActionException`
+### `RegisterForFreeAction` throws `UseRecordWalkInActionException` or `UseRecordHeadcountActionException`
 
 The event's `registration_mode` is `None`, and `open_door_mode` is set to `walk_in` or `headcount`. Use `RecordWalkInAction` or `RecordHeadcountLogAction` instead.
 
@@ -99,3 +99,7 @@ Status values stored in the database are unchanged. Allowed transitions are defi
 ### `DefaultEventRegistrationScopeResolver` TypeError on explicit mode
 
 When a session or occurrence has an explicit `pricing_mode` or `registration_mode` column value, the model cast may already return the enum instance. The resolver handles both cases (raw string and pre-cast enum). If you see `TypeError: ::from()` in the stack trace, ensure your package version includes the `instanceof` guard added in this feature.
+
+## A change notice was not delivered
+
+Change notices publish via `EventChangeNoticeWorkflow::publishNotice($changeLog)` and deliver through the `aiarmada/communications` manager. If recipients did not receive a notice, check the `EventChangeLog` record exists, the audience resolver returned recipients, each recipient has a mail destination (a valid `email` attribute or `routeNotificationForMail()`), and the communications outbox/logs for transport errors.

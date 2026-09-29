@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource\RelationManagers;
 
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
@@ -20,6 +21,8 @@ use Filament\Tables\Table;
 
 final class TiersRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'tiers';
 
     public function form(Schema $schema): Schema

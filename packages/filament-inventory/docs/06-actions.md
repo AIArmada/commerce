@@ -29,6 +29,8 @@ ReceiveStockAction::make()
 | received_at | DatePicker | Movement date, defaults to now |
 | notes | Textarea | Quality notes, inspection results |
 
+The action runs against the current record as the inventoryable model. The location is revalidated server-side; the reason is built from PO/supplier.
+
 **Behavior:**
 - Creates a `receipt` movement
 - `purchase_order` and `supplier` are joined into the movement `reason`

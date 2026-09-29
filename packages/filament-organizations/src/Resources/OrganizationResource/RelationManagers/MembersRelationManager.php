@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentOrganizations\Resources\OrganizationResource\RelationManagers;
 
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\FilamentOrganizations\Resources\OrganizationResource;
 use AIArmada\Membership\Actions\AddMemberAction;
 use AIArmada\Membership\Actions\ChangeMemberRoleAction;
@@ -21,6 +22,8 @@ use Illuminate\Database\Eloquent\Model;
 
 final class MembersRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'members';
 
     public function table(Table $table): Table

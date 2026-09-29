@@ -10,7 +10,7 @@ title: Installation
 - Laravel 13+
 - Filament v5
 - `aiarmada/affiliate-network` package
-- `aiarmada/affiliates` package
+- `aiarmada/affiliates` package (optional; enables the engine-backed network seams)
 
 ## Install via Composer
 
@@ -18,8 +18,8 @@ title: Installation
 composer require aiarmada/filament-affiliate-network
 ```
 
-The core packages `aiarmada/affiliate-network` and `aiarmada/affiliates` are
-installed as dependencies. `aiarmada/filament-affiliates` remains optional.
+The core package `aiarmada/affiliate-network` is installed as a dependency.
+`aiarmada/affiliates` and `aiarmada/filament-affiliates` remain optional.
 
 ## Publish Configuration
 
@@ -45,7 +45,7 @@ public function panel(Panel $panel): Panel
 
 ## Publish Views (Optional)
 
-To customize the dashboard view:
+To customize the merchant dashboard view:
 
 ```bash
 php artisan vendor:publish --tag=filament-affiliate-network-views

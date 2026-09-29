@@ -67,6 +67,7 @@ This creates `config/filament-cashier.php`. Its top-level sections are:
 
 // Customer Portal (Billing Panel)
 'billing_portal' => [
+    'enabled' => false,
     'panel_id' => 'billing',
     'path' => 'billing',
     'brand_name' => 'Billing Portal',
@@ -86,7 +87,7 @@ This creates `config/filament-cashier.php`. Its top-level sections are:
 ```
 
 > **info**
-> `billing_portal` has no `enabled` flag. The portal only exists once
+> The `billing_portal.enabled` key is reserved and is not read. The portal only exists once
 > `BillingPanelProvider` is registered. `features.subscriptions` is the only
 > `features.*` key the code reads (it gates the "new subscription" header
 > action on `ManageSubscriptions`).
@@ -145,7 +146,7 @@ For multi-currency setups:
 
 ```php
 'currency' => [
-    'base' => 'USD',                // Base currency for totals
+    'base' => 'MYR',                // Base currency for totals
     'display_converted' => false,   // Convert all amounts to base currency
     'conversion_rates' => [
         'MYR' => 4.70,

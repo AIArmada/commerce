@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Services;
 
+use AIArmada\Affiliates\Actions\Payouts\AssertPayoutCompletable;
+use AIArmada\Affiliates\Exceptions\PayoutCompletionBlockedException;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliatePayout;
@@ -24,6 +26,13 @@ use Illuminate\Support\Facades\DB;
 
 final class PayoutReconciliationService
 {
+    /**
+     * Operation code marking a payout the completion gate refused.
+     * Blocked payouts need operator action, not re-polling: the
+     * provider outcome is already known.
+     */
+    public const COMPLETION_BLOCKED_CODE = 'PAYOUT_COMPLETION_BLOCKED';
+
     public function __construct(private readonly CurrencyConverter $converter) {}
 
     /** @param array<string, mixed> $externalData */
@@ -58,8 +67,11 @@ final class PayoutReconciliationService
                 : mb_strtolower($externalStatus);
             $newStatus = PayoutStatus::fromString($statusClass, $locked);
 
+            $overrideReason = null;
+
             if ($newStatus->equals(CompletedPayout::class)) {
                 $locked->assertHomogeneousConversions();
+                $overrideReason = AssertPayoutCompletable::run($locked);
             }
 
             $metadata = array_merge($locked->metadata ?? [], array_filter([
@@ -98,7 +110,7 @@ final class PayoutReconciliationService
             $locked->events()->create([
                 'from_status' => $fromStatus,
                 'to_status' => $newStatus->getValue(),
-                'notes' => 'Provider status reconciled to ' . $newStatus->getValue(),
+                'notes' => 'Provider status reconciled to ' . $newStatus->getValue() . ($overrideReason !== null ? ' under payout override: ' . $overrideReason : ''),
                 'metadata' => ['provider_status' => $providerStatus],
             ]);
 
@@ -111,10 +123,26 @@ final class PayoutReconciliationService
     private function syncConversions(AffiliatePayout $payout, PayoutStatus $newStatus): void
     {
         if ($newStatus->equals(CompletedPayout::class)) {
-            $payout->conversions()->update([
-                'status' => PaidConversion::value(),
-                'paid_at' => CarbonImmutable::now(),
-            ]);
+            // Approved-only plus a count check: a conversion that left
+            // Approved out of band (raced reversal) fails the completion
+            // instead of being silently rewritten to paid.
+            $expected = $payout->conversions()->count();
+
+            $affected = $payout->conversions()
+                ->where('status', ApprovedConversion::value())
+                ->update([
+                    'status' => PaidConversion::value(),
+                    'paid_at' => CarbonImmutable::now(),
+                ]);
+
+            if ($affected !== $expected) {
+                throw new PayoutCompletionBlockedException(sprintf(
+                    'Payout [%s] cannot complete: %d of %d linked conversions left Approved out of band.',
+                    (string) $payout->getKey(),
+                    $expected - $affected,
+                    $expected,
+                ));
+            }
 
             return;
         }
@@ -169,6 +197,7 @@ final class PayoutReconciliationService
     public function getPayoutsNeedingReconciliation(): Collection
     {
         return AffiliatePayout::query()
+            ->with('operation')
             ->whereIn('status', [ProcessingPayout::value(), PendingPayout::value()])
             ->where(static function ($query): void {
                 $query->whereHas('operation', static function ($operationQuery): void {
@@ -176,7 +205,13 @@ final class PayoutReconciliationService
                 })->orWhereNotNull('external_reference');
             })
             ->where('updated_at', '<=', CarbonImmutable::now()->subMinutes(5))
-            ->get();
+            ->get()
+            // Gate-blocked payouts are excluded in PHP rather than SQL so
+            // the external_reference branch cannot smuggle them back in:
+            // re-polling a known provider outcome would spam a provider
+            // call and a fresh timeline event per cycle.
+            ->reject(fn (AffiliatePayout $payout): bool => $payout->operation?->last_error_code === self::COMPLETION_BLOCKED_CODE)
+            ->values();
     }
 
     /** @return array<string, mixed> */

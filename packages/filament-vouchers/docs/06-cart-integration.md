@@ -89,24 +89,7 @@ class ViewCart extends BaseViewCart
 
 ### Edit Cart Page
 
-```php
-// app/Filament/Resources/CartResource/Pages/EditCart.php
-namespace App\Filament\Resources\CartResource\Pages;
-
-use AIArmada\FilamentCart\Resources\CartResource\Pages\EditCart as BaseEditCart;
-use AIArmada\FilamentVouchers\Extensions\CartVoucherActions;
-
-class EditCart extends BaseEditCart
-{
-    protected function getHeaderActions(): array
-    {
-        return [
-            CartVoucherActions::applyVoucher(),
-            ...parent::getHeaderActions(),
-        ];
-    }
-}
-```
+`CartResource` is read-only (list and view pages only; editing is disabled), so there is no edit page to extend. Attach voucher actions to `ViewCart` as shown above.
 
 ## Cart Widgets
 

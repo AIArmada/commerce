@@ -159,7 +159,7 @@ Payment records.
 | `id` | `string` | UUID primary key |
 | `order_id` | `string` | Parent order ID |
 | `gateway` | `string` | Payment gateway name |
-| `transaction_id` | `string` | Gateway transaction ID |
+| `transaction_id` | `string\|null` | Gateway transaction ID |
 | `amount` | `int` | Amount in cents |
 | `currency` | `string` | Currency code |
 | `status` | `PaymentStatus` | Enum status |
@@ -177,11 +177,11 @@ Refund records.
 | `id` | `string` | UUID primary key |
 | `order_id` | `string` | Parent order ID |
 | `payment_id` | `string\|null` | Related payment ID |
-| `gateway` | `string\|null` | Refund gateway |
+| `gateway` | `string` | Refund gateway |
 | `transaction_id` | `string\|null` | Refund transaction ID |
 | `amount` | `int` | Refund amount in cents |
 | `currency` | `string` | Currency code |
-| `reason` | `string\|null` | Refund reason |
+| `reason` | `string` | Refund reason |
 | `status` | `RefundStatus` | Enum status |
 | `refunded_at` | `Carbon\|null` | Refund timestamp |
 | `failed_at` | `Carbon\|null` | Refund failure timestamp |
@@ -295,6 +295,8 @@ interface OrderServiceInterface
         int $amount,
         array $metadata = [],
     ): Order;
+
+    public function confirmFreeOrder(Order $order): Order;
 
     public function ship(
         Order $order,

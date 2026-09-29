@@ -62,6 +62,8 @@ Core metrics stats overview:
 `ChipStatsWidget` is `final`, so it cannot be subclassed. To add a metric, build your own
 `StatsOverviewWidget` and register it alongside the packaged widget:
 
+Package widgets are `final`, so build your own widget for custom metrics:
+
 ```php
 <?php
 

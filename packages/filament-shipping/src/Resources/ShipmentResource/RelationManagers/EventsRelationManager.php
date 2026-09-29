@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentShipping\Resources\ShipmentResource\RelationManagers;
 
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\Shipping\Enums\TrackingStatus;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
@@ -11,6 +12,8 @@ use Filament\Tables\Table;
 
 class EventsRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'events';
 
     protected static ?string $recordTitleAttribute = 'description';

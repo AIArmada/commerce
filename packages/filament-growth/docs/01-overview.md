@@ -25,7 +25,7 @@ The `aiarmada/filament-growth` package is the Filament admin adapter for `aiarma
 
 - [`aiarmada/growth`](../../growth/docs/01-overview.md) — core experimentation engine
 - [`aiarmada/signals`](../../signals/docs/01-overview.md) — tracked properties and event attribution
-- [`aiarmada/commerce-support`](../../commerce-support/docs/04-multi-tenancy.md) — owner resolution and scoping primitives
+- [`aiarmada/commerce-support`](../../commerce-support/docs/14-multi-tenancy.md) — owner resolution and scoping primitives
 
 ## Main models services or surfaces
 
@@ -73,7 +73,7 @@ The `aiarmada/filament-growth` package is the Filament admin adapter for `aiarma
 
 - [`aiarmada/growth`](../../growth/docs/01-overview.md) for the experiment, variant, assignment, and metrics domain layer
 - [`aiarmada/signals`](../../signals/docs/01-overview.md) for tracked properties and event attribution
-- [`aiarmada/commerce-support`](../../commerce-support/docs/04-multi-tenancy.md) for owner resolution and scoping behavior
+- [`aiarmada/commerce-support`](../../commerce-support/docs/14-multi-tenancy.md) for owner resolution and scoping behavior
 
 ## Next steps
 

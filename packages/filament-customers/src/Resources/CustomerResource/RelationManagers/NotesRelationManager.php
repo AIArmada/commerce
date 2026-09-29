@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCustomers\Resources\CustomerResource\RelationManagers;
 
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\Customers\Models\CustomerNote;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -22,6 +23,8 @@ use Illuminate\Support\Facades\Gate;
 
 class NotesRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'notes';
 
     protected static ?string $recordTitleAttribute = 'content';

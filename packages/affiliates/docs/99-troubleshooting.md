@@ -114,13 +114,13 @@ RecordAffiliateConversion::run($cart, [
 
 2. **Volume tiers are configured correctly:**
 ```php
-AffiliateVolumeTier::where('affiliate_id', $affiliate->getKey())->get();
+AffiliateVolumeTier::where('program_id', $program->id)->get();
 ```
 
 3. **Commission rules priority:**
 ```php
-AffiliateCommissionRule::where('affiliate_id', $affiliate->getKey())
-    ->orderByDesc('priority')
+$program->commissionRules()
+    ->orderBy('priority', 'desc')
     ->get();
 ```
 
@@ -132,7 +132,7 @@ AffiliateCommissionRule::where('affiliate_id', $affiliate->getKey())
 
 1. **Conversion status is Approved:**
 ```php
-$conversion->status; // Should be ConversionStatus::Approved
+$conversion->status; // Should be an ApprovedConversion state
 ```
 
 If you are using the maturity workflow, a conversion may sit in `Qualified` until `php artisan affiliates:process-maturity` promotes it.
@@ -173,7 +173,7 @@ $affiliate->balanceFor('USD')?->available_minor >= 5000;
 1. **Payout method is configured:**
 ```php
 $affiliate->payoutMethods()
-    ->where('is_verified', true)
+    ->whereNotNull('verified_at')
     ->exists();
 ```
 
@@ -186,6 +186,42 @@ $affiliate->payoutMethods()
     ],
 ],
 ```
+
+### Payout Completion Blocked
+
+The completion gate refuses the payout (`PAYOUT_COMPLETION_BLOCKED`
+on the operation, reason on the payout timeline):
+
+1. **Affiliate can no longer receive payouts** (paused, or disabled
+   without an override): cancel the payout and re-create it with a
+   `payout_override_reason` when the balance was legitimately earned —
+   via `CreatePayout` attributes or the payout create form's override
+   field. The reason is audited onto `metadata.payout_override` and
+   stamped with `override_completed_at` on completion. Note the gate
+   also covers manual-record payouts (resolved via the payee), but
+   completing one debits no balance because no funds were reserved:
+   exclude unreserved payouts when investigating reconciliation
+   discrepancies.
+2. **A linked conversion left `Approved` out of band:** the whole
+   completion aborts rather than paying a partial batch. Inspect the
+   drifted conversion, restore it to `Approved` if the move was a
+   mistake, then retry.
+3. **Payout links conversions across N affiliates:** a payout must
+   belong to one affiliate. Unlink the foreign conversions (or split
+   into per-affiliate payouts) and retry.
+4. **Payout names no affiliate:** manual-record payouts resolve
+   eligibility through the payee — set an affiliate `payee_type` /
+   `payee_id` before completing.
+5. **Affiliate missing or outside the payout owner scope:** the
+   affiliate was deleted or lives under another owner. Restore it, or
+   move the payout into the owning scope, and retry.
+
+> [!WARNING]
+> Never cancel a payout the provider already paid: cancel returns the
+> funds and releases the conversions, so a paid-then-cancelled payout
+> double-pays when re-created. If money moved, complete (with an
+> override when the affiliate was disabled mid-flight) instead of
+> cancelling.
 
 ## Multi-Tenancy Issues
 

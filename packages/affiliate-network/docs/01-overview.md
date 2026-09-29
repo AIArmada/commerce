@@ -80,6 +80,8 @@ The `aiarmada/affiliate-network` package provides a complete multi-merchant affi
 Build an affiliate marketplace where merchants list offers and affiliates browse/apply:
 
 ```php
+use AIArmada\AffiliateNetwork\Enums\OfferStatus;
+use AIArmada\AffiliateNetwork\Enums\OfferVisibility;
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 
 // Get published public offers for marketplace display
@@ -155,7 +157,7 @@ affiliate-network/
 │   └── affiliate-network.php        # Package configuration
 ├── database/
 │   ├── factories/                   # 7 model factories
-│   ├── migrations/                  # 8 migration files
+│   ├── migrations/                  # 7 migration files
 ├── routes/
 │   └── api.php                      # Merchant postback route
 └── src/
@@ -167,11 +169,16 @@ affiliate-network/
     │   ├── RegisterSite.php              # Register a merchant site
     │   ├── SubmitOffer.php               # Submit an offer for approval
     │   └── UpdateOffer.php               # Update an existing offer
+    ├── Adapters/Affiliates/         # Local engine adapters (identity, ledger, catalog, fulfillment)
     ├── Console/Commands/
     │   ├── ArchiveExpiredOffersCommand.php # Batch archive expired offers
     │   ├── ReconcileNetworkLedgerCommand.php
     │   └── SyncSiteOffersCommand.php
     ├── Contracts/
+    │   ├── AffiliateIdentityResolver.php
+    │   ├── CatalogReaderInterface.php
+    │   ├── Fulfillment.php
+    │   ├── NetworkLedger.php
     │   └── SiteVerificationStrategyInterface.php
     ├── Events/
     │   ├── ApplicationApproved.php
@@ -180,6 +187,7 @@ affiliate-network/
     │   ├── OfferCreated.php
     │   └── OfferUpdated.php
     ├── Exceptions/
+    │   ├── AffiliatesNotInstalled.php
     │   ├── ApplicationAlreadySubmittedException.php
     │   ├── OfferNotFoundException.php
     │   └── SiteVerificationFailedException.php
@@ -206,6 +214,12 @@ affiliate-network/
     │   └── Concerns/
     │       └── ScopesByBelongsToOwner.php
     ├── Services/
+    │   ├── Catalog/                     # Local + remote catalog readers
+    │   ├── CreatorBalances.php
+    │   ├── HostManualFulfillment.php
+    │   ├── NetworkBooks.php
+    │   ├── NetworkLedgerReconciliationService.php
+    │   ├── OfferImportService.php
     │   ├── SiteVerificationService.php
     │   ├── OfferManagementService.php
     │   └── OfferLinkService.php

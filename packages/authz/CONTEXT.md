@@ -44,7 +44,7 @@ keywords:
 
 ## Key surfaces
 - Actions/Services: `Services/ImpersonateManager`, `Services/PermissionKeyBuilder`, `Services/WildcardPermissionResolver`, `Support/AuthzScopeContext`, `Support/AuthzScopeResolver`, `Support/AuthzScopeTeamResolver`, `Support/CommandProhibitor`, `Support/ImpersonationScopeGuard`
-- Config `authz.php`: `database`, `table_prefix`, `tables`, `roles`, `permissions`, `model_has_permissions`, `model_has_roles`, `role_has_permissions`, `scopes`, `super_admin_role`
+- Config `authz.php`: `database`, `super_admin_role`, `guards`, `users`, `wildcard_permissions`, `permissions`, `custom_permissions`, `sync`, `scopes`, `impersonate`
 
 ## Docs map
 - Start: `01-overview` → `03-configuration` → `04-usage` → `99-troubleshooting`

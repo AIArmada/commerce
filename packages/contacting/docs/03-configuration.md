@@ -107,4 +107,4 @@ required.
 ],
 ```
 
-You can add more platforms by adding a `label`, and optionally a `prefix` or `suffix` for URL normalization. Platforms without a URL pattern are still valid for manual entry and display only.
+The snippet above is trimmed; the published config ships a fuller platform list. You can add more platforms by adding a `label`, and optionally a `prefix` or `suffix` for URL normalization. Platforms without a URL pattern are still valid for manual entry and display only.

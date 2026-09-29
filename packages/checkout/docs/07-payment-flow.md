@@ -307,32 +307,15 @@ Processing ─────────────▶ AwaitingPayment ◀──�
 
 After payment confirmation, `CheckoutFinalizer::finalize()` runs:
 
-1. Transition the session status to `Processing` (when it is not already there)
-2. Transition the session status to `Completed`
-3. Dispatch `CheckoutCompleted`
-4. Clear the cart
-
-Voucher redemption is not a step: `RedeemVouchersOnCheckoutCompleted` listens for
-`CheckoutCompleted` and redeems the recorded commitments.
+1. Persist `order_id` on the session (before payment confirmation, so retries reuse the same order)
+2. Confirm payment on the order when `create_order.confirm_payment` is enabled (paid orders only)
+3. Redeem applied vouchers via the `CheckoutCompleted` listener
+4. Transition the session status through `Processing` to `Completed` (which stamps `completed_at`)
+5. Clear the cart
 
 ### Inventory Timing
 
-Checkout does **not** commit inventory reservations. `ReserveInventoryStep`
-places a reservation; the inventory package owns the commit path:
-
-- `aiarmada/inventory` listens for `PaymentConfirmed` and commits the
-  allocation (`CommitInventoryOnPayment`).
-- Separately, `PaymentConfirmed` in the orders package dispatches an
-  `InventoryDeductionRequired` event for its own deduction path
-  (`DeductInventoryOnOrder`).
-
-Both paths coexist — the inventory package is responsible for idempotent
-handling. `InventoryAdapter::commit()` exists on the checkout adapter but has
-no checkout caller; reaching it is the host's decision.
-
-`ReserveInventoryStep::compensate()` releases the whole reference group and is
-invoked by the step executor when a later step fails or throws. It honours
-`integrations.inventory.release_on_failure`.
+Checkout does not commit inventory reservations itself. `ReserveInventoryStep` places a group reservation before payment (or first in the post-payment phase when `reserve_before_payment` is `false`), and releases it on failure or cancellation through step compensation. Stock deduction flows through the orders package instead: its `PaymentConfirmed` transition dispatches `OrderProcessingStarted`, which the `DeductInventoryOnPaymentConfirmed` listener turns into an `InventoryDeductionRequired` event for the inventory package to handle idempotently. Free orders (`payment_data.type === 'free_order'`) use the dedicated `FreeOrderConfirmed` transition, which dispatches the same `OrderProcessingStarted` event without a payment record, paid timestamp, or `OrderPaid` event — and rejects the order when it no longer qualifies as free (for example after a live-cart reprice), recording a `free_order_reconciliation` mismatch on the session.
 
 ## Error Handling
 

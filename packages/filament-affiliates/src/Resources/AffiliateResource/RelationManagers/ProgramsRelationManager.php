@@ -7,6 +7,7 @@ namespace AIArmada\FilamentAffiliates\Resources\AffiliateResource\RelationManage
 use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramTier;
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\CommerceSupport\Support\LikeSearch;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
@@ -25,6 +26,8 @@ use Filament\Tables\Table;
 
 final class ProgramsRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'programs';
 
     public function form(Schema $schema): Schema

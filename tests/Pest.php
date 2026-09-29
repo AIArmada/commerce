@@ -33,6 +33,7 @@ use AIArmada\Events\Models\EventSession;
 use AIArmada\Events\Support\EventTicketScope;
 use AIArmada\Ticketing\Models\Pass;
 use AIArmada\Ticketing\Models\TicketType;
+use Illuminate\Support\Facades\DB;
 
 /*
 |--------------------------------------------------------------------------
@@ -289,3 +290,28 @@ beforeEach(function (): void {
     config()->set('customers.features.owner.enabled', true);
     config()->set('customers.features.owner.include_global', false);
 })->in('src/Customers'); // @phpstan-ignore method.notFound
+
+/**
+ * Capture DB::afterCommit callbacks so tests can invoke them on demand
+ * instead of letting them fire on transaction/savepoint release.
+ *
+ * @return Closure(): void
+ */
+function captureAfterCommitHooks(): Closure
+{
+    $afterCommitCallbacks = [];
+
+    $spy = Mockery::mock(DB::getFacadeRoot())->makePartial();
+    $spy->shouldReceive('afterCommit')->andReturnUsing(
+        function (callable $callback) use (&$afterCommitCallbacks): void {
+            $afterCommitCallbacks[] = $callback;
+        }
+    );
+    DB::swap($spy);
+
+    return function () use (&$afterCommitCallbacks): void {
+        foreach ($afterCommitCallbacks as $callback) {
+            $callback();
+        }
+    };
+}

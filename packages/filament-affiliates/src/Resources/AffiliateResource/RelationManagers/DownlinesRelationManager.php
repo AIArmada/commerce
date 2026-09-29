@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Resources\AffiliateResource\RelationManagers;
 
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\FilamentAffiliates\Resources\AffiliateResource;
 use Filament\Actions\Action;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -15,6 +16,8 @@ use Illuminate\Database\Eloquent\Builder;
 
 final class DownlinesRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'children';
 
     protected static ?string $title = 'Downlines';

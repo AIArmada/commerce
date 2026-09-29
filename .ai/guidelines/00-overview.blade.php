@@ -5,7 +5,6 @@ These files are intentionally split by concern for easier maintenance. Read and 
 ## Rule Hierarchy
 - Follow the strictest rule when guidance overlaps: security > data isolation > correctness > style.
 - If instructions conflict or cannot both be satisfied, say so explicitly, explain the conflict, and choose the safest alternative.
-- Never assume UI scoping is security. Server-side enforcement and validation are mandatory.
 
 ## Runtime Baseline
 - Target PHP 8.4+ only.

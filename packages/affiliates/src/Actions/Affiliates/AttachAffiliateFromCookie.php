@@ -22,7 +22,7 @@ final class AttachAffiliateFromCookie
     {
         $attribution = $this->affiliateLookup->findActiveAttributionByCookie($cookieValue);
 
-        if (! $attribution || ! $attribution->affiliate || ! $attribution->affiliate->isActive()) {
+        if (! $attribution || ! $attribution->affiliate || ! $attribution->affiliate->canBeAttributed()) {
             return null;
         }
 

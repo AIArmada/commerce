@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Resources\ProductResource\RelationManagers;
 
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\Products\Models\Product;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -25,6 +26,8 @@ use Illuminate\Support\Facades\Gate;
 
 final class OptionsRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'options';
 
     protected static ?string $recordTitleAttribute = 'name';

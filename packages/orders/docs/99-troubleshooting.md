@@ -180,12 +180,10 @@ dd(DB::getQueryLog());
 ### Check state machine configuration
 
 ```php
-use AIArmada\Orders\Models\Order;
+use AIArmada\Orders\States\OrderStatus;
 
-$order = new Order();
-
-// Get all registered states
-$config = $order->getStateConfig('status');
+// Get the state config with all registered states and transitions
+$config = OrderStatus::config();
 dump($config);
 ```
 

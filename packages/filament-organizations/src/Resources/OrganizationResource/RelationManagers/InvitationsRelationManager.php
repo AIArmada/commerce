@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentOrganizations\Resources\OrganizationResource\RelationManagers;
 
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\FilamentOrganizations\Resources\OrganizationResource;
 use AIArmada\Membership\Actions\InviteMemberAction;
 use AIArmada\Membership\Actions\RevokeInvitationAction;
@@ -22,6 +23,8 @@ use Illuminate\Database\Eloquent\Model;
 
 final class InvitationsRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'invitations';
 
     public function table(Table $table): Table

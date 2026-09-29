@@ -6,6 +6,7 @@ namespace AIArmada\CashierChip\Concerns;
 
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Invoice\Invoice;
+use AIArmada\CashierChip\Support\IdempotencyKey;
 use AIArmada\CashierChip\Support\RedirectUrlValidator;
 use AIArmada\Chip\Data\PurchaseData;
 use Illuminate\Support\Collection;
@@ -166,6 +167,10 @@ trait ManagesInvoices // @phpstan-ignore trait.unused
         if (isset($options['failure_url'])) {
             $builder->failureUrl($options['failure_url']);
         }
+
+        // Caller-supplied key only; no-op when omitted. The key is never
+        // derived, so intentionally-duplicate invoices cannot collapse.
+        $builder = IdempotencyKey::apply($builder, $options);
 
         $purchase = $builder->create();
 

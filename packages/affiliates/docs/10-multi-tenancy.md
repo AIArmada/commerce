@@ -71,10 +71,13 @@ class Affiliate extends Model
 - `Affiliate`
 - `AffiliateAttribution`
 - `AffiliateConversion`
+- `AffiliateDailyStat`
 - `AffiliatePayout`
 - `AffiliatePayoutOperation`
 - `AffiliateProgram`
 - `AffiliateRank`
+- `AffiliateTouchpoint`
+- `AffiliateUpline`
 - `AffiliateCommissionTemplate`
 - `AffiliateDailyStat`
 - `AffiliateTouchpoint`
@@ -112,17 +115,23 @@ Through `program_id` (`ScopesByProgramOwner`):
 
 - `AffiliateProgramTier`
 - `AffiliateProgramCreative`
+- `AffiliateCommissionPromotion`
 - `AffiliateCommissionRule`
+- `AffiliateProgramCreative`
+- `AffiliateProgramTier`
 - `AffiliateVolumeTier`
 - `AffiliateCommissionPromotion`
 
-Through the ticket (`ScopesByTicketAffiliateOwner`):
-
+Via ticket (`ScopesByTicketAffiliateOwner`):
 - `AffiliateSupportMessage`
 
-These `ScopesBy*` concerns are relationship-boundary guards, not alternate
-implementations of `HasOwner`. Each traversal is a greppable opt-out point —
-if you remove the scope, you own re-scoping.
+Direct affiliate, attribution, conversion, payout, program, rank, template,
+daily-stat, touchpoint, and upline roots use `HasOwner` and
+the shared `OwnerScope`. Derived rows without owner columns use a relational
+`ScopesBy*` concern: affiliate-owned rows join through `affiliate_id`,
+program-owned rows through `program_id`, and support messages through their
+ticket. These concerns are relationship-boundary guards, not alternate
+implementations of `HasOwner`.
 
 ## Querying with Owner Scope
 

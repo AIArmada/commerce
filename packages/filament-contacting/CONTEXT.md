@@ -43,7 +43,7 @@ keywords:
 ## Key surfaces
 - Resources: `ContactMethodResource`, `ContactSnapshotResource`, `SocialProfileResource`
 - Actions/Services: `Support/ContactingFilamentConfig`, `Support/GuardsContactingUi`, `Support/ResolvesContactingModels`
-- Config `filament-contacting.php`: `navigation`, `group`, `sort`, `icons`, `contact_methods`, `social_profiles`, `contact_snapshots`, `tables`, `default_pagination`, `show_owner_columns`
+- Config `filament-contacting.php`: `navigation` (`group`, `sort`, `icons`), `tables`, `features`, `resources` (`contact_methods`, `social_profiles`, `contact_snapshots`)
 
 ## Docs map
 - Start: `01-overview` → `03-configuration` → `04-usage` → `99-troubleshooting`

@@ -160,12 +160,14 @@ this flag.
 | `enabled` | Enable package-owned public referral helpers and shared view data |
 | `view_data_key` | View variable populated by the public referral middleware / view composer |
 | `auto_register_middleware` | Push `HydratePublicAffiliateReferralContext` into the `web` middleware group |
-| `route.enabled` | Enable the package-owned referral entry route |
-| `route.path` | Referral landing path, default `r/{affiliateCode}` |
-| `route.name` | Route name used when generating entry URLs |
-| `route.middleware` | Middleware stack applied to the entry route |
+| `route.enabled` | Reserved: entry capture is middleware-based (see below), no route is registered |
+| `route.path` | Referral suffix pattern captured by the middleware, default `r/{affiliateCode}` |
+| `route.name` | Reserved entry-route name (no route is registered) |
+| `route.middleware` | Reserved entry-route middleware stack (no route is registered) |
 | `route.destination_parameter` | Query-string key used to choose a configured destination |
-| `route.destinations` | Allowed redirect destinations, keyed by public destination name |
+| `route.destinations` | Allowed destinations, keyed by public destination name; feeds the referral payload links |
+
+Entry capture is handled by the `CaptureAffiliateReferralFromPath` middleware (alias `affiliates.referral_path`), which is prepended globally when `enabled` and `auto_register_middleware` are both true. It captures any URL ending in the referral suffix and redirects back to the prefix path.
 
 ## Voucher Integration
 
@@ -212,7 +214,7 @@ Every commission path funnels through `CommissionCaps::clamp()`, so these bounds
     'currency' => env('AFFILIATES_PAYOUT_CURRENCY', env('AFFILIATES_DEFAULT_CURRENCY', 'MYR')),
     'reference_prefix' => env('AFFILIATES_PAYOUT_REF_PREFIX', 'PO-'),
     'minimum_amount' => env('AFFILIATES_PAYOUT_MINIMUM_AMOUNT', 5000),
-    'minimum_amounts_by_currency' => ['USD' => 1000], // per-currency minor-unit floors; falls back to minimum_amount
+    'minimum_amounts_by_currency' => [], // per-currency minor-unit floors, e.g. ['USD' => 1000]; falls back to minimum_amount
     'maturity_days' => env('AFFILIATES_PAYOUT_MATURITY_DAYS', 30),
     'multi_level' => [
         'enabled' => env('AFFILIATES_MULTI_LEVEL_ENABLED', true),
@@ -298,14 +300,23 @@ Every commission path funnels through `CommissionCaps::clamp()`, so these bounds
     'approval_mode' => env('AFFILIATES_REGISTRATION_APPROVAL_MODE', 'admin'),
     'default_commission_type' => env('AFFILIATES_REGISTRATION_COMMISSION_TYPE', 'percentage'),
     'default_commission_rate' => env('AFFILIATES_REGISTRATION_COMMISSION_RATE', 1000),
+    'open_approval_min_commission_minor' => env('AFFILIATES_OPEN_APPROVAL_MIN_COMMISSION', 0),
 ],
 ```
 
 | Approval Mode | Behavior |
 |---------------|----------|
 | `auto` | Immediately activate new affiliates |
-| `open` | Create as pending, auto-approve on first conversion |
+| `open` | Create as pending, auto-activate on the first qualifying conversion (real attribution, above the minimum commission, no unresolved fraud) |
 | `admin` | Require manual admin approval |
+
+The mode is read at signup and snapshotted onto each affiliate
+(`registration_approval_mode`); changing the setting later only affects
+future registrations. The stored mode is immutable. Open-pending affiliates
+can be attributed and earn held commission but cannot grant customer
+discounts until activated. Note: payout creation does not currently gate
+on affiliate status, so operator-driven payouts are the backstop until a
+status-aware payout gate ships.
 
 ## Events & Webhooks
 

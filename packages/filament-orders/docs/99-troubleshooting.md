@@ -89,18 +89,17 @@ Pdf::html('<h1>Test</h1>')->save('/tmp/test.pdf');
 // - service (string) — only when a fulfillment handler is bound
 ```
 
-### Table polling causing performance issues
+### Table performance issues
 
-**Cause**: Poll interval too aggressive or expensive queries.
+**Cause**: Expensive queries on large order datasets. (The package does not poll tables automatically.)
 
-**Solution**: No table in this package polls by default, so there is no
-`filament-orders` poll-interval config key. If you added polling in a custom
-page, tune or disable it there:
+**Solution**: Reduce query cost with eager loading and indexed filters. No table
+in this package polls by default; tune any polling added in your custom pages.
 
 ```php
-public function table(Table $table): Table
+public static function getEloquentQuery(): Builder
 {
-    return parent::table($table)->poll(null);
+    return parent::getEloquentQuery()->with(['items', 'payments']);
 }
 ```
 
@@ -114,7 +113,7 @@ public function table(Table $table): Table
 
 ### Slow Dashboard Widgets
 
-1. Widgets use 15-30 second cache by default.
+1. The stats widget uses a 15-second owner-scoped cache by default.
 2. For larger datasets, increase cache duration.
 3. Consider reducing query complexity.
 

@@ -28,7 +28,7 @@ The `aiarmada/chip` package is the direct CHIP gateway integration for Commerce.
 - [`aiarmada/filament-chip`](../../filament-chip/docs/01-overview.md) — Filament admin resources and analytics for CHIP data
 - [`aiarmada/cashier-chip`](../../cashier-chip/docs/01-overview.md) — Cashier-style subscription billing on top of CHIP
 - [`aiarmada/checkout`](../../checkout/docs/01-overview.md) — checkout orchestration that may use CHIP for payment collection
-- [`aiarmada/docs`](../../docs/01-overview.md) — a downstream package that may subscribe to CHIP events
+- [`aiarmada/docs`](../../docs/docs/01-overview.md) — a downstream package that may subscribe to CHIP events
 - [`aiarmada/commerce-support`](../../commerce-support/docs/01-overview.md) — owner scoping and payment gateway contracts
 
 ## Main models services or surfaces
@@ -52,7 +52,7 @@ A comprehensive Laravel integration for the [CHIP](https://chip-in.asia) payment
 CHIP is a Malaysian fintech payment gateway that offers:
 - **FPX** (Financial Process Exchange) - Direct bank transfers
 - **Credit/Debit Cards** - Visa, Mastercard, Maestro
-- **E-Wallets** - DuitNow, Touch 'n Go, GrabPay, ShopeePay
+- **E-Wallets** - DuitNow, Touch 'n Go, GrabPay, ShopeePay, Atome
 - **Payouts** - Send money to bank accounts (CHIP Send)
 
 ## Package Features
@@ -159,9 +159,9 @@ Full multi-tenancy support via `commerce-support`:
 - [Configuration](03-configuration.md)
 - [Usage Guide](04-usage.md)
 - [Multitenancy](05-multitenancy.md)
-- [CHIP Collect](chip-collect.md)
-- [CHIP Send](chip-send.md)
-- [Payment gateway](payment-gateway.md)
-- [Webhooks](webhooks.md)
-- [API reference](api-reference.md)
+- [CHIP Collect](07-chip-collect.md)
+- [CHIP Send](08-chip-send.md)
+- [Payment gateway](06-payment-gateway.md)
+- [Webhooks](09-webhooks.md)
+- [API reference](10-api-reference.md)
 - [Troubleshooting](99-troubleshooting.md)

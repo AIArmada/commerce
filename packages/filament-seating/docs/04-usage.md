@@ -13,8 +13,7 @@ Navigate to **Venue → Seat Maps** in the Filament admin panel to create, edit,
 3. Set the version (minimum 1) and status
 4. Save the map, then add sections and seats via the domain API (`AIArmada\Seating`)
 
-> **info**
-> Visual seat map editing and the occupancy viewer are planned but not yet available in the admin panel.
+Visual seat map editing and the occupancy viewer are available as the `SeatMapEditor` and `SeatMapOccupancy` pages, with an aggregate `SeatMapOverview` dashboard widget.
 
 ### Managing seat maps on host resources
 

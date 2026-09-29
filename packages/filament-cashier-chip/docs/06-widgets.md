@@ -236,8 +236,7 @@ class TargetWidget extends StatsOverviewWidget
 
         return [
             Stat::make('MRR vs Target', $mrr)
-                ->description('Monthly goal')
-                ->chart($this->getChartData()),
+                ->description('Monthly goal'),
         ];
     }
 }

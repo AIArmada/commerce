@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentPersons\Resources\PersonResource\RelationManagers;
 
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\CommerceSupport\Support\OwnerScope;
@@ -25,6 +26,8 @@ use InvalidArgumentException;
 
 class AffiliationsRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'affiliations';
 
     protected static ?string $title = 'Affiliations';
