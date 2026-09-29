@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentOrders\Resources\OrderResource\RelationManagers;
 
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\Orders\Models\Order;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
@@ -20,6 +21,8 @@ use Illuminate\Support\Facades\Gate;
 
 final class NotesRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'orderNotes';
 
     protected static ?string $title = 'Notes';

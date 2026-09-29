@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEngagement\RelationManagers;
 
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
 
 final class SubscriptionsRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'subscriptions';
 
     protected static ?string $title = 'Subscriptions';

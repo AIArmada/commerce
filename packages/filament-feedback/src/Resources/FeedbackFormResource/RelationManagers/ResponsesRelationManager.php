@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentFeedback\Resources\FeedbackFormResource\RelationManagers;
 
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\Feedback\Enums\FeedbackResponseStatus;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
@@ -11,6 +12,8 @@ use Filament\Tables\Table;
 
 final class ResponsesRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'responses';
 
     public function table(Table $table): Table

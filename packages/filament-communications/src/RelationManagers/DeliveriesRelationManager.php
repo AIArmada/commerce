@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Filament\Communications\RelationManagers;
 
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\Communications\Enums\DeliveryStatus;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
@@ -11,6 +12,8 @@ use Filament\Tables\Table;
 
 final class DeliveriesRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'deliveries';
 
     protected static ?string $title = 'Deliveries';

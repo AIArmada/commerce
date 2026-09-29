@@ -70,6 +70,13 @@ Available on the order view page. Shows chronological history:
 Includes a form to add new notes directly from the timeline. Notes are capped at
 2000 characters and visibility is server-validated (`internal` or `customer`).
 
+The widget uses `VerifiesRecordOwnerContext` (from `commerce-support`): its
+record is re-verified against the current owner scope on every Livewire
+request, and a mid-session owner change clears the record so the timeline
+renders empty instead of stale cross-owner data. See
+[Multi-tenancy](../../commerce-support/docs/14-multi-tenancy.md#livewire-record-components)
+for the shared contract.
+
 ## Relation Managers
 
 ### Items Relation Manager

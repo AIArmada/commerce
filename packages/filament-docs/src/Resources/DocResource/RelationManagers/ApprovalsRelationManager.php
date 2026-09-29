@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Resources\DocResource\RelationManagers;
 
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Models\DocApproval;
 use AIArmada\FilamentDocs\Support\DocPermissions;
@@ -29,6 +30,8 @@ use Illuminate\Validation\ValidationException;
 
 final class ApprovalsRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'approvals';
 
     protected static ?string $recordTitleAttribute = 'requested_by';

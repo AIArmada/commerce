@@ -6,6 +6,7 @@ namespace AIArmada\FilamentVouchers\Widgets;
 
 use AIArmada\Cart\Snapshots\CartInstanceManager;
 use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRecordOwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\FilamentVouchers\Support\MoneyHelper;
@@ -15,10 +16,14 @@ use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
+use Livewire\Attributes\Locked;
 use Throwable;
 
 final class AppliedVouchersWidget extends BaseWidget
 {
+    use VerifiesRecordOwnerContext;
+
+    #[Locked]
     public ?Model $record = null;
 
     protected int | string | array $columnSpan = 'full';

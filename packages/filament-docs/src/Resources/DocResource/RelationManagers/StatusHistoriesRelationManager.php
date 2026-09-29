@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Resources\DocResource\RelationManagers;
 
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\Docs\States\DocStatus;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Columns\TextColumn;
@@ -11,6 +12,8 @@ use Filament\Tables\Table;
 
 final class StatusHistoriesRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'statusHistories';
 
     protected static ?string $title = 'Status History';

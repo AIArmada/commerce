@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentFeedback\Resources\FeedbackFormResource\RelationManagers;
 
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\Feedback\Actions\DeleteFeedbackSectionAction;
 use AIArmada\Feedback\Actions\SaveFeedbackFormStructureAction;
 use AIArmada\Feedback\Models\FeedbackSection;
@@ -17,6 +18,8 @@ use Filament\Tables\Table;
 
 final class SectionsRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'sections';
 
     public function table(Table $table): Table

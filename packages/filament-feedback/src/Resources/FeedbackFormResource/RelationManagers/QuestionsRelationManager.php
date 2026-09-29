@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentFeedback\Resources\FeedbackFormResource\RelationManagers;
 
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\Feedback\Actions\DeleteFeedbackQuestionAction;
 use AIArmada\Feedback\Actions\SaveFeedbackFormStructureAction;
 use AIArmada\Feedback\Enums\FeedbackQuestionType;
@@ -20,6 +21,8 @@ use Filament\Tables\Table;
 
 final class QuestionsRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'questions';
 
     public function table(Table $table): Table

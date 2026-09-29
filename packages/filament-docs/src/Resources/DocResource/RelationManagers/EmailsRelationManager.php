@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Resources\DocResource\RelationManagers;
 
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\Docs\Models\DocEmail;
 use AIArmada\Docs\Services\DocEmailService;
 use Filament\Actions\Action;
@@ -17,6 +18,8 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 final class EmailsRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'emails';
 
     protected static ?string $recordTitleAttribute = 'recipient_email';

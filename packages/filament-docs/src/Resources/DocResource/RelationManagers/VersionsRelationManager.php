@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Resources\DocResource\RelationManagers;
 
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\Docs\Models\DocVersion;
 use Filament\Actions\Action;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -14,6 +15,8 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 final class VersionsRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'versions';
 
     protected static ?string $recordTitleAttribute = 'version_number';

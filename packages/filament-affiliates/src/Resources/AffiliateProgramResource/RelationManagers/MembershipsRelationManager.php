@@ -6,6 +6,7 @@ namespace AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource\Relatio
 
 use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Models\AffiliateProgramMembership;
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
@@ -25,6 +26,8 @@ use Illuminate\Database\Eloquent\Builder;
 
 final class MembershipsRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'memberships';
 
     public function form(Schema $schema): Schema

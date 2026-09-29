@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentTax\Resources\TaxZoneResource\RelationManagers;
 
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\FilamentTax\Resources\TaxZoneResource\RelationManagers\RatesRelationManager\Schemas\RatesForm;
 use AIArmada\FilamentTax\Resources\TaxZoneResource\RelationManagers\RatesRelationManager\Tables\RatesTable;
@@ -15,6 +16,8 @@ use Illuminate\Database\Eloquent\Builder;
 
 final class RatesRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'rates';
 
     protected static ?string $title = 'Tax Rates';

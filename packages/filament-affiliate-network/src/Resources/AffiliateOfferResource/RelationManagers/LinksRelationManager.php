@@ -7,6 +7,7 @@ namespace AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Rel
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
 use AIArmada\AffiliateNetwork\Services\NetworkLedgerReconciliationService;
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Filament\Actions\Action;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -23,6 +24,8 @@ use Filament\Tables\Table;
  */
 final class LinksRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'links';
 
     public function form(Schema $schema): Schema

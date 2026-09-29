@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource\RelationManagers;
 
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
@@ -28,6 +29,8 @@ use RuntimeException;
 
 final class CommissionPromotionsRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'commissionPromotions';
 
     public function form(Schema $schema): Schema

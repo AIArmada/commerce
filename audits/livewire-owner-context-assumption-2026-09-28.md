@@ -155,3 +155,169 @@ Record pages declare their record `#[Locked]`; record widgets do not.
 Whether an unlocked model prop admits key tampering depends on
 Livewire's snapshot integrity, which was not examined here. If the
 systemic project ever starts, include this in its threat surface.
+
+---
+
+# Resolution (2026-09-28)
+
+Status: FIXED via the systemic project sketched above. The accepted-risk
+posture is superseded; the revisit trigger is closed.
+
+## What was built
+
+One shared mechanism in `commerce-support`, rolled out uniformly:
+
+- New `AIArmada\CommerceSupport\Filament\Concerns\VerifiesRecordOwnerContext`
+  trait (`packages/commerce-support/src/Filament/Concerns/`). It stamps the
+  mount-time owner context (tuple + explicit-global flag) and record identity
+  (class, key, owner tuple) into a `#[Locked]` snapshot prop, then re-verifies
+  on every subsequent request via Livewire's automatic `mount{Trait}` /
+  `hydrate{Trait}` hooks. Any mismatch — changed context, changed record
+  identity, missing stamp, or failed fresh scoped visibility check — fails
+  closed by clearing the record, so the widget renders its empty state and
+  write actions no-op. Mount-time verification also covers lazy widgets
+  (all Filament v5 widgets are lazy by default; their mount runs on a later
+  request). The guard skips silently for null/unsaved records, non-owner-
+  scoped models, and disabled scoping.
+- Rolled out to all 6 record widgets (verified by repo-wide sweep: no other
+  widget holds a model prop): `OrderTimelineWidget` (filament-orders) plus
+  `AppliedVouchersWidget`, `QuickApplyVoucherWidget`,
+  `VoucherSuggestionsWidget`, `VoucherUsageTimelineWidget`,
+  `VoucherCartStatsWidget` (filament-vouchers). Each change is trait use +
+  `#[Locked]` on `$record`. Existing per-method/per-action owner checks were
+  kept as defense in depth.
+- Record pages needed no change: they already fail closed per request via
+  Filament core (`hydrateCanAuthorizeAccess` → policy), confirmed against
+  installed Filament v5.8.4 and the Filament 5.x security docs.
+
+## Design decisions (per the open questions)
+
+- "Context changed" = stamped context tuple or explicit-global flag differs
+  from current, OR record class/key/tuple differs, OR fresh scoped `exists()`
+  fails.
+- Fail-closed = clear record + stamp (graceful empty state), not abort/redirect:
+  widgets are sub-components, polling/lazy loads stay quiet, and the page
+  shell independently 403s on its own next request.
+- Polling interaction: each poll re-runs the same check; mismatch renders
+  empty, no error storms or redirect loops.
+
+## Adjacent observation: closed
+
+- All 6 widget `$record` props are now `#[Locked]`, matching record pages.
+- Livewire 4.x docs confirm model props already carry ID-tamper protection
+  ("Model properties are secure by default"); `#[Locked]` adds explicit
+  update rejection (`CannotUpdateLockedPropertyException`, verified in
+  installed Livewire v4.4.6). The string stamp prop requires its lock (plain
+  props are freely mutable by default) and has it.
+
+## Verification
+
+- 62 new tests, all passing: 34 trait contract tests
+  (`tests/src/CommerceSupport/VerifiesRecordOwnerContextTest.php`, incl.
+  real `Livewire::test` round-trips for mount/hydrate wiring, refresh after
+  owner switch, mid-cycle deletion, locked-prop rejection, lazy resume, and
+  custom-prop override, plus fixed-owner pin coverage), 5 orders rollout
+  tests, 19 vouchers rollout tests (dataset-uniform across all 5 widgets,
+  incl. read-path emptiness after a switch for the two widgets whose display
+  paths previously had no owner check: `OrderTimelineWidget`,
+  `VoucherCartStatsWidget`), 4 event-preview rollout tests.
+- No regressions: `tests/src/CommerceSupport`, `tests/src/FilamentOrders`,
+  `tests/src/FilamentVouchers`, `tests/src/FilamentEvents` all green except
+  1 pre-existing `ConfigurationPagesTest` failure reproduced on the clean
+  tree (unrelated).
+- PHPStan level 6 clean on all touched packages (combined analysis, which
+  also checks the trait in each consumer's context); Pint clean on all
+  touched files.
+- Livewire hook mechanics verified against installed vendor code (trait-hook
+  naming, mount-param auto-fill ordering before `mount{Trait}`, lazy
+  mount-on-later-request with snapshot-restored props, locked enforcement)
+  and current Livewire 4.x / Filament 5.x docs.
+
+## External audit loop 4 (2026-09-28)
+
+NO FINDINGS. The loop-3 suppression fix was verified closed against
+installed Livewire v4.4.6 / Filament v5.8.4, and the full tracked-plus-
+untracked sweep confirmed all six record widgets and `EventPublicPreview`
+guarded and locked, with no additional owner-scoped Filament public model
+props. Loop terminates.
+
+## External audit loop 3 (2026-09-28)
+
+Loop-2 fixes both verified closed; no other new issue in guard, stamp,
+Octane state, or rollout. One new minor, fixed:
+
+1. (Minor, FIXED) The visibility check ignored
+   `OwnerScopeOverride::suppressIncludeGlobal()`, staying more permissive
+   than `OwnerScope` inside batch overrides. It now applies the same
+   suppression. Covered by mount + hydrate override tests. No current
+   caller runs the guard inside the override (only `OwnerBatchRunner`
+   sets it), so current behavior is unchanged.
+
+## External audit loop 2 (2026-09-28)
+
+Loop-1 fixes #1, #3, #4, #5 all verified closed by re-audit; the
+relation-manager deferral was judged sound. Two new minors, both fixed:
+
+1. (Minor, FIXED) The guard ignored a configured fixed `OwnerScopeConfig::$owner`.
+   Both the stamp and the visibility check now use the effective owner
+   (pin wins over ambient resolution, mirroring `OwnerScope`), so pinned
+   models are immune to context changes and a pin counts as sufficient
+   context. No in-tree model uses a pin, so current behavior is unchanged.
+   Covered by 4 new fixture tests.
+2. (Minor, FIXED) The custom-prop override had no round-trip coverage. Added
+   a real `Livewire::test` cycle for an `event`-prop component (mount stamp,
+   refresh-after-switch clear).
+
+The loop also corrected the follow-up triage: related-resource managers call
+`canAccess()` → `canViewAny()` (no parent-record check), so that class is
+not closed by authorization; and it added a third verified instance
+(`ItemsRelationManager` + unscoped `CartSnapshotItem`, 30s poll). Both are
+recorded in `audits/relation-manager-owner-context-2026-09-28.md`.
+
+## External audit loop 1 (2026-09-28)
+
+An independent model audit (report-only) raised 5 findings; 4 fixed in this
+pass, 1 tracked as a separate project:
+
+1. (Major, FIXED) `filament-events/.../Pages/EventPublicPreview.php` holds
+   `public ?Event $event` with mount-only scoping. The "no
+   subsequent-request vector" claim was wrong: Livewire magic actions such as
+   `$refresh` are callable on every component. Fixed by generalizing the
+   trait with an overridable `ownerGuardedPropName()` (default `record`) and
+   applying it to the page (guarding `event`), plus `#[Locked]` on both
+   `$event` and `$eventId`. Covered by 4 new rollout tests.
+2. (Major, TRACKED SEPARATELY) Relation-manager child requests restore the
+   locked `ownerRecord` unscoped, and managers without a related resource
+   authorize via `viewAny` on the child model — never the parent's owner
+   scope. Verified for `VoucherUsagesRelationManager`/`VoucherUsage` and
+   `ConditionsRelationManager`/`CartSnapshotCondition` (both child models
+   unscoped). ~95 managers; non-nullable parent prop needs abort-style
+   fail-closed, a distinct mechanism. Recorded as
+   `audits/relation-manager-owner-context-2026-09-28.md` with a fix sketch.
+3. (Minor, FIXED) Restored models are PHP 8.4 native lazy proxies: a row
+   deleted after mount threw `ModelNotFoundException` on first guard access
+   instead of rendering empty. Both hooks now convert that exception to the
+   same fail-closed clear. Covered by a real round-trip deletion test.
+4. (Minor, FIXED) The visibility check used `newQueryWithoutScopes()`,
+   dropping every model scope. It now uses `newQuery()` minus only
+   `OwnerScope`, so independent model scopes still apply. Covered by an
+   extra-scope fixture test.
+5. (Minor, FIXED) Direct-hook tests did not prove Livewire wiring. Added
+   real `Livewire::test` round-trips (mount stamp, refresh-after-switch
+   clear, fresh-storage restore proof, mid-cycle delete, locked-update
+   rejection, lazy resume incl. cross-owner resume), plus a same-owner
+   key-swap test.
+
+Latent issue noticed (RESOLVED 2026-09-29): `EventPublicPreview` read
+its event from a `?event=` query value, but Livewire page mounts receive
+route params only — the page always mounted empty via URL. Fixed with the
+Filament-idiomatic route-placeholder shape: slug
+`events/public-preview/{eventId}`, `mount(?string $eventId = null)` (a
+placeholder named `event` would collide with the `?Event $event` prop
+during auto-fill), `ViewEvent` link updated to the `eventId` key, and
+uniform 404 for missing/empty/malformed/cross-owner ids (no existence
+leak; the UUID check also avoids a PostgreSQL uuid-cast 500 on malformed
+ids — loop-2 audit finding). Post-mount staleness stays covered by
+`VerifiesRecordOwnerContext`. Covered by mount tests (null/empty/malformed/
+unknown/cross-owner 404 + slug placeholder + getUrl path-fill + Livewire
+refresh-after-switch cycle).

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCustomers\Resources\CustomerResource\RelationManagers;
 
 use AIArmada\Addressing\Models\Address;
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Customers\Actions\SetDefaultCustomerAddress;
 use AIArmada\Customers\Models\Customer;
@@ -26,6 +27,8 @@ use LogicException;
 
 class AddressesRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'addresses';
 
     protected static ?string $title = 'Addresses';

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Resources\ProductResource\RelationManagers;
 
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\CommerceSupport\Support\Filament\OwnerScopedIds;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Pricing\Models\Price;
@@ -28,6 +29,8 @@ use Illuminate\Database\Eloquent\Model;
 
 final class PricesRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'prices';
 
     protected static ?string $title = 'Price Lists';

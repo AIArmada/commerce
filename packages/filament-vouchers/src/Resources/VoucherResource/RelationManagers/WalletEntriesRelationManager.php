@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Resources\VoucherResource\RelationManagers;
 
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\FilamentVouchers\Resources\VoucherResource\Tables\WalletEntriesTable;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Table;
 
 final class WalletEntriesRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'walletEntries';
 
     protected static ?string $title = 'Wallet Entries';

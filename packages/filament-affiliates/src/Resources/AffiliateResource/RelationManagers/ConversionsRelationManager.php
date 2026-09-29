@@ -11,6 +11,7 @@ use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\States\RejectedConversion;
 use AIArmada\Affiliates\Support\Integrations\CartBridge;
 use AIArmada\Affiliates\Support\Integrations\VoucherBridge;
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource\Tables\AffiliateConversionsTable;
@@ -22,6 +23,8 @@ use Filament\Tables\Table;
 
 final class ConversionsRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'conversions';
 
     public function table(Table $table): Table

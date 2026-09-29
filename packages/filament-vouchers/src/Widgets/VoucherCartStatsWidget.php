@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentVouchers\Widgets;
 
 use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRecordOwnerContext;
 use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -16,6 +17,7 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Database\Connection;
 use Illuminate\Database\Eloquent\Model;
 use Livewire\Attributes\Lazy;
+use Livewire\Attributes\Locked;
 use Throwable;
 
 /**
@@ -24,6 +26,9 @@ use Throwable;
 #[Lazy]
 final class VoucherCartStatsWidget extends BaseWidget
 {
+    use VerifiesRecordOwnerContext;
+
+    #[Locked]
     public ?Model $record = null;
 
     protected function getStats(): array

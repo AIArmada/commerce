@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Resources\CartResource\RelationManagers;
 
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\FilamentCart\Actions\ApplyConditionAction;
 use AIArmada\FilamentCart\Actions\RemoveConditionAction;
 use AIArmada\FilamentCart\Resources\CartResource\Tables\CartSnapshotConditionsTable;
@@ -12,6 +13,8 @@ use Filament\Tables\Table;
 
 final class ConditionsRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'cartConditions';
 
     public function table(Table $table): Table

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAddressing\RelationManagers;
 
 use AIArmada\Addressing\Models\AddressArea;
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\FilamentAddressing\Resources\AddressAreaResource;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Columns\TextColumn;
@@ -12,6 +13,8 @@ use Filament\Tables\Table;
 
 final class ChildAreasRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'children';
 
     protected static ?string $relatedResource = AddressAreaResource::class;

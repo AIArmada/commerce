@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentShipping\Resources\ReturnAuthorizationResource\RelationManagers;
 
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
@@ -17,6 +18,8 @@ use Filament\Tables\Table;
 
 class ItemsRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'items';
 
     protected static ?string $recordTitleAttribute = 'name';

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashierChip\Resources\CustomerResource\RelationManagers;
 
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\FilamentCashierChip\Concerns\HasSetupPaymentMethodIdempotencyKey;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
@@ -15,6 +16,7 @@ use Filament\Tables\Table;
 final class PaymentMethodsRelationManager extends RelationManager
 {
     use HasSetupPaymentMethodIdempotencyKey;
+    use VerifiesRelationManagerOwnerContext;
 
     protected static string $relationship = 'storedPaymentMethods';
 

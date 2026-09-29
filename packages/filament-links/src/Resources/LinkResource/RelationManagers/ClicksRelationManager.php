@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentLinks\Resources\LinkResource\RelationManagers;
 
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
 
 final class ClicksRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'clicks';
 
     public function table(Table $table): Table

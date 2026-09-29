@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEvents\Pages;
 
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRecordOwnerContext;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Events\Models\Event;
 use BackedEnum;
@@ -11,32 +12,56 @@ use Filament\Infolists;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Support\Str;
+use Livewire\Attributes\Locked;
 use UnitEnum;
 
 final class EventPublicPreview extends Page
 {
+    use VerifiesRecordOwnerContext;
+
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-eye';
 
     protected static ?string $title = 'Public Preview';
 
-    protected static ?string $slug = 'events/public-preview';
+    protected static ?string $slug = 'events/public-preview/{eventId}';
 
     protected static bool $shouldRegisterNavigation = false;
 
+    #[Locked]
     public ?string $eventId = null;
 
+    #[Locked]
     public ?Event $event = null;
 
-    public function mount(?string $event = null): void
+    public function mount(?string $eventId = null): void
     {
-        if ($event) {
-            $this->eventId = $event;
-            /* @phpstan-ignore assign.propertyType */
-            $this->event = OwnerUiScope::apply(Event::query()->with([
-                'occurrences', 'locations', 'involvements', 'ticketTypes',
-                'materials', 'links', 'mediaRecords', 'updates' => fn ($q) => $q->where('is_pinned', true),
-            ]), includeGlobal: false)->find($event);
+        // Uniform 404: missing, malformed, and cross-owner ids are
+        // indistinguishable, so the URL never leaks event existence across
+        // owners. The UUID check also keeps malformed ids from reaching a
+        // uuid-typed column comparison (a 500 on PostgreSQL) — events use
+        // HasUuids keys.
+        if ($eventId === null || $eventId === '' || ! Str::isUuid($eventId)) {
+            abort(404);
         }
+
+        $event = OwnerUiScope::apply(Event::query()->with([
+            'occurrences', 'locations', 'involvements', 'ticketTypes',
+            'materials', 'links', 'mediaRecords', 'updates' => fn ($q) => $q->where('is_pinned', true),
+        ]), includeGlobal: false)->find($eventId);
+
+        if (! $event instanceof Event) {
+            abort(404);
+        }
+
+        $this->eventId = $eventId;
+        /* @phpstan-ignore assign.propertyType */
+        $this->event = $event;
+    }
+
+    protected function ownerGuardedPropName(): string
+    {
+        return 'event';
     }
 
     public static function getNavigationGroup(): string | UnitEnum | null

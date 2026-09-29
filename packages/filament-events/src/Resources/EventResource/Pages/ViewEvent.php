@@ -19,7 +19,7 @@ final class ViewEvent extends ViewRecord
             Action::make('publicPreview')
                 ->label('Public Preview')
                 ->icon('heroicon-o-eye')
-                ->url(fn () => EventPublicPreview::getUrl(['event' => $this->record->getKey()])),
+                ->url(fn () => EventPublicPreview::getUrl(['eventId' => $this->record->getKey()])),
         ];
     }
 }

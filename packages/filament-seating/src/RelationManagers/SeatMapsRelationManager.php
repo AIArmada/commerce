@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSeating\RelationManagers;
 
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\FilamentSeating\Schemas\SeatMapFormSchema;
 use AIArmada\FilamentSeating\Tables\SeatMapTable;
@@ -26,6 +27,8 @@ use Illuminate\Database\Eloquent\Relations\Relation;
  */
 class SeatMapsRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'seatMaps';
 
     protected static ?string $title = 'Seat Maps';

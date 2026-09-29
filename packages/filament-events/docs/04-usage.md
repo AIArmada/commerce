@@ -113,13 +113,20 @@ The Approval Queue page (`/events/approvals`) processes event submissions:
 
 ## Event Public Preview
 
-The Event Public Preview page shows an event as the public would see it. Accessed via a link from the View Event page. Displays:
+The Event Public Preview page shows an event as the public would see it. Accessed via a link from the View Event page, at `events/public-preview/{eventId}`. Mounting without an id, with a malformed or unknown id, or with a cross-owner id aborts with 404 (missing, malformed, and cross-owner ids are indistinguishable, so the URL never leaks event existence). Displays:
 
 - Event details (title, summary, description, status, delivery_mode)
 - Occurrences
 - Speakers and organizers
 - Pinned updates and notices
 - Ticket types
+
+The page uses `VerifiesRecordOwnerContext` (from `commerce-support`,
+guarding its `event` prop): the event is re-verified against the current
+owner scope on every Livewire request, and a mid-session owner change clears
+it instead of rendering stale cross-owner data. See
+[Multi-tenancy](../../commerce-support/docs/14-multi-tenancy.md#livewire-record-components)
+for the shared contract.
 
 ## Owner Safety
 

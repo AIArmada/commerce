@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentOrders\Resources\OrderResource\RelationManagers;
 
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\Orders\Enums\PaymentStatus;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
@@ -11,6 +12,8 @@ use Filament\Tables\Table;
 
 final class PaymentsRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'payments';
 
     protected static ?string $title = 'Payments';

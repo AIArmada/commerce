@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAddressing\RelationManagers;
 
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use Filament\Actions\AttachAction;
 use Filament\Actions\DetachAction;
@@ -17,6 +18,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class AddressesRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'addresses';
 
     protected static ?string $title = 'Addresses';

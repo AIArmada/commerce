@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Resources\AffiliateSupportTicketResource\RelationManagers;
 
 use AIArmada\Affiliates\Models\AffiliateSupportTicket;
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use Filament\Actions\CreateAction;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Toggle;
@@ -15,6 +16,8 @@ use Filament\Tables\Table;
 
 final class MessagesRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'messages';
 
     public function form(Schema $schema): Schema

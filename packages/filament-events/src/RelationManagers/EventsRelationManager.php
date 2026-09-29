@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEvents\RelationManagers;
 
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\FilamentEvents\Resources\EventResource;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Table;
@@ -17,6 +18,8 @@ use Filament\Tables\Table;
  */
 class EventsRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'events';
 
     protected static ?string $title = 'Events';

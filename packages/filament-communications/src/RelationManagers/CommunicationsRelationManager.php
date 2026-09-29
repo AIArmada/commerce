@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Filament\Communications\RelationManagers;
 
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\Communications\Enums\CommunicationCategory;
 use AIArmada\Communications\Enums\CommunicationDirection;
 use AIArmada\Communications\Enums\CommunicationStatus;
@@ -14,6 +15,8 @@ use Filament\Tables\Table;
 
 final class CommunicationsRelationManager extends RelationManager
 {
+    use VerifiesRelationManagerOwnerContext;
+
     protected static string $relationship = 'communications';
 
     protected static ?string $title = 'Communications';

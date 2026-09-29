@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentOrders\Widgets;
 
+use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRecordOwnerContext;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\Orders\Models\Order;
 use Filament\Facades\Filament;
@@ -15,6 +16,7 @@ use Filament\Schemas\Schema;
 use Filament\Widgets\Widget;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
+use Livewire\Attributes\Locked;
 use Throwable;
 
 /**
@@ -23,7 +25,9 @@ use Throwable;
 final class OrderTimelineWidget extends Widget implements HasForms
 {
     use InteractsWithForms;
+    use VerifiesRecordOwnerContext;
 
+    #[Locked]
     public ?Order $record = null;
 
     public ?array $noteData = [];
