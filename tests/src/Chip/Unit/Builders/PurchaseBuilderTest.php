@@ -373,11 +373,46 @@ describe('PurchaseBuilder', function (): void {
             ->toThrow(ChipValidationException::class, 'Call currency() before adding purchase products.');
     });
 
-    it('rejects non-integral product quantities', function (): void {
-        expect(fn () => $this->builder
+    it('accepts fractional product quantities as given', function (): void {
+        $data = $this->builder
             ->currency('MYR')
-            ->addProductCents('Product', 1000, 1.5))
-            ->toThrow(ChipValidationException::class, 'Product quantity must be an integer.');
+            ->addProductCents('Half', 100, 0.5)
+            ->addProductCents('Frac', 100, '1.555')
+            ->addProductCents('Dust', 100, 0.1 + 0.2)
+            ->toArray();
+
+        expect($data['purchase']['products'][0]['quantity'])->toBe('0.5')
+            ->and($data['purchase']['products'][1]['quantity'])->toBe('1.555')
+            ->and($data['purchase']['products'][2]['quantity'])->toBe('0.3');
+    });
+
+    it('rejects non-numeric and non-positive product quantities', function (): void {
+        expect(fn () => $this->builder->currency('MYR')->addProductCents('P', 100, 0))
+            ->toThrow(ChipValidationException::class, 'greater than zero');
+        expect(fn () => $this->builder->currency('MYR')->addProductCents('P', 100, -2))
+            ->toThrow(ChipValidationException::class, 'greater than zero');
+        expect(fn () => $this->builder->currency('MYR')->addProductCents('P', 100, 'abc'))
+            ->toThrow(ChipValidationException::class, 'must be numeric');
+    });
+
+    it('rejects quantities with more than 4 decimal places', function (): void {
+        expect(fn () => $this->builder->currency('MYR')->addProductCents('P', 100, '1.55555'))
+            ->toThrow(ChipValidationException::class, 'at most 4 decimal places');
+        expect(fn () => $this->builder->currency('MYR')->addProductCents('P', 100, 1.55555))
+            ->toThrow(ChipValidationException::class, 'at most 4 decimal places');
+        expect(fn () => $this->builder->currency('MYR')->addProductCents('P', 100, '1.0000000000000001'))
+            ->toThrow(ChipValidationException::class, 'at most 4 decimal places');
+        expect(fn () => $this->builder->currency('MYR')->addProductCents('P', 100, '1.5e-5'))
+            ->toThrow(ChipValidationException::class, 'at most 4 decimal places');
+    });
+
+    it('rejects out-of-range quantities', function (): void {
+        expect(fn () => $this->builder->currency('MYR')->addProductCents('P', 100, 1e30))
+            ->toThrow(ChipValidationException::class, 'out of range');
+        expect(fn () => $this->builder->currency('MYR')->addProductCents('P', 100, '1e30'))
+            ->toThrow(ChipValidationException::class, 'out of range');
+        expect(fn () => $this->builder->currency('MYR')->addProductCents('P', 100, '9007199254740993'))
+            ->toThrow(ChipValidationException::class, 'out of range');
     });
 
     it('normalizes integral float quantities to integer strings', function (): void {
@@ -475,6 +510,16 @@ describe('PurchaseBuilder', function (): void {
         expect(fn () => $this->builder->taxNumber(''))->toThrow(ChipValidationException::class, 'Client tax number cannot be blank.');
         expect(fn () => $this->builder->bankAccount(''))->toThrow(ChipValidationException::class, 'Client bank account cannot be blank.');
         expect(fn () => $this->builder->bankCode(''))->toThrow(ChipValidationException::class, 'Client bank code cannot be blank.');
+    });
+
+    it('trims cc and bcc entries on emit', function (): void {
+        $data = $this->builder
+            ->cc(['  cc@example.com  '])
+            ->bcc(["\tbcc@example.com\n"])
+            ->toArray();
+
+        expect($data['client']['cc'])->toBe(['cc@example.com'])
+            ->and($data['client']['bcc'])->toBe(['bcc@example.com']);
     });
 
     it('unsets client_id when client setters write', function (): void {

@@ -117,6 +117,12 @@ final class ProductData extends ChipData
     /**
      * Get the total price as Money (price - discount) × quantity,
      * or the total price override when set.
+     *
+     * Net-rounded per line (sandbox-proven server parity). With
+     * fractional quantities plus a discount this can differ by a
+     * rounding unit from subtotal-minus-discount-total, since each
+     * accessor rounds independently (half-up parts never promise
+     * to sum). Pin overrides from one consistent side.
      */
     public function getTotalPrice(): Money
     {
@@ -142,7 +148,13 @@ final class ProductData extends ChipData
      * Multiply integer minor units by a decimal quantity with explicit
      * half-up rounding so fractional quantities never silently truncate.
      */
-    private static function multiplyMinorUnits(int $minorUnits, string $quantity): int
+    /**
+     * Multiply integer minor units by a quantity with half-up rounding.
+     *
+     * Shared line-total primitive: matches CHIP's server-side rounding
+     * (sandbox-proven half-up per line, 2026-09-29).
+     */
+    public static function multiplyMinorUnits(int $minorUnits, string $quantity): int
     {
         $normalized = mb_trim($quantity);
 

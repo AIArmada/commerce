@@ -261,7 +261,7 @@ final class PurchaseBuilder
             $this->assertMoneyCurrency($price, $currency, 'line item price');
             $this->assertMoneyCurrency($lineItemDiscount, $currency, 'line item discount');
 
-            $lineItemsSubtotal += (int) $price->getAmount() * $quantity;
+            $lineItemsSubtotal += ProductData::multiplyMinorUnits((int) $price->getAmount(), (string) $quantity);
         }
 
         $subtotalAmount = (int) $subtotal->getAmount();
@@ -909,7 +909,10 @@ final class PurchaseBuilder
             }
         }
 
-        return array_values($emails);
+        return array_values(array_map(
+            fn (string $email): string => mb_trim($email),
+            $emails
+        ));
     }
 
     /**
@@ -956,32 +959,68 @@ final class PurchaseBuilder
         return $currency;
     }
 
-    private function normalizeQuantity(string | float | int $quantity): int
+    private function normalizeQuantity(string | float | int $quantity): int | string
     {
-        if (is_float($quantity) && (! is_finite($quantity) || floor($quantity) !== $quantity)) {
-            throw new ChipValidationException('Product quantity must be an integer.');
-        }
-
         if (is_int($quantity)) {
             $normalized = $quantity;
         } elseif (is_float($quantity)) {
-            $normalized = (int) $quantity;
-        } else {
-            $value = mb_trim($quantity);
-            $validated = filter_var($value, FILTER_VALIDATE_INT);
-
-            if ($value === '' || $validated === false) {
-                throw new ChipValidationException('Product quantity must be an integer.');
+            if (! is_finite($quantity)) {
+                throw new ChipValidationException('Product quantity must be numeric.');
             }
 
-            $normalized = (int) $validated;
+            // 2**53 is the float64-exactness boundary; larger whole floats
+            // would silently narrow on (int) cast, so they stay strings
+            // for the range check below.
+            $normalized = floor($quantity) === $quantity && $quantity < 2 ** 53 ? (int) $quantity : (string) $quantity;
+        } else {
+            $value = mb_trim($quantity);
+
+            if ($value === '' || ! is_numeric($value) || ! is_finite((float) $value)) {
+                throw new ChipValidationException('Product quantity must be numeric.');
+            }
+
+            $normalized = $value;
         }
 
-        if ($normalized < 1) {
-            throw new ChipValidationException('Product quantity must be an integer.');
+        $asFloat = (float) $normalized;
+
+        if ($asFloat <= 0) {
+            throw new ChipValidationException('Product quantity must be greater than zero.');
+        }
+
+        if ($asFloat >= 2 ** 53) {
+            throw new ChipValidationException('Product quantity is out of range.');
+        }
+
+        if ($this->decimalPlaces((string) $normalized) > 4) {
+            throw new ChipValidationException('Product quantity must have at most 4 decimal places.');
         }
 
         return $normalized;
+    }
+
+    /**
+     * Count decimal places in a numeric string, mirroring how a decimal
+     * field parses it: fraction digits minus the exponent, floored at 0.
+     * String-counted (not float-rounded) so precision-collapsed forms
+     * like "1.0000000000000001" cannot slip through a float cast.
+     */
+    private function decimalPlaces(string $value): int
+    {
+        $value = mb_ltrim($value, '+-');
+        $exponent = 0;
+
+        $ePos = mb_stripos($value, 'e');
+
+        if ($ePos !== false) {
+            $exponent = (int) mb_substr($value, $ePos + 1);
+            $value = mb_substr($value, 0, $ePos);
+        }
+
+        $dotPos = mb_strpos($value, '.');
+        $fractionDigits = $dotPos === false ? 0 : mb_strlen($value) - $dotPos - 1;
+
+        return max(0, $fractionDigits - $exponent);
     }
 
     private function assertMoneyCurrency(Money $money, string $currency, string $field): void

@@ -154,6 +154,102 @@ it('rejects an unreconciled stable total contract', function (): void {
     ]))->toThrow(ChipValidationException::class, 'total overrides do not reconcile');
 });
 
+it('rejects over-cap client address fields', function (string $field, int $max): void {
+    expect(fn () => $this->apiWithoutCache->create(chipValidCreatePayload([
+        'client' => [$field => str_repeat('x', $max + 1)],
+    ])))->toThrow(ChipValidationException::class, 'at most');
+})->with([
+    'street' => ['street_address', 128],
+    'city' => ['city', 128],
+    'zip' => ['zip_code', 32],
+    'state' => ['state', 128],
+    'shipping street' => ['shipping_street_address', 128],
+    'shipping city' => ['shipping_city', 128],
+    'shipping zip' => ['shipping_zip_code', 32],
+    'shipping state' => ['shipping_state', 128],
+]);
+
+it('accepts at-cap client address fields', function (): void {
+    $this->client->shouldReceive('post')
+        ->once()
+        ->andReturn(chipPurchaseResponse());
+
+    $purchase = $this->apiWithoutCache->create(chipValidCreatePayload([
+        'client' => [
+            'street_address' => str_repeat('s', 128),
+            'city' => str_repeat('c', 128),
+            'zip_code' => str_repeat('z', 32),
+            'state' => str_repeat('t', 128),
+            'shipping_street_address' => str_repeat('s', 128),
+            'shipping_city' => str_repeat('c', 128),
+            'shipping_zip_code' => str_repeat('z', 32),
+            'shipping_state' => str_repeat('t', 128),
+        ],
+    ]));
+
+    expect($purchase->id)->toBe('purchase_123');
+});
+
+it('reconciles subtotal_override against per-product total price overrides', function (): void {
+    $this->client->shouldReceive('post')
+        ->once()
+        ->andReturn(chipPurchaseResponse());
+
+    $purchase = $this->apiWithoutCache->create(chipValidCreatePayload([
+        'purchase' => [
+            'products' => [
+                ['name' => 'TPO item', 'price' => 1000, 'quantity' => 3, 'total_price_override' => 2500],
+                ['name' => 'Plain item', 'price' => 100, 'quantity' => 5],
+            ],
+            'subtotal_override' => 3000,
+        ],
+    ]));
+
+    expect($purchase->id)->toBe('purchase_123');
+});
+
+it('reports the override-based subtotal on mismatch', function (): void {
+    $thrown = null;
+
+    try {
+        $this->apiWithoutCache->create(chipValidCreatePayload([
+            'purchase' => [
+                'products' => [['name' => 'TPO item', 'price' => 1000, 'quantity' => 3, 'total_price_override' => 2500]],
+                'subtotal_override' => 2999,
+            ],
+        ]));
+    } catch (ChipValidationException $e) {
+        $thrown = $e;
+    }
+
+    expect($thrown)->toBeInstanceOf(ChipValidationException::class);
+    expect($thrown->getMessage())->toContain('subtotal override does not match');
+    expect($thrown->getValidationErrors())->toBe(['line_items_subtotal' => 2500, 'subtotal_override' => 2999]);
+});
+
+it('treats a null per-product total price override as absent', function (): void {
+    $this->client->shouldReceive('post')
+        ->once()
+        ->andReturn(chipPurchaseResponse());
+
+    $purchase = $this->apiWithoutCache->create(chipValidCreatePayload([
+        'purchase' => [
+            'products' => [['name' => 'Item', 'price' => 1000, 'total_price_override' => null]],
+            'subtotal_override' => 1000,
+        ],
+    ]));
+
+    expect($purchase->id)->toBe('purchase_123');
+});
+
+it('rejects a negative per-product total price override', function (): void {
+    expect(fn () => $this->apiWithoutCache->create(chipValidCreatePayload([
+        'purchase' => [
+            'products' => [['name' => 'TPO item', 'price' => 1000, 'total_price_override' => -1]],
+        ],
+    ])))->toThrow(ChipValidationException::class, 'total price override must be non-negative');
+});
+
 it('rejects client and client_id set together', function (): void {
     expect(fn () => $this->apiWithoutCache->create([
         'client' => ['email' => 'buyer@example.com'],
@@ -780,7 +876,7 @@ describe('PurchasesApi E4 shared validation', function (): void {
 
     it('rejects over-length and non-array cc/bcc entries', function (): void {
         expect(fn () => $this->apiWithoutCache->create(chipValidCreatePayload([
-            'client' => ['cc' => [str_repeat('a', 250).'@b.co']],
+            'client' => ['cc' => [str_repeat('a', 250) . '@b.co']],
         ])))->toThrow(ChipValidationException::class, 'Client cc entries must be a string of at most 254 characters.');
 
         expect(fn () => $this->apiWithoutCache->create(chipValidCreatePayload([
@@ -819,7 +915,7 @@ describe('PurchasesApi E4 shared validation', function (): void {
         $purchase = $this->apiWithoutCache->create(chipValidCreatePayload([
             'client' => [
                 'legal_name' => str_repeat('l', 1000),
-                'cc' => [str_repeat('a', 249).'@b.co'],
+                'cc' => [str_repeat('a', 249) . '@b.co'],
             ],
             'purchase' => [
                 'notes' => str_repeat('n', 10000),
@@ -847,9 +943,60 @@ describe('PurchasesApi E4 shared validation', function (): void {
             ->toThrow(ChipValidationException::class, 'Platform must be one of: web, api, ios, android, macos, windows.');
     });
 
-    it('rejects fractional quantities on the raw path', function (): void {
+    it('accepts fractional quantities on the raw path', function (): void {
+        $this->client->shouldReceive('post')
+            ->once()
+            ->andReturn(chipPurchaseResponse());
+
+        $purchase = $this->apiWithoutCache->create(chipValidCreatePayload([
+            'purchase' => ['products' => [['name' => 'Frac', 'price' => 100, 'quantity' => '1.5000']]],
+        ]));
+
+        expect($purchase->id)->toBe('purchase_123');
+    });
+
+    it('rounds fractional line totals half-up in subtotal reconciliation', function (): void {
+        $this->client->shouldReceive('post')
+            ->once()
+            ->andReturn(chipPurchaseResponse());
+
+        $purchase = $this->apiWithoutCache->create(chipValidCreatePayload([
+            'purchase' => [
+                'products' => [
+                    ['name' => 'A', 'price' => 100, 'quantity' => '1.555'],
+                    ['name' => 'B', 'price' => 100, 'quantity' => '1.555'],
+                ],
+                'subtotal_override' => 312,
+            ],
+        ]));
+
+        expect($purchase->id)->toBe('purchase_123');
+    });
+
+    it('rejects non-numeric and non-positive quantities on the raw path', function (): void {
         expect(fn () => $this->apiWithoutCache->create(chipValidCreatePayload([
-            'purchase' => ['products' => [['quantity' => 1.5]]],
-        ])))->toThrow(ChipValidationException::class, 'Product quantity must be an integer.');
+            'purchase' => ['products' => [['name' => 'P', 'price' => 100, 'quantity' => 0]]],
+        ])))->toThrow(ChipValidationException::class, 'greater than zero');
+        expect(fn () => $this->apiWithoutCache->create(chipValidCreatePayload([
+            'purchase' => ['products' => [['name' => 'P', 'price' => 100, 'quantity' => 'abc']]],
+        ])))->toThrow(ChipValidationException::class, 'must be numeric');
+    });
+
+    it('rejects quantities with more than 4 decimal places on the raw path', function (): void {
+        expect(fn () => $this->apiWithoutCache->create(chipValidCreatePayload([
+            'purchase' => ['products' => [['name' => 'P', 'price' => 100, 'quantity' => '1.55555']]],
+        ])))->toThrow(ChipValidationException::class, 'at most 4 decimal places');
+        expect(fn () => $this->apiWithoutCache->create(chipValidCreatePayload([
+            'purchase' => ['products' => [['name' => 'P', 'price' => 100, 'quantity' => '1.0000000000000001']]],
+        ])))->toThrow(ChipValidationException::class, 'at most 4 decimal places');
+    });
+
+    it('rejects out-of-range quantities on the raw path', function (): void {
+        expect(fn () => $this->apiWithoutCache->create(chipValidCreatePayload([
+            'purchase' => ['products' => [['name' => 'P', 'price' => 100, 'quantity' => 1e30]]],
+        ])))->toThrow(ChipValidationException::class, 'out of range');
+        expect(fn () => $this->apiWithoutCache->create(chipValidCreatePayload([
+            'purchase' => ['products' => [['name' => 'P', 'price' => 100, 'quantity' => '9007199254740993']]],
+        ])))->toThrow(ChipValidationException::class, 'out of range');
     });
 });

@@ -420,3 +420,173 @@ callers do (see bug 4).
 - Program complete: Batches A–E all dual-approved. Remaining
   work is sandbox/support probes (residual unknowns) and the
   merge of `fix/chip-collect-spec-review-2026-09-28`.
+
+## Addendum 2026-09-29: N2/N3/N4 tickets + sandbox probes
+
+Tickets implemented solo, reviewed by Codex (`gpt-6-luna` max) only.
+- N2: `normalizeEmailList()` trims on emit (`PurchaseBuilder.php`).
+- N3: 8 address caps at the API layer (street/city/state 128,
+  zip 32, billing + shipping). `country`/`shipping_country`
+  deliberately NOT capped — see probe P10 below.
+- N4: subtotal honors per-product `total_price_override` (as-is,
+  not x quantity; null = absent) and rejects negatives — the
+  negative throw matches the server's live `min_value` 400 (P11).
+- Verification: 14 new tests (12 ran red first), Chip suite 885
+  passed, Pint clean (incl. 2 pre-existing `concat_space` lines),
+  PHPStan L6 clean.
+- Codex R1 BLOCKed on F1 (add 2-char country caps) and F2
+  (negative-TPO throw vs schema silence); both resolved against
+  the live probes below — caps declined, throw kept. Codex R2
+  APPROVEd with two non-blocking evidence notes (P4c artifact
+  gap, `shipping_country` inferred), both closed with fresh
+  probes in-round — approval stands, no R3 needed.
+
+Sandbox probes (2026-09-29, `is_test=True`, script at
+`/tmp/panel-chip/probe-chip.sh`, bodies under
+`/tmp/panel-chip/probes/` — creds from `~/Herd/unfair/.env`,
+sandbox environment, never committed):
+- P1 unknown-field `purchase.total: 999999` → 201, silently
+  ignored (calculated 100 kept and stored). `total` not writable.
+- P2a numeric `tax_percent: 6` → 201, echoed `"6.00"`.
+- P2b `tax_percent: "1e2"` → 201, parsed as 100 (echoed
+  `"100.00"`, total doubled). As-given emit is safe.
+- P2c `category: null` → 400 `"may not be null"`. `toRequestArray`
+  strips nulls, so only hand-built raw payloads can hit this.
+- P3 `quantity: "1.5000"` → 201, honored (total 1500, echoed
+  as given). Server accepts fractional quantities; the client
+  still rejects them — needs a rounding-policy decision before
+  any client change (open ticket T2).
+- P4 `Idempotency-Key` replay (same key, then identical
+  payload) → two distinct purchases (201 + 201). Header NOT
+  honored; the local ledger is the only dedupe. Docs updated.
+  Re-proven with full artifacts after Codex R2 (`p4redo.body.json`
+  + `p4redo.key.txt` + `p4redo-a/c.json`): same body, same key,
+  distinct ids.
+- P5 `GET billing_templates/` → 200, empty list. Routes live
+  (SDK-only scope; future package surface, no action).
+- P7 `{}` → 400 per-field `[{message, code}]` arrays; only
+  `purchase` + `brand_id` flagged — `client`/`client_id`
+  absent without complaint (leans toward client truly
+  optional server-side; not conclusive).
+- P8 webhook `all_events: true` + `events: [...]` → 201
+  accepted (probe webhook deleted, 204).
+- P9 price 10000 + `tax_percent: "6"` → total 10600 ("added
+  to the price" confirmed). GET responses carry no
+  subtotal/tax breakdown (only overrides + total).
+- P10 `country: "Malaysia"` → 201, stored `"MY"`;
+  `"United States of America"` → 201, stored `"US"`;
+  200-char garbage → 400 `invalid_choice`. Country is a
+  server-side choice field, not maxLength-2 — hence NO
+  local cap (Codex F1 declined with evidence). Codes
+  preferred; checkout path sends code-or-nothing.
+  `shipping_country` directly probed after Codex R2
+  (`p10b.json`): full name → 201, stored `"US"`.
+- P11 `total_price_override: -100` → 400 `min_value`
+  ("greater than or equal to 0"). N4's local throw is
+  server-parity, not just policy (Codex F2 declined).
+- P6 `direct_post_url` params: UNPROBED (field `None` on
+  plain purchases; only set for card flows).
+
+Still open (support questions, not probeable): 403/409
+emission shapes, current-month card expiry acceptance,
+`direct_post_url` param behavior, spec inconsistencies
+(`PurchaseBody.required` vs client XOR prose — P7 leans
+optional; `__all__` object vs array; `PublicKey` string
+vs SDK object).
+
+## Addendum 2026-09-29 (cont.): T2 fractional quantities + P12–P15
+
+- T2 implemented: quantities accept finite numerics > 0
+  below 2^53 with at most 4 decimal places (int,
+  whole/fractional float, numeric string incl. `"1.5000"`,
+  `"1e2"`, `" 2 "`, `"+2"` — all sandbox-accepted; 5dp+
+  is a server 400 `max_decimal_places`, mirrored locally
+  by string-counting decimals (float casts would collapse
+  forms like `"1.0000000000000001"`); >= 2^53 rejected as
+  out-of-range since float64 money math cannot represent
+  it exactly). Both `normalizeQuantity` sites
+  (builder + API) widened to `int|string`, emitting
+  as-given; both subtotal sites use the shared
+  `ProductData::multiplyMinorUnits` half-up primitive
+  (widened private → public, zero duplication). This also
+  unblocks fractional `LineItemInterface` quantities
+  (contract already `int|float`). 10 new/rewritten tests
+  (all red first), incl. a 312-total tie-break mirror.
+- P12 fractional cents: 100 x 1.555 + 100 x 0.5 → total
+  206 (half-up consistent). P13 tie-break: two 100 x 1.555
+  lines → 312, proving PER-LINE half-up (total-rounding
+  would give 311). P14 zero quantity → 400 (rejected via the
+  preauthorization guard, not a dedicated quantity rule — but
+  rejected, so the local `> 0` rule is safe). P15 bad key → 401
+  `{"__all__":[{"message":"Incorrect secret_key",
+  "code":"authentication_failed"}]}` — auth failures are
+  401, and `__all__` is an ARRAY in every observed case
+  (401, 405, zero-qty 400).
+- Verification: builder/interface/API/Data files green
+  (38 + 14 + 65 + 93), full Chip suite 893 passed
+  (2583 assertions), Pint PASS (incl. mb_* sweep of the
+  new helper), PHPStan L6 clean.
+- Luna T2-R2 APPROVEd (BLOCK refuted with the override
+  arithmetic worked through; no Σ-discount scope needed).
+  Its two non-blocking precision notes were both fixed in
+  kind: decimals string-counted per decimal-field rules,
+  bound tightened 2^63 → 2^53 — micro-confirm R3
+  dispatched on that delta.
+- P16 no-client create → 400 `purchase_client_or_id_required`
+  (`__all__` array): client XOR client_id IS required
+  server-side — answers draft Q4 (dropped from the ticket).
+- P17 price 100 / discount 1 / qty 1.5 → total 149: server
+  rounds NET per line, matching `ProductData::getTotalPrice`
+  exactly. The ±1 gap vs subtotal-minus-discount-total is
+  inherent half-up parts behavior, documented on the
+  accessor; no local check mixes the pair.
+- P18 quantity forms: `"1e2"`, `" 2 "`, `"+2"` accepted;
+  `"1.55555"` → 400 `max_decimal_places`. Local 4dp rule
+  mirrors the server; float dust below 14 significant
+  digits stringifies away before the check (validates the
+  wire form).
+- Luna T2-R1 BLOCKed on discount-rounding parity; rebutted
+  with P17 (server == our net accessor; response check
+  compares server-total vs caller-override, neither side
+  from the divergent pair; mixing our accessors to pin
+  overrides throws locally first). Its three non-blocking
+  notes all produced real fixes: 4dp bound (P18), 2^63
+  range bound, draft rewording (Q4 dropped, Q5/Q2/Q3
+  qualified as tested-vs-untested). Card-flow probe for
+  `direct_post_url` skipped: needs test-card tokenization
+  through the card form, disproportionate to a support
+  question — recorded as untested, not untestable.
+
+Support ticket draft (send as-is; evidence from sandbox
+probes P1–P18, brand in `~/Herd/unfair/.env`):
+
+> Subject: Collect API — status codes, card expiry,
+> direct_post_url, and spec questions
+>
+> Hi CHIP team — we're integrating against Collect
+> (sandbox-verified) and have a few questions we could
+> not settle from the docs. (One we settled ourselves:
+> posting without `client`/`client_id` returns
+> `purchase_client_or_id_required`, so the XOR
+> requirement is confirmed — no action needed there.)
+>
+> 1. Status codes: we observe 400 for validation errors
+>    and 401 (`authentication_failed` under `__all__`)
+>    for bad keys. Are 403, 409, or 422 ever emitted by
+>    Collect, and if so by which operations?
+> 2. Card expiry edge (untested — no sandbox card
+>    attempt made): the spec's expiry wording reads
+>    both "current month or later" and "later than now".
+>    Is a card expiring in the current month accepted?
+> 3. Does the card Direct Post page (`direct_post_url`)
+>    honor `?preferred=` / `fpx_bank_code` for
+>    pre-selecting the payment method? (Untested — the
+>    field is absent outside card flows.)
+> 4. In the error responses we tested, `__all__` is an
+>    array of `{message, code}`. Is the object form ever
+>    emitted?
+> 5. `PublicKey` is typed string in the spec but modeled
+>    as an object in the official PHP SDK. Which is
+>    canonical?
+>
+> Thanks!

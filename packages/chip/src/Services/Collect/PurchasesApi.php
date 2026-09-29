@@ -977,6 +977,14 @@ final class PurchasesApi extends CollectApi
             $this->assertCappedLength($data['client'], 'tax_number', 32, 'Client tax number');
             $this->assertCappedLength($data['client'], 'bank_account', 64, 'Client bank account');
             $this->assertCappedLength($data['client'], 'bank_code', 32, 'Client bank code');
+            $this->assertCappedLength($data['client'], 'street_address', 128, 'Client street address');
+            $this->assertCappedLength($data['client'], 'city', 128, 'Client city');
+            $this->assertCappedLength($data['client'], 'zip_code', 32, 'Client ZIP code');
+            $this->assertCappedLength($data['client'], 'state', 128, 'Client state');
+            $this->assertCappedLength($data['client'], 'shipping_street_address', 128, 'Client shipping street address');
+            $this->assertCappedLength($data['client'], 'shipping_city', 128, 'Client shipping city');
+            $this->assertCappedLength($data['client'], 'shipping_zip_code', 32, 'Client shipping ZIP code');
+            $this->assertCappedLength($data['client'], 'shipping_state', 128, 'Client shipping state');
 
             foreach (['cc', 'bcc'] as $list) {
                 if (! array_key_exists($list, $data['client'])) {
@@ -1008,9 +1016,16 @@ final class PurchasesApi extends CollectApi
             $price = $this->normalizeMinorAmount($product['price'], 'product price');
             $quantity = $this->normalizeQuantity($product['quantity'] ?? 1);
             $discount = $this->normalizeMinorAmount($product['discount'] ?? 0, 'product discount');
+            $totalPriceOverride = ($product['total_price_override'] ?? null) !== null
+                ? $this->normalizeMinorAmount($product['total_price_override'], 'product total price override')
+                : null;
 
             if ($price < 0 || $discount < 0 || $discount > $price) {
                 throw new ChipValidationException('Product price and discount must be non-negative, with discount no greater than price.');
+            }
+
+            if ($totalPriceOverride !== null && $totalPriceOverride < 0) {
+                throw new ChipValidationException('Product total price override must be non-negative.');
             }
 
             $this->assertMaxLength($product['name'], 256, 'Product name');
@@ -1023,7 +1038,7 @@ final class PurchasesApi extends CollectApi
                 TaxPercent::normalize($product['tax_percent']);
             }
 
-            $subtotal += $price * $quantity;
+            $subtotal += $totalPriceOverride ?? ProductData::multiplyMinorUnits($price, (string) $quantity);
         }
 
         $this->assertCappedLength($data['purchase'], 'notes', 10000, 'Purchase notes');
@@ -1112,22 +1127,69 @@ final class PurchasesApi extends CollectApi
         return $amount === null ? null : $this->normalizeMinorAmount($amount, $field);
     }
 
-    private function normalizeQuantity(mixed $quantity): int
+    private function normalizeQuantity(mixed $quantity): int | string
     {
         if (is_int($quantity)) {
             $normalized = $quantity;
-        } elseif (is_float($quantity) && is_finite($quantity) && floor($quantity) === $quantity) {
-            $normalized = (int) $quantity;
-        } elseif (is_string($quantity) && filter_var(mb_trim($quantity), FILTER_VALIDATE_INT) !== false) {
-            $normalized = (int) mb_trim($quantity);
+        } elseif (is_float($quantity)) {
+            if (! is_finite($quantity)) {
+                throw new ChipValidationException('Product quantity must be numeric.');
+            }
+
+            // 2**53 is the float64-exactness boundary; larger whole floats
+            // would silently narrow on (int) cast, so they stay strings
+            // for the range check below.
+            $normalized = floor($quantity) === $quantity && $quantity < 2 ** 53 ? (int) $quantity : (string) $quantity;
+        } elseif (is_string($quantity)) {
+            $value = mb_trim($quantity);
+
+            if ($value === '' || ! is_numeric($value) || ! is_finite((float) $value)) {
+                throw new ChipValidationException('Product quantity must be numeric.');
+            }
+
+            $normalized = $value;
         } else {
-            throw new ChipValidationException('Product quantity must be an integer.');
+            throw new ChipValidationException('Product quantity must be numeric.');
         }
 
-        if ($normalized < 1) {
-            throw new ChipValidationException('Product quantity must be an integer greater than zero.');
+        $asFloat = (float) $normalized;
+
+        if ($asFloat <= 0) {
+            throw new ChipValidationException('Product quantity must be greater than zero.');
+        }
+
+        if ($asFloat >= 2 ** 53) {
+            throw new ChipValidationException('Product quantity is out of range.');
+        }
+
+        if ($this->decimalPlaces((string) $normalized) > 4) {
+            throw new ChipValidationException('Product quantity must have at most 4 decimal places.');
         }
 
         return $normalized;
+    }
+
+    /**
+     * Count decimal places in a numeric string, mirroring how a decimal
+     * field parses it: fraction digits minus the exponent, floored at 0.
+     * String-counted (not float-rounded) so precision-collapsed forms
+     * like "1.0000000000000001" cannot slip through a float cast.
+     */
+    private function decimalPlaces(string $value): int
+    {
+        $value = mb_ltrim($value, '+-');
+        $exponent = 0;
+
+        $ePos = mb_stripos($value, 'e');
+
+        if ($ePos !== false) {
+            $exponent = (int) mb_substr($value, $ePos + 1);
+            $value = mb_substr($value, 0, $ePos);
+        }
+
+        $dotPos = mb_strpos($value, '.');
+        $fractionDigits = $dotPos === false ? 0 : mb_strlen($value) - $dotPos - 1;
+
+        return max(0, $fractionDigits - $exponent);
     }
 }

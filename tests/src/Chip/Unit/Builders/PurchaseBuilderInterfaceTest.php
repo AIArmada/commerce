@@ -167,6 +167,35 @@ describe('PurchaseBuilder Interface Integration', function (): void {
             expect($data['purchase'])->not->toHaveKey('notes');
         });
 
+        it('reconciles fractional line-item quantities half-up', function (): void {
+            $lineItem = Mockery::mock(LineItemInterface::class);
+            $lineItem->shouldReceive('getLineItemName')->andReturn('Bulk');
+            $lineItem->shouldReceive('getLineItemPrice')->andReturn(Money::MYR(100));
+            $lineItem->shouldReceive('getLineItemQuantity')->andReturn(1.555);
+            $lineItem->shouldReceive('getLineItemDiscount')->andReturn(Money::MYR(0));
+            $lineItem->shouldReceive('getLineItemTaxPercent')->andReturn(0.0);
+            $lineItem->shouldReceive('getLineItemCategory')->andReturn(null);
+
+            $checkoutable = Mockery::mock(CheckoutableInterface::class);
+            $checkoutable->shouldReceive('getCheckoutCurrency')->andReturn('MYR');
+            $checkoutable->shouldReceive('getCheckoutLineItems')->andReturn([$lineItem]);
+            $checkoutable->shouldReceive('getCheckoutSubtotal')->andReturn(Money::MYR(156));
+            $checkoutable->shouldReceive('getCheckoutDiscount')->andReturn(Money::MYR(0));
+            $checkoutable->shouldReceive('getCheckoutTax')->andReturn(Money::MYR(0));
+            $checkoutable->shouldReceive('getCheckoutTotal')->andReturn(Money::MYR(156));
+            $checkoutable->shouldReceive('getCheckoutReference')->andReturn('REF-FRAC');
+            $checkoutable->shouldReceive('getCheckoutNotes')->andReturn(null);
+            $checkoutable->shouldReceive('getCheckoutMetadata')->andReturn([]);
+
+            $data = $this->builder
+                ->fromCheckoutable($checkoutable)
+                ->email('test@example.com')
+                ->toArray();
+
+            expect($data['purchase']['products'][0]['quantity'])->toBe('1.555')
+                ->and($data['purchase']['subtotal_override'])->toBe(156);
+        });
+
         it('omits the spec-absent total field while keeping total_override', function (): void {
             $lineItem = Mockery::mock(LineItemInterface::class);
             $lineItem->shouldReceive('getLineItemName')->andReturn('Product');
