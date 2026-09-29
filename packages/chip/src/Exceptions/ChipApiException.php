@@ -65,13 +65,14 @@ class ChipApiException extends Exception
     }
 
     /**
-     * Extract CHIP's `__all__` error payload, which the spec emits in two
-     * shapes: an object (`{"message", "code"}`) on generic 400s, and a list
-     * of such objects on charge errors. Only the first list entry is
-     * inspected; later entries are never scanned. A bare string entry (or
-     * list item) yields a message-only error. Non-string message/code
-     * values coerce to null; a missing `__all__`, or one that is neither
-     * array nor string, yields null.
+     * Extract CHIP's `__all__` error payload. The spec shows an object
+     * (`{"message", "code"}`) at :1269 and a list of such objects at
+     * :301/:327; all 11 live errors sampled (2026-09-29 sandbox) carried
+     * lists, so the object form is accepted but unconfirmed. Only the
+     * first list entry is inspected; later entries are never scanned.
+     * A bare string entry (or list item) yields a message-only error.
+     * Non-string message/code values coerce to null; a missing `__all__`,
+     * or one that is neither array nor string, yields null.
      *
      * @return ?array{code: ?string, message: ?string}
      */

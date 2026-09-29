@@ -558,35 +558,173 @@ vs SDK object).
   question — recorded as untested, not untestable.
 
 Support ticket draft (send as-is; evidence from sandbox
-probes P1–P18, brand in `~/Herd/unfair/.env`):
+probes P1–P23, brand in `~/Herd/unfair/.env`):
 
-> Subject: Collect API — status codes, card expiry,
-> direct_post_url, and spec questions
+> Subject: Collect API — status codes, error envelope,
+> and two doc conflicts
 >
 > Hi CHIP team — we're integrating against Collect
-> (sandbox-verified) and have a few questions we could
-> not settle from the docs. (One we settled ourselves:
-> posting without `client`/`client_id` returns
-> `purchase_client_or_id_required`, so the XOR
-> requirement is confirmed — no action needed there.)
+> (sandbox-verified; ~40 probed calls, all `is_test`).
+> Four items we could not settle:
 >
-> 1. Status codes: we observe 400 for validation errors
->    and 401 (`authentication_failed` under `__all__`)
->    for bad keys. Are 403, 409, or 422 ever emitted by
->    Collect, and if so by which operations?
-> 2. Card expiry edge (untested — no sandbox card
->    attempt made): the spec's expiry wording reads
->    both "current month or later" and "later than now".
->    Is a card expiring in the current month accepted?
-> 3. Does the card Direct Post page (`direct_post_url`)
->    honor `?preferred=` / `fpx_bank_code` for
->    pre-selecting the payment method? (Untested — the
->    field is absent outside card flows.)
-> 4. In the error responses we tested, `__all__` is an
->    array of `{message, code}`. Is the object form ever
->    emitted?
-> 5. `PublicKey` is typed string in the spec but modeled
->    as an object in the official PHP SDK. Which is
->    canonical?
+> 1. Status codes: your errors guide lists 403
+>    `forbidden`, 409 `conflict`, and 422
+>    `unprocessable_entity`, but across ~40 calls we saw
+>    only 400, 401, 404, and 405. The 400s cover
+>    validation plus state violations (a repeat cancel,
+>    and release/refund/capture on a fresh purchase,
+>    return 400 `purchase_*_wrong_status` — the first
+>    cancel succeeds; tokenless charge returns 400
+>    `invalid_recurring_token`). Your guide names
+>    capture-on-captured as a 409 case (needs a paid
+>    purchase) and over-capture as a 422 cause (needs
+>    an authorized hold) — our curl probes reached
+>    neither prerequisite state: `cardpost.html`
+>    returned the JS-gated form, and `cardpaid.json`
+>    remained `viewed`. Which operations actually
+>    return 403/409/422? (Side note: bad keys return
+>    401 `authentication_failed`, not the guide's
+>    `unauthorized`.)
+> 2. Card-expiry wording conflict: the spec says "any
+>    expiry larger or equal to the current month/year"
+>    (:88) but also "any date/month greater than now"
+>    (:160), while the payment-link and pre-auth docs
+>    both say "no earlier than the current month/year".
+>    Please confirm a current-month expiry is accepted
+>    and align :160. (Our live card attempt was
+>    inconclusive: the endpoint returned the JS-gated
+>    form and the purchase stayed `viewed` — no expiry
+>    signal either way.)
+> 3. `__all__` shape: the spec shows an ARRAY at :301
+>    and :327 but an OBJECT at :1269. The `__all__`
+>    values in all 11 non-field errors we observed were
+>    arrays (field errors use keyed/nested shapes
+>    instead of this envelope). Is the object form ever
+>    emitted, or is :1269 stale?
+> 4. Idempotency docs conflict: the errors guide says a
+>    repeated body with the same `Idempotency-Key`
+>    "will return the same result without performing
+>    the action twice", but our sandbox replay
+>    (identical body, same key) created a second
+>    purchase. Please confirm the header is currently
+>    ignored and either honor it or fix the guide.
+>
+> Settled ourselves, no action needed: client XOR
+> `client_id` fully enforced both halves
+> (`purchase_client_or_id_required` +
+> `purchase_client_or_id_only`); `GET public_key/`
+> returns a string (spec canonical — note the official
+> PHP SDK cannot handle it: its client types
+> `array|stdClass` while the resource expects
+> `['public_key']`, so static inspection indicates a
+> `TypeError` against live); `?preferred=` /
+> `fpx_bank_code` are checkout-URL features (direct-post
+> docs) — no rendered body change observed when passed
+> to `direct_post_url`.
 >
 > Thanks!
+
+## Addendum 2026-09-29 (cont. 2): card flow + P19–P21
+
+- P6 CLOSED: `?preferred=`/`fpx_bank_code` are CHECKOUT-URL
+  features (direct-post intro docs, official example with
+  `MB2U0227`), not `direct_post_url` features — the
+  residual's premise was wrong. Live: checkout URL +
+  params → 302 to `payments.chip-in.asia` (headers saved
+  in `p6b.headers`; params consumed, not echoed); page
+  content is JS (curl cannot confirm preselection).
+- P19 `GET public_key/` → 200 JSON string (PEM). Spec
+  canonical; the official SDK cannot handle it — its
+  client types `array|stdClass` (`GuzzleClient.php:45`,
+  `json_decode` passthrough) while the resource expects
+  `['public_key']` (`PublicKeyResource.php:20`, test
+  mocks that shape), so static inspection indicates a
+  `TypeError` against live. SDK-side skew, reported in
+  the draft FYI. Old Q5 dropped.
+- P20 expiry: "no earlier than current month/year" on
+  BOTH the payment-link and pre-auth docs pages, plus
+  spec :88 — 3:1 for current-month-valid against spec
+  :160 ("greater than now"). Live card attempt
+  inconclusive (JS-gated form returned, purchase stayed
+  `viewed` — no expiry signal either way); kept as
+  draft Q2 spec-alignment ask with line cites.
+- P21 `direct_post_url`: obtained by adding
+  `success_redirect`/`failure_redirect` (spec :3015
+  conditions) — GET renders the form (200, brand title);
+  with `?preferred=fpx&fpx_bank_code=MB2U0227` no
+  rendered body change observed (byte-identical).
+  Old Q3 dropped (wrong premise).
+- P22 both-supplied client+client_id → 400
+  `purchase_client_or_id_only`. With P16, XOR fully
+  established live; local both-reject matches (the
+  audit's ":50 accepted locally" note was pre-fix
+  state). "XOR enforced" restored with complete
+  evidence after Luna's challenge.
+- P23 state violations: release/refund/capture on a
+  fresh purchase → 400 `purchase_*_wrong_status`
+  (arrays); first cancel → 200 (`created`→`cancelled`),
+  repeat cancel → 400 `purchase_cancel_wrong_status`;
+  tokenless charge → 400 `invalid_recurring_token`
+  (token check fires first — charge wrong-status
+  untested, needs a valid token). No 409 anywhere.
+- 403/409/422: still unobserved (~40 calls). The errors
+  guide DOES document all three (403 scopes, 409 state,
+  422 semantics) plus a 401 `unauthorized` code that
+  mismatches live `authentication_failed` — and its
+  Idempotency section promises server dedupe,
+  contradicted by P4. Kept as draft Q1 (sharpened) +
+  new Q4 (idempotency docs conflict).
+- `__all__`: the values in 11/11 live non-field errors
+  are arrays (verified by artifact inventory, re-confirmed
+  by Luna; field errors use keyed/nested shapes, not this
+  envelope) vs spec :1269 object — kept as draft Q3
+  (sharpened with line cites). The earlier "7/7" was a
+  sloppy count, corrected after Luna's audit. Our own
+  docs + `extractAllError` docblock claimed "object on
+  generic 400s" — corrected to list-observed (parser
+  already accepts all three forms; no behavior change).
+- Luna probe-R1 BLOCKed on the XOR half-proof and the
+  7/7 + envelope wording; both fixed by probe (P22)
+  and recount (11/11) plus wording repair. Its four
+  non-blocking notes each produced fixes: errors-guide
+  reading (Q1/Q4), JS-scope honesty, SDK-shape
+  correction, P21/P6 phrasing + headers artifact.
+- Luna probe-R2 BLOCKed on three draft misstatements,
+  all fixed: charge split out of the wrong-status claim
+  (it returns `invalid_recurring_token`; true charge
+  wrong-status needs a token), SDK outcome corrected to
+  indicated `TypeError` (verified through
+  `GuzzleClient.php:45` + `PublicKeyResource.php:20`,
+  cite fixed :15→:20), P21 softened to the observed
+  wording. Its non-blocking notes confirmed XOR closure,
+  11/11, and Q4, refined Q1 toward the guide's 409/422
+  examples, and caught our own docs' object-`__all__`
+  claim — docblock + both doc lines corrected (parser
+  unchanged). Expiry corroboration snapshots saved at
+  `/tmp/panel-chip/probes/docs-{payment-link,preauth}.md`
+  for auditability. R3 dispatched.
+- Luna probe-R3 BLOCKed on two Q1 misstatements, both
+  fixed: cancel split into succeeding-first vs rejected
+  repeat (P23 likewise completed), and the 409/422
+  examples given their distinct states (paid purchase
+  vs authorized hold). Its non-blocking notes confirmed
+  the TypeError chain airtight (RetryClient rescues
+  only `ChipApiException`), all wording checks, the Q4
+  quote, and Q2's honest inconclusive (browser attempt
+  still possible). R4 dispatched.
+- Luna probe-R4 confirmed the cancel split but BLOCKed on
+  "neither state drivable via API" — capture IS an API op,
+  so the states are reachable via card-flow-then-capture;
+  narrowed to "not reached with our curl probes". R5
+  dispatched.
+- Luna probe-R5 BLOCKed on the parenthetical (a hold is
+  authorization, not a completed payment — status enum
+  agrees); replaced with Luna's dictated sentence
+  verbatim. R6 dispatched.
+- Luna probe-R6 BLOCKed: my "verbatim" had dropped the
+  evidence clause. Full dictated sentence now applied
+  character-for-character. R7 dispatched.
+- Luna probe-R7 APPROVEd (evidence clause verified
+  verbatim; all prior rounds' findings closed across
+  R6+R7). Probe program complete: P1–P23 resolved,
+  4-question support draft approved sendable.

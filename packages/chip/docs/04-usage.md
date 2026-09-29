@@ -401,7 +401,7 @@ HTTP-date `Retry-After` values require the weekday to match the date; a mismatch
 
 Three exception types: `ChipValidationException` for local validation (bad payload, unreconciled overrides) plus server 400s on the Send path, `ChipApiException` for API failures, and `ChipRateLimitException` (a `RuntimeException`) for server 429s — catch it separately, as above.
 
-`ChipApiException` message precedence on the live clients: top-level `message`, then `error`, then CHIP's `__all__` payload, else `API request failed with status {code}`. `__all__` arrives in two shapes — an object (`{"message", "code"}`) on generic 400s, a list of such objects on charge errors (first entry wins); a bare string entry is message-only. The extracted `code` merges into the error data only when no top-level code is present on the Collect path (Send 400s throw before the merge). Scalar bodies (proxy text, numeric codes) degrade gracefully: a non-blank string becomes the message, anything else behaves like an empty body.
+`ChipApiException` message precedence on the live clients: top-level `message`, then `error`, then CHIP's `__all__` payload, else `API request failed with status {code}`. `__all__` parses in three forms — object (`{"message", "code"}`), first-of-list, or bare message-only string. All 11 live errors sampled (2026-09-29 sandbox) carried lists; the spec's object example (:1269) is accepted but unconfirmed. The extracted `code` merges into the error data only when no top-level code is present on the Collect path (Send 400s throw before the merge). Scalar bodies (proxy text, numeric codes) degrade gracefully: a non-blank string becomes the message, anything else behaves like an empty body.
 
 ## Testing
 
