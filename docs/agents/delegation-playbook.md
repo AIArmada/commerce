@@ -75,7 +75,7 @@ by habit:
   re-migrate; never hand-patch a dev DB into shape). Record shipped
   edits and new-table migrations in `migration-record.md` as
   deviations. No backfills.
-- No DB FK constraints/cascades. PHP 8.4. No soft deletes. Money is
+- No DB FK constraints/cascades. PHP 8.5. No soft deletes. Money is
   integer minor units.
 - Tenant writes via `OwnerWriteGuard` / `ResolveOwnedModelOrFailAction` /
   `OwnerContext`; never assign `owner_type`/`owner_id` directly.

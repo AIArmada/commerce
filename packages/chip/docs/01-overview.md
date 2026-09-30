@@ -131,7 +131,7 @@ return redirect($purchase->checkout_url);
 
 ## Requirements
 
-- PHP 8.4+
+- PHP 8.5+
 - Laravel 13+
 - CHIP merchant account with API credentials
 - `aiarmada/commerce-support` package

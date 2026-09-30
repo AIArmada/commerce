@@ -101,7 +101,7 @@ The plugin follows Filament best practices:
 
 ## Requirements
 
-- PHP 8.4+
+- PHP 8.5+
 - Filament ^5.8.1
 - aiarmada/customers package
 

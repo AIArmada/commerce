@@ -4,7 +4,7 @@ title: Persons Installation
 
 ## Requirements
 
-- PHP 8.4+
+- PHP 8.5+
 - Laravel 13+
 - `aiarmada/commerce-support`
 

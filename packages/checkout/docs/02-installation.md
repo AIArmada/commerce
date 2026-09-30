@@ -6,7 +6,7 @@ title: Installation
 
 ## Requirements
 
-- PHP 8.4+
+- PHP 8.5+
 - Laravel 13+
 - At least one payment gateway package installed (chip, cashier-chip, or cashier)
 

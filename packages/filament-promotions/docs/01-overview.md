@@ -91,7 +91,7 @@ The `PromotionType` enum and the `Promotion` model live in the core
 
 ## Requirements
 
-- PHP 8.4+
+- PHP 8.5+
 - Laravel 13+
 - Filament 5.8+
 - aiarmada/promotions package

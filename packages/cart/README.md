@@ -14,7 +14,7 @@ A modern, production-grade shopping cart engine for Laravel 13 applications.
 
 ## Requirements
 
-- PHP 8.4+
+- PHP 8.5+
 - Laravel 13.x
 
 ## Installation

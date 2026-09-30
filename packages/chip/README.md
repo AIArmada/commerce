@@ -9,7 +9,7 @@ Laravel 13 integration for [CHIP](https://docs.chip-in.asia/) payment platform �
 - **Universal Gateway** – implements `PaymentGatewayInterface` for provider switching
 - **Complete API coverage** – purchases, refunds, subscriptions, payouts, webhooks
 - **Laravel DX** – facades, fluent builders, typed data objects, events
-- **Production ready** – PHP 8.4, PHPStan level 6, Pest test suite
+- **Production ready** – PHP 8.5, PHPStan level 6, Pest test suite
 - **Secure** – webhook signature verification, sensitive data masking
 
 ## Installation

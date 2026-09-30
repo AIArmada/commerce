@@ -76,7 +76,7 @@ Access at `/billing` with pages for:
 
 ## Requirements
 
-- PHP ^8.4
+- PHP ^8.5
 - Laravel ^13.0
 - Filament ^5.0
 - aiarmada/chip

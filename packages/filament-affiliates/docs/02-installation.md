@@ -6,7 +6,7 @@ title: Installation
 
 ## Requirements
 
-- PHP 8.4+
+- PHP 8.5+
 - Laravel application with Filament v5
 - `aiarmada/affiliates`
 

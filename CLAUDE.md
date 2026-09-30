@@ -11,7 +11,7 @@ These files are intentionally split by concern for easier maintenance. Read and 
 - **Never assume UI scoping is security**. Server-side enforcement and validation are mandatory.
 
 ## Runtime assumptions
-- **PHP**: Target **PHP 8.4+** only.
+- **PHP**: Target **PHP 8.5+** only.
 - **Filament**: Use Filament v5 APIs. Filament v5 is API-compatible with Filament v4; the primary difference is Livewire (v5 uses Livewire v4, v4 uses Livewire v3). When official v5 docs are missing, Filament v4 docs/examples are acceptable.
 
 ## Verification mindset
@@ -106,7 +106,7 @@ These files are intentionally split by concern for easier maintenance. Read and 
 
 ## Best Practices
 - **Strict Laravel**: `Arr::get()`, `Collections`, `Service Container`.
-- **Modern PHP**: 8.4+ (readonly, match, modern typing).
+- **Modern PHP**: 8.5+ (readonly, match, modern typing).
 - **Time**: Use `CarbonImmutable` (or immutable date/time objects) wherever possible; avoid mutable `Carbon` unless you have a strong reason.
 - **Logic**: Action Classes only. No logic in Controllers/Models.
 - **Structure**: SOLID, Repository for access, Factory for creation.
@@ -266,7 +266,7 @@ The Laravel Boost guidelines are specifically curated by Laravel maintainers for
 ## Foundational Context
 This application is a Laravel application and its main Laravel ecosystems package & versions are below. You are an expert with them all. Ensure you abide by these specific packages & versions.
 
-- php - 8.4.16
+- php - 8.5.10
 
 ## Conventions
 - You must follow all existing code conventions used in this application. When creating or editing a file, check sibling files for the correct structure, approach, and naming.

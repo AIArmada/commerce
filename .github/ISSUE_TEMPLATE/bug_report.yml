@@ -96,7 +96,7 @@ body:
       label: PHP Version
       description: Which PHP version are you using?
       options:
-        - 8.4
+        - 8.5
         - 8.3
         - 8.2
         - Other (please specify below)
@@ -162,7 +162,7 @@ body:
           required: true
         - label: I have provided all requested information
           required: true
-        - label: I am using a supported version of PHP (^8.4)
+        - label: I am using a supported version of PHP (^8.5)
           required: true
         - label: I am using a supported version of Laravel (^13.0)
           required: true

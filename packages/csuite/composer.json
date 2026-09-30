@@ -9,7 +9,7 @@
         "source": "https://github.com/aiarmada/commerce"
     },
     "require": {
-        "php": "^8.4",
+        "php": "^8.5",
         "aiarmada/authz": "self.version",
         "aiarmada/cart": "self.version",
         "aiarmada/cashier": "self.version",

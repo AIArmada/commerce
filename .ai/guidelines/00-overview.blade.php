@@ -7,7 +7,7 @@ These files are intentionally split by concern for easier maintenance. Read and 
 - If instructions conflict or cannot both be satisfied, say so explicitly, explain the conflict, and choose the safest alternative.
 
 ## Runtime Baseline
-- Target PHP 8.4+ only.
+- Target PHP 8.5+ only.
 - Use Filament v5 APIs.
 - Assume long-lived workers. Avoid request-leaking static mutable state, prefer request-scoped or container-scoped state, and keep code safe under Laravel Octane.
 

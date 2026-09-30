@@ -3,7 +3,7 @@
     "description": "Filament admin for aiarmada/persons: manage persons, titles, credentials, affiliations.",
     "license": "MIT",
     "require": {
-        "php": "^8.4",
+        "php": "^8.5",
         "aiarmada/commerce-support": "self.version",
         "aiarmada/persons": "self.version",
         "filament/filament": "^5.8.1"

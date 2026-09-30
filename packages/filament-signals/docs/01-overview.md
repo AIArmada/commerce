@@ -54,7 +54,7 @@ The `aiarmada/filament-signals` package provides a Filament v5 analytics UI on t
 
 ## Requirements
 
-- PHP 8.4+
+- PHP 8.5+
 - Filament v5
 - `aiarmada/signals`
 

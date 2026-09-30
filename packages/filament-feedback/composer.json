@@ -3,7 +3,7 @@
     "description": "Filament v5 admin adapter for aiarmada/feedback.",
     "license": "MIT",
     "require": {
-        "php": "^8.4",
+        "php": "^8.5",
         "aiarmada/commerce-support": "self.version",
         "aiarmada/feedback": "self.version",
         "filament/filament": "^5.8.1"

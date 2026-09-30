@@ -3,7 +3,7 @@
     "description": "Filament v5 adapter for aiarmada/contacting.",
     "license": "MIT",
     "require": {
-        "php": "^8.4",
+        "php": "^8.5",
         "aiarmada/commerce-support": "self.version",
         "aiarmada/contacting": "self.version",
         "filament/filament": "^5.8.1"

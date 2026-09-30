@@ -106,7 +106,7 @@ The plugin registers by default:
 
 ## Requirements
 
-- PHP 8.4+
+- PHP 8.5+
 - Laravel 13+
 - Filament 5.0+
 - `aiarmada/chip` (core package)

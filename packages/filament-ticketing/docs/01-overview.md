@@ -73,7 +73,7 @@ Use this package when you need panel resources for ticket type management, pass 
 
 ## Requirements
 
-- PHP 8.4+
+- PHP 8.5+
 - Filament 5.8+
 - `aiarmada/ticketing`
 - `aiarmada/commerce-support`

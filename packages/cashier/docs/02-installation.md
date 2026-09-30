@@ -10,7 +10,7 @@ This guide installs `aiarmada/cashier` and the gateway packages it coordinates f
 
 Before you begin, ensure you have:
 
-- PHP 8.4 or higher
+- PHP 8.5 or higher
 - Laravel 13.0 or higher
 - Composer installed
 - At least one payment gateway account (Stripe, CHIP, etc.)

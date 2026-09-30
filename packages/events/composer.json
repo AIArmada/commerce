@@ -19,7 +19,7 @@
     }
   ],
   "require": {
-    "php": "^8.4",
+    "php": "^8.5",
     "aiarmada/commerce-support": "self.version",
     "aiarmada/addressing": "self.version",
     "aiarmada/communications": "self.version",

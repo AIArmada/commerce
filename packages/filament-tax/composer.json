@@ -22,7 +22,7 @@
         "aiarmada/filament-authz": "self.version",
         "aiarmada/tax": "self.version",
         "filament/filament": "^5.8.1",
-        "php": "^8.4"
+        "php": "^8.5"
     },
     "suggest": {
         "aiarmada/customers": "Required for Customer/CustomerGroup exemption entity types",

@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
-use AIArmada\CashierChip\Subscription;
+use AIArmada\CashierChip\Payment\StoredPaymentMethod;
+use AIArmada\CashierChip\Subscription\Subscription;
+use AIArmada\Chip\Models\ChipCustomerLink;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use App\Models\User;
 use Carbon\Carbon;
@@ -78,7 +80,28 @@ final class BillingShowcaseSeeder extends Seeder
      */
     private function setupBillableUser(User $user, array $attributes): void
     {
-        $user->forceFill($attributes)->save();
+        ChipCustomerLink::firstOrCreate(
+            [
+                'subject_type' => $user->getMorphClass(),
+                'subject_id' => (string) $user->getKey(),
+            ],
+            [
+                'chip_customer_id' => $attributes['chip_id'],
+            ]
+        );
+
+        StoredPaymentMethod::firstOrCreate(
+            [
+                'billable_type' => $user->getMorphClass(),
+                'billable_id' => (string) $user->getKey(),
+            ],
+            [
+                'recurring_token' => $attributes['default_pm_id'],
+                'type' => $attributes['pm_type'] ?? null,
+                'last_four' => $attributes['pm_last_four'] ?? null,
+                'is_default' => true,
+            ]
+        );
     }
 
     /**
@@ -89,7 +112,8 @@ final class BillingShowcaseSeeder extends Seeder
     private function createSubscription(User $user, array $attributes): Subscription
     {
         return Subscription::create([
-            'user_id' => $user->id,
+            'billable_type' => $user->getMorphClass(),
+            'billable_id' => (string) $user->getKey(),
             'type' => $attributes['type'] ?? 'default',
             'chip_id' => 'sub_'.Str::random(40),
             'chip_status' => $attributes['chip_status'] ?? SubscriptionStatus::Active,
@@ -97,7 +121,6 @@ final class BillingShowcaseSeeder extends Seeder
             'quantity' => $attributes['quantity'] ?? 1,
             'billing_interval' => $attributes['billing_interval'] ?? 'month',
             'billing_interval_count' => $attributes['billing_interval_count'] ?? 1,
-            'recurring_token' => 'tok_'.Str::random(32),
             'trial_ends_at' => $attributes['trial_ends_at'] ?? null,
             'ends_at' => $attributes['ends_at'] ?? null,
             'next_billing_at' => $attributes['next_billing_at'] ?? Carbon::now()->addMonth(),

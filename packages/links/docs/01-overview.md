@@ -58,7 +58,7 @@ The `aiarmada/links` package is generic tracked-link management for Laravel. It 
 
 ## Requirements
 
-- PHP 8.4+
+- PHP 8.5+
 - Laravel 12+
 - `aiarmada/commerce-support`
 

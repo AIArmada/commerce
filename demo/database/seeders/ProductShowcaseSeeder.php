@@ -50,7 +50,6 @@ final class ProductShowcaseSeeder extends Seeder
             'code' => 'general',
             'description' => 'General product attributes',
             'position' => 1,
-            'is_visible' => true,
         ]);
 
         $technicalGroup = AttributeGroup::create([
@@ -58,7 +57,6 @@ final class ProductShowcaseSeeder extends Seeder
             'code' => 'technical',
             'description' => 'Technical specifications and features',
             'position' => 2,
-            'is_visible' => true,
         ]);
 
         $dimensionsGroup = AttributeGroup::create([
@@ -66,7 +64,6 @@ final class ProductShowcaseSeeder extends Seeder
             'code' => 'dimensions',
             'description' => 'Physical dimensions and weight',
             'position' => 3,
-            'is_visible' => true,
         ]);
 
         $fashionGroup = AttributeGroup::create([
@@ -74,7 +71,6 @@ final class ProductShowcaseSeeder extends Seeder
             'code' => 'fashion',
             'description' => 'Fashion-specific attributes',
             'position' => 4,
-            'is_visible' => true,
         ]);
 
         $marketingGroup = AttributeGroup::create([
@@ -82,7 +78,6 @@ final class ProductShowcaseSeeder extends Seeder
             'code' => 'marketing',
             'description' => 'Marketing and promotional attributes',
             'position' => 5,
-            'is_visible' => true,
         ]);
 
         // =====================================================================
@@ -470,7 +465,6 @@ final class ProductShowcaseSeeder extends Seeder
                     'name' => 'Tablets',
                     'description' => 'Tablet devices and accessories',
                     'parent_id' => $electronicsCategory->id,
-                    'is_visible' => true,
                     'is_featured' => true,
                     'position' => 10,
                     'meta_title' => 'Tablets - Best Tablet Deals',
@@ -484,7 +478,6 @@ final class ProductShowcaseSeeder extends Seeder
                     'name' => 'Wearables',
                     'description' => 'Smartwatches, fitness trackers, and wearable tech',
                     'parent_id' => $electronicsCategory->id,
-                    'is_visible' => true,
                     'is_featured' => false,
                     'position' => 11,
                 ]
@@ -496,7 +489,6 @@ final class ProductShowcaseSeeder extends Seeder
                     'name' => 'Gaming',
                     'description' => 'Gaming consoles, accessories, and games',
                     'parent_id' => $electronicsCategory->id,
-                    'is_visible' => true,
                     'is_featured' => true,
                     'position' => 12,
                 ]
@@ -510,7 +502,6 @@ final class ProductShowcaseSeeder extends Seeder
                     'name' => 'Accessories',
                     'description' => 'Bags, belts, watches, and more',
                     'parent_id' => $fashionCategory->id,
-                    'is_visible' => true,
                     'is_featured' => false,
                     'position' => 10,
                 ]
@@ -522,7 +513,6 @@ final class ProductShowcaseSeeder extends Seeder
                     'name' => 'Sportswear',
                     'description' => 'Athletic and sports clothing',
                     'parent_id' => $fashionCategory->id,
-                    'is_visible' => true,
                     'is_featured' => true,
                     'position' => 11,
                 ]
@@ -540,7 +530,6 @@ final class ProductShowcaseSeeder extends Seeder
             'slug' => 'best-sellers',
             'description' => 'Our top-selling products across all categories',
             'type' => 'manual',
-            'is_visible' => true,
             'is_featured' => true,
             'position' => 1,
             'published_at' => now(),
@@ -554,7 +543,6 @@ final class ProductShowcaseSeeder extends Seeder
             'slug' => 'new-arrivals',
             'description' => 'Fresh products just added to our store',
             'type' => 'manual',
-            'is_visible' => true,
             'is_featured' => true,
             'position' => 2,
             'published_at' => now(),
@@ -572,7 +560,6 @@ final class ProductShowcaseSeeder extends Seeder
                 ],
                 'match' => 'all',
             ],
-            'is_visible' => true,
             'is_featured' => true,
             'position' => 3,
             'published_at' => now(),
@@ -590,7 +577,6 @@ final class ProductShowcaseSeeder extends Seeder
                 ],
                 'match' => 'all',
             ],
-            'is_visible' => true,
             'is_featured' => false,
             'position' => 4,
             'published_at' => now(),
@@ -602,7 +588,6 @@ final class ProductShowcaseSeeder extends Seeder
             'slug' => 'summer-sale-2026',
             'description' => 'Hot deals for the summer season',
             'type' => 'manual',
-            'is_visible' => true,
             'is_featured' => true,
             'position' => 5,
             'published_at' => now()->addDays(30), // Future publish
@@ -625,7 +610,6 @@ final class ProductShowcaseSeeder extends Seeder
                 ],
                 'match' => 'all',
             ],
-            'is_visible' => true,
             'is_featured' => false,
             'position' => 6,
             'published_at' => now(),
@@ -740,7 +724,6 @@ final class ProductShowcaseSeeder extends Seeder
             'name' => 'storage',
             'display_name' => 'Storage',
             'position' => 1,
-            'is_visible' => true,
         ]);
 
         $colorOption = Option::create([
@@ -748,7 +731,6 @@ final class ProductShowcaseSeeder extends Seeder
             'name' => 'color',
             'display_name' => 'Color',
             'position' => 2,
-            'is_visible' => true,
         ]);
 
         $storage256 = OptionValue::create(['option_id' => $storageOption->id, 'name' => '256GB', 'position' => 1]);

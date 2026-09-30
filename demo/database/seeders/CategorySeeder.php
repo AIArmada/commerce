@@ -51,7 +51,6 @@ final class CategorySeeder extends Seeder
 
             $parent = Category::create([
                 ...$categoryData,
-                'is_visible' => true,
                 'position' => $position++,
             ]);
 
@@ -60,7 +59,6 @@ final class CategorySeeder extends Seeder
                 Category::create([
                     ...$childData,
                     'parent_id' => $parent->id,
-                    'is_visible' => true,
                     'position' => $childPosition++,
                 ]);
             }

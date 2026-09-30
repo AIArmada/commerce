@@ -157,7 +157,7 @@ The application resource provides:
 
 ## Requirements
 
-- PHP 8.4+
+- PHP 8.5+
 - Laravel 13+
 - Filament v5
 - `aiarmada/affiliate-network` package

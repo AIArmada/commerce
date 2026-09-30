@@ -68,7 +68,7 @@ The `aiarmada/filament-shipping` package provides a complete Filament v5 admin p
 
 ## Requirements
 
-- PHP 8.4+
+- PHP 8.5+
 - Laravel 13+
 - Filament 5.8+
 - `aiarmada/shipping` package

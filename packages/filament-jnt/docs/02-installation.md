@@ -10,7 +10,7 @@ This guide covers installing and setting up the Filament JNT package.
 
 ## Requirements
 
-- PHP 8.4+
+- PHP 8.5+
 - Laravel 13+
 - Filament v5
 - `aiarmada/jnt` package installed and configured

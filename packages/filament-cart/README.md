@@ -4,7 +4,7 @@ Filament admin panel integration for `aiarmada/cart`. Provides normalized cart d
 
 ## Requirements
 
-- PHP 8.4+
+- PHP 8.5+
 - Laravel 13+
 - Filament 5+
 - aiarmada/cart

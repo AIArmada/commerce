@@ -114,7 +114,7 @@ The package automatically detects installed gateways and enables features accord
 
 ## Requirements
 
-- PHP 8.4+
+- PHP 8.5+
 - Laravel 13.0+
 - Filament 5.0+
 - `aiarmada/cashier` (required)

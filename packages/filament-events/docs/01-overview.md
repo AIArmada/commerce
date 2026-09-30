@@ -79,7 +79,7 @@ Bulk import/export is supported via `Actions\Importer\*` (registrations, session
 
 ## Requirements
 
-- PHP 8.4+
+- PHP 8.5+
 - Laravel 13+
 - Filament 5.8+
 - `aiarmada/events`

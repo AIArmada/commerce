@@ -3,7 +3,7 @@
     "description": "Filament admin for aiarmada/ticketing: manage ticket types, passes, pass holders, transfers, and pass issuance.",
     "license": "MIT",
     "require": {
-        "php": "^8.4",
+        "php": "^8.5",
         "aiarmada/commerce-support": "self.version",
         "aiarmada/filament-commerce-support": "self.version",
         "aiarmada/ticketing": "self.version",

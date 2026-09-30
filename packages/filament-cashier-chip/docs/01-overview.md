@@ -110,7 +110,7 @@ php artisan vendor:publish --tag=filament-cashier-chip-config
 
 ## Requirements
 
-- PHP 8.4+
+- PHP 8.5+
 - Laravel 13+
 - Filament 5.x
 - aiarmada/cashier-chip package

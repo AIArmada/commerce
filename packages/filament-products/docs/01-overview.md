@@ -62,7 +62,7 @@ This package does not treat Filament option scoping as authorization. Resource q
 
 ## Requirements
 
-- PHP 8.4+
+- PHP 8.5+
 - Laravel 13+
 - Filament v5
 - `aiarmada/products`

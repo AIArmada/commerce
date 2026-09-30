@@ -6,7 +6,7 @@
     <a href="https://github.com/aiarmada/commerce/actions"><img alt="Tests passing" src="https://img.shields.io/badge/Tests-passing-34d399?style=for-the-badge&logo=github"></a>
     <a href="https://laravel.com"><img alt="Laravel v13" src="https://img.shields.io/badge/Laravel-v13-FF2D20?style=for-the-badge&logo=laravel"></a>
     <a href="https://livewire.laravel.com"><img alt="Livewire v4" src="https://img.shields.io/badge/Livewire-v4-FB70A9?style=for-the-badge"></a>
-    <a href="https://php.net"><img alt="PHP 8.4" src="https://img.shields.io/badge/PHP-8.4-777BB4?style=for-the-badge&logo=php"></a>
+    <a href="https://php.net"><img alt="PHP 8.5" src="https://img.shields.io/badge/PHP-8.5-777BB4?style=for-the-badge&logo=php"></a>
 </p>
 
 **AIArmada Commerce is a modular e-commerce stack for Laravel 13 — carts, payments, vouchers, shipping, inventory, and Filament admin panels in one cohesive toolkit.**

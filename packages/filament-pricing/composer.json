@@ -22,7 +22,7 @@
     "aiarmada/pricing": "self.version",
     "filament/filament": "^5.8.1",
     "filament/spatie-laravel-settings-plugin": "^5.8.1",
-    "php": "^8.4"
+    "php": "^8.5"
   },
   "suggest": {
     "aiarmada/customers": "Optional integration",

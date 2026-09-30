@@ -16,7 +16,7 @@
     }
   ],
   "require": {
-    "php": "^8.4",
+    "php": "^8.5",
     "aiarmada/commerce-support": "self.version",
     "aiarmada/organizations": "self.version",
     "aiarmada/membership": "self.version",

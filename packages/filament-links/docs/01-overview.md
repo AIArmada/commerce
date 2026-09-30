@@ -29,7 +29,7 @@ The `aiarmada/filament-links` package is the Filament admin adapter for [`aiarma
 
 ## Requirements
 
-- PHP 8.4+
+- PHP 8.5+
 - `aiarmada/links`
 - Filament v5
 

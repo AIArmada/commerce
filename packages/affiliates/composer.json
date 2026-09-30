@@ -10,7 +10,7 @@
   "require": {
     "aiarmada/contacting": "self.version",
     "aiarmada/commerce-support": "self.version",
-    "php": "^8.4",
+    "php": "^8.5",
     "spatie/laravel-settings": "^3.9.0"
   },
   "suggest": {

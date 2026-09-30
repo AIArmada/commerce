@@ -6,7 +6,7 @@ For package-specific setup, configuration, webhooks, and Filament registration d
 
 ## Requirements
 
-- PHP 8.4+
+- PHP 8.5+
 - Laravel 13+
 - Composer 2.7+
 

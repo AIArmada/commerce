@@ -3,7 +3,7 @@
     "description": "Filament admin for aiarmada/seating: manage seat maps, sections, and occupancy.",
     "license": "MIT",
     "require": {
-        "php": "^8.4",
+        "php": "^8.5",
         "aiarmada/seating": "self.version",
         "aiarmada/commerce-support": "self.version",
         "aiarmada/filament-commerce-support": "self.version",

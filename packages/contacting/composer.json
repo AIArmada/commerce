@@ -19,7 +19,7 @@
         }
     ],
     "require": {
-        "php": "^8.4",
+        "php": "^8.5",
         "aiarmada/commerce-support": "self.version",
         "propaganistas/laravel-phone": "^6.0.3",
         "spatie/laravel-data": "^4.23.0",

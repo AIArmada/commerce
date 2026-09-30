@@ -5,19 +5,32 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateFraudSignal;
 use AIArmada\Authz\Models\Permission;
 use AIArmada\Authz\Models\Role;
+use AIArmada\Cart\Models\CartModel;
 use AIArmada\Cashier\Cashier;
 use AIArmada\CashierChip\Billing\Cashier as CashierChip;
+use AIArmada\CashierChip\Subscription\Subscription;
 use AIArmada\Checkout\Contracts\PaymentGatewayResolverInterface;
 use AIArmada\Chip\Events\PurchasePaid;
+use AIArmada\Chip\Models\ChipCustomerLink;
 use AIArmada\Chip\Models\Client;
 use AIArmada\Chip\Models\Payment;
 use AIArmada\Chip\Models\Purchase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Docs\Models\Doc;
+use AIArmada\Docs\Models\DocApproval;
+use AIArmada\Docs\Models\DocEmailTemplate;
+use AIArmada\Docs\Models\DocSequence;
+use AIArmada\Docs\Models\DocStatusHistory;
+use AIArmada\Docs\Models\DocTemplate;
+use AIArmada\Growth\Models\Assignment;
+use AIArmada\Growth\Models\Experiment;
+use AIArmada\Growth\Models\Variant as GrowthVariant;
 use AIArmada\Inventory\Models\InventoryAllocation;
 use AIArmada\Inventory\Models\InventoryBackorder;
 use AIArmada\Inventory\Models\InventoryBatch;
@@ -32,17 +45,35 @@ use AIArmada\Inventory\Models\InventorySerialHistory;
 use AIArmada\Inventory\Models\InventoryStandardCost;
 use AIArmada\Inventory\Models\InventorySupplierLeadtime;
 use AIArmada\Inventory\Models\InventoryValuationSnapshot;
+use AIArmada\Jnt\Models\JntOrder;
+use AIArmada\Jnt\Models\JntOrderItem;
+use AIArmada\Jnt\Models\JntTrackingEvent;
 use AIArmada\Orders\Models\Order;
+use AIArmada\Orders\Models\OrderItem;
 use AIArmada\Pricing\Models\Price;
 use AIArmada\Pricing\Models\PriceList;
 use AIArmada\Pricing\Models\PriceTier;
+use AIArmada\Products\Models\Attribute;
+use AIArmada\Products\Models\AttributeGroup;
+use AIArmada\Products\Models\AttributeSet;
+use AIArmada\Products\Models\AttributeValue;
 use AIArmada\Products\Models\Category;
+use AIArmada\Products\Models\Collection;
+use AIArmada\Products\Models\Option;
+use AIArmada\Products\Models\OptionValue;
 use AIArmada\Products\Models\Product;
+use AIArmada\Products\Models\Variant;
 use AIArmada\Promotions\Models\Promotion;
+use AIArmada\Signals\Models\SignalEvent;
+use AIArmada\Signals\Models\SignalIdentity;
+use AIArmada\Signals\Models\SignalSession;
+use AIArmada\Signals\Models\TrackedProperty;
 use AIArmada\Tax\Models\TaxClass;
 use AIArmada\Tax\Models\TaxExemption;
 use AIArmada\Tax\Models\TaxRate;
 use AIArmada\Tax\Models\TaxZone;
+use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\Models\VoucherUsage;
 use App\Checkout\DemoPaymentProcessor;
 use App\Checkout\DemoRequestExperimentSubjectResolver;
 use App\Listeners\HandleChipPaymentSuccess;
@@ -148,20 +179,39 @@ final class AppServiceProvider extends ServiceProvider
 
         Relation::enforceMorphMap([
             'order' => Order::class,
+            'order_item' => OrderItem::class,
             'chip_client' => Client::class,
+            'chip_customer_link' => ChipCustomerLink::class,
             'chip_purchase' => Purchase::class,
             'chip_payment' => Payment::class,
+            'subscription' => Subscription::class,
             'price' => Price::class,
             'price_list' => PriceList::class,
             'price_tier' => PriceTier::class,
             'promotion' => Promotion::class,
             'affiliate' => Affiliate::class,
+            'affiliate_attribution' => AffiliateAttribution::class,
+            'affiliate_conversion' => AffiliateConversion::class,
             'affiliate_fraud_signal' => AffiliateFraudSignal::class,
             'doc' => Doc::class,
+            'doc_approval' => DocApproval::class,
+            'doc_email_template' => DocEmailTemplate::class,
+            'doc_sequence' => DocSequence::class,
+            'doc_status_history' => DocStatusHistory::class,
+            'doc_template' => DocTemplate::class,
             'product' => Product::class,
+            'product_variant' => Variant::class,
+            'product_option' => Option::class,
+            'product_option_value' => OptionValue::class,
+            'product_collection' => Collection::class,
+            'product_attribute' => Attribute::class,
+            'product_attribute_group' => AttributeGroup::class,
+            'product_attribute_set' => AttributeSet::class,
+            'product_attribute_value' => AttributeValue::class,
             'category' => Category::class,
             'user' => User::class,
             'customer' => Customer::class,
+            'cart' => CartModel::class,
             'tax_zone' => TaxZone::class,
             'tax_rate' => TaxRate::class,
             'tax_class' => TaxClass::class,
@@ -182,6 +232,18 @@ final class AppServiceProvider extends ServiceProvider
             'inventory_valuation_snapshot' => InventoryValuationSnapshot::class,
             'permission' => Permission::class,
             'role' => Role::class,
+            'growth_assignment' => Assignment::class,
+            'growth_experiment' => Experiment::class,
+            'growth_variant' => GrowthVariant::class,
+            'signal_event' => SignalEvent::class,
+            'signal_identity' => SignalIdentity::class,
+            'signal_session' => SignalSession::class,
+            'tracked_property' => TrackedProperty::class,
+            'jnt_order' => JntOrder::class,
+            'jnt_order_item' => JntOrderItem::class,
+            'jnt_tracking_event' => JntTrackingEvent::class,
+            'voucher' => Voucher::class,
+            'voucher_usage' => VoucherUsage::class,
         ]);
 
         // Register CHIP webhook listeners for order processing

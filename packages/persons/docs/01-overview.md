@@ -112,6 +112,6 @@ This stores short, stable type strings (`person`) instead of FQCNs in assignment
 
 ## Requirements
 
-- PHP 8.4+
+- PHP 8.5+
 - Laravel 13+
 - `aiarmada/commerce-support`
