@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\References\Enums\ReferencePartType;
+use AIArmada\References\Enums\ReferenceRecordKind;
 use AIArmada\References\Enums\ReferenceStatus;
 use AIArmada\References\Enums\ReferenceType;
 use AIArmada\References\Models\Reference;
@@ -13,6 +14,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 beforeEach(function (): void {
     config()->set('references.owner.enabled', true);
@@ -68,7 +70,7 @@ test('rejects invalid reference parents', function (): void {
         'type' => ReferenceType::Book, 'status' => ReferenceStatus::Draft, 'title' => 'Parent Root',
     ]));
     $child = OwnerContext::withOwner($ownerA, fn (): Reference => Reference::create([
-        'type' => ReferenceType::Book, 'status' => ReferenceStatus::Draft, 'title' => 'Parent Child', 'parent_id' => $root->getKey(),
+        'type' => ReferenceType::Book, 'status' => ReferenceStatus::Draft, 'title' => 'Parent Child', 'record_kind' => ReferenceRecordKind::Edition, 'parent_id' => $root->getKey(),
     ]));
     $otherParent = OwnerContext::withOwner($ownerB, fn (): Reference => Reference::create([
         'type' => ReferenceType::Book, 'status' => ReferenceStatus::Draft, 'title' => 'Other Parent',
@@ -76,15 +78,15 @@ test('rejects invalid reference parents', function (): void {
 
     expect(fn () => OwnerContext::withOwner($ownerA, fn (): Reference => Reference::create([
         'type' => ReferenceType::Book, 'status' => ReferenceStatus::Draft, 'title' => 'Missing', 'parent_id' => (string) Str::uuid(),
-    ])))->toThrow(InvalidArgumentException::class, 'parent_id');
+    ])))->toThrow(ValidationException::class, 'parent_id');
 
     expect(fn () => OwnerContext::withOwner($ownerA, function () use ($root): void {
         $root->update(['parent_id' => $root->getKey()]);
-    }))->toThrow(InvalidArgumentException::class, 'own parent');
+    }))->toThrow(ValidationException::class, 'own parent');
 
     expect(fn () => OwnerContext::withOwner($ownerA, function () use ($root, $child): void {
         $root->update(['parent_id' => $child->getKey()]);
-    }))->toThrow(InvalidArgumentException::class, 'own descendant');
+    }))->toThrow(ValidationException::class, 'own descendant');
 
     expect(fn () => OwnerContext::withOwner($ownerA, fn (): Reference => Reference::create([
         'type' => ReferenceType::Book, 'status' => ReferenceStatus::Draft, 'title' => 'Cross', 'parent_id' => $otherParent->getKey(),
@@ -93,15 +95,15 @@ test('rejects invalid reference parents', function (): void {
 
 test('deleting a reference fires events for every descendant', function (): void {
     $root = Reference::create(['type' => ReferenceType::Book, 'status' => ReferenceStatus::Draft, 'title' => 'Event Root']);
-    $child = Reference::create(['type' => ReferenceType::Book, 'status' => ReferenceStatus::Draft, 'title' => 'Event Child', 'parent_id' => $root->getKey()]);
-    Reference::create(['type' => ReferenceType::Book, 'status' => ReferenceStatus::Draft, 'title' => 'Event Grandchild', 'parent_id' => $child->getKey()]);
+    $child = Reference::create(['type' => ReferenceType::Book, 'status' => ReferenceStatus::Draft, 'title' => 'Event Child', 'record_kind' => ReferenceRecordKind::Edition, 'parent_id' => $root->getKey()]);
+    Reference::create(['type' => ReferenceType::Book, 'status' => ReferenceStatus::Draft, 'title' => 'Event Grandchild', 'record_kind' => ReferenceRecordKind::Part, 'parent_id' => $child->getKey()]);
 
     Event::fake();
 
     $root->delete();
 
-    Event::assertDispatchedTimes('eloquent.deleting: ' . Reference::class, 3);
-    Event::assertDispatchedTimes('eloquent.deleted: ' . Reference::class, 3);
+    Event::assertDispatchedTimes('eloquent.deleting: '.Reference::class, 3);
+    Event::assertDispatchedTimes('eloquent.deleted: '.Reference::class, 3);
 });
 
 test('deleting a global parent removes owned descendants too', function (): void {
@@ -113,7 +115,7 @@ test('deleting a global parent removes owned descendants too', function (): void
         'type' => ReferenceType::Book, 'status' => ReferenceStatus::Draft, 'title' => 'Global Cascade',
     ]));
     $child = OwnerContext::withOwner($owner, fn (): Reference => Reference::create([
-        'type' => ReferenceType::Book, 'status' => ReferenceStatus::Draft, 'title' => 'Owned Cascade Child', 'parent_id' => $parent->getKey(),
+        'type' => ReferenceType::Book, 'status' => ReferenceStatus::Draft, 'title' => 'Owned Cascade Child', 'record_kind' => ReferenceRecordKind::Part, 'parent_id' => $parent->getKey(),
     ]));
 
     OwnerContext::withOwner(null, fn (): ?bool => $parent->delete());
@@ -143,7 +145,7 @@ test('reference policy is registered and owner-aware', function (): void {
 test('rejects invalid reference fields', function (array $attributes, string $message): void {
     expect(fn () => Reference::create(array_merge([
         'type' => ReferenceType::Book, 'status' => ReferenceStatus::Draft, 'title' => 'Invalid Fields',
-    ], $attributes)))->toThrow(InvalidArgumentException::class, $message);
+    ], $attributes)))->toThrow(ValidationException::class, $message);
 })->with([
     'non-numeric year' => [['year' => 'soon'], 'Invalid year'],
     'absurd year' => [['year' => 99999], 'Invalid year'],
@@ -221,21 +223,70 @@ test('publishing directly still stamps the publish timestamp', function (): void
     expect($reference->published_at)->not->toBeNull();
 });
 
-test('allows a single canonical reference per owner', function (): void {
-    $ownerA = makeReferenceOwner('ref-canon-a@example.test');
-    $ownerB = makeReferenceOwner('ref-canon-b@example.test');
+test('stores typed editions and edition-specific parts', function (): void {
+    $work = Reference::create(['type' => ReferenceType::Book, 'status' => ReferenceStatus::Draft, 'title' => 'A Work']);
+    $edition = Reference::create([
+        'type' => ReferenceType::Book, 'status' => ReferenceStatus::Draft, 'title' => 'An Edition',
+        'record_kind' => ReferenceRecordKind::Edition, 'parent_id' => $work->getKey(),
+        'edition_number' => 3, 'edition_label' => 'Revised',
+    ]);
+    $part = Reference::create([
+        'type' => ReferenceType::Book, 'status' => ReferenceStatus::Draft, 'title' => 'A Part',
+        'record_kind' => ReferenceRecordKind::Part, 'parent_id' => $edition->getKey(),
+    ]);
 
-    OwnerContext::withOwner($ownerA, fn (): Reference => Reference::create([
-        'type' => ReferenceType::Book, 'status' => ReferenceStatus::Draft, 'title' => 'Canon A', 'is_canonical' => true,
-    ]));
-
-    expect(fn () => OwnerContext::withOwner($ownerA, fn (): Reference => Reference::create([
-        'type' => ReferenceType::Book, 'status' => ReferenceStatus::Draft, 'title' => 'Canon A Again', 'is_canonical' => true,
-    ])))->toThrow(InvalidArgumentException::class, 'canonical');
-
-    $other = OwnerContext::withOwner($ownerB, fn (): Reference => Reference::create([
-        'type' => ReferenceType::Book, 'status' => ReferenceStatus::Draft, 'title' => 'Canon B', 'is_canonical' => true,
-    ]));
-
-    expect($other->is_canonical)->toBeTrue();
+    expect($work->record_kind)->toBe(ReferenceRecordKind::Work);
+    expect($edition->fresh()->edition_number)->toBe(3);
+    expect($part->fresh()->parent_id)->toBe($edition->getKey());
 });
+
+test('rejects parent kinds and kind changes which invalidate children', function (): void {
+    $work = Reference::create(['type' => ReferenceType::Book, 'status' => ReferenceStatus::Draft, 'title' => 'Work']);
+    $part = Reference::create([
+        'type' => ReferenceType::Book, 'status' => ReferenceStatus::Draft, 'title' => 'Part',
+        'record_kind' => ReferenceRecordKind::Part, 'parent_id' => $work->getKey(),
+    ]);
+
+    expect(fn () => Reference::create([
+        'type' => ReferenceType::Book, 'status' => ReferenceStatus::Draft, 'title' => 'Invalid Edition',
+        'record_kind' => ReferenceRecordKind::Edition, 'parent_id' => $part->getKey(),
+    ]))->toThrow(ValidationException::class);
+    expect(fn () => $work->update(['record_kind' => ReferenceRecordKind::Part, 'parent_id' => $part->getKey()]))
+        ->toThrow(ValidationException::class);
+});
+
+test('rejects edition fields and missing parents with field errors', function (array $attributes, string $field): void {
+    try {
+        Reference::create(array_merge([
+            'type' => ReferenceType::Book, 'status' => ReferenceStatus::Draft, 'title' => 'Invalid Shape',
+        ], $attributes));
+        test()->fail('Expected validation to reject the reference.');
+    } catch (ValidationException $exception) {
+        expect($exception->errors())->toHaveKey($field);
+    }
+})->with([
+    'edition without parent' => [['record_kind' => ReferenceRecordKind::Edition], 'parent_id'],
+    'part without parent' => [['record_kind' => ReferenceRecordKind::Part], 'parent_id'],
+    'work with edition data' => [['edition_number' => 2], 'record_kind'],
+    'negative edition number' => [['edition_number' => -1], 'edition_number'],
+    'decimal edition number' => [['edition_number' => '1.5'], 'edition_number'],
+    'oversized edition label' => [['edition_label' => str_repeat('a', 256)], 'edition_label'],
+]);
+
+test('normalizes valid ISBNs before persisting', function (string $input, string $normalized): void {
+    $reference = Reference::create([
+        'type' => ReferenceType::Book, 'status' => ReferenceStatus::Draft, 'title' => 'ISBN Work', 'isbn' => $input,
+    ]);
+
+    expect($reference->fresh()->isbn)->toBe($normalized);
+})->with([
+    'isbn13 with separators' => ['978-3-16-148410-0', '9783161484100'],
+    'isbn10 with spaces' => ['0 306 40615 2', '0306406152'],
+    'isbn10 lowercase check digit' => ['0-8044-2957-x', '080442957X'],
+]);
+
+test('rejects invalid ISBN checksums and prefixes', function (string $isbn): void {
+    expect(fn () => Reference::create([
+        'type' => ReferenceType::Book, 'status' => ReferenceStatus::Draft, 'title' => 'Bad ISBN', 'isbn' => $isbn,
+    ]))->toThrow(ValidationException::class);
+})->with(['9783161484101', '0306406153', '1234567890128', '978-3-16-148410-0!']);

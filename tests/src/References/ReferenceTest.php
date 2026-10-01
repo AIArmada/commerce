@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\References\Enums\ReferenceRecordKind;
 use AIArmada\References\Enums\ReferenceStatus;
 use AIArmada\References\Enums\ReferenceType;
 use AIArmada\References\Models\Reference;
@@ -22,7 +23,6 @@ beforeEach(function (): void {
         'type' => ReferenceType::Book,
         'status' => ReferenceStatus::Draft,
         'title' => 'The Art of Islamic Living',
-        'author' => 'Ibn Kathir',
         'publisher' => 'Dar Al-Kutub',
         'year' => 2024,
     ]);
@@ -31,7 +31,6 @@ beforeEach(function (): void {
 test('creates a reference with minimal attributes', function (): void {
     expect($this->reference->id)->toBeUuid();
     expect($this->reference->title)->toBe('The Art of Islamic Living');
-    expect($this->reference->author)->toBe('Ibn Kathir');
     expect($this->reference->publisher)->toBe('Dar Al-Kutub');
     expect($this->reference->year)->toBe(2024);
 });
@@ -161,12 +160,14 @@ test('deleting a reference removes its complete subtree and media', function ():
         'type' => ReferenceType::Article,
         'status' => ReferenceStatus::Draft,
         'title' => 'Child Reference',
+        'record_kind' => ReferenceRecordKind::Edition,
         'parent_id' => $root->getKey(),
     ]);
     $grandchild = Reference::create([
         'type' => ReferenceType::Article,
         'status' => ReferenceStatus::Draft,
         'title' => 'Grandchild Reference',
+        'record_kind' => ReferenceRecordKind::Part,
         'parent_id' => $child->getKey(),
     ]);
 
