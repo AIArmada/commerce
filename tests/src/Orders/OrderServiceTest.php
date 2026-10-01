@@ -131,11 +131,14 @@ describe('OrderService', function (): void {
             expect($order)->toBeInstanceOf(Order::class)
                 ->and($order->order_number)->toBe($orderData['order_number'])
                 ->and($order->status)->toBeInstanceOf(PendingPayment::class)
-                ->and($order->items)->toHaveCount(2)
-                ->and($order->primaryAddress('billing'))->not->toBeNull()
-                ->and($order->primaryAddress('shipping'))->not->toBeNull()
-                ->and(data_get($order->primaryAddress('billing')?->metadata, Order::ADDRESS_CONTACT_METADATA_KEY . '.first_name'))->toBe('John')
-                ->and(data_get($order->primaryAddress('shipping')?->metadata, Order::ADDRESS_CONTACT_METADATA_KEY . '.first_name'))->toBe('Jane');
+                ->and($order->items)->toHaveCount(2);
+
+            OwnerContext::withOwner(null, function () use ($order): void {
+                expect($order->primaryAddress('billing'))->not->toBeNull()
+                    ->and($order->primaryAddress('shipping'))->not->toBeNull()
+                    ->and(data_get($order->primaryAddress('billing')?->metadata, Order::ADDRESS_CONTACT_METADATA_KEY . '.first_name'))->toBe('John')
+                    ->and(data_get($order->primaryAddress('shipping')?->metadata, Order::ADDRESS_CONTACT_METADATA_KEY . '.first_name'))->toBe('Jane');
+            });
         });
 
         it('can add items to an order', function (): void {
@@ -301,8 +304,11 @@ describe('OrderService', function (): void {
                 ->and($order->metadata['session_id'])->toBe('session-cart-123')
                 ->and($order->items)->toHaveCount(1)
                 ->and($order->items->first()->purchasable_id)->toBe('prod_1')
-                ->and($order->items->first()->sku)->toBe('TEST-001')
-                ->and($order->primaryAddress('billing'))->not->toBeNull();
+                ->and($order->items->first()->sku)->toBe('TEST-001');
+
+            OwnerContext::withOwner(null, function () use ($order): void {
+                expect($order->primaryAddress('billing'))->not->toBeNull();
+            });
         });
 
         it('rejects the former duck-typed cart payload', function (): void {

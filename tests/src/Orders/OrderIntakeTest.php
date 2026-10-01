@@ -226,7 +226,9 @@ it('retried intake includes loaded relationships', function (): void {
     expect($order2->id)->toBe($order1->id);
     expect($order2->relationLoaded('items'))->toBeTrue();
     expect($order2->relationLoaded('addresses'))->toBeTrue();
-    expect($order2->primaryAddress('billing'))->not->toBeNull();
+    OwnerContext::withOwner(null, function () use ($order2): void {
+        expect($order2->primaryAddress('billing'))->not->toBeNull();
+    });
 });
 
 it('throws conflict exception when retry has different customer', function (): void {

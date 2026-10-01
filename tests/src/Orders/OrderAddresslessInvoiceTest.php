@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Models\Address;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Tests\Fixtures\TestOwner;
 use AIArmada\Docs\Enums\DocType;
 use AIArmada\Orders\Actions\CreateOrder;
 use AIArmada\Orders\Actions\CreateOrderInvoiceDoc;
@@ -220,4 +221,72 @@ it('falls back to the primary shipping address for document customer data', func
         'name' => 'Shipping Fallback',
         'email' => 'shipping-fallback@example.com',
     ]);
+});
+
+it('renders an owned order invoice while the ambient context belongs to another owner', function (): void {
+    config()->set('orders.owner.enabled', true);
+    config()->set('orders.owner.auto_assign_on_create', true);
+    config()->set('docs.owner.enabled', false);
+
+    Schema::dropIfExists('test_owners');
+    Schema::create('test_owners', function (Blueprint $table): void {
+        $table->uuid('id')->primary();
+        $table->string('name');
+        $table->timestamps();
+    });
+
+    $owner = TestOwner::query()->create(['name' => 'Invoice Owner']);
+
+    $order = OwnerContext::withOwner($owner, function (): Order {
+        $order = Order::factory()->create([
+            'order_number' => 'ORD-OWNED-' . uniqid(),
+            'currency' => 'MYR',
+            'subtotal' => 10000,
+            'grand_total' => 10000,
+            'shipping_total' => 0,
+            'tax_total' => 0,
+            'discount_total' => 0,
+        ]);
+        $order->items()->create([
+            'name' => 'Physical Product',
+            'quantity' => 1,
+            'unit_price' => 10000,
+            'currency' => 'MYR',
+        ]);
+
+        $billing = Address::create([
+            'line1' => '7 Owned Street',
+            'city' => 'Kuala Lumpur',
+            'postcode' => '50000',
+            'country_code' => 'MY',
+            'metadata' => [
+                Order::ADDRESS_CONTACT_METADATA_KEY => [
+                    'first_name' => 'Owned',
+                    'last_name' => 'Billing',
+                ],
+            ],
+        ]);
+
+        $order->attachAddress($billing, type: 'billing', isPrimary: true);
+
+        return $order->fresh(['items', 'addresses']) ?? $order;
+    });
+
+    // The ambient context resolves the default test owner, not $owner.
+    view()->addNamespace('orders', dirname(__DIR__, 3) . '/packages/orders/resources/views');
+
+    $response = (new GenerateInvoice)->download($order);
+    expect($response)->toBeInstanceOf(StreamedResponse::class);
+
+    ob_start();
+    $response->sendContent();
+    $html = (string) ob_get_clean();
+
+    expect($html)->toContain('Bill To')
+        ->and($html)->toContain('Owned Billing')
+        ->and($html)->toContain('7 Owned Street');
+
+    OwnerContext::withOwner($owner, function () use ($order): void {
+        expect($order->refresh()->invoice_number)->not->toBeNull();
+    });
 });

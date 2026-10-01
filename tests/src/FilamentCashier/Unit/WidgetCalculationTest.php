@@ -88,6 +88,10 @@ it('buckets six months of revenue in a single scan per gateway', function (): vo
     $twoMonthsAgo = now()->subMonths(2)->startOfMonth()->addDay();
     $thisMonth = now()->startOfMonth()->addDay();
 
+    if ($thisMonth->isFuture()) {
+        $thisMonth = now();
+    }
+
     createChipSubscriptionWithAmount(['created_at' => $twoMonthsAgo], 1000);
     createChipSubscriptionWithAmount(['created_at' => $thisMonth], 2500);
     createChipSubscriptionWithAmount([
