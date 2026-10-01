@@ -102,8 +102,8 @@ test('deleting a reference fires events for every descendant', function (): void
 
     $root->delete();
 
-    Event::assertDispatchedTimes('eloquent.deleting: '.Reference::class, 3);
-    Event::assertDispatchedTimes('eloquent.deleted: '.Reference::class, 3);
+    Event::assertDispatchedTimes('eloquent.deleting: ' . Reference::class, 3);
+    Event::assertDispatchedTimes('eloquent.deleted: ' . Reference::class, 3);
 });
 
 test('deleting a global parent removes owned descendants too', function (): void {
