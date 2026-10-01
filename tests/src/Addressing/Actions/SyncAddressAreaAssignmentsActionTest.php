@@ -97,10 +97,10 @@ it('rejects cross-owner assignment synchronization before mutating assignments',
         ]);
     });
 
-    expect($address->areaAssignments()->count())->toBe(1)
+    expect(OwnerContext::withOwner($ownerA, fn (): int => $address->areaAssignments()->count()))->toBe(1)
         ->and(fn (): mixed => OwnerContext::withOwner($ownerB, fn () => app(SyncAddressAreaAssignmentsAction::class)->execute($address, [])))
         ->toThrow(AuthorizationException::class)
-        ->and($address->areaAssignments()->count())->toBe(1);
+        ->and(OwnerContext::withOwner($ownerA, fn (): int => $address->areaAssignments()->count()))->toBe(1);
 });
 
 it('rejects the state_id pseudo-role even for a matching state area', function (): void {

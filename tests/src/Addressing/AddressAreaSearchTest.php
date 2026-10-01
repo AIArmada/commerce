@@ -287,3 +287,23 @@ it('resolves full Argentine CPA codes through their base code', function (): voi
         ->and($action->execute(query: 'Comuna 10', countryCode: 'AR', postalCode: 'C1406')->pluck('name')->all())
         ->toContain('Comuna 10');
 });
+
+it('respects the configured area subclass and its global scopes', function (): void {
+    $scopedArea = new class extends AddressArea
+    {
+        protected static function booted(): void
+        {
+            parent::booted();
+
+            static::addGlobalScope('test-hide-district', fn ($query) => $query->where('name', '!=', 'Johor Bahru'));
+        }
+    };
+
+    config()->set('addressing.models.area', $scopedArea::class);
+
+    $results = app(SearchAddressAreasAction::class)->execute(query: 'Johor', countryCode: 'MY');
+
+    expect($results->pluck('name')->all())->toContain('Johor')
+        ->not->toContain('Johor Bahru')
+        ->and($results->first())->toBeInstanceOf($scopedArea::class);
+});

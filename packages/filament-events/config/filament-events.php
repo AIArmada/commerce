@@ -40,6 +40,7 @@ return [
         'event_form_extensions' => [
             DefaultEventMediaExtension::class,
         ],
+        'term_form_extensions' => [],
         'event_relation_managers' => [],
         'occurrence_relation_managers' => [],
         'session_relation_managers' => [],

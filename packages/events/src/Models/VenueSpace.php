@@ -13,6 +13,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
+use InvalidArgumentException;
 
 /**
  * @property string $id
@@ -24,7 +26,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $unit_no
  * @property string|null $block
  * @property string|null $wing
- * @property int|null $capacity
+ * @property int|null $capacity Default/suggested capacity of this shared space definition. Actual per-institution capacity lives app-side (in ilmu360, the institution_space pivot); both null means unknown and needs app policy.
  * @property float|null $latitude
  * @property float|null $longitude
  * @property string|null $google_maps_url
@@ -36,7 +38,7 @@ use Illuminate\Support\Carbon;
  * @property array|null $metadata
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read Venue $venue
+ * @property-read Venue|null $venue Null for a shared standalone space template.
  * @property-read Collection<int, VenueFacility> $facilities
  * @property-read Collection<int, EventLocation> $eventLocations
  */
@@ -60,6 +62,17 @@ class VenueSpace extends Model
         return config('events.database.tables.venue_spaces', 'venue_spaces');
     }
 
+    protected static function booted(): void
+    {
+        static::saving(function (VenueSpace $space): void {
+            $space->guardVenueReference();
+        });
+
+        static::deleting(function (VenueSpace $space): void {
+            VenueFacility::query()->where('venue_space_id', $space->getKey())->delete();
+        });
+    }
+
     protected function casts(): array
     {
         return [
@@ -79,6 +92,12 @@ class VenueSpace extends Model
     }
 
     /**
+     * Rows bound to this space only.
+     *
+     * For a venue-bound space these rows also carry the venue id, so they
+     * appear in Venue::facilities too. For a standalone template
+     * (venue_id null) the rows carry a null venue id and appear only here.
+     *
      * @return HasMany<VenueFacility, $this>
      */
     public function facilities(): HasMany
@@ -92,6 +111,31 @@ class VenueSpace extends Model
     public function eventLocations(): HasMany
     {
         return $this->hasMany(EventLocation::class, 'venue_space_id');
+    }
+
+    /**
+     * A persisted venue_id change would leave attached VenueFacility rows
+     * pointing at the old venue, so reparenting is rejected while any
+     * facility is attached. Remove the space facilities first, then move the
+     * space. Spaces without facilities move freely in either direction.
+     */
+    private function guardVenueReference(): void
+    {
+        $venueId = $this->getAttribute('venue_id');
+
+        if ($venueId !== null && (! is_string($venueId) || $venueId === '' || ! Str::isUuid($venueId))) {
+            throw new InvalidArgumentException('A venue id must be a valid UUID string or null.');
+        }
+
+        if ($venueId !== null && ! Venue::query()->whereKey($venueId)->exists()) {
+            throw new InvalidArgumentException("Venue [{$venueId}] does not exist.");
+        }
+
+        if ($this->exists && $this->isDirty('venue_id') && $this->facilities()->exists()) {
+            throw new InvalidArgumentException(
+                'VenueSpace venue cannot be changed while facilities are attached. Remove the space facilities first.'
+            );
+        }
     }
 
     protected static function newFactory(): VenueSpaceFactory

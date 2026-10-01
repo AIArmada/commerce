@@ -100,6 +100,36 @@ Status values stored in the database are unchanged. Allowed transitions are defi
 
 When a session or occurrence has an explicit `pricing_mode` or `registration_mode` column value, the model cast may already return the enum instance. The resolver handles both cases (raw string and pre-cast enum). If you see `TypeError: ::from()` in the stack trace, ensure your package version includes the `instanceof` guard added in this feature.
 
+### Venue facility write rejected
+
+`VenueFacility` saves enforce place integrity and throw
+`InvalidArgumentException` when the facility type id is missing, malformed,
+or unknown, when neither venue nor space is set, when a place id is not a
+valid UUID string or null (non-string values, empty strings, and malformed
+UUID strings such as `bad-id` are rejected before any existence query, never
+silently treated as null), when the referenced venue or space does not exist,
+or when the venue does not own the space (a standalone template space requires
+a null venue).
+Creating through `$space->facilities()` — or omitting `venue_id`/passing
+null for a bound space — inherits the venue automatically; an explicitly set
+venue must still match. Invalid `availability` values throw `ValueError`
+through the native `FacilityAvailability` enum cast. See
+[Venue Facilities](06-venue-facilities.md#place-integrity-guards).
+
+### Venue space reparent rejected
+
+Changing a persisted `VenueSpace::$venue_id` while facilities are attached
+is rejected with `InvalidArgumentException`. Remove the space facilities
+first, then move the space; a non-null new parent must exist. See
+[Venue Facilities](06-venue-facilities.md#space-reparenting).
+
+### Facility type deletion blocked
+
+Deleting a `FacilityType` referenced by any `EventFacility` row is rejected
+with `InvalidArgumentException` before any place value is touched, so event
+facilities are never orphaned. Retire the type with `is_active=false`
+instead. See [Venue Facilities](06-venue-facilities.md#deletion-cleanup).
+
 ## A change notice was not delivered
 
 Change notices publish via `EventChangeNoticeWorkflow::publishNotice($changeLog)` and deliver through the `aiarmada/communications` manager. If recipients did not receive a notice, check the `EventChangeLog` record exists, the audience resolver returned recipients, each recipient has a mail destination (a valid `email` attribute or `routeNotificationForMail()`), and the communications outbox/logs for transport errors.

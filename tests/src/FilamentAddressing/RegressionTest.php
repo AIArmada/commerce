@@ -216,7 +216,7 @@ it('returns no state options without a country and scopes them by country', func
     $malaysia = AddressCountry::query()->where('iso2', 'MY')->firstOrFail();
     $singapore = AddressCountry::query()->where('iso2', 'SG')->firstOrFail();
 
-    $selangor = State::query()->create(['country_id' => $malaysia->getKey(), 'name' => 'Selangor']);
+    $selangor = State::query()->create(['country_id' => $malaysia->getKey(), 'country_code' => 'MY', 'code' => '10', 'name' => 'Selangor']);
     State::query()->create(['country_id' => $singapore->getKey(), 'name' => 'Singapore']);
 
     $field = collect(AddressFormSchema::make())

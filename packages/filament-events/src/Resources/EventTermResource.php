@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentEvents\Resources;
 
 use AIArmada\Events\Models\EventTerm;
+use AIArmada\FilamentEvents\Contracts\TermFormExtension;
 use AIArmada\FilamentEvents\Resources\EventTermResource\Pages\CreateEventTerm;
 use AIArmada\FilamentEvents\Resources\EventTermResource\Pages\EditEventTerm;
 use AIArmada\FilamentEvents\Resources\EventTermResource\Pages\ListEventTerms;
@@ -16,6 +17,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables;
@@ -152,7 +154,34 @@ final class EventTermResource extends Resource
                         Toggle::make('is_active')
                             ->default(true),
                     ])->columns(2),
+                ...self::configuredTermFormExtensions(),
             ]);
+    }
+
+    /**
+     * @return array<int, Component>
+     */
+    private static function configuredTermFormExtensions(): array
+    {
+        $configuredExtensions = config('filament-events.resources.term_form_extensions', []);
+
+        if (! is_array($configuredExtensions)) {
+            return [];
+        }
+
+        $components = [];
+
+        foreach ($configuredExtensions as $extensionClass) {
+            if (! is_string($extensionClass) || ! is_a($extensionClass, TermFormExtension::class, true)) {
+                continue;
+            }
+
+            /** @var TermFormExtension $extension */
+            $extension = app($extensionClass);
+            $components = [...$components, ...$extension->components()];
+        }
+
+        return $components;
     }
 
     public static function getPages(): array

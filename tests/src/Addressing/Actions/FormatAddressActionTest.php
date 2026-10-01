@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\FormatAddressAction;
 use AIArmada\Addressing\Data\AddressData;
+use AIArmada\Addressing\Models\State;
 
 it('formats Malaysian addresses using the country formatter', function (): void {
     $address = AddressData::from([
@@ -164,6 +165,98 @@ it('keeps zero street and city lines on the generic path', function (): void {
         'VA',
     ]));
 });
+
+it('keeps sparse street lines on the generic path when line1 is missing', function (): void {
+    $address = AddressData::from([
+        'line2' => 'Unit marker two',
+        'city' => 'City marker',
+        'postcode' => '12345',
+        'countryCode' => 'VA',
+    ]);
+
+    expect(app(FormatAddressAction::class)->format($address))->toBe(implode("\n", [
+        'Unit marker two',
+        '12345 City marker',
+        'VA',
+    ]));
+});
+
+it('keeps non-adjacent street lines on the generic path', function (): void {
+    $address = AddressData::from([
+        'line1' => 'First line',
+        'line3' => 'Third line',
+        'city' => 'City marker',
+        'postcode' => '12345',
+        'countryCode' => 'VA',
+    ]);
+
+    expect(app(FormatAddressAction::class)->format($address))->toBe(implode("\n", [
+        'First line',
+        'Third line',
+        '12345 City marker',
+        'VA',
+    ]));
+});
+
+it('prints the postcode on its own line when only a trailing street line exists', function (): void {
+    $address = AddressData::from([
+        'line3' => 'Third line only',
+        'postcode' => '12345',
+        'countryCode' => 'VA',
+    ]);
+
+    expect(app(FormatAddressAction::class)->format($address))->toBe(implode("\n", [
+        'Third line only',
+        '12345',
+        'VA',
+    ]));
+});
+
+it('keeps a zero street line on the generic path when line1 is missing', function (): void {
+    $address = AddressData::from([
+        'line2' => '0',
+        'city' => 'City marker',
+        'postcode' => '12345',
+        'countryCode' => 'VA',
+    ]);
+
+    expect(app(FormatAddressAction::class)->format($address))->toBe(implode("\n", [
+        '0',
+        '12345 City marker',
+        'VA',
+    ]));
+});
+
+it('abbreviates full state names regardless of letter case', function (array $input, string $expected): void {
+    expect(State::query()->count())->toBe(0);
+
+    foreach (['title' => $input['state'], 'upper' => mb_strtoupper($input['state']), 'lower' => mb_strtolower($input['state'])] as $case => $variant) {
+        $address = AddressData::from([...$input, 'state' => $variant]);
+
+        expect(app(FormatAddressAction::class)->format($address))->toBe($expected, "Failed for {$case} [{$variant}].");
+    }
+})->with([
+    'US California' => [
+        ['line1' => '123 Main St', 'city' => 'Los Angeles', 'state' => 'California', 'postcode' => '90001', 'countryCode' => 'US'],
+        "123 Main St\nLos Angeles CA 90001\nUnited States",
+    ],
+    'CA Ontario' => [
+        ['line1' => '8450 Newman Blvd.', 'city' => 'Toronto', 'state' => 'Ontario', 'postcode' => 'M4B 1B3', 'countryCode' => 'CA'],
+        "8450 Newman Blvd.\nToronto ON M4B 1B3\nCanada",
+    ],
+    'AU Victoria' => [
+        ['line1' => '113 Bond St', 'city' => 'Melbourne', 'state' => 'Victoria', 'postcode' => '3000', 'countryCode' => 'AU'],
+        "113 Bond St\nMelbourne  VIC  3000\nAustralia",
+    ],
+    'BR São Paulo' => [
+        ['line1' => 'Av Paulista 1000', 'city' => 'São Paulo', 'state' => 'São Paulo', 'postcode' => '01310-100', 'countryCode' => 'BR'],
+        "Av Paulista 1000\nSão Paulo - SP\n01310-100\nBrazil",
+    ],
+    'MX Jalisco' => [
+        ['line1' => 'Av Juárez 100', 'city' => 'Guadalajara', 'state' => 'Jalisco', 'postcode' => '44100', 'countryCode' => 'MX'],
+        "Av Juárez 100\n44100 Guadalajara, JAL\nMexico",
+    ],
+]);
 
 it('prints the seeded country name for provider-less countries like Macao', function (): void {
     $this->seedCountry('MO');

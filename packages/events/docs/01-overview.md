@@ -14,6 +14,7 @@ title: Events Overview
 - Attendance tracking and check-in console
 - People roles (speakers, organizers, sponsors, moderators, etc.)
 - Venue/location management with geocoding
+- Place facilities catalog (`FacilityType` + `VenueFacility`); see [Venue Facilities](06-venue-facilities.md)
 - Change management with public updates and notifications
 - Event submissions and approval workflows
 - Series, taxonomy, and classification system

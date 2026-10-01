@@ -282,6 +282,14 @@ scope: catalog slugs are globally unique, while venue-owned slugs are unique
 per venue. Event locations store an optional space_name_snapshot so consumers
 can preserve the selected name when the live space is renamed.
 
+### Venue facilities
+
+Place facilities are catalog values attached to venues and spaces, separate
+from event attributes and event-scoped facilities. See
+[Venue Facilities](06-venue-facilities.md) for the catalog, seed action,
+CRUD, filtering, typed availability, global-write rules, and capacity
+semantics.
+
 ## Managing Registrations
 
 ### Basic registration

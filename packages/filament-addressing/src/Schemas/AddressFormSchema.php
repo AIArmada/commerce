@@ -74,11 +74,16 @@ class AddressFormSchema
                     return [];
                 }
 
-                return ModelResolver::stateClass()::query()
-                    ->whereHas('country', fn ($countries) => $countries->where('iso2', $countryCode))
-                    ->orderBy('name')
-                    ->pluck('name', 'id')
-                    ->toArray();
+                // Core owns hierarchy truth: list only provider state-kind
+                // roots so every option resolves to an area parent.
+                // Provider-less countries fall back to all states.
+                $query = app(CountryAddressProfileResolver::class)->stateOptionsQuery($countryCode);
+
+                if ($query === null) {
+                    return [];
+                }
+
+                return $query->pluck('name', 'id')->toArray();
             })
             ->searchable()
             ->rules(fn (callable $get): array => [new StateBelongsToCountry($get($prefix . 'country_code'))])

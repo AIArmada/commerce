@@ -101,3 +101,19 @@ return Filament schema components from `components()`. Setting the list replaces
 default entirely — re-add `DefaultEventMediaExtension::class` if you still want media.
 The default renders nothing when the resolved event model does not implement spatie's
 `HasMedia`, so custom event models without media stay safe.
+
+### Term form extensions
+
+The term resource accepts form extensions the same way, for application-specific
+fields such as taxonomy metadata. It ships with no defaults:
+
+```php
+'resources' => [
+    'term_form_extensions' => [
+        App\Filament\Resources\EventTerms\CustomTermExtension::class,
+    ],
+],
+```
+
+Each extension must implement `AIArmada\FilamentEvents\Contracts\TermFormExtension` and
+return Filament schema components from `components()`. Invalid entries are skipped.

@@ -23,6 +23,10 @@ $tablePrefix = env('EVENTS_TABLE_PREFIX', '');
 
 Every table name is individually configurable via environment variables, allowing collision-free coexistence with other packages. Migrations resolve the JSON column type through `commerce_json_column_type('events', 'jsonb')`, which prefers `EVENTS_JSON_COLUMN_TYPE`, then the shared `COMMERCE_JSON_COLUMN_TYPE`, then this config value.
 
+The place-facility tables (`venues`, `venue_spaces`, `facility_types`,
+`venue_facilities`) resolve through the same `database.tables` map; see
+[Venue Facilities](06-venue-facilities.md#configurable-tables).
+
 ### Media profiles
 
 The package models use Spatie Media Library through configurable media profiles. The default profiles provide `cover`, `poster`, and `gallery` collections for `Event`, and a `cover` collection for occurrences and sessions. Applications can replace the collections or conversions without editing package models:

@@ -141,3 +141,52 @@ it('parses every provider area source without orphaned rows', function (): void 
 
     expect($failures)->toBe([]);
 });
+
+it('keeps every provider area row within address_areas column limits without markup', function (): void {
+    // Mirrors 2001_01_01_000004_create_address_areas_table: string() defaults
+    // to 255 characters, country_code is 2. SQLite ignores these limits, so
+    // this invariant is what protects Postgres-backed seeds.
+    $limits = [
+        'source' => 255,
+        'sourceId' => 255,
+        'countryCode' => 2,
+        'type' => 255,
+        'name' => 255,
+        'nativeName' => 255,
+        'code' => 255,
+        'parentSourceId' => 255,
+    ];
+
+    $failures = [];
+
+    foreach (geographyProviderClasses() as $providerClass) {
+        $provider = app($providerClass);
+
+        if (! $provider instanceof CountryHierarchyProvider) {
+            continue;
+        }
+
+        $code = $provider instanceof CountryGeographyProvider ? $provider->countryCode() : $providerClass;
+
+        foreach ($provider->addressAreaSource()->areas()->all() as $area) {
+            foreach ($limits as $field => $limit) {
+                $value = $area->{$field};
+
+                if ($value !== null && mb_strlen($value) > $limit) {
+                    $failures[] = "{$code}: area [{$area->sourceId}] field [{$field}] is "
+                        . mb_strlen($value) . " characters; limit {$limit}.";
+                }
+            }
+
+            foreach (['name', 'nativeName'] as $field) {
+                $value = $area->{$field} ?? '';
+
+                if ($value !== '' && preg_match('/<[^>]+>|\\{\\{|\\}\\}|\\[\\[|\\]\\]/', $value)) {
+                    $failures[] = "{$code}: area [{$area->sourceId}] field [{$field}] carries markup: [{$value}].";
+                }
+            }
+        }
+    }
+
+    expect($failures)->toBe([]);
+});

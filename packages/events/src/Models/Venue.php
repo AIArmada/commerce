@@ -81,6 +81,13 @@ class Venue extends Model implements HasMedia
         return config('events.database.tables.venues', 'venues');
     }
 
+    protected static function booted(): void
+    {
+        static::deleting(function (Venue $venue): void {
+            VenueFacility::query()->where('venue_id', $venue->getKey())->delete();
+        });
+    }
+
     protected function casts(): array
     {
         return [
@@ -131,6 +138,11 @@ class Venue extends Model implements HasMedia
     }
 
     /**
+     * Venue-wide rows plus rows bound to this venue's spaces.
+     *
+     * Both shapes carry this venue's id, so they are returned together.
+     * Standalone template facilities (venue_id null) are excluded.
+     *
      * @return HasMany<VenueFacility, $this>
      */
     public function facilities(): HasMany

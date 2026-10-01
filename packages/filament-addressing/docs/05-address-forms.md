@@ -9,7 +9,7 @@ country address profiles in `aiarmada/addressing`:
 
 - `country_code` select (live; changing it resets state and area picks)
 - `label`, `line1`, `line2`, free-text `city`, `postcode`
-- `state_id` select with a per-country label, visible only when the country has states
+- `state_id` select with a per-country label, visible only when the country has states; it lists only the provider state-kind roots (4 nations for GB, 10 counties for LT) so every option resolves to an area parent, falling back to all states for provider-less countries
 - One `area_assignments.{role}` select per hierarchy role the selected country defines
 
 Role selects only appear for the selected country, only offer areas under the

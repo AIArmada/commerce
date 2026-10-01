@@ -3,9 +3,11 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
+use AIArmada\Addressing\Actions\SeedAddressStatesAction;
 use AIArmada\Addressing\Contracts\CountryAddressProfile;
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
 use AIArmada\Addressing\Data\AddressLevelDefinition;
+use AIArmada\Addressing\Geography\UnitedKingdom\UnitedKingdomGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaRelationship;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
@@ -221,6 +223,43 @@ it('clears narrowed successors when an earlier level changes', function (): void
         'area_assignments.narrow_subdivision' => null,
         'area_assignments.narrow_zone' => null,
     ]);
+});
+
+it('lists only provider state-kind roots in the state selector', function (): void {
+    $country = AddressCountry::query()->where('iso2', 'GB')->firstOrFail();
+
+    $states = array_values(array_filter(
+        json_decode((string) file_get_contents(__DIR__ . '/../../../packages/addressing/resources/data/states.json'), true),
+        static fn (array $row): bool => ($row['country_code'] ?? null) === 'GB',
+    ));
+
+    app(SeedAddressStatesAction::class)->execute($states);
+    app(UnitedKingdomGeographyProvider::class)->seed($country);
+
+    $field = collect(AddressFormSchema::make())
+        ->first(fn ($component): bool => $component->getName() === 'state_id');
+
+    $optionsCallback = (new ReflectionProperty($field, 'options'))->getValue($field);
+
+    expect($optionsCallback)->toBeInstanceOf(Closure::class);
+
+    $options = $optionsCallback(static fn (string $path): ?string => $path === 'country_code' ? 'GB' : null);
+
+    expect($options)->toHaveCount(4)
+        ->and(array_values($options))->toEqualCanonicalizing(['England', 'Northern Ireland', 'Scotland', 'Wales']);
+
+    // Lower-tier rows stay in the database for City references.
+    expect(State::query()->where('country_id', $country->getKey())->count())->toBe(221);
+
+    // Provider-less countries fall back to all states.
+    $mo = AddressCountry::query()->where('iso2', 'MO')->firstOrFail();
+
+    State::query()->create(['country_id' => $mo->getKey(), 'country_code' => 'MO', 'code' => 'MO-A', 'name' => 'Macao A']);
+    State::query()->create(['country_id' => $mo->getKey(), 'country_code' => 'MO', 'code' => 'MO-B', 'name' => 'Macao B']);
+
+    $fallback = $optionsCallback(static fn (string $path): ?string => $path === 'country_code' ? 'MO' : null);
+
+    expect($fallback)->toHaveCount(2);
 });
 
 /**

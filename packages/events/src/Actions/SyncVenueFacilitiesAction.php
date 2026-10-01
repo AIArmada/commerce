@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Events\Enums\FacilityAvailability;
 use AIArmada\Events\Models\FacilityType;
 use AIArmada\Events\Models\Venue;
 use AIArmada\Events\Models\VenueFacility;
@@ -14,10 +16,26 @@ use InvalidArgumentException;
 final class SyncVenueFacilitiesAction
 {
     /**
-     * @param  array<int, array{code: string, availability?: string, visibility?: string}>  $facilities
+     * @param  array<int, array{code: string, availability?: FacilityAvailability|string, visibility?: string}>  $facilities
      */
     public function handle(Venue $venue, array $facilities): int
     {
+        // Venue facilities are global catalog rows shared across owners, so
+        // the sync runs in explicit global context.
+        return OwnerContext::withOwner(null, fn (): int => $this->sync($venue, $facilities));
+    }
+
+    /**
+     * @param  array<int, array{code: string, availability?: FacilityAvailability|string, visibility?: string}>  $facilities
+     */
+    private function sync(Venue $venue, array $facilities): int
+    {
+        // An empty payload never reaches the model guards, so validate the
+        // target explicitly before mutating anything.
+        if ($venue->getKey() === null || ! Venue::query()->whereKey($venue->getKey())->exists()) {
+            throw new InvalidArgumentException('A persisted venue is required to sync venue facilities.');
+        }
+
         $codes = array_unique(array_map(fn (array $f): string => $f['code'], $facilities));
 
         /** @var Collection<string, FacilityType> $types */
@@ -74,11 +92,14 @@ final class SyncVenueFacilitiesAction
             $toRemove = $existing->keys()->diff($incomingIds);
 
             if ($toRemove->isNotEmpty()) {
+                // Delete through the model so model hooks run; only venue-wide
+                // rows of this venue are candidates, space rows survive.
                 VenueFacility::query()
                     ->where('venue_id', $venue->getKey())
                     ->whereNull('venue_space_id')
                     ->whereIn('facility_type_id', $toRemove->all())
-                    ->delete();
+                    ->get()
+                    ->each(fn (VenueFacility $row): mixed => $row->delete());
             }
         });
 

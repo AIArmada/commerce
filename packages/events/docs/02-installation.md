@@ -37,6 +37,26 @@ php artisan vendor:publish --provider="AIArmada\Events\EventsServiceProvider" --
 | `EVENTS_TABLE_SESSIONS` | `{prefix}event_sessions` | Custom sessions table name |
 | `EVENTS_TABLE_REGISTRATION_PARTICIPANTS` | `{prefix}event_registration_participants` | Custom participants table name |
 
+## Seed the place-facility catalog (optional)
+
+```php
+use AIArmada\Events\Actions\SeedFacilityTypesAction;
+
+app(SeedFacilityTypesAction::class)->execute();
+```
+
+The seeder is idempotent and never overwrites customized rows. See
+[Venue Facilities](06-venue-facilities.md). Nothing seeds automatically on
+boot.
+
+> **warning**
+>
+> The `venue_facilities` migration was edited in place to make `venue_id`
+> nullable (standalone template support) and to use `foreignUuid` columns.
+> Fresh schemas use it on `migrate`. Existing installs must explicitly apply
+> the nullable `venue_id` change out of band; no upgrade migration or
+> backfill is provided and there is no legacy path.
+
 ## Verify installation
 
 ```php
