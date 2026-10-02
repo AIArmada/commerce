@@ -274,36 +274,35 @@ it('exposes the shared-postcode Batu Pahat towns as postal localities', function
     );
 });
 
-it('exposes the Melaka and Negeri Sembilan expansion towns', function (): void {
+it('exposes the Negeri Sembilan expansion town', function (): void {
+    // Lubok China left this sweep: the Melaka book-to-row pass proved it a
+    // gazetted UPI pekan, so it now carries the administrative_subdivision
+    // role instead. It is covered by the Melaka book-to-row test.
     $provider = app(MalaysiaGeographyProvider::class);
     $areas = $provider->addressAreaSource()->areas()->collect()->keyBy->sourceId;
 
-    $lubokChina = $areas->get('my:subdistrict:district:melaka:alor-gajah:lubok-china');
     $telokKemang = $areas->get('my:subdistrict:district:negeri-sembilan:port-dickson:telok-kemang');
 
-    expect($lubokChina->type)->toBe('locality')
-        ->and($lubokChina->level)->toBe(3)
-        ->and($lubokChina->parentSourceId)->toBe('my:district:melaka:alor-gajah')
-        ->and($telokKemang->type)->toBe('locality')
+    expect($telokKemang->type)->toBe('locality')
         ->and($telokKemang->level)->toBe(3)
         ->and($telokKemang->parentSourceId)->toBe('my:district:negeri-sembilan:port-dickson');
 
     $country = new AddressCountry;
     $roles = $provider->areaRoles($country);
 
-    expect($roles['my:subdistrict:district:melaka:alor-gajah:lubok-china'][0]['role'])->toBe('postal_locality')
-        ->and($roles['my:subdistrict:district:negeri-sembilan:port-dickson:telok-kemang'][0]['role'])->toBe('postal_locality');
+    expect($roles['my:subdistrict:district:negeri-sembilan:port-dickson:telok-kemang'][0]['role'])->toBe('postal_locality');
 });
 
-it('exposes the Kedah, Perlis, and Penang expansion towns', function (): void {
+it('exposes the Perlis and Penang expansion towns', function (): void {
+    // Tikam Batu left this sweep: the Kedah book-to-row pass proved it a
+    // gazetted UPI bandar, so it now carries the administrative_subdivision
+    // role instead. It is covered by the Kedah book-to-row test.
+    // Kangar and Kaki Bukit likewise: the Perlis book-to-row pass proved
+    // them gazetted UPI town (bandar/pekan), covered by the Perlis test.
     $provider = app(MalaysiaGeographyProvider::class);
     $areas = $provider->addressAreaSource()->areas()->collect()->keyBy->sourceId;
 
-    expect($areas->get('my:subdistrict:district:kedah:kuala-muda:tikam-batu')->parentSourceId)->toBe('my:district:kedah:kuala-muda')
-        ->and($areas->get('my:subdistrict:state:perlis:kangar')->parentSourceId)->toBe('my:state:perlis')
-        ->and($areas->get('my:subdistrict:state:perlis:kangar')->level)->toBe(2)
-        ->and($areas->get('my:subdistrict:state:perlis:padang-besar')->parentSourceId)->toBe('my:state:perlis')
-        ->and($areas->get('my:subdistrict:state:perlis:kaki-bukit')->parentSourceId)->toBe('my:state:perlis')
+    expect($areas->get('my:subdistrict:state:perlis:padang-besar')->parentSourceId)->toBe('my:state:perlis')
         ->and($areas->get('my:subdistrict:state:perlis:simpang-empat')->parentSourceId)->toBe('my:state:perlis')
         ->and($areas->get('my:subdistrict:district:pulau-pinang:barat-daya:teluk-bahang')->parentSourceId)->toBe('my:district:pulau-pinang:barat-daya')
         ->and($areas->get('my:subdistrict:district:pulau-pinang:seberang-perai-selatan:batu-kawan')->parentSourceId)->toBe('my:district:pulau-pinang:seberang-perai-selatan')
@@ -312,16 +311,13 @@ it('exposes the Kedah, Perlis, and Penang expansion towns', function (): void {
     $country = new AddressCountry;
     $roles = $provider->areaRoles($country);
 
-    expect($roles['my:subdistrict:district:kedah:kuala-muda:tikam-batu'][0]['role'])->toBe('postal_locality')
-        ->and($roles['my:subdistrict:state:perlis:kangar'][0]['role'])->toBe('postal_locality')
-        ->and($roles['my:subdistrict:state:perlis:padang-besar'][0]['role'])->toBe('postal_locality')
-        ->and($roles['my:subdistrict:state:perlis:kaki-bukit'][0]['role'])->toBe('postal_locality')
+    expect($roles['my:subdistrict:state:perlis:padang-besar'][0]['role'])->toBe('postal_locality')
         ->and($roles['my:subdistrict:state:perlis:simpang-empat'][0]['role'])->toBe('postal_locality')
         ->and($roles['my:subdistrict:district:pulau-pinang:barat-daya:teluk-bahang'][0]['role'])->toBe('postal_locality')
         ->and($roles['my:subdistrict:district:pulau-pinang:seberang-perai-selatan:batu-kawan'][0]['role'])->toBe('postal_locality')
         ->and($roles['my:subdistrict:district:pulau-pinang:seberang-perai-utara:bertam'][0]['role'])->toBe('postal_locality');
 
-    $links = $provider->areaRelationships($country)['my:subdistrict:state:perlis:kangar'];
+    $links = $provider->areaRelationships($country)['my:subdistrict:state:perlis:padang-besar'];
 
     expect($links)->toBe([
         ['parent_source_id' => 'my:state:perlis', 'relationship_type' => 'contains', 'hierarchy_type' => 'postal'],
@@ -349,7 +345,6 @@ it('exposes the Pahang, Perak, and Selangor expansion towns', function (): void 
     $areas = $provider->addressAreaSource()->areas()->collect()->keyBy->sourceId;
 
     expect($areas->get('my:subdistrict:district:pahang:bentong:bukit-tinggi')->parentSourceId)->toBe('my:district:pahang:bentong')
-        ->and($areas->get('my:subdistrict:district:pahang:bera:mengkarak')->parentSourceId)->toBe('my:district:pahang:bera')
         ->and($areas->get('my:subdistrict:district:perak:kerian:simpang-lima')->parentSourceId)->toBe('my:district:perak:kerian')
         ->and($areas->get('my:subdistrict:district:selangor:petaling:seri-kembangan')->parentSourceId)->toBe('my:district:selangor:petaling')
         ->and($areas->get('my:subdistrict:district:selangor:petaling:serdang')->parentSourceId)->toBe('my:district:selangor:petaling')
@@ -358,12 +353,16 @@ it('exposes the Pahang, Perak, and Selangor expansion towns', function (): void 
     $country = new AddressCountry;
     $roles = $provider->areaRoles($country);
 
+    // Mengkarak left this sweep: the Pahang book-to-row pass proved it a gazetted
+    // UPI pekan, so it now carries the administrative_subdivision role instead.
+    // Simpang Lima likewise: the Perak book-to-row pass retyped it locality to pekan.
+    // Serdang and Balakong likewise: the Selangor book-to-row pass proved them
+    // gazetted UPI pekan and bandar respectively.
     expect($roles['my:subdistrict:district:pahang:bentong:bukit-tinggi'][0]['role'])->toBe('postal_locality')
-        ->and($roles['my:subdistrict:district:pahang:bera:mengkarak'][0]['role'])->toBe('postal_locality')
-        ->and($roles['my:subdistrict:district:perak:kerian:simpang-lima'][0]['role'])->toBe('postal_locality')
+        ->and($roles['my:subdistrict:district:perak:kerian:simpang-lima'][0]['role'])->toBe('administrative_subdivision')
         ->and($roles['my:subdistrict:district:selangor:petaling:seri-kembangan'][0]['role'])->toBe('postal_locality')
-        ->and($roles['my:subdistrict:district:selangor:petaling:serdang'][0]['role'])->toBe('postal_locality')
-        ->and($roles['my:subdistrict:district:selangor:hulu-langat:balakong'][0]['role'])->toBe('postal_locality');
+        ->and($roles['my:subdistrict:district:selangor:petaling:serdang'][0]['role'])->toBe('administrative_subdivision')
+        ->and($roles['my:subdistrict:district:selangor:hulu-langat:balakong'][0]['role'])->toBe('administrative_subdivision');
 });
 
 it('exposes the gazetted Ipoh (U) and Ipoh (S) bandars under Kinta', function (): void {
@@ -758,4 +757,806 @@ it('exposes level-4 Borneo postal localities under the region', function (): voi
         ['parent_source_id' => 'my:district:sabah:lahad-datu', 'relationship_type' => 'contains', 'hierarchy_type' => 'postal'],
         ['parent_source_id' => 'my:state:sabah', 'relationship_type' => 'contains', 'hierarchy_type' => 'postal'],
     );
+});
+
+it('exposes the Kelantan UPI bandars alongside their same-stem mukims', function (): void {
+    $provider = app(MalaysiaGeographyProvider::class);
+    $areas = $provider->addressAreaSource()->areas()->collect()->keyBy->sourceId;
+
+    // UPI lists both MUKIM X and BANDAR X here; the bandar keeps the prefixed
+    // name because the bare name belongs to the mukim (Johor Kluang precedent).
+    foreach (['bachok', 'tumpat', 'pasir-puteh', 'kuala-krai', 'machang', 'gua-musang', 'tanah-merah'] as $district) {
+        $bandar = $areas->get("my:subdistrict:district:kelantan:{$district}:bandar-{$district}");
+
+        expect($bandar->type)->toBe('bandar', $district)
+            ->and($bandar->level)->toBe(3, $district)
+            ->and($bandar->parentSourceId)->toBe("my:district:kelantan:{$district}", $district);
+    }
+
+    // Tanah Merah type swap: the bare row is the UPI mukim, the prefixed row the bandar.
+    expect($areas->get('my:subdistrict:district:kelantan:tanah-merah:tanah-merah')->type)->toBe('mukim');
+
+    // Pasir Mas has no UPI mukim, so the bare bandar stands alone and the dup row is gone.
+    expect($areas->get('my:subdistrict:district:kelantan:pasir-mas:pasir-mas')->type)->toBe('bandar')
+        ->and($areas->has('my:subdistrict:district:kelantan:pasir-mas:bandar-pasir-mas'))->toBeFalse();
+
+    $roles = $provider->areaRoles(new AddressCountry);
+
+    expect($roles['my:subdistrict:district:kelantan:tumpat:bandar-tumpat'][0]['role'])->toBe('administrative_subdivision')
+        ->and($roles['my:subdistrict:district:kelantan:tanah-merah:tanah-merah'][0]['role'])->toBe('administrative_subdivision');
+});
+
+it('exposes the Kelantan book-to-row completed mukim tiers', function (): void {
+    $provider = app(MalaysiaGeographyProvider::class);
+    $areas = $provider->addressAreaSource()->areas()->collect()->keyBy->sourceId;
+
+    foreach ([
+        'kota-bharu:aur-duri', 'kota-bharu:che-latiff', 'kota-bharu:duson-rendah',
+        'kota-bharu:kampung-sireh', 'kota-bharu:ketereh-barat', 'kota-bharu:ketereh-timor',
+        'kota-bharu:pasir-mas', 'kota-bharu:pulau', 'kota-bharu:telok-bharu',
+        'bachok:gajah-mati', 'bachok:temu-ranggas', 'bachok:tualang-salak',
+        'pasir-mas:apa-apa', 'pasir-mas:kuala-kelar',
+        'pasir-puteh:gong-chapa', 'pasir-puteh:gong-pachat', 'pasir-puteh:pengkalan',
+        'tumpat:wakaf-delima', 'lojing:balar', 'lojing:sigar',
+    ] as $suffix) {
+        $area = $areas->get('my:subdistrict:district:kelantan:' . $suffix);
+
+        expect($area->type)->toBe('mukim', $suffix)
+            ->and($area->level)->toBe(3, $suffix);
+    }
+
+    expect($areas->get('my:subdistrict:district:kelantan:lojing:balar')->parentSourceId)->toBe('my:district:kelantan:lojing')
+        ->and($areas->get('my:subdistrict:district:kelantan:pasir-mas:apa-apa')->name)->toBe('Apa-Apa');
+
+    // Full-tier counts pin the UPI completion: 89 Kota Bharu mukims, 7 Lojing mukims.
+    $forParent = static fn (string $parent): int => $areas
+        ->filter(static fn (AddressAreaData $area): bool => $area->parentSourceId === $parent && $area->type === 'mukim')
+        ->count();
+
+    expect($forParent('my:district:kelantan:kota-bharu'))->toBe(89)
+        ->and($forParent('my:district:kelantan:lojing'))->toBe(7);
+
+    // Kampung spelling choice over the UPI Kampong form, matching the two older rows.
+    $names = $provider->areaNames(new AddressCountry);
+
+    expect($names['my:subdistrict:district:kelantan:kota-bharu:kampung-sireh'])->toContain(
+        ['name' => 'Kampong Sireh', 'name_type' => 'alternative'],
+    );
+});
+
+it('places the Kelantan pekan primaries on the pekan rows', function (): void {
+    $dir = __DIR__ . '/../../../../packages/addressing/resources/geography';
+    $source = new CsvPostalCodeSource('MY', $dir . '/malaysia-postal-codes.csv', $dir . '/malaysia-postal-code-areas.csv', 'aiarmada_addressing_malaysia_v1');
+
+    $byCode = $source->postalCodes()->collect()->groupBy->code;
+
+    $primaries = static fn (string $code): array => $byCode->get($code, collect())
+        ->filter(static fn (PostalCodeData $row): bool => $row->isPrimary)
+        ->map(static fn (PostalCodeData $row): string => (string) $row->areaSourceId)
+        ->all();
+
+    expect($primaries('17200'))->toBe(['my:subdistrict:district:kelantan:pasir-mas:pekan-rantau-panjang'])
+        ->and($primaries('18400'))->toBe(['my:subdistrict:district:kelantan:machang:pekan-temangan'])
+        ->and($primaries('16810'))->toBe(['my:subdistrict:district:kelantan:pasir-puteh:pekan-selising'])
+        ->and($primaries('16070'))->toBe(['my:subdistrict:district:kelantan:bachok:jelawat']);
+
+    // Pasir Mas town codes consolidated on the bare bandar after the dup removal.
+    expect($primaries('17000'))->toBe(['my:subdistrict:district:kelantan:pasir-mas:pasir-mas'])
+        ->and($primaries('17070'))->toBe(['my:subdistrict:district:kelantan:pasir-mas:pasir-mas']);
+
+    $secondaries = static fn (string $code): array => $byCode->get($code, collect())
+        ->reject(static fn (PostalCodeData $row): bool => $row->isPrimary)
+        ->map(static fn (PostalCodeData $row): string => (string) $row->areaSourceId)
+        ->all();
+
+    // Tanah Merah town codes stay primary on the bandar, secondary on the swapped mukim.
+    expect($primaries('17500'))->toBe(['my:subdistrict:district:kelantan:tanah-merah:bandar-tanah-merah'])
+        ->and($secondaries('17500'))->toContain('my:subdistrict:district:kelantan:tanah-merah:tanah-merah');
+});
+
+it('exposes the Pahang book-to-row completed bandar and pekan tiers', function (): void {
+    $provider = app(MalaysiaGeographyProvider::class);
+    $areas = $provider->addressAreaSource()->areas()->collect()->keyBy->sourceId;
+
+    foreach ([
+        'bentong:bandar-bentong' => 'bandar', 'bentong:telemung' => 'pekan',
+        'cameron-highlands:bandar-tanah-rata' => 'bandar', 'cameron-highlands:lubok-tamang' => 'pekan',
+        'cameron-highlands:pekan-ringlet' => 'pekan', 'jerantut:pekan-kuala-tembeling' => 'pekan',
+        'jerantut:jeransang' => 'pekan', 'kuantan:pekan-beserah' => 'pekan',
+        'kuantan:tanjung-lumpur' => 'pekan', 'lipis:bandar-kuala-lipis' => 'bandar',
+        'pekan:bandar-pekan' => 'bandar', 'pekan:pekan-kuala-pahang' => 'pekan',
+        'pekan:nenasi' => 'pekan', 'raub:pekan-raub' => 'pekan', 'raub:pekan-dong' => 'pekan',
+        'raub:pekan-tras' => 'pekan', 'raub:cheroh' => 'pekan', 'raub:sang-lee' => 'pekan',
+        'raub:sungai-ruan' => 'pekan', 'raub:sungai-kelau' => 'pekan',
+        'temerloh:bandar-mentakab' => 'bandar', 'temerloh:pekan-kerdau' => 'pekan',
+        'rompin:baharu-rompin' => 'bandar', 'rompin:rompin-i' => 'bandar',
+        'rompin:rompin-ii' => 'bandar', 'rompin:rompin-iii' => 'bandar',
+        'rompin:rompin-iv' => 'bandar', 'rompin:bandar-pontian' => 'bandar',
+        'rompin:bandar-endau' => 'bandar', 'rompin:bandar-tioman' => 'bandar',
+        'rompin:pekan-tioman' => 'pekan', 'maran:pekan-chenor' => 'pekan',
+        'maran:sri-jaya' => 'pekan', 'bera:bandar-triang' => 'bandar',
+        'bera:durian-tawar' => 'pekan', 'bera:mengkuang' => 'pekan',
+    ] as $suffix => $type) {
+        $area = $areas->get('my:subdistrict:district:pahang:' . $suffix);
+
+        expect($area->type)->toBe($type, $suffix)
+            ->and($area->level)->toBe(3, $suffix);
+    }
+
+    // Retypes: Gambang was a mistyped mukim, Benta/Padang Tengku are UPI pekans,
+    // and the Mengkarak postal locality is a gazetted UPI pekan.
+    expect($areas->get('my:subdistrict:district:pahang:kuantan:gambang')->type)->toBe('bandar')
+        ->and($areas->get('my:subdistrict:district:pahang:lipis:benta')->type)->toBe('pekan')
+        ->and($areas->get('my:subdistrict:district:pahang:lipis:padang-tengku')->type)->toBe('pekan')
+        ->and($areas->get('my:subdistrict:district:pahang:bera:mengkarak')->type)->toBe('pekan');
+
+    // Full-tier counts pin the UPI completion.
+    $forParent = static fn (string $parent): int => $areas
+        ->filter(static fn (AddressAreaData $area): bool => $area->parentSourceId === $parent && in_array($area->type, ['mukim', 'bandar', 'pekan'], true))
+        ->count();
+
+    expect($forParent('my:district:pahang:rompin'))->toBe(14)
+        ->and($forParent('my:district:pahang:raub'))->toBe(16)
+        ->and($forParent('my:district:pahang:cameron-highlands'))->toBe(7)
+        ->and($forParent('my:district:pahang:bera'))->toBe(6);
+
+    $names = $provider->areaNames(new AddressCountry);
+
+    expect($names['my:subdistrict:district:pahang:bentong:telemung'])->toContain(
+        ['name' => 'Telemong', 'name_type' => 'alternative'],
+    );
+});
+
+it('places the Pahang town-code primaries on the bandar and pekan rows', function (): void {
+    $dir = __DIR__ . '/../../../../packages/addressing/resources/geography';
+    $source = new CsvPostalCodeSource('MY', $dir . '/malaysia-postal-codes.csv', $dir . '/malaysia-postal-code-areas.csv', 'aiarmada_addressing_malaysia_v1');
+
+    $byCode = $source->postalCodes()->collect()->groupBy->code;
+
+    $primaries = static fn (string $code): array => $byCode->get($code, collect())
+        ->filter(static fn (PostalCodeData $row): bool => $row->isPrimary)
+        ->map(static fn (PostalCodeData $row): string => (string) $row->areaSourceId)
+        ->all();
+
+    expect($primaries('39000'))->toBe(['my:subdistrict:district:pahang:cameron-highlands:bandar-tanah-rata'])
+        ->and($primaries('39200'))->toBe(['my:subdistrict:district:pahang:cameron-highlands:pekan-ringlet'])
+        ->and($primaries('26600'))->toBe(['my:subdistrict:district:pahang:pekan:bandar-pekan'])
+        ->and($primaries('28400'))->toBe(['my:subdistrict:district:pahang:temerloh:bandar-mentakab'])
+        ->and($primaries('28100'))->toBe(['my:subdistrict:district:pahang:maran:pekan-chenor'])
+        ->and($primaries('28300'))->toBe(['my:subdistrict:district:pahang:bera:bandar-triang'])
+        ->and($primaries('27400'))->toBe(['my:subdistrict:district:pahang:raub:pekan-dong'])
+        ->and($primaries('27500'))->toBe(['my:subdistrict:district:pahang:raub:sungai-ruan'])
+        ->and($primaries('28700'))->toBe(['my:subdistrict:district:pahang:bentong:bandar-bentong'])
+        ->and($primaries('26100'))->toBe(['my:subdistrict:district:pahang:kuantan:pekan-beserah']);
+
+    // 26150 has no Beserah-town evidence, so it stays primary on Sungai Karang.
+    expect($primaries('26150'))->toBe(['my:subdistrict:district:pahang:kuantan:sungai-karang']);
+});
+
+it('exposes the Johor book-to-row completed bandar and pekan tiers', function (): void {
+    $provider = app(MalaysiaGeographyProvider::class);
+    $areas = $provider->addressAreaSource()->areas()->collect()->keyBy->sourceId;
+
+    foreach ([
+        'johor-bahru:bandar-tebrau' => 'bandar',
+        'kluang:bandar-paloh' => 'bandar', 'kluang:bandar-rengam' => 'bandar',
+        'mersing:bandar-jemaluang' => 'bandar', 'mersing:mersing-kanan' => 'bandar',
+        'mersing:bandar-padang-endau' => 'bandar', 'muar:bandar-bukit-kepong' => 'bandar',
+        'muar:bandar-parit-jawa' => 'bandar', 'pontian:bandar-benut' => 'bandar',
+        'segamat:bandar-bekok' => 'bandar', 'segamat:bandar-buloh-kasap' => 'bandar',
+        'segamat:bandar-jementah' => 'bandar', 'segamat:bandar-labis' => 'bandar',
+        'segamat:gemas-bahru' => 'pekan', 'tangkak:bukit-kangkar' => 'bandar',
+        'tangkak:parit-bunga' => 'bandar', 'tangkak:bandar-serom' => 'bandar',
+        'tangkak:pekan-grisek' => 'pekan',
+    ] as $suffix => $type) {
+        $area = $areas->get('my:subdistrict:district:johor:' . $suffix);
+
+        expect($area->type)->toBe($type, $suffix)
+            ->and($area->level)->toBe(3, $suffix);
+    }
+
+    // Panchor was a mistyped mukim: UPI lists only Bandar Panchor (06/43).
+    expect($areas->get('my:subdistrict:district:johor:muar:panchor')->type)->toBe('bandar');
+
+    // The Bandar Segamat mukim duplicate is gone (UPI has no such entity).
+    expect($areas->has('my:subdistrict:district:johor:segamat:bandar-segamat'))->toBeFalse();
+
+    // Full-tier counts pin the UPI completion.
+    $forParent = static fn (string $parent): int => $areas
+        ->filter(static fn (AddressAreaData $area): bool => $area->parentSourceId === $parent && in_array($area->type, ['mukim', 'bandar', 'pekan'], true))
+        ->count();
+
+    expect($forParent('my:district:johor:batu-pahat'))->toBe(19)
+        ->and($forParent('my:district:johor:johor-bahru'))->toBe(8)
+        ->and($forParent('my:district:johor:kluang'))->toBe(11)
+        ->and($forParent('my:district:johor:kota-tinggi'))->toBe(11)
+        ->and($forParent('my:district:johor:mersing'))->toBe(18)
+        ->and($forParent('my:district:johor:muar'))->toBe(17)
+        ->and($forParent('my:district:johor:pontian'))->toBe(14)
+        ->and($forParent('my:district:johor:segamat'))->toBe(18)
+        ->and($forParent('my:district:johor:kulai'))->toBe(5)
+        ->and($forParent('my:district:johor:tangkak'))->toBe(12);
+
+    $names = $provider->areaNames(new AddressCountry);
+
+    expect($names['my:subdistrict:district:johor:kluang:bandar-rengam'])->toContain(
+        ['name' => 'Renggam', 'name_type' => 'alternative'],
+    )->and($names['my:subdistrict:district:johor:tangkak:pekan-grisek'])->toContain(
+        ['name' => 'Gerisek', 'name_type' => 'alternative'],
+    )->and($names['my:subdistrict:district:johor:segamat:gemas-bahru'])->toContain(
+        ['name' => 'Gemas Baru', 'name_type' => 'alternative'],
+    );
+});
+
+it('places the Johor town-code primaries on the bandar and pekan rows', function (): void {
+    $dir = __DIR__ . '/../../../../packages/addressing/resources/geography';
+    $source = new CsvPostalCodeSource('MY', $dir . '/malaysia-postal-codes.csv', $dir . '/malaysia-postal-code-areas.csv', 'aiarmada_addressing_malaysia_v1');
+
+    $byCode = $source->postalCodes()->collect()->groupBy->code;
+
+    $primaries = static fn (string $code): array => $byCode->get($code, collect())
+        ->filter(static fn (PostalCodeData $row): bool => $row->isPrimary)
+        ->map(static fn (PostalCodeData $row): string => (string) $row->areaSourceId)
+        ->all();
+
+    expect($primaries('82200'))->toBe(['my:subdistrict:district:johor:pontian:bandar-benut'])
+        ->and($primaries('84150'))->toBe(['my:subdistrict:district:johor:muar:bandar-parit-jawa'])
+        ->and($primaries('84160'))->toBe(['my:subdistrict:district:johor:muar:bandar-parit-jawa'])
+        ->and($primaries('86600'))->toBe(['my:subdistrict:district:johor:kluang:bandar-paloh'])
+        ->and($primaries('86300'))->toBe(['my:subdistrict:district:johor:kluang:bandar-rengam'])
+        ->and($primaries('85200'))->toBe(['my:subdistrict:district:johor:segamat:bandar-jementah'])
+        ->and($primaries('85210'))->toBe(['my:subdistrict:district:johor:segamat:bandar-jementah'])
+        ->and($primaries('85220'))->toBe(['my:subdistrict:district:johor:segamat:bandar-jementah'])
+        ->and($primaries('85300'))->toBe(['my:subdistrict:district:johor:segamat:bandar-labis'])
+        ->and($primaries('86500'))->toBe(['my:subdistrict:district:johor:segamat:bandar-bekok'])
+        ->and($primaries('85010'))->toBe(['my:subdistrict:district:johor:segamat:bandar-buloh-kasap'])
+        ->and($primaries('84700'))->toBe(['my:subdistrict:district:johor:tangkak:pekan-grisek'])
+        ->and($primaries('84710'))->toBe(['my:subdistrict:district:johor:tangkak:pekan-grisek']);
+
+    // Untouched primaries stay put: Segamat town, retyped Panchor, and the
+    // Negeri Sembilan-held Gemas code shared with Gemas Bahru.
+    expect($primaries('85000'))->toBe(['my:subdistrict:district:johor:segamat:segamat'])
+        ->and($primaries('84500'))->toBe(['my:subdistrict:district:johor:muar:panchor'])
+        ->and($primaries('73400'))->toBe(['my:subdistrict:district:negeri-sembilan:tampin:bandar-gemas']);
+});
+
+it('exposes the Kedah book-to-row completed bandar and pekan tiers', function (): void {
+    $provider = app(MalaysiaGeographyProvider::class);
+    $areas = $provider->addressAreaSource()->areas()->collect()->keyBy->sourceId;
+
+    foreach ([
+        'kota-setar:bandar-anak-bukit' => 'bandar', 'kota-setar:alor-merah' => 'bandar', 'kota-setar:bukit-pinang' => 'bandar',
+        'kota-setar:bandar-langgar' => 'bandar', 'kota-setar:alor-janggus' => 'pekan', 'kota-setar:pekan-gunung' => 'pekan',
+        'kubang-pasu:bandar-tunjang' => 'bandar', 'kubang-pasu:padang-sera' => 'bandar', 'kubang-pasu:kuala-sanglang' => 'pekan',
+        'kubang-pasu:pekan-sanglang' => 'pekan', 'kubang-pasu:kerpan' => 'pekan', 'kubang-pasu:sintok' => 'pekan',
+        'kubang-pasu:napoh' => 'pekan', 'kubang-pasu:sungai-korok' => 'pekan',
+        'padang-terap:naka' => 'pekan', 'padang-terap:durian-burung' => 'pekan', 'padang-terap:lubok-merbau' => 'pekan',
+        'padang-terap:bukit-tembaga' => 'pekan', 'padang-terap:padang-sanai' => 'pekan', 'padang-terap:kampung-tanjung' => 'pekan',
+        'langkawi:bandar-kuah' => 'bandar', 'langkawi:bandar-padang-mat-sirat' => 'bandar', 'langkawi:padang-lalang' => 'bandar',
+        'langkawi:telok-datai' => 'pekan',
+        'kuala-muda:teloi-kiri' => 'mukim', 'kuala-muda:bandar-gurun' => 'bandar', 'kuala-muda:sungai-lalang' => 'bandar',
+        'kuala-muda:bandar-merbok' => 'bandar', 'kuala-muda:bandar-semeling' => 'bandar', 'kuala-muda:bandar-aman-jaya' => 'bandar',
+        'kuala-muda:bukit-selambau' => 'pekan', 'kuala-muda:tanjung-dawai' => 'pekan',
+        'yan:bandar-yan' => 'bandar', 'yan:simpang-tiga-sungai-limau' => 'pekan', 'yan:sungai-limau' => 'pekan',
+        'yan:teroi' => 'pekan', 'yan:pekan-singkir' => 'pekan',
+        'sik:bandar-sik' => 'bandar', 'sik:batu-lima-sik' => 'pekan', 'sik:gulau' => 'pekan',
+        'sik:gajah-puteh' => 'pekan', 'sik:charok-padang' => 'pekan',
+        'baling:bandar-kupang' => 'bandar', 'baling:kampung-baru-kejai' => 'pekan', 'baling:pekan-pulai' => 'pekan',
+        'baling:pekan-tawar' => 'pekan', 'baling:parit-panjang' => 'pekan', 'baling:kampung-lalang' => 'pekan',
+        'baling:malau' => 'pekan',
+        'kulim:pekan-junjong' => 'pekan', 'kulim:pekan-karangan' => 'pekan', 'kulim:labu-besar' => 'pekan',
+        'kulim:pekan-mahang' => 'pekan', 'kulim:merbau-pulas' => 'pekan', 'kulim:sungai-karangan' => 'pekan',
+        'kulim:sungai-kob' => 'pekan', 'kulim:pekan-padang-meha' => 'pekan',
+        'bandar-baharu:bandar-serdang' => 'bandar', 'bandar-baharu:lubuk-buntar' => 'pekan', 'bandar-baharu:selama' => 'pekan',
+        'bandar-baharu:sungai-kechil-ilir' => 'pekan', 'bandar-baharu:pekan-relau' => 'pekan',
+        'pendang:bukit-raya' => 'mukim', 'pendang:bukit-jenun' => 'pekan', 'pendang:kubur-panjang' => 'pekan',
+        'pendang:tanah-merah' => 'pekan', 'pendang:tokai' => 'pekan', 'pendang:kobah' => 'pekan',
+        'pendang:kampung-baru' => 'pekan', 'pendang:sungai-tiang' => 'pekan',
+        'pokok-sena:kebun-500' => 'pekan',
+    ] as $suffix => $type) {
+        $area = $areas->get('my:subdistrict:district:kedah:' . $suffix);
+
+        expect($area->type)->toBe($type, $suffix)
+            ->and($area->level)->toBe(3, $suffix);
+    }
+
+    // Retypes: four mistyped town mukims plus the Tikam Batu locality conversion.
+    expect($areas->get('my:subdistrict:district:kedah:kubang-pasu:bandar-jitra')->type)->toBe('bandar')
+        ->and($areas->get('my:subdistrict:district:kedah:kuala-muda:bandar-sungai-petani')->type)->toBe('bandar')
+        ->and($areas->get('my:subdistrict:district:kedah:baling:bandar-baling')->type)->toBe('bandar')
+        ->and($areas->get('my:subdistrict:district:kedah:kulim:bandar-kulim')->type)->toBe('bandar')
+        ->and($areas->get('my:subdistrict:district:kedah:kuala-muda:tikam-batu')->type)->toBe('bandar');
+
+    // Consolidated duplicates are gone (their links moved to the bare bandars).
+    expect($areas->has('my:subdistrict:district:kedah:kota-setar:bandar-alor-setar'))->toBeFalse()
+        ->and($areas->has('my:subdistrict:district:kedah:pendang:bandar-pendang'))->toBeFalse()
+        ->and($areas->has('my:subdistrict:district:kedah:pokok-sena:pekan-pokok-sena'))->toBeFalse()
+        ->and($areas->has('my:subdistrict:district:kedah:sik:pekan-sik'))->toBeFalse();
+
+    // Full-tier counts pin the UPI completion (Yan 11: the book lists Guar
+    // Cempedak/Chempedak as two code-40 rows for one town).
+    $forParent = static fn (string $parent): int => $areas
+        ->filter(static fn (AddressAreaData $area): bool => $area->parentSourceId === $parent && in_array($area->type, ['mukim', 'bandar', 'pekan'], true))
+        ->count();
+
+    expect($forParent('my:district:kedah:kota-setar'))->toBe(29)
+        ->and($forParent('my:district:kedah:kubang-pasu'))->toBe(36)
+        ->and($forParent('my:district:kedah:padang-terap'))->toBe(18)
+        ->and($forParent('my:district:kedah:langkawi'))->toBe(10)
+        ->and($forParent('my:district:kedah:kuala-muda'))->toBe(28)
+        ->and($forParent('my:district:kedah:yan'))->toBe(11)
+        ->and($forParent('my:district:kedah:sik'))->toBe(8)
+        ->and($forParent('my:district:kedah:baling'))->toBe(18)
+        ->and($forParent('my:district:kedah:kulim'))->toBe(24)
+        ->and($forParent('my:district:kedah:bandar-baharu'))->toBe(13)
+        ->and($forParent('my:district:kedah:pendang'))->toBe(16)
+        ->and($forParent('my:district:kedah:pokok-sena'))->toBe(8);
+
+    $names = $provider->areaNames(new AddressCountry);
+
+    expect($names['my:subdistrict:district:kedah:langkawi:telok-datai'])->toContain(
+        ['name' => 'Teluk Datai', 'name_type' => 'alternative'],
+    )->and($names['my:subdistrict:district:kedah:padang-terap:lubok-merbau'])->toContain(
+        ['name' => 'Lubuk Merbau', 'name_type' => 'alternative'],
+    )->and($names['my:subdistrict:district:kedah:sik:gajah-puteh'])->toContain(
+        ['name' => 'Gajah Putih', 'name_type' => 'alternative'],
+    );
+});
+
+it('places the Kedah town-code primaries on the bandar and pekan rows', function (): void {
+    $dir = __DIR__ . '/../../../../packages/addressing/resources/geography';
+    $source = new CsvPostalCodeSource('MY', $dir . '/malaysia-postal-codes.csv', $dir . '/malaysia-postal-code-areas.csv', 'aiarmada_addressing_malaysia_v1');
+
+    $byCode = $source->postalCodes()->collect()->groupBy->code;
+
+    $primaries = static fn (string $code): array => $byCode->get($code, collect())
+        ->filter(static fn (PostalCodeData $row): bool => $row->isPrimary)
+        ->map(static fn (PostalCodeData $row): string => (string) $row->areaSourceId)
+        ->all();
+
+    expect($primaries('07000'))->toBe(['my:subdistrict:district:kedah:langkawi:bandar-kuah'])
+        ->and($primaries('06500'))->toBe(['my:subdistrict:district:kedah:kota-setar:bandar-langgar'])
+        ->and($primaries('08300'))->toBe(['my:subdistrict:district:kedah:kuala-muda:bandar-gurun'])
+        ->and($primaries('08400'))->toBe(['my:subdistrict:district:kedah:kuala-muda:bandar-merbok'])
+        ->and($primaries('06900'))->toBe(['my:subdistrict:district:kedah:yan:bandar-yan'])
+        ->and($primaries('08200'))->toBe(['my:subdistrict:district:kedah:sik:bandar-sik'])
+        ->and($primaries('09200'))->toBe(['my:subdistrict:district:kedah:baling:bandar-kupang'])
+        ->and($primaries('09700'))->toBe(['my:subdistrict:district:kedah:kulim:pekan-karangan'])
+        ->and($primaries('09800'))->toBe(['my:subdistrict:district:kedah:bandar-baharu:bandar-serdang']);
+
+    // Consolidation keeps every town code on the surviving bare bandar.
+    expect($primaries('05000'))->toBe(['my:subdistrict:district:kedah:kota-setar:alor-setar'])
+        ->and($primaries('06700'))->toBe(['my:subdistrict:district:kedah:pendang:pendang'])
+        ->and($primaries('06400'))->toBe(['my:subdistrict:district:kedah:pokok-sena:pokok-sena'])
+        ->and($primaries('06000'))->toBe(['my:subdistrict:district:kedah:kubang-pasu:bandar-jitra'])
+        ->and($primaries('08000'))->toBe(['my:subdistrict:district:kedah:kuala-muda:bandar-sungai-petani'])
+        ->and($primaries('09000'))->toBe(['my:subdistrict:district:kedah:kulim:bandar-kulim'])
+        ->and($primaries('09100'))->toBe(['my:subdistrict:district:kedah:baling:bandar-baling'])
+        ->and($primaries('08700'))->toBe(['my:subdistrict:district:kedah:kuala-muda:jeniang']);
+});
+
+it('exposes the Melaka book-to-row completed bandar and pekan tiers', function (): void {
+    $provider = app(MalaysiaGeographyProvider::class);
+    $areas = $provider->addressAreaSource()->areas()->collect()->keyBy->sourceId;
+
+    foreach ([
+        'melaka-tengah:padang-semabok' => 'mukim', 'melaka-tengah:bandar-bukit-baru' => 'bandar', 'melaka-tengah:pekan-ayer-molek' => 'pekan',
+        'melaka-tengah:pekan-batu-berendam' => 'pekan', 'melaka-tengah:pekan-bukit-rambai' => 'pekan', 'melaka-tengah:pekan-kandang' => 'pekan',
+        'melaka-tengah:klebang' => 'pekan', 'melaka-tengah:pekan-paya-rumput' => 'pekan', 'melaka-tengah:pekan-sungai-udang' => 'pekan',
+        'melaka-tengah:pekan-tangga-batu' => 'pekan', 'melaka-tengah:pekan-tanjong-kling' => 'pekan',
+        'jasin:bandar-merlimau' => 'bandar', 'jasin:pekan-batang-malaka' => 'pekan', 'jasin:pekan-chin-chin' => 'pekan',
+        'jasin:kesang-pajak' => 'pekan', 'jasin:pekan-nyalas' => 'pekan', 'jasin:pekan-selandar' => 'pekan',
+        'jasin:sempang-bekoh' => 'pekan', 'jasin:pekan-sungai-rambai' => 'pekan',
+        'alor-gajah:bandar-masjid-tanah' => 'bandar', 'alor-gajah:bandar-pulau-sebang' => 'bandar', 'alor-gajah:pekan-durian-tunggal' => 'pekan',
+        'alor-gajah:pekan-kuala-sungai-baru' => 'pekan', 'alor-gajah:pekan-rembia' => 'pekan',
+    ] as $suffix => $type) {
+        $area = $areas->get('my:subdistrict:district:melaka:' . $suffix);
+
+        expect($area->type)->toBe($type, $suffix)
+            ->and($area->level)->toBe(3, $suffix);
+    }
+
+    // Lubok China converts from postal locality to gazetted pekan in place.
+    expect($areas->get('my:subdistrict:district:melaka:alor-gajah:lubok-china')->type)->toBe('pekan');
+
+    // Full-tier counts pin the UPI completion.
+    $forParent = static fn (string $parent): int => $areas
+        ->filter(static fn (AddressAreaData $area): bool => $area->parentSourceId === $parent && in_array($area->type, ['mukim', 'bandar', 'pekan'], true))
+        ->count();
+
+    expect($forParent('my:district:melaka:melaka-tengah'))->toBe(40)
+        ->and($forParent('my:district:melaka:jasin'))->toBe(31)
+        ->and($forParent('my:district:melaka:alor-gajah'))->toBe(38);
+
+    $names = $provider->areaNames(new AddressCountry);
+
+    expect($names['my:subdistrict:district:melaka:melaka-tengah:pekan-sungai-udang'])->toContain(
+        ['name' => 'Pekan Sungei Udang', 'name_type' => 'alternative'],
+    )->and($names['my:subdistrict:district:melaka:jasin:pekan-sungai-rambai'])->toContain(
+        ['name' => 'Pekan Sungei Rambai', 'name_type' => 'alternative'],
+    )->and($names['my:subdistrict:district:melaka:alor-gajah:pekan-kuala-sungai-baru'])->toContain(
+        ['name' => 'Pekan Kuala Sungei Baru', 'name_type' => 'alternative'],
+    );
+});
+
+it('places the Melaka town-code primaries on the bandar and pekan rows', function (): void {
+    $dir = __DIR__ . '/../../../../packages/addressing/resources/geography';
+    $source = new CsvPostalCodeSource('MY', $dir . '/malaysia-postal-codes.csv', $dir . '/malaysia-postal-code-areas.csv', 'aiarmada_addressing_malaysia_v1');
+
+    $byCode = $source->postalCodes()->collect()->groupBy->code;
+
+    $primaries = static fn (string $code): array => $byCode->get($code, collect())
+        ->filter(static fn (PostalCodeData $row): bool => $row->isPrimary)
+        ->map(static fn (PostalCodeData $row): string => (string) $row->areaSourceId)
+        ->all();
+
+    expect($primaries('76400'))->toBe(['my:subdistrict:district:melaka:melaka-tengah:pekan-tanjong-kling'])
+        ->and($primaries('77300'))->toBe(['my:subdistrict:district:melaka:jasin:bandar-merlimau'])
+        ->and($primaries('77500'))->toBe(['my:subdistrict:district:melaka:jasin:pekan-selandar'])
+        ->and($primaries('78300'))->toBe(['my:subdistrict:district:melaka:alor-gajah:bandar-masjid-tanah'])
+        ->and($primaries('76100'))->toBe(['my:subdistrict:district:melaka:alor-gajah:pekan-durian-tunggal'])
+        ->and($primaries('78200'))->toBe(['my:subdistrict:district:melaka:alor-gajah:pekan-kuala-sungai-baru'])
+        ->and($primaries('76300'))->toBe(['my:subdistrict:district:melaka:melaka-tengah:pekan-sungai-udang'])
+        ->and($primaries('77400'))->toBe(['my:subdistrict:district:melaka:jasin:pekan-sungai-rambai'])
+        ->and($primaries('77409'))->toBe(['my:subdistrict:district:melaka:jasin:pekan-sungai-rambai']);
+
+    // Lubok China keeps its town code through the locality-to-pekan conversion.
+    expect($primaries('78100'))->toBe(['my:subdistrict:district:melaka:alor-gajah:lubok-china']);
+});
+
+it('exposes the Negeri Sembilan book-to-row completed bandar and pekan tiers', function (): void {
+    $provider = app(MalaysiaGeographyProvider::class);
+    $areas = $provider->addressAreaSource()->areas()->collect()->keyBy->sourceId;
+
+    foreach ([
+        'jelebu:bandar-kuala-klawang' => 'bandar', 'jelebu:pekan-kuala-klawang' => 'pekan', 'jelebu:pekan-pertang' => 'pekan',
+        'jelebu:titi' => 'pekan', 'jelebu:petaling' => 'pekan', 'jelebu:sungai-muntoh' => 'pekan',
+        'kuala-pilah:pekan-johol' => 'pekan', 'kuala-pilah:pekan-parit-tinggi' => 'pekan', 'kuala-pilah:pekan-juasseh' => 'pekan',
+        'kuala-pilah:dangi' => 'pekan', 'kuala-pilah:gunung-pasir' => 'pekan', 'kuala-pilah:senaling' => 'pekan',
+        'kuala-pilah:bukit-gelugor' => 'pekan', 'kuala-pilah:melang' => 'pekan', 'kuala-pilah:air-mawang' => 'pekan',
+        'kuala-pilah:dangi-baru' => 'pekan',
+        'port-dickson:bandar-port-dickson' => 'bandar', 'port-dickson:pekan-port-dickson' => 'pekan', 'port-dickson:teluk-kemang' => 'bandar',
+        'port-dickson:pekan-teluk-kemang' => 'pekan', 'port-dickson:pekan-pasir-panjang' => 'pekan', 'port-dickson:pengkalan-kempas' => 'pekan',
+        'port-dickson:chuah' => 'pekan', 'port-dickson:pekan-linggi' => 'pekan', 'port-dickson:bukit-pelanduk' => 'pekan',
+        'port-dickson:air-kuning' => 'pekan', 'port-dickson:sungai-menyala' => 'pekan', 'port-dickson:bagan-pinang' => 'pekan',
+        'port-dickson:tanah-merah-utara' => 'pekan', 'port-dickson:tanah-merah-selatan' => 'pekan', 'port-dickson:jemima' => 'pekan',
+        'rembau:pekan-chengkau' => 'pekan', 'rembau:pekan-pedas' => 'pekan', 'rembau:pekan-chembong' => 'pekan',
+        'rembau:pekan-rembau' => 'pekan', 'rembau:kampong-batu' => 'pekan', 'rembau:lubok-china' => 'pekan',
+        'rembau:seri-kota' => 'pekan', 'rembau:seri-kendong' => 'pekan', 'rembau:merbau-sembilan' => 'pekan',
+        'seremban:bandar-seremban-utama' => 'bandar', 'seremban:bandar-mantin-utama' => 'bandar', 'seremban:bandar-baru-kota-sri-mas' => 'bandar',
+        'seremban:bandar-nilai-utama' => 'bandar', 'seremban:bandar-sri-sendayan' => 'bandar', 'seremban:pekan-labu' => 'pekan',
+        'seremban:pekan-lenggeng' => 'pekan', 'seremban:pekan-rantau' => 'pekan', 'seremban:pekan-setul' => 'pekan',
+        'seremban:broga' => 'pekan', 'seremban:ulu-beranang' => 'pekan', 'seremban:mambau' => 'pekan',
+        'seremban:pajam' => 'pekan', 'seremban:tiroi' => 'pekan', 'seremban:pancor' => 'pekan',
+        'seremban:taman-seremban' => 'pekan', 'seremban:rahang-baru' => 'pekan', 'seremban:paroi' => 'pekan',
+        'seremban:bukit-kepayang' => 'pekan', 'seremban:dusun-setia' => 'pekan', 'seremban:sungai-gadut' => 'pekan',
+        'seremban:bukti' => 'pekan', 'seremban:sikamat' => 'pekan', 'seremban:shah-bandar' => 'pekan',
+        'seremban:ulu-temiang' => 'pekan', 'seremban:paroi-jaya' => 'pekan', 'seremban:rasah-jaya' => 'pekan',
+        'seremban:seremban-jaya' => 'pekan',
+        'tampin:bandar-gemas' => 'bandar', 'tampin:pekan-tampin-tengah' => 'pekan', 'tampin:pekan-air-kuning' => 'pekan',
+        'tampin:pekan-repah' => 'pekan', 'tampin:air-kuning-selatan' => 'pekan', 'tampin:batang-melaka' => 'pekan',
+        'tampin:gemencheh-bahru' => 'pekan', 'tampin:pasir-besar' => 'pekan', 'tampin:repah-jaya' => 'pekan',
+        'tampin:repah-permai' => 'pekan',
+        'jempol:pekan-bahau' => 'pekan', 'jempol:pekan-rompin' => 'pekan', 'jempol:kuala-jelai' => 'pekan',
+        'jempol:ladang-geddes' => 'pekan', 'jempol:mahsan' => 'pekan', 'jempol:serting-tengah' => 'pekan',
+        'jempol:serting' => 'bandar',
+    ] as $suffix => $type) {
+        $area = $areas->get('my:subdistrict:district:negeri-sembilan:' . $suffix);
+
+        expect($area->type)->toBe($type, $suffix)
+            ->and($area->level)->toBe(3, $suffix);
+    }
+
+    // Retypes: Chengkau was an inverted pekan (UPI lists mukim 04 plus pekan
+    // 76); the two Bandar-prefixed mukims are the gazetted town bandars.
+    expect($areas->get('my:subdistrict:district:negeri-sembilan:rembau:chengkau')->type)->toBe('mukim')
+        ->and($areas->get('my:subdistrict:district:negeri-sembilan:seremban:bandar-seremban')->type)->toBe('bandar')
+        ->and($areas->get('my:subdistrict:district:negeri-sembilan:jempol:bandar-seri-jempol')->type)->toBe('bandar');
+
+    // Full-tier counts pin the UPI completion (Seremban 41: the book lists
+    // Bandar Seremban under both code 40 and code 41 for one town).
+    $forParent = static fn (string $parent): int => $areas
+        ->filter(static fn (AddressAreaData $area): bool => $area->parentSourceId === $parent && in_array($area->type, ['mukim', 'bandar', 'pekan'], true))
+        ->count();
+
+    expect($forParent('my:district:negeri-sembilan:jelebu'))->toBe(16)
+        ->and($forParent('my:district:negeri-sembilan:kuala-pilah'))->toBe(23)
+        ->and($forParent('my:district:negeri-sembilan:port-dickson'))->toBe(21)
+        ->and($forParent('my:district:negeri-sembilan:rembau'))->toBe(28)
+        ->and($forParent('my:district:negeri-sembilan:seremban'))->toBe(41)
+        ->and($forParent('my:district:negeri-sembilan:tampin'))->toBe(18)
+        ->and($forParent('my:district:negeri-sembilan:jempol'))->toBe(15);
+
+    $names = $provider->areaNames(new AddressCountry);
+
+    expect($names['my:subdistrict:district:negeri-sembilan:rembau:kampong-batu'])->toContain(
+        ['name' => 'Kampung Batu', 'name_type' => 'alternative'],
+    )->and($names['my:subdistrict:district:negeri-sembilan:tampin:gemencheh-bahru'])->toContain(
+        ['name' => 'Gemencheh Baru', 'name_type' => 'alternative'],
+    );
+});
+
+it('places the Negeri Sembilan town-code primaries on the bandar and pekan rows', function (): void {
+    $dir = __DIR__ . '/../../../../packages/addressing/resources/geography';
+    $source = new CsvPostalCodeSource('MY', $dir . '/malaysia-postal-codes.csv', $dir . '/malaysia-postal-code-areas.csv', 'aiarmada_addressing_malaysia_v1');
+
+    $byCode = $source->postalCodes()->collect()->groupBy->code;
+
+    $primaries = static fn (string $code): array => $byCode->get($code, collect())
+        ->filter(static fn (PostalCodeData $row): bool => $row->isPrimary)
+        ->map(static fn (PostalCodeData $row): string => (string) $row->areaSourceId)
+        ->all();
+
+    expect($primaries('71600'))->toBe(['my:subdistrict:district:negeri-sembilan:jelebu:bandar-kuala-klawang'])
+        ->and($primaries('73100'))->toBe(['my:subdistrict:district:negeri-sembilan:kuala-pilah:pekan-johol'])
+        ->and($primaries('71000'))->toBe(['my:subdistrict:district:negeri-sembilan:port-dickson:bandar-port-dickson'])
+        ->and($primaries('71150'))->toBe(['my:subdistrict:district:negeri-sembilan:port-dickson:pekan-linggi'])
+        ->and($primaries('71900'))->toBe(['my:subdistrict:district:negeri-sembilan:seremban:pekan-labu'])
+        ->and($primaries('71100'))->toBe(['my:subdistrict:district:negeri-sembilan:seremban:pekan-rantau'])
+        ->and($primaries('73400'))->toBe(['my:subdistrict:district:negeri-sembilan:tampin:bandar-gemas'])
+        ->and($primaries('73500'))->toBe(['my:subdistrict:district:negeri-sembilan:jempol:pekan-rompin']);
+
+    // Retyped town rows keep their codes; locked-bag codes follow the town.
+    expect($primaries('71300'))->toBe(['my:subdistrict:district:negeri-sembilan:rembau:rembau'])
+        ->and($primaries('72100'))->toBe(['my:subdistrict:district:negeri-sembilan:jempol:bahau'])
+        ->and($primaries('72120'))->toBe(['my:subdistrict:district:negeri-sembilan:jempol:bandar-seri-jempol'])
+        ->and($primaries('70000'))->toBe(['my:subdistrict:district:negeri-sembilan:seremban:bandar-seremban'])
+        ->and($primaries('71659'))->toBe(['my:subdistrict:district:negeri-sembilan:jelebu:bandar-kuala-klawang']);
+});
+
+it('exposes the Perak book-to-row variant spellings as alternative names', function (): void {
+    $provider = app(MalaysiaGeographyProvider::class);
+    $names = $provider->areaNames(new AddressCountry);
+
+    expect($names['my:subdistrict:district:perak:bagan-datuk:teluk-bharu'])->toContain(
+        ['name' => 'Teluk Baru', 'name_type' => 'alternative'],
+    )->and($names['my:subdistrict:district:perak:bagan-datuk:batu-dua-puloh'])->toContain(
+        ['name' => 'Batu Dua Puluh', 'name_type' => 'alternative'],
+    )->and($names['my:subdistrict:district:perak:manjung:kampong-baharu'])->toContain(
+        ['name' => 'Kampung Baharu', 'name_type' => 'alternative'],
+    );
+});
+
+it('places the Perak town-code primaries on the bandar and pekan rows', function (): void {
+    $dir = __DIR__ . '/../../../../packages/addressing/resources/geography';
+    $source = new CsvPostalCodeSource('MY', $dir . '/malaysia-postal-codes.csv', $dir . '/malaysia-postal-code-areas.csv', 'aiarmada_addressing_malaysia_v1');
+
+    $byCode = $source->postalCodes()->collect()->groupBy->code;
+
+    $primaries = static fn (string $code): array => $byCode->get($code, collect())
+        ->filter(static fn (PostalCodeData $row): bool => $row->isPrimary)
+        ->map(static fn (PostalCodeData $row): string => (string) $row->areaSourceId)
+        ->all();
+
+    expect($primaries('35500'))->toBe(['my:subdistrict:district:perak:batang-padang:bandar-bidor'])
+        ->and($primaries('34300'))->toBe(['my:subdistrict:district:perak:kerian:bandar-bagan-serai'])
+        ->and($primaries('34200'))->toBe(['my:subdistrict:district:perak:kerian:bandar-parit-buntar'])
+        ->and($primaries('34600'))->toBe(['my:subdistrict:district:perak:larut-matang:bandar-kamunting'])
+        ->and($primaries('34100'))->toBe(['my:subdistrict:district:perak:selama:bandar-selama'])
+        ->and($primaries('31900'))->toBe(['my:subdistrict:district:perak:kampar:bandar-kampar'])
+        ->and($primaries('31050'))->toBe(['my:subdistrict:district:perak:kuala-kangsar:bandar-sungai-siput'])
+        ->and($primaries('33300'))->toBe(['my:subdistrict:district:perak:hulu-perak:bandar-gerik']);
+
+    // Retyped pekan rows keep their codes; covering mukims stay secondary-only.
+    expect($primaries('34850'))->toBe(['my:subdistrict:district:perak:larut-matang:changkat-jering'])
+        ->and($primaries('34140'))->toBe(['my:subdistrict:district:perak:selama:rantau-panjang'])
+        ->and($primaries('31750'))->toBe(['my:subdistrict:district:perak:kinta:bandar-tronoh']);
+});
+
+it('exposes the Perlis gazetted towns as bandar and pekan rows under the state', function (): void {
+    $provider = app(MalaysiaGeographyProvider::class);
+    $areas = $provider->addressAreaSource()->areas()->collect()->keyBy->sourceId;
+
+    // TIADA DAERAH: Perlis subdistricts hang directly under the state at level 2.
+    expect($areas->get('my:subdistrict:state:perlis:bandar-arau')->type)->toBe('bandar')
+        ->and($areas->get('my:subdistrict:state:perlis:bandar-arau')->level)->toBe(2)
+        ->and($areas->get('my:subdistrict:state:perlis:bandar-arau')->parentSourceId)->toBe('my:state:perlis')
+        ->and($areas->get('my:subdistrict:state:perlis:pekan-kuala-perlis')->type)->toBe('pekan')
+        ->and($areas->get('my:subdistrict:state:perlis:pekan-kuala-perlis')->level)->toBe(2)
+        ->and($areas->get('my:subdistrict:state:perlis:kangar')->type)->toBe('bandar')
+        ->and($areas->get('my:subdistrict:state:perlis:kaki-bukit')->type)->toBe('pekan');
+
+    $country = new AddressCountry;
+    $roles = $provider->areaRoles($country);
+
+    expect($roles['my:subdistrict:state:perlis:kangar'][0]['role'])->toBe('administrative_subdivision')
+        ->and($roles['my:subdistrict:state:perlis:kaki-bukit'][0]['role'])->toBe('administrative_subdivision')
+        ->and($roles['my:subdistrict:state:perlis:padang-besar'][0]['role'])->toBe('postal_locality')
+        ->and($roles['my:subdistrict:state:perlis:simpang-empat'][0]['role'])->toBe('postal_locality');
+});
+
+it('places the Perlis town-code primaries on the bandar and pekan rows', function (): void {
+    $dir = __DIR__ . '/../../../../packages/addressing/resources/geography';
+    $source = new CsvPostalCodeSource('MY', $dir . '/malaysia-postal-codes.csv', $dir . '/malaysia-postal-code-areas.csv', 'aiarmada_addressing_malaysia_v1');
+
+    $byCode = $source->postalCodes()->collect()->groupBy->code;
+
+    $primaries = static fn (string $code): array => $byCode->get($code, collect())
+        ->filter(static fn (PostalCodeData $row): bool => $row->isPrimary)
+        ->map(static fn (PostalCodeData $row): string => (string) $row->areaSourceId)
+        ->all();
+
+    expect($primaries('02600'))->toBe(['my:subdistrict:state:perlis:bandar-arau'])
+        ->and($primaries('02607'))->toBe(['my:subdistrict:state:perlis:bandar-arau'])
+        ->and($primaries('02609'))->toBe(['my:subdistrict:state:perlis:bandar-arau'])
+        ->and($primaries('02000'))->toBe(['my:subdistrict:state:perlis:pekan-kuala-perlis']);
+
+    // Retyped towns keep their codes; non-gazetted towns stay postal localities.
+    expect($primaries('01000'))->toBe(['my:subdistrict:state:perlis:kangar'])
+        ->and($primaries('02200'))->toBe(['my:subdistrict:state:perlis:kaki-bukit'])
+        ->and($primaries('02100'))->toBe(['my:subdistrict:state:perlis:padang-besar'])
+        ->and($primaries('02700'))->toBe(['my:subdistrict:state:perlis:simpang-empat']);
+});
+
+it('exposes the Penang book-to-row bandars and the Sungei Bakap spelling', function (): void {
+    $provider = app(MalaysiaGeographyProvider::class);
+    $areas = $provider->addressAreaSource()->areas()->collect()->keyBy->sourceId;
+
+    expect($areas->get('my:subdistrict:district:pulau-pinang:seberang-perai-selatan:bandar-sungai-bakap')->type)->toBe('bandar')
+        ->and($areas->get('my:subdistrict:district:pulau-pinang:timur-laut:tanjong-tokong')->type)->toBe('bandar')
+        ->and($areas->get('my:subdistrict:district:pulau-pinang:timur-laut:tanjong-pinang')->type)->toBe('bandar');
+
+    $names = $provider->areaNames(new AddressCountry);
+
+    expect($names['my:subdistrict:district:pulau-pinang:seberang-perai-selatan:bandar-sungai-bakap'])->toContain(
+        ['name' => 'Bandar Sungei Bakap', 'name_type' => 'alternative'],
+    );
+});
+
+it('places the 10470 primary on Tanjong Tokong and keeps Sungai Jawi principal', function (): void {
+    $dir = __DIR__ . '/../../../../packages/addressing/resources/geography';
+    $source = new CsvPostalCodeSource('MY', $dir . '/malaysia-postal-codes.csv', $dir . '/malaysia-postal-code-areas.csv', 'aiarmada_addressing_malaysia_v1');
+
+    $byCode = $source->postalCodes()->collect()->groupBy->code;
+
+    $primaries = static fn (string $code): array => $byCode->get($code, collect())
+        ->filter(static fn (PostalCodeData $row): bool => $row->isPrimary)
+        ->map(static fn (PostalCodeData $row): string => (string) $row->areaSourceId)
+        ->all();
+
+    // Every 10470 street is Tokong-area; Tanjong Pinang shares the code.
+    expect($primaries('10470'))->toBe(['my:subdistrict:district:pulau-pinang:timur-laut:tanjong-tokong'])
+        ->and($primaries('14200'))->toBe(['my:subdistrict:district:pulau-pinang:seberang-perai-selatan:sungai-jawi']);
+});
+
+it('exposes the Selangor book-to-row variant spellings as alternative names', function (): void {
+    $provider = app(MalaysiaGeographyProvider::class);
+    $names = $provider->areaNames(new AddressCountry);
+
+    expect($names['my:subdistrict:district:selangor:hulu-selangor:bandar-hulu-yam-baharu'])->toContain(
+        ['name' => 'Bandar Ulu Yam Baharu', 'name_type' => 'alternative'],
+    )->and($names['my:subdistrict:district:selangor:hulu-selangor:bandar-hulu-yam-baharu'])->toContain(
+        ['name' => 'Bandar Hulu Yam Baru', 'name_type' => 'alternative'],
+    )->and($names['my:subdistrict:district:selangor:kuala-selangor:pekan-kampong-kuantan'])->toContain(
+        ['name' => 'Pekan Kampung Kuantan', 'name_type' => 'alternative'],
+    )->and($names['my:subdistrict:district:selangor:sabak-bernam:pekan-sabak'])->toContain(
+        ['name' => 'Sabak Bernam', 'name_type' => 'common', 'is_preferred' => true],
+    );
+});
+
+it('places the Selangor town-code primaries on the bandar and pekan rows', function (): void {
+    $dir = __DIR__ . '/../../../../packages/addressing/resources/geography';
+    $source = new CsvPostalCodeSource('MY', $dir . '/malaysia-postal-codes.csv', $dir . '/malaysia-postal-code-areas.csv', 'aiarmada_addressing_malaysia_v1');
+
+    $byCode = $source->postalCodes()->collect()->groupBy->code;
+
+    $primaries = static fn (string $code): array => $byCode->get($code, collect())
+        ->filter(static fn (PostalCodeData $row): bool => $row->isPrimary)
+        ->map(static fn (PostalCodeData $row): string => (string) $row->areaSourceId)
+        ->all();
+
+    expect($primaries('41000'))->toBe(['my:subdistrict:district:selangor:klang:bandar-klang'])
+        ->and($primaries('42200'))->toBe(['my:subdistrict:district:selangor:klang:pekan-kapar'])
+        ->and($primaries('42500'))->toBe(['my:subdistrict:district:selangor:kuala-langat:bandar-telok-panglima-garang'])
+        ->and($primaries('42600'))->toBe(['my:subdistrict:district:selangor:kuala-langat:jenjarom'])
+        ->and($primaries('45200'))->toBe(['my:subdistrict:district:selangor:sabak-bernam:pekan-sabak'])
+        ->and($primaries('45100'))->toBe(['my:subdistrict:district:selangor:sabak-bernam:pekan-sungai-air-tawar'])
+        ->and($primaries('64000'))->toBe(['my:subdistrict:district:selangor:sepang:bandar-lapangan-terbang-antarabangsa-sepang'])
+        ->and($primaries('47000'))->toBe(['my:subdistrict:district:selangor:gombak:bandar-sungai-buloh'])
+        ->and($primaries('48100'))->toBe(['my:subdistrict:district:selangor:gombak:batu-arang']);
+
+    // City primaries stay put; cross-state primaries stay out of state.
+    expect($primaries('42700'))->toBe(['my:subdistrict:district:selangor:kuala-langat:banting'])
+        ->and($primaries('43400'))->toBe(['my:subdistrict:district:selangor:petaling:serdang'])
+        ->and($primaries('35900'))->toBe(['my:subdistrict:district:perak:muallim:tanjong-malim']);
+});
+
+it('exposes the Terengganu book-to-row postal spellings as alternative names', function (): void {
+    $provider = app(MalaysiaGeographyProvider::class);
+    $names = $provider->areaNames(new AddressCountry);
+
+    expect($names['my:subdistrict:district:terengganu:kemaman:pekan-air-putih'])->toContain(
+        ['name' => 'Ayer Puteh', 'name_type' => 'alternative'],
+    )->and($names['my:subdistrict:district:terengganu:marang:pekan-bukit-payung'])->toContain(
+        ['name' => 'Bukit Payong', 'name_type' => 'alternative'],
+    );
+});
+
+it('places the Terengganu town-code primaries on the pekan rows', function (): void {
+    $dir = __DIR__ . '/../../../../packages/addressing/resources/geography';
+    $source = new CsvPostalCodeSource('MY', $dir . '/malaysia-postal-codes.csv', $dir . '/malaysia-postal-code-areas.csv', 'aiarmada_addressing_malaysia_v1');
+
+    $byCode = $source->postalCodes()->collect()->groupBy->code;
+
+    $primaries = static fn (string $code): array => $byCode->get($code, collect())
+        ->filter(static fn (PostalCodeData $row): bool => $row->isPrimary)
+        ->map(static fn (PostalCodeData $row): string => (string) $row->areaSourceId)
+        ->all();
+
+    expect($primaries('22200'))->toBe(['my:subdistrict:district:terengganu:besut:pekan-kampung-raja'])
+        ->and($primaries('22300'))->toBe(['my:subdistrict:district:terengganu:besut:pekan-kuala-besut'])
+        ->and($primaries('24200'))->toBe(['my:subdistrict:district:terengganu:kemaman:pekan-kemasik'])
+        ->and($primaries('24100'))->toBe(['my:subdistrict:district:terengganu:kemaman:pekan-kijal'])
+        ->and($primaries('21700'))->toBe(['my:subdistrict:district:terengganu:hulu-terengganu:pekan-kuala-berang'])
+        ->and($primaries('21400'))->toBe(['my:subdistrict:district:terengganu:marang:pekan-bukit-payung'])
+        ->and($primaries('24050'))->toBe(['my:subdistrict:district:terengganu:kemaman:pekan-air-putih']);
+
+    // Bandar primaries stay; the Paka postal town keeps its code.
+    expect($primaries('24000'))->toBe(['my:subdistrict:district:terengganu:kemaman:cukai'])
+        ->and($primaries('23100'))->toBe(['my:subdistrict:district:terengganu:dungun:paka']);
+});
+
+it('exposes the WPKL gazetted towns as linkless admin rows under the territory', function (): void {
+    $provider = app(MalaysiaGeographyProvider::class);
+    $areas = $provider->addressAreaSource()->areas()->collect()->keyBy->sourceId;
+
+    // TIADA DAERAH: towns hang directly under the territory at level 2,
+    // and KL postal routing stays on the state + constituencies by design.
+    expect($areas->get('my:subdistrict:state:wilayah-persekutuan-kuala-lumpur:bandar-kuala-lumpur')->type)->toBe('bandar')
+        ->and($areas->get('my:subdistrict:state:wilayah-persekutuan-kuala-lumpur:bandar-kuala-lumpur')->level)->toBe(2)
+        ->and($areas->get('my:subdistrict:state:wilayah-persekutuan-kuala-lumpur:pekan-batu-caves')->type)->toBe('pekan')
+        ->and($areas->get('my:subdistrict:state:wilayah-persekutuan-kuala-lumpur:pekan-sungai-besi')->type)->toBe('pekan');
+
+    $names = $provider->areaNames(new AddressCountry);
+
+    expect($names['my:subdistrict:state:wilayah-persekutuan-kuala-lumpur:bandar-bandar-baharu-sungai-besi'])->toContain(
+        ['name' => 'Bandar Bandar Baru Sungai Besi', 'name_type' => 'alternative'],
+    );
+});
+
+it('keeps WPKL postcode primaries on the state and constituencies', function (): void {
+    $dir = __DIR__ . '/../../../../packages/addressing/resources/geography';
+    $source = new CsvPostalCodeSource('MY', $dir . '/malaysia-postal-codes.csv', $dir . '/malaysia-postal-code-areas.csv', 'aiarmada_addressing_malaysia_v1');
+
+    $byCode = $source->postalCodes()->collect()->groupBy->code;
+
+    $primaries = static fn (string $code): array => $byCode->get($code, collect())
+        ->filter(static fn (PostalCodeData $row): bool => $row->isPrimary)
+        ->map(static fn (PostalCodeData $row): string => (string) $row->areaSourceId)
+        ->all();
+
+    expect($primaries('52100'))->toBe(['my:subdistrict:state:wilayah-persekutuan-kuala-lumpur:kepong'])
+        ->and($primaries('56000'))->toBe(['my:subdistrict:state:wilayah-persekutuan-kuala-lumpur:cheras'])
+        ->and($primaries('50000'))->toBe(['my:state:wilayah-persekutuan-kuala-lumpur'])
+        ->and($primaries('60000'))->toBe(['my:state:wilayah-persekutuan-kuala-lumpur']);
+});
+
+it('exposes all 20 Putrajaya precincts under the territory', function (): void {
+    $provider = app(MalaysiaGeographyProvider::class);
+    $areas = $provider->addressAreaSource()->areas()->collect()->keyBy->sourceId;
+
+    $precincts = $areas->filter(
+        static fn ($area): bool => $area->parentSourceId === 'my:state:wilayah-persekutuan-putrajaya',
+    );
+
+    expect($precincts)->toHaveCount(20)
+        ->and($areas->get('my:subdistrict:state:wilayah-persekutuan-putrajaya:precinct-1')->type)->toBe('precinct')
+        ->and($areas->get('my:subdistrict:state:wilayah-persekutuan-putrajaya:precinct-20')->type)->toBe('precinct');
+});
+
+it('places Putrajaya town-code primaries on the lead precincts', function (): void {
+    $dir = __DIR__ . '/../../../../packages/addressing/resources/geography';
+    $source = new CsvPostalCodeSource('MY', $dir . '/malaysia-postal-codes.csv', $dir . '/malaysia-postal-code-areas.csv', 'aiarmada_addressing_malaysia_v1');
+
+    $byCode = $source->postalCodes()->collect()->groupBy->code;
+
+    $primaries = static fn (string $code): array => $byCode->get($code, collect())
+        ->filter(static fn (PostalCodeData $row): bool => $row->isPrimary)
+        ->map(static fn (PostalCodeData $row): string => (string) $row->areaSourceId)
+        ->all();
+
+    expect($primaries('62000'))->toBe(['my:subdistrict:state:wilayah-persekutuan-putrajaya:precinct-1'])
+        ->and($primaries('62100'))->toBe(['my:subdistrict:state:wilayah-persekutuan-putrajaya:precinct-2'])
+        ->and($primaries('62300'))->toBe(['my:subdistrict:state:wilayah-persekutuan-putrajaya:precinct-11'])
+        ->and($primaries('62502'))->toBe(['my:state:wilayah-persekutuan-putrajaya']);
 });

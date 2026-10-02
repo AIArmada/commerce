@@ -21,15 +21,20 @@ it('groups subdivision and locality correctly for every Malaysian state and WP',
     app(SeedCountryGeographiesAction::class)->execute('MY');
 
     // [subdivision gate, locality gate, grouped, subdivision label, locality label]
+    // Kedah keeps no postal-locality rows: the book-to-row pass proved every
+    // Kedah town gazetted (last one: Tikam Batu to bandar), so the locality
+    // gate falls back to the state parent and the controls ungroup.
+    // Perlis and WPKL gained bandar/pekan rows, so their subdivision
+    // labels widen from bare Mukim.
     $expected = [
         'Johor' => ['district', 'district', true, 'Mukim / Bandar / Pekan', 'Locality'],
-        'Kedah' => ['district', 'district', true, 'Mukim / Bandar / Pekan', 'Locality'],
+        'Kedah' => ['district', 'region', false, 'Mukim / Bandar / Pekan', 'Locality / Precinct / Kampung'],
         'Kelantan' => ['district', 'district', true, 'Mukim / Bandar / Pekan', 'Locality'],
         'Melaka' => ['district', 'district', true, 'Mukim / Bandar / Pekan', 'Locality'],
         'Negeri Sembilan' => ['district', 'district', true, 'Mukim / Bandar / Pekan', 'Locality'],
         'Pahang' => ['district', 'district', true, 'Mukim / Bandar / Pekan', 'Locality'],
         'Perak' => ['district', 'district', true, 'Mukim / Bandar / Pekan', 'Locality'],
-        'Perlis' => ['region', 'region', true, 'Mukim', 'Locality'],
+        'Perlis' => ['region', 'region', true, 'Mukim / Bandar / Pekan', 'Locality'],
         'Pulau Pinang' => ['district', 'district', true, 'Mukim / Bandar', 'Locality'],
         'Sabah' => ['district', 'district', true, 'Daerah Kecil', 'Locality'],
         // Sarawak rectification: towns are postal localities and the
@@ -37,7 +42,7 @@ it('groups subdivision and locality correctly for every Malaysian state and WP',
         'Sarawak' => ['district', 'district', true, 'Daerah Kecil', 'Locality'],
         'Selangor' => ['district', 'district', true, 'Mukim / Bandar / Pekan', 'Locality'],
         'Terengganu' => ['district', 'district', true, 'Mukim / Bandar / Pekan', 'Locality'],
-        'WP Kuala Lumpur' => ['region', 'region', true, 'Mukim', 'Locality'],
+        'WP Kuala Lumpur' => ['region', 'region', true, 'Mukim / Bandar / Pekan', 'Locality'],
         // Labuan and Putrajaya have no subdivision rows (generic fallback
         // label); consumers render the locality control alone there.
         'WP Labuan' => ['region', 'region', true, 'Mukim / Subdistrict / Bandar / Pekan / Daerah Kecil', 'Locality'],

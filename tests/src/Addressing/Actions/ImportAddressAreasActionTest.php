@@ -642,3 +642,40 @@ it('dry-run reports cyclic-branch failures without writing', function (): void {
         ->and(AddressArea::query()->where('source', 'test')->where('source_id', 'new-child')->exists())->toBeFalse()
         ->and(AddressArea::query()->where('source', 'test')->where('source_id', 'x')->firstOrFail()->parent_id)->toBeNull();
 });
+
+it('imports child-before-parent file order identically to parent-first order', function (): void {
+    $rows = static fn (string $source): array => [
+        new AddressAreaData(source: $source, sourceId: 'root', countryCode: 'MY', type: 'state', name: 'Selangor', level: 1),
+        new AddressAreaData(source: $source, sourceId: 'child', countryCode: 'MY', type: 'district', name: 'Petaling', parentSourceId: 'root', level: 2),
+        new AddressAreaData(source: $source, sourceId: 'grandchild', countryCode: 'MY', type: 'mukim', name: 'Damansara', parentSourceId: 'child', level: 3),
+    ];
+
+    $ordered = $this->action->execute(new ArrayAddressAreaSource('test-ordered', $rows('test-ordered')));
+
+    expect($ordered->hasFailures())->toBeFalse()
+        ->and($ordered->created)->toBe(3);
+
+    $shuffled = $this->action->execute(new ArrayAddressAreaSource('test-shuffled', array_reverse($rows('test-shuffled'))));
+
+    expect($shuffled->hasFailures())->toBeFalse()
+        ->and($shuffled->created)->toBe(3);
+
+    $root = AddressArea::where('source', 'test-shuffled')->where('source_id', 'root')->firstOrFail();
+    $child = AddressArea::where('source', 'test-shuffled')->where('source_id', 'child')->firstOrFail();
+    $grandchild = AddressArea::where('source', 'test-shuffled')->where('source_id', 'grandchild')->firstOrFail();
+
+    expect($child->parent_id)->toBe($root->getKey())
+        ->and($grandchild->parent_id)->toBe($child->getKey());
+
+    $dry = $this->action->execute(new ArrayAddressAreaSource('test-dry', array_reverse($rows('test-dry'))), dryRun: true);
+
+    expect($dry->hasFailures())->toBeFalse()
+        ->and($dry->skipped)->toBe(3);
+});
+
+it('accepts an empty payload without failures', function (): void {
+    $result = $this->action->execute(new ArrayAddressAreaSource('test-empty', []));
+
+    expect($result->hasFailures())->toBeFalse()
+        ->and($result->created)->toBe(0);
+});
