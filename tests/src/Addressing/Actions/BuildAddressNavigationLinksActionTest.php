@@ -134,8 +134,7 @@ it('generates google maps url from place id with query and query_place_id', func
         'countryCode' => 'MY',
         'latitude' => 3.1712,
         'longitude' => 101.6678,
-        'provider' => 'google',
-        'provider_place_id' => 'ChIJc6C6R_Ei2jERtP6Y3Y6Y3Y4',
+        'google_place_id' => 'ChIJc6C6R_Ei2jERtP6Y3Y6Y3Y4',
     ]);
 
     $links = $this->action->execute($address);

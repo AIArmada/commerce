@@ -38,8 +38,6 @@ class AddressTable
                     ->boolean()
                     ->state(fn ($record): bool => $record->validation_status === 'verified')
                     ->toggleable(),
-                TextColumn::make('provider')
-                    ->toggleable(),
                 TextColumn::make('updated_at')
                     ->dateTime()
                     ->sortable()

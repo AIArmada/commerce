@@ -70,16 +70,20 @@ it('snapshot copies nav links from AddressData', function (): void {
     expect($snapshot->navigation_links)->toBe(['grab' => ['url' => 'https://grab.com/directions']]);
 });
 
-it('snapshot copies provider and provider_place_id from AddressData', function (): void {
+it('snapshot copies google identifiers from AddressData', function (): void {
     $addressData = AddressData::from([
         'line1' => '123 Main St',
         'countryCode' => 'MY',
-        'provider' => 'google',
-        'provider_place_id' => 'ChIJc6C6R_Ei2jERtP6Y3Y6Y3Y4',
+        'google_place_id' => 'ChIJc6C6R_Ei2jERtP6Y3Y6Y3Y4',
+        'google_feature_id' => '0x31cc:0x8e9f',
+        'google_cid' => '1234567890123456789',
+        'google_entity_id' => '/g/abc123',
     ]);
 
     $snapshot = $this->action->execute($this->snapshotable, $addressData, reason: 'test');
 
-    expect($snapshot->provider)->toBe('google');
-    expect($snapshot->provider_place_id)->toBe('ChIJc6C6R_Ei2jERtP6Y3Y6Y3Y4');
+    expect($snapshot->google_place_id)->toBe('ChIJc6C6R_Ei2jERtP6Y3Y6Y3Y4')
+        ->and($snapshot->google_feature_id)->toBe('0x31cc:0x8e9f')
+        ->and($snapshot->google_cid)->toBe('1234567890123456789')
+        ->and($snapshot->google_entity_id)->toBe('/g/abc123');
 });

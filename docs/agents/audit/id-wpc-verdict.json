@@ -1,0 +1,986 @@
+{
+ "verdict": {
+  "20416": {
+   "reg": "1271",
+   "why": "clear 2v page=['north-sumatra__medan', 'north-sumatra__medan']"
+  },
+  "20584": {
+   "reg": "1218",
+   "why": "clear 2v page=['north-sumatra__serdang-bedagai']"
+  },
+  "20617": {
+   "reg": "1276",
+   "why": "clear 3v page=['north-sumatra__tebing-tinggi', 'north-sumatra__tebing-tinggi']"
+  },
+  "20618": {
+   "reg": "1276",
+   "why": "clear 2v page=['north-sumatra__tebing-tinggi', 'north-sumatra__tebing-tinggi']"
+  },
+  "20651": {
+   "reg": "1218",
+   "why": "clear 4v page=['north-sumatra__serdang-bedagai']"
+  },
+  "20691": {
+   "reg": "1218",
+   "why": "clear 2v page=['north-sumatra__serdang-bedagai']"
+  },
+  "20692": {
+   "reg": "1218",
+   "why": "clear 4v page=['north-sumatra__serdang-bedagai']"
+  },
+  "20693": {
+   "reg": "1218",
+   "why": "clear 4v page=['north-sumatra__serdang-bedagai']"
+  },
+  "20697": {
+   "reg": "1218",
+   "why": "clear 2v page=['north-sumatra__serdang-bedagai']"
+  },
+  "20882": {
+   "reg": "1205",
+   "why": "clear 2v page=['north-sumatra__langkat']"
+  },
+  "20981": {
+   "reg": "1207",
+   "why": "clear 4v page=['north-sumatra__serdang-bedagai']"
+  },
+  "20985": {
+   "reg": "1207",
+   "why": "clear 2v page=['north-sumatra__serdang-bedagai']"
+  },
+  "21138": {
+   "reg": "1272",
+   "why": "clear 3v page=['north-sumatra__pematang-siantar', 'north-sumatra__pematang-siantar']"
+  },
+  "21351": {
+   "reg": "1209",
+   "why": "clear 2v page=['north-sumatra__tanjung-balai']"
+  },
+  "22376": {
+   "reg": "1202",
+   "why": "clear 2v page=['north-sumatra__toba-samosir']"
+  },
+  "22776": {
+   "reg": "1213",
+   "why": "clear 4v page=['north-sumatra__mandailing-natal']"
+  },
+  "22783": {
+   "reg": "1213",
+   "why": "clear 2v page=['north-sumatra__mandailing-natal']"
+  },
+  "22787": {
+   "reg": "1213",
+   "why": "clear 2v page=['north-sumatra__mandailing-natal']"
+  },
+  "22798": {
+   "reg": "1213",
+   "why": "clear 2v page=['north-sumatra__mandailing-natal']"
+  },
+  "22855": {
+   "reg": "1224",
+   "why": "clear 1v page=['north-sumatra__nias']"
+  },
+  "22856": {
+   "reg": "1224",
+   "why": "clear 2v page=['north-sumatra__nias-utara']"
+  },
+  "23113": {
+   "reg": "1171",
+   "why": "clear 2v page=['aceh__banda-aceh']"
+  },
+  "23693": {
+   "reg": "1109",
+   "why": "clear 2v page=['aceh__simeulu']"
+  },
+  "23695": {
+   "reg": "1109",
+   "why": "clear 2v page=['aceh__simeulu']"
+  },
+  "23895": {
+   "reg": "1109",
+   "why": "clear 2v page=['aceh__simeulu']"
+  },
+  "25245": {
+   "reg": "1303",
+   "why": "clear 2v page=['west-sumatra__sijunjung', 'west-sumatra__sijunjung']"
+  },
+  "25653": {
+   "reg": "1301",
+   "why": "clear 2v page=['west-sumatra__pesisir-selatan']"
+  },
+  "25665": {
+   "reg": "1301",
+   "why": "clear 2v page=['west-sumatra__pesisir-selatan']"
+  },
+  "25672": {
+   "reg": "1301",
+   "why": "clear 2v page=['west-sumatra__pesisir-selatan']"
+  },
+  "26234": {
+   "reg": "1376",
+   "why": "clear 2v page=['west-sumatra__payakumbuh', 'west-sumatra__payakumbuh']"
+  },
+  "26361": {
+   "reg": "1312",
+   "why": "clear 2v page=['west-sumatra__pasaman-barat']"
+  },
+  "26364": {
+   "reg": "1312",
+   "why": "clear 2v page=['west-sumatra__pasaman-barat']"
+  },
+  "26367": {
+   "reg": "1312",
+   "why": "clear 2v page=['west-sumatra__pasaman-barat']"
+  },
+  "26373": {
+   "reg": "1312",
+   "why": "clear 2v page=['west-sumatra__pasaman-barat']"
+  },
+  "26374": {
+   "reg": "1312",
+   "why": "clear 2v page=['west-sumatra__pasaman-barat']"
+  },
+  "27266": {
+   "reg": "1304",
+   "why": "clear 2v page=['west-sumatra__tanah-datar']"
+  },
+  "27291": {
+   "reg": "1304",
+   "why": "clear 2v page=['west-sumatra__tanah-datar']"
+  },
+  "27293": {
+   "reg": "1304",
+   "why": "clear 2v page=['west-sumatra__tanah-datar']"
+  },
+  "27362": {
+   "reg": "1302",
+   "why": "clear 2v page=['west-sumatra__solok']"
+  },
+  "27363": {
+   "reg": "1302",
+   "why": "clear 2v page=['west-sumatra__solok']"
+  },
+  "27364": {
+   "reg": "1302",
+   "why": "clear 2v page=['west-sumatra__solok']"
+  },
+  "27366": {
+   "reg": "1302",
+   "why": "clear 2v page=['west-sumatra__solok']"
+  },
+  "27367": {
+   "reg": "1302",
+   "why": "clear 2v page=['west-sumatra__solok']"
+  },
+  "27375": {
+   "reg": "1302",
+   "why": "clear 2v page=['west-sumatra__solok']"
+  },
+  "27376": {
+   "reg": "1311",
+   "why": "clear 2v page=['west-sumatra__solok-selatan']"
+  },
+  "27377": {
+   "reg": "1311",
+   "why": "clear 2v page=['west-sumatra__solok-selatan']"
+  },
+  "27378": {
+   "reg": "1311",
+   "why": "clear 2v page=['west-sumatra__solok-selatan']"
+  },
+  "27379": {
+   "reg": "1311",
+   "why": "clear 2v page=['west-sumatra__solok-selatan']"
+  },
+  "27382": {
+   "reg": "1302",
+   "why": "clear 2v page=['west-sumatra__solok']"
+  },
+  "27384": {
+   "reg": "1302",
+   "why": "clear 2v page=['west-sumatra__solok']"
+  },
+  "27385": {
+   "reg": "1302",
+   "why": "clear 2v page=['west-sumatra__solok']"
+  },
+  "27386": {
+   "reg": "1302",
+   "why": "clear 2v page=['west-sumatra__solok']"
+  },
+  "27552": {
+   "reg": "1303",
+   "why": "clear 4v page=['west-sumatra__sawahlunto-sijunjung']"
+  },
+  "28672": {
+   "reg": "1408",
+   "why": "clear 4v page=['riau__siak']"
+  },
+  "28762": {
+   "reg": "1408",
+   "why": "clear 4v page=['riau__siak']"
+  },
+  "28782": {
+   "reg": "1472",
+   "why": "clear 4v page=['riau__siak']"
+  },
+  "31147": {
+   "reg": "1674",
+   "why": "clear 4v page=['south-sumatra__prabumulih']"
+  },
+  "31151": {
+   "reg": "1674",
+   "why": "clear 1v page=['south-sumatra__prabumulih']"
+  },
+  "31525": {
+   "reg": "1608",
+   "why": "clear 4v page=['south-sumatra__ogan-komering-ulu-timur', 'south-sumatra__ogan-komering-ulu-timur']"
+  },
+  "34612": {
+   "reg": "1805",
+   "why": "clear 4v page=['lampung__tulang-bawang']"
+  },
+  "34692": {
+   "reg": "1812",
+   "why": "clear 2v page=['lampung__tulang-bawang']"
+  },
+  "41351": {
+   "reg": "3215",
+   "why": "override: 1-vote Sukabumi village beats nothing; page+41352-58 block Karawang"
+  },
+  "43124": {
+   "reg": "3272",
+   "why": "clear 6v page=['java-west__sukabumi', 'java-west__sukabumi']"
+  },
+  "43163": {
+   "reg": "3272",
+   "why": "clear 4v page=['java-west__sukabumi']"
+  },
+  "43164": {
+   "reg": "3272",
+   "why": "clear 4v page=['java-west__sukabumi']"
+  },
+  "43195": {
+   "reg": "3272",
+   "why": "clear 4v page=['java-west__sukabumi']"
+  },
+  "45351": {
+   "reg": "3211",
+   "why": "clear 2v page=['java-west__sumedang']"
+  },
+  "45357": {
+   "reg": "3211",
+   "why": "override: page+45352-56 block Sumedang; no Cimara district in Kuningan"
+  },
+  "45451": {
+   "reg": "3210",
+   "why": "clear 2v page=['java-west__majalengka']"
+  },
+  "45551": {
+   "reg": "3208",
+   "why": "clear 4v page=['java-west__kuningan']"
+  },
+  "46152": {
+   "reg": "3278",
+   "why": "clear 4v page=['java-west__tasikmalaya']"
+  },
+  "46154": {
+   "reg": "3206",
+   "why": "clear 4v page=['java-west__tasikmalaya']"
+  },
+  "46165": {
+   "reg": "3206",
+   "why": "clear 4v page=['java-west__tasikmalaya']"
+  },
+  "46166": {
+   "reg": "3278",
+   "why": "override WEAK: only Tasik-area tree match = Cibeureum district Kota Tasik; no Kab Tasik match"
+  },
+  "46167": {
+   "reg": "3206",
+   "why": "clear 4v page=['java-west__tasikmalaya']"
+  },
+  "46191": {
+   "reg": "3206",
+   "why": "clear 2v page=['java-west__tasikmalaya']"
+  },
+  "46199": {
+   "reg": "3206",
+   "why": "clear 4v page=['java-west__tasikmalaya']"
+  },
+  "46472": {
+   "reg": "3206",
+   "why": "clear 4v page=['java-west__tasikmalaya']"
+  },
+  "50731": {
+   "reg": "3373",
+   "why": "clear 2v page=['java-central__salatiga']"
+  },
+  "50740": {
+   "reg": "3305",
+   "why": "clear 4v page=['java-central__kebumen']"
+  },
+  "51131": {
+   "reg": "3375",
+   "why": "clear 2v page=['java-central__pekalongan', 'java-central__pekalongan']"
+  },
+  "51142": {
+   "reg": "3375",
+   "why": "clear 3v page=['java-central__pekalongan', 'java-central__pekalongan']"
+  },
+  "51154": {
+   "reg": "3326",
+   "why": "clear 4v page=['java-central__pekalongan']"
+  },
+  "52116": {
+   "reg": "3376",
+   "why": "clear 2v page=['java-central__tegal']"
+  },
+  "52142": {
+   "reg": "3376",
+   "why": "clear 4v page=['java-central__tegal']"
+  },
+  "52145": {
+   "reg": "3376",
+   "why": "clear 4v page=['java-central__tegal']"
+  },
+  "53322": {
+   "reg": "3303",
+   "why": "clear 2v page=['java-central__purbalingga', 'java-central__purbalingga']"
+  },
+  "53351": {
+   "reg": "3303",
+   "why": "clear 2v page=['java-central__purbalingga']"
+  },
+  "54152": {
+   "reg": "3306",
+   "why": "clear 4v page=['java-central__purworejo']"
+  },
+  "54252": {
+   "reg": "3306",
+   "why": "clear 4v page=['java-central__purworejo']"
+  },
+  "54415": {
+   "reg": "3305",
+   "why": "clear 4v page=['java-central__kebumen']"
+  },
+  "56363": {
+   "reg": "3307",
+   "why": "clear 8v page=['java-central__wonosobo', 'java-central__wonosobo']"
+  },
+  "56451": {
+   "reg": "3308",
+   "why": "clear 4v page=['java-central__magelang']"
+  },
+  "56551": {
+   "reg": "3308",
+   "why": "clear 4v page=['java-central__magelang']"
+  },
+  "57110": {
+   "reg": "3372",
+   "why": "clear 5v page=['java-central__surakarta', 'java-central__surakarta']"
+  },
+  "57120": {
+   "reg": "3372",
+   "why": "clear 5v page=['java-central__surakarta', 'java-central__surakarta']"
+  },
+  "57130": {
+   "reg": "3372",
+   "why": "clear 5v page=['java-central__surakarta', 'java-central__surakarta']"
+  },
+  "57140": {
+   "reg": "3372",
+   "why": "clear 5v page=['java-central__surakarta', 'java-central__surakarta']"
+  },
+  "57150": {
+   "reg": "3372",
+   "why": "clear 4v page=['java-central__surakarta']"
+  },
+  "57160": {
+   "reg": "3372",
+   "why": "clear 5v page=['java-central__surakarta', 'java-central__surakarta']"
+  },
+  "57170": {
+   "reg": "3372",
+   "why": "clear 5v page=['java-central__surakarta', 'java-central__surakarta']"
+  },
+  "57251": {
+   "reg": "3314",
+   "why": "clear 2v page=['java-central__sragen']"
+  },
+  "57291": {
+   "reg": "3314",
+   "why": "clear 4v page=['java-central__sragen']"
+  },
+  "57431": {
+   "reg": "3310",
+   "why": "clear 3v page=['java-central__klaten', 'java-central__klaten']"
+  },
+  "57436": {
+   "reg": "3310",
+   "why": "clear 2v page=['java-central__klaten', 'java-central__klaten']"
+  },
+  "57526": {
+   "reg": "3311",
+   "why": "clear 4v page=['java-central__sukoharjo', 'java-central__sukoharjo']"
+  },
+  "57572": {
+   "reg": "3311",
+   "why": "clear 4v page=['java-central__sukoharjo']"
+  },
+  "57676": {
+   "reg": "3312",
+   "why": "clear 4v page=['java-central__wonogiri']"
+  },
+  "59151": {
+   "reg": "3318",
+   "why": "clear 2v page=['java-central__pati']"
+  },
+  "59352": {
+   "reg": "3319",
+   "why": "clear 4v page=['java-central__kudus']"
+  },
+  "59354": {
+   "reg": "3319",
+   "why": "clear 2v page=['java-central__kudus']"
+  },
+  "61221": {
+   "reg": "3515",
+   "why": "clear 3v page=['java-east__sidoarjo', 'java-east__sidoarjo']"
+  },
+  "61222": {
+   "reg": "3515",
+   "why": "clear 3v page=['java-east__sidoarjo', 'java-east__sidoarjo']"
+  },
+  "61227": {
+   "reg": "3515",
+   "why": "clear 3v page=['java-east__sidoarjo', 'java-east__sidoarjo']"
+  },
+  "61229": {
+   "reg": "3515",
+   "why": "clear 3v page=['java-east__sidoarjo', 'java-east__sidoarjo']"
+  },
+  "61232": {
+   "reg": "3515",
+   "why": "clear 2v page=['java-east__sidoarjo', 'java-east__sidoarjo']"
+  },
+  "66271": {
+   "reg": "3504",
+   "why": "clear 4v page=['java-east__tulungagung']"
+  },
+  "68361": {
+   "reg": "3512",
+   "why": "clear 2v page=['java-east__situbondo']"
+  },
+  "69381": {
+   "reg": "3528",
+   "why": "clear 2v page=['java-east__pamekasan']"
+  },
+  "71151": {
+   "reg": "6305",
+   "why": "clear 2v page=['kalimantan-south__tapin']"
+  },
+  "72172": {
+   "reg": "6310",
+   "why": "clear 2v page=['kalimantan-south__tanah-bumbu']"
+  },
+  "72173": {
+   "reg": "6310",
+   "why": "clear 2v page=['kalimantan-south__tanah-bumbu']"
+  },
+  "73115": {
+   "reg": "6271",
+   "why": "clear 4v page=['kalimantan-central__palangka-raya', 'kalimantan-central__palangka-raya']"
+  },
+  "73116": {
+   "reg": "6271",
+   "why": "clear 4v page=['kalimantan-central__palangka-raya', 'kalimantan-central__palangka-raya']"
+  },
+  "73117": {
+   "reg": "6271",
+   "why": "clear 4v page=['kalimantan-central__palangka-raya', 'kalimantan-central__palangka-raya']"
+  },
+  "73119": {
+   "reg": "6271",
+   "why": "clear 4v page=['kalimantan-central__palangka-raya', 'kalimantan-central__palangka-raya']"
+  },
+  "73561": {
+   "reg": "6211",
+   "why": "clear 2v page=['kalimantan-central__pulang-pisau']"
+  },
+  "73562": {
+   "reg": "6211",
+   "why": "clear 2v page=['kalimantan-central__pulang-pisau']"
+  },
+  "73571": {
+   "reg": "6211",
+   "why": "clear 2v page=['kalimantan-central__pulang-pisau']"
+  },
+  "73572": {
+   "reg": "6211",
+   "why": "clear 2v page=['kalimantan-central__pulang-pisau']"
+  },
+  "74251": {
+   "reg": "6207",
+   "why": "clear 2v page=['kalimantan-central__seruyan']"
+  },
+  "74711": {
+   "reg": "6208",
+   "why": "clear 2v page=['kalimantan-central__sukamara']"
+  },
+  "74713": {
+   "reg": "6208",
+   "why": "clear 1v page=['kalimantan-central__sukamara']"
+  },
+  "74811": {
+   "reg": "6211",
+   "why": "clear 3v page=['kalimantan-central__pulang-pisau', 'kalimantan-central__pulang-pisau']"
+  },
+  "74814": {
+   "reg": "6211",
+   "why": "clear 2v page=['kalimantan-central__pulang-pisau']"
+  },
+  "74815": {
+   "reg": "6211",
+   "why": "clear 2v page=['kalimantan-central__pulang-pisau']"
+  },
+  "74864": {
+   "reg": "6203",
+   "why": "clear 4v page=['kalimantan-central__pulang-pisau']"
+  },
+  "78651": {
+   "reg": "6105",
+   "why": "clear 2v page=['kalimantan-west__sintang']"
+  },
+  "79152": {
+   "reg": "6101",
+   "why": "clear 2v page=['kalimantan-west__singkawang']"
+  },
+  "79161": {
+   "reg": "6107",
+   "why": "clear 4v page=['kalimantan-west__singkawang']"
+  },
+  "79162": {
+   "reg": "6101",
+   "why": "clear 2v page=['kalimantan-west__singkawang']"
+  },
+  "79166": {
+   "reg": "6101",
+   "why": "clear 2v page=['kalimantan-west__singkawang']"
+  },
+  "79182": {
+   "reg": "6107",
+   "why": "clear 2v page=['kalimantan-west__singkawang']"
+  },
+  "79183": {
+   "reg": "6107",
+   "why": "clear 2v page=['kalimantan-west__singkawang', 'kalimantan-west__singkawang']"
+  },
+  "79184": {
+   "reg": "6107",
+   "why": "clear 2v page=['kalimantan-west__singkawang', 'kalimantan-west__singkawang']"
+  },
+  "79185": {
+   "reg": "6107",
+   "why": "clear 4v page=['kalimantan-west__singkawang']"
+  },
+  "85518": {
+   "reg": "5302",
+   "why": "clear 4v page=['east-nusa-tenggara__timor-tengah-selatan', 'east-nusa-tenggara__timor-tengah-selatan']"
+  },
+  "85672": {
+   "reg": "5303",
+   "why": "clear 2v page=['east-nusa-tenggara__timor-tengah-utara']"
+  },
+  "85683": {
+   "reg": "5303",
+   "why": "clear 2v page=['east-nusa-tenggara__timor-tengah-utara']"
+  },
+  "86117": {
+   "reg": "5307",
+   "why": "clear 2v page=['east-nusa-tenggara__sikka']"
+  },
+  "86151": {
+   "reg": "5307",
+   "why": "clear 2v page=['east-nusa-tenggara__sikka']"
+  },
+  "87151": {
+   "reg": "5311",
+   "why": "clear 2v page=['east-nusa-tenggara__sumba-timur']"
+  },
+  "87251": {
+   "reg": "5312",
+   "why": "clear 2v page=['east-nusa-tenggara__sumba-barat']"
+  },
+  "90551": {
+   "reg": "7309",
+   "why": "clear 4v page=['south-sulawesi__maros', 'south-sulawesi__maros']"
+  },
+  "91124": {
+   "reg": "7372",
+   "why": "clear 3v page=['south-sulawesi__pare-pare', 'south-sulawesi__pare-pare']"
+  },
+  "91816": {
+   "reg": "7318",
+   "why": "clear 2v page=['south-sulawesi__tana-toraja']"
+  },
+  "91953": {
+   "reg": "7322",
+   "why": "clear 4v page=['south-sulawesi__luwu-utara']"
+  },
+  "91955": {
+   "reg": "7322",
+   "why": "clear 4v page=['south-sulawesi__luwu-utara']"
+  },
+  "91961": {
+   "reg": "7322",
+   "why": "clear 4v page=['south-sulawesi__luwu-utara']"
+  },
+  "91963": {
+   "reg": "7322",
+   "why": "clear 4v page=['south-sulawesi__luwu-utara']"
+  },
+  "92253": {
+   "reg": "7305",
+   "why": "clear 2v page=['south-sulawesi__takalar']"
+  },
+  "92651": {
+   "reg": "7307",
+   "why": "clear 2v page=['south-sulawesi__sinjai']"
+  },
+  "92672": {
+   "reg": "7307",
+   "why": "clear 4v page=['south-sulawesi__sinjai']"
+  },
+  "92911": {
+   "reg": "7322",
+   "why": "clear 4v page=['south-sulawesi__luwu-utara']"
+  },
+  "92966": {
+   "reg": "7322",
+   "why": "clear 4v page=['south-sulawesi__luwu-utara']"
+  },
+  "95448": {
+   "reg": "7173",
+   "why": "clear 3v page=['north-sulawesi__tomohon', 'north-sulawesi__tomohon']"
+  },
+  "98251": {
+   "reg": "9105",
+   "why": "clear 2v page=['papua__yapen-waropen']"
+  },
+  "98974": {
+   "reg": "9402",
+   "why": "clear 2v page=['papua__puncak-jaya']"
+  },
+  "98975": {
+   "reg": "9402",
+   "why": "clear 2v page=['papua__puncak-jaya']"
+  },
+  "20587": {
+   "reg": "1218",
+   "why": "split adjudicated (district/block/page) \u2014 see session notes"
+  },
+  "22778": {
+   "reg": "1213",
+   "why": "split adjudicated (district/block/page) \u2014 see session notes"
+  },
+  "22951": {
+   "reg": "1213",
+   "why": "split adjudicated (district/block/page) \u2014 see session notes"
+  },
+  "23782": {
+   "reg": "1175",
+   "why": "split adjudicated (district/block/page) \u2014 see session notes"
+  },
+  "26382": {
+   "reg": "1308",
+   "why": "split adjudicated (district/block/page) \u2014 see session notes"
+  },
+  "27374": {
+   "reg": "1302",
+   "why": "split adjudicated (district/block/page) \u2014 see session notes"
+  },
+  "34699": {
+   "reg": "1811",
+   "why": "split adjudicated (district/block/page) \u2014 see session notes"
+  },
+  "41173": {
+   "reg": "3214",
+   "why": "split adjudicated (district/block/page) \u2014 see session notes"
+  },
+  "41180": {
+   "reg": "3214",
+   "why": "split adjudicated (district/block/page) \u2014 see session notes"
+  },
+  "46157": {
+   "reg": "3206",
+   "why": "split adjudicated (district/block/page) \u2014 see session notes"
+  },
+  "54351": {
+   "reg": "3305",
+   "why": "split adjudicated (district/block/page) \u2014 see session notes"
+  },
+  "56219": {
+   "reg": "3323",
+   "why": "split adjudicated (district/block/page) \u2014 see session notes"
+  },
+  "57182": {
+   "reg": "3313",
+   "why": "split adjudicated (district/block/page) \u2014 see session notes"
+  },
+  "57183": {
+   "reg": "3313",
+   "why": "split adjudicated (district/block/page) \u2014 see session notes"
+  },
+  "57515": {
+   "reg": "3311",
+   "why": "split adjudicated (district/block/page) \u2014 see session notes"
+  },
+  "57517": {
+   "reg": "3311",
+   "why": "split adjudicated (district/block/page) \u2014 see session notes"
+  },
+  "57518": {
+   "reg": "3311",
+   "why": "split adjudicated (district/block/page) \u2014 see session notes"
+  },
+  "57522": {
+   "reg": "3311",
+   "why": "split adjudicated (district/block/page) \u2014 see session notes"
+  },
+  "57523": {
+   "reg": "3311",
+   "why": "split adjudicated (district/block/page) \u2014 see session notes"
+  },
+  "57525": {
+   "reg": "3311",
+   "why": "split adjudicated (district/block/page) \u2014 see session notes"
+  },
+  "57761": {
+   "reg": "3313",
+   "why": "split adjudicated (district/block/page) \u2014 see session notes"
+  },
+  "57773": {
+   "reg": "3313",
+   "why": "split adjudicated (district/block/page) \u2014 see session notes"
+  },
+  "59345": {
+   "reg": "3319",
+   "why": "split adjudicated (district/block/page) \u2014 see session notes"
+  },
+  "59371": {
+   "reg": "3319",
+   "why": "split adjudicated (district/block/page) \u2014 see session notes"
+  },
+  "63394": {
+   "reg": "3520",
+   "why": "split adjudicated (district/block/page) \u2014 see session notes"
+  },
+  "64351": {
+   "reg": "3518",
+   "why": "split adjudicated (district/block/page) \u2014 see session notes"
+  },
+  "67285": {
+   "reg": "3513",
+   "why": "split adjudicated (district/block/page) \u2014 see session notes"
+  },
+  "79171": {
+   "reg": "6101",
+   "why": "split adjudicated (district/block/page) \u2014 see session notes"
+  },
+  "90851": {
+   "reg": "7312",
+   "why": "split adjudicated (district/block/page) \u2014 see session notes"
+  },
+  "91612": {
+   "reg": "7314",
+   "why": "split adjudicated (district/block/page) \u2014 see session notes"
+  },
+  "91954": {
+   "reg": "7322",
+   "why": "split adjudicated (district/block/page) \u2014 see session notes WEAK: no Limbong district; page+block only"
+  },
+  "94522": {
+   "reg": "7204",
+   "why": "split adjudicated (district/block/page) \u2014 see session notes"
+  },
+  "20694": {
+   "reg": "1218",
+   "why": "page+block adjudication \u2014 see session notes"
+  },
+  "27217": {
+   "reg": "1304",
+   "why": "page+block adjudication \u2014 see session notes"
+  },
+  "27581": {
+   "reg": "1303",
+   "why": "page+block adjudication \u2014 see session notes"
+  },
+  "64483": {
+   "reg": "3518",
+   "why": "page+block adjudication \u2014 see session notes"
+  },
+  "20695": {
+   "reg": "1218",
+   "why": "page+block adjudication \u2014 see session notes"
+  },
+  "20696": {
+   "reg": "1218",
+   "why": "page+block adjudication \u2014 see session notes"
+  },
+  "22731": {
+   "reg": "1277",
+   "why": "page+block adjudication \u2014 see session notes"
+  },
+  "22736": {
+   "reg": "1277",
+   "why": "page+block adjudication \u2014 see session notes"
+  },
+  "22882": {
+   "reg": "1214",
+   "why": "page+block adjudication \u2014 see session notes"
+  },
+  "23691": {
+   "reg": "1109",
+   "why": "page+block adjudication \u2014 see session notes"
+  },
+  "23692": {
+   "reg": "1109",
+   "why": "page+block adjudication \u2014 see session notes"
+  },
+  "23694": {
+   "reg": "1109",
+   "why": "page+block adjudication \u2014 see session notes"
+  },
+  "23775": {
+   "reg": "1101",
+   "why": "page+block adjudication \u2014 see session notes"
+  },
+  "26371": {
+   "reg": "1312",
+   "why": "page+block adjudication \u2014 see session notes"
+  },
+  "26372": {
+   "reg": "1312",
+   "why": "page+block adjudication \u2014 see session notes"
+  },
+  "27215": {
+   "reg": "1304",
+   "why": "page+block adjudication \u2014 see session notes"
+  },
+  "27351": {
+   "reg": "1302",
+   "why": "page+block adjudication \u2014 see session notes"
+  },
+  "27352": {
+   "reg": "1302",
+   "why": "page+block adjudication \u2014 see session notes"
+  },
+  "27353": {
+   "reg": "1302",
+   "why": "page+block adjudication \u2014 see session notes"
+  },
+  "27451": {
+   "reg": "1373",
+   "why": "page+block adjudication \u2014 see session notes"
+  },
+  "27584": {
+   "reg": "1303",
+   "why": "page+block adjudication \u2014 see session notes"
+  },
+  "28661": {
+   "reg": "1408",
+   "why": "page+block adjudication \u2014 see session notes"
+  },
+  "31518": {
+   "reg": "1672",
+   "why": "page+block adjudication \u2014 see session notes"
+  },
+  "31523": {
+   "reg": "1672",
+   "why": "page+block adjudication \u2014 see session notes"
+  },
+  "31524": {
+   "reg": "1672",
+   "why": "page+block adjudication \u2014 see session notes"
+  },
+  "31528": {
+   "reg": "1672",
+   "why": "page+block adjudication \u2014 see session notes"
+  },
+  "43311": {
+   "reg": "3202",
+   "why": "page+block adjudication \u2014 see session notes"
+  },
+  "45374": {
+   "reg": "3211",
+   "why": "page+block adjudication \u2014 see session notes"
+  },
+  "46159": {
+   "reg": "3206",
+   "why": "page+block adjudication \u2014 see session notes"
+  },
+  "52191": {
+   "reg": "3328",
+   "why": "page+block adjudication \u2014 see session notes WEAK"
+  },
+  "57167": {
+   "reg": "3311",
+   "why": "page+block adjudication \u2014 see session notes"
+  },
+  "57558": {
+   "reg": "3311",
+   "why": "page+block adjudication \u2014 see session notes"
+  },
+  "70851": {
+   "reg": "6301",
+   "why": "page+block adjudication \u2014 see session notes"
+  },
+  "74714": {
+   "reg": "6208",
+   "why": "page+block adjudication \u2014 see session notes WEAK"
+  },
+  "74715": {
+   "reg": "6208",
+   "why": "page+block adjudication \u2014 see session notes WEAK"
+  },
+  "77151": {
+   "reg": "6571",
+   "why": "page+block adjudication \u2014 see session notes"
+  },
+  "85652": {
+   "reg": "5303",
+   "why": "page+block adjudication \u2014 see session notes"
+  },
+  "87256": {
+   "reg": "5312",
+   "why": "page+block adjudication \u2014 see session notes WEAK"
+  },
+  "92962": {
+   "reg": "7322",
+   "why": "page+block adjudication \u2014 see session notes"
+  },
+  "98951": {
+   "reg": "9402",
+   "why": "page+block adjudication \u2014 see session notes"
+  }
+ },
+ "drops": {
+  "17378": "page typo for 27378 (Solsel page, Bengkulu prefix, no book/GN)",
+  "28875": "page error: Riau code on Nias page, place Moi unknown, no book/GN",
+  "77156": "page error: Kerayan true code 77456 Nunukan (already linked)",
+  "89170": "Timor-Leste place (Passabe)",
+  "89270": "Timor-Leste place (Tilomar)",
+  "89410": "Timor-Leste place (Maliana)",
+  "89450": "Timor-Leste place (Atabae)"
+ },
+ "fixes": {
+  "27161": "1304",
+  "27212": "1304",
+  "27213": "1304",
+  "27214": "1304",
+  "27216": "1304",
+  "27218": "1304",
+  "27219": "1304"
+ }
+}

@@ -32,6 +32,7 @@ beforeEach(function (): void {
     Schema::create('affiliates', function (Blueprint $table): void {
         $table->uuid('id')->primary();
         $table->string('code')->unique();
+        $table->string('handle', 40)->unique();
         $table->string('name');
         $table->string('status')->default(Active::class);
         $table->string('commission_type')->default(CommissionType::Percentage->value);

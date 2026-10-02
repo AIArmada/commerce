@@ -44,6 +44,56 @@ it('pins the verified postal tree of 28 districts and 81 sectors', function (): 
         ->and($byId->get('sg:postal-sector:75')->parentSourceId)->toBe('sg:postal-district:27');
 });
 
+it('matches the full URA-sourced district to sector table', function (): void {
+    // Sectors 74 and 83 are unallocated; every other 01-83 sector appears once.
+    $table = [
+        '01' => ['01', '02', '03', '04', '05', '06'],
+        '02' => ['07', '08'],
+        '03' => ['14', '15', '16'],
+        '04' => ['09', '10'],
+        '05' => ['11', '12', '13'],
+        '06' => ['17'],
+        '07' => ['18', '19'],
+        '08' => ['20', '21'],
+        '09' => ['22', '23'],
+        '10' => ['24', '25', '26', '27'],
+        '11' => ['28', '29', '30'],
+        '12' => ['31', '32', '33'],
+        '13' => ['34', '35', '36', '37'],
+        '14' => ['38', '39', '40', '41'],
+        '15' => ['42', '43', '44', '45'],
+        '16' => ['46', '47', '48'],
+        '17' => ['49', '50', '81'],
+        '18' => ['51', '52'],
+        '19' => ['53', '54', '55', '82'],
+        '20' => ['56', '57'],
+        '21' => ['58', '59'],
+        '22' => ['60', '61', '62', '63', '64'],
+        '23' => ['65', '66', '67', '68'],
+        '24' => ['69', '70', '71'],
+        '25' => ['72', '73'],
+        '26' => ['77', '78'],
+        '27' => ['75', '76'],
+        '28' => ['79', '80'],
+    ];
+
+    $areas = app(SingaporeGeographyProvider::class)->addressAreaSource()->areas()->collect();
+    $byId = $areas->keyBy->sourceId;
+
+    $seen = [];
+
+    foreach ($table as $district => $sectors) {
+        foreach ($sectors as $sector) {
+            expect($byId->get("sg:postal-sector:{$sector}")->parentSourceId)
+                ->toBe("sg:postal-district:{$district}", "sector {$sector}");
+
+            $seen[] = $sector;
+        }
+    }
+
+    expect($seen)->toHaveCount(81);
+});
+
 it('pins the verified planning tree of 5 regions and 55 planning areas', function (): void {
     $areas = app(SingaporeGeographyProvider::class)->addressAreaSource()->areas()->collect();
 

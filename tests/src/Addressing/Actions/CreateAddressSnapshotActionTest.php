@@ -63,8 +63,7 @@ it('snapshots address from Address model', function (): void {
         'city' => 'Kuala Lumpur',
         'postcode' => '50450',
         'country_code' => 'MY',
-        'provider' => 'google',
-        'provider_place_id' => 'ChIJc6C6R_Ei2jERtP6Y3Y6Y3Y4',
+        'google_place_id' => 'ChIJc6C6R_Ei2jERtP6Y3Y6Y3Y4',
     ]);
 
     $snapshot = $this->action->execute($snapshotable, $address, reason: 'order_placed');
@@ -72,8 +71,7 @@ it('snapshots address from Address model', function (): void {
     expect($snapshot->line1)->toBe('123 Main St');
     expect($snapshot->city)->toBe('Kuala Lumpur');
     expect($snapshot->address_id)->toBe($address->id);
-    expect($snapshot->provider)->toBe('google');
-    expect($snapshot->provider_place_id)->toBe('ChIJc6C6R_Ei2jERtP6Y3Y6Y3Y4');
+    expect($snapshot->google_place_id)->toBe('ChIJc6C6R_Ei2jERtP6Y3Y6Y3Y4');
 });
 
 it('snapshots the address label from AddressData and Address', function (): void {
@@ -132,8 +130,7 @@ it('snapshot remains unchanged when original address changes', function (): void
         'city' => 'Original City',
         'postcode' => '12345',
         'country_code' => 'MY',
-        'provider' => 'google',
-        'provider_place_id' => 'ChIJc6C6R_Ei2jERtP6Y3Y6Y3Y4',
+        'google_place_id' => 'ChIJc6C6R_Ei2jERtP6Y3Y6Y3Y4',
     ]);
 
     $snapshot = $this->action->execute($snapshotable, $address, reason: 'order_placed');
@@ -141,14 +138,12 @@ it('snapshot remains unchanged when original address changes', function (): void
     $address->update([
         'line1' => 'Changed Line',
         'city' => 'Changed City',
-        'provider' => 'here',
-        'provider_place_id' => 'new-place-id',
+        'google_place_id' => 'new-place-id',
     ]);
 
     $snapshot->refresh();
 
     expect($snapshot->line1)->toBe('Original Line');
     expect($snapshot->city)->toBe('Original City');
-    expect($snapshot->provider)->toBe('google');
-    expect($snapshot->provider_place_id)->toBe('ChIJc6C6R_Ei2jERtP6Y3Y6Y3Y4');
+    expect($snapshot->google_place_id)->toBe('ChIJc6C6R_Ei2jERtP6Y3Y6Y3Y4');
 });

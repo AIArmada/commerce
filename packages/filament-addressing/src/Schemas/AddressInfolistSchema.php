@@ -36,17 +36,15 @@ class AddressInfolistSchema
                         TextEntry::make('validation_status')->badge(),
                         TextEntry::make('validated_at')->dateTime(),
                     ])->columns(2),
-                Section::make('Provider / Source')
-                    ->schema(self::providerEntries())
-                    ->visible(fn (): bool => (bool) config('filament-addressing.features.show_provider_payload')),
+                Section::make('Maps')
+                    ->schema([
+                        TextEntry::make('google_maps_url'),
+                        TextEntry::make('waze_url'),
+                        TextEntry::make('google_place_id'),
+                        TextEntry::make('google_feature_id'),
+                        TextEntry::make('google_cid'),
+                        TextEntry::make('google_entity_id'),
+                    ])->columns(2),
             ]);
-    }
-
-    private static function providerEntries(): array
-    {
-        return [
-            TextEntry::make('provider'),
-            TextEntry::make('provider_place_id'),
-        ];
     }
 }

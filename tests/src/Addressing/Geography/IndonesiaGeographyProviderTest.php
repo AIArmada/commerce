@@ -7,6 +7,7 @@ use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\State;
 use AIArmada\Addressing\Support\CompositeAddressAreaSource;
 use AIArmada\Addressing\Support\CsvAddressAreaSource;
+use AIArmada\Addressing\Support\CsvPostalCodeSource;
 
 it('uses only the main source when the villages flag is off', function (): void {
     expect(app(IndonesiaGeographyProvider::class)->addressAreaSource())->toBeInstanceOf(CsvAddressAreaSource::class);
@@ -81,4 +82,65 @@ it('links deep areas to their province ancestor', function (): void {
         ->and($relationships['id:district:110101'][1]['parent_source_id'])->toBe('id:province:11')
         ->and($relationships['id:regency:1101'])->toHaveCount(1)
         ->and($relationships['id:regency:1101'][0]['parent_source_id'])->toBe('id:province:11');
+});
+
+it('uses the official Kepmendagri 2025 names for the corrected regencies', function (): void {
+    $byId = app(IndonesiaGeographyProvider::class)->addressAreaSource()->areas()->collect()->keyBy->sourceId;
+
+    // Upstream region-id mangled these with neighbour/province tokens or
+    // truncations; verified against Kepmendagri 300.2.2-2138/2025.
+    expect($byId->get('id:regency:1172')->name)->toBe('Kota Sabang')
+        ->and($byId->get('id:regency:1217')->name)->toBe('Kabupaten Samosir')
+        ->and($byId->get('id:regency:1218')->name)->toBe('Kabupaten Serdang Bedagai')
+        ->and($byId->get('id:regency:1307')->name)->toBe('Kabupaten Lima Puluh Kota')
+        ->and($byId->get('id:regency:1612')->name)->toBe('Kabupaten Penukal Abab Lematang Ilir')
+        ->and($byId->get('id:regency:3276')->name)->toBe('Kota Depok')
+        ->and($byId->get('id:regency:3514')->name)->toBe('Kabupaten Pasuruan')
+        ->and($byId->get('id:regency:6408')->name)->toBe('Kabupaten Kutai Timur')
+        ->and($byId->get('id:regency:6474')->name)->toBe('Kota Bontang')
+        ->and($byId->get('id:regency:7109')->name)->toBe('Kabupaten Kepulauan Siau Tagulandang Biaro')
+        ->and($byId->get('id:regency:7310')->name)->toBe('Kabupaten Pangkajene dan Kepulauan')
+        ->and($byId->get('id:regency:7324')->name)->toBe('Kabupaten Luwu Timur')
+        ->and($byId->get('id:regency:7601')->name)->toBe('Kabupaten Pasangkayu')
+        ->and($byId->get('id:regency:8201')->name)->toBe('Kabupaten Halmahera Barat')
+        ->and($byId->get('id:regency:9401')->name)->toBe('Kabupaten Nabire');
+});
+
+it('links postcodes to the re-verified regencies', function (): void {
+    $dir = __DIR__ . '/../../../../packages/addressing/resources/geography';
+    $source = new CsvPostalCodeSource('ID', $dir . '/indonesia-postal-codes.csv', $dir . '/indonesia-postal-code-areas.csv', 'aiarmada.addressing.indonesia');
+
+    $postcodes = $source->postalCodes()->collect();
+
+    expect($postcodes)->toHaveCount(9361)
+        ->and($postcodes->every(static fn ($row): bool => (bool) preg_match('/^\\d{5}$/', (string) $row->code)))->toBeTrue()
+        ->and($postcodes->every(static fn ($row): bool => $row->isPrimary))->toBeTrue();
+
+    $byCode = $postcodes->keyBy->code;
+
+    // Corrected systematic rotations: Jakarta prefixes, Medan/Binjai,
+    // Bukittinggi, OKU Timur, Wondama, Nabire, Merauke, Tual.
+    expect((string) $byCode->get('10110')->areaSourceId)->toBe('id:regency:3171')
+        ->and((string) $byCode->get('11110')->areaSourceId)->toBe('id:regency:3173')
+        ->and((string) $byCode->get('12110')->areaSourceId)->toBe('id:regency:3174')
+        ->and((string) $byCode->get('13110')->areaSourceId)->toBe('id:regency:3175')
+        ->and((string) $byCode->get('14110')->areaSourceId)->toBe('id:regency:3172')
+        ->and((string) $byCode->get('20241')->areaSourceId)->toBe('id:regency:1271')
+        ->and((string) $byCode->get('20352')->areaSourceId)->toBe('id:regency:1207')
+        ->and((string) $byCode->get('20711')->areaSourceId)->toBe('id:regency:1275')
+        ->and((string) $byCode->get('20762')->areaSourceId)->toBe('id:regency:1205')
+        ->and((string) $byCode->get('26111')->areaSourceId)->toBe('id:regency:1375')
+        ->and((string) $byCode->get('32311')->areaSourceId)->toBe('id:regency:1608')
+        ->and((string) $byCode->get('98362')->areaSourceId)->toBe('id:regency:9207')
+        ->and((string) $byCode->get('98811')->areaSourceId)->toBe('id:regency:9401')
+        ->and((string) $byCode->get('99611')->areaSourceId)->toBe('id:regency:9301')
+        ->and((string) $byCode->get('97611')->areaSourceId)->toBe('id:regency:8172')
+        ->and((string) $byCode->get('60111')->areaSourceId)->toBe('id:regency:3578')
+        ->and((string) $byCode->get('50111')->areaSourceId)->toBe('id:regency:3374')
+        ->and((string) $byCode->get('20111')->areaSourceId)->toBe('id:regency:1271')
+        ->and((string) $byCode->get('90111')->areaSourceId)->toBe('id:regency:7371')
+        ->and((string) $byCode->get('57111')->areaSourceId)->toBe('id:regency:3372')
+        ->and((string) $byCode->get('63111')->areaSourceId)->toBe('id:regency:3577')
+        ->and((string) $byCode->get('75111')->areaSourceId)->toBe('id:regency:6472')
+        ->and((string) $byCode->get('78611')->areaSourceId)->toBe('id:regency:6105');
 });

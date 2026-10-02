@@ -127,9 +127,18 @@ final class VenueResource extends Resource
                             ->state(static fn (Venue $record): ?float => static::address($record)?->latitude),
                         TextEntry::make('longitude')
                             ->state(static fn (Venue $record): ?float => static::address($record)?->longitude),
-                        TextEntry::make('provider_place_id')
-                            ->label('Provider Place ID')
-                            ->state(static fn (Venue $record): ?string => static::address($record)?->provider_place_id),
+                        TextEntry::make('google_place_id')
+                            ->label('Google Place ID')
+                            ->state(static fn (Venue $record): ?string => static::address($record)?->google_place_id),
+                        TextEntry::make('google_feature_id')
+                            ->label('Google Feature ID')
+                            ->state(static fn (Venue $record): ?string => static::address($record)?->google_feature_id),
+                        TextEntry::make('google_cid')
+                            ->label('Google CID')
+                            ->state(static fn (Venue $record): ?string => static::address($record)?->google_cid),
+                        TextEntry::make('google_entity_id')
+                            ->label('Google Entity ID')
+                            ->state(static fn (Venue $record): ?string => static::address($record)?->google_entity_id),
                         TextEntry::make('google_maps_url')
                             ->state(static fn (Venue $record): ?string => static::address($record)?->google_maps_url),
                         TextEntry::make('waze_url')

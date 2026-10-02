@@ -24,6 +24,10 @@ final class EventLocationData extends Data
         public readonly float | null | Optional $longitude,
         public readonly string | null | Optional $google_maps_url,
         public readonly string | null | Optional $waze_url,
+        public readonly string | null | Optional $google_place_id,
+        public readonly string | null | Optional $google_feature_id,
+        public readonly string | null | Optional $google_cid,
+        public readonly string | null | Optional $google_entity_id,
         public readonly string | null | Optional $directions,
         public readonly VenueData | null | Optional $venue,
     ) {}
@@ -45,6 +49,10 @@ final class EventLocationData extends Data
             longitude: $address?->longitude,
             google_maps_url: $address?->google_maps_url,
             waze_url: $address?->waze_url,
+            google_place_id: $address?->google_place_id,
+            google_feature_id: $address?->google_feature_id,
+            google_cid: $address?->google_cid,
+            google_entity_id: $address?->google_entity_id,
             directions: self::directionsFrom($address),
             venue: $location->relationLoaded('venue') ? VenueData::fromVenue($location->venue) : null,
         );

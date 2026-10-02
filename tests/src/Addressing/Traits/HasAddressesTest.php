@@ -36,8 +36,7 @@ it('normalizes free-text address fields before persistence', function (): void {
         'line1' => '  123 Main Street  ',
         'raw_address' => '  123 Main Street, Kuala Lumpur  ',
         'formatted_address' => '  123 Main Street, Kuala Lumpur  ',
-        'provider' => '  google  ',
-        'provider_place_id' => '  place-123  ',
+        'google_place_id' => '  place-123  ',
         'country_code' => ' my ',
     ]);
 
@@ -46,8 +45,7 @@ it('normalizes free-text address fields before persistence', function (): void {
         ->line1->toBe('123 Main Street')
         ->raw_address->toBe('123 Main Street, Kuala Lumpur')
         ->formatted_address->toBe('123 Main Street, Kuala Lumpur')
-        ->provider->toBe('google')
-        ->provider_place_id->toBe('place-123')
+        ->google_place_id->toBe('place-123')
         ->country_code->toBe('MY');
 });
 
