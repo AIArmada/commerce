@@ -31,18 +31,17 @@ it('groups subdivision and locality correctly for every Malaysian state and WP',
         'Perak' => ['district', 'district', true, 'Mukim / Bandar / Pekan', 'Locality'],
         'Perlis' => ['region', 'region', true, 'Mukim', 'Locality'],
         'Pulau Pinang' => ['district', 'district', true, 'Mukim / Bandar', 'Locality'],
-        'Sabah' => ['district', 'district', true, 'Subdistrict', 'Locality'],
-        // Sarawak has no locality rows (all towns are level-4
-        // subdistricts), so the locality gate falls back to the region
-        // and the pair stays ungrouped.
-        'Sarawak' => ['district', 'region', false, 'Subdistrict', 'Locality / Precinct / Kampung'],
+        'Sabah' => ['district', 'district', true, 'Daerah Kecil', 'Locality'],
+        // Sarawak rectification: towns are postal localities and the
+        // gazetted sub-districts are daerah kecil, mirroring Sabah.
+        'Sarawak' => ['district', 'district', true, 'Daerah Kecil', 'Locality'],
         'Selangor' => ['district', 'district', true, 'Mukim / Bandar / Pekan', 'Locality'],
         'Terengganu' => ['district', 'district', true, 'Mukim / Bandar / Pekan', 'Locality'],
         'WP Kuala Lumpur' => ['region', 'region', true, 'Mukim', 'Locality'],
         // Labuan and Putrajaya have no subdivision rows (generic fallback
         // label); consumers render the locality control alone there.
-        'WP Labuan' => ['region', 'region', true, 'Mukim / Subdistrict / Bandar / Pekan', 'Locality'],
-        'WP Putrajaya' => ['region', 'region', true, 'Mukim / Subdistrict / Bandar / Pekan', 'Precinct'],
+        'WP Labuan' => ['region', 'region', true, 'Mukim / Subdistrict / Bandar / Pekan / Daerah Kecil', 'Locality'],
+        'WP Putrajaya' => ['region', 'region', true, 'Mukim / Subdistrict / Bandar / Pekan / Daerah Kecil', 'Precinct'],
     ];
 
     $resolver = app(CountryAddressProfileResolver::class);

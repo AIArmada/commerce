@@ -48,18 +48,28 @@ final readonly class EventRegistrationScope
 
     public function capacityRemaining(): ?int
     {
-        if ($this->session !== null) {
-            $remaining = $this->session->capacityRemaining();
+        $remaining = [];
 
-            if ($remaining !== null) {
-                return $remaining;
+        if ($this->occurrence !== null) {
+            $occurrenceRemaining = $this->occurrence->capacityRemaining();
+
+            if ($occurrenceRemaining !== null) {
+                $remaining[] = $occurrenceRemaining;
             }
         }
 
-        if ($this->occurrence !== null) {
-            return $this->occurrence->capacityRemaining();
+        if ($this->session !== null) {
+            $sessionRemaining = $this->session->capacityRemaining();
+
+            if ($sessionRemaining !== null) {
+                $remaining[] = $sessionRemaining;
+            }
         }
 
-        return null;
+        if ($remaining === []) {
+            return null;
+        }
+
+        return min($remaining);
     }
 }

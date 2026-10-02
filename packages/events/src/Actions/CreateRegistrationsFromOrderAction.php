@@ -121,7 +121,7 @@ final class CreateRegistrationsFromOrderAction
                 return $existing;
             }
 
-            if ($scope->pricingMode === PricingMode::Free) {
+            if ($scope->pricingMode === PricingMode::Free || $this->isMixedScopeFreeTicket($scope, $ticketType)) {
                 return $this->createFreeOrderRegistrations(
                     target: $target,
                     orderItem: $orderItem,
@@ -293,6 +293,19 @@ final class CreateRegistrationsFromOrderAction
         $ticketType->loadMissing('ticketable');
 
         return EventTicketScope::belongsToRegistrationScope($ticketType, $scope);
+    }
+
+    /**
+     * A genuinely free ticket stays on the canonical free path even when
+     * sibling paid tickets make the scope Mixed. Genuineness comes from the
+     * ticket catalog price, never from the order line total: a paid line
+     * discounted to zero keeps paid semantics (flag-gated capacity), while a
+     * zero-price ticket always enforces scope capacity.
+     */
+    private function isMixedScopeFreeTicket(EventRegistrationScope $scope, TicketType $ticketType): bool
+    {
+        return $scope->pricingMode === PricingMode::Mixed
+            && $ticketType->effectivePricingMode() === PricingMode::Free;
     }
 
     private function registrationStatus(array $options): string

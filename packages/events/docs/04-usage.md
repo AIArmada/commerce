@@ -653,7 +653,7 @@ One participant entry produces one registration with one ticket item — matchin
 
 ### Quota validation
 
-Scope capacity is checked via `capacityRemaining()` on the occurrence or session: configured `capacity` minus the summed `total_participants` of registrations in capacity-blocking statuses (`pending`, `confirmed`, `refund_pending`, `checked_in`). Quota is not checked during checkout intent (re-entering checkout for an existing registration). The inventory package is not required; ticket capacity is self-contained.
+Scope capacity is checked via `EventRegistrationScope::capacityRemaining()`: the minimum of the applicable finite occurrence and session remainings, where each remaining is configured `capacity` minus the summed `total_participants` of registrations in capacity-blocking statuses (`pending`, `confirmed`, `refund_pending`, `checked_in`). A `null` capacity means unbounded and is ignored in the minimum. Session registrations carry the parent `event_occurrence_id`, so sibling sessions and direct occurrence bookings all consume the same occurrence aggregate. Capacity-sensitive writes lock event, then occurrence, then session inside the transaction before checking. In a `Mixed` scope, order lines for genuinely free tickets (zero catalog price) always take the canonical free path with scope-capacity enforcement, even when paid-capacity enforcement is off; a paid line discounted to zero keeps paid semantics. Promoting an `interested` registration requires remaining capacity for its full `total_participants`. Quota is not checked during checkout intent (re-entering checkout for an existing registration). The inventory package is not required; ticket capacity is self-contained.
 
 ### Checkout intent resolver
 

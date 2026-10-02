@@ -266,7 +266,7 @@ it('labels an Indonesian kota with its proper term', function (): void {
 it('falls back to the static label without scope and null when unknown', function (): void {
     $resolver = app(CountryAddressProfileResolver::class);
 
-    expect($resolver->levelLabel('MY', 'administrative_district'))->toBe('District / Jajahan / Jajahan Kecil')
+    expect($resolver->levelLabel('MY', 'administrative_district'))->toBe('District / Jajahan / Jajahan Kecil / Daerah Kecil')
         ->and($resolver->levelLabel('MY', 'nope'))->toBeNull()
         ->and($resolver->levelLabel('XX', 'administrative_district'))->toBeNull();
 });
