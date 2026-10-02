@@ -540,10 +540,18 @@ duplicates or non-places.
 
 ## Sarawak audit
 
-Sarawak has no mukim tier; the daerah kecil is the formal subdistrict tier,
-so every row was verified against the Administrative Areas Order 2022
-gazette, the 2018 admin table plus 2021/22 upgrade notices, the SPR
-polling-district gazette, and DOSM townships. Moved 9 rows: Tapah to Siburan,
+Sarawak has no mukim tier. Its below-district `subdistrict` tier is mixed:
+about two dozen gazetted daerah kecil sit alongside state-constituency and
+polling-district names, towns, and district-town placeholders, so no single
+proper term covers the tier and it keeps the generic `Subdistrict` label.
+The gazetted daerah kecil are Padawan, Sematan, Sadong Jaya, Balai Ringin,
+Engkilili, Spaoh, Debak, Maludam, Nanga Budu, Roban, Balingian, Oya, Igan,
+Nanga Merit, Sungai Asap, Bario, Niah-Suai (rowed as Niah and Suai), Mulu,
+Lapok, Long Lama, Long Bedian, Nanga Medamit, Sundar, and Trusan; Bario
+(Miri district) has no row yet. Every row was verified against the
+Administrative Areas Order 2022 gazette, the 2018 admin table plus 2021/22
+upgrade notices, the SPR polling-district gazette, and DOSM townships.
+Moved 9 rows: Tapah to Siburan,
 Moyan and Tambirat to Asajaya, Triso to Pusa, Roban to Kabong, Nanga Medamit
 to Limbang, Belawai to Tanjung Manis, Paloh to Daro, and Niah to Subis.
 Removed 13 rows: stale post-split duplicates (Balingian, Bekenu, Long Lama,

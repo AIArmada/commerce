@@ -78,6 +78,7 @@ use AIArmada\Addressing\Geography\Lebanon\LebanonGeographyProvider;
 use AIArmada\Addressing\Geography\Liechtenstein\LiechtensteinGeographyProvider;
 use AIArmada\Addressing\Geography\Lithuania\LithuaniaGeographyProvider;
 use AIArmada\Addressing\Geography\Madagascar\MadagascarGeographyProvider;
+use AIArmada\Addressing\Geography\Malaysia\MalaysiaGeographyProvider;
 use AIArmada\Addressing\Geography\Mali\MaliGeographyProvider;
 use AIArmada\Addressing\Geography\Martinique\MartiniqueGeographyProvider;
 use AIArmada\Addressing\Geography\Mauritania\MauritaniaGeographyProvider;
@@ -372,6 +373,26 @@ it('labels area types for every country', function (string $provider, array $are
 
     // Madagascar
     [MadagascarGeographyProvider::class, ['province' => 'Faritany', 'region' => 'Faritra', 'district' => 'Distrika'], []],
+
+    // Malaysia
+    [MalaysiaGeographyProvider::class, [
+        'state' => 'State',
+        'wilayah_persekutuan' => 'Wilayah Persekutuan',
+        'division' => 'Division',
+        'district' => 'District',
+        'minor_district' => 'Minor District',
+        'city' => 'City',
+        'municipality' => 'Municipality',
+        'mukim' => 'Mukim',
+        'subdistrict' => 'Subdistrict',
+        'bandar' => 'Bandar',
+        'pekan' => 'Pekan',
+        'locality' => 'Locality',
+        'precinct' => 'Precinct',
+    ], [
+        ['state_code' => '03', 'type_labels' => ['district' => 'Jajahan', 'minor_district' => 'Jajahan Kecil']],
+        ['state_code' => '06', 'type_labels' => ['minor_district' => 'Daerah Kecil']],
+    ]],
 
     // Mali
     [MaliGeographyProvider::class, ['district' => 'District', 'region' => 'Région', 'cercle' => 'Cercle'], []],

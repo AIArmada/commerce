@@ -2,12 +2,17 @@
 
 declare(strict_types=1);
 
+use AIArmada\Addressing\Data\AddressHierarchyDefinition;
+use AIArmada\Addressing\Data\AddressLevelDefinition;
+use AIArmada\Addressing\Geography\Malaysia\MalaysiaGeographyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaRelationship;
 use AIArmada\Addressing\Models\AddressAreaStateLink;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\State;
 use AIArmada\Addressing\Support\CountryAddressProfileResolver;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 beforeEach(function (): void {
@@ -93,6 +98,130 @@ it('narrows the label with the selected parent scope', function (): void {
     expect(app(CountryAddressProfileResolver::class)->levelLabel('MY', 'administrative_subdivision', (string) $this->johor->id, [
         'administrative_district' => (string) $this->batuPahat->id,
     ]))->toBe('Mukim');
+});
+
+describe('request-scoped type lookups', function (): void {
+    beforeEach(function (): void {
+        DB::enableQueryLog();
+        DB::flushQueryLog();
+
+        $this->typeLookupCount = static fn (): int => count(array_filter(
+            DB::getQueryLog(),
+            static fn (array $query): bool => preg_match('/select distinct ["`]?type["`]? from/i', $query['query']) === 1,
+        ));
+    });
+
+    afterEach(function (): void {
+        DB::disableQueryLog();
+        DB::flushQueryLog();
+    });
+
+    it('reuses the type lookup when rendering the same scoped label repeatedly', function (): void {
+        $resolver = app(CountryAddressProfileResolver::class);
+        $stateId = (string) $this->johor->id;
+
+        expect($resolver->levelLabel('MY', 'administrative_subdivision', $stateId))->toBe('Mukim / Bandar');
+        expect($resolver->levelLabel('MY', 'administrative_subdivision', $stateId))->toBe('Mukim / Bandar');
+        expect(($this->typeLookupCount)())->toBe(1);
+    });
+
+    it('keeps adaptive labels when changing parent scope and returning', function (): void {
+        $resolver = app(CountryAddressProfileResolver::class);
+        $stateId = (string) $this->johor->id;
+
+        expect($resolver->levelLabel('MY', 'administrative_subdivision', $stateId))->toBe('Mukim / Bandar');
+        expect($resolver->levelLabel('MY', 'administrative_subdivision', $stateId, [
+            'administrative_district' => (string) $this->batuPahat->id,
+        ]))->toBe('Mukim');
+        expect($resolver->levelLabel('MY', 'administrative_subdivision', $stateId))->toBe('Mukim / Bandar');
+        expect(($this->typeLookupCount)())->toBe(2);
+    });
+
+    it('isolates roles sharing the same parent area', function (): void {
+        $resolver = app(CountryAddressProfileResolver::class);
+        $stateId = (string) $this->johor->id;
+
+        expect($resolver->levelLabel('MY', 'administrative_district', $stateId))->toBe('District');
+        expect($resolver->levelLabel('MY', 'administrative_subdivision', $stateId))->toBe('Mukim / Bandar');
+        expect($resolver->levelLabel('MY', 'administrative_district', $stateId))->toBe('District');
+        expect(($this->typeLookupCount)())->toBe(2);
+    });
+
+    it('caches empty scopes while preserving the fallback label', function (): void {
+        $resolver = app(CountryAddressProfileResolver::class);
+        $stateId = (string) $this->johor->id;
+
+        expect($resolver->levelLabel('MY', 'administrative_division', $stateId))->toBe('Division / Bahagian');
+        expect($resolver->levelLabel('MY', 'administrative_division', $stateId))->toBe('Division / Bahagian');
+        expect(($this->typeLookupCount)())->toBe(1);
+    });
+
+    it('refreshes the type set on a new request even when reusing the resolver', function (): void {
+        $resolver = app(CountryAddressProfileResolver::class);
+        $stateId = (string) $this->johor->id;
+        $originalRequest = request();
+
+        expect($resolver->levelLabel('MY', 'administrative_subdivision', $stateId))->toBe('Mukim / Bandar');
+        AddressArea::query()->where('type', 'bandar')->update(['is_active' => false]);
+        expect($resolver->levelLabel('MY', 'administrative_subdivision', $stateId))->toBe('Mukim / Bandar');
+
+        app()->instance('request', Request::create('/'));
+
+        try {
+            expect($resolver->levelLabel('MY', 'administrative_subdivision', $stateId))->toBe('Mukim');
+            expect(($this->typeLookupCount)())->toBe(2);
+        } finally {
+            app()->instance('request', $originalRequest);
+        }
+    });
+
+    it('queries each scoped label when no request is bound', function (): void {
+        $resolver = app(CountryAddressProfileResolver::class);
+        $stateId = (string) $this->johor->id;
+        $originalRequest = request();
+        app()->offsetUnset('request');
+
+        try {
+            expect($resolver->levelLabel('MY', 'administrative_subdivision', $stateId))->toBe('Mukim / Bandar');
+            expect($resolver->levelLabel('MY', 'administrative_subdivision', $stateId))->toBe('Mukim / Bandar');
+            expect(($this->typeLookupCount)())->toBe(2);
+        } finally {
+            app()->instance('request', $originalRequest);
+        }
+    });
+
+    it('isolates type filters, declared order, levels and hierarchy under one parent', function (): void {
+        $provider = new class extends MalaysiaGeographyProvider
+        {
+            public function addressHierarchies(): array
+            {
+                return [new AddressHierarchyDefinition(
+                    key: 'administrative',
+                    label: 'Administrative',
+                    levels: [
+                        new AddressLevelDefinition(key: 'region', label: 'State', kind: 'state'),
+                        new AddressLevelDefinition(key: 'mixed', label: 'Mixed fallback', kind: 'area', areaTypes: ['mukim', 'bandar'], areaLevels: [3], parentKey: 'region'),
+                        new AddressLevelDefinition(key: 'filtered', label: 'Filtered fallback', kind: 'area', areaTypes: ['mukim'], areaLevels: [3], parentKey: 'region'),
+                        new AddressLevelDefinition(key: 'reversed', label: 'Reversed fallback', kind: 'area', areaTypes: ['bandar', 'mukim'], areaLevels: [3], parentKey: 'region'),
+                        new AddressLevelDefinition(key: 'level', label: 'Level fallback', kind: 'area', areaTypes: ['mukim', 'bandar'], areaLevels: [4], parentKey: 'region'),
+                        new AddressLevelDefinition(key: 'postal', label: 'Postal fallback', kind: 'area', hierarchyType: 'postal', areaTypes: ['mukim', 'bandar'], areaLevels: [3], parentKey: 'region'),
+                    ],
+                )];
+            }
+        };
+        app()->instance($provider::class, $provider);
+        config()->set('addressing.geography.providers', [$provider::class]);
+        $resolver = app(CountryAddressProfileResolver::class);
+        $stateId = (string) $this->johor->id;
+
+        expect($resolver->levelLabel('MY', 'administrative_mixed', $stateId))->toBe('Mukim / Bandar');
+        expect($resolver->levelLabel('MY', 'administrative_filtered', $stateId))->toBe('Mukim');
+        expect($resolver->levelLabel('MY', 'administrative_reversed', $stateId))->toBe('Bandar / Mukim');
+        expect($resolver->levelLabel('MY', 'administrative_level', $stateId))->toBe('Level fallback');
+        expect($resolver->levelLabel('MY', 'administrative_postal', $stateId))->toBe('Postal fallback');
+        expect($resolver->levelLabel('MY', 'administrative_mixed', $stateId))->toBe('Mukim / Bandar');
+        expect(($this->typeLookupCount)())->toBe(5);
+    });
 });
 
 it('labels an Indonesian kota with its proper term', function (): void {
