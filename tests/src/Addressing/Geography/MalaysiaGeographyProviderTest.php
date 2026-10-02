@@ -364,6 +364,22 @@ it('exposes the Pahang, Perak, and Selangor expansion towns', function (): void 
         ->and($roles['my:subdistrict:district:selangor:hulu-langat:balakong'][0]['role'])->toBe('postal_locality');
 });
 
+it('exposes the gazetted Ipoh (U) and Ipoh (S) bandars under Kinta', function (): void {
+    $provider = app(MalaysiaGeographyProvider::class);
+    $areas = $provider->addressAreaSource()->areas()->collect()->keyBy->sourceId;
+
+    $utara = $areas->get('my:subdistrict:district:perak:kinta:ipoh-u');
+    $selatan = $areas->get('my:subdistrict:district:perak:kinta:ipoh-s');
+
+    expect($utara->name)->toBe('Ipoh (U)')
+        ->and($utara->type)->toBe('bandar')
+        ->and($utara->parentSourceId)->toBe('my:district:perak:kinta')
+        ->and($selatan->name)->toBe('Ipoh (S)')
+        ->and($selatan->type)->toBe('bandar')
+        ->and($selatan->parentSourceId)->toBe('my:district:perak:kinta')
+        ->and($areas->has('my:subdistrict:district:perak:kinta:ipoh-n'))->toBeFalse();
+});
+
 it('exposes level-4 Borneo postal localities under the region', function (): void {
     $provider = app(MalaysiaGeographyProvider::class);
     $areas = $provider->addressAreaSource()->areas()->collect()->keyBy->sourceId;

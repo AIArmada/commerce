@@ -443,9 +443,9 @@ kod-mukim, DOSM census divisions, state gazettes, and land-title records.
 Structural fixes: the combined Larut-Matang-dan-Selama district row was split
 into Larut Matang (15 rows) and Selama (3 rows); Sungai Sumun moved from
 Hilir Perak to Bagan Datuk; Trolak moved from Batang Padang to Muallim as
-Pekan Terolak. Ipoh town split into Bandar Ipoh (N) and Bandar Ipoh (S) with
+Pekan Terolak. Ipoh town split into Bandar Ipoh (U) and Bandar Ipoh (S) with
 all 112 town postcodes linking the Kinta district (Muadzam precedent; the
-N/S line runs east-west across the town centre per plan PW 5296). Retyped 17
+U/S line runs east-west across the town centre per plan PW 5296). Retyped 17
 rows to bandar and 12 to pekan (Langkap and Malim Nawar kept as pekan on
 gazette evidence). Renamed to gazetted forms: Kelian Intan, Simpang Empat,
 Terung (Terong/Trong are the same place), Hulu Ijok, Hulu Selama, Jaya Baru,
