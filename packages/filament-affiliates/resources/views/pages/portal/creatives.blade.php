@@ -205,6 +205,7 @@
                             >
                                 <div class="relative aspect-[16/10] overflow-hidden bg-gray-100 dark:bg-gray-900">
                                     <img
+                                        x-show="asset.thumbnail"
                                         x-bind:src="asset.thumbnail"
                                         x-bind:alt="asset.title"
                                         class="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
@@ -302,7 +303,7 @@
                                 </div>
                                 <div class="p-5">
                                     <div class="relative aspect-video overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-900">
-                                        <img x-bind:src="activeAsset.thumbnail" x-bind:alt="activeAsset.title" class="h-full w-full object-cover" />
+                                        <img x-show="activeAsset.thumbnail" x-bind:src="activeAsset.thumbnail" x-bind:alt="activeAsset.title" class="h-full w-full object-cover" />
                                     </div>
                                     <div class="mt-5">
                                         <div class="flex items-center justify-between gap-3">

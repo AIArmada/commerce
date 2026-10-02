@@ -55,6 +55,7 @@ final class MerchantIdentityService implements MerchantIdentity
         return new MerchantAffiliate(
             id: (string) $affiliate->getKey(),
             code: (string) $affiliate->code,
+            handle: $affiliate->handle,
             email: $affiliate->contact_email,
             ownerType: $ownerType,
             ownerId: $ownerId,

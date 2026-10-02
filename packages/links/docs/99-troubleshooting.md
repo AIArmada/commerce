@@ -24,7 +24,7 @@ Slugs are globally unique across owners because the public redirect route has no
 
 ## UTM values missing on the merchant side
 
-Precedence is incoming query, then the destination's own query, then `utm_defaults`. A value already present in the destination URL is never overwritten by defaults.
+Precedence is baked `parameters`, then incoming query, then the destination's own query, then `utm_defaults`. A value already present in the destination URL is never overwritten by defaults. Custom incoming UTM keys must match `utm_` (case-insensitive) followed by ASCII letters, digits, or underscores, with a total key length of at most 100. Values must be non-empty strings of at most 500 characters. Malformed inputs are ignored; see [redirect behavior](04-usage.md#the-redirect).
 
 ## Clicks table growing too fast
 

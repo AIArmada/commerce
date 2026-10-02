@@ -73,7 +73,7 @@ final class AffiliateCreativeResource extends Resource
         /** @var Builder<AffiliateProgramCreative> $query */
         $query = parent::getEloquentQuery();
 
-        $query = $query->general();
+        $query = $query->general()->with('media');
 
         if (! (bool) config('affiliates.owner.enabled', false)) {
             return $query;
@@ -127,14 +127,9 @@ final class AffiliateCreativeResource extends Resource
                 ->schema([
                     SpatieMediaLibraryFileUpload::make('asset')
                         ->collection('creative_asset')
-                        ->maxSize(51200)
+                        ->maxSize((int) ceil((int) config('media-library.max_file_size', 10485760) / 1024))
                         ->label('Upload File')
-                        ->helperText('Upload an image, video, PDF, or ZIP file. Max 50MB.'),
-
-                    TextInput::make('asset_url')
-                        ->label('Asset URL (or leave blank if uploading)')
-                        ->url()
-                        ->maxLength(2048),
+                        ->helperText('Upload an image, video, PDF, or ZIP file.'),
 
                     TextInput::make('width')
                         ->label('Width (px)')
@@ -185,7 +180,8 @@ final class AffiliateCreativeResource extends Resource
                 TextColumn::make('type')
                     ->badge(),
 
-                TextColumn::make('asset_url')
+                TextColumn::make('asset')
+                    ->state(fn (AffiliateProgramCreative $record): ?string => $record->getAssetUrl())
                     ->label('Asset')
                     ->limit(40)
                     ->url(fn (?string $state): ?string => $state, shouldOpenInNewTab: true),

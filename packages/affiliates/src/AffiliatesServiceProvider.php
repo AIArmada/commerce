@@ -76,6 +76,9 @@ use AIArmada\Affiliates\Support\Middleware\TrackAffiliateCookie;
 use AIArmada\Affiliates\Support\Webhooks\WebhookDispatcher;
 use AIArmada\Cart\CartManager;
 use AIArmada\Cart\Conditions\ConditionProviderRegistry;
+use AIArmada\Links\Contracts\LinkGateInterface;
+use AIArmada\Links\Events\LinkClicked;
+use AIArmada\Links\LinksServiceProvider;
 use AIArmada\Orders\Events\CommissionAttributionRequired;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -190,6 +193,11 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
 
         if (config('affiliates.cookies.enabled', true)) {
             $this->registerCookieTrackingMiddleware();
+        }
+
+        if (class_exists(LinksServiceProvider::class)) {
+            $this->app->tag([Support\Links\AffiliateLinkGate::class], LinkGateInterface::class);
+            Event::listen(LinkClicked::class, Listeners\IncrementAffiliateLinkClicks::class);
         }
 
         $this->registerPublicPageSupport();

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\AffiliateNetwork\Actions\CreateOffer;
+use AIArmada\AffiliateNetwork\Actions\SyncOfferCreatives;
 use AIArmada\AffiliateNetwork\Actions\UpdateOffer;
 use AIArmada\AffiliateNetwork\Enums\OfferStatus;
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
@@ -160,7 +161,8 @@ describe('OfferImportService', function (): void {
     test('syncAll keeps good programs when one remote program fails', function (): void {
         Http::fake([
             '*/programs/good-1/catalog' => Http::response([
-                'version' => 'v1',
+                'version' => 'v2',
+                'creatives' => [],
                 'program_id' => 'good-1',
                 'currency' => 'MYR',
                 'cookie_days' => 30,
@@ -193,6 +195,7 @@ describe('OfferImportService', function (): void {
             new CatalogReaderResolver(new RemoteCatalogClient(new PublicHttpUrlGuard(dnsResolver: fn (string $host): array => ['93.184.216.34']))),
             app(CreateOffer::class),
             app(UpdateOffer::class),
+            app(SyncOfferCreatives::class),
         );
 
         $result = $importer->syncAll($site);
@@ -279,7 +282,8 @@ describe('OfferImportService', function (): void {
     test('counts failed subjects without aborting the sync', function (): void {
         Http::fake([
             '*' => Http::response([
-                'version' => 'v1',
+                'version' => 'v2',
+                'creatives' => [],
                 'program_id' => 'mixed-1',
                 'currency' => 'MYR',
                 'cookie_days' => 30,
@@ -316,6 +320,7 @@ describe('OfferImportService', function (): void {
             new CatalogReaderResolver(new RemoteCatalogClient(new PublicHttpUrlGuard(dnsResolver: fn (string $host): array => ['93.184.216.34']))),
             app(CreateOffer::class),
             app(UpdateOffer::class),
+            app(SyncOfferCreatives::class),
         );
 
         $result = $importer->sync($site, 'mixed-1');
@@ -339,7 +344,8 @@ describe('OfferImportService', function (): void {
     test('remote source precedence is retained on imported offers', function (): void {
         Http::fake([
             '*' => Http::response([
-                'version' => 'v1',
+                'version' => 'v2',
+                'creatives' => [],
                 'program_id' => 'remote-precedence',
                 'currency' => 'MYR',
                 'subjects' => [[
@@ -365,6 +371,7 @@ describe('OfferImportService', function (): void {
             new CatalogReaderResolver(new RemoteCatalogClient(new PublicHttpUrlGuard(dnsResolver: fn (string $host): array => ['93.184.216.34']))),
             app(CreateOffer::class),
             app(UpdateOffer::class),
+            app(SyncOfferCreatives::class),
         );
 
         $importer->sync($site, 'remote-precedence');

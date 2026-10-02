@@ -13,6 +13,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
 final class AffiliateApiController extends Controller
@@ -56,7 +57,9 @@ final class AffiliateApiController extends Controller
 
         $validator = Validator::make($request->all(), [
             'url' => ['nullable', 'string', 'max:2048'],
-            'ttl' => ['nullable', 'integer', 'min:1', 'max:31536000'],
+            'link_style' => ['nullable', 'in:short,branded'],
+            'link_label' => ['nullable', 'string', 'max:60'],
+            'expires_at' => ['nullable', 'date'],
             'params' => ['nullable', 'array', 'max:50'],
             'params.*' => ['nullable', 'string', 'max:2048'],
             'subject_type' => ['nullable', 'string', 'max:255'],
@@ -74,14 +77,15 @@ final class AffiliateApiController extends Controller
         $validated = $validator->validated();
 
         $url = (string) ($validated['url'] ?? url('/'));
-        $ttl = isset($validated['ttl']) ? (int) $validated['ttl'] : null;
         $params = $validated['params'] ?? [];
         $subjectMetadata = $validated['subject_metadata'] ?? [];
 
         try {
             $link = $this->createTrackingLink->handle($affiliate, $url, [
                 'params' => $params,
-                'ttl_seconds' => $ttl,
+                'link_style' => $validated['link_style'] ?? config('affiliates.links.default_style', 'short'),
+                'link_label' => $validated['link_label'] ?? null,
+                'expires_at' => $validated['expires_at'] ?? null,
                 'subject_type' => $validated['subject_type'] ?? null,
                 'subject_key' => $validated['subject_key'] ?? null,
                 'subject_id' => $validated['subject_id'] ?? null,
@@ -89,6 +93,8 @@ final class AffiliateApiController extends Controller
                 'subject_title_snapshot' => $validated['subject_title_snapshot'] ?? null,
                 'subject_metadata' => $subjectMetadata,
             ]);
+        } catch (ValidationException $exception) {
+            return response()->json(['message' => $exception->validator->errors()->first()], 422);
         } catch (InvalidArgumentException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         }

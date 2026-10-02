@@ -11,6 +11,7 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\SupportServiceProvider as CommerceSupportServiceProvider;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\Contacting\ContactingServiceProvider;
+use AIArmada\Links\LinksServiceProvider;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -34,6 +35,7 @@ abstract class AffiliatesTestCase extends Orchestra
     {
         $this->loadMigrationsFrom(__DIR__ . '/../../../packages/affiliates/database/migrations');
         $this->loadMigrationsFrom(__DIR__ . '/../../../packages/contacting/database/migrations');
+        $this->loadMigrationsFrom(__DIR__ . '/../../../packages/links/database/migrations');
         $this->loadMigrationsFrom(__DIR__ . '/../../../packages/cart/database/migrations');
         $this->loadMigrationsFrom(__DIR__ . '/../../../packages/orders/database/migrations');
     }
@@ -107,6 +109,7 @@ abstract class AffiliatesTestCase extends Orchestra
             CommerceSupportServiceProvider::class,
             ContactingServiceProvider::class,
             CartServiceProvider::class,
+            LinksServiceProvider::class,
             AffiliatesServiceProvider::class,
         ];
     }

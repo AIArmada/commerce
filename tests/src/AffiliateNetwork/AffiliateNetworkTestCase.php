@@ -18,13 +18,14 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
 use Orchestra\Testbench\TestCase as Orchestra;
 use Spatie\LaravelData\LaravelDataServiceProvider;
+use Spatie\MediaLibrary\MediaLibraryServiceProvider;
 
 /**
  * Slim case for the affiliate-network suite: six providers and five
  * migration paths instead of the monorepo-wide base case. Tables and
  * bindings mirror the base case's network-relevant subset (users table,
- * ambient default owner); media, notifications, and permission tables
- * are intentionally absent — nothing under src/AffiliateNetwork uses them.
+ * ambient default owner); notifications and permission tables are intentionally absent.
+ * Media is registered for offer creative uploads and lifecycle cleanup.
  */
 abstract class AffiliateNetworkTestCase extends Orchestra
 {
@@ -46,6 +47,10 @@ abstract class AffiliateNetworkTestCase extends Orchestra
         // Reset any leaked static unguarded state from a previous test so every
         // test starts at the framework default (guarded). Mirrors the base case.
         Model::reguard();
+
+        if (! Schema::hasTable('media')) {
+            (require base_path('vendor/spatie/laravel-medialibrary/database/migrations/create_media_table.php.stub'))->up();
+        }
 
         Schema::dropIfExists('users');
         Schema::create('users', function (Blueprint $table): void {
@@ -100,6 +105,7 @@ abstract class AffiliateNetworkTestCase extends Orchestra
     {
         return [
             LaravelDataServiceProvider::class,
+            MediaLibraryServiceProvider::class,
             CommerceSupportServiceProvider::class,
             ContactingServiceProvider::class,
             LinksServiceProvider::class,

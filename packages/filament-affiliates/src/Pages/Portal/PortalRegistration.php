@@ -12,6 +12,7 @@ use AIArmada\Affiliates\Services\UplineService;
 use AIArmada\Authz\Models\Permission;
 use AIArmada\Authz\Models\Role;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\PublicHandle;
 use AIArmada\FilamentAffiliates\Concerns\InteractsWithAffiliate;
 use Filament\Actions\Action;
 use Filament\Auth\Http\Responses\Contracts\RegistrationResponse;
@@ -145,6 +146,12 @@ class PortalRegistration extends FilamentRegister
                 $this->getPasswordConfirmationFormComponent(),
                 $this->getAffiliateNameFormComponent(),
                 $this->getPhoneFormComponent(),
+                TextInput::make('handle')
+                    ->label(__('Public Handle'))
+                    ->helperText(__('Choose a public handle, or leave blank to have one assigned.'))
+                    ->rules(['nullable', ...array_slice(PublicHandle::rules(), 1)])
+                    ->visible(config('affiliates.handles.allow_custom', true))
+                    ->dehydrated(config('affiliates.handles.allow_custom', true)),
                 $this->getAffiliateCodeFormComponent(),
                 $this->getReferralCodeFormComponent(),
             ]);
@@ -352,6 +359,7 @@ class PortalRegistration extends FilamentRegister
 
         $affiliateData = [
             'name' => $data['affiliate_name'],
+            'handle' => $data['handle'] ?? null,
             'contact_email' => $data['email'],
             'phone' => $data['phone'] ?? null,
         ];

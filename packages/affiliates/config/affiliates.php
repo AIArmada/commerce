@@ -288,12 +288,14 @@ return [
 |--------------------------------------------------------------------------
 */
 
+    // Public Handles
+    'handles' => [
+        'allow_custom' => true,
+    ],
+
     'links' => [
-        'signing_key' => env('AFFILIATES_LINK_SIGNING_KEY', env('APP_KEY')),
-        'default_ttl_minutes' => env('AFFILIATES_LINK_TTL', 60 * 24 * 7),
+        'default_style' => 'short',
         'parameter' => env('AFFILIATES_LINK_PARAM', 'aff'),
-        // Hosts tracking links may point to. Empty falls back to the app.url
-        // host so signed links cannot be minted for arbitrary domains.
         'allowed_hosts' => array_filter(explode(',', (string) env('AFFILIATES_LINK_ALLOWED_HOSTS', ''))),
     ],
 

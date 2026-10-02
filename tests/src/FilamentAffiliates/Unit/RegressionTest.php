@@ -10,6 +10,7 @@ use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateFraudSignal;
+use AIArmada\Affiliates\Models\AffiliateLink;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliatePayoutEvent;
 use AIArmada\Affiliates\Models\AffiliatePayoutMethod;
@@ -387,7 +388,8 @@ it('rejects off-host and non-http link targets', function (): void {
     $page->targetUrl = $scheme . '://shop.' . $host . '/item';
     $page->generateLink();
 
-    expect($page->generatedLink)->toContain('aff=' . $affiliate->code);
+    expect($page->generatedLink)->toContain('/go/')
+        ->and(AffiliateLink::query()->where('affiliate_id', $affiliate->id)->exists())->toBeTrue();
 });
 
 // Upline widget clamps user-controlled depth.

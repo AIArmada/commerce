@@ -140,8 +140,14 @@ Manage affiliate offers.
 
 ### Relation Managers
 
-The edit page carries two read-only relation tabs:
+The edit page carries three relation tabs:
 
+- **Creatives:** imported and manual materials, with source badges and the
+  source program ID. Imported content is read-only; operators may change
+  active visibility and sort order. Manual rows support file uploads through
+  the official Spatie Media Library field, destination URLs, and templates.
+  Manual asset URLs are derived from media; there is no asset URL input.
+  Only manual rows can be deleted here. Re-sync reconciles imported deletions.
 - **Links:** issued tracking links with clicks, conversions, and revenue,
   plus a reconcile action proving every counted conversion posted to the
   merchant ledger exactly once.
@@ -322,3 +328,9 @@ $panel->resources([
     // ...plus any default resources you still want
 ]);
 ```
+
+
+The offer link ledger displays the handle snapshot alongside the globally unique
+slug for branded links. Link creation remains in the host's application flow;
+pass `link_style` and `link_label` to `OfferLinkService` there. Handles are owned
+by the configured identity source, not this adapter.

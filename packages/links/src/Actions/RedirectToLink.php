@@ -19,12 +19,17 @@ final class RedirectToLink
 {
     use AsAction;
 
+    public function asBrandedController(Request $request, string $prefix, string $slug): RedirectResponse
+    {
+        return $this->asController($request, $slug);
+    }
+
     public function asController(Request $request, string $slug): RedirectResponse
     {
         $slug = mb_trim($slug);
         $link = Link::query()->withoutOwnerScope()->where('slug', $slug)->first();
 
-        if (! $link instanceof Link) {
+        if (! $link instanceof Link || $link->slug_prefix !== $request->route('prefix')) {
             abort(404);
         }
 
@@ -73,13 +78,24 @@ final class RedirectToLink
         $defaults = is_array($link->utm_defaults) ? $link->utm_defaults : [];
 
         foreach (LinkAttributes::UTM_KEYS as $key) {
-            $incoming = $request->query($key);
-
-            if (is_string($incoming) && $incoming !== '') {
-                $query[$key] = $incoming;
-            } elseif (! isset($query[$key]) && isset($defaults[$key]) && is_string($defaults[$key]) && $defaults[$key] !== '') {
+            if (! isset($query[$key]) && isset($defaults[$key]) && is_string($defaults[$key]) && $defaults[$key] !== '') {
                 $query[$key] = $defaults[$key];
             }
+        }
+
+        foreach ($request->query() as $key => $value) {
+            if (
+                ! is_string($key)
+                || mb_strlen($key) > 100
+                || preg_match('/\Autm_[A-Za-z0-9_]+\z/i', $key) !== 1
+                || ! is_string($value)
+                || $value === ''
+                || mb_strlen($value) > 500
+            ) {
+                continue;
+            }
+
+            $query[$key] = $value;
         }
 
         // Ad click IDs pass through so merchants keep their own ad attribution.

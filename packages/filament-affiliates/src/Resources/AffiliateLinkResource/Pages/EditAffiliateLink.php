@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Resources\AffiliateLinkResource\Pages;
 
+use AIArmada\Affiliates\Actions\Affiliates\UpdateTrackingLink;
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Models\AffiliateLink;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentAffiliates\Resources\AffiliateLinkResource;
-use AIArmada\FilamentAffiliates\Resources\AffiliateLinkResource\Pages\Concerns\FillsTrackingUrl;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -19,8 +20,6 @@ use RuntimeException;
 
 final class EditAffiliateLink extends EditRecord
 {
-    use FillsTrackingUrl;
-
     protected static string $resource = AffiliateLinkResource::class;
 
     /**
@@ -48,7 +47,7 @@ final class EditAffiliateLink extends EditRecord
         if ($programId === null || $programId === '') {
             $data['program_id'] = null;
 
-            return $this->fillTrackingUrl($data);
+            return $data;
         }
 
         if (! is_string($programId) && ! is_int($programId)) {
@@ -63,7 +62,14 @@ final class EditAffiliateLink extends EditRecord
             'program_id',
         );
 
-        return $this->fillTrackingUrl($data);
+        return $data;
+    }
+
+    protected function handleRecordUpdate(Model $record, array $data): Model
+    {
+        $link = AffiliateLink::query()->whereKey($record->getKey())->firstOrFail();
+
+        return UpdateTrackingLink::run($link, $data);
     }
 
     protected function getHeaderActions(): array

@@ -13,6 +13,7 @@ final readonly class MerchantAffiliate
     public function __construct(
         public string $id,
         public string $code,
+        public string $handle,
         public ?string $email,
         public ?string $ownerType,
         public string | int | null $ownerId,

@@ -83,7 +83,9 @@
                                 <div class="fia-portal-field">
                                     <label class="fia-portal-label">{{ $creative['name'] }}</label>
                                     <p class="fia-portal-helper">{{ __('Type: :type', ['type' => $creative['type']]) }}</p>
-                                    <p><a href="{{ $creative['asset_url'] }}" target="_blank" rel="noopener">{{ __('View asset') }}</a></p>
+                                    @if ($creative['download_url'])
+                                        <p><a href="{{ $creative['download_url'] }}" target="_blank" rel="noopener">{{ __('View asset') }}</a></p>
+                                    @endif
                                 </div>
                             @endforeach
                         </div>

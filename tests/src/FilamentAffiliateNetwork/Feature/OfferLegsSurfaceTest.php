@@ -8,6 +8,7 @@ use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
 use AIArmada\AffiliateNetwork\Models\NetworkConversionLeg;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource;
+use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\RelationManagers\CreativesRelationManager;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\RelationManagers\LegsRelationManager;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\RelationManagers\LinksRelationManager;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Tables\AffiliateOffersTable;
@@ -60,6 +61,7 @@ describe('offer legs surface', function (): void {
         expect(AffiliateOfferResource::getRelations())->toBe([
             LinksRelationManager::class,
             LegsRelationManager::class,
+            CreativesRelationManager::class,
         ]);
     });
 

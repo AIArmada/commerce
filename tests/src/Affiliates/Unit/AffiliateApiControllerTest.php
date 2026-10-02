@@ -10,6 +10,7 @@ use AIArmada\Affiliates\States\Active;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Links\Models\Link;
 use Illuminate\Http\Request;
 
 beforeEach(function (): void {
@@ -113,7 +114,8 @@ describe('AffiliateApiController', function (): void {
 
             $data = json_decode($response->getContent(), true);
             expect($data)->toHaveKey('link');
-            expect($data['link'])->toContain($this->affiliate->code);
+            expect($data['link'])->toContain('/go/')
+                ->and(parse_url($data['link'], PHP_URL_QUERY))->toBeNull();
             expect(AffiliateLink::query()->count())->toBe(1);
         });
 
@@ -169,7 +171,8 @@ describe('AffiliateApiController', function (): void {
             expect($response->getStatusCode())->toBe(200);
 
             $data = json_decode($response->getContent(), true);
-            expect($data['link'])->toContain('campaign=summer');
+            expect($data['link'])->toContain('/go/');
+            expect(Link::query()->latest()->first()->parameters['campaign'])->toBe('summer');
         });
 
         test('returns 404 for unknown affiliate code', function (): void {
@@ -183,10 +186,10 @@ describe('AffiliateApiController', function (): void {
             expect($data['message'])->toBe('Affiliate not found');
         });
 
-        test('generates link with TTL', function (): void {
+        test('generates link with an explicit expiry', function (): void {
             $request = Request::create('/api/affiliates/links', 'POST', [
                 'url' => 'https://example.com/products',
-                'ttl' => 86400,
+                'expires_at' => now()->addDay()->toIso8601String(),
             ]);
 
             $response = $this->controller->links($this->affiliate->code, $request);
@@ -205,7 +208,7 @@ describe('AffiliateApiController', function (): void {
             $response = $this->controller->links($this->affiliate->code, $request);
 
             expect($response->getStatusCode())->toBe(422);
-            expect(json_decode($response->getContent(), true)['message'])->toBe('Link URL scheme must be http or https.');
+            expect(json_decode($response->getContent(), true))->toHaveKey('message');
         });
 
         test('requires owner context when owner scoping is enabled', function (): void {

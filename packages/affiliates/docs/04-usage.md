@@ -209,7 +209,8 @@ use AIArmada\Affiliates\Actions\Affiliates\CreateTrackingLink;
 
 $link = CreateTrackingLink::run($affiliate, 'https://example.com/products/sku-1001', [
     'params' => ['utm_source' => 'affiliate-campaign'],
-    'ttl_seconds' => 3600,
+    'link_style' => 'branded',
+    'link_label' => 'summer',
     'subject_type' => 'product',
     'subject_key' => 'SKU-1001',
     'subject_instance' => 'web',
@@ -413,3 +414,25 @@ commands are `affiliates:aggregate-daily`, `affiliates:process-maturity`,
 `affiliates:process-ranks`, `affiliates:award-bonuses`, `affiliates:process-payouts`, and
 `affiliates:payout:export`. With `affiliates.owner.enabled` on, each command iterates owner
 contexts automatically.
+
+
+## Public handles and permanent campaign URLs
+
+Affiliates receive a generated public `handle` on creation. Pass `handle` to
+`CreateAffiliate::run()` to choose one, or update the owned affiliate's `handle`
+when `affiliates.handles.allow_custom` is enabled. Values are normalized to
+lowercase and globally unique across affiliate owners in this installation.
+Handles are public branding; attribution continues to use the affiliate ID.
+
+Install `aiarmada/links` to create saved tracking links. `CreateTrackingLink`
+defaults to a permanent `/go/{token}` URL; `link_style => branded` creates
+`/go/{handle}/{label}-{token}`. The handle is saved on the tracked link at issuance.
+Changing the affiliate's handle only affects new links. Arbitrary URL overrides
+and the old signed-link generator are removed; use `expires_at` for deliberate
+row-level expiry. No aliases or historical backfills are supplied.
+
+The redirect forwards the baked `aff_link` row ID to the destination. Cookie
+tracking resolves the affiliate through that saved link, so changing a handle or
+tracking code cannot move attribution. Configure allowed destinations and install
+the affiliate cookie middleware on the destination application. Deactivation,
+inactive affiliates, explicit expiry, and click limits stop redirects.

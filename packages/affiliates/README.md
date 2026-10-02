@@ -117,7 +117,7 @@ Multi-level uplines are supported via `parent_affiliate_id` on affiliates and `p
 Webhook + link utilities
 
 - Optional webhooks for attribution/conversion payloads (`events.dispatch_webhooks` + `webhooks.*` endpoints/headers).
-- Signed referral links via `AffiliateLinkGenerator` using configurable parameter name, TTL, and signing key.
+- Permanent short and branded campaign links through `aiarmada/links`, with public affiliate handles and optional row-level expiry.
 
 ## Configuration
 

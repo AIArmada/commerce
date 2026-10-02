@@ -93,6 +93,7 @@ final class AffiliateLinkResource extends Resource
                 ->schema([
                     Forms\Components\Select::make('affiliate_id')
                         ->relationship('affiliate', 'name', modifyQueryUsing: fn (Builder $query): Builder => OwnerUiScope::apply($query, includeGlobal: false))
+                        ->disabled(fn (string $operation): bool => $operation === 'edit')->dehydrated()
                         ->searchable()
                         ->required(),
 
@@ -106,17 +107,14 @@ final class AffiliateLinkResource extends Resource
                         ->maxLength(2048),
 
                     Forms\Components\TextInput::make('tracking_url')
-                        ->url()
-                        ->nullable()
-                        ->helperText('Leave empty to auto-generate from the destination URL.')
-                        ->maxLength(2048),
-
-                    Forms\Components\TextInput::make('short_url')
-                        ->url()
-                        ->maxLength(2048),
-
-                    Forms\Components\TextInput::make('custom_slug')
-                        ->maxLength(255),
+                        ->disabled()->dehydrated(false)->visible(fn (string $operation): bool => $operation !== 'create'),
+                    Forms\Components\Select::make('link_style')
+                        ->label('Link Style')->options(['short' => 'Short', 'branded' => 'Branded'])
+                        ->default(config('affiliates.links.default_style', 'short'))->required()->visible(fn (string $operation): bool => $operation === 'create')
+                        ->dehydrated(fn (string $operation): bool => $operation === 'create'),
+                    Forms\Components\TextInput::make('link_label')
+                        ->label('Campaign Name')->maxLength(60)->visible(fn (string $operation): bool => $operation === 'create')
+                        ->dehydrated(fn (string $operation): bool => $operation === 'create'),
                 ])
                 ->columns(2),
 

@@ -22,6 +22,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 |-----------|------|-------------|
 | `id` | uuid | Primary key |
 | `code` | string | Unique affiliate code |
+| `handle` | string | Required public handle; normalized lowercase and globally unique |
 | `name` | string | Affiliate name |
 | `status` | `AIArmada\Affiliates\States\AffiliateStatus` | Spatie model state: `draft`, `pending`, `active`, `paused`, `disabled` |
 | `registration_approval_mode` | string | Snapshotted approval mode (auto/open/admin), immutable |

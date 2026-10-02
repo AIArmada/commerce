@@ -87,7 +87,6 @@ it('scopes program tiers and creatives by current owner', function (): void {
         'program_id' => $programA->getKey(),
         'type' => 'banner',
         'name' => 'Creative A',
-        'asset_url' => 'https://example.com/a.jpg',
         'destination_url' => 'https://example.com/a',
         'tracking_code' => 'TRACK-A',
     ]);
@@ -107,7 +106,6 @@ it('scopes program tiers and creatives by current owner', function (): void {
         'program_id' => $programB->getKey(),
         'type' => 'banner',
         'name' => 'Creative B',
-        'asset_url' => 'https://example.com/b.jpg',
         'destination_url' => 'https://example.com/b',
         'tracking_code' => 'TRACK-B',
     ]);

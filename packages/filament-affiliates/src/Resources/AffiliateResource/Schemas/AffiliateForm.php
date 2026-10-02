@@ -12,6 +12,7 @@ use AIArmada\Affiliates\States\Draft;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\CommerceSupport\Support\PublicHandle;
 use BackedEnum;
 use Closure;
 use Filament\Forms\Components\Hidden;
@@ -54,6 +55,14 @@ final class AffiliateForm
                                     $fail('The code has already been taken.');
                                 }
                             }),
+
+                        TextInput::make('handle')
+                            ->label('Public Handle')
+                            ->placeholder('Assigned automatically if left empty')
+                            ->rules(['nullable', ...array_slice(PublicHandle::rules(), 1)])
+                            ->required(fn (string $operation): bool => $operation === 'edit')
+                            ->disabled(! config('affiliates.handles.allow_custom', true))
+                            ->dehydrated(config('affiliates.handles.allow_custom', true)),
 
                         TextInput::make('name')
                             ->label('Name')

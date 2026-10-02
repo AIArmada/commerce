@@ -8,10 +8,10 @@ use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
 use AIArmada\AffiliateNetwork\Services\OfferLinkService;
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Links\Actions\UpdateLink;
 use AIArmada\Links\Events\LinkBlocked;
 use AIArmada\Links\Models\LinkClick;
 use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\URL;
 
 describe('affiliate network redirect', function (): void {
     beforeEach(function (): void {
@@ -34,7 +34,46 @@ describe('affiliate network redirect', function (): void {
         ]);
     });
 
-    test('tracking url uses the signed links route with the slug', function (): void {
+    test('service links stay clean and record attributed clicks beyond the signature TTL', function (): void {
+        config(['links.routing.signature_ttl_minutes' => 60 * 24 * 30]);
+        $service = app(OfferLinkService::class);
+        $link = $service->createLink($this->offer, (string) $this->affiliate->getKey(), ['sub_id' => 'bio']);
+        $url = $service->generateTrackingUrl($link);
+
+        expect($url)->toBe(route('links.redirect', ['slug' => $link->link->slug]))
+            ->and(parse_url($url, PHP_URL_QUERY))->toBeNull()
+            ->and($link->link->expires_at)->toBeNull();
+
+        $this->get($url)->assertStatus(302);
+        $this->travel(365)->days();
+        expect($service->generateTrackingUrl($link->fresh()))->toBe($url);
+        $response = $this->get($url);
+        $response->assertStatus(302);
+        expect($response->headers->get('Location'))->toContain('anl=' . $link->link->slug)
+            ->toContain('sub1=bio')
+            ->and($link->fresh()->clicks)->toBe(2)
+            ->and(LinkClick::query()->forSubject($link)->count())->toBe(2);
+    });
+
+    test('unsigned service links still enforce row controls', function (string $control): void {
+        $service = app(OfferLinkService::class);
+        $link = $service->createLink($this->offer, (string) $this->affiliate->getKey());
+        $url = $service->generateTrackingUrl($link);
+        $attributes = match ($control) {
+            'deactivation' => ['deactivated_at' => now()],
+            'expiry' => ['expires_at' => now()->subMinute()],
+            'click limit' => ['max_clicks' => 1],
+        };
+        UpdateLink::run($link->link, $attributes);
+        if ($control === 'click limit') {
+            $this->get($url)->assertStatus(302);
+        }
+
+        $this->get($url)->assertGone();
+        expect(LinkClick::query()->forSubject($link)->count())->toBe($control === 'click limit' ? 1 : 0);
+    })->with(['deactivation', 'expiry', 'click limit']);
+
+    test('tracking url uses the public links route with the slug', function (): void {
         config(['affiliate-network.links.parameter' => 'anl']);
 
         $service = app(OfferLinkService::class);
@@ -42,31 +81,16 @@ describe('affiliate network redirect', function (): void {
         $link = AffiliateOfferLink::factory()
             ->forOffer($this->offer)
             ->forAffiliateId((string) $this->affiliate->getKey())
-            ->withSlug('signed-slug')
+            ->withSlug('public-slug')
             ->withTarget('https://merchant.example/offers/spring')
             ->create();
 
         $trackingUrl = $service->generateTrackingUrl($link);
 
-        expect($trackingUrl)->toContain('/go/signed-slug');
-        expect($trackingUrl)->toContain('signature=');
-        expect($trackingUrl)->toContain('expires=');
+        expect($trackingUrl)->toBe(route('links.redirect', ['slug' => 'public-slug']));
     });
 
-    test('redirect route rejects unsigned requests', function (): void {
-        $link = AffiliateOfferLink::factory()
-            ->forOffer($this->offer)
-            ->forAffiliateId((string) $this->affiliate->getKey())
-            ->withSlug('unsigned-slug')
-            ->create();
-
-        $response = $this->get(route('links.redirect', ['slug' => $link->link->slug]));
-
-        $response->assertForbidden();
-        expect(LinkClick::query()->count())->toBe(0);
-    });
-
-    test('valid signed redirect records a click and preserves attribution', function (): void {
+    test('public redirect records a click and preserves attribution', function (): void {
         $link = AffiliateOfferLink::factory()
             ->forOffer($this->offer)
             ->forAffiliateId((string) $this->affiliate->getKey())
@@ -83,7 +107,7 @@ describe('affiliate network redirect', function (): void {
             ->and($link->fresh()->clicks)->toBe(1);
     });
 
-    test('valid signed redirect stores a raw click event with request context', function (): void {
+    test('public redirect stores a raw click event with request context', function (): void {
         $link = AffiliateOfferLink::factory()
             ->forOffer($this->offer)
             ->forAffiliateId((string) $this->affiliate->getKey())
@@ -225,27 +249,6 @@ describe('affiliate network redirect', function (): void {
         $response = $this->get(app(OfferLinkService::class)->generateTrackingUrl($link));
 
         $response->assertGone();
-        expect($link->fresh()->clicks)->toBe(0)
-            ->and(LinkClick::query()->count())->toBe(0);
-    });
-
-    test('expired signed URL and tampered query are rejected', function (): void {
-        $link = AffiliateOfferLink::factory()
-            ->forOffer($this->offer)
-            ->forAffiliateId((string) $this->affiliate->getKey())
-            ->withSlug('signed-expiry-slug')
-            ->create();
-
-        $expiredUrl = URL::temporarySignedRoute(
-            'links.redirect',
-            now()->subMinute(),
-            ['slug' => $link->link->slug],
-        );
-
-        $this->get($expiredUrl)->assertForbidden();
-
-        $validUrl = app(OfferLinkService::class)->generateTrackingUrl($link);
-        $this->get($validUrl . '&tampered=1')->assertForbidden();
         expect($link->fresh()->clicks)->toBe(0)
             ->and(LinkClick::query()->count())->toBe(0);
     });

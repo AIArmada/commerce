@@ -46,7 +46,7 @@ describe('OfferLinkService', function (): void {
             expect($link->is_active)->toBeTrue();
             expect($link->link)->toBeInstanceOf(Link::class);
             expect($link->link->destination_url)->toBe('https://example.com/landing');
-            expect($link->link->require_signature)->toBeTrue();
+            expect($link->link->require_signature)->toBeFalse();
             expect($link->link->subject_id)->toBe((string) $link->getKey());
             expect($link->link->parameters['anl'])->toBe($link->link->slug);
         });
@@ -165,7 +165,7 @@ describe('OfferLinkService', function (): void {
     });
 
     describe('generateTrackingUrl', function (): void {
-        test('generates signed tracking URL', function (): void {
+        test('generates a clean public tracking URL', function (): void {
             $link = AffiliateOfferLink::factory()
                 ->forOffer($this->offer)
                 ->forAffiliateId((string) $this->affiliate->getKey())
@@ -174,9 +174,7 @@ describe('OfferLinkService', function (): void {
 
             $url = $this->service->generateTrackingUrl($link);
 
-            expect($url)->toContain('/go/trackslug');
-            expect($url)->toContain('signature=');
-            expect($url)->toContain('expires=');
+            expect($url)->toBe(route('links.redirect', ['slug' => 'trackslug']));
         });
     });
 
@@ -372,4 +370,21 @@ describe('OfferLinkService', function (): void {
             expect($stats['conversion_rate'])->toBe(80.0);
         });
     });
+});
+
+test('network branded links snapshot the affiliate handle and preserve redirect attribution after rename', function (): void {
+    $site = AffiliateSite::factory()->verified()->create();
+    $offer = AffiliateOffer::factory()->published()->forSite($site)->create(['requires_approval' => false, 'name' => 'Summer']);
+    $affiliate = createTestAffiliate(['handle' => 'saifreviews']);
+    $service = app(OfferLinkService::class);
+    $offerLink = $service->createLink($offer, $affiliate->id, ['link_style' => 'branded', 'link_label' => 'summer']);
+    $issued = $offerLink->link->cloakedUrl();
+    expect($issued)->toContain('/go/saifreviews/summer-');
+    $affiliate->update(['handle' => 'saifnew']);
+    expect($offerLink->fresh()->link->cloakedUrl())->toBe($issued);
+    $this->get($issued)->assertRedirect();
+    expect($offerLink->refresh()->clicks)->toBe(1)
+        ->and($service->resolveLink($offerLink->link->slug)->affiliate_id)->toBe($affiliate->id);
+    $new = $service->createLink($offer, $affiliate->id, ['link_style' => 'branded']);
+    expect($new->link->cloakedUrl())->toContain('/go/saifnew/');
 });

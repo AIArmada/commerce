@@ -18,10 +18,10 @@ use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\CompletedPayout;
 use AIArmada\Affiliates\States\PendingConversion;
-use AIArmada\Affiliates\Support\Links\AffiliateLinkGenerator;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalConversions;
+use AIArmada\FilamentAffiliates\Pages\Portal\PortalCreatives;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalDashboard;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalLinks;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalPayouts;
@@ -29,10 +29,15 @@ use AIArmada\FilamentAffiliates\Pages\Portal\PortalProfile;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalPrograms;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalSupport;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Spatie\MediaLibrary\MediaLibraryServiceProvider;
 
 beforeEach(function (): void {
     config(['affiliates.owner.enabled' => false]);
+    app()->register(MediaLibraryServiceProvider::class);
+    Storage::fake('public');
 
     AffiliateProgramCreative::query()->delete();
     AffiliateProgramMembership::query()->delete();
@@ -405,23 +410,16 @@ it('PortalLinks generates links when affiliate exists', function (): void {
 
     $this->actingAs($user);
 
-    $this->app->instance(AffiliateLinkGenerator::class, new class
-    {
-        public function generate(string $affiliateCode, string $url): string
-        {
-            return $url . '?aff=' . $affiliateCode;
-        }
-    });
-
     $page = new PortalLinks;
     $page->mount();
 
-    expect($page->getDefaultLink())->toContain($affiliate->code);
+    expect($page->getDefaultLink())->toBeNull();
 
     $page->targetUrl = mb_rtrim((string) config('app.url'), '/') . '/test';
     $page->generateLink();
 
-    expect($page->generatedLink)->toBe($page->targetUrl . '?aff=' . $affiliate->code);
+    expect($page->generatedLink)->toContain('/go/')
+        ->and($affiliate->links()->count())->toBe(1);
 
     $reflection = new ReflectionClass($page);
     $method = $reflection->getMethod('getHeaderActions');
@@ -430,7 +428,7 @@ it('PortalLinks generates links when affiliate exists', function (): void {
     expect($actions)->toBeArray()->and(count($actions))->toBe(1);
 });
 
-it('PortalLinks falls back when link generator rejects the default URL', function (): void {
+it('PortalLinks displays no default link until one has been created', function (): void {
     $user = User::create([
         'name' => 'Fallback User',
         'email' => 'fallback-user@example.com',
@@ -449,19 +447,11 @@ it('PortalLinks falls back when link generator rejects the default URL', functio
 
     $this->actingAs($user);
 
-    $this->app->instance(AffiliateLinkGenerator::class, new class
-    {
-        public function generate(string $affiliateCode, string $url): string
-        {
-            throw new InvalidArgumentException('Disallowed URL');
-        }
-    });
-
     $page = new PortalLinks;
 
     $fallback = $page->getDefaultLink();
 
-    expect($fallback)->toContain('?');
+    expect($fallback)->toBeNull();
 });
 
 it('PortalProfile updates affiliate profile and default payout method', function (): void {
@@ -547,14 +537,14 @@ it('PortalPrograms returns joined programs and creative assets for the current a
         'approved_at' => now(),
     ]);
 
-    AffiliateProgramCreative::create([
+    $creative = AffiliateProgramCreative::create([
         'program_id' => $program->getKey(),
         'type' => 'banner',
         'name' => 'Hero Banner',
-        'asset_url' => 'https://cdn.example.com/banner.jpg',
         'destination_url' => 'https://example.com/offer',
         'tracking_code' => 'trk-hero-banner',
     ]);
+    $media = $creative->addMedia(UploadedFile::fake()->image('hero.png'))->toMediaCollection('creative_asset');
 
     $this->actingAs($user);
 
@@ -567,7 +557,18 @@ it('PortalPrograms returns joined programs and creative assets for the current a
         ->and($viewData['programs'][0]['name'])->toBe('Starter Program')
         ->and($viewData['programs'][0]['is_joined'])->toBeTrue()
         ->and($viewData['programs'][0]['creative_count'])->toBe(1)
-        ->and($viewData['programs'][0]['creatives'][0]['name'])->toBe('Hero Banner');
+        ->and($viewData['programs'][0]['creatives'][0]['name'])->toBe('Hero Banner')
+        ->and($viewData['programs'][0]['creatives'][0]['download_url'])->toBe($media->getFullUrl());
+
+    $assets = (new PortalCreatives)->getViewData()['assets'];
+    expect($assets)->toHaveCount(1)
+        ->and($assets[0]['download_url'])->toBe($media->getFullUrl())
+        ->and($assets[0]['thumbnail'])->toBe($media->getUrl())
+        ->and($assets[0]['format'])->toBe('PNG');
+
+    AffiliateProgramMembership::query()->where('affiliate_id', $affiliate->getKey())
+        ->where('program_id', $program->getKey())->firstOrFail()->update(['status' => MembershipStatus::Pending]);
+    expect((new PortalCreatives)->getViewData()['assets'])->toBeEmpty();
 });
 
 it('PortalPrograms can join available programs and expose accessible creative assets', function (): void {
@@ -602,7 +603,6 @@ it('PortalPrograms can join available programs and expose accessible creative as
         'program_id' => $program->getKey(),
         'type' => 'banner',
         'name' => 'Join Banner',
-        'asset_url' => 'https://cdn.example.com/join-banner.jpg',
         'destination_url' => 'https://example.com/join-offer',
         'tracking_code' => 'trk-join-banner',
     ]);
@@ -735,4 +735,31 @@ it('PortalSupport can create tickets, reply to them, and track compliance docume
         ->and($viewData['tickets'][0]['messages'])->toHaveCount(2)
         ->and($viewData['taxDocuments'])->toHaveCount(1)
         ->and($viewData['taxDocuments'][0]['document_type'])->toBe('1099');
+});
+
+it('creative portal handles documents and text links without image previews', function (): void {
+    $user = User::create(['name' => 'Creative Portal', 'email' => 'creative-portal@example.com', 'password' => 'secret']);
+    $affiliate = new Affiliate([
+        'code' => 'CREATIVE-PORTAL', 'name' => 'Creative Portal Affiliate', 'status' => Active::class,
+        'commission_type' => 'percentage', 'commission_rate' => 500, 'currency' => 'USD',
+    ]);
+    $affiliate->forceFill(['owner_type' => $user->getMorphClass(), 'owner_id' => $user->getKey()])->save();
+    $document = AffiliateProgramCreative::create([
+        'name' => 'Guide', 'type' => 'document', 'tracking_code' => 'GUIDE',
+    ]);
+    $media = $document->addMedia(UploadedFile::fake()->createWithContent('guide.pdf', "%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\n%%EOF"))
+        ->toMediaCollection('creative_asset');
+    $link = AffiliateProgramCreative::create([
+        'name' => 'Text Link', 'type' => 'text_link', 'tracking_code' => 'TEXT',
+        'destination_url' => 'https://example.com/offer',
+    ]);
+    $this->actingAs($user);
+
+    $assets = (new PortalCreatives)->getViewData()['assets']->keyBy('id');
+    expect($assets[$document->getKey()]['download_url'])->toBe($media->getFullUrl())
+        ->and($assets[$document->getKey()]['format'])->toBe('PDF')
+        ->and($assets[$document->getKey()]['thumbnail'])->toBeNull()
+        ->and($assets[$link->getKey()]['download_url'])->toBeNull()
+        ->and($assets[$link->getKey()]['thumbnail'])->toBeNull()
+        ->and($assets[$link->getKey()]['affiliate_url'])->toBe($link->getTrackingUrl($affiliate));
 });

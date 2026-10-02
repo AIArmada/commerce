@@ -376,9 +376,9 @@ Read-only snapshot that `aiarmada/affiliate-network` pulls (shared DB) or fetche
 ## Links
 
 ```php
+'handles' => ['allow_custom' => true],
 'links' => [
-    'signing_key' => env('AFFILIATES_LINK_SIGNING_KEY', env('APP_KEY')),
-    'default_ttl_minutes' => env('AFFILIATES_LINK_TTL', 10080),
+    'default_style' => 'short',
     'parameter' => env('AFFILIATES_LINK_PARAM', 'aff'),
     'allowed_hosts' => array_filter(explode(',', (string) env('AFFILIATES_LINK_ALLOWED_HOSTS', ''))),
 ],
@@ -386,10 +386,13 @@ Read-only snapshot that `aiarmada/affiliate-network` pulls (shared DB) or fetche
 
 | Key | Description |
 |-----|-------------|
-| `signing_key` | Signing key used for generated affiliate links |
-| `default_ttl_minutes` | Default lifetime for generated tracking links |
-| `parameter` | Query-string parameter used when building fallback links |
-| `allowed_hosts` | Hostname allowlist enforced by the link generator; empty falls back to the `app.url` host |
+| `parameter` | Query parameter for direct affiliate referral entry |
+| `allowed_hosts` | Hostname allowlist for saved campaign links; empty allows the `app.url` host and its subdomains |
+
+`handles.allow_custom` enables chosen handles at registration and profile update.
+When false, the domain rejects custom handle writes and assigns a handle on creation.
+`links.default_style` is `short` or `branded`, and each link can override it using
+`link_style`. Saved tracking links require the optional `aiarmada/links` package.
 
 ## API
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferCreative;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
+use Illuminate\Support\Facades\Schema;
 
 describe('AffiliateOfferCreative Model', function (): void {
     beforeEach(function (): void {
@@ -103,4 +104,11 @@ describe('AffiliateOfferCreative Model', function (): void {
             expect($creative->metadata)->toBe(['tags' => ['sale', 'promo']]);
         });
     });
+});
+
+test('network creative files have no generic URL column or mass assignment path', function (): void {
+    $creative = new AffiliateOfferCreative;
+    expect(Schema::hasColumn($creative->getTable(), 'url'))->toBeFalse()
+        ->and($creative->getFillable())->not->toContain('url')
+        ->and(Schema::hasColumn($creative->getTable(), 'source_asset_url'))->toBeTrue();
 });

@@ -136,3 +136,16 @@ public function panel(Panel $panel): Panel
 - [Configuration](03-configuration.md)
 - [Widgets](05-widgets.md)
 - [Portal](06-portal.md)
+
+## Creative files
+
+General marketing materials in `AffiliateCreativeResource` and program creatives in the program's relation manager use the official Filament Spatie Media Library upload field. Each creative stores one file in `creative_asset`; uploading a replacement removes the previous file. The upload limit follows `media-library.max_file_size`.
+
+Asset links in admin tables, the creative portal, and joined program details come from the attached media. Image previews use the original image; videos, documents, and creatives without files have no image preview. Text links may use a destination URL without a file.
+
+> **warning**: Breaking change: creative asset URL inputs and external URL fallbacks have been removed. Upload the creative file through the Media Library field. No existing asset URLs are imported or backfilled.
+
+
+Affiliate forms and tables expose the public handle. Link creation offers Short
+and Branded styles and a campaign name; the issued tracking URL is read-only on
+edit. Core validation enforces handle policy and uniqueness beyond the UI.

@@ -6,6 +6,8 @@ namespace AIArmada\Affiliates\Support\Middleware;
 
 use AIArmada\Affiliates\Actions\Affiliates\TouchAffiliateAttribution;
 use AIArmada\Affiliates\Actions\Affiliates\TrackAffiliateVisit;
+use AIArmada\Affiliates\Models\AffiliateLink;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -37,11 +39,30 @@ final class TrackAffiliateCookie
 
         $cookieName = config('affiliates.cookies.name', 'affiliate_session');
         $cookieValue = $request->cookie($cookieName);
-        $affiliateCode = $this->resolveAffiliateCode($request);
+        $linkId = $request->query('aff_link');
+        $link = is_string($linkId) ? AffiliateLink::query()->withoutGlobalScope('affiliate_owner')
+            ->with(['affiliate' => fn ($query) => $query->withoutOwnerScope()])
+            ->whereKey($linkId)->whereNull('deactivated_at')->first() : null;
+        $affiliateCode = $linkId !== null ? $link?->affiliate->code : $this->resolveAffiliateCode($request);
         $context = $this->buildContext($request);
 
         if ($affiliateCode) {
-            $attribution = $this->trackAffiliateVisit->handle($affiliateCode, $context, $cookieValue);
+            if ($link !== null) {
+                $context = array_merge($context, [
+                    'affiliate_link_id' => $link->id,
+                    'subject_type' => $link->subject_type,
+                    'subject_key' => $link->subject_key,
+                    'subject_id' => $link->subject_id,
+                    'subject_instance' => $link->subject_instance,
+                    'subject_title_snapshot' => $link->subject_title_snapshot,
+                    'metadata' => array_merge($link->subject_metadata ?? [], $context['metadata']),
+                    'origin' => $link->origin,
+                ]);
+                $owner = OwnerContext::fromTypeAndId($link->affiliate->owner_type, $link->affiliate->owner_id);
+                $attribution = OwnerContext::withOwner($owner, fn () => $this->trackAffiliateVisit->handle($affiliateCode, $context, $cookieValue));
+            } else {
+                $attribution = $this->trackAffiliateVisit->handle($affiliateCode, $context, $cookieValue);
+            }
             $cookieValue = $attribution?->cookieValue;
         } elseif ($cookieValue) {
             $this->touchAffiliateAttribution->handle($cookieValue, $context);

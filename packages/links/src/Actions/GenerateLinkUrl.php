@@ -15,10 +15,10 @@ final class GenerateLinkUrl
 
     public function handle(Link $link): string
     {
-        $name = (string) config('links.routing.name', 'links.redirect');
+        $name = $link->routeName();
 
         if (! $link->require_signature) {
-            return route($name, ['slug' => $link->slug]);
+            return route($name, $link->routeParameters());
         }
 
         $ttl = (int) config('links.routing.signature_ttl_minutes', 60 * 24 * 30);
@@ -26,7 +26,7 @@ final class GenerateLinkUrl
         return URL::temporarySignedRoute(
             $name,
             CarbonImmutable::now()->addMinutes(max(1, $ttl)),
-            ['slug' => $link->slug],
+            $link->routeParameters(),
         );
     }
 }

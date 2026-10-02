@@ -17,6 +17,11 @@ if (is_string($domain) && $domain !== '') {
 }
 
 Route::group($attributes, function (): void {
+    Route::get('/{prefix}/{slug}', [RedirectToLink::class, 'asBrandedController'])
+        ->where('prefix', '[a-z0-9]+(?:[-_][a-z0-9]+)*')
+        ->where('slug', '[A-Za-z0-9_-]+')
+        ->name(config('links.routing.name', 'links.redirect') . '.branded');
+
     Route::get('/{slug}', [RedirectToLink::class, 'asController'])
         ->where('slug', '[A-Za-z0-9_-]+')
         ->name(config('links.routing.name', 'links.redirect'));

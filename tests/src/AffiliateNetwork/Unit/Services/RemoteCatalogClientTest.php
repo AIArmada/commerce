@@ -27,7 +27,8 @@ describe('RemoteCatalogClient', function (): void {
     test('parses catalog snapshot payload', function (): void {
         Http::fake([
             '*' => Http::response([
-                'version' => 'v1',
+                'version' => 'v2',
+                'creatives' => [],
                 'program_id' => 'prog-1',
                 'currency' => 'MYR',
                 'cookie_days' => 30,
@@ -101,8 +102,9 @@ describe('RemoteCatalogClient', function (): void {
 
     test('encodes program ids placed into the request path', function (): void {
         Http::fake(['*' => Http::response([
-            'version' => 'v1',
-            'program_id' => 'prog-1',
+            'version' => 'v2',
+            'creatives' => [],
+            'program_id' => 'a/b?c=d',
             'subjects' => [],
         ])]);
 
@@ -110,4 +112,15 @@ describe('RemoteCatalogClient', function (): void {
 
         Http::assertSent(fn ($request): bool => str_contains($request->url(), 'programs/a%2Fb%3Fc%3Dd/catalog'));
     });
+});
+
+test('remote catalogs require version two and a complete creative list', function (): void {
+    foreach ([
+        ['version' => 'v1', 'program_id' => 'prog-1', 'subjects' => [], 'creatives' => []],
+        ['version' => 'v2', 'program_id' => 'prog-1', 'subjects' => []],
+        ['version' => 'v2', 'program_id' => 'prog-1', 'subjects' => [], 'creatives' => null],
+    ] as $payload) {
+        Http::fake(['*' => Http::response($payload)]);
+        expect(fn () => $this->client->snapshot($this->site, 'prog-1'))->toThrow(OfferNotFoundException::class);
+    }
 });

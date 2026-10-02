@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Pages\Portal;
 
+use AIArmada\Affiliates\Actions\Affiliates\CreateTrackingLink;
 use AIArmada\FilamentAffiliates\Concerns\PortalPage;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
@@ -19,7 +21,9 @@ class PortalLinks extends PortalPage
 
     public ?string $generatedLink = null;
 
-    public ?string $generatedShortLink = null;
+    public string $linkStyle = 'short';
+
+    public string $linkLabel = '';
 
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedLink;
 
@@ -39,6 +43,7 @@ class PortalLinks extends PortalPage
     public function mount(): void
     {
         $this->targetUrl = $this->resolvePublicUrl();
+        $this->linkStyle = (string) config('affiliates.links.default_style', 'short');
     }
 
     public function getViewData(): array
@@ -50,7 +55,7 @@ class PortalLinks extends PortalPage
             'hasAffiliate' => $this->hasAffiliate(),
             'affiliateCode' => $affiliate?->code,
             'defaultLink' => $this->getDefaultLink(),
-            'shortLink' => $this->getShortLink(),
+            'affiliateHandle' => $affiliate?->handle,
         ];
     }
 
@@ -63,21 +68,8 @@ class PortalLinks extends PortalPage
             return null;
         }
 
-        $param = config('affiliates.links.parameter', 'aff');
-
-        return $this->resolvePublicUrl() . '?' . $param . '=' . $affiliate->code;
-    }
-
-    #[Computed]
-    public function getShortLink(): ?string
-    {
-        $affiliate = $this->getAffiliate();
-
-        if (! $affiliate) {
-            return null;
-        }
-
-        return mb_rtrim((string) config('app.url'), '/') . '/r/' . $affiliate->code;
+        return $affiliate->links()->where('destination_url', $this->resolvePublicUrl())
+            ->whereNull('deactivated_at')->latest()->value('tracking_url');
     }
 
     public function generateLink(): void
@@ -120,16 +112,11 @@ class PortalLinks extends PortalPage
             return;
         }
 
-        $param = (string) config('affiliates.links.parameter', 'aff');
-        $separator = str_contains($targetUrl, '?') ? '&' : '?';
-
-        $this->generatedLink = $targetUrl . $separator . rawurlencode($param) . '=' . rawurlencode($affiliate->code);
-
-        $path = mb_ltrim((string) parse_url($targetUrl, PHP_URL_PATH), '/');
-
-        $this->generatedShortLink = mb_rtrim((string) config('app.url'), '/')
-            . ($path !== '' ? '/' . $path : '')
-            . '/r/' . rawurlencode($affiliate->code);
+        $link = CreateTrackingLink::run($affiliate, $targetUrl, [
+            'link_style' => $this->linkStyle,
+            'link_label' => $this->linkLabel,
+        ]);
+        $this->generatedLink = $link->tracking_url;
 
         Notification::make()
             ->title(__('Link generated successfully'))
@@ -143,6 +130,8 @@ class PortalLinks extends PortalPage
             Action::make('generateLink')
                 ->label(__('Generate Link'))
                 ->form([
+                    Select::make('link_style')->label('Link Style')->options(['short' => 'Short', 'branded' => 'Branded'])->default(config('affiliates.links.default_style', 'short'))->required(),
+                    TextInput::make('link_label')->label('Campaign Name')->maxLength(60),
                     TextInput::make('url')
                         ->label(__('Target URL'))
                         ->url()
@@ -151,6 +140,8 @@ class PortalLinks extends PortalPage
                         ->placeholder('https://example.com/product'),
                 ])
                 ->action(function (array $data): void {
+                    $this->linkStyle = $data['link_style'];
+                    $this->linkLabel = $data['link_label'] ?? '';
                     $this->targetUrl = $data['url'];
                     $this->generateLink();
                 }),

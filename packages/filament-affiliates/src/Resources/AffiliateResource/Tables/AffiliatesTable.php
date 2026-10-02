@@ -31,6 +31,8 @@ final class AffiliatesTable
     {
         return $table
             ->columns([
+                TextColumn::make('handle')->label('Public Handle')->searchable()->copyable(),
+
                 TextColumn::make('code')
                     ->label('Code')
                     ->icon(Heroicon::OutlinedLink)

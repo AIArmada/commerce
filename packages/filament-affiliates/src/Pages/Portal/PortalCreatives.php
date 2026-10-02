@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Pages\Portal;
 
+use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramCreative;
@@ -57,6 +58,7 @@ class PortalCreatives extends PortalPage
 
         $generalCreatives = AffiliateProgramCreative::query()
             ->general()
+            ->with('media')
             ->orderByDesc('created_at')
             ->limit(200)
             ->get();
@@ -94,7 +96,7 @@ class PortalCreatives extends PortalPage
         $programs = $affiliate->programs()
             ->withPivot('status')
             ->get()
-            ->filter(fn (AffiliateProgram $program): bool => $program->getAttribute('pivot')->status === 'approved');
+            ->filter(fn (AffiliateProgram $program): bool => $program->getAttribute('pivot')->status === MembershipStatus::Approved);
 
         if ($programs->isEmpty()) {
             return new Collection;
@@ -104,6 +106,7 @@ class PortalCreatives extends PortalPage
 
         return AffiliateProgramCreative::query()
             ->whereIn('program_id', $programsById->keys()->all())
+            ->with('media')
             ->orderByDesc('created_at')
             ->limit(200)
             ->get()
@@ -133,6 +136,7 @@ class PortalCreatives extends PortalPage
     private function mapAsset(AffiliateProgramCreative $creative, Affiliate $affiliate): array
     {
         $metadata = $creative->metadata ?? [];
+        $media = $creative->getFirstMedia('creative_asset');
         $campaign = $creative->program?->name ?? $metadata['campaign'] ?? 'General';
         $defaultCategory = match ($creative->type) {
             'banner' => 'Banners',
@@ -148,15 +152,15 @@ class PortalCreatives extends PortalPage
             'description' => $creative->description ?? '',
             'type' => $creative->type,
             'program' => $creative->program?->name ?? 'General',
-            'format' => $metadata['format'] ?? mb_strtoupper(pathinfo((string) $creative->asset_url, PATHINFO_EXTENSION) ?: $creative->type),
+            'format' => $metadata['format'] ?? mb_strtoupper(pathinfo($media?->file_name ?? '', PATHINFO_EXTENSION) ?: $creative->type),
             'category' => $metadata['category'] ?? $defaultCategory,
             'campaign' => $campaign,
             'platforms' => $metadata['platforms'] ?? [],
             'dimensions' => $creative->getDimensions() ?? '—',
             'status' => $metadata['status'] ?? 'Approved',
             'status_color' => $metadata['status_color'] ?? 'success',
-            'thumbnail' => $creative->getFirstMediaUrl('creative_asset', 'thumb') ?: $creative->asset_url,
-            'download_url' => $creative->asset_url,
+            'thumbnail' => $media !== null && str_starts_with($media->mime_type ?? '', 'image/') ? $media->getUrl() : null,
+            'download_url' => $creative->getAssetUrl(),
             'affiliate_url' => $creative->getTrackingUrl($affiliate),
             'caption' => $metadata['caption'] ?? $creative->description ?? '',
             'downloads' => $metadata['downloads'] ?? 0,

@@ -10,6 +10,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateCommissionPromotion;
 use AIArmada\Affiliates\Models\AffiliateCommissionRule;
 use AIArmada\Affiliates\Models\AffiliateProgram;
+use AIArmada\Affiliates\Models\AffiliateProgramCreative;
 use AIArmada\Affiliates\Models\AffiliateVolumeTier;
 use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
 use AIArmada\Affiliates\Support\Catalog\PromotableRegistry;
@@ -60,7 +61,7 @@ final class ProgramCatalogService
         $resolved = $subjects->map(fn (array $s): array => $this->resolveSubject($program, $probe, $s, $defaultType));
 
         return [
-            'version' => 'v1',
+            'version' => 'v2',
             'program_id' => (string) $program->getKey(),
             'currency' => $program->getAttribute('currency') ?? config('affiliates.currency.default', 'MYR'),
             'cookie_days' => $program->cookie_lifetime_days,
@@ -69,6 +70,19 @@ final class ProgramCatalogService
                 'default_rate_bp' => (int) $program->default_commission_rate_basis_points,
             ],
             'subjects' => $resolved->values()->all(),
+            'creatives' => $program->creatives()->with('media')->orderBy('id')->get()
+                ->map(fn (AffiliateProgramCreative $creative): array => [
+                    'id' => (string) $creative->getKey(),
+                    'type' => $creative->type,
+                    'name' => $creative->name,
+                    'description' => $creative->description,
+                    'asset_url' => $creative->getAssetUrl(),
+                    'destination_url' => $creative->destination_url,
+                    'width' => $creative->width,
+                    'height' => $creative->height,
+                    'tracking_code' => $creative->tracking_code,
+                    'metadata' => $creative->metadata,
+                ])->all(),
             'variable_extras' => [
                 'volume_tiers' => $this->volumeTiers($program),
                 'promotions' => $this->activePromotions($program),

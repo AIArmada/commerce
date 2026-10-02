@@ -19,10 +19,10 @@ See `ProgramCatalogService::snapshot()` for the implementation.
 ## Endpoints
 
 - `GET /api/affiliates/programs` — active + public programs only.
-- `GET /api/affiliates/programs/{id}/catalog` — `v1` DTO: base rate,
+- `GET /api/affiliates/programs/{id}/catalog` — `v2` DTO: base rate,
   per-subject `effective` rate (deterministic product/category/program rules
   folded in), plus `variable_extras` (volume tiers, promotions) listed
-  separately and never folded into the flat rate.
+  separately and never folded into the flat rate, and program creatives.
 
 > **warning**
 > The catalog routes live inside the existing API auth group (bearer token
@@ -70,3 +70,24 @@ app(PromotableRegistry::class)->register(new ProductPromotables);
 > **warning**
 > Snapshot uses `getApplicableRules()` + base math only. It never calls
 > `CommissionRuleEngine::calculate()`, which would increment promotion usage.
+
+## Creative snapshot contract
+
+Catalog version `v2` requires a `creatives` list, including `[]` when the
+program has no creatives. Each entry contains `id`, `type`, `name`,
+`description`, `asset_url`, `destination_url`, `width`, `height`,
+`tracking_code`, and `metadata`. Optional values are explicitly null.
+Assets use absolute public Media Library URLs; text links may have no file.
+Programless creatives are excluded. Media is eager-loaded, and snapshots
+never contain affiliate-personalized embed HTML.
+
+Both local and HTTP catalog reads require an active, public program and
+respect its owner boundary. The network mirrors each program creative
+onto every imported subject offer. Merchant asset bytes remain on the
+merchant's public disk; replacement/deletion takes effect on the next sync.
+
+> **warning**
+> Breaking contract: network readers require `v2` and the creative list.
+> Upgrade producer and consumer together. There is no `v1` fallback,
+> compatibility layer, or data backfill. Schema changes live in the original
+> package migrations.

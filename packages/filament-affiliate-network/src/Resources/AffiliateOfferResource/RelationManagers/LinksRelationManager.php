@@ -44,6 +44,8 @@ final class LinksRelationManager extends RelationManager
                     ->copyable()
                     ->toggleable(),
 
+                TextColumn::make('link.slug_prefix')->label('Handle at Creation')->toggleable(),
+
                 TextColumn::make('link.slug')
                     ->label('Slug')
                     ->searchable()

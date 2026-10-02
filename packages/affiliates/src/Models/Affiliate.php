@@ -14,6 +14,7 @@ use AIArmada\Affiliates\States\Pending;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\PublicHandle;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Contacting\Concerns\HasContactMethods;
@@ -32,6 +33,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use LogicException;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\ModelStates\HasStates;
@@ -39,6 +43,7 @@ use Spatie\ModelStates\HasStates;
 /**
  * @property string $id
  * @property string $code
+ * @property string $handle
  * @property string $name
  * @property string|null $description
  * @property AffiliateStatus $status
@@ -109,6 +114,7 @@ class Affiliate extends Model implements Auditable
 
     protected $fillable = [
         'code',
+        'handle',
         'name',
         'description',
         'status',
@@ -136,6 +142,7 @@ class Affiliate extends Model implements Auditable
     {
         return [
             'code',
+            'handle',
             'name',
             'description',
             'status',
@@ -392,6 +399,28 @@ class Affiliate extends Model implements Auditable
 
     protected static function booted(): void
     {
+        self::saving(function (self $affiliate): void {
+            if ($affiliate->exists && ! $affiliate->isDirty('handle')) {
+                return;
+            }
+
+            $provided = $affiliate->getAttribute('handle');
+            if (! $affiliate->exists && ($provided === null || $provided === '')) {
+                $affiliate->handle = PublicHandle::generate($affiliate->name);
+            } else {
+                Validator::make(['handle' => $provided], ['handle' => ['required', 'string']])->validate();
+                if (! config('affiliates.handles.allow_custom', true)) {
+                    throw ValidationException::withMessages(['handle' => 'Custom handles are disabled.']);
+                }
+                $affiliate->handle = PublicHandle::normalize($provided);
+            }
+
+            Validator::make(['handle' => $affiliate->handle], ['handle' => [
+                ...PublicHandle::rules(),
+                Rule::unique($affiliate->getTable(), 'handle')->ignore($affiliate->getKey()),
+            ]])->validate();
+        });
+
         self::creating(function (self $affiliate): void {
             if (! config('affiliates.owner.enabled', false)) {
                 return;
@@ -448,7 +477,11 @@ class Affiliate extends Model implements Auditable
             $affiliate->conversions()->delete();
             $affiliate->fraudSignals()->delete();
             $affiliate->dailyStats()->delete();
-            $affiliate->links()->delete();
+            $affiliate->links()->chunkById(100, function ($links): void {
+                foreach ($links as $link) {
+                    $link->delete();
+                }
+            });
             $affiliate->payoutMethods()->delete();
             $affiliate->payoutHolds()->delete();
             $affiliate->payouts()->chunkById(100, function ($payouts): void {

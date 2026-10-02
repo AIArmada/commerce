@@ -23,6 +23,7 @@ use RuntimeException;
  * @property string|null $subject_id
  * @property string $name
  * @property string $slug
+ * @property string|null $slug_prefix
  * @property string $destination_url
  * @property array<string, string|null>|null $utm_defaults
  * @property array<string, string|null>|null $parameters
@@ -49,6 +50,7 @@ final class Link extends Model
     protected $fillable = [
         'name',
         'slug',
+        'slug_prefix',
         'destination_url',
         'utm_defaults',
         'parameters',
@@ -122,7 +124,20 @@ final class Link extends Model
 
     public function cloakedUrl(): string
     {
-        return route((string) config('links.routing.name', 'links.redirect'), ['slug' => $this->slug]);
+        return route($this->routeName(), $this->routeParameters());
+    }
+
+    public function routeName(): string
+    {
+        return (string) config('links.routing.name', 'links.redirect') . ($this->slug_prefix !== null ? '.branded' : '');
+    }
+
+    /** @return array<string, string> */
+    public function routeParameters(): array
+    {
+        return $this->slug_prefix === null
+            ? ['slug' => $this->slug]
+            : ['prefix' => $this->slug_prefix, 'slug' => $this->slug];
     }
 
     protected static function booted(): void

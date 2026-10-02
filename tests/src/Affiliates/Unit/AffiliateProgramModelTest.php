@@ -143,7 +143,6 @@ describe('AffiliateProgram Model', function (): void {
             'program_id' => $program->id,
             'name' => 'Banner Ad',
             'type' => 'banner',
-            'asset_url' => 'https://example.com/banner.jpg',
             'destination_url' => 'https://example.com',
             'tracking_code' => 'ABC123',
         ]);

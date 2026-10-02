@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Links\Support;
 
+use AIArmada\CommerceSupport\Support\PublicHandle;
 use AIArmada\Links\Models\Link;
 use AIArmada\Links\Rules\DestinationUrlRule;
 use Closure;
@@ -47,6 +48,7 @@ final class LinkAttributes
         return [
             'name' => ['required', 'string', 'max:255'],
             'slug' => static::slugRules(),
+            'slug_prefix' => ['nullable', ...array_slice(PublicHandle::rules(), 1)],
             'destination_url' => ['required', 'string', 'max:2000', new DestinationUrlRule($requireHttps, $allowedHosts)],
             'utm_defaults' => ['nullable', 'array', static::utmDefaultsRule()],
             'utm_defaults.*' => ['nullable', 'string', 'max:255'],

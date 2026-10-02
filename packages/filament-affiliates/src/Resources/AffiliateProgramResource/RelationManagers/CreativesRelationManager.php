@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource\RelationManagers;
 
+use AIArmada\Affiliates\Models\AffiliateProgramCreative;
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
@@ -19,6 +20,7 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 
 final class CreativesRelationManager extends RelationManager
@@ -51,14 +53,9 @@ final class CreativesRelationManager extends RelationManager
 
             SpatieMediaLibraryFileUpload::make('asset')
                 ->collection('creative_asset')
-                ->maxSize(51200)
+                ->maxSize((int) ceil((int) config('media-library.max_file_size', 10485760) / 1024))
                 ->label('Upload File')
-                ->helperText('Upload an image, video, PDF, or ZIP file. Max 50MB.'),
-
-            TextInput::make('asset_url')
-                ->label('Asset URL (or leave blank if uploading)')
-                ->url()
-                ->maxLength(2048),
+                ->helperText('Upload an image, video, PDF, or ZIP file.'),
 
             TextInput::make('destination_url')
                 ->url()
@@ -88,6 +85,7 @@ final class CreativesRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with('media'))
             ->recordTitleAttribute('name')
             ->columns([
                 TextColumn::make('name')
@@ -96,7 +94,8 @@ final class CreativesRelationManager extends RelationManager
                 TextColumn::make('type')
                     ->badge(),
 
-                TextColumn::make('asset_url')
+                TextColumn::make('asset')
+                    ->state(fn (AffiliateProgramCreative $record): ?string => $record->getAssetUrl())
                     ->label('Asset')
                     ->url(fn (?string $state): ?string => $state, shouldOpenInNewTab: true)
                     ->limit(40),

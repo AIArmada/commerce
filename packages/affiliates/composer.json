@@ -11,9 +11,11 @@
     "aiarmada/contacting": "self.version",
     "aiarmada/commerce-support": "self.version",
     "php": "^8.5",
+    "spatie/laravel-medialibrary": "^11.23.8",
     "spatie/laravel-settings": "^3.9.0"
   },
   "suggest": {
+    "aiarmada/links": "Creates permanent short and branded affiliate campaign links.",
     "aiarmada/affiliate-network": "Binds the network seam adapters (identity, ledger, programs, local catalog).",
     "aiarmada/cart": "Enables cart level attribution helpers and conversion tracking",
     "aiarmada/orders": "Optional integration",

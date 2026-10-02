@@ -21,7 +21,7 @@ final class MerchantCatalogService implements MerchantCatalog
     {
         $program = AffiliateProgram::query()->whereKey($programId)->first();
 
-        if (! $program instanceof AffiliateProgram) {
+        if (! $program instanceof AffiliateProgram || ! $program->isActive() || ! $program->isOpen()) {
             return null;
         }
 

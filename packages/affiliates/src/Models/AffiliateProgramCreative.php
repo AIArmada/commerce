@@ -24,7 +24,6 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property string|null $description
  * @property int|null $width
  * @property int|null $height
- * @property string $asset_url
  * @property string|null $destination_url
  * @property string $tracking_code
  * @property array<string, mixed>|null $metadata
@@ -47,7 +46,6 @@ class AffiliateProgramCreative extends Model implements Auditable, HasMedia
         'description',
         'width',
         'height',
-        'asset_url',
         'destination_url',
         'tracking_code',
         'metadata',
@@ -114,6 +112,11 @@ class AffiliateProgramCreative extends Model implements Auditable, HasMedia
             ]);
     }
 
+    public function getAssetUrl(): ?string
+    {
+        return $this->getFirstMedia('creative_asset')?->getFullUrl();
+    }
+
     public function getTrackingUrl(Affiliate $affiliate): ?string
     {
         if ($this->destination_url === null) {
@@ -134,18 +137,24 @@ class AffiliateProgramCreative extends Model implements Auditable, HasMedia
             return null;
         }
 
+        $assetUrl = $this->getAssetUrl();
+
+        if ($this->type === 'banner' && $assetUrl === null) {
+            return null;
+        }
+
         return match ($this->type) {
             'banner' => sprintf(
                 '<a href="%s" target="_blank"><img src="%s" width="%d" height="%d" alt="%s" /></a>',
-                $trackingUrl,
-                $this->asset_url,
+                htmlspecialchars($trackingUrl),
+                htmlspecialchars($assetUrl ?? ''),
                 $this->width ?? 0,
                 $this->height ?? 0,
                 htmlspecialchars($this->name)
             ),
             'text_link' => sprintf(
                 '<a href="%s" target="_blank">%s</a>',
-                $trackingUrl,
+                htmlspecialchars($trackingUrl),
                 htmlspecialchars($this->name)
             ),
             default => $trackingUrl,

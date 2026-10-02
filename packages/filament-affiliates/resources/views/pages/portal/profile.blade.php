@@ -14,6 +14,16 @@
             </x-slot>
 
             <form wire:submit.prevent="saveProfile" class="fia-portal-field-grid">
+                @if (config('affiliates.handles.allow_custom', true))
+                    <div class="fia-portal-field">
+                        <label for="handle" class="fia-portal-label">{{ __('Public Handle') }}</label>
+                        <x-filament::input.wrapper>
+                            <x-filament::input id="handle" wire:model.defer="handle" />
+                        </x-filament::input.wrapper>
+                        @error('handle') <p class="text-danger-600">{{ $message }}</p> @enderror
+                        <p class="fia-portal-helper">{{ __('Changing your handle leaves published links working.') }}</p>
+                    </div>
+                @endif
                 <div class="fia-portal-field">
                     <label for="name" class="fia-portal-label">{{ __('Affiliate Name') }}</label>
 

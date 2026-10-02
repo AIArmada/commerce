@@ -21,7 +21,7 @@ All settings live in `config/links.php`.
 |---|---|---|
 | `defaults.slug_length` | `7` | Length of auto-generated slugs. |
 | `defaults.slug_alphabet` | unambiguous Base58-ish | Characters used for auto-generated slugs. |
-| `defaults.redirect_status` | `302` | Redirect status for `/go/{slug}`. Prefer `302`: `301` responses are cached by browsers and undercount clicks. |
+| `defaults.redirect_status` | `302` | Redirect status for `/go/{slug}` and `/go/{prefix}/{slug}`. Prefer `302`: `301` responses are cached by browsers and undercount clicks. |
 
 ## Owner
 

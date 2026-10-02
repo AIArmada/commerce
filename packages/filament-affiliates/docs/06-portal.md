@@ -11,7 +11,7 @@ The plugin includes a self-service Filament panel for affiliates.
 The portal allows affiliates to:
 
 - view a dashboard with earnings, click, conversion summaries, downline affiliates, and linked vouchers,
-- generate affiliate links (full and short),
+- create saved short or branded tracking links,
 - review conversion history with source labels (link, voucher, downline),
 - review payout history,
 - register a new affiliate account when portal registration is enabled, optionally with a referral code to link as a downline.
@@ -47,7 +47,7 @@ Pages are feature-gated through `filament-affiliates.portal.features`:
 
 If `filament-affiliates.portal.registration_enabled` is `true`, the panel uses `PortalRegistration` as the registration page.
 
-Custom link targets on `PortalLinks` are validated server-side: only `http(s)` URLs on the application host (including subdomains) are accepted, and the affiliate code is URL-encoded into the generated link.
+Custom link targets on `PortalLinks` are validated server-side: only `http(s)` URLs on the application host (including subdomains) are accepted, and links are persisted through the core creation action. Choose Short or Branded and optionally enter a campaign name.
 
 Portal money is per currency. The dashboard shows available earnings as a per-currency breakdown sourced from the affiliate's balances, conversions list each row in its own `commission_currency`, and paid totals group by payout currency — one payout exists per currency, never a blended total.
 
@@ -108,3 +108,10 @@ The registration form includes an optional **Referral Code** field. If a valid a
 
 - The new affiliate is linked as a direct downline (`parent_affiliate_id`) of the referring affiliate.
 - The `UplineService::addToUpline()` call builds the closure table entry (when `affiliates.upline.enabled` is `true`).
+
+
+Public handles are available during registration and profile editing when
+`affiliates.handles.allow_custom` is enabled. Leaving registration blank assigns
+one automatically. Published branded URLs retain the handle used at creation.
+The link page shows a saved default link only when one exists; rendering the page
+does not provision links. Saved-link creation requires `aiarmada/links`.

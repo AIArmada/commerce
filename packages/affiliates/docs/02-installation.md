@@ -31,7 +31,7 @@ php artisan vendor:publish --tag=affiliates-migrations
 php artisan migrate
 ```
 
-The package includes 27 migrations creating 28 tables with proper indexes.
+The package includes 27 migrations creating 28 tables with proper indexes. Creative assets require Spatie Media Library v11, installed with the package. `commerce-support` loads its media-table migration when no published copy exists. The support provider sets UUID morph keys by default, matching creative IDs. Configure storage through `config/media-library.php`; creatives use the `public` disk.
 
 ## Optional: Filament Admin Panel
 
@@ -125,3 +125,15 @@ php artisan affiliates:aggregate-daily --help
 ```
 
 If you see the command help output, the installation is complete.
+
+
+Saved short and branded tracking links use the optional `aiarmada/links` package:
+
+```bash
+composer require aiarmada/links
+```
+
+The existing affiliates migration defines the required, unique public `handle`;
+the existing links migration defines the optional `slug_prefix` for branded paths.
+Schema changes are made in those owning migrations. No upgrade migration or
+backfill is supplied.

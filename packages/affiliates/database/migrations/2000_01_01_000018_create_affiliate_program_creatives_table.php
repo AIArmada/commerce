@@ -20,7 +20,6 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->integer('width')->nullable();
             $table->integer('height')->nullable();
-            $table->string('asset_url', 2048)->nullable();
             $table->string('destination_url')->nullable();
             $table->string('tracking_code');
 

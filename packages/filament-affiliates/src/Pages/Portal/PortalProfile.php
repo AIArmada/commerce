@@ -23,6 +23,8 @@ class PortalProfile extends PortalPage
 
     public string $name = '';
 
+    public string $handle = '';
+
     public string $contactEmail = '';
 
     public string $websiteUrl = '';
@@ -42,6 +44,7 @@ class PortalProfile extends PortalPage
         }
 
         $this->name = (string) ($affiliate->name ?? '');
+        $this->handle = $affiliate->handle;
         $this->contactEmail = (string) ($affiliate->contact_email ?? '');
         $this->websiteUrl = (string) ($affiliate->website_url ?? '');
 
@@ -107,6 +110,7 @@ class PortalProfile extends PortalPage
 
         DB::transaction(function () use ($affiliate, $validated): void {
             $affiliate->update([
+                'handle' => config('affiliates.handles.allow_custom', true) ? $this->handle : $affiliate->handle,
                 'name' => $validated['name'],
                 'contact_email' => $validated['contact_email'] !== '' ? $validated['contact_email'] : null,
                 'website_url' => $validated['website_url'] !== '' ? $validated['website_url'] : null,

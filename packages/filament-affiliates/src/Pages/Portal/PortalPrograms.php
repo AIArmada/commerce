@@ -154,6 +154,10 @@ class PortalPrograms extends PortalPage
                 $isJoined = $membership?->status === MembershipStatus::Approved;
                 $isPending = $membership?->status === MembershipStatus::Pending;
 
+                if ($isJoined) {
+                    $program->loadMissing('creatives.media');
+                }
+
                 return [
                     'id' => (string) $program->getKey(),
                     'name' => (string) $program->name,
@@ -172,7 +176,7 @@ class PortalPrograms extends PortalPage
                             'id' => (string) $creative->getKey(),
                             'name' => (string) $creative->name,
                             'type' => (string) $creative->type,
-                            'asset_url' => (string) $creative->asset_url,
+                            'download_url' => $creative->getAssetUrl(),
                             'destination_url' => (string) $creative->destination_url,
                         ])->all()
                         : [],

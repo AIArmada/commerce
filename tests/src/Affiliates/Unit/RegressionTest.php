@@ -21,7 +21,6 @@ use AIArmada\Affiliates\States\CompletedPayout;
 use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\Affiliates\States\PendingPayout;
-use AIArmada\Affiliates\Support\Links\AffiliateLinkGenerator;
 use AIArmada\Affiliates\Support\Webhooks\WebhookDispatcher;
 use Spatie\ModelStates\Exceptions\TransitionNotFound;
 
@@ -261,24 +260,6 @@ test('owner tuple is not mass assignable', function (): void {
         ->and($attribution->owner_id)->toBeNull()
         ->and($payout->owner_type)->toBeNull()
         ->and($payout->owner_id)->toBeNull();
-});
-
-test('link verification rejects array signatures without error', function (): void {
-    config()->set('affiliates.links.allowed_hosts', ['shop.test']);
-
-    $generator = new AffiliateLinkGenerator;
-
-    expect($generator->verify('https://shop.test/p?aff_sig[]=x&aff_exp=9999999999'))->toBeFalse();
-});
-
-test('link verification rejects tampered parameters', function (): void {
-    config()->set('affiliates.links.allowed_hosts', ['shop.test']);
-
-    $generator = new AffiliateLinkGenerator;
-    $url = $generator->generate('AFF1', 'https://shop.test/p', ['utm' => 'a']);
-
-    expect($generator->verify($url))->toBeTrue()
-        ->and($generator->verify($url . '&injected=1'))->toBeFalse();
 });
 
 test('webhook dispatcher sends nothing without a signing secret', function (): void {

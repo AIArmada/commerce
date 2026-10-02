@@ -8,12 +8,15 @@ use AIArmada\Affiliates\Models\Concerns\ScopesByAffiliateOwner;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerScope;
+use AIArmada\Links\LinksServiceProvider;
+use AIArmada\Links\Models\Link;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Contracts\Auditable;
 
@@ -152,6 +155,12 @@ class AffiliateLink extends Model implements Auditable
         return $this->hasMany(AffiliateConversion::class, 'affiliate_link_id');
     }
 
+    /** @return MorphOne<Link, $this> */
+    public function trackedLink(): MorphOne
+    {
+        return $this->morphOne(Link::class, 'subject');
+    }
+
     public function incrementClicks(): void
     {
         $this->increment('clicks');
@@ -193,6 +202,12 @@ class AffiliateLink extends Model implements Auditable
 
     protected static function booted(): void
     {
+        static::deleting(function (self $link): void {
+            if (class_exists(Link::class) && app()->providerIsLoaded(LinksServiceProvider::class)) {
+                $link->trackedLink()->get()->each(fn (Link $tracked) => $tracked->delete());
+            }
+        });
+
         static::creating(function (self $link): void {
             self::guardProgramReference($link);
         });

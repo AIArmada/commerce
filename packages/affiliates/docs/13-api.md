@@ -52,7 +52,8 @@ title: Public API
 ```json
 {
   "url": "https://example.com/products/sku-1001",
-  "ttl": 3600,
+  "link_style": "branded",
+  "link_label": "summer",
   "params": {"utm_campaign": "spring-launch"},
   "subject_type": "product",
   "subject_key": "SKU-1001",
@@ -67,7 +68,7 @@ Success response:
 ```json
 {
   "id": "uuid",
-  "link": "https://example.com/products/sku-1001?aff=PARTNER42...",
+  "link": "https://example.com/go/saifreviews/summer-k7m4",
   "subject_type": "product",
   "subject_key": "SKU-1001"
 }
@@ -76,3 +77,12 @@ Success response:
 ## Owner Context
 
 If owner scoping is enabled and global rows are disabled, API requests require resolved owner context; otherwise, endpoints return `400` with `Owner context required`.
+
+## Program Catalog Endpoint
+
+`GET /api/affiliates/programs/{id}/catalog` returns version `v2`, including
+raw program creatives alongside subjects and commission rules. Each creative
+contains its merchant ID, type, name, description, nullable absolute
+`asset_url`, nullable `destination_url`, dimensions, tracking code, and
+metadata. No affiliate-specific HTML is exported. Only active public programs
+are readable. See [Program catalog](14-catalog.md) for the required contract.

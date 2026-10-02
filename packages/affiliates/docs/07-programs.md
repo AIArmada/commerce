@@ -128,11 +128,11 @@ Provide affiliates with promotional materials:
 ```php
 use AIArmada\Affiliates\Models\AffiliateProgramCreative;
 
-AffiliateProgramCreative::create([
+$creative = AffiliateProgramCreative::create([
     'program_id' => $program->id,
     'name' => 'Summer Sale Banner',
     'type' => 'banner',
-    'asset_url' => 'https://cdn.example.com/banners/summer-sale.jpg',
+    'tracking_code' => 'SUMMER-SALE',
     'width' => 728,
     'height' => 90,
     'destination_url' => 'https://example.com/summer-sale',
@@ -142,9 +142,18 @@ AffiliateProgramCreative::create([
 ]);
 ```
 
-`affiliate_program_id`, `url`, `dimensions`, and `is_active` are not fillable
-and are silently dropped. There is no `is_active` column; gate visibility with
-`AffiliateProgram::status` or the parent program.
+Creative files live exclusively in Spatie Media Library's single-file `creative_asset` collection on the `public` disk. Attach a local file after creating the creative:
+
+```php
+$creative->addMedia(storage_path('app/banners/summer-sale.jpg'))
+    ->toMediaCollection('creative_asset');
+
+$url = $creative->getAssetUrl(); // null when no file is attached
+```
+
+Replacing the file removes the previous media and deleting the creative removes its media. Banner embeds require an attached file; text links can use only `destination_url`.
+
+> **warning**: Breaking change: the creative URL column and URL form inputs have been removed. Create creatives with an attached file using Media Library. The existing creative migration defines the new schema; there is no compatibility path or data backfill.
 
 ## Using the ProgramService
 
@@ -294,3 +303,10 @@ AffiliateCommissionPromotion::create([
 > Promotions are program-scoped; opt individual affiliates in through the
 > `affiliate_ids` array, and there is no `is_active` column — window it with
 > `starts_at` / `ends_at` and `max_uses` / `current_uses`.
+
+### Network mirroring
+
+Program creatives are included in the [version 2 catalog](14-catalog.md).
+Their asset URLs are absolute so remote networks can display public files.
+General creatives without a program are excluded. The network builds its own
+tracking links; the merchant's personalized embed HTML is never transferred.

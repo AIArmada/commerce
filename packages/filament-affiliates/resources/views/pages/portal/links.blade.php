@@ -16,14 +16,14 @@
 
                 <div class="fia-portal-field-grid">
                     <div class="fia-portal-field">
-                        <label class="fia-portal-label">{{ __('Affiliate Code') }}</label>
+                        <label class="fia-portal-label">{{ __('Public Handle') }}</label>
 
                         <div class="fia-portal-inline-code">
-                            <code class="fia-portal-code-box">{{ $affiliateCode }}</code>
+                            <code class="fia-portal-code-box">{{ $affiliateHandle }}</code>
 
                             <x-filament::icon-button
                                 icon="heroicon-o-clipboard-document"
-                                x-on:click="navigator.clipboard.writeText(@js($affiliateCode)); $tooltip('Copied!')"
+                                x-on:click="navigator.clipboard.writeText(@js($affiliateHandle)); $tooltip('Copied!')"
                             />
                         </div>
                     </div>
@@ -43,23 +43,7 @@
                         </div>
                     @endif
 
-                    @if ($shortLink)
-                        <div class="fia-portal-field">
-                            <label class="fia-portal-label">{{ __('Short Referral Link') }}</label>
 
-                            <div class="fia-portal-inline-code">
-                                <code class="fia-portal-code-box fia-portal-code-box--primary">{{ $shortLink }}</code>
-
-                                <x-filament::icon-button
-                                    icon="heroicon-o-clipboard-document"
-                                    color="primary"
-                                    x-on:click="navigator.clipboard.writeText(@js($shortLink)); $tooltip('Copied!')"
-                                />
-                            </div>
-                        </div>
-
-                        <p class="fia-portal-helper">{{ __('Works on any page — e.g. :url', ['url' => mb_rtrim((string) config("app.url"), "/") . '/checkout/r/' . $affiliateCode]) }}</p>
-                    @endif
                 </div>
             </x-filament::section>
 
@@ -82,10 +66,25 @@
                         </x-filament::input.wrapper>
 
                         <p class="fia-portal-helper">
-                            {{ __('Enter the URL you want to share with your affiliate code.') }}
+                            {{ __('Enter the destination for your tracking link.') }}
                         </p>
                     </div>
 
+                    <div class="fia-portal-field">
+                        <label for="linkStyle" class="fia-portal-label">{{ __('Link Style') }}</label>
+                        <x-filament::input.wrapper>
+                            <x-filament::input.select id="linkStyle" wire:model="linkStyle">
+                                <option value="short">{{ __('Short') }}</option>
+                                <option value="branded">{{ __('Branded') }}</option>
+                            </x-filament::input.select>
+                        </x-filament::input.wrapper>
+                    </div>
+                    <div class="fia-portal-field">
+                        <label for="linkLabel" class="fia-portal-label">{{ __('Campaign Name') }}</label>
+                        <x-filament::input.wrapper>
+                            <x-filament::input id="linkLabel" wire:model="linkLabel" placeholder="summer" />
+                        </x-filament::input.wrapper>
+                    </div>
                     <div>
                         <x-filament::button type="submit">
                             {{ __('Generate Link') }}
@@ -106,22 +105,6 @@
                                 />
                             </div>
                         </div>
-
-                        @if ($generatedShortLink && $generatedShortLink !== $generatedLink)
-                            <div class="fia-portal-field">
-                                <label class="fia-portal-label">{{ __('Short Generated Link') }}</label>
-
-                                <div class="fia-portal-inline-code">
-                                    <code class="fia-portal-code-box fia-portal-code-box--success">{{ $generatedShortLink }}</code>
-
-                                    <x-filament::icon-button
-                                        icon="heroicon-o-clipboard-document"
-                                        color="success"
-                                        x-on:click="navigator.clipboard.writeText(@js($generatedShortLink)); $tooltip('Copied!')"
-                                    />
-                                </div>
-                            </div>
-                        @endif
                     @endif
                 </form>
             </x-filament::section>

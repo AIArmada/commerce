@@ -49,7 +49,7 @@ describe('AffiliateOfferLink Model', function (): void {
     });
 
     describe('tracked link', function (): void {
-        test('factory mints a signed backing link with attribution parameters', function (): void {
+        test('factory mints a public backing link with attribution parameters', function (): void {
             config(['affiliate-network.links.parameter' => 'anl']);
 
             $link = AffiliateOfferLink::factory()
@@ -61,7 +61,7 @@ describe('AffiliateOfferLink Model', function (): void {
             expect($link->link)->toBeInstanceOf(Link::class)
                 ->and($link->trackedSlug())->toBe('offer-slug-1')
                 ->and($link->link->slug)->toBe('offer-slug-1')
-                ->and($link->link->require_signature)->toBeTrue()
+                ->and($link->link->require_signature)->toBeFalse()
                 ->and($link->link->subject_type)->toBe($link->getMorphClass())
                 ->and($link->link->subject_id)->toBe((string) $link->getKey())
                 ->and($link->link->parameters['anl'])->toBe('offer-slug-1');

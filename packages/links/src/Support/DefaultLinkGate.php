@@ -11,6 +11,14 @@ final class DefaultLinkGate implements LinkGateInterface
 {
     public function blockedReason(Link $link): ?string
     {
+        /** @var LinkGateInterface $gate */
+        foreach (app()->tagged(LinkGateInterface::class) as $gate) {
+            $reason = $gate->blockedReason($link);
+            if ($reason !== null) {
+                return $reason;
+            }
+        }
+
         return null;
     }
 }

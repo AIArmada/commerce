@@ -277,7 +277,9 @@ class AffiliateProgram extends Model implements Auditable
             $program->commissionRules()->delete();
             $program->commissionPromotions()->delete();
             $program->memberships()->delete();
-            $program->creatives()->delete();
+            $program->creatives()->each(function (AffiliateProgramCreative $creative): void {
+                $creative->delete();
+            });
         });
     }
 

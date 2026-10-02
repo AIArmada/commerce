@@ -27,9 +27,14 @@ use AIArmada\AffiliateNetwork\Services\NetworkBooks;
 use AIArmada\AffiliateNetwork\Services\NetworkLedgerReconciliationService;
 use AIArmada\AffiliateNetwork\Services\OfferLinkService;
 use AIArmada\AffiliateNetwork\Services\OfferManagementService;
+use AIArmada\AffiliateNetwork\Support\UserKeyAffiliateIdentityResolver;
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 
 function networkPackageRoot(): string
 {
@@ -226,7 +231,7 @@ describe('Network seam', function (): void {
         [, $offer] = seamFixtures('seam-apply.example');
 
         $identities = new FakeAffiliateIdentities([
-            'aff-1' => new NetworkAffiliate(id: 'aff-1', code: 'SEAM1'),
+            'aff-1' => new NetworkAffiliate(id: 'aff-1', code: 'SEAM1', handle: 'seam-one'),
         ]);
 
         $application = (new ApplyToOffer($identities))->execute($offer, 'aff-1', 'Seam application');
@@ -438,4 +443,27 @@ describe('Network seam', function (): void {
         app()->bind(CatalogReaderResolver::LOCAL_READER_KEY, FakeLocalCatalogReader::class);
         expect($resolver->readerFor($localSite))->toBeInstanceOf(FakeLocalCatalogReader::class);
     });
+});
+
+test('standalone user identity supports missing and host chosen handles under strict models', function (): void {
+    $user = User::factory()->create();
+    $resolver = app(UserKeyAffiliateIdentityResolver::class);
+    $preventMissingAttributes = Model::preventsAccessingMissingAttributes();
+    Model::preventAccessingMissingAttributes();
+
+    try {
+        $assigned = $resolver->find($user->id);
+        expect($assigned->handle)->toStartWith('creator-')
+            ->and($resolver->find($user->id)->handle)->toBe($assigned->handle);
+
+        Schema::table('users', function (Blueprint $table): void {
+            $table->string('handle')->nullable()->unique();
+        });
+        expect($resolver->find($user->id)->handle)->toBe($assigned->handle);
+
+        $user->forceFill(['handle' => 'SaifReviews'])->save();
+        expect($resolver->find($user->id)->handle)->toBe('saifreviews');
+    } finally {
+        Model::preventAccessingMissingAttributes($preventMissingAttributes);
+    }
 });

@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Resources\AffiliateLinkResource\Pages;
 
+use AIArmada\Affiliates\Actions\Affiliates\CreateTrackingLink;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentAffiliates\Resources\AffiliateLinkResource;
-use AIArmada\FilamentAffiliates\Resources\AffiliateLinkResource\Pages\Concerns\FillsTrackingUrl;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
@@ -18,8 +18,6 @@ use RuntimeException;
 
 final class CreateAffiliateLink extends CreateRecord
 {
-    use FillsTrackingUrl;
-
     protected static string $resource = AffiliateLinkResource::class;
 
     /**
@@ -47,7 +45,7 @@ final class CreateAffiliateLink extends CreateRecord
         if ($programId === null || $programId === '') {
             $data['program_id'] = null;
 
-            return $this->fillTrackingUrl($data);
+            return $data;
         }
 
         if (! is_string($programId) && ! is_int($programId)) {
@@ -62,7 +60,14 @@ final class CreateAffiliateLink extends CreateRecord
             'program_id',
         );
 
-        return $this->fillTrackingUrl($data);
+        return $data;
+    }
+
+    protected function handleRecordCreation(array $data): Model
+    {
+        $affiliate = Affiliate::query()->whereKey($data['affiliate_id'])->firstOrFail();
+
+        return CreateTrackingLink::run($affiliate, $data['destination_url'], $data);
     }
 
     /**

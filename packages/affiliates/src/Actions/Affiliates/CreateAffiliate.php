@@ -54,6 +54,7 @@ final class CreateAffiliate
                     $affiliate = new Affiliate([
                         'code' => $data['code'] ?? $this->generateCode->handle($name),
                         'name' => $name,
+                        'handle' => $data['handle'] ?? null,
                         'description' => $data['description'] ?? null,
                         'status' => $status,
                         'registration_approval_mode' => $mode->value,

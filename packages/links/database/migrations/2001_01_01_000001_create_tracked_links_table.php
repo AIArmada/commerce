@@ -17,6 +17,7 @@ return new class extends Migration
             $table->nullableUuidMorphs('owner');
             $table->string('name');
             $table->string('slug')->unique();
+            $table->string('slug_prefix', 40)->nullable();
             $table->text('destination_url');
             $table->{$jsonColumnType}('utm_defaults')->nullable();
             $table->unsignedInteger('max_clicks')->nullable();

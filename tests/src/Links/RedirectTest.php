@@ -3,8 +3,10 @@
 declare(strict_types=1);
 
 use AIArmada\Links\Actions\CreateLink;
+use AIArmada\Links\Actions\RedirectToLink;
 use AIArmada\Links\Events\LinkClicked;
 use AIArmada\Links\Models\LinkClick;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
 
 const LINKS_CHROME_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
@@ -86,4 +88,82 @@ test('bot recording can be disabled entirely', function (): void {
 
     $link->refresh();
     expect($link->total_clicks)->toBe(0);
+});
+
+test('redirect forwards custom UTM keys and preserves their spelling', function (): void {
+    CreateLink::run([
+        'name' => 'Custom campaign', 'slug' => 'custom-campaign',
+        'destination_url' => 'https://merchant.example/offer',
+    ]);
+
+    $this->get('/go/custom-campaign?utm_creative=hero-video&utm_audience=lookalike&UtM_Placement2=bio')
+        ->assertRedirect('https://merchant.example/offer?utm_creative=hero-video&utm_audience=lookalike&UtM_Placement2=bio');
+});
+
+test('baked custom UTM parameters win over incoming and destination values', function (): void {
+    CreateLink::run([
+        'name' => 'Baked campaign', 'slug' => 'baked-campaign',
+        'destination_url' => 'https://merchant.example/offer?utm_creative=destination&utm_audience=destination',
+        'parameters' => ['utm_creative' => 'baked'],
+    ]);
+
+    $this->get('/go/baked-campaign?utm_creative=spoofed&utm_audience=incoming')
+        ->assertRedirect('https://merchant.example/offer?utm_creative=baked&utm_audience=incoming');
+});
+
+test('redirect ignores malformed UTM keys and values', function (array $query): void {
+    $link = CreateLink::run([
+        'name' => 'Malformed campaign', 'slug' => 'malformed-campaign',
+        'destination_url' => 'https://merchant.example/offer?utm_creative=destination',
+    ]);
+    $request = Request::create('/go/malformed-campaign', 'GET', $query);
+
+    $response = app(RedirectToLink::class)->asController($request, $link->slug);
+    expect($response->getTargetUrl())->toBe('https://merchant.example/offer?utm_creative=destination');
+})->with([
+    'empty key' => [['' => 'value']],
+    'numeric key' => [[0 => 'value']],
+    'empty suffix' => [['utm_' => 'value']],
+    'invalid suffix' => [['utm_creative-extra' => 'value']],
+    'non ASCII suffix' => [['utm_créative' => 'value']],
+    'key too long' => [['utm_' . str_repeat('a', 97) => 'value']],
+    'empty value' => [['utm_creative' => '']],
+    'array value' => [['utm_creative' => ['nested' => 'value']]],
+    'integer value' => [['utm_creative' => 42]],
+    'null value' => [['utm_creative' => null]],
+    'value too long' => [['utm_creative' => str_repeat('a', 501)]],
+]);
+
+test('redirect accepts UTM keys and values at the length limits', function (): void {
+    CreateLink::run([
+        'name' => 'Length boundary', 'slug' => 'utm-boundary',
+        'destination_url' => 'https://merchant.example/offer',
+    ]);
+    $query = ['utm_' . str_repeat('a', 96) => str_repeat('é', 500)];
+
+    $this->get('/go/utm-boundary?' . http_build_query($query))
+        ->assertRedirect('https://merchant.example/offer?' . http_build_query($query));
+});
+
+test('UTM forwarding preserves defaults destination incoming and baked precedence', function (): void {
+    CreateLink::run([
+        'name' => 'Precedence', 'slug' => 'utm-precedence',
+        'destination_url' => 'https://merchant.example/offer?utm_source=destination&utm_campaign=destination&utm_term=destination&gclid=destination&merchant=keep#details',
+        'utm_defaults' => [
+            'utm_source' => 'default', 'utm_medium' => 'default', 'utm_campaign' => 'default',
+            'utm_term' => 'default', 'utm_content' => 'default',
+        ],
+        'parameters' => ['utm_term' => 'baked', 'utm_creative' => 'baked', 'fbclid' => 'baked-click'],
+    ]);
+
+    $response = $this->get('/go/utm-precedence?utm_campaign=incoming&utm_term=incoming&utm_content=incoming&utm_creative=incoming&gclid=incoming&fbclid=incoming');
+    $response->assertStatus(302);
+    $url = $response->headers->get('Location');
+    parse_str(parse_url($url, PHP_URL_QUERY), $query);
+
+    expect($query)->toBe([
+        'utm_source' => 'destination', 'utm_campaign' => 'incoming', 'utm_term' => 'baked',
+        'gclid' => 'incoming', 'merchant' => 'keep', 'utm_medium' => 'default',
+        'utm_content' => 'incoming', 'utm_creative' => 'baked', 'fbclid' => 'baked-click',
+    ])->and(parse_url($url, PHP_URL_FRAGMENT))->toBe('details');
 });

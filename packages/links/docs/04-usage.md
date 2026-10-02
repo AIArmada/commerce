@@ -45,10 +45,14 @@ Deactivation uses a `deactivated_at` toggle timestamp; expiry uses `expires_at`;
 `GET /go/{slug}` resolves the link, records a click, merges parameters, and redirects:
 
 - The link's `parameters` always win, so request query strings can never spoof them.
-- Incoming `?utm_*` query parameters win over defaults.
+- Incoming `?utm_*` query parameters override the destination’s matching parameters and defaults. The `utm_` prefix is matched case-insensitively; the remaining key must contain only ASCII letters, digits, or underscores. Keys retain their spelling, are at most 100 characters long, and values must be non-empty strings of at most 500 characters. Arrays and malformed keys or values are ignored.
 - Incoming ad click IDs (`gclid`, `fbclid`, `msclkid`, `ttclid`, and friends) pass through untouched.
 - The destination's own query parameters are preserved.
 - The link's `utm_defaults` fill any remaining gaps.
+
+For example, `/go/camera-deal?utm_creative=hero-video&utm_audience=lookalike` forwards both custom UTMs to the merchant. Baked `parameters` still override incoming values for the same key. The `utm_defaults` field and click-record UTM columns continue to use the five standard UTMs.
+
+Precedence is baked parameters, then incoming UTMs, then the destination’s existing parameters, then defaults that fill missing values.
 
 Any other incoming query parameter is dropped: it is neither forwarded nor stored.
 
@@ -158,3 +162,35 @@ php artisan links:prune-clicks --days=90
 ## Read next
 
 - [Troubleshooting](99-troubleshooting.md)
+
+
+## Public short and branded links
+
+```php
+use AIArmada\Links\Actions\CreatePublicLink;
+use AIArmada\Links\Actions\GenerateLinkUrl;
+
+$short = CreatePublicLink::run([
+    'name' => 'Summer',
+    'destination_url' => 'https://merchant.example/summer',
+]);
+$branded = CreatePublicLink::run([
+    'name' => 'Summer',
+    'destination_url' => 'https://merchant.example/summer',
+], 'branded', 'saifreviews', 'summer');
+
+GenerateLinkUrl::run($short);   // /go/{token}
+GenerateLinkUrl::run($branded); // /go/saifreviews/summer-{token}
+```
+
+The slug remains globally unique. `slug_prefix` stores the normalized public
+handle at issuance; it never reads a profile during URL generation or redirect.
+Both path segments must match the saved row. A branded link does not also resolve
+through the short route, and an arbitrary prefix cannot be added to a short link.
+Public links have no signature or automatic expiry; explicit `expires_at`,
+`max_clicks`, and deactivation still apply.
+
+Consumer gates register implementations of `LinkGateInterface` with the container
+tag `LinkGateInterface::class`. The default gate evaluates every registered gate,
+so multiple installed integrations retain their own deactivation checks. A host
+that overrides the gate binding owns the complete gate policy.

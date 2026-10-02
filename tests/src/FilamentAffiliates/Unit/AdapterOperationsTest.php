@@ -10,6 +10,7 @@ use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliateProgram;
+use AIArmada\Affiliates\Models\AffiliateProgramCreative;
 use AIArmada\Affiliates\Models\AffiliateTaxDocument;
 use AIArmada\Affiliates\Services\ProgramCatalogService;
 use AIArmada\Affiliates\States\Active;
@@ -19,10 +20,13 @@ use AIArmada\FilamentAffiliates\Pages\ManageAffiliateBonusSettings;
 use AIArmada\FilamentAffiliates\Pages\ManageAffiliatePayoutSettings;
 use AIArmada\FilamentAffiliates\Pages\PayoutBatchPage;
 use AIArmada\FilamentAffiliates\Pages\PerformanceBonusesPage;
+use AIArmada\FilamentAffiliates\Resources\AffiliateCreativeResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource\Pages\ViewAffiliateProgram;
+use AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource\RelationManagers\CreativesRelationManager;
 use AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource\Schemas\AffiliateProgramInfolist;
 use AIArmada\FilamentAffiliates\Resources\AffiliateTaxDocumentResource;
+use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Schemas\Concerns\InteractsWithSchemas;
 use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Schemas\Schema;
@@ -30,7 +34,10 @@ use Filament\Support\Contracts\TranslatableContentDriver;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
+use Spatie\MediaLibrary\MediaLibraryServiceProvider;
 
 class AdapterOperationsHostComponent extends Component implements HasSchemas
 {
@@ -257,4 +264,37 @@ it('bonuses page exposes month preview and award actions', function (): void {
 
     expect($schema->getComponent('month'))->not->toBeNull()
         ->and($names)->toContain('preview', 'award');
+});
+
+it('creative forms use media uploads and admin asset links resolve attached media', function (): void {
+    app()->register(MediaLibraryServiceProvider::class);
+    Storage::fake('public');
+    config(['media-library.max_file_size' => 10000000]);
+    $creative = AffiliateProgramCreative::create([
+        'type' => 'image', 'name' => 'Admin Asset', 'tracking_code' => 'ADMIN-MEDIA',
+    ]);
+    $media = $creative->addMedia(UploadedFile::fake()->image('admin.png'))->toMediaCollection('creative_asset');
+
+    $schema = AffiliateCreativeResource::form(
+        Schema::make(new AdapterOperationsHostComponent)->model($creative)->statePath('data')
+    );
+    $upload = $schema->getComponent('asset');
+    expect($upload)->toBeInstanceOf(SpatieMediaLibraryFileUpload::class)
+        ->and($upload->getCollection())->toBe('creative_asset')
+        ->and($upload->getMaxSize())->toBe(9766)
+        ->and($schema->getComponent('asset_url'))->toBeNull();
+
+    $manager = new CreativesRelationManager;
+    $programSchema = $manager->form(
+        Schema::make(new AdapterOperationsHostComponent)->model($creative)->statePath('data')
+    );
+    expect($programSchema->getComponent('asset'))->toBeInstanceOf(SpatieMediaLibraryFileUpload::class)
+        ->and($programSchema->getComponent('asset_url'))->toBeNull();
+
+    $host = new AdapterOperationsTableHost;
+    $table = AffiliateCreativeResource::table(Table::make($host));
+    (new ReflectionProperty($host, 'table'))->setValue($host, $table);
+    $column = $table->getColumn('asset')->record($creative->fresh());
+    expect($column->getState())->toBe($media->getFullUrl())
+        ->and($column->getUrl($column->getState()))->toBe($media->getFullUrl());
 });
