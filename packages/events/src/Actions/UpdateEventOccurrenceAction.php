@@ -54,12 +54,16 @@ final class UpdateEventOccurrenceAction
             $allowed['title'] = $this->contentNormalizer->normalizeTitle((string) $allowed['title']);
         }
 
+        if (array_key_exists('starts_at', $allowed) && blank($allowed['starts_at'])) {
+            throw new InvalidArgumentException('Occurrence start time is required.');
+        }
+
         $startsAt = array_key_exists('starts_at', $allowed)
-            ? CarbonImmutable::parse((string) $allowed['starts_at'])
+            ? CarbonImmutable::parse($allowed['starts_at'])
             : $occurrence->starts_at;
-        $endsAt = array_key_exists('ends_at', $allowed)
-            ? CarbonImmutable::parse((string) $allowed['ends_at'])
-            : $occurrence->ends_at;
+        $endsAt = ! array_key_exists('ends_at', $allowed)
+            ? $occurrence->ends_at
+            : ($allowed['ends_at'] === null ? null : CarbonImmutable::parse($allowed['ends_at']));
 
         if ($endsAt instanceof CarbonImmutable && $startsAt instanceof CarbonImmutable && $endsAt->lessThanOrEqualTo($startsAt)) {
             throw new InvalidArgumentException('Occurrence end time must be after the start time.');

@@ -42,6 +42,8 @@ return new class extends Migration
             $table->string('registration_mode')->nullable()->index();
             $table->boolean('issue_passes_for_free')->default(true);
             $table->timestampTz('rescheduled_at')->nullable()->index();
+
+            $table->unique(['event_id', 'slug']);
         });
     }
 };

@@ -26,6 +26,7 @@ use Spatie\ModelStates\HasStates;
  * @property string|null $target_id
  * @property string|null $event_id
  * @property string|null $event_occurrence_id
+ * @property string|null $event_session_id
  * @property mixed|null $submission_data
  * @property EventModerationStatusState $status
  * @property CarbonImmutable|null $submitted_at
@@ -45,7 +46,7 @@ class EventSubmission extends Model
     protected $fillable = [
         'submitter_type', 'submitter_id',
         'target_type', 'target_id',
-        'event_id', 'event_occurrence_id',
+        'event_id', 'event_occurrence_id', 'event_session_id',
         'submission_data',
         'status',
         'submitted_at', 'reviewed_at',
@@ -116,6 +117,14 @@ class EventSubmission extends Model
     public function occurrence(): BelongsTo
     {
         return $this->belongsTo(EventOccurrence::class, 'event_occurrence_id');
+    }
+
+    /**
+     * @return BelongsTo<EventSession, $this>
+     */
+    public function session(): BelongsTo
+    {
+        return $this->belongsTo(EventSession::class, 'event_session_id');
     }
 
     /**

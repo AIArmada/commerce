@@ -98,7 +98,7 @@ final class EventDeleteCascade
         EventRevision::class => ['event_id', 'event_occurrence_id', 'event_session_id'],
         EventSearchDocument::class => ['event_id', 'event_occurrence_id', 'event_session_id'],
         EventSeriesItem::class => ['event_id', 'event_occurrence_id', 'event_session_id'],
-        EventSubmission::class => ['event_id', 'event_occurrence_id'],
+        EventSubmission::class => ['event_id', 'event_occurrence_id', 'event_session_id'],
         EventTimeExpression::class => ['event_id', 'event_occurrence_id', 'event_session_id'],
         EventUpdate::class => ['event_id', 'event_occurrence_id', 'event_session_id'],
         EventVerification::class => ['event_id', 'event_occurrence_id', 'event_session_id'],

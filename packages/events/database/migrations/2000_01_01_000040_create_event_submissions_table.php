@@ -20,6 +20,7 @@ return new class extends Migration
             $table->uuid('target_id')->nullable()->index();
             $table->uuid('event_id')->nullable()->index();
             $table->uuid('event_occurrence_id')->nullable()->index();
+            $table->uuid('event_session_id')->nullable()->index();
             $table->{$jsonType}('submission_data')->nullable();
             $table->string('status')->index();
             $table->timestampTz('submitted_at');

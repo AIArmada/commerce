@@ -193,6 +193,8 @@ $workflow->delay($occurrence, 'Doors delayed', now()->addHour());
 $workflow->cancel($event, 'Weather emergency');
 $workflow->archive($event);
 $workflow->reschedule($occurrence, $newStart, $newEnd);
+$workflow->reschedule($session, $newStart); // open-ended: unknown end stays unknown
+$workflow->reschedule($occurrence, $newStart, $newEnd, ['timezone' => 'Asia/Kuala_Lumpur']);
 $workflow->complete($occurrence);
 ```
 
@@ -226,6 +228,23 @@ $occurrence = $event->occurrences()->create([
 
 Occurrences represent the actual scheduled run of an event. They carry their own status lifecycle, capacity, and registration windows.
 
+### Primary occurrence sync
+
+`SyncPrimaryEventOccurrenceAction` creates or updates the primary occurrence (earliest by start time) with lifecycle protection:
+
+```php
+$occurrence = app(SyncPrimaryEventOccurrenceAction::class)->handle($event, [
+    'schedule_kind' => ScheduleKind::Single,
+    'starts_at' => $startsAt, // DateTimeInterface|string, stored immutable
+    'ends_at' => $endsAt, // omit to keep/default, null for open-ended
+    'timezone' => 'Asia/Kuala_Lumpur',
+]);
+```
+
+Published, postponed, delayed, and rescheduled occurrences are rescheduled through `EventLifecycleWorkflow` so the transition is recorded, including open-ended schedules: an explicit `null` end stays unknown through the lifecycle transition. An omitted `ends_at` keeps the stored end for comparisons and for the workflow call. Requested non-schedule attributes (title, visibility, and so on) are applied after a successful lifecycle reschedule. Terminal occurrences (cancelled, completed, archived) and live occurrences refuse schedule changes with an `InvalidArgumentException`; re-syncing identical values is a no-op that never re-transitions but still applies non-schedule attributes. Re-rescheduling an already-rescheduled occurrence saves the new dates and records another change without an illegal self-transition. Date strings are parsed in the resolved timezone (attribute, occurrence, event, then `events.defaults.timezone`) and stored as UTC instants. Writes are owner-guarded through `EventWriteGuard`, and lifecycle guards re-resolve the persisted occurrence or session before checking the owning event so dirty in-memory `event_id` values cannot bypass the owner boundary.
+
+`CreateEventOccurrenceAction` defaults an omitted `ends_at` to two hours after the start; pass an explicit `null` for an open-ended occurrence. `UpdateEventOccurrenceAction` keeps `ends_at` when the key is omitted and clears it when explicitly `null`.
+
 ## Managing Sessions
 
 ```php
@@ -243,6 +262,8 @@ $session = $occurrence->sessions()->create([
 ```
 
 Sessions are agenda items within an occurrence.
+
+`CreateEventSessionAction` defaults an omitted `ends_at` to one hour after the start; pass an explicit `null` for an open-ended session. Session slugs are generated from the title and uniquified within the event (`keynote`, `keynote-2`, ...), backed by a unique `event_id` + `slug` index.
 
 Content inputs are normalized server-side before persistence. Titles are trimmed and repeated whitespace is collapsed, and blank summary or description inputs are stored as `null`.
 
@@ -473,6 +494,26 @@ $event->involvements()->create([
 ]);
 ```
 
+### Syncing scoped involvements
+
+`SyncEventInvolvementsAction` replaces the involvement rows owned by one event, occurrence, or session scope. The scope is re-resolved from persisted storage (never trusted from dirty in-memory attributes) and the owning event is owner-guarded, so a forged child model cannot redirect writes across events. Rows outside the scope are never touched, and organizer rows are preserved unless `'organizer'` is explicitly included in the role filter — organizer rows in the input are rejected without that opt-in. Every row must use a role inside the explicit filter, and an explicit empty filter is rejected instead of deleting more broadly. Every row is validated before any delete runs, role codes resolve in one batched query (unknown or inactive codes are rejected), and duplicate identities are collapsed per scope and role.
+
+```php
+app(SyncEventInvolvementsAction::class)->handle($session, [
+    ['role_code' => 'speaker', 'involveable_type' => 'person', 'involveable_id' => $personId],
+    ['role_code' => 'moderator', 'display_name' => 'Guest host', 'visibility' => 'private'],
+], ['speaker', 'moderator']);
+```
+
+### Scoped languages and classifications
+
+`SyncEventLanguagesAction` and `SyncEventClassificationsAction` accept the same event, occurrence, or session scope and only replace rows owned by that scope. All three sync actions share the same persisted scope resolution: event-level syncs carry a null occurrence and session, and a nullable session occurrence is preserved as null rather than cast to an empty string.
+
+```php
+app(SyncEventLanguagesAction::class)->handle($session, ['ms', 'ar']);
+app(SyncEventClassificationsAction::class)->handle($session, ['topic' => ['Fiqh']]);
+```
+
 ### Querying involvements
 
 ```php
@@ -701,6 +742,26 @@ else targets `followers`.
 ## Deleting events
 
 Deleting an event cascades through the owned subtree in application logic: occurrences, sessions, registrations (with participants, answers, items, attendances, and passes), locations, media, classifications, updates, submissions, and the remaining event-scoped records, plus the event's ticket types and seat maps. Deleting an occurrence or session cascades through its own scope the same way. Cross-owner deletes are blocked by the owner write guards before the cascade runs.
+
+## Event submissions
+
+`EventSubmission.target_type` / `target_id` is the owner target the submission is filed under, resolved through the `target()` morph. It is never the submitted event or session: converted or container-bound submissions point at the created graph through `event_id`, `event_occurrence_id`, and `event_session_id` instead.
+
+```php
+$submission = EventSubmission::query()->create([
+    'target_type' => $owner->getMorphClass(),
+    'target_id' => $owner->getKey(),
+    'event_id' => $event->id,
+    'event_occurrence_id' => $occurrence->id,
+    'event_session_id' => $session->id,
+    'status' => 'pending',
+    'submitted_at' => now(),
+]);
+
+$submission->session; // BelongsTo EventSession
+```
+
+Writes are guarded by `EventSubmissionOwnerScope`: the target pair must both be present or both null, persisted targets are immutable, and event-bound submissions must pass the event write guard. Graph integrity runs on every save even when owner scoping is disabled or the submission is global: `event_id` is required when an occurrence or session is linked, a linked occurrence must exist and belong to the submitted event, a linked session must exist and belong to the submitted event, and a supplied occurrence must match the session's occurrence (a null session occurrence never matches a non-null supplied occurrence). A null submission occurrence with a session is allowed and preserves the canonical null. Deletes only enforce the owner boundary and never block cleanup on a missing parent. Session deletes cascade to linked submissions.
 
 ## Finalizing event orders
 

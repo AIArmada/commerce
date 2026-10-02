@@ -35,11 +35,9 @@ final class CreateEventOccurrenceAction
             ? CarbonImmutable::now()->addDay()
             : CarbonImmutable::parse($attributes['starts_at']);
 
-        $endsAt = blank($attributes['ends_at'] ?? null)
-            ? $startsAt->addHours(2)
-            : CarbonImmutable::parse($attributes['ends_at']);
+        $endsAt = $this->resolveEndsAt($attributes, $startsAt);
 
-        if ($endsAt->lessThanOrEqualTo($startsAt)) {
+        if ($endsAt instanceof CarbonImmutable && $endsAt->lessThanOrEqualTo($startsAt)) {
             throw new InvalidArgumentException('Occurrence end time must be after the start time.');
         }
 
@@ -74,6 +72,22 @@ final class CreateEventOccurrenceAction
         event(new EventOccurrenceCreated($occurrence));
 
         return $occurrence;
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    private function resolveEndsAt(array $attributes, CarbonImmutable $startsAt): ?CarbonImmutable
+    {
+        if (! array_key_exists('ends_at', $attributes) || $attributes['ends_at'] === '') {
+            return $startsAt->addHours(2);
+        }
+
+        if ($attributes['ends_at'] === null) {
+            return null;
+        }
+
+        return CarbonImmutable::parse($attributes['ends_at']);
     }
 
     private function resolveEventForWrite(Event $event): Event

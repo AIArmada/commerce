@@ -392,7 +392,7 @@ final class EventSession extends Model implements HasMedia
         app(EventLifecycleWorkflow::class)->cancel($this, $reason);
     }
 
-    public function reschedule(DateTimeInterface $startsAt, DateTimeInterface $endsAt, array $options = []): void
+    public function reschedule(DateTimeInterface $startsAt, ?DateTimeInterface $endsAt = null, array $options = []): void
     {
         app(EventLifecycleWorkflow::class)->reschedule($this, $startsAt, $endsAt, $options);
     }

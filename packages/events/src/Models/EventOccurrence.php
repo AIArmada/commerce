@@ -40,7 +40,7 @@ use Spatie\ModelStates\HasStates;
  * @property string $title
  * @property string $slug
  * @property CarbonImmutable $starts_at
- * @property CarbonImmutable $ends_at
+ * @property CarbonImmutable|null $ends_at
  * @property string $timezone
  * @property OccurrenceStatusState $status
  * @property string $visibility
@@ -415,6 +415,11 @@ final class EventOccurrence extends Model implements HasMedia
     public function cancel(?string $reason = null): void
     {
         app(EventLifecycleWorkflow::class)->cancel($this, $reason);
+    }
+
+    public function reschedule(DateTimeInterface $startsAt, ?DateTimeInterface $endsAt = null, array $options = []): void
+    {
+        app(EventLifecycleWorkflow::class)->reschedule($this, $startsAt, $endsAt, $options);
     }
 
     protected static function newFactory(): EventOccurrenceFactory

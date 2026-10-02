@@ -7,9 +7,11 @@ namespace AIArmada\Events\Actions;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventClassification;
+use AIArmada\Events\Models\EventOccurrence;
+use AIArmada\Events\Models\EventSession;
 use AIArmada\Events\Models\EventTaxonomy;
 use AIArmada\Events\Models\EventTerm;
-use AIArmada\Events\Support\EventWriteGuard;
+use AIArmada\Events\Support\EventScopeResolver;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -23,21 +25,34 @@ final class SyncEventClassificationsAction
      * @param  list<mixed>  $explicitTermIds
      */
     public function handle(
-        Event $event,
+        Event | EventOccurrence | EventSession $scope,
         array $taxonomyValues,
         array $taxonomyDefinitions = [],
         array $explicitTermIds = [],
     ): int {
-        EventWriteGuard::findOrFail($event->getKey());
+        $resolved = EventScopeResolver::resolve($scope);
+        $eventId = $resolved['event_id'];
+        $occurrenceId = $resolved['occurrence_id'];
+        $sessionId = $resolved['session_id'];
 
-        return DB::transaction(function () use ($event, $taxonomyValues, $taxonomyDefinitions, $explicitTermIds): int {
+        return DB::transaction(function () use ($eventId, $occurrenceId, $sessionId, $taxonomyValues, $taxonomyDefinitions, $explicitTermIds): int {
             $termIds = $this->resolveTermIds($taxonomyValues, $taxonomyDefinitions, $explicitTermIds);
 
-            EventClassification::query()
-                ->where('event_id', $event->getKey())
-                ->whereNull('event_occurrence_id')
-                ->whereNull('event_session_id')
-                ->delete();
+            $delete = EventClassification::query()->where('event_id', $eventId);
+
+            if ($occurrenceId === null) {
+                $delete->whereNull('event_occurrence_id');
+            } else {
+                $delete->where('event_occurrence_id', $occurrenceId);
+            }
+
+            if ($sessionId === null) {
+                $delete->whereNull('event_session_id');
+            } else {
+                $delete->where('event_session_id', $sessionId);
+            }
+
+            $delete->delete();
 
             if ($termIds->isEmpty()) {
                 return 0;
@@ -65,7 +80,9 @@ final class SyncEventClassificationsAction
                 }
 
                 EventClassification::query()->create([
-                    'event_id' => $event->getKey(),
+                    'event_id' => $eventId,
+                    'event_occurrence_id' => $occurrenceId,
+                    'event_session_id' => $sessionId,
                     'event_taxonomy_id' => $term->event_taxonomy_id,
                     'event_term_id' => $term->getKey(),
                     'taxonomy_code' => $taxonomies->get((string) $term->event_taxonomy_id)?->code,

@@ -16,7 +16,7 @@ interface HasEventLifecycle
 
     public function delay(?string $reason = null, ?DateTimeInterface $expectedStartsAt = null): void;
 
-    public function reschedule(DateTimeInterface $startsAt, DateTimeInterface $endsAt, array $options = []): void;
+    public function reschedule(DateTimeInterface $startsAt, ?DateTimeInterface $endsAt = null, array $options = []): void;
 
     public function complete(): void;
 

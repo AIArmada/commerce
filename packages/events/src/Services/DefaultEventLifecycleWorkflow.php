@@ -37,12 +37,13 @@ use AIArmada\Events\States\OccurrenceStatus\Rescheduled as OccurrenceRescheduled
 use AIArmada\Events\Support\EventWriteGuard;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
+use InvalidArgumentException;
 
 final class DefaultEventLifecycleWorkflow implements EventLifecycleWorkflow
 {
     public function publish(Event $event): void
     {
-        EventWriteGuard::findOrFail($event);
+        $this->guardEvent($event);
 
         $event->published_at = CarbonImmutable::now();
         $event->status->transitionTo(EventPublishedState::class);
@@ -54,7 +55,11 @@ final class DefaultEventLifecycleWorkflow implements EventLifecycleWorkflow
 
     public function cancel(Event | EventOccurrence | EventSession $target, ?string $reason = null): void
     {
-        EventWriteGuard::findOrFail($target->event_id ?? $target->id);
+        if ($target instanceof Event) {
+            $this->guardEvent($target);
+        } else {
+            $this->guardChild($target);
+        }
 
         $target->cancelled_at = CarbonImmutable::now();
         $target->status_reason = $reason;
@@ -78,7 +83,11 @@ final class DefaultEventLifecycleWorkflow implements EventLifecycleWorkflow
 
     public function postpone(Event | EventOccurrence | EventSession $target, ?string $reason = null): void
     {
-        EventWriteGuard::findOrFail($target->event_id ?? $target->id);
+        if ($target instanceof Event) {
+            $this->guardEvent($target);
+        } else {
+            $this->guardChild($target);
+        }
 
         $target->postponed_at = CarbonImmutable::now();
         $target->status_reason = $reason;
@@ -102,7 +111,7 @@ final class DefaultEventLifecycleWorkflow implements EventLifecycleWorkflow
 
     public function delay(EventOccurrence | EventSession $target, ?string $reason = null, ?DateTimeInterface $expectedStartsAt = null): void
     {
-        EventWriteGuard::findOrFail($target->event_id);
+        $this->guardChild($target);
 
         $target->delayed_at = CarbonImmutable::now();
         $target->status_reason = $reason;
@@ -117,22 +126,47 @@ final class DefaultEventLifecycleWorkflow implements EventLifecycleWorkflow
         }
     }
 
-    public function reschedule(EventOccurrence | EventSession $target, DateTimeInterface $newStartsAt, DateTimeInterface $newEndsAt, array $options = []): EventOccurrence | EventSession
+    public function reschedule(EventOccurrence | EventSession $target, DateTimeInterface $newStartsAt, ?DateTimeInterface $newEndsAt = null, array $options = []): EventOccurrence | EventSession
     {
-        EventWriteGuard::findOrFail($target->event_id);
+        $this->guardChild($target);
+
+        $startsAt = CarbonImmutable::createFromInterface($newStartsAt)->setTimezone('UTC');
+        $endsAt = $newEndsAt === null
+            ? null
+            : CarbonImmutable::createFromInterface($newEndsAt)->setTimezone('UTC');
+
+        if ($endsAt instanceof CarbonImmutable && $endsAt->lessThanOrEqualTo($startsAt)) {
+            throw new InvalidArgumentException('Rescheduled end time must be after the start time.');
+        }
 
         $oldTarget = clone $target;
 
-        $target->starts_at = CarbonImmutable::createFromInterface($newStartsAt);
-        $target->ends_at = CarbonImmutable::createFromInterface($newEndsAt);
+        $target->starts_at = $startsAt;
+        $target->ends_at = $endsAt;
+
+        if (isset($options['timezone']) && is_string($options['timezone']) && $options['timezone'] !== '') {
+            $target->timezone = $options['timezone'];
+        }
+
         $target->rescheduled_at = CarbonImmutable::now();
-        $target->status->transitionTo(OccurrenceRescheduledState::class);
+
+        $currentStatus = (string) $target->status->getValue();
+
+        if ($currentStatus === 'rescheduled') {
+            $target->save();
+        } else {
+            if ($currentStatus === 'live') {
+                throw new InvalidArgumentException('Live occurrences and sessions cannot be rescheduled.');
+            }
+
+            $target->status->transitionTo(OccurrenceRescheduledState::class);
+        }
 
         $this->recordChange($target, 'rescheduled', null, [
             'old_starts_at' => $oldTarget->starts_at,
             'old_ends_at' => $oldTarget->ends_at,
-            'new_starts_at' => $newStartsAt,
-            'new_ends_at' => $newEndsAt,
+            'new_starts_at' => $startsAt,
+            'new_ends_at' => $endsAt,
         ]);
 
         if ($target instanceof EventOccurrence) {
@@ -146,7 +180,11 @@ final class DefaultEventLifecycleWorkflow implements EventLifecycleWorkflow
 
     public function complete(Event | EventOccurrence | EventSession $target): void
     {
-        EventWriteGuard::findOrFail($target->event_id ?? $target->id);
+        if ($target instanceof Event) {
+            $this->guardEvent($target);
+        } else {
+            $this->guardChild($target);
+        }
 
         $target->completed_at = CarbonImmutable::now();
 
@@ -167,7 +205,11 @@ final class DefaultEventLifecycleWorkflow implements EventLifecycleWorkflow
 
     public function archive(Event | EventOccurrence $target, ?string $reason = null): void
     {
-        EventWriteGuard::findOrFail($target->event_id ?? $target->id);
+        if ($target instanceof Event) {
+            $this->guardEvent($target);
+        } else {
+            $this->guardChild($target);
+        }
 
         $target->archived_at = CarbonImmutable::now();
         $target->status_reason = $reason;
@@ -181,6 +223,38 @@ final class DefaultEventLifecycleWorkflow implements EventLifecycleWorkflow
         $this->recordChange($target, 'archived', $reason);
 
         event(new EventArchived($target, $reason));
+    }
+
+    private function guardEvent(Event $event): void
+    {
+        $key = $event->getKey();
+
+        if ($key === null || ! $event->exists) {
+            throw new InvalidArgumentException('Lifecycle actions require a persisted event.');
+        }
+
+        $persisted = EventWriteGuard::findOrFail($key);
+
+        $event->setRawAttributes($persisted->getAttributes(), true);
+        $event->setRelations([]);
+        $event->exists = true;
+    }
+
+    private function guardChild(EventOccurrence | EventSession $target): void
+    {
+        $key = $target->getKey();
+
+        if ($key === null || ! $target->exists) {
+            throw new InvalidArgumentException('Lifecycle actions require a persisted occurrence or session.');
+        }
+
+        $persisted = $target::query()->withoutOwnerScope()->whereKey($key)->firstOrFail();
+
+        EventWriteGuard::findOrFail($persisted->event_id);
+
+        $target->setRawAttributes($persisted->getAttributes(), true);
+        $target->setRelations([]);
+        $target->exists = true;
     }
 
     private function recordChange(Event | EventOccurrence | EventSession $target, string $changeType, ?string $reason = null, array $context = []): void

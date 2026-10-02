@@ -106,6 +106,144 @@ it('generates a slug when the slug input is blank', function (): void {
     expect($session->slug)->toBe('workshop-c');
 });
 
+it('uniquifies duplicate session slugs within the event', function (): void {
+    $first = app(CreateEventSessionAction::class)->handle(
+        $this->occurrence,
+        [
+            'title' => 'Keynote',
+            'starts_at' => '2026-07-01 09:00:00',
+            'ends_at' => '2026-07-01 10:00:00',
+        ],
+    );
+
+    $second = app(CreateEventSessionAction::class)->handle(
+        $this->occurrence,
+        [
+            'title' => 'Keynote',
+            'starts_at' => '2026-07-01 11:00:00',
+            'ends_at' => '2026-07-01 12:00:00',
+        ],
+    );
+
+    expect($first->slug)->toBe('keynote')
+        ->and($second->slug)->toBe('keynote-2');
+});
+
+it('increments suffixes across repeated session title collisions', function (): void {
+    $action = app(CreateEventSessionAction::class);
+
+    $slugs = [];
+
+    foreach ([9, 11, 13] as $hour) {
+        $slugs[] = $action->handle(
+            $this->occurrence,
+            [
+                'title' => 'Keynote',
+                'starts_at' => sprintf('2026-07-01 %02d:00:00', $hour),
+                'ends_at' => sprintf('2026-07-01 %02d:30:00', $hour),
+            ],
+        )->slug;
+    }
+
+    expect($slugs)->toBe(['keynote', 'keynote-2', 'keynote-3']);
+});
+
+it('uniquifies explicit session slugs containing like wildcards', function (): void {
+    $action = app(CreateEventSessionAction::class);
+
+    $slugs = [];
+
+    foreach ([9, 11, 13] as $hour) {
+        $slugs[] = $action->handle(
+            $this->occurrence,
+            [
+                'title' => 'Underscore Session',
+                'slug' => 'session_1',
+                'starts_at' => sprintf('2026-07-01 %02d:00:00', $hour),
+                'ends_at' => sprintf('2026-07-01 %02d:30:00', $hour),
+            ],
+        )->slug;
+    }
+
+    expect($slugs)->toBe(['session_1', 'session_1-2', 'session_1-3']);
+
+    $percent = $action->handle(
+        $this->occurrence,
+        [
+            'title' => 'Percent Session',
+            'slug' => '100%_live',
+            'starts_at' => '2026-07-02 09:00:00',
+            'ends_at' => '2026-07-02 10:00:00',
+        ],
+    );
+
+    $percentRepeat = $action->handle(
+        $this->occurrence,
+        [
+            'title' => 'Percent Session Repeat',
+            'slug' => '100%_live',
+            'starts_at' => '2026-07-02 11:00:00',
+            'ends_at' => '2026-07-02 12:00:00',
+        ],
+    );
+
+    expect($percent->slug)->toBe('100%_live')
+        ->and($percentRepeat->slug)->toBe('100%_live-2');
+});
+
+it('uniquifies explicit session slugs containing backslashes', function (): void {
+    $action = app(CreateEventSessionAction::class);
+
+    $first = $action->handle(
+        $this->occurrence,
+        [
+            'title' => 'Backslash Session',
+            'slug' => 'track\a',
+            'starts_at' => '2026-07-01 09:00:00',
+            'ends_at' => '2026-07-01 10:00:00',
+        ],
+    );
+
+    $second = $action->handle(
+        $this->occurrence,
+        [
+            'title' => 'Backslash Session Repeat',
+            'slug' => 'track\a',
+            'starts_at' => '2026-07-01 11:00:00',
+            'ends_at' => '2026-07-01 12:00:00',
+        ],
+    );
+
+    expect($first->slug)->toBe('track\a')
+        ->and($second->slug)->toBe('track\a-2');
+});
+
+it('allows the same session slug in different events', function (): void {
+    $otherEvent = Event::factory()->create();
+    $otherOccurrence = EventOccurrence::factory()->create(['event_id' => $otherEvent->id]);
+
+    $first = app(CreateEventSessionAction::class)->handle(
+        $this->occurrence,
+        [
+            'title' => 'Shared Title',
+            'starts_at' => '2026-07-01 09:00:00',
+            'ends_at' => '2026-07-01 10:00:00',
+        ],
+    );
+
+    $second = app(CreateEventSessionAction::class)->handle(
+        $otherOccurrence,
+        [
+            'title' => 'Shared Title',
+            'starts_at' => '2026-07-01 09:00:00',
+            'ends_at' => '2026-07-01 10:00:00',
+        ],
+    );
+
+    expect($first->slug)->toBe('shared-title')
+        ->and($second->slug)->toBe('shared-title');
+});
+
 it('validates session title is required', function (): void {
     app(CreateEventSessionAction::class)->handle($this->occurrence, []);
 })->throws(InvalidArgumentException::class, 'Session title is required.');
