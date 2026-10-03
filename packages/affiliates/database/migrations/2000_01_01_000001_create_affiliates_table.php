@@ -20,6 +20,7 @@ return new class extends Migration
             $table->string('name', 120);
             $table->text('description')->nullable();
             $table->string('status', 32)->default('draft')->index();
+            $table->string('registration_approval_mode', 16)->default('admin');
             $table->string('commission_type', 24)->default('percentage')->index();
             $table->unsignedInteger('commission_rate')->default(0); // cents or basis points
             $table->string('currency', 3)->default(config('affiliates.currency.default', 'USD'))->index();
@@ -38,6 +39,7 @@ return new class extends Migration
             $table->timestampTz('paused_at')->nullable();
             $table->timestampsTz();
             $table->index(['status', 'activated_at'], 'affiliates_active_idx');
+            $table->index(['registration_approval_mode', 'status'], 'affiliates_open_approval_idx');
         });
     }
 };

@@ -16,6 +16,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->foreignUuid('link_id');
             $table->nullableUuidMorphs('owner');
+            $table->nullableUuidMorphs('subject');
             $table->timestampTz('occurred_at');
             $table->string('ip_address')->nullable();
             $table->text('user_agent')->nullable();
