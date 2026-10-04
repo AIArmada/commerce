@@ -281,7 +281,7 @@ it('records an affiliate conversion signal for the matching owner property', fun
         ->and($event->event_category)->toBe('conversion')
         ->and($event->signal_session_id)->not->toBeNull()
         ->and($event->signal_identity_id)->not->toBeNull()
-        ->and($event->revenue_minor)->toBe(28000)
+        ->and($event->revenue_minor)->toBe(0)
         ->and($event->currency)->toBe('MYR')
         ->and($event->source)->toBe('telegram')
         ->and($event->medium)->toBe('share')
@@ -412,4 +412,65 @@ it('ignores forged affiliate events that target another owner model id', functio
     ));
 
     expect(SignalEvent::query()->withoutOwnerScope()->count())->toBe(0);
+});
+
+it('deduplicates affiliate conversion retries without collapsing distinct conversions', function (): void {
+    $owner = User::query()->firstOrFail();
+
+    TrackedProperty::query()->create([
+        'name' => 'Affiliate Retry Property',
+        'slug' => 'affiliate-retry-property',
+        'type' => 'website',
+        'currency' => 'MYR',
+        'timezone' => 'UTC',
+        'is_active' => true,
+    ]);
+
+    $affiliate = Affiliate::query()->create([
+        'code' => 'RETRY-AFF',
+        'name' => 'Retry Affiliate',
+        'status' => Active::class,
+        'commission_type' => CommissionType::Percentage->value,
+        'commission_rate' => 1000,
+        'currency' => 'MYR',
+    ]);
+    $affiliate->forceFill([
+        'owner_type' => $owner->getMorphClass(),
+        'owner_id' => $owner->getKey(),
+    ])->save();
+
+    $makeConversion = function (string $reference) use ($affiliate, $owner): AffiliateConversion {
+        $conversion = AffiliateConversion::query()->create([
+            'affiliate_id' => $affiliate->getKey(),
+            'affiliate_code' => $affiliate->code,
+            'subject_key' => 'retry-subject',
+            'subject_instance' => 'share-link',
+            'external_reference' => $reference,
+            'conversion_type' => 'registration',
+            'subtotal_minor' => 32000,
+            'value_minor' => 28000,
+            'commission_minor' => 2800,
+            'commission_currency' => 'MYR',
+            'status' => ApprovedConversion::class,
+            'channel' => 'share',
+            'occurred_at' => now(),
+        ]);
+        $conversion->forceFill([
+            'owner_type' => $owner->getMorphClass(),
+            'owner_id' => $owner->getKey(),
+        ])->save();
+
+        return $conversion;
+    };
+
+    $first = $makeConversion('RETRY-REF-1');
+    Event::dispatch(new AffiliateConversionRecorded(AffiliateConversionData::fromModel($first)));
+    Event::dispatch(new AffiliateConversionRecorded(AffiliateConversionData::fromModel($first)));
+
+    expect(SignalEvent::query()->withoutOwnerScope()->where('event_name', 'affiliate.conversion.recorded')->count())->toBe(1);
+
+    $second = $makeConversion('RETRY-REF-2');
+    Event::dispatch(new AffiliateConversionRecorded(AffiliateConversionData::fromModel($second)));
+
+    expect(SignalEvent::query()->withoutOwnerScope()->where('event_name', 'affiliate.conversion.recorded')->count())->toBe(2);
 });

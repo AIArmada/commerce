@@ -147,3 +147,43 @@ it('records a voucher applied signal for the owner-scoped property', function ()
             'voucher_value' => 1000,
         ]);
 });
+
+it('records repeated cart and voucher interactions without collapsing them', function (): void {
+    $owner = User::query()->firstOrFail();
+
+    TrackedProperty::query()->create([
+        'name' => 'Cart Retry Property',
+        'slug' => 'cart-retry-property',
+        'type' => 'website',
+        'currency' => 'MYR',
+        'timezone' => 'UTC',
+        'is_active' => true,
+    ]);
+
+    $storage = (new InMemoryStorage)->withOwner($owner);
+    $cart = new Cart($storage, 'cart-retry', events: null);
+    $item = new CartItem('sku-retry', 'Retry Tee', 4900, 2);
+
+    Event::dispatch(new ItemAdded($item, $cart));
+    Event::dispatch(new ItemAdded($item, $cart));
+
+    $voucher = VoucherData::fromArray([
+        'id' => 'voucher-retry',
+        'code' => 'RETRY10',
+        'name' => 'Retry Discount',
+        'type' => VoucherType::Fixed->value,
+        'value' => 1000,
+        'currency' => 'MYR',
+        'status' => Active::class,
+    ]);
+
+    Event::dispatch(new VoucherApplied($cart, $voucher));
+    Event::dispatch(new VoucherApplied($cart, $voucher));
+
+    expect(SignalEvent::query()->withoutOwnerScope()->where('event_name', 'cart.item.added')->count())->toBe(2)
+        ->and(SignalEvent::query()->withoutOwnerScope()->where('event_name', 'voucher.applied')->count())->toBe(2);
+
+    Event::dispatch(new ItemAdded(new CartItem('sku-other', 'Other Tee', 4900, 1), $cart));
+
+    expect(SignalEvent::query()->withoutOwnerScope()->where('event_name', 'cart.item.added')->count())->toBe(3);
+});

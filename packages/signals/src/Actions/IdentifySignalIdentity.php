@@ -9,12 +9,15 @@ use AIArmada\Signals\Models\SignalIdentity;
 use AIArmada\Signals\Models\TrackedProperty;
 use AIArmada\Signals\Services\SignalPropertyFilter;
 use AIArmada\Signals\Services\SignalsIngestionRequestValidator;
+use AIArmada\Signals\Support\DuplicateKeyViolation;
 use Carbon\CarbonImmutable;
 use Carbon\Exceptions\InvalidFormatException;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -59,7 +62,31 @@ final class IdentifySignalIdentity
         $this->syncOwnerFromProperty($identity, $trackedProperty);
         $owner = OwnerContext::fromTypeAndId($trackedProperty->owner_type, $trackedProperty->owner_id);
 
-        OwnerContext::withOwner($owner, static fn (): bool => $identity->save());
+        try {
+            OwnerContext::withOwner($owner, static fn (): bool => (bool) DB::transaction(static fn (): bool => $identity->save()));
+
+            return $identity;
+        } catch (QueryException $e) {
+            if (! DuplicateKeyViolation::is($e) || ($payload['external_id'] ?? null) === null) {
+                throw $e;
+            }
+        }
+
+        $identity = $this->resolveIdentity($trackedProperty, $payload);
+
+        $identity->fill([
+            'email' => $payload['email'] ?? $identity->email,
+            'anonymous_id' => $payload['anonymous_id'] ?? $identity->anonymous_id,
+            'traits' => $traits ?? $identity->traits,
+            'first_seen_at' => $identity->first_seen_at ?? $seenAt,
+            'last_seen_at' => $seenAt,
+            'auth_user_type' => $authUserType ?? $identity->auth_user_type,
+            'auth_user_id' => $authUserId ?? $identity->auth_user_id,
+        ]);
+
+        $this->syncOwnerFromProperty($identity, $trackedProperty);
+
+        OwnerContext::withOwner($owner, static fn (): bool => (bool) DB::transaction(static fn (): bool => $identity->save()));
 
         return $identity;
     }

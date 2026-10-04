@@ -6,6 +6,7 @@ namespace AIArmada\Signals\Jobs;
 
 use AIArmada\CommerceSupport\Contracts\OwnerScopedJob;
 use AIArmada\CommerceSupport\Http\PinnedHttpClient;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerJobContext;
 use AIArmada\CommerceSupport\Support\PublicHttpUrlGuard;
 use AIArmada\CommerceSupport\Traits\OwnerContextJob;
@@ -87,19 +88,39 @@ final class DispatchSignalAlertDelivery implements OwnerScopedJob, ShouldQueue
 
     public function failed(Throwable $exception): void
     {
-        $delivery = SignalAlertDelivery::query()->withoutOwnerScope()->find($this->deliveryId);
-
-        if (! $delivery instanceof SignalAlertDelivery || $delivery->status === 'sent') {
+        try {
+            $context = $this->ownerContext();
+            $owner = $context->isExplicitGlobal() ? null : $context->toOwnerModelOrFail();
+        } catch (Throwable) {
             return;
         }
 
-        $delivery->forceFill([
-            'status' => 'dead',
-            'dead_at' => CarbonImmutable::now(),
-            'leased_at' => null,
-            'last_error_code' => $this->safeErrorCode($exception),
-        ])->save();
-        $this->refreshLog($delivery);
+        if (! $context->isExplicitGlobal() && $owner === null) {
+            return;
+        }
+
+        OwnerContext::withOwner($owner, function () use ($exception): void {
+            $this->failDelivery($exception);
+        });
+    }
+
+    private function failDelivery(Throwable $exception): void
+    {
+        DB::transaction(function () use ($exception): void {
+            $delivery = SignalAlertDelivery::query()->lockForUpdate()->find($this->deliveryId);
+
+            if (! $delivery instanceof SignalAlertDelivery || in_array($delivery->status, ['sent', 'dead'], true)) {
+                return;
+            }
+
+            $delivery->forceFill([
+                'status' => 'dead',
+                'dead_at' => CarbonImmutable::now(),
+                'leased_at' => null,
+                'last_error_code' => $this->safeErrorCode($exception),
+            ])->save();
+            $this->refreshLog($delivery);
+        });
     }
 
     private function claim(): ?SignalAlertDelivery

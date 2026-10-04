@@ -131,7 +131,7 @@ describe('OrdersServiceProvider', function (): void {
         OwnerContext::withOwner($owner, function () use (&$listener, $order): void {
             expect($listener)->toBeInstanceOf(Closure::class);
 
-            $listener(new OrderPaid($order, 'txn_123', 'chip'));
+            $listener(new OrderPaid($order, 'txn_123', 'chip', (int) $order->grand_total));
         });
 
         Notification::assertSentOnDemand(

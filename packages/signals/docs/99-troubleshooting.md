@@ -74,6 +74,18 @@ php artisan signals:aggregate-daily --days=2
 
 - Ensure scheduler is running in production.
 
+## Child Writes Fail With an Authorization Error
+
+- `tracked_property_id` is immutable once persisted for identities, sessions, and events. Changing it on an existing row is rejected even for properties of the same owner.
+- Referenced properties, sessions, and identities must exist. Events, sessions, and identities reject missing references, and events/sessions reject cross-property session/identity references, even when owner scoping is disabled.
+- With `signals.owner.enabled`, every `tracked_property_id`, `signal_session_id`, `signal_identity_id`, and `signal_alert_log_id` is additionally ownership-validated on save. A foreign id is rejected.
+- Wrap owner work in `OwnerContext::withOwner($owner, ...)` and global work in `OwnerContext::withOwner(null, ...)`. A missing owner is not the same as global access.
+
+## The Same Idempotency Key Created Two Events
+
+- This is expected when the key was submitted on both ingestion boundaries: browser and trusted keys live in separate namespaces scoped by `ingestion_source`.
+- Retries within one boundary still deduplicate. Check the `ingestion_source` column on both rows to confirm which path each came from.
+
 ## Alert Rules Never Trigger
 
 - Run dry-run processing:
@@ -83,4 +95,5 @@ php artisan signals:process-alerts --dry-run
 ```
 
 - Check `is_active`, threshold values, and cooldown windows on `SignalAlertRule`.
-- If you expected alerts during ingest, confirm `signals.features.alerts.evaluate_on_ingest.enabled` is turned on.
+- If you expected alerts during ingest, confirm `signals.features.alerts.evaluate_on_ingest.enabled` is turned on. On-ingest alert effects run after the outermost transaction commits; if the outer transaction rolls back, no alert job or log escapes.
+- Final delivery failures lock the delivery row inside a transaction and leave `sent` and `dead` rows terminal.
