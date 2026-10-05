@@ -431,6 +431,7 @@ it('exposes the Sabah rectified towns as postal localities', function (): void {
         'papar:pekan-lok-kawi' => 'papar',
         'kota-marudu:bandau' => 'kota-marudu',
         'kota-marudu:langkon' => 'kota-marudu',
+        'kota-marudu:pingan-pingan' => 'kota-marudu',
         'kudat:pekan-matunggong' => 'kudat',
         'kudat:pekan-sikuati' => 'kudat',
         'kudat:pekan-karakit' => 'kudat',
@@ -461,7 +462,8 @@ it('exposes the Sabah rectified towns as postal localities', function (): void {
 
     expect($roles['my:subdistrict:district:sabah:membakut:pekan-membakut'][0]['role'])->toBe('postal_locality')
         ->and($roles['my:subdistrict:district:sabah:paitan:pamol'][0]['role'])->toBe('postal_locality')
-        ->and($roles['my:subdistrict:district:sabah:tawau:merotai-besar'][0]['role'])->toBe('postal_locality');
+        ->and($roles['my:subdistrict:district:sabah:tawau:merotai-besar'][0]['role'])->toBe('postal_locality')
+        ->and($roles['my:subdistrict:district:sabah:kota-marudu:pingan-pingan'][0]['role'])->toBe('postal_locality');
 
     $links = $provider->areaRelationships(new AddressCountry)['my:subdistrict:district:sabah:membakut:pekan-membakut'];
 
@@ -504,10 +506,12 @@ it('places the Sabah rectified postcodes on exactly one primary area', function 
 
     $byCode = $source->postalCodes()->collect()->groupBy->code;
 
-    // Phantom Kota Marudu overflow codes are gone entirely.
-    foreach (['89130', '89137', '89138', '89139'] as $code) {
-        expect($byCode->has($code))->toBeFalse($code);
-    }
+    // Pingan Pingan was once treated as a phantom Kota Marudu overflow,
+    // but it is a real Pos Malaysia office set: delivery code 89130 plus
+    // PO-box/window/lockbag codes 89137-89139, each with its own
+    // postcode.my locality page (Kota Marudu, Sabah), and all four sit in
+    // a Pos-live cell (Kota Marudu, Oct 2026 probe). The rectification
+    // directories simply do not cover this office.
 
     $primaries = static fn (string $code): array => $byCode->get($code, collect())
         ->filter(static fn (PostalCodeData $row): bool => $row->isPrimary)
@@ -519,7 +523,11 @@ it('places the Sabah rectified postcodes on exactly one primary area', function 
         ->and($primaries('89720'))->toBe(['my:subdistrict:district:sabah:membakut:pekan-membakut'])
         ->and($primaries('89500'))->toBe(['my:subdistrict:district:sabah:penampang:pekan-donggongon'])
         ->and($primaries('90400'))->toBe(['my:subdistrict:district:sabah:paitan:pamol'])
-        ->and($primaries('91150'))->toBe(['my:subdistrict:district:sabah:lahad-datu:cenderawasih']);
+        ->and($primaries('91150'))->toBe(['my:subdistrict:district:sabah:lahad-datu:cenderawasih'])
+        ->and($primaries('89130'))->toBe(['my:subdistrict:district:sabah:kota-marudu:pingan-pingan'])
+        ->and($primaries('89137'))->toBe(['my:subdistrict:district:sabah:kota-marudu:pingan-pingan'])
+        ->and($primaries('89138'))->toBe(['my:subdistrict:district:sabah:kota-marudu:pingan-pingan'])
+        ->and($primaries('89139'))->toBe(['my:subdistrict:district:sabah:kota-marudu:pingan-pingan']);
 
     $secondaries = static fn (string $code): array => $byCode->get($code, collect())
         ->reject(static fn (PostalCodeData $row): bool => $row->isPrimary)
@@ -696,8 +704,11 @@ it('places the Sarawak rectified postcodes on exactly one primary area', functio
 
     $byCode = $source->postalCodes()->collect()->groupBy->code;
 
-    // Phantom Lundu overflow code is gone entirely.
-    expect($byCode->has('94111'))->toBeFalse();
+    // 94111 was once treated as a phantom Lundu overflow, but it is
+    // Tanjung Datu's special postcode: Pos Malaysia issued it to the
+    // Tanjung Datu Lighthouse with Malaysia Book of Records recognition
+    // (Sarawak Tribune, Nov 2024), so it resolves on Lundu town. Its
+    // primary is asserted in the chain below.
 
     $primaries = static fn (string $code): array => $byCode->get($code, collect())
         ->filter(static fn (PostalCodeData $row): bool => $row->isPrimary)
@@ -718,7 +729,8 @@ it('places the Sarawak rectified postcodes on exactly one primary area', functio
         ->and($primaries('97200'))->toBe(['my:subdistrict:district:sarawak:tatau:tatau'])
         ->and($primaries('98100'))->toBe(['my:subdistrict:district:sarawak:miri:lutong'])
         ->and($primaries('98200'))->toBe(['my:subdistrict:district:sarawak:subis:niah'])
-        ->and($primaries('96010'))->toBe(['my:subdistrict:district:sarawak:sibu:sibu-jaya']);
+        ->and($primaries('96010'))->toBe(['my:subdistrict:district:sarawak:sibu:sibu-jaya'])
+        ->and($primaries('94111'))->toBe(['my:subdistrict:district:sarawak:lundu:lundu']);
 
     $secondaries = static fn (string $code): array => $byCode->get($code, collect())
         ->reject(static fn (PostalCodeData $row): bool => $row->isPrimary)
@@ -1459,6 +1471,47 @@ it('places the Selangor town-code primaries on the bandar and pekan rows', funct
     expect($primaries('42700'))->toBe(['my:subdistrict:district:selangor:kuala-langat:banting'])
         ->and($primaries('43400'))->toBe(['my:subdistrict:district:selangor:petaling:serdang'])
         ->and($primaries('35900'))->toBe(['my:subdistrict:district:perak:muallim:tanjong-malim']);
+
+    // 42920 resolves on the Pulau Indah town row with Mukim Klang as
+    // secondary (postcode.my "42920 Pulau Lumut", Pos-live cell).
+    expect($primaries('42920'))->toBe(['my:subdistrict:district:selangor:klang:pulau-indah']);
+
+    $secondaries = static fn (string $code): array => $byCode->get($code, collect())
+        ->reject(static fn (PostalCodeData $row): bool => $row->isPrimary)
+        ->map(static fn (PostalCodeData $row): string => (string) $row->areaSourceId)
+        ->values()
+        ->all();
+
+    expect($secondaries('42920'))->toBe(['my:subdistrict:district:selangor:klang:klang']);
+});
+
+it('exposes the Pulau Indah town row with its former name', function (): void {
+    $provider = app(MalaysiaGeographyProvider::class);
+    $areas = $provider->addressAreaSource()->areas()->collect()->keyBy->sourceId;
+
+    $pulauIndah = $areas->get('my:subdistrict:district:selangor:klang:pulau-indah');
+
+    expect($pulauIndah->type)->toBe('bandar')
+        ->and($pulauIndah->level)->toBe(3)
+        ->and($pulauIndah->parentSourceId)->toBe('my:district:selangor:klang');
+
+    $country = new AddressCountry;
+    $roles = $provider->areaRoles($country);
+
+    expect($roles['my:subdistrict:district:selangor:klang:pulau-indah'][0]['role'])->toBe('administrative_subdivision');
+
+    $names = $provider->areaNames($country);
+
+    expect($names['my:subdistrict:district:selangor:klang:pulau-indah'])->toContain(
+        ['name' => 'Pulau Lumut', 'name_type' => 'alternative'],
+    );
+
+    $links = $provider->areaRelationships($country)['my:subdistrict:district:selangor:klang:pulau-indah'];
+
+    expect($links)->toContain(
+        ['parent_source_id' => 'my:district:selangor:klang', 'relationship_type' => 'contains', 'hierarchy_type' => 'administrative'],
+        ['parent_source_id' => 'my:state:selangor', 'relationship_type' => 'contains', 'hierarchy_type' => 'administrative'],
+    );
 });
 
 it('exposes the Terengganu book-to-row postal spellings as alternative names', function (): void {
@@ -1559,4 +1612,89 @@ it('places Putrajaya town-code primaries on the lead precincts', function (): vo
         ->and($primaries('62100'))->toBe(['my:subdistrict:state:wilayah-persekutuan-putrajaya:precinct-2'])
         ->and($primaries('62300'))->toBe(['my:subdistrict:state:wilayah-persekutuan-putrajaya:precinct-11'])
         ->and($primaries('62502'))->toBe(['my:state:wilayah-persekutuan-putrajaya']);
+});
+
+it('resolves the proven gap postcodes on their postal towns', function (): void {
+    $dir = __DIR__ . '/../../../../packages/addressing/resources/geography';
+    $source = new CsvPostalCodeSource('MY', $dir . '/malaysia-postal-codes.csv', $dir . '/malaysia-postal-code-areas.csv', 'aiarmada_addressing_malaysia_v1');
+
+    $byCode = $source->postalCodes()->collect()->groupBy->code;
+
+    // Pos Malaysia getStateByPostcode returns "Post Code Not Exist" for
+    // these (verified twice, Oct 2026); they stay out of the dataset.
+    // 14700, 42425, 42900, 42907 were packaged phantoms: each sits in a
+    // fully dead API neighborhood (146xx-148xx, 4242x, 4290x) and was
+    // purged Oct 2026. Pulau Indah is 42920; Telok Panglima Garang is
+    // 42500/42507/42509.
+    foreach (['22564', '27800', '29115', '29452', '29466', '94100', '48500', '56300', '64999', '74300', '14700', '42425', '42900', '42907'] as $code) {
+        expect($byCode->has($code))->toBeFalse($code);
+    }
+
+    $primaries = static fn (string $code): array => $byCode->get($code, collect())
+        ->filter(static fn (PostalCodeData $row): bool => $row->isPrimary)
+        ->map(static fn (PostalCodeData $row): string => (string) $row->areaSourceId)
+        ->all();
+
+    // Each code below is proven by addressed usage (school, clinic,
+    // agency, or business address) or a clean courier listing, on top of
+    // a non-400 Pos range check; the primary mirrors the sibling base
+    // code for the same postal town. Pos 200s alone prove only a live
+    // range, never exact existence.
+    expect($primaries('72130'))->toBe(['my:subdistrict:district:negeri-sembilan:jempol:bandar-seri-jempol'])
+        ->and($primaries('76470'))->toBe(['my:subdistrict:district:melaka:melaka-tengah:melaka'])
+        ->and($primaries('15250'))->toBe(['my:subdistrict:district:kelantan:kota-bharu:kota-bharu'])
+        ->and($primaries('26020'))->toBe(['my:subdistrict:district:pahang:kuantan:kuantan'])
+        ->and($primaries('41450'))->toBe(['my:subdistrict:district:selangor:klang:bandar-klang'])
+        ->and($primaries('42005'))->toBe(['my:subdistrict:district:selangor:klang:port-swettenham'])
+        ->and($primaries('46620'))->toBe(['my:subdistrict:district:selangor:petaling:petaling-jaya'])
+        ->and($primaries('54080'))->toBe(['my:state:wilayah-persekutuan-kuala-lumpur'])
+        ->and($primaries('83740'))->toBe(['my:subdistrict:district:johor:batu-pahat:yong-peng'])
+        ->and($primaries('84060'))->toBe(['my:subdistrict:district:johor:muar:bandar'])
+        ->and($primaries('85007'))->toBe(['my:subdistrict:district:johor:segamat:segamat'])
+        ->and($primaries('86009'))->toBe(['my:subdistrict:district:johor:kluang:bandar-kluang'])
+        ->and($primaries('89070'))->toBe(['my:subdistrict:district:sabah:kudat:pekan-kudat'])
+        // 11460 (Padang Tembak) takes the George Town primary: no Padang
+        // Tembak row exists (250 Jalan Air Itam uses 11460 George Town).
+        // 40750/47580/80120 come from Samsung's delivery list, which
+        // carries zero known-dead codes. (94111 Tanjung Datu is covered
+        // by the Sarawak rectified-postcodes test instead.)
+        ->and($primaries('11460'))->toBe(['my:subdistrict:district:pulau-pinang:timur-laut:bandar-george-town'])
+        ->and($primaries('40750'))->toBe(['my:subdistrict:district:selangor:petaling:shah-alam'])
+        ->and($primaries('46661'))->toBe(['my:subdistrict:district:selangor:petaling:petaling-jaya'])
+        ->and($primaries('47580'))->toBe(['my:subdistrict:district:selangor:petaling:subang-jaya'])
+        ->and($primaries('58400'))->toBe(['my:state:wilayah-persekutuan-kuala-lumpur'])
+        ->and($primaries('59400'))->toBe(['my:state:wilayah-persekutuan-kuala-lumpur'])
+        ->and($primaries('80120'))->toBe(['my:subdistrict:district:johor:johor-bahru:johor-bahru'])
+        ->and($primaries('81060'))->toBe(['my:subdistrict:district:johor:kulai:bandar-kulai'])
+        ->and($primaries('81150'))->toBe(['my:subdistrict:district:johor:johor-bahru:johor-bahru'])
+        ->and($primaries('83720'))->toBe(['my:subdistrict:district:johor:batu-pahat:yong-peng']);
+
+    // Excluded as unproven (Oct 2026 re-verification): live Pos range
+    // but no addressed usage, clean listing, or directory page found.
+    // These are NOT disproven — reinstate with concrete proof only.
+    foreach (['34210', '32910', '31958', '32699', '77453', '77483', '20126', '21455', '21710', '22009', '25562', '27101', '27356', '28108', '28293', '28773', '28781', '48040', '63009', '73530', '55555'] as $code) {
+        expect($byCode->has($code))->toBeFalse($code);
+    }
+
+    // The surviving codes behind the purged phantoms keep resolving
+    // (42920 now points at the Bandar Pulau Indah town row).
+    expect($primaries('42920'))->toBe(['my:subdistrict:district:selangor:klang:pulau-indah'])
+        ->and($primaries('42500'))->toBe(['my:subdistrict:district:selangor:kuala-langat:bandar-telok-panglima-garang'])
+        ->and($primaries('42507'))->toBe(['my:subdistrict:district:selangor:kuala-langat:bandar-telok-panglima-garang'])
+        ->and($primaries('42509'))->toBe(['my:subdistrict:district:selangor:kuala-langat:bandar-telok-panglima-garang']);
+
+    // 21040 keeps its Kuala Terengganu primary and gains the Marang
+    // mukims covering Kampung Temiang, Kampung Jerong Seberang, and
+    // Kampung Jerong Tuan (Pengkalan Berangan/Jerung cluster).
+    $secondaries = static fn (string $code): array => $byCode->get($code, collect())
+        ->reject(static fn (PostalCodeData $row): bool => $row->isPrimary)
+        ->map(static fn (PostalCodeData $row): string => (string) $row->areaSourceId)
+        ->values()
+        ->all();
+
+    expect($primaries('21040'))->toBe(['my:subdistrict:district:terengganu:kuala-terengganu:kuala-terengganu'])
+        ->and($secondaries('21040'))->toBe([
+            'my:subdistrict:district:terengganu:marang:jerung',
+            'my:subdistrict:district:terengganu:marang:bukit-payung',
+        ]);
 });
