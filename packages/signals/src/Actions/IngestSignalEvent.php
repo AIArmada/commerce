@@ -120,14 +120,19 @@ final class IngestSignalEvent implements SignalEventIngestor
                             $fresh->duration_milliseconds = max(0, (int) ($fresh->started_at?->diffInMilliseconds($occurredAt) ?? 0));
                         }
 
-                        $hasOtherEvents = $fresh->events()->whereKeyNot($event->id)->exists();
+                        // Shared-locking read: after waiting on the session row lock, a
+                        // plain read could still see the pre-commit snapshot and
+                        // wrongly keep bounced_at on a multi-event session.
+                        $hasOtherEvents = $fresh->events()->whereKeyNot($event->id)->sharedLock()->value('id') !== null;
                         $fresh->bounced_at = $hasOtherEvents ? null : $fresh->bounced_at ?? CarbonImmutable::now();
                         $fresh->save();
                     }
                 }
 
                 return $event;
-            }));
+                // Bounded top-level retries: simultaneous duplicate inserts
+                // can deadlock on InnoDB; the retry then hits the winner path.
+            }, 5));
         } catch (QueryException $e) {
             $existing = $idempotencyKey !== null && DuplicateKeyViolation::is($e)
                 ? CrossTenantQuery::findExistingEvent($trackedProperty, $ingestionSource, $idempotencyKey)

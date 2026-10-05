@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Signals\Support;
 
 use AIArmada\Signals\Models\SignalEvent;
+use AIArmada\Signals\Models\SignalIdentity;
 use AIArmada\Signals\Models\SignalSession;
 use AIArmada\Signals\Models\TrackedProperty;
 use Illuminate\Database\Eloquent\Builder;
@@ -42,6 +43,20 @@ final class CrossTenantQuery
     }
 
     /**
+     * @return Builder<SignalIdentity>
+     */
+    public static function identityQuery(TrackedProperty $trackedProperty, string $externalId): Builder
+    {
+        return SignalIdentity::query()
+            ->withoutOwnerScope()
+            ->where('tracked_property_id', $trackedProperty->id)
+            ->where('external_id', $externalId)
+            ->where(function (Builder $query) use ($trackedProperty): void {
+                self::applyPropertyOwnerTuple($query, $trackedProperty);
+            });
+    }
+
+    /**
      * @return Builder<SignalSession>
      */
     public static function sessionQuery(TrackedProperty $trackedProperty, string $sessionIdentifier): Builder
@@ -56,7 +71,7 @@ final class CrossTenantQuery
     }
 
     /**
-     * @param  Builder<SignalEvent|SignalSession>  $query
+     * @param  Builder<SignalEvent|SignalSession|SignalIdentity>  $query
      */
     private static function applyPropertyOwnerTuple(Builder $query, TrackedProperty $trackedProperty): void
     {

@@ -76,16 +76,22 @@ final class ResolveSession
                 $isBot,
                 $storeRaw
             ): SignalSession {
-                $locked = CrossTenantQuery::sessionQuery($trackedProperty, $sessionIdentifier)
-                    ->lockForUpdate()
-                    ->first();
+                // Non-locking existence probe first: locking a missing row
+                // would take a gap lock and deadlock concurrent creators.
+                $knownId = CrossTenantQuery::sessionQuery($trackedProperty, $sessionIdentifier)->value('id');
 
-                if ($locked instanceof SignalSession) {
-                    $this->fillSession($locked, $identity, $payload, $request, $parsed, $rawUserAgent, $capturedIp, $isBot, $storeRaw);
-                    $this->syncOwnerFromProperty($locked, $trackedProperty);
-                    $locked->save();
+                if ($knownId !== null) {
+                    $locked = CrossTenantQuery::sessionQuery($trackedProperty, $sessionIdentifier)
+                        ->lockForUpdate()
+                        ->first();
 
-                    return $locked;
+                    if ($locked instanceof SignalSession) {
+                        $this->fillSession($locked, $identity, $payload, $request, $parsed, $rawUserAgent, $capturedIp, $isBot, $storeRaw);
+                        $this->syncOwnerFromProperty($locked, $trackedProperty);
+                        $locked->save();
+
+                        return $locked;
+                    }
                 }
 
                 $session = new SignalSession([

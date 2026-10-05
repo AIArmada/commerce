@@ -64,23 +64,13 @@ final class DispatchSignalAlertDelivery implements OwnerScopedJob, ShouldQueue
             return;
         }
 
+        $claimedAttempt = $delivery->attempt_count;
+
         try {
             $status = $this->deliver($delivery);
-            $delivery->forceFill([
-                'status' => 'sent',
-                'sent_at' => CarbonImmutable::now(),
-                'leased_at' => null,
-                'response_status' => $status,
-                'last_error_code' => null,
-            ])->save();
-            $this->refreshLog($delivery);
+            $this->finalizeAttempt($claimedAttempt, $status, null);
         } catch (Throwable $exception) {
-            $delivery->forceFill([
-                'status' => 'failed',
-                'leased_at' => null,
-                'last_error_code' => $this->safeErrorCode($exception),
-            ])->save();
-            $this->refreshLog($delivery);
+            $this->finalizeAttempt($claimedAttempt, null, $exception);
 
             throw new RuntimeException('Signals alert delivery failed.', previous: $exception);
         }
@@ -119,6 +109,50 @@ final class DispatchSignalAlertDelivery implements OwnerScopedJob, ShouldQueue
                 'leased_at' => null,
                 'last_error_code' => $this->safeErrorCode($exception),
             ])->save();
+            $this->refreshLog($delivery);
+        });
+    }
+
+    /**
+     * Finalize a transport outcome under a fresh row lock.
+     *
+     * The network send runs outside any transaction; only this narrow
+     * reread-and-write is locked. Terminal sent/dead rows win, and a stale
+     * completion never regresses a newer claim (identified by attempt_count).
+     */
+    private function finalizeAttempt(int $claimedAttempt, ?int $status, ?Throwable $error): void
+    {
+        DB::transaction(function () use ($claimedAttempt, $status, $error): void {
+            $delivery = SignalAlertDelivery::query()->lockForUpdate()->find($this->deliveryId);
+
+            if (! $delivery instanceof SignalAlertDelivery) {
+                return;
+            }
+
+            if (in_array($delivery->status, ['sent', 'dead'], true)) {
+                return;
+            }
+
+            if ($delivery->attempt_count !== $claimedAttempt) {
+                return;
+            }
+
+            if ($error instanceof Throwable) {
+                $delivery->forceFill([
+                    'status' => 'failed',
+                    'leased_at' => null,
+                    'last_error_code' => $this->safeErrorCode($error),
+                ])->save();
+            } else {
+                $delivery->forceFill([
+                    'status' => 'sent',
+                    'sent_at' => $delivery->sent_at ?? CarbonImmutable::now(),
+                    'leased_at' => null,
+                    'response_status' => $status,
+                    'last_error_code' => null,
+                ])->save();
+            }
+
             $this->refreshLog($delivery);
         });
     }

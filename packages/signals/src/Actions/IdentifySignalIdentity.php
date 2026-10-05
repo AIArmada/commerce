@@ -9,6 +9,7 @@ use AIArmada\Signals\Models\SignalIdentity;
 use AIArmada\Signals\Models\TrackedProperty;
 use AIArmada\Signals\Services\SignalPropertyFilter;
 use AIArmada\Signals\Services\SignalsIngestionRequestValidator;
+use AIArmada\Signals\Support\CrossTenantQuery;
 use AIArmada\Signals\Support\DuplicateKeyViolation;
 use Carbon\CarbonImmutable;
 use Carbon\Exceptions\InvalidFormatException;
@@ -70,25 +71,47 @@ final class IdentifySignalIdentity
             if (! DuplicateKeyViolation::is($e) || ($payload['external_id'] ?? null) === null) {
                 throw $e;
             }
+
+            $duplicate = $e;
         }
 
-        $identity = $this->resolveIdentity($trackedProperty, $payload);
+        $externalId = (string) $payload['external_id'];
 
-        $identity->fill([
-            'email' => $payload['email'] ?? $identity->email,
-            'anonymous_id' => $payload['anonymous_id'] ?? $identity->anonymous_id,
-            'traits' => $traits ?? $identity->traits,
-            'first_seen_at' => $identity->first_seen_at ?? $seenAt,
-            'last_seen_at' => $seenAt,
-            'auth_user_type' => $authUserType ?? $identity->auth_user_type,
-            'auth_user_id' => $authUserId ?? $identity->auth_user_id,
-        ]);
+        return OwnerContext::withOwner($owner, fn (): SignalIdentity => DB::transaction(function () use (
+            $trackedProperty,
+            $payload,
+            $externalId,
+            $duplicate,
+            $traits,
+            $seenAt,
+            $authUserType,
+            $authUserId
+        ): SignalIdentity {
+            // Locking read: sees the currently committed winner even when the
+            // surrounding transaction runs under repeatable read.
+            $winner = CrossTenantQuery::identityQuery($trackedProperty, $externalId)
+                ->lockForUpdate()
+                ->first();
 
-        $this->syncOwnerFromProperty($identity, $trackedProperty);
+            if (! $winner instanceof SignalIdentity) {
+                throw $duplicate;
+            }
 
-        OwnerContext::withOwner($owner, static fn (): bool => (bool) DB::transaction(static fn (): bool => $identity->save()));
+            $winner->fill([
+                'email' => $payload['email'] ?? $winner->email,
+                'anonymous_id' => $payload['anonymous_id'] ?? $winner->anonymous_id,
+                'traits' => $traits ?? $winner->traits,
+                'first_seen_at' => $winner->first_seen_at ?? $seenAt,
+                'last_seen_at' => $seenAt,
+                'auth_user_type' => $authUserType ?? $winner->auth_user_type,
+                'auth_user_id' => $authUserId ?? $winner->auth_user_id,
+            ]);
 
-        return $identity;
+            $this->syncOwnerFromProperty($winner, $trackedProperty);
+            $winner->save();
+
+            return $winner;
+        }));
     }
 
     public function asController(Request $request): JsonResponse
