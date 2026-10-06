@@ -9,6 +9,7 @@ use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaPostalCode;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\PostalCode;
+use AIArmada\Addressing\Support\BundledPostalDatasets;
 use AIArmada\Addressing\Support\CsvPostalCodeSource;
 use Generator;
 use Illuminate\Support\Carbon;
@@ -18,7 +19,7 @@ use RuntimeException;
 /**
  * Shared postcode-dataset helpers for the PostalCodeCsvImport shards.
  *
- * The 160 bundled postcode datasets are sharded across files (see
+ * The 163 bundled postcode datasets are sharded across files (see
  * PostalCodeCsvImportShard*Test) so parallel runs split the work, the
  * same way GeographyProviderSeedShard*Test shards full seeding.
  *
@@ -41,39 +42,9 @@ final class PostalCsvSamples
      */
     public static function datasets(): array
     {
-        $dir = __DIR__ . '/../../../../../packages/addressing/resources/geography';
-        $datasets = [];
-
-        foreach (glob($dir . '/*-postal-codes.csv') ?: [] as $codesPath) {
-            $slug = basename($codesPath, '-postal-codes.csv');
-            $linksPath = $dir . '/' . $slug . '-postal-code-areas.csv';
-
-            if (! is_file($linksPath)) {
-                continue;
-            }
-
-            $handle = fopen($codesPath, 'r');
-            $header = $handle !== false ? fgetcsv($handle, escape: '\\') : false;
-            $first = $handle !== false ? fgetcsv($handle, escape: '\\') : false;
-
-            if ($handle !== false) {
-                fclose($handle);
-            }
-
-            if ($header === false || $first === false) {
-                continue;
-            }
-
-            $datasets[$slug] = [
-                mb_strtoupper(mb_trim((string) ($first[0] ?? ''))),
-                $codesPath,
-                $linksPath,
-            ];
-        }
-
-        ksort($datasets);
-
-        return $datasets;
+        return BundledPostalDatasets::datasets(
+            __DIR__ . '/../../../../../packages/addressing/resources/geography'
+        );
     }
 
     /**

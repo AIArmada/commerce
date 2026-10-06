@@ -7,6 +7,7 @@ use AIArmada\Addressing\Geography\SaintBarthelemy\SaintBarthelemyGeographyProvid
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\City;
+use AIArmada\Addressing\Models\PostalCode;
 use AIArmada\Addressing\Models\State;
 use AIArmada\Addressing\Support\SeedAddressingSummary;
 
@@ -21,14 +22,25 @@ it('seeds every tier for the configured providers', function (): void {
 
     $country = AddressCountry::query()->where('iso2', 'BL')->firstOrFail();
 
-    expect($result)->toHaveKeys(['countries', 'references', 'states', 'cities', 'geographies'])
+    expect($result)->toHaveKeys(['countries', 'references', 'states', 'cities', 'geographies', 'postal_codes'])
         ->and($result['geographies']['seeded'])->toBe(['BL'])
+        ->and($result['postal_codes']['seeded'])->toBe(['BL'])
         ->and(AddressCountry::count())->toBeGreaterThan(200)
         ->and(State::count())->toBeGreaterThan(0)
         ->and(City::count())->toBeGreaterThan(0)
         ->and(City::query()->where('country_code', '!=', 'MY')->count())->toBe(0)
         ->and(State::query()->where('country_id', $country->getKey())->count())->toBe(1)
-        ->and(AddressArea::query()->where('country_id', $country->getKey())->where('is_active', true)->count())->toBeGreaterThan(0);
+        ->and(AddressArea::query()->where('country_id', $country->getKey())->where('is_active', true)->count())->toBeGreaterThan(0)
+        ->and(PostalCode::query()->where('country_code', 'BL')->count())->toBe(1);
+});
+
+it('skips postcodes when the seed toggle is off', function (): void {
+    config(['addressing.seed.full_city_countries' => ['MY'], 'addressing.seed.postal_codes' => false]);
+
+    $result = app(SeedAddressingAction::class)->execute();
+
+    expect($result['postal_codes']['seeded'])->toBe([])
+        ->and(PostalCode::query()->count())->toBe(0);
 });
 
 it('summarizes every tier on one line', function (): void {
@@ -45,7 +57,14 @@ it('summarizes every tier on one line', function (): void {
                 'SG' => ['created' => 1, 'updated' => 1, 'skipped' => 1],
             ],
         ],
+        'postal_codes' => [
+            'seeded' => ['MY'],
+            'skipped' => [],
+            'codes' => [
+                'MY' => ['created' => 12, 'updated' => 3, 'skipped' => 4, 'links' => 5],
+            ],
+        ],
     ]);
 
-    expect($line)->toBe('Addressing seeded: countries 1 created / 2 updated / 3 skipped; country references 4 currency links / 5 timezone links; states 6 created / 7 updated / 8 skipped; cities 9 created / 10 updated / 11 skipped; country geographies seeded for MY, SG; areas 13 created / 14 updated / 15 skipped.');
+    expect($line)->toBe('Addressing seeded: countries 1 created / 2 updated / 3 skipped; country references 4 currency links / 5 timezone links; states 6 created / 7 updated / 8 skipped; cities 9 created / 10 updated / 11 skipped; country geographies seeded for MY, SG; areas 13 created / 14 updated / 15 skipped; postcodes 12 created / 3 updated / 4 skipped / 5 links.');
 });
