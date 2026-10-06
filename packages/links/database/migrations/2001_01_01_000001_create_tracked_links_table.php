@@ -20,6 +20,9 @@ return new class extends Migration
             $table->string('slug_prefix', 40)->nullable();
             $table->text('destination_url');
             $table->{$jsonColumnType}('utm_defaults')->nullable();
+            $table->nullableUuidMorphs('subject');
+            $table->{$jsonColumnType}('parameters')->nullable();
+            $table->boolean('require_signature')->default(false);
             $table->unsignedInteger('max_clicks')->nullable();
             $table->unsignedBigInteger('total_clicks')->default(0);
             $table->unsignedBigInteger('human_clicks')->default(0);

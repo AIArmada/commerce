@@ -133,10 +133,11 @@ it('records a checkout completed signal for the matching owner property', functi
         ->and($event->event_category)->toBe('checkout')
         ->and($event->signal_session_id)->toBeNull()
         ->and($event->signal_identity_id)->not->toBeNull()
-        ->and($event->revenue_minor)->toBe(15900)
+        ->and($event->revenue_minor)->toBe(0)
         ->and($event->properties)->toMatchArray([
             'checkout_session_id' => $session->id,
             'payment_gateway' => 'chip',
+            'total_minor' => 15900,
         ]);
 });
 
@@ -191,11 +192,12 @@ it('records a checkout started signal for the matching owner property', function
         ->and($event->event_category)->toBe('checkout')
         ->and($event->signal_session_id)->toBeNull()
         ->and($event->signal_identity_id)->not->toBeNull()
-        ->and($event->revenue_minor)->toBe(9900)
+        ->and($event->revenue_minor)->toBe(0)
         ->and($event->properties)->toMatchArray([
             'checkout_session_id' => $session->id,
             'payment_gateway' => 'chip',
             'shipping_method' => 'standard',
+            'total_minor' => 9900,
         ]);
 });
 
@@ -240,7 +242,7 @@ it('records an order paid signal as a conversion for the matching owner property
         'owner_id' => $owner->getKey(),
     ])->save();
 
-    Event::dispatch(new OrderPaid($order, 'txn_1001', 'chip'));
+    Event::dispatch(new OrderPaid($order, 'txn_1001', 'chip', 24900));
 
     $event = SignalEvent::query()->withoutOwnerScope()->sole();
 
@@ -255,5 +257,7 @@ it('records an order paid signal as a conversion for the matching owner property
             'order_number' => $order->order_number,
             'gateway' => 'chip',
             'transaction_id' => 'txn_1001',
+            'paid_amount_minor' => 24900,
+            'order_total_minor' => 24900,
         ]);
 });

@@ -129,8 +129,8 @@ it('records checkout and order signals with projected experiment context', funct
     [$checkoutStarted, $orderPaid, $orderRefunded] = OwnerContext::withOwner($owner, function () use ($recorder, $checkoutSession, $order): array {
         return [
             $recorder->recordCheckoutStarted($checkoutSession),
-            $recorder->recordOrderPaid($order, 'txn-growth-1', 'chip'),
-            $recorder->recordOrderRefunded($order, 1500, 'customer-request'),
+            $recorder->recordOrderPaid($order, 'txn-growth-1', 'chip', 129900),
+            $recorder->recordOrderRefunded($order, 'refund-growth-1', 1500, 'customer-request'),
         ];
     });
 
@@ -172,7 +172,7 @@ it('reads cart context from order metadata when strict missing-attribute protect
             return $order;
         });
 
-        $orderPaid = app(CommerceSignalsRecorder::class)->recordOrderPaid($order, 'txn-growth-strict', 'chip');
+        $orderPaid = app(CommerceSignalsRecorder::class)->recordOrderPaid($order, 'txn-growth-strict', 'chip', 90900);
 
         expect($orderPaid)->not->toBeNull()
             ->and(data_get($orderPaid?->properties, 'cart_id'))->toBe('cart-recorder-strict')
@@ -220,7 +220,7 @@ it('uses the tracked property owner for growth enrichment when only a resolver o
     });
 
     $recorder = app(CommerceSignalsRecorder::class);
-    $orderPaid = $recorder->recordOrderPaid($order, 'txn-growth-2', 'chip');
+    $orderPaid = $recorder->recordOrderPaid($order, 'txn-growth-2', 'chip', 219900);
 
     expect($orderPaid)->not->toBeNull()
         ->and(data_get($orderPaid?->properties, 'experiment_contexts.0.experiment_id'))->toBe((string) $experiment->getKey())

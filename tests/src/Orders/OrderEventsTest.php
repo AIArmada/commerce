@@ -48,11 +48,12 @@ describe('Order Events', function (): void {
                 'paid_at' => now(),
             ]);
 
-            $event = new OrderPaid($order, 'txn_123', 'stripe');
+            $event = new OrderPaid($order, 'txn_123', 'stripe', 10000);
 
             expect($event->order)->toBe($order);
             expect($event->transactionId)->toBe('txn_123');
             expect($event->gateway)->toBe('stripe');
+            expect($event->amount)->toBe(10000);
             expect($event->order->isPaid())->toBeTrue();
         });
     });
@@ -125,11 +126,12 @@ describe('Order Events', function (): void {
                 'grand_total' => 10000,
             ]);
 
-            $event = new OrderRefunded($order, 5000, 'Customer request');
+            $event = new OrderRefunded($order, 5000, 'Customer request', 'refund_evt_123');
 
             expect($event->order)->toBe($order);
             expect($event->amount)->toBe(5000);
             expect($event->reason)->toBe('Customer request');
+            expect($event->refundId)->toBe('refund_evt_123');
         });
     });
 
@@ -145,11 +147,11 @@ describe('Order Events', function (): void {
 
             $events = [
                 new OrderCreated($order),
-                new OrderPaid($order, 'txn_tuple_1', 'chip'),
+                new OrderPaid($order, 'txn_tuple_1', 'chip', 10000),
                 new OrderShipped($order, 'J&T', 'JT-TUPLE-123'),
                 new OrderDelivered($order),
                 new OrderCanceled($order, 'Tuple contract test'),
-                new OrderRefunded($order, 1000, 'Tuple contract test'),
+                new OrderRefunded($order, 1000, 'Tuple contract test', 'refund_tuple_1'),
                 new InventoryDeductionRequired($order),
                 new InventoryReleaseRequired($order),
                 new CommissionAttributionRequired($order),

@@ -34,6 +34,7 @@ return new class extends Migration
             $table->string('performance_bonus_key', 160)->nullable()->unique();
             $table->unsignedBigInteger('subtotal_minor')->default(0);
             $table->bigInteger('commission_minor')->default(0);
+            $table->bigInteger('held_minor')->default(0);
             $table->unsignedBigInteger('value_minor')->default(0);
             $table->string('commission_currency', 3)->index();
             $table->decimal('commission_rate_to_base', 20, 8)->nullable();
