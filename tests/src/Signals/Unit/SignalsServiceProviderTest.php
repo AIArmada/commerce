@@ -77,6 +77,9 @@ it('keeps one explicit mapping for each commerce signal listener source', functi
     $eventClasses = [
         'AIArmada\\Affiliates\\Events\\AffiliateAttributed',
         'AIArmada\\Affiliates\\Events\\AffiliateConversionRecorded',
+        'AIArmada\\Affiliates\\Events\\AffiliateCreated',
+        'AIArmada\\Affiliates\\Events\\AffiliateProgramJoined',
+        'AIArmada\\Affiliates\\Events\\FraudSignalDetected',
         'AIArmada\\AffiliateNetwork\\Events\\OfferCreated',
         'AIArmada\\AffiliateNetwork\\Events\\OfferUpdated',
         'AIArmada\\AffiliateNetwork\\Events\\ApplicationSubmitted',
@@ -99,7 +102,24 @@ it('keeps one explicit mapping for each commerce signal listener source', functi
 
     $mappings = array_map(static fn (string $eventClass): ?array => SignalEventMap::for($eventClass), $eventClasses);
 
-    expect($mappings)->toHaveCount(20)
+    expect($mappings)->toHaveCount(23)
         ->and($mappings)->each->not->toBeNull()
-        ->and(array_unique(array_map(static fn (array $mapping): string => $mapping['method'], $mappings)))->toHaveCount(20);
+        ->and(array_unique(array_map(static fn (array $mapping): string => $mapping['method'], $mappings)))->toHaveCount(23);
+});
+
+it('maps affiliate lifecycle events to exact recorder methods and arguments', function (): void {
+    expect(SignalEventMap::for('AIArmada\\Affiliates\\Events\\AffiliateCreated'))->toBe([
+        'method' => 'recordAffiliateCreated',
+        'arguments' => [['property' => 'affiliate', 'type' => 'model']],
+    ])->and(SignalEventMap::for('AIArmada\\Affiliates\\Events\\AffiliateProgramJoined'))->toBe([
+        'method' => 'recordAffiliateProgramJoined',
+        'arguments' => [
+            ['property' => 'affiliate', 'type' => 'model'],
+            ['property' => 'program', 'type' => 'model'],
+            ['property' => 'membership', 'type' => 'model'],
+        ],
+    ])->and(SignalEventMap::for('AIArmada\\Affiliates\\Events\\FraudSignalDetected'))->toBe([
+        'method' => 'recordAffiliateFraudSignalDetected',
+        'arguments' => [['property' => 'signal', 'type' => 'model']],
+    ]);
 });
