@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Support\Links;
 
 use AIArmada\Affiliates\Models\AffiliateLink;
+use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\Links\Contracts\LinkGateInterface;
 use AIArmada\Links\Models\Link;
 
@@ -17,7 +18,7 @@ final class AffiliateLinkGate implements LinkGateInterface
         }
 
         $affiliateLink = AffiliateLink::query()->withoutGlobalScope('affiliate_owner')
-            ->with(['affiliate' => fn ($query) => $query->withoutOwnerScope()])
+            ->with(['affiliate' => fn ($query) => $query->withoutGlobalScope(OwnerScope::class)])
             ->find($link->subject_id);
 
         if ($affiliateLink === null) {

@@ -8,6 +8,7 @@ use AIArmada\Affiliates\Actions\Affiliates\TouchAffiliateAttribution;
 use AIArmada\Affiliates\Actions\Affiliates\TrackAffiliateVisit;
 use AIArmada\Affiliates\Models\AffiliateLink;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScope;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -41,7 +42,7 @@ final class TrackAffiliateCookie
         $cookieValue = $request->cookie($cookieName);
         $linkId = $request->query('aff_link');
         $link = is_string($linkId) ? AffiliateLink::query()->withoutGlobalScope('affiliate_owner')
-            ->with(['affiliate' => fn ($query) => $query->withoutOwnerScope()])
+            ->with(['affiliate' => fn ($query) => $query->withoutGlobalScope(OwnerScope::class)])
             ->whereKey($linkId)->whereNull('deactivated_at')->first() : null;
         $affiliateCode = $linkId !== null ? $link?->affiliate->code : $this->resolveAffiliateCode($request);
         $context = $this->buildContext($request);

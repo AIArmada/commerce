@@ -6,6 +6,7 @@ namespace AIArmada\Affiliates\Listeners;
 
 use AIArmada\Affiliates\Models\AffiliateLink;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\Links\Events\LinkClicked;
 
 final class IncrementAffiliateLinkClicks
@@ -17,7 +18,7 @@ final class IncrementAffiliateLinkClicks
         }
 
         $link = AffiliateLink::query()->withoutGlobalScope('affiliate_owner')
-            ->with(['affiliate' => fn ($query) => $query->withoutOwnerScope()])
+            ->with(['affiliate' => fn ($query) => $query->withoutGlobalScope(OwnerScope::class)])
             ->find($event->link->subject_id);
 
         if ($link !== null) {

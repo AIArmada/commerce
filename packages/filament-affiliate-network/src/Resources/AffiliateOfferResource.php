@@ -6,6 +6,7 @@ namespace AIArmada\FilamentAffiliateNetwork\Resources;
 
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Models\Concerns\ScopesByBelongsToOwner;
+use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Pages\CreateAffiliateOffer;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Pages\EditAffiliateOffer;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Pages\ListAffiliateOffers;
@@ -83,8 +84,8 @@ final class AffiliateOfferResource extends Resource
         /** @var Builder<AffiliateOffer> $query */
         $query = parent::getEloquentQuery()
             ->with([
-                'site' => fn ($builder) => $builder->withoutOwnerScope(),
-                'category' => fn ($builder) => $builder->withoutOwnerScope(),
+                'site' => fn ($builder) => $builder->withoutGlobalScope(OwnerScope::class),
+                'category' => fn ($builder) => $builder->withoutGlobalScope(OwnerScope::class),
             ]);
 
         return $query->withoutGlobalScope(ScopesByBelongsToOwner::class);

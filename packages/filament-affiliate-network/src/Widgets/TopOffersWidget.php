@@ -10,6 +10,7 @@ use AIArmada\AffiliateNetwork\Models\Concerns\ScopesByBelongsToOwner;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerCache;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\FilamentAffiliateNetwork\Support\NetworkAdminAccess;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -52,7 +53,7 @@ final class TopOffersWidget extends BaseWidget
                         ->whereKey($offerIds)
                         ->where('status', OfferStatus::Published)
                         ->with([
-                            'site' => fn ($query) => $query->withoutOwnerScope(),
+                            'site' => fn ($query) => $query->withoutGlobalScope(OwnerScope::class),
                         ])
                         ->withSum(['links' => fn (Builder $query): Builder => $query->withoutGlobalScope(ScopesByBelongsToOwner::class)], 'clicks')
                         ->withSum(['links' => fn (Builder $query): Builder => $query->withoutGlobalScope(ScopesByBelongsToOwner::class)], 'conversions')
