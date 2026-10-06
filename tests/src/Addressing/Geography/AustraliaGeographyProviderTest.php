@@ -3,35 +3,59 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Geography\Australia\AustraliaGeographyProvider;
-use AIArmada\Addressing\Models\AddressCountry;
+use AIArmada\Addressing\Support\CsvPostalCodeSource;
 
-it('ships 537 local government areas under states with parent links', function (): void {
+it('ships 8 states/territories with 539 LGAs under L1 parents', function (): void {
     $areas = app(AustraliaGeographyProvider::class)->addressAreaSource()->areas()->collect();
     $byId = $areas->keyBy->sourceId;
+    $l1 = $areas->where('level', 1);
     $l2 = $areas->where('level', 2);
 
-    expect($l2)->toHaveCount(537)
-        ->and($l2->pluck('parentSourceId')->every(fn ($p) => $byId->has($p)))->toBeTrue()
-        ->and($l2->where('type', 'city'))->toHaveCount(128)
-        ->and($l2->where('type', 'shire'))->toHaveCount(240)
-        ->and($l2->where('type', 'council'))->toHaveCount(91)
-        ->and($l2->where('type', 'region'))->toHaveCount(51)
-        ->and($l2->where('type', 'town'))->toHaveCount(13)
-        ->and($l2->where('type', 'rural_city'))->toHaveCount(7)
-        ->and($l2->where('type', 'municipality'))->toHaveCount(6)
-        ->and($l2->where('type', 'borough'))->toHaveCount(1)
-        ->and($byId->get('au:city:city-of-sydney')->parentSourceId)->toBe('au:state:new-south-wales')
-        ->and($byId->get('au:shire:yarra-ranges-shire')->parentSourceId)->toBe('au:state:victoria')
-        ->and($byId->get('au:borough:borough-of-queenscliffe')->parentSourceId)->toBe('au:state:victoria')
-        ->and($byId->get('au:city:south-australia:city-of-campbelltown')->parentSourceId)->toBe('au:state:south-australia')
-        ->and($byId->get('au:council:tasmania:central-coast-council')->parentSourceId)->toBe('au:state:tasmania');
+    expect($areas)->toHaveCount(547)
+        ->and($l1)->toHaveCount(8)
+        ->and($l2)->toHaveCount(539)
+        ->and($l2->pluck('parentSourceId')->every(fn ($p) => $byId->has($p)))->toBeTrue();
+
+    expect($byId->get('au:state:new-south-wales')->code)->toBe('NSW')
+        ->and($byId->get('au:state:queensland')->code)->toBe('QLD')
+        ->and($byId->get('au:territory:northern-territory')->code)->toBe('NT');
 });
 
-it('declares postal abbreviations for all 8 states and territories', function (): void {
-    $names = app(AustraliaGeographyProvider::class)->areaNames(new AddressCountry);
+it('pins the B19 SA tree cells: SLCC + Lower Eyre renames, APY + Maralinga adds', function (): void {
+    $areas = app(AustraliaGeographyProvider::class)->addressAreaSource()->areas()->collect();
+    $byId = $areas->keyBy->sourceId;
 
-    expect($names)->toHaveCount(8)
-        ->and($names['au:state:new-south-wales'][0])->toBe(['name' => 'NSW', 'name_type' => 'abbreviation'])
-        ->and($names['au:state:queensland'][0]['name'])->toBe('QLD')
-        ->and($names['au:territory:northern-territory'][0]['name'])->toBe('NT');
+    expect($byId->get('au:council:district-council-of-grant')->name)->toBe('Southern Limestone Coast Council')
+        ->and($byId->get('au:council:district-council-of-lower-eyre-peninsula')->name)->toBe('Lower Eyre Council')
+        ->and($byId->get('au:council:anangu-pitjantjatjara-yankunytjatjara')->parentSourceId)->toBe('au:state:south-australia')
+        ->and($byId->get('au:council:maralinga-tjarutja')->parentSourceId)->toBe('au:state:south-australia')
+        ->and($byId->get('au:council:roxby-council')->name)->toBe('Roxby Council');
+});
+
+it('pins the B19 ASGS link pass: 3165 codes with flips, adds, and drops', function (): void {
+    $dir = __DIR__ . '/../../../../packages/addressing/resources/geography';
+    $source = new CsvPostalCodeSource('AU', $dir . '/australia-postal-codes.csv', $dir . '/australia-postal-code-areas.csv', 'aiarmada.addressing.australia');
+
+    $postcodes = $source->postalCodes()->collect();
+    $byCode = $postcodes->groupBy->code;
+
+    expect($byCode)->toHaveCount(3165)
+        ->and($postcodes)->toHaveCount(4186);
+
+    $primary = fn (string $code) => $byCode->get($code)->where('isPrimary', true)->first()->areaSourceId;
+
+    expect($primary('5150'))->toBe('au:city:city-of-mitcham')
+        ->and($primary('5273'))->toBe('au:council:naracoorte-lucindale-council')
+        ->and($primary('7469'))->toBe('au:council:west-coast-council')
+        ->and($primary('0862'))->toBe('au:region:barkly-region')
+        ->and($primary('0885'))->toBe('au:region:groote-archipelago-region')
+        ->and($primary('2335'))->toBe('au:council:singleton-council')
+        ->and($primary('7215'))->toBe('au:council:break-o-day-council');
+
+    expect($byCode->get('0872')->pluck('areaSourceId')->contains('au:council:anangu-pitjantjatjara-yankunytjatjara'))->toBeTrue()
+        ->and($byCode->get('5690')->pluck('areaSourceId')->contains('au:council:maralinga-tjarutja'))->toBeTrue()
+        ->and($byCode->get('4605')->pluck('areaSourceId')->contains('au:shire:aboriginal-shire-of-cherbourg'))->toBeTrue()
+        ->and($byCode->get('4605')->pluck('areaSourceId')->contains('au:region:gympie-region'))->toBeFalse()
+        ->and($byCode->get('0822')->pluck('areaSourceId')->contains('au:city:city-of-darwin'))->toBeFalse()
+        ->and($byCode->get('7030')->pluck('areaSourceId')->contains('au:council:derwent-valley-council'))->toBeFalse();
 });

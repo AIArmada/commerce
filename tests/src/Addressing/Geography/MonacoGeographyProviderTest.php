@@ -24,3 +24,16 @@ it('keeps the 17 ISO quarters rather than the 2013 ordinance wards', function ()
     expect($areas)->toHaveCount(17)
         ->and($areas->firstWhere('sourceId', 'mc:quarter:la-colle')->code)->toBe('CL');
 });
+
+it('pins the verified Monaco ISO quarter codes', function (): void {
+    $areas = app(MonacoGeographyProvider::class)->addressAreaSource()->areas()->collect();
+    $byId = $areas->keyBy->sourceId;
+
+    // ISO 3166-2:MC codes, exact set (B5 re-verified).
+    expect($byId->get('mc:quarter:fontvieille')->code)->toBe('FO')
+        ->and($byId->get('mc:quarter:monaco-ville')->code)->toBe('MO')
+        ->and($byId->get('mc:quarter:monte-carlo')->code)->toBe('MC')
+        ->and($byId->get('mc:quarter:saint-roman')->code)->toBe('SR')
+        ->and($byId->get('mc:quarter:sainte-devote')->code)->toBe('SD')
+        ->and($byId->get('mc:quarter:vallon-de-la-rousse')->code)->toBe('VR');
+});

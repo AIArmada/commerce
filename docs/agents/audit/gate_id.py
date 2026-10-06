@@ -4,7 +4,7 @@ Verifies, after the Oct-2026 re-verification:
   1. Tree: counts, orphans, Kemendagri code-prefix consistency.
   2. Tree names match Kepmendagri 300.2.2-2138/2025 (via cahyadsn/wilayah.sql),
      except the documented deliberate set.
-  3. Links: 9361 codes, 5-digit, exactly-1 primary, no dangling, 514 areas.
+  3. Links: 9359 codes, 5-digit, exactly-1 primary, no dangling, 514 areas.
   4. Anchor pins for the corrected systematic rotations.
   5. Full 3-digit prefix verdict table (regression guard).
 """
@@ -67,12 +67,12 @@ for c, name in ours.items():
         check(False, f"name {c}: {name!r} != {exp!r}")
 
 # 3. links
-check(len(codes) == 9361, f"codes {len(codes)}")
+check(len(codes) == 9359, f"codes {len(codes)}")
 check(all(re.fullmatch(r'\d{5}', c['code']) for c in codes), "code format")
-check(len(links) == 9361, f"links {len(links)}")
+check(len(links) == 9359, f"links {len(links)}")
 check(all(l['is_primary'] == 'true' for l in links), "primaries")
 check(all(l['area_source_id'] in ids for l in links), "dangling")
-check(len({l['postcode'] for l in links}) == 9361, "dupes")
+check(len({l['postcode'] for l in links}) == 9359, "dupes")
 check(len({l['area_source_id'] for l in links}) == 514, "coverage != 389")
 
 lt = {l['postcode']: l['area_source_id'].split(':')[-1] for l in links}
@@ -102,7 +102,7 @@ ANCHORS = {
     '77181': '6502', '77311': '6403', '78111': '6171', '78356': '6108', '78511': '6103',
     '78711': '6106', '78811': '6104', '78911': '6102', '79211': '6107', '80111': '5171',
     '80351': '5103', '80511': '5104', '81111': '5108', '82111': '5102', '83111': '5271',
-    '83352': '5208', '83511': '5202', '84111': '5206', '84311': '5204', '85111': '5371',
+    '83352': '5208', '83511': '5202', '84111': '5272', '84311': '5204', '85111': '5371',
     '85351': '5301', '85711': '5304', '85811': '5305', '86211': '5306', '86311': '5308',
     '86411': '5309', '86511': '5310', '90223': '7371', '90611': '7310', '90711': '7311',
     '91311': '7604', '91411': '7605', '91511': '7602', '91711': '7316', '91951': '7317',
@@ -122,7 +122,7 @@ ANCHORS = {
     '98359': '9212', '98361': '9207', '98363': '9206', '98371': '9604', '98373': '9206',
     '98411': '9671', '98453': '9601', '98454': '9602', '98456': '9602', '98457': '9601',
     '98461': '9605', '98611': '9203', '98653': '9208', '98711': '9403', '98764': '9408',
-    '98767': '9407', '98811': '9401', '98854': '9406', '98864': '9408', '98865': '9403',
+    '98767': '9407', '98811': '9401', '98854': '9406', '98864': '9408', '98865': '9406',
     '98868': '9407', '99111': '9171', '99352': '9103', '99355': '9110', '99358': '9103',
     '99375': '9120', '99465': '9111', '99511': '9501', '99553': '9505', '99555': '9507',
     '99611': '9301', '99652': '9301', '99661': '9302', '99671': '9303', '99673': '9304',

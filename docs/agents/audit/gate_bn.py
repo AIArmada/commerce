@@ -42,5 +42,18 @@ for pc in ['BS8670','BS8675','BA1710','KB3534','TA1141']:
     check(f'{pc}-excluded', pc not in have)
 # BB3713 is dual-listed in the source (kampung + locked bag): bundled as the kampung code
 check('BB3713-berakas-a', [l['area_source_id'] for l in links if l['postcode'] == 'BB3713'] == ['bn:mukim:berakas-a'])
+# 2026-10-06 retry (Buku Poskod Edisi ke 2 + Mapanet family): Kedayan A/B keep
+# operator-sourced BK incumbents (BN1711/BN1511 are family-only 1v1 claims);
+# Amo B/C PD1351/PD1551 are single-contaminated-lineage claims, held out.
+by_post = {}
+for l in links:
+    by_post.setdefault(l['postcode'], []).append(l['area_source_id'])
+check('kedayan-A-BK1711', by_post.get('BK1711') == ['bn:mukim:sungai-kedayan'])
+check('kedayan-B-BK1511', by_post.get('BK1511') == ['bn:mukim:sungai-kedayan'])
+for pc in ['BN1711', 'BN1511', 'PD1351', 'PD1551']:
+    check(f'{pc}-held-out', pc not in have)
+# Belaban is finder PD2451 here but Buku + family unanimous PD3151 (open-log
+# #22, 1v2 against the bundle): pin the finder value until adjudicated.
+check('belaban-PD2451-amo', by_post.get('PD2451') == ['bn:mukim:amo'])
 print('ALL PASS' if not fails else f'{len(fails)} FAILURES')
 sys.exit(1 if fails else 0)

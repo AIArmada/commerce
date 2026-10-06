@@ -3461,7 +3461,6 @@ postcode,area_source_id,relationship_type,is_primary
 89050,my:subdistrict:district:sabah:kudat:pekan-sikuati,served_by,false
 89050,my:subdistrict:district:sabah:kudat:pekan-karakit,served_by,false
 89050,my:subdistrict:district:sabah:kota-marudu:langkon,served_by,false
-89050,my:subdistrict:district:sabah:kota-marudu:tandek,served_by,false
 89057,my:subdistrict:district:sabah:kudat:pekan-kudat,served_by,true
 89058,my:subdistrict:district:sabah:kudat:pekan-kudat,served_by,true
 89059,my:subdistrict:district:sabah:kudat:pekan-kudat,served_by,true
@@ -3469,6 +3468,7 @@ postcode,area_source_id,relationship_type,is_primary
 89100,my:subdistrict:district:sabah:kota-marudu:pekan-kota-marudu,served_by,true
 89100,my:subdistrict:district:sabah:kota-marudu:bandau,served_by,false
 89100,my:subdistrict:district:sabah:pitas:pekan-pitas,served_by,false
+89100,my:subdistrict:district:sabah:kota-marudu:tandek,served_by,false
 89107,my:subdistrict:district:sabah:kota-marudu:pekan-kota-marudu,served_by,true
 89108,my:subdistrict:district:sabah:kota-marudu:pekan-kota-marudu,served_by,true
 89109,my:subdistrict:district:sabah:kota-marudu:pekan-kota-marudu,served_by,true
@@ -3825,6 +3825,8 @@ postcode,area_source_id,relationship_type,is_primary
 94950,my:subdistrict:district:sarawak:pusa:pusa,served_by,true
 95000,my:subdistrict:district:sarawak:sri-aman:sri-aman,served_by,true
 95000,my:subdistrict:district:sarawak:pantu:pantu,served_by,false
+95000,my:subdistrict:district:sarawak:pantu:lachau,served_by,false
+95000,my:subdistrict:district:sarawak:pantu:sungai-tenggang,served_by,false
 95007,my:subdistrict:district:sarawak:sri-aman:sri-aman,served_by,true
 95008,my:subdistrict:district:sarawak:sri-aman:sri-aman,served_by,true
 95009,my:subdistrict:district:sarawak:sri-aman:sri-aman,served_by,true
@@ -3846,7 +3848,6 @@ postcode,area_source_id,relationship_type,is_primary
 96009,my:subdistrict:district:sarawak:sibu:sibu,served_by,true
 96010,my:subdistrict:district:sarawak:sibu:sibu-jaya,served_by,true
 96100,my:subdistrict:district:sarawak:sarikei:sarikei,served_by,true
-96100,my:subdistrict:district:sarawak:pakan:pakan,served_by,false
 96107,my:subdistrict:district:sarawak:sarikei:sarikei,served_by,true
 96108,my:subdistrict:district:sarawak:sarikei:sarikei,served_by,true
 96109,my:subdistrict:district:sarawak:sarikei:sarikei,served_by,true
@@ -3864,7 +3865,7 @@ postcode,area_source_id,relationship_type,is_primary
 96507,my:subdistrict:district:sarawak:meradong:bintangor,served_by,true
 96508,my:subdistrict:district:sarawak:meradong:bintangor,served_by,true
 96509,my:subdistrict:district:sarawak:meradong:bintangor,served_by,true
-96510,my:subdistrict:district:sarawak:meradong:bintangor,served_by,true
+96510,my:subdistrict:district:sarawak:pakan:pakan,served_by,true
 96600,my:subdistrict:district:sarawak:julau:julau,served_by,true
 96700,my:subdistrict:district:sarawak:kanowit:kanowit,served_by,true
 96707,my:subdistrict:district:sarawak:kanowit:kanowit,served_by,true
@@ -3897,6 +3898,7 @@ postcode,area_source_id,relationship_type,is_primary
 98009,my:subdistrict:district:sarawak:miri:miri,served_by,true
 98050,my:subdistrict:district:sarawak:marudi:marudi,served_by,true
 98050,my:subdistrict:district:sarawak:marudi:pekan-bario,served_by,false
+98050,my:subdistrict:district:sarawak:beluru:beluru,served_by,false
 98057,my:subdistrict:district:sarawak:marudi:marudi,served_by,true
 98058,my:subdistrict:district:sarawak:marudi:marudi,served_by,true
 98059,my:subdistrict:district:sarawak:marudi:marudi,served_by,true

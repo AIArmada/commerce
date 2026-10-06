@@ -42,6 +42,30 @@ it('bundles one primary kampung postcode per link with valid Brunei formats', fu
         ->and($byCode->has('KB3534'))->toBeFalse();
 });
 
+it('holds the 2026-10-06 retry verdicts: Kedayan BK incumbents kept, family-only codes out', function (): void {
+    $dir = __DIR__ . '/../../../../packages/addressing/resources/geography';
+    $source = new CsvPostalCodeSource('BN', $dir . '/brunei-postal-codes.csv', $dir . '/brunei-postal-code-areas.csv', 'aiarmada.addressing.brunei');
+
+    $byCode = $source->postalCodes()->collect()->keyBy->code;
+
+    // Sungai Kedayan A/B: operator-sourced BK incumbents beat the
+    // Mapanet-family BN claims 1v1; a flip needs live-finder proof.
+    expect((string) $byCode->get('BK1711')->areaSourceId)->toBe('bn:mukim:sungai-kedayan')
+        ->and((string) $byCode->get('BK1511')->areaSourceId)->toBe('bn:mukim:sungai-kedayan')
+        ->and($byCode->has('BN1711'))->toBeFalse()
+        ->and($byCode->has('BN1511'))->toBeFalse();
+
+    // Amo B/C PD1351/PD1551: single contaminated lineage, held out.
+    expect($byCode->has('PD1351'))->toBeFalse()
+        ->and($byCode->has('PD1551'))->toBeFalse()
+        ->and((string) $byCode->get('PD1151')->areaSourceId)->toBe('bn:mukim:amo');
+
+    // Belaban: finder PD2451 pinned while the Buku-vs-finder 1v2
+    // (Buku + family unanimous PD3151) awaits adjudication.
+    expect((string) $byCode->get('PD2451')->areaSourceId)->toBe('bn:mukim:amo')
+        ->and($byCode->has('PD3151'))->toBeFalse();
+});
+
 it('exposes the Brunei Post finder spellings as alternative names', function (): void {
     $names = app(BruneiGeographyProvider::class)->areaNames(new AddressCountry);
 

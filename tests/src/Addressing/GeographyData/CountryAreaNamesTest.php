@@ -220,6 +220,9 @@ it('resolves canonical area names', function (string $provider, array $expected)
         'ba:municipality:banja-luka' => 'Banja Luka',
         'ba:municipality:mostar' => 'Mostar',
         'ba:municipality:bihac' => 'Bihać',
+        'ba:municipality:stanari' => 'Stanari',
+        'ba:municipality:istocno-novo-sarajevo' => 'Istočno Novo Sarajevo',
+        'ba:municipality:bosanski-petrovac' => 'Bosanski Petrovac',
     ]],
 
     'Botswana' => [BotswanaGeographyProvider::class, [
@@ -347,7 +350,7 @@ it('resolves canonical area names', function (string $provider, array $expected)
     ]],
 
     'Ecuador' => [EcuadorGeographyProvider::class, [
-        'ec:canton:quito' => 'Quito',
+        'ec:canton:distrito-metropolitano-de-quito' => 'Distrito Metropolitano de Quito',
         'ec:canton:cuenca' => 'Cuenca',
         'ec:canton:guayaquil' => 'Guayaquil',
     ]],
@@ -367,13 +370,17 @@ it('resolves canonical area names', function (string $provider, array $expected)
     'Eswatini' => [EswatiniGeographyProvider::class, [
         'sz:inkhundla:lobamba' => 'Lobamba',
         'sz:inkhundla:mbabane-west' => 'Mbabane West',
-        'sz:inkhundla:hlane' => 'Hlane',
+        'sz:inkhundla:gilgal' => 'Gilgal',
     ]],
 
     'Ethiopia' => [EthiopiaGeographyProvider::class, [
         'et:zone:gurage' => 'Gurage',
         'et:woreda:sofi' => 'Sofi',
         'et:zone:bole' => 'Bole',
+        'et:zone:borana' => 'Borena',
+        'et:zone:east-welega-gimbie' => 'East Welega',
+        'et:zone:west-haraghe' => 'West Hararghe',
+        'et:zone:mekele' => 'Mekelle',
     ]],
 
     'FaroeIslands' => [FaroeIslandsGeographyProvider::class, [
@@ -574,7 +581,7 @@ it('resolves canonical area names', function (string $provider, array $expected)
 
     'Liberia' => [LiberiaGeographyProvider::class, [
         'lr:district:klay' => 'Klay',
-        'lr:district:sanniquellie-mahn' => 'Sanniquellie-Mahn',
+        'lr:district:sanniquellie-mahn' => 'Sanniquellie Mahn',
         'lr:district:barclayville' => 'Barclayville',
     ]],
 
@@ -592,6 +599,9 @@ it('resolves canonical area names', function (string $provider, array $expected)
         'mg:region:analamanga' => 'Analamanga',
         'mg:region:diana' => 'Diana',
         'mg:region:ambatosoa' => 'Ambatosoa',
+        'mg:region:matsiatra-ambony' => 'Matsiatra Ambony',
+        'mg:district:antananarivo-avaradrano' => 'Antananarivo-Avaradrano',
+        'mg:district:mananara-avaratra' => 'Mananara Avaratra',
     ]],
 
     'Maldives' => [MaldivesGeographyProvider::class, [
@@ -621,6 +631,9 @@ it('resolves canonical area names', function (string $provider, array $expected)
         'mu:town:curepipe' => 'Curepipe',
         'mu:village:chamarel' => 'Chamarel',
         'mu:village:vingt-cinq' => 'Vingt-Cinq',
+        'mu:village:lalmatie' => 'Lalmatie',
+        'mu:village:belle-vue-haurel' => 'Belle Vue Haurel',
+        'mu:village:l-escalier' => "L'Escalier",
     ]],
 
     'Mayotte' => [MayotteGeographyProvider::class, [
@@ -647,7 +660,9 @@ it('resolves canonical area names', function (string $provider, array $expected)
     ]],
 
     'Montserrat' => [MontserratGeographyProvider::class, [
-        'ms:parish:saint-patrick' => 'Saint Patrick',
+        // B1: Saint Patrick was a phantom parish (a destroyed
+        // village, GeoNames PPLW); only three parishes exist.
+        'ms:parish:saint-georges' => 'Saint Georges',
     ]],
 
     'Mozambique' => [MozambiqueGeographyProvider::class, [
@@ -763,7 +778,7 @@ it('resolves canonical area names', function (string $provider, array $expected)
     ]],
 
     'Portugal' => [PortugalGeographyProvider::class, [
-        'pt:municipality:lisbon' => 'Lisbon',
+        'pt:municipality:lisbon' => 'Lisboa',
         'pt:municipality:porto' => 'Porto',
         'pt:municipality:sintra' => 'Sintra',
     ]],
@@ -872,12 +887,12 @@ it('resolves canonical area names', function (string $provider, array $expected)
 
     'Sweden' => [SwedenGeographyProvider::class, [
         'se:municipality:stockholm' => 'Stockholm',
-        'se:municipality:gothenburg' => 'Gothenburg',
+        'se:municipality:gothenburg' => 'Göteborg',
         'se:municipality:malmo' => 'Malmö',
     ]],
 
     'Switzerland' => [SwitzerlandGeographyProvider::class, [
-        'ch:district:zurich' => 'Zurich',
+        'ch:district:zurich' => 'Zürich',
         'ch:district:luzern' => 'Luzern',
         'ch:district:bern-mittelland' => 'Bern-Mittelland',
     ]],
@@ -963,7 +978,7 @@ it('resolves canonical area names', function (string $provider, array $expected)
     ]],
 
     'Uruguay' => [UruguayGeographyProvider::class, [
-        'uy:municipality:municipality-a' => 'Municipality A',
+        'uy:municipality:municipality-a' => 'Municipio A',
         'uy:municipality:maldonado' => 'Maldonado',
         'uy:municipality:ciudad-de-la-costa' => 'Ciudad de la Costa',
     ]],

@@ -16,3 +16,17 @@ it('names the island department Islas de la Bahía with a Bay Islands alias', fu
 
     expect($names['hn:department:islas-de-la-bahia'][0]['name'])->toBe('Bay Islands');
 });
+
+it('uses Cantarranas as the official municipality name (not San Juan de Flores)', function (): void {
+    $areas = app(HondurasGeographyProvider::class)->addressAreaSource()->areas()->collect()->keyBy->sourceId;
+
+    expect($areas->has('hn:municipality:cantarranas'))->toBeTrue()
+        ->and($areas->get('hn:municipality:cantarranas')->name)->toBe('Cantarranas')
+        ->and($areas->has('hn:municipality:san-juan-de-flores'))->toBeFalse();
+});
+
+it('spells the Santa Bárbara municipality Taulabé with the accent', function (): void {
+    $areas = app(HondurasGeographyProvider::class)->addressAreaSource()->areas()->collect()->keyBy->sourceId;
+
+    expect($areas->get('hn:municipality:taulabe')->name)->toBe('Taulabé');
+});

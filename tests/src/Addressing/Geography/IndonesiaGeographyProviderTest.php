@@ -112,7 +112,7 @@ it('links postcodes to the re-verified regencies', function (): void {
 
     $postcodes = $source->postalCodes()->collect();
 
-    expect($postcodes)->toHaveCount(9361)
+    expect($postcodes)->toHaveCount(9359)
         ->and($postcodes->every(static fn ($row): bool => (bool) preg_match('/^\\d{5}$/', (string) $row->code)))->toBeTrue()
         ->and($postcodes->every(static fn ($row): bool => $row->isPrimary))->toBeTrue();
 
@@ -143,4 +143,15 @@ it('links postcodes to the re-verified regencies', function (): void {
         ->and((string) $byCode->get('63111')->areaSourceId)->toBe('id:regency:3577')
         ->and((string) $byCode->get('75111')->areaSourceId)->toBe('id:regency:6472')
         ->and((string) $byCode->get('78611')->areaSourceId)->toBe('id:regency:6105');
+
+    // Oct-2026 open-log #1 retry: official Pos Indonesia directory +
+    // second signals. Six relinks off stale GN-family vintage, two drops.
+    expect((string) $byCode->get('99674')->areaSourceId)->toBe('id:regency:9302')
+        ->and((string) $byCode->get('20524')->areaSourceId)->toBe('id:regency:1271')
+        ->and((string) $byCode->get('20525')->areaSourceId)->toBe('id:regency:1271')
+        ->and((string) $byCode->get('92661')->areaSourceId)->toBe('id:regency:7307')
+        ->and((string) $byCode->get('98865')->areaSourceId)->toBe('id:regency:9406')
+        ->and((string) $byCode->get('84111')->areaSourceId)->toBe('id:regency:5272')
+        ->and($byCode->has('52191'))->toBeFalse()
+        ->and($byCode->has('34663'))->toBeFalse();
 });

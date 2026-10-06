@@ -534,15 +534,22 @@ it('places the Sabah rectified postcodes on exactly one primary area', function 
         ->map(static fn (PostalCodeData $row): string => (string) $row->areaSourceId)
         ->all();
 
+    // Tandek left 89050 in the Oct-2026 retry: MOH addressed
+    // "PEKAN TANDEK 89100" + school PO-box zone + directory 89100
+    // beat the directory-only 89050 (zero addressed usage).
     expect($secondaries('89050'))->toContain(
         'my:subdistrict:district:sabah:kudat:pekan-karakit',
         'my:subdistrict:district:sabah:kudat:pekan-sikuati',
         'my:subdistrict:district:sabah:kudat:pekan-matunggong',
         'my:subdistrict:district:sabah:kota-marudu:langkon',
-        'my:subdistrict:district:sabah:kota-marudu:tandek',
     )->not->toContain(
         'my:subdistrict:district:sabah:kudat:banggi',
         'my:subdistrict:district:sabah:kudat:matunggong',
+        'my:subdistrict:district:sabah:kota-marudu:tandek',
+    );
+
+    expect($secondaries('89100'))->toContain(
+        'my:subdistrict:district:sabah:kota-marudu:tandek',
     );
 
     expect($secondaries('91150'))->toBeEmpty();
@@ -552,7 +559,11 @@ it('exposes Sarawak daerah kecil as the administrative subdivision tier', functi
     $provider = app(MalaysiaGeographyProvider::class);
     $areas = $provider->addressAreaSource()->areas()->collect()->keyBy->sourceId;
 
-    foreach (['betong:debak', 'betong:spaoh', 'kabong:roban', 'pusa:maludam', 'saratok:nanga-budu', 'lundu:sematan', 'lawas:sundar', 'lawas:trusan', 'limbang:nanga-medamit', 'telang-usan:long-lama', 'dalat:oya', 'mukah:balingian', 'lubok-antu:engkilili', 'asajaya:sadong-jaya', 'marudi:bario', 'subis:sibuti', 'subis:niah-suai'] as $suffix) {
+    // Padawan rejoined as the 18th DK in the Oct-2026 L3-program pass:
+    // the "is a district" removal premise was rebutted (state portal
+    // sub-district column + Kuching division DK office + 11-Aug-1983
+    // gazette history), so it is a gazetted DK under Kuching again.
+    foreach (['betong:debak', 'betong:spaoh', 'kabong:roban', 'pusa:maludam', 'saratok:nanga-budu', 'lundu:sematan', 'lawas:sundar', 'lawas:trusan', 'limbang:nanga-medamit', 'telang-usan:long-lama', 'dalat:oya', 'mukah:balingian', 'lubok-antu:engkilili', 'asajaya:sadong-jaya', 'marudi:bario', 'subis:sibuti', 'subis:niah-suai', 'kuching:padawan'] as $suffix) {
         $area = $areas->get('my:subdistrict:district:sarawak:' . $suffix);
 
         expect($area->type)->toBe('daerah_kecil', $suffix)
@@ -640,6 +651,8 @@ it('exposes the Sarawak rectified towns as postal localities', function (): void
         'lubok-antu:lubok-antu' => 'lubok-antu',
         'lubok-antu:pekan-engkilili' => 'lubok-antu',
         'pantu:pantu' => 'pantu',
+        'pantu:lachau' => 'pantu',
+        'pantu:sungai-tenggang' => 'pantu',
         'sri-aman:sri-aman' => 'sri-aman',
     ];
 
@@ -675,7 +688,7 @@ it('drops the Sarawak non-town subdistrict rows without orphans', function (): v
         'belaga:sungai-asap', 'kapit:nanga-merit', 'kapit:pelagus', 'song:katibas',
         'song:nanga-engkuah', 'bau:buso', 'bau:krokong', 'bau:musi',
         'bau:pangkalan-tebang', 'bau:tondong', 'kuching:batu-kawa', 'kuching:matang',
-        'kuching:padawan', 'kuching:santubong', 'kuching:semariang', 'lundu:biawak',
+        'kuching:santubong', 'kuching:semariang', 'lundu:biawak',
         'lawas:bakelalan', 'lawas:long-semado', 'lawas:merapok', 'limbang:batu-danau',
         'limbang:kubong', 'beluru:lapok', 'beluru:long-jegan', 'marudi:long-teru',
         'marudi:mulu', 'miri:bakam', 'miri:lambir', 'subis:sepupok', 'subis:suai',
@@ -737,21 +750,31 @@ it('places the Sarawak rectified postcodes on exactly one primary area', functio
         ->map(static fn (PostalCodeData $row): string => (string) $row->areaSourceId)
         ->all();
 
+    // Oct-2026 retry: Pakan owns 96510 primary (gazette x2 + bank x2
+    // + school) and lost its directory-only 96100 secondary; Beluru
+    // gains a 98050 dual leg (gazette + Sarawak-gov SKAS + school);
+    // Lachau + Sungai Tenggang join 95000 as new Pantu pekan rows.
+    expect($primaries('96510'))->toBe(['my:subdistrict:district:sarawak:pakan:pakan'])
+        ->and($primaries('96100'))->toBe(['my:subdistrict:district:sarawak:sarikei:sarikei']);
+
     expect($secondaries('98850'))->toContain('my:subdistrict:district:sarawak:lawas:pekan-trusan')
         ->and($secondaries('94600'))->toContain('my:subdistrict:district:sarawak:asajaya:pekan-sadong-jaya')
         ->and($secondaries('94500'))->toContain('my:subdistrict:district:sarawak:lundu:pekan-sematan')
         ->and($secondaries('96410'))->toContain('my:subdistrict:district:sarawak:dalat:pekan-oya')
         ->and($secondaries('98050'))->toContain('my:subdistrict:district:sarawak:marudi:pekan-bario')
+        ->and($secondaries('98050'))->toContain('my:subdistrict:district:sarawak:beluru:beluru')
         ->and($secondaries('98000'))->toContain('my:subdistrict:district:sarawak:beluru:beluru')
         ->and($secondaries('95000'))->toContain('my:subdistrict:district:sarawak:pantu:pantu')
+        ->and($secondaries('95000'))->toContain('my:subdistrict:district:sarawak:pantu:lachau')
+        ->and($secondaries('95000'))->toContain('my:subdistrict:district:sarawak:pantu:sungai-tenggang')
         ->and($secondaries('96000'))->toContain('my:subdistrict:district:sarawak:selangau:selangau')
-        ->and($secondaries('96100'))->toContain('my:subdistrict:district:sarawak:pakan:pakan')
         ->and($secondaries('94760'))->toContain('my:subdistrict:district:sarawak:tebedu:tebedu')
         ->and($secondaries('98200'))->toContain('my:subdistrict:district:sarawak:subis:batu-niah');
 
     expect($secondaries('98850'))->not->toContain('my:subdistrict:district:sarawak:lawas:trusan')
         ->and($secondaries('94600'))->not->toContain('my:subdistrict:district:sarawak:asajaya:sadong-jaya')
-        ->and($secondaries('94500'))->not->toContain('my:subdistrict:district:sarawak:lundu:sematan');
+        ->and($secondaries('94500'))->not->toContain('my:subdistrict:district:sarawak:lundu:sematan')
+        ->and($secondaries('96100'))->not->toContain('my:subdistrict:district:sarawak:pakan:pakan');
 });
 
 it('exposes level-4 Borneo postal localities under the region', function (): void {

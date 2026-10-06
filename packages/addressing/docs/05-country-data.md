@@ -1059,8 +1059,10 @@ and Tandek under Kudat, Lumadan under Sipitang).
 District corrections: Pamol (own code 90400, SMK Pamol) moved Beluran to
 Paitan with its primary (Sugut-DUN + Jalan Pamol tender evidence); Pekan
 Pitas takes the 89100 secondary (three addressed town usages beat the
-directory's 89050 area entries); Tandek (Kota Marudu) takes the 89050
-secondary cross-district and drops the unverified 89100 link.
+directory's 89050 area entries); Tandek (Kota Marudu) takes the 89100
+secondary (Oct-2026 retry: MOH addressed "PEKAN TANDEK 89100" + school
+PO-box zone + directory 89100 beat the directory-only 89050 with zero
+addressed usage — same addressed-beats-directory rule as the Pitas call).
 
 Reinstated 4 Kota Marudu office codes with their links (Oct 2026):
 89130 Pingan Pingan delivery plus 89137-89139 PO-box/window/lockbag,
@@ -1074,9 +1076,22 @@ directory pages satisfies the concrete-proof standard. The single
 unlisted in the courier directories. 90108/91208 were verified nonexistent
 (Pos Malaysia skips them), so the Beluran/Kunak sets stay as they are.
 
-Residual uncertainties: Melalap, Sepulot, and Benoni are weak keeps
-(single-road/local-usage town evidence against directory silence); Tulid
-has no town (DUN named for Kampung Tulid) and keeps no row.
+Residual uncertainties: Langkon keeps its 89050 secondary on hold
+(directory-unanimous for town delivery vs KM school-box zone, zero
+addressed either way — one addressed sighting flips or seals it);
+Pekan Paitan (90107) and Pekan Sook (89000) are medium (town+zone
+proven, direct addressed string still wanted); Pekan Karakit (89050)
+medium-high (optional seal). Menggatal 88400 / Kinarut 89500 leads
+rejected as single-MOH outliers (revisit only on 2+ new signals).
+
+Revisit 2026-10-06 (open-log #2 retry: Tandek 89050→89100 move +
+28 secondary-only towns swept; `gate_my.py` ALL PASS): Melalap,
+Sepulot, and Benoni upgraded weak → PROVEN (postcode.my + OSM +
+school-zone/addressed usage); Tulid no-row vindicated as a kampung
+(5 signals); all 28 Sabah secondary-only towns CONFIRMED shared
+except Tandek (moved) and Langkon (held). Office-code discipline
+held: Kundasang 89308, Sindumin 89859, and Tungku 91122 rejected as
+counter-ticket / locked-bag / PO-box-range codes.
 
 ## Sarawak audit
 
@@ -1107,12 +1122,14 @@ maps. Seventeen rows are genuine gazetted daerah kecil; the rest were
 towns (kept as `locality`), electoral names, villages, longhouses,
 islands, parks, suburbs, or placeholders.
 
-New `daerah_kecil` rows (17, all level 4 under their district,
+New `daerah_kecil` rows (18, all level 4 under their district,
 administrative-only with no postal links): Debak and Spaoh (Betong),
 Roban (Kabong), Maludam (Pusa), Nanga Budu (Saratok), Sematan (Lundu),
 Sadong Jaya (Asajaya), Sundar and Trusan (Lawas), Nanga Medamit
 (Limbang), Long Lama (Telang Usan), Oya (Dalat), Balingian (Mukah),
-Engkilili (Lubok Antu), Bario (Marudi), Sibuti and Niah-Suai (Subis).
+Engkilili (Lubok Antu), Bario (Marudi), Sibuti and Niah-Suai (Subis),
+and Padawan (Kuching — rejoined in the Oct-2026 L3-program pass, see
+the Revisit below).
 Proof highlights: MS daerah-kecil articles with district maps (Debak,
 Roban, Sadong Jaya, Sematan, Nanga Budu, Nanga Medamit, Oya, Sundar,
 Trusan); gazetted sub-district offices (Balingian 2004-2021, Engkilili
@@ -1121,9 +1138,11 @@ Subis PDF (Sibuti + Niah-Suai); the UKM Daerah Kecil Spaoh study; the
 Maludam article (Pejabat Daerah Kecil Maludam under Pusa). Not daerah
 kecil: Song (gazette shows Pejabat Daerah Song — a district office),
 Beluru (the old Beluru sub-district office predates the Beluru district
-upgrade), Padawan (a district, so its misplaced level-4 row was
-removed), Ba'kelalan (nine-village highland cluster, removed), and
-Batang Ai (dam/lake area, no row).
+upgrade), Ba'kelalan (nine-village highland cluster, removed), and
+Batang Ai (dam/lake area, no row). Padawan was wrongly listed here as
+"a district" — the Oct-2026 L3-program pass rebutted that (state
+portal sub-district column + Kuching division DK office + 11-Aug-1983
+gazette history), so it rejoined as the 18th DK row instead.
 
 Name-sharing splits (13): each keeps the bare name as `daerah_kecil`
 while a new Pekan locality takes the postal links — Pekan Debak
@@ -1143,17 +1162,22 @@ Lingga, Lubok Antu, Niah (98200), and Lutong (98100-set, the Miri
 township with single-entry directory confirmation).
 
 Added secondaries on proven shared-code towns: Selangau (96000; "Pekan
-Selangau" Pan-Borneo town), Pakan (96100; Petron "96100 SARIKEI"
-address — the PeKa B40 96150 listing is their error), Tebedu (94760;
+Selangau" Pan-Borneo town), Tebedu (94760;
 v-swiss "Tebedu" entry plus border town), Beluru (98000; SJK(C) Hua
-Kwong at "Pekan Beluru, Bakong"), Pantu (95000; district since 2021
+Kwong at "Pekan Beluru, Bakong" — plus a 98050 dual leg since the
+Oct-2026 retry: gazette + Sarawak-gov SKAS + school, mirroring the
+Bario dual), Pantu (95000; district since 2021
 per MS Daerah Pantu, admin centre Pekan Pantu), and Batu Niah (98200;
-SJK(C) Chee Mung Niah). Siniawan (94000) and Sematan-town (94500) keep
+SJK(C) Chee Mung Niah). Pakan owns the 96510 primary since the
+Oct-2026 retry (gazette x2 + bank x2 + school; bundled Bintangor
+primary had zero directory support) and lost its directory-only 96100
+secondary (unlocatable Petron snippet, zero addressed town usage).
+Siniawan (94000) and Sematan-town (94500) keep
 their shared links as notable historic/beach towns; Sibu Jaya keeps
 96010 (all.json plus addressed Waze/foodpanda usage against two
 directory gaps).
 
-Removed 80 rows: longhouse and kampung pollings (Long Teru, Long
+Removed 79 rows: longhouse and kampung pollings (Long Teru, Long
 Jegan, Long Semado, Merapok, Lio Matu, Long Akah, Long Bedian, Long
 San, Padeh, Sepupok, Triso, Majau, Wuak, Arip); Nanga confluence
 names (Merit, Engkuah, Entabai, Dap, Tada); DUN-area names (Machan,
@@ -1162,8 +1186,8 @@ Danau); river, island, park, and scheme geography (Batang Igan,
 Skrang, Pelagus rapids, Pulau Babi, Mulu, Lambir, Sungai Asap, Long
 Murum); city/industrial suburbs and resort areas (Batu Kawa, Matang,
 Semariang, Santubong, Jepak, Kidurong, Bakam, Sungai Merah, Jakar);
-municipal and port areas (Padawan,
-Tanjung Manis); villages without town evidence (Buso, Krokong,
+municipal and port areas (Tanjung Manis — Padawan rejoined as a DK
+row in the Oct-2026 L3-program pass); villages without town evidence (Buso, Krokong,
 Tondong, Musi, Biawak, Nyabor, Lapok, Kemuyang, Pasai Siong, Paloh,
 Semah, Serdeng, Igan, Moyan, Semera, Tambirat, Rangawan, Terasi,
 Nyelong, Tulai, Balai Ringin, Tapah, Amo, Lemanak, Batu Lintang,
@@ -1182,12 +1206,34 @@ it resolves on Lundu although the directories omit it. The single
 per the S6-positive rule plus addressed usage) and 97300 Tanjung
 Kidurong (stays on the Bintulu city row as a suburb code).
 
-Residual uncertainties: Song has no proven "Song" daerah kecil inside
-Song district (town row only); Bario's 98050 secondary alongside its
-98060 primary reflects dual real-world addressing; Padawan district
-itself is missing from the level-3 tier (follow-up L3 program, not
-half-added here); Lachau and Sungai Tenggang (Pantu district pekan
-per MS Daerah Pantu) have no rows and no codes.
+Residual uncertainties: Bario's 98050 secondary alongside its
+98060 primary reflects dual real-world addressing. The L3 tier is
+complete at 45/45 districts vs the state portal table (Oct-2026
+L3-program pass); the "Kota Samarahan" district name vs the state's
+"Samarahan" is a pre-existing naming note, kept as is.
+
+Revisit 2026-10-06 (open-log #2 retry: 96510→Pakan move, 96100 Pakan
+drop, Beluru 98050 dual, Lachau + Sungai Tenggang rows; `gate_my.py`
+ALL PASS): the 1873 "daerah kecil Song" was UPGRADED to a full
+district on 2 Apr 1973, so Song town-row-only stands closed as a
+non-entity; Lachau and Sungai Tenggang gained `locality` rows +
+95000 secondaries (gazette + SKAS-gov Pasar/bazaar + directory +
+OSM + MS pekan status); all 11 Sarawak secondary-only towns
+CONFIRMED shared except Pakan (moved) and Beluru (dual-added).
+Sematan 94100 rejected as one stale lineage (zero directory support;
+MOH corrected itself to 94500).
+
+Revisit 2026-10-06 (open-log #3 L3 program: zero L3 adds + Padawan L4
+DK re-add; `gate_my.py` ALL PASS): the bundled L3 tier already matches
+the official state district list 45/45 (names + division parents), so
+no Padawan district row was added — the "Padawan is a district"
+premise is rebutted (state portal lists it under Sub-Districts;
+Kuching division runs Pejabat Daerah Kecil Padawan; gazetted as a
+sub-district 11 Aug 1983; full-district status still a proposal per
+2023–2024 press). Padawan rejoined as L4 `daerah_kecil` under Kuching
+instead (admin-only, no postal links). Unblock for any future flip: a
+Sarawak Gazette district proclamation — revisit only on 2 new
+positive signals.
 
 ## Singapore
 
@@ -1319,6 +1365,24 @@ Indonesian addresses are formatted as street lines, `kelurahan`/`desa` and
 `kecamatan` components, `{kota} {postcode}`, province, and country, per the
 UPU addressing layout.
 
+Revisit 2026-10-06 (open-log #1 retry: 6 relinks + 2 drops, 9 proven,
+3 held; `gate_id.py` ALL PASS): the official Pos Indonesia directory
+is directly queryable (POST `kodepos.posindonesia.co.id/CariKodepos`,
+field `kodepos=`) and settled most items. Structural finding: the
+GeoNames-family directories (GN dump, kodepos.id, kode-pos.com,
+indonesiapostcode, mamikos, prangko book) are an OLD vintage — whole
+districts renumbered since (official-affirmed codes treated as alive;
+official-silent codes with unanimous old-vintage L2 kept with a
+stale-suspect flag). Relinks: 99674 Mappi→Boven Digoel, 20524/20525
+Deli Serdang→Medan, 92661 Bulukumba→Sinjai (Ujungloe is 92562 now),
+98865 Paniai→Dogiyai, 84111 Bima regency→Kota Bima. Drops: 52191 (WPC
+page error; Sumurpanggang is 52141 Kota) and 34663 (zero-source code).
+Proven: 26235 Payakumbuh, 23612 Aceh Barat, 42114 Kota Serang, 42181
+Kab Serang, 46371 Pangandaran, 97611 Kota Tual, 74714/74715 Sukamara,
+93915 Kolaka Utara. Held: 91954 Lutra, 46166 Kota Tasik, 87256 Sumba
+Barat. 9,359 codes; follow-up vintage program (official-new codes
+absent from the overlay) recorded in the retry report.
+
 ## Brunei
 
 The bundled `BruneiGeographyProvider` supplies the four ISO 3166-2
@@ -1348,6 +1412,19 @@ code here either.
 Brunei addresses are formatted per the UPU layout: street lines, kampung
 component, `{town or district} {postcode}` with the town preferred, and
 country. Types are labelled `Daerah` and `Mukim`.
+
+Revisit 2026-10-06 (verify-only, zero data changes; `gate_bn.py` ALL
+PASS + new hold pins): the 20 finder-empty kampungs were retried
+against Buku Poskod Edisi ke 2 (Dec-2018, both 2018 snapshots) with
+the Mapanet family (56ok/postcodebase/postcode.info/postalcoder —
+one shared 2013–2015 lineage with phantom rows, corroboration-only)
+as second signal. 17/21 gap verdicts PROVEN with all codes already
+bundled (incl. Lumapas B BJ3524 and Amo PD1151); residual holds are
+Sungai Kedayan A/B (bundled BK1711/BK1511 vs family BN1711/BN1511,
+kept as operator-sourced incumbents — flip needs live-finder proof)
+and Amo B/C (family-only PD1351/PD1551, no fill). Adjacent find:
+Belaban is bundled finder PD2451 but Buku + family unanimous
+PD3151 (open-log #22, pinned pending adjudication).
 
 ## Bahrain
 
@@ -1892,6 +1969,27 @@ candidates held (MVD E/F + sliver splits, 20500/27300 border
 parajes, split-town ties 35200/34200/40200, seat-vs-vote
 45100/98000/15500).
 
+Revisit 2026-10-06 (open-log #15 retry: 5 flips + 7 drops + 16 adds,
+27 of 30 holds resolved; `gate_uy.py` ALL PASS): adjudicated against
+IDElUy municipio polygons (pip), Corte Electoral plan-circuital,
+INE loccen/loccat, Falling Rain gazetteer, and OSM/Nominatim —
+same-lineage agreement never counted (Correo/GN = one base pair; FR
+per-place pages copy GN coords; shared-fallback coords void).
+Montevideo: 12100 E→F, 12000 F→D (+C, −E), 8 H3 sliver adds
+(11900+G, 11300+B, 11600+E+C, 11400+D, 11800+CH, 11700+D+A);
+Lezica A-split stays G-single (no delivery points in A-territory).
+Interior: 35200 FL→Cerro Chato primary (+TT dept leg; tri-department
+town, FL was 17% with no center function), 60200 dept→Quebracho
+(+Chapicuy +Cerro Chato PA, −dept), 20500 −Lascano −Maldonado-dept
+(3 legs left), 30100 +Soca (lean, 71 m margin), 70800 +Conchillas,
+33000 −Vergara, 50000 −Belén, 70000 −Tarariras. Legs 342 → 351,
+multis 88 → 93 (11300/11600/11700/11900/12100 go multi; no
+collapses). Vindicated keeps: 40200/34200 ties→incumbent, 45100/
+98000 vote-over-seat, 15500 Pando, 12500 G-single, Agraciada split
+town, Belén / Juan L. Lacaze / Villa Soriano names. 3 holds stay:
+37000→Tupambaé (Rincón de Tacuarí unplaceable), 91500→San Jacinto
+(paraje "Blanco"), 70000→Carmelo (Santa Rosa 50 m straddle).
+
 ## Venezuela
 
 The bundled `VenezuelaGeographyProvider` supplies the 23 states
@@ -2095,9 +2193,15 @@ retired W1M/WD1/WD2, BN91 live-but-ungeocoded, 23 live Crown as own
 GG/JE/IM countries); 10 more NSPL-live large-user-ungeocoded
 outwards (GIR, IM99, CH90, EN77, LS78, PO24, S94, SN80, SR43, TW98)
 and 33 micro-legs (<10 units, no GeoNames place) stay held out, and
-8 razor primaries (NG20 369/368, WA3 762/754, BT75, CW3, LA6, MK19,
-PH12, WV9) keep their bundled side — all pinned in the gate. CSV
-line endings: areas LF, postal files CRLF — preserve per file.
+7 razor primaries (NG20 369/368, WA3 762/754, CW3, LA6, MK19,
+PH12, WV9) keep their bundled side — all pinned in the gate. BT75
+flipped 2026-10-06 to Mid Ulster primary (dual Fermanagh and Omagh
+leg kept): NISRA CPD_LIGHT Jul-2026 gives 73/136 Mid Ulster,
+agreeing with NSPL 72/136, with the Fivemiletown town majority
+explaining the margin; the 17 other BT flips are confirmed at
+81–100% by the same third lineage (80/80 BT primaries agree, zero
+mismatches). CSV line endings: areas LF, postal files CRLF —
+preserve per file.
 
 British addresses are formatted per the UPU layout: street lines, post
 town, the uppercased postcode on its own line, and country. The county
@@ -2329,6 +2433,36 @@ prefix is ever added. Types are labelled with the German terms
 `Kreisfreie Stadt`); none ever prints on mail, and the Stadtstaaten
 need no per-state override.
 
+### Revisit (B19, 2026-10-06)
+
+Tree membership/types/parents exact, 11 endonym
+renames; postal set exact, 10812/10910 →
+10812/10911 (`gate_de.py` ALL PASS). L1 16/16
+vs ISO 3166-2:DE; 401/401 vs WP LK294/SK107
+KrS lists + GN AGS (Hanau 27th HE district +
+6 codes vindicated 2026-correct). Renames: 6
+English exonyms → endonyms (Cleves→Kleve,
+Cologne→Köln, Hanover→Hannover,
+Munich→München ×2, Nuremberg→Nürnberg;
+English kept as provider alternatives) +
+Hohenlohekreis, Saarpfalz-Kreis, St. Wendel,
+Frankfurt (Oder), Neustadt an der
+Aisch-Bad Windsheim. Postal: exhaustive
+per-code GN vote 10,763/49; 20 same-name-town
+retargets (Munster/Halle/Essen/Fürth/Weimar/
+Oberhausen/Amberg/Landau bugs) + 4 primary
+swaps (07919 Vogtland, 12529 Dahme-Spreewald,
+21465 Stormarn, 92637 Weiden) re-closed by
+integrator OSM Nominatim (11/12; 50586 empty
+but 50xxx=Köln space) + 1 Stormarn secondary
+(22113, Hamburg primary OSM-confirmed) + 10/10
+agreement spot codes. Holds: 98711 S5
+(Nominatim empty, medium confidence),
+91054/98739 keeps, 12529 Berlin secondary,
+71/95 multi secondaries unreviewed,
+GN-Hamburg-quarter rot lesson (corroborate,
+never trust alone).
+
 ## France
 
 The bundled `FranceGeographyProvider` supplies the 18 regions (13
@@ -2375,6 +2509,15 @@ CEDEX 01460 / 01960 / special-distribution codes stay out: no
 department attribution attainable. 2A/2B codes numeric-only in the
 tree, formatted 2A/2B by the provider.
 
+Revisit 2026-10-06 (verify-only, zero data changes; `gate_fr.py` ALL
+PASS): the Hexasmal downward sweep ran to completion — the raw file
+carries `#Code_commune_INSEE` on all 39,192 rows, so the commune
+crosswalk (6,328 codes, 0 unmapped, geo.api tie-break on all 35,007
+INSEE) built directly. All 6,051 metro Hexasmal codes are bundled
+with 0 dept-attribution deltas; the 277 overseas codes route out by
+design (136 DOM + 139 COM to their provider files, Monaco and
+Clipperton excluded). Open-log #7 closed.
+
 ## Italy
 
 The bundled `ItalyGeographyProvider` supplies the 20 regions as
@@ -2404,8 +2547,10 @@ Revisit 2026-10-04 (fix-and-fill: +3 sigla, +48 codes, −2 codes,
 109 L2 with ISTAT Elenco-codici Feb-2026 sigla (Gallura OT, Medio
 Campidano VS, Ogliastra OG filled from the Motorizzazione table +
 it.wiki Targa infoboxes + plate-continuity lists; Sulcis Iglesiente
-stays empty — ISTAT says CI but it.wiki cites CdM n.168 09-04-2026
-for SU, HOLD). Codes 4735 → 4781, legs 4745 → 4791, multis 9 → 10.
+filled SU 2026-10-06 — CdM n.168 preliminare + n.181 definitivo
+(14-07-2026, Consiglio di Stato opinion incorporated) + Lega press
+explicit SU↔Sulcis mapping over stale ISTAT Feb-2026 CI). Codes
+4735 → 4781, legs 4745 → 4791, multis 9 → 10.
 Sardinian reworks: 08020 drops Sassari (ISTAT: zero Sassari-metro
 comuni; Nuoro-primary + Gallura secondary for the Budoni/San Teodoro
 coast), 08030 drops Oristano and re-primaries Cagliari over Nuoro
@@ -2419,18 +2564,21 @@ comuni.json + all three courier CAP lists. Cesena 47023 dropped
 (it.wiki Codice postale lists 47521/47522 only; absent from
 comuni.json and all courier lists) with 47521/47522 filled;
 Ravenna 48121–48125 filled (comuni.json + MagicLand + per-code
-addressed usage). Sappada pair: 32047 dropped, 33012 filled to
-Udine (ISTAT FVG/Udine + all courier lists + addressed; GeoNames
-32047 Sappada/BL row stale pre-2017). New-comune fills 10079
-Mappano, 29031 Alta Val Tidone, 33014 Treppo Ligosullo, 36044 Val
-Liona, 36048 Barbarano Mossano, 52019 Laterina Pergine Valdarno,
-61036 Colli al Metauro, 62031 Valfornace (comuni.json + en.wiki /
-db-city); Verbania 28921/28923–28925 (comuni.json + Poste-branch
-addresses; 28922 kept); 15122 Alessandria, 41123 Modena, 04031
-Ventotene, 71051 Isole Tremiti (dual-live with 71040 San Nicola),
-82014 Ceppaloni. Holds stay out: 09132/09133 (courier c/o mess vs
-comuni.json Cagliari), La Spezia 19127–19130 (multi-source
-conflict), Sulcis sigla.
+addressed usage; all 7 Cesena/Ravenna fills re-confirmed live
+2026-10-06 by fresh NSC street tables + official Poste.it
+Variazioni-CAP delta bulletins). Sappada pair: 32047 dropped,
+33012 filled to Udine (ISTAT FVG/Udine + all courier lists +
+addressed; GeoNames 32047 Sappada/BL row stale pre-2017).
+New-comune fills 10079 Mappano, 29031 Alta Val Tidone, 33014
+Treppo Ligosullo, 36044 Val Liona, 36048 Barbarano Mossano, 52019
+Laterina Pergine Valdarno, 61036 Colli al Metauro, 62031 Valfornace
+(comuni.json + en.wiki / db-city); Verbania 28921/28923–28925
+(comuni.json + Poste-branch addresses; 28922 kept); 15122
+Alessandria, 41123 Modena, 04031 Ventotene, 71051 Isole Tremiti
+(dual-live with 71040 San Nicola), 82014 Ceppaloni. Holds stay
+out, triple-sealed 2026-10-06 (fresh NSC NOT_FOUND + en/it.wiki
+ranges skipping them exactly + WPC directory skips vs CJ-2019
+contiguous padding alone): 09132/09133, La Spezia 19127–19130.
 
 ## Japan
 
@@ -2458,11 +2606,32 @@ table (code↔parent consistency, kind totals, twin coverage);
 row-by-row external name verification of all 1,747 rows remains
 future work.
 
-The 120,682-code overlay comes from the Japan Post ken_all official
+The 120,720-code overlay comes from the Japan Post ken_all official
 gazette at municipality level (stored in dashed NNN-NNNN form):
 designated-city wards roll up to their city codes, firm codes and
 abolished rows excluded, 1,741 of 1,747 municipalities covered (the 6
 Northern Territories villages codeless); no new area rows.
+
+### Revisit (B21, 2026-10-06)
+
+Tree ZERO changes, postal 120682/120764 →
+120720/120801 (`gate_jp.py` ALL PASS). 47
+prefs == ISO 3166-2:JP == MIC; 1747 muns
+== MIC R6.1.1 set-exact, 0 kanji/type/
+parent diffs; naive-Hepburn + GN-admin2
+romaji screens rejected as artifacts.
+FIX-A: 77 Tenryu-ku legs 22100→22130
+(stale pre-2024 ku→city table; sibling
+Chuo-ku already correct). FIX-B: 432-0000
+phantom Shizuoka secondary deleted.
+FIX-C: 38 KEN_ALL-missing codes added (32
+Gosen-shi 959-10xx vintage hole + 6
+scattered) as a terminal-authority
+single-signal exception — JP Post defines
+existence; live re-check carried as
+hardening. Keeps: cross-prefecture
+498-0000/871-0000 multis, Toyone 431-4121
+cross-border delivery, 235/235 sample.
 
 Japanese addresses are formatted per the UPU western layout: street
 lines, `{city}, {prefecture}`, and `{postcode} {country}` on the last
@@ -2503,6 +2672,28 @@ their USPS abbreviation as a searchable alias (the formatter map is
 the source; military AA/AE/AP excluded with the areas). County
 flavors need no type labels (parish, borough, and census_area render
 correctly as distinct types).
+
+### Revisit (B21, 2026-10-06)
+
+Verify-only: 0 tree fixes, 0 postal fixes
+(`gate_us.py` ALL PASS). L1 56 (UM reasonably
+absent); L2 3143/3143 GEOIDs identical to
+Census 2024 gazetteer 50-state set, 0
+name/type/parent defects (CT 9 planning
+regions, VA 38 independent cities, AK 30 incl.
+Chugach/Copper River split + Kusilvak,
+Oglala Lakota, LaSalle/De Baca gazetteer
+spellings, Bedford correctly absent).
+Postal 40977/40977: 0 orphans (bundle ⊆ GN
+exactly), 0/40977 state-join mismatches,
+33226/33642 county-join (residual = CT
+legacy-code vintage + DC L1-design,
+vindicated; 408-row stratified sample 393
+clean + explained rest). Holds: HUD
+crosswalk 404 + USPS Akamai-wall (arbiter
+unavailable), territory/military/MH scope
+(149 ZCTAs + 509 APO/FPO + 96960/96970),
+71 county-ambiguous single-signal ZIPs.
 
 ## Spain
 
@@ -2755,13 +2946,21 @@ flipped to Addis Ababa primary (UPU `ethEn.pdf` plus the
 EthioPost cheat-sheet, North Shewa stays secondary); the other 49
 codes / 80 legs stand — the cheat-sheet corroborates 34 of 50 codes
 and the woreda containments corroborate the Arsi/Bale/West Arsi,
-Gondar, Tigray, Keffa/Bench Sheko and Afar splits. Held for an
-EthioPost source: cheat-only 1230 (Akaki Beseka), a possible
-1150 Sheger leg (Alem Gena), Dessie/Woldiya/Sekota town codes
-(South Wollo unlinked; North Wollo/Wag Hemra ride 7220), the
-Somali-article-only Harawo (= Awbare) special, and Tigray
-long-vs-short English forms (`Southern`/`Eastern` per GeoNames
-alternates vs bundled shorts).
+Gondar, Tigray, Keffa/Bench Sheko and Afar splits. Retry
+2026-10-06 (+1 code, +1 leg; `gate_et.py` ALL PASS): 1230 Akaki
+Beseka added to Addis Ababa (cheat + vendor pool + addressed
+Beseka School `PO BOX 28/1230`); 1150 gains a Sheger City
+secondary (EHRCO press + Anbessa bank data place Alem Gena in
+Sheger/Gelan Guda, Addis primary kept) — 51 codes / 83 legs / 23
+multis. Tigray shorts kept (WP + EDRMC-2025 + Tigray Finance
+Bureau short usage; longs equally attested incl. COD-AB 2025 —
+no canonical form exists, hold closed as unresolvable-by-design).
+Somali specials settled at 6 (COD-AB town units + DDSI 2016
+session record; Harawo is a regular Fafan woreda, correctly
+absent). Still held: Dessie/Woldiya/Sekota town codes (EthioPost
+publishes a 629-branch office table but no postcodes; vendor pool
+has no Dessie/Woldiya/Sekota rows; flag the vendor Abergele-6200
+vs bundle-7220 contradiction, both single-signal, no flip).
 
 ## Democratic Republic of the Congo
 
@@ -3004,6 +3203,37 @@ country. All 27 states and the federal district carry their UF
 abbreviation as a searchable alias. Types are labelled `Estado`,
 `Distrito Federal`, `Município`, and `Distrito`.
 
+### Revisit (B21, 2026-10-06)
+
+Tree ZERO changes, postal 5526/5526 →
+5547/5547 (`gate_br.py` ALL PASS). 27/27
+ISO; 5570/5570 byte-exact vs IBGE, FnN
+correctly district under PE; one-major-
+CEP-per-municipality granularity
+confirmed. 38 RO renumber replaces
+789xx→768/769xx (ViaCEP old-erro 52/52
++ new-OK IBGE-match + OSM postcode);
+78937-000 stale Itapuã dup deleted
+(76861 kept); 68948-000 relinked Pedra
+Branca→Serra do Navio; 22 general-CEP
+adds (ViaCEP-OK + OSM). Follow-up
+(integrator OSM 44-probe sweep, 6
+matches on municipality boundaries +
+ViaCEP): 3 more RO (Jaru, Presidente
+Médici, Nova Mamoré), 3 small-city
+generals (Santa Bárbara de Goiás,
+Aroeiras, São Sebastião do Oeste),
+Bujari 69923→69926 (69923 is a Rio
+Branco street). Holds: 10 RO stale
+(big-city policy + L1-only), 42
+unlinked (L1-only/conflicts/street-
+level), DF-19 + small-city-10 +
+Noronha (ViaCEP erro on general;
+street-coding undetermined).
+Keeps: 144/144 ViaCEP-OK, 10 rename
+resolutions, Buritirana non-000,
+capital generics by convention.
+
 ## Mexico
 
 The bundled `MexicoGeographyProvider` supplies the 32 federal
@@ -3027,6 +3257,32 @@ The 32,448-code overlay (01000–99998) joins the GeoNames 144,655-row
 dump on INEGI state+municipality code: zero misses, zero
 cross-municipality codes, 2,457 of 2,479 municipalities covered (22
 codeless are post-dump creations and splits); no new area rows.
+
+### Revisit (B21, 2026-10-06)
+
+Tree 10 renames, postal 2 reassigns
+(`gate_mx.py` ALL PASS). 32/32 ISO;
+2479 keys = INEGI 2478 + Villa Juárez
+01012 (2026-08-28 vindicated); 21/21
+new-key deltas vindicated (Playa del
+Carmen 2025, Batopilas 2017, Yalálag
+2023). Renames: Cadereyta Jiménez
+(dup-bug), San Juan Colorado
+(corruption), Dolores Hidalgo full,
+San Martín Hidalgo, Acambay full,
+Blas Atempa de-prefix, Tututepec
+full, Atltzayanca, Ziltlaltépec,
+Medellín de Bravo. T11 Las Casas
+HELD (INEGI capital-L). PF1
+77580/77586 → Puerto Morelos (2015
+split); 74801 Tehuitzingo kept (S1
+isolated master error). PF2 317 adds
+HELD (single-lineage; current-Correos
+spot check blocked — correos +
+datos.gob.mx timeout from sandbox);
+PH1 473 bundle-only held; 1285 admin
+codes correctly absent; 384/384
+sample.
 
 Mexican addresses are formatted per the UPU layout: street lines,
 `{postcode} {locality}, {abbrev}` with the state abbreviation from
@@ -3058,6 +3314,27 @@ and uppercased `ANA NAN` postcode, and country. All 13 provinces and
 territories carry their postal abbreviation as a searchable alias
 (plus accented `Québec`); province, territory, municipality,
 indigenous reserve, and unorganized need no type labels.
+
+### Revisit (B21, 2026-10-06)
+
+Tree 1-char repair, postal 1651/1660 →
+1663/1673 (`gate_ca.py` ALL PASS). L2 ==
+reconstructed SGC 2024 exactly (5028/5028;
+NB 2023 reform + IRI incorporations + QC
+code changes already adopted); T1 Sambaa
+K'e U+0092→U+2019 (sole control byte in
+file + StatCan 98100002). FSA granularity
+confirmed: G0B (retired, now G4T) + H4Z
+(unassigned) removed (wiki cells +
+StatCan-2021 absent; GN staleness shown);
+14 FSA adds (StatCan pop + wiki-active;
+R5J Taché via MB news release, R5L/R5M
+via opened Wikipedia, R5N/R5P + V7Z
+secondary via StatCan DPL parents).
+Integrator holds: S7B Corman Park
+secondary (MLS snippets only), S7C
+secondaries (over 2-leg convention);
+14 wiki-only FSAs + SGC-2025 delta held.
 
 ## Australia
 
@@ -3238,6 +3515,23 @@ Vietnamese addresses are formatted per the UPU layout: street and
 ward lines, `{province} {postcode}` with a 5-digit postcode, and
 country.
 
+Revisit 2026-10-06 (B21 worker r3, verify-only, zero changes;
+`gate_vn.py` ALL PASS): L1 34/34 (25 province + 9 municipality)
+vs MOST TOC + Resolution 202 + openapi + ISO legacy codes (Hue 26
+inherits VN-26; ISO entry explicitly obsolete); L2 counts 34/34
+vs a direct MOST-text recount of 3321 true rows (the prior
+worker's 3319 JSON was a lossy parse — dropped Tam Dương Bắc
+15221 on a "152213" PDF artifact and the Hai Phong #VALUE!
+05127 row); 3320/3320 legs MOST-correct with a 68/68 stratified
+hand sample. HELD: H1 22 wards as 2026 xã→phường conversions
+(bundle+vi.wiki 2026 vs MOST+openapi 2025 — live openapi p/24
+re-confirms 33/66 vs bundle 45/54 with identical name sets);
+H2 05127 (single-sourced from the corrupted MOST row, Nghi
+Dương stays unlegged); H3 Hiệp Hoà 2-2 spelling; H4 corrupt
+postcode.vn PDF; H5 GeoNames publishes no VN postal dump
+(VN.zip 404s); H6 24 provinces single-signal on names. Keeps:
+15221→Tam Dương Bắc (3 signals), lam-ong slug as internal key.
+
 ## Vanuatu
 
 The bundled `VanuatuGeographyProvider` supplies the 6 provinces as
@@ -3360,6 +3654,25 @@ it for provincial addresses (`{postcode} {municipality}, METRO MANILA`
 for Metro Manila, `{postcode} {locality}` when no province is set),
 and country.
 
+Revisit 2026-10-06 (B22 worker + integrator; `gate_ph.py` ALL PASS):
+bundle is exactly PSGC 1Q2025-vintage — L1 83/83 (82 provinces ISO
+exact + NCR), L2 1642/1642 (all 39 WP diffs resolve PSGC-literal in
+the bundle's favor), L3 41798/41798 code-join with zero parent
+mismatches. Tree: 3 PSGC-literal renames (Araceli + Abra de Ilog
+Santo Niño ×2, PPC `Barangay ng mga Mangingisda` — the sole
+`Barangay`-prefixed row in 42011, kept because the bundle had
+dropped meaning, not just the prefix). Postal 1933→1919: 15 drops
+(0905 Manila big-user, 4 old-Cebu artifacts, 4532 stale, 9 retired
+DavOro 81xx), 2 relegs (9610/9612 Maguindanao del Norte→del Sur),
+1 add (2222 Subic Bay Freeport Zone→Zambales). HELD: H1
+forward-delta (1Q2026 San Rafael→Dacanlao merger evidence-ready +
+14 renames single-lineage — bundle stays 1Q2025-vintage pending a
+vintage-policy decision); H2/H3 sub-office keeps (1045/1820/2333/
+2334/5456/4133/6267, GeoNames-single-lineage); H4 L2-remapping
+project (all legs point at L1 while codes serve municipalities —
+needs a leg-granularity product decision); 8016 Ateneo scope quirk
+pinned. NCR legs all within 1000–1899.
+
 ## South Korea
 
 The bundled `SouthKoreaGeographyProvider` supplies the 17
@@ -3461,20 +3774,29 @@ Berezna-30426, Borysiv-31073, Sloboda-31146), 4 specials verified
 exact). Two genuine cross-raion codes HELD with both legs: 82563
 (Matkiv 82563 Stryi/Koziova + Ivashkivtsi Sambir/Borynia)
 and 47431 (Pahinya 47431 Kremenets/Lanivtsi + Karnachivka 47431
-Ternopil/Zbarazh). One worker drop reversed into a flip: 90124 is
-Khust-sole (both village councils Irshavskyi per dab pages,
-Irshavskyi reform-wholly to Khust). All 607 singles moves applied
+Ternopil/Zbarazh). 90124 flipped to Berehove-sole 2026-10-06
+(Ukrposhta operator street DB: 1253/1253 Siltse + PCIU + Siltse
+infobox + COD-AB; old Irshavskyi SPLIT Kamianska→Berehove, so the
+B15 reform-wholly premise was false). All 607 singles moves applied
 after a 16/16 stratified sample (8 infobox-pc exact incl. 08411
 Boryspil, 78119 Kolomyia, 16262 Novhorod-Siverskyi, 67633
 Mizhlymanske; 8 reform+block incl. 27019, 26135, 84423 Lyman
 hromada, 08146 near-miss accepted; zero contradictions).
-Row-error proofs: Kalynove-Borshchuvate true-pc 93279 Alchevsk
-(voids 93302-Alchevsk), Mayak true-pc 53542 (voids 52414-Nikopol),
+Retry 2026-10-06 found the live Ukrposhta operator API
+(index.ukrposhta.ua street-grain + serving-office records) and
+closed all 7 village gaps (27019/26135/26230/52029/08146/84423/
+64372, operator + GN; infoboxes in 5/7 carry the neighbour's
+code); 47431/82563 stay held multis (directory favours sole —
+Pakhynia 47428, Ivashkivtsi 82525 — but 1v1 pending a municipal
+second signal). Row-error proofs: Kalynove-Borshchuvate true-pc
+93279 Alchevsk (voids 93302-Alchevsk; operator-blind, 0 rows),
+Mayak-Myrivska true-pc 53524 (53542 is Zoria's; voids
+52414-Nikopol — 52414 is Mayak-Solonianska sole per operator),
 Luchka-Okhtyrka 42600 vs Luchka-Romny 42547 (voids 42600-Romny).
-Held: Berestove-63744 ukwiki infobox pc 32911 looks corrupt
-(Rivne-block number on a Kupiansk village; target kept on
-reform+block+SUC/BLK/nb); occupied-territory OSM hromada edges
-treated as weak.
+Held: Berestove-63744 ukwiki infobox pc 32911 still corrupt
+(re-verified 2026-10-06 back to Feb-2023; operator confirms 63744
+= Berestove/Kupiansk and 32911 has 0 rows operator-wide);
+occupied-territory OSM hromada edges treated as weak.
 
 ## Iraq
 
@@ -3660,6 +3982,24 @@ normalized LF/CRLF-mixed → pure CRLF to match codes/links. Held:
 ~20 Mapanet-only singles (e.g. 207 Nosy Be, 401 Mahajanga I, 602
 Toliara II) whose WP articles carry no postcode — kept as
 uncontested block-sane singles pending a Paositra list.
+
+Retry 2026-10-06 (zero data changes; `gate_mg.py` 0 FAILURES):
+the unsealed set re-derives to 32 codes, of which 29 are now
+sealed by WP town/commune articles + OSM calculated postcodes +
+addressed usage (WFP "Nosy Be 207", hotel "SAINTE MARIE,515" and
+"614 Taolagnaro"); only 111 Antsirabe II, 323 Manandriana, and
+606 Ankazoabo-Atsimo stay held (French-list-only, WP fully
+exhausted). Lineage correction: Mapanet + youbianku +
+postcodebase + 56ok are ONE French-list lineage (shared quirks:
+Nord/Sud, Rural/Urban, Morafanobe, Antsihihy typo) — agreement
+between them is not a second signal, and B14's youbianku
+urban-row corroboration was weak (replaced by the new seals).
+Paositra's live site (paositramalagasy.mg) has an official
+193-agency map but no postcode table; postcodesdb is dead and
+postcode.info MG leaves all 404 (B14's 502/504/508/604 seals no
+longer live-verifiable). Single-signal anomalies held for the
+record: Bezaha-610 typo claim, Soalara membership conflict,
+110-bleed around Antsirabe, Ambohimahazo-223 OSM noise.
 
 ## Afghanistan
 
@@ -4898,7 +5238,10 @@ Mokouba/Makouba), so `Amdafock` follows the 3-source -ck majority
 over the decree-literal `Amdafoc`, and `Nana-Outa` follows the
 article + citypopulation over `Nana-Ouata`. The press "84" total is
 its own arithmetic slip (its lists sum to 81 + Bangui); 85 is the
-verified target. L1 untouched: ISO 3166-2:CF still lists the former
+verified target — confirmed 2026-10-06 by RNL post 69002 quoting
+the Loi du 21 janvier 2021 itself (20 préfectures + 85
+sous-préfectures) and OCHA COD-AB v02 listing exactly 20 + 85.
+L1 untouched: ISO 3166-2:CF still lists the former
 17 (last change NL II-2 2010), so LP/ME/OF stay provisional. Verdict
 stays none: UPU cafEn/cafFr profiles (03/2022) codeless, UPU
 Sep-2025 do-not-require list carries the country, GeoNames has no CF
@@ -5126,12 +5469,22 @@ Nominatim ~70 probes (rural reliable, Habana-city noisy:
 10100/10500/10700/10900/10800 misattributions), Havana
 Archdiocese parish directory (100+ usage postcodes, also
 confirms all Mayabeque bases + 34xxx sectors), UPU CUB.pdf,
-eswiki, 6 Guantanamo directories. No GN CU postal dump;
-Correos office-search app dead (JS shell only), live finder
-absent; Overpass unusable this session. Held: Camaguey
-Mapanet-only sectors (72820/74310/...) vs bundle parallel
-sectors (single-signal each way); 62410/77200/74680/34390/34140
-(Mapanet- or usage-only); 12900 Castilla usage vs Cerro leg.
+eswiki, 6 Guantanamo directories. No GN CU postal dump.
+Retry 2026-10-06 (zero data changes): the office search was
+never dead — its backend is `POST /wp-admin/admin-ajax.php`
+(`action=oficinas`, named by `hueman/js/oficinas.js`); 638
+live office rows pulled across 11 provinces, 100% new-scheme
+in Artemisa (35/37/38 keeps vindicated, all old codes stay
+unfilled — even 2-signal stale rows 32300/32400/32500 prove
+existence, not dual validity). Rebutted, do not fill: 74680
+La Jagua (operator: La Jagua office carries 74540) and 74360
+San Miguel de Bagá (operator: 74370 + Nominatim places it in
+Nuevitas, not Guáimaro). Still held: 10 Camaguey sectors
+(operator- + OSM-silent; unblock = one second lineage each);
+62410 (operator+OSM+usage all 62400 — likely off-by-10);
+77200 (de-facto base is 77210); 34390/34140 old-scheme;
+35110/37330/37550/34360 operator-only finds (need a second
+signal); 12900 Castilla usage vs Cerro leg.
 
 ## Djibouti
 
@@ -5695,6 +6048,24 @@ JS-walled with grouped postal localities, no GeoNames MU postal
 export, directories paywalled) — the bundle stays
 MP-scrape-authoritative pending a finder API or directory PDF.
 
+Retry 2026-10-06 (zero data changes): the finder yielded a plain
+same-page POST (`town_village` + `submit=` to
+`/find-your-post-code/`, plus an autocomplete AJAX action) and a
+full 146-town harvest (4,283 rows) replicates the bundle code set
+EXACTLY (1,990/1,990, zero diffs either way). The MDPA open-data
+street snapshot (2024-09-30) replicates 1,987/1,990 with 6
+MDPA-only stale/typo rows adjudicated against live MP (bundle
+vindicated); MDPA is publication-independent but MP-derived, so
+per-code transcription is proven to MP-operator level while a
+non-MP ground-truth oracle stays unfound (GeoNames/WPC/postcodebase
+absent, OSM 406, Nominatim junk, UPU POST*CODE walled). Link-level
+(code→area) audit remains future work (naive town join only
+1,349/1,990 — grouped postal localities need the integrator's
+`mp-table.json` replay). Rodrigues 5-sub-office split (La Ferme,
+Port Mathurin, Grande Montagne, Riviere Coco, Mont Lubin + 182
+R-code rows) and the Agalega office record are banked in OPEN/MU
+scratch for the future enhancement.
+
 Mauritian addresses are formatted per the UPU layout: street lines,
 `{locality} {postcode}` with a 5-digit postcode (`R` + 4 digits on
 Rodrigues), and country.
@@ -5787,15 +6158,23 @@ Renames: San Juan de Río Coco → San Juan del Río Coco, 35800
 body vs eswiki-title/cp-display "de"); Waspán → Waspam, 72100
 (2015 operator RAAN map + INIDE gazetteer + COD-AB +
 citypopulation wikilink vs eswiki/cp-display Spanish form; slug
-was already m-form). Keeps: San Juan del Norte, 92500 (2015
-operator map + eswiki legal note vs 2013 print-all + INIDE
-lineage — operator contradicts itself across years, held);
+was already m-form). San Juan del Norte → San Juan de Nicaragua,
+92500, renamed 2026-10-06 (Ley 434 Art. 1–2 of 2002-07-15 +
+consolidated Ley 59 of 2021 + INIDE anuario2023 31× + operator
+print-all 4 captures + enwiki; eswiki "extraoficial" note cites no
+law and is stale; the 2015 map's del Norte is stale vs the
+operator's own print-all; area id keeps the pre-2002 slug as
+stable key). SJRC del now law-backed too (Decreto 981 of 1964 +
+consolidation; note INIDE anuario2023 prints de ×10 — an
+INIDE-internal inconsistency, law wins). Keeps:
 El Jícaro, 38800 (operator NS map keeps the article);
 Kukra Hill, 82200 (operator RAAS map spaced); Mulukukú accent
 (gazetteer drops accents inconsistently); Los Remates casing
 (eswiki canonical capital-L). Postal: all 144 non-Managua codes
 verified — 16/17 archived operator dept maps read code-by-code
-(Madriz map 404s; its 9 covered by Nominatim), full 144/144
+(Madriz map re-captured 2026-10-06 as file-verified 600×429 JPEG
+from Wayback 20151225082009, content pixels not yet eyeballed;
+its 9 covered by Nominatim), full 144/144
 Nominatim sweep, 7 flags resolved for the bundle by
 codigo-postal.org + operator maps (42600 Masatepe, 46400 San
 Marcos, 46600 Santa Teresa, 48500 Tola over OSM
@@ -6399,6 +6778,34 @@ absence proves nothing); 71335 Pržidi stays omitted per build
 note. Build note said 55 dual-linked vs 50 found — post-fix 53
 multis / 58 extra legs; the historic drift has no build snapshot
 to reconcile against.
+
+Revisit 2026-10-06 (OPEN #12 fill, `gate_ba.py` 0 FAILURES, tree
+untouched): the 2013 HP routing table (561 codes with operator
+tags) plus all three live operator networks settled delivery-vs-unit
+grain for every WP-only code. Postal 517→563 codes / 575→625 legs
+/ 53→57 multis: 37 PROVEN-live fills (15 Sarajevo BHP units on the
+WP municipality split, duals 71124 Novo-Sarajevo-primary and 71213
+Ilidža-primary with Istočna Ilidža secondaries, Kiseljak 71275/71335
+— overturning the 71335 build-note omission — 72293 Opara, Orašje
+76281, Odžak 76298, Livno 80202/80205, Tomislavgrad 80246, 10 Mostar
+units, Široki Brijeg 88221, Ljubuški 88322) plus 10 beyond-65 proven
+(71126 Lukavica, duals 71214/71216 Ilidža-primary, 73300 Foča, 79101
+Prijedor, 74231 Sivša, 74273 Banja Vrućica, 71212, 71218, 71323
+Kobilja Glava). Drops: 79293 erroneous Opara (two operator lineages
+plus block fit contradict the shared WP/PBN error; replaced by
+72293 in the same pass); retired 74321/75000/88267 confirmed absent
+with successors 74231/75101/88266 live. Held in gate + bundle: the
+10 LIKELY-live Hodovo-class delivery codes (medium-high, one
+addressed sighting each unblocks: 76234/76271/76276, 80203, 88327,
+88365/88366/88368/88375/88395), the 15 likely-retired unit codes
+(71145, 76100, 76231, 80241, 88005, 88101, 88222, 88241, 88242,
+88261, 88264, 88301, 88302, 88321, 88341), and all single-lineage
+singletons (HP/BHP/PS finder-only and HP-route-vintage codes need a
+second signal each). Weak keeps flagged for review: 78108 (directory-
+only), 78249 (Razboj link-target suspect), 74221 (directory-only);
+75248 Čelić secondary leg held (HP-route single signal). The 55-vs-50
+build note is recorded as dropped-unreconcilable: no build snapshot
+exists and the multi-count moved again with the newly proven duals.
 
 ## Bulgaria
 
@@ -7074,6 +7481,17 @@ on already-multi codes). The old "pre-2018 communes mapped to
 merged names" claim is now verified cell-by-cell: 13 stale
 GeoNames admin2 labels fold into the 8 current communes with zero
 primary misses.
+
+Open-case retry 2026-10-06 (blocked-log #8; `gate_lu.py` ALL
+PASS): fresh BD-Adresses (ACT, 2026-10-05, 179,635 buildings)
++ Nominatim retired the dated legs — L-7533 Fischbach
+secondary dropped (Place de l'Église 18/18 Mersch, Nominatim
+Mersch-only; new totals 4333/4434/93), L-1634 Hesperange
+secondary confirmed (Turbelfiels/Itzig, 1/31), L-2632
+Luxembourg-city secondary confirmed (Rue de Trèves Findel
+69/69 Sandweiler primary stands), L-7300 still 0-address
+dormant (hold stands).
+
 ## Malta
 
 The bundled `MaltaGeographyProvider` supplies the 68 local
@@ -7376,6 +7794,35 @@ are parent-scoped.
 
 Romanian addresses are formatted per the UPU layout: street lines,
 `{postcode} {locality}` with a 6-digit postcode, and country.
+
+### Revisit (B21, 2026-10-06)
+
+Tree 17 renames, postal ZERO changes
+(`gate_ro.py` ALL PASS). L1 42/42 ISO
+codes; L2 3180/3180 UATs vs SIRUTA-2022,
+0 type/parent/county errors; comma-below
+diacritics clean. Renames triangulated
+(SIRUTA + GN-PPLA2/village + ro.wiki;
+ADM2==SIRUTA never double-counted):
+Daia Română, Dârmănești, Sânmărtin,
+Gălăuțaș, Piatra-Neamț, Piatra-Olt,
+Boldești-Gradiștea, Șărmășag, C.A.
+Rosetti, I.C. Brătianu, Smârdan, Șelaru
+(drop wiki-disambiguation suffix),
+Alexandru I. Cuza, Pădina (not seat
+village), Roșiori de Vede, Beidaud,
+Mihail Kogălniceanu; 15 vindications
+incl. Petreu Dec-2022 rename. Bucharest
+exonym HELD (L1 State-row migration
+needs states.json + prune — maintainer
+call). Postal: bundle == GN export
+exactly (same lineage, not proof);
+mirror partial (Covasna 186/186 + Ilfov
+105/105 set-equal); integrator H3
+prefix-join 37914/37914 clean; H4
+330-sample + Arad/Călărași/Alba
+shortfalls held.
+
 ## Saint Kitts and Nevis
 
 The bundled `SaintKittsAndNevisGeographyProvider` supplies the 2
@@ -7468,6 +7915,23 @@ codes incl. 11165/11189 (single-signal), 11000 as-is. OSM
 Belgrade points are unreliable (11231 misplaced at Beli
 Potok — operator confirms Rakovica; 11102 half-right) —
 operator wins every conflict.
+
+Retry 2026-10-06 (1415→1411 legs, 69→67 multis; `gate_rs.py`
+0 FAILURES): 11040 → Savski Venac primary + Voždovac secondary
+(PAK 12:2 streets + PlanPlus Beograd-33 office row; Rakovica
+drops); 11050 → Zvezdara primary + Voždovac secondary
+(delivery-office rule: Beograd-22 office at Ustanička 182;
+Vračar drops); 17508 → Vranje primary + Trgovište secondary
+(Sveti Ilija solved as a Barelić hamlet post office; district
+drops); 18110 → Niš (PAK Nikola Tesla + addressed journal
+article); 18251 → Niš primary + Nišava span marker (office
+town Mramor); 18252 Merošina-only and 18411 Doljevac-only
+(district span legs drop). L1 branch tail: 91/92 codes to
+city-municipalities (office street → PAK opština × PlanPlus
+× OSM per code); only 11161 stays generic (zero signals
+anywhere). Holds: 11161; WPC-only slices (18251-Merošina,
+17508-Trgovište); 18252 single-oracle caveat; 11113/11140
+borderline rows.
 ## Slovakia
 
 The bundled `SlovakiaGeographyProvider` supplies the 8 regions as
@@ -7623,7 +8087,9 @@ secondary), 1595 Bern-Mittelland→See/Lac (Clavaleyres→Murten
 2022), 1015 Lausanne→Ouest lausannois (EPFL/UNIL campus, zero
 Lausanne-commune rows); drops: 1911 Conthey
 (Mayens-de-Chamoson is 1955), 6825 Lugano (pre-2022 Rovio dupe),
-2333 La Chaux-de-Fonds (La Cibourg is a Renan/BE hamlet);
+2333 La Chaux-de-Fonds (La Cibourg is a Renan/BE hamlet —
+Renan commune tourism page + La Ferrière commune heritage article,
+2026-10-06, triple-signal);
 primary flips: 3994 Östlich Raron→Goms (Lax 312 vs Martisberg
 19), 1958 Sion→Sierre (St-Léonard 2,460 vs Uvrier ~1,400).
 3220 legs, 42 multis. Held: ~324 swisstopo-only micro-slivers
@@ -8699,12 +9165,13 @@ Seven authorities straddle regional boundaries; each is
 parented to its largest-share region. All three types share
 the `district` assignment role.
 
-1201 postal localities (suburbs, towns, rural-delivery names)
+1229 postal localities (suburbs, towns, rural-delivery names)
 ship as level-3 `locality` areas under their district, with a
 `postal` hierarchy (region > locality, refined by district)
-and the `postal_locality` role. The 1737-code overlay links
+and the `postal_locality` role. The 1769-code overlay links
 each code to its locality (0110–9893; 1081 shared by Ostend
-and Surfdale, Ostend primary). 58 places needed manual
+and Surfdale, Ostend primary; 4180 leg-less pending PAF).
+58 places needed manual
 resolution: GeoNames rows with empty admin2 (Tararua and
 Waitaki Valley clusters, Petone, Turangi), name variants
 (Puk-kura = Pukekura, Weheka = Fox Glacier), and Waioruarangi
@@ -8713,6 +9180,35 @@ Waiau-side dump coordinate.
 
 New Zealand postcodes print left of the locality
 (`6011 Wellington`).
+
+### Revisit (B21, 2026-10-06)
+
+Tree 6 renames + 28 appends, postal
+1737/1738 → 1769/1769 (`gate_nz.py` ALL
+PASS). L1 17/17 ISO (incl. CIT); L2
+67/67 TA exact. Renames: Manawatū
+macron, Chatham Islands Territory,
+Whanganui ×2, Feilding/Hastings case.
+28 L3: 13 homonym splits (Woodhill/
+Kensington/Meremere/Hillsborough ×2/
+Tokomaru/Waverley ×2/Richmond/Avondale/
+Sunnyvale/Ngapuna/Parkvale) + 15
+suburbs (One Tree Point, Flat Bush,
+Hamurana, Te Puna, Minden, Tauwhare,
+Acacia Bay, Linton, Swannanoa, Eyrewell,
+Pegasus, West Melton, Levels, Tora,
+Chatham Islands). Postal: 32 onzp-
+street adds (0 drops) + 23 retargets
+(21 homonym side-fixes + Nukuhau
+phantom + doubly-wrong Waipawa→Tora).
+Judgment calls recorded: 3384 Wairakei
+over Oruanui (10-10 tie, 8v7 single +
+principal settlement), 5583 Manakau
+over Ōtaki 7v6, 7050 OSM-Westland
+refuted by prefix allocation. Holds:
+4180 leg (no 2-signal target), ~87
+lobby-code gap (paid PAF), 57
+waimate-only singles.
 
 ## Numeric state codes
 

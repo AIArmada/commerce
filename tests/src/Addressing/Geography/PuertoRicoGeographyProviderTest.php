@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Geography\PuertoRico\PuertoRicoGeographyProvider;
+use AIArmada\Addressing\Support\CsvPostalCodeSource;
 
 it('types all 78 municipios as municipality with FIPS codes', function (): void {
     $areas = app(PuertoRicoGeographyProvider::class)->addressAreaSource()->areas()->collect()->keyBy->sourceId;
@@ -42,4 +43,28 @@ it('ships 901 barrios under municipios with parent links', function (): void {
         ->and($l2->where('type', 'barrio_pueblo'))->toHaveCount(74)
         ->and($byId->get('pr:barrio:santurce')->parentSourceId)->toBe('pr:municipality:san-juan')
         ->and($byId->get('pr:barrio_pueblo:adjuntas')->parentSourceId)->toBe('pr:municipality:adjuntas');
+});
+
+it('pins the B20 verify-only postal pass: 177 ZIPs with GN-matching legs, 00938 held', function (): void {
+    $dir = __DIR__ . '/../../../../packages/addressing/resources/geography';
+    $source = new CsvPostalCodeSource('PR', $dir . '/puerto-rico-postal-codes.csv', $dir . '/puerto-rico-postal-code-areas.csv', 'aiarmada.addressing.puerto-rico');
+
+    $postcodes = $source->postalCodes()->collect();
+    $byCode = $postcodes->groupBy->code;
+
+    expect($byCode)->toHaveCount(177)
+        ->and($postcodes)->toHaveCount(177);
+
+    $primary = fn (string $code) => $byCode->get($code)->where('isPrimary', true)->first()->areaSourceId;
+
+    // Notable assignments consistent with GN municipio.
+    expect($primary('00968'))->toBe('pr:municipality:san-juan')
+        ->and($primary('00934'))->toBe('pr:municipality:bayamon')
+        ->and($primary('00785'))->toBe('pr:municipality:guayanilla')
+        ->and($primary('00742'))->toBe('pr:municipality:ceiba')
+        // Deep-dived keeps: dir-A index omissions proven stale artifacts.
+        ->and($primary('00636'))->toBe('pr:municipality:san-german')
+        ->and($primary('00930'))->toBe('pr:municipality:san-juan')
+        // H1: split evidence, kept pending a human USPS-finder lookup.
+        ->and($primary('00938'))->toBe('pr:municipality:san-juan');
 });

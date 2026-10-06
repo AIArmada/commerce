@@ -32,3 +32,15 @@ it('ships 326 municipalities under provinces with parent links', function (): vo
         ->and($byId->get('ao:municipality:viana')->parentSourceId)->toBe('ao:province:luanda')
         ->and($byId->get('ao:municipality:quelo')->parentSourceId)->toBe('ao:province:zaire');
 });
+
+it('spells Alto Chicapa per census oracles and keeps dual-name municipalities single', function (): void {
+    $areas = app(AngolaGeographyProvider::class)->addressAreaSource()->areas()->collect();
+    $byId = $areas->keyBy->sourceId;
+
+    expect($byId->has('ao:municipality:alto-chipaca'))->toBeFalse()
+        ->and($byId->get('ao:municipality:alto-chicapa')->name)->toBe('Alto Chicapa')
+        ->and($byId->get('ao:municipality:alto-chicapa')->parentSourceId)->toBe('ao:province:lunda-sul')
+        ->and($byId->get('ao:municipality:tombwa')->name)->toBe('Tômbwa')
+        ->and($byId->get('ao:municipality:waku-kungo')->parentSourceId)->toBe('ao:province:cuanza-sul')
+        ->and($byId->get('ao:municipality:cangola')->parentSourceId)->toBe('ao:province:uige');
+});
