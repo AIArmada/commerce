@@ -7,7 +7,6 @@ use AIArmada\Signals\Exceptions\CommerceSignalTransactionControlFailed;
 use AIArmada\Signals\Support\TransactionFailureClassifier;
 use Illuminate\Database\DeadlockException;
 use Illuminate\Database\QueryException;
-use PDOException;
 
 uses(SignalsTestCase::class);
 
