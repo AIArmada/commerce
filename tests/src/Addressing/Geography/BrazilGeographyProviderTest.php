@@ -15,8 +15,8 @@ it('declares UF abbreviations for all 27 states and the federal district', funct
 });
 
 it('pins the B21 postal pass: RO renumber, Itapua dedup, Serra relink, 22 adds', function (): void {
-    $dir = __DIR__.'/../../../../packages/addressing/resources/geography';
-    $source = new CsvPostalCodeSource('BR', $dir.'/brazil-postal-codes.csv', $dir.'/brazil-postal-code-areas.csv', 'aiarmada.addressing.brazil');
+    $dir = __DIR__ . '/../../../../packages/addressing/resources/geography';
+    $source = new CsvPostalCodeSource('BR', $dir . '/brazil-postal-codes.csv', $dir . '/brazil-postal-code-areas.csv', 'aiarmada.addressing.brazil');
 
     $postcodes = $source->postalCodes()->collect();
     $byCode = $postcodes->groupBy->code;

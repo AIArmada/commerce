@@ -74,8 +74,8 @@ it('ships no postal overlay yet (verify-only-tree, gap program open)', function 
     // index table is truncated mid-Khatlon (22/69 L2 codeless) with 14
     // shared codes, and no second directory exists. A future seed must
     // resolve the gap program first -- and update this pin deliberately.
-    $dir = __DIR__.'/../../../../packages/addressing/resources/geography';
+    $dir = __DIR__ . '/../../../../packages/addressing/resources/geography';
 
-    expect(file_exists($dir.'/tajikistan-postal-codes.csv'))->toBeFalse()
-        ->and(file_exists($dir.'/tajikistan-postal-code-areas.csv'))->toBeFalse();
+    expect(file_exists($dir . '/tajikistan-postal-codes.csv'))->toBeFalse()
+        ->and(file_exists($dir . '/tajikistan-postal-code-areas.csv'))->toBeFalse();
 });

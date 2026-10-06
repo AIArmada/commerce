@@ -23,8 +23,8 @@ it('pins the B21 pass: Sambaa K’e repair, G0B/H4Z drops, 14 FSA adds', functio
     expect($areas)->toHaveCount(5041)
         ->and($byId->get('ca:municipality:6104006')->name)->toBe('Sambaa K’e');
 
-    $dir = __DIR__.'/../../../../packages/addressing/resources/geography';
-    $source = new CsvPostalCodeSource('CA', $dir.'/canada-postal-codes.csv', $dir.'/canada-postal-code-areas.csv', 'aiarmada.addressing.canada');
+    $dir = __DIR__ . '/../../../../packages/addressing/resources/geography';
+    $source = new CsvPostalCodeSource('CA', $dir . '/canada-postal-codes.csv', $dir . '/canada-postal-code-areas.csv', 'aiarmada.addressing.canada');
 
     $postcodes = $source->postalCodes()->collect();
     $byCode = $postcodes->groupBy->code;

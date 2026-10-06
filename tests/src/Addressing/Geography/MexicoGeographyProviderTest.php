@@ -32,8 +32,8 @@ it('pins the B21 tree pass: 10 municipio fixes, Las Casas held', function (): vo
 });
 
 it('pins the B21 postal pass: PF1 Puerto Morelos pair, PF2 held out', function (): void {
-    $dir = __DIR__.'/../../../../packages/addressing/resources/geography';
-    $source = new CsvPostalCodeSource('MX', $dir.'/mexico-postal-codes.csv', $dir.'/mexico-postal-code-areas.csv', 'aiarmada.addressing.mexico');
+    $dir = __DIR__ . '/../../../../packages/addressing/resources/geography';
+    $source = new CsvPostalCodeSource('MX', $dir . '/mexico-postal-codes.csv', $dir . '/mexico-postal-code-areas.csv', 'aiarmada.addressing.mexico');
 
     $postcodes = $source->postalCodes()->collect();
     $byCode = $postcodes->groupBy->code;

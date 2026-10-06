@@ -130,6 +130,6 @@ it('keeps every code inside its province prefix block', function (): void {
     expect($rows)->toHaveCount(467);
 
     foreach ($rows as [$code, $area]) {
-        expect($blocks[substr((string) $code, 0, 2)])->toContain($area);
+        expect($blocks[mb_substr((string) $code, 0, 2)])->toContain($area);
     }
 });

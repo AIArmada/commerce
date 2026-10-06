@@ -19,8 +19,8 @@ it('types municipalities by kind from the kanji suffix', function (): void {
 });
 
 it('pins the B21 postal pass: Tenryu-ku remaps, phantom drop, 38 KEN_ALL adds', function (): void {
-    $dir = __DIR__.'/../../../../packages/addressing/resources/geography';
-    $source = new CsvPostalCodeSource('JP', $dir.'/japan-postal-codes.csv', $dir.'/japan-postal-code-areas.csv', 'aiarmada.addressing.japan');
+    $dir = __DIR__ . '/../../../../packages/addressing/resources/geography';
+    $source = new CsvPostalCodeSource('JP', $dir . '/japan-postal-codes.csv', $dir . '/japan-postal-code-areas.csv', 'aiarmada.addressing.japan');
 
     $postcodes = $source->postalCodes()->collect();
     $byCode = $postcodes->groupBy->code;

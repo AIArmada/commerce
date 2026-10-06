@@ -41,8 +41,8 @@ it('declares USPS abbreviations for all 56 states, territories, and DC', functio
 });
 
 it('pins the B21 verify-only pass: 40977 ZIPs, zero orphans, zero moves', function (): void {
-    $dir = __DIR__.'/../../../../packages/addressing/resources/geography';
-    $source = new CsvPostalCodeSource('US', $dir.'/united-states-postal-codes.csv', $dir.'/united-states-postal-code-areas.csv', 'aiarmada.addressing.united-states');
+    $dir = __DIR__ . '/../../../../packages/addressing/resources/geography';
+    $source = new CsvPostalCodeSource('US', $dir . '/united-states-postal-codes.csv', $dir . '/united-states-postal-code-areas.csv', 'aiarmada.addressing.united-states');
 
     $postcodes = $source->postalCodes()->collect();
     $byCode = $postcodes->groupBy->code;

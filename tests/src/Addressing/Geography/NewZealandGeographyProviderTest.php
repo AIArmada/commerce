@@ -50,8 +50,8 @@ it('pins the B21 tree pass: 6 renames plus 28 homonym and suburb rows', function
 });
 
 it('pins the B21 postal pass: 32 adds, 23 retargets, 4180 leg-less', function (): void {
-    $dir = __DIR__.'/../../../../packages/addressing/resources/geography';
-    $source = new CsvPostalCodeSource('NZ', $dir.'/new-zealand-postal-codes.csv', $dir.'/new-zealand-postal-code-areas.csv', 'aiarmada.addressing.new-zealand');
+    $dir = __DIR__ . '/../../../../packages/addressing/resources/geography';
+    $source = new CsvPostalCodeSource('NZ', $dir . '/new-zealand-postal-codes.csv', $dir . '/new-zealand-postal-code-areas.csv', 'aiarmada.addressing.new-zealand');
 
     $postcodes = $source->postalCodes()->collect();
     $byCode = $postcodes->groupBy->code;

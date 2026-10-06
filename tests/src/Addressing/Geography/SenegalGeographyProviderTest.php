@@ -91,10 +91,10 @@ it('pins the corrected cross-department links', function (): void {
 
     // Dropped secondaries stay dropped (single-link after M2).
     foreach (['23200' => 'sn:department:m-bour', '24018' => 'sn:department:foundiougne',
-              '24030' => 'sn:department:kaolack', '25400' => 'sn:department:koumpentoum',
-              '26018' => 'sn:department:goudiry', '27009' => 'sn:department:oussouye',
-              '27406' => 'sn:department:velingara', '30600' => 'sn:department:kebemer',
-              '31000' => 'sn:department:louga', '22100' => 'sn:department:mbacke'] as $code => $sole) {
+        '24030' => 'sn:department:kaolack', '25400' => 'sn:department:koumpentoum',
+        '26018' => 'sn:department:goudiry', '27009' => 'sn:department:oussouye',
+        '27406' => 'sn:department:velingara', '30600' => 'sn:department:kebemer',
+        '31000' => 'sn:department:louga', '22100' => 'sn:department:mbacke'] as $code => $sole) {
         expect($links[$code])->toBe([$sole], $code);
     }
 
