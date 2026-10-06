@@ -1215,6 +1215,12 @@ describe('incomplete payment reference', function (): void {
 
 describe('callback transaction nesting', function (): void {
     it('completes a success callback without nested savepoints', function (): void {
+        // Cross-package CheckoutCompleted listeners (e.g. signals recording)
+        // legitimately open their own savepoints. Fake before the service
+        // resolves its dispatcher so this count measures checkout's own
+        // nesting only.
+        Event::fake([CheckoutCompleted::class]);
+
         $registry = new CheckoutStepRegistry;
         $registry->register('process_payment', regressionTrackStep('process_payment'));
         $registry->register('create_order', regressionTrackStep('create_order', ['process_payment']));
