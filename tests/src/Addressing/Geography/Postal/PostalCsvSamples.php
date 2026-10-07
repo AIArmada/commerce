@@ -19,7 +19,7 @@ use RuntimeException;
 /**
  * Shared postcode-dataset helpers for the PostalCodeCsvImport shards.
  *
- * The 163 bundled postcode datasets are sharded across files (see
+ * The 164 bundled postcode datasets are sharded across files (see
  * PostalCodeCsvImportShard*Test) so parallel runs split the work, the
  * same way GeographyProviderSeedShard*Test shards full seeding.
  *

@@ -24,6 +24,13 @@ it('resolves a country timezone and rejects unsupported input', function (): voi
     $country = AddressCountry::query()->where('iso2', 'MY')->firstOrFail();
 
     expect($this->resolver->timezoneFor($country->id))->toBe('Asia/Kuala_Lumpur')
-        ->and($this->resolver->resolve('Malaysia'))->toBeNull()
-        ->and($this->resolver->resolve(null))->toBeNull();
+        ->and($this->resolver->resolve(null))->toBeNull()
+        ->and($this->resolver->resolve('Neverland'))->toBeNull();
+});
+
+it('resolves a country by name, case-insensitively', function (): void {
+    $country = AddressCountry::query()->where('iso2', 'MY')->firstOrFail();
+
+    expect($this->resolver->resolve('Malaysia')?->id)->toBe($country->id)
+        ->and($this->resolver->resolve('malaysia')?->id)->toBe($country->id);
 });

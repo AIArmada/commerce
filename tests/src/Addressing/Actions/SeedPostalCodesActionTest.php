@@ -68,7 +68,7 @@ it('covers every bundled dataset with the default providers', function (): void 
     }
 
     expect($result['seeded'])->toBe([])
-        ->and($result['skipped'])->toHaveCount(163)
+        ->and($result['skipped'])->toHaveCount(164)
         ->and(array_diff($result['skipped'], $provided))->toBe([]);
 });
 

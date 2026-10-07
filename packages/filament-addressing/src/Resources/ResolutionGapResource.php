@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAddressing\Resources;
 
 use AIArmada\Addressing\Models\ResolutionGap;
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\FilamentAddressing\Resources\ResolutionGapResource\Pages\ListResolutionGaps;
 use AIArmada\FilamentAddressing\Resources\ResolutionGapResource\Pages\ViewResolutionGap;
 use AIArmada\FilamentAddressing\Tables\ResolutionGapTable;
@@ -14,6 +15,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 final class ResolutionGapResource extends Resource
 {
@@ -46,6 +48,11 @@ final class ResolutionGapResource extends Resource
     public static function shouldRegisterNavigation(): bool
     {
         return (bool) config('filament-addressing.navigation.enabled', true);
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return OwnerUiScope::apply(parent::getEloquentQuery(), includeGlobal: true);
     }
 
     public static function table(Table $table): Table

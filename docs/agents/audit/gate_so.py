@@ -1,6 +1,8 @@
 import csv, os, sys
-# Somalia gate. No operational postcode system (UPU paper AA NNNNN
-# never taken into use). M5 revisit: 1 spelling fix proposed (see
+# Somalia gate. Verdict admin-ready since Stage 2 (2026-10-07):
+# AA NNNNN format triply attested (UPU somEn + Google SO pattern +
+# commerceguys), allocation unlisted, operational use unconfirmed.
+# M5 revisit: 1 spelling fix proposed (see
 # verdict.md); this gate pins the CORRECTED names, so it reports
 # 2 FAILs (iso-SH, iso-SD) until the CSV renames land.
 # Run from repo root: python3 docs/agents/audit/gate_so.py
@@ -92,11 +94,11 @@ for reg, names in table.items():
 if ok: print('PASS all 18 region mappings (89 districts)')
 orph = [r['source_id'] for r in rows if r['parent_source_id'] and r['parent_source_id'] not in byid]
 check('no-orphans', not orph, str(orph[:3]))
-# Verdict none: UPU somEn (09/2004) documents a paper-only AA NNNNN
-# scheme (never taken into use); Sep-2025 UPU list carries
-# Somalia on do-not-require (absent from the Aug-2026 require
-# list); GeoNames has no SO postal dump (404); directories agree
-# ('Somalia does not have a postal code system').
+# Verdict admin-ready: format attested (UPU somEn + Google SO +
+# commerceguys agree on AA NNNNN) but no allocation list is
+# published and operational use is unconfirmed; GeoNames has no SO
+# postal dump (404). Admin already bundled, so only links queued —
+# no CSVs ship until the district allocation exists.
 check('no-codes-file', not os.path.exists(C))
 check('no-links-file', not os.path.exists(L))
 print('ALL PASS' if not fails else f'{len(fails)} FAILURES')

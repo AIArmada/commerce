@@ -8,6 +8,8 @@ use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaRole;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\ResolutionGap;
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\CommerceSupport\Support\OwnerCache;
 use Illuminate\Support\Facades\Cache;
 
 /**
@@ -92,11 +94,14 @@ final class AddressingFilterOptions
     public static function gapRoles(): array
     {
         $gapClass = config('filament-addressing.resources.resolution_gaps.model', ResolutionGap::class);
+        $owner = OwnerUiScope::resolveOwner($gapClass);
 
-        return Cache::remember(
-            self::key('gap-roles', $gapClass),
+        return OwnerCache::remember(
+            $owner,
+            'filament-addressing.filter-options.gap-roles.' . md5($gapClass),
             self::TTL_SECONDS,
-            static fn (): array => $gapClass::query()
+            fn (): array => $gapClass::query()
+                ->forOwner($owner, true)
                 ->distinct()
                 ->orderBy('role')
                 ->pluck('role', 'role')

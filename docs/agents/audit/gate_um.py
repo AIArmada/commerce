@@ -1,6 +1,8 @@
 import csv, os, sys
 # US-Minor-Outlying-Islands gate. B3 revisit: verify-only, zero
-# data changes. Run from repo root: python3 docs/agents/audit/gate_um.py
+# data changes. Stage 2 (2026-10-07): single-code overlay added;
+# postal checks below pin the new contract.
+# Run from repo root: python3 docs/agents/audit/gate_um.py
 A = './packages/addressing/resources/geography/us-minor-outlying-islands-address-areas.csv'
 C = './packages/addressing/resources/geography/us-minor-outlying-islands-postal-codes.csv'
 L = './packages/addressing/resources/geography/us-minor-outlying-islands-postal-code-areas.csv'
@@ -28,7 +30,11 @@ for sid, (name, code) in iso.items():
           and r['parent_source_id'] == '', str(r))
 # UPU umiEn (03/2005): islands follow the US postal system (state
 # code UM); no permanent population; no UM domestic system.
-check('no-codes-file', not os.path.exists(C))
-check('no-links-file', not os.path.exists(L))
+# Single-code overlay (Google UM entry pins 96898, USPS posturl):
+# code-only per Niue precedent (Wake-only in practice).
+codes = list(csv.DictReader(open(C, newline=''))) if os.path.exists(C) else None
+check('codes-single-96898', codes == [{'country_code': 'UM', 'code': '96898'}], str(codes))
+links = list(csv.DictReader(open(L, newline=''))) if os.path.exists(L) else None
+check('links-header-only', links == [], str(links))
 print('ALL PASS' if not fails else f'{len(fails)} FAILURES')
 sys.exit(1 if fails else 0)

@@ -137,6 +137,7 @@ pest()->extend(AddressingDatabaseTestCase::class)->in(
     'src/Addressing/Casts',
     'src/Addressing/Data',
     'src/Addressing/Models',
+    'src/Addressing/Rules',
     'src/Addressing/Support',
     'src/Addressing/Traits',
     'src/Addressing/AddressAreaSearchTest.php',

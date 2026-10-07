@@ -2,7 +2,8 @@
 
 ## Base Model Contract
 - Use `Illuminate\Database\Eloquent\Concerns\HasUuids`.
-- Do not set `protected $table`; implement `getTable()` using package config so table names can be prefixed and remapped per package.
+- Do not declare `protected $table`; implement `getTable()` so the default table name resolves from package config (prefixable and remappable per package).
+- When a model has self-referencing relations, `getTable()` must also honor per-instance overrides (`return $this->table ?? <config resolution>;`): Laravel aliases the inner table via `setTable()` for self-join existence queries, and ignoring the alias silently misbinds the join to the outer table.
 
 ## Type Safety
 - Type relations and collections with PHPDoc generics.

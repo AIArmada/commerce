@@ -10,11 +10,14 @@ use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaName;
 use AIArmada\Addressing\Models\ResolutionGap;
 use AIArmada\Addressing\Support\ArrayAddressAreaSource;
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentAddressing\Resources\ResolutionGapResource;
 use AIArmada\FilamentAddressing\Support\AddressingFilterOptions;
 use AIArmada\FilamentAddressing\Tables\ResolutionGapTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 beforeEach(function (): void {
@@ -155,4 +158,27 @@ it('maps distinct gap roles for the role filter', function (): void {
         'postal_locality' => 'Postal locality',
         'state' => 'State',
     ]);
+});
+
+it('scopes cached gap roles per owner with global roles shared', function (): void {
+    $ownerA = User::query()->create([
+        'name' => 'Owner A',
+        'email' => Str::lower(Str::random(10)) . '@example.com',
+        'password' => 'secret',
+    ]);
+    $ownerB = User::query()->create([
+        'name' => 'Owner B',
+        'email' => Str::lower(Str::random(10)) . '@example.com',
+        'password' => 'secret',
+    ]);
+
+    OwnerContext::withOwner($ownerA, fn (): ResolutionGap => logTestGap('Alpha Value', 'alpha_probe'));
+    OwnerContext::withOwner($ownerB, fn (): ResolutionGap => logTestGap('Beta Value', 'beta_probe'));
+    OwnerContext::withOwner(null, fn (): ResolutionGap => logTestGap('Global Value', 'global_probe'));
+
+    $rolesA = OwnerContext::withOwner($ownerA, fn (): array => AddressingFilterOptions::gapRoles());
+    $rolesB = OwnerContext::withOwner($ownerB, fn (): array => AddressingFilterOptions::gapRoles());
+
+    expect($rolesA)->toBe(['alpha_probe' => 'Alpha probe', 'global_probe' => 'Global probe'])
+        ->and($rolesB)->toBe(['beta_probe' => 'Beta probe', 'global_probe' => 'Global probe']);
 });

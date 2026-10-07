@@ -69,6 +69,7 @@ it('maps the canonical shipping attachment into shipment data', function (): voi
     $address = Address::create([
         'line1' => '456 Shipping Road',
         'city' => 'Johor Bahru',
+        'state' => 'Johor',
         'postcode' => '80000',
         'country_code' => 'MY',
         'metadata' => [
@@ -148,6 +149,34 @@ it('maps the canonical shipping attachment into carrier rate requests', function
         'rate' => 800,
         'currency' => 'MYR',
     ]]);
+});
+
+it('refuses shipments to destinations that fail address validation', function (): void {
+    $shippingManager = Mockery::mock(ShippingManager::class);
+    $shipmentService = Mockery::mock(ShipmentService::class);
+    $shipmentService->shouldNotReceive('create');
+
+    $order = Order::factory()->create(['grand_total' => 5000]);
+    $address = Address::create([
+        'line1' => '456 Shipping Road',
+        'city' => 'Johor Bahru',
+        'state' => 'Johor',
+        'postcode' => 'NOT-A-POSTCODE',
+        'country_code' => 'MY',
+        'metadata' => [
+            Order::ADDRESS_CONTACT_METADATA_KEY => [
+                'first_name' => 'Shipping',
+                'last_name' => 'Customer',
+            ],
+        ],
+    ]);
+    $order->attachAddress($address, type: 'shipping', isPrimary: true);
+
+    $handler = new OrderFulfillmentHandler($shippingManager, $shipmentService);
+    $result = $handler->createShipment($order, ['carrier' => 'manual', 'service' => 'standard']);
+
+    expect($result['success'])->toBeFalse()
+        ->and($result['error'])->toContain('not shippable');
 });
 
 it('keeps fulfillment addressless when no canonical shipping attachment exists', function (): void {
