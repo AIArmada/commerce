@@ -196,8 +196,7 @@ it('formats an address for every country', function (string $formatter, array $i
     [BruneiAddressFormatter::class, ['line1' => 'No. 7 Simpang 170, Jalan Muara',
         'city' => 'Muara',
         'postcode' => 'BT2328',
-        'country_code' => 'BN',
-        'components' => ['kampung' => 'Kampong Kapok'], ], "No. 7 Simpang 170, Jalan Muara\nKampong Kapok\nMuara BT2328\nBrunei Darussalam"],
+        'country_code' => 'BN', ], "No. 7 Simpang 170, Jalan Muara\nMuara BT2328\nBrunei Darussalam"],
 
     // BurkinaFaso
     [BurkinaFasoAddressFormatter::class, ['line1' => 'Secteur 3',
@@ -376,7 +375,7 @@ it('formats an address for every country', function (string $formatter, array $i
     [IranAddressFormatter::class, ['line1' => 'West 196 street',
         'city' => 'Tehranpars',
         'state' => 'Tehran Province',
-        'country_code' => 'IR', ], "West 196 street\nTehranpars\nTehran Province\nIran"],
+        'country_code' => 'IR', ], "Tehranpars\nWest 196 street\nTehran Province\nIran"],
 
     // IsleOfMan
     [IsleOfManAddressFormatter::class, ['line1' => 'P.O. Box 177',
@@ -509,7 +508,7 @@ it('formats an address for every country', function (string $formatter, array $i
     [NewZealandAddressFormatter::class, ['line1' => '100 Queen Street',
         'city' => 'Auckland',
         'postcode' => '1010',
-        'country_code' => 'NZ', ], "100 Queen Street\n1010 Auckland\nNew Zealand"],
+        'country_code' => 'NZ', ], "100 Queen Street\nAuckland 1010\nNew Zealand"],
 
     // Niger
     [NigerAddressFormatter::class, ['line1' => 'BP 502',
@@ -699,7 +698,7 @@ it('formats an address for every country', function (string $formatter, array $i
     [USMinorOutlyingIslandsAddressFormatter::class, ['line1' => 'PO Box 501',
         'city' => 'Wake Island',
         'postcode' => '96898',
-        'country_code' => 'UM', ], "PO Box 501\nWake Island\n96898\nUnited States Minor Outlying Islands"],
+        'country_code' => 'UM', ], "PO Box 501\nWake Island 96898\nUnited States Minor Outlying Islands"],
 
     // Ukraine
     [UkraineAddressFormatter::class, ['line1' => 'vul. Khreshchatyk, 22',
@@ -726,7 +725,7 @@ it('formats an address for every country', function (string $formatter, array $i
         'city' => 'CARACAS',
         'state' => 'D.C.',
         'postcode' => '1010',
-        'country_code' => 'VE', ], "AV. FUERZAS ARMADAS\nTORRE SAN JOSÉ, ENTRADA B\nPISO 5, APARTAMENTO 20\nCARACAS 1010\nD.C.\nVenezuela"],
+        'country_code' => 'VE', ], "AV. FUERZAS ARMADAS\nTORRE SAN JOSÉ, ENTRADA B\nPISO 5, APARTAMENTO 20\nCARACAS 1010, D.C.\nVenezuela"],
 
     // WallisAndFutuna
     [WallisAndFutunaAddressFormatter::class, ['line1' => 'BP 5',

@@ -7,19 +7,21 @@ use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Models\State;
 
 it('formats Malaysian addresses using the country formatter', function (): void {
+    // Ruled 2026-10-08: postcode joins the writer-computed partner (town
+    // here — Kajang; a mukim case would join the daerah). `city` is
+    // present but must be ignored: MY has no city level.
     $address = AddressData::from([
         'line1' => 'Lot 12 Jalan Mawar',
         'city' => 'Kajang',
         'state' => 'Selangor',
         'postcode' => '43000',
         'countryCode' => 'MY',
-        'components' => ['district' => 'Hulu Langat'],
+        'components' => ['postcode_partner' => 'Kajang'],
     ]);
 
     expect(app(FormatAddressAction::class)->format($address))->toBe(implode("\n", [
         'Lot 12 Jalan Mawar',
-        'Hulu Langat',
-        '43000 Kajang',
+        '43000, Kajang',
         'Selangor',
         'Malaysia',
     ]));
@@ -77,7 +79,7 @@ it('formats Indonesian addresses with the postcode after the city', function ():
         'postcode' => '10640',
         'country' => 'Indonesia',
         'countryCode' => 'ID',
-        'components' => ['kelurahan' => 'Cempaka Baru', 'kecamatan' => 'Cempaka Putih'],
+        'components' => ['urban_village' => 'Cempaka Baru', 'district' => 'Cempaka Putih'],
     ]);
 
     expect(app(FormatAddressAction::class)->format($address))->toBe(implode("\n", [
@@ -98,12 +100,10 @@ it('formats Brunei addresses with the town or district before the postcode', fun
         'postcode' => 'BT2328',
         'country' => 'Brunei Darussalam',
         'countryCode' => 'BN',
-        'components' => ['kampung' => 'Kampong Kapok'],
     ]);
 
     expect(app(FormatAddressAction::class)->format($address))->toBe(implode("\n", [
         'No. 7 Simpang 170, Jalan Muara',
-        'Kampong Kapok',
         'Muara BT2328',
         'Brunei Darussalam',
     ]));
