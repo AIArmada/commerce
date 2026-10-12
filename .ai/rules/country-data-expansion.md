@@ -27,8 +27,9 @@ the same doctrine.
 - Follow each file's existing row and link ordering convention; keep the
   provider's `source_id` scheme stable.
 - Dataset truth is not database truth: after any CSV or provider change,
-  consumers must re-run `address:seed`. The stale-seed symptom is
-  over-broad scoping (a district page listing other districts' towns).
+  consumers must re-run the `AddressingSeeder` (or `address:seed-geographies`
+  for one country). The stale-seed symptom is over-broad scoping (a district
+  page listing other districts' towns).
 - Every expansion ships a sampling test for the new rows, a green
   `GeographyProviderContractTest`, a `05-country-data.md` update, and a
   consumer reseed, in the same pass.

@@ -84,7 +84,6 @@ return [
 
         'snapshots' => [
             'enabled' => false,
-            'read_only' => true,
             'model' => AddressSnapshot::class,
         ],
     ],

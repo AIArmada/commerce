@@ -5,8 +5,8 @@ declare(strict_types=1);
 use AIArmada\Addressing\Models\Address;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Models\Customer;
+use AIArmada\FilamentCustomers\FilamentCustomersServiceProvider;
 use AIArmada\FilamentCustomers\Pages\AddressValidationPage;
-use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 
 if (! function_exists('filamentCustomers_makeOwner')) {
@@ -33,56 +33,68 @@ if (! function_exists('filamentCustomers_makeOwner')) {
     }
 }
 
+if (! function_exists('filamentCustomers_makeCustomerAddress')) {
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    function filamentCustomers_makeCustomerAddress(Model $owner, array $attributes): Address
+    {
+        return OwnerContext::withOwner($owner, function () use ($attributes): Address {
+            $customer = Customer::query()->create([
+                'first_name' => 'Scoped',
+                'last_name' => 'Customer',
+            ]);
+            $address = Address::query()->create($attributes);
+            $customer->attachAddress($address, type: 'shipping');
+
+            return $address;
+        });
+    }
+}
+
 beforeEach(function (): void {
     config()->set('customers.features.owner.enabled', true);
     config()->set('customers.features.owner.include_global', false);
 });
 
-it('only validates addresses inside the current owner scope', function (): void {
+it('lists only invalid addresses inside the current owner scope', function (): void {
     $ownerA = filamentCustomers_makeOwner('00000000-0000-0000-0000-00000000000a');
     $ownerB = filamentCustomers_makeOwner('00000000-0000-0000-0000-00000000000b');
 
-    $addressInScope = OwnerContext::withOwner($ownerA, function (): Address {
-        $customer = Customer::query()->create([
-            'first_name' => 'Scoped',
-            'last_name' => 'Customer',
-        ]);
-        $address = Address::query()->create([
-            'line1' => 'Line 1',
-            'city' => 'City',
-            'postcode' => '12345',
-            'country' => 'MY',
-        ]);
-        $customer->attachAddress($address, type: 'shipping');
+    $invalid = filamentCustomers_makeCustomerAddress($ownerA, [
+        'line1' => 'Line 1',
+        'city' => 'Kuala Lumpur',
+        'postcode' => 'ABC',
+        'country_code' => 'MY',
+    ]);
 
-        return $address;
-    });
+    filamentCustomers_makeCustomerAddress($ownerA, [
+        'line1' => 'Line 2',
+        'city' => 'Kuala Lumpur',
+        'state' => 'Kuala Lumpur',
+        'postcode' => '50450',
+        'country_code' => 'MY',
+    ]);
 
-    $addressOutOfScope = OwnerContext::withOwner($ownerB, function (): Address {
-        $customer = Customer::query()->create([
-            'first_name' => 'Other',
-            'last_name' => 'Customer',
-        ]);
-        $address = Address::query()->create([
-            'line1' => 'Line 2',
-            'city' => 'City',
-            'postcode' => '54321',
-            'country' => 'MY',
-        ]);
-        $customer->attachAddress($address, type: 'shipping');
+    filamentCustomers_makeCustomerAddress($ownerB, [
+        'line1' => 'Line 3',
+        'city' => 'Kuala Lumpur',
+        'postcode' => 'XYZ',
+        'country_code' => 'MY',
+    ]);
 
-        return $address;
-    });
+    $listed = OwnerContext::withOwner(
+        $ownerA,
+        fn (): array => (new AddressValidationPage)->getInvalidAddresses(),
+    );
 
-    $page = new AddressValidationPage;
+    expect($listed)->toHaveCount(1)
+        ->and($listed[0]['id'])->toBe($invalid->id)
+        ->and($listed[0]['violations'])->not->toBeEmpty();
+});
 
-    OwnerContext::withOwner($ownerA, function () use ($addressInScope, $page): void {
-        $page->validateAddress($addressInScope->id);
-    });
+it('registers the address-validation blade view', function (): void {
+    $this->app->register(FilamentCustomersServiceProvider::class);
 
-    expect($addressInScope->fresh()->validated_at)->not->toBeNull()
-        ->and($addressInScope->fresh()->validation_status)->toBe('verified');
-
-    expect(fn (): mixed => OwnerContext::withOwner($ownerA, fn (): mixed => $page->validateAddress($addressOutOfScope->id)))
-        ->toThrow(AuthorizationException::class);
+    expect(view()->exists('filament-customers::pages.address-validation'))->toBeTrue();
 });

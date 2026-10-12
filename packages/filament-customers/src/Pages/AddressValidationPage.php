@@ -4,20 +4,24 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCustomers\Pages;
 
+use AIArmada\Addressing\Actions\ValidateAddressAction;
+use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Models\Address;
 use AIArmada\Addressing\Models\Addressable;
+use AIArmada\Addressing\Support\ModelResolver;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Customers\Models\Customer;
 use BackedEnum;
-use Carbon\CarbonImmutable;
-use Filament\Actions\Action;
-use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
+/**
+ * Stateless validation report: lists customer addresses that currently fail
+ * their country validation profile. Nothing is stamped or persisted; fixing
+ * the address data removes it from this page.
+ */
 class AddressValidationPage extends Page
 {
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedMapPin;
@@ -49,21 +53,33 @@ class AddressValidationPage extends Page
     }
 
     /**
-     * @return array<int, array{id: string, customer_name: string, full_address: string, country: string, validated: bool}>
+     * @return array<int, array{id: string, customer_name: string, full_address: string, country: string, violations: array<string, string>}>
      */
-    public function getUnvalidatedAddresses(): array
+    public function getInvalidAddresses(): array
     {
-        return $this->unvalidatedAddressesQuery()
+        $validator = app(ValidateAddressAction::class);
+
+        return $this->customerAddressesQuery()
             ->limit(100)
             ->get()
-            ->map(fn (Address $address): array => [
-                'id' => $address->id,
-                'customer_name' => $this->resolveCustomerName($address),
-                'full_address' => $address->formatted_address
-                    ?? implode(', ', array_filter([$address->line1, $address->city, $address->postcode])),
-                'country' => $address->country ?? $address->country_code,
-                'validated' => $address->validated_at !== null,
-            ])
+            ->map(function (Address $address) use ($validator): ?array {
+                $violations = $validator->execute(AddressData::from($address->attributesToArray()));
+
+                if ($violations === []) {
+                    return null;
+                }
+
+                return [
+                    'id' => $address->id,
+                    'customer_name' => $this->resolveCustomerName($address),
+                    'full_address' => $address->formatted_address
+                        ?? implode(', ', array_filter([$address->line1, $address->city, $address->postcode])),
+                    'country' => $address->country ?? $address->country_code,
+                    'violations' => $violations,
+                ];
+            })
+            ->filter()
+            ->values()
             ->all();
     }
 
@@ -80,69 +96,18 @@ class AddressValidationPage extends Page
         return 'Unknown';
     }
 
-    public function validateAddress(string $addressId): void
-    {
-        /** @var Address $address */
-        $address = OwnerWriteGuard::findOrFailForOwner(Address::class, $addressId, includeGlobal: false);
-
-        $address->update([
-            'validation_status' => 'verified',
-            'validated_at' => CarbonImmutable::now(),
-        ]);
-
-        Notification::make()
-            ->title('Address validated successfully')
-            ->success()
-            ->send();
-    }
-
-    public function runBatchValidation(): void
-    {
-        $addresses = $this->unvalidatedAddressesQuery()
-            ->limit(100)
-            ->get();
-
-        $validatedAt = CarbonImmutable::now();
-        $count = 0;
-
-        foreach ($addresses as $address) {
-            $address->update([
-                'validation_status' => 'verified',
-                'validated_at' => $validatedAt,
-            ]);
-
-            $count++;
-        }
-
-        Notification::make()
-            ->title("Batch address validation completed ({$count} validated)")
-            ->success()
-            ->send();
-    }
-
     /**
      * @return Builder<Address>
      */
-    private function unvalidatedAddressesQuery(): Builder
+    private function customerAddressesQuery(): Builder
     {
-        $query = Address::query()
+        $query = ModelResolver::addressClass()::query()
             ->with(['addressableLinks.addressable'])
-            ->whereNull('validated_at')
             ->whereHas('addressableLinks', function (Builder $query): void {
                 $query->where('addressable_type', (new Customer)->getMorphClass());
-            });
+            })
+            ->orderByDesc('updated_at');
 
         return OwnerUiScope::apply($query, includeGlobal: false);
-    }
-
-    protected function getHeaderActions(): array
-    {
-        return [
-            Action::make('batch_validate')
-                ->label('Run Batch Validation')
-                ->icon('heroicon-o-check-badge')
-                ->action('runBatchValidation')
-                ->requiresConfirmation(),
-        ];
     }
 }

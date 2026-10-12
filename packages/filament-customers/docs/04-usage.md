@@ -357,9 +357,10 @@ the `rebuild` policy before anything is queued.
 
 ### Address Validation
 
-Single validation marks one address `verified`. Batch validation marks up
-to 100 currently unvalidated in-scope addresses `verified` in one run. Both
-stay inside the current owner scope.
+The page is a stateless report: it lists up to 100 current-scope customer
+addresses that fail their country validation profile, with the violation
+messages from `ValidateAddressAction`. Nothing is stamped or stored; fixing
+the address data removes the entry.
 
 ## Next Steps
 

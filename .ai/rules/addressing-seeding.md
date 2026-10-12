@@ -5,9 +5,10 @@ addressing reference data.
 
 - `SeedAddressingAction` is the composition root: countries, references,
   states, cities, then every configured geography. Apps call the bundled
-  `AIArmada\Addressing\Database\Seeders\AddressingSeeder` or run
-  `address:seed`; they never hand-roll the orchestration.
-- The granular `address:seed-*` commands exist for partial work only.
+  `AIArmada\Addressing\Database\Seeders\AddressingSeeder`; they never
+  hand-roll the orchestration.
+- The granular `address:seed-geographies` and `address:seed-postal-codes`
+  commands exist for per-country partial work only.
 - City volume is config, not app code:
   `addressing.seed.full_city_countries` filters cities outside production.
   Production always seeds the full city dataset.

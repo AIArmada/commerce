@@ -29,12 +29,10 @@ class AddressInfolistSchema
                         TextEntry::make('country'),
                         TextEntry::make('country_code')->label('Country Code'),
                     ])->columns(3),
-                Section::make('Coordinates / Validation')
+                Section::make('Coordinates')
                     ->schema([
                         TextEntry::make('latitude'),
                         TextEntry::make('longitude'),
-                        TextEntry::make('validation_status')->badge(),
-                        TextEntry::make('validated_at')->dateTime(),
                     ])->columns(2),
                 Section::make('Maps')
                     ->schema([
