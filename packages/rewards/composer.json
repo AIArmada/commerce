@@ -3,6 +3,11 @@
     "description": "Configurable reward programs (recognition, points, badges, cash, benefits) for Laravel applications",
     "type": "library",
     "license": "MIT",
+    "homepage": "https://github.com/AIArmada/rewards",
+    "support": {
+        "issues": "https://github.com/AIArmada/rewards/issues",
+        "source": "https://github.com/AIArmada/rewards"
+    },
     "require": {
         "php": "^8.5",
         "aiarmada/commerce-support": "self.version",

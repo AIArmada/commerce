@@ -2,10 +2,10 @@
   "name": "aiarmada/filament-rewards",
   "description": "A Filament v5 plugin for administering reward programs provided by the AIArmada rewards package",
   "license": "MIT",
-  "homepage": "https://github.com/aiarmada/commerce",
+  "homepage": "https://github.com/AIArmada/filament-rewards",
   "support": {
-    "issues": "https://github.com/aiarmada/commerce/issues",
-    "source": "https://github.com/aiarmada/commerce"
+    "issues": "https://github.com/AIArmada/filament-rewards/issues",
+    "source": "https://github.com/AIArmada/filament-rewards"
   },
   "require": {
     "aiarmada/commerce-support": "self.version",

@@ -56,6 +56,7 @@ jobs:
           - filament-pricing
           - filament-products
           - filament-promotions
+          - filament-rewards
           - filament-seating
           - filament-shipping
           - filament-signals
@@ -75,6 +76,7 @@ jobs:
           - products
           - promotions
           - references
+          - rewards
           - seating
           - shipping
           - signals
