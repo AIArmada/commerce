@@ -1,0 +1,29 @@
+{
+  "name": "aiarmada/filament-referrals",
+  "description": "A Filament v5 adapter for AIArmada referral programs, invites, and rewards",
+  "license": "MIT",
+  "require": {
+    "aiarmada/commerce-support": "self.version",
+    "aiarmada/referrals": "self.version",
+    "filament/filament": "^5.8.1",
+    "php": "^8.5",
+    "spatie/laravel-package-tools": "^1.93.2"
+  },
+  "autoload": {
+    "psr-4": {
+      "AIArmada\\FilamentReferrals\\": "src/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "AIArmada\\FilamentReferrals\\FilamentReferralsServiceProvider"
+      ]
+    }
+  },
+  "config": {
+    "sort-packages": true
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
+}

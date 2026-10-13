@@ -21,6 +21,7 @@ keywords:
 - Triggers: member-get-member, referral invite, invite claim, referral qualification, referral reward
 - Search first: `src/Actions, src/Models, src/Support, src/Fulfillment, config, docs`
 - Related: `commerce-support`, `affiliates`, `rewards`, `vouchers`
+- Paired: `filament-referrals` provides the owner-scoped Filament admin adapter.
 
 ## Read next
 1. `docs/01-overview.md`

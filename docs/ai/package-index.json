@@ -1310,7 +1310,7 @@
   "use_when": "Inviting known contacts and rewarding a host-reported qualifying member action.",
   "skip_when": "Commercial partner attribution or commissions belong to affiliates; points ledgers belong to rewards; voucher issuance belongs to vouchers.",
   "owner": "Owner-scoped through ReferralProgram; invites and rewards resolve through their program.",
-  "paired": null,
+  "paired": "filament-referrals",
   "context": "packages/referrals/CONTEXT.md",
   "overview": "packages/referrals/docs/01-overview.md"
  },
@@ -1486,5 +1486,25 @@
   "paired": "rewards",
   "context": "packages/filament-rewards/CONTEXT.md",
   "overview": "packages/filament-rewards/docs/01-overview.md"
+ },
+ {
+  "package": "filament-referrals",
+  "composer": "aiarmada/filament-referrals",
+  "surface": "adapter",
+  "family": "growth-and-incentives",
+  "status": "current",
+  "summary": "Filament v5 admin adapter for owner-scoped referral programs, invites, frozen rewards, lifecycle actions, and statistics.",
+  "keywords": [
+   "filament",
+   "referral-admin",
+   "referral-invites",
+   "referral-rewards"
+  ],
+  "use_when": "Administering owner-scoped referral programs, invites, and rewards from a Filament panel.",
+  "skip_when": "Headless/API-only hosts with no Filament panel.",
+  "owner": "Program-scoped queries; invites and rewards resolve through owner-visible programs.",
+  "paired": "referrals",
+  "context": "packages/filament-referrals/CONTEXT.md",
+  "overview": "packages/filament-referrals/docs/01-overview.md"
  }
 ]

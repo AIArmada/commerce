@@ -76,6 +76,7 @@ Machine index: `docs/ai/package-index.json` (grep keywords/triggers). Full manif
 | `filament-engagement` | Filament admin for follows/bookmarks/RSVPs/reactions/subs/reminders + actions. | filament, engagement-ui | `engagement` |
 | `filament-growth` | Filament admin for experiments/variants, dashboards, results. | filament, experiments-ui, ab-test | `growth` |
 | `filament-promotions` | Filament admin for promotions + issue-vouchers actions. | filament, promotions-ui | `promotions` |
+| `filament-referrals` | Filament admin for referral programs, addressed invites, rewards, lifecycle actions, and owner-scoped statistics. | filament, referral-admin, invite-review, reward-fulfilment | `referrals` |
 | `filament-rewards` | Filament admin for rewards: programs, awards, appeals, funding, payees, payouts, benefits, recoveries, fraud queue. | filament, rewards-ui, awards-ui, payout-queue | `rewards` |
 | `filament-vouchers` | Filament admin for vouchers/usage/wallets + stacking/targeting pages. | filament, vouchers-ui, wallets, stacking | `vouchers` |
 | `growth` | Revenue experimentation: experiments/variants, sticky assignments, presets, winner metrics on Signals. | experiment, ab-test, variant, assignment, preset | `filament-growth` |
@@ -83,7 +84,7 @@ Machine index: `docs/ai/package-index.json` (grep keywords/triggers). Full manif
 | `filament-links` | Filament admin for tracked links: link management, click history, lifecycle actions. | filament, links-ui, redirect, click-tracking | `links` |
 | `promotions` | Automatic and code-based discount campaigns with targeting evaluation. | promotion, discount, campaign, targeting | `filament-promotions` |
 | `rewards` | Configurable reward programs: recognition, points, badges, cash payouts, benefit grants with immutable ledgers. | reward, points, badge, cash, benefit, award, payout, payee, program | `filament-rewards` |
-| `referrals` | Member-get-member programs: addressed invites, single claim, qualification, two-sided reward intents, fulfilment and reversal. | referral, member-get-member, invite, qualification, referral-reward | `—` |
+| `referrals` | Member-get-member programs: addressed invites, single claim, qualification, two-sided reward intents, fulfilment and reversal. | referral, member-get-member, invite, qualification, referral-reward | `filament-referrals` |
 | `vouchers` | Voucher issuance, cart-condition redemption, wallets, stacking, usage tracking. | voucher, coupon, wallet, redemption, stacking | `filament-vouchers` |
 
 ## Checkout flow

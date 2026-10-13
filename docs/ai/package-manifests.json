@@ -56,6 +56,7 @@
       "filament-links",
       "filament-promotions",
       "filament-vouchers",
+      "filament-referrals",
       "growth",
       "links",
       "promotions",
@@ -462,7 +463,7 @@
       "composer": "aiarmada/referrals",
       "surface": "domain",
       "family": "growth-and-incentives",
-      "paired_package": null,
+      "paired_package": "filament-referrals",
       "summary": "Member-get-member lifecycle for addressed invites, single claims, host qualification, immutable two-sided reward intents, fulfilment, and reversal.",
       "canonical_docs": {
         "overview": "packages/referrals/docs/01-overview.md",
@@ -473,6 +474,7 @@
       },
       "related_packages": [
         "commerce-support",
+        "filament-referrals",
         "affiliates",
         "rewards",
         "vouchers"
@@ -2089,6 +2091,32 @@
         "payout-queue"
       ],
       "use_when": "Administering reward programs from a Filament panel.",
+      "owner_scoped": true
+    },
+    "filament-referrals": {
+      "composer": "aiarmada/filament-referrals",
+      "surface": "adapter",
+      "family": "growth-and-incentives",
+      "paired_package": "referrals",
+      "summary": "Filament v5 admin adapter for owner-scoped referral programs, invites, rewards, and statistics.",
+      "canonical_docs": {
+        "overview": "packages/filament-referrals/docs/01-overview.md",
+        "installation": "packages/filament-referrals/docs/02-installation.md",
+        "configuration": "packages/filament-referrals/docs/03-configuration.md",
+        "usage": "packages/filament-referrals/docs/04-usage.md",
+        "troubleshooting": "packages/filament-referrals/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "referrals",
+        "commerce-support"
+      ],
+      "keywords": [
+        "filament",
+        "referral-admin",
+        "referral-invites",
+        "referral-rewards"
+      ],
+      "use_when": "Administering owner-scoped referral programs, invites, and rewards from a Filament panel.",
       "owner_scoped": true
     }
   }

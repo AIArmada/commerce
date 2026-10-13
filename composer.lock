@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "186263f1aecb1df03bc0aec15f7fd8ad",
+    "content-hash": "068b5df61d47db181b5891ffd2272185",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -8342,11 +8342,12 @@
             "dist": {
                 "type": "path",
                 "url": "packages/authz",
-                "reference": "1c4416f1c82ad93b9b67830274bf60fefdebc00d"
+                "reference": "802dc9e7b4adce240d6b705433adcd785e52a9dc"
             },
             "require": {
                 "aiarmada/commerce-support": "self.version",
                 "php": "^8.5",
+                "spatie/laravel-package-tools": "^1.93.2",
                 "spatie/laravel-permission": "^8.3.0"
             },
             "suggest": {
@@ -8491,18 +8492,55 @@
             }
         },
         {
+            "name": "aiarmada/filament-referrals",
+            "version": "dev-main",
+            "dist": {
+                "type": "path",
+                "url": "packages/filament-referrals",
+                "reference": "f367ffb54d53808b8ae0a0ff4b071d08a55cde2e"
+            },
+            "require": {
+                "aiarmada/commerce-support": "self.version",
+                "aiarmada/referrals": "self.version",
+                "filament/filament": "^5.8.1",
+                "php": "^8.5",
+                "spatie/laravel-package-tools": "^1.93.2"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "AIArmada\\FilamentReferrals\\FilamentReferralsServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "AIArmada\\FilamentReferrals\\": "src/"
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "description": "A Filament v5 adapter for AIArmada referral programs, invites, and rewards",
+            "transport-options": {
+                "relative": true
+            }
+        },
+        {
             "name": "aiarmada/membership",
             "version": "dev-main",
             "dist": {
                 "type": "path",
                 "url": "packages/membership",
-                "reference": "b10d2b4f5b9f19f9931f037a9f5123bc6464b7c3"
+                "reference": "06a023fc234c5d45cf2f7289a9958628b4cead99"
             },
             "require": {
                 "aiarmada/authz": "self.version",
                 "aiarmada/commerce-support": "self.version",
                 "lorisleiva/laravel-actions": "^2.12.0",
-                "php": "^8.5"
+                "php": "^8.5",
+                "spatie/laravel-package-tools": "^1.93.2"
             },
             "type": "library",
             "extra": {

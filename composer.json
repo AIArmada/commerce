@@ -9,6 +9,7 @@
     "require-dev": {
         "aiarmada/commerce-support": "*",
         "aiarmada/filament-organizations": "*",
+        "aiarmada/filament-referrals": "*",
         "aiarmada/membership": "*",
         "aiarmada/organizations": "*",
         "aiarmada/referrals": "*",
@@ -102,6 +103,10 @@
         {
             "type": "path",
             "url": "packages/filament-organizations"
+        },
+        {
+            "type": "path",
+            "url": "packages/filament-referrals"
         },
         {
             "type": "path",
