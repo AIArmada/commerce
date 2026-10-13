@@ -385,12 +385,14 @@ final class CommissionRuleEngine
         $recruiters = Affiliate::query()
             ->forOwner(OwnerContext::CURRENT, $includeGlobal)
             ->where('status', AffiliateStatus::normalize(Active::class))
+            ->whereCommercialPurpose()
             ->withCount([
                 'children' => function (Builder $query) use ($from, $to, $includeGlobal): void {
                     /** @var Builder<Affiliate> $query */
                     $query->forOwner(OwnerContext::CURRENT, $includeGlobal)
                         ->whereBetween('created_at', [$from, $to])
-                        ->where('status', AffiliateStatus::normalize(Active::class));
+                        ->where('status', AffiliateStatus::normalize(Active::class))
+                        ->whereCommercialPurpose();
                 },
             ])
             ->whereHas(
@@ -453,6 +455,7 @@ final class CommissionRuleEngine
         $affiliates = Affiliate::query()
             ->forOwner(OwnerContext::CURRENT, $includeGlobal)
             ->where('status', AffiliateStatus::normalize(Active::class))
+            ->whereCommercialPurpose()
             ->get();
 
         foreach ($affiliates as $affiliate) {
@@ -518,6 +521,7 @@ final class CommissionRuleEngine
         $affiliates = Affiliate::query()
             ->forOwner(OwnerContext::CURRENT, $includeGlobal)
             ->where('status', AffiliateStatus::normalize(Active::class))
+            ->whereCommercialPurpose()
             ->get();
 
         $floorCurrency = mb_strtoupper((string) ($config['min_previous_revenue_currency'] ?? config('affiliates.currency.default', 'MYR')));
@@ -594,6 +598,7 @@ final class CommissionRuleEngine
     ): array {
         $conversionsTable = (new AffiliateConversion)->getTable();
         $affiliatesTable = (new Affiliate)->getTable();
+        $purposeColumn = DB::connection()->getQueryGrammar()->wrap("{$affiliatesTable}.purpose");
         $revenueExpression = "COALESCE({$conversionsTable}.value_minor, 0)";
 
         $query = DB::table($conversionsTable)
@@ -608,6 +613,10 @@ final class CommissionRuleEngine
             ->whereBetween("{$conversionsTable}.occurred_at", [$from, $to])
             ->where("{$conversionsTable}.status", ApprovedConversion::value())
             ->where("{$affiliatesTable}.status", AffiliateStatus::normalize(Active::class))
+            ->where(static function ($query) use ($affiliatesTable, $purposeColumn): void {
+                $query->whereNull("{$affiliatesTable}.purpose")
+                    ->orWhereRaw("LOWER(TRIM({$purposeColumn})) = ?", [Affiliate::PURPOSE_GENERAL]);
+            })
             ->groupBy("{$affiliatesTable}.id", "{$affiliatesTable}.name", "{$conversionsTable}.commission_currency");
 
         if ((bool) config('affiliates.owner.enabled', false)) {

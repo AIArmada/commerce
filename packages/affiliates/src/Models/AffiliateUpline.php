@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 use Illuminate\Support\Collection;
+use InvalidArgumentException;
 use OwenIt\Auditing\Contracts\Auditable;
 
 /**
@@ -58,10 +59,15 @@ class AffiliateUpline extends Model implements Auditable
      */
     public static function getAncestors(Affiliate $affiliate): Collection
     {
+        if (! $affiliate->isCommercialPurpose()) {
+            return collect();
+        }
+
         /** @var Collection<int, self> $paths */
         $paths = static::query()
             ->where('descendant_id', $affiliate->getKey())
             ->where('depth', '>', 0)
+            ->whereHas('ancestor', static fn ($query) => $query->whereCommercialPurpose())
             ->orderBy('depth')
             ->with('ancestor')
             ->get();
@@ -89,10 +95,15 @@ class AffiliateUpline extends Model implements Auditable
      */
     public static function getDescendants(Affiliate $affiliate): Collection
     {
+        if (! $affiliate->isCommercialPurpose()) {
+            return collect();
+        }
+
         /** @var Collection<int, self> $paths */
         $paths = static::query()
             ->where('ancestor_id', $affiliate->getKey())
             ->where('depth', '>', 0)
+            ->whereHas('descendant', static fn ($query) => $query->whereCommercialPurpose())
             ->orderBy('depth')
             ->with('descendant')
             ->get();
@@ -120,10 +131,15 @@ class AffiliateUpline extends Model implements Auditable
      */
     public static function getAtDepth(Affiliate $affiliate, int $depth): Collection
     {
+        if (! $affiliate->isCommercialPurpose()) {
+            return collect();
+        }
+
         /** @var Collection<int, self> $paths */
         $paths = static::query()
             ->where('ancestor_id', $affiliate->getKey())
             ->where('depth', $depth)
+            ->whereHas('descendant', static fn ($query) => $query->whereCommercialPurpose())
             ->with('descendant')
             ->get();
 
@@ -158,9 +174,14 @@ class AffiliateUpline extends Model implements Auditable
      */
     public static function getDescendantCount(Affiliate $affiliate): int
     {
+        if (! $affiliate->isCommercialPurpose()) {
+            return 0;
+        }
+
         return static::query()
             ->where('ancestor_id', $affiliate->getKey())
             ->where('depth', '>', 0)
+            ->whereHas('descendant', static fn ($query) => $query->whereCommercialPurpose())
             ->count();
     }
 
@@ -169,6 +190,10 @@ class AffiliateUpline extends Model implements Auditable
      */
     public static function addToUpline(Affiliate $affiliate, ?Affiliate $sponsor = null): void
     {
+        if (! $affiliate->isCommercialPurpose() || ($sponsor !== null && ! $sponsor->isCommercialPurpose())) {
+            throw new InvalidArgumentException('Only commercial affiliates can participate in an upline.');
+        }
+
         // Self-referencing entry (every node points to itself at depth 0)
         self::storePath(
             [
@@ -187,6 +212,7 @@ class AffiliateUpline extends Model implements Auditable
         // Copy all ancestor paths from sponsor and add 1 to depth
         $sponsorAncestors = static::query()
             ->where('descendant_id', $sponsor->getKey())
+            ->whereHas('ancestor', static fn ($query) => $query->whereCommercialPurpose())
             ->get();
 
         foreach ($sponsorAncestors as $path) {
@@ -228,9 +254,14 @@ class AffiliateUpline extends Model implements Auditable
      */
     public static function moveToNewSponsor(Affiliate $affiliate, Affiliate $newSponsor): void
     {
+        if (! $affiliate->isCommercialPurpose() || ! $newSponsor->isCommercialPurpose()) {
+            throw new InvalidArgumentException('Only commercial affiliates can participate in an upline.');
+        }
+
         // Get all descendants of the affiliate
         $descendantIds = static::query()
             ->where('ancestor_id', $affiliate->getKey())
+            ->whereHas('descendant', static fn ($query) => $query->whereCommercialPurpose())
             ->pluck('descendant_id');
 
         // Delete all paths that go through old ancestors (excluding self-references)
@@ -243,6 +274,7 @@ class AffiliateUpline extends Model implements Auditable
         // Add new paths from new sponsor's ancestors
         $newSponsorAncestors = static::query()
             ->where('descendant_id', $newSponsor->getKey())
+            ->whereHas('ancestor', static fn ($query) => $query->whereCommercialPurpose())
             ->get();
 
         foreach ($descendantIds as $descendantId) {

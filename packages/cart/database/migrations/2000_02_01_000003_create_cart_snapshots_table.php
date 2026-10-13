@@ -5,7 +5,6 @@ declare(strict_types=1);
 use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -14,8 +13,9 @@ return new class extends Migration
     {
         $tableName = (string) config('cart.database.tables.snapshots', 'cart_snapshots');
         $jsonType = (string) commerce_json_column_type('cart', config('cart.database.json_column_type', 'jsonb'));
+        $usePostgresGin = $jsonType === 'jsonb' && ConnectionDriver::name(Schema::getConnection()) === 'pgsql';
 
-        Schema::create($tableName, function (Blueprint $table) use ($jsonType, $tableName): void {
+        Schema::create($tableName, function (Blueprint $table) use ($jsonType, $tableName, $usePostgresGin): void {
             $table->uuid('id')->primary();
             $table->string('identifier');
             $table->string('instance')->default('default');
@@ -49,17 +49,12 @@ return new class extends Migration
             $table->index('checkout_abandoned_at');
             $table->index('created_at');
             $table->index('updated_at');
-        });
 
-        if (
-            commerce_json_column_type('cart', config('cart.database.json_column_type', 'jsonb')) === 'jsonb'
-            && ConnectionDriver::name(Schema::getConnection()) === 'pgsql'
-        ) {
-            Schema::table($tableName, function (Blueprint $table) use ($tableName): void {
-                DB::statement("CREATE INDEX {$tableName}_items_gin_index ON {$tableName} USING GIN (items)");
-                DB::statement("CREATE INDEX {$tableName}_conditions_gin_index ON {$tableName} USING GIN (conditions)");
-                DB::statement("CREATE INDEX {$tableName}_metadata_gin_index ON {$tableName} USING GIN (metadata)");
-            });
-        }
+            if ($usePostgresGin) {
+                $table->index('items', $tableName . '_items_gin_index', 'gin');
+                $table->index('conditions', $tableName . '_conditions_gin_index', 'gin');
+                $table->index('metadata', $tableName . '_metadata_gin_index', 'gin');
+            }
+        });
     }
 };

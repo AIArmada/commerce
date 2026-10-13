@@ -624,38 +624,42 @@ final class RegistrationService implements RegistrationServiceInterface
     {
         EventWriteGuard::findOrFail($registration->event_id);
 
-        if ($registration->status instanceof Cancelled) {
-            if ($registration->cancelled_at === null) {
-                $registration->status_reason = $reason;
-                $registration->transitionStatus(Cancelled::class);
+        $registration->getConnection()->transaction(function () use ($registration, $reason): void {
+            if ($registration->status instanceof Cancelled) {
+                if ($registration->cancelled_at === null) {
+                    $registration->status_reason = $reason;
+                    $registration->transitionStatus(Cancelled::class);
+                }
+
+                return;
             }
 
-            return;
-        }
+            $registration->status_reason = $reason;
+            $registration->transitionStatus(Cancelled::class);
 
-        $registration->status_reason = $reason;
-        $registration->transitionStatus(Cancelled::class);
-
-        event(new EventRegistrationCancelled($registration, $reason));
+            event(new EventRegistrationCancelled($registration, $reason));
+        });
     }
 
     public function reject(EventRegistration $registration, string $reason, mixed $actor = null): void
     {
         EventWriteGuard::findOrFail($registration->event_id);
 
-        if ($registration->status instanceof Rejected) {
-            if ($registration->rejected_at === null) {
-                $registration->status_reason = $reason;
-                $registration->transitionStatus(Rejected::class);
+        $registration->getConnection()->transaction(function () use ($registration, $reason): void {
+            if ($registration->status instanceof Rejected) {
+                if ($registration->rejected_at === null) {
+                    $registration->status_reason = $reason;
+                    $registration->transitionStatus(Rejected::class);
+                }
+
+                return;
             }
 
-            return;
-        }
+            $registration->status_reason = $reason;
+            $registration->transitionStatus(Rejected::class);
 
-        $registration->status_reason = $reason;
-        $registration->transitionStatus(Rejected::class);
-
-        event(new EventRegistrationRejected($registration, $reason));
+            event(new EventRegistrationRejected($registration, $reason));
+        });
     }
 
     public function waitlist(EventRegistration $registration): void

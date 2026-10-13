@@ -51,6 +51,7 @@ use Spatie\ModelStates\HasStates;
  * @property CommissionType $commission_type
  * @property int $commission_rate
  * @property string $currency
+ * @property string|null $purpose
  * @property string|null $parent_affiliate_id
  * @property string|null $rank_id
  * @property int $network_depth
@@ -100,6 +101,8 @@ class Affiliate extends Model implements Auditable
 
     protected static string $ownerScopeConfigKey = 'affiliates.owner';
 
+    public const string PURPOSE_GENERAL = 'general';
+
     private ?string $contactEmailCache = null;
 
     private ?string $pendingContactEmail = null;
@@ -122,6 +125,7 @@ class Affiliate extends Model implements Auditable
         'commission_type',
         'commission_rate',
         'currency',
+        'purpose',
         'parent_affiliate_id',
         'rank_id',
         'network_depth',
@@ -149,6 +153,7 @@ class Affiliate extends Model implements Auditable
             'commission_type',
             'commission_rate',
             'currency',
+            'purpose',
             'parent_affiliate_id',
             'rank_id',
             'network_depth',
@@ -395,6 +400,30 @@ class Affiliate extends Model implements Auditable
         $scoped = $this->baseScopeForOwner($query, $owner, $includeGlobal);
 
         return $scoped;
+    }
+
+    /**
+     * Commercial-participation scope: unmarked (null) or explicitly general
+     * profiles only. Host-tagged non-commercial profiles — attribution-only,
+     * reward-recipient, system — are excluded from bonuses, ranks, uplines,
+     * downlines, sweeps, and unfiltered payout queues. The package never
+     * interprets host purpose values beyond this test.
+     */
+    public function scopeWhereCommercialPurpose(Builder $query): Builder
+    {
+        $column = $query->getModel()->qualifyColumn('purpose');
+        $wrappedColumn = $query->getQuery()->getGrammar()->wrap($column);
+
+        return $query->where(static function (Builder $nested) use ($column, $wrappedColumn): void {
+            $nested->whereNull($column)->orWhereRaw("LOWER(TRIM({$wrappedColumn})) = ?", [self::PURPOSE_GENERAL]);
+        });
+    }
+
+    public function isCommercialPurpose(): bool
+    {
+        $purpose = $this->getAttribute('purpose');
+
+        return $purpose === null || (is_string($purpose) && mb_strtolower(mb_trim($purpose, ' ')) === self::PURPOSE_GENERAL);
     }
 
     protected static function booted(): void

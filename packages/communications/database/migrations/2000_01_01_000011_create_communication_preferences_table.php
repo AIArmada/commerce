@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -11,8 +12,12 @@ return new class extends Migration
     public function up(): void
     {
         $jsonType = commerce_json_column_type('communications', 'jsonb');
+        $tableName = config('communications.database.tables.preferences', 'communication_preferences');
 
-        Schema::create(config('communications.database.tables.preferences', 'communication_preferences'), function (Blueprint $table) use ($jsonType): void {
+        $isMysqlFamily = in_array(ConnectionDriver::name(Schema::getConnection()), ['mysql', 'mariadb'], true);
+        $grammar = Schema::getConnection()->getQueryGrammar();
+
+        Schema::create($tableName, function (Blueprint $table) use ($jsonType, $isMysqlFamily, $grammar): void {
             $table->uuid('id')->primary();
             $table->nullableUuidMorphs('owner');
             $table->string('recipient_type');
@@ -36,8 +41,21 @@ return new class extends Migration
             $table->timestampsTz();
 
             $table->index(['recipient_type', 'recipient_id']);
-            $table->index(['owner_type', 'owner_id', 'channel', 'category']);
+
+            if (! $isMysqlFamily) {
+                $table->index(['owner_type', 'owner_id', 'channel', 'category']);
+            } else {
+                $table->rawIndex(sprintf(
+                    '%s(191), %s, %s(191), %s(191)',
+                    $grammar->wrap('owner_type'),
+                    $grammar->wrap('owner_id'),
+                    $grammar->wrap('channel'),
+                    $grammar->wrap('category'),
+                ), 'communication_preferences_owner_channel_category_idx');
+            }
+
             $table->index(['scope_type', 'scope_key']);
         });
+
     }
 };

@@ -17,9 +17,11 @@ unrelated saves; changing the underlying contact value regenerates only values
 that were not explicitly supplied.
 
 Primary status is scoped to the contactable/socialable, channel (`type` or
-`platform`), and `purpose`. The save path locks the parent and demotes matching
-siblings in a transaction. Invalid polymorphic references are rejected before
-that demotion path runs.
+`platform`), `purpose`, and owner. The save path locks the parent and demotes
+matching siblings in a transaction. Invalid polymorphic references are rejected
+before that demotion path runs. Identity comparisons are byte-exact across
+supported databases: case and trailing spaces are significant in owner,
+contactable/socialable, channel, and purpose identity values.
 
 Parentless (`null` contactable/socialable) primaries never demote each other:
 without a parent scope there is nothing to partition by, so each parentless

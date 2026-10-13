@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Actions\Payouts;
 
-use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
@@ -253,10 +252,6 @@ final class CreatePayout
 
     private function reserveBalance(Affiliate $affiliate, int $total, string $currency): ?AffiliateBalance
     {
-        if (! ApplyConversionAccounting::balancesSyncEnabled()) {
-            return null;
-        }
-
         $balance = AffiliateBalance::query()
             ->where('affiliate_id', $affiliate->getKey())
             ->where('currency', $currency)

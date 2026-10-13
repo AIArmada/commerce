@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Actions\Affiliates\CreateTrackingLink;
 use AIArmada\Affiliates\Actions\Conversions\RecordAffiliateOutcome;
+use AIArmada\Affiliates\Enums\AffiliateOutcomeDisposition;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\ProgramVisibility;
@@ -20,6 +21,7 @@ use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 beforeEach(function (): void {
     $this->affiliate = Affiliate::create([
@@ -42,6 +44,24 @@ test('it creates a permanent tracked link and preserves subject provenance', fun
         ->and($link->subject_type)->toBe('event');
 });
 
+test('it stores a caller-supplied opaque public token atomically', function (): void {
+    config(['affiliates.links.allowed_hosts' => ['ilmu360.test']]);
+    $link = CreateTrackingLink::run($this->affiliate, 'https://ilmu360.test/majlis/ramadan', [
+        'custom_slug' => 'abc123xyz7890001',
+    ]);
+    expect($link->custom_slug)->toBe('abc123xyz7890001')
+        ->and($link->tracking_url)->toContain('/go/')
+        ->and($link->trackedLink()->exists())->toBeTrue()
+        ->and(AffiliateLink::query()->whereKey($link->getKey())->value('custom_slug'))->toBe('abc123xyz7890001');
+});
+
+test('it rejects a malformed caller-supplied public token', function (): void {
+    config(['affiliates.links.allowed_hosts' => ['ilmu360.test']]);
+    expect(fn () => CreateTrackingLink::run($this->affiliate, 'https://ilmu360.test/majlis/ramadan', [
+        'custom_slug' => 'NOT-A-TOKEN!',
+    ]))->toThrow(ValidationException::class);
+});
+
 test('it records an attributed outcome without requiring a cart', function (): void {
     $attribution = AffiliateAttribution::create([
         'affiliate_id' => $this->affiliate->getKey(),
@@ -52,10 +72,10 @@ test('it records an attributed outcome without requiring a cart', function (): v
         'subject_instance' => 'web',
     ]);
 
-    $conversion = app(RecordAffiliateOutcome::class)->handle(
+    $result = app(RecordAffiliateOutcome::class)->handle(
         attribution: $attribution,
         conversionType: 'event_checkin',
-        externalReference: 'event-checkin:1',
+        businessKey: 'tracking-link-test:event_checkin:event-checkin-1',
         payload: [
             'status' => ApprovedConversion::class,
             'subject_id' => 'event-id',
@@ -63,10 +83,10 @@ test('it records an attributed outcome without requiring a cart', function (): v
         ],
     );
 
-    expect($conversion)
-        ->not()->toBeNull()
-        ->and($conversion?->affiliateCode)->toBe($this->affiliate->code)
-        ->and($conversion?->conversionType)->toBe('event_checkin');
+    expect($result->disposition)->toBe(AffiliateOutcomeDisposition::Created)
+        ->and($result->conversion)->not->toBeNull()
+        ->and($result->conversion?->affiliateCode)->toBe($this->affiliate->code)
+        ->and($result->conversion?->conversionType)->toBe('event_checkin');
 });
 
 test('it creates a program tracking link when owner scoping is disabled without an owner', function (): void {

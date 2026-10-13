@@ -2,9 +2,8 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentAffiliates\Actions;
+namespace AIArmada\Affiliates\Actions\Payouts;
 
-use AIArmada\Affiliates\Actions\Payouts\UpdatePayoutStatus;
 use AIArmada\Affiliates\Data\PayoutResult;
 use AIArmada\Affiliates\Exceptions\PayoutCompletionBlockedException;
 use AIArmada\Affiliates\Models\Affiliate;
@@ -18,7 +17,6 @@ use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Affiliates\States\ProcessingPayout;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\DB;
 use Throwable;
 
 final class ProcessAffiliatePayout
@@ -36,7 +34,8 @@ final class ProcessAffiliatePayout
         }
 
         try {
-            $claim = DB::transaction(function () use ($payout): array {
+            $connection = $payout->getConnection();
+            $claim = $connection->transaction(function () use ($payout): array {
                 $lockedQuery = AffiliatePayout::query()->with('operation');
 
                 if ((bool) config('affiliates.owner.enabled', false)) {
@@ -67,9 +66,37 @@ final class ProcessAffiliatePayout
                     return ['error' => PayoutResult::failure('The payout affiliate is missing.', 'MISSING_PAYOUT_AFFILIATE')];
                 }
 
+                $needsReconciliation = $locked->status->equals(ProcessingPayout::class)
+                    || in_array($locked->operation->status, ['submitting', 'unknown', 'submitted'], true);
+
+                if ($needsReconciliation && $locked->operation->lease_expires_at?->isFuture()) {
+                    return ['error' => PayoutResult::unknown('PAYOUT_LEASE_ACTIVE')];
+                }
+
                 $method = $affiliate->payoutMethods()->where('is_default', true)->first();
 
                 if ($method === null) {
+                    if ($needsReconciliation) {
+                        $locked->load('operation');
+                        $wasUnknown = $locked->operation->status === 'unknown'
+                            && $locked->operation->last_error_code === 'NO_DEFAULT_PAYOUT_METHOD';
+                        $locked->operation->forceFill([
+                            'status' => 'unknown',
+                            'last_error_code' => 'NO_DEFAULT_PAYOUT_METHOD',
+                            'lease_expires_at' => null,
+                        ])->save();
+
+                        if (! $wasUnknown) {
+                            $locked->events()->create([
+                                'from_status' => $locked->status->getValue(),
+                                'to_status' => $locked->status->getValue(),
+                                'notes' => 'Provider reconciliation required, but no default payout method is configured.',
+                            ]);
+                        }
+
+                        return ['error' => PayoutResult::unknown('NO_DEFAULT_PAYOUT_METHOD')];
+                    }
+
                     $locked = $this->updatePayoutStatus->handle(
                         $locked,
                         FailedPayout::value(),
@@ -80,9 +107,6 @@ final class ProcessAffiliatePayout
 
                     return ['error' => PayoutResult::failure('No default payout method is configured.', 'NO_DEFAULT_PAYOUT_METHOD'), 'release' => true];
                 }
-
-                $needsReconciliation = $locked->status->equals(ProcessingPayout::class)
-                    || in_array($locked->operation->status, ['submitting', 'unknown', 'submitted'], true);
 
                 if (! $locked->status->equals(PendingPayout::class) && ! $needsReconciliation) {
                     return ['error' => PayoutResult::failure('The payout is not processable.', 'PAYOUT_NOT_PROCESSABLE')];
@@ -98,11 +122,13 @@ final class ProcessAffiliatePayout
                     'status' => $needsReconciliation ? $locked->operation->status : 'submitting',
                     'lease_expires_at' => CarbonImmutable::now()->addMinutes(5),
                 ])->save();
+                $leaseExpiresAt = $locked->operation->fresh()?->lease_expires_at?->toISOString();
 
                 return [
                     'payout' => $locked->fresh(['operation', 'payee']),
                     'processor_type' => $method->type->value,
                     'reconcile' => $needsReconciliation,
+                    'lease_expires_at' => $leaseExpiresAt,
                 ];
             }, attempts: 3);
 
@@ -122,19 +148,19 @@ final class ProcessAffiliatePayout
                 $status = $processor->getStatus($claimedPayout);
 
                 if ($status === 'completed') {
-                    return $this->recordResult($claimedPayout, PayoutResult::success((string) ($claimedPayout->external_reference ?? $claimedPayout->operation?->provider_reference ?? $claimedPayout->id)));
+                    return $this->recordResult($claimedPayout, PayoutResult::success((string) ($claimedPayout->external_reference ?? $claimedPayout->operation?->provider_reference ?? $claimedPayout->id)), leaseExpiresAt: $claim['lease_expires_at']);
                 }
 
                 if (in_array($status, ['failed', 'cancelled'], true)) {
-                    return $this->recordResult($claimedPayout, PayoutResult::failure('The provider reported a failed payout.', 'PROVIDER_RECONCILED_FAILURE'));
+                    return $this->recordResult($claimedPayout, PayoutResult::failure('The provider reported a failed payout.', 'PROVIDER_RECONCILED_FAILURE'), leaseExpiresAt: $claim['lease_expires_at']);
                 }
 
                 if ($status !== 'not_found') {
-                    return $this->recordResult($claimedPayout, PayoutResult::unknown('PROVIDER_RECONCILIATION_REQUIRED'));
+                    return $this->recordResult($claimedPayout, PayoutResult::unknown('PROVIDER_RECONCILIATION_REQUIRED'), leaseExpiresAt: $claim['lease_expires_at']);
                 }
             }
 
-            return $this->recordResult($claimedPayout, $processor->process($claimedPayout));
+            return $this->recordResult($claimedPayout, $processor->process($claimedPayout), leaseExpiresAt: $claim['lease_expires_at']);
         } catch (Throwable $throwable) {
             report($throwable);
 
@@ -145,19 +171,25 @@ final class ProcessAffiliatePayout
             // generic code: only the gate's own exception narrows here.
             if ($throwable instanceof PayoutCompletionBlockedException) {
                 return $this->recordResult(
-                    $payout,
+                    $claim['payout'] ?? $payout,
                     PayoutResult::unknown(PayoutReconciliationService::COMPLETION_BLOCKED_CODE),
-                    'Completion blocked: ' . $throwable->getMessage()
+                    'Completion blocked: ' . $throwable->getMessage(),
+                    $claim['lease_expires_at'] ?? null,
                 );
             }
 
-            return $this->recordResult($payout, PayoutResult::unknown('PAYOUT_PROCESSING_EXCEPTION'));
+            return $this->recordResult(
+                $claim['payout'] ?? $payout,
+                PayoutResult::unknown('PAYOUT_PROCESSING_EXCEPTION'),
+                leaseExpiresAt: $claim['lease_expires_at'] ?? null,
+            );
         }
     }
 
-    private function recordResult(AffiliatePayout $payout, PayoutResult $result, ?string $notes = null): PayoutResult
+    private function recordResult(AffiliatePayout $payout, PayoutResult $result, ?string $notes = null, ?string $leaseExpiresAt = null): PayoutResult
     {
-        DB::transaction(function () use ($payout, $result, $notes): void {
+        $connection = $payout->getConnection();
+        $recorded = $connection->transaction(function () use ($payout, $result, $notes, $leaseExpiresAt): bool {
             $lockedQuery = AffiliatePayout::query()->with('operation');
 
             if ((bool) config('affiliates.owner.enabled', false)) {
@@ -167,7 +199,15 @@ final class ProcessAffiliatePayout
             $locked = $lockedQuery->lockForUpdate()->find($payout->getKey());
 
             if (! $locked instanceof AffiliatePayout || ! $locked->operation instanceof AffiliatePayoutOperation) {
-                return;
+                return false;
+            }
+
+            if ($locked->status->equals(CompletedPayout::class) || $locked->status->equals(FailedPayout::class)) {
+                return false;
+            }
+
+            if ($leaseExpiresAt === null || $locked->operation->lease_expires_at?->toISOString() !== $leaseExpiresAt) {
+                return false;
             }
 
             $fromStatus = $locked->status->getValue();
@@ -248,9 +288,11 @@ final class ProcessAffiliatePayout
                     'notes' => $notes ?? 'Provider outcome: ' . $result->getStatus() . ($result->failureCode !== null ? ' (' . $result->failureCode . ')' : ''),
                 ]);
             }
+
+            return true;
         }, attempts: 3);
 
-        if ($result->getStatus() === 'failed') {
+        if ($recorded && $result->getStatus() === 'failed') {
             $this->reconciliation->releaseReservedFunds($payout);
         }
 

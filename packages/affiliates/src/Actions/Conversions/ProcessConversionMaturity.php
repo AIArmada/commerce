@@ -31,6 +31,9 @@ final class ProcessConversionMaturity
         AffiliateConversion::query()
             ->where('status', QualifiedConversion::value())
             ->where('occurred_at', '<=', CarbonImmutable::now()->subDays($maturityDays))
+            ->whereHas('affiliate', static function ($query): void {
+                $query->whereCommercialPurpose();
+            })
             ->with('affiliate')
             ->chunkById(200, function ($conversions) use (&$matured): void {
                 foreach ($conversions as $conversion) {

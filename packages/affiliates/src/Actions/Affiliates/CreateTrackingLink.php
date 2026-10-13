@@ -72,7 +72,7 @@ final class CreateTrackingLink
         Validator::make($attributes, [
             'tracking_url' => ['prohibited'],
             'short_url' => ['prohibited'],
-            'custom_slug' => ['prohibited'],
+            'custom_slug' => ['nullable', 'string', 'min:8', 'max:64', 'regex:/^[a-z0-9]+$/'],
             'ttl_seconds' => ['prohibited'],
             'link_style' => ['sometimes', 'string', 'in:short,branded'],
             'link_label' => ['nullable', 'string', 'max:60'],
@@ -84,6 +84,7 @@ final class CreateTrackingLink
                 'program_id' => $programId,
                 'destination_url' => $destinationUrl,
                 'tracking_url' => '',
+                'custom_slug' => Arr::get($attributes, 'custom_slug'),
                 'campaign' => Arr::get($attributes, 'campaign'),
                 'sub_id' => Arr::get($attributes, 'sub_id'),
                 'sub_id_2' => Arr::get($attributes, 'sub_id_2'),

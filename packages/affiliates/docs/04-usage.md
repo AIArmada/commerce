@@ -221,6 +221,13 @@ $link = CreateTrackingLink::run($affiliate, 'https://example.com/products/sku-10
 ]);
 ```
 
+Callers may supply their own opaque public token atomically with `custom_slug`
+(lowercase alphanumeric, 8–64 chars, globally unique). The token is stored on
+the created link inside the same transaction that mints its managed short URL,
+so callers never need a post-create update to attach a server-issued identity.
+Omit it (or pass null) to leave the column empty; `tracking_url`, `short_url`
+and `ttl_seconds` remain package-managed and prohibited inputs.
+
 ### Conversion Statuses
 
 ```php
@@ -240,6 +247,33 @@ Use `total` and `subtotal` as the conversion amount inputs. The persisted conver
 `value_minor` and `external_reference`; cart identity is resolved from the active attribution.
 
 When the maturity workflow is enabled, conversions typically move from `Pending` into `Qualified`, remain in holding, and then become `Approved` when `affiliates:process-maturity` runs after the configured maturity window.
+
+### Attributed Outcomes Without a Cart
+
+Referral, signup, and engagement flows use `RecordAffiliateOutcome` with a
+caller-owned namespaced business key. The key is hashed for the unique
+`idempotency_key`, independent of affiliate/link, so one source transition
+yields exactly one winner. Replays return the stored row untouched.
+
+```php
+use AIArmada\Affiliates\Actions\Conversions\RecordAffiliateOutcome;
+use AIArmada\Affiliates\Enums\AffiliateOutcomeDisposition;
+
+$result = RecordAffiliateOutcome::run(
+    $attribution,
+    'referral',
+    'my-app:referral:'.$sourceTransitionId,
+    ['dispatch_event' => false],
+);
+
+if ($result->disposition === AffiliateOutcomeDisposition::Created) {
+    // Only creation mutates projections; Replayed/Rejected/NoAffiliate do not.
+}
+```
+
+Insertion, persisted fraud-rule signals, rejection marking, and accounting run
+in one same-connection transaction. `AffiliateConversionRecorded` dispatches
+after commit only, gated by `dispatch_event`.
 
 ## Commission Calculation
 
@@ -277,6 +311,17 @@ $affiliate->commission_rate = 500;
 ```
 
 ## Working with Affiliates
+
+### Commercial Participation
+
+Affiliate profiles with no `purpose` value or the package's `general` purpose
+participate in automatic rank upgrades, performance bonuses, upline/downline
+metrics, conversion maturity, scheduled payout claims, and payout queues that
+do not specify an affiliate. Hosts may store other opaque purpose values for
+attribution-only or reward-recipient profiles; those values do not opt those
+profiles into those automatic commercial workflows. Attribution, recorded
+outcomes, and explicitly targeted awards or payouts remain available. The
+package does not reinterpret host-specific purpose values.
 
 ### Creating Affiliates
 

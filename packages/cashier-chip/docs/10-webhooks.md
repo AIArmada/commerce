@@ -69,8 +69,8 @@ Two layers:
    `idempotency_key` per delivery. A redelivery whose key is already processed is dropped before any
    handler runs.
 2. `SyncChipPurchaseStatus` additionally short-circuits on a `purchase_id` already recorded as a
-   `completed` `RenewalAttempt`, so a re-delivered purchase cannot double-apply a subscription
-   state change.
+   `completed` or `mismatch` `RenewalAttempt`, so a re-delivered purchase cannot double-apply a subscription
+   state change or duplicate the reconciliation hook.
 
 ## Handled Events
 

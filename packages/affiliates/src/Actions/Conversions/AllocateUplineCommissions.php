@@ -43,7 +43,7 @@ final class AllocateUplineCommissions
         foreach ($baseConversions as $conversionData) {
             $affiliate = Affiliate::query()->find($conversionData->affiliateId);
 
-            if (! $affiliate) {
+            if (! $affiliate || ! $affiliate->isCommercialPurpose()) {
                 continue;
             }
 
@@ -64,6 +64,12 @@ final class AllocateUplineCommissions
 
                 if (! $current) {
                     break;
+                }
+
+                if (! $current->isCommercialPurpose()) {
+                    $current = $current->parent;
+
+                    continue;
                 }
 
                 $portion = CommissionCaps::clamp(self::resolvePortion($conversionData->commissionMinor, $levelConfig));

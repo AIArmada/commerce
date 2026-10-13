@@ -26,7 +26,7 @@ return new class extends Migration
             $table->nullableMorphs('owner');
             $table->timestampsTz();
 
-            $table->index(['ticket_type_id', 'product_id', 'variant_id']);
+            $table->index(['ticket_type_id', 'product_id', 'variant_id'], 'ticket_type_products_type_prod_variant_idx');
         });
     }
 };

@@ -5,7 +5,6 @@ declare(strict_types=1);
 use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -14,8 +13,9 @@ return new class extends Migration
     {
         $tableName = (string) config('cart.database.tables.snapshot_conditions', 'cart_snapshot_conditions');
         $jsonType = (string) commerce_json_column_type('cart', config('cart.database.json_column_type', 'jsonb'));
+        $usePostgresGin = $jsonType === 'jsonb' && ConnectionDriver::name(Schema::getConnection()) === 'pgsql';
 
-        Schema::create($tableName, function (Blueprint $table) use ($jsonType): void {
+        Schema::create($tableName, function (Blueprint $table) use ($jsonType, $tableName, $usePostgresGin): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('cart_id');
             $table->foreignUuid('cart_item_id')->nullable();
@@ -51,17 +51,11 @@ return new class extends Migration
             $table->index('is_global');
             $table->index('created_at');
             $table->index('updated_at');
-        });
 
-        // GIN indexes only work with jsonb in PostgreSQL
-        if (
-            commerce_json_column_type('cart', config('cart.database.json_column_type', 'jsonb')) === 'jsonb'
-            && ConnectionDriver::name(Schema::getConnection()) === 'pgsql'
-        ) {
-            Schema::table($tableName, function (Blueprint $table) use ($tableName): void {
-                DB::statement("CREATE INDEX {$tableName}_rules_gin_index ON {$tableName} USING GIN (rules)");
-                DB::statement("CREATE INDEX {$tableName}_attributes_gin_index ON {$tableName} USING GIN (attributes)");
-            });
-        }
+            if ($usePostgresGin) {
+                $table->index('rules', $tableName . '_rules_gin_index', 'gin');
+                $table->index('attributes', $tableName . '_attributes_gin_index', 'gin');
+            }
+        });
     }
 };

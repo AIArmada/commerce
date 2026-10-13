@@ -17,38 +17,24 @@ use AIArmada\Affiliates\States\RejectedConversion;
 use AIArmada\Affiliates\States\ReversedConversion;
 use AIArmada\Affiliates\Support\PayoutMinimums;
 use Illuminate\Database\QueryException;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Schema;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 final class ApplyConversionAccounting
 {
     use AsAction;
 
-    /** @var array<string, bool> */
-    private static array $balancesTableMemo = [];
-
-    public static function balancesSyncEnabled(): bool
-    {
-        $table = (new AffiliateBalance)->getTable();
-
-        return self::$balancesTableMemo[$table] ??= Schema::hasTable($table);
-    }
-
     public function handle(AffiliateConversion $conversion, ?ConversionStatus $previousStatus = null): void
     {
-        if (! self::balancesSyncEnabled()) {
-            return;
-        }
-
         $affiliate = $conversion->affiliate()->first();
 
         if (! $affiliate) {
             return;
         }
 
-        DB::transaction(function () use ($affiliate, $conversion, $previousStatus): void {
+        $connection = $conversion->getConnection();
+
+        $connection->transaction(function () use ($affiliate, $conversion, $previousStatus): void {
             // Self-sufficient lock: callers hold this row already, but the
             // held read-modify-write below must be correct regardless.
             $lockedConversion = AffiliateConversion::query()
@@ -219,18 +205,22 @@ final class ApplyConversionAccounting
 
     private static function createBalance(Affiliate $affiliate, string $currency): AffiliateBalance
     {
+        $connection = (new AffiliateBalance)->getConnection();
+
         try {
-            return AffiliateBalance::create([
+            return $connection->transaction(static fn (): AffiliateBalance => AffiliateBalance::create([
                 'affiliate_id' => $affiliate->id,
                 'available_minor' => 0,
                 'holding_minor' => 0,
                 'lifetime_earnings_minor' => 0,
                 'minimum_payout_minor' => PayoutMinimums::forCurrency($currency),
                 'currency' => $currency,
-            ]);
+            ]), 1);
         } catch (QueryException $exception) {
             // Concurrent first conversion in this currency: the unique
             // (affiliate_id, currency) row already exists, so reuse it.
+            // The nested savepoint keeps the caller's outer transaction
+            // usable on PostgreSQL after the unique violation.
             if (! in_array((string) ($exception->errorInfo[0] ?? $exception->getCode()), ['23000', '23505'], true)) {
                 throw $exception;
             }

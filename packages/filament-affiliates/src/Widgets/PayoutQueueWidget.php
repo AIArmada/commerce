@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Widgets;
 
+use AIArmada\Affiliates\Actions\Payouts\ProcessAffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Affiliates\States\ProcessingPayout;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\FilamentAffiliates\Actions\ProcessAffiliatePayout;
 use AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
@@ -36,6 +36,9 @@ final class PayoutQueueWidget extends BaseWidget
                 AffiliatePayout::query()
                     ->with('payee')
                     ->whereIn('status', [PendingPayout::value(), ProcessingPayout::value()])
+                    ->whereHas('payee', static function ($query): void {
+                        $query->whereCommercialPurpose();
+                    })
                     ->orderBy('scheduled_at')
                     ->limit(10)
             )
@@ -111,6 +114,9 @@ final class PayoutQueueWidget extends BaseWidget
     {
         $pendingCount = AffiliatePayout::query()
             ->whereIn('status', [PendingPayout::value(), ProcessingPayout::value()])
+            ->whereHas('payee', static function ($query): void {
+                $query->whereCommercialPurpose();
+            })
             ->count();
 
         return "Pending Payouts ({$pendingCount})";

@@ -12,6 +12,7 @@ use AIArmada\Affiliates\Models\AffiliateRankHistory;
 use AIArmada\Affiliates\Support\RevenueVolume;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
+use InvalidArgumentException;
 
 final class RankQualificationService
 {
@@ -32,6 +33,10 @@ final class RankQualificationService
      */
     public function evaluate(Affiliate $affiliate): ?AffiliateRank
     {
+        if (! $affiliate->isCommercialPurpose()) {
+            return null;
+        }
+
         // Order by level DESC to find highest qualifying rank first. Metrics
         // are measured per rank currency so floors never compare across codes.
         return AffiliateRank::query()
@@ -57,6 +62,7 @@ final class RankQualificationService
         $upgraded = 0;
 
         Affiliate::query()
+            ->whereCommercialPurpose()
             ->with('rank')
             ->chunk(100, function ($affiliates) use (&$upgraded): void {
                 foreach ($affiliates as $affiliate) {
@@ -77,6 +83,10 @@ final class RankQualificationService
      */
     public function processRankChange(Affiliate $affiliate): void
     {
+        if (! $affiliate->isCommercialPurpose()) {
+            return;
+        }
+
         $newRank = $this->evaluate($affiliate);
 
         if ($this->shouldChangeRank($affiliate, $newRank)) {
@@ -101,6 +111,10 @@ final class RankQualificationService
      */
     public function assignRank(Affiliate $affiliate, ?AffiliateRank $rank): void
     {
+        if (! $affiliate->isCommercialPurpose()) {
+            throw new InvalidArgumentException('A non-commercial affiliate cannot receive a rank.');
+        }
+
         $this->changeRank($affiliate, $rank, RankQualificationReason::Manual);
     }
 

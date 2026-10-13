@@ -55,7 +55,7 @@ final class PerformanceBonusService
             foreach ($bonuses as $bonus) {
                 $affiliate = Affiliate::query()->forOwner()->find($bonus['affiliate_id']);
 
-                if (! $affiliate || ! $affiliate->status->equals(Active::class)) {
+                if (! $affiliate || ! $affiliate->status->equals(Active::class) || ! $affiliate->isCommercialPurpose()) {
                     continue;
                 }
 
@@ -124,6 +124,7 @@ final class PerformanceBonusService
 
         $conversionsTable = (new AffiliateConversion)->getTable();
         $affiliatesTable = (new Affiliate)->getTable();
+        $purposeColumn = DB::connection()->getQueryGrammar()->wrap("{$affiliatesTable}.purpose");
         $revenueExpression = "COALESCE({$conversionsTable}.value_minor, 0)";
 
         $query = DB::table($conversionsTable)
@@ -140,6 +141,10 @@ final class PerformanceBonusService
             ->whereBetween("{$conversionsTable}.occurred_at", [$from, $to])
             ->where("{$conversionsTable}.status", ApprovedConversion::value())
             ->where("{$affiliatesTable}.status", AffiliateStatus::normalize(Active::class))
+            ->where(static function ($query) use ($affiliatesTable, $purposeColumn): void {
+                $query->whereNull("{$affiliatesTable}.purpose")
+                    ->orWhereRaw("LOWER(TRIM({$purposeColumn})) = ?", [Affiliate::PURPOSE_GENERAL]);
+            })
             ->groupBy("{$affiliatesTable}.id", "{$affiliatesTable}.name", "{$affiliatesTable}.code")
             ->orderByDesc('total_revenue')
             ->limit($limit);

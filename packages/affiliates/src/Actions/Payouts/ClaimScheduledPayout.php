@@ -24,7 +24,7 @@ final class ClaimScheduledPayout
         $currency = mb_strtoupper($currency ?? $this->defaultCurrency($affiliateId));
         $affiliate = Affiliate::query()->forOwner()->find($affiliateId);
 
-        if (! $affiliate instanceof Affiliate) {
+        if (! $affiliate instanceof Affiliate || ! $affiliate->isCommercialPurpose()) {
             return false;
         }
 
@@ -71,7 +71,7 @@ final class ClaimScheduledPayout
         return DB::transaction(function () use ($affiliateId, $minimumAmountMinor, $currency): ?AffiliatePayoutOperation {
             $affiliate = Affiliate::query()->forOwner()->lockForUpdate()->find($affiliateId);
 
-            if (! $affiliate instanceof Affiliate) {
+            if (! $affiliate instanceof Affiliate || ! $affiliate->isCommercialPurpose()) {
                 return null;
             }
 
@@ -225,7 +225,13 @@ final class ClaimScheduledPayout
         $conversionIds = [];
         $amountMinor = 0;
 
-        foreach ($query->get() as $conversion) {
+        // Fixed-size lazy batches keep memory bounded on high-volume
+        // affiliates. Skipped rows (other currencies, zero commission) must
+        // not consume a row limit, so limit(availableMinor) is wrong; and
+        // lazyById would reorder the occurred_at,id FIFO, so ordered offset
+        // chunks are used. No rows mutate during traversal (links update
+        // after allocation), making offset pagination safe here.
+        foreach ($query->lazy(1000) as $conversion) {
             if (mb_strtoupper((string) $conversion->commission_currency) !== $currency) {
                 continue;
             }

@@ -19,10 +19,12 @@ return new class extends Migration
 
         Schema::create($tableName, function (Blueprint $table) use ($jsonType, $tableName): void {
             $table->uuid('id')->primary();
-            $table->string('identifier')->index();
-            $table->string('owner_scope')->default('global');
-            $table->nullableUuidMorphs('owner');
-            $table->string('instance')->default('default')->index();
+            $table->string('identifier', 191)->index();
+            $table->string('owner_scope', 191)->default('global');
+            $table->string('owner_type', 191)->nullable();
+            $table->uuid('owner_id')->nullable();
+            $table->index(['owner_type', 'owner_id']);
+            $table->string('instance', 191)->default('default')->index();
             $table->{$jsonType}('items')->nullable();
             $table->{$jsonType}('conditions')->nullable();
             $table->{$jsonType}('metadata')->nullable();
@@ -102,7 +104,6 @@ return new class extends Migration
         $grammar = $connection->getQueryGrammar();
 
         foreach ($indexes as $indexName => $columns) {
-
             $connection->statement(sprintf(
                 'CREATE INDEX %s ON %s %s',
                 $grammar->wrap($indexName),

@@ -16,6 +16,7 @@ use AIArmada\CashierChip\Payment\Payment;
 use AIArmada\CashierChip\Payment\PaymentMethod;
 use AIArmada\CashierChip\Subscription\RenewalAttempt;
 use AIArmada\CashierChip\Subscription\Subscription;
+use AIArmada\CashierChip\Subscription\SubscriptionItem;
 use AIArmada\CashierChip\Testing\FakeChipClient;
 use AIArmada\Chip\Data\ClientData;
 use AIArmada\Chip\Data\PurchaseData;
@@ -293,6 +294,11 @@ describe('SyncChipPurchaseStatus', function (): void {
             'next_billing_at' => $nextBillingAt,
         ]);
 
+        SubscriptionItem::factory()->forSubscription($subscription)->create([
+            'unit_amount' => 1000,
+            'quantity' => 1,
+        ]);
+
         $periodKey = ClaimRenewalAttempt::periodKeyFor($subscription->refresh());
 
         RenewalAttempt::query()->create([
@@ -306,8 +312,10 @@ describe('SyncChipPurchaseStatus', function (): void {
         $purchaseData = PurchaseData::from([
             'id' => 'purchase_new',
             'status' => 'paid',
-            'currency' => 'MYR',
-            'amount_in_cents' => 1000,
+            'purchase' => [
+                'total' => 1000,
+                'currency' => 'MYR',
+            ],
         ]);
 
         // Fake only after fixtures exist: model creating hooks stamp owner scope.

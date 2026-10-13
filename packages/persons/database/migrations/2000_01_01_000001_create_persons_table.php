@@ -13,8 +13,9 @@ return new class extends Migration
     {
         $jsonType = commerce_json_column_type('persons', 'jsonb');
         $tableName = (string) config('persons.database.tables.persons', 'persons');
+        $isMysqlFamily = in_array(ConnectionDriver::name(Schema::getConnection()), ['mysql', 'mariadb'], true);
 
-        Schema::create($tableName, function (Blueprint $table) use ($jsonType): void {
+        Schema::create($tableName, function (Blueprint $table) use ($jsonType, $isMysqlFamily): void {
             $table->uuid('id')->primary();
             $table->string('name');
             $table->string('family_name', 100)->nullable();
@@ -28,13 +29,17 @@ return new class extends Migration
             $table->string('status', 50)->nullable()->index();
             $table->timestampTz('published_at')->nullable()->index();
             $table->timestampsTz();
+
+            if ($isMysqlFamily) {
+                $table->unique('slug', 'persons_slug_unique');
+            }
         });
 
-        if (ConnectionDriver::name(Schema::getConnection()) === 'mysql') {
-            Schema::table($tableName, function (Blueprint $table): void {
-                $table->unique('slug', 'persons_slug_unique');
-            });
-
+        // MariaDB takes the MySQL branch: it has no partial indexes, and
+        // its plain unique already treats NULL slugs as distinct — the
+        // same rule the partial index states for PostgreSQL/SQLite. Same
+        // canonical index name on every driver.
+        if ($isMysqlFamily) {
             return;
         }
 

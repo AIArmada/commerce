@@ -54,7 +54,9 @@ return new class extends Migration
             $table->{$jsonType}('metadata')->nullable();
             $table->timestampsTz();
 
-            $table->index(['owner_type', 'owner_id', 'status', 'created_at']);
+            // Explicit short name: the generated 68-char name exceeds the
+            // 64-char MySQL/MariaDB identifier limit. Same columns/type.
+            $table->index(['owner_type', 'owner_id', 'status', 'created_at'], 'comm_deliveries_owner_status_created_idx');
             $table->index(['communication_id', 'status']);
             $table->index(['recipient_id', 'channel']);
             $table->index(['provider', 'provider_message_id']);

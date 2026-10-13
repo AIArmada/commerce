@@ -236,6 +236,13 @@ describe('RepairRegression renewal idempotency', function (): void {
             'billing_interval_count' => 1,
             'next_billing_at' => CarbonImmutable::now()->subDay(),
         ]);
+        $this->createTrustedSubscriptionItem($subscription, [
+            'chip_id' => 'item_dedup',
+            'chip_product' => 'prod',
+            'chip_price' => 'price_monthly',
+            'quantity' => 1,
+            'unit_amount' => 1000,
+        ]);
 
         $payload = [
             'id' => 'pur_dedup_1',

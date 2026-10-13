@@ -81,13 +81,20 @@ it('stores recurring token from webhook when no default payment method', functio
 });
 
 it('updates subscription to active on payment success', function (): void {
-    $this->createTrustedSubscription($this->user, [
+    $subscription = $this->createTrustedSubscription($this->user, [
         'type' => 'standard',
         'chip_id' => 'test-sub-id',
         'chip_status' => SubscriptionStatus::PastDue,
         'chip_price' => 'price_monthly',
         'billing_interval' => 'month',
         'billing_interval_count' => 1,
+    ]);
+    $this->createTrustedSubscriptionItem($subscription, [
+        'chip_id' => 'test-item-id',
+        'chip_product' => 'prod',
+        'chip_price' => 'price_monthly',
+        'quantity' => 1,
+        'unit_amount' => 10000,
     ]);
 
     $purchaseData = [

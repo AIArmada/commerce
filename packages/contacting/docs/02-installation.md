@@ -9,6 +9,7 @@ title: Contacting Installation
 - PHP 8.5+
 - Laravel 10+
 - `aiarmada/commerce-support`
+- MySQL 8.0.23+ or MariaDB 10.4.14+ when using a MySQL-family database
 
 ## Install via Composer
 

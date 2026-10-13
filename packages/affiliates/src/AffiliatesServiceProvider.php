@@ -119,7 +119,7 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
         $this->app->singleton(WebhookDispatcher::class);
         $this->app->singleton(AttributionModel::class);
         $this->app->singleton(UplineService::class);
-        $this->app->singleton(RankQualificationService::class);
+        $this->app->scoped(RankQualificationService::class);
         $this->app->singleton(DailyAggregationService::class);
         $this->app->singleton(FraudDetectionService::class);
         $this->app->singleton(PayoutProcessorFactory::class);

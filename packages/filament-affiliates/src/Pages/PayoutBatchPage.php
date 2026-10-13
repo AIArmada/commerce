@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Pages;
 
+use AIArmada\Affiliates\Actions\Payouts\ProcessAffiliatePayout;
 use AIArmada\Affiliates\Actions\Payouts\UpdatePayoutStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
@@ -12,7 +13,6 @@ use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\FilamentAffiliates\Actions\ProcessAffiliatePayout;
 use AIArmada\FilamentAffiliates\Actions\RunScheduledPayoutSweep;
 use AIArmada\FilamentAffiliates\Services\PayoutExportService;
 use BackedEnum;
@@ -134,6 +134,9 @@ final class PayoutBatchPage extends Page implements HasForms, HasTable
             ->query(
                 AffiliatePayout::query()
                     ->where('status', PendingPayout::value())
+                    ->whereHas('payee', static function ($query): void {
+                        $query->whereCommercialPurpose();
+                    })
                     ->with(['payee', 'payee.payoutMethods' => fn ($query) => $query->where('is_default', true)])
                     ->latest()
             )

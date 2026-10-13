@@ -13,6 +13,7 @@ use AIArmada\Affiliates\Support\RevenueVolume;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 
 final class UplineService
 {
@@ -21,6 +22,10 @@ final class UplineService
      */
     public function addToUpline(Affiliate $affiliate, ?Affiliate $sponsor = null): void
     {
+        if (! $affiliate->isCommercialPurpose() || ($sponsor !== null && ! $sponsor->isCommercialPurpose())) {
+            throw new InvalidArgumentException('Only commercial affiliates can participate in an upline.');
+        }
+
         if (! $this->isEnabled()) {
             return;
         }
@@ -53,6 +58,10 @@ final class UplineService
      */
     public function changeSponsor(Affiliate $affiliate, Affiliate $newSponsor): void
     {
+        if (! $affiliate->isCommercialPurpose() || ! $newSponsor->isCommercialPurpose()) {
+            throw new InvalidArgumentException('Only commercial affiliates can participate in an upline.');
+        }
+
         if (! $this->isEnabled()) {
             return;
         }
@@ -112,13 +121,14 @@ final class UplineService
      */
     public function getTeamSales(Affiliate $affiliate, ?CarbonImmutable $from = null, ?CarbonImmutable $to = null, ?string $currency = null): int
     {
-        if (! $this->isEnabled()) {
+        if (! $this->isEnabled() || ! $affiliate->isCommercialPurpose()) {
             return 0;
         }
 
         $descendantIds = AffiliateUpline::query()
             ->where('ancestor_id', $affiliate->getKey())
             ->where('depth', '>', 0)
+            ->whereHas('descendant', static fn ($query) => $query->whereCommercialPurpose())
             ->pluck('descendant_id');
 
         if ($descendantIds->isEmpty()) {
@@ -152,17 +162,19 @@ final class UplineService
      */
     public function getActiveDownlineCount(Affiliate $affiliate): int
     {
-        if (! $this->isEnabled()) {
+        if (! $this->isEnabled() || ! $affiliate->isCommercialPurpose()) {
             return 0;
         }
 
         $descendantIds = AffiliateUpline::query()
             ->where('ancestor_id', $affiliate->getKey())
             ->where('depth', '>', 0)
+            ->whereHas('descendant', static fn ($query) => $query->whereCommercialPurpose())
             ->pluck('descendant_id');
 
         return Affiliate::query()
             ->whereIn('id', $descendantIds)
+            ->whereCommercialPurpose()
             ->where('status', AffiliateStatus::normalize(Active::class))
             ->count();
     }
@@ -253,12 +265,14 @@ final class UplineService
         $directCount = AffiliateUpline::query()
             ->where('ancestor_id', $affiliate->getKey())
             ->where('depth', 1)
+            ->whereHas('descendant', static fn ($query) => $query->whereCommercialPurpose())
             ->count();
 
         $totalCount = AffiliateUpline::getDescendantCount($affiliate);
 
         $depth = AffiliateUpline::query()
             ->where('descendant_id', $affiliate->getKey())
+            ->whereHas('ancestor', static fn ($query) => $query->whereCommercialPurpose())
             ->max('depth') ?? 0;
 
         $affiliate->update([

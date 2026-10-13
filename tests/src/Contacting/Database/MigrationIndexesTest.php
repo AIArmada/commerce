@@ -40,6 +40,8 @@ it('keeps primary application guards and rejects direct duplicate writes', funct
         'id' => (string) Str::uuid(),
         'contactable_type' => $customer->getMorphClass(),
         'contactable_id' => $customer->getKey(),
+        'owner_type' => $secondContact->owner_type,
+        'owner_id' => $secondContact->owner_id,
         'type' => 'email',
         'purpose' => 'general',
         'value' => 'direct-duplicate@example.com',
@@ -69,6 +71,8 @@ it('keeps primary application guards and rejects direct duplicate writes', funct
         'id' => (string) Str::uuid(),
         'socialable_type' => $customer->getMorphClass(),
         'socialable_id' => $customer->getKey(),
+        'owner_type' => $secondProfile->owner_type,
+        'owner_id' => $secondProfile->owner_id,
         'platform' => 'facebook',
         'purpose' => 'general',
         'handle' => 'direct-duplicate',
@@ -85,7 +89,8 @@ it('reports dirty primary contact data without deleting it during preflight', fu
     ]);
     $tableName = (string) config('contacting.database.tables.contact_methods', 'contact_methods');
     Schema::table($tableName, function (Blueprint $table): void {
-        $table->dropIndex('contact_methods_primary_unique');
+        $table->dropIndex('contact_methods_primary_owner_unique');
+        $table->dropIndex('contact_methods_primary_global_unique');
     });
 
     DB::table($tableName)->insert([

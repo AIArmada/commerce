@@ -61,24 +61,29 @@ final class DefaultEventLifecycleWorkflow implements EventLifecycleWorkflow
             $this->guardChild($target);
         }
 
-        $target->cancelled_at = CarbonImmutable::now();
-        $target->status_reason = $reason;
+        // One transaction covers the status transition, the change record,
+        // and the synchronous cancellation listeners, so dependent
+        // corrections commit or roll back with the source change.
+        $target->getConnection()->transaction(function () use ($target, $reason): void {
+            $target->cancelled_at = CarbonImmutable::now();
+            $target->status_reason = $reason;
 
-        $target->status->transitionTo(
-            $target instanceof Event
-                ? EventCancelledState::class
-                : OccurrenceCancelledState::class,
-        );
+            $target->status->transitionTo(
+                $target instanceof Event
+                    ? EventCancelledState::class
+                    : OccurrenceCancelledState::class,
+            );
 
-        $this->recordChange($target, 'cancelled', $reason);
+            $this->recordChange($target, 'cancelled', $reason);
 
-        if ($target instanceof Event) {
-            event(new EventCancelled($target, $reason));
-        } elseif ($target instanceof EventOccurrence) {
-            event(new EventOccurrenceCancelled($target, $reason));
-        } elseif ($target instanceof EventSession) {
-            event(new EventSessionCancelled($target, $reason));
-        }
+            if ($target instanceof Event) {
+                event(new EventCancelled($target, $reason));
+            } elseif ($target instanceof EventOccurrence) {
+                event(new EventOccurrenceCancelled($target, $reason));
+            } elseif ($target instanceof EventSession) {
+                event(new EventSessionCancelled($target, $reason));
+            }
+        });
     }
 
     public function postpone(Event | EventOccurrence | EventSession $target, ?string $reason = null): void

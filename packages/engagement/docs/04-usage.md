@@ -316,6 +316,9 @@ returning it. The package's owner-aware unique indexes are the final race guard;
 if two requests create the same identity concurrently, the losing request
 returns the committed record instead of emitting a second lifecycle event or
 counter update.
+Actor, subject, and owner identity values use byte-exact comparisons across
+supported databases; case and trailing spaces in polymorphic type values are
+significant.
 
 ## Working with engagement counters
 

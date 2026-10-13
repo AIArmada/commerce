@@ -3,10 +3,12 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Actions\Affiliates\ResolvePublicAffiliateReferralContext;
+use AIArmada\Affiliates\Actions\Affiliates\TouchAffiliateAttribution;
 use AIArmada\Affiliates\Actions\Affiliates\TrackAffiliateVisit;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\Support\IpHasher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\View;
@@ -107,4 +109,42 @@ BLADE,
         ->toContain($this->affiliate->name)
         ->toContain($this->affiliate->default_voucher_code)
         ->toContain(url('/checkout?aff=' . $this->affiliate->code));
+});
+
+test('tracked visit stores a single IP hash and never the raw address', function (): void {
+    $rawIp = '203.0.113.7';
+
+    $this->call('GET', '/r/' . $this->affiliate->code, [], [], [], ['REMOTE_ADDR' => $rawIp])
+        ->assertRedirect();
+
+    $attribution = AffiliateAttribution::query()->sole();
+    $expected = IpHasher::hash($rawIp);
+
+    expect($expected)->toMatch('/^[0-9a-f]{64}$/')
+        ->and($attribution->ip_address)->toBe($expected)
+        ->and($attribution->ip_address)->not->toBe($rawIp)
+        ->and($attribution->ip_address)->not->toBe(IpHasher::hash((string) $expected))
+        ->and((string) json_encode($attribution->metadata ?? []))->not->toContain($rawIp);
+});
+
+test('touching attribution preserves the stored hash unless a new raw IP arrives', function (): void {
+    $firstIp = '198.51.100.11';
+    $secondIp = '198.51.100.22';
+
+    app(TrackAffiliateVisit::class)->handle($this->affiliate->code, ['ip_address' => $firstIp], 'touch-cookie-f03');
+
+    $stored = AffiliateAttribution::query()->where('cookie_value', 'touch-cookie-f03')->sole();
+
+    expect($stored->ip_address)->toBe(IpHasher::hash($firstIp));
+
+    app(TouchAffiliateAttribution::class)->handle('touch-cookie-f03', []);
+
+    expect($stored->refresh()->ip_address)->toBe(IpHasher::hash($firstIp));
+
+    app(TouchAffiliateAttribution::class)->handle('touch-cookie-f03', ['ip_address' => $secondIp]);
+
+    $touched = $stored->refresh();
+
+    expect($touched->ip_address)->toBe(IpHasher::hash($secondIp))
+        ->and($touched->ip_address)->not->toBe(IpHasher::hash((string) IpHasher::hash($secondIp)));
 });

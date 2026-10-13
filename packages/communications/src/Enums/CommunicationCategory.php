@@ -13,6 +13,7 @@ enum CommunicationCategory: string
     case Legal = 'legal';
     case Support = 'support';
     case Internal = 'internal';
+    case Digest = 'digest';
 
     public function label(): string
     {
@@ -24,6 +25,7 @@ enum CommunicationCategory: string
             self::Legal => 'Legal',
             self::Support => 'Support',
             self::Internal => 'Internal',
+            self::Digest => 'Digest',
         };
     }
 }

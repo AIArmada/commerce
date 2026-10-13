@@ -24,6 +24,11 @@ return new class extends Migration
             $table->string('commission_type', 24)->default('percentage')->index();
             $table->unsignedInteger('commission_rate')->default(0); // cents or basis points
             $table->string('currency', 3)->default(config('affiliates.currency.default', 'USD'))->index();
+            // Neutral purpose marker: null (or 'general') means ordinary
+            // commercial participation. Hosts tag non-commercial profiles
+            // (attribution-only, reward-recipient, system) with their own
+            // opaque values; every commercial selector below excludes them.
+            $table->string('purpose', 32)->nullable()->index();
             $table->uuid('parent_affiliate_id')->nullable()->index();
             $table->foreignUuid('rank_id')->nullable();
             $table->integer('network_depth')->default(0);

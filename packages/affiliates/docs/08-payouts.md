@@ -324,7 +324,7 @@ affiliate's `payoutMethods` relation. `PayoutResult` exposes
 `isSuccessful()` or `getTransactionId()`.
 
 > [!WARNING]
-> Never complete a payout with a direct status write (`$payout->update(['status' => ...])`): it bypasses the completion eligibility gate, the Approved-only conversion sync, the payout event, and the operation sync — leaving conversions linked-but-approved against a payout that reported the money as sent. Always complete through `UpdatePayoutStatus::run($payout, 'completed', ...)` (or `ProcessAffiliatePayout::handle($payout)` for the full claim/processor flow).
+> Never complete a payout with a direct status write (`$payout->update(['status' => ...])`): it bypasses the completion eligibility gate, the Approved-only conversion sync, the payout event, and the operation sync — leaving conversions linked-but-approved against a payout that reported the money as sent. Always complete through `UpdatePayoutStatus::run($payout, 'completed', ...)` (or `AIArmada\Affiliates\Actions\Payouts\ProcessAffiliatePayout::handle($payout)` for the full claim/processor flow).
 
 ## Payout Events
 

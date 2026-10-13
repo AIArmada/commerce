@@ -42,7 +42,15 @@ final class ValidateAffiliateParentAssignment
 
         $parentAffiliate = $this->resolveParentAffiliate($parentAffiliateId);
 
+        if (! $parentAffiliate->isCommercialPurpose()) {
+            throw $this->validationException('Selected parent affiliate is not a commercial profile.');
+        }
+
         if ($record instanceof Affiliate) {
+            if (! $record->isCommercialPurpose()) {
+                throw $this->validationException('Non-commercial profiles cannot join a downline.');
+            }
+
             $this->ensureNoHierarchyCycle($record, $parentAffiliate);
         }
 

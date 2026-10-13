@@ -56,9 +56,31 @@ settle transaction rolls back without extending the subscription. This is safe a
 gateway double-charges, but the money still needs host reconciliation (refund, credit,
 or manual extension).
 
+The same hook fires when a paid purchase does not match the locked renewal amount or
+the billable's preferred currency. The subscription is left untouched (status and
+billing dates unchanged) and the attempt is terminally recorded as `mismatch` with the
+actual gateway-charged amount in `amount_minor`, a cleared lease, `completed_at` set,
+and `last_error_code` of `AMOUNT_MISMATCH` or `CURRENCY_MISMATCH`. A mismatched
+`purchase_id` counts as already processed, so redelivery cannot re-apply or duplicate
+the hook. When the billing period is free, the mismatch keeps the period key and
+occupies the period unique, so automatic renewal cannot silently restart the period —
+the host must reconcile first. When the period is already held by an unrelated pending
+claim, the mismatch receipt uses a null period key (the unique allows multiple nulls)
+so the pending claim is preserved for the correct purchase; the event and log still
+carry the known billing-period key plus full amount reconciliation.
+
+The expected amount comes from the immutable renewal-attempt amount when the purchase
+matches an active claim for that billing period. Without a matching claim, it comes
+from the subscription's current renewal amount. A price change after a claim therefore
+does not change the amount that claim authorizes.
+
 Hosts should listen for `AIArmada\CashierChip\Events\SettledPeriodPurchaseConflict`,
-which carries the subscription, the rolled-back `purchaseId`, and the settled
-`periodKey`. A warning is also logged with the same identifiers.
+which carries the subscription, the `purchaseId` requiring reconciliation, and the
+`periodKey`. For amount or currency mismatches it additionally carries
+`expectedAmountMinor`, `actualAmountMinor`, `expectedCurrency`, and `actualCurrency`
+(`null` for distinct-purchase collisions). A warning is also logged with the same
+identifiers. Both the event and the log publish after commit, so an outer rollback
+suppresses them.
 
 ```php
 use AIArmada\CashierChip\Events\SettledPeriodPurchaseConflict;

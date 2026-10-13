@@ -9,19 +9,58 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    private const PRIMARY_UNIQUE_HASH_COLUMN = 'primary_unique_hash';
+
     public function up(): void
     {
         $tableName = config('contacting.database.tables.contact_methods', 'contact_methods');
         $jsonColumnType = commerce_json_column_type('contacting', 'json');
+        $connection = Schema::getConnection();
+        $grammar = $connection->getQueryGrammar();
+        $driver = ConnectionDriver::name($connection);
+        $isMysqlFamily = in_array($driver, ['mysql', 'mariadb'], true)
+            || $connection instanceof MySqlConnection;
+        $identityCollation = ConnectionDriver::isMariaDb($connection)
+            ? 'utf8mb4_nopad_bin'
+            : ($isMysqlFamily ? 'utf8mb4_0900_bin' : null);
 
-        Schema::create($tableName, function (Blueprint $table) use ($jsonColumnType, $tableName): void {
+        $hashColumn = self::PRIMARY_UNIQUE_HASH_COLUMN;
+        $pack = static fn (array $columns): string => 'CONCAT(' . implode(', ', array_merge(...array_map(static fn (string $column): array => [
+            sprintf('CHAR_LENGTH(%s)', $grammar->wrap($column)),
+            "':'",
+            $grammar->wrap($column),
+            "'|'",
+        ], $columns))) . ')';
+        $ownerPackedColumn = 'primary_unique_packed';
+        $globalPackedColumn = 'primary_global_unique_packed';
+        $ownerPackExpression = $isMysqlFamily ? $pack(['owner_type', 'owner_id', 'contactable_type', 'contactable_id', 'type', 'purpose']) : '';
+        $globalPackExpression = $isMysqlFamily ? $pack(['contactable_type', 'contactable_id', 'type', 'purpose']) : '';
+        $primaryHashExpression = $isMysqlFamily
+            ? sprintf('CASE WHEN %s = 1 THEN SHA2(%s, 256) ELSE NULL END', $grammar->wrap('is_primary'), $grammar->wrap($ownerPackedColumn))
+            : '';
+        $globalHashExpression = $isMysqlFamily
+            ? sprintf('CASE WHEN %s = 1 AND %s IS NULL AND %s IS NULL THEN SHA2(%s, 256) ELSE NULL END', $grammar->wrap('is_primary'), $grammar->wrap('owner_type'), $grammar->wrap('owner_id'), $grammar->wrap($globalPackedColumn))
+            : '';
+
+        Schema::create($tableName, function (Blueprint $table) use ($jsonColumnType, $tableName, $isMysqlFamily, $hashColumn, $ownerPackedColumn, $globalPackedColumn, $ownerPackExpression, $globalPackExpression, $primaryHashExpression, $globalHashExpression, $identityCollation): void {
             $table->uuid('id')->primary();
 
-            $table->nullableUuidMorphs('owner');
-            $table->nullableUuidMorphs('contactable');
+            $ownerType = $table->string('owner_type', 191)->nullable();
+            $ownerId = $table->uuid('owner_id')->nullable();
+            $table->index(['owner_type', 'owner_id']);
+            $contactableType = $table->string('contactable_type', 191)->nullable();
+            $contactableId = $table->uuid('contactable_id')->nullable();
+            $table->index(['contactable_type', 'contactable_id']);
 
-            $table->string('type');
-            $table->string('purpose')->default('general');
+            $type = $table->string('type', 191);
+            $purpose = $table->string('purpose', 191)->default('general');
+
+            if ($identityCollation !== null) {
+                foreach ([$ownerType, $ownerId, $contactableType, $contactableId, $type, $purpose] as $column) {
+                    $column->charset('utf8mb4')->collation($identityCollation);
+                }
+            }
+
             $table->string('label')->nullable();
 
             $table->text('value');
@@ -44,6 +83,23 @@ return new class extends Migration
 
             $table->timestamps();
 
+            // MySQL-family primary uniqueness lives in a nullable VIRTUAL
+            // generated column holding a SHA-256 hash of the length-prefixed
+            // non-null primary tuple. The ordinary unique index below covers
+            // it; NULL allows non-qualifying duplicates. A truncated
+            // functional key would report false collisions on long tuples,
+            // so both MySQL and MariaDB share this hash column instead.
+            if ($isMysqlFamily) {
+                $table->text($ownerPackedColumn)->nullable()->virtualAs($ownerPackExpression)->invisible();
+                $table->text($globalPackedColumn)->nullable()->virtualAs($globalPackExpression)->invisible();
+                $table->string($hashColumn, 64)->nullable()->virtualAs($primaryHashExpression)->invisible();
+                $globalHashColumn = 'primary_global_unique_hash';
+                $table->string($globalHashColumn, 64)->nullable()->virtualAs($globalHashExpression)->invisible();
+                $baseName = str_replace(['.', '-', ' '], '_', $tableName);
+                $table->unique($hashColumn, $baseName . '_primary_owner_unique');
+                $table->unique($globalHashColumn, $baseName . '_primary_global_unique');
+            }
+
             $table->index(['type', 'purpose']);
             $table->index(['is_primary']);
             $table->index(['is_public']);
@@ -59,80 +115,49 @@ return new class extends Migration
             );
         });
 
-        $this->createPrimaryUniqueIndex(
-            $tableName,
-            ['contactable_type', 'contactable_id', 'type', 'purpose'],
-            'contactable_type',
-            'contactable_id',
-        );
+        if ($isMysqlFamily) {
+            return;
+        }
+
+        $this->createPrimaryUniqueIndexes($tableName);
     }
 
-    /**
-     * @param  list<string>  $columns
-     */
-    private function createPrimaryUniqueIndex(
-        string $tableName,
-        array $columns,
-        string $morphTypeColumn,
-        string $morphIdColumn,
-    ): void {
-        $indexName = str_replace(['.', '-', ' '], '_', $tableName) . '_primary_unique';
-
+    private function createPrimaryUniqueIndexes(string $tableName): void
+    {
         $connection = Schema::getConnection();
         $grammar = $connection->getQueryGrammar();
         $driver = ConnectionDriver::name($connection);
-
-        if (! in_array($driver, ['mysql', 'pgsql', 'sqlite'], true)) {
+        if (! in_array($driver, ['pgsql', 'sqlite'], true)) {
             throw new RuntimeException(sprintf(
                 'Contacting primary index migration cannot run on unsupported database driver [%s].',
                 $driver,
             ));
         }
-
-        if ($driver === 'mysql') {
-            $wrappedColumns = implode(', ', array_map(
-                $grammar->wrap(...),
-                $columns,
-            ));
-            $expression = sprintf(
-                'CASE WHEN %s = 1 AND %s IS NOT NULL AND %s IS NOT NULL '
-                . 'THEN CAST(JSON_ARRAY(%s) AS CHAR(512)) ELSE NULL END',
-                $grammar->wrap('is_primary'),
-                $grammar->wrap($morphTypeColumn),
-                $grammar->wrap($morphIdColumn),
-                $wrappedColumns,
-            );
-
-            $connection->statement(sprintf(
-                'CREATE UNIQUE INDEX %s ON %s ((%s))',
-                $grammar->wrap($indexName),
-                $grammar->wrapTable($tableName),
-                $expression,
-            ));
-
-            return;
-        }
-
-        $predicate = $driver === 'pgsql'
-            ? sprintf(
-                '%s IS TRUE AND %s IS NOT NULL AND %s IS NOT NULL',
-                $grammar->wrap('is_primary'),
-                $grammar->wrap($morphTypeColumn),
-                $grammar->wrap($morphIdColumn),
-            )
-            : sprintf(
-                '%s = 1 AND %s IS NOT NULL AND %s IS NOT NULL',
-                $grammar->wrap('is_primary'),
-                $grammar->wrap($morphTypeColumn),
-                $grammar->wrap($morphIdColumn),
-            );
-
+        $base = str_replace(['.', '-', ' '], '_', $tableName);
+        $isPrimary = $driver === 'pgsql'
+            ? $grammar->wrap('is_primary') . ' IS TRUE'
+            : $grammar->wrap('is_primary') . ' = 1';
+        $contactablePresent = $grammar->wrap('contactable_type') . ' IS NOT NULL AND '
+            . $grammar->wrap('contactable_id') . ' IS NOT NULL';
         $connection->statement(sprintf(
-            'CREATE UNIQUE INDEX %s ON %s (%s) WHERE %s',
-            $grammar->wrap($indexName),
+            'CREATE UNIQUE INDEX %s ON %s (%s) WHERE %s AND %s AND %s IS NOT NULL AND %s IS NOT NULL',
+            $grammar->wrap($base . '_primary_owner_unique'),
             $grammar->wrapTable($tableName),
-            implode(', ', array_map($grammar->wrap(...), $columns)),
-            $predicate,
+            implode(', ', array_map($grammar->wrap(...), ['owner_type', 'owner_id', 'contactable_type', 'contactable_id', 'type', 'purpose'])),
+            $isPrimary,
+            $contactablePresent,
+            $grammar->wrap('owner_type'),
+            $grammar->wrap('owner_id'),
+        ));
+        $connection->statement(sprintf(
+            'CREATE UNIQUE INDEX %s ON %s (%s) WHERE %s AND %s AND %s IS NULL AND %s IS NULL',
+            $grammar->wrap($base . '_primary_global_unique'),
+            $grammar->wrapTable($tableName),
+            implode(', ', array_map($grammar->wrap(...), ['contactable_type', 'contactable_id', 'type', 'purpose'])),
+            $isPrimary,
+            $contactablePresent,
+            $grammar->wrap('owner_type'),
+            $grammar->wrap('owner_id'),
         ));
     }
 };

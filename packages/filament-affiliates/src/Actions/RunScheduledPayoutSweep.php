@@ -38,7 +38,8 @@ final class RunScheduledPayoutSweep
         AffiliateBalance::query()
             ->where('available_minor', $minimum > 0 ? '>=' : '>', $minimum > 0 ? $minimum : 0)
             ->whereHas('affiliate', static function ($query): void {
-                $query->where('status', AffiliateStatus::normalize(Active::class));
+                $query->where('status', AffiliateStatus::normalize(Active::class))
+                    ->whereCommercialPurpose();
             })
             ->when($affiliateId !== null, fn ($query) => $query->where('affiliate_id', $affiliateId))
             ->select('id', 'affiliate_id', 'currency')
