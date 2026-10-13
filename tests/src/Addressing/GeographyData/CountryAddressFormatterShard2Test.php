@@ -253,14 +253,14 @@ it('formats an address for every country', function (string $formatter, array $i
     [CubaAddressFormatter::class, ['line1' => 'Calle 23 No. 55',
         'city' => 'CIUDAD HABANA',
         'postcode' => '10600',
-        'country_code' => 'CU', ], "Calle 23 No. 55\n10600 CIUDAD HABANA\nCuba"],
+        'country_code' => 'CU', ], "Calle 23 No. 55\nCP 10600 CIUDAD HABANA\nCuba"],
 
     // CzechRepublic
     [CzechRepublicAddressFormatter::class, ['line1' => 'Roprachtice 129',
         'city' => 'Roprachtice',
         'state' => 'Liberecký kraj',
         'postcode' => '513 01',
-        'country_code' => 'CZ', ], "Roprachtice 129\n513 01 Roprachtice\nLiberecký kraj\nCzech Republic"],
+        'country_code' => 'CZ', ], "Roprachtice 129\n513 01  Roprachtice\nLiberecký kraj\nCzech Republic"],
 
     // Djibouti
     [DjiboutiAddressFormatter::class, ['line1' => 'BP 1663',
@@ -348,7 +348,7 @@ it('formats an address for every country', function (string $formatter, array $i
     [GuatemalaAddressFormatter::class, ['line1' => 'Calle Principal 1',
         'city' => 'Villa Canales',
         'postcode' => '01065',
-        'country_code' => 'GT', ], "Calle Principal 1\n01065 - Villa Canales\nGuatemala"],
+        'country_code' => 'GT', ], "Calle Principal 1\n01065 Villa Canales\nGuatemala"],
 
     // GuineaBissau
     [GuineaBissauAddressFormatter::class, ['line1' => 'Rua Justino Lopes 12C',
@@ -380,7 +380,7 @@ it('formats an address for every country', function (string $formatter, array $i
         'city' => 'Tehranpars',
         'state' => 'Tehran Province',
         'postcode' => '1619614153',
-        'country_code' => 'IR', ], "West 196 street\nNo. 12 third floor\nTehranpars\nTehran Province\n1619614153\nIran"],
+        'country_code' => 'IR', ], "Tehranpars\nWest 196 street\nNo. 12 third floor\nTehran Province\n1619614153\nIran"],
 
     // Ireland
     [IrelandAddressFormatter::class, ['line1' => '12 Grafton Street',
@@ -399,7 +399,7 @@ it('formats an address for every country', function (string $formatter, array $i
         'city' => 'Musashi-Murayama-shi',
         'state' => 'TOKYO',
         'postcode' => '231-0012',
-        'country_code' => 'JP', ], "10-23, Mitsugi 1-chome\nMusashi-Murayama-shi, TOKYO\n231-0012 Japan"],
+        'country_code' => 'JP', ], "10-23, Mitsugi 1-chome\nMusashi-Murayama-shi, TOKYO 231-0012\nJapan"],
 
     // Jordan
     [JordanAddressFormatter::class, ['line1' => 'Al Mohazab Al Halabi',

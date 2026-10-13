@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAddressing\Tables;
 
-use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
@@ -32,11 +31,6 @@ class AddressTable
                     ->label('Country')
                     ->sortable(),
                 TextColumn::make('country')
-                    ->toggleable(),
-                IconColumn::make('validation_status')
-                    ->label('Valid')
-                    ->boolean()
-                    ->state(fn ($record): bool => $record->validation_status === 'verified')
                     ->toggleable(),
                 TextColumn::make('updated_at')
                     ->dateTime()

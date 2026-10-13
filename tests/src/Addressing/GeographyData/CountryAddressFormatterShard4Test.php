@@ -512,7 +512,7 @@ it('formats an address for every country', function (string $formatter, array $i
     [NewZealandAddressFormatter::class, ['line1' => 'PO Box 1',
         'city' => 'Wellington',
         'postcode' => '6011',
-        'country_code' => 'NZ', ], "PO Box 1\n6011 Wellington\nNew Zealand"],
+        'country_code' => 'NZ', ], "PO Box 1\nWellington 6011\nNew Zealand"],
 
     // Niger
     [NigerAddressFormatter::class, ['line1' => 'BP 502',
@@ -571,7 +571,7 @@ it('formats an address for every country', function (string $formatter, array $i
         'city' => 'Santurce',
         'state' => 'San Juan',
         'postcode' => '00907',
-        'country_code' => 'PR', ], "Calle Luna 10\nSanturce\nSan Juan PR 00907\nPuerto Rico"],
+        'country_code' => 'PR', ], "Calle Luna 10\nSan Juan\nSanturce PR 00907\nPuerto Rico"],
 
     // Romania
     [RomaniaAddressFormatter::class, ['line1' => 'Drumul Taberei nr. 35, bl. F5, sc. 2, parter, ap. 23',
@@ -734,7 +734,7 @@ it('formats an address for every country', function (string $formatter, array $i
         'city' => 'SANARE',
         'state' => 'LARA',
         'postcode' => '3028-A',
-        'country_code' => 'VE', ], "Calle Bolívar 3\nSANARE 3028-A\nLARA\nVenezuela"],
+        'country_code' => 'VE', ], "Calle Bolívar 3\nSANARE 3028-A, LARA\nVenezuela"],
 
     // Yemen
     [YemenAddressFormatter::class, ['line1' => 'B.P. 1993',

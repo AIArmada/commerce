@@ -9,7 +9,11 @@ use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\City;
 use AIArmada\Addressing\Models\PostalCode;
 use AIArmada\Addressing\Models\State;
+use AIArmada\Addressing\Support\ConsoleSeedProgress;
 use AIArmada\Addressing\Support\SeedAddressingSummary;
+use Symfony\Component\Console\Input\ArrayInput;
+use Symfony\Component\Console\Output\BufferedOutput;
+use Symfony\Component\Console\Style\SymfonyStyle;
 
 beforeEach(function (): void {
     config(['addressing.geography.providers' => [SaintBarthelemyGeographyProvider::class]]);
@@ -32,6 +36,57 @@ it('seeds every tier for the configured providers', function (): void {
         ->and(State::query()->where('country_id', $country->getKey())->count())->toBe(1)
         ->and(AddressArea::query()->where('country_id', $country->getKey())->where('is_active', true)->count())->toBeGreaterThan(0)
         ->and(PostalCode::query()->where('country_code', 'BL')->count())->toBe(1);
+});
+
+it('reports every step phase in order with terminals', function (): void {
+    config(['addressing.seed.full_city_countries' => ['MY']]);
+
+    $events = [];
+
+    app(SeedAddressingAction::class)->execute(
+        function (string $phase, int $done, int $total, ?string $label = null) use (&$events): void {
+            $events[] = [$phase, $done, $total, $label];
+        },
+    );
+
+    $order = [];
+
+    foreach ($events as [$phase, , , $label]) {
+        if ($label === null && in_array($phase, ['countries', 'references', 'states', 'cities'], true) && ! in_array($phase, $order, true)) {
+            $order[] = $phase;
+        }
+    }
+
+    $terminals = [];
+
+    foreach (['countries', 'references', 'states', 'cities'] as $phase) {
+        $phaseEvents = array_values(array_filter(
+            $events,
+            fn (array $event): bool => $event[0] === $phase && $event[3] === null,
+        ));
+        $terminals[$phase] = end($phaseEvents);
+    }
+
+    expect($order)->toBe(['countries', 'references', 'states', 'cities'])
+        ->and($terminals['countries'][1])->toBe($terminals['countries'][2])
+        ->and($terminals['references'][1])->toBe($terminals['references'][2])
+        ->and($terminals['states'][1])->toBe($terminals['states'][2])
+        ->and($terminals['cities'][1])->toBe($terminals['cities'][2]);
+});
+
+it('renders one console bar per step on a full run', function (): void {
+    config(['addressing.seed.full_city_countries' => ['MY']]);
+
+    $output = new BufferedOutput;
+    $progress = ConsoleSeedProgress::for(new SymfonyStyle(new ArrayInput([]), $output));
+
+    expect($progress)->not->toBeNull();
+
+    app(SeedAddressingAction::class)->execute($progress);
+
+    $text = $output->fetch();
+
+    expect($text)->toContain('countries', 'references', 'states', 'cities', 'BL codes', 'BL links');
 });
 
 it('skips postcodes when the seed toggle is off', function (): void {

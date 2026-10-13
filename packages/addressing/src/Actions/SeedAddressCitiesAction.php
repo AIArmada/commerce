@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Addressing\Actions;
 
-use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Support\ModelResolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
@@ -12,7 +11,10 @@ use RuntimeException;
 
 class SeedAddressCitiesAction
 {
-    public function execute(?array $cities = null): array
+    /**
+     * @param  ?callable(string, int, int, ?string=): void  $progress
+     */
+    public function execute(?array $cities = null, ?callable $progress = null): array
     {
         if ($cities === null) {
             $path = __DIR__ . '/../../resources/data/cities.json';
@@ -27,7 +29,7 @@ class SeedAddressCitiesAction
         $stateClass = ModelResolver::stateClass();
 
         // ponytail: 150k+ rows — cache country/state lookups.
-        $countryIds = AddressCountry::query()->pluck('id', 'iso2')->all();
+        $countryIds = ModelResolver::countryClass()::query()->pluck('id', 'iso2')->all();
         $stateIds = $stateClass::query()
             ->get(['id', 'country_id', 'code'])
             ->mapWithKeys(fn ($state) => [$state->country_id . '|' . $state->code => $state->id])
@@ -36,6 +38,8 @@ class SeedAddressCitiesAction
         $created = 0;
         $updated = 0;
         $skipped = 0;
+        $total = count($cities);
+        $done = 0;
 
         foreach (array_chunk($cities, 2000) as $chunk) {
             $existingByKey = $cityClass::query()
@@ -110,6 +114,16 @@ class SeedAddressCitiesAction
             if ($inserts !== []) {
                 $cityClass::query()->insert(array_values($inserts));
             }
+
+            $done += count($chunk);
+
+            if ($progress !== null) {
+                $progress('cities', $done, $total);
+            }
+        }
+
+        if ($progress !== null && $total === 0) {
+            $progress('cities', 0, 0);
         }
 
         return compact('created', 'updated', 'skipped');

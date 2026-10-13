@@ -135,7 +135,6 @@ Enabled by default. Disable to hide the match-to-area and ignore row actions (pl
 
     'snapshots' => [
         'enabled' => false,
-        'read_only' => true,
         'model' => \AIArmada\Addressing\Models\AddressSnapshot::class,
     ],
 ],

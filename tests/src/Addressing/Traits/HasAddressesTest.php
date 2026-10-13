@@ -34,7 +34,6 @@ it('normalizes free-text address fields before persistence', function (): void {
     $address = Address::create([
         'label' => '  Home  ',
         'line1' => '  123 Main Street  ',
-        'raw_address' => '  123 Main Street, Kuala Lumpur  ',
         'formatted_address' => '  123 Main Street, Kuala Lumpur  ',
         'google_place_id' => '  place-123  ',
         'country_code' => ' my ',
@@ -43,7 +42,6 @@ it('normalizes free-text address fields before persistence', function (): void {
     expect($address->fresh())
         ->label->toBe('Home')
         ->line1->toBe('123 Main Street')
-        ->raw_address->toBe('123 Main Street, Kuala Lumpur')
         ->formatted_address->toBe('123 Main Street, Kuala Lumpur')
         ->google_place_id->toBe('place-123')
         ->country_code->toBe('MY');

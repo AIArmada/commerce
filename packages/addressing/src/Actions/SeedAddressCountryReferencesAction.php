@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Addressing\Actions;
 
-use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Support\AddressingTableResolver;
+use AIArmada\Addressing\Support\ModelResolver;
 use AIArmada\CommerceSupport\Actions\SeedCurrenciesAction;
 use AIArmada\CommerceSupport\Actions\SeedTimezonesAction;
 use AIArmada\CommerceSupport\Models\Currency;
@@ -23,9 +23,10 @@ class SeedAddressCountryReferencesAction
     ) {}
 
     /**
+     * @param  ?callable(string, int, int, ?string=): void  $progress
      * @return array{currency_links: int, timezone_links: int}
      */
-    public function execute(): array
+    public function execute(?callable $progress = null): array
     {
         $this->seedCurrencies->execute();
         $this->seedTimezones->execute();
@@ -41,14 +42,22 @@ class SeedAddressCountryReferencesAction
             throw new RuntimeException('Country data file must contain a JSON array.');
         }
 
-        return DB::transaction(function () use ($countries): array {
+        $total = count($countries) * 2;
+
+        $result = DB::transaction(function () use ($countries, $progress, $total): array {
             $this->clearExistingLinks($countries);
 
             return [
-                'currency_links' => $this->syncCurrencies($countries),
-                'timezone_links' => $this->syncTimezones($countries),
+                'currency_links' => $this->syncCurrencies($countries, $progress, $total, 0),
+                'timezone_links' => $this->syncTimezones($countries, $progress, $total, count($countries)),
             ];
         });
+
+        if ($progress !== null && $total === 0) {
+            $progress('references', 0, 0);
+        }
+
+        return $result;
     }
 
     /**
@@ -66,7 +75,7 @@ class SeedAddressCountryReferencesAction
             return;
         }
 
-        $countryIds = AddressCountry::query()
+        $countryIds = ModelResolver::countryClass()::query()
             ->whereIn('iso2', $countryCodes)
             ->pluck('id');
 
@@ -83,14 +92,19 @@ class SeedAddressCountryReferencesAction
 
     /**
      * @param  array<int, mixed>  $countries
+     * @param  ?callable(string, int, int, ?string=): void  $progress
      */
-    private function syncCurrencies(array $countries): int
+    private function syncCurrencies(array $countries, ?callable $progress = null, int $total = 0, int $offset = 0): int
     {
         $currencyIds = Currency::query()->pluck('id', 'code');
-        $countryIds = AddressCountry::query()->pluck('id', 'iso2');
+        $countryIds = ModelResolver::countryClass()::query()->pluck('id', 'iso2');
         $created = 0;
 
-        foreach ($countries as $country) {
+        foreach ($countries as $index => $country) {
+            if ($progress !== null) {
+                $progress('references', $offset + $index + 1, $total);
+            }
+
             if (! is_array($country)) {
                 continue;
             }
@@ -113,14 +127,19 @@ class SeedAddressCountryReferencesAction
 
     /**
      * @param  array<int, mixed>  $countries
+     * @param  ?callable(string, int, int, ?string=): void  $progress
      */
-    private function syncTimezones(array $countries): int
+    private function syncTimezones(array $countries, ?callable $progress = null, int $total = 0, int $offset = 0): int
     {
         $timezoneIds = Timezone::query()->pluck('id', 'name');
-        $countryIds = AddressCountry::query()->pluck('id', 'iso2');
+        $countryIds = ModelResolver::countryClass()::query()->pluck('id', 'iso2');
         $created = 0;
 
-        foreach ($countries as $country) {
+        foreach ($countries as $index => $country) {
+            if ($progress !== null) {
+                $progress('references', $offset + $index + 1, $total);
+            }
+
             if (! is_array($country)) {
                 continue;
             }

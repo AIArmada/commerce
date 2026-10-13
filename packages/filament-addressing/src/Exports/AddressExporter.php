@@ -48,8 +48,6 @@ class AddressExporter extends Exporter
                 ->label('Country'),
             ExportColumn::make('formatted_address')
                 ->label('Formatted Address'),
-            ExportColumn::make('validation_status')
-                ->label('Validation Status'),
         ];
     }
 
