@@ -1293,6 +1293,28 @@
   "overview": "packages/references/docs/01-overview.md"
  },
  {
+  "package": "referrals",
+  "composer": "aiarmada/referrals",
+  "surface": "domain",
+  "family": "growth-and-incentives",
+  "status": "current",
+  "summary": "Member-get-member referrals: addressed invites, single-claim acceptance, host qualification, frozen two-sided reward intents, fulfilment, and reversal.",
+  "keywords": [
+   "referral",
+   "referrals",
+   "member-get-member",
+   "invite",
+   "qualification",
+   "referral-reward"
+  ],
+  "use_when": "Inviting known contacts and rewarding a host-reported qualifying member action.",
+  "skip_when": "Commercial partner attribution or commissions belong to affiliates; points ledgers belong to rewards; voucher issuance belongs to vouchers.",
+  "owner": "Owner-scoped through ReferralProgram; invites and rewards resolve through their program.",
+  "paired": null,
+  "context": "packages/referrals/CONTEXT.md",
+  "overview": "packages/referrals/docs/01-overview.md"
+ },
+ {
   "package": "seating",
   "composer": "aiarmada/seating",
   "surface": "domain",

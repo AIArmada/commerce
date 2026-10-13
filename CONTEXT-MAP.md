@@ -116,6 +116,7 @@ Use these routing rules before editing code or docs.
 | authz scopes, panel/page/widget authorization, impersonation UI | `filament-authz` | `authz`, paired Filament package |
 | tenant aggregate, ownership transfer, current-org context | `organizations` | `membership`, `filament-organizations` |
 | join/invite/member-role flows for any model | `membership` | `organizations`, `authz` |
+| member-get-member referrals, invite claims, host qualification, and two-sided referral rewards | `referrals` | `commerce-support`, `affiliates`, `rewards`, `vouchers` |
 | org admin UI | `filament-organizations` | `organizations`, `membership` |
 | person identity, names, titles, credentials, affiliations | `persons` | `filament-persons`, `addressing`, `events` |
 | person admin UI | `filament-persons` | `persons` |
@@ -163,7 +164,7 @@ Use these routing rules before editing code or docs.
 - **Governance and safety**: `moderation`
 - **Knowledge and references**: `references`
 - **Catalog and identity**: `persons`, `filament-persons`, `customers`, `filament-customers`, `products`, `filament-products`, `inventory`, `filament-inventory`, `pricing`, `filament-pricing`, `tax`, `filament-tax`, `ticketing`, `filament-ticketing`
-- **Growth and incentives**: `promotions`, `filament-promotions`, `vouchers`, `filament-vouchers`, `affiliates`, `filament-affiliates`, `affiliate-network`, `filament-affiliate-network`, `growth`, `filament-growth`, `engagement`, `filament-engagement`, `links`, `filament-links`, `rewards`, `filament-rewards`
+- **Growth and incentives**: `promotions`, `filament-promotions`, `vouchers`, `filament-vouchers`, `affiliates`, `filament-affiliates`, `affiliate-network`, `filament-affiliate-network`, `growth`, `filament-growth`, `engagement`, `filament-engagement`, `links`, `filament-links`, `rewards`, `referrals`, `filament-rewards`
 - **Checkout flow**: `cart`, `filament-cart`, `checkout`, `orders`, `filament-orders`, `shipping`, `filament-shipping`, `jnt`, `filament-jnt`
 - **Payments and documents**: `chip`, `filament-chip`, `cashier`, `filament-cashier`, `cashier-chip`, `filament-cashier-chip`, `docs`, `filament-docs`
 - **Analytics and events**: `events`, `filament-events`, `signals`, `filament-signals`

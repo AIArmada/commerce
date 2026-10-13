@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "8d04b1d3bce2afd3cef0edefe1a6e794",
+    "content-hash": "186263f1aecb1df03bc0aec15f7fd8ad",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -8569,6 +8569,47 @@
                 "organizations",
                 "tenancy"
             ],
+            "transport-options": {
+                "relative": true
+            }
+        },
+        {
+            "name": "aiarmada/referrals",
+            "version": "dev-main",
+            "dist": {
+                "type": "path",
+                "url": "packages/referrals",
+                "reference": "9f15fda69f07cfeb215c6bb81799e9cc9fec0c4a"
+            },
+            "require": {
+                "aiarmada/commerce-support": "self.version",
+                "lorisleiva/laravel-actions": "^2.12.0",
+                "php": "^8.5",
+                "spatie/laravel-package-tools": "^1.93.2"
+            },
+            "suggest": {
+                "aiarmada/affiliates": "Provides the affiliate cash fulfilment rail.",
+                "aiarmada/rewards": "Provides the points fulfilment rail.",
+                "aiarmada/vouchers": "Provides the voucher fulfilment rail."
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "AIArmada\\Referrals\\ReferralsServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "AIArmada\\Referrals\\": "src/",
+                    "AIArmada\\Referrals\\Database\\Factories\\": "database/factories/"
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "description": "Member-get-member referral programs for Laravel applications.",
             "transport-options": {
                 "relative": true
             }

@@ -11,6 +11,7 @@
         "aiarmada/filament-organizations": "*",
         "aiarmada/membership": "*",
         "aiarmada/organizations": "*",
+        "aiarmada/referrals": "*",
         "anourvalar/eloquent-serialize": "^1.3.12",
         "filament/blueprint": "^2.4.0",
         "filament/filament": "^5.8.1",
@@ -89,6 +90,10 @@
         {
             "type": "path",
             "url": "packages/membership"
+        },
+        {
+            "type": "path",
+            "url": "packages/referrals"
         },
         {
             "type": "path",

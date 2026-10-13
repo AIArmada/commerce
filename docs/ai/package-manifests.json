@@ -59,6 +59,7 @@
       "growth",
       "links",
       "promotions",
+      "referrals",
       "vouchers"
     ],
     "checkout-flow": [
@@ -456,6 +457,36 @@
       ],
       "use_when": "Citations or reference hierarchies.",
       "owner_scoped": false
+    },
+    "referrals": {
+      "composer": "aiarmada/referrals",
+      "surface": "domain",
+      "family": "growth-and-incentives",
+      "paired_package": null,
+      "summary": "Member-get-member lifecycle for addressed invites, single claims, host qualification, immutable two-sided reward intents, fulfilment, and reversal.",
+      "canonical_docs": {
+        "overview": "packages/referrals/docs/01-overview.md",
+        "installation": "packages/referrals/docs/02-installation.md",
+        "configuration": "packages/referrals/docs/03-configuration.md",
+        "usage": "packages/referrals/docs/04-usage.md",
+        "troubleshooting": "packages/referrals/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "commerce-support",
+        "affiliates",
+        "rewards",
+        "vouchers"
+      ],
+      "keywords": [
+        "referral",
+        "referrals",
+        "member-get-member",
+        "invite",
+        "qualification",
+        "referral-reward"
+      ],
+      "use_when": "Inviting known contacts and rewarding a host-reported qualifying member action.",
+      "owner_scoped": true
     },
     "customers": {
       "composer": "aiarmada/customers",
