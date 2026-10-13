@@ -4,24 +4,20 @@ declare(strict_types=1);
 
 namespace AIArmada\Filament\Communications;
 
-use Illuminate\Support\ServiceProvider;
+use Spatie\LaravelPackageTools\Package;
+use Spatie\LaravelPackageTools\PackageServiceProvider;
 
-final class FilamentCommunicationsServiceProvider extends ServiceProvider
+final class FilamentCommunicationsServiceProvider extends PackageServiceProvider
 {
-    public function register(): void
+    public function configurePackage(Package $package): void
     {
-        $this->mergeConfigFrom(
-            __DIR__ . '/../config/filament-communications.php',
-            'filament-communications',
-        );
-
-        $this->app->singleton(FilamentCommunicationsPlugin::class);
+        $package
+            ->name('filament-communications')
+            ->hasConfigFile();
     }
 
-    public function boot(): void
+    public function packageRegistered(): void
     {
-        $this->publishes([
-            __DIR__ . '/../config/filament-communications.php' => config_path('filament-communications.php'),
-        ], 'filament-communications-config');
+        $this->app->singleton(FilamentCommunicationsPlugin::class);
     }
 }

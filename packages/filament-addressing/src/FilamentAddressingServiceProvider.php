@@ -4,24 +4,20 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAddressing;
 
-use Illuminate\Support\ServiceProvider;
+use Spatie\LaravelPackageTools\Package;
+use Spatie\LaravelPackageTools\PackageServiceProvider;
 
-final class FilamentAddressingServiceProvider extends ServiceProvider
+final class FilamentAddressingServiceProvider extends PackageServiceProvider
 {
-    public function register(): void
+    public function configurePackage(Package $package): void
     {
-        $this->mergeConfigFrom(
-            __DIR__ . '/../config/filament-addressing.php',
-            'filament-addressing',
-        );
-
-        $this->app->singleton(FilamentAddressingPlugin::class);
+        $package
+            ->name('filament-addressing')
+            ->hasConfigFile();
     }
 
-    public function boot(): void
+    public function packageRegistered(): void
     {
-        $this->publishes([
-            __DIR__ . '/../config/filament-addressing.php' => config_path('filament-addressing.php'),
-        ], 'filament-addressing-config');
+        $this->app->singleton(FilamentAddressingPlugin::class);
     }
 }

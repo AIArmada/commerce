@@ -24,22 +24,35 @@ use Illuminate\Auth\Events\Logout;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\ServiceProvider;
 use Illuminate\View\Compilers\BladeCompiler;
 use InvalidArgumentException;
 use Laravel\Octane\Events\RequestReceived;
+use Spatie\LaravelPackageTools\Package;
+use Spatie\LaravelPackageTools\PackageServiceProvider;
 use Spatie\Permission\Contracts\PermissionsTeamResolver;
 use Spatie\Permission\DefaultTeamResolver;
 use Spatie\Permission\Models\Permission as SpatiePermission;
 use Spatie\Permission\Models\Role as SpatieRole;
 use Spatie\Permission\PermissionRegistrar;
 
-final class AuthzServiceProvider extends ServiceProvider
+final class AuthzServiceProvider extends PackageServiceProvider
 {
-    public function register(): void
+    public function configurePackage(Package $package): void
     {
-        $this->mergeConfigFrom(__DIR__ . '/../config/authz.php', 'authz');
+        $package
+            ->name('authz')
+            ->hasConfigFile()
+            ->runsMigrations()
+            ->discoversMigrations()
+            ->hasRoutes(['web'])
+            ->hasCommands([
+                SuperAdminCommand::class,
+                SyncAuthzCommand::class,
+            ]);
+    }
 
+    public function packageRegistered(): void
+    {
         $this->configureSpatiePermissions();
 
         $this->app->scoped(AuthzScopeContext::class, static fn (): AuthzScopeContext => new AuthzScopeContext);
@@ -63,22 +76,20 @@ final class AuthzServiceProvider extends ServiceProvider
         $this->registerOctaneListeners();
     }
 
-    public function boot(): void
+    public function packageBooted(): void
     {
         $this->assertConfiguration();
 
-        $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
-        $this->loadRoutesFrom(__DIR__ . '/../routes/web.php');
-
         $this->registerBladeDirectives();
         $this->registerImpersonationEventListeners();
-
-        $this->publishes([
-            __DIR__ . '/../config/authz.php' => config_path('authz.php'),
-        ], 'authz-config');
-
         $this->registerGateHooks();
-        $this->registerCommands();
+    }
+
+    public function bootingPackage(): void
+    {
+        if (! isset($this->package)) {
+            $this->register();
+        }
     }
 
     private function assertConfiguration(): void
@@ -134,16 +145,6 @@ final class AuthzServiceProvider extends ServiceProvider
 
                 return null;
             });
-        }
-    }
-
-    protected function registerCommands(): void
-    {
-        if ($this->app->runningInConsole()) {
-            $this->commands([
-                SuperAdminCommand::class,
-                SyncAuthzCommand::class,
-            ]);
         }
     }
 

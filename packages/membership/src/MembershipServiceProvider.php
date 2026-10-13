@@ -6,29 +6,25 @@ namespace AIArmada\Membership;
 
 use AIArmada\Membership\Console\Commands\SyncRolesCommand;
 use AIArmada\Membership\Services\MembershipRoleSyncService;
-use Illuminate\Support\ServiceProvider;
+use Spatie\LaravelPackageTools\Package;
+use Spatie\LaravelPackageTools\PackageServiceProvider;
 
-final class MembershipServiceProvider extends ServiceProvider
+final class MembershipServiceProvider extends PackageServiceProvider
 {
-    public function register(): void
+    public function configurePackage(Package $package): void
     {
-        $this->mergeConfigFrom(__DIR__ . '/../config/membership.php', 'membership');
-
-        $this->app->singleton(MembershipRoleSyncService::class);
-    }
-
-    public function boot(): void
-    {
-        $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
-
-        $this->publishes([
-            __DIR__ . '/../config/membership.php' => config_path('membership.php'),
-        ], 'membership-config');
-
-        if ($this->app->runningInConsole()) {
-            $this->commands([
+        $package
+            ->name('membership')
+            ->hasConfigFile()
+            ->runsMigrations()
+            ->discoversMigrations()
+            ->hasCommands([
                 SyncRolesCommand::class,
             ]);
-        }
+    }
+
+    public function packageRegistered(): void
+    {
+        $this->app->singleton(MembershipRoleSyncService::class);
     }
 }
