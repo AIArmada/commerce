@@ -40,7 +40,7 @@ function appealHarness(string $source = 'src-appeal-1', array $factOverrides = [
     return [$result->award->refresh(), $memberId, $reader];
 }
 
-it('opens appeals inside the window and refuses late, foreign, and duplicate appeals', function () {
+it('opens appeals inside the window and refuses late, foreign, and duplicate appeals', function (): void {
     [$award, $memberId] = appealHarness();
 
     $opened = OpenRewardAppealAction::run($award, 'user', $memberId, 'member', 'amount-looks-wrong', ['note' => 'expected-more'], CarbonImmutable::parse('2026-06-20T00:00:00Z'), 30);
@@ -63,7 +63,7 @@ it('opens appeals inside the window and refuses late, foreign, and duplicate app
     expect(RewardAppeal::query()->count())->toBe(1);
 });
 
-it('reviews appeals with separated identities and appends every decision', function () {
+it('reviews appeals with separated identities and appends every decision', function (): void {
     [$award, $memberId] = appealHarness('src-appeal-rev-1');
 
     $opened = OpenRewardAppealAction::run($award, 'user', $memberId, 'member', 'please-recheck', null, CarbonImmutable::parse('2026-06-20T00:00:00Z'));
@@ -95,7 +95,7 @@ it('reviews appeals with separated identities and appends every decision', funct
         ->toThrow(InvalidArgumentException::class, 'Invalid appeal transition');
 });
 
-it('overturns rejected awards by appending overrides while the original stands', function () {
+it('overturns rejected awards by appending overrides while the original stands', function (): void {
     [$seedProgram, , , $seedMember] = RewardLedgerFixtures::seedActiveEnrolled('ledger-appeal-over');
 
     $reader = new FakeRewardSourceFactReader;
@@ -140,7 +140,7 @@ it('overturns rejected awards by appending overrides while the original stands',
         ->and($entries[1]->reason)->toStartWith('appeal-overturned:');
 });
 
-it('appends idempotent adjustments and resolves them with separated identities', function () {
+it('appends idempotent adjustments and resolves them with separated identities', function (): void {
     [$award, $memberId] = appealHarness('src-appeal-adj-1');
 
     $staff = RewardLedgerFixtures::staffId();

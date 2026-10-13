@@ -42,7 +42,7 @@ function stackingProgram(string $family, array $compatible, ?array $caps, string
     return [$program->refresh(), $version];
 }
 
-it('enforces default cross-family exclusivity per source, component, and role', function () {
+it('enforces default cross-family exclusivity per source, component, and role', function (): void {
     $memberId = (string) Str::uuid();
     [$programA] = stackingProgram('ledger-excl-a', [], null, $memberId);
     [$programB] = stackingProgram('ledger-excl-b', [], null, $memberId);
@@ -61,7 +61,7 @@ it('enforces default cross-family exclusivity per source, component, and role', 
         ->and(RewardSourceComponentClaim::query()->count())->toBe(1);
 });
 
-it('allows explicit bilateral compatible stacking and refuses one-directional claims', function () {
+it('allows explicit bilateral compatible stacking and refuses one-directional claims', function (): void {
     $memberId = (string) Str::uuid();
     $stackCaps = [['scope' => 'recipient_program_day', 'limit' => 10]];
     [$programA] = stackingProgram('ledger-comp-a', ['ledger-comp-b'], $stackCaps, $memberId);
@@ -97,7 +97,7 @@ it('allows explicit bilateral compatible stacking and refuses one-directional cl
         ->and($fourth->reasons)->toBe(['stacking_conflict']);
 });
 
-it('binds the recipient-source cap across stacked families unless relaxed', function () {
+it('binds the recipient-source cap across stacked families unless relaxed', function (): void {
     $memberId = (string) Str::uuid();
     [$programA] = stackingProgram('ledger-rsc-a', ['ledger-rsc-b'], null, $memberId);
     [$programB] = stackingProgram('ledger-rsc-b', ['ledger-rsc-a'], null, $memberId);
@@ -115,7 +115,7 @@ it('binds the recipient-source cap across stacked families unless relaxed', func
         ->toThrow(InvalidArgumentException::class, 'cap_exceeded');
 });
 
-it('blocks same-family second beneficiaries on an already-claimed source', function () {
+it('blocks same-family second beneficiaries on an already-claimed source', function (): void {
     $memberId = (string) Str::uuid();
     $otherId = (string) Str::uuid();
     [$programA] = stackingProgram('ledger-samef-a', [], null, $memberId);
@@ -140,7 +140,7 @@ it('blocks same-family second beneficiaries on an already-claimed source', funct
         ->and($second->reasons)->toBe(['stacking_conflict']);
 });
 
-it('enforces day, total, and cross-program caps without consuming on rejection', function () {
+it('enforces day, total, and cross-program caps without consuming on rejection', function (): void {
     $memberId = (string) Str::uuid();
     [$program] = stackingProgram('ledger-cap-a', ['ledger-cap-b'], [
         ['scope' => 'recipient_source_component', 'limit' => 1],

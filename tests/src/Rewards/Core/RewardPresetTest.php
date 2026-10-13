@@ -18,7 +18,7 @@ use AIArmada\Rewards\Tests\Core\Support\RewardCoreTestFixtures;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
 
-it('builds disabled draft presets for all modes with validator-clean rules', function (RewardProgramMode $mode) {
+it('builds disabled draft presets for all modes with validator-clean rules', function (RewardProgramMode $mode): void {
     $preset = RewardPresetBuilders::for($mode);
     $validator = new RewardRuleValidator;
 
@@ -30,7 +30,7 @@ it('builds disabled draft presets for all modes with validator-clean rules', fun
         ->and($validator->termsErrors($preset['terms']))->toBe([]);
 })->with(RewardProgramMode::cases());
 
-it('lists missing finance adapters on money and benefit presets, never fake capability', function (RewardProgramMode $mode) {
+it('lists missing finance adapters on money and benefit presets, never fake capability', function (RewardProgramMode $mode): void {
     $preset = RewardPresetBuilders::for($mode);
 
     expect($preset['blocked_reasons'])->toContain(
@@ -41,13 +41,13 @@ it('lists missing finance adapters on money and benefit presets, never fake capa
     );
 })->with([RewardProgramMode::Cash, RewardProgramMode::Benefit]);
 
-it('keeps recognition, points, and badge presets free of money blockers', function (RewardProgramMode $mode) {
+it('keeps recognition, points, and badge presets free of money blockers', function (RewardProgramMode $mode): void {
     $preset = RewardPresetBuilders::for($mode);
 
     expect($preset['blocked_reasons'])->not->toContain('funding-adapter-missing');
 })->with([RewardProgramMode::Recognition, RewardProgramMode::Points, RewardProgramMode::Badges, RewardProgramMode::Combined]);
 
-it('null readiness rejects cash activation with truthful blockers', function () {
+it('null readiness rejects cash activation with truthful blockers', function (): void {
     $checker = new NullRewardReadinessChecker;
     [$program, $version] = RewardCoreTestFixtures::seedVersionedProgram('core-cash', RewardProgramMode::Cash);
 
@@ -64,7 +64,7 @@ it('null readiness rejects cash activation with truthful blockers', function () 
         );
 });
 
-it('blocks unfunded cash programs from reaching active through transitions', function () {
+it('blocks unfunded cash programs from reaching active through transitions', function (): void {
     app()->bind(RewardReadinessChecker::class, FundedRewardReadinessChecker::class);
     app()->bind(RewardFinancialReadinessChecker::class, FundedRewardFinancialReadinessChecker::class);
 
@@ -78,7 +78,7 @@ it('blocks unfunded cash programs from reaching active through transitions', fun
         ->toThrow(InvalidArgumentException::class, 'no-confirmed-funding');
 });
 
-it('activates points programs structurally without payee claims', function () {
+it('activates points programs structurally without payee claims', function (): void {
     [$program, $version] = RewardCoreTestFixtures::seedVersionedProgram('core-points-go');
 
     $assessment = (new NullRewardReadinessChecker)->canActivate($program, $version);
@@ -93,7 +93,7 @@ it('activates points programs structurally without payee claims', function () {
     expect($active->status)->toBe(RewardProgramStatus::Active);
 });
 
-it('publishes preset rules verbatim for every mode', function (RewardProgramMode $mode) {
+it('publishes preset rules verbatim for every mode', function (RewardProgramMode $mode): void {
     $program = RewardProgram::factory()->create([
         'family_key' => 'core-preset-' . $mode->value . '-' . Str::lower(Str::random(4)),
         'mode' => $mode,

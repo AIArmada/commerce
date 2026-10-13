@@ -103,7 +103,7 @@ function runRacePair(string $driver, string $database, string $mode, array $payl
     return [$decode($first), $decode($second)];
 }
 
-it('serializes concurrent same-family publishes on real drivers', function (string $driver) {
+it('serializes concurrent same-family publishes on real drivers', function (string $driver): void {
     [$database, $previous] = RewardCoreWorkerDb::setUp($driver, 'publish');
 
     try {
@@ -137,7 +137,7 @@ it('serializes concurrent same-family publishes on real drivers', function (stri
     }
 })->with(['pgsql', 'mariadb']);
 
-it('keeps one canonical enrollment under concurrent same-member enrolls', function (string $driver) {
+it('keeps one canonical enrollment under concurrent same-member enrolls', function (string $driver): void {
     [$database, $previous] = RewardCoreWorkerDb::setUp($driver, 'enroll');
 
     try {
@@ -184,7 +184,7 @@ it('keeps one canonical enrollment under concurrent same-member enrolls', functi
     }
 })->with(['pgsql', 'mariadb']);
 
-it('assigns unique acceptance seqs under concurrent reaccepts', function (string $driver) {
+it('assigns unique acceptance seqs under concurrent reaccepts', function (string $driver): void {
     [$database, $previous] = RewardCoreWorkerDb::setUp($driver, 'reaccept');
 
     try {

@@ -37,7 +37,7 @@ function closureIdentity(string $suffix = ''): array
     return ['user', (string) Str::uuid(), 'closure-' . $suffix . Str::lower(Str::random(4)), 'pts'];
 }
 
-it('A binds reservation identity and refuses same-key amount and unit reuse', function () {
+it('A binds reservation identity and refuses same-key amount and unit reuse', function (): void {
     [$type, $recipient, $family, $unit] = closureIdentity('a1');
 
     CreditRewardPointsAction::run($type, $recipient, $family, $unit, 100, CarbonImmutable::parse('2026-06-01T00:00:00Z'), null, null, null, 'op:cl-a1', 'system', null, 'c', CarbonImmutable::parse('2026-06-01T00:00:00Z'));
@@ -65,7 +65,7 @@ it('A binds reservation identity and refuses same-key amount and unit reuse', fu
         ->and(RewardPointOperation::query()->count())->toBe(1);
 });
 
-it('A binds debit identity across families and capture reservations', function () {
+it('A binds debit identity across families and capture reservations', function (): void {
     [$type, $recipient, $family, $unit] = closureIdentity('a2');
 
     CreditRewardPointsAction::run($type, $recipient, $family, $unit, 100, CarbonImmutable::parse('2026-06-01T00:00:00Z'), null, null, null, 'op:cl-a2', 'system', null, 'c', CarbonImmutable::parse('2026-06-01T00:00:00Z'));
@@ -87,7 +87,7 @@ it('A binds debit identity across families and capture reservations', function (
     expect(RewardPointOperation::query()->where('kind', 'debit')->count())->toBe(2);
 });
 
-it('A binds refund identity to its linked debit and rolls back failed claims', function () {
+it('A binds refund identity to its linked debit and rolls back failed claims', function (): void {
     [$type, $recipient, $family, $unit] = closureIdentity('a3');
 
     CreditRewardPointsAction::run($type, $recipient, $family, $unit, 60, CarbonImmutable::parse('2026-06-01T00:00:00Z'), null, null, null, 'op:cl-a3', 'system', null, 'c', CarbonImmutable::parse('2026-06-01T00:00:00Z'));
@@ -112,7 +112,7 @@ it('A binds refund identity to its linked debit and rolls back failed claims', f
     expect(RewardPointOperation::query()->where('operation_key', 'rsv:cl-a3-fail')->count())->toBe(0);
 });
 
-it('B refuses held approval while the source stays underverified', function () {
+it('B refuses held approval while the source stays underverified', function (): void {
     [$program, , , $memberId] = RewardLedgerFixtures::seedActiveEnrolled('closure-b1');
     $reader = new FakeRewardSourceFactReader;
     $reader->seed(RewardLedgerFixtures::fact('src-cl-b1', $memberId, '2026-06-12T00:00:00Z', 'attendance', ['isAmbiguousDevice' => true]));
@@ -140,7 +140,7 @@ it('B refuses held approval while the source stays underverified', function () {
         ->and($result->award->entries()->count())->toBe($entriesBefore);
 });
 
-it('B advances verified held awards without duplicate claims or cap use', function () {
+it('B advances verified held awards without duplicate claims or cap use', function (): void {
     [$program, , , $memberId] = RewardLedgerFixtures::seedActiveEnrolled(
         'closure-b2',
         RewardProgramMode::Points,
@@ -185,7 +185,7 @@ it('B advances verified held awards without duplicate claims or cap use', functi
     expect($entry->evidence['frozen_qualification']['verdict'] ?? null)->toBe('hold-resolved-by-review');
 });
 
-it('B refuses milestone fulfillment after a contributor correction until the hook processes it', function () {
+it('B refuses milestone fulfillment after a contributor correction until the hook processes it', function (): void {
     [$program, , , $memberId] = RewardLedgerFixtures::seedActiveEnrolled(
         'closure-b3',
         RewardProgramMode::Points,
@@ -244,7 +244,7 @@ it('B refuses milestone fulfillment after a contributor correction until the hoo
         ->and(RewardPointLot::query()->where('award_id', $award->getKey())->count())->toBe(1);
 });
 
-it('B refuses milestone fulfillment when a contributor becomes unknown', function () {
+it('B refuses milestone fulfillment when a contributor becomes unknown', function (): void {
     [$program, , , $memberId] = RewardLedgerFixtures::seedActiveEnrolled(
         'closure-b4',
         RewardProgramMode::Points,
@@ -288,7 +288,7 @@ it('B refuses milestone fulfillment when a contributor becomes unknown', functio
         ->and(RewardPointLot::query()->where('award_id', $award->getKey())->count())->toBe(0);
 });
 
-it('B clears only targeted merit gates on overturn and never published rules', function () {
+it('B clears only targeted merit gates on overturn and never published rules', function (): void {
     [$program, , , $memberId] = RewardLedgerFixtures::seedActiveEnrolled('closure-b5');
     $reader = new FakeRewardSourceFactReader;
     $reader->seed(RewardLedgerFixtures::fact('src-cl-b5', $memberId, '2026-06-12T00:00:00Z', 'attendance', ['verification' => RewardVerificationLevel::Unverified]));
@@ -344,7 +344,7 @@ it('B clears only targeted merit gates on overturn and never published rules', f
         ->toThrow(InvalidArgumentException::class, 'only to appeal overturns');
 });
 
-it('B refuses overturns that would bypass frozen outcome rules', function () {
+it('B refuses overturns that would bypass frozen outcome rules', function (): void {
     [$program, , , $memberId] = RewardLedgerFixtures::seedActiveEnrolled('closure-b6');
     $reader = new FakeRewardSourceFactReader;
     $reader->seed(RewardLedgerFixtures::fact('src-cl-b6', $memberId, '2026-06-12T00:00:00Z', 'saved_item'));

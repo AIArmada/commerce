@@ -127,7 +127,7 @@ it('rejects pending payee registrations and never touches verified rows', functi
         ->toThrow(InvalidArgumentException::class, 'Only a pending payee registration can be rejected.');
 });
 
-it('reverses a confirmed cash payout through recovery and settles the budget', function () {
+it('reverses a confirmed cash payout through recovery and settles the budget', function (): void {
     app()->bind(RewardReadinessChecker::class, FundedRewardReadinessChecker::class);
     app()->bind(RewardFinancialReadinessChecker::class, FundedRewardFinancialReadinessChecker::class);
     app()->bind(RewardPayoutExecutor::class, fn (): RewardPayoutExecutor => new ScriptedPayoutExecutor([

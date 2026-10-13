@@ -195,7 +195,7 @@ function raceSeedProgram(string $family, string $case, ?array $caps = null, arra
     return [$program->refresh(), $version, $memberId];
 }
 
-it('keeps one canonical award under concurrent duplicate evaluations', function (string $driver) {
+it('keeps one canonical award under concurrent duplicate evaluations', function (string $driver): void {
     [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'evaldup');
 
     try {
@@ -229,7 +229,7 @@ it('keeps one canonical award under concurrent duplicate evaluations', function 
     }
 })->with(['pgsql', 'mariadb']);
 
-it('freezes the first award when concurrent evaluations race a version switch', function (string $driver) {
+it('freezes the first award when concurrent evaluations race a version switch', function (string $driver): void {
     [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'evalver');
 
     try {
@@ -283,7 +283,7 @@ it('freezes the first award when concurrent evaluations race a version switch', 
     }
 })->with(['pgsql', 'mariadb']);
 
-it('serializes two-family exclusivity races to a single claim', function (string $driver) {
+it('serializes two-family exclusivity races to a single claim', function (string $driver): void {
     [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'excl');
 
     try {
@@ -321,7 +321,7 @@ it('serializes two-family exclusivity races to a single claim', function (string
     }
 })->with(['pgsql', 'mariadb']);
 
-it('stacks compatible families concurrently without losing either award', function (string $driver) {
+it('stacks compatible families concurrently without losing either award', function (string $driver): void {
     [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'compat');
 
     try {
@@ -373,7 +373,7 @@ it('stacks compatible families concurrently without losing either award', functi
     }
 })->with(['pgsql', 'mariadb']);
 
-it('never overspends a cap under concurrent evaluations', function (string $driver) {
+it('never overspends a cap under concurrent evaluations', function (string $driver): void {
     [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'caprace');
 
     try {
@@ -412,7 +412,7 @@ it('never overspends a cap under concurrent evaluations', function (string $driv
     }
 })->with(['pgsql', 'mariadb']);
 
-it('serializes simultaneous point reserves without overspending', function (string $driver) {
+it('serializes simultaneous point reserves without overspending', function (string $driver): void {
     [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'rsvrace');
 
     try {
@@ -447,7 +447,7 @@ it('serializes simultaneous point reserves without overspending', function (stri
     }
 })->with(['pgsql', 'mariadb']);
 
-it('serializes simultaneous point debits without going negative', function (string $driver) {
+it('serializes simultaneous point debits without going negative', function (string $driver): void {
     [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'debrace');
 
     try {
@@ -482,7 +482,7 @@ it('serializes simultaneous point debits without going negative', function (stri
     }
 })->with(['pgsql', 'mariadb']);
 
-it('expires a lot exactly once under concurrent expiry runs', function (string $driver) {
+it('expires a lot exactly once under concurrent expiry runs', function (string $driver): void {
     [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'exprace');
 
     try {
@@ -516,7 +516,7 @@ it('expires a lot exactly once under concurrent expiry runs', function (string $
     }
 })->with(['pgsql', 'mariadb']);
 
-it('achieves a milestone exactly once under concurrent contributions', function (string $driver) {
+it('achieves a milestone exactly once under concurrent contributions', function (string $driver): void {
     [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'milerace');
 
     try {
@@ -572,7 +572,7 @@ it('achieves a milestone exactly once under concurrent contributions', function 
     }
 })->with(['pgsql', 'mariadb']);
 
-it('keeps buckets coherent when correction races spending', function (string $driver) {
+it('keeps buckets coherent when correction races spending', function (string $driver): void {
     [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'corrrace');
 
     try {
@@ -631,7 +631,7 @@ it('keeps buckets coherent when correction races spending', function (string $dr
     }
 })->with(['pgsql', 'mariadb']);
 
-it('collapses concurrent same-key credits onto one lot', function (string $driver) {
+it('collapses concurrent same-key credits onto one lot', function (string $driver): void {
     [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'creditreplay');
 
     try {
@@ -662,7 +662,7 @@ it('collapses concurrent same-key credits onto one lot', function (string $drive
     }
 })->with(['pgsql', 'mariadb']);
 
-it('collapses concurrent same-key reserves onto one reservation', function (string $driver) {
+it('collapses concurrent same-key reserves onto one reservation', function (string $driver): void {
     [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'rsvreplay');
 
     try {
@@ -699,7 +699,7 @@ it('collapses concurrent same-key reserves onto one reservation', function (stri
     }
 })->with(['pgsql', 'mariadb']);
 
-it('leaves no partial movements when point operations fail on real drivers', function (string $driver) {
+it('leaves no partial movements when point operations fail on real drivers', function (string $driver): void {
     [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'atomic');
 
     try {
@@ -725,7 +725,7 @@ it('leaves no partial movements when point operations fail on real drivers', fun
     }
 })->with(['pgsql', 'mariadb']);
 
-it('collapses concurrent same-key refunds onto one allocation', function (string $driver) {
+it('collapses concurrent same-key refunds onto one allocation', function (string $driver): void {
     [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'refundreplay');
 
     try {
@@ -763,7 +763,7 @@ it('collapses concurrent same-key refunds onto one allocation', function (string
     }
 })->with(['pgsql', 'mariadb']);
 
-it('bounds concurrent distinct partial refunds by the debited total', function (string $driver) {
+it('bounds concurrent distinct partial refunds by the debited total', function (string $driver): void {
     [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'refundcap');
 
     try {
@@ -797,7 +797,7 @@ it('bounds concurrent distinct partial refunds by the debited total', function (
     }
 })->with(['pgsql', 'mariadb']);
 
-it('serializes concurrent appeal advances without duplicate decisions', function (string $driver) {
+it('serializes concurrent appeal advances without duplicate decisions', function (string $driver): void {
     [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'appealrace');
 
     try {
@@ -840,7 +840,7 @@ it('serializes concurrent appeal advances without duplicate decisions', function
     }
 })->with(['pgsql', 'mariadb']);
 
-it('refuses concurrent mismatched reservation reuse across disjoint recipients', function (string $driver) {
+it('refuses concurrent mismatched reservation reuse across disjoint recipients', function (string $driver): void {
     [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'rsvmismatch');
 
     try {
@@ -905,7 +905,7 @@ it('refuses concurrent mismatched reservation reuse across disjoint recipients',
     }
 })->with(['pgsql', 'mariadb']);
 
-it('refuses concurrent mismatched debit reuse across disjoint recipients', function (string $driver) {
+it('refuses concurrent mismatched debit reuse across disjoint recipients', function (string $driver): void {
     [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'debmismatch');
 
     try {
@@ -969,7 +969,7 @@ it('refuses concurrent mismatched debit reuse across disjoint recipients', funct
     }
 })->with(['pgsql', 'mariadb']);
 
-it('refuses concurrent refund reuse across different linked debits', function (string $driver) {
+it('refuses concurrent refund reuse across different linked debits', function (string $driver): void {
     [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'refmismatch');
 
     try {
@@ -1018,7 +1018,7 @@ it('refuses concurrent refund reuse across different linked debits', function (s
     }
 })->with(['pgsql', 'mariadb']);
 
-it('serializes concurrent double approvals without duplicate obligations', function (string $driver) {
+it('serializes concurrent double approvals without duplicate obligations', function (string $driver): void {
     [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'approve2');
 
     try {
@@ -1062,7 +1062,7 @@ it('serializes concurrent double approvals without duplicate obligations', funct
     }
 })->with(['pgsql', 'mariadb']);
 
-it('keeps direct approval and appeal overturn coherent under contention', function (string $driver) {
+it('keeps direct approval and appeal overturn coherent under contention', function (string $driver): void {
     [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'approveover');
 
     try {
@@ -1127,7 +1127,7 @@ it('keeps direct approval and appeal overturn coherent under contention', functi
     }
 })->with(['pgsql', 'mariadb']);
 
-it('keeps milestone fulfillment coherent when a correction races it', function (string $driver) {
+it('keeps milestone fulfillment coherent when a correction races it', function (string $driver): void {
     [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'milefulfill');
 
     try {
@@ -1208,7 +1208,7 @@ it('keeps milestone fulfillment coherent when a correction races it', function (
     }
 })->with(['pgsql', 'mariadb']);
 
-it('keeps refund and credit coherent under sequence contention', function (string $driver) {
+it('keeps refund and credit coherent under sequence contention', function (string $driver): void {
     [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'refundcredit');
 
     try {
@@ -1256,7 +1256,7 @@ it('keeps refund and credit coherent under sequence contention', function (strin
     }
 })->with(['pgsql', 'mariadb']);
 
-it('keeps refund and debit coherent under cross-path contention', function (string $driver) {
+it('keeps refund and debit coherent under cross-path contention', function (string $driver): void {
     [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'refunddebit');
 
     try {
@@ -1301,7 +1301,7 @@ it('keeps refund and debit coherent under cross-path contention', function (stri
     }
 })->with(['pgsql', 'mariadb']);
 
-it('keeps refund and expiry coherent under cross-path contention', function (string $driver) {
+it('keeps refund and expiry coherent under cross-path contention', function (string $driver): void {
     [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'refundexp');
 
     try {
@@ -1345,7 +1345,7 @@ it('keeps refund and expiry coherent under cross-path contention', function (str
     }
 })->with(['pgsql', 'mariadb']);
 
-it('keeps refund and reserve coherent under cross-path contention', function (string $driver) {
+it('keeps refund and reserve coherent under cross-path contention', function (string $driver): void {
     [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'refundrsv');
 
     try {
@@ -1383,7 +1383,7 @@ it('keeps refund and reserve coherent under cross-path contention', function (st
     }
 })->with(['pgsql', 'mariadb']);
 
-it('converges attested reversal and release with no resurrection', function (string $driver) {
+it('converges attested reversal and release with no resurrection', function (string $driver): void {
     [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'corrrevrel');
 
     try {
@@ -1443,7 +1443,7 @@ it('converges attested reversal and release with no resurrection', function (str
     }
 })->with(['pgsql', 'mariadb']);
 
-it('blocks unattested reversal under release contention, then converges', function (string $driver) {
+it('blocks unattested reversal under release contention, then converges', function (string $driver): void {
     [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'corrrevun');
 
     try {
@@ -1508,7 +1508,7 @@ it('blocks unattested reversal under release contention, then converges', functi
     }
 })->with(['pgsql', 'mariadb']);
 
-it('serializes reversal and capture to exactly one settlement', function (string $driver) {
+it('serializes reversal and capture to exactly one settlement', function (string $driver): void {
     [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'corrrevcap');
 
     try {
@@ -1578,7 +1578,7 @@ it('serializes reversal and capture to exactly one settlement', function (string
     }
 })->with(['pgsql', 'mariadb']);
 
-it('serializes reversal and refund without resurrecting corrected credit', function (string $driver) {
+it('serializes reversal and refund without resurrecting corrected credit', function (string $driver): void {
     [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'corrrevref');
 
     try {

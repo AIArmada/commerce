@@ -88,7 +88,7 @@ function sweepHarness(string $prefix): array
     return [$program->refresh(), $held->refresh(), $approved->refresh(), $memberId, $staff];
 }
 
-it('reverses tainted keys explicitly with a full report', function () {
+it('reverses tainted keys explicitly with a full report', function (): void {
     [$program, $held, $approved, $memberId, $staff] = sweepHarness('sweep-1');
 
     $report = ApplyRewardSourceCorrectionsAction::run(
@@ -126,7 +126,7 @@ it('reverses tainted keys explicitly with a full report', function () {
         ->and($rerun['rejected'])->toBe([]);
 });
 
-it('sweeps explicit keys through the command and no-ops on an empty source', function () {
+it('sweeps explicit keys through the command and no-ops on an empty source', function (): void {
     [$program, $held, $approved, $memberId, $staff] = sweepHarness('sweep-2');
 
     $this->artisan('rewards:apply-source-corrections', [
@@ -144,7 +144,7 @@ it('sweeps explicit keys through the command and no-ops on an empty source', fun
     ])->assertSuccessful();
 });
 
-it('rechecks awards through the fact reader when a correction lands', function () {
+it('rechecks awards through the fact reader when a correction lands', function (): void {
     [$program, , , $memberId] = RewardLedgerFixtures::seedActiveEnrolled('sweep-3');
 
     $reader = new FakeRewardSourceFactReader;
@@ -190,7 +190,7 @@ it('rechecks awards through the fact reader when a correction lands', function (
     expect(RewardAward::query()->whereKey($award->getKey())->firstOrFail()->entries()->count())->toBeGreaterThan(0);
 });
 
-it('rechecks through the key source when the key has no readable fact', function () {
+it('rechecks through the key source when the key has no readable fact', function (): void {
     [$program, , , $memberId] = RewardLedgerFixtures::seedActiveEnrolled('sweep-4');
 
     $reader = new FakeRewardSourceFactReader;

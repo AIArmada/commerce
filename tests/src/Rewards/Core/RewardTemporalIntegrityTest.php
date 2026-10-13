@@ -16,7 +16,7 @@ use AIArmada\Rewards\Tests\Core\Support\RewardCoreTestFixtures;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
 
-it('rejects leave before join and consent before publication', function () {
+it('rejects leave before join and consent before publication', function (): void {
     [$program, $version] = RewardCoreTestFixtures::seedVersionedProgram('core-c3-time');
 
     $enrollment = EnrollRewardMemberAction::run(
@@ -48,7 +48,7 @@ it('rejects leave before join and consent before publication', function () {
     ))->toThrow(InvalidArgumentException::class, 'cannot predate the policy publication');
 });
 
-it('rejects backward acceptance and overlapping rejoin', function () {
+it('rejects backward acceptance and overlapping rejoin', function (): void {
     [$program, $version] = RewardCoreTestFixtures::seedVersionedProgram('core-c3-mono');
 
     $memberId = (string) Str::uuid();
@@ -101,7 +101,7 @@ it('rejects backward acceptance and overlapping rejoin', function () {
     ))->toThrow(InvalidArgumentException::class, 'strictly after the last leave');
 });
 
-it('gates gap facts by the relevant period and published lookback', function () {
+it('gates gap facts by the relevant period and published lookback', function (): void {
     [$program, $version] = RewardCoreTestFixtures::seedVersionedProgram('core-c3-gap');
     TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Ready);
     $program = TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Active);
@@ -159,7 +159,7 @@ it('gates gap facts by the relevant period and published lookback', function () 
     expect($outside->reasons)->toBe([RewardPreviewReason::OutsidePreclaimLookback]);
 });
 
-it('preserves frozen history across leave and rejoin', function () {
+it('preserves frozen history across leave and rejoin', function (): void {
     [$program, $version] = RewardCoreTestFixtures::seedVersionedProgram('core-c3-frozen');
 
     $memberId = (string) Str::uuid();
@@ -194,7 +194,7 @@ it('preserves frozen history across leave and rejoin', function () {
         ->and($periods[1]->left_at)->toBeNull();
 });
 
-it('rejects inverted period and enrollment timestamps at model boundaries', function () {
+it('rejects inverted period and enrollment timestamps at model boundaries', function (): void {
     [$program, $version] = RewardCoreTestFixtures::seedVersionedProgram('core-c3-model');
 
     $enrollment = EnrollRewardMemberAction::run(

@@ -47,7 +47,7 @@ function c4Harness(string $prefix = 'core-c4'): array
     return [$program->refresh(), $memberId];
 }
 
-it('rejects missing, empty, relative, and malformed fixture timestamps without guessing', function () {
+it('rejects missing, empty, relative, and malformed fixture timestamps without guessing', function (): void {
     [$program] = c4Harness('core-c4-date');
     $decision = CarbonImmutable::parse('2026-07-11T00:00:00Z');
 
@@ -65,7 +65,7 @@ it('rejects missing, empty, relative, and malformed fixture timestamps without g
     }
 });
 
-it('rejects disabled or omitted protection flags at validation', function () {
+it('rejects disabled or omitted protection flags at validation', function (): void {
     $validator = new RewardRuleValidator;
 
     foreach (['exclude_self_credit', 'require_enrollment', 'require_claimed_identity'] as $flag) {
@@ -79,7 +79,7 @@ it('rejects disabled or omitted protection flags at validation', function () {
     }
 });
 
-it('rejects unclaimed, unattributed, bot, cancelled, and invalid sources', function () {
+it('rejects unclaimed, unattributed, bot, cancelled, and invalid sources', function (): void {
     [$program, $memberId] = c4Harness('core-c4-src');
     $member = ['member_type' => 'user', 'member_id' => $memberId];
     $decision = CarbonImmutable::parse('2026-07-11T00:00:00Z');
@@ -103,7 +103,7 @@ it('rejects unclaimed, unattributed, bot, cancelled, and invalid sources', funct
     expect($self->reasons)->toBe([RewardPreviewReason::SelfCreditExcluded]);
 });
 
-it('applies per-kind verification without letting moderation vouch for attendance', function () {
+it('applies per-kind verification without letting moderation vouch for attendance', function (): void {
     expect(RewardVerificationLevel::ModeratedApproved->satisfiesFor(RewardVerificationLevel::StaffVerified, 'contribution'))->toBeTrue();
     expect(RewardVerificationLevel::ModeratedApproved->satisfiesFor(RewardVerificationLevel::StaffVerified, 'attendance'))->toBeFalse();
     expect(RewardVerificationLevel::ModeratedApproved->satisfiesFor(RewardVerificationLevel::Accepted, 'registration'))->toBeFalse();
@@ -134,7 +134,7 @@ it('applies per-kind verification without letting moderation vouch for attendanc
     expect($submission->decision)->toBe(RewardPreviewDecision::Eligible);
 });
 
-it('validates directly constructed fixtures with the same invariants', function () {
+it('validates directly constructed fixtures with the same invariants', function (): void {
     expect(fn () => new RewardPreviewFixture(
         sourceBusinessKey: '',
         outcome: 'attendance',

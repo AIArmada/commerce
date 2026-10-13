@@ -83,7 +83,7 @@ function benefitLedgerBalances(string $memberId, string $family): array
     return ['available' => $buckets->available, 'reserved' => $buckets->reserved, 'spent' => $buckets->spent];
 }
 
-it('creates and retires catalog items with frozen terms', function () {
+it('creates and retires catalog items with frozen terms', function (): void {
     [$program] = benefitLedgerProgram('ben-cat');
     $staff = RewardLedgerFixtures::staffId();
 
@@ -124,7 +124,7 @@ it('creates and retires catalog items with frozen terms', function () {
         ->and($retired->retired_at)->not->toBeNull();
 });
 
-it('redeems, fulfills, and consumes a point-funded benefit exactly', function () {
+it('redeems, fulfills, and consumes a point-funded benefit exactly', function (): void {
     [$program] = benefitLedgerProgram('ben-redeem');
     [$memberId] = benefitLedgerFundedMember($program, $program->currentVersion, 500);
     [$staff, $operator] = [RewardLedgerFixtures::staffId(), RewardLedgerFixtures::staffId()];
@@ -187,7 +187,7 @@ it('redeems, fulfills, and consumes a point-funded benefit exactly', function ()
     expect($consumed->status)->toBe(RewardBenefitGrantStatus::Consumed);
 });
 
-it('cancels a pending redemption and restores exactly once', function () {
+it('cancels a pending redemption and restores exactly once', function (): void {
     [$program] = benefitLedgerProgram('ben-cancel');
     [$memberId] = benefitLedgerFundedMember($program, $program->currentVersion, 300);
     $staff = RewardLedgerFixtures::staffId();
@@ -236,7 +236,7 @@ it('cancels a pending redemption and restores exactly once', function () {
         ->and(RewardBenefitStockLedger::balances($item->refresh())['available'])->toBe(4);
 });
 
-it('revokes an unused issued grant and refuses revocation after use', function () {
+it('revokes an unused issued grant and refuses revocation after use', function (): void {
     [$program] = benefitLedgerProgram('ben-revoke');
     [$memberId] = benefitLedgerFundedMember($program, $program->currentVersion, 300);
     [$staff, $operator] = [RewardLedgerFixtures::staffId(), RewardLedgerFixtures::staffId()];
@@ -351,7 +351,7 @@ it('revokes an unused issued grant and refuses revocation after use', function (
     ))->toThrow(InvalidArgumentException::class, 'Only issued grants can be revoked');
 });
 
-it('expires reserved grants past the catalog expiry and restores points and stock', function () {
+it('expires reserved grants past the catalog expiry and restores points and stock', function (): void {
     [$program] = benefitLedgerProgram('ben-expire');
     [$memberId] = benefitLedgerFundedMember($program, $program->currentVersion, 300);
     $staff = RewardLedgerFixtures::staffId();
@@ -408,7 +408,7 @@ it('expires reserved grants past the catalog expiry and restores points and stoc
         ->and(RewardBenefitStockLedger::balances($item->refresh())['available'])->toBe(4);
 });
 
-it('fulfills a direct-entitlement benefit award through the catalog', function () {
+it('fulfills a direct-entitlement benefit award through the catalog', function (): void {
     app()->bind(RewardReadinessChecker::class, FundedRewardReadinessChecker::class);
     app()->bind(RewardFinancialReadinessChecker::class, FundedRewardFinancialReadinessChecker::class);
 

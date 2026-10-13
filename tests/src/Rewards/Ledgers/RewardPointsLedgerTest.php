@@ -20,7 +20,7 @@ function pointsIdentity(string $suffix = ''): array
     return ['user', (string) Str::uuid(), 'pts-fam-' . $suffix . Str::lower(Str::random(4)), 'pts'];
 }
 
-it('credits idempotent source-linked lots and reconciles buckets exactly', function () {
+it('credits idempotent source-linked lots and reconciles buckets exactly', function (): void {
     [$type, $recipient, $family, $unit] = pointsIdentity('a');
 
     $first = CreditRewardPointsAction::run($type, $recipient, $family, $unit, 100, CarbonImmutable::parse('2026-06-01T00:00:00Z'), CarbonImmutable::parse('2026-12-01T00:00:00Z'), null, null, 'op:recon-1', 'system', null, 'test-credit', CarbonImmutable::parse('2026-06-01T00:00:00Z'));
@@ -40,7 +40,7 @@ it('credits idempotent source-linked lots and reconciles buckets exactly', funct
         ->and($buckets->total())->toBe(140);
 });
 
-it('reserves oldest-expiring first and refuses to spend reserved or pending value', function () {
+it('reserves oldest-expiring first and refuses to spend reserved or pending value', function (): void {
     [$type, $recipient, $family, $unit] = pointsIdentity('b');
 
     CreditRewardPointsAction::run($type, $recipient, $family, $unit, 50, CarbonImmutable::parse('2026-06-01T00:00:00Z'), CarbonImmutable::parse('2026-07-10T00:00:00Z'), null, null, 'op:rsv-a', 'system', null, 'c', CarbonImmutable::parse('2026-06-01T00:00:00Z'));
@@ -70,7 +70,7 @@ it('reserves oldest-expiring first and refuses to spend reserved or pending valu
         ->toThrow(InvalidArgumentException::class, 'Insufficient available');
 });
 
-it('releases to available when unexpired and expires immediately after expiry', function () {
+it('releases to available when unexpired and expires immediately after expiry', function (): void {
     [$type, $recipient, $family, $unit] = pointsIdentity('c');
 
     CreditRewardPointsAction::run($type, $recipient, $family, $unit, 30, CarbonImmutable::parse('2026-06-01T00:00:00Z'), CarbonImmutable::parse('2026-07-01T00:00:00Z'), null, null, 'op:rel-a', 'system', null, 'c', CarbonImmutable::parse('2026-06-01T00:00:00Z'));
@@ -97,7 +97,7 @@ it('releases to available when unexpired and expires immediately after expiry', 
         ->and($after->expired)->toBe(30);
 });
 
-it('captures reservations exactly and debits available without going negative', function () {
+it('captures reservations exactly and debits available without going negative', function (): void {
     [$type, $recipient, $family, $unit] = pointsIdentity('d');
 
     CreditRewardPointsAction::run($type, $recipient, $family, $unit, 25, CarbonImmutable::parse('2026-06-01T00:00:00Z'), null, null, null, 'op:cap-a', 'system', null, 'c', CarbonImmutable::parse('2026-06-01T00:00:00Z'));
@@ -128,7 +128,7 @@ it('captures reservations exactly and debits available without going negative', 
         ->and($final->spent)->toBe(25);
 });
 
-it('expires only unreserved remainders while reservations survive until resolution', function () {
+it('expires only unreserved remainders while reservations survive until resolution', function (): void {
     [$type, $recipient, $family, $unit] = pointsIdentity('e');
 
     CreditRewardPointsAction::run($type, $recipient, $family, $unit, 100, CarbonImmutable::parse('2026-06-01T00:00:00Z'), CarbonImmutable::parse('2026-07-01T00:00:00Z'), null, null, 'op:exp-a', 'system', null, 'c', CarbonImmutable::parse('2026-06-01T00:00:00Z'));
@@ -162,7 +162,7 @@ it('expires only unreserved remainders while reservations survive until resoluti
         ->and($settled->reserved)->toBe(0);
 });
 
-it('refunds linked debits into new lots capped at the debited amount', function () {
+it('refunds linked debits into new lots capped at the debited amount', function (): void {
     [$type, $recipient, $family, $unit] = pointsIdentity('f');
 
     CreditRewardPointsAction::run($type, $recipient, $family, $unit, 50, CarbonImmutable::parse('2026-06-01T00:00:00Z'), null, null, null, 'op:ref-a', 'system', null, 'c', CarbonImmutable::parse('2026-06-01T00:00:00Z'));
@@ -186,7 +186,7 @@ it('refunds linked debits into new lots capped at the debited amount', function 
         ->toThrow(InvalidArgumentException::class, 'prior debit aggregate');
 });
 
-it('refuses negative, zero, overflowing, and incoherent point operations', function () {
+it('refuses negative, zero, overflowing, and incoherent point operations', function (): void {
     [$type, $recipient, $family, $unit] = pointsIdentity('g');
 
     expect(fn () => CreditRewardPointsAction::run($type, $recipient, $family, $unit, 0, CarbonImmutable::parse('2026-06-01T00:00:00Z')))

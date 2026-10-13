@@ -52,7 +52,7 @@ function couponHarness(string $prefix): array
     return [$program->refresh(), $item->refresh(), $grant->refresh(), $staff];
 }
 
-it('fails closed on coupon benefits without a bound fulfillment', function () {
+it('fails closed on coupon benefits without a bound fulfillment', function (): void {
     [, , $grant, $staff] = couponHarness('coupon-closed');
 
     expect(fn () => FulfillRewardBenefitAction::run(
@@ -64,7 +64,7 @@ it('fails closed on coupon benefits without a bound fulfillment', function () {
     ))->toThrow(InvalidArgumentException::class, 'RewardBenefitCouponFulfillment');
 });
 
-it('issues, consumes, and revokes coupons through the bound contract', function () {
+it('issues, consumes, and revokes coupons through the bound contract', function (): void {
     $fake = new FakeRewardBenefitCouponFulfillment;
     app()->instance(RewardBenefitCouponFulfillment::class, $fake);
 
@@ -111,7 +111,7 @@ it('issues, consumes, and revokes coupons through the bound contract', function 
     ))->toThrow(InvalidArgumentException::class);
 });
 
-it('revokes unissued-coupon grants through the bound contract', function () {
+it('revokes unissued-coupon grants through the bound contract', function (): void {
     $fake = new FakeRewardBenefitCouponFulfillment;
     app()->instance(RewardBenefitCouponFulfillment::class, $fake);
 

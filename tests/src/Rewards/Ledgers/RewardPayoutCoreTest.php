@@ -98,7 +98,7 @@ function payoutHarness(string $prefix): array
     return [$program->refresh(), $award->refresh(), $memberId, $staff];
 }
 
-it('submits manual payouts as submitted and confirms them with spend', function () {
+it('submits manual payouts as submitted and confirms them with spend', function (): void {
     [$program, $award, $memberId, $staff] = payoutHarness('pay-core-1');
 
     $request = RequestRewardPayoutAction::run(
@@ -139,7 +139,7 @@ it('submits manual payouts as submitted and confirms them with spend', function 
         ->and(RewardBudgetLedger::balances((string) $program->getKey(), 'MYR')['reserved'])->toBe(0);
 });
 
-it('cancels requested payouts directly with release', function () {
+it('cancels requested payouts directly with release', function (): void {
     [$program, $award, $memberId, $staff] = payoutHarness('pay-core-2');
 
     $request = RequestRewardPayoutAction::run(
@@ -158,7 +158,7 @@ it('cancels requested payouts directly with release', function () {
         ->and(RewardBudgetLedger::balances((string) $program->getKey(), 'MYR')['reserved'])->toBe(0);
 });
 
-it('reconciles submitted manual payouts as evidence-only', function () {
+it('reconciles submitted manual payouts as evidence-only', function (): void {
     [$program, $award, $memberId, $staff] = payoutHarness('pay-core-3');
 
     $request = RequestRewardPayoutAction::run(
@@ -180,7 +180,7 @@ it('reconciles submitted manual payouts as evidence-only', function () {
         ->and(RewardBudgetLedger::balances((string) $program->getKey(), 'MYR')['reserved'])->toBe((int) $request->amount_minor);
 });
 
-it('maps executor outcomes honestly without duplicating money', function () {
+it('maps executor outcomes honestly without duplicating money', function (): void {
     [$program, $award, $memberId, $staff] = payoutHarness('pay-core-4');
 
     app()->bind(RewardPayoutExecutor::class, fn (): RewardPayoutExecutor => new ScriptedPayoutExecutor([

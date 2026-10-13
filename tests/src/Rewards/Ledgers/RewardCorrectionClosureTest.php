@@ -115,7 +115,7 @@ function correctionReverse(
     );
 }
 
-it('D1 leaves no dispute when a full refund precedes reversal', function () {
+it('D1 leaves no dispute when a full refund precedes reversal', function (): void {
     $setup = correctionSetup('corr-d1f');
     [, , , , $memberId, , $staff] = $setup;
     $award = correctionFulfill($setup, 'src-d1f-1', 100);
@@ -157,7 +157,7 @@ it('D1 leaves no dispute when a full refund precedes reversal', function () {
         ->and(RewardAdjustment::query()->where('award_id', $award->getKey())->count())->toBe(0);
 });
 
-it('D1 disputes only the unrefunded remainder after a partial refund', function () {
+it('D1 disputes only the unrefunded remainder after a partial refund', function (): void {
     $setup = correctionSetup('corr-d1p');
     [, , , , $memberId, , $staff] = $setup;
     $award = correctionFulfill($setup, 'src-d1p-1', 100);
@@ -183,7 +183,7 @@ it('D1 disputes only the unrefunded remainder after a partial refund', function 
         ->and($buckets->spent)->toBe(40);
 });
 
-it('D1 attributes multi-award debits and refunds per award', function () {
+it('D1 attributes multi-award debits and refunds per award', function (): void {
     $setup = correctionSetup('corr-d1m');
     [, , , , $memberId, , $staff] = $setup;
 
@@ -229,7 +229,7 @@ it('D1 attributes multi-award debits and refunds per award', function () {
         ->and($final->spent)->toBe(120);
 });
 
-it('D1 nets repeat spend and refund cycles', function () {
+it('D1 nets repeat spend and refund cycles', function (): void {
     $setup = correctionSetup('corr-d1c');
     [, , , , $memberId, , $staff] = $setup;
     $award = correctionFulfill($setup, 'src-d1c-1', 100);
@@ -266,7 +266,7 @@ it('D1 nets repeat spend and refund cycles', function () {
         ->and(RewardAdjustment::query()->where('award_id', $award->getKey())->count())->toBe(1);
 });
 
-it('D2 voids attested reservations atomically and never resurrects', function () {
+it('D2 voids attested reservations atomically and never resurrects', function (): void {
     $setup = correctionSetup('corr-d2v');
     [, , , , $memberId, , $staff] = $setup;
     $award = correctionFulfill($setup, 'src-d2v-1', 100);
@@ -315,7 +315,7 @@ it('D2 voids attested reservations atomically and never resurrects', function ()
         ->and($settled->reserved)->toBe(0);
 });
 
-it('D2 blocks reversal on unknown reservations without partial effects', function () {
+it('D2 blocks reversal on unknown reservations without partial effects', function (): void {
     $setup = correctionSetup('corr-d2u');
     [, , , , $memberId, , $staff] = $setup;
     $award = correctionFulfill($setup, 'src-d2u-1', 100);
@@ -360,7 +360,7 @@ it('D2 blocks reversal on unknown reservations without partial effects', functio
         ->and($settled->reserved)->toBe(0);
 });
 
-it('D2 disputes captured reservations as confirmed consumption', function () {
+it('D2 disputes captured reservations as confirmed consumption', function (): void {
     $setup = correctionSetup('corr-d2c');
     [, , , , $memberId, , $staff] = $setup;
     $award = correctionFulfill($setup, 'src-d2c-1', 100);
@@ -383,7 +383,7 @@ it('D2 disputes captured reservations as confirmed consumption', function () {
         ->and($buckets->spent)->toBe(100);
 });
 
-it('D2 voids only the reversed award pieces of a cross-award reservation', function () {
+it('D2 voids only the reversed award pieces of a cross-award reservation', function (): void {
     $setup = correctionSetup('corr-d2x');
     [, , , , $memberId, , $staff] = $setup;
 
@@ -424,7 +424,7 @@ it('D2 voids only the reversed award pieces of a cross-award reservation', funct
     expect(RewardPointLot::query()->where('award_id', $awardA->getKey())->firstOrFail()->status)->toBe(RewardPointLotStatus::Depleted);
 });
 
-it('D2 refuses spendable refunds from reversed lots but keeps live portions', function () {
+it('D2 refuses spendable refunds from reversed lots but keeps live portions', function (): void {
     $setup = correctionSetup('corr-d2r');
     [, , , , $memberId, , $staff] = $setup;
 
@@ -473,7 +473,7 @@ it('D2 refuses spendable refunds from reversed lots but keeps live portions', fu
         ->and($final->spent)->toBe(120);
 });
 
-it('D2 voids expired reservations into expiry without resurrection', function () {
+it('D2 voids expired reservations into expiry without resurrection', function (): void {
     $setup = correctionSetup('corr-d2e');
     [, , , , $memberId, , $staff] = $setup;
     $award = correctionFulfill($setup, 'src-d2e-1', 100, '2026-07-01T00:00:00Z');
@@ -518,7 +518,7 @@ it('D2 voids expired reservations into expiry without resurrection', function ()
         ->and(RewardPointMovement::query()->count())->toBe($movementsBefore);
 });
 
-it('D2 records voided holds in the consumed dispute evidence', function () {
+it('D2 records voided holds in the consumed dispute evidence', function (): void {
     $setup = correctionSetup('corr-d2m');
     [, , , , $memberId, , $staff] = $setup;
     $award = correctionFulfill($setup, 'src-d2m-1', 100);
@@ -545,7 +545,7 @@ it('D2 records voided holds in the consumed dispute evidence', function () {
         ->and($buckets->spent)->toBe(20);
 });
 
-it('D2 keeps milestone invalidation atomic with attested reservations', function () {
+it('D2 keeps milestone invalidation atomic with attested reservations', function (): void {
     [$program, , , $memberId] = RewardLedgerFixtures::seedActiveEnrolled(
         'corr-d2mi',
         RewardProgramMode::Points,
@@ -629,7 +629,7 @@ it('D2 keeps milestone invalidation atomic with attested reservations', function
         ->and($buckets->reserved)->toBe(0);
 });
 
-it('D1 keeps an unconsumed reversal free of disputes and reservations consults', function () {
+it('D1 keeps an unconsumed reversal free of disputes and reservations consults', function (): void {
     $setup = correctionSetup('corr-d1n');
     [, , , , $memberId, , $staff] = $setup;
     $award = correctionFulfill($setup, 'src-d1n-1', 100);

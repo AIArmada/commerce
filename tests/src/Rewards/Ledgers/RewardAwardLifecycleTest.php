@@ -84,7 +84,7 @@ function lifecycleApprove($award, $reader, $to, string $staff, string $reason, s
     );
 }
 
-it('moves held awards through review, approval, and fulfillment with stamped entries', function () {
+it('moves held awards through review, approval, and fulfillment with stamped entries', function (): void {
     [$award, , , $reader] = heldPointsAward();
 
     $staff = RewardLedgerFixtures::staffId();
@@ -115,7 +115,7 @@ it('moves held awards through review, approval, and fulfillment with stamped ent
         ->and($entries->pluck('seq')->all())->toBe([1, 2, 3, 4]);
 });
 
-it('prohibits caller own-approval and member approval wherever identities are supplied', function () {
+it('prohibits caller own-approval and member approval wherever identities are supplied', function (): void {
     [$award, $memberId, , $reader] = heldPointsAward('src-life-own-1');
 
     expect(fn () => TransitionRewardAwardAction::run($award, RewardAwardStatus::Approved, 'user', $memberId, 'staff', 'self-approve', null, null, CarbonImmutable::parse('2026-06-17T00:00:00Z')))
@@ -133,7 +133,7 @@ it('prohibits caller own-approval and member approval wherever identities are su
     expect($award->refresh()->status)->toBe(RewardAwardStatus::Approved);
 });
 
-it('rejects invalid transitions and never rewrites stamped timestamps', function () {
+it('rejects invalid transitions and never rewrites stamped timestamps', function (): void {
     [$award] = lifecycleAward();
 
     expect(fn () => TransitionRewardAwardAction::run($award, RewardAwardStatus::Held, 'user', RewardLedgerFixtures::staffId(), 'staff', 'backwards', null, null, CarbonImmutable::parse('2026-06-17T00:00:00Z')))
@@ -148,7 +148,7 @@ it('rejects invalid transitions and never rewrites stamped timestamps', function
         ->toThrow(LogicException::class, 'immutable transition timestamp');
 });
 
-it('refuses cash and benefit approval and fulfillment while unready', function () {
+it('refuses cash and benefit approval and fulfillment while unready', function (): void {
     [$program] = RewardLedgerFixtures::seedVersionedProgram('ledger-lcash', RewardProgramMode::Cash);
     $program = RewardLedgerFixtures::forceActive($program);
 
@@ -181,7 +181,7 @@ it('refuses cash and benefit approval and fulfillment while unready', function (
         ->toThrow(InvalidArgumentException::class, 'Invalid award transition');
 });
 
-it('acknowledges recognition once and only by the recipient', function () {
+it('acknowledges recognition once and only by the recipient', function (): void {
     [$award, $memberId] = lifecycleAward(RewardProgramMode::Recognition, 'src-life-rec-1');
 
     $other = RewardLedgerFixtures::staffId();
@@ -203,7 +203,7 @@ it('acknowledges recognition once and only by the recipient', function () {
         ->toThrow(InvalidArgumentException::class, 'Only recognition awards');
 });
 
-it('grants badges on badge fulfillment and claws back unspent points on reversal', function () {
+it('grants badges on badge fulfillment and claws back unspent points on reversal', function (): void {
     [$award, , , $badgeReader] = lifecycleAward(RewardProgramMode::Badges, 'src-life-badge-1');
 
     $staff = RewardLedgerFixtures::staffId();
@@ -231,7 +231,7 @@ it('grants badges on badge fulfillment and claws back unspent points on reversal
         ->and(RewardAdjustment::query()->where('award_id', $pointsAward->getKey())->count())->toBe(0);
 });
 
-it('opens a dispute instead of restoring consumed value on reversal', function () {
+it('opens a dispute instead of restoring consumed value on reversal', function (): void {
     [$award, $memberId, , $reader] = lifecycleAward(RewardProgramMode::Points, 'src-life-cons-1');
 
     $staff = RewardLedgerFixtures::staffId();
@@ -255,7 +255,7 @@ it('opens a dispute instead of restoring consumed value on reversal', function (
         ->and($balances->spent)->toBe(6);
 });
 
-it('dismisses fraud back to held without approving', function () {
+it('dismisses fraud back to held without approving', function (): void {
     [$program, , , $memberId] = RewardLedgerFixtures::seedActiveEnrolled('ledger-lfraud');
 
     $reader = new FakeRewardSourceFactReader;

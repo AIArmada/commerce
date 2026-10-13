@@ -60,7 +60,7 @@ function milestoneRecord($reader, string $recipient, string $family, string $key
     );
 }
 
-it('grants badges idempotently and revokes with retained history', function () {
+it('grants badges idempotently and revokes with retained history', function (): void {
     $recipient = (string) Str::uuid();
     $family = 'badge-fam-' . Str::lower(Str::random(4));
     $staff = RewardLedgerFixtures::staffId();
@@ -90,7 +90,7 @@ it('grants badges idempotently and revokes with retained history', function () {
         ->toThrow(InvalidArgumentException::class, 'staff/admin/system');
 });
 
-it('records contributions into deterministic cycles and achieves exactly once', function () {
+it('records contributions into deterministic cycles and achieves exactly once', function (): void {
     [$program, $recipient, $reader] = milestoneProgram('ledger-mile', 'three-checkins', 3, 30, ['type' => 'points', 'points' => 25, 'unit' => 'pts']);
     $family = $program->family_key;
 
@@ -143,7 +143,7 @@ it('records contributions into deterministic cycles and achieves exactly once', 
         ->and(RewardAward::query()->count())->toBe(1);
 });
 
-it('splits fixed windows deterministically and rejects definition mismatches', function () {
+it('splits fixed windows deterministically and rejects definition mismatches', function (): void {
     [$program, $recipient, $reader] = milestoneProgram('ledger-milew', 'monthly-three', 3, 30, ['type' => 'points', 'points' => 25, 'unit' => 'pts']);
     $family = $program->family_key;
 
@@ -217,7 +217,7 @@ it('splits fixed windows deterministically and rejects definition mismatches', f
     ))->toThrow(InvalidArgumentException::class, 'WP6 finance scope');
 });
 
-it('revokes contributor corrections consistently, reversing grants and retaining history', function () {
+it('revokes contributor corrections consistently, reversing grants and retaining history', function (): void {
     [$program, $recipient, $reader] = milestoneProgram('ledger-milei', 'two-saves', 2, 30, ['type' => 'badge', 'badge_key' => 'steady-saver'], RewardProgramMode::Badges);
     $family = $program->family_key;
 
@@ -267,7 +267,7 @@ it('revokes contributor corrections consistently, reversing grants and retaining
         ->and($award->refresh()->entries()->count())->toBe($award->entries()->count());
 });
 
-it('keeps achieved milestones when corrections stay above target', function () {
+it('keeps achieved milestones when corrections stay above target', function (): void {
     [$program, $recipient, $reader] = milestoneProgram('ledger-milea', 'two-plus', 2, 30, ['type' => 'points', 'points' => 25, 'unit' => 'pts']);
     $family = $program->family_key;
 

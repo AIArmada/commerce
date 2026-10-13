@@ -19,7 +19,7 @@ function seedVersionedProgram(string $prefix): array
     return RewardCoreTestFixtures::seedVersionedProgram($prefix);
 }
 
-it('enrolls with canonical identity plus acceptance and period rows', function () {
+it('enrolls with canonical identity plus acceptance and period rows', function (): void {
     [$program, $version] = seedVersionedProgram('core-enroll');
 
     $memberId = (string) Str::uuid();
@@ -49,7 +49,7 @@ it('enrolls with canonical identity plus acceptance and period rows', function (
         ->and($period->left_at)->toBeNull();
 });
 
-it('is idempotent for active members under identical frozen terms', function () {
+it('is idempotent for active members under identical frozen terms', function (): void {
     [$program, $version] = seedVersionedProgram('core-idem');
 
     $memberId = (string) Str::uuid();
@@ -61,7 +61,7 @@ it('is idempotent for active members under identical frozen terms', function () 
         ->and($second->periods()->count())->toBe(1);
 });
 
-it('appends reacceptance prospectively on material terms change', function () {
+it('appends reacceptance prospectively on material terms change', function (): void {
     [$program, $v1] = seedVersionedProgram('core-reacc');
 
     $memberId = (string) Str::uuid();
@@ -99,7 +99,7 @@ it('appends reacceptance prospectively on material terms change', function () {
         ->and((string) $reaccepted->current_acceptance_id)->toBe((string) $rows[1]->getKey());
 });
 
-it('always appends reacceptance rows even for identical terms', function () {
+it('always appends reacceptance rows even for identical terms', function (): void {
     [$program, $version] = seedVersionedProgram('core-reacc-same');
 
     $memberId = (string) Str::uuid();
@@ -112,7 +112,7 @@ it('always appends reacceptance rows even for identical terms', function () {
         ->and((string) $enrollment->current_acceptance_id)->toBe((string) $again->getKey());
 });
 
-it('leaves and rejoins with preserved frozen history', function () {
+it('leaves and rejoins with preserved frozen history', function (): void {
     [$program, $version] = seedVersionedProgram('core-rejoin');
 
     $memberId = (string) Str::uuid();
@@ -160,7 +160,7 @@ it('leaves and rejoins with preserved frozen history', function () {
         ->and(CarbonImmutable::parse($again->left_at)->toIso8601String())->toBe($firstLeftAt);
 });
 
-it('rejects non-member identities and foreign policy versions', function () {
+it('rejects non-member identities and foreign policy versions', function (): void {
     [$program, $version] = seedVersionedProgram('core-reject');
 
     expect(fn () => EnrollRewardMemberAction::run($program, 'guest', (string) Str::uuid(), $version))
@@ -183,7 +183,7 @@ it('rejects non-member identities and foreign policy versions', function () {
         ->toThrow(InvalidArgumentException::class, 'does not belong');
 });
 
-it('freezes acceptance rows and enrollment identity', function () {
+it('freezes acceptance rows and enrollment identity', function (): void {
     [$program, $version] = seedVersionedProgram('core-frozen');
 
     $enrollment = EnrollRewardMemberAction::run($program, 'user', (string) Str::uuid(), $version);
@@ -194,7 +194,7 @@ it('freezes acceptance rows and enrollment identity', function () {
     expect(fn () => $enrollment->delete())->toThrow(LogicException::class);
 });
 
-it('rejects recognition and cash modes only via their own rules, not enrollment', function () {
+it('rejects recognition and cash modes only via their own rules, not enrollment', function (): void {
     $program = RewardProgram::factory()->create([
         'family_key' => 'core-rec-' . Str::lower(Str::random(6)),
         'mode' => RewardProgramMode::Recognition,

@@ -42,7 +42,7 @@ function c2ActiveProgram(string $prefix): array
     return [$program->refresh(), $v1];
 }
 
-it('keeps v1 consent valid after advance v2 acceptance before the effective boundary', function () {
+it('keeps v1 consent valid after advance v2 acceptance before the effective boundary', function (): void {
     [$program] = c2ActiveProgram('core-c2-advance');
 
     $memberId = (string) Str::uuid();
@@ -94,7 +94,7 @@ it('keeps v1 consent valid after advance v2 acceptance before the effective boun
     expect($v2Decision->decision)->toBe(RewardPreviewDecision::Eligible);
 });
 
-it('applies decision-time policy with lookback for pre-claim sources across a material switch', function () {
+it('applies decision-time policy with lookback for pre-claim sources across a material switch', function (): void {
     [$program] = c2ActiveProgram('core-c2-switch');
 
     $memberId = (string) Str::uuid();
@@ -131,7 +131,7 @@ it('applies decision-time policy with lookback for pre-claim sources across a ma
     expect($outside->reasons)->toBe([RewardPreviewReason::OutsidePreclaimLookback]);
 });
 
-it('resolves exact effective boundaries by decision time', function () {
+it('resolves exact effective boundaries by decision time', function (): void {
     [$program] = c2ActiveProgram('core-c2-edge');
 
     $memberId = (string) Str::uuid();
@@ -169,7 +169,7 @@ it('resolves exact effective boundaries by decision time', function () {
         ->and($at->applicableVersionId)->toBe((string) $v2->getKey());
 });
 
-it('rejects retroactive publication and backward publication time', function () {
+it('rejects retroactive publication and backward publication time', function (): void {
     [$program] = RewardCoreTestFixtures::seedVersionedProgram('core-c2-retro');
 
     expect(fn () => PublishRewardProgramVersionAction::run(

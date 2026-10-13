@@ -6,14 +6,14 @@ use AIArmada\Rewards\Enums\RewardProgramMode;
 use AIArmada\Rewards\Support\RewardRuleValidator;
 use AIArmada\Rewards\Tests\Core\Support\RewardCoreTestFixtures;
 
-it('accepts validator-clean rules and terms for every mode', function (RewardProgramMode $mode) {
+it('accepts validator-clean rules and terms for every mode', function (RewardProgramMode $mode): void {
     $validator = new RewardRuleValidator;
 
     expect($validator->errors(RewardCoreTestFixtures::rules($mode), $mode, 'own-family'))->toBe([])
         ->and($validator->termsErrors(RewardCoreTestFixtures::terms($mode)))->toBe([]);
 })->with(RewardProgramMode::cases());
 
-it('rejects unknown keys at every level', function () {
+it('rejects unknown keys at every level', function (): void {
     $validator = new RewardRuleValidator;
     $rules = RewardCoreTestFixtures::rules();
     $rules['expression'] = 'points * 2';
@@ -27,7 +27,7 @@ it('rejects unknown keys at every level', function () {
     expect($validator->errors($rules, RewardProgramMode::Points, 'own-family')[0])->toContain('unknown key [formula]');
 });
 
-it('enforces per-component amount shapes', function () {
+it('enforces per-component amount shapes', function (): void {
     $validator = new RewardRuleValidator;
 
     $recognition = RewardCoreTestFixtures::rules(RewardProgramMode::Recognition);
@@ -59,7 +59,7 @@ it('enforces per-component amount shapes', function () {
     expect($validator->errors($benefit, RewardProgramMode::Benefit, 'own-family')[0])->toContain('explicit list');
 });
 
-it('rejects amount overflow and duplicate components', function () {
+it('rejects amount overflow and duplicate components', function (): void {
     $validator = new RewardRuleValidator;
 
     $points = RewardCoreTestFixtures::rules();
@@ -75,7 +75,7 @@ it('rejects amount overflow and duplicate components', function () {
     expect($validator->errors($combined, RewardProgramMode::Combined, 'own-family')[0])->toContain('Duplicate component');
 });
 
-it('rejects unknown outcomes and circular stacking', function () {
+it('rejects unknown outcomes and circular stacking', function (): void {
     $validator = new RewardRuleValidator;
 
     $rules = RewardCoreTestFixtures::rules();
@@ -87,7 +87,7 @@ it('rejects unknown outcomes and circular stacking', function () {
     expect($validator->errors($rules, RewardProgramMode::Points, 'own-family')[0])->toContain('circular');
 });
 
-it('requires verified evidence for cash and benefit components', function () {
+it('requires verified evidence for cash and benefit components', function (): void {
     $validator = new RewardRuleValidator;
 
     $cash = RewardCoreTestFixtures::rules(RewardProgramMode::Cash);
@@ -101,7 +101,7 @@ it('requires verified evidence for cash and benefit components', function () {
         ->toContain('staff_verified or higher');
 });
 
-it('rejects malformed terms snapshots', function () {
+it('rejects malformed terms snapshots', function (): void {
     $validator = new RewardRuleValidator;
 
     expect($validator->termsErrors([])[0])->toContain('Terms label');

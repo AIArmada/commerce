@@ -14,7 +14,7 @@ use AIArmada\Rewards\Tests\Core\Support\RewardCoreTestFixtures;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
 
-it('creates disabled draft programs with explicit ownership scope', function () {
+it('creates disabled draft programs with explicit ownership scope', function (): void {
     $program = CreateRewardProgramAction::run(
         familyKey: 'core-lifecycle-' . Str::lower(Str::random(6)),
         title: 'Lifecycle program',
@@ -29,7 +29,7 @@ it('creates disabled draft programs with explicit ownership scope', function () 
         ->and($program->ready_at)->toBeNull();
 });
 
-it('rejects invalid ownership scope and duplicate families', function () {
+it('rejects invalid ownership scope and duplicate families', function (): void {
     $family = 'core-dup-' . Str::lower(Str::random(6));
 
     CreateRewardProgramAction::run($family, 'T', RewardProgramMode::Points, null, null, 'p');
@@ -44,7 +44,7 @@ it('rejects invalid ownership scope and duplicate families', function () {
         ->toThrow(InvalidArgumentException::class, 'owner UUID');
 });
 
-it('publishes an append-only version timeline with derived windows', function () {
+it('publishes an append-only version timeline with derived windows', function (): void {
     $program = RewardProgram::factory()->create(['family_key' => 'core-timeline-' . Str::lower(Str::random(6))]);
     $publish = app(PublishRewardProgramVersionAction::class);
 
@@ -71,7 +71,7 @@ it('publishes an append-only version timeline with derived windows', function ()
         ->and(RewardVersionResolver::windowEndFor($timeline, (string) $v2->getKey()))->toBeNull();
 });
 
-it('rejects backdated publications into published windows', function () {
+it('rejects backdated publications into published windows', function (): void {
     $program = RewardProgram::factory()->create(['family_key' => 'core-backdate-' . Str::lower(Str::random(6))]);
     $publish = app(PublishRewardProgramVersionAction::class);
     $t1 = CarbonImmutable::parse('2026-06-01T00:00:00Z');
@@ -82,7 +82,7 @@ it('rejects backdated publications into published windows', function () {
         ->toThrow(InvalidArgumentException::class, 'strictly after');
 });
 
-it('walks draft to active with immutable first-transition timestamps', function () {
+it('walks draft to active with immutable first-transition timestamps', function (): void {
     $program = RewardProgram::factory()->create(['family_key' => 'core-walk-' . Str::lower(Str::random(6))]);
     $transition = app(TransitionRewardProgramStatusAction::class);
 
@@ -116,7 +116,7 @@ it('walks draft to active with immutable first-transition timestamps', function 
         ->toThrow(InvalidArgumentException::class, 'Invalid reward program status transition');
 });
 
-it('rejects invalid lifecycle jumps', function () {
+it('rejects invalid lifecycle jumps', function (): void {
     $program = RewardProgram::factory()->create(['family_key' => 'core-jump-' . Str::lower(Str::random(6))]);
     $effective = CarbonImmutable::parse('2026-06-01T00:00:00Z');
 
@@ -126,14 +126,14 @@ it('rejects invalid lifecycle jumps', function () {
         ->toThrow(InvalidArgumentException::class, 'Invalid reward program status transition');
 });
 
-it('builds mode-coherent version fixtures', function () {
+it('builds mode-coherent version fixtures', function (): void {
     $version = RewardProgramVersion::factory()->ofMode(RewardProgramMode::Cash)->create();
 
     expect($version->program->mode)->toBe(RewardProgramMode::Cash)
         ->and($version->rules['mode'])->toBe(RewardProgramMode::Cash->value);
 });
 
-it('freezes published versions and blocks program deletion', function () {
+it('freezes published versions and blocks program deletion', function (): void {
     $version = RewardProgramVersion::factory()->create();
 
     expect(fn () => $version->forceFill(['reason' => 'x'])->save())->toThrow(LogicException::class);

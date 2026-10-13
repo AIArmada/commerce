@@ -16,7 +16,7 @@ use AIArmada\Rewards\Tests\Core\Support\RewardCoreTestFixtures;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
 
-it('blocks new earning on rule-only material change while old references stay immutable', function () {
+it('blocks new earning on rule-only material change while old references stay immutable', function (): void {
     [$program, $v1] = RewardCoreTestFixtures::seedVersionedProgram('core-c1-rule');
     TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Ready);
     $program = TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Active);
@@ -107,7 +107,7 @@ it('blocks new earning on rule-only material change while old references stay im
     expect($oldAcceptance->refresh()->material_terms_hash)->toBe($v1->material_terms_hash);
 });
 
-it('changes the fingerprint on component enablement, value, eligibility, and window edits', function () {
+it('changes the fingerprint on component enablement, value, eligibility, and window edits', function (): void {
     $rules = RewardCoreTestFixtures::rules();
     $terms = RewardCoreTestFixtures::terms();
     $base = RewardMaterialTerms::hashForVersion($rules, $terms);
@@ -133,7 +133,7 @@ it('changes the fingerprint on component enablement, value, eligibility, and win
     expect(RewardMaterialTerms::hashForVersion($rules, $material))->not->toBe($base);
 });
 
-it('is order-insensitive but cannot be masked by an unchanged material map', function () {
+it('is order-insensitive but cannot be masked by an unchanged material map', function (): void {
     $rules = RewardCoreTestFixtures::rules();
     $terms = RewardCoreTestFixtures::terms();
 
@@ -158,7 +158,7 @@ it('is order-insensitive but cannot be masked by an unchanged material map', fun
         ->not->toBe(RewardMaterialTerms::hashForVersion($rules, $terms));
 });
 
-it('ignores nonmaterial copy changes', function () {
+it('ignores nonmaterial copy changes', function (): void {
     $rules = RewardCoreTestFixtures::rules();
     $terms = RewardCoreTestFixtures::terms();
     $base = RewardMaterialTerms::hashForVersion($rules, $terms);
@@ -171,7 +171,7 @@ it('ignores nonmaterial copy changes', function () {
     expect(RewardMaterialTerms::hashForVersion($rules, $copy))->toBe($base);
 });
 
-it('rejects missing mandatory clauses and mode mismatches', function () {
+it('rejects missing mandatory clauses and mode mismatches', function (): void {
     $validator = new RewardRuleValidator;
     $rules = RewardCoreTestFixtures::rules();
     $terms = RewardCoreTestFixtures::terms();

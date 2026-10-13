@@ -82,7 +82,7 @@ function previewFixture(array $overrides = []): array
     ], $overrides);
 }
 
-it('approves the happy path with fixture-labeled deterministic output', function () {
+it('approves the happy path with fixture-labeled deterministic output', function (): void {
     [$program, $memberId] = previewHarness();
 
     $action = app(PreviewRewardQualificationAction::class);
@@ -103,7 +103,7 @@ it('approves the happy path with fixture-labeled deterministic output', function
         ->and($second->explanations)->toBe($first->explanations);
 });
 
-it('rejects non-active programs and missing versions', function () {
+it('rejects non-active programs and missing versions', function (): void {
     [$program] = RewardCoreTestFixtures::seedVersionedProgram('core-prev-draft');
 
     $result = PreviewRewardQualificationAction::run(
@@ -138,7 +138,7 @@ it('rejects non-active programs and missing versions', function () {
     expect($early->reasons)->toBe([RewardPreviewReason::OutsidePreclaimLookback]);
 });
 
-it('rejects disallowed outcomes, categories, and weak verification', function () {
+it('rejects disallowed outcomes, categories, and weak verification', function (): void {
     [$program, $memberId] = previewHarness(['eligibility' => ['categories' => ['family-night']]], 'core-prev-allow');
     $member = ['member_type' => 'user', 'member_id' => $memberId];
     $decision = CarbonImmutable::parse('2026-07-11T00:00:00Z');
@@ -153,7 +153,7 @@ it('rejects disallowed outcomes, categories, and weak verification', function ()
     expect($verification->reasons)->toBe([RewardPreviewReason::VerificationInsufficient]);
 });
 
-it('never treats accepted registration as staff-verified attendance', function () {
+it('never treats accepted registration as staff-verified attendance', function (): void {
     [$program, $memberId] = previewHarness(['eligibility' => ['min_verification' => 'staff_verified']], 'core-prev-staff');
     $member = ['member_type' => 'user', 'member_id' => $memberId];
     $decision = CarbonImmutable::parse('2026-07-11T00:00:00Z');
@@ -165,7 +165,7 @@ it('never treats accepted registration as staff-verified attendance', function (
     expect($verified->decision)->toBe(RewardPreviewDecision::Eligible);
 });
 
-it('excludes self credit, unclaimed guests, and recurring evidence when first-only', function () {
+it('excludes self credit, unclaimed guests, and recurring evidence when first-only', function (): void {
     [$program, $memberId] = previewHarness(['eligibility' => ['first_only' => true]], 'core-prev-self');
     $member = ['member_type' => 'user', 'member_id' => $memberId];
     $decision = CarbonImmutable::parse('2026-07-11T00:00:00Z');
@@ -180,7 +180,7 @@ it('excludes self credit, unclaimed guests, and recurring evidence when first-on
     expect($guest->reasons)->toBe([RewardPreviewReason::GuestUnclaimed]);
 });
 
-it('requires active enrollment with current acceptance at decision time', function () {
+it('requires active enrollment with current acceptance at decision time', function (): void {
     [$program, $memberId, $enrollment] = previewHarness([], 'core-prev-enroll');
     $decision = CarbonImmutable::parse('2026-07-11T00:00:00Z');
 
@@ -197,7 +197,7 @@ it('requires active enrollment with current acceptance at decision time', functi
     expect($left->reasons)->toBe([RewardPreviewReason::EnrollmentLeft]);
 });
 
-it('blocks new qualification after material terms change until reacceptance', function () {
+it('blocks new qualification after material terms change until reacceptance', function (): void {
     [$program, $memberId] = previewHarness([], 'core-prev-mat');
     $decision = CarbonImmutable::parse('2026-08-11T00:00:00Z');
     $member = ['member_type' => 'user', 'member_id' => $memberId];
@@ -241,7 +241,7 @@ it('blocks new qualification after material terms change until reacceptance', fu
     expect($fresh->decision)->toBe(RewardPreviewDecision::Eligible);
 });
 
-it('applies the published preclaim lookback without historical replay', function () {
+it('applies the published preclaim lookback without historical replay', function (): void {
     [$program, $memberId] = previewHarness([], 'core-prev-preclaim');
     $member = ['member_type' => 'user', 'member_id' => $memberId];
 
@@ -282,7 +282,7 @@ it('applies the published preclaim lookback without historical replay', function
     expect($future->reasons)->toBe([RewardPreviewReason::EvidenceAfterDecision]);
 });
 
-it('holds ambiguous evidence and rejects stacking conflicts', function () {
+it('holds ambiguous evidence and rejects stacking conflicts', function (): void {
     [$program, $memberId] = previewHarness([], 'core-prev-hold');
     $member = ['member_type' => 'user', 'member_id' => $memberId];
     $decision = CarbonImmutable::parse('2026-07-11T00:00:00Z');
@@ -298,7 +298,7 @@ it('holds ambiguous evidence and rejects stacking conflicts', function () {
     expect($component->reasons)->toBe([RewardPreviewReason::ComponentNotEnabled]);
 });
 
-it('rejects malformed fixture input without guessing', function () {
+it('rejects malformed fixture input without guessing', function (): void {
     [$program] = previewHarness([], 'core-prev-bad');
 
     expect(fn () => PreviewRewardQualificationAction::run($program, RewardComponent::Points, ['outcome' => 'attendance'], CarbonImmutable::parse('2026-07-11T00:00:00Z')))

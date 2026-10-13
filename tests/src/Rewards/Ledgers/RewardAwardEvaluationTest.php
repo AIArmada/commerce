@@ -28,7 +28,7 @@ function ledgerHarness(string $prefix = 'ledger-eval', array $ruleOverrides = []
     return RewardLedgerFixtures::seedActiveEnrolled($prefix, RewardProgramMode::Points, $ruleOverrides);
 }
 
-it('awards a clean fact with frozen snapshots, entry, claim, and caps', function () {
+it('awards a clean fact with frozen snapshots, entry, claim, and caps', function (): void {
     [$program, $version, , $memberId] = ledgerHarness();
 
     $reader = new FakeRewardSourceFactReader;
@@ -59,7 +59,7 @@ it('awards a clean fact with frozen snapshots, entry, claim, and caps', function
         ->and($reader->readCount('src-clean-1'))->toBeGreaterThanOrEqual(2);
 });
 
-it('returns the frozen first award on duplicate evaluation and version switch', function () {
+it('returns the frozen first award on duplicate evaluation and version switch', function (): void {
     [$program, $v1, , $memberId] = ledgerHarness('ledger-dup');
 
     $reader = new FakeRewardSourceFactReader;
@@ -93,7 +93,7 @@ it('returns the frozen first award on duplicate evaluation and version switch', 
         ->and(RewardAward::query()->count())->toBe(1);
 });
 
-it('refuses unknown sources without writing rows', function () {
+it('refuses unknown sources without writing rows', function (): void {
     [$program, , , $memberId] = ledgerHarness('ledger-unk');
 
     $action = new EvaluateRewardEntitlementAction(new FakeRewardSourceFactReader);
@@ -109,7 +109,7 @@ it('refuses unknown sources without writing rows', function () {
         ->toThrow(InvalidArgumentException::class, 'unknown_source');
 });
 
-it('records permanent rejections for merits failures', function (array $factOverrides, string $reason) {
+it('records permanent rejections for merits failures', function (array $factOverrides, string $reason): void {
     [$program, , , $memberId] = ledgerHarness('ledger-rej');
 
     if (($factOverrides['sharerId'] ?? null) === '@recipient') {
@@ -150,7 +150,7 @@ it('records permanent rejections for merits failures', function (array $factOver
     'beneficiary mismatch' => [['sharerId' => (string) Str::uuid()], 'beneficiary_mismatch'],
 ]);
 
-it('refuses not-yet-authorized attempts without freezing rows', function () {
+it('refuses not-yet-authorized attempts without freezing rows', function (): void {
     [$program, $version, $enrollment, $memberId] = ledgerHarness('ledger-trans');
 
     TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Paused);
@@ -178,7 +178,7 @@ it('refuses not-yet-authorized attempts without freezing rows', function () {
     expect(RewardAward::query()->where('source_business_key', 'src-left-1')->count())->toBe(0);
 });
 
-it('refuses stale consent, guest claims, and evidence after the decision transiently', function () {
+it('refuses stale consent, guest claims, and evidence after the decision transiently', function (): void {
     [$program, , , $memberId] = ledgerHarness('ledger-stale');
 
     $rules = RewardLedgerFixtures::rules();
@@ -210,7 +210,7 @@ it('refuses stale consent, guest claims, and evidence after the decision transie
     expect(RewardAward::query()->count())->toBe(0);
 });
 
-it('holds fraud suspects, ambiguous devices, and policy holds instead of approving', function () {
+it('holds fraud suspects, ambiguous devices, and policy holds instead of approving', function (): void {
     [$program, , , $memberId] = ledgerHarness('ledger-hold');
 
     $reader = new FakeRewardSourceFactReader;
@@ -229,7 +229,7 @@ it('holds fraud suspects, ambiguous devices, and policy holds instead of approvi
         ->and($ambiguous->reasons)->toBe(['hold_required']);
 });
 
-it('records cash candidates as held prerequisites, never approved money', function () {
+it('records cash candidates as held prerequisites, never approved money', function (): void {
     [$program] = RewardLedgerFixtures::seedVersionedProgram('ledger-cash', RewardProgramMode::Cash);
     $program = RewardLedgerFixtures::forceActive($program);
 
@@ -249,7 +249,7 @@ it('records cash candidates as held prerequisites, never approved money', functi
         ->and($result->award->status)->toBe(RewardAwardStatus::Held);
 });
 
-it('records benefit candidates as held prerequisites with exact amount snapshots', function () {
+it('records benefit candidates as held prerequisites with exact amount snapshots', function (): void {
     [$program] = RewardLedgerFixtures::seedVersionedProgram('ledger-benefit', RewardProgramMode::Benefit);
     $program = RewardLedgerFixtures::forceActive($program);
 
@@ -270,7 +270,7 @@ it('records benefit candidates as held prerequisites with exact amount snapshots
         ->and($result->award->fulfilled_at)->toBeNull();
 });
 
-it('proceeds on corrected sources while freezing the correction evidence', function () {
+it('proceeds on corrected sources while freezing the correction evidence', function (): void {
     [$program, , , $memberId] = ledgerHarness('ledger-corr');
 
     $reader = new FakeRewardSourceFactReader;
@@ -287,7 +287,7 @@ it('proceeds on corrected sources while freezing the correction evidence', funct
         ->and($result->award->source_snapshot['correction_id'])->toBe('corr-42');
 });
 
-it('qualifies preclaim facts inside the published lookback and rejects outside', function () {
+it('qualifies preclaim facts inside the published lookback and rejects outside', function (): void {
     [$program, , , $memberId] = ledgerHarness('ledger-look');
 
     $reader = new FakeRewardSourceFactReader;
@@ -304,7 +304,7 @@ it('qualifies preclaim facts inside the published lookback and rejects outside',
         ->and($outside->reasons)->toBe(['outside_preclaim_lookback']);
 });
 
-it('aborts when the source fact changes mid-evaluation and succeeds on retry', function () {
+it('aborts when the source fact changes mid-evaluation and succeeds on retry', function (): void {
     [$program, , , $memberId] = ledgerHarness('ledger-chg');
 
     $first = RewardLedgerFixtures::fact('src-chg-1', $memberId);
@@ -325,7 +325,7 @@ it('aborts when the source fact changes mid-evaluation and succeeds on retry', f
     expect($retry->outcome)->toBe(RewardEvaluationOutcome::Awarded);
 });
 
-it('binds participant, purchaser, staff, and sharer roles to distinct identities', function () {
+it('binds participant, purchaser, staff, and sharer roles to distinct identities', function (): void {
     [$program, , , $memberId] = ledgerHarness('ledger-roles');
 
     $reader = new FakeRewardSourceFactReader;

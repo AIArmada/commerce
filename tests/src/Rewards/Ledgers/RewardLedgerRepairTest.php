@@ -43,7 +43,7 @@ function repairIdentity(string $suffix = ''): array
     return ['user', (string) Str::uuid(), 'repair-' . $suffix . Str::lower(Str::random(4)), 'pts'];
 }
 
-it('R1 refuses reserve and debit after deadline without any expiry job', function () {
+it('R1 refuses reserve and debit after deadline without any expiry job', function (): void {
     [$type, $recipient, $family, $unit] = repairIdentity('r1a');
 
     CreditRewardPointsAction::run($type, $recipient, $family, $unit, 100, CarbonImmutable::parse('2026-06-01T00:00:00Z'), CarbonImmutable::parse('2026-07-01T00:00:00Z'), null, null, 'op:r1-a', 'system', null, 'c', CarbonImmutable::parse('2026-06-01T00:00:00Z'));
@@ -79,7 +79,7 @@ it('R1 refuses reserve and debit after deadline without any expiry job', functio
         ->and($settled->expired)->toBe(100);
 });
 
-it('R1 preserves reserved obligations across expiry until resolution', function () {
+it('R1 preserves reserved obligations across expiry until resolution', function (): void {
     [$type, $recipient, $family, $unit] = repairIdentity('r1b');
 
     CreditRewardPointsAction::run($type, $recipient, $family, $unit, 100, CarbonImmutable::parse('2026-06-01T00:00:00Z'), CarbonImmutable::parse('2026-07-01T00:00:00Z'), null, null, 'op:r1b-a', 'system', null, 'c', CarbonImmutable::parse('2026-06-01T00:00:00Z'));
@@ -117,7 +117,7 @@ it('R1 preserves reserved obligations across expiry until resolution', function 
         ->and($afterRelease->available)->toBe(0);
 });
 
-it('R1 derives fulfillment expiry from frozen terms and never silently perpetuates', function () {
+it('R1 derives fulfillment expiry from frozen terms and never silently perpetuates', function (): void {
     [$program, $version, $enrollment, $memberId] = RewardLedgerFixtures::seedActiveEnrolled('repair-r1d');
     $acceptance = RewardEnrollmentAcceptance::query()->where('enrollment_id', $enrollment->getKey())->orderByDesc('seq')->firstOrFail();
     $reader = new FakeRewardSourceFactReader;
@@ -231,7 +231,7 @@ it('R1 derives fulfillment expiry from frozen terms and never silently perpetuat
     ))->toThrow(InvalidArgumentException::class, 'frozen published terms');
 });
 
-it('R2 collapses same-operation refund replays and refuses changed terms', function () {
+it('R2 collapses same-operation refund replays and refuses changed terms', function (): void {
     [$type, $recipient, $family, $unit] = repairIdentity('r2a');
 
     CreditRewardPointsAction::run($type, $recipient, $family, $unit, 50, CarbonImmutable::parse('2026-06-01T00:00:00Z'), null, null, null, 'op:r2-a', 'system', null, 'c', CarbonImmutable::parse('2026-06-01T00:00:00Z'));
@@ -260,7 +260,7 @@ it('R2 collapses same-operation refund replays and refuses changed terms', funct
         ->toThrow(InvalidArgumentException::class, 'unrefunded debited amount');
 });
 
-it('R2 allocates multi-lot refunds with inherited expiries and after-expiry truthfulness', function () {
+it('R2 allocates multi-lot refunds with inherited expiries and after-expiry truthfulness', function (): void {
     [$type, $recipient, $family, $unit] = repairIdentity('r2b');
 
     CreditRewardPointsAction::run($type, $recipient, $family, $unit, 30, CarbonImmutable::parse('2026-06-01T00:00:00Z'), CarbonImmutable::parse('2026-07-10T00:00:00Z'), null, null, 'op:r2b-a', 'system', null, 'c', CarbonImmutable::parse('2026-06-01T00:00:00Z'));
@@ -303,7 +303,7 @@ it('R2 allocates multi-lot refunds with inherited expiries and after-expiry trut
         ->and($buckets->spent)->toBe(20);
 });
 
-it('R3 refuses mismatched replay across recipient family unit and amount', function () {
+it('R3 refuses mismatched replay across recipient family unit and amount', function (): void {
     [$type, $recipient, $family, $unit] = repairIdentity('r3a');
 
     CreditRewardPointsAction::run($type, $recipient, $family, $unit, 100, CarbonImmutable::parse('2026-06-01T00:00:00Z'), null, null, null, 'op:r3-a', 'system', null, 'c', CarbonImmutable::parse('2026-06-01T00:00:00Z'));
@@ -337,7 +337,7 @@ it('R3 refuses mismatched replay across recipient family unit and amount', funct
         ->toThrow(InvalidArgumentException::class, 'different terms');
 });
 
-it('R4 records exact prior states through full award and appeal chains', function () {
+it('R4 records exact prior states through full award and appeal chains', function (): void {
     [$program, , , $memberId] = RewardLedgerFixtures::seedActiveEnrolled('repair-r4');
     $reader = new FakeRewardSourceFactReader;
     $reader->seed(RewardLedgerFixtures::fact('src-r4-1', $memberId, '2026-06-12T00:00:00Z', 'attendance', ['isAmbiguousDevice' => true]));
@@ -387,7 +387,7 @@ it('R4 records exact prior states through full award and appeal chains', functio
         ->and($decisions->pluck('to_status')->all())->toBe(['open', 'in_review', 'upheld']);
 });
 
-it('R5 refuses approval and fulfillment after source invalidation', function () {
+it('R5 refuses approval and fulfillment after source invalidation', function (): void {
     [$program, , , $memberId] = RewardLedgerFixtures::seedActiveEnrolled('repair-r5a');
     $reader = new FakeRewardSourceFactReader;
     $reader->seed(RewardLedgerFixtures::fact('src-r5a-1', $memberId, '2026-06-12T00:00:00Z', 'attendance', ['isAmbiguousDevice' => true]));
@@ -436,7 +436,7 @@ it('R5 refuses approval and fulfillment after source invalidation', function () 
         ->toThrow(InvalidArgumentException::class, 'unknown_source');
 });
 
-it('R5 overturn acquires claims and caps and refuses incompatible or exhausted rivals', function () {
+it('R5 overturn acquires claims and caps and refuses incompatible or exhausted rivals', function (): void {
     [$programA, , , $memberId] = RewardLedgerFixtures::seedActiveEnrolled('repair-r5c');
     [$programB] = RewardLedgerFixtures::seedVersionedProgram('repair-r5d', RewardProgramMode::Points);
 
@@ -488,7 +488,7 @@ it('R5 overturn acquires claims and caps and refuses incompatible or exhausted r
         ->toThrow(InvalidArgumentException::class, 'appeal-merit-override');
 });
 
-it('R5 keeps held approvals single-claim and single-cap', function () {
+it('R5 keeps held approvals single-claim and single-cap', function (): void {
     [$program, , , $memberId] = RewardLedgerFixtures::seedActiveEnrolled('repair-r5e');
     $reader = new FakeRewardSourceFactReader;
     $reader->seed(RewardLedgerFixtures::fact('src-r5e-1', $memberId, '2026-06-12T00:00:00Z', 'attendance', ['isAmbiguousDevice' => true]));
@@ -511,7 +511,7 @@ it('R5 keeps held approvals single-claim and single-cap', function () {
     expect(RewardSourceComponentClaim::query()->count())->toBe($claimsBefore);
 });
 
-it('R6 refuses unpublished unknown and unqualified milestones and binds published terms', function () {
+it('R6 refuses unpublished unknown and unqualified milestones and binds published terms', function (): void {
     [$program, $memberId] = (function (): array {
         [$p, , , $m] = RewardLedgerFixtures::seedActiveEnrolled('repair-r6a');
 
@@ -620,7 +620,7 @@ it('R6 refuses unpublished unknown and unqualified milestones and binds publishe
     ))->toThrow(InvalidArgumentException::class, 'published definition');
 });
 
-it('R4 leaves no orphan entry or status when fulfillment fails mid-transition', function () {
+it('R4 leaves no orphan entry or status when fulfillment fails mid-transition', function (): void {
     [$program, $version, $enrollment, $memberId] = RewardLedgerFixtures::seedActiveEnrolled('repair-r4b');
     $acceptance = RewardEnrollmentAcceptance::query()->where('enrollment_id', $enrollment->getKey())->orderByDesc('seq')->firstOrFail();
 
@@ -667,7 +667,7 @@ it('R4 leaves no orphan entry or status when fulfillment fails mid-transition', 
         ->and($award->entries()->count())->toBe($entriesBefore);
 });
 
-it('R5 refuses overturn when the frozen cap quota is exhausted', function () {
+it('R5 refuses overturn when the frozen cap quota is exhausted', function (): void {
     [$program, , , $memberId] = RewardLedgerFixtures::seedActiveEnrolled(
         'repair-r5f',
         RewardProgramMode::Points,
