@@ -1418,5 +1418,51 @@
   "paired": "filament-vouchers",
   "context": "packages/vouchers/CONTEXT.md",
   "overview": "packages/vouchers/docs/01-overview.md"
+ },
+ {
+  "package": "rewards",
+  "composer": "aiarmada/rewards",
+  "surface": "domain",
+  "family": "growth-and-incentives",
+  "status": "current",
+  "summary": "Configurable reward programs: recognition, points, badges, cash payouts, and benefit grants with immutable ledgers.",
+  "keywords": [
+   "reward",
+   "rewards",
+   "points",
+   "badge",
+   "cash",
+   "benefit",
+   "award",
+   "payout",
+   "payee",
+   "program"
+  ],
+  "use_when": "Running configurable reward/loyalty programs with audited entitlements and payouts.",
+  "skip_when": "Only discounts are needed (use promotions) or only issued codes (use vouchers).",
+  "owner": "Owner-scoped through the program boundary (RewardProgram carries the owner morph).",
+  "paired": "filament-rewards",
+  "context": "packages/rewards/CONTEXT.md",
+  "overview": "packages/rewards/docs/01-overview.md"
+ },
+ {
+  "package": "filament-rewards",
+  "composer": "aiarmada/filament-rewards",
+  "surface": "adapter",
+  "family": "growth-and-incentives",
+  "status": "current",
+  "summary": "Filament v5 admin for rewards: programs, awards, appeals, funding, payees, payouts, benefits, recoveries, fraud queue.",
+  "keywords": [
+   "filament",
+   "rewards-ui",
+   "awards-ui",
+   "payout-queue"
+  ],
+  "use_when": "Administering reward programs from a Filament panel.",
+  "skip_when": "Headless/API-only hosts with no Filament panel.",
+  "owner": "Program-scoped table queries; payee queue is staff-gated.",
+  "paired": "rewards",
+  "context": "packages/filament-rewards/CONTEXT.md",
+  "overview": "packages/filament-rewards/docs/01-overview.md"
  }
 ]

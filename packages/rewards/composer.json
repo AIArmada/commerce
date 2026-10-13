@@ -1,0 +1,34 @@
+{
+    "name": "aiarmada/rewards",
+    "description": "Configurable reward programs (recognition, points, badges, cash, benefits) for Laravel applications",
+    "type": "library",
+    "license": "MIT",
+    "require": {
+        "php": "^8.5",
+        "aiarmada/commerce-support": "self.version",
+        "lorisleiva/laravel-actions": "^2.12.0",
+        "spatie/laravel-package-tools": "^1.93.2"
+    },
+    "suggest": {
+        "aiarmada/affiliates": "Enables the Affiliates-backed cash payout executor adapter",
+        "aiarmada/vouchers": "Enables coupon-backed benefit fulfillment"
+    },
+    "autoload": {
+        "psr-4": {
+            "AIArmada\\Rewards\\": "src/",
+            "AIArmada\\Rewards\\Database\\Factories\\": "database/factories/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "AIArmada\\Rewards\\RewardsServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

@@ -2000,6 +2000,65 @@
       ],
       "use_when": "Person identity admin UI.",
       "owner_scoped": false
+    },
+    "rewards": {
+      "composer": "aiarmada/rewards",
+      "surface": "domain",
+      "family": "growth-and-incentives",
+      "paired_package": "filament-rewards",
+      "summary": "Configurable reward programs with audited entitlements, immutable ledgers, and host-bound payout/coupon rails.",
+      "canonical_docs": {
+        "overview": "packages/rewards/docs/01-overview.md",
+        "installation": "packages/rewards/docs/02-installation.md",
+        "configuration": "packages/rewards/docs/03-configuration.md",
+        "usage": "packages/rewards/docs/04-usage.md",
+        "troubleshooting": "packages/rewards/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "commerce-support",
+        "affiliates",
+        "vouchers"
+      ],
+      "keywords": [
+        "reward",
+        "rewards",
+        "points",
+        "badge",
+        "cash",
+        "benefit",
+        "award",
+        "payout",
+        "payee",
+        "program"
+      ],
+      "use_when": "Running configurable reward/loyalty programs with audited entitlements and payouts.",
+      "owner_scoped": true
+    },
+    "filament-rewards": {
+      "composer": "aiarmada/filament-rewards",
+      "surface": "adapter",
+      "family": "growth-and-incentives",
+      "paired_package": "rewards",
+      "summary": "Filament v5 admin adapter for the rewards package.",
+      "canonical_docs": {
+        "overview": "packages/filament-rewards/docs/01-overview.md",
+        "installation": "packages/filament-rewards/docs/02-installation.md",
+        "configuration": "packages/filament-rewards/docs/03-configuration.md",
+        "usage": "packages/filament-rewards/docs/04-usage.md",
+        "troubleshooting": "packages/filament-rewards/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "rewards",
+        "commerce-support"
+      ],
+      "keywords": [
+        "filament",
+        "rewards-ui",
+        "awards-ui",
+        "payout-queue"
+      ],
+      "use_when": "Administering reward programs from a Filament panel.",
+      "owner_scoped": true
     }
   }
 }

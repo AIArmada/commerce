@@ -101,6 +101,8 @@ pest()->extend(TestCase::class)->in(
     'src/References',
     'src/Links',
     'src/FilamentLinks',
+    'src/Rewards',
+    'src/FilamentRewards',
 );
 
 pest()->extend(AffiliateNetworkTestCase::class)->in('src/AffiliateNetwork');

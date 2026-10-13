@@ -39,6 +39,7 @@ use AIArmada\FilamentDocs\FilamentDocsServiceProvider;
 use AIArmada\FilamentEvents\FilamentEventsServiceProvider;
 use AIArmada\FilamentGrowth\FilamentGrowthServiceProvider;
 use AIArmada\FilamentLinks\FilamentLinksServiceProvider;
+use AIArmada\FilamentRewards\FilamentRewardsServiceProvider;
 use AIArmada\FilamentSeating\FilamentSeatingServiceProvider;
 use AIArmada\FilamentShipping\FilamentShippingServiceProvider;
 use AIArmada\FilamentSignals\FilamentSignalsServiceProvider;
@@ -52,6 +53,7 @@ use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
 use AIArmada\Products\ProductsServiceProvider;
 use AIArmada\References\ReferencesServiceProvider;
+use AIArmada\Rewards\RewardsServiceProvider;
 use AIArmada\Seating\SeatingServiceProvider;
 use AIArmada\Shipping\Facades\Shipping;
 use AIArmada\Shipping\ShippingServiceProvider;
@@ -194,6 +196,7 @@ abstract class TestCase extends Orchestra
             SluggableServiceProvider::class,
             AuthzServiceProvider::class,
             FilamentAuthzServiceProvider::class,
+            FilamentRewardsServiceProvider::class,
             FilamentVouchersServiceProvider::class,
             AddressingServiceProvider::class,
             AffiliatesServiceProvider::class,
@@ -208,6 +211,7 @@ abstract class TestCase extends Orchestra
             FilamentCommunicationsServiceProvider::class,
             ModerationServiceProvider::class,
             ReferencesServiceProvider::class,
+            RewardsServiceProvider::class,
             LinksServiceProvider::class,
             FilamentLinksServiceProvider::class,
             FilamentShippingServiceProvider::class,
@@ -363,6 +367,13 @@ abstract class TestCase extends Orchestra
         $app['config']->set('growth.features.owner.enabled', true);
         $app['config']->set('growth.features.owner.include_global', false);
         $app['config']->set('promotions.features.owner.enabled', true);
+        $app['config']->set('rewards.owner.enabled', true);
+        $app['config']->set('rewards.owner.include_global', false);
+        $app['config']->set('rewards.owner.auto_assign_on_create', true);
+        $app['config']->set('rewards.outcomes', ['contribution', 'attendance', 'referral', 'registration', 'person_follow', 'org_follow', 'series_follow', 'reference_follow', 'saved_search', 'saved_item', 'rsvp']);
+        $app['config']->set('rewards.moderated_outcomes', ['contribution']);
+        $app['config']->set('rewards.recipient_types', ['user']);
+        $app['config']->set('rewards.payouts.methods', ['manual']);
         $app['config']->set('promotions.features.owner.include_global', false);
         $app['config']->set('signals.owner.enabled', true);
         $app['config']->set('signals.owner.include_global', false);
@@ -500,6 +511,7 @@ abstract class TestCase extends Orchestra
         $this->loadMigrationsFrom(__DIR__ . '/../../packages/affiliate-network/database/migrations');
         $this->loadMigrationsFrom(__DIR__ . '/../../packages/docs/database/migrations');
         $this->loadMigrationsFrom(__DIR__ . '/../../packages/promotions/database/migrations');
+        $this->loadMigrationsFrom(__DIR__ . '/../../packages/rewards/database/migrations');
         $this->loadMigrationsFrom(__DIR__ . '/../../packages/orders/database/migrations');
         $this->loadMigrationsFrom(__DIR__ . '/../../packages/pricing/database/migrations');
         $this->loadMigrationsFrom(__DIR__ . '/../../packages/cashier-chip/database/migrations');
