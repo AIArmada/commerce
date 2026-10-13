@@ -73,19 +73,6 @@ final class ContactMethod extends Model
         'metadata',
     ];
 
-    /**
-     * DB-only MySQL-family uniqueness helper. Never fillable; hidden from array
-     * and JSON serialization so it cannot become public API shape.
-     *
-     * @var list<string>
-     */
-    protected $hidden = [
-        'primary_unique_packed',
-        'primary_global_unique_packed',
-        'primary_unique_hash',
-        'primary_global_unique_hash',
-    ];
-
     protected static string $ownerScopeConfigKey = 'contacting.features.owner';
 
     public function getTable(): string

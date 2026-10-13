@@ -2,7 +2,7 @@
 title: Installation
 ---
 
-MySQL deployments require 8.0.23 or later; MariaDB deployments require 10.4.14 or later for the generated owner-scoped identity indexes.
+PostgreSQL is supported for the owner-scoped identity indexes.
 
 ## Install
 

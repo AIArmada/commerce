@@ -19,12 +19,10 @@ return new class extends Migration
 
         Schema::create($tableName, function (Blueprint $table) use ($jsonType, $tableName): void {
             $table->uuid('id')->primary();
-            $table->string('identifier', 191)->index();
-            $table->string('owner_scope', 191)->default('global');
-            $table->string('owner_type', 191)->nullable();
-            $table->uuid('owner_id')->nullable();
-            $table->index(['owner_type', 'owner_id']);
-            $table->string('instance', 191)->default('default')->index();
+            $table->string('identifier')->index();
+            $table->string('owner_scope')->default('global');
+            $table->nullableUuidMorphs('owner');
+            $table->string('instance')->default('default')->index();
             $table->{$jsonType}('items')->nullable();
             $table->{$jsonType}('conditions')->nullable();
             $table->{$jsonType}('metadata')->nullable();
@@ -54,8 +52,6 @@ return new class extends Migration
 
         if ($driver === 'pgsql') {
             $this->addPostgreSQLIndexes($tableName, $jsonType);
-        } else {
-            $this->addMySQLIndexes($tableName);
         }
     }
 
@@ -90,26 +86,6 @@ return new class extends Migration
                 ON \"{$tableName}\" (owner_type, owner_id, updated_at, instance)
                 WHERE items IS NOT NULL
             ");
-        }
-    }
-
-    private function addMySQLIndexes(string $tableName): void
-    {
-        $indexes = [
-            "{$tableName}_lookup_covering" => '(owner_type, owner_id, identifier, instance, id, version, updated_at, expires_at)',
-            "{$tableName}_expired" => '(owner_type, owner_id, expires_at)',
-            "{$tableName}_analytics" => '(owner_type, owner_id, updated_at, instance)',
-        ];
-        $connection = Schema::getConnection();
-        $grammar = $connection->getQueryGrammar();
-
-        foreach ($indexes as $indexName => $columns) {
-            $connection->statement(sprintf(
-                'CREATE INDEX %s ON %s %s',
-                $grammar->wrap($indexName),
-                $grammar->wrapTable($tableName),
-                $columns,
-            ));
         }
     }
 };

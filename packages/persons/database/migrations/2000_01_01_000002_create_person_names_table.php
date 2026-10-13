@@ -28,7 +28,7 @@ return new class extends Migration
 
         $driver = ConnectionDriver::name(Schema::getConnection());
 
-        if (! in_array($driver, ['mysql', 'pgsql', 'sqlite'], true)) {
+        if (! in_array($driver, ['pgsql', 'sqlite'], true)) {
             throw new RuntimeException(sprintf(
                 'Person names identity index cannot run on unsupported database driver [%s].',
                 $driver,
@@ -38,19 +38,6 @@ return new class extends Migration
         $connection = Schema::getConnection();
         $grammar = $connection->getQueryGrammar();
         $columns = ['person_id', 'name_type', 'language_code'];
-
-        if ($driver === 'mysql') {
-            $connection->statement(sprintf(
-                'CREATE UNIQUE INDEX %s ON %s ((CASE WHEN %s = 1 THEN CAST(CONCAT_WS(%s, %s) AS CHAR(512)) ELSE NULL END))',
-                $grammar->wrap('person_names_primary_unique'),
-                $grammar->wrapTable($tableName),
-                $grammar->wrap('is_primary'),
-                $connection->getPdo()->quote('|'),
-                implode(', ', array_map($grammar->wrap(...), $columns)),
-            ));
-
-            return;
-        }
 
         $predicate = $driver === 'pgsql'
             ? sprintf('%s IS TRUE', $grammar->wrap('is_primary'))

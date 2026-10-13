@@ -15,7 +15,7 @@ return new class extends Migration
         $jsonType = (string) commerce_json_column_type('cart', config('cart.database.json_column_type', 'jsonb'));
         $usePostgresGin = $jsonType === 'jsonb' && ConnectionDriver::name(Schema::getConnection()) === 'pgsql';
 
-        Schema::create($tableName, function (Blueprint $table) use ($jsonType, $usePostgresGin): void {
+        Schema::create($tableName, function (Blueprint $table) use ($jsonType, $usePostgresGin, $tableName): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('cart_id');
             $table->string('item_id')->index(); // The original cart item ID

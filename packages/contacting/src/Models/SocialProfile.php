@@ -77,20 +77,6 @@ final class SocialProfile extends Model
         'metadata',
     ];
 
-    /**
-     * DB-only MySQL uniqueness helper. Never fillable; hidden from array
-     * and JSON serialization so it cannot become public API shape.
-     * The generated column is invisible at the database level.
-     *
-     * @var list<string>
-     */
-    protected $hidden = [
-        'primary_unique_packed',
-        'primary_global_unique_packed',
-        'primary_unique_identity',
-        'primary_global_unique_identity',
-    ];
-
     protected static string $ownerScopeConfigKey = 'contacting.features.owner';
 
     public function getTable(): string

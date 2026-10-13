@@ -14,55 +14,18 @@ return new class extends Migration
         $tableName = config('contacting.database.tables.social_profiles', 'social_profiles');
         $jsonColumnType = commerce_json_column_type('contacting', 'json');
 
-        // MariaDB/MySQL enforce a 3072-byte index limit that the full-width
-        // 8-column validity index exceeds (1071). Columns keep their
-        // canonical widths and every index keeps its canonical name and
-        // membership; only the MySQL-family validity index spells its long
-        // string parts with prefix lengths (a non-unique lookup assist, so
-        // prefixes change selectivity, never query results).
         $driver = ConnectionDriver::name(Schema::getConnection());
-        $isMysqlFamily = in_array($driver, ['mysql', 'mariadb'], true);
         $connection = Schema::getConnection();
-        $grammar = $connection->getQueryGrammar();
-        $identityCollation = ConnectionDriver::isMariaDb($connection)
-            ? 'utf8mb4_nopad_bin'
-            : ($isMysqlFamily ? 'utf8mb4_0900_bin' : null);
         $validityIndexName = str_replace(['.', '-', ' '], '_', $tableName) . '_socialable_validity_index';
-        $primaryUniqueIdentity = null;
-        $globalUniqueIdentity = null;
-        $ownerPackedColumn = 'primary_unique_packed';
-        $globalPackedColumn = 'primary_global_unique_packed';
-        $ownerPackExpression = null;
-        $globalPackExpression = null;
 
-        if ($isMysqlFamily) {
-            $pack = static fn (array $columns): string => 'CONCAT(' . implode(', ', array_merge(...array_map(
-                static fn (string $column): array => [sprintf('CHAR_LENGTH(%s)', $grammar->wrap($column)), "':'", $grammar->wrap($column), "'|'"],
-                $columns,
-            ))) . ')';
-            $ownerPackExpression = $pack(['owner_type', 'owner_id', 'socialable_type', 'socialable_id', 'platform', 'purpose']);
-            $globalPackExpression = $pack(['socialable_type', 'socialable_id', 'platform', 'purpose']);
-            $primaryUniqueIdentity = sprintf('CASE WHEN %s = 1 THEN SHA2(%s, 256) ELSE NULL END', $grammar->wrap('is_primary'), $grammar->wrap($ownerPackedColumn));
-            $globalUniqueIdentity = sprintf('CASE WHEN %s = 1 AND %s IS NULL AND %s IS NULL THEN SHA2(%s, 256) ELSE NULL END', $grammar->wrap('is_primary'), $grammar->wrap('owner_type'), $grammar->wrap('owner_id'), $grammar->wrap($globalPackedColumn));
-        }
-
-        Schema::create($tableName, function (Blueprint $table) use ($jsonColumnType, $tableName, $isMysqlFamily, $primaryUniqueIdentity, $globalUniqueIdentity, $ownerPackedColumn, $globalPackedColumn, $ownerPackExpression, $globalPackExpression, $validityIndexName, $grammar, $identityCollation): void {
+        Schema::create($tableName, function (Blueprint $table) use ($jsonColumnType, $tableName, $validityIndexName): void {
             $table->uuid('id')->primary();
 
-            $ownerType = $table->string('owner_type', 191)->nullable();
-            $ownerId = $table->uuid('owner_id')->nullable();
-            $table->index(['owner_type', 'owner_id']);
-            $socialableType = $table->string('socialable_type', 191)->nullable();
-            $socialableId = $table->uuid('socialable_id')->nullable();
-            $table->index(['socialable_type', 'socialable_id']);
+            $table->nullableUuidMorphs('owner');
+            $table->nullableUuidMorphs('socialable');
 
-            $platform = $table->string('platform', 191);
-            $purpose = $table->string('purpose', 191)->default('general');
-            if ($identityCollation !== null) {
-                foreach ([$ownerType, $ownerId, $socialableType, $socialableId, $platform, $purpose] as $column) {
-                    $column->charset('utf8mb4')->collation($identityCollation);
-                }
-            }
+            $table->string('platform');
+            $table->string('purpose')->default('general');
             $table->string('label')->nullable();
 
             $table->string('handle')->nullable();
@@ -94,39 +57,11 @@ return new class extends Migration
                 str_replace(['.', '-', ' '], '_', $tableName) . '_socialable_primary_index',
             );
 
-            if (! $isMysqlFamily) {
-                $table->index(
-                    ['socialable_type', 'socialable_id', 'platform', 'purpose', 'is_primary', 'valid_from', 'valid_until', 'sort_order'],
-                    str_replace(['.', '-', ' '], '_', $tableName) . '_socialable_validity_index',
-                );
-            } else {
-                $table->rawIndex(sprintf(
-                    '%s(191), %s, %s(191), %s(191), %s, %s, %s, %s',
-                    $grammar->wrap('socialable_type'),
-                    $grammar->wrap('socialable_id'),
-                    $grammar->wrap('platform'),
-                    $grammar->wrap('purpose'),
-                    $grammar->wrap('is_primary'),
-                    $grammar->wrap('valid_from'),
-                    $grammar->wrap('valid_until'),
-                    $grammar->wrap('sort_order'),
-                ), $validityIndexName);
-            }
-
-            if ($primaryUniqueIdentity !== null) {
-                $table->text($ownerPackedColumn)->nullable()->virtualAs($ownerPackExpression)->invisible();
-                $table->text($globalPackedColumn)->nullable()->virtualAs($globalPackExpression)->invisible();
-                $table->string('primary_unique_identity', 64)->nullable()->virtualAs($primaryUniqueIdentity)->invisible();
-                $table->string('primary_global_unique_identity', 64)->nullable()->virtualAs($globalUniqueIdentity)->invisible();
-                $base = str_replace(['.', '-', ' '], '_', $tableName);
-                $table->unique('primary_unique_identity', $base . '_primary_owner_unique');
-                $table->unique('primary_global_unique_identity', $base . '_primary_global_unique');
-            }
+            $table->index(
+                ['socialable_type', 'socialable_id', 'platform', 'purpose', 'is_primary', 'valid_from', 'valid_until', 'sort_order'],
+                $validityIndexName,
+            );
         });
-
-        if ($isMysqlFamily) {
-            return;
-        }
 
         $this->createPrimaryUniqueIndex(
             $tableName,
