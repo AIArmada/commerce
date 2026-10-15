@@ -59,8 +59,11 @@ class RewardFraudTable
                     ->visible(fn (RewardAward $record): bool => self::fraudStatusFor($record) !== RewardSourceFraudStatus::Clear->value
                         && auth()->user()?->can('reward-fraud-steward') === true)
                     ->action(function (RewardAward $record, array $data, DismissRewardFraudAction $dismiss): void {
+                        // Handler boundary: `visible()` is presentation only, so
+                        // re-check the staff role and the steward ability here.
                         $staff = RewardAdminPresenter::staffActor();
                         abort_unless($staff !== null, 403);
+                        abort_unless(auth()->user()?->can('reward-fraud-steward') === true, 403);
 
                         try {
                             $dismiss->handle($record, 'user', (string) $staff->getKey(), RewardAdminPresenter::staffRole(), (string) $data['reason']);

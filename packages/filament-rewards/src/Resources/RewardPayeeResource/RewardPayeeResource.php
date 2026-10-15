@@ -6,6 +6,7 @@ namespace AIArmada\FilamentRewards\Resources\RewardPayeeResource;
 
 use AIArmada\FilamentRewards\Resources\RewardPayeeResource\Pages\ListRewardPayees;
 use AIArmada\FilamentRewards\Resources\RewardPayeeResource\Tables\RewardPayeesTable;
+use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
 use AIArmada\Rewards\Models\RewardPayee;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -31,6 +32,16 @@ class RewardPayeeResource extends Resource
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedIdentification;
 
     protected static ?string $navigationLabel = 'Payees';
+
+    /**
+     * Payee rows are recipient-keyed by design and carry no program/owner
+     * column to scope on, so panel access is gated on the staff role instead.
+     */
+    #[Override]
+    public static function canViewAny(): bool
+    {
+        return RewardAdminPresenter::staffActor() !== null;
+    }
 
     #[Override]
     public static function table(Table $table): Table

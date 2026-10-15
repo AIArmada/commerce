@@ -27,9 +27,15 @@ class ReferralProgramForm
                     TextInput::make('slug')
                         ->required()
                         ->maxLength(191),
+                    // Status is a lifecycle field, not an edit field: it moves
+                    // only through the matrix-checked table actions. On edit it
+                    // is shown read-only and withheld from the payload, so a
+                    // tampered request cannot reactivate an archived program.
                     Select::make('status')
                         ->options(self::programStatusOptions())
-                        ->required(),
+                        ->required()
+                        ->disabled(fn (string $operation): bool => $operation === 'edit')
+                        ->dehydrated(fn (string $operation): bool => $operation !== 'edit'),
                     TextInput::make('qualifier_outcome')
                         ->required()
                         ->maxLength(191),
@@ -89,7 +95,7 @@ class ReferralProgramForm
             Fieldset::make('Reward specification')
                 ->schema([
                     Select::make($side . '.driver')
-                        ->options(ReferralAdminPresenter::driverOptions())
+                        ->options(fn (): array => ReferralAdminPresenter::driverOptions())
                         ->searchable()
                         ->nullable()
                         ->live(),
@@ -101,6 +107,13 @@ class ReferralProgramForm
                         ->numeric()
                         ->rules(['integer', 'min:1'])
                         ->nullable(),
+                    TextInput::make($side . '.family_key')
+                        ->label('Rewards family key')
+                        ->helperText('Binds the points promise to one rewards program family.')
+                        ->rule('regex:/^[a-z0-9][a-z0-9_\-]{0,63}$/')
+                        ->maxLength(64)
+                        ->nullable()
+                        ->visible(fn (Get $get): bool => $get($side . '.driver') === 'reward_points'),
                     TextInput::make($side . '.currency')
                         ->minLength(3)
                         ->maxLength(3)

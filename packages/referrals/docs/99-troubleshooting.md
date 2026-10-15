@@ -24,6 +24,10 @@ The token is stored as a one-way SHA-256 hash and is returned only once. Check t
 
 Enter the owner context that created the program with `OwnerContext::withOwner($owner, ...)`. A missing owner is not global access. Use `OwnerContext::withOwner(null, ...)` only for an intentional global operation. Invite and reward actions revalidate their parent program under the current context.
 
+## A global-program mutation throws in a tenant context
+
+`referrals.owner.include_global=true` makes global programs *readable* in a resolved owner's scope; it never widens writes. Every guard-resolved mutation on a global-program row (accept, qualify, fulfil, reverse, revoke, and the Filament actions that dispatch them) fails closed with `AuthorizationException` unless the call is wrapped in `OwnerContext::withOwner(null, ...)`. Read visibility is `OwnerScope` plus the config key; write authority is resolved through `ReferralProgramGuard::program()`, which never widens to global rows. The scheduled `referrals:expire-invites` command expires each owner's due invites inside that owner's context and the global program's inside an explicit-global context, so background expiry needs no change.
+
 ## Affiliate award is refused
 
 Check that a host resolver returns the matching Affiliate for the frozen beneficiary and that the single bound `AffiliateAwardPolicy` dispatches `referrals:award:` keys to `ReferralAffiliateAwardPolicy`. The policy rejects pending-state, amount, currency, source, qualification-key, or recipient mismatches.
@@ -35,3 +39,7 @@ The host `RewardSourceFactReader` must recognize `referrals:qualified:{inviteId}
 ## Rewards points fulfilment fails after evaluation
 
 The synchronous Rewards job must leave a non-refused points award for the referral business key and frozen beneficiary. Check enrollment, programme eligibility, caps, and the frozen point amount; a refused evaluation or missing award remains `Failed` in referrals.
+
+## A points reversal is blocked
+
+Driving the reversal ran the Rewards corrections sweep for the side key, but a live award could not be settled: an unattested active reservation (the default null resolver attests nothing, so a hold with unknown external status refuses), a per-award sweep error, or a sweep that left the award live. `ReverseReferralReward` refuses and the referral stays `Fulfilled`, so resolve the underlying reservation (release or capture it) or repair the award, then retry the reversal. The failed attempt persists nothing.

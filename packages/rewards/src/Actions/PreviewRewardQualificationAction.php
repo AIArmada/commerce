@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Rewards\Actions;
 
 use AIArmada\Rewards\Contracts\RewardPreviewEvaluator;
+use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
 use AIArmada\Rewards\Enums\RewardComponent;
 use AIArmada\Rewards\Enums\RewardVerificationLevel;
 use AIArmada\Rewards\Models\RewardEnrollment;
@@ -214,6 +215,7 @@ final readonly class PreviewRewardQualificationAction
                 'source_business_key', 'outcome', 'category', 'occurred_at', 'verification',
                 'is_first_time', 'actor_id', 'sharer_id', 'is_claimed_identity', 'is_attributed',
                 'is_ambiguous_device', 'claimed_family_keys', 'is_bot', 'is_cancelled', 'is_valid_source',
+                'beneficiary_role',
             ], true)) {
                 throw new InvalidArgumentException("Unknown fixture key [{$key}].");
             }
@@ -293,6 +295,18 @@ final readonly class PreviewRewardQualificationAction
             }
         }
 
+        $rawBeneficiaryRole = $input['beneficiary_role'] ?? RewardBeneficiaryRole::Recipient->value;
+
+        if (! is_string($rawBeneficiaryRole)) {
+            throw new InvalidArgumentException('Fixture beneficiary_role must be a string role value.');
+        }
+
+        $beneficiaryRole = RewardBeneficiaryRole::tryFrom($rawBeneficiaryRole);
+
+        if (! $beneficiaryRole instanceof RewardBeneficiaryRole) {
+            throw new InvalidArgumentException('Fixture beneficiary_role must be a known role.');
+        }
+
         return new RewardPreviewFixture(
             sourceBusinessKey: $businessKey,
             outcome: $outcome,
@@ -309,6 +323,7 @@ final readonly class PreviewRewardQualificationAction
             isBot: (bool) ($input['is_bot'] ?? false),
             isCancelled: (bool) ($input['is_cancelled'] ?? false),
             isValidSource: (bool) ($input['is_valid_source'] ?? true),
+            beneficiaryRole: $beneficiaryRole,
         );
     }
 }

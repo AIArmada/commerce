@@ -66,8 +66,11 @@ class RewardAppealsTable
                     ->visible(fn (RewardAppeal $record): bool => $record->status->allowedTransitions() !== []
                         && RewardAdminPresenter::canDecideAward($record, 'decide'))
                     ->action(function (RewardAppeal $record, array $data, AdvanceRewardAppealAction $advance): void {
+                        // Handler boundary: `visible()` is presentation only, so
+                        // re-check the staff role and the `decide` ability here.
                         $staff = RewardAdminPresenter::staffActor();
                         abort_unless($staff !== null, 403);
+                        abort_unless(RewardAdminPresenter::canDecideAward($record, 'decide'), 403);
 
                         try {
                             $advance->handle(

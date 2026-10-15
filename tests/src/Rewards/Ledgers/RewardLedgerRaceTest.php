@@ -1160,7 +1160,7 @@ it('keeps milestone fulfillment coherent when a correction races it', function (
                 $source,
                 'user',
                 $recipient,
-                RewardBeneficiaryRole::Participant,
+                RewardBeneficiaryRole::Recipient,
                 'attendance',
                 CarbonImmutable::parse('2026-06-10T00:00:00Z'),
                 (string) $program->getKey(),

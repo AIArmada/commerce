@@ -10,6 +10,7 @@ use AIArmada\FilamentReferrals\Resources\ReferralInviteResource\Pages\ListReferr
 use AIArmada\FilamentReferrals\Resources\ReferralInviteResource\Pages\ViewReferralInvite;
 use AIArmada\FilamentReferrals\Resources\ReferralInviteResource\ReferralInviteResource;
 use AIArmada\FilamentReferrals\Resources\ReferralProgramResource\Pages\CreateReferralProgram as CreateReferralProgramPage;
+use AIArmada\FilamentReferrals\Resources\ReferralProgramResource\Pages\EditReferralProgram as EditReferralProgramPage;
 use AIArmada\FilamentReferrals\Resources\ReferralProgramResource\Pages\ListReferralPrograms;
 use AIArmada\FilamentReferrals\Resources\ReferralProgramResource\ReferralProgramResource;
 use AIArmada\FilamentReferrals\Resources\ReferralRewardResource\Pages\ListReferralRewards;
@@ -27,7 +28,9 @@ use AIArmada\Referrals\Enums\ReferralRewardStatus;
 use AIArmada\Referrals\Models\ReferralInvite;
 use AIArmada\Referrals\Models\ReferralProgram;
 use AIArmada\Referrals\Models\ReferralReward;
+use Filament\Forms\Components\Select;
 use Filament\Panel;
+use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
@@ -55,10 +58,11 @@ it('registers the resources and stats widget on a panel with merged config', fun
         ->and(config('filament-referrals.navigation.group'))->toBe('Referrals');
 });
 
-it('renders the program list and creates a program with both reward specifications', function (): void {
+it('creates a program with enabled reward specifications when another driver is disabled', function (): void {
     $owner = User::factory()->create();
     $this->setCurrentOwner($owner);
     $slug = 'program-' . Str::lower(Str::random(10));
+    config(['referrals.fulfillment.drivers.affiliate_cash.enabled' => false]);
 
     Livewire::actingAs($owner)
         ->test(ListReferralPrograms::class)
@@ -83,6 +87,7 @@ it('renders the program list and creates a program with both reward specificatio
             'referee_reward' => [
                 'driver' => 'reward_points',
                 'points' => '40',
+                'family_key' => 'referee-join',
             ],
         ])
         ->call('create')
@@ -100,11 +105,121 @@ it('renders the program list and creates a program with both reward specificatio
     ])->and($program->referee_reward)->toBe([
         'driver' => 'reward_points',
         'points' => 40,
+        'family_key' => 'referee-join',
     ]);
 
     Livewire::actingAs($owner)
         ->test(ListReferralPrograms::class)
         ->assertCanSeeTableRecords([$program]);
+});
+
+it('offers enabled drivers dynamically while keeping historical disabled drivers readable and filterable', function (): void {
+    $owner = User::factory()->create();
+    $program = $this->newProgram($owner, [
+        'referrer_reward' => [
+            'driver' => 'affiliate_cash',
+            'amount_minor' => 1250,
+            'currency' => 'MYR',
+        ],
+        'referee_reward' => null,
+    ]);
+    $invite = filamentReferralsQualifyInvite(
+        $owner,
+        $program,
+        $owner,
+        User::factory()->create(),
+        'historical-driver@example.com',
+    );
+    $reward = $invite->rewards()->firstOrFail();
+    $this->setCurrentOwner($owner);
+    config(['referrals.fulfillment.drivers.affiliate_cash.enabled' => true]);
+
+    $programForm = Livewire::actingAs($owner)->test(CreateReferralProgramPage::class);
+
+    $programForm->assertFormFieldExists(
+        'referrer_reward.driver',
+        static fn (Select $field): bool => array_key_exists('affiliate_cash', $field->getOptions())
+            && array_key_exists('manual', $field->getOptions()),
+    );
+
+    config(['referrals.fulfillment.drivers.affiliate_cash.enabled' => false]);
+
+    $programForm->assertFormFieldExists(
+        'referrer_reward.driver',
+        static fn (Select $field): bool => ! array_key_exists('affiliate_cash', $field->getOptions())
+            && array_key_exists('manual', $field->getOptions()),
+    );
+
+    Livewire::actingAs($owner)
+        ->test(ListReferralRewards::class)
+        ->assertCanSeeTableRecords([$reward])
+        ->assertTableFilterExists(
+            'driver',
+            static fn (SelectFilter $filter): bool => array_key_exists('affiliate_cash', $filter->getOptions()),
+        )
+        ->filterTable('driver', 'affiliate_cash')
+        ->assertCanSeeTableRecords([$reward]);
+});
+
+it('rejects a disabled reward driver during program creation without persisting the program', function (): void {
+    $owner = User::factory()->create();
+    $this->setCurrentOwner($owner);
+    config(['referrals.fulfillment.drivers.affiliate_cash.enabled' => false]);
+    $slug = 'disabled-driver-' . Str::lower(Str::random(10));
+
+    Livewire::actingAs($owner)
+        ->test(CreateReferralProgramPage::class)
+        ->fillForm([
+            'name' => 'Disabled driver referral',
+            'slug' => $slug,
+            'status' => ReferralProgramStatus::Draft->value,
+            'qualifier_outcome' => 'first_registration',
+            'currency' => 'MYR',
+            'referrer_reward' => [
+                'driver' => 'affiliate_cash',
+                'amount_minor' => '1250',
+                'currency' => 'MYR',
+            ],
+            'referee_reward' => null,
+        ])
+        ->call('create')
+        ->assertHasFormErrors(['referrer_reward.driver' => 'in']);
+
+    $programExists = OwnerContext::withOwner(
+        $owner,
+        fn (): bool => ReferralProgram::query()->where('slug', $slug)->exists(),
+    );
+
+    expect($programExists)->toBeFalse();
+});
+
+it('rejects a disabled reward driver during program edit without changing its specification', function (): void {
+    $owner = User::factory()->create();
+    $program = $this->newProgram($owner, [
+        'referrer_reward' => [
+            'driver' => 'manual',
+            'amount_minor' => 1250,
+            'currency' => 'MYR',
+        ],
+        'referee_reward' => null,
+    ]);
+    $originalReward = $program->referrer_reward;
+    $this->setCurrentOwner($owner);
+    config(['referrals.fulfillment.drivers.affiliate_cash.enabled' => false]);
+
+    Livewire::actingAs($owner)
+        ->test(EditReferralProgramPage::class, ['record' => $program->getKey()])
+        ->fillForm([
+            'referrer_reward' => [
+                'driver' => 'affiliate_cash',
+                'amount_minor' => '2500',
+                'currency' => 'USD',
+            ],
+        ])
+        ->call('save')
+        ->assertHasFormErrors(['referrer_reward.driver' => 'in']);
+
+    expect($program->fresh()->referrer_reward)->toBe($originalReward);
 });
 
 it('hides invites that belong to another owner from the invite list', function (): void {
@@ -257,6 +372,79 @@ it('does not render the invite token hash or decrypted invitee contact', functio
         ->assertOk()
         ->assertDontSee((string) $invite->token_hash)
         ->assertDontSee($contact);
+});
+
+it('rejects an invalid program edit and leaves the stored program unchanged', function (): void {
+    $owner = User::factory()->create();
+    $program = $this->newProgram($owner, [
+        'starts_at' => '2026-01-01T00:00:00Z',
+        'ends_at' => '2026-02-01T00:00:00Z',
+    ]);
+    $originalEndsAt = $program->ends_at;
+    $this->setCurrentOwner($owner);
+
+    // The form's length rules let "!!!" through; the core update action
+    // rejects it and the page reports the failure on the currency field.
+    Livewire::actingAs($owner)
+        ->test(EditReferralProgramPage::class, ['record' => $program->getKey()])
+        ->fillForm(['currency' => '!!!'])
+        ->call('save')
+        ->assertHasFormErrors(['currency']);
+
+    expect($program->fresh()->currency)->toBe('MYR');
+
+    // A window that inverts against the stored starts_at is refused the same
+    // way creation would refuse it.
+    Livewire::actingAs($owner)
+        ->test(EditReferralProgramPage::class, ['record' => $program->getKey()])
+        ->fillForm(['ends_at' => '2025-12-01 00:00:00'])
+        ->call('save')
+        ->assertHasFormErrors(['ends_at']);
+
+    expect($program->fresh()->ends_at?->equalTo($originalEndsAt))->toBeTrue();
+});
+
+it('does not reactivate an archived program through the edit page', function (): void {
+    $owner = User::factory()->create();
+    $program = $this->newProgram($owner, [
+        'status' => 'archived',
+        'name' => 'Archived referral',
+    ]);
+    $this->setCurrentOwner($owner);
+
+    // The status select is non-dehydrated on edit, so a tampered payload
+    // cannot move the program back to Active while other edits still apply.
+    Livewire::actingAs($owner)
+        ->test(EditReferralProgramPage::class, ['record' => $program->getKey()])
+        ->fillForm([
+            'status' => ReferralProgramStatus::Active->value,
+            'name' => 'Archived referral renamed',
+        ])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect($program->fresh()->status)->toBe(ReferralProgramStatus::Archived)
+        ->and($program->fresh()->name)->toBe('Archived referral renamed');
+});
+
+it('persists a valid program edit through the core update action', function (): void {
+    $owner = User::factory()->create();
+    $program = $this->newProgram($owner, ['name' => 'Member referral']);
+    $this->setCurrentOwner($owner);
+
+    Livewire::actingAs($owner)
+        ->test(EditReferralProgramPage::class, ['record' => $program->getKey()])
+        ->fillForm([
+            'name' => 'Member referral v2',
+            'invite_expiry_days' => '21',
+            'currency' => 'SGD',
+        ])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect($program->fresh()->name)->toBe('Member referral v2')
+        ->and($program->fresh()->invite_expiry_days)->toBe(21)
+        ->and($program->fresh()->currency)->toBe('SGD');
 });
 
 function filamentReferralsQualifyInvite(

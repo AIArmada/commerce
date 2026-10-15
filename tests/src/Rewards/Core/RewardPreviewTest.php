@@ -272,6 +272,16 @@ it('applies the published preclaim lookback without historical replay', function
     );
     expect($unattributed->reasons)->toBe([RewardPreviewReason::LateAttributionRefused]);
 
+    $actorBound = PreviewRewardQualificationAction::run(
+        $program,
+        RewardComponent::Points,
+        previewFixture(['occurred_at' => '2026-06-20T00:00:00Z', 'is_attributed' => false, 'beneficiary_role' => 'participant']),
+        CarbonImmutable::parse('2026-07-11T00:00:00Z'),
+        $member,
+    );
+    expect($actorBound->decision)->toBe(RewardPreviewDecision::Eligible)
+        ->and($actorBound->reasons)->toContain(RewardPreviewReason::Ok);
+
     $future = PreviewRewardQualificationAction::run(
         $program,
         RewardComponent::Points,

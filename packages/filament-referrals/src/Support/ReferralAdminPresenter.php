@@ -86,6 +86,26 @@ final class ReferralAdminPresenter
      */
     public static function driverOptions(): array
     {
+        return array_filter(
+            self::driverLabels(),
+            static fn (string $driver): bool => (bool) config("referrals.fulfillment.drivers.{$driver}.enabled", false),
+            ARRAY_FILTER_USE_KEY,
+        );
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function driverFilterOptions(): array
+    {
+        return self::driverLabels();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private static function driverLabels(): array
+    {
         return [
             'manual' => 'Manual',
             'voucher' => 'Voucher',

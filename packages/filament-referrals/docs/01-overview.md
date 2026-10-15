@@ -18,6 +18,6 @@ aiarmada/filament-referrals is the Filament v5 admin adapter for [aiarmada/refer
 - Identity, contact capture, referral delivery, or deciding whether a member has qualified.
 - Voucher, affiliate cash, or reward points behavior.
 
-The core referrals package owns those domain rules. This adapter calls CreateReferralProgram, RevokeReferralInvite, FulfillReferralReward, and ReverseReferralReward. Edits and program status actions resolve the program through ReferralProgramGuard because the core package currently has no update or program status-transition Action.
+The core referrals package owns those domain rules. This adapter calls CreateReferralProgram, UpdateReferralProgram, RevokeReferralInvite, FulfillReferralReward, and ReverseReferralReward. Program edits run through the core update Action so they enforce exactly the creation rules; program status still moves only through the matrix-checked table actions, which re-resolve the program through ReferralProgramGuard.
 
 See [installation](02-installation.md), [configuration](03-configuration.md), [usage](04-usage.md), and [troubleshooting](99-troubleshooting.md).

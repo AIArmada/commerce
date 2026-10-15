@@ -2,6 +2,10 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\NullOwnerResolver;
+use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\Rewards\Actions\ApproveRewardPayoutAction;
 use AIArmada\Rewards\Actions\ConfirmRewardPayoutAction;
 use AIArmada\Rewards\Actions\CreditRewardPointsAction;
@@ -24,6 +28,7 @@ use AIArmada\Rewards\Contracts\RewardFinancialReadinessChecker;
 use AIArmada\Rewards\Contracts\RewardPayoutExecution;
 use AIArmada\Rewards\Contracts\RewardPayoutExecutor;
 use AIArmada\Rewards\Contracts\RewardReadinessChecker;
+use AIArmada\Rewards\Contracts\RewardSourceFactReader;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
 use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
 use AIArmada\Rewards\Enums\RewardComponent;
@@ -411,6 +416,52 @@ it('evaluates queued business keys through the entitlement job', function (): vo
     );
 
     expect(RewardAward::query()->where('source_business_key', 'src-fin-job-unknown')->count())->toBe(0);
+});
+
+it('fans serialized evaluation out to each program owner without an ambient owner', function (): void {
+    [$owned, $global, $memberId] = RewardLedgerFixtures::seedOwnedAndGlobalEnrolled('fin-sys');
+
+    // Queue/console reality: the resolver returns no owner and no override exists.
+    app()->instance(OwnerResolverInterface::class, new NullOwnerResolver);
+
+    $reader = new FakeRewardSourceFactReader;
+    $reader->seed(RewardLedgerFixtures::fact('src-fin-sys-1', $memberId));
+    app()->instance(RewardSourceFactReader::class, $reader);
+
+    EvaluateRewardEntitlementJob::dispatchSync('src-fin-sys-1');
+
+    $awardedProgramIds = RewardAward::query()
+        ->where('source_business_key', 'src-fin-sys-1')
+        ->pluck('program_id')
+        ->sort()
+        ->values()
+        ->all();
+
+    expect($awardedProgramIds)->toBe(collect([$owned, $global])
+        ->map(fn ($program): string => (string) $program->getKey())
+        ->sort()
+        ->values()
+        ->all());
+});
+
+it('keeps an ambient owner scoped instead of fanning out to other tenants', function (): void {
+    [$owned, , $memberId] = RewardLedgerFixtures::seedOwnedAndGlobalEnrolled('fin-scope');
+
+    // An owner IS resolved (the synchronous in-tenant shape): the scan must
+    // stay scoped to it, so another tenant's active program is never
+    // enumerated and cannot be awarded from this dispatch.
+    app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver(User::factory()->create()));
+
+    $reader = new FakeRewardSourceFactReader;
+    $reader->seed(RewardLedgerFixtures::fact('src-fin-scope-1', $memberId));
+    app()->instance(RewardSourceFactReader::class, $reader);
+
+    EvaluateRewardEntitlementJob::dispatchSync('src-fin-scope-1');
+
+    expect(RewardAward::query()
+        ->where('source_business_key', 'src-fin-scope-1')
+        ->where('program_id', $owned->getKey())
+        ->exists())->toBeFalse();
 });
 
 it('assembles publish payloads from structured controls without hand-written JSON', function (): void {

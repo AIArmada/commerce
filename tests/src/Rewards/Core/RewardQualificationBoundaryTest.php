@@ -103,6 +103,54 @@ it('rejects unclaimed, unattributed, bot, cancelled, and invalid sources', funct
     expect($self->reasons)->toBe([RewardPreviewReason::SelfCreditExcluded]);
 });
 
+it('lets actor-bound beneficiary roles earn unattributed evidence while sharer-bound roles still refuse', function (): void {
+    [$program, $memberId] = c4Harness('core-c4-actor-attr');
+    $member = ['member_type' => 'user', 'member_id' => $memberId];
+    $decision = CarbonImmutable::parse('2026-07-11T00:00:00Z');
+
+    $unattributed = ['is_attributed' => false];
+
+    foreach (['recipient', 'sharer'] as $role) {
+        $refused = PreviewRewardQualificationAction::run(
+            $program,
+            RewardComponent::Points,
+            c4Fixture([...$unattributed, 'beneficiary_role' => $role]),
+            $decision,
+            $member,
+        );
+
+        expect($refused->decision)->toBe(RewardPreviewDecision::Ineligible)
+            ->and($refused->reasons)->toBe([RewardPreviewReason::LateAttributionRefused]);
+    }
+
+    foreach (['participant', 'purchaser', 'staff'] as $role) {
+        $eligible = PreviewRewardQualificationAction::run(
+            $program,
+            RewardComponent::Points,
+            c4Fixture([...$unattributed, 'beneficiary_role' => $role]),
+            $decision,
+            $member,
+        );
+
+        expect($eligible->decision)->toBe(RewardPreviewDecision::Eligible)
+            ->and($eligible->reasons)->toContain(RewardPreviewReason::Ok);
+    }
+});
+
+it('rejects unknown beneficiary roles instead of silently defaulting', function (): void {
+    [$program, $memberId] = c4Harness('core-c4-unknown-role');
+    $member = ['member_type' => 'user', 'member_id' => $memberId];
+    $decision = CarbonImmutable::parse('2026-07-11T00:00:00Z');
+
+    expect(fn () => PreviewRewardQualificationAction::run(
+        $program,
+        RewardComponent::Points,
+        c4Fixture(['beneficiary_role' => 'moderator']),
+        $decision,
+        $member,
+    ))->toThrow(InvalidArgumentException::class, 'beneficiary_role');
+});
+
 it('applies per-kind verification without letting moderation vouch for attendance', function (): void {
     expect(RewardVerificationLevel::ModeratedApproved->satisfiesFor(RewardVerificationLevel::StaffVerified, 'contribution'))->toBeTrue();
     expect(RewardVerificationLevel::ModeratedApproved->satisfiesFor(RewardVerificationLevel::StaffVerified, 'attendance'))->toBeFalse();

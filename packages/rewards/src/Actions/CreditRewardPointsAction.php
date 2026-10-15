@@ -10,6 +10,7 @@ use AIArmada\Rewards\Models\RewardPointLot;
 use AIArmada\Rewards\Models\RewardPointMovement;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardOperationKeys;
+use AIArmada\Rewards\Support\RewardProgramGuard;
 use AIArmada\Rewards\Support\RewardRuleValidator;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
@@ -69,6 +70,18 @@ final readonly class CreditRewardPointsAction
 
         if ($programId !== null && ! Str::isUuid($programId)) {
             throw new InvalidArgumentException('Program id must be a UUID.');
+        }
+
+        // Lot owners are not the program: a lot may only be bound to a
+        // foreign award/program that actually exists AND sits in the
+        // current owner scope. Dangling references stay allowed for
+        // append-only annotations.
+        if ($awardId !== null) {
+            RewardProgramGuard::assertAwardInScopeWhenExists($awardId);
+        }
+
+        if ($programId !== null) {
+            RewardProgramGuard::assertProgramInScopeWhenExists($programId);
         }
 
         $key = $operationKey ?? ($awardId !== null

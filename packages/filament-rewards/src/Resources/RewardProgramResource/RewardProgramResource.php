@@ -10,6 +10,7 @@ use AIArmada\FilamentRewards\Resources\RewardProgramResource\Pages\ViewRewardPro
 use AIArmada\FilamentRewards\Resources\RewardProgramResource\Schemas\RewardProgramForm;
 use AIArmada\FilamentRewards\Resources\RewardProgramResource\Schemas\RewardProgramInfolist;
 use AIArmada\FilamentRewards\Resources\RewardProgramResource\Tables\RewardProgramsTable;
+use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
 use AIArmada\Rewards\Models\RewardProgram;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -36,6 +37,17 @@ class RewardProgramResource extends Resource
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedGift;
 
     protected static ?string $recordTitleAttribute = 'title';
+
+    /**
+     * Program families are the tenant boundary for the whole rewards ledger, so
+     * only staff panel users may open the create page (the page handler repeats
+     * the check as its own fail-closed boundary).
+     */
+    #[Override]
+    public static function canCreate(): bool
+    {
+        return RewardAdminPresenter::staffActor() !== null;
+    }
 
     #[Override]
     public static function form(Schema $schema): Schema

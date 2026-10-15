@@ -50,6 +50,11 @@ final class ReferralProgramFormData
                     : null,
             ];
 
+            if ($driver === 'reward_points') {
+                $familyKey = is_string($state['family_key'] ?? null) ? mb_trim($state['family_key']) : '';
+                $spec['family_key'] = $familyKey === '' ? null : $familyKey;
+            }
+
             if ($driver === 'voucher') {
                 $voucher = [];
                 $voucherType = $state['voucher']['type'] ?? null;
@@ -96,6 +101,7 @@ final class ReferralProgramFormData
             'amount_minor' => $spec['amount_minor'] ?? null,
             'points' => $spec['points'] ?? null,
             'currency' => $spec['currency'] ?? null,
+            'family_key' => $spec['family_key'] ?? null,
             'voucher' => [
                 'type' => is_array($spec['voucher'] ?? null) ? ($spec['voucher']['type'] ?? null) : null,
                 'value' => is_array($spec['voucher'] ?? null) ? ($spec['voucher']['value'] ?? null) : null,

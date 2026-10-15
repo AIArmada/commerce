@@ -447,6 +447,7 @@ final readonly class EvaluateRewardEntitlementAction
                 isBot: $firstRead->isBot,
                 isCancelled: $firstRead->isCancelled,
                 isValidSource: $firstRead->isValid,
+                beneficiaryRole: $role,
             ),
             requestedComponent: $component,
             decisionTime: $decision,
@@ -626,13 +627,14 @@ final readonly class EvaluateRewardEntitlementAction
         return ['reject' => null, 'hold' => null];
     }
 
+    /**
+     * Binding follows the enum's single split: sharer-bound roles bind the
+     * fact's sharer id, actor-bound roles bind its actor id, and Staff
+     * additionally requires the fact's actor role to be Staff.
+     */
     private function beneficiaryBinds(RewardSourceFact $fact, RewardBeneficiaryRole $role, string $recipientId): bool
     {
-        return match ($role) {
-            RewardBeneficiaryRole::Recipient, RewardBeneficiaryRole::Sharer => $fact->sharerId !== null && $fact->sharerId === $recipientId,
-            RewardBeneficiaryRole::Participant, RewardBeneficiaryRole::Purchaser => $fact->actorId !== null && $fact->actorId === $recipientId,
-            RewardBeneficiaryRole::Staff => $fact->actorRole === RewardBeneficiaryRole::Staff && $fact->actorId !== null && $fact->actorId === $recipientId,
-        };
+        return $role->binds($fact->actorId, $fact->actorRole, $fact->sharerId, $recipientId);
     }
 
     /**

@@ -8,6 +8,7 @@ use AIArmada\Rewards\Enums\RewardEnrollmentStatus;
 use AIArmada\Rewards\Models\RewardEnrollment;
 use AIArmada\Rewards\Models\RewardEnrollmentAcceptance;
 use AIArmada\Rewards\Models\RewardEnrollmentPeriod;
+use AIArmada\Rewards\Support\RewardProgramGuard;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
@@ -40,6 +41,10 @@ final readonly class LeaveRewardProgramAction
             : CarbonImmutable::parse($decisionTime)->setTimezone('UTC');
 
         $enrollmentId = $enrollment instanceof RewardEnrollment ? (string) $enrollment->getKey() : $enrollment;
+
+        // The program is the tenant boundary: prove the enrollment's program
+        // is in the current owner scope before any lock.
+        RewardProgramGuard::findEnrollmentOrFail($enrollmentId);
 
         return DB::transaction(function () use ($enrollmentId, $reason, $decision): RewardEnrollment {
             $locked = RewardEnrollment::query()->whereKey($enrollmentId)->lockForUpdate()->first();

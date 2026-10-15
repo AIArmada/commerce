@@ -310,7 +310,7 @@ try {
                 (string) $sources[$slot],
                 'user',
                 (string) $payload['recipient_id'],
-                RewardBeneficiaryRole::Participant,
+                RewardBeneficiaryRole::Recipient,
                 (string) ($payload['outcome']),
                 CarbonImmutable::parse((string) $payload['occurred_at']),
                 (string) $payload['program_id'],

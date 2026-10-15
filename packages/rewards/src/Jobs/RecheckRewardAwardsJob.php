@@ -12,6 +12,7 @@ use AIArmada\Rewards\Enums\RewardAwardStatus;
 use AIArmada\Rewards\Enums\RewardSourceCorrectionStatus;
 use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Models\RewardMilestoneContribution;
+use AIArmada\Rewards\Support\RewardProgramGuard;
 use AIArmada\Rewards\Support\RewardSourceFact;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
@@ -114,15 +115,19 @@ final class RecheckRewardAwardsJob implements ShouldBeUniqueUntilProcessing, Sho
                 : RewardAwardStatus::Rejected;
 
             try {
-                $transition->handle(
-                    $award,
-                    $to,
-                    'system',
-                    null,
-                    'system',
-                    'source_withdrawn',
-                    $evidence,
-                );
+                // Queue workers resolve no ambient owner: run the transition
+                // under the owning program's own owner.
+                RewardProgramGuard::withProgramOwner((string) $award->program_id, static function () use ($transition, $award, $to, $evidence): void {
+                    $transition->handle(
+                        $award,
+                        $to,
+                        'system',
+                        null,
+                        'system',
+                        'source_withdrawn',
+                        $evidence,
+                    );
+                });
             } catch (InvalidArgumentException $exception) {
                 // A concurrent operator/system transition already moved the
                 // award out of the expected state; anything else is a real
@@ -143,12 +148,17 @@ final class RecheckRewardAwardsJob implements ShouldBeUniqueUntilProcessing, Sho
 
         foreach ($contributions as $contribution) {
             // The action is idempotent on revoked_at under the cycle lock.
-            $invalidate->handle(
-                $contribution,
-                'system',
-                null,
-                'system',
-                'source_withdrawn',
+            // Run it under the cycle's program owner — queue workers resolve
+            // no ambient owner.
+            RewardProgramGuard::withProgramOwner(
+                (string) ($contribution->cycle?->program_id ?? ''),
+                static fn () => $invalidate->handle(
+                    $contribution,
+                    'system',
+                    null,
+                    'system',
+                    'source_withdrawn',
+                ),
             );
         }
     }

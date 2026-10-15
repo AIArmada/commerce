@@ -19,6 +19,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
@@ -65,7 +66,7 @@ class RewardAwardsTable
                     ->visible(fn (RewardAward $record): bool => in_array($record->status, [RewardAwardStatus::Held, RewardAwardStatus::PendingReview], true)
                         && RewardAdminPresenter::canDecideAward($record, 'approve'))
                     ->action(function (RewardAward $record, array $data, TransitionRewardAwardAction $transition): void {
-                        self::transition($record, RewardAwardStatus::Approved, (string) $data['reason'], $transition, 'Award approved');
+                        self::transition($record, RewardAwardStatus::Approved, (string) $data['reason'], $transition, 'Award approved', 'approve');
                     }),
                 Action::make('reject')
                     ->label('Reject')
@@ -78,7 +79,7 @@ class RewardAwardsTable
                     ->visible(fn (RewardAward $record): bool => in_array($record->status, [RewardAwardStatus::Held, RewardAwardStatus::PendingReview], true)
                         && RewardAdminPresenter::canDecideAward($record, 'review'))
                     ->action(function (RewardAward $record, array $data, TransitionRewardAwardAction $transition): void {
-                        self::transition($record, RewardAwardStatus::Rejected, (string) $data['reason'], $transition, 'Award rejected');
+                        self::transition($record, RewardAwardStatus::Rejected, (string) $data['reason'], $transition, 'Award rejected', 'review');
                     }),
                 Action::make('reverse')
                     ->label('Reverse')
@@ -107,8 +108,7 @@ class RewardAwardsTable
                     ->visible(fn (RewardAward $record): bool => in_array($record->status, [RewardAwardStatus::Held, RewardAwardStatus::PendingReview], true)
                         && RewardAdminPresenter::canDecideAward($record, 'dismissFraud'))
                     ->action(function (RewardAward $record, array $data, DismissRewardFraudAction $dismiss): void {
-                        $staff = RewardAdminPresenter::staffActor();
-                        abort_unless($staff !== null, 403);
+                        $staff = self::authorize($record, 'dismissFraud');
 
                         try {
                             $dismiss->handle($record, 'user', (string) $staff->getKey(), RewardAdminPresenter::staffRole(), (string) $data['reason']);
@@ -121,6 +121,21 @@ class RewardAwardsTable
             ]);
     }
 
+    /**
+     * Fail-closed handler boundary for every award decision. `visible()` only
+     * decides whether the button renders; a crafted Livewire request can still
+     * resolve and call a hidden record action, so the staff role and the Gate
+     * ability are re-checked here before any state change.
+     */
+    private static function authorize(RewardAward $record, string $ability): Authenticatable
+    {
+        $staff = RewardAdminPresenter::staffActor();
+        abort_unless($staff !== null, 403);
+        abort_unless(RewardAdminPresenter::canDecideAward($record, $ability), 403);
+
+        return $staff;
+    }
+
     private static function reverse(
         RewardAward $record,
         string $reason,
@@ -129,8 +144,7 @@ class RewardAwardsTable
         // Fulfilled awards reverse through the recovery-aware connector;
         // anything else reverses through the plain transition.
         if ($record->status === RewardAwardStatus::Fulfilled) {
-            $staff = RewardAdminPresenter::staffActor();
-            abort_unless($staff !== null, 403);
+            $staff = self::authorize($record, 'reverse');
 
             try {
                 $outcome = ReverseRewardFulfillmentAction::run(
@@ -154,7 +168,7 @@ class RewardAwardsTable
             return;
         }
 
-        self::transition($record, RewardAwardStatus::Reversed, $reason, $transition, 'Award reversed');
+        self::transition($record, RewardAwardStatus::Reversed, $reason, $transition, 'Award reversed', 'reverse');
     }
 
     private static function transition(
@@ -163,9 +177,9 @@ class RewardAwardsTable
         string $reason,
         TransitionRewardAwardAction $transition,
         string $successTitle,
+        string $ability,
     ): void {
-        $staff = RewardAdminPresenter::staffActor();
-        abort_unless($staff !== null, 403);
+        $staff = self::authorize($record, $ability);
 
         try {
             $transition->handle($record, $to, 'user', (string) $staff->getKey(), RewardAdminPresenter::staffRole(), $reason);

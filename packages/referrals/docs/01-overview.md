@@ -38,10 +38,11 @@ Reward specifications have this shape:
     'points' => null,       // integer points for the rewards rail
     'currency' => null,     // explicit three-letter currency when monetary
     'voucher' => null,      // input array for vouchers' CreateVoucher action
+    'family_key' => null,   // rewards program family slug; reward_points only
 ]
 ```
 
-Use `null` or an empty array to omit a side. The program's specs are validated when the program is created. A qualified invite stores a frozen copy on each reward row, so later program edits cannot change a promise already made.
+Use `null` or an empty array to omit a side. The program's specs are validated when the program is created. A qualified invite stores a frozen copy on each reward row, so later program edits cannot change a promise already made. One Rewards program's points component carries one points value, so two points sides with different amounts must each name a `family_key`; equal amounts may share a family or omit it. Voucher sides are always single-use and beneficiary-bound, worth exactly the promised `amount_minor` — the spec cannot ask for anything else.
 
 ## Lifecycle
 

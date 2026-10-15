@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Tests\Ledgers\Support;
 
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Rewards\Actions\CreateRewardProgramAction;
 use AIArmada\Rewards\Actions\EnrollRewardMemberAction;
 use AIArmada\Rewards\Actions\PublishRewardProgramVersionAction;
@@ -65,9 +67,10 @@ final class RewardLedgerFixtures
         RewardProgramMode $mode = RewardProgramMode::Points,
         array $ruleOverrides = [],
         string $effective = '2026-06-01T00:00:00Z',
+        ?string $familyKey = null,
     ): array {
         $program = CreateRewardProgramAction::run(
-            $prefix . '-' . Str::lower(Str::random(6)),
+            $familyKey ?? ($prefix . '-' . Str::lower(Str::random(6))),
             'Ledger test program',
             $mode,
             null,
@@ -126,6 +129,60 @@ final class RewardLedgerFixtures
         );
 
         return [$program->refresh(), $version, $enrollment, $memberId];
+    }
+
+    /**
+     * Seeds two active programs sharing one enrolled member: a tenant-owned
+     * program (owned by a fresh user) and a global program. Jobs, sweeps, and
+     * commands must fan work out per program owner, so owner-fan-out tests
+     * bind a NullOwnerResolver afterwards and expect both programs to settle.
+     *
+     * @return array{0: RewardProgram, 1: RewardProgram, 2: string, 3: User}
+     */
+    public static function seedOwnedAndGlobalEnrolled(
+        string $prefix,
+        RewardProgramMode $mode = RewardProgramMode::Points,
+    ): array {
+        $memberId = (string) Str::uuid();
+        $owner = User::factory()->create();
+
+        [$owned, $ownedVersion] = OwnerContext::withOwner(
+            $owner,
+            static fn (): array => self::seedVersionedProgram($prefix . '-owned', $mode),
+        );
+
+        OwnerContext::withOwner($owner, static function () use ($owned, $ownedVersion, $memberId): void {
+            TransitionRewardProgramStatusAction::run($owned, RewardProgramStatus::Ready);
+            TransitionRewardProgramStatusAction::run($owned, RewardProgramStatus::Active);
+            EnrollRewardMemberAction::run(
+                $owned,
+                'user',
+                $memberId,
+                $ownedVersion,
+                'member-portal',
+                CarbonImmutable::parse('2026-06-10T00:00:00Z'),
+            );
+        });
+
+        [$global, $globalVersion] = OwnerContext::withOwner(
+            null,
+            static fn (): array => self::seedVersionedProgram($prefix . '-global', $mode),
+        );
+
+        OwnerContext::withOwner(null, static function () use ($global, $globalVersion, $memberId): void {
+            TransitionRewardProgramStatusAction::run($global, RewardProgramStatus::Ready);
+            TransitionRewardProgramStatusAction::run($global, RewardProgramStatus::Active);
+            EnrollRewardMemberAction::run(
+                $global,
+                'user',
+                $memberId,
+                $globalVersion,
+                'member-portal',
+                CarbonImmutable::parse('2026-06-10T00:00:00Z'),
+            );
+        });
+
+        return [$owned->refresh(), $global->refresh(), $memberId, $owner];
     }
 
     /**
