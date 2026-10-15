@@ -90,7 +90,7 @@ it('reports dirty primary contact data without deleting it during preflight', fu
     $tableName = (string) config('contacting.database.tables.contact_methods', 'contact_methods');
     Schema::table($tableName, function (Blueprint $table): void {
         $table->dropIndex('contact_methods_primary_owner_unique');
-        $table->dropIndex('contact_methods_primary_global_unique');
+        $table->dropIndex('contact_methods_primary_unique');
     });
 
     DB::table($tableName)->insert([
