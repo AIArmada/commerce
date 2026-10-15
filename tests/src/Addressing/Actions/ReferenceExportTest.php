@@ -253,6 +253,30 @@ it('filters the export to requested country codes and marks out of scope differe
     }
 });
 
+it('exports and compares default-hierarchy state links with an empty hierarchy marker', function (): void {
+    useOneReferenceProviderScope();
+    $fixture = seedReferenceExportFixture();
+    AddressAreaStateLink::query()->create([
+        'address_area_id' => $fixture['child']->getKey(),
+        'state_id' => $fixture['state']->getKey(),
+        'hierarchy_type' => '',
+    ]);
+    $before = referenceExportPath();
+    $after = referenceExportPath();
+
+    try {
+        app(ExportAddressingReferencesAction::class)->execute($before, ['MY']);
+        app(ExportAddressingReferencesAction::class)->execute($after, ['MY']);
+
+        $comparison = app(CompareAddressingReferenceExportsAction::class)->execute($before, $after);
+
+        expect($comparison['counts']['unchanged']['area_state_links'])->toBe(2);
+    } finally {
+        @unlink($before);
+        @unlink($after);
+    }
+});
+
 it('reports changed and added records and rejects tampered rows', function (): void {
     useOneReferenceProviderScope();
     $fixture = seedReferenceExportFixture();

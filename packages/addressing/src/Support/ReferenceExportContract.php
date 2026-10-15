@@ -241,9 +241,9 @@ final class ReferenceExportContract
             case 'area_roles':
                 return ['area' => self::areaField($data, 'area'), 'role' => self::stringField($data, 'role'), 'country' => self::stringField($data, 'country'), 'source' => self::stringField($data, 'source')];
             case 'area_relationships':
-                return ['parent' => self::areaField($data, 'parent'), 'child' => self::areaField($data, 'child'), 'relationship_type' => self::stringField($data, 'relationship_type'), 'hierarchy_type' => self::stringField($data, 'hierarchy_type'), 'source' => self::stringField($data, 'source')];
+                return ['parent' => self::areaField($data, 'parent'), 'child' => self::areaField($data, 'child'), 'relationship_type' => self::stringField($data, 'relationship_type'), 'hierarchy_type' => self::hierarchyTypeField($data, 'hierarchy_type'), 'source' => self::stringField($data, 'source')];
             case 'area_state_links':
-                return ['area' => self::areaField($data, 'area'), 'state' => self::stateField($data, 'state'), 'hierarchy_type' => self::stringField($data, 'hierarchy_type')];
+                return ['area' => self::areaField($data, 'area'), 'state' => self::stateField($data, 'state'), 'hierarchy_type' => self::hierarchyTypeField($data, 'hierarchy_type')];
             case 'postal_codes':
                 return ['country' => self::stringField($data, 'country'), 'code' => self::stringField($data, 'code')];
             case 'area_postal_codes':
@@ -272,6 +272,22 @@ final class ReferenceExportContract
     {
         if (! is_string($data[$field] ?? null) || $data[$field] === '') {
             throw new InvalidArgumentException(sprintf('Reference data field [%s] must be a non-empty string.', $field));
+        }
+
+        return $data[$field];
+    }
+
+    /**
+     * Hierarchy markers use the empty string for the default hierarchy
+     * (see AddressAreaStateLink's null normalization), so only the type
+     * is enforced here, not non-emptiness.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private static function hierarchyTypeField(array $data, string $field): string
+    {
+        if (! is_string($data[$field] ?? null)) {
+            throw new InvalidArgumentException(sprintf('Reference data field [%s] must be a string.', $field));
         }
 
         return $data[$field];
