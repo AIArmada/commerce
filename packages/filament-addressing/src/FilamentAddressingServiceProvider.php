@@ -13,7 +13,8 @@ final class FilamentAddressingServiceProvider extends PackageServiceProvider
     {
         $package
             ->name('filament-addressing')
-            ->hasConfigFile();
+            ->hasConfigFile()
+            ->hasViews();
     }
 
     public function packageRegistered(): void

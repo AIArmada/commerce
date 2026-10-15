@@ -28,6 +28,8 @@ use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
 use AIArmada\Addressing\Actions\SeedPostalCodesAction;
 use AIArmada\Addressing\Actions\SyncAddressAreaAssignmentsAction;
 use AIArmada\Addressing\Actions\ValidateAddressAction;
+use AIArmada\Addressing\Commands\BuildReferenceDatasetCommand;
+use AIArmada\Addressing\Commands\InspectReferenceContributionCommand;
 use AIArmada\Addressing\Commands\DiffCldrSubdivisionsCommand;
 use AIArmada\Addressing\Commands\DiffGoogleAddressReferenceCommand;
 use AIArmada\Addressing\Commands\ExportResolutionGapAliasesCommand;
@@ -39,6 +41,11 @@ use AIArmada\Addressing\Contracts\AddressFormatter;
 use AIArmada\Addressing\Contracts\AddressNormalizer;
 use AIArmada\Addressing\Contracts\CountryAddressFormatter;
 use AIArmada\Addressing\Contracts\CountryGeographyProvider;
+use AIArmada\Addressing\ReferenceSync\DiffEngine;
+use AIArmada\Addressing\ReferenceSync\ReferenceArchive;
+use AIArmada\Addressing\ReferenceSync\ReferenceReview;
+use AIArmada\Addressing\ReferenceSync\ReferenceWriter;
+use AIArmada\Addressing\ReferenceSync\SnapshotRepository;
 use AIArmada\Addressing\Support\CountryAddressFormatterResolver;
 use AIArmada\Addressing\Support\CountryAddressProfileResolver;
 use AIArmada\Addressing\Support\OneMapClient;
@@ -63,6 +70,8 @@ final class AddressingServiceProvider extends PackageServiceProvider
                 ExportResolutionGapAliasesCommand::class,
                 DiffGoogleAddressReferenceCommand::class,
                 DiffCldrSubdivisionsCommand::class,
+                BuildReferenceDatasetCommand::class,
+                InspectReferenceContributionCommand::class,
             );
     }
 
@@ -95,6 +104,11 @@ final class AddressingServiceProvider extends PackageServiceProvider
         $this->app->singleton(ValidateAddressAction::class);
         $this->app->singleton(DiffGoogleAddressReferenceAction::class);
         $this->app->singleton(DiffCldrSubdivisionsAction::class);
+        $this->app->singleton(SnapshotRepository::class);
+        $this->app->singleton(DiffEngine::class);
+        $this->app->singleton(ReferenceArchive::class);
+        $this->app->singleton(ReferenceReview::class);
+        $this->app->singleton(ReferenceWriter::class);
 
         $this->app->bind(AddressNormalizer::class, NormalizeAddressDataAction::class);
         $this->app->bind(AddressFormatter::class, FormatAddressAction::class);
@@ -124,29 +138,21 @@ final class AddressingServiceProvider extends PackageServiceProvider
     private function normalizeDefaultCountryCode(): void
     {
         $countryCode = config('addressing.defaults.country_code');
-
         if ($countryCode === null) {
             return;
         }
-
         if (! is_string($countryCode) || mb_trim($countryCode) === '') {
             config(['addressing.defaults.country_code' => null]);
-
             return;
         }
-
         config(['addressing.defaults.country_code' => mb_strtoupper(mb_trim($countryCode))]);
     }
 
     private function validateConfiguredClasses(mixed $classes, string $contract, string $label): void
     {
         if (! is_array($classes)) {
-            throw new InvalidArgumentException(sprintf(
-                'Addressing %s configuration must be an array of class strings.',
-                $label,
-            ));
+            throw new InvalidArgumentException(sprintf('Addressing %s configuration must be an array of class strings.', $label));
         }
-
         foreach ($classes as $class) {
             if (! is_string($class) || ! class_exists($class) || ! is_a($class, $contract, true)) {
                 throw new InvalidArgumentException(sprintf(

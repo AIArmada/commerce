@@ -27,7 +27,6 @@ return [
             'resolution_gaps' => 'heroicon-o-exclamation-circle',
         ],
     ],
-
     'features' => [
         'country_editing' => false,
         'area_import' => true,
@@ -37,51 +36,44 @@ return [
         'postal_code_import' => false,
         'postal_code_export' => false,
         'gap_actions' => true,
+        'reference_sync' => false, // Enable after migration and authorization setup.
     ],
-
     'resources' => [
         'countries' => [
             'enabled' => true,
             'read_only' => true,
             'model' => AddressCountry::class,
         ],
-
         'states' => [
             'enabled' => true,
             'read_only' => false,
             'model' => State::class,
         ],
-
         'cities' => [
             'enabled' => true,
             'read_only' => false,
             'model' => City::class,
         ],
-
         'areas' => [
             'enabled' => true,
             'read_only' => false,
             'model' => AddressArea::class,
         ],
-
         'postal_codes' => [
             'enabled' => true,
             'read_only' => false,
             'model' => PostalCode::class,
         ],
-
         'resolution_gaps' => [
             'enabled' => true,
             'read_only' => false,
             'model' => ResolutionGap::class,
         ],
-
         'addresses' => [
             'enabled' => false,
             'read_only' => false,
             'model' => Address::class,
         ],
-
         'snapshots' => [
             'enabled' => false,
             'model' => AddressSnapshot::class,

@@ -19,6 +19,7 @@
     ],
     "require": {
         "php": "^8.5",
+        "ext-zip": "*",
         "aiarmada/commerce-support": "self.version",
         "spatie/laravel-package-tools": "^1.93.2"
     },
