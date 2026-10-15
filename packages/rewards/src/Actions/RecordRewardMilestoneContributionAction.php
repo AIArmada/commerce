@@ -42,13 +42,15 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * source fact through the reader boundary, and a covering enrollment and
  * acceptance. Unknown programs, unpublished or mismatched definitions,
  * unknown/unclaimed/self/bot/cancelled/invalid/duplicate/incompatible facts,
- * and missing/stale consent are all refused. The cycle identity (recipient,
- * family, milestone_key, fixed window_start) is computable from the fact's
- * earning time. Re-recording the same source returns the existing
- * contribution; reaching the target achieves the cycle and mints exactly one
- * milestone award with frozen policy/enrollment/acceptance provenance (never
- * null aggregates). Milestone rewards are recognition/points/badge only;
- * cash/benefit settlement is WP6 scope.
+ * role-unbound contributions (the fact must bind the contributor role to
+ * the recipient), and missing/stale consent are all refused. The cycle
+ * identity (recipient, family, milestone_key, fixed window_start) is
+ * computable from the fact's earning time. Re-recording the same source
+ * returns the existing contribution; reaching the target achieves the
+ * cycle and mints exactly one milestone award with frozen
+ * policy/enrollment/acceptance provenance (never null aggregates), whose
+ * beneficiary_role is the achieving contribution's role. Milestone rewards
+ * are recognition/points/badge only; cash/benefit settlement is WP6 scope.
  *
  * @return array{cycle: RewardMilestoneCycle, contribution: RewardMilestoneContribution, achieved: bool}
  */
@@ -151,7 +153,7 @@ final readonly class RecordRewardMilestoneContributionAction
             throw new InvalidArgumentException('Refused: unknown_source has no readable source fact.');
         }
 
-        $this->assertFactQualifies($firstRead, $recipientId, $outcomeEnum, $occurred, $sourceSnapshot);
+        $this->assertFactQualifies($firstRead, $role, $recipientId, $outcomeEnum, $occurred, $sourceSnapshot);
 
         $windowStart = RewardMilestoneCycleIdentity::windowStart(
             $firstRead->occurredAt->setTimezone('UTC'),
@@ -199,6 +201,7 @@ final readonly class RecordRewardMilestoneContributionAction
      */
     private function assertFactQualifies(
         RewardSourceFact $fact,
+        RewardBeneficiaryRole $role,
         string $recipientId,
         string $outcome,
         CarbonImmutable $occurred,
@@ -240,16 +243,16 @@ final readonly class RecordRewardMilestoneContributionAction
             throw new InvalidArgumentException('Refused: unclaimed guest facts never count.');
         }
 
-        if (! $fact->isAttributed) {
-            throw new InvalidArgumentException('Refused: unattributed facts never count.');
+        if (! $fact->isAttributed && $role->requiresAttribution()) {
+            throw new InvalidArgumentException('Refused: unattributed facts never count for a sharer-bound contributor role.');
         }
 
         if ($fact->actorId !== null && $fact->sharerId !== null && $fact->actorId === $fact->sharerId) {
             throw new InvalidArgumentException('Refused: self-credited facts never count.');
         }
 
-        if ($fact->sharerId !== $recipientId && $fact->actorId !== $recipientId) {
-            throw new InvalidArgumentException('Refused: contributing fact does not involve the recipient.');
+        if (! $role->binds($fact->actorId, $fact->actorRole, $fact->sharerId, $recipientId)) {
+            throw new InvalidArgumentException('Refused: contributing fact does not bind the contributor role to the recipient.');
         }
     }
 
@@ -578,7 +581,7 @@ final readonly class RecordRewardMilestoneContributionAction
             'acceptance_id' => $coveringAcceptance->getKey(),
             'recipient_type' => $recipientType,
             'recipient_id' => $recipientId,
-            'beneficiary_role' => RewardBeneficiaryRole::Recipient,
+            'beneficiary_role' => $role,
             'source_business_key' => $milestoneSource,
             'family_key' => $familyKey,
             'component' => $component,

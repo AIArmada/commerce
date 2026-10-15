@@ -459,10 +459,13 @@ final readonly class TransitionRewardAwardAction
      * Milestone aggregate recheck: the frozen contributor set is re-read
      * against current canonical evidence while the cycle, contribution, and
      * award locks are held. A contributor that became cancelled, withdrawn,
-     * fraud-confirmed, unverified, or otherwise unqualified after achievement
-     * — but before the invalidation hook runs — refuses fulfillment; revoked
-     * contributions are excluded, so above-target cycles fulfill once the
-     * hook has processed the correction.
+     * fraud-confirmed, unverified, role-unbound, or otherwise unqualified
+     * after achievement — but before the invalidation hook runs — refuses
+     * fulfillment; revoked contributions are excluded, so above-target
+     * cycles fulfill once the hook has processed the correction. Each
+     * contribution is checked under its own stored contributor_role:
+     * attribution is demanded only for sharer-bound roles, and the fact
+     * must still bind that role to the award recipient.
      *
      * @param  array<string, mixed>  $entryEvidence
      */
@@ -558,7 +561,13 @@ final readonly class TransitionRewardAwardAction
                 throw new InvalidArgumentException("Refused: contributor [{$key}] is guest_unclaimed; the milestone cannot fulfill until its correction is processed.");
             }
 
-            if (! $fact->isAttributed) {
+            $contributorRole = RewardBeneficiaryRole::tryFrom((string) $contribution->contributor_role);
+
+            if (! $contributorRole instanceof RewardBeneficiaryRole) {
+                throw new InvalidArgumentException("Refused: contributor [{$key}] carries an unknown role; the milestone cannot fulfill until its correction is processed.");
+            }
+
+            if (! $fact->isAttributed && $contributorRole->requiresAttribution()) {
                 throw new InvalidArgumentException("Refused: contributor [{$key}] is unattributed; the milestone cannot fulfill until its correction is processed.");
             }
 
@@ -566,8 +575,8 @@ final readonly class TransitionRewardAwardAction
                 throw new InvalidArgumentException("Refused: contributor [{$key}] is self_credit_excluded; the milestone cannot fulfill until its correction is processed.");
             }
 
-            if ($fact->sharerId !== (string) $award->recipient_id && $fact->actorId !== (string) $award->recipient_id) {
-                throw new InvalidArgumentException("Refused: contributor [{$key}] no longer involves the recipient; the milestone cannot fulfill until its correction is processed.");
+            if (! $contributorRole->binds($fact->actorId, $fact->actorRole, $fact->sharerId, (string) $award->recipient_id)) {
+                throw new InvalidArgumentException("Refused: contributor [{$key}] no longer binds the contributor role to the recipient; the milestone cannot fulfill until its correction is processed.");
             }
 
             if ($fact->outcome !== (string) $contribution->outcome) {
@@ -582,6 +591,7 @@ final readonly class TransitionRewardAwardAction
 
             $checked[] = [
                 'source' => $key,
+                'contributor_role' => $contributorRole->value,
                 'verification' => $fact->verification->value,
                 'fraud_status' => $fact->fraudStatus->value,
                 'correction_status' => $fact->correctionStatus->value,
@@ -729,6 +739,7 @@ final readonly class TransitionRewardAwardAction
                 isBot: $fact->isBot,
                 isCancelled: $fact->isCancelled,
                 isValidSource: $fact->isValid,
+                beneficiaryRole: $award->beneficiary_role,
             ),
             requestedComponent: $award->component,
             decisionTime: $decision,
@@ -938,11 +949,7 @@ final readonly class TransitionRewardAwardAction
 
     private static function beneficiaryBinds(RewardSourceFact $fact, RewardBeneficiaryRole $role, string $recipientId): bool
     {
-        return match ($role) {
-            RewardBeneficiaryRole::Recipient, RewardBeneficiaryRole::Sharer => $fact->sharerId !== null && $fact->sharerId === $recipientId,
-            RewardBeneficiaryRole::Participant, RewardBeneficiaryRole::Purchaser => $fact->actorId !== null && $fact->actorId === $recipientId,
-            RewardBeneficiaryRole::Staff => $fact->actorRole === RewardBeneficiaryRole::Staff && $fact->actorId !== null && $fact->actorId === $recipientId,
-        };
+        return $role->binds($fact->actorId, $fact->actorRole, $fact->sharerId, $recipientId);
     }
 
     /**

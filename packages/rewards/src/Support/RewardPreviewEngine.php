@@ -28,10 +28,15 @@ use AIArmada\Rewards\Enums\RewardVerificationLevel;
  *   reacceptance; frozen acceptance references on accrued obligations are
  *   untouched (prospective). Advance consent for a future version never
  *   invalidates still-valid current consent.
- * - Product invariants are unconditional: no reward for unattributed, self,
- *   bot, invalid, or cancelled evidence, or for unclaimed guests. Validated
- *   rules always carry these protections as true; the engine enforces them
- *   even if a stored snapshot somehow omits them.
+ * - Product invariants are unconditional: no reward for self, bot, invalid,
+ *   or cancelled evidence, or for unclaimed guests. Validated rules always
+ *   carry these protections as true; the engine enforces them even if a
+ *   stored snapshot somehow omits them. The unattributed gate is the one
+ *   scoped invariant: it binds through the fixture's beneficiary role
+ *   (RewardBeneficiaryRole::requiresAttribution()) — sharer-bound roles
+ *   (Recipient, Sharer) stay refused on unattributed evidence, while
+ *   actor-bound roles (Participant, Purchaser, Staff) may earn from the
+ *   actor's own unattributed act.
  *
  * No database, clock, or request access. Gates run in fixed order; identical
  * inputs always yield identical outputs.
@@ -135,8 +140,8 @@ final class RewardPreviewEngine implements RewardPreviewEvaluator
             return $this->result(RewardPreviewDecision::Ineligible, $context, $reasons, $explanations);
         }
 
-        if (! $fixture->isAttributed) {
-            $add(RewardPreviewReason::LateAttributionRefused, 'Unattributed evidence cannot earn; a claim never converts it into attributed credit.');
+        if (! $fixture->isAttributed && $fixture->beneficiaryRole->requiresAttribution()) {
+            $add(RewardPreviewReason::LateAttributionRefused, 'Unattributed evidence cannot earn for a sharer-bound role; a claim never converts it into attributed credit. Actor-bound roles may earn their own unattributed act.');
 
             return $this->result(RewardPreviewDecision::Ineligible, $context, $reasons, $explanations);
         }

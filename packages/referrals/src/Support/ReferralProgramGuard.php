@@ -19,10 +19,15 @@ final class ReferralProgramGuard
         $id = $program instanceof ReferralProgram ? (string) $program->getKey() : $program;
 
         if ((bool) config('referrals.owner.enabled', true)) {
+            // Writes never widen to global rows: `include_global` is read
+            // visibility only (referrals/docs/03-configuration.md), so the
+            // guard resolves with includeGlobal=false unconditionally.
+            // Explicit-global contexts keep working because OwnerQuery
+            // returns global-only rows when the resolved owner is null.
             $resolved = OwnerWriteGuard::findOrFailForOwner(
                 modelClass: ReferralProgram::class,
                 id: $id,
-                includeGlobal: (bool) config('referrals.owner.include_global', false),
+                includeGlobal: false,
             );
         } else {
             $resolved = ReferralProgram::query()->whereKey($id)->firstOrFail();

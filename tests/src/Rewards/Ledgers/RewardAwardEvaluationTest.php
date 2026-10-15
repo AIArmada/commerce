@@ -150,6 +150,33 @@ it('records permanent rejections for merits failures', function (array $factOver
     'beneficiary mismatch' => [['sharerId' => (string) Str::uuid()], 'beneficiary_mismatch'],
 ]);
 
+it('awards an unattributed fact to an actor-bound role without freezing a rejection', function (): void {
+    [$program, , , $memberId] = ledgerHarness('ledger-actor-unattr');
+
+    $reader = new FakeRewardSourceFactReader;
+    $reader->seed(RewardLedgerFixtures::fact('src-actor-unattr-1', (string) Str::uuid(), '2026-06-12T00:00:00Z', 'attendance', [
+        'actorId' => $memberId,
+        'isAttributed' => false,
+    ]));
+
+    $action = new EvaluateRewardEntitlementAction($reader);
+    $result = $action->handle(
+        $program,
+        RewardComponent::Points,
+        'user',
+        $memberId,
+        RewardBeneficiaryRole::Participant,
+        'src-actor-unattr-1',
+        CarbonImmutable::parse('2026-06-15T00:00:00Z'),
+    );
+
+    expect($result->outcome)->toBe(RewardEvaluationOutcome::Awarded)
+        ->and($result->award->status)->toBe(RewardAwardStatus::Approved)
+        ->and($result->award->beneficiary_role)->toBe(RewardBeneficiaryRole::Participant)
+        ->and(RewardAward::query()->where('source_business_key', 'src-actor-unattr-1')->count())->toBe(1)
+        ->and(RewardAward::query()->where('source_business_key', 'src-actor-unattr-1')->where('status', RewardAwardStatus::Rejected->value)->count())->toBe(0);
+});
+
 it('refuses not-yet-authorized attempts without freezing rows', function (): void {
     [$program, $version, $enrollment, $memberId] = ledgerHarness('ledger-trans');
 

@@ -9,6 +9,7 @@ use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
 use AIArmada\Rewards\Actions\PreviewRewardQualificationAction;
 use AIArmada\Rewards\Actions\PublishRewardProgramVersionAction;
 use AIArmada\Rewards\Actions\TransitionRewardProgramStatusAction;
+use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
 use AIArmada\Rewards\Enums\RewardComponent;
 use AIArmada\Rewards\Enums\RewardProgramMode;
 use AIArmada\Rewards\Enums\RewardVerificationLevel;
@@ -327,6 +328,18 @@ class ViewRewardProgram extends ViewRecord
                     ->options(RewardAdminPresenter::verificationOptions())
                     ->default(RewardVerificationLevel::Accepted->value)
                     ->required(),
+                Select::make('beneficiary_role')
+                    ->label('Beneficiary role')
+                    ->options([
+                        RewardBeneficiaryRole::Recipient->value => 'Recipient (sharer-bound; attribution required)',
+                        RewardBeneficiaryRole::Participant->value => 'Participant (actor-bound)',
+                        RewardBeneficiaryRole::Purchaser->value => 'Purchaser (actor-bound)',
+                        RewardBeneficiaryRole::Staff->value => 'Staff (actor-bound)',
+                        RewardBeneficiaryRole::Sharer->value => 'Sharer (sharer-bound; attribution required)',
+                    ])
+                    ->default(RewardBeneficiaryRole::Recipient->value)
+                    ->required()
+                    ->helperText('Actor-bound roles can earn unattributed evidence; sharer-bound roles still require attribution.'),
                 Toggle::make('is_first_time')->label('First-time outcome')->default(true),
                 Toggle::make('is_attributed')->label('Attributed')->default(true),
                 Toggle::make('is_claimed_identity')->label('Claimed identity')->default(true),
@@ -344,13 +357,14 @@ class ViewRewardProgram extends ViewRecord
                             'source_business_key' => 'fixture:preview:' . (string) $data['outcome'],
                             'outcome' => (string) $data['outcome'],
                             'category' => null,
-                            'occurred_at' => CarbonImmutable::now('UTC')->subDay(),
-                            'verification' => RewardVerificationLevel::from((string) $data['verification']),
+                            'occurred_at' => CarbonImmutable::now('UTC')->subDay()->toIso8601String(),
+                            'verification' => (string) $data['verification'],
                             'is_first_time' => (bool) ($data['is_first_time'] ?? false),
                             'actor_id' => $actorId,
                             'sharer_id' => $sharerId,
                             'is_claimed_identity' => (bool) ($data['is_claimed_identity'] ?? false),
                             'is_attributed' => (bool) ($data['is_attributed'] ?? false),
+                            'beneficiary_role' => (string) ($data['beneficiary_role'] ?? RewardBeneficiaryRole::Recipient->value),
                         ],
                         CarbonImmutable::now('UTC'),
                     );

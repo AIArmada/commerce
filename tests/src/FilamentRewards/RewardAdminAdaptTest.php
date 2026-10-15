@@ -37,6 +37,8 @@ use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
 use AIArmada\Rewards\Enums\RewardComponent;
 use AIArmada\Rewards\Enums\RewardProgramMode;
 use AIArmada\Rewards\Enums\RewardProgramStatus;
+use AIArmada\Rewards\Enums\RewardRecoveryKind;
+use AIArmada\Rewards\Enums\RewardRecoveryStatus;
 use AIArmada\Rewards\Enums\RewardSourceFraudStatus;
 use AIArmada\Rewards\Models\RewardAppeal;
 use AIArmada\Rewards\Models\RewardAward;
@@ -44,11 +46,14 @@ use AIArmada\Rewards\Models\RewardFundingEntry;
 use AIArmada\Rewards\Models\RewardPayee;
 use AIArmada\Rewards\Models\RewardProgram;
 use AIArmada\Rewards\Models\RewardProgramVersion;
+use AIArmada\Rewards\Models\RewardRecovery;
 use AIArmada\Rewards\Support\FundedRewardFinancialReadinessChecker;
 use AIArmada\Rewards\Support\FundedRewardReadinessChecker;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
 use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerFixtures;
 use Carbon\CarbonImmutable;
+use Filament\Actions\Exceptions\ActionNotResolvableException;
+use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
@@ -298,6 +303,35 @@ it('lets staff publish a version and transition a program', function (): void {
     expect($program->fresh()->status)->toBe(RewardProgramStatus::Ready);
 });
 
+it('previews qualification from the program page sandbox', function (): void {
+    [$program] = RewardLedgerFixtures::seedVersionedProgram('admin-preview', RewardProgramMode::Points);
+    $program = $program->refresh();
+
+    TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Ready);
+    TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Active);
+
+    // The sandbox payload must satisfy the core array contract: string
+    // timestamps, string verification, and the beneficiary-role select.
+    // No enrollment is supplied, so the deterministic verdict is an
+    // ineligible enrollment-missing preview — the notification still
+    // carries every refusal reason for the operator.
+    Livewire::actingAs($this->staff)
+        ->test(ViewRewardProgram::class, ['record' => $program->getKey()])
+        ->callAction('preview_qualification', data: [
+            'component' => RewardComponent::Points->value,
+            'outcome' => 'attendance',
+            'verification' => 'accepted',
+            'is_first_time' => true,
+            'is_attributed' => true,
+            'is_claimed_identity' => true,
+            'self_credit' => false,
+            'beneficiary_role' => RewardBeneficiaryRole::Participant->value,
+        ])
+        ->assertHasNoActionErrors();
+
+    Notification::assertNotified('Preview: ineligible');
+});
+
 it('lets staff decide an appeal from the appeals table', function (): void {
     $award = adminAdaptHeldAward((string) $this->staff->getKey());
 
@@ -464,4 +498,55 @@ it('scopes admin queries to programs visible in the current owner context', func
     app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($other));
 
     Livewire::actingAs($other)->test(ListRewardAwards::class)->assertCanNotSeeTableRecords([$award]);
+});
+
+it('refuses settling a foreign recovery from the admin table', function (): void {
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
+
+    [$program, $version, $enrollment, $memberId] = OwnerContext::withOwner(
+        $owner,
+        static fn (): array => RewardLedgerFixtures::seedActiveEnrolled('adapt-cross-recovery'),
+    );
+
+    $reader = new FakeRewardSourceFactReader;
+    $reader->seed(RewardLedgerFixtures::fact('src-adapt-cross-recovery-1', $memberId));
+
+    $award = OwnerContext::withOwner(
+        $owner,
+        static fn () => (new EvaluateRewardEntitlementAction($reader))->handle(
+            $program,
+            RewardComponent::Points,
+            'user',
+            $memberId,
+            RewardBeneficiaryRole::Recipient,
+            'src-adapt-cross-recovery-1',
+            CarbonImmutable::parse('2026-06-15T00:00:00Z'),
+        ),
+    )->award->refresh();
+
+    $recovery = OwnerContext::withOwner(
+        $owner,
+        static fn (): RewardRecovery => RewardRecovery::factory()->create([
+            'award_id' => $award->getKey(),
+            'kind' => RewardRecoveryKind::Dispute,
+            'points' => 100,
+            'unit' => 'pts',
+        ]),
+    );
+
+    // Owner B's session invokes the settle table action on owner A's
+    // recovery. The recovery table query is award-scoped (RewardFilamentScope),
+    // so the action cannot even resolve for a foreign row — and the
+    // action-side guard in SettleRewardRecoveryAction remains the handler-level
+    // boundary for any other caller (see RewardOwnerScopingTest).
+    app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($other));
+
+    expect(fn () => Livewire::actingAs($other)
+        ->test(ListRewardRecoveries::class)
+        ->callTableAction('settle', $recovery->getKey(), data: [
+            'recovery_proof' => 'BANK-RETURN-1',
+        ]))->toThrow(ActionNotResolvableException::class);
+
+    expect($recovery->refresh()->status)->toBe(RewardRecoveryStatus::Open);
 });

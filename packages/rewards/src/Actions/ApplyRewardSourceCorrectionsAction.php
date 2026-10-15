@@ -9,8 +9,10 @@ use AIArmada\Rewards\Enums\RewardAwardStatus;
 use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Models\RewardMilestoneContribution;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
+use AIArmada\Rewards\Support\RewardProgramGuard;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
+use Illuminate\Auth\Access\AuthorizationException;
 use InvalidArgumentException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -36,6 +38,12 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * every skip, and every per-award error. Re-runs converge (settled work
  * skips), so the scheduled run, an operator rerun, and the queued job
  * all compose safely.
+ *
+ * Sweeps run without an ambient owner (cron, console, explicit-key
+ * callers), so each award transition/reversal and each contribution
+ * invalidation runs under the owning program's own owner context.
+ * Orphaned owner tuples record a per-award error and never abort the
+ * sweep.
  *
  * @return array{reversed: list<string>, rejected: list<string>, recoveries: list<string>, contributions: int, skipped: list<string>, errors: array<string, string>}
  */
@@ -90,56 +98,68 @@ final readonly class ApplyRewardSourceCorrectionsAction
                     continue;
                 }
 
+                $to = match ($award->status) {
+                    RewardAwardStatus::Held,
+                    RewardAwardStatus::PendingReview => RewardAwardStatus::Rejected,
+                    default => RewardAwardStatus::Reversed,
+                };
+
                 try {
-                    // Same routing as the queued recheck: unapproved work
-                    // rejects, approved work reverses, fulfilled work goes
-                    // through recovery.
-                    $to = match ($award->status) {
-                        RewardAwardStatus::Held,
-                        RewardAwardStatus::PendingReview => RewardAwardStatus::Rejected,
-                        default => RewardAwardStatus::Reversed,
-                    };
+                    // Sweeps run without an ambient owner: each award's work
+                    // runs under the owning program's own owner.
+                    RewardProgramGuard::withProgramOwner((string) $award->program_id, function () use ($awardId, $award, $to, $cause, $actorType, $actorId, $actorRole, $decided, &$report): void {
+                        // Same routing as the queued recheck: unapproved work
+                        // rejects, approved work reverses, fulfilled work goes
+                        // through recovery.
+                        if ($award->status === RewardAwardStatus::Fulfilled) {
+                            $outcome = ReverseRewardFulfillmentAction::run(
+                                $awardId,
+                                $actorType,
+                                $actorId,
+                                $actorRole,
+                                $cause['reason'],
+                                ['source_correction' => $cause['evidence']],
+                                $decided,
+                            );
 
-                    if ($award->status === RewardAwardStatus::Fulfilled) {
-                        $outcome = ReverseRewardFulfillmentAction::run(
-                            $awardId,
-                            $actorType,
-                            $actorId,
-                            $actorRole,
-                            $cause['reason'],
-                            ['source_correction' => $cause['evidence']],
-                            $decided,
-                        );
-
-                        foreach ($outcome['recovery_ids'] as $recoveryId) {
-                            $report['recoveries'][] = (string) $recoveryId;
+                            foreach ($outcome['recovery_ids'] as $recoveryId) {
+                                $report['recoveries'][] = (string) $recoveryId;
+                            }
+                        } else {
+                            app(TransitionRewardAwardAction::class)->handle(
+                                $awardId,
+                                $to,
+                                $actorType,
+                                $actorId,
+                                $actorRole,
+                                $cause['reason'],
+                                ['source_correction' => $cause['evidence']],
+                                null,
+                                $decided,
+                            );
                         }
-                    } else {
-                        app(TransitionRewardAwardAction::class)->handle(
-                            $awardId,
-                            $to,
-                            $actorType,
-                            $actorId,
-                            $actorRole,
-                            $cause['reason'],
-                            ['source_correction' => $cause['evidence']],
-                            null,
-                            $decided,
-                        );
-                    }
 
-                    $report[$to === RewardAwardStatus::Reversed ? 'reversed' : 'rejected'][] = $awardId;
-                } catch (InvalidArgumentException $exception) {
+                        $report[$to === RewardAwardStatus::Reversed ? 'reversed' : 'rejected'][] = $awardId;
+                    });
+                } catch (InvalidArgumentException | AuthorizationException $exception) {
+                    // Per-award failures (unknown program, orphaned owner,
+                    // refused authorization, concurrent transition) record a
+                    // per-award error and let the sweep continue.
                     $report['errors'][$awardId] = $exception->getMessage();
                 }
             }
 
-            $report['contributions'] += $this->invalidateContributions($businessKey, $actorType, $actorId, $actorRole, $cause['reason'], $decided);
+            $contributions = $this->invalidateContributions($businessKey, $actorType, $actorId, $actorRole, $cause['reason'], $decided);
+            $report['contributions'] += $contributions['count'];
+            $report['errors'] += $contributions['errors'];
         }
 
         return $report;
     }
 
+    /**
+     * @return array{count: int, errors: array<string, string>}
+     */
     private function invalidateContributions(
         string $businessKey,
         string $actorType,
@@ -147,7 +167,7 @@ final readonly class ApplyRewardSourceCorrectionsAction
         string $actorRole,
         string $reason,
         CarbonImmutable $decided,
-    ): int {
+    ): array {
         $contributions = RewardMilestoneContribution::query()
             ->where('source_business_key', $businessKey)
             ->whereNull('revoked_at')
@@ -155,25 +175,35 @@ final readonly class ApplyRewardSourceCorrectionsAction
             ->get();
 
         $count = 0;
+        $errors = [];
 
         foreach ($contributions as $contribution) {
             try {
-                app(InvalidateRewardMilestoneContributionAction::class)->handle(
-                    $contribution,
-                    $actorType,
-                    $actorId,
-                    $actorRole,
-                    $reason,
-                    $decided,
+                // Sweeps run without an ambient owner: run the invalidation
+                // under the cycle's program owner.
+                RewardProgramGuard::withProgramOwner(
+                    (string) ($contribution->cycle?->program_id ?? ''),
+                    static fn () => app(InvalidateRewardMilestoneContributionAction::class)->handle(
+                        $contribution,
+                        $actorType,
+                        $actorId,
+                        $actorRole,
+                        $reason,
+                        $decided,
+                    ),
                 );
                 $count++;
-            } catch (InvalidArgumentException) {
-                // A concurrent invalidation won; the contribution is
-                // settled either way.
+            } catch (InvalidArgumentException | AuthorizationException $exception) {
+                // A per-contribution failure — an orphaned owner tuple, a
+                // refused authorization, or a concurrent invalidation — is
+                // recorded rather than swallowed: the sweep must report every
+                // unit it could not settle, or a live milestone contribution
+                // would go unnoticed.
+                $errors['contribution:' . (string) $contribution->getKey()] = $exception->getMessage();
             }
         }
 
-        return $count;
+        return ['count' => $count, 'errors' => $errors];
     }
 
     /**

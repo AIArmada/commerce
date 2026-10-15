@@ -25,7 +25,7 @@ class ReferralRewardsTable
             SelectFilter::make('status')
                 ->options(self::statusOptions()),
             SelectFilter::make('driver')
-                ->options(ReferralAdminPresenter::driverOptions()),
+                ->options(ReferralAdminPresenter::driverFilterOptions()),
             SelectFilter::make('side')
                 ->options(self::sideOptions()),
         ];

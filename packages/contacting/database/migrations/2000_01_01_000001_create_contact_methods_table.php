@@ -90,7 +90,7 @@ return new class extends Migration
         ));
         $connection->statement(sprintf(
             'CREATE UNIQUE INDEX %s ON %s (%s) WHERE %s AND %s AND %s IS NULL AND %s IS NULL',
-            $grammar->wrap($base . '_primary_global_unique'),
+            $grammar->wrap($base . '_primary_unique'),
             $grammar->wrapTable($tableName),
             implode(', ', array_map($grammar->wrap(...), ['contactable_type', 'contactable_id', 'type', 'purpose'])),
             $isPrimary,

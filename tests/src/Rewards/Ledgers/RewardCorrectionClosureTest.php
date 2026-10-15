@@ -567,7 +567,7 @@ it('D2 keeps milestone invalidation atomic with attested reservations', function
         'src-d2mi-1',
         'user',
         $memberId,
-        RewardBeneficiaryRole::Participant,
+        RewardBeneficiaryRole::Recipient,
         'attendance',
         CarbonImmutable::parse('2026-06-10T00:00:00Z'),
         (string) $program->getKey(),

@@ -8,6 +8,14 @@ title: Filament rewards usage
 
 Create program families from the list page: family key, title, mode, owner (or platform for a global program), and purpose. Versions, readiness, and activation run through the core actions from the program view page, including a qualification preview sandbox.
 
+Only staff panel users may open the create page. The submitted owner alias is re-resolved server-side against `filament-rewards.owners.types` and the referenced record is loaded before the core action runs — the handler never trusts the posted alias or id, and an unconfigured alias or missing record fails on `owner_record_id` with no row written. Platform programs are the only owner-less form.
+
+## Qualification preview sandbox
+
+The **Preview qualification** action on the program view page explains why a supplied fixture qualifies, holds, or rejects under the applicable published version. Nothing is persisted, and every result is labeled fixture-only (`FIXTURE-NOT-SOURCE`), never source proof.
+
+The sandbox speaks the core array contract exactly: `occurred_at` is an explicit absolute timestamp string, `verification` is a string level value, and the beneficiary-role select (`recipient` default, or `participant` / `purchaser` / `staff` / `sharer`) rides through as `beneficiary_role`. Actor-bound roles can earn unattributed evidence; sharer-bound roles still require **Attributed** to be on. Because the sandbox supplies no enrollment, the deterministic verdict ends at the enrollment gate — the notification still lists every refusal reason for the operator. Preview never writes rows; live evaluation re-resolves under locks.
+
 ## Awards and appeals
 
 The awards table transitions held → pending → approved → fulfilled (or rejected/reversed/corrected) with actor, reason, and evidence capture. Appeals open from awards and advance through review to upheld/overturned/closed.

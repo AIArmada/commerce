@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Support;
 
+use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
 use AIArmada\Rewards\Enums\RewardVerificationLevel;
 use Carbon\CarbonImmutable;
 use InvalidArgumentException;
@@ -24,7 +25,9 @@ final readonly class RewardPreviewFixture
      * Synthetic fixture evidence only (never source proof). Validity flags
      * default to a clean source so existing valid fixtures keep working;
      * bot/cancelled/invalid/unattributed fixtures are explicitly rejected by
-     * the engine, never treated as eligible.
+     * the engine, never treated as eligible. The beneficiary role defaults
+     * to the fail-closed sharer-bound Recipient: an unattributed fixture
+     * stays refused unless the caller names an actor-bound role.
      *
      * @param  list<string>  $claimedFamilyKeys  Families already claiming this source/component (frozen snapshots).
      */
@@ -44,6 +47,7 @@ final readonly class RewardPreviewFixture
         public bool $isBot = false,
         public bool $isCancelled = false,
         public bool $isValidSource = true,
+        public RewardBeneficiaryRole $beneficiaryRole = RewardBeneficiaryRole::Recipient,
     ) {
         if ($this->sourceBusinessKey === '' || mb_strlen($this->sourceBusinessKey) > 191) {
             throw new InvalidArgumentException('Fixture source_business_key must be 1..191 characters.');

@@ -13,6 +13,7 @@ use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Models\RewardMilestoneContribution;
 use AIArmada\Rewards\Models\RewardMilestoneCycle;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
+use AIArmada\Rewards\Support\RewardProgramGuard;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
@@ -54,6 +55,10 @@ final readonly class InvalidateRewardMilestoneContributionAction
         $at = $revokedAt === null
             ? CarbonImmutable::now('UTC')
             : CarbonImmutable::parse($revokedAt)->setTimezone('UTC');
+
+        // The program is the tenant boundary: prove the contribution's
+        // cycle's program is in the current owner scope before any lock.
+        RewardProgramGuard::findContributionOrFail($contribution);
 
         $contributionId = $contribution instanceof RewardMilestoneContribution
             ? (string) $contribution->getKey()

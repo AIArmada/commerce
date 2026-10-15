@@ -10,6 +10,7 @@ use AIArmada\Rewards\Enums\RewardProgramStatus;
 use AIArmada\Rewards\Models\RewardProgram;
 use AIArmada\Rewards\Models\RewardProgramVersion;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 
 /**
  * Automation candidate resolution for single-fact evaluation.
@@ -17,14 +18,20 @@ use Carbon\CarbonImmutable;
  * For one committed source fact, resolves every (active program, enabled
  * component, bound role, recipient) tuple the evaluate job must attempt.
  * Binding follows the kernel exactly: sharer-side roles bind the fact's
- * sharer id, actor-side roles bind the fact's actor id. Unattributed,
- * invalid, and cancelled facts yield no candidates — automation stays
- * silent instead of freezing rejection rows for facts that could never
- * qualify; policy-merit rejections still freeze through explicit calls.
+ * sharer id, actor-side roles bind the fact's actor id. Invalid and
+ * cancelled facts yield no candidates — automation stays silent instead
+ * of freezing rejection rows for facts that could never qualify;
+ * policy-merit rejections still freeze through explicit calls.
+ * Unattributed facts drop only the sharer side: sharer-bound roles need
+ * attributed evidence, while actor-bound roles may earn the actor's own
+ * unattributed act.
  */
 final class RewardEvaluationCandidates
 {
     /**
+     * @param  bool  $systemEnumeration  System context (queued job): widen the
+     *                                   program scan past the ambient owner scope — every candidate is then
+     *                                   evaluated under its own program owner by the caller.
      * @return list<array{
      *     program: RewardProgram,
      *     version: RewardProgramVersion,
@@ -33,24 +40,23 @@ final class RewardEvaluationCandidates
      *     recipient_id: string,
      * }>
      */
-    public static function for(RewardSourceFact $fact, CarbonImmutable $at): array
+    public static function for(RewardSourceFact $fact, CarbonImmutable $at, bool $systemEnumeration = false): array
     {
-        if (! $fact->isAttributed || ! $fact->isValid || $fact->isCancelled) {
+        if (! $fact->isValid || $fact->isCancelled) {
             return [];
         }
 
         $sides = [];
 
-        if ($fact->sharerId !== null) {
+        if ($fact->sharerId !== null && $fact->isAttributed) {
             $sides[] = ['role' => RewardBeneficiaryRole::Sharer, 'recipient_id' => $fact->sharerId];
         }
 
         if ($fact->actorId !== null) {
-            $role = in_array($fact->actorRole, [RewardBeneficiaryRole::Participant, RewardBeneficiaryRole::Purchaser], true)
-                ? $fact->actorRole
-                : RewardBeneficiaryRole::Participant;
-
-            $sides[] = ['role' => $role, 'recipient_id' => $fact->actorId];
+            $sides[] = [
+                'role' => RewardBeneficiaryRole::actorSide($fact->actorRole),
+                'recipient_id' => $fact->actorId,
+            ];
         }
 
         if ($sides === []) {
@@ -60,7 +66,16 @@ final class RewardEvaluationCandidates
         $at = $at->setTimezone('UTC');
         $candidates = [];
 
+        // System enumeration (the queued job) runs without an ambient owner,
+        // so the program scan widens past the current owner scope on
+        // purpose: each candidate is later evaluated under its own program
+        // owner via RewardProgramGuard::withProgramOwner(). This is the
+        // only sanctioned unscoped query on programs.
         $programs = RewardProgram::query()
+            ->when(
+                $systemEnumeration && config('rewards.owner.enabled', true),
+                static fn (Builder $query): Builder => $query->withoutGlobalScopes(),
+            )
             ->where('status', RewardProgramStatus::Active->value)
             ->orderBy('family_key')
             ->get();

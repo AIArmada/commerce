@@ -32,7 +32,7 @@ keywords:
 - Adapter only: core referrals owns persistence, qualification, and reward transitions.
 - Programs use the core ReferralProgram OwnerScope. Invite and reward queries, relation managers, filters, and widget counts constrain through ReferralFilamentScope.
 - Re-resolve action records through ReferralProgramGuard and invoke the core invite/reward Actions. Never render invite token hashes or decrypted invitee contacts.
-- Program creation calls CreateReferralProgram; edits and program status actions re-resolve through the core guard because referrals currently has no update or status-transition Action.
+- Program creation calls CreateReferralProgram and edits call UpdateReferralProgram, which re-resolves the program through the core guard under a row lock; program status moves only through the matrix-checked table actions.
 - Navigation reads filament-referrals.navigation.* from config; never use static $navigationGroup.
 - Update the canonical docs/*.md when public behavior or config changes.
 
@@ -45,5 +45,5 @@ keywords:
 - Resources: ReferralProgramResource, ReferralInviteResource, ReferralRewardResource
 - Support: ReferralFilamentScope, ReferralAdminPresenter, ReferralProgramFormData
 - Widget: ReferralStatsWidget
-- Actions: core CreateReferralProgram, RevokeReferralInvite, FulfillReferralReward, and ReverseReferralReward
+- Actions: core CreateReferralProgram, UpdateReferralProgram, RevokeReferralInvite, FulfillReferralReward, and ReverseReferralReward
 - Config: filament-referrals.php navigation group and sort positions

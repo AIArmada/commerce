@@ -7,6 +7,7 @@ namespace AIArmada\Rewards\Actions;
 use AIArmada\Rewards\Enums\RewardRecoveryStatus;
 use AIArmada\Rewards\Models\RewardRecovery;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
+use AIArmada\Rewards\Support\RewardProgramGuard;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
@@ -42,6 +43,10 @@ final readonly class WriteOffRewardRecoveryAction
         $decided = $decidedAt === null
             ? CarbonImmutable::now('UTC')
             : CarbonImmutable::parse($decidedAt)->setTimezone('UTC');
+
+        // The program is the tenant boundary: prove the recovery's award's
+        // program is in the current owner scope before any lock.
+        RewardProgramGuard::findRecoveryOrFail($recoveryId);
 
         return DB::transaction(function () use ($recoveryId, $reason, $decided): RewardRecovery {
             $locked = RewardRecovery::query()->whereKey($recoveryId)->lockForUpdate()->first();

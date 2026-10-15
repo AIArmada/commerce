@@ -16,6 +16,7 @@ use AIArmada\Rewards\Support\NullRewardReservationResolver;
 use AIArmada\Rewards\Support\RewardLedgerEntries;
 use AIArmada\Rewards\Support\RewardOperationKeys;
 use AIArmada\Rewards\Support\RewardPointLedger;
+use AIArmada\Rewards\Support\RewardProgramGuard;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
@@ -72,6 +73,14 @@ final readonly class ClawBackAwardPointsAction
     ): array {
         RewardLedgerEntries::assertActor($actorType, $actorId, $actorRole);
         RewardLedgerEntries::assertReason($reason);
+
+        // The program is the tenant boundary: prove the award's program is in
+        // the current owner scope before any lock or mutation.
+        RewardProgramGuard::findAwardOrFail($award);
+
+        if (! in_array($actorRole, ['staff', 'admin', 'system'], true)) {
+            throw new InvalidArgumentException('Award point clawback requires a staff/admin/system identity.');
+        }
 
         $decided = $decidedAt === null
             ? CarbonImmutable::now('UTC')

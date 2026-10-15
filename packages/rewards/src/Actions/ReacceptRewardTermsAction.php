@@ -7,6 +7,7 @@ namespace AIArmada\Rewards\Actions;
 use AIArmada\Rewards\Models\RewardEnrollment;
 use AIArmada\Rewards\Models\RewardEnrollmentAcceptance;
 use AIArmada\Rewards\Models\RewardProgramVersion;
+use AIArmada\Rewards\Support\RewardProgramGuard;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
@@ -38,6 +39,10 @@ final readonly class ReacceptRewardTermsAction
 
         $enrollmentId = $enrollment instanceof RewardEnrollment ? (string) $enrollment->getKey() : $enrollment;
         $versionId = $policyVersion instanceof RewardProgramVersion ? (string) $policyVersion->getKey() : $policyVersion;
+
+        // The program is the tenant boundary: prove the enrollment's program
+        // is in the current owner scope before any lock.
+        RewardProgramGuard::findEnrollmentOrFail($enrollmentId);
 
         return DB::transaction(function () use ($enrollmentId, $versionId, $acceptedVia, $decision): RewardEnrollmentAcceptance {
             $locked = RewardEnrollment::query()->whereKey($enrollmentId)->lockForUpdate()->first();

@@ -6,7 +6,13 @@ title: Filament Referrals Usage
 
 ## Programs
 
-The program resource supports list, create, edit, and view pages. Creation runs through the core CreateReferralProgram Action. Each reward side is mapped to and from its frozen core specification; an empty side is stored as null. Edits re-resolve the program with ReferralProgramGuard before saving the editable fields. The list includes invite and reward counts, date windows, a status filter, and guarded activate, pause, and archive actions.
+The program resource supports list, create, edit, and view pages. Creation runs through the core CreateReferralProgram Action and edits run through the core UpdateReferralProgram Action, so both paths enforce the same rules: a currency that is not a three-letter code, a window that ends before it starts, or a name that slugifies to nothing is refused and the stored program is left unchanged. Each reward side is mapped to and from its frozen core specification; an empty side is stored as null.
+
+The status field is read-only on the edit page and is withheld from the submitted payload, so an archived program cannot be reactivated from the form. Status moves only through the guarded activate, pause, and archive actions on the list, each of which re-checks the allowed transitions before writing. The list includes invite and reward counts, date windows, and a status filter.
+
+The reward specification fields offer only drivers enabled by `referrals.fulfillment.drivers.<driver>.enabled`. Options are resolved at runtime, and Filament rejects submitted driver values that are currently disabled on both create and edit. The rewards list retains all known drivers in its filter, so historical reward rows remain readable and filterable after a driver is disabled.
+
+When a side's driver is `reward_points`, the form also carries the **Rewards family key** field: an optional 1..64 slug that binds that side's points promise to the Rewards program family allowed to fulfil it. The core validator enforces the slug shape, keeps the field on the points driver only, and rejects two points sides with different amounts unless each side names its own family.
 
 The program view contains a read-only invites relation manager.
 
