@@ -54,6 +54,7 @@ final class PostgresReseedingGeographyProvider implements CountryAddressAreaMeta
                 metadata: [
                     'labels' => ['z' => true, 'a' => 'Café'],
                     'verified' => true,
+                    'whole_float' => 1.0,
                 ],
             ),
         ]);
@@ -199,6 +200,7 @@ it('keeps decimal geography and JSON stable on PostgreSQL no-op reseeds', functi
         ->and((string) $before->longitude)->toBe('2.7182818')
         ->and($metadata['labels'])->toBe(['a' => 'Café', 'z' => true])
         ->and($metadata['verified'])->toBeTrue()
+        ->and($metadata['whole_float'])->toBe(1)
         ->and($after)->toEqual($before)
         ->and($result['areas']['BL'])->toBe(['created' => 0, 'updated' => 0, 'skipped' => 1]);
 });
