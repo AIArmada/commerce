@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAddressing\Pages;
 
-use AIArmada\Addressing\ReferenceSync\DiffEngine;
 use AIArmada\Addressing\Jobs\ReferenceSyncJob;
+use AIArmada\Addressing\ReferenceSync\DiffEngine;
 use AIArmada\Addressing\ReferenceSync\ReferenceArchive;
 use AIArmada\Addressing\ReferenceSync\ReferenceReview;
-use AIArmada\Addressing\ReferenceSync\ReferenceWriter;
 use AIArmada\Addressing\ReferenceSync\SnapshotRepository;
 use BackedEnum;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 final class ReferenceSyncPage extends Page
 {
@@ -47,9 +47,15 @@ final class ReferenceSyncPage extends Page
             && auth()->user()->can('addressing.manage-reference-sync');
     }
 
-    public function updatedDirection(): void { $this->pageNum = 1; }
+    public function updatedDirection(): void
+    {
+        $this->pageNum = 1;
+    }
 
-    public function updatedFilter(): void { $this->pageNum = 1; }
+    public function updatedFilter(): void
+    {
+        $this->pageNum = 1;
+    }
 
     public function rows(): array
     {
@@ -61,6 +67,7 @@ final class ReferenceSyncPage extends Page
         $total = (clone $q)->count();
         $maxPage = max(1, (int) ceil($total / 20));
         $this->pageNum = min(max(1, $this->pageNum), $maxPage);
+
         return ['total' => $total, 'page' => $this->pageNum, 'maxPage' => $maxPage,
             'rows' => $q->orderBy('id')->forPage($this->pageNum, 20)->get()];
     }
@@ -90,12 +97,13 @@ final class ReferenceSyncPage extends Page
         Notification::make()->title('Review decision saved')->success()->send();
     }
 
-    public function exportApproved(): \Symfony\Component\HttpFoundation\BinaryFileResponse
+    public function exportApproved(): BinaryFileResponse
     {
         abort_unless(self::canAccess(), 403);
         $directory = storage_path('app/private/addressing/contributions');
         $path = $directory . '/contributions-' . Str::uuid() . '.zip';
         (new ReferenceArchive)->exportContributions($path);
+
         return response()->download($path, basename($path))->deleteFileAfterSend();
     }
 
@@ -115,17 +123,18 @@ final class ReferenceSyncPage extends Page
     public function exportHistory(): array
     {
         abort_unless(self::canAccess(), 403);
+
         return DB::table('addressing_reference_exports')->orderByDesc('exported_at')->limit(8)->get()->all();
     }
 
     public function releaseInfo(): array
     {
         $repo = new SnapshotRepository;
+
         return [
             'baseline' => $repo->get('baseline_revision', 'Not initialized'),
             'incoming' => $repo->get('remote_revision', 'Not loaded'),
             'job' => $repo->get('job', null),
         ];
     }
-
 }

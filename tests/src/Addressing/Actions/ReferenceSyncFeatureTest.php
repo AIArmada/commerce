@@ -6,6 +6,7 @@ use AIArmada\Addressing\Models\PostalCode;
 use AIArmada\Addressing\ReferenceSync\Canonical;
 use AIArmada\Addressing\ReferenceSync\DiffEngine;
 use AIArmada\Addressing\ReferenceSync\ReferenceReview;
+use AIArmada\Addressing\ReferenceSync\ReferenceWriter;
 use AIArmada\Addressing\ReferenceSync\SnapshotRepository;
 use Illuminate\Support\Facades\DB;
 
@@ -120,6 +121,7 @@ it('flags incompatible simultaneous local and upstream corrections as conflicts'
             if ($r->entity_type === 'countries') {
                 $payload['name'] = 'Different upstream spelling';
             }
+
             return ['entity_type' => $r->entity_type,
                 'natural_key' => Canonical::decode($r->natural_key), 'payload' => $payload];
         },
@@ -140,6 +142,7 @@ it('applies a reviewed nonconflicting upstream scalar update and advances only i
             if ($r->entity_type === 'countries') {
                 $payload['name'] = 'Reviewed canonical name';
             }
+
             return ['entity_type' => $r->entity_type,
                 'natural_key' => Canonical::decode($r->natural_key), 'payload' => $payload];
         },
@@ -148,7 +151,7 @@ it('applies a reviewed nonconflicting upstream scalar update and advances only i
     (new DiffEngine)->rebuild();
     $id = (int) DB::table(DiffEngine::TABLE)->where('direction', 'delivery')->value('id');
     (new ReferenceReview)->decide($id, 'approved', 'tester');
-    $result = (new \AIArmada\Addressing\ReferenceSync\ReferenceWriter)->applyApproved(1);
+    $result = (new ReferenceWriter)->applyApproved(1);
     expect($result['applied'])->toBe(1)
         ->and($country->fresh()->name)->toBe('Reviewed canonical name');
 });

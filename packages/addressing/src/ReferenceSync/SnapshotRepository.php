@@ -6,6 +6,7 @@ namespace AIArmada\Addressing\ReferenceSync;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 use LogicException;
 
 /** Batched, restart-safe snapshots. Scope is intentionally limited to canonical reference data. */
@@ -33,6 +34,7 @@ final class SnapshotRepository
         }
         DB::table(self::TABLE)->where('scope', 'local')->where('generation', '!=', $generation)->delete();
         $this->set('last_capture', ['at' => now()->toIso8601String(), 'records' => $count]);
+
         return $count;
     }
 
@@ -57,6 +59,7 @@ final class SnapshotRepository
         // Only remove old-generation entries after all new rows have been committed.
         DB::table(self::TABLE)->where('scope', 'remote')->where('generation', '!=', $generation)->delete();
         $this->set('remote_revision', $revision);
+
         return $count;
     }
 
@@ -74,7 +77,9 @@ final class SnapshotRepository
             ->leftJoin(self::TABLE . ' as r', function ($j): void {
                 $j->on('r.entity_type', '=', 'l.entity_type')->on('r.key_hash', '=', 'l.key_hash')->where('r.scope', '=', 'remote');
             })->where('l.scope', 'local')
-            ->where(function ($q): void { $q->whereNull('r.id')->orWhereColumn('l.checksum', '!=', 'r.checksum'); })
+            ->where(function ($q): void {
+                $q->whereNull('r.id')->orWhereColumn('l.checksum', '!=', 'r.checksum');
+            })
             ->exists();
         $missing = DB::table(self::TABLE . ' as r')
             ->leftJoin(self::TABLE . ' as l', function ($j): void {
@@ -108,6 +113,7 @@ final class SnapshotRepository
         $remote = DB::table(self::TABLE)->where(['scope' => 'remote', 'entity_type' => $type, 'key_hash' => $keyHash])->first();
         if ($remote === null) {
             DB::table(self::TABLE)->where(['scope' => 'baseline', 'entity_type' => $type, 'key_hash' => $keyHash])->delete();
+
             return;
         }
         $this->upsert([[
@@ -122,6 +128,7 @@ final class SnapshotRepository
     public function get(string $key, mixed $default = null): mixed
     {
         $stored = DB::table('addressing_reference_settings')->where('key', $key)->value('value');
+
         return $stored === null ? $default : json_decode((string) $stored, true, 512, JSON_THROW_ON_ERROR);
     }
 
@@ -135,9 +142,10 @@ final class SnapshotRepository
     public function row(string $scope, string $type, array $key, array $payload, string $generation, ?string $revision = null): array
     {
         if (! in_array($type, ReferenceTypes::TYPES, true)) {
-            throw new \InvalidArgumentException('Not a permitted canonical reference entity.');
+            throw new InvalidArgumentException('Not a permitted canonical reference entity.');
         }
         $keyJson = Canonical::json($key);
+
         return [
             'scope' => $scope, 'entity_type' => $type,
             'key_hash' => hash('sha256', $keyJson), 'natural_key' => $keyJson,

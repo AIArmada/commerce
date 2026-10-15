@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Addressing\ReferenceSync;
 
+use InvalidArgumentException;
 use JsonException;
 
 /** Canonical, locale-independent serialization; excludes database UUIDs and write timestamps. */
@@ -29,14 +30,16 @@ final class Canonical
         if (is_array($value)) {
             return $value;
         }
+
         try {
             $decoded = json_decode((string) $value, true, 512, JSON_THROW_ON_ERROR);
         } catch (JsonException $exception) {
-            throw new \InvalidArgumentException('Invalid reference data JSON.', previous: $exception);
+            throw new InvalidArgumentException('Invalid reference data JSON.', previous: $exception);
         }
         if (! is_array($decoded)) {
-            throw new \InvalidArgumentException('Expected JSON object/array.');
+            throw new InvalidArgumentException('Expected JSON object/array.');
         }
+
         return $decoded;
     }
 
@@ -50,6 +53,7 @@ final class Canonical
                 $data[$key] = self::sort($value);
             }
         }
+
         return $data;
     }
 }

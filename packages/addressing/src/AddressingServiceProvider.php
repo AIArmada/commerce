@@ -29,11 +29,11 @@ use AIArmada\Addressing\Actions\SeedPostalCodesAction;
 use AIArmada\Addressing\Actions\SyncAddressAreaAssignmentsAction;
 use AIArmada\Addressing\Actions\ValidateAddressAction;
 use AIArmada\Addressing\Commands\BuildReferenceDatasetCommand;
-use AIArmada\Addressing\Commands\InspectReferenceContributionCommand;
 use AIArmada\Addressing\Commands\DiffCldrSubdivisionsCommand;
 use AIArmada\Addressing\Commands\DiffGoogleAddressReferenceCommand;
 use AIArmada\Addressing\Commands\ExportResolutionGapAliasesCommand;
 use AIArmada\Addressing\Commands\ImportAddressAreasCommand;
+use AIArmada\Addressing\Commands\InspectReferenceContributionCommand;
 use AIArmada\Addressing\Commands\ReportResolutionGapsCommand;
 use AIArmada\Addressing\Commands\SeedCountryGeographiesCommand;
 use AIArmada\Addressing\Commands\SeedPostalCodesCommand;
@@ -143,6 +143,7 @@ final class AddressingServiceProvider extends PackageServiceProvider
         }
         if (! is_string($countryCode) || mb_trim($countryCode) === '') {
             config(['addressing.defaults.country_code' => null]);
+
             return;
         }
         config(['addressing.defaults.country_code' => mb_strtoupper(mb_trim($countryCode))]);

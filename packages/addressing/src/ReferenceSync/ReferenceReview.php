@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Addressing\ReferenceSync;
 
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 use RuntimeException;
 
 final class ReferenceReview
@@ -12,7 +13,7 @@ final class ReferenceReview
     public function decide(int $id, string $decision, string $actor, ?string $notes = null): void
     {
         if (! in_array($decision, ['approved', 'rejected', 'pending'], true)) {
-            throw new \InvalidArgumentException('Unsupported review decision.');
+            throw new InvalidArgumentException('Unsupported review decision.');
         }
         DB::transaction(static function () use ($id, $decision, $actor, $notes): void {
             $change = DB::table(DiffEngine::TABLE)->where('id', $id)->lockForUpdate()->first();

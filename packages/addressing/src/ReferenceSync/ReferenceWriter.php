@@ -8,6 +8,7 @@ use AIArmada\Addressing\Support\ModelResolver;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 use LogicException;
 use RuntimeException;
 
@@ -24,7 +25,7 @@ final class ReferenceWriter
     public function applyApproved(int $limit = 100): array
     {
         if ($limit < 1 || $limit > 1000) {
-            throw new \InvalidArgumentException('Batch limit must be between 1 and 1000.');
+            throw new InvalidArgumentException('Batch limit must be between 1 and 1000.');
         }
         // Re-snapshot and reclassify immediately, invalidating stale approvals.
         (new SnapshotRepository)->captureLocal();
@@ -36,6 +37,7 @@ final class ReferenceWriter
             if (! in_array($change->operation, ['create', 'update', 'reconciled'], true)
                 || ! in_array($change->entity_type, self::WRITABLE, true)) {
                 $result['deferred']++;
+
                 continue;
             }
             DB::transaction(function () use ($change, &$result): void {
@@ -45,7 +47,8 @@ final class ReferenceWriter
                 }
                 if ($change->operation === 'reconciled') {
                     $this->assertCurrentMatches(
-                        $change->entity_type, Canonical::decode($change->natural_key),
+                        $change->entity_type,
+                        Canonical::decode($change->natural_key),
                         Canonical::decode($change->local_payload),
                     );
                     (new SnapshotRepository)->acceptRemote($change->entity_type, $change->key_hash);
@@ -56,8 +59,13 @@ final class ReferenceWriter
                     if (! is_array($key)) {
                         throw new RuntimeException('Missing reference identity.');
                     }
-                    $this->write($change->entity_type, $key, $payload,
-                        Canonical::decode($change->local_payload), $change->operation);
+                    $this->write(
+                        $change->entity_type,
+                        $key,
+                        $payload,
+                        Canonical::decode($change->local_payload),
+                        $change->operation
+                    );
                     (new SnapshotRepository)->acceptRemote($change->entity_type, $change->key_hash);
                     $result['applied']++;
                 }
@@ -67,6 +75,7 @@ final class ReferenceWriter
         }
         (new SnapshotRepository)->captureLocal();
         (new DiffEngine)->rebuild();
+
         return $result;
     }
 
@@ -83,6 +92,7 @@ final class ReferenceWriter
                 throw new RuntimeException('Local reference content changed during synchronization. Recompare first.');
             }
         }
+
         return $record;
     }
 
@@ -95,6 +105,7 @@ final class ReferenceWriter
             }
             $record->is_active = false;
             $record->saveOrFail();
+
             return;
         }
         if (! is_array($payload)) {
@@ -110,6 +121,7 @@ final class ReferenceWriter
     private function lookup(string $type, array $key): ?Model
     {
         $class = $this->modelClass($type);
+
         return match ($type) {
             'countries' => $class::query()->where('iso2', $key[0])->lockForUpdate()->first(),
             'states' => $this->state($key[0], $key[1], lock: true),
@@ -133,10 +145,12 @@ final class ReferenceWriter
         switch ($type) {
             case 'states':
                 $p['country_id'] = $this->countryId($key[0]);
+
                 break;
             case 'cities':
                 $p['country_id'] = $this->countryId($key[0]);
                 $p['state_id'] = $this->stateId($key[0], $key[1]);
+
                 break;
             case 'areas':
                 $p['country_id'] = $this->countryId($key[0]);
@@ -157,8 +171,10 @@ final class ReferenceWriter
                 if (array_key_exists('parent_source_id', $p) && ($p['parent_source_id'] === null || $p['parent_source_id'] === '')) {
                     $p['parent_id'] = null;
                 }
+
                 break;
         }
+
         return $p;
     }
 
@@ -177,6 +193,7 @@ final class ReferenceWriter
     private function countryId(string $iso2): string
     {
         $class = ModelResolver::countryClass();
+
         return (string) $class::query()->where('iso2', $iso2)->firstOrFail()->getKey();
     }
 
@@ -185,6 +202,7 @@ final class ReferenceWriter
         if ($key === '@name:' || $key === '') {
             return null;
         }
+
         return $this->state($countryCode, $key)?->getKey();
     }
 
@@ -193,13 +211,14 @@ final class ReferenceWriter
         $class = ModelResolver::stateClass();
         $query = $class::query()->where('country_id', $this->countryId($countryCode));
         if (str_starts_with($key, '@name:')) {
-            $query->where('name', substr($key, 6));
+            $query->where('name', mb_substr($key, 6));
         } else {
             $query->where('code', $key);
         }
         if ($lock) {
             $query->lockForUpdate();
         }
+
         return $query->first();
     }
 }

@@ -71,6 +71,7 @@ final class FilamentAddressingPlugin implements Plugin
         if (config('filament-addressing.resources.snapshots.enabled')) {
             $resources[] = AddressSnapshotResource::class;
         }
+
         return $resources;
     }
 }

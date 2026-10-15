@@ -29,18 +29,20 @@ final class InspectReferenceContributionCommand extends Command
         $handle = $zip->getStream('records.ndjson');
         if (! is_resource($handle)) {
             $zip->close();
+
             throw new RuntimeException('Missing contributions stream.');
         }
         $counts = ['create' => 0, 'update' => 0, 'delete' => 0];
         $candidates = [];
         $digest = hash_init('sha256');
+
         try {
             while (($line = fgets($handle, 4_194_305)) !== false) {
-                if (strlen($line) > 4_194_304 || ! str_ends_with($line, "\n")) {
+                if (mb_strlen($line) > 4_194_304 || ! str_ends_with($line, "\n")) {
                     throw new RuntimeException('Invalid or oversized contribution row.');
                 }
                 hash_update($digest, $line);
-                $row = Canonical::decode(trim($line));
+                $row = Canonical::decode(mb_trim($line));
                 $type = $row['entity_type'] ?? null;
                 $op = $row['operation'] ?? null;
                 $before = $row['before'] ?? null;
@@ -75,7 +77,8 @@ final class InspectReferenceContributionCommand extends Command
         $this->line('Baseline revision: ' . $manifest['revision']);
         $this->table(['Operation', 'Candidates'], array_map(
             static fn (string $op, int $count): array => [$op, $count],
-            array_keys($counts), array_values($counts),
+            array_keys($counts),
+            array_values($counts),
         ));
         $report = $this->option('report');
         if (is_string($report) && $report !== '') {
@@ -88,6 +91,7 @@ final class InspectReferenceContributionCommand extends Command
             }
             $this->info('Wrote review report to ' . $report);
         }
+
         return self::SUCCESS;
     }
 }

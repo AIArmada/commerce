@@ -19,10 +19,10 @@ final class DiffEngine
         $counts = ['contribution' => 0, 'delivery' => 0, 'conflict' => 0];
         // Visit each reference key exactly once, including additions in either branch.
         foreach (['baseline', 'local', 'remote'] as $anchor) {
-            $a = substr($anchor, 0, 1);
+            $a = mb_substr($anchor, 0, 1);
             $others = array_values(array_diff(['baseline', 'local', 'remote'], [$anchor]));
-            $b = substr($others[0], 0, 1);
-            $c = substr($others[1], 0, 1);
+            $b = mb_substr($others[0], 0, 1);
+            $c = mb_substr($others[1], 0, 1);
             $query = DB::table(SnapshotRepository::TABLE . " as {$a}")
                 ->where("{$a}.scope", $anchor)
                 ->leftJoin(SnapshotRepository::TABLE . " as {$b}", function ($join) use ($a, $b, $others): void {
@@ -72,6 +72,7 @@ final class DiffEngine
         }
         // Sweep stale rows after scanning using explicit scan_generation column.
         DB::table(self::TABLE)->where('scan_generation', '!=', $generation)->delete();
+
         return $counts;
     }
 

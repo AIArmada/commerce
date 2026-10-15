@@ -6,6 +6,7 @@ namespace AIArmada\Addressing\ReferenceSync;
 
 use AIArmada\Addressing\Support\AddressingTableResolver;
 use Illuminate\Support\Facades\DB;
+use LogicException;
 
 /** Maps reference tables to portable records; never captures customer addresses or ownership data. */
 final class ReferenceTypes
@@ -73,6 +74,7 @@ final class ReferenceTypes
         $area = static fn (string $prefix): array => [
             (string) $r[$prefix . '_country'], (string) $r[$prefix . '_source'], (string) $r[$prefix . '_source_id'],
         ];
+
         return match ($type) {
             'countries' => [(string) $r['iso2']],
             'states' => [(string) ($r['resolved_country'] ?? $r['country_code']), (string) ($r['code'] ?: '@name:' . $r['name'])],
@@ -84,7 +86,7 @@ final class ReferenceTypes
             'area_state_links' => [...$area('area'), (string) ($r['linked_state_code'] ?: '@name:' . $r['linked_state_name']), (string) ($r['hierarchy_type'] ?? '')],
             'postal_codes' => [(string) $r['country_code'], (string) $r['code']],
             'area_postal_codes' => [(string) $r['postal_country'], (string) $r['postal_code'], ...$area('area'), (string) $r['source'], (string) ($r['source_id'] ?? ''), (string) $r['relationship_type']],
-            default => throw new \LogicException("Unsupported reference type: {$type}"),
+            default => throw new LogicException("Unsupported reference type: {$type}"),
         };
     }
 
@@ -123,6 +125,7 @@ final class ReferenceTypes
                 $r[$float] = (float) $r[$float];
             }
         }
+
         // Source identifiers of referenced records become part of the portable payload.
         // The exact counterpart can be reconstructed using natural_key in the bundle.
         return $r;

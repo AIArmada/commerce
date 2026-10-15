@@ -38,6 +38,7 @@ final class ReferenceSyncJob implements ShouldQueue
             throw new RuntimeException('Another reference synchronization operation is running.');
         }
         $repo = new SnapshotRepository;
+
         try {
             $repo->set('job', ['status' => 'running', 'operation' => $this->operation, 'started' => now()->toIso8601String()]);
             $result = match ($this->operation) {
@@ -52,6 +53,7 @@ final class ReferenceSyncJob implements ShouldQueue
         } catch (Throwable $e) {
             $repo->set('job', ['status' => 'failed', 'operation' => $this->operation,
                 'completed' => now()->toIso8601String(), 'error' => $e->getMessage()]);
+
             throw $e;
         } finally {
             $lock->release();
@@ -61,6 +63,7 @@ final class ReferenceSyncJob implements ShouldQueue
     private function compare(): array
     {
         $count = (new SnapshotRepository)->captureLocal();
+
         return ['rows_scanned' => $count, ...((new DiffEngine)->rebuild())];
     }
 
@@ -71,6 +74,7 @@ final class ReferenceSyncJob implements ShouldQueue
             throw new RuntimeException('The installed Composer package lacks resources/datasets/current.zip.');
         }
         $count = (new ReferenceArchive)->importCanonical($path);
+
         return ['imported_remote' => $count, ...$this->compare()];
     }
 
@@ -82,6 +86,7 @@ final class ReferenceSyncJob implements ShouldQueue
             throw new RuntimeException('Load the packaged reference dataset first.');
         }
         $repo->initializeBaseline($revision);
+
         return ['initialized_baseline' => $revision, ...$this->compare()];
     }
 }

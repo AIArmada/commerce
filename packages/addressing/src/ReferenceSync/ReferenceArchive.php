@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Addressing\ReferenceSync;
 
+use Generator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -13,12 +14,14 @@ use ZipArchive;
 final class ReferenceArchive
 {
     private const MAX_RECORD_BYTES = 4_194_304;
+
     private const MAX_ARCHIVE_BYTES = 2_147_483_648;
 
     /** Build a reference-only canonical release on a PRISTINE package-seeded database. */
     public function exportCanonical(string $path, string $revision): int
     {
         (new SnapshotRepository)->captureLocal();
+
         return $this->writeArchive($path, 'canonical', $revision, function ($handle): int {
             $count = 0;
             DB::table(SnapshotRepository::TABLE)->where('scope', 'local')->orderBy('id')
@@ -32,6 +35,7 @@ final class ReferenceArchive
                         $count++;
                     }
                 });
+
             return $count;
         });
     }
@@ -44,6 +48,7 @@ final class ReferenceArchive
         if ($revision === '') {
             throw new RuntimeException('Canonical baseline not initialized; cannot export trustworthy changes.');
         }
+
         return $this->writeArchive($path, 'contributions', $revision, function ($handle): int {
             $count = 0;
             DB::table(DiffEngine::TABLE)->where('direction', 'contribution')
@@ -62,6 +67,7 @@ final class ReferenceArchive
                         $count++;
                     }
                 });
+
             return $count;
         });
     }
@@ -74,6 +80,7 @@ final class ReferenceArchive
             throw new RuntimeException('Installed package dataset revision does not match the expected revision.');
         }
         $this->verifyRecords($path, $manifest);
+
         return DB::transaction(function () use ($path, $manifest): int {
             return (new SnapshotRepository)->receiveRemote($this->records($path), $manifest['revision']);
         });
@@ -85,13 +92,14 @@ final class ReferenceArchive
         if ($zip->open($path, ZipArchive::RDONLY) !== true) {
             throw new RuntimeException('Unable to open reference archive.');
         }
+
         try {
             if ($zip->numFiles !== 2 || $zip->locateName('manifest.json') === false || $zip->locateName('records.ndjson') === false) {
                 throw new RuntimeException('Archive must contain only manifest.json and records.ndjson.');
             }
             $manifestRaw = $zip->getFromName('manifest.json');
             $stat = $zip->statName('records.ndjson');
-            if (! is_string($manifestRaw) || strlen($manifestRaw) > 65536 || ! is_array($stat)
+            if (! is_string($manifestRaw) || mb_strlen($manifestRaw) > 65536 || ! is_array($stat)
                 || ($stat['size'] ?? 0) > self::MAX_ARCHIVE_BYTES) {
                 throw new RuntimeException('Invalid reference archive size.');
             }
@@ -99,9 +107,10 @@ final class ReferenceArchive
             if (($manifest['schema'] ?? null) !== 1 || ($manifest['kind'] ?? null) !== $requiredKind
                 || ! is_string($manifest['revision'] ?? null) || $manifest['revision'] === ''
                 || ! is_string($manifest['sha256'] ?? null) || ! ctype_xdigit($manifest['sha256'])
-                || strlen($manifest['sha256']) !== 64 || ! is_int($manifest['count'] ?? null)) {
+                || mb_strlen($manifest['sha256']) !== 64 || ! is_int($manifest['count'] ?? null)) {
                 throw new RuntimeException('Invalid archive manifest.');
             }
+
             return $manifest;
         } finally {
             $zip->close();
@@ -114,7 +123,7 @@ final class ReferenceArchive
         $count = 0;
         foreach ($this->lines($path) as $line) {
             hash_update($sha, $line);
-            $data = Canonical::decode(rtrim($line, "\r\n"));
+            $data = Canonical::decode(mb_rtrim($line, "\r\n"));
             if (! in_array($data['entity_type'] ?? '', ReferenceTypes::TYPES, true)
                 || ! is_array($data['natural_key'] ?? null) || ! is_array($data['payload'] ?? null)) {
                 throw new RuntimeException('Invalid canonical record.');
@@ -129,14 +138,14 @@ final class ReferenceArchive
         }
     }
 
-    private function records(string $path): \Generator
+    private function records(string $path): Generator
     {
         foreach ($this->lines($path) as $line) {
-            yield Canonical::decode(rtrim($line, "\r\n"));
+            yield Canonical::decode(mb_rtrim($line, "\r\n"));
         }
     }
 
-    private function lines(string $path): \Generator
+    private function lines(string $path): Generator
     {
         $zip = new ZipArchive;
         if ($zip->open($path, ZipArchive::RDONLY) !== true) {
@@ -145,11 +154,13 @@ final class ReferenceArchive
         $stream = $zip->getStream('records.ndjson');
         if (! is_resource($stream)) {
             $zip->close();
+
             throw new RuntimeException('Missing records stream.');
         }
+
         try {
             while (($line = fgets($stream, self::MAX_RECORD_BYTES + 1)) !== false) {
-                if (strlen($line) > self::MAX_RECORD_BYTES || ! str_ends_with($line, "\n")) {
+                if (mb_strlen($line) > self::MAX_RECORD_BYTES || ! str_ends_with($line, "\n")) {
                     throw new RuntimeException('Canonical record is too large or incomplete.');
                 }
                 yield $line;
@@ -170,6 +181,7 @@ final class ReferenceArchive
             throw new RuntimeException('Cannot allocate export file.');
         }
         $handle = fopen($tmp, 'wb');
+
         try {
             $count = $produce($handle);
             fclose($handle);
@@ -205,6 +217,7 @@ final class ReferenceArchive
                     'exported_at' => now(), 'created_at' => now(), 'updated_at' => now(),
                 ]);
             }
+
             return $count;
         } finally {
             if (is_resource($handle)) {
