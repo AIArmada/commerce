@@ -83,23 +83,22 @@ class AddressAreaFormSchema
                             ->searchable()
                             ->native(false)
                             ->placeholder('Choose a hierarchy')
-                            ->default(fn (callable $get): ?string => self::currentHierarchyType($currentArea)
-                                ?? self::soleHierarchyType(self::hierarchyOptions($get('country_id'))))
+                            ->default(fn (callable $get): ?string => self::defaultHierarchyType($currentArea, $get('country_id')))
                             ->helperText(fn (callable $get): ?string => count(self::hierarchyOptions($get('country_id'))) > 1
                                 ? 'Choose the hierarchy for the parent relationship.'
                                 : 'Used to distinguish parallel geographic hierarchies.')
                             ->visible(fn (callable $get): bool => self::hierarchyOptions($get('country_id')) !== [])
-                            ->required(fn (callable $get): bool => self::hasParent($get('parent_id')))
+                            ->required(fn (callable $get): bool => self::hasParent($get('parent_id')) && ! $isSourceManaged)
                             ->rules(['nullable', 'string', 'max:50'])
                             ->disabled($isSourceManaged),
                         TextInput::make('hierarchy_type')
                             ->label('Hierarchy Type')
                             ->placeholder('e.g. postal, administrative')
                             ->maxLength(50)
-                            ->default(fn (): ?string => self::currentHierarchyType($currentArea))
+                            ->default(fn (callable $get): ?string => self::defaultHierarchyType($currentArea, $get('country_id')))
                             ->helperText('Enter a custom hierarchy type for this country.')
                             ->visible(fn (callable $get): bool => self::hierarchyOptions($get('country_id')) === [])
-                            ->required(fn (callable $get): bool => self::hasParent($get('parent_id')))
+                            ->required(fn (callable $get): bool => self::hasParent($get('parent_id')) && ! $isSourceManaged)
                             ->disabled($isSourceManaged),
                         Select::make('parent_id')
                             ->label('Parent')
@@ -233,6 +232,18 @@ class AddressAreaFormSchema
         return collect($provider->addressHierarchies())
             ->mapWithKeys(static fn (AddressHierarchyDefinition $hierarchy): array => [$hierarchy->key => $hierarchy->label])
             ->all();
+    }
+
+    /**
+     * The hierarchy to pre-select when there is only one sensible value:
+     * the area's single existing contains-hierarchy, else the sole
+     * configured hierarchy for its country. Anything ambiguous stays
+     * empty so the operator picks explicitly.
+     */
+    public static function defaultHierarchyType(?AddressArea $area, mixed $countryId): ?string
+    {
+        return self::currentHierarchyType($area)
+            ?? self::soleHierarchyType(self::hierarchyOptions($countryId));
     }
 
     /** @param array<string, string> $options */

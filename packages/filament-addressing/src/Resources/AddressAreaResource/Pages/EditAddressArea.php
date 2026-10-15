@@ -8,6 +8,7 @@ use AIArmada\Addressing\Actions\SaveAddressAreaAction;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Support\AddressAreaHierarchy;
 use AIArmada\FilamentAddressing\Resources\AddressAreaResource;
+use AIArmada\FilamentAddressing\Schemas\AddressAreaFormSchema;
 use AIArmada\FilamentAddressing\Support\AddressingFilterOptions;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
@@ -45,6 +46,25 @@ final class EditAddressArea extends EditRecord
                     AddressingFilterOptions::forgetAreaOptions();
                 }),
         ];
+    }
+
+    protected function mutateFormDataBeforeFill(array $data): array
+    {
+        // Edit fills skip field defaults, so pre-select the hierarchy here
+        // when there is only one sensible value. Ambiguous cases stay
+        // empty for an explicit pick.
+        if (($data['hierarchy_type'] ?? null) === null && $this->record instanceof AddressArea) {
+            $resolved = AddressAreaFormSchema::defaultHierarchyType(
+                $this->record,
+                $data['country_id'] ?? $this->record->country_id,
+            );
+
+            if ($resolved !== null) {
+                $data['hierarchy_type'] = $resolved;
+            }
+        }
+
+        return $data;
     }
 
     protected function mutateFormDataBeforeSave(array $data): array
