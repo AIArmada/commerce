@@ -230,6 +230,27 @@ it('removes stale source-owned relationships when hierarchy metadata changes', f
     expect(AddressAreaRelationship::query()->where('source', 'test')->exists())->toBeFalse();
 });
 
+it('updates a source relationship in place when its parent changes', function (): void {
+    $this->action->execute(new ArrayAddressAreaSource('feed', [
+        new AddressAreaData(source: 'feed', sourceId: 'parent-a', countryCode: 'MY', type: 'state', name: 'A'),
+        new AddressAreaData(source: 'feed', sourceId: 'parent-b', countryCode: 'MY', type: 'state', name: 'B'),
+        new AddressAreaData(source: 'feed', sourceId: 'child', countryCode: 'MY', type: 'district', name: 'Child', parentSourceId: 'parent-a', hierarchyType: 'administrative'),
+    ]));
+
+    $areas = AddressArea::query()->where('source', 'feed')->get()->keyBy('source_id');
+    $relationship = AddressAreaRelationship::query()->where('source', 'feed')->firstOrFail();
+    $relationshipId = $relationship->getKey();
+
+    $this->action->execute(new ArrayAddressAreaSource('feed', [
+        new AddressAreaData(source: 'feed', sourceId: 'child', countryCode: 'MY', type: 'district', name: 'Child', parentSourceId: 'parent-b', hierarchyType: 'administrative'),
+    ]));
+
+    $relationship->refresh();
+
+    expect($relationship->getKey())->toBe($relationshipId)
+        ->and($relationship->parent_address_area_id)->toBe($areas['parent-b']->getKey());
+});
+
 it('keeps a manual relationship when an import owns the same typed edge', function (): void {
     $this->action->execute(new ArrayAddressAreaSource('feed', [
         new AddressAreaData(source: 'feed', sourceId: 'root', countryCode: 'MY', type: 'state', name: 'Selangor'),
@@ -282,6 +303,21 @@ it('quiesces when re-imported without changes', function (): void {
     expect($result->updated)->toBe(0);
     expect($result->skipped)->toBe(1);
     expect($result->hasFailures())->toBeFalse();
+});
+
+it('quiesces on the final staged duplicate on the next source seed', function (): void {
+    $this->action->execute(new ArrayAddressAreaSource('feed', [
+        new AddressAreaData(source: 'feed', sourceId: 'duplicate', countryCode: 'MY', type: 'locality', name: 'Earlier name'),
+        new AddressAreaData(source: 'feed', sourceId: 'duplicate', countryCode: 'MY', type: 'locality', name: 'Final name'),
+    ]), providerKey: 'feed-owner');
+
+    $result = $this->action->execute(new ArrayAddressAreaSource('feed', [
+        new AddressAreaData(source: 'feed', sourceId: 'duplicate', countryCode: 'MY', type: 'locality', name: 'Final name'),
+    ]), providerKey: 'feed-owner');
+
+    expect($result->created)->toBe(0)
+        ->and($result->updated)->toBe(0)
+        ->and($result->skipped)->toBe(1);
 });
 
 it('preserves operator deactivation unless reactivate is set', function (): void {
