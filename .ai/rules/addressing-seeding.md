@@ -15,10 +15,14 @@ addressing reference data.
 - The geography seed rebuilds provider-sourced roles, names, and
   relationships from scratch while area rows upsert by `source_id` with
   stable IDs. Reseeding is safe and is the way dataset changes reach a
-  database.
+  database: the consuming application never edits reference rows, so seeds
+  overwrite unconditionally with no conflict checks.
 - Reseed safety limits: renamed identity keys (`source_id`, state code,
   city name, `iso2`) orphan existing links onto the old row — renames
-  need a remap migration, not just a reseed. External tables must link
+  need a remap migration, not just a reseed. Rule of thumb: migration when
+  the change must happen once and in order (remap, retire, backfill app
+  references); seeder when the desired end-state just needs to exist (adds,
+  same-identity edits). External tables must link
   to area/state/city/country IDs only, never to rebuilt link-table IDs.
   Records on deactivated areas need a show-with-warning or remap path.
 - Streaming seed readers index raw bytes: use

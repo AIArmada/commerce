@@ -127,13 +127,16 @@ it('reports state seeding per row with totals', function (): void {
 
 it('reports city seeding per chunk with totals', function (): void {
     $this->seedCountry('US');
+    app(SeedAddressStatesAction::class)->execute([
+        ['name' => 'California', 'country_code' => 'US', 'state_code' => 'CA'],
+    ]);
 
     $events = [];
 
     app(SeedAddressCitiesAction::class)->execute(
         [
-            ['name' => 'Springfield', 'country_code' => 'US', 'state_code' => 'AA'],
-            ['name' => 'Shelbyville', 'country_code' => 'US', 'state_code' => 'AA'],
+            ['name' => 'Springfield', 'country_code' => 'US', 'state_code' => 'CA'],
+            ['name' => 'Shelbyville', 'country_code' => 'US', 'state_code' => 'CA'],
         ],
         function (string $phase, int $done, int $total) use (&$events): void {
             $events[] = [$phase, $done, $total];
