@@ -7,8 +7,10 @@ namespace AIArmada\FilamentAddressing\Tables;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\FilamentAddressing\Resources\AddressAreaResource;
 use AIArmada\FilamentAddressing\Support\AddressingFilterOptions;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -61,6 +63,10 @@ class AddressAreaTable
                     ->label('Source ID')
                     ->searchable()
                     ->toggleable(),
+                IconColumn::make('is_active')
+                    ->label('Active')
+                    ->boolean()
+                    ->sortable(),
                 TextColumn::make('synced_at')
                     ->dateTime()
                     ->toggleable()
@@ -87,6 +93,7 @@ class AddressAreaTable
                         $data['value'] ?? null,
                         fn (Builder $areas, string $role): Builder => $areas->whereHas('roles', fn (Builder $roles): Builder => $roles->where('role', $role)),
                     )),
+                TernaryFilter::make('is_active')->label('Active'),
             ])
             ->defaultSort('country_code')
             ->paginated([10, 25, 50, 100]);

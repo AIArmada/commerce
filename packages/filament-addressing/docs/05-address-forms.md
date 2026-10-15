@@ -8,7 +8,9 @@ title: Filament Addressing Address Forms
 country address profiles in `aiarmada/addressing`:
 
 - `country_code` select (live; changing it resets state and area picks)
-- `label`, `line1`, `line2`, free-text `city`, `postcode`
+- `label`, `line1`, `line2`, `line3`, free-text `city`, `postcode`
+- Optional canonical `city_id` lookup, narrowed to the selected country and state; free-text city remains independent
+- Latitude/longitude, Google place/feature/CID/entity identifiers, and optional Google Maps/Waze URLs
 - `state_id` select with a per-country label, visible only when the country has states; it lists only the provider state-kind roots (4 nations for GB, 10 counties for LT) so every option resolves to an area parent, falling back to all states for provider-less countries
 - One `area_assignments.{role}` select per hierarchy role the selected country defines
 
@@ -16,6 +18,12 @@ Role selects only appear for the selected country, only offer areas under the
 selected parent (state or parent role), and clear their children automatically
 when a parent changes. Selections are validated twice: by form rules at input
 time and by `SyncAddressAreaAssignmentsAction` at save time.
+
+The canonical city selector searches on demand and only returns cities in the
+selected country and state. Its submitted ID is revalidated server-side;
+changing country or state clears the selection. It does not replace free-text
+`city`, which remains useful for unseeded locality names. Coordinates are
+bounded to valid latitude/longitude ranges.
 
 Region-parented levels narrow to a selected intermediate level when the stored
 links prove the narrowing is structural: Malaysia's subdivisions list only the
@@ -150,7 +158,9 @@ states, and areas before exposing the form — see the addressing
 
 ## Limitations
 
-- `postcode` is free text. No per-country format validation or
-  postcode-to-area autofill is wired into the schema today.
-- `city` stays free text even when a country also defines city areas; the two
-  fields are independent.
+- `postcode` remains free text and optional, but known country profiles apply
+  the core `ValidPostalCode` format rule to non-empty values. Countries without
+  a profile remain unconstrained, and postcode-to-area autofill is not wired
+  into the schema.
+- Free-text `city` and canonical `city_id` are independent. The canonical
+  selector is optional and requires a matching seeded City row.

@@ -53,7 +53,6 @@ This package has no `tables` config section. Table behaviour is configured per r
     'area_import' => true,
     'area_export' => true,
     'address_export' => false,
-    'show_provider_payload' => false,
     'show_source_payload' => false,
     'postal_code_import' => false,
     'postal_code_export' => false,
@@ -77,11 +76,11 @@ Address exports honor the configured address model and are scoped to the current
 
 ### Postcode Import And Export
 
-Both default to disabled. Enable them to show import/export header actions on the postcode list. The importer delegates to the core `ImportPostalCodesAction`; expected columns are `country_code`, `code`, `source`, `source_id`, plus optional `area_source`, `area_source_id`, `relationship_type`, `is_primary`, and `metadata` (JSON).
+Both default to disabled. Enable them to show import/export header actions on the postcode list. The importer delegates to core admin import orchestration; expected columns and round-trip boundaries are described in [Usage](./04-usage.md#manage-postcodes).
 
-### Source And Provider Payloads
+### Source Payloads
 
-Payloads can be large and may contain provider-specific data. Keep hidden unless an admin/debug panel needs them.
+Area source payloads and metadata can be large and provider-specific. Keep hidden unless an admin/debug panel needs them. This setting controls their area detail display; source identity and sync time remain visible.
 
 ### Gap Actions
 

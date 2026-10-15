@@ -28,6 +28,9 @@ final class EditAddressArea extends EditRecord
     {
         return [
             Actions\DeleteAction::make()
+                ->visible(fn (AddressArea $record): bool => $record->source === 'manual')
+                ->authorize(fn (AddressArea $record): bool => $record->source === 'manual'
+                    && AddressAreaResource::canDelete($record))
                 ->modalDescription(function (AddressArea $record): string {
                     $areaClass = AddressAreaResource::getModel();
                     $childCount = $areaClass::query()->where('parent_id', $record->getKey())->count();
@@ -46,6 +49,19 @@ final class EditAddressArea extends EditRecord
 
     protected function mutateFormDataBeforeSave(array $data): array
     {
+        if ($this->record instanceof AddressArea && $this->record->source !== 'manual') {
+            unset($data['hierarchy_type']);
+        } elseif ($this->record instanceof AddressArea && array_key_exists('hierarchy_type', $data)) {
+            $currentHierarchyType = $this->record->ancestors()
+                ->wherePivot('relationship_type', 'contains')
+                ->wherePivot('source', $this->record->source)
+                ->first()?->pivot?->getAttribute('hierarchy_type');
+
+            if ($currentHierarchyType === $data['hierarchy_type']) {
+                unset($data['hierarchy_type']);
+            }
+        }
+
         if (isset($data['parent_id']) && $this->record instanceof AddressArea) {
             $areaClass = AddressAreaResource::getModel();
             $parent = $areaClass::query()->find($data['parent_id']);
@@ -80,6 +96,12 @@ final class EditAddressArea extends EditRecord
     {
         if (! $record instanceof AddressArea) {
             throw new LogicException('Expected an address area record.');
+        }
+
+        if ($record->source !== 'manual') {
+            $data = array_intersect_key($data, ['is_active' => true]);
+        } else {
+            unset($data['source'], $data['source_id'], $data['parent_source_id']);
         }
 
         $area = app(SaveAddressAreaAction::class)->handle($data, $record);

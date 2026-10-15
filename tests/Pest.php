@@ -15,6 +15,7 @@ use AIArmada\Commerce\Tests\Addressing\AddressingGeographyTestCase;
 use AIArmada\Commerce\Tests\AffiliateNetwork\AffiliateNetworkTestCase;
 use AIArmada\Commerce\Tests\Affiliates\AffiliatesTestCase;
 use AIArmada\Commerce\Tests\Feedback\FeedbackTestCase;
+use AIArmada\Commerce\Tests\FilamentAddressing\FilamentAddressingTestCase;
 use AIArmada\Commerce\Tests\FilamentAffiliateNetwork\FilamentAffiliateNetworkTestCase;
 use AIArmada\Commerce\Tests\FilamentAuthz\FilamentAuthzTestCase;
 use AIArmada\Commerce\Tests\FilamentInventory\FilamentInventoryTestCase;
@@ -65,7 +66,6 @@ pest()->extend(TestCase::class)->in(
     // New subdirs under src/Addressing MUST be added to the slim binding.
     'src/Addressing/AddressOwnerGuardTest.php',
     'src/Authz',
-    'src/FilamentAddressing',
     'src/Cart',
     'src/Checkout',
     'src/Chip',
@@ -122,6 +122,8 @@ pest()->extend(InventoryTestCase::class)->in('src/Inventory');
 pest()->extend(TaxTestCase::class)->in('src/Tax');
 
 pest()->extend(FilamentInventoryTestCase::class)->in('src/FilamentInventory');
+
+pest()->extend(FilamentAddressingTestCase::class)->in('src/FilamentAddressing');
 
 pest()->extend(FilamentAuthzTestCase::class)->in('src/FilamentAuthzScoped');
 

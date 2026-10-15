@@ -10,7 +10,7 @@ use AIArmada\FilamentAddressing\Resources\AddressCityResource\Pages\ListAddressC
 use AIArmada\FilamentAddressing\Resources\AddressCityResource\Pages\ViewAddressCity;
 use AIArmada\FilamentAddressing\Tables\AddressCityTable;
 use BackedEnum;
-use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
@@ -103,28 +103,22 @@ final class AddressCityResource extends Resource
             ->schema([
                 Section::make('Identity')
                     ->schema([
-                        TextInput::make('name')->required(),
+                        TextInput::make('name')->required()->disabled()->dehydrated(false),
                         TextInput::make('latitude')
                             ->numeric()
+                            ->minValue(-90)
+                            ->maxValue(90)
                             ->step(0.0000001),
                         TextInput::make('longitude')
                             ->numeric()
+                            ->minValue(-180)
+                            ->maxValue(180)
                             ->step(0.0000001),
                     ])->columns(2),
                 Section::make('Location')
                     ->schema([
-                        Select::make('country_id')
-                            ->relationship('country', 'name')
-                            ->searchable()
-                            ->preload()
-                            ->required()
-                            ->live()
-                            ->afterStateUpdated(fn ($set) => $set('state_id', null)),
-                        Select::make('state_id')
-                            ->label('State')
-                            ->relationship('state', 'name', fn ($query, $get) => $query->where('country_id', $get('country_id')))
-                            ->searchable()
-                            ->preload(),
+                        Placeholder::make('country_display')->label('Country')->content(fn (?City $record): ?string => $record?->country?->name),
+                        Placeholder::make('state_display')->label('State')->content(fn (?City $record): ?string => $record?->state?->name),
                     ])->columns(2),
             ]);
     }

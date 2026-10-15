@@ -119,6 +119,7 @@ it('clears state-dependent areas when the state changes', function (): void {
     );
 
     expect($cleared)->toBe([
+        'city_id' => null,
         'area_assignments.test_district' => null,
         'area_assignments.test_subdistrict' => null,
     ]);

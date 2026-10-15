@@ -6,6 +6,7 @@ namespace AIArmada\FilamentAddressing\Resources\AddressResource\Pages;
 
 use AIArmada\FilamentAddressing\Exports\AddressExporter;
 use AIArmada\FilamentAddressing\Resources\AddressResource;
+use Filament\Actions\CreateAction;
 use Filament\Actions\ExportAction;
 use Filament\Resources\Pages\ListRecords;
 
@@ -15,7 +16,10 @@ final class ListAddresses extends ListRecords
 
     protected function getHeaderActions(): array
     {
-        $actions = [];
+        $actions = [
+            CreateAction::make()
+                ->visible(fn (): bool => ! AddressResource::isReadOnly() && AddressResource::canCreate()),
+        ];
 
         if (config('filament-addressing.features.address_export')) {
             $actions[] = ExportAction::make()

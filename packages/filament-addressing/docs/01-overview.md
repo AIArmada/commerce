@@ -10,6 +10,8 @@ It gives applications admin UI for:
 
 - Address countries.
 - Address areas with searchable roles, aliases, and hierarchy filters.
+- Area detail views for aliases, roles, typed relationships, state mappings,
+  postcode coverage, inactive status, and source provenance.
 - Postal codes and their served-area relationships.
 - Resolution gaps with match-to-area and ignore actions.
 - Optional central address inspection.

@@ -8,6 +8,8 @@ use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaRelationship;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Support\ArrayAddressAreaSource;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 
 beforeEach(function (): void {
     $this->seedCountry('MY');
@@ -123,6 +125,36 @@ it('upserts by source and source_id', function (): void {
 
     $area = AddressArea::where('source', 'test')->where('source_id', '1')->first();
     expect($area->name)->toBe('Selangor Updated');
+});
+
+it('keeps the area id stable when an update lands', function (): void {
+    $this->action->execute(new ArrayAddressAreaSource('test', [
+        new AddressAreaData(
+            source: 'test',
+            sourceId: '1',
+            countryCode: 'MY',
+            type: 'state',
+            name: 'Selangor',
+        ),
+    ]));
+
+    $before = AddressArea::where('source', 'test')->where('source_id', '1')->firstOrFail();
+
+    $result = $this->action->execute(new ArrayAddressAreaSource('test', [
+        new AddressAreaData(
+            source: 'test',
+            sourceId: '1',
+            countryCode: 'MY',
+            type: 'state',
+            name: 'Selangor Updated',
+        ),
+    ]));
+
+    $after = AddressArea::where('source', 'test')->where('source_id', '1')->firstOrFail();
+
+    expect($result->updated)->toBe(1)
+        ->and($after->getKey())->toBe($before->getKey())
+        ->and(AddressArea::where('source', 'test')->where('source_id', '1')->count())->toBe(1);
 });
 
 it('records source_payload and synced_at', function (): void {
@@ -273,6 +305,106 @@ it('preserves operator deactivation unless reactivate is set', function (): void
     $this->action->execute(new ArrayAddressAreaSource('test', $rows()), reactivate: true);
 
     expect(AddressArea::where('source', 'test')->where('source_id', '1')->firstOrFail()->is_active)->toBeTrue();
+});
+
+it('preserves an operator deactivation made after the area preload', function (): void {
+    $this->action->execute(new ArrayAddressAreaSource('test', [
+        new AddressAreaData(source: 'test', sourceId: '1', countryCode: 'MY', type: 'state', name: 'Selangor'),
+    ]));
+
+    $area = AddressArea::query()->where('source', 'test')->where('source_id', '1')->firstOrFail();
+
+    $this->action->execute(
+        new ArrayAddressAreaSource('test', [
+            new AddressAreaData(source: 'test', sourceId: '1', countryCode: 'MY', type: 'state', name: 'Selangor Updated'),
+        ]),
+        progress: static function () use ($area): void {
+            AddressArea::query()->whereKey($area->getKey())->update(['is_active' => false]);
+        },
+    );
+
+    $updatedArea = AddressArea::query()->whereKey($area->getKey())->firstOrFail();
+
+    expect($updatedArea->is_active)->toBeFalse()
+        ->and($updatedArea->name)->toBe('Selangor Updated');
+});
+
+it('runs area update observers during imports', function (): void {
+    $this->action->execute(new ArrayAddressAreaSource('test', [
+        new AddressAreaData(source: 'test', sourceId: '1', countryCode: 'MY', type: 'state', name: 'Selangor'),
+    ]));
+
+    $event = 'eloquent.updating: ' . AddressArea::class;
+    Event::listen($event, static function (AddressArea $area): void {
+        $area->code = 'observer-code';
+    });
+
+    try {
+        $result = $this->action->execute(new ArrayAddressAreaSource('test', [
+            new AddressAreaData(source: 'test', sourceId: '1', countryCode: 'MY', type: 'state', name: 'Selangor Updated'),
+        ]));
+    } finally {
+        Event::getFacadeRoot()->forget($event);
+    }
+
+    $area = AddressArea::query()->where('source', 'test')->where('source_id', '1')->firstOrFail();
+
+    expect($result->updated)->toBe(1)
+        ->and($area->name)->toBe('Selangor Updated')
+        ->and($area->code)->toBe('observer-code');
+});
+
+it('preserves provider relationships when an area update is cancelled', function (): void {
+    $this->action->execute(new ArrayAddressAreaSource('test', [
+        new AddressAreaData(source: 'test', sourceId: 'root-a', countryCode: 'MY', type: 'state', name: 'Selangor'),
+        new AddressAreaData(source: 'test', sourceId: 'root-b', countryCode: 'MY', type: 'state', name: 'Kedah'),
+        new AddressAreaData(source: 'test', sourceId: 'child', countryCode: 'MY', type: 'district', name: 'Petaling', parentSourceId: 'root-a', hierarchyType: 'administrative'),
+    ]));
+
+    $rootA = AddressArea::query()->where('source', 'test')->where('source_id', 'root-a')->firstOrFail();
+    $child = AddressArea::query()->where('source', 'test')->where('source_id', 'child')->firstOrFail();
+    $event = 'eloquent.updating: ' . AddressArea::class;
+    Event::listen($event, static fn (AddressArea $area): false => false);
+
+    try {
+        $result = $this->action->execute(new ArrayAddressAreaSource('test', [
+            new AddressAreaData(source: 'test', sourceId: 'child', countryCode: 'MY', type: 'district', name: 'Petaling Updated', parentSourceId: 'root-b', hierarchyType: 'administrative'),
+        ]));
+    } finally {
+        Event::getFacadeRoot()->forget($event);
+    }
+
+    expect($result->updated)->toBe(0)
+        ->and($result->skipped)->toBe(1)
+        ->and(AddressArea::query()->whereKey($child->getKey())->value('name'))->toBe('Petaling')
+        ->and(AddressAreaRelationship::query()
+            ->where('source', 'test')
+            ->where('child_address_area_id', $child->getKey())
+            ->where('parent_address_area_id', $rootA->getKey())
+            ->exists())->toBeTrue();
+});
+
+it('preloads matching areas once for a multi-row import', function (): void {
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    try {
+        $this->action->execute(new ArrayAddressAreaSource('test', [
+            new AddressAreaData(source: 'test', sourceId: '1', countryCode: 'MY', type: 'state', name: 'One'),
+            new AddressAreaData(source: 'test', sourceId: '2', countryCode: 'MY', type: 'state', name: 'Two'),
+            new AddressAreaData(source: 'test', sourceId: '3', countryCode: 'MY', type: 'state', name: 'Three'),
+        ]));
+
+        $areaSelects = collect(DB::getQueryLog())
+            ->pluck('query')
+            ->filter(static fn (string $query): bool => str_starts_with(mb_strtolower(mb_ltrim($query)), 'select')
+                && str_contains($query, AddressArea::query()->getModel()->getTable()))
+            ->count();
+    } finally {
+        DB::disableQueryLog();
+    }
+
+    expect($areaSelects)->toBe(1);
 });
 
 it('reports missing parents during dry-run', function (): void {

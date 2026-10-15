@@ -7,6 +7,7 @@ namespace AIArmada\FilamentAddressing\Resources\PostalCodeResource\Pages;
 use AIArmada\FilamentAddressing\Exports\PostalCodeExporter;
 use AIArmada\FilamentAddressing\Imports\PostalCodeImporter;
 use AIArmada\FilamentAddressing\Resources\PostalCodeResource;
+use Filament\Actions\CreateAction;
 use Filament\Actions\ExportAction;
 use Filament\Actions\ImportAction;
 use Filament\Resources\Pages\ListRecords;
@@ -19,10 +20,16 @@ final class ListPostalCodes extends ListRecords
     {
         $actions = [];
 
+        if (! PostalCodeResource::isReadOnly() && PostalCodeResource::canCreate()) {
+            $actions[] = CreateAction::make();
+        }
+
         if (config('filament-addressing.features.postal_code_import', false)) {
             $actions[] = ImportAction::make()
                 ->importer(PostalCodeImporter::class)
-                ->label('Import Postcodes');
+                ->label('Import Postcodes')
+                ->visible(fn (): bool => ! PostalCodeResource::isReadOnly() && PostalCodeResource::canCreate())
+                ->authorize(fn (): bool => ! PostalCodeResource::isReadOnly() && PostalCodeResource::canCreate());
         }
 
         if (config('filament-addressing.features.postal_code_export', false)) {

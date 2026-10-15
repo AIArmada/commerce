@@ -87,13 +87,13 @@ That is intentional.
 
 Snapshots preserve historical address state. Edit the owning domain record or create a new snapshot through core domain workflows.
 
-## Provider Payload Not Visible
+## Area Source Payload Not Visible
 
 Enable it only for debugging/admin panels:
 
 ```php
 'features' => [
-    'show_provider_payload' => true,
+    'show_source_payload' => true,
 ],
 ```
 

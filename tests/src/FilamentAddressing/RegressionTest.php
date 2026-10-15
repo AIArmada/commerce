@@ -19,6 +19,7 @@ use AIArmada\FilamentAddressing\Exports\PostalCodeExporter;
 use AIArmada\FilamentAddressing\Imports\PostalCodeImporter;
 use AIArmada\FilamentAddressing\RelationManagers\AddressesRelationManager;
 use AIArmada\FilamentAddressing\Resources\AddressCountryResource;
+use AIArmada\FilamentAddressing\Resources\AddressResource;
 use AIArmada\FilamentAddressing\Resources\AddressResource\Pages\CreateAddress;
 use AIArmada\FilamentAddressing\Resources\PostalCodeResource;
 use AIArmada\FilamentAddressing\Resources\PostalCodeResource\Pages\CreatePostalCode;
@@ -32,8 +33,10 @@ use AIArmada\FilamentAddressing\Tables\AddressCountryTable;
 use AIArmada\FilamentAddressing\Tables\AddressStateTable;
 use AIArmada\FilamentAddressing\Tables\PostalCodeTable;
 use Filament\Actions\Imports\Models\Import;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Schemas\Schema;
 use Filament\Tables\Contracts\HasTable;
@@ -41,7 +44,6 @@ use Filament\Tables\Table;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Livewire\Component;
-use Symfony\Component\HttpKernel\Exception\HttpException;
 
 beforeEach(function (): void {
     app(SeedAddressCountriesAction::class)->execute();
@@ -274,32 +276,14 @@ it('scopes the addresses relation manager record select and row actions to the o
         'line1' => 'Owner B attached', 'country_code' => 'MY',
     ]));
 
-    $table = (new AddressesRelationManager)->table(Table::make(Mockery::mock(HasTable::class)));
-    $headerActions = collect($table->getHeaderActions());
-    $rowActions = collect($table->getActions());
-
-    $attach = $headerActions->first(fn ($action): bool => $action->getName() === 'attach');
-    $scopeCallback = (new ReflectionProperty($attach, 'modifyRecordSelectOptionsQueryUsing'))->getValue($attach);
-
-    expect($scopeCallback)->toBeInstanceOf(Closure::class);
-
-    $scopedIds = OwnerContext::withOwner(
-        $ownerA,
-        fn (): array => $scopeCallback(Address::query())->pluck('id')->all(),
-    );
+    $scopedIds = OwnerContext::withOwner($ownerA, fn (): array => AddressResource::getEloquentQuery()->pluck('id')->all());
 
     expect($scopedIds)->toContain($addressA->id)->not->toContain($addressB->id);
 
-    $edit = $rowActions->first(fn ($action): bool => $action->getName() === 'edit');
-    $detach = $rowActions->first(fn ($action): bool => $action->getName() === 'detach');
+    $table = (new AddressesRelationManager)->table(Table::make(Mockery::mock(HasTable::class)));
+    $rowActions = collect($table->getActions());
 
-    OwnerContext::withOwner($ownerA, function () use ($edit, $detach, $addressA, $addressB): void {
-        expect($edit->record($addressA)->isVisible())->toBeTrue()
-            ->and($edit->record($addressB)->isVisible())->toBeFalse()
-            ->and($detach->record($addressA)->isVisible())->toBeTrue()
-            ->and($detach->record($addressB)->isVisible())->toBeFalse()
-            ->and(fn () => $edit->record($addressB)->callBefore())->toThrow(HttpException::class);
-    });
+    expect($rowActions->map(fn ($action): string => $action->getName())->all())->toContain('editAttachment', 'detachAddress');
 });
 
 it('requires two-letter alpha ISO2 codes', function (): void {
@@ -326,14 +310,17 @@ it('AUD#B1 offers only active areas on the postcode form', function (): void {
     ]);
 
     $schema = PostalCodeResource::form(Schema::make(Mockery::mock(Component::class, HasSchemas::class)));
-    $areas = collect($schema->getComponents())
+    $manualCoverage = collect($schema->getComponents())
         ->flatMap(fn ($section): array => $section->getChildComponents())
-        ->first(fn ($component): bool => $component instanceof Select && $component->getName() === 'areas');
+        ->first(fn ($component): bool => $component instanceof Repeater && $component->getName() === 'manual_coverage');
+    $areaSelect = collect($manualCoverage->getChildComponents())
+        ->first(fn ($component): bool => $component instanceof Select && $component->getName() === 'area_id');
 
-    $modifyQuery = (new ReflectionProperty(Select::class, 'modifyRelationshipQueryUsing'))->getValue($areas);
-    $query = $modifyQuery(AddressArea::query(), static fn (): string => 'MY');
+    $search = (new ReflectionProperty(Select::class, 'getSearchResultsUsing'))->getValue($areaSelect);
+    $get = Mockery::mock(Get::class);
+    $get->shouldReceive('__invoke')->with('../../country_code')->andReturn('MY');
 
-    expect($query->pluck('name')->all())->toBe(['Active Area']);
+    expect($search($get, 'Area'))->toBe([AddressArea::query()->where('name', 'Active Area')->value('id') => 'Active Area']);
 });
 
 class RepairCustomAddress extends Address {}

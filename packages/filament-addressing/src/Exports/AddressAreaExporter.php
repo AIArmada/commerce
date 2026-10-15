@@ -33,6 +33,14 @@ class AddressAreaExporter extends Exporter
                 ->label('Code'),
             ExportColumn::make('parent_source_id')
                 ->label('Parent Source ID'),
+            ExportColumn::make('relationship_type')
+                ->state(static fn (AddressArea $record): ?string => $record->ancestors()
+                    ->wherePivot('source', $record->source)
+                    ->first()?->pivot?->getAttribute('relationship_type')),
+            ExportColumn::make('hierarchy_type')
+                ->state(static fn (AddressArea $record): ?string => $record->ancestors()
+                    ->wherePivot('source', $record->source)
+                    ->first()?->pivot?->getAttribute('hierarchy_type')),
             ExportColumn::make('source')
                 ->label('Source'),
             ExportColumn::make('source_id')
@@ -41,6 +49,15 @@ class AddressAreaExporter extends Exporter
                 ->label('Latitude'),
             ExportColumn::make('longitude')
                 ->label('Longitude'),
+            ExportColumn::make('metadata')
+                ->formatStateUsing(static fn (mixed $state): string => is_array($state)
+                    ? (json_encode($state, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '')
+                    : (string) ($state ?? '')),
+            ExportColumn::make('source_payload')
+                ->label('Source Payload')
+                ->formatStateUsing(static fn (mixed $state): string => is_array($state)
+                    ? (json_encode($state, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '')
+                    : (string) ($state ?? '')),
             ExportColumn::make('synced_at')
                 ->label('Synced At'),
         ];
