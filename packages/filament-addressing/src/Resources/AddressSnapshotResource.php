@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAddressing\Resources;
 
+use AIArmada\Addressing\Actions\BuildAddressNavigationLinksAction;
+use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Models\AddressSnapshot;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\FilamentAddressing\Resources\AddressSnapshotResource\Pages\ListAddressSnapshots;
@@ -77,6 +79,7 @@ final class AddressSnapshotResource extends Resource
                         TextEntry::make('label'),
                         TextEntry::make('line1'),
                         TextEntry::make('line2'),
+                        TextEntry::make('line3'),
                         TextEntry::make('city'),
                         TextEntry::make('state'),
                         TextEntry::make('postcode'),
@@ -87,6 +90,29 @@ final class AddressSnapshotResource extends Resource
                     ->schema([
                         TextEntry::make('latitude'),
                         TextEntry::make('longitude'),
+                    ])->columns(2),
+                Section::make('Navigation and source data')
+                    ->schema([
+                        TextEntry::make('google_maps_url')
+                            ->label('Google Maps')
+                            ->state(fn (AddressSnapshot $record): ?string => app(BuildAddressNavigationLinksAction::class)
+                                ->execute(AddressData::from($record->attributesToArray()))['google_maps_url'])
+                            ->url(fn (AddressSnapshot $record): ?string => app(BuildAddressNavigationLinksAction::class)
+                                ->execute(AddressData::from($record->attributesToArray()))['google_maps_url'])
+                            ->openUrlInNewTab(),
+                        TextEntry::make('waze_url')
+                            ->label('Waze')
+                            ->state(fn (AddressSnapshot $record): ?string => app(BuildAddressNavigationLinksAction::class)
+                                ->execute(AddressData::from($record->attributesToArray()))['waze_url'])
+                            ->url(fn (AddressSnapshot $record): ?string => app(BuildAddressNavigationLinksAction::class)
+                                ->execute(AddressData::from($record->attributesToArray()))['waze_url'])
+                            ->openUrlInNewTab(),
+                        TextEntry::make('google_place_id'),
+                        TextEntry::make('google_feature_id'),
+                        TextEntry::make('google_cid'),
+                        TextEntry::make('google_entity_id'),
+                        TextEntry::make('navigation_links')->formatStateUsing(fn (mixed $state): string => is_array($state) ? json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) ?: '—' : '—'),
+                        TextEntry::make('metadata')->formatStateUsing(fn (mixed $state): string => is_array($state) ? json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) ?: '—' : '—'),
                     ])->columns(2),
             ]);
     }

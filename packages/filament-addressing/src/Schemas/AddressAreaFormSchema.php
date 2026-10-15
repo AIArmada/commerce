@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAddressing\Schemas;
 
 use AIArmada\Addressing\Contracts\CountryAddressProfile;
+use AIArmada\Addressing\Data\AddressHierarchyDefinition;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Support\AddressAreaHierarchy;
 use AIArmada\Addressing\Support\CountryAddressProfileResolver;
+use AIArmada\Addressing\Support\ModelResolver;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -24,6 +26,7 @@ class AddressAreaFormSchema
         $record = $schema->getRecord();
         $currentArea = $record instanceof AddressArea ? $record : null;
         $currentAreaId = $currentArea?->getKey();
+        $isSourceManaged = $currentArea instanceof AddressArea && $currentArea->source !== 'manual';
 
         return $schema
             ->schema([
@@ -40,8 +43,14 @@ class AddressAreaFormSchema
                             )
                             ->searchable()
                             ->required()
+                            ->disabled($isSourceManaged)
                             ->live()
-                            ->afterStateUpdated(fn (callable $set) => $set('parent_id', null)),
+                            ->afterStateUpdated(function (mixed $state, callable $set): void {
+                                $set('parent_id', null);
+
+                                $hierarchyOptions = self::hierarchyOptions($state);
+                                $set('hierarchy_type', count($hierarchyOptions) === 1 ? array_key_first($hierarchyOptions) : null);
+                            }),
                         TextInput::make('name')
                             ->label('Name')
                             ->required()
@@ -52,26 +61,46 @@ class AddressAreaFormSchema
                         TextInput::make('code')
                             ->label('Code')
                             ->maxLength(100),
-                    ])->columns(2),
+                    ])->columns(2)
+                    ->disabled($isSourceManaged),
                 Section::make('Classification')
                     ->schema([
                         TextInput::make('type')
                             ->label('Type')
                             ->required()
                             ->maxLength(100)
-                            ->placeholder('e.g. state, province, city'),
+                            ->placeholder('e.g. state, province, city')
+                            ->disabled($isSourceManaged),
                         TextInput::make('level')
                             ->label('Level')
                             ->numeric()
                             ->minValue(1)
-                            ->maxValue(10),
+                            ->maxValue(10)
+                            ->disabled($isSourceManaged),
+                        Select::make('hierarchy_type')
+                            ->label('Hierarchy Type')
+                            ->options(fn (callable $get): array => self::hierarchyOptions($get('country_id')))
+                            ->searchable()
+                            ->native(false)
+                            ->placeholder('Choose a hierarchy')
+                            ->default(fn (callable $get): ?string => self::currentHierarchyType($currentArea)
+                                ?? self::soleHierarchyType(self::hierarchyOptions($get('country_id'))))
+                            ->helperText(fn (callable $get): ?string => count(self::hierarchyOptions($get('country_id'))) > 1
+                                ? 'Choose the hierarchy for the parent relationship.'
+                                : 'Used to distinguish parallel geographic hierarchies.')
+                            ->visible(fn (callable $get): bool => self::hierarchyOptions($get('country_id')) !== [])
+                            ->required(fn (callable $get): bool => self::hasParent($get('parent_id')))
+                            ->rules(['nullable', 'string', 'max:50'])
+                            ->disabled($isSourceManaged),
                         TextInput::make('hierarchy_type')
                             ->label('Hierarchy Type')
                             ->placeholder('e.g. postal, administrative')
                             ->maxLength(50)
-                            ->default(fn (callable $get): ?string => $currentArea?->ancestors()->first()?->pivot?->getAttribute('hierarchy_type')
-                                ?? self::inferHierarchyType($get('country_id')))
-                            ->helperText('Used to distinguish parallel geographic hierarchies.'),
+                            ->default(fn (): ?string => self::currentHierarchyType($currentArea))
+                            ->helperText('Enter a custom hierarchy type for this country.')
+                            ->visible(fn (callable $get): bool => self::hierarchyOptions($get('country_id')) === [])
+                            ->required(fn (callable $get): bool => self::hasParent($get('parent_id')))
+                            ->disabled($isSourceManaged),
                         Select::make('parent_id')
                             ->label('Parent')
                             ->options(
@@ -81,10 +110,14 @@ class AddressAreaFormSchema
                                 ),
                             )
                             ->searchable()
-                            ->placeholder('None (top-level)'),
+                            ->placeholder('None (top-level)')
+                            ->disabled($isSourceManaged),
                         Toggle::make('is_active')
                             ->label('Active')
-                            ->default(true),
+                            ->default(true)
+                            ->helperText($isSourceManaged
+                                ? 'Provider-managed areas may be reactivated the next time geography data is seeded.'
+                                : null),
                     ])->columns(2),
                 Section::make('Coordinates')
                     ->schema([
@@ -96,22 +129,20 @@ class AddressAreaFormSchema
                             ->label('Longitude')
                             ->numeric()
                             ->step(0.000001),
-                    ])->columns(2),
+                    ])->columns(2)
+                    ->disabled($isSourceManaged),
                 Section::make('Source')
                     ->schema([
                         TextInput::make('source')
                             ->label('Source')
-                            ->required()
-                            ->maxLength(100),
+                            ->disabled(),
                         TextInput::make('source_id')
                             ->label('Source ID')
-                            ->required()
-                            ->maxLength(255),
+                            ->disabled(),
                         TextInput::make('parent_source_id')
                             ->label('Parent Source ID')
-                            ->maxLength(255),
-                    ])->columns(2)
-                    ->visible(fn (): bool => (bool) config('filament-addressing.features.show_source_payload')),
+                            ->disabled(),
+                    ])->columns(2),
             ]);
     }
 
@@ -146,35 +177,89 @@ class AddressAreaFormSchema
                         TextEntry::make('source'),
                         TextEntry::make('source_id'),
                         TextEntry::make('synced_at')->dateTime(),
+                        TextEntry::make('status_warning')
+                            ->label('Status warning')
+                            ->state(static function (AddressArea $record): string {
+                                $warnings = [];
+
+                                if (! $record->is_active) {
+                                    $warnings[] = 'This area is inactive; existing references still point to it.';
+                                }
+
+                                if ($record->source !== 'manual') {
+                                    $warnings[] = 'Provider-managed details may be restored on the next geography seed.';
+                                }
+
+                                return implode(' ', $warnings);
+                            })
+                            ->color('warning')
+                            ->visible(fn (AddressArea $record): bool => ! $record->is_active || $record->source !== 'manual'),
                     ])->columns(2),
+                Section::make('Source Payload')
+                    ->schema([
+                        TextEntry::make('source_payload')
+                            ->formatStateUsing(static fn (mixed $state): string => is_array($state)
+                                ? (json_encode($state, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '')
+                                : (string) ($state ?? '')),
+                        TextEntry::make('metadata')
+                            ->formatStateUsing(static fn (mixed $state): string => is_array($state)
+                                ? (json_encode($state, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '')
+                                : (string) ($state ?? '')),
+                    ])
+                    ->visible(fn (): bool => (bool) config('filament-addressing.features.show_source_payload')),
             ]);
     }
 
-    private static function inferHierarchyType(mixed $countryId): ?string
+    /** @return array<string, string> */
+    private static function hierarchyOptions(mixed $countryId): array
     {
         if (! is_string($countryId) || mb_trim($countryId) === '') {
-            return null;
+            return [];
         }
 
         $country = config('filament-addressing.resources.countries.model', AddressCountry::class)::query()
             ->find($countryId);
 
         if (! $country instanceof AddressCountry || ! is_string($country->iso2)) {
-            return null;
+            return [];
         }
 
         $provider = app(CountryAddressProfileResolver::class)->resolve($country->iso2);
 
         if (! $provider instanceof CountryAddressProfile) {
+            return [];
+        }
+
+        return collect($provider->addressHierarchies())
+            ->mapWithKeys(static fn (AddressHierarchyDefinition $hierarchy): array => [$hierarchy->key => $hierarchy->label])
+            ->all();
+    }
+
+    /** @param array<string, string> $options */
+    private static function soleHierarchyType(array $options): ?string
+    {
+        return count($options) === 1 ? array_key_first($options) : null;
+    }
+
+    private static function currentHierarchyType(?AddressArea $area): ?string
+    {
+        if (! $area instanceof AddressArea) {
             return null;
         }
 
-        $hierarchies = $provider->addressHierarchies();
+        $hierarchyTypes = ModelResolver::areaRelationshipClass()::query()
+            ->where('child_address_area_id', $area->getKey())
+            ->where('relationship_type', 'contains')
+            ->pluck('hierarchy_type')
+            ->filter(static fn (mixed $hierarchyType): bool => is_string($hierarchyType) && mb_trim($hierarchyType) !== '')
+            ->unique()
+            ->values();
 
-        if ($hierarchies === []) {
-            return null;
-        }
+        return $hierarchyTypes->count() === 1 ? $hierarchyTypes->first() : null;
+    }
 
-        return $hierarchies[0]->key;
+    private static function hasParent(mixed $parentId): bool
+    {
+        return is_string($parentId) && mb_trim($parentId) !== '';
     }
 }

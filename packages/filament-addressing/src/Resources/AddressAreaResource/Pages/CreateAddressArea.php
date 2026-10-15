@@ -21,6 +21,8 @@ final class CreateAddressArea extends CreateRecord
 
     protected function handleRecordCreation(array $data): AddressArea
     {
+        unset($data['source'], $data['source_id'], $data['parent_source_id']);
+
         $area = app(SaveAddressAreaAction::class)->handle($data);
 
         AddressingFilterOptions::forgetAreaOptions();

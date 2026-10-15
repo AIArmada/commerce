@@ -5,6 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAddressing\Resources;
 
 use AIArmada\Addressing\Models\AddressArea;
+use AIArmada\FilamentAddressing\RelationManagers\AreaAliasesRelationManager;
+use AIArmada\FilamentAddressing\RelationManagers\AreaPostalCodesRelationManager;
+use AIArmada\FilamentAddressing\RelationManagers\AreaRolesRelationManager;
+use AIArmada\FilamentAddressing\RelationManagers\AreaStateLinksRelationManager;
 use AIArmada\FilamentAddressing\Resources\AddressAreaResource\Pages\CreateAddressArea;
 use AIArmada\FilamentAddressing\Resources\AddressAreaResource\Pages\EditAddressArea;
 use AIArmada\FilamentAddressing\Resources\AddressAreaResource\Pages\ListAddressAreas;
@@ -79,17 +83,28 @@ final class AddressAreaResource extends Resource
         return AddressAreaFormSchema::form($schema);
     }
 
+    public static function getRelations(): array
+    {
+        return [
+            AreaAliasesRelationManager::class,
+            AreaRolesRelationManager::class,
+            AreaStateLinksRelationManager::class,
+            AreaPostalCodesRelationManager::class,
+        ];
+    }
+
     public static function getPages(): array
     {
         $pages = [
             'index' => ListAddressAreas::route('/'),
-            'view' => ViewAddressArea::route('/{record}'),
         ];
 
         if (! self::isReadOnly()) {
-            $pages['edit'] = EditAddressArea::route('/{record}/edit');
             $pages['create'] = CreateAddressArea::route('/create');
+            $pages['edit'] = EditAddressArea::route('/{record}/edit');
         }
+
+        $pages['view'] = ViewAddressArea::route('/{record}');
 
         return $pages;
     }

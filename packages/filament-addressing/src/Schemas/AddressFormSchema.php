@@ -9,10 +9,13 @@ use AIArmada\Addressing\Data\AddressHierarchyDefinition;
 use AIArmada\Addressing\Models\Address;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressCountry;
+use AIArmada\Addressing\Models\City;
+use AIArmada\Addressing\Rules\ValidPostalCode;
 use AIArmada\Addressing\Support\CountryAddressProfileResolver;
 use AIArmada\Addressing\Support\ModelResolver;
 use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\FilamentAddressing\Rules\AddressAreasBelongToCountry;
+use AIArmada\FilamentAddressing\Rules\CityBelongsToCountryAndState;
 use AIArmada\FilamentAddressing\Rules\StateBelongsToCountry;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -41,6 +44,7 @@ class AddressFormSchema
             ->live()
             ->afterStateUpdated(function (callable $set) use ($prefix): void {
                 $set($prefix . 'state_id', null);
+                $set($prefix . 'city_id', null);
                 $set($prefix . 'area_assignments', []);
             });
 
@@ -54,6 +58,10 @@ class AddressFormSchema
 
         $fields[] = TextInput::make($prefix . 'line2')
             ->label('Line 2')
+            ->maxLength(255);
+
+        $fields[] = TextInput::make($prefix . 'line3')
+            ->label('Line 3')
             ->maxLength(255);
 
         $fields[] = TextInput::make($prefix . 'city')
@@ -89,10 +97,51 @@ class AddressFormSchema
             ->rules(fn (callable $get): array => [new StateBelongsToCountry($get($prefix . 'country_code'))])
             ->visible(fn (callable $get): bool => self::countryHasStates($get($prefix . 'country_code')))
             ->afterStateUpdated(function (callable $set, callable $get) use ($prefix): void {
+                $set($prefix . 'city_id', null);
                 foreach (app(CountryAddressProfileResolver::class)->stateDependentRoles(self::nullableString($get($prefix . 'country_code'))) as $role) {
                     $set($prefix . 'area_assignments.' . $role, null);
                 }
             })
+            ->live();
+
+        $cityClass = config('filament-addressing.resources.cities.model', City::class);
+        $fields[] = Select::make($prefix . 'city_id')
+            ->label('Canonical city')
+            ->getSearchResultsUsing(function (string $search, callable $get) use ($prefix, $cityClass): array {
+                $countryCode = self::nullableString($get($prefix . 'country_code'));
+
+                if ($countryCode === null) {
+                    return [];
+                }
+
+                $needle = LikeSearch::contains($search);
+
+                return $cityClass::query()
+                    ->whereHas('country', fn ($query) => $query->where('iso2', mb_strtoupper($countryCode)))
+                    ->where('state_id', self::nullableString($get($prefix . 'state_id')))
+                    ->where(fn ($query) => LikeSearch::whereLike($query, 'name', $needle))
+                    ->orderBy('name')
+                    ->limit(50)
+                    ->pluck('name', 'id')
+                    ->toArray();
+            })
+            ->getOptionLabelUsing(function (mixed $value, callable $get) use ($prefix, $cityClass): ?string {
+                if (! is_string($value)) {
+                    return null;
+                }
+
+                return $cityClass::query()
+                    ->whereKey($value)
+                    ->whereHas('country', fn ($query) => $query->where('iso2', mb_strtoupper((string) $get($prefix . 'country_code'))))
+                    ->where('state_id', self::nullableString($get($prefix . 'state_id')))
+                    ->value('name');
+            })
+            ->searchable()
+            ->rules(fn (callable $get): array => [new CityBelongsToCountryAndState(
+                self::nullableString($get($prefix . 'country_code')),
+                self::nullableString($get($prefix . 'state_id')),
+            )])
+            ->visible(fn (callable $get): bool => self::nullableString($get($prefix . 'country_code')) !== null)
             ->live();
 
         foreach ($assignmentRoles as $role) {
@@ -197,7 +246,26 @@ class AddressFormSchema
 
         $fields[] = TextInput::make($prefix . 'postcode')
             ->label('Postcode')
-            ->maxLength(20);
+            ->maxLength(20)
+            ->rules(fn (callable $get): array => [new ValidPostalCode((string) $get($prefix . 'country_code'))]);
+
+        foreach (['latitude', 'longitude'] as $coordinate) {
+            $fields[] = TextInput::make($prefix . $coordinate)
+                ->numeric()
+                ->minValue($coordinate === 'latitude' ? -90 : -180)
+                ->maxValue($coordinate === 'latitude' ? 90 : 180)
+                ->step(0.0000001);
+        }
+
+        foreach (['google_place_id', 'google_feature_id', 'google_cid', 'google_entity_id'] as $identifier) {
+            $fields[] = TextInput::make($prefix . $identifier)->maxLength(255);
+        }
+
+        foreach (['google_maps_url', 'waze_url'] as $navigationUrl) {
+            $fields[] = TextInput::make($prefix . $navigationUrl)
+                ->url()
+                ->maxLength(2048);
+        }
 
         return $fields;
     }

@@ -36,6 +36,10 @@ class AddressExporter extends Exporter
                 ->label('Line 1'),
             ExportColumn::make('line2')
                 ->label('Line 2'),
+            ExportColumn::make('line3')
+                ->label('Line 3'),
+            ExportColumn::make('city_id')
+                ->label('Canonical City ID'),
             ExportColumn::make('city')
                 ->label('City'),
             ExportColumn::make('state')
@@ -48,6 +52,22 @@ class AddressExporter extends Exporter
                 ->label('Country'),
             ExportColumn::make('formatted_address')
                 ->label('Formatted Address'),
+            ExportColumn::make('latitude')
+                ->label('Latitude'),
+            ExportColumn::make('longitude')
+                ->label('Longitude'),
+            ExportColumn::make('google_place_id')
+                ->label('Google Place ID'),
+            ExportColumn::make('google_feature_id')
+                ->label('Google Feature ID'),
+            ExportColumn::make('google_cid')
+                ->label('Google CID'),
+            ExportColumn::make('google_entity_id')
+                ->label('Google Entity ID'),
+            ExportColumn::make('google_maps_url')
+                ->label('Google Maps URL'),
+            ExportColumn::make('waze_url')
+                ->label('Waze URL'),
         ];
     }
 

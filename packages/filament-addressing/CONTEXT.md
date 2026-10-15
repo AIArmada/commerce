@@ -42,6 +42,7 @@ keywords:
 
 ## Key surfaces
 - Resources: `AddressAreaResource`, `AddressCityResource`, `AddressCountryResource`, `AddressResource`, `AddressSnapshotResource`, `AddressStateResource`, `PostalCodeResource`, `ResolutionGapResource`
+- Area detail managers: manual/provider aliases, roles, canonical state links, postcode coverage, and incoming/outgoing typed area relationships
 - Actions/Services: `Support/AddressingFilterOptions` (cached table-filter option lists); the reusable `SingleAddressAreaSource` now belongs to core `addressing`
 - Config `filament-addressing.php`: `navigation` (`enabled`, `group`, `sort`, `icons`), `features`, `resources` (`countries`, `states`, `cities`, `areas`, `postal_codes`, `resolution_gaps`, `addresses`, `snapshots`)
 

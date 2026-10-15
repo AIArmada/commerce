@@ -8,6 +8,7 @@ use AIArmada\Addressing\Actions\ImportAddressAreasAction;
 use AIArmada\Addressing\Data\AddressAreaData;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Support\SingleAddressAreaSource;
+use AIArmada\FilamentAddressing\Resources\AddressAreaResource;
 use AIArmada\FilamentAddressing\Support\AddressingFilterOptions;
 use Filament\Actions\Imports\Exceptions\RowImportFailedException;
 use Filament\Actions\Imports\ImportColumn;
@@ -54,6 +55,9 @@ class AddressAreaImporter extends Importer
             ImportColumn::make('hierarchy_type')
                 ->label('Hierarchy Type')
                 ->example('administrative'),
+            ImportColumn::make('relationship_type')
+                ->label('Parent Relationship Type')
+                ->example('contains'),
             ImportColumn::make('source')
                 ->label('Source')
                 ->requiredMapping()
@@ -73,22 +77,11 @@ class AddressAreaImporter extends Importer
             ImportColumn::make('metadata')
                 ->label('Metadata')
                 ->example('{"source":"import"}')
-                ->castStateUsing(static function (?string $state): array {
-                    if ($state === null || mb_trim($state) === '') {
-                        return [];
-                    }
-
-                    try {
-                        $decoded = json_decode($state, true, 512, JSON_THROW_ON_ERROR);
-                    } catch (JsonException $exception) {
-                        throw new RowImportFailedException(
-                            'Invalid metadata JSON: ' . $exception->getMessage(),
-                            previous: $exception,
-                        );
-                    }
-
-                    return is_array($decoded) ? $decoded : [];
-                }),
+                ->castStateUsing(static fn (?string $state): array => self::decodeJsonColumn($state, 'metadata')),
+            ImportColumn::make('source_payload')
+                ->label('Source Payload')
+                ->example('{"source":"upstream"}')
+                ->castStateUsing(static fn (?string $state): array => self::decodeJsonColumn($state, 'source payload')),
         ];
     }
 
@@ -141,6 +134,31 @@ class AddressAreaImporter extends Importer
             throw new RowImportFailedException('Expected AddressArea record');
         }
 
+        if (AddressAreaResource::isReadOnly()) {
+            throw new RowImportFailedException('Area import is disabled while the resource is read only.');
+        }
+
+        $authorizationRecord = $record;
+
+        if ($record->exists) {
+            $areaClass = self::getModel();
+            $persistedRecord = $areaClass::query()->whereKey($record->getKey())->firstOrFail();
+
+            if (! $persistedRecord instanceof AddressArea) {
+                throw new LogicException('Configured area model must extend AddressArea.');
+            }
+
+            $authorizationRecord = $persistedRecord;
+        }
+
+        $isAuthorized = $record->exists
+            ? AddressAreaResource::canEdit($authorizationRecord)
+            : AddressAreaResource::canCreate();
+
+        if (! $isAuthorized) {
+            throw new RowImportFailedException('You are not authorized to create or update this area.');
+        }
+
         $areaData = $this->buildAddressAreaData();
         $source = new SingleAddressAreaSource($areaData->source, $areaData);
 
@@ -184,8 +202,29 @@ class AddressAreaImporter extends Importer
             latitude: $this->nullableFloat($this->data['latitude'] ?? null),
             longitude: $this->nullableFloat($this->data['longitude'] ?? null),
             hierarchyType: $this->nullableString($this->data['hierarchy_type'] ?? null),
+            relationshipType: $this->nullableString($this->data['relationship_type'] ?? null) ?? 'contains',
             metadata: isset($this->data['metadata']) && is_array($this->data['metadata']) ? $this->data['metadata'] : [],
+            sourcePayload: isset($this->data['source_payload']) && is_array($this->data['source_payload']) ? $this->data['source_payload'] : [],
         );
+    }
+
+    /** @return array<string, mixed> */
+    private static function decodeJsonColumn(?string $state, string $label): array
+    {
+        if ($state === null || mb_trim($state) === '') {
+            return [];
+        }
+
+        try {
+            $decoded = json_decode($state, true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException $exception) {
+            throw new RowImportFailedException(
+                "Invalid {$label} JSON: " . $exception->getMessage(),
+                previous: $exception,
+            );
+        }
+
+        return is_array($decoded) ? $decoded : [];
     }
 
     private function nullableString(mixed $value): ?string

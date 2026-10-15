@@ -10,6 +10,7 @@ use AIArmada\Addressing\Data\AddressLevelDefinition;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\ResolutionGap;
 use AIArmada\Addressing\Support\CountryAddressProfileResolver;
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\FilamentAddressing\Resources\AddressAreaResource;
 use AIArmada\FilamentAddressing\Resources\ResolutionGapResource;
@@ -141,7 +142,10 @@ final class ResolutionGapTable
 
     public static function matchActionVisible(ResolutionGap $record): bool
     {
-        return self::mutatingActionsEnabled() && $record->status === 'open';
+        return self::mutatingActionsEnabled()
+            && OwnerUiScope::canMutateRecord($record)
+            && ResolutionGapResource::canEdit($record)
+            && $record->status === 'open';
     }
 
     public static function matchDisabledReason(ResolutionGap $record): ?string
@@ -161,7 +165,10 @@ final class ResolutionGapTable
 
     public static function ignoreActionVisible(ResolutionGap $record): bool
     {
-        return self::mutatingActionsEnabled() && $record->status !== 'ignored';
+        return self::mutatingActionsEnabled()
+            && OwnerUiScope::canMutateRecord($record)
+            && ResolutionGapResource::canEdit($record)
+            && $record->status !== 'ignored';
     }
 
     /** @return array<string, string> */
@@ -202,6 +209,8 @@ final class ResolutionGapTable
 
     public static function runMatch(ResolutionGap $record, array $data): void
     {
+        self::assertGapCanMutate($record);
+
         $areaId = $data['address_area_id'] ?? null;
 
         if (! is_string($areaId) || mb_trim($areaId) === '') {
@@ -221,6 +230,7 @@ final class ResolutionGapTable
 
     public static function runIgnore(ResolutionGap $record): void
     {
+        self::assertGapCanMutate($record);
         app(IgnoreResolutionGapAction::class)->execute($record);
 
         Notification::make()
@@ -231,13 +241,24 @@ final class ResolutionGapTable
 
     public static function runBulkIgnore(Collection $records): void
     {
-        $ignored = 0;
+        if (! self::mutatingActionsEnabled()) {
+            abort(403);
+        }
+
+        $gaps = [];
 
         foreach ($records as $record) {
             if (! $record instanceof ResolutionGap || $record->status === 'ignored') {
                 continue;
             }
 
+            self::assertGapCanMutate($record);
+            $gaps[] = $record;
+        }
+
+        $ignored = 0;
+
+        foreach ($gaps as $record) {
             app(IgnoreResolutionGapAction::class)->execute($record);
             $ignored++;
         }
@@ -246,6 +267,17 @@ final class ResolutionGapTable
             ->title("{$ignored} gaps ignored")
             ->success()
             ->send();
+    }
+
+    private static function assertGapCanMutate(ResolutionGap $record): void
+    {
+        abort_unless(self::mutatingActionsEnabled(), 403);
+
+        $current = ResolutionGapResource::getEloquentQuery()->whereKey($record->getKey())->firstOrFail();
+        abort_unless(
+            OwnerUiScope::canMutateRecord($current) && ResolutionGapResource::canEdit($current),
+            403,
+        );
     }
 
     private static function areaOptionLabel(mixed $value): ?string

@@ -77,13 +77,15 @@ final class AddressResource extends Resource
 
     public static function getPages(): array
     {
-        $pages = [
-            'index' => ListAddresses::route('/'),
-            'view' => ViewAddress::route('/{record}'),
-        ];
+        $pages = ['index' => ListAddresses::route('/')];
 
         if (! self::isReadOnly()) {
             $pages['create'] = CreateAddress::route('/create');
+        }
+
+        $pages['view'] = ViewAddress::route('/{record}');
+
+        if (! self::isReadOnly()) {
             $pages['edit'] = EditAddress::route('/{record}/edit');
         }
 

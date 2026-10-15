@@ -4,14 +4,17 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAddressing\Imports;
 
+use AIArmada\Addressing\Actions\ImportPostalCodeAdminDataAction;
 use AIArmada\Addressing\Actions\ImportPostalCodesAction;
 use AIArmada\Addressing\Data\PostalCodeData;
 use AIArmada\Addressing\Models\PostalCode;
 use AIArmada\Addressing\Support\ArrayPostalCodeSource;
+use AIArmada\FilamentAddressing\Resources\PostalCodeResource;
 use Filament\Actions\Imports\Exceptions\RowImportFailedException;
 use Filament\Actions\Imports\ImportColumn;
 use Filament\Actions\Imports\Importer;
 use Filament\Actions\Imports\Models\Import;
+use Illuminate\Validation\ValidationException;
 use JsonException;
 use LogicException;
 
@@ -35,11 +38,9 @@ class PostalCodeImporter extends Importer
                 ->example('47500'),
             ImportColumn::make('source')
                 ->label('Source')
-                ->requiredMapping()
                 ->example('app.malaysia'),
             ImportColumn::make('source_id')
                 ->label('Source ID')
-                ->requiredMapping()
                 ->example('MY-47500'),
             ImportColumn::make('area_source')
                 ->label('Area Source')
@@ -57,9 +58,9 @@ class PostalCodeImporter extends Importer
             ImportColumn::make('metadata')
                 ->label('Metadata')
                 ->example('{"source":"import"}')
-                ->castStateUsing(static function (?string $state): array {
+                ->castStateUsing(static function (?string $state): ?array {
                     if ($state === null || mb_trim($state) === '') {
-                        return [];
+                        return null;
                     }
 
                     try {
@@ -71,7 +72,38 @@ class PostalCodeImporter extends Importer
                         );
                     }
 
-                    return is_array($decoded) ? $decoded : [];
+                    if ($decoded !== null && ! is_array($decoded)) {
+                        throw new RowImportFailedException('Metadata JSON must be an object, a list, or null.');
+                    }
+
+                    return $decoded;
+                }),
+            ImportColumn::make('is_active')
+                ->label('Active')
+                ->boolean()
+                ->example('1'),
+            ImportColumn::make('coverage')
+                ->label('Coverage')
+                ->example('[{"source":"provider","source_id":"MY-47500:area-1","area_source":"app.malaysia","area_source_id":"MY-10","relationship_type":"served_by","is_primary":true}]')
+                ->castStateUsing(static function (?string $state): ?array {
+                    if ($state === null || mb_trim($state) === '') {
+                        return null;
+                    }
+
+                    try {
+                        $decoded = json_decode($state, true, 512, JSON_THROW_ON_ERROR);
+                    } catch (JsonException $exception) {
+                        throw new RowImportFailedException(
+                            'Invalid coverage JSON: ' . $exception->getMessage(),
+                            previous: $exception,
+                        );
+                    }
+
+                    if (! is_array($decoded) || ! array_is_list($decoded)) {
+                        throw new RowImportFailedException('Coverage JSON must be a list of coverage objects.');
+                    }
+
+                    return $decoded;
                 }),
         ];
     }
@@ -110,9 +142,12 @@ class PostalCodeImporter extends Importer
         return [
             'country_code' => ['required', 'string', 'max:2'],
             'code' => ['required', 'string', 'max:20'],
-            'source' => ['required', 'string', 'max:100'],
-            'source_id' => ['required', 'string', 'max:255'],
+            'source' => ['nullable', 'string', 'max:100'],
+            'source_id' => ['nullable', 'string', 'max:255'],
             'relationship_type' => ['nullable', 'string', 'max:50'],
+            'is_active' => ['nullable', 'boolean'],
+            'coverage' => ['nullable', 'array'],
+            'coverage.*' => ['array'],
         ];
     }
 
@@ -122,6 +157,52 @@ class PostalCodeImporter extends Importer
 
         if (! $record instanceof PostalCode) {
             throw new RowImportFailedException('Expected PostalCode record');
+        }
+
+        $persistedRecord = $record->exists
+            ? $record->newQuery()->whereKey($record->getKey())->first()
+            : $record;
+
+        if (! $persistedRecord instanceof PostalCode) {
+            throw new RowImportFailedException('The postcode could not be found for import.');
+        }
+
+        if (PostalCodeResource::isReadOnly()
+            || ($persistedRecord->exists
+                ? ! PostalCodeResource::canEdit($persistedRecord)
+                : ! PostalCodeResource::canCreate())) {
+            throw new RowImportFailedException('You are not authorized to import this postcode.');
+        }
+
+        $record = $persistedRecord;
+
+        $coverage = $this->data['coverage'] ?? null;
+
+        if (is_array($coverage)) {
+            if ($this->hasFlatCoverage()) {
+                throw new RowImportFailedException('Use either the coverage JSON column or the flat area source columns, not both.');
+            }
+
+            try {
+                $this->record = app(ImportPostalCodeAdminDataAction::class)->execute(
+                    countryCode: (string) $this->data['country_code'],
+                    code: (string) $this->data['code'],
+                    isActive: filter_var($this->data['is_active'] ?? ($record->exists ? $record->is_active : true), FILTER_VALIDATE_BOOLEAN),
+                    metadata: array_key_exists('metadata', $this->data)
+                        ? (is_array($this->data['metadata']) ? $this->data['metadata'] : null)
+                        : $record->metadata,
+                    coverage: $coverage,
+                );
+            } catch (ValidationException $exception) {
+                throw new RowImportFailedException(implode('; ', $exception->validator->errors()->all()), previous: $exception);
+            }
+
+            return;
+        }
+
+        if (! is_string($this->data['source'] ?? null) || mb_trim($this->data['source']) === ''
+            || ! is_string($this->data['source_id'] ?? null) || mb_trim($this->data['source_id']) === '') {
+            throw new RowImportFailedException('Source and Source ID are required for flat postcode imports.');
         }
 
         $postalData = $this->buildPostalCodeData();
@@ -165,6 +246,12 @@ class PostalCodeImporter extends Importer
             isPrimary: (bool) ($this->data['is_primary'] ?? false),
             metadata: isset($this->data['metadata']) && is_array($this->data['metadata']) ? $this->data['metadata'] : [],
         );
+    }
+
+    private function hasFlatCoverage(): bool
+    {
+        return $this->nullableString($this->data['area_source'] ?? null) !== null
+            || $this->nullableString($this->data['area_source_id'] ?? null) !== null;
     }
 
     private function nullableString(mixed $value): ?string
