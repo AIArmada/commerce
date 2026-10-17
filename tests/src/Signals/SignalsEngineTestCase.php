@@ -39,12 +39,12 @@ abstract class SignalsEngineTestCase extends Orchestra
 
     protected function defineDatabaseMigrations(): void
     {
-        $this->loadMigrationsFrom(__DIR__.'/../../../packages/signals/database/migrations');
+        $this->loadMigrationsFrom(__DIR__ . '/../../../packages/signals/database/migrations');
     }
 
     protected function defineEnvironment($app): void
     {
-        $app['config']->set('app.key', 'base64:'.base64_encode(random_bytes(32)));
+        $app['config']->set('app.key', 'base64:' . base64_encode(random_bytes(32)));
         $app['config']->set('app.env', 'testing');
         $app['config']->set('app.timezone', 'UTC');
         $app['config']->set('database.default', 'testing');
@@ -56,8 +56,8 @@ abstract class SignalsEngineTestCase extends Orchestra
 
         $params = $this->engineParams();
         $connection = $this->engineConnectionConfig($params);
-        $app['config']->set('database.connections.'.$this->engineConnection, $connection);
-        $app['config']->set('database.connections.'.$this->engineSecondConnection, $connection);
+        $app['config']->set('database.connections.' . $this->engineConnection, $connection);
+        $app['config']->set('database.connections.' . $this->engineSecondConnection, $connection);
         $app['config']->set('cache.default', 'array');
         $app['config']->set('session.driver', 'array');
         $app['config']->set('auth.providers.users.model', User::class);
@@ -93,7 +93,7 @@ abstract class SignalsEngineTestCase extends Orchestra
 
         $owner = User::query()->create([
             'name' => 'Engine Owner',
-            'email' => 'sigeng-'.Str::lower(Str::random(12)).'@example.com',
+            'email' => 'sigeng-' . Str::lower(Str::random(12)) . '@example.com',
             'password' => 'secret',
         ]);
         $this->engineOwner = $owner;
@@ -104,7 +104,7 @@ abstract class SignalsEngineTestCase extends Orchestra
     {
         return TrackedProperty::query()->create([
             'name' => $prefix,
-            'slug' => Str::slug($prefix).'-pgsql-'.Str::lower(Str::random(8)),
+            'slug' => Str::slug($prefix) . '-pgsql-' . Str::lower(Str::random(8)),
             'type' => 'website',
             'currency' => 'MYR',
             'timezone' => 'UTC',
@@ -125,11 +125,11 @@ abstract class SignalsEngineTestCase extends Orchestra
     protected function setEngineSessionIsolation(string $level): void
     {
         if (! in_array($level, ['REPEATABLE READ', 'READ COMMITTED'], true)) {
-            $this->fail('Unsupported PostgreSQL isolation ['.$level.'].');
+            $this->fail('Unsupported PostgreSQL isolation [' . $level . '].');
         }
 
         foreach ([$this->engineConnection, $this->engineSecondConnection] as $connection) {
-            DB::connection($connection)->statement('SET SESSION CHARACTERISTICS AS TRANSACTION ISOLATION LEVEL '.$level);
+            DB::connection($connection)->statement('SET SESSION CHARACTERISTICS AS TRANSACTION ISOLATION LEVEL ' . $level);
         }
     }
 
@@ -163,7 +163,7 @@ abstract class SignalsEngineTestCase extends Orchestra
     private function engineParams(): array
     {
         $prefix = 'SIGNALS_ENGINE_PGSQL';
-        $read = static fn (string $key, string $default): string => (string) ($_SERVER[$prefix.'_'.$key] ?? getenv($prefix.'_'.$key) ?: $default);
+        $read = static fn (string $key, string $default): string => (string) ($_SERVER[$prefix . '_' . $key] ?? getenv($prefix . '_' . $key) ?: $default);
 
         return [
             'host' => $read('HOST', '127.0.0.1'),
@@ -179,14 +179,14 @@ abstract class SignalsEngineTestCase extends Orchestra
         $database = $params['database'];
         $this->assertDisposableEngineDatabase($database);
         $pdo = new PDO(
-            'pgsql:host='.$params['host'].';port='.$params['port'].';dbname=postgres',
+            'pgsql:host=' . $params['host'] . ';port=' . $params['port'] . ';dbname=postgres',
             $params['user'],
         );
-        $exists = $pdo->query("SELECT 1 FROM pg_database WHERE datname = '".str_replace("'", "''", $database)."'")->fetchColumn();
+        $exists = $pdo->query("SELECT 1 FROM pg_database WHERE datname = '" . str_replace("'", "''", $database) . "'")->fetchColumn();
 
         if ($exists === false) {
             try {
-                $pdo->exec('CREATE DATABASE "'.str_replace('"', '""', $database).'"');
+                $pdo->exec('CREATE DATABASE "' . str_replace('"', '""', $database) . '"');
             } catch (PDOException $exception) {
                 $sqlState = (string) ($exception->errorInfo[0] ?? '');
                 if ($sqlState !== '42P04' && $sqlState !== '23505') {
@@ -199,7 +199,7 @@ abstract class SignalsEngineTestCase extends Orchestra
     /** @param array{host: string, port: string, user: string, database: string} $params */
     private function migrateEngineOnce(array $params): void
     {
-        $lockPath = sys_get_temp_dir().'/sigeng-migrate-'.$params['database'].'.lock';
+        $lockPath = sys_get_temp_dir() . '/sigeng-migrate-' . $params['database'] . '.lock';
         $lock = fopen($lockPath, 'c');
         if ($lock === false) {
             throw new RuntimeException('Could not open PostgreSQL engine migration lock.');

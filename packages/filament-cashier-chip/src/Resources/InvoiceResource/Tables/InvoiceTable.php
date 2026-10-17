@@ -16,6 +16,7 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use RuntimeException;
 
 final class InvoiceTable
 {
@@ -146,7 +147,7 @@ final class InvoiceTable
                                 "CAST(COALESCE(json_extract(purchase, '$.total'), json_extract(purchase, '$.total.amount')) AS INTEGER) >= ?",
                                 [$amount]
                             ),
-                            default => throw new \RuntimeException('Invoice filters support only PostgreSQL and SQLite.'),
+                            default => throw new RuntimeException('Invoice filters support only PostgreSQL and SQLite.'),
                         };
                     }),
             ], layout: FiltersLayout::AboveContentCollapsible)

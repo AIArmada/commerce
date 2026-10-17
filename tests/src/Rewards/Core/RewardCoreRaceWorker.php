@@ -9,8 +9,8 @@ declare(strict_types=1);
 use AIArmada\Rewards\Actions\EnrollRewardMemberAction;
 use AIArmada\Rewards\Actions\PublishRewardProgramVersionAction;
 use AIArmada\Rewards\Actions\ReacceptRewardTermsAction;
-use AIArmada\Rewards\Tests\Support\RewardRaceWorkerBoot;
 use AIArmada\Rewards\Tests\Core\Support\RewardCoreWorkerDb;
+use AIArmada\Rewards\Tests\Support\RewardRaceWorkerBoot;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 

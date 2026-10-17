@@ -114,5 +114,4 @@ return new class extends Migration
             $predicate,
         ));
     }
-
 };

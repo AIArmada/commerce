@@ -103,5 +103,4 @@ return new class extends Migration
             $grammar->wrap('owner_id'),
         ));
     }
-
 };

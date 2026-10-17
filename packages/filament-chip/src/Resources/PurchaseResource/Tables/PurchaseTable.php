@@ -23,6 +23,7 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use RuntimeException;
 
 final class PurchaseTable
 {
@@ -137,7 +138,7 @@ final class PurchaseTable
                                 "CAST(json_extract(purchase, '$.total') AS INTEGER) >= ?",
                                 [$amount]
                             ),
-                            default => throw new \RuntimeException('Purchase filters support only PostgreSQL and SQLite.'),
+                            default => throw new RuntimeException('Purchase filters support only PostgreSQL and SQLite.'),
                         };
                     }),
             ], layout: FiltersLayout::AboveContent)

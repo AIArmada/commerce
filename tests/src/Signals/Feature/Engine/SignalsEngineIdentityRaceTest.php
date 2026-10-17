@@ -148,7 +148,6 @@ it('recovers duplicate identity creation under genuine concurrency', function ()
 it('recovers duplicate identity creation inside an outer transaction after a concurrent commit', function (): void {
     $this->useEngine();
 
-
     $property = $this->engineProperty('Engine Identity Outer');
     $externalId = 'eng-ident-outer-' . Str::lower(Str::random(10));
     $secondExternalId = 'eng-ident-outer-second-' . Str::lower(Str::random(10));

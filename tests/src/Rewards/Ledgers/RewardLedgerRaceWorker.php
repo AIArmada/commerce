@@ -27,8 +27,8 @@ use AIArmada\Rewards\Enums\RewardVerificationLevel;
 use AIArmada\Rewards\Support\RewardSourceFact;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardReservationResolver;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
-use AIArmada\Rewards\Tests\Support\RewardRaceWorkerBoot;
 use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerWorkerDb;
+use AIArmada\Rewards\Tests\Support\RewardRaceWorkerBoot;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 

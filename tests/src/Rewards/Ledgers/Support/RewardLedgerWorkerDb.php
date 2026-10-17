@@ -59,9 +59,9 @@ final class RewardLedgerWorkerDb
     public static function workerDatabaseName(string $test): string
     {
         $token = ParallelTesting::token();
-        $raw = ($token !== false ? $token : 'serial').'_'.getmypid().'_'.$test;
+        $raw = ($token !== false ? $token : 'serial') . '_' . getmypid() . '_' . $test;
         $suffix = mb_strtolower((string) preg_replace('/[^a-z0-9]+/', '_', $raw));
-        $name = 'share_rewards_test_rewards_ledger_'.mb_substr($suffix, 0, 28);
+        $name = 'share_rewards_test_rewards_ledger_' . mb_substr($suffix, 0, 28);
         self::guardWorkerDatabaseName($name);
 
         return $name;
@@ -69,7 +69,7 @@ final class RewardLedgerWorkerDb
 
     public static function baseConnection(): Connection
     {
-        config(['database.connections.'.self::BASE_CONNECTION => self::connectionConfig()]);
+        config(['database.connections.' . self::BASE_CONNECTION => self::connectionConfig()]);
         DB::purge(self::BASE_CONNECTION);
 
         return DB::connection(self::BASE_CONNECTION);
@@ -84,7 +84,7 @@ final class RewardLedgerWorkerDb
     public static function dropWorkerDatabase(string $database): void
     {
         self::guardWorkerDatabaseName($database);
-        self::baseConnection()->statement('DROP DATABASE IF EXISTS "'.$database.'"');
+        self::baseConnection()->statement('DROP DATABASE IF EXISTS "' . $database . '"');
     }
 
     public static function createWorkerDatabase(string $test): string
@@ -93,7 +93,7 @@ final class RewardLedgerWorkerDb
         $connection = self::baseConnection();
         self::assertServerIdentity($connection);
         self::dropWorkerDatabase($database);
-        $connection->statement('CREATE DATABASE "'.$database.'"');
+        $connection->statement('CREATE DATABASE "' . $database . '"');
 
         return $database;
     }
@@ -101,7 +101,7 @@ final class RewardLedgerWorkerDb
     public static function useWorkerDatabase(string $database): string
     {
         self::guardWorkerDatabaseName($database);
-        config(['database.connections.'.self::WORKER_CONNECTION => self::connectionConfig($database)]);
+        config(['database.connections.' . self::WORKER_CONNECTION => self::connectionConfig($database)]);
         DB::purge(self::WORKER_CONNECTION);
         $previous = (string) DB::getDefaultConnection();
         DB::setDefaultConnection(self::WORKER_CONNECTION);
@@ -118,7 +118,7 @@ final class RewardLedgerWorkerDb
 
     public static function migrateWorkerDatabase(): void
     {
-        $files = glob(__DIR__.'/../../../../../packages/rewards/database/migrations/2001_05_01_*_create_reward_*.php');
+        $files = glob(__DIR__ . '/../../../../../packages/rewards/database/migrations/2001_05_01_*_create_reward_*.php');
         Assert::assertIsArray($files, 'Reward package migrations must exist.');
         sort($files);
         Assert::assertCount(30, $files, 'Exactly the thirty reward package migrations must run.');
