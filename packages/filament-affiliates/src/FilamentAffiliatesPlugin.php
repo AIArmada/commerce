@@ -90,6 +90,9 @@ final class FilamentAffiliatesPlugin implements Plugin
 
         if ($features['commission_management']) {
             $resources[] = AffiliateCommissionTemplateResource::class;
+        }
+
+        if ($features['volume_tiers']) {
             $resources[] = AffiliateVolumeTierResource::class;
         }
 
@@ -185,7 +188,7 @@ final class FilamentAffiliatesPlugin implements Plugin
     }
 
     /**
-     * @return array{conversions: bool, payouts: bool, programs: bool, commission_management: bool, links: bool, attribution: bool, ranks: bool, support_compliance: bool, fraud_monitoring: bool, reports: bool, upline_visualization: bool, creatives: bool}
+     * @return array{conversions: bool, payouts: bool, programs: bool, commission_management: bool, volume_tiers: bool, links: bool, attribution: bool, ranks: bool, support_compliance: bool, fraud_monitoring: bool, reports: bool, upline_visualization: bool, creatives: bool}
      */
     private function getAdminFeatures(): array
     {
@@ -197,6 +200,7 @@ final class FilamentAffiliatesPlugin implements Plugin
             'payouts' => $commissionTrackingEnabled && (bool) ($configured['payouts'] ?? true),
             'programs' => $commissionTrackingEnabled && (bool) ($configured['programs'] ?? true),
             'commission_management' => $commissionTrackingEnabled && (bool) ($configured['commission_management'] ?? true),
+            'volume_tiers' => $commissionTrackingEnabled && (bool) ($configured['volume_tiers'] ?? true),
             'links' => (bool) ($configured['links'] ?? true),
             'attribution' => (bool) ($configured['attribution'] ?? true),
             'ranks' => (bool) ($configured['ranks'] ?? true),

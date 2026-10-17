@@ -48,7 +48,7 @@ TICKETING_TABLE_PREFIX=festival_
 Use the `commerce_json_column_type('ticketing', 'jsonb')` helper in migrations.
 
 - Use `jsonb` for PostgreSQL (default) — better performance, supports indexing
-- Use `json` for MySQL compatibility
+- Use `json` for SQLite; PostgreSQL defaults to `jsonb`
 
 ## Defaults
 

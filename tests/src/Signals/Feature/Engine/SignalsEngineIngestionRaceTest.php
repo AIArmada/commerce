@@ -42,8 +42,8 @@ function engineEventRendezvous(string $workdir, string $role, string $peer): voi
     });
 }
 
-it('persists exactly one event under genuine duplicate concurrent ingestion', function (string $engine): void {
-    $this->useEngine($engine);
+it('persists exactly one event under genuine duplicate concurrent ingestion', function (): void {
+    $this->useEngine();
 
     for ($round = 0; $round < engineIngestionRepeats(); $round++) {
         $property = $this->engineProperty('Engine Ingest Race');
@@ -161,10 +161,10 @@ it('persists exactly one event under genuine duplicate concurrent ingestion', fu
                 ->where('tracked_property_id', $propertyId)
                 ->where('anonymous_id', $loserAnon)->count())->toBe(0);
     }
-})->with(['pgsql', 'mysql']);
+});
 
-it('persists both events when the same key races across browser and trusted sources', function (string $engine): void {
-    $this->useEngine($engine);
+it('persists both events when the same key races across browser and trusted sources', function (): void {
+    $this->useEngine();
 
     for ($round = 0; $round < engineIngestionRepeats(); $round++) {
         $property = $this->engineProperty('Engine Source Race');
@@ -221,4 +221,4 @@ it('persists both events when the same key races across browser and trusted sour
             ])
             ->and(SignalSession::query()->withoutOwnerScope()->where('tracked_property_id', $propertyId)->count())->toBe(1);
     }
-})->with(['pgsql', 'mysql']);
+});

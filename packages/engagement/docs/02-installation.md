@@ -2,7 +2,7 @@
 title: Installation
 ---
 
-PostgreSQL is supported for the owner-scoped identity indexes.
+PostgreSQL and SQLite are supported for engagement identity indexes, using partial unique indexes for owner-bound identities.
 
 ## Install
 

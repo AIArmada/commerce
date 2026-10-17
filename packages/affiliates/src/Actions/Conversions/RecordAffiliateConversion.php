@@ -27,6 +27,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Stringable;
+use InvalidArgumentException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 final class RecordAffiliateConversion
@@ -50,6 +51,47 @@ final class RecordAffiliateConversion
     }
 
     /**
+     * Record against an attribution frozen before an external checkout handoff.
+     *
+     * The frozen attribution is authoritative even if its cookie window or
+     * tracked link changes before payment confirmation. A frozen commercial
+     * attribution is one affiliate decision, so touchpoint weights cannot
+     * fan the conversion out to other affiliates.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    public function recordCommercialForFrozenAttribution(
+        Cart $cart,
+        AffiliateAttribution $attribution,
+        array $payload = [],
+    ): ?AffiliateConversionData {
+        $affiliate = $attribution->affiliate;
+
+        if (! $affiliate instanceof Affiliate || ! $affiliate->isCommercialPurpose()) {
+            throw new InvalidArgumentException('Frozen commission attribution must belong to a commercial-purpose affiliate.');
+        }
+
+        if (isset($payload['affiliate_id']) && (string) $payload['affiliate_id'] !== (string) $affiliate->getKey()) {
+            throw new InvalidArgumentException('Frozen commission attribution does not match the requested affiliate.');
+        }
+
+        foreach ([
+            'affiliate_code' => $attribution->affiliate_code ?? $affiliate->code,
+            'affiliate_link_id' => $attribution->affiliate_link_id,
+            'affiliate_program_id' => $attribution->affiliate_program_id,
+        ] as $key => $frozenValue) {
+            if (array_key_exists($key, $payload)
+                && ($payload[$key] === null ? null : (string) $payload[$key]) !== ($frozenValue === null ? null : (string) $frozenValue)) {
+                throw new InvalidArgumentException("Frozen commission attribution does not match requested [{$key}].");
+            }
+        }
+
+        $payload['affiliate_attribution_id'] = (string) $attribution->getKey();
+
+        return DB::transaction(fn (): ?AffiliateConversionData => $this->record($cart, $payload, $attribution));
+    }
+
+    /**
      * Resolve the active attribution for a cart without recording.
      *
      * Lets order listeners compare touch times before deciding whether
@@ -60,9 +102,9 @@ final class RecordAffiliateConversion
         return $this->resolveAttribution($cart, []);
     }
 
-    private function record(Cart $cart, array $payload = []): ?AffiliateConversionData
+    private function record(Cart $cart, array $payload = [], ?AffiliateAttribution $frozenAttribution = null): ?AffiliateConversionData
     {
-        $attribution = $this->resolveAttribution($cart, $payload);
+        $attribution = $frozenAttribution ?? $this->resolveAttribution($cart, $payload);
         $affiliate = $this->resolveAffiliate($payload, $attribution);
 
         if (! $affiliate) {
@@ -84,7 +126,9 @@ final class RecordAffiliateConversion
         $autoApprove = config('affiliates.commissions.auto_approve', false);
 
         $touches = $attribution?->touchpoints()->get() ?? collect();
-        $weights = $this->attributionModel->distribute($touches);
+        $weights = $frozenAttribution instanceof AffiliateAttribution
+            ? [$affiliate->getKey() => 1.0]
+            : $this->attributionModel->distribute($touches);
 
         if ($weights === []) {
             $weights = [$affiliate->getKey() => 1.0];
@@ -147,18 +191,39 @@ final class RecordAffiliateConversion
                 'approved_at' => $autoApprove ? CarbonImmutable::now() : null,
             ];
 
-            $idempotencyKey = $this->resolveIdempotencyKey(
-                $externalReference,
-                $affiliateId,
-                $conversionType,
-                $channel,
-                $ownerType,
-                $ownerId,
-                $cart,
-                $subtotalMinor,
-                $totalMinor,
-                $portionCommission,
-            );
+            $explicitIdempotencyKey = $payload['idempotency_key'] ?? null;
+
+            if ($explicitIdempotencyKey !== null
+                && (! is_string($explicitIdempotencyKey)
+                    || mb_trim($explicitIdempotencyKey) === ''
+                    || mb_strlen($explicitIdempotencyKey) > 64)) {
+                throw new InvalidArgumentException('Explicit conversion idempotency keys must be non-empty strings up to 64 characters.');
+            }
+
+            $idempotencyKey = is_string($explicitIdempotencyKey)
+                ? hash('sha256', implode('|', [
+                    'affiliate-conversion',
+                    $ownerType ?? 'global',
+                    $ownerId ?? 'global',
+                    $affiliateId,
+                    mb_trim($explicitIdempotencyKey),
+                ]))
+                : $this->resolveIdempotencyKey(
+                    $externalReference,
+                    $affiliateId,
+                    $conversionType,
+                    $channel,
+                    $ownerType,
+                    $ownerId,
+                    $cart,
+                    $subtotalMinor,
+                    $totalMinor,
+                    $portionCommission,
+                );
+
+            if (is_string($explicitIdempotencyKey)) {
+                $conversionAttributes['metadata']['caller_idempotency_key'] = mb_trim($explicitIdempotencyKey);
+            }
 
             $conversionAttributes['idempotency_key'] = $idempotencyKey;
             $conversion = $this->createIdempotent($conversionAttributes);

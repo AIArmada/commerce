@@ -15,6 +15,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use UnitEnum;
 
 final class LinkResource extends Resource
@@ -24,6 +25,33 @@ final class LinkResource extends Resource
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-link';
 
     protected static ?string $recordTitleAttribute = 'name';
+
+    public static function canViewAny(): bool
+    {
+        return self::hasStaffAccess();
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return self::hasStaffAccess();
+    }
+
+    public static function canCreate(): bool
+    {
+        return self::hasStaffAccess();
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return self::hasStaffAccess();
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return self::hasStaffAccess()
+            && $record instanceof Link
+            && ! LinkForm::isProtectedSubject($record);
+    }
 
     /**
      * @return Builder<Link>
@@ -73,5 +101,24 @@ final class LinkResource extends Resource
             'create' => Pages\CreateLink::route('/create'),
             'edit' => Pages\EditLink::route('/{record}/edit'),
         ];
+    }
+
+    private static function hasStaffAccess(): bool
+    {
+        $staffRoles = array_values(array_filter((array) config('filament-links.staff_roles', []), 'is_string'));
+
+        if ($staffRoles === []) {
+            return true;
+        }
+
+        $user = auth()->user();
+
+        foreach ($staffRoles as $role) {
+            if (is_object($user) && method_exists($user, 'hasRole') && $user->hasRole($role)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

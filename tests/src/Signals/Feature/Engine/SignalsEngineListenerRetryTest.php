@@ -25,8 +25,8 @@ function engineConcurrencyFailure(): QueryException
     return new QueryException('engine', 'update "probe" set "name" = ?', ['probe'], $pdo);
 }
 
-it('retries the host transaction when recording hits a serialization failure', function (string $engine): void {
-    $this->useEngine($engine);
+it('retries the host transaction when recording hits a serialization failure', function (): void {
+    $this->useEngine();
     $this->setEngineSessionIsolation('REPEATABLE READ');
 
     $property = $this->engineProperty('Engine Listener Retry');
@@ -71,8 +71,7 @@ it('retries the host transaction when recording hits a serialization failure', f
     // first host attempt the row was concurrently committed by the second
     // connection, so PostgreSQL raises SQLSTATE 40001 under REPEATABLE
     // READ. The listener must propagate it unwrapped so the host retries.
-    // MySQL needs its own conflict scenario; this dataset stays
-    // PostgreSQL-only.
+    // This conflict scenario runs against the supported PostgreSQL engine.
     app()->instance('growth.signal_event_property_enricher', new class($propertyId)
     {
         public function __construct(private readonly string $propertyId) {}
@@ -118,10 +117,10 @@ it('retries the host transaction when recording hits a serialization failure', f
         ->and($events->first()->event_name)->toBe('order.paid')
         ->and(app(ExceptionHandler::class)->reported)->toHaveCount(0)
         ->and($laterRan)->toBeTrue();
-})->with(['pgsql']);
+});
 
-it('reports once and continues when recording retries are exhausted without an outer transaction', function (string $engine): void {
-    $this->useEngine($engine);
+it('reports once and continues when recording retries are exhausted without an outer transaction', function (): void {
+    $this->useEngine();
 
     expect(DB::transactionLevel())->toBe(0);
 
@@ -187,4 +186,4 @@ it('reports once and continues when recording retries are exhausted without an o
         ->and(SignalEvent::query()->withoutOwnerScope()->where('tracked_property_id', $propertyId)->count())->toBe(0)
         ->and($laterRan)->toBeTrue()
         ->and(DB::transactionLevel())->toBe(0);
-})->with(['pgsql', 'mysql']);
+});

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentLinks\Resources\LinkResource\Pages;
 
 use AIArmada\FilamentLinks\Resources\LinkResource;
+use AIArmada\FilamentLinks\Resources\LinkResource\Schemas\LinkForm;
 use AIArmada\Links\Actions\GenerateLinkUrl;
 use AIArmada\Links\Actions\UpdateLink as UpdateLinkAction;
 use AIArmada\Links\Models\Link;
@@ -25,13 +26,19 @@ final class EditLink extends EditRecord
                 ->url(fn (): string => $this->cloakedUrl())
                 ->openUrlInNewTab(),
 
-            Actions\DeleteAction::make(),
+            Actions\DeleteAction::make()
+                ->authorize(fn (Link $record): bool => LinkResource::canDelete($record))
+                ->visible(fn (Link $record): bool => LinkResource::canDelete($record)),
         ];
     }
 
     protected function handleRecordUpdate(Model $record, array $data): Model
     {
         /** @var Link $record */
+        if (LinkForm::isProtectedSubject($record)) {
+            unset($data['slug'], $data['destination_url'], $data['parameters'], $data['utm_defaults'], $data['require_signature']);
+        }
+
         return UpdateLinkAction::run($record, $data);
     }
 

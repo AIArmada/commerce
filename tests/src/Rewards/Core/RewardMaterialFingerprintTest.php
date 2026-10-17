@@ -6,6 +6,7 @@ use AIArmada\Rewards\Actions\EnrollRewardMemberAction;
 use AIArmada\Rewards\Actions\PreviewRewardQualificationAction;
 use AIArmada\Rewards\Actions\PublishRewardProgramVersionAction;
 use AIArmada\Rewards\Actions\TransitionRewardProgramStatusAction;
+use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
 use AIArmada\Rewards\Enums\RewardComponent;
 use AIArmada\Rewards\Enums\RewardPreviewDecision;
 use AIArmada\Rewards\Enums\RewardPreviewReason;
@@ -156,6 +157,39 @@ it('is order-insensitive but cannot be masked by an unchanged material map', fun
 
     expect(RewardMaterialTerms::hashForVersion($masked, $terms))
         ->not->toBe(RewardMaterialTerms::hashForVersion($rules, $terms));
+});
+
+it('keeps fingerprints stable for flat-equivalent variants and empty milestone lists', function (): void {
+    $flatRules = RewardCoreTestFixtures::rules();
+    unset($flatRules['milestones']);
+    $terms = RewardCoreTestFixtures::terms();
+    $flatHash = RewardMaterialTerms::hashForVersion($flatRules, $terms);
+
+    $variantRules = $flatRules;
+    $variantRules['components'] = array_map(
+        static function (array $component) use ($flatRules): array {
+            $type = $component['type'];
+            unset($component['type']);
+
+            return [
+                'type' => $type,
+                'variants' => [[
+                    'outcomes' => $flatRules['eligibility']['outcomes'],
+                    'roles' => RewardBeneficiaryRole::values(),
+                    'min_verification' => $flatRules['eligibility']['min_verification'],
+                    'first_only' => $flatRules['eligibility']['first_only'] ?? false,
+                    ...$component,
+                ]],
+            ];
+        },
+        $flatRules['components'],
+    );
+
+    $emptyMilestonesRules = $flatRules;
+    $emptyMilestonesRules['milestones'] = [];
+
+    expect(RewardMaterialTerms::hashForVersion($variantRules, $terms))->toBe($flatHash)
+        ->and(RewardMaterialTerms::hashForVersion($emptyMilestonesRules, $terms))->toBe($flatHash);
 });
 
 it('ignores nonmaterial copy changes', function (): void {

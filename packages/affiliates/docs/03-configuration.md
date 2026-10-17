@@ -216,6 +216,9 @@ Every commission path funnels through `CommissionCaps::clamp()`, so these bounds
     'minimum_amount' => env('AFFILIATES_PAYOUT_MINIMUM_AMOUNT', 5000),
     'minimum_amounts_by_currency' => [], // per-currency minor-unit floors, e.g. ['USD' => 1000]; falls back to minimum_amount
     'maturity_days' => env('AFFILIATES_PAYOUT_MATURITY_DAYS', 30),
+    'reward_award_settlement' => [
+        'enabled' => env('AFFILIATES_REWARD_AWARD_SETTLEMENT_ENABLED', true),
+    ],
     'multi_level' => [
         'enabled' => env('AFFILIATES_MULTI_LEVEL_ENABLED', true),
         'levels' => [0.1, 0.05], // 10%, 5% of commission to uplines
@@ -234,6 +237,14 @@ Every commission path funnels through `CommissionCaps::clamp()`, so these bounds
 `payouts.currency` falls back to `AFFILIATES_DEFAULT_CURRENCY`, so the default runtime currency is `MYR` unless you override it.
 
 `minimum_amount` and `minimum_amounts_by_currency` resolve from the `affiliate-payouts` settings group first and fall back to this config when settings are unmigrated. Manage them at runtime through the filament-affiliates Payout Settings page instead of editing config.
+
+Payout creation locks the selected affiliate and refuses every conversion if its purpose is neither unset nor `general`. This purpose check is independent of the payout currency and status, so host-defined non-commercial affiliate profiles cannot receive commercial payouts.
+
+The `reward_award_settlement.enabled` switch is the sole exception for a payout
+containing only `reward_award` backing conversions. It defaults to `true` for
+consumers that deliberately settle approved rewards. When false, purpose-tagged
+affiliates cannot create or complete those payouts. A mixed payout containing
+any commercial conversion remains subject to the commercial-purpose gate.
 
 ## Tracking Settings
 
@@ -314,9 +325,9 @@ The mode is read at signup and snapshotted onto each affiliate
 (`registration_approval_mode`); changing the setting later only affects
 future registrations. The stored mode is immutable. Open-pending affiliates
 can be attributed and earn held commission but cannot grant customer
-discounts until activated. Note: payout creation does not currently gate
-on affiliate status, so operator-driven payouts are the backstop until a
-status-aware payout gate ships.
+discounts until activated. Affiliate status is checked at payout completion;
+disabled affiliates require the creation-time audited override described in
+[Payouts](08-payouts.md).
 
 ## Events & Webhooks
 

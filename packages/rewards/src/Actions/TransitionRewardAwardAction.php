@@ -706,6 +706,7 @@ final readonly class TransitionRewardAwardAction
                 'eligibility' => $policy['eligibility'],
                 'windows' => is_array($policy['windows'] ?? null) ? $policy['windows'] : [],
                 'holds' => is_array($policy['holds'] ?? null) ? $policy['holds'] : [],
+                'components' => is_array($policy['components'] ?? null) ? $policy['components'] : [],
             ],
             versionComponents: $components,
             versionMaterialHash: $materialHash,

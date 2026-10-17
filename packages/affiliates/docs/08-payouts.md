@@ -61,6 +61,25 @@ foreach ($conversionIdsByCurrency as $currency => $ids) {
 UpdatePayoutStatus::run($payout, 'completed', 'Processed successfully');
 ```
 
+### Purpose Gate and Reward-Award Settlement
+
+Payouts are commercial by default. `CreatePayout` and the shared
+`AssertPayoutCompletable` gate require an affiliate with unset or `general`
+purpose. The same completion gate protects manual status updates and provider
+reconciliation, so a purpose-tagged payout cannot bypass the check through a
+second completion path.
+
+The only exception is a payout containing exclusively `reward_award` backing
+conversions, and it is controlled by the single switch
+`affiliates.payouts.reward_award_settlement.enabled`. The package default is
+`true` for consumers that intentionally settle reward entitlements. Set it to
+`false` to close the seam, including completion of already-created
+reward-award payouts. Any mixed payout containing a purchase or other
+commercial conversion is subject to the normal commercial-purpose gate.
+
+For Ilmu360, the host pins this switch off in `config/affiliates.php`; cash
+referral fulfillment is also disabled in `config/referrals.php`.
+
 ### Manual Creation
 
 ```php

@@ -21,7 +21,7 @@ Use this package when you need to sell tickets for events, workshops, courses, o
 - Bundle products (auto-add required products to cart)
 - Cart/checkout integration (optional, via `class_exists()`)
 - Inventory stock tracking integration (optional, via `class_exists()`)
-- MySQL/PostgreSQL JSON columns (configurable via `json_column_type`)
+- PostgreSQL/SQLite JSON columns (configurable via `json_column_type`)
 
 ## What this package does not own
 

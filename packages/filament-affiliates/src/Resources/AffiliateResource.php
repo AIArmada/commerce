@@ -64,7 +64,10 @@ final class AffiliateResource extends Resource
 
     public static function canDelete(Model $record): bool
     {
-        return FilamentPermission::hasAbility('affiliate.delete');
+        return FilamentPermission::hasAbility('affiliate.delete')
+            && $record instanceof Affiliate
+            && ! $record->conversions()->exists()
+            && ! $record->payouts()->exists();
     }
 
     public static function shouldRegisterNavigation(): bool

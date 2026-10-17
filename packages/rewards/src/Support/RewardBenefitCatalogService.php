@@ -186,11 +186,16 @@ final class RewardBenefitCatalogService implements RewardBenefitCatalog
         $keys = [];
 
         foreach ($rules['components'] as $component) {
-            if (is_array($component)
-                && ($component['type'] ?? null) === RewardComponent::Benefit->value
-                && is_string($component['benefit_key'] ?? null)
-            ) {
-                $keys[] = $component['benefit_key'];
+            if (! is_array($component) || ($component['type'] ?? null) !== RewardComponent::Benefit->value) {
+                continue;
+            }
+
+            $configurations = is_array($component['variants'] ?? null) ? $component['variants'] : [$component];
+
+            foreach ($configurations as $configuration) {
+                if (is_array($configuration) && is_string($configuration['benefit_key'] ?? null)) {
+                    $keys[] = $configuration['benefit_key'];
+                }
             }
         }
 

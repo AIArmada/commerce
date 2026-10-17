@@ -23,6 +23,17 @@ The complete file is `config/referrals.php`. Every setting below is read by the 
 | `referrals.defaults.invite_expiry_days` | `30` | Invite lifetime when a program has no override. |
 | `referrals.defaults.token_length` | `32` | Random plaintext token length, accepted from 16 through 128. Only its SHA-256 hash is stored. |
 
+## Qualifier allowlist
+
+| Key | Default | Purpose |
+| --- | --- | --- |
+| `referrals.qualifier_outcomes` | `[]` | Optional exact allowlist enforced by both referral program creation and updates and used by the Filament qualifier select. An empty list preserves free-text behavior for consumers that need custom qualifiers. |
+
+Updates revalidate the stored qualifier against the current allowlist. If a
+consumer adds an allowlist after creating a custom-qualifier program, editing
+any field fails with a `qualifier_outcome` error until that value is migrated
+to an allowed outcome.
+
 ## Owner boundary
 
 | Key | Default | Purpose |

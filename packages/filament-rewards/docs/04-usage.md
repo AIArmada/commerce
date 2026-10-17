@@ -10,6 +10,14 @@ Create program families from the list page: family key, title, mode, owner (or p
 
 Only staff panel users may open the create page. The submitted owner alias is re-resolved server-side against `filament-rewards.owners.types` and the referenced record is loaded before the core action runs — the handler never trusts the posted alias or id, and an unconfigured alias or missing record fails on `owner_record_id` with no row written. Platform programs are the only owner-less form.
 
+Publishing a version uses repeaters for component variants and milestone
+levels. A component variant specifies its eligible outcomes and beneficiary
+roles, minimum verification, first-only behavior, and amount or grant payload.
+Milestone rows define the member-facing label, qualifying outcomes and roles,
+threshold, cycle window, verification rule, and recognition, points, or badge
+grant. The core validator checks the submitted rows before the immutable
+version is published. Existing flat component versions remain readable.
+
 ## Qualification preview sandbox
 
 The **Preview qualification** action on the program view page explains why a supplied fixture qualifies, holds, or rejects under the applicable published version. Nothing is persisted, and every result is labeled fixture-only (`FIXTURE-NOT-SOURCE`), never source proof.
@@ -27,6 +35,10 @@ The funding page records funding sources and program allocations. The payee queu
 ## Benefits and recoveries
 
 Benefit items define the capacitated catalog; grants reserve, fulfill (manual handoff or coupon), consume on canonical use, and revoke or expire. Recoveries track post-fulfillment value clawback through settlement or write-off.
+
+Members see their own point balance and milestone progress on their rewards
+surface. The admin program view controls published milestone labels and
+thresholds; it does not create a public leaderboard.
 
 ## Fraud queue
 

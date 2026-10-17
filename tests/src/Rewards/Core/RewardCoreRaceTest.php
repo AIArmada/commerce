@@ -18,21 +18,20 @@ use Illuminate\Support\Str;
 use Symfony\Component\Process\Process;
 
 beforeEach(function (): void {
-    foreach (RewardCoreWorkerDb::driverConfigs() as $driver => $config) {
-        $socket = @fsockopen((string) $config['host'], (int) $config['port'], $errno, $errstr, 2);
+    $config = RewardCoreWorkerDb::connectionConfig();
+    $socket = @fsockopen((string) $config['host'], (int) $config['port'], $errno, $errstr, 2);
 
-        if ($socket === false) {
-            $this->markTestSkipped("Race fixtures unavailable: {$driver} at {$config['host']}:{$config['port']} refused.");
-        }
-
-        fclose($socket);
+    if ($socket === false) {
+        $this->markTestSkipped('Isolated PostgreSQL fixture at 127.0.0.1:45432 is unavailable.');
     }
+
+    fclose($socket);
 });
 
-function raceReadyDir(string $driver, string $case): string
+function raceReadyDir(string $case): string
 {
     $token = ParallelTesting::token();
-    $dir = sys_get_temp_dir() . '/rewards-core-race-' . ($token !== false ? $token : 'serial') . '-' . $driver . '-' . $case . '-' . getmypid();
+    $dir = sys_get_temp_dir() . '/rewards-core-race-' . ($token !== false ? $token : 'serial') . '-' . $case . '-' . getmypid();
 
     if (! is_dir($dir)) {
         mkdir($dir, 0777, true);
@@ -48,26 +47,18 @@ function raceReadyDir(string $driver, string $case): string
 /**
  * @return array{0: array<string, mixed>, 1: array<string, mixed>}
  */
-function runRacePair(string $driver, string $database, string $mode, array $payload, string $case): array
+function runRacePair(string $database, string $mode, array $payload, string $case): array
 {
-    $readyDir = raceReadyDir($driver, $case);
+    $readyDir = raceReadyDir($case);
     file_put_contents($readyDir . '/payload.json', json_encode($payload, JSON_THROW_ON_ERROR));
-
-    $configs = RewardCoreWorkerDb::driverConfigs();
-    $username = (string) $configs[$driver]['username'];
-    $password = (string) $configs[$driver]['password'];
-    $port = $driver === 'pgsql' ? 45432 : 43306;
 
     $worker = __DIR__ . '/RewardCoreRaceWorker.php';
 
     $make = fn (int $slot): Process => new Process([
         PHP_BINARY, $worker,
-        '--driver=' . $driver,
-        '--host=127.0.0.1',
-        '--port=' . $port,
+
         '--database=' . $database,
-        '--username=' . $username,
-        '--password=' . $password,
+
         '--mode=' . $mode,
         '--ready-dir=' . $readyDir,
         '--slot=' . $slot,
@@ -103,12 +94,12 @@ function runRacePair(string $driver, string $database, string $mode, array $payl
     return [$decode($first), $decode($second)];
 }
 
-it('serializes concurrent same-family publishes on real drivers', function (string $driver): void {
-    [$database, $previous] = RewardCoreWorkerDb::setUp($driver, 'publish');
+it('serializes concurrent same-family publishes on isolated PostgreSQL', function (): void {
+    [$database, $previous] = RewardCoreWorkerDb::setUp('publish');
 
     try {
         $program = RewardProgram::factory()->create([
-            'family_key' => 'core-race-pub-' . $driver . '-' . Str::lower(Str::random(4)),
+            'family_key' => 'core-race-pub-' . 'pgsql-' . Str::lower(Str::random(4)),
             'mode' => RewardProgramMode::Points,
         ]);
 
@@ -119,7 +110,7 @@ it('serializes concurrent same-family publishes on real drivers', function (stri
             'terms' => RewardCoreTestFixtures::terms(),
         ];
 
-        [$a, $b] = runRacePair($driver, $database, 'publish', $payload, 'publish');
+        [$a, $b] = runRacePair($database, 'publish', $payload, 'publish');
 
         expect($a['exit'] ?? null)->toBe(0)
             ->and($b['exit'] ?? null)->toBe(0);
@@ -133,16 +124,16 @@ it('serializes concurrent same-family publishes on real drivers', function (stri
         $loser = ($a['ok'] ?? false) === true ? $b : $a;
         expect($loser['conflict'] ?? false)->toBeTrue();
     } finally {
-        RewardCoreWorkerDb::tearDown($driver, $database, $previous);
+        RewardCoreWorkerDb::tearDown($database, $previous);
     }
-})->with(['pgsql', 'mariadb']);
+});
 
-it('keeps one canonical enrollment under concurrent same-member enrolls', function (string $driver): void {
-    [$database, $previous] = RewardCoreWorkerDb::setUp($driver, 'enroll');
+it('keeps one canonical enrollment under concurrent same-member enrolls', function (): void {
+    [$database, $previous] = RewardCoreWorkerDb::setUp('enroll');
 
     try {
         $program = RewardProgram::factory()->create([
-            'family_key' => 'core-race-enr-' . $driver . '-' . Str::lower(Str::random(4)),
+            'family_key' => 'core-race-enr-' . 'pgsql-' . Str::lower(Str::random(4)),
             'mode' => RewardProgramMode::Points,
         ]);
         $effective = CarbonImmutable::parse('2026-06-01T00:00:00Z');
@@ -166,7 +157,7 @@ it('keeps one canonical enrollment under concurrent same-member enrolls', functi
             'decision_time' => '2026-07-05T00:00:00Z',
         ];
 
-        [$a, $b] = runRacePair($driver, $database, 'enroll', $payload, 'enroll');
+        [$a, $b] = runRacePair($database, 'enroll', $payload, 'enroll');
 
         expect($a['exit'] ?? null)->toBe(0)
             ->and($b['exit'] ?? null)->toBe(0)
@@ -180,16 +171,16 @@ it('keeps one canonical enrollment under concurrent same-member enrolls', functi
             ->and(RewardEnrollmentAcceptance::query()->where('enrollment_id', $enrollment->getKey())->count())->toBe(1)
             ->and(RewardEnrollmentPeriod::query()->where('enrollment_id', $enrollment->getKey())->count())->toBe(1);
     } finally {
-        RewardCoreWorkerDb::tearDown($driver, $database, $previous);
+        RewardCoreWorkerDb::tearDown($database, $previous);
     }
-})->with(['pgsql', 'mariadb']);
+});
 
-it('assigns unique acceptance seqs under concurrent reaccepts', function (string $driver): void {
-    [$database, $previous] = RewardCoreWorkerDb::setUp($driver, 'reaccept');
+it('assigns unique acceptance seqs under concurrent reaccepts', function (): void {
+    [$database, $previous] = RewardCoreWorkerDb::setUp('reaccept');
 
     try {
         $program = RewardProgram::factory()->create([
-            'family_key' => 'core-race-rea-' . $driver . '-' . Str::lower(Str::random(4)),
+            'family_key' => 'core-race-rea-' . 'pgsql-' . Str::lower(Str::random(4)),
             'mode' => RewardProgramMode::Points,
         ]);
         $effective = CarbonImmutable::parse('2026-06-01T00:00:00Z');
@@ -211,7 +202,7 @@ it('assigns unique acceptance seqs under concurrent reaccepts', function (string
             'decision_time' => '2026-07-06T00:00:00Z',
         ];
 
-        [$a, $b] = runRacePair($driver, $database, 'reaccept', $payload, 'reaccept');
+        [$a, $b] = runRacePair($database, 'reaccept', $payload, 'reaccept');
 
         expect($a['exit'] ?? null)->toBe(0)
             ->and($b['exit'] ?? null)->toBe(0)
@@ -235,6 +226,6 @@ it('assigns unique acceptance seqs under concurrent reaccepts', function (string
 
         expect($ids)->toContain($pointer);
     } finally {
-        RewardCoreWorkerDb::tearDown($driver, $database, $previous);
+        RewardCoreWorkerDb::tearDown($database, $previous);
     }
-})->with(['pgsql', 'mariadb']);
+});

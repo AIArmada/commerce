@@ -61,6 +61,15 @@ refuse conversions reserved by an open payout — see
 | `CreatePayout::run($conversionIds, $attributes)` | Create a payout batch |
 | `UpdatePayoutStatus::run($payout, $status, $notes, $metadata)` | Update payout status |
 
+Manual commission payout creation rejects purpose-tagged affiliates. A payout
+containing only the fixed `reward_award` backing conversion can use the rewards
+award-settlement seam only when
+`affiliates.payouts.reward_award_settlement.enabled` is true. The switch
+defaults to true for package consumers; host applications may pin it off. When
+disabled, the completion gate rejects that payout as well. A mixed payout with
+any commercial conversion does not qualify for the carve-out. Other
+conversions from purpose-tagged affiliates cannot be added to a payout.
+
 Completion runs through a single eligibility gate.
 `AssertPayoutCompletable` resolves the affiliate from the linked
 conversions, or from the payout payee for manual-record payouts that

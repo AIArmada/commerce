@@ -77,7 +77,13 @@ it('prefers the typed live cart bridge and never calls the snapshot builder path
         ],
         'billing_data' => ['line1' => 'Billing Street'],
         'shipping_data' => ['line1' => 'Shipping Street'],
-        'payment_data' => ['type' => 'free_order'],
+        'payment_data' => [
+            'type' => 'free_order',
+            'affiliate_commission' => [
+                'strategy' => 'registration_lines',
+                'attribution_id' => (string) Str::uuid(),
+            ],
+        ],
         'subtotal' => 1,
         'grand_total' => 1,
         'currency' => 'MYR',
@@ -118,6 +124,8 @@ it('prefers the typed live cart bridge and never calls the snapshot builder path
     $result = app(CreateOrderStep::class)->handle($session);
 
     expect($result->isSuccessful())->toBeTrue()
+        ->and(data_get($order->metadata, 'checkout_session_id'))->toBe($session->id)
+        ->and(data_get($order->metadata, 'payment_data.affiliate_commission.strategy'))->toBe('registration_lines')
         ->and($session->fresh()?->order_id)->toBe($order->id);
 });
 

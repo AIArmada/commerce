@@ -6,6 +6,7 @@ namespace AIArmada\Affiliates\Actions\Payouts;
 
 use AIArmada\Affiliates\Exceptions\PayoutCompletionBlockedException;
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\Disabled;
 use Carbon\CarbonImmutable;
@@ -71,6 +72,15 @@ final class AssertPayoutCompletable
                 (string) $payout->getKey(),
                 (string) $affiliateId,
             ));
+        }
+
+        $conversions = $payout->conversions()->forOwner($owner)->get();
+        $onlyRewardAwards = $conversions->isNotEmpty()
+            && $conversions->every(static fn (AffiliateConversion $conversion): bool => $conversion->conversion_type === 'reward_award');
+
+        if (! $affiliate->isCommercialPurpose()
+            && (! $onlyRewardAwards || ! (bool) config('affiliates.payouts.reward_award_settlement.enabled', true))) {
+            throw new PayoutCompletionBlockedException('A non-commercial affiliate payout cannot be completed.');
         }
 
         if ($affiliate->canReceivePayout()) {

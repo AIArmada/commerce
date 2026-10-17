@@ -1131,7 +1131,7 @@ it('propagates control-originated lost connections unreported without an outer t
     // escapes recording-owned machinery differing from the callback
     // failure arrives marked, so the no-outer branch propagates it
     // unreported instead of swallowing it as an exhausted retry.
-    $lost = new QueryException('sqlite', 'ROLLBACK', [], new RuntimeException('SQLSTATE[HY000]: General error: 2006 MySQL server has gone away'));
+    $lost = new QueryException('pgsql', 'ROLLBACK', [], new RuntimeException('SQLSTATE[08006]: Connection failure: server closed the connection unexpectedly'));
     $marker = CommerceSignalTransactionControlFailed::fromControlFailure($lost, new RuntimeException('callback boom'));
 
     $probe = new class($marker)
@@ -1178,7 +1178,7 @@ it('marks a lost connection thrown from rollback during ingestion', function ():
     // the failure itself is recognized. Laravel resets the bookkeeping
     // to zero for lost rollbacks, which is what makes the restored
     // state meaningful here.
-    $lost = new RuntimeException('SQLSTATE[HY000]: General error: 2006 MySQL server has gone away');
+    $lost = new RuntimeException('SQLSTATE[08006]: Connection failure: server closed the connection unexpectedly');
     $callbackFired = false;
 
     SignalEvent::saving(function () use (&$callbackFired): void {
@@ -1533,7 +1533,7 @@ it('propagates lost connections raw and unreported inside an outer transaction',
         'is_active' => true,
     ]);
 
-    $lost = new QueryException('sqlite', 'select * from "probe"', [], new RuntimeException('SQLSTATE[HY000]: General error: 2006 MySQL server has gone away'));
+    $lost = new QueryException('pgsql', 'select * from "probe"', [], new RuntimeException('SQLSTATE[08006]: Connection failure: server closed the connection unexpectedly'));
 
     $probe = new class($lost)
     {

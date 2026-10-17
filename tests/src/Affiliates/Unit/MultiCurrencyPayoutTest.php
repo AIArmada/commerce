@@ -68,6 +68,18 @@ describe('Multi-currency payouts', function (): void {
             ->toThrow(InvalidArgumentException::class, 'must match');
     });
 
+    test('CreatePayout rejects approved conversions owned by non-commercial affiliates', function (): void {
+        $affiliate = createPayoutTestAffiliate();
+        $affiliate->forceFill(['purpose' => 'share_member'])->save();
+        $conversion = recordApprovedConversion($affiliate, 'USD', 1000);
+
+        expect(fn (): object => CreatePayout::run([$conversion->id]))
+            ->toThrow(InvalidArgumentException::class, 'commercial-purpose');
+
+        expect($conversion->fresh()->affiliate_payout_id)->toBeNull()
+            ->and(balanceFor($affiliate, 'USD')->available_minor)->toBe(1000);
+    });
+
     test('CreatePayout reserves only the matching currency balance', function (): void {
         $affiliate = createPayoutTestAffiliate();
         $usd = recordApprovedConversion($affiliate, 'USD', 1000);

@@ -18,6 +18,9 @@ return [
         'token_length' => 32,
     ],
 
+    // An empty list preserves the existing free-text qualifier behavior.
+    'qualifier_outcomes' => [],
+
     'owner' => [
         'enabled' => true,
         'include_global' => false,

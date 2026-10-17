@@ -43,6 +43,8 @@ final class AffiliateForm
                             ->required()
                             ->alphaDash()
                             ->maxLength(64)
+                            ->disabled(fn (?Affiliate $record): bool => self::hasNonCommercialPurpose($record))
+                            ->dehydrated(fn (?Affiliate $record): bool => ! self::hasNonCommercialPurpose($record))
                             ->rule(fn (mixed $component): Closure => function (string $attribute, string $value, Closure $fail) use ($component): void {
                                 $query = Affiliate::query()
                                     ->whereRaw('LOWER(code) = ?', [mb_strtolower($value)]);
@@ -61,13 +63,17 @@ final class AffiliateForm
                             ->placeholder('Assigned automatically if left empty')
                             ->rules(['nullable', ...array_slice(PublicHandle::rules(), 1)])
                             ->required(fn (string $operation): bool => $operation === 'edit')
-                            ->disabled(! config('affiliates.handles.allow_custom', true))
-                            ->dehydrated(config('affiliates.handles.allow_custom', true)),
+                            ->disabled(fn (?Affiliate $record): bool => self::hasNonCommercialPurpose($record)
+                                || ! config('affiliates.handles.allow_custom', true))
+                            ->dehydrated(fn (?Affiliate $record): bool => ! self::hasNonCommercialPurpose($record)
+                                && config('affiliates.handles.allow_custom', true)),
 
                         TextInput::make('name')
                             ->label('Name')
                             ->required()
-                            ->maxLength(120),
+                            ->maxLength(120)
+                            ->disabled(fn (?Affiliate $record): bool => self::hasNonCommercialPurpose($record))
+                            ->dehydrated(fn (?Affiliate $record): bool => ! self::hasNonCommercialPurpose($record)),
 
                         Select::make('status')
                             ->label('Status')
@@ -78,12 +84,16 @@ final class AffiliateForm
                         Select::make('parent_affiliate_id')
                             ->label('Parent Affiliate')
                             ->relationship('parent', 'name', modifyQueryUsing: fn (Builder $query): Builder => OwnerUiScope::apply($query, includeGlobal: false))
-                            ->searchable(),
+                            ->searchable()
+                            ->disabled(fn (?Affiliate $record): bool => self::hasNonCommercialPurpose($record))
+                            ->dehydrated(fn (?Affiliate $record): bool => ! self::hasNonCommercialPurpose($record)),
 
                         Select::make('rank_id')
                             ->label('Rank')
                             ->relationship('rank', 'name', modifyQueryUsing: fn (Builder $query): Builder => OwnerUiScope::apply($query, includeGlobal: false))
-                            ->searchable(),
+                            ->searchable()
+                            ->disabled(fn (?Affiliate $record): bool => self::hasNonCommercialPurpose($record))
+                            ->dehydrated(fn (?Affiliate $record): bool => ! self::hasNonCommercialPurpose($record)),
                     ]),
 
                     Textarea::make('description')
@@ -93,15 +103,21 @@ final class AffiliateForm
                     Grid::make(3)->schema([
                         TextInput::make('default_voucher_code')
                             ->label('Default Voucher Code')
-                            ->maxLength(64),
+                            ->maxLength(64)
+                            ->disabled(fn (?Affiliate $record): bool => self::hasNonCommercialPurpose($record))
+                            ->dehydrated(fn (?Affiliate $record): bool => ! self::hasNonCommercialPurpose($record)),
 
                         TextInput::make('tracking_domain')
                             ->label('Tracking Domain')
-                            ->placeholder('track.example.com'),
+                            ->placeholder('track.example.com')
+                            ->disabled(fn (?Affiliate $record): bool => self::hasNonCommercialPurpose($record))
+                            ->dehydrated(fn (?Affiliate $record): bool => ! self::hasNonCommercialPurpose($record)),
 
                         TextInput::make('payout_terms')
                             ->label('Payout Terms')
-                            ->placeholder('Net-30'),
+                            ->placeholder('Net-30')
+                            ->disabled(fn (?Affiliate $record): bool => self::hasNonCommercialPurpose($record))
+                            ->dehydrated(fn (?Affiliate $record): bool => ! self::hasNonCommercialPurpose($record)),
                     ]),
                 ]),
 
@@ -124,6 +140,7 @@ final class AffiliateForm
                                 ->toArray())
                             ->getOptionLabelUsing(fn ($value): ?string => AffiliateCommissionTemplate::query()->find($value)?->name)
                             ->searchable()
+                            ->disabled(fn (?Affiliate $record): bool => self::hasNonCommercialPurpose($record))
                             ->afterStateUpdated(function (string $state, Set $set, Get $get): void {
                                 $template = AffiliateCommissionTemplate::query()->find($state);
 
@@ -152,7 +169,9 @@ final class AffiliateForm
                             ->label('Type')
                             ->required()
                             ->options(self::enumOptions(CommissionType::class))
-                            ->default(CommissionType::Percentage->value),
+                            ->default(CommissionType::Percentage->value)
+                            ->disabled(fn (?Affiliate $record): bool => self::hasNonCommercialPurpose($record))
+                            ->dehydrated(fn (?Affiliate $record): bool => ! self::hasNonCommercialPurpose($record)),
 
                         TextInput::make('commission_rate')
                             ->label('Rate')
@@ -170,7 +189,9 @@ final class AffiliateForm
                                 fn (?string $state, Get $get): ?int => $state === null || $state === ''
                                 ? null
                                 : (int) round((float) $state * 100)
-                            ),
+                            )
+                            ->disabled(fn (?Affiliate $record): bool => self::hasNonCommercialPurpose($record))
+                            ->dehydrated(fn (?Affiliate $record): bool => ! self::hasNonCommercialPurpose($record)),
 
                         Select::make('currency')
                             ->label('Currency')
@@ -180,7 +201,9 @@ final class AffiliateForm
                                 'SGD' => 'SGD',
                                 'IDR' => 'IDR',
                             ])
-                            ->default($currency),
+                            ->default($currency)
+                            ->disabled(fn (?Affiliate $record): bool => self::hasNonCommercialPurpose($record))
+                            ->dehydrated(fn (?Affiliate $record): bool => ! self::hasNonCommercialPurpose($record)),
 
                         TextInput::make('network_depth')
                             ->label('Network Depth')
@@ -258,7 +281,9 @@ final class AffiliateForm
                                     $set('owner_type', null);
                                     $set('owner_id', null);
                                 }
-                            }),
+                            })
+                            ->disabled(fn (?Affiliate $record): bool => self::hasNonCommercialPurpose($record))
+                            ->dehydrated(fn (?Affiliate $record): bool => ! self::hasNonCommercialPurpose($record)),
                     ]),
                 ])
                 ->collapsible(),
@@ -269,7 +294,9 @@ final class AffiliateForm
                         ->label('Metadata')
                         ->keyLabel('Key')
                         ->valueLabel('Value')
-                        ->addActionLabel('Add entry'),
+                        ->addActionLabel('Add entry')
+                        ->disabled(fn (?Affiliate $record): bool => self::hasNonCommercialPurpose($record))
+                        ->dehydrated(fn (?Affiliate $record): bool => ! self::hasNonCommercialPurpose($record)),
                 ])
                 ->collapsed(),
         ]);
@@ -287,5 +314,10 @@ final class AffiliateForm
         return collect($cases)
             ->mapWithKeys(static fn ($case): array => [$case->value => method_exists($case, 'label') ? $case->label() : ucfirst($case->value)])
             ->toArray();
+    }
+
+    private static function hasNonCommercialPurpose(?Affiliate $affiliate): bool
+    {
+        return $affiliate !== null && ! $affiliate->isCommercialPurpose();
     }
 }

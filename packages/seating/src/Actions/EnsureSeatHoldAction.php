@@ -189,7 +189,7 @@ class EnsureSeatHoldAction
 
         // Contended seat rows are skipped instead of blocking: the retry loop
         // refills from seats that were never contested. The raw lock string
-        // passes through on MySQL/Postgres and is ignored on SQLite.
+        // PostgreSQL applies this lock; SQLite ignores it.
         return $query
             ->orderBy('seat_section_id')
             ->orderBy('row_number')

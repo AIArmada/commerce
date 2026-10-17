@@ -221,6 +221,7 @@ it('skips commission template admin surface when commission management is disabl
             AffiliateConversionResource::class,
             AffiliatePayoutResource::class,
             AffiliateProgramResource::class,
+            AffiliateVolumeTierResource::class,
             AffiliateLinkResource::class,
             AffiliateTouchpointResource::class,
             AffiliateRankResource::class,
@@ -263,8 +264,34 @@ it('skips commission template admin surface when commission management is disabl
     (new FilamentAffiliatesPlugin)->register($panel);
 });
 
+it('hides volume tiers when the volume tier feature is disabled', function (): void {
+    config()->set('filament-affiliates.features.admin.volume_tiers', false);
+
+    $method = new ReflectionMethod(FilamentAffiliatesPlugin::class, 'getResources');
+    $resources = $method->invoke(new FilamentAffiliatesPlugin);
+
+    expect($resources)
+        ->toContain(AffiliateCommissionTemplateResource::class)
+        ->not->toContain(AffiliateVolumeTierResource::class);
+});
+
 it('skips support and compliance admin surfaces when support compliance is disabled', function (): void {
-    config()->set('filament-affiliates.features.admin.support_compliance', false);
+    config()->set('affiliates.features.commission_tracking.enabled', true);
+    config()->set('filament-affiliates.features.admin', [
+        'conversions' => true,
+        'payouts' => true,
+        'programs' => true,
+        'commission_management' => true,
+        'volume_tiers' => true,
+        'links' => true,
+        'attribution' => true,
+        'ranks' => true,
+        'support_compliance' => false,
+        'fraud_monitoring' => true,
+        'reports' => true,
+        'upline_visualization' => true,
+        'creatives' => true,
+    ]);
 
     /** @var Panel&MockInterface $panel */
     $panel = Mockery::mock(Panel::class);

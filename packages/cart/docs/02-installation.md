@@ -8,7 +8,7 @@ title: Installation
 
 - PHP 8.5+
 - Laravel 13+
-- MySQL 8.0+, PostgreSQL 14+, or SQLite 3.35+
+- PostgreSQL 14+ or SQLite 3.35+
 
 ## Installing via Composer
 
@@ -164,5 +164,5 @@ Clear config cache: `php artisan config:clear`
 
 `cart.database.json_column_type` defaults to `jsonb`. SQLite does not support
 `jsonb`, so set `CART_JSON_COLUMN_TYPE=json` (or `database.json_column_type => 'json'`)
-in `.env` before migrating on SQLite. MySQL and PostgreSQL can use the default.
+in `.env` before migrating on SQLite. PostgreSQL can use the default.
 

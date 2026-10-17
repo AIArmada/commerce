@@ -58,12 +58,12 @@ function engineThrowingSyncAlertEvaluation(): void
     });
 }
 
-it('dispatches queued alert evaluation only after the outermost engine commit', function (string $engine): void {
+it('dispatches queued alert evaluation only after the outermost engine commit', function (): void {
     Queue::fake();
     config()->set('signals.features.alerts.evaluate_on_ingest.enabled', true);
     config()->set('signals.features.alerts.evaluate_on_ingest.queue', true);
 
-    $this->useEngine($engine);
+    $this->useEngine();
 
     $property = $this->engineProperty('Engine Alert Commit');
 
@@ -87,14 +87,14 @@ it('dispatches queued alert evaluation only after the outermost engine commit', 
 
     Queue::assertPushed(EvaluateSignalAlertsForEvent::class, 1);
     expect(SignalEvent::query()->withoutOwnerScope()->where('tracked_property_id', $property->id)->count())->toBe(1);
-})->with(['pgsql', 'mysql']);
+});
 
-it('discards queued alert evaluation when the outermost engine transaction rolls back', function (string $engine): void {
+it('discards queued alert evaluation when the outermost engine transaction rolls back', function (): void {
     Queue::fake();
     config()->set('signals.features.alerts.evaluate_on_ingest.enabled', true);
     config()->set('signals.features.alerts.evaluate_on_ingest.queue', true);
 
-    $this->useEngine($engine);
+    $this->useEngine();
 
     $property = $this->engineProperty('Engine Alert Rollback');
 
@@ -112,21 +112,21 @@ it('discards queued alert evaluation when the outermost engine transaction rolls
 
     Queue::assertNotPushed(EvaluateSignalAlertsForEvent::class);
     expect(SignalEvent::query()->withoutOwnerScope()->where('tracked_property_id', $property->id)->count())->toBe(0);
-})->with(['pgsql', 'mysql']);
+});
 
-it('runs inline alert effects only after the outermost engine commit', function (string $engine): void {
+it('runs inline alert effects only after the outermost engine commit', function (): void {
     Queue::fake();
     config()->set('signals.features.alerts.evaluate_on_ingest.enabled', true);
     config()->set('signals.features.alerts.evaluate_on_ingest.queue', false);
 
-    $this->useEngine($engine);
+    $this->useEngine();
 
     $property = $this->engineProperty('Engine Alert Inline');
 
     $rule = SignalAlertRule::query()->create([
         'tracked_property_id' => $property->id,
         'name' => 'Engine Inline Rule',
-        'slug' => 'engine-inline-rule-' . $engine . '-' . Str::lower(Str::random(6)),
+        'slug' => 'engine-inline-rule-' . 'pgsql' . '-' . Str::lower(Str::random(6)),
         'metric_key' => 'events',
         'operator' => '>=',
         'threshold' => 1,
@@ -169,10 +169,10 @@ it('runs inline alert effects only after the outermost engine commit', function 
     DB::rollBack();
 
     expect(SignalAlertLog::query()->withoutOwnerScope()->where('signal_alert_rule_id', $rule->id)->count())->toBe(1);
-})->with(['pgsql', 'mysql']);
+});
 
-it('keeps the persisted event when immediate alert evaluation fails at level zero', function (string $engine): void {
-    $this->useEngine($engine);
+it('keeps the persisted event when immediate alert evaluation fails at level zero', function (): void {
+    $this->useEngine();
 
     engineThrowingSyncAlertEvaluation();
 
@@ -187,7 +187,7 @@ it('keeps the persisted event when immediate alert evaluation fails at level zer
     SignalAlertRule::query()->create([
         'tracked_property_id' => $property->id,
         'name' => 'Engine Failure Rule',
-        'slug' => 'engine-failure-rule-' . $engine . '-' . Str::lower(Str::random(6)),
+        'slug' => 'engine-failure-rule-' . 'pgsql' . '-' . Str::lower(Str::random(6)),
         'metric_key' => 'events',
         'operator' => '>=',
         'threshold' => 1,
@@ -220,10 +220,10 @@ it('keeps the persisted event when immediate alert evaluation fails at level zer
             'phase' => 'alert_evaluation',
             'signal_event_id' => $event->getKey(),
         ]);
-})->with(['pgsql', 'mysql']);
+});
 
-it('keeps the persisted event and later callbacks when deferred alert evaluation fails on commit', function (string $engine): void {
-    $this->useEngine($engine);
+it('keeps the persisted event and later callbacks when deferred alert evaluation fails on commit', function (): void {
+    $this->useEngine();
 
     engineThrowingSyncAlertEvaluation();
 
@@ -236,7 +236,7 @@ it('keeps the persisted event and later callbacks when deferred alert evaluation
     SignalAlertRule::query()->create([
         'tracked_property_id' => $property->id,
         'name' => 'Engine Deferred Failure Rule',
-        'slug' => 'engine-deferred-failure-rule-' . $engine . '-' . Str::lower(Str::random(6)),
+        'slug' => 'engine-deferred-failure-rule-' . 'pgsql' . '-' . Str::lower(Str::random(6)),
         'metric_key' => 'events',
         'operator' => '>=',
         'threshold' => 1,
@@ -280,4 +280,4 @@ it('keeps the persisted event and later callbacks when deferred alert evaluation
             'phase' => 'alert_evaluation',
             'signal_event_id' => $event->getKey(),
         ]);
-})->with(['pgsql', 'mysql']);
+});

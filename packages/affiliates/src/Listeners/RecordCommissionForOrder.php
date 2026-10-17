@@ -51,6 +51,15 @@ final readonly class RecordCommissionForOrder
             $metadata = [];
         }
 
+        $commissionStrategy = data_get($metadata, 'payment_data.affiliate_commission.strategy');
+
+        if ($commissionStrategy === 'registration_lines') {
+            // A host may route ticket commissions through checkout's frozen
+            // registration-line seam. Do not also record this order as one
+            // generic cart purchase.
+            return;
+        }
+
         $networkPresent = array_key_exists('network_touch_at', $metadata);
 
         $cartId = $metadata['cart_id'] ?? null;

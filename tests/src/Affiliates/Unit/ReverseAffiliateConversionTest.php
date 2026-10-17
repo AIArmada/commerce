@@ -6,6 +6,8 @@ use AIArmada\Affiliates\Actions\Conversions\ReverseAffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\ReversedConversion;
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 
 function reversalConversion(int $commissionMinor = 13485): AffiliateConversion
 {
@@ -48,6 +50,28 @@ describe('ReverseAffiliateConversion', function (): void {
 
         expect($second->getKey())->toBe($first->getKey())
             ->and(AffiliateConversion::query()->where('conversion_type', 'reversal')->count())->toBe(1);
+    });
+
+    test('reversal preserves the original conversion owner', function (): void {
+        config()->set('affiliates.owner.enabled', true);
+        config()->set('affiliates.owner.include_global', false);
+
+        $owner = User::create([
+            'name' => 'Reversal Owner',
+            'email' => 'reversal-owner-' . uniqid() . '@example.com',
+            'password' => 'secret',
+        ]);
+        $conversion = OwnerContext::withOwner($owner, fn (): AffiliateConversion => reversalConversion());
+
+        $reversal = OwnerContext::withOwner(
+            $owner,
+            fn (): AffiliateConversion => ReverseAffiliateConversion::run($conversion, 'refund'),
+        );
+
+        expect($conversion->fresh()->owner_type)->toBe($owner->getMorphClass())
+            ->and($conversion->fresh()->owner_id)->toBe($owner->getKey())
+            ->and($reversal->owner_type)->toBe($conversion->fresh()->owner_type)
+            ->and($reversal->owner_id)->toBe($conversion->fresh()->owner_id);
     });
 
     test('zero-commission conversions reverse without a leg', function (): void {

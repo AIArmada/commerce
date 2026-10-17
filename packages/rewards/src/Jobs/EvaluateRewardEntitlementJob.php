@@ -10,7 +10,6 @@ use AIArmada\Rewards\Actions\RecordRewardMilestoneContributionAction;
 use AIArmada\Rewards\Contracts\RewardSourceFactReader;
 use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
 use AIArmada\Rewards\Enums\RewardComponent;
-use AIArmada\Rewards\Enums\RewardEvaluationOutcome;
 use AIArmada\Rewards\Models\RewardProgram;
 use AIArmada\Rewards\Models\RewardProgramVersion;
 use AIArmada\Rewards\Support\RewardEvaluationCandidates;
@@ -104,23 +103,29 @@ final class EvaluateRewardEntitlementJob implements ShouldBeUniqueUntilProcessin
             }
 
             try {
-                RewardProgramGuard::withProgramOwner($candidate['program'], function () use ($evaluate, $fact, $candidate, $now, $recipientType): void {
-                    $result = $evaluate->handle(
-                        $candidate['program'],
-                        $candidate['component'],
-                        $recipientType,
-                        $candidate['recipient_id'],
-                        $candidate['role'],
-                        $this->businessKey,
-                        $now,
-                        'system',
-                        null,
-                        'system',
-                    );
-
-                    if ($result->outcome === RewardEvaluationOutcome::Awarded) {
-                        $this->recordMilestones($fact, $candidate['version']->rules, $candidate['recipient_id'], $candidate['role']->value, (string) $candidate['program']->getKey(), $candidate['program']->family_key, $recipientType);
+                RewardProgramGuard::withProgramOwner($candidate['program'], function () use ($evaluate, $fact, $candidate, $now, $recipientType, $reader): void {
+                    foreach ($candidate['components'] as $component) {
+                        try {
+                            $evaluate->handle(
+                                $candidate['program'],
+                                $component,
+                                $recipientType,
+                                $candidate['recipient_id'],
+                                $candidate['role'],
+                                $this->businessKey,
+                                $now,
+                                'system',
+                                null,
+                                'system',
+                            );
+                        } catch (InvalidArgumentException $exception) {
+                            if (! str_starts_with($exception->getMessage(), 'Refused:')) {
+                                throw $exception;
+                            }
+                        }
                     }
+
+                    $this->recordMilestones($fact, $candidate['milestones'], $candidate['recipient_id'], $candidate['role']->value, (string) $candidate['program']->getKey(), $candidate['program']->family_key, $recipientType, $reader);
                 });
             } catch (InvalidArgumentException $exception) {
                 if (str_starts_with($exception->getMessage(), 'Refused:')) {
@@ -133,7 +138,7 @@ final class EvaluateRewardEntitlementJob implements ShouldBeUniqueUntilProcessin
     }
 
     /**
-     * @param  array{program: RewardProgram, version: RewardProgramVersion, component: RewardComponent, role: RewardBeneficiaryRole, recipient_id: string}  $candidate
+     * @param  array{program: RewardProgram, version: RewardProgramVersion, components: list<RewardComponent>, milestones: list<array<string, mixed>>, role: RewardBeneficiaryRole, recipient_id: string}  $candidate
      */
     private function inScope(array $candidate): bool
     {
@@ -168,18 +173,19 @@ final class EvaluateRewardEntitlementJob implements ShouldBeUniqueUntilProcessin
     }
 
     /**
-     * @param  array<string, mixed>  $rules
+     * @param  list<array<string, mixed>>  $milestones
      */
     private function recordMilestones(
         RewardSourceFact $fact,
-        mixed $rules,
+        array $milestones,
         string $recipientId,
         string $role,
         string $programId,
         string $familyKey,
         string $recipientType,
+        RewardSourceFactReader $reader,
     ): void {
-        $milestones = is_array($rules) && is_array($rules['milestones'] ?? null) ? $rules['milestones'] : [];
+        $milestoneAction = new RecordRewardMilestoneContributionAction($reader);
 
         foreach ($milestones as $definition) {
             if (! is_array($definition)) {
@@ -196,7 +202,7 @@ final class EvaluateRewardEntitlementJob implements ShouldBeUniqueUntilProcessin
             }
 
             try {
-                RecordRewardMilestoneContributionAction::run(
+                $milestoneAction->handle(
                     $recipientType,
                     $recipientId,
                     $familyKey,
@@ -215,9 +221,10 @@ final class EvaluateRewardEntitlementJob implements ShouldBeUniqueUntilProcessin
                     $fact->snapshot(),
                 );
             } catch (InvalidArgumentException $exception) {
-                // The fact became unreadable mid-flight; validation errors
-                // below indicate version-data bugs and must throw instead.
-                if (str_starts_with($exception->getMessage(), 'Refused: unknown_source')) {
+                // Candidate pre-filtering narrows routine mismatches, but
+                // eligibility can still change between the read and write.
+                // Skip that milestone and keep evaluating later definitions.
+                if (str_starts_with($exception->getMessage(), 'Refused:')) {
                     continue;
                 }
 

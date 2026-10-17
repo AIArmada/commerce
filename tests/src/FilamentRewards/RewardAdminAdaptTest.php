@@ -42,6 +42,7 @@ use AIArmada\Rewards\Enums\RewardRecoveryStatus;
 use AIArmada\Rewards\Enums\RewardSourceFraudStatus;
 use AIArmada\Rewards\Models\RewardAppeal;
 use AIArmada\Rewards\Models\RewardAward;
+use AIArmada\Rewards\Models\RewardBenefitItem;
 use AIArmada\Rewards\Models\RewardFundingEntry;
 use AIArmada\Rewards\Models\RewardPayee;
 use AIArmada\Rewards\Models\RewardProgram;
@@ -202,6 +203,35 @@ function adminAdaptCashSetup(string $staffId): array
     return [$program, $request];
 }
 
+function recordAdminAdaptFunding(RewardProgram $program, string $currency, int $amountMinor): void
+{
+    $staffId = RewardLedgerFixtures::staffId();
+    $sourceRef = 'TREASURY-' . $currency . '-' . Str::uuid();
+    $at = CarbonImmutable::parse('2026-06-02T00:00:00Z');
+
+    RecordRewardFundingSourceAction::run(
+        $sourceRef,
+        $currency,
+        $amountMinor,
+        'user',
+        $staffId,
+        'staff',
+        null,
+        $at,
+    );
+    RecordRewardFundingAction::run(
+        $program,
+        $currency,
+        $amountMinor,
+        $sourceRef,
+        'user',
+        $staffId,
+        'staff',
+        null,
+        $at,
+    );
+}
+
 it('lets staff approve a held award from the awards table', function (): void {
     $award = adminAdaptHeldAward((string) $this->staff->getKey());
     expect($award->status)->toBe(RewardAwardStatus::Held);
@@ -261,7 +291,8 @@ it('lets staff dismiss fraud without approving, and reverse approved awards', fu
 });
 
 it('lets staff publish a version and transition a program', function (): void {
-    [$program] = RewardLedgerFixtures::seedVersionedProgram('admin-program', RewardProgramMode::Recognition);
+    config(['rewards.outcomes' => ['contribution', 'attendance']]);
+    [$program] = RewardLedgerFixtures::seedVersionedProgram('admin-program', RewardProgramMode::Combined);
     $program = $program->refresh();
     expect($program->status)->toBe(RewardProgramStatus::Draft);
 
@@ -269,7 +300,28 @@ it('lets staff publish a version and transition a program', function (): void {
         ->test(ViewRewardProgram::class, ['record' => $program->getKey()])
         ->callAction('publish_version', data: [
             'effective_from' => CarbonImmutable::now('UTC')->addHour()->toIso8601String(),
-            'recognition_template' => 'general-thanks',
+            'component_rows' => [[
+                'type' => 'recognition',
+                'variants' => [[
+                    'outcomes' => ['attendance'],
+                    'roles' => [RewardBeneficiaryRole::Participant->value],
+                    'min_verification' => 'staff_verified',
+                    'first_only' => false,
+                    'template' => 'general-thanks',
+                ]],
+            ]],
+            'milestone_rows' => [[
+                'key' => 'bintang-1',
+                'label' => 'Bintang 1',
+                'outcomes' => ['attendance'],
+                'roles' => [RewardBeneficiaryRole::Participant->value],
+                'min_verification' => 'staff_verified',
+                'first_only' => false,
+                'target_count' => 1,
+                'window_days' => 30,
+                'reward_type' => 'badge',
+                'badge_key' => 'bintang-1',
+            ]],
             'eligibility_outcomes' => ['contribution', 'attendance'],
             'eligibility_categories' => '',
             'min_verification' => 'accepted',
@@ -293,7 +345,14 @@ it('lets staff publish a version and transition a program', function (): void {
         ])
         ->assertHasNoActionErrors();
 
-    expect(RewardProgramVersion::query()->where('program_id', $program->getKey())->count())->toBe(2);
+    $publishedVersion = RewardProgramVersion::query()
+        ->where('program_id', $program->getKey())
+        ->orderByDesc('version')
+        ->firstOrFail();
+
+    expect(RewardProgramVersion::query()->where('program_id', $program->getKey())->count())->toBe(2)
+        ->and($publishedVersion->rules['components'][0]['variants'][0]['template'])->toBe('general-thanks')
+        ->and($publishedVersion->rules['milestones'][0]['label'])->toBe('Bintang 1');
 
     Livewire::actingAs($this->staff)
         ->test(ViewRewardProgram::class, ['record' => $program->getKey()])
@@ -301,6 +360,74 @@ it('lets staff publish a version and transition a program', function (): void {
         ->assertHasNoActionErrors();
 
     expect($program->fresh()->status)->toBe(RewardProgramStatus::Ready);
+});
+
+it('hides points as a milestone grant option for badges-mode programs', function (): void {
+    [$program] = RewardLedgerFixtures::seedVersionedProgram('admin-badges-milestone-ui', RewardProgramMode::Badges);
+
+    Livewire::actingAs($this->staff)
+        ->test(ViewRewardProgram::class, ['record' => $program->getKey()])
+        ->callAction('publish_version', data: [
+            'effective_from' => CarbonImmutable::now('UTC')->addHour()->toIso8601String(),
+            'component_rows' => [[
+                'type' => 'badge',
+                'variants' => [[
+                    'outcomes' => ['attendance'],
+                    'roles' => [RewardBeneficiaryRole::Participant->value],
+                    'min_verification' => 'accepted',
+                    'first_only' => false,
+                    'badge_key' => 'member-star',
+                ]],
+            ]],
+            'milestone_rows' => [[
+                'key' => 'points-tier',
+                'label' => 'Points tier',
+                'outcomes' => ['attendance'],
+                'roles' => [RewardBeneficiaryRole::Participant->value],
+                'min_verification' => 'accepted',
+                'first_only' => false,
+                'target_count' => 1,
+                'window_days' => 30,
+                'reward_type' => 'points',
+                'points' => 5,
+                'unit' => 'pts',
+            ]],
+            'eligibility_outcomes' => ['attendance'],
+            'eligibility_categories' => '',
+            'min_verification' => 'accepted',
+            'first_only' => false,
+            'exclude_self_credit' => true,
+            'require_enrollment' => true,
+            'require_claimed_identity' => true,
+            'preclaim_lookback_days' => 30,
+            'hold_days' => 0,
+            'cap_scope_1' => 'recipient_source_component',
+            'cap_limit_1' => 1,
+            'ambiguous_device' => true,
+            'manual_review_outcomes' => [],
+            'terms_label' => 'Member terms',
+            'terms_version_label' => 'v2',
+            'terms_body' => 'Earn only on verified eligible outcomes.',
+            'terms_earn_basis' => 'Verified eligible outcomes only.',
+            'terms_changes' => 'Changes apply prospectively after reacceptance.',
+            'terms_no_ranking' => 'No public ranking.',
+            'reason' => 'Badges programs cannot grant points from milestones.',
+        ])
+        ->assertHasFormErrors(['milestone_rows.0.reward_type' => ['in']]);
+});
+
+it('maps structured publish failures to the closest form section', function (): void {
+    $page = (new ReflectionClass(ViewRewardProgram::class))->newInstanceWithoutConstructor();
+    $method = new ReflectionMethod(ViewRewardProgram::class, 'publishErrorField');
+
+    expect($method->invoke($page, new InvalidArgumentException('Milestone [0] outcomes are invalid.')))
+        ->toBe('milestone_rows')
+        ->and($method->invoke($page, new InvalidArgumentException('Component [0] is invalid.')))
+        ->toBe('component_rows')
+        ->and($method->invoke($page, new InvalidArgumentException('Eligibility outcomes are invalid.')))
+        ->toBe('eligibility_outcomes')
+        ->and($method->invoke($page, new InvalidArgumentException('Terms label is invalid.')))
+        ->toBe('terms_label');
 });
 
 it('previews qualification from the program page sandbox', function (): void {
@@ -408,6 +535,118 @@ it('renders finance tables and runs record, verify, and approve actions', functi
         ->assertHasNoTableActionErrors();
 
     expect($request->fresh()->status->value)->toBe('approved');
+});
+
+it('requires funding for every cash variant currency before activation', function (): void {
+    config(['rewards.outcomes' => ['attendance', 'signup']]);
+
+    [$program] = RewardLedgerFixtures::seedVersionedProgram('admin-cash-variants', RewardProgramMode::Cash, [
+        'components' => [[
+            'type' => 'cash',
+            'variants' => [
+                [
+                    'outcomes' => ['attendance'],
+                    'roles' => [RewardBeneficiaryRole::Recipient->value],
+                    'min_verification' => 'staff_verified',
+                    'first_only' => false,
+                    'minor_units' => 100,
+                    'currency' => 'MYR',
+                ],
+                [
+                    'outcomes' => ['signup'],
+                    'roles' => [RewardBeneficiaryRole::Recipient->value],
+                    'min_verification' => 'staff_verified',
+                    'first_only' => false,
+                    'minor_units' => 200,
+                    'currency' => 'USD',
+                ],
+            ],
+        ]],
+        'eligibility' => [
+            'outcomes' => ['attendance', 'signup'],
+            'min_verification' => 'staff_verified',
+        ],
+    ]);
+    recordAdminAdaptFunding($program, 'MYR', 10000);
+
+    $ready = TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Ready);
+    $blocked = app(FundedRewardReadinessChecker::class)->canActivate(
+        $ready,
+        $ready->versions()->orderByDesc('version')->firstOrFail(),
+    );
+
+    expect($blocked->ready)->toBeFalse()
+        ->and($blocked->blockers)->toContain('no-confirmed-funding:USD');
+
+    recordAdminAdaptFunding($program, 'USD', 10000);
+    $active = TransitionRewardProgramStatusAction::run($ready, RewardProgramStatus::Active);
+
+    expect($active->status)->toBe(RewardProgramStatus::Active);
+});
+
+it('requires catalog items for every benefit variant key before activation', function (): void {
+    config(['rewards.outcomes' => ['attendance', 'signup']]);
+
+    [$program] = RewardLedgerFixtures::seedVersionedProgram('admin-benefit-variants', RewardProgramMode::Benefit, [
+        'components' => [[
+            'type' => 'benefit',
+            'variants' => [
+                [
+                    'outcomes' => ['attendance'],
+                    'roles' => [RewardBeneficiaryRole::Recipient->value],
+                    'min_verification' => 'staff_verified',
+                    'first_only' => false,
+                    'benefit_key' => 'attendance-pack',
+                    'conditions' => ['Verified attendance'],
+                ],
+                [
+                    'outcomes' => ['signup'],
+                    'roles' => [RewardBeneficiaryRole::Recipient->value],
+                    'min_verification' => 'staff_verified',
+                    'first_only' => false,
+                    'benefit_key' => 'signup-pack',
+                    'conditions' => ['Verified signup'],
+                ],
+            ],
+        ]],
+        'eligibility' => [
+            'outcomes' => ['attendance', 'signup'],
+            'min_verification' => 'staff_verified',
+        ],
+    ]);
+    $staffId = RewardLedgerFixtures::staffId();
+    $createBenefit = static function (string $key, string $label) use ($program, $staffId): void {
+        CreateRewardBenefitItemAction::run(
+            $program,
+            $key,
+            $label,
+            ['One verified use'],
+            100,
+            'pts',
+            false,
+            10,
+            'user',
+            $staffId,
+            'staff',
+        );
+    };
+
+    $createBenefit('attendance-pack', 'Attendance Pack');
+    $ready = TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Ready);
+    $blocked = app(FundedRewardReadinessChecker::class)->canActivate(
+        $ready,
+        $ready->versions()->orderByDesc('version')->firstOrFail(),
+    );
+
+    expect($blocked->ready)->toBeFalse()
+        ->and($blocked->blockers)->toContain('benefit-catalog-unavailable')
+        ->and(RewardBenefitItem::query()->where('program_id', $program->getKey())->count())->toBe(1);
+
+    $createBenefit('signup-pack', 'Signup Pack');
+    $active = TransitionRewardProgramStatusAction::run($ready, RewardProgramStatus::Active);
+
+    expect($active->status)->toBe(RewardProgramStatus::Active)
+        ->and(RewardBenefitItem::query()->where('program_id', $program->getKey())->count())->toBe(2);
 });
 
 it('renders catalog, recovery, fraud, and program tables', function (): void {

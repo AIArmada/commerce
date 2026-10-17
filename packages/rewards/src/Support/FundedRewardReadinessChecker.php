@@ -140,11 +140,16 @@ final class FundedRewardReadinessChecker implements RewardReadinessChecker
         }
 
         foreach ($components as $component) {
-            if (is_array($component)
-                && ($component['type'] ?? null) === RewardComponent::Cash->value
-                && is_string($component['currency'] ?? null)
-            ) {
-                $currencies[] = mb_strtoupper($component['currency']);
+            if (! is_array($component) || ($component['type'] ?? null) !== RewardComponent::Cash->value) {
+                continue;
+            }
+
+            $configurations = is_array($component['variants'] ?? null) ? $component['variants'] : [$component];
+
+            foreach ($configurations as $configuration) {
+                if (is_array($configuration) && is_string($configuration['currency'] ?? null)) {
+                    $currencies[] = mb_strtoupper($configuration['currency']);
+                }
             }
         }
 

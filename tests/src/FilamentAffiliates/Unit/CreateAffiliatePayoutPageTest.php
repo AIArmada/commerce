@@ -202,6 +202,19 @@ it('rejects creating a payout for a non-payable affiliate without a reason', fun
     });
 });
 
+it('rejects manual payout creation for an active Dawah affiliate', function (): void {
+    [$owner, $affiliate] = createPayoutOverrideAffiliate(Active::class);
+    OwnerContext::withOwner($owner, fn () => $affiliate->forceFill(['purpose' => 'share_member'])->save());
+
+    OwnerContext::withOwner($owner, function () use ($affiliate): void {
+        expect(fn () => invokePayoutMutate([
+            'affiliate_id' => $affiliate->getKey(),
+            'total_minor' => 5500,
+            'currency' => 'USD',
+        ]))->toThrow(ValidationException::class, 'Only commercial-purpose affiliates can receive manual payouts.');
+    });
+});
+
 it('rejects a payout override reason for any other non-payable status', function (): void {
     [$owner, $affiliate] = createPayoutOverrideAffiliate(Draft::class);
 

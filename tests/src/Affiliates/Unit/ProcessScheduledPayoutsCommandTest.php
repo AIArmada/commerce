@@ -211,6 +211,31 @@ describe('ProcessScheduledPayoutsCommand', function (): void {
         expect($output)->toContain('Skipped: 1');
     });
 
+    test('scheduled payout command excludes Dawah-purpose affiliates', function (): void {
+        $this->affiliate->forceFill(['purpose' => 'share_member'])->save();
+
+        AffiliateBalance::create([
+            'affiliate_id' => $this->affiliate->id,
+            'available_minor' => 10000,
+            'pending_minor' => 0,
+            'minimum_payout_minor' => 5000,
+            'currency' => 'USD',
+        ]);
+        $conversion = addScheduledPayoutConversion($this->affiliate, 5000);
+
+        $result = Artisan::call('affiliates:process-payouts');
+        $output = Artisan::output();
+
+        expect($result)->toBe(0)
+            ->and($output)->toContain('Processed: 0')
+            ->and(AffiliatePayout::query()->exists())->toBeFalse()
+            ->and($conversion->fresh()->affiliate_payout_id)->toBeNull()
+            ->and(AffiliateBalance::query()
+                ->where('affiliate_id', $this->affiliate->getKey())
+                ->where('currency', 'USD')
+                ->value('available_minor'))->toBe(10000);
+    });
+
     test('skips affiliates with pending payouts', function (): void {
         AffiliateBalance::create([
             'affiliate_id' => $this->affiliate->id,

@@ -23,6 +23,7 @@ return [
             'payouts' => true,
             'programs' => true,
             'commission_management' => true,
+            'volume_tiers' => true,
             'links' => true,
             'attribution' => true,
             'ranks' => true,

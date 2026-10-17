@@ -28,6 +28,7 @@ use AIArmada\Referrals\Enums\ReferralRewardStatus;
 use AIArmada\Referrals\Exceptions\ReferralAlreadyClaimedException;
 use AIArmada\Referrals\Exceptions\ReferralFulfillmentException;
 use AIArmada\Referrals\Exceptions\ReferralInviteNotFoundException;
+use AIArmada\Referrals\Exceptions\ReferralProgramAttributeException;
 use AIArmada\Referrals\Models\ReferralInvite;
 use AIArmada\Referrals\Models\ReferralProgram;
 use AIArmada\Referrals\Models\ReferralReward;
@@ -67,6 +68,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 use LogicException;
 use Mockery;
@@ -1280,6 +1282,79 @@ it('stores only the invite token hash and encrypts the addressed contact', funct
         ->and($persisted->token_hash)->toBe(hash('sha256', $created->token))
         ->and($persisted->invitee_contact_encrypted)->not->toBe($normalizedContact)
         ->and($created->invite->getAttribute('invitee_contact_encrypted'))->toBe($normalizedContact);
+});
+
+it('keeps free-text qualifiers by default and validates configured qualifiers on create and edit', function (): void {
+    $program = OwnerContext::withOwner(null, fn (): ReferralProgram => CreateReferralProgram::run([
+        'name' => 'Custom qualifier program',
+        'slug' => 'custom-qualifier-' . Str::lower(Str::random(8)),
+        'qualifier_outcome' => 'custom_host_outcome',
+        'currency' => 'MYR',
+    ]));
+
+    expect($program->qualifier_outcome)->toBe('custom_host_outcome');
+
+    config()->set('referrals.qualifier_outcomes', [
+        'first_accepted_registration_or_staff_verified_checkin',
+    ]);
+
+    $createException = null;
+
+    try {
+        OwnerContext::withOwner(null, fn (): ReferralProgram => CreateReferralProgram::run([
+            'name' => 'Rejected qualifier program',
+            'slug' => 'rejected-qualifier-' . Str::lower(Str::random(8)),
+            'qualifier_outcome' => 'custom_host_outcome',
+            'currency' => 'MYR',
+        ]));
+    } catch (ReferralProgramAttributeException $exception) {
+        $createException = $exception;
+    }
+
+    $updateException = null;
+
+    try {
+        OwnerContext::withOwner(null, fn (): ReferralProgram => UpdateReferralProgram::run(
+            $program,
+            ['qualifier_outcome' => 'custom_host_outcome'],
+        ));
+    } catch (ReferralProgramAttributeException $exception) {
+        $updateException = $exception;
+    }
+
+    expect($createException)->toBeInstanceOf(ReferralProgramAttributeException::class)
+        ->and($createException->attribute)->toBe('qualifier_outcome')
+        ->and($createException->getMessage())->toBe('Referral program qualifier outcome is not allowed.')
+        ->and($updateException)->toBeInstanceOf(ReferralProgramAttributeException::class)
+        ->and($updateException->attribute)->toBe('qualifier_outcome')
+        ->and($updateException->getMessage())->toBe('Referral program qualifier outcome is not allowed.');
+});
+
+it('reports the legacy qualifier field when an allowlist blocks unrelated edits', function (): void {
+    $program = OwnerContext::withOwner(null, fn (): ReferralProgram => CreateReferralProgram::run([
+        'name' => 'Legacy qualifier program',
+        'slug' => 'legacy-qualifier-' . Str::lower(Str::random(8)),
+        'qualifier_outcome' => 'custom_host_outcome',
+        'currency' => 'MYR',
+    ]));
+
+    config()->set('referrals.qualifier_outcomes', ['first_accepted_registration_or_staff_verified_checkin']);
+
+    $exception = null;
+
+    try {
+        OwnerContext::withOwner(null, fn (): ReferralProgram => UpdateReferralProgram::run(
+            $program,
+            ['name' => 'Renamed legacy qualifier program'],
+        ));
+    } catch (ReferralProgramAttributeException $caught) {
+        $exception = $caught;
+    }
+
+    expect($exception)->toBeInstanceOf(ReferralProgramAttributeException::class)
+        ->and($exception->attribute)->toBe('qualifier_outcome')
+        ->and($exception->getMessage())->toBe('Referral program qualifier outcome is not allowed.')
+        ->and($program->fresh()->name)->toBe('Legacy qualifier program');
 });
 
 it('rejects an invalid program edit and leaves the stored program unchanged', function (): void {

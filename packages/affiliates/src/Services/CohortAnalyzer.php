@@ -361,7 +361,6 @@ final class CohortAnalyzer
 
         $dateFormat = match ($driver) {
             'pgsql' => "to_char(created_at, 'YYYY-MM')",
-            'mysql', 'mariadb' => "DATE_FORMAT(created_at, '%Y-%m')",
             'sqlite' => "strftime('%Y-%m', created_at)",
             default => throw new RuntimeException("Unsupported database driver [{$driver}] for affiliate cohorts."),
         };
@@ -509,7 +508,6 @@ final class CohortAnalyzer
 
         $monthExpression = match ($driver) {
             'pgsql' => "to_char(occurred_at, 'YYYY-MM')",
-            'mysql', 'mariadb' => "DATE_FORMAT(occurred_at, '%Y-%m')",
             'sqlite' => "strftime('%Y-%m', occurred_at)",
             default => throw new RuntimeException("Unsupported database driver [{$driver}] for affiliate cohorts."),
         };

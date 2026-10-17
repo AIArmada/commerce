@@ -11,7 +11,9 @@ return new class extends Migration
     public function up(): void
     {
         $jsonType = commerce_json_column_type('communications', 'jsonb');
-        Schema::create(config('communications.database.tables.preferences', 'communication_preferences'), function (Blueprint $table) use ($jsonType): void {
+        $tableName = config('communications.database.tables.preferences', 'communication_preferences');
+
+        Schema::create($tableName, function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->nullableUuidMorphs('owner');
             $table->string('recipient_type');
@@ -39,6 +41,5 @@ return new class extends Migration
             $table->index(['owner_type', 'owner_id', 'channel', 'category']);
             $table->index(['scope_type', 'scope_key']);
         });
-
     }
 };

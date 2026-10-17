@@ -5,12 +5,14 @@ declare(strict_types=1);
 use AIArmada\Rewards\Actions\EnrollRewardMemberAction;
 use AIArmada\Rewards\Actions\EvaluateRewardEntitlementAction;
 use AIArmada\Rewards\Actions\LeaveRewardProgramAction;
+use AIArmada\Rewards\Actions\PreviewRewardQualificationAction;
 use AIArmada\Rewards\Actions\PublishRewardProgramVersionAction;
 use AIArmada\Rewards\Actions\TransitionRewardProgramStatusAction;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
 use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
 use AIArmada\Rewards\Enums\RewardComponent;
 use AIArmada\Rewards\Enums\RewardEvaluationOutcome;
+use AIArmada\Rewards\Enums\RewardPreviewDecision;
 use AIArmada\Rewards\Enums\RewardProgramMode;
 use AIArmada\Rewards\Enums\RewardProgramStatus;
 use AIArmada\Rewards\Enums\RewardSourceCorrectionStatus;
@@ -57,6 +59,173 @@ it('awards a clean fact with frozen snapshots, entry, claim, and caps', function
         ->and($result->award->entries()->count())->toBe(1)
         ->and(RewardSourceComponentClaim::query()->count())->toBe(1)
         ->and($reader->readCount('src-clean-1'))->toBeGreaterThanOrEqual(2);
+});
+
+it('freezes the matching per-outcome amount and refuses a first-only repeat', function (): void {
+    config(['rewards.outcomes' => ['signup', 'attendance']]);
+
+    $variants = [
+        [
+            'outcomes' => ['signup'],
+            'roles' => [RewardBeneficiaryRole::Sharer->value],
+            'min_verification' => RewardVerificationLevel::Accepted->value,
+            'first_only' => true,
+            'points' => 5,
+            'unit' => 'pts',
+        ],
+        [
+            'outcomes' => ['attendance'],
+            'roles' => [RewardBeneficiaryRole::Sharer->value],
+            'min_verification' => RewardVerificationLevel::StaffVerified->value,
+            'first_only' => false,
+            'points' => 15,
+            'unit' => 'pts',
+        ],
+    ];
+    [$program, , , $memberId] = ledgerHarness('ledger-outcome-amounts', [
+        'components' => [[
+            'type' => 'points',
+            'variants' => $variants,
+        ]],
+        'eligibility' => [
+            'outcomes' => ['signup', 'attendance'],
+            'min_verification' => RewardVerificationLevel::Accepted->value,
+            'first_only' => false,
+        ],
+    ]);
+
+    $reader = new FakeRewardSourceFactReader;
+    $reader->seed(RewardLedgerFixtures::fact('src-outcome-signup', $memberId, outcome: 'signup', overrides: [
+        'verification' => RewardVerificationLevel::Accepted,
+    ]));
+    $reader->seed(RewardLedgerFixtures::fact('src-outcome-attendance', $memberId, outcome: 'attendance'));
+    $reader->seed(RewardLedgerFixtures::fact('src-outcome-repeat', $memberId, outcome: 'signup', overrides: [
+        'verification' => RewardVerificationLevel::Accepted,
+        'isFirstTime' => false,
+    ]));
+
+    $action = new EvaluateRewardEntitlementAction($reader);
+    $decision = CarbonImmutable::parse('2026-06-15T00:00:00Z');
+    $signup = $action->handle($program, RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Sharer, 'src-outcome-signup', $decision);
+    $attendance = $action->handle($program, RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Sharer, 'src-outcome-attendance', $decision);
+    $repeat = $action->handle($program, RewardComponent::Points, 'user', $memberId, RewardBeneficiaryRole::Sharer, 'src-outcome-repeat', $decision);
+
+    expect($signup->outcome)->toBe(RewardEvaluationOutcome::Awarded)
+        ->and($signup->award->amount_snapshot['points'])->toBe(5)
+        ->and($attendance->outcome)->toBe(RewardEvaluationOutcome::Awarded)
+        ->and($attendance->award->amount_snapshot['points'])->toBe(15)
+        ->and($repeat->outcome)->toBe(RewardEvaluationOutcome::Rejected)
+        ->and($repeat->reasons)->toBe(['recurring_excluded']);
+});
+
+it('lets a matching activity variant loosen program eligibility and keeps preview in parity', function (): void {
+    config(['rewards.outcomes' => ['signup', 'attendance']]);
+
+    $roles = [RewardBeneficiaryRole::Sharer->value];
+    [$program, , , $memberId] = ledgerHarness('ledger-variant-loosen', [
+        'components' => [[
+            'type' => 'points',
+            'variants' => [[
+                'outcomes' => ['attendance'],
+                'roles' => $roles,
+                'min_verification' => RewardVerificationLevel::Accepted->value,
+                'first_only' => false,
+                'points' => 23,
+                'unit' => 'pts',
+            ]],
+        ]],
+        'eligibility' => [
+            'outcomes' => ['attendance'],
+            'min_verification' => RewardVerificationLevel::StaffVerified->value,
+            'first_only' => true,
+        ],
+    ]);
+
+    $fact = RewardLedgerFixtures::fact('src-variant-loosen-1', $memberId, '2026-06-12T00:00:00Z', 'attendance', [
+        'verification' => RewardVerificationLevel::Accepted,
+        'isFirstTime' => false,
+    ]);
+    $reader = new FakeRewardSourceFactReader;
+    $reader->seed($fact);
+
+    $live = (new EvaluateRewardEntitlementAction($reader))->handle(
+        $program,
+        RewardComponent::Points,
+        'user',
+        $memberId,
+        RewardBeneficiaryRole::Sharer,
+        $fact->sourceBusinessKey,
+        CarbonImmutable::parse('2026-06-15T00:00:00Z'),
+    );
+    $preview = PreviewRewardQualificationAction::run(
+        $program,
+        RewardComponent::Points,
+        [
+            'source_business_key' => $fact->sourceBusinessKey,
+            'outcome' => $fact->outcome,
+            'category' => $fact->category,
+            'occurred_at' => $fact->occurredAt->toIso8601String(),
+            'verification' => $fact->verification->value,
+            'is_first_time' => $fact->isFirstTime,
+            'actor_id' => $fact->actorId,
+            'sharer_id' => $fact->sharerId,
+            'is_claimed_identity' => $fact->isClaimedIdentity,
+            'is_attributed' => $fact->isAttributed,
+            'beneficiary_role' => RewardBeneficiaryRole::Sharer->value,
+        ],
+        CarbonImmutable::parse('2026-06-15T00:00:00Z'),
+        ['member_type' => 'user', 'member_id' => $memberId],
+    );
+
+    expect($live->outcome)->toBe(RewardEvaluationOutcome::Awarded)
+        ->and($live->award->amount_snapshot['points'])->toBe(23)
+        ->and($live->award->policy_snapshot['components'][0]['min_verification'])->toBe('accepted')
+        ->and($live->award->policy_snapshot['components'][0]['first_only'])->toBeFalse()
+        ->and($preview->decision)->toBe(RewardPreviewDecision::Eligible);
+});
+
+it('keeps tightened activity variants blocking weaker recurring evidence', function (): void {
+    config(['rewards.outcomes' => ['signup', 'attendance']]);
+
+    [$program, , , $memberId] = ledgerHarness('ledger-variant-tighten', [
+        'components' => [[
+            'type' => 'points',
+            'variants' => [[
+                'outcomes' => ['attendance'],
+                'roles' => [RewardBeneficiaryRole::Sharer->value],
+                'min_verification' => RewardVerificationLevel::StaffVerified->value,
+                'first_only' => true,
+                'points' => 23,
+                'unit' => 'pts',
+            ]],
+        ]],
+        'eligibility' => [
+            'outcomes' => ['attendance'],
+            'min_verification' => RewardVerificationLevel::Accepted->value,
+            'first_only' => false,
+        ],
+    ]);
+    $fact = RewardLedgerFixtures::fact('src-variant-tighten-1', $memberId, '2026-06-12T00:00:00Z', 'attendance', [
+        'verification' => RewardVerificationLevel::Accepted,
+        'isFirstTime' => false,
+    ]);
+    $reader = new FakeRewardSourceFactReader;
+    $reader->seed($fact);
+
+    $result = (new EvaluateRewardEntitlementAction($reader))->handle(
+        $program,
+        RewardComponent::Points,
+        'user',
+        $memberId,
+        RewardBeneficiaryRole::Sharer,
+        $fact->sourceBusinessKey,
+        CarbonImmutable::parse('2026-06-15T00:00:00Z'),
+    );
+
+    expect($result->outcome)->toBe(RewardEvaluationOutcome::Rejected)
+        ->and($result->reasons)->toContain('verification_insufficient')
+        ->and($result->award->policy_snapshot['components'][0]['min_verification'])->toBe('staff_verified')
+        ->and($result->award->policy_snapshot['components'][0]['first_only'])->toBeTrue();
 });
 
 it('returns the frozen first award on duplicate evaluation and version switch', function (): void {
@@ -257,7 +426,20 @@ it('holds fraud suspects, ambiguous devices, and policy holds instead of approvi
 });
 
 it('records cash candidates as held prerequisites, never approved money', function (): void {
-    [$program] = RewardLedgerFixtures::seedVersionedProgram('ledger-cash', RewardProgramMode::Cash);
+    [$program] = RewardLedgerFixtures::seedVersionedProgram('ledger-cash', RewardProgramMode::Cash, [
+        'components' => [[
+            'type' => 'cash',
+            'variants' => [[
+                'outcomes' => ['attendance'],
+                'roles' => [RewardBeneficiaryRole::Recipient->value],
+                'min_verification' => RewardVerificationLevel::StaffVerified->value,
+                'first_only' => false,
+                'minor_units' => 250,
+                'currency' => 'USD',
+            ]],
+        ]],
+        'eligibility' => ['outcomes' => ['attendance']],
+    ]);
     $program = RewardLedgerFixtures::forceActive($program);
 
     $memberId = (string) Str::uuid();
@@ -272,8 +454,52 @@ it('records cash candidates as held prerequisites, never approved money', functi
 
     expect($result->outcome)->toBe(RewardEvaluationOutcome::Held)
         ->and($result->reasons)->toBe(['financial_readiness_pending'])
-        ->and($result->award->amount_snapshot)->toBe(['type' => 'cash', 'minor_units' => 100, 'currency' => 'MYR'])
+        ->and($result->award->amount_snapshot)->toBe([
+            'type' => 'cash',
+            'outcomes' => ['attendance'],
+            'roles' => [RewardBeneficiaryRole::Recipient->value],
+            'min_verification' => 'staff_verified',
+            'first_only' => false,
+            'minor_units' => 250,
+            'currency' => 'USD',
+        ])
+        ->and($result->award->policy_snapshot['components'])->toBe([$result->award->amount_snapshot])
         ->and($result->award->status)->toBe(RewardAwardStatus::Held);
+});
+
+it('freezes a selected points variant in the held policy snapshot', function (): void {
+    [$program, , , $memberId] = ledgerHarness('ledger-held-variant-points', [
+        'components' => [[
+            'type' => 'points',
+            'variants' => [[
+                'outcomes' => ['attendance'],
+                'roles' => [RewardBeneficiaryRole::Recipient->value],
+                'min_verification' => RewardVerificationLevel::Accepted->value,
+                'first_only' => false,
+                'points' => 41,
+                'unit' => 'pts',
+            ]],
+        ]],
+        'eligibility' => ['outcomes' => ['attendance']],
+        'holds' => ['manual_review_outcomes' => ['attendance']],
+    ]);
+    $reader = new FakeRewardSourceFactReader;
+    $reader->seed(RewardLedgerFixtures::fact('src-held-variant-points', $memberId));
+
+    $result = (new EvaluateRewardEntitlementAction($reader))->handle(
+        $program,
+        RewardComponent::Points,
+        'user',
+        $memberId,
+        RewardBeneficiaryRole::Recipient,
+        'src-held-variant-points',
+        CarbonImmutable::parse('2026-06-15T00:00:00Z'),
+    );
+
+    expect($result->outcome)->toBe(RewardEvaluationOutcome::Held)
+        ->and($result->award->amount_snapshot['points'])->toBe(41)
+        ->and($result->award->policy_snapshot['components'])->toBe([$result->award->amount_snapshot])
+        ->and($result->award->policy_snapshot['components'][0]['roles'])->toBe([RewardBeneficiaryRole::Recipient->value]);
 });
 
 it('records benefit candidates as held prerequisites with exact amount snapshots', function (): void {

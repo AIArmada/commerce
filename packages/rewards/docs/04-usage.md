@@ -93,6 +93,48 @@ The same split governs every surface, so an actor-bound fact earns consistently 
 - **Transitions** — the frozen-qualification recheck re-runs the pure engine under the award's own `beneficiary_role`, so a held actor-bound award earned on an unattributed fact advances while a sharer-bound one keeps refusing.
 - **Preview sandbox** — fixtures carry a `beneficiary_role` key (values from `RewardBeneficiaryRole::values()`, default `recipient`; unknown values throw). The fail-closed default means existing callers and stored fixtures keep the old sharer-bound behavior.
 
+## Outcome-scoped component amounts and milestones
+
+Published versions may define multiple non-overlapping variants under a
+component. Each variant scopes its grant to eligible outcomes, beneficiary
+roles, a minimum verification level, and the first-only rule:
+
+```php
+'components' => [[
+    'type' => 'points',
+    'variants' => [
+        [
+            'outcomes' => ['event_registration'],
+            'roles' => ['participant', 'sharer'],
+            'min_verification' => 'accepted',
+            'first_only' => false,
+            'points' => 5,
+            'unit' => 'pts',
+        ],
+        [
+            'outcomes' => ['event_checkin'],
+            'roles' => ['participant', 'sharer'],
+            'min_verification' => 'staff_verified',
+            'first_only' => false,
+            'points' => 15,
+            'unit' => 'pts',
+        ],
+    ],
+]],
+```
+
+Variants for one component cannot overlap on the same outcome and role. Their
+award snapshots carry the selected variant, so later edits affect only a new
+published version. Existing versions that store one flat component entry
+remain readable and keep their original award behavior.
+
+Versions may also contain `milestones`, each with a stable `key`, member-facing
+`label`, eligible `outcomes` and `roles`, `min_verification`, `first_only`, a
+`target_count`, a rolling `window_days`, and a `reward` grant. Contributions
+and completion rechecks use that frozen definition; badge, points, and
+recognition grants are supported. Milestone labels and grants are private
+program data and do not imply a public ranking.
+
 ## Cash payouts (manual rail)
 
 ```php

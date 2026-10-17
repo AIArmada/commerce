@@ -229,7 +229,7 @@ Event::listen(Attempting::class, function ($event) {
 **Cause:** SQLite has limited JSON support.
 
 **Solution:**
-1. Use MySQL or PostgreSQL for production
+1. Use PostgreSQL for production
 2. Upgrade to SQLite 3.38+ for better JSON support
 
 ## Debugging Tools

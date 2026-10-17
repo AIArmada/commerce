@@ -22,7 +22,9 @@ final class EditAffiliate extends EditRecord
     {
         return [
             Actions\ViewAction::make(),
-            Actions\DeleteAction::make(),
+            Actions\DeleteAction::make()
+                ->authorize(fn (Affiliate $record): bool => AffiliateResource::canDelete($record))
+                ->visible(fn (Affiliate $record): bool => AffiliateResource::canDelete($record)),
         ];
     }
 
@@ -32,10 +34,32 @@ final class EditAffiliate extends EditRecord
 
         $record = $this->getRecord();
 
-        $data = ValidateAffiliateParentAssignment::run(
-            $data,
-            $record instanceof Affiliate ? $record : null,
-        );
+        if ($record instanceof Affiliate && ! $record->isCommercialPurpose()) {
+            unset(
+                $data['name'],
+                $data['handle'],
+                $data['apply_template'],
+                $data['commission_type'],
+                $data['commission_rate'],
+                $data['currency'],
+                $data['network_depth'],
+                $data['rank_id'],
+                $data['parent_affiliate_id'],
+                $data['default_voucher_code'],
+                $data['tracking_domain'],
+                $data['payout_terms'],
+                $data['code'],
+                $data['purpose'],
+                $data['metadata'],
+                $data['owner_type'],
+                $data['owner_id'],
+                $data['linked_user'],
+            );
+        }
+
+        if (! $record instanceof Affiliate || $record->isCommercialPurpose()) {
+            $data = ValidateAffiliateParentAssignment::run($data, $record instanceof Affiliate ? $record : null);
+        }
 
         return ResolveAffiliateLinkedOwner::run(
             $data,

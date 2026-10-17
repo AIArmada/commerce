@@ -11,7 +11,6 @@ use AIArmada\Rewards\Actions\PublishRewardProgramVersionAction;
 use AIArmada\Rewards\Actions\TransitionRewardProgramStatusAction;
 use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
 use AIArmada\Rewards\Enums\RewardComponent;
-use AIArmada\Rewards\Enums\RewardProgramMode;
 use AIArmada\Rewards\Enums\RewardVerificationLevel;
 use AIArmada\Rewards\Models\RewardProgram;
 use AIArmada\Rewards\Support\RewardPresetBuilders;
@@ -20,13 +19,16 @@ use AIArmada\Rewards\Support\RewardRuleValidator;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 use Override;
@@ -71,7 +73,7 @@ class ViewRewardProgram extends ViewRecord
                 try {
                     $payload = RewardPublishAssembler::assemble($this->programRecord()->mode, $data);
                 } catch (InvalidArgumentException $exception) {
-                    throw ValidationException::withMessages(['effective_from' => $exception->getMessage()]);
+                    throw ValidationException::withMessages([$this->publishErrorField($exception) => $exception->getMessage()]);
                 }
 
                 try {
@@ -85,11 +87,24 @@ class ViewRewardProgram extends ViewRecord
                         (string) $staff->getKey(),
                     );
                 } catch (InvalidArgumentException $exception) {
-                    throw ValidationException::withMessages(['effective_from' => $exception->getMessage()]);
+                    throw ValidationException::withMessages([$this->publishErrorField($exception) => $exception->getMessage()]);
                 }
 
                 Notification::make()->title('Program version published')->success()->send();
             });
+    }
+
+    private function publishErrorField(InvalidArgumentException $exception): string
+    {
+        $message = mb_strtolower($exception->getMessage());
+
+        return match (true) {
+            str_contains($message, 'milestone') => 'milestone_rows',
+            str_contains($message, 'component') => 'component_rows',
+            str_contains($message, 'eligibility') => 'eligibility_outcomes',
+            str_contains($message, 'terms') => 'terms_label',
+            default => 'effective_from',
+        };
     }
 
     /**
@@ -105,15 +120,22 @@ class ViewRewardProgram extends ViewRecord
         $preset = RewardPresetBuilders::for($mode);
         $rules = $preset['rules'];
         $terms = $preset['terms'];
-        $combined = $mode === RewardProgramMode::Combined;
-
-        $byType = [];
-
+        $componentRows = [];
         foreach ($rules['components'] as $component) {
-            $byType[$component['type']] = $component;
-        }
+            $amount = $component;
+            unset($amount['type']);
 
-        $show = static fn (RewardProgramMode $single): bool => $combined || $mode === $single;
+            $componentRows[] = [
+                'type' => $component['type'],
+                'variants' => [[
+                    'outcomes' => $rules['eligibility']['outcomes'],
+                    'roles' => [RewardBeneficiaryRole::Sharer->value, RewardBeneficiaryRole::Participant->value],
+                    'min_verification' => $rules['eligibility']['min_verification'],
+                    'first_only' => (bool) ($rules['eligibility']['first_only'] ?? false),
+                    ...$amount,
+                ]],
+            ];
+        }
 
         $schema = [
             DateTimePicker::make('effective_from')
@@ -123,71 +145,141 @@ class ViewRewardProgram extends ViewRecord
                 ->default(now()->toIso8601String()),
         ];
 
-        if ($combined) {
-            foreach (['recognition', 'points', 'badge', 'cash', 'benefit'] as $type) {
-                $schema[] = Toggle::make('component_' . $type)
-                    ->label('Enable ' . ucfirst($type))
-                    ->default(isset($byType[$type]));
+        $componentOptions = [];
+        foreach ($mode->allowedComponents() as $component) {
+            $componentOptions[$component->value] = ucfirst($component->value);
+        }
+
+        $roleOptions = [];
+        foreach (RewardBeneficiaryRole::cases() as $role) {
+            $roleOptions[$role->value] = str($role->value)->replace('_', ' ')->headline()->toString();
+        }
+
+        $milestoneRewardOptions = [];
+        foreach ([
+            RewardComponent::Recognition->value => 'Recognition',
+            RewardComponent::Points->value => 'Points',
+            RewardComponent::Badge->value => 'Badge',
+        ] as $type => $label) {
+            if (in_array(RewardComponent::from($type), $mode->allowedComponents(), true)) {
+                $milestoneRewardOptions[$type] = $label;
             }
         }
 
-        if ($show(RewardProgramMode::Recognition)) {
-            $schema[] = TextInput::make('recognition_template')
-                ->label('Recognition template')
-                ->maxLength(64)
-                ->default($byType['recognition']['template'] ?? 'quiet-thanks');
-        }
+        $typeIs = static fn (Get $get, string $type): bool => $get('../../type') === $type;
+        $schema[] = Repeater::make('component_rows')
+            ->label('Per-activity rewards')
+            ->schema([
+                Select::make('type')
+                    ->label('Reward component')
+                    ->options($componentOptions)
+                    ->live()
+                    ->required(),
+                Repeater::make('variants')
+                    ->label('Outcome amounts')
+                    ->minItems(1)
+                    ->schema([
+                        Select::make('outcomes')
+                            ->label('Outcomes')
+                            ->options(RewardAdminPresenter::outcomeOptions())
+                            ->multiple()
+                            ->required(),
+                        Select::make('roles')
+                            ->label('Beneficiary roles')
+                            ->options($roleOptions)
+                            ->multiple()
+                            ->required(),
+                        Select::make('min_verification')
+                            ->label('Minimum verification')
+                            ->options(RewardAdminPresenter::verificationOptions())
+                            ->required(),
+                        Toggle::make('first_only')->label('First eligible outcome only')->default(false),
+                        TextInput::make('template')
+                            ->label('Recognition template')
+                            ->maxLength(64)
+                            ->visible(fn (Get $get): bool => $typeIs($get, 'recognition'))
+                            ->dehydrated(fn (Get $get): bool => $typeIs($get, 'recognition')),
+                        TextInput::make('points')
+                            ->label('Points')
+                            ->numeric()
+                            ->minValue(1)
+                            ->maxValue(RewardRuleValidator::maxPoints())
+                            ->required(fn (Get $get): bool => $typeIs($get, 'points'))
+                            ->visible(fn (Get $get): bool => $typeIs($get, 'points'))
+                            ->dehydrated(fn (Get $get): bool => $typeIs($get, 'points')),
+                        TextInput::make('unit')
+                            ->label('Points unit')
+                            ->maxLength(16)
+                            ->required(fn (Get $get): bool => $typeIs($get, 'points'))
+                            ->visible(fn (Get $get): bool => $typeIs($get, 'points'))
+                            ->dehydrated(fn (Get $get): bool => $typeIs($get, 'points')),
+                        TextInput::make('badge_key')
+                            ->label('Badge key')
+                            ->maxLength(64)
+                            ->required(fn (Get $get): bool => $typeIs($get, 'badge'))
+                            ->visible(fn (Get $get): bool => $typeIs($get, 'badge'))
+                            ->dehydrated(fn (Get $get): bool => $typeIs($get, 'badge')),
+                        TextInput::make('minor_units')
+                            ->label('Cash amount (minor units)')
+                            ->numeric()
+                            ->minValue(1)
+                            ->required(fn (Get $get): bool => $typeIs($get, 'cash'))
+                            ->visible(fn (Get $get): bool => $typeIs($get, 'cash'))
+                            ->dehydrated(fn (Get $get): bool => $typeIs($get, 'cash')),
+                        Select::make('currency')
+                            ->label('Cash currency')
+                            ->options(RewardAdminPresenter::currencyOptions())
+                            ->required(fn (Get $get): bool => $typeIs($get, 'cash'))
+                            ->visible(fn (Get $get): bool => $typeIs($get, 'cash'))
+                            ->dehydrated(fn (Get $get): bool => $typeIs($get, 'cash')),
+                        TextInput::make('benefit_key')
+                            ->label('Benefit key')
+                            ->maxLength(64)
+                            ->required(fn (Get $get): bool => $typeIs($get, 'benefit'))
+                            ->visible(fn (Get $get): bool => $typeIs($get, 'benefit'))
+                            ->dehydrated(fn (Get $get): bool => $typeIs($get, 'benefit')),
+                        Textarea::make('conditions')
+                            ->label('Benefit conditions (one per line)')
+                            ->rows(2)
+                            ->required(fn (Get $get): bool => $typeIs($get, 'benefit'))
+                            ->visible(fn (Get $get): bool => $typeIs($get, 'benefit'))
+                            ->dehydrated(fn (Get $get): bool => $typeIs($get, 'benefit')),
+                    ])
+                    ->defaultItems(1)
+                    ->addActionLabel('Add outcome amount'),
+            ])
+            ->default($componentRows)
+            ->minItems(1)
+            ->maxItems(5)
+            ->addActionLabel('Add reward component');
 
-        if ($show(RewardProgramMode::Points)) {
-            $schema[] = TextInput::make('points_amount')
-                ->label('Points per award')
-                ->numeric()
-                ->minValue(1)
-                ->maxValue(RewardRuleValidator::maxPoints())
-                ->required()
-                ->default($byType['points']['points'] ?? 10);
-            $schema[] = TextInput::make('points_unit')
-                ->label('Points unit')
-                ->maxLength(16)
-                ->required()
-                ->default($byType['points']['unit'] ?? 'pts');
-        }
-
-        if ($show(RewardProgramMode::Badges)) {
-            $schema[] = TextInput::make('badge_key')
-                ->label('Badge key')
-                ->maxLength(64)
-                ->required()
-                ->default($byType['badge']['badge_key'] ?? 'first-contribution');
-        }
-
-        if ($show(RewardProgramMode::Cash)) {
-            $schema[] = TextInput::make('cash_minor_units')
-                ->label('Cash amount (minor units)')
-                ->helperText('Minor units (for example cents): 500 = 5.00.')
-                ->numeric()
-                ->minValue(1)
-                ->required()
-                ->default($byType['cash']['minor_units'] ?? 500);
-            $schema[] = Select::make('cash_currency')
-                ->label('Cash currency')
-                ->options(RewardAdminPresenter::currencyOptions())
-                ->required()
-                ->default($byType['cash']['currency'] ?? 'MYR');
-        }
-
-        if ($show(RewardProgramMode::Benefit)) {
-            $schema[] = TextInput::make('benefit_key')
-                ->label('Benefit key')
-                ->maxLength(64)
-                ->required()
-                ->default($byType['benefit']['benefit_key'] ?? 'welcome-credit');
-            $schema[] = Textarea::make('benefit_conditions')
-                ->label('Benefit conditions (one per line)')
-                ->rows(2)
-                ->required()
-                ->default(implode("\n", $byType['benefit']['conditions'] ?? ['Member account in good standing']));
-        }
+        $schema[] = Repeater::make('milestone_rows')
+            ->label('Star and milestone levels')
+            ->visible($milestoneRewardOptions !== [])
+            ->schema([
+                TextInput::make('key')->label('Milestone key')->required()->maxLength(64),
+                TextInput::make('label')->label('Member-facing label')->required()->maxLength(191),
+                Select::make('outcomes')->label('Eligible outcomes')->options(RewardAdminPresenter::outcomeOptions())->multiple()->required(),
+                Select::make('roles')->label('Beneficiary roles')->options($roleOptions)->multiple()->required(),
+                Select::make('min_verification')->label('Minimum verification')->options(RewardAdminPresenter::verificationOptions())->required(),
+                Toggle::make('first_only')->label('First eligible outcome only')->default(false),
+                TextInput::make('target_count')->label('Threshold')->numeric()->minValue(1)->required(),
+                TextInput::make('window_days')->label('Cycle window (days)')->numeric()->minValue(1)->maxValue(365)->required(),
+                Select::make('reward_type')
+                    ->label('Milestone grant')
+                    ->options($milestoneRewardOptions)
+                    ->rule(Rule::in(array_keys($milestoneRewardOptions)))
+                    ->default(array_key_first($milestoneRewardOptions))
+                    ->live()
+                    ->required(),
+                TextInput::make('template')->label('Recognition template')->maxLength(64)->visible(fn (Get $get): bool => $get('reward_type') === 'recognition')->dehydrated(fn (Get $get): bool => $get('reward_type') === 'recognition'),
+                TextInput::make('points')->label('Points grant')->numeric()->minValue(1)->maxValue(RewardRuleValidator::maxPoints())->required(fn (Get $get): bool => $get('reward_type') === 'points')->visible(fn (Get $get): bool => $get('reward_type') === 'points')->dehydrated(fn (Get $get): bool => $get('reward_type') === 'points'),
+                TextInput::make('unit')->label('Points unit')->maxLength(16)->required(fn (Get $get): bool => $get('reward_type') === 'points')->visible(fn (Get $get): bool => $get('reward_type') === 'points')->dehydrated(fn (Get $get): bool => $get('reward_type') === 'points'),
+                TextInput::make('badge_key')->label('Badge key')->maxLength(64)->required(fn (Get $get): bool => $get('reward_type') === 'badge')->visible(fn (Get $get): bool => $get('reward_type') === 'badge')->dehydrated(fn (Get $get): bool => $get('reward_type') === 'badge'),
+            ])
+            ->default([])
+            ->maxItems(20)
+            ->addActionLabel('Add star or milestone');
 
         $schema[] = Select::make('eligibility_outcomes')
             ->label('Eligible outcomes')

@@ -68,6 +68,15 @@ final class CreatePayout
 
             $affiliate = Affiliate::query()->forOwner()->lockForUpdate()->findOrFail((string) $affiliateIds->first());
 
+            $onlyFixedRewardAwards = $conversions->every(
+                fn (AffiliateConversion $conversion): bool => $conversion->conversion_type === 'reward_award',
+            );
+
+            if (! $affiliate->isCommercialPurpose()
+                && (! $onlyFixedRewardAwards || ! (bool) config('affiliates.payouts.reward_award_settlement.enabled', true))) {
+                throw new InvalidArgumentException('Only commercial-purpose conversions may be paid unless reward-award settlement is explicitly enabled.');
+            }
+
             $payoutOverride = $this->resolvePayoutOverride($affiliate, $attributes);
 
             $ownerTuples = $conversions

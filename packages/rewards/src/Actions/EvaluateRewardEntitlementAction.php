@@ -272,6 +272,19 @@ final readonly class EvaluateRewardEntitlementAction
             throw new InvalidArgumentException('Refused: component_not_enabled by the applicable version.');
         }
 
+        $componentResolution = RewardPreviewEngine::resolveComponentConfiguration(
+            $rules,
+            $component,
+            $firstRead->outcome,
+            $role,
+        );
+
+        if ($componentResolution === null) {
+            throw new InvalidArgumentException('Refused: component_variant_ineligible; no matching outcome and beneficiary role may be frozen.');
+        }
+
+        $componentConfig = $componentResolution['configuration'];
+
         if ($lockedProgram->status->value !== 'active') {
             throw new InvalidArgumentException('Refused: program_not_active stops new qualification; accrued obligations keep frozen terms.');
         }
@@ -314,6 +327,7 @@ final readonly class EvaluateRewardEntitlementAction
                     $actorType,
                     $actorId,
                     $actorRole,
+                    $componentConfig,
                 );
             }
 
@@ -337,6 +351,7 @@ final readonly class EvaluateRewardEntitlementAction
                     $actorType,
                     $actorId,
                     $actorRole,
+                    $componentConfig,
                 );
             }
         }
@@ -408,6 +423,7 @@ final readonly class EvaluateRewardEntitlementAction
                 $actorType,
                 $actorId,
                 $actorRole,
+                $componentConfig,
             );
         }
 
@@ -479,6 +495,7 @@ final readonly class EvaluateRewardEntitlementAction
                 $actorType,
                 $actorId,
                 $actorRole,
+                $componentConfig,
             );
         }
 
@@ -501,6 +518,8 @@ final readonly class EvaluateRewardEntitlementAction
                 $actorType,
                 $actorId,
                 $actorRole,
+                null,
+                $componentConfig,
             );
         }
 
@@ -523,6 +542,8 @@ final readonly class EvaluateRewardEntitlementAction
                 $actorType,
                 $actorId,
                 $actorRole,
+                null,
+                $componentConfig,
             );
         }
 
@@ -546,6 +567,7 @@ final readonly class EvaluateRewardEntitlementAction
                 $actorId,
                 $actorRole,
                 ['note' => 'Cash/benefit components record held-prerequisite candidates only; WP6 finance scope settles fulfillment.'],
+                $componentConfig,
             );
         }
 
@@ -575,6 +597,8 @@ final readonly class EvaluateRewardEntitlementAction
             $actorId,
             $actorRole,
             ['ok'],
+            null,
+            $componentConfig,
         );
 
         RewardSourceComponentClaim::query()->create([
@@ -755,6 +779,7 @@ final readonly class EvaluateRewardEntitlementAction
         ?string $actorId,
         string $actorRole,
         ?array $extraEvidence = null,
+        ?array $componentConfigOverride = null,
     ): RewardEvaluationResult {
         $this->consumeCaps($rules, $program->family_key, (string) $program->getKey(), $recipientType, $recipientId, $sourceBusinessKey, $component->value, $decision);
 
@@ -783,6 +808,7 @@ final readonly class EvaluateRewardEntitlementAction
             $actorRole,
             $reasons,
             $extraEvidence,
+            $componentConfigOverride,
         );
 
         RewardSourceComponentClaim::query()->create([
@@ -818,6 +844,7 @@ final readonly class EvaluateRewardEntitlementAction
         string $actorType,
         ?string $actorId,
         string $actorRole,
+        ?array $componentConfigOverride = null,
     ): void {
         if ($component !== RewardComponent::Cash) {
             return;
@@ -873,6 +900,7 @@ final readonly class EvaluateRewardEntitlementAction
         string $actorType,
         ?string $actorId,
         string $actorRole,
+        ?array $componentConfigOverride = null,
     ): RewardEvaluationResult {
         $award = $this->insertAward(
             $program,
@@ -892,29 +920,30 @@ final readonly class EvaluateRewardEntitlementAction
             $actorId,
             $actorRole,
             $reasons,
+            null,
+            $componentConfigOverride,
         );
 
         return new RewardEvaluationResult(RewardEvaluationOutcome::Rejected, $award->refresh(), $reasons);
     }
 
-    /**
-     * @param  array<string, mixed>  $rules
-     * @return array<string, mixed>
-     */
     private function snapshots(
         array $rules,
         RewardProgramVersion $version,
         RewardComponent $component,
         ?RewardEnrollmentAcceptance $acceptance,
         RewardSourceFact $fact,
+        ?array $componentConfigOverride = null,
     ): array {
-        $componentConfig = ['type' => $component->value];
+        $componentConfig = $componentConfigOverride ?? ['type' => $component->value];
 
-        foreach ((is_array($rules['components'] ?? null) ? $rules['components'] : []) as $entry) {
-            if (is_array($entry) && ($entry['type'] ?? null) === $component->value) {
-                $componentConfig = $entry;
+        if ($componentConfigOverride === null) {
+            foreach ((is_array($rules['components'] ?? null) ? $rules['components'] : []) as $entry) {
+                if (is_array($entry) && ($entry['type'] ?? null) === $component->value) {
+                    $componentConfig = $entry;
 
-                break;
+                    break;
+                }
             }
         }
 
@@ -928,7 +957,11 @@ final readonly class EvaluateRewardEntitlementAction
                 'eligibility' => $rules['eligibility'] ?? [],
                 'windows' => $rules['windows'] ?? [],
                 'stacking' => $rules['stacking'] ?? [],
-                'components' => $rules['components'] ?? [],
+                // Approval re-evaluates against the immutable configuration
+                // selected for this source fact, not the program's raw variant
+                // catalogue. A held or rejected award must carry the same
+                // decision basis as an approved one.
+                'components' => [$componentConfig],
             ],
             'consent' => $acceptance instanceof RewardEnrollmentAcceptance
                 ? [
@@ -966,8 +999,9 @@ final readonly class EvaluateRewardEntitlementAction
         string $actorRole,
         array $reasons,
         ?array $extraEvidence = null,
+        ?array $componentConfigOverride = null,
     ): RewardAward {
-        $snapshots = $this->snapshots($rules, $version, $component, $acceptance, $fact);
+        $snapshots = $this->snapshots($rules, $version, $component, $acceptance, $fact, $componentConfigOverride);
 
         $award = RewardAward::query()->create([
             'program_id' => $program->getKey(),

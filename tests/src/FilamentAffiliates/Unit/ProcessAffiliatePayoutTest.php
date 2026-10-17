@@ -167,6 +167,21 @@ test('a gate-blocked completion parks as unknown with the gate reason', function
         ->and($blockedEvent->notes)->toContain('can no longer receive payouts');
 });
 
+test('provider processing cannot complete a payout after its affiliate becomes Dawah-only', function (): void {
+    $affiliate = createProcessPayoutAffiliate();
+    $payout = createProcessPayout($affiliate);
+    $affiliate->forceFill(['purpose' => 'share_member'])->save();
+    useFakeSuccessProcessor();
+
+    $result = app(ProcessAffiliatePayout::class)->handle($payout);
+    $blockedEvent = $payout->events()->where('notes', 'like', 'Completion blocked:%')->first();
+
+    expect($result->isUnknown())->toBeTrue()
+        ->and($payout->fresh()->status->equals(ProcessingPayout::class))->toBeTrue()
+        ->and($payout->operation()->firstOrFail()->last_error_code)->toBe('PAYOUT_COMPLETION_BLOCKED')
+        ->and($blockedEvent?->notes)->toContain('non-commercial affiliate payout cannot be completed');
+});
+
 test('a non-gate processor exception keeps the generic processing code', function (): void {
     $affiliate = createProcessPayoutAffiliate();
     $payout = createProcessPayout($affiliate);

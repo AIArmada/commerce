@@ -27,9 +27,8 @@ Starting a response is idempotent while an open draft exists for the same form
 and respondent. Submitting that draft continues the existing response instead of
 creating a second row.
 
-On PostgreSQL and SQLite, the package also adds a submitted-only unique index for
-the one-response backstop. MySQL relies on the action-level checks because it
-does not provide portable partial-index syntax.
+On PostgreSQL and SQLite, the package also adds a submitted-only partial unique
+index as a database backstop for the action-level checks.
 
 ## Multiple submitted responses
 

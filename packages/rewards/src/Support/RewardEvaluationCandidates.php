@@ -7,6 +7,7 @@ namespace AIArmada\Rewards\Support;
 use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
 use AIArmada\Rewards\Enums\RewardComponent;
 use AIArmada\Rewards\Enums\RewardProgramStatus;
+use AIArmada\Rewards\Enums\RewardVerificationLevel;
 use AIArmada\Rewards\Models\RewardProgram;
 use AIArmada\Rewards\Models\RewardProgramVersion;
 use Carbon\CarbonImmutable;
@@ -35,7 +36,8 @@ final class RewardEvaluationCandidates
      * @return list<array{
      *     program: RewardProgram,
      *     version: RewardProgramVersion,
-     *     component: RewardComponent,
+     *     components: list<RewardComponent>,
+     *     milestones: list<array<string, mixed>>,
      *     role: RewardBeneficiaryRole,
      *     recipient_id: string,
      * }>
@@ -121,26 +123,79 @@ final class RewardEvaluationCandidates
             $rules = $resolved->rules;
             $entries = is_array($rules['components'] ?? null) ? $rules['components'] : [];
 
-            foreach ($entries as $entry) {
-                if (! is_array($entry)) {
+            foreach ($sides as $side) {
+                $components = [];
+
+                foreach ($entries as $entry) {
+                    if (! is_array($entry)) {
+                        continue;
+                    }
+
+                    $component = RewardComponent::tryFrom((string) ($entry['type'] ?? ''));
+
+                    if (! $component instanceof RewardComponent) {
+                        continue;
+                    }
+
+                    $variants = $entry['variants'] ?? null;
+
+                    if (is_array($variants)) {
+                        $matches = false;
+
+                        foreach ($variants as $variant) {
+                            if (is_array($variant)
+                                && in_array($fact->outcome, $variant['outcomes'] ?? [], true)
+                                && in_array($side['role']->value, $variant['roles'] ?? [], true)) {
+                                $matches = true;
+
+                                break;
+                            }
+                        }
+
+                        if ($matches) {
+                            $components[$component->value] = $component;
+                        }
+
+                        continue;
+                    }
+
+                    if (in_array($fact->outcome, $rules['eligibility']['outcomes'] ?? [], true)) {
+                        $components[$component->value] = $component;
+                    }
+                }
+
+                $milestones = [];
+
+                foreach (is_array($rules['milestones'] ?? null) ? $rules['milestones'] : [] as $milestone) {
+                    if (! is_array($milestone)
+                        || ! in_array($fact->outcome, $milestone['outcomes'] ?? [], true)
+                        || ! in_array($side['role']->value, $milestone['roles'] ?? [], true)) {
+                        continue;
+                    }
+
+                    $minimum = RewardVerificationLevel::tryFrom((string) ($milestone['min_verification'] ?? ''));
+
+                    if (! $minimum instanceof RewardVerificationLevel
+                        || ! $fact->verification->satisfiesFor($minimum, $fact->outcome)
+                        || (($milestone['first_only'] ?? false) && ! $fact->isFirstTime)) {
+                        continue;
+                    }
+
+                    $milestones[] = $milestone;
+                }
+
+                if ($components === [] && $milestones === []) {
                     continue;
                 }
 
-                $component = RewardComponent::tryFrom((string) ($entry['type'] ?? ''));
-
-                if (! $component instanceof RewardComponent) {
-                    continue;
-                }
-
-                foreach ($sides as $side) {
-                    $candidates[] = [
-                        'program' => $program,
-                        'version' => $resolved,
-                        'component' => $component,
-                        'role' => $side['role'],
-                        'recipient_id' => $side['recipient_id'],
-                    ];
-                }
+                $candidates[] = [
+                    'program' => $program,
+                    'version' => $resolved,
+                    'components' => array_values($components),
+                    'milestones' => $milestones,
+                    'role' => $side['role'],
+                    'recipient_id' => $side['recipient_id'],
+                ];
             }
         }
 

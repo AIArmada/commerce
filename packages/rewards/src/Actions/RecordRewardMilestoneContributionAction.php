@@ -427,7 +427,7 @@ final readonly class RecordRewardMilestoneContributionAction
             throw new InvalidArgumentException('Milestone definition mismatches the published definition.');
         }
 
-        $this->assertOutcomeCompatible($version, $outcomeEnum, $firstRead);
+        $this->assertOutcomeCompatible($version, $published, $outcomeEnum, $firstRead, $role);
 
         $enrollment = RewardEnrollment::query()
             ->where('program_id', $program->getKey())
@@ -663,23 +663,38 @@ final readonly class RecordRewardMilestoneContributionAction
 
     private function assertOutcomeCompatible(
         RewardProgramVersion $version,
+        array $milestone,
         string $outcome,
         RewardSourceFact $fact,
+        RewardBeneficiaryRole $role,
     ): void {
         $rules = $version->rules;
         $eligibility = is_array($rules['eligibility'] ?? null) ? $rules['eligibility'] : [];
         $outcomes = is_array($eligibility['outcomes'] ?? null) ? $eligibility['outcomes'] : [];
+        $milestoneOutcomes = is_array($milestone['outcomes'] ?? null) ? $milestone['outcomes'] : $outcomes;
 
-        if ($outcomes !== [] && ! in_array($outcome, $outcomes, true)) {
+        if (($outcomes !== [] && ! in_array($outcome, $outcomes, true))
+            || ($milestoneOutcomes !== [] && ! in_array($outcome, $milestoneOutcomes, true))
+        ) {
             throw new InvalidArgumentException('Refused: incompatible outcome is not eligible under the published version.');
         }
 
-        $minimum = RewardVerificationLevel::tryFrom((string) ($eligibility['min_verification'] ?? ''));
+        $roles = is_array($milestone['roles'] ?? null) ? $milestone['roles'] : [];
+
+        if ($roles !== [] && ! in_array($role->value, $roles, true)) {
+            throw new InvalidArgumentException('Refused: contributor role is not eligible for this milestone.');
+        }
+
+        $minimum = RewardVerificationLevel::tryFrom((string) ($milestone['min_verification'] ?? $eligibility['min_verification'] ?? ''));
 
         if ($minimum instanceof RewardVerificationLevel
             && ! $fact->verification->satisfiesFor($minimum, $outcome)
         ) {
             throw new InvalidArgumentException('Refused: contributing fact verification is below the published minimum.');
+        }
+
+        if (($milestone['first_only'] ?? false) === true && ! $fact->isFirstTime) {
+            throw new InvalidArgumentException('Refused: this milestone accepts first-time facts only.');
         }
     }
 

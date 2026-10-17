@@ -35,8 +35,6 @@ use AIArmada\FilamentAffiliates\Policies\AffiliateUplinePolicy;
 use AIArmada\FilamentAffiliates\Services\AffiliateStatsAggregator;
 use AIArmada\FilamentAffiliates\Services\PayoutExportService;
 use Filament\Facades\Filament;
-use Filament\Support\Assets\Css;
-use Filament\Support\Facades\FilamentAsset;
 use Illuminate\Support\Facades\Gate;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -80,12 +78,6 @@ final class FilamentAffiliatesServiceProvider extends PackageServiceProvider
 
     public function packageBooted(): void
     {
-        // Without registration `filament:assets` never publishes the portal
-        // stylesheet, so portal pages render unstyled (giant empty-state icon).
-        FilamentAsset::register([
-            Css::make('affiliate-portal', __DIR__ . '/../resources/css/affiliate-portal.css'),
-        ], 'aiarmada/filament-affiliates');
-
         Filament::serving(function (): void {
             if (config('filament-affiliates.integrations.filament_cart', true)) {
                 app(CartBridge::class)->warm();

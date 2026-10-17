@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Actions\Affiliates\CreateTrackingLink;
 use AIArmada\Affiliates\Enums\FraudSeverity;
 use AIArmada\Affiliates\Enums\FraudSignalStatus;
 use AIArmada\Affiliates\Models\Affiliate;
@@ -19,6 +20,7 @@ use AIArmada\FilamentAffiliates\Resources\AffiliateCommissionTemplateResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateFraudSignalResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateLinkResource;
+use AIArmada\FilamentAffiliates\Resources\AffiliateLinkResource\Pages\EditAffiliateLink;
 use AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource\RelationManagers\PayoutEventsRelationManager;
 use AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource;
@@ -30,6 +32,7 @@ use AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource\RelationManag
 use AIArmada\FilamentAffiliates\Resources\AffiliateRankHistoryResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateRankResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateResource;
+use AIArmada\FilamentAffiliates\Resources\AffiliateResource\Pages\EditAffiliate;
 use AIArmada\FilamentAffiliates\Resources\AffiliateResource\RelationManagers\ConversionsRelationManager;
 use AIArmada\FilamentAffiliates\Resources\AffiliateResource\RelationManagers\DownlinesRelationManager;
 use AIArmada\FilamentAffiliates\Resources\AffiliateResource\RelationManagers\PayoutHoldsRelationManager;
@@ -54,7 +57,7 @@ it('AffiliateResource returns pages array', function (): void {
     $pages = AffiliateResource::getPages();
 
     expect($pages)
-        ->toBeArray()
+
         ->toHaveKey('index')
         ->toHaveKey('create')
         ->toHaveKey('view')
@@ -65,7 +68,7 @@ it('AffiliateResource has relations', function (): void {
     $relations = AffiliateResource::getRelations();
 
     expect($relations)
-        ->toBeArray()
+
         ->toBe([
             DownlinesRelationManager::class,
             ConversionsRelationManager::class,
@@ -89,6 +92,47 @@ it('AffiliateResource has navigation group from config', function (): void {
     expect(AffiliateResource::getNavigationGroup())->toBe('Affiliates');
 });
 
+it('affiliate payout resource shows only commercial-purpose payees', function (): void {
+    $commercial = Affiliate::create([
+        'code' => 'AFF-PAYOUT-RESOURCE-' . Str::uuid(),
+        'name' => 'Commercial Payout Payee',
+        'status' => Active::class,
+        'commission_type' => 'percentage',
+        'commission_rate' => 500,
+        'currency' => 'USD',
+    ]);
+    $dawah = Affiliate::create([
+        'code' => 'AFF-PAYOUT-RESOURCE-DAWAH-' . Str::uuid(),
+        'name' => 'Dawah Payout Payee',
+        'status' => Active::class,
+        'purpose' => 'share_member',
+        'commission_type' => 'percentage',
+        'commission_rate' => 0,
+        'currency' => 'USD',
+    ]);
+    $commercialPayout = AffiliatePayout::create([
+        'reference' => 'PAY-COMMERCIAL-' . Str::uuid(),
+        'status' => PendingPayout::class,
+        'total_minor' => 1000,
+        'currency' => 'USD',
+        'payee_type' => $commercial->getMorphClass(),
+        'payee_id' => $commercial->getKey(),
+    ]);
+    $dawahPayout = AffiliatePayout::create([
+        'reference' => 'PAY-DAWAH-' . Str::uuid(),
+        'status' => PendingPayout::class,
+        'total_minor' => 1000,
+        'currency' => 'USD',
+        'payee_type' => $dawah->getMorphClass(),
+        'payee_id' => $dawah->getKey(),
+    ]);
+
+    $visibleIds = AffiliatePayoutResource::getEloquentQuery()->pluck('id')->map(fn ($id): string => (string) $id)->all();
+
+    expect($visibleIds)->toContain((string) $commercialPayout->getKey())
+        ->and($visibleIds)->not->toContain((string) $dawahPayout->getKey());
+});
+
 it('AffiliateResource CRUD abilities follow affiliate permission set', function (): void {
     $user = User::create([
         'name' => 'Affiliate CRUD Operator',
@@ -110,18 +154,214 @@ it('AffiliateResource CRUD abilities follow affiliate permission set', function 
         ->and(AffiliateResource::canCreate())->toBeTrue();
 });
 
+it('prevents deleting affiliates after conversion or payout history exists', function (): void {
+    $user = User::create([
+        'name' => 'Affiliate Delete Operator',
+        'email' => 'affiliate-delete-operator@example.com',
+        'password' => bcrypt('password'),
+    ]);
+    Permission::create(['name' => 'affiliate.delete', 'guard_name' => 'web']);
+    $user->givePermissionTo('affiliate.delete');
+    $this->actingAs($user);
+
+    $affiliate = Affiliate::create([
+        'code' => 'AFF-DELETE-' . Str::uuid(),
+        'name' => 'Affiliate With Conversion',
+        'status' => Active::class,
+        'commission_type' => 'percentage',
+        'commission_rate' => 500,
+        'currency' => 'USD',
+    ]);
+    $cleanAffiliate = Affiliate::create([
+        'code' => 'AFF-CLEAN-' . Str::uuid(),
+        'name' => 'Affiliate Without Financial History',
+        'status' => Active::class,
+        'commission_type' => 'percentage',
+        'commission_rate' => 500,
+        'currency' => 'USD',
+    ]);
+
+    expect(AffiliateResource::canDelete($cleanAffiliate))->toBeTrue();
+
+    AffiliateConversion::create([
+        'affiliate_id' => $affiliate->getKey(),
+        'affiliate_code' => $affiliate->code,
+        'external_reference' => 'DELETE-GUARD-' . Str::uuid(),
+        'subject_key' => 'checkout:' . Str::uuid(),
+        'status' => PendingConversion::class,
+        'occurred_at' => now(),
+        'subtotal_minor' => 10000,
+        'total_minor' => 10000,
+        'value_minor' => 10000,
+        'commission_minor' => 1000,
+        'currency' => 'USD',
+        'commission_currency' => 'USD',
+    ]);
+
+    expect(AffiliateResource::canDelete($affiliate))->toBeFalse();
+
+    $payoutAffiliate = Affiliate::create([
+        'code' => 'AFF-PAYOUT-' . Str::uuid(),
+        'name' => 'Affiliate With Payout History',
+        'status' => Active::class,
+        'commission_type' => 'percentage',
+        'commission_rate' => 500,
+        'currency' => 'USD',
+    ]);
+    $payout = AffiliatePayout::create([
+        'reference' => 'PAY-' . Str::uuid(),
+        'status' => PendingPayout::class,
+        'total_minor' => 5000,
+        'currency' => 'USD',
+        'payee_type' => $payoutAffiliate->getMorphClass(),
+        'payee_id' => $payoutAffiliate->getKey(),
+    ]);
+
+    expect($payout->exists)->toBeTrue()
+        ->and(AffiliateResource::canDelete($payoutAffiliate))->toBeFalse();
+});
+
+it('strips identity and ownership edits from a Dawah affiliate edit payload', function (): void {
+    $affiliate = Affiliate::create([
+        'code' => 'AFF-DAWAH-EDIT-' . Str::uuid(),
+        'name' => 'Dawah Member',
+        'status' => Active::class,
+        'purpose' => 'share_member',
+        'commission_type' => 'percentage',
+        'commission_rate' => 0,
+        'currency' => 'USD',
+    ]);
+    $page = new EditAffiliate;
+    $page->record = $affiliate;
+    $method = new ReflectionMethod(EditAffiliate::class, 'mutateFormDataBeforeSave');
+    $method->setAccessible(true);
+
+    $mutated = $method->invoke($page, [
+        'name' => 'Updated member name',
+        'handle' => 'forged-handle',
+        'apply_template' => (string) Str::uuid(),
+        'commission_type' => 'fixed',
+        'commission_rate' => 1000,
+        'currency' => 'USD',
+        'network_depth' => 5,
+        'rank_id' => (string) Str::uuid(),
+        'parent_affiliate_id' => (string) Str::uuid(),
+        'default_voucher_code' => 'FORGED-VOUCHER',
+        'tracking_domain' => 'forged.example.test',
+        'payout_terms' => 'Net-1',
+        'code' => 'FORGED-CODE',
+        'purpose' => 'general',
+        'metadata' => ['forged' => true],
+        'owner_type' => User::class,
+        'owner_id' => (string) Str::uuid(),
+        'linked_user' => (string) Str::uuid(),
+        'status' => 'suspended',
+    ]);
+
+    expect($mutated['status'])->toBe('suspended')
+        ->and($mutated)->not->toHaveKeys([
+            'name',
+            'handle',
+            'apply_template',
+            'commission_type',
+            'commission_rate',
+            'currency',
+            'network_depth',
+            'rank_id',
+            'parent_affiliate_id',
+            'default_voucher_code',
+            'tracking_domain',
+            'payout_terms',
+            'code',
+            'purpose',
+            'metadata',
+            'owner_type',
+            'owner_id',
+            'linked_user',
+        ]);
+});
+
+it('keeps commercial affiliate edit fields available to the normal save pipeline', function (): void {
+    $affiliate = Affiliate::create([
+        'code' => 'AFF-COMMERCIAL-EDIT-' . Str::uuid(),
+        'name' => 'Commercial Affiliate',
+        'status' => Active::class,
+        'commission_type' => 'percentage',
+        'commission_rate' => 500,
+        'currency' => 'USD',
+    ]);
+    $parent = Affiliate::create([
+        'code' => 'AFF-COMMERCIAL-PARENT-' . Str::uuid(),
+        'name' => 'Commercial Parent',
+        'status' => Active::class,
+        'commission_type' => 'percentage',
+        'commission_rate' => 500,
+        'currency' => 'USD',
+    ]);
+    $page = new EditAffiliate;
+    $page->record = $affiliate;
+    $method = new ReflectionMethod(EditAffiliate::class, 'mutateFormDataBeforeSave');
+    $method->setAccessible(true);
+
+    $data = [
+        'name' => 'Updated Commercial Affiliate',
+        'handle' => 'updated-commercial',
+        'commission_type' => 'fixed',
+        'commission_rate' => 1000,
+        'currency' => 'MYR',
+        'rank_id' => (string) Str::uuid(),
+        'parent_affiliate_id' => (string) $parent->getKey(),
+        'default_voucher_code' => 'COMMERCIAL-VOUCHER',
+        'tracking_domain' => 'track.example.test',
+        'payout_terms' => 'Net-15',
+        'status' => 'active',
+    ];
+
+    expect($method->invoke($page, $data))->toMatchArray($data);
+});
+
+it('strips destination edits from a Dawah affiliate link edit payload', function (): void {
+    $affiliate = Affiliate::create([
+        'code' => 'AFF-DAWAH-LINK-EDIT-' . Str::uuid(),
+        'name' => 'Dawah Link Owner',
+        'status' => Active::class,
+        'purpose' => 'share_member',
+        'commission_type' => 'percentage',
+        'commission_rate' => 0,
+        'currency' => 'USD',
+    ]);
+    $destinationUrl = mb_rtrim((string) config('app.url'), '/') . '/kongsi';
+    $link = CreateTrackingLink::run($affiliate, $destinationUrl, [
+        'custom_slug' => 'frozenlink',
+    ]);
+    $frozenTrackingUrl = $link->tracking_url;
+    $page = new EditAffiliateLink;
+    $method = new ReflectionMethod(EditAffiliateLink::class, 'handleRecordUpdate');
+    $method->setAccessible(true);
+
+    $updated = $method->invoke($page, $link, [
+        'destination_url' => 'https://attacker.example/',
+        'tracking_url' => 'https://attacker.example/tracking',
+        'custom_slug' => 'forged-slug',
+    ]);
+
+    expect($updated->destination_url)->toBe($destinationUrl)
+        ->and($updated->tracking_url)->toBe($frozenTrackingUrl)
+        ->and($updated->custom_slug)->toBe('frozenlink');
+});
+
 // AffiliateConversionResource Tests
 it('AffiliateConversionResource returns pages array', function (): void {
     $pages = AffiliateConversionResource::getPages();
 
     expect($pages)
-        ->toBeArray()
+
         ->toHaveKey('index')
         ->toHaveKey('view');
 });
 
 it('AffiliateConversionResource has empty relations', function (): void {
-    expect(AffiliateConversionResource::getRelations())->toBeArray()->toBeEmpty();
+    expect(AffiliateConversionResource::getRelations())->toBeEmpty();
 });
 
 it('AffiliateConversionResource is explicitly non-CRUD', function (): void {
@@ -196,7 +436,7 @@ it('AffiliateConversionResource canViewAny allows affiliate.approve permission',
 
 it('AffiliateCommissionTemplateResource returns pages array', function (): void {
     expect(AffiliateCommissionTemplateResource::getPages())
-        ->toBeArray()
+
         ->toHaveKey('index')
         ->toHaveKey('create')
         ->toHaveKey('view')
@@ -205,14 +445,14 @@ it('AffiliateCommissionTemplateResource returns pages array', function (): void 
 
 it('AffiliateRankHistoryResource returns pages array', function (): void {
     expect(AffiliateRankHistoryResource::getPages())
-        ->toBeArray()
+
         ->toHaveKey('index')
         ->toHaveKey('view');
 });
 
 it('AffiliateSupportTicketResource returns pages array', function (): void {
     expect(AffiliateSupportTicketResource::getPages())
-        ->toBeArray()
+
         ->toHaveKey('index')
         ->toHaveKey('create')
         ->toHaveKey('view')
@@ -221,13 +461,13 @@ it('AffiliateSupportTicketResource returns pages array', function (): void {
 
 it('AffiliateSupportTicketResource has messages relation manager', function (): void {
     expect(AffiliateSupportTicketResource::getRelations())
-        ->toBeArray()
+
         ->toBe([MessagesRelationManager::class]);
 });
 
 it('AffiliateTaxDocumentResource returns pages array', function (): void {
     expect(AffiliateTaxDocumentResource::getPages())
-        ->toBeArray()
+
         ->toHaveKey('index')
         ->toHaveKey('view');
 });
@@ -237,7 +477,7 @@ it('AffiliatePayoutResource has relations', function (): void {
     $relations = AffiliatePayoutResource::getRelations();
 
     expect($relations)
-        ->toBeArray()
+
         ->toBe([
             AffiliatePayoutResource\RelationManagers\ConversionsRelationManager::class,
             PayoutEventsRelationManager::class,
@@ -279,7 +519,7 @@ it('AffiliateProgramResource returns pages array', function (): void {
     $pages = AffiliateProgramResource::getPages();
 
     expect($pages)
-        ->toBeArray()
+
         ->toHaveKey('index')
         ->toHaveKey('create')
         ->toHaveKey('view')
@@ -290,7 +530,7 @@ it('AffiliateProgramResource exposes relation managers', function (): void {
     $relations = AffiliateProgramResource::getRelations();
 
     expect($relations)
-        ->toBeArray()
+
         ->toContain(TiersRelationManager::class)
         ->toContain(MembershipsRelationManager::class)
         ->toContain(CreativesRelationManager::class)
@@ -355,7 +595,7 @@ it('AffiliateLinkResource CRUD abilities follow affiliate permission set', funct
 
 // AffiliateTouchpointResource Tests
 it('AffiliateTouchpointResource is read-only', function (): void {
-    $touchpoint = AffiliateTouchpoint::make();
+    $touchpoint = new AffiliateTouchpoint;
 
     expect(AffiliateTouchpointResource::canCreate())->toBeFalse()
         ->and(AffiliateTouchpointResource::canEdit($touchpoint))->toBeFalse()
@@ -364,7 +604,7 @@ it('AffiliateTouchpointResource is read-only', function (): void {
 
 it('AffiliateTouchpointResource returns pages array', function (): void {
     expect(AffiliateTouchpointResource::getPages())
-        ->toBeArray()
+
         ->toHaveKey('index')
         ->toHaveKey('view');
 });
@@ -372,7 +612,7 @@ it('AffiliateTouchpointResource returns pages array', function (): void {
 // AffiliateRankResource Tests
 it('AffiliateRankResource returns pages array', function (): void {
     expect(AffiliateRankResource::getPages())
-        ->toBeArray()
+
         ->toHaveKey('index')
         ->toHaveKey('create')
         ->toHaveKey('view')
@@ -387,7 +627,7 @@ it('AffiliateRankResource has navigation sort from config', function (): void {
 
 // AffiliateUplineResource Tests
 it('AffiliateUplineResource is read-only', function (): void {
-    $network = AffiliateUpline::make();
+    $network = new AffiliateUpline;
 
     expect(AffiliateUplineResource::canCreate())->toBeFalse()
         ->and(AffiliateUplineResource::canEdit($network))->toBeFalse()
@@ -396,7 +636,7 @@ it('AffiliateUplineResource is read-only', function (): void {
 
 it('AffiliateUplineResource returns pages array', function (): void {
     expect(AffiliateUplineResource::getPages())
-        ->toBeArray()
+
         ->toHaveKey('index')
         ->toHaveKey('view');
 });
@@ -406,13 +646,13 @@ it('AffiliateFraudSignalResource returns pages array', function (): void {
     $pages = AffiliateFraudSignalResource::getPages();
 
     expect($pages)
-        ->toBeArray()
+
         ->toHaveKey('index')
         ->toHaveKey('view');
 });
 
 it('AffiliateFraudSignalResource has empty relations', function (): void {
-    expect(AffiliateFraudSignalResource::getRelations())->toBeArray()->toBeEmpty();
+    expect(AffiliateFraudSignalResource::getRelations())->toBeEmpty();
 });
 
 it('AffiliateFraudSignalResource is explicitly non-CRUD', function (): void {

@@ -83,7 +83,7 @@ class WebhookMonitor
     /**
      * Get hourly webhook volume for the last 24 hours.
      *
-     * Uses PHP-based grouping for database portability (works with MySQL, PostgreSQL, SQLite).
+     * Uses PHP-based grouping for PostgreSQL and SQLite portability.
      *
      * @return array<string, array{total: int, processed: int, failed: int}>
      */

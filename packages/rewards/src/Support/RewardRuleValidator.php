@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Rewards\Support;
 
+use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
 use AIArmada\Rewards\Enums\RewardComponent;
 use AIArmada\Rewards\Enums\RewardProgramMode;
 use AIArmada\Rewards\Enums\RewardVerificationLevel;
@@ -106,11 +107,59 @@ final class RewardRuleValidator
 
         $errors = [...$errors, ...$this->componentErrors($rules['components'] ?? null, $mode)];
         $errors = [...$errors, ...$this->eligibilityErrors($rules['eligibility'] ?? null, $rules['components'] ?? null)];
+        $eligibilityOutcomes = is_array($rules['eligibility'] ?? null)
+            ? ($rules['eligibility']['outcomes'] ?? null)
+            : null;
+        $errors = [...$errors, ...$this->scopedOutcomeErrors($rules['components'] ?? null, $eligibilityOutcomes, $rules['milestones'] ?? null)];
         $errors = [...$errors, ...$this->windowsErrors($rules['windows'] ?? null)];
         $errors = [...$errors, ...$this->capsErrors($rules['caps'] ?? null)];
         $errors = [...$errors, ...$this->stackingErrors($rules['stacking'] ?? null, $ownFamilyKey)];
         $errors = [...$errors, ...$this->holdsErrors($rules['holds'] ?? null)];
-        $errors = [...$errors, ...$this->milestoneErrors($rules['milestones'] ?? null)];
+        $errors = [...$errors, ...$this->milestoneErrors($rules['milestones'] ?? null, $mode)];
+
+        return $errors;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function scopedOutcomeErrors(mixed $components, mixed $eligibilityOutcomes, mixed $milestones): array
+    {
+        if (! is_array($eligibilityOutcomes) || ! array_is_list($eligibilityOutcomes)) {
+            return [];
+        }
+
+        $errors = [];
+
+        if (is_array($components)) {
+            foreach ($components as $componentIndex => $component) {
+                if (! is_array($component) || ! is_array($component['variants'] ?? null)) {
+                    continue;
+                }
+
+                foreach ($component['variants'] as $variantIndex => $variant) {
+                    $outcomes = is_array($variant) && is_array($variant['outcomes'] ?? null) ? $variant['outcomes'] : [];
+
+                    foreach ($outcomes as $outcome) {
+                        if (is_string($outcome) && ! in_array($outcome, $eligibilityOutcomes, true)) {
+                            $errors[] = "Component [{$componentIndex}] variant [{$variantIndex}] outcome [{$outcome}] is outside program eligibility.";
+                        }
+                    }
+                }
+            }
+        }
+
+        if (is_array($milestones)) {
+            foreach ($milestones as $index => $milestone) {
+                $outcomes = is_array($milestone) && is_array($milestone['outcomes'] ?? null) ? $milestone['outcomes'] : [];
+
+                foreach ($outcomes as $outcome) {
+                    if (is_string($outcome) && ! in_array($outcome, $eligibilityOutcomes, true)) {
+                        $errors[] = "Milestone [{$index}] outcome [{$outcome}] is outside program eligibility.";
+                    }
+                }
+            }
+        }
 
         return $errors;
     }
@@ -250,7 +299,129 @@ final class RewardRuleValidator
                 $errors[] = "Component [{$enum->value}] is not allowed in mode [{$mode->value}].";
             }
 
-            $errors = [...$errors, ...$this->singleComponentErrors($enum, $component, $index)];
+            if (array_key_exists('variants', $component)) {
+                foreach (array_keys($component) as $key) {
+                    if (! in_array($key, ['type', 'variants'], true)) {
+                        $errors[] = "Component [{$index}] ({$enum->value}) has an unknown key [{$key}].";
+                    }
+                }
+
+                $errors = [...$errors, ...$this->componentVariantErrors($enum, $component['variants'], $index)];
+            } else {
+                $errors = [...$errors, ...$this->singleComponentErrors($enum, $component, $index)];
+            }
+        }
+
+        return $errors;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function componentVariantErrors(RewardComponent $component, mixed $variants, int $index): array
+    {
+        if (! is_array($variants) || ! array_is_list($variants) || $variants === [] || count($variants) > 20) {
+            return ["Component [{$index}] variants must be a non-empty list of up to 20 entries."];
+        }
+
+        $errors = [];
+        $seenOutcomeRoles = [];
+
+        foreach ($variants as $variantIndex => $variant) {
+            $label = "component:{$index}:variant:{$variantIndex}";
+
+            if (! is_array($variant) || array_is_list($variant)) {
+                $errors[] = "Component variant [{$label}] must be an associative map.";
+
+                continue;
+            }
+
+            foreach (array_keys($variant) as $key) {
+                if (! in_array($key, ['outcomes', 'roles', 'min_verification', 'first_only', 'template', 'points', 'unit', 'badge_key', 'minor_units', 'currency', 'benefit_key', 'conditions'], true)) {
+                    $errors[] = "Component variant [{$label}] has an unknown key [{$key}].";
+                }
+            }
+
+            $outcomes = $variant['outcomes'] ?? null;
+            $validOutcomes = [];
+            if (! is_array($outcomes) || ! array_is_list($outcomes) || $outcomes === [] || count($outcomes) > 20) {
+                $errors[] = "Component variant [{$label}] outcomes must be a non-empty allowlisted list.";
+                $outcomes = [];
+            } else {
+                $seen = [];
+                foreach ($outcomes as $outcome) {
+                    if (! is_string($outcome) || ! in_array($outcome, self::outcomes(), true)) {
+                        $errors[] = "Component variant [{$label}] outcomes must all be allowlisted values.";
+
+                        continue;
+                    }
+
+                    if (in_array($outcome, $seen, true)) {
+                        $errors[] = "Component variant [{$label}] has duplicate outcome [{$outcome}].";
+
+                        continue;
+                    }
+
+                    $seen[] = $outcome;
+                    $validOutcomes[] = $outcome;
+                }
+            }
+            $outcomes = $validOutcomes;
+
+            $roles = $variant['roles'] ?? null;
+            $validRoles = [];
+            if (! is_array($roles) || ! array_is_list($roles) || $roles === [] || count($roles) > count(RewardBeneficiaryRole::cases())) {
+                $errors[] = "Component variant [{$label}] roles must be a non-empty allowlisted list.";
+                $roles = [];
+            } else {
+                $seen = [];
+                foreach ($roles as $role) {
+                    if (! is_string($role) || ! in_array($role, RewardBeneficiaryRole::values(), true)) {
+                        $errors[] = "Component variant [{$label}] roles must all be known beneficiary roles.";
+
+                        continue;
+                    }
+
+                    if (in_array($role, $seen, true)) {
+                        $errors[] = "Component variant [{$label}] has duplicate role [{$role}].";
+
+                        continue;
+                    }
+
+                    $seen[] = $role;
+                    $validRoles[] = $role;
+                }
+            }
+            $roles = $validRoles;
+
+            $minimum = RewardVerificationLevel::tryFrom((string) ($variant['min_verification'] ?? ''));
+            if (! $minimum instanceof RewardVerificationLevel) {
+                $errors[] = "Component variant [{$label}] min_verification must be a known verification level.";
+            } elseif (in_array($component, [RewardComponent::Cash, RewardComponent::Benefit], true)
+                && ! $minimum->satisfies(RewardVerificationLevel::StaffVerified)
+            ) {
+                $errors[] = "Component variant [{$label}] cash/benefit requires staff_verified or higher.";
+            }
+
+            if (! is_bool($variant['first_only'] ?? null)) {
+                $errors[] = "Component variant [{$label}] first_only must be boolean.";
+            }
+
+            foreach ($outcomes as $outcome) {
+                foreach ($roles as $role) {
+                    $pair = $outcome . ':' . $role;
+
+                    if (isset($seenOutcomeRoles[$pair])) {
+                        $errors[] = "Component [{$index}] variants overlap for outcome [{$outcome}] and role [{$role}].";
+                    }
+
+                    $seenOutcomeRoles[$pair] = true;
+                }
+            }
+
+            $amount = $variant;
+            unset($amount['outcomes'], $amount['roles'], $amount['min_verification'], $amount['first_only']);
+            $errors = [...$errors, ...$this->singleComponentErrors($component, $amount, $label)];
         }
 
         return $errors;
@@ -614,7 +785,7 @@ final class RewardRuleValidator
     /**
      * @return list<string>
      */
-    private function milestoneErrors(mixed $milestones): array
+    private function milestoneErrors(mixed $milestones, RewardProgramMode $mode): array
     {
         if ($milestones === null) {
             return [];
@@ -635,7 +806,7 @@ final class RewardRuleValidator
             }
 
             foreach (array_keys($definition) as $key) {
-                if (! in_array($key, ['key', 'target_count', 'window_days', 'reward'], true)) {
+                if (! in_array($key, ['key', 'label', 'outcomes', 'roles', 'min_verification', 'first_only', 'target_count', 'window_days', 'reward'], true)) {
                     $errors[] = "Milestone [{$index}] has an unknown key [{$key}].";
                 }
             }
@@ -648,6 +819,71 @@ final class RewardRuleValidator
                 $errors[] = "Duplicate milestone key [{$key}].";
             } else {
                 $seen[] = $key;
+            }
+
+            $label = $definition['label'] ?? null;
+            if ($label !== null && (! is_string($label) || mb_trim($label) === '' || mb_strlen($label) > 191)) {
+                $errors[] = "Milestone [{$index}] label must be 1..191 characters when supplied.";
+            }
+
+            if (array_key_exists('outcomes', $definition)) {
+                $outcomes = $definition['outcomes'];
+                if (! is_array($outcomes) || ! array_is_list($outcomes) || $outcomes === [] || count($outcomes) > 20) {
+                    $errors[] = "Milestone [{$index}] outcomes must be a non-empty allowlisted list.";
+                } else {
+                    $seenOutcomes = [];
+
+                    foreach ($outcomes as $outcome) {
+                        if (! is_string($outcome) || ! in_array($outcome, self::outcomes(), true)) {
+                            $errors[] = "Milestone [{$index}] outcomes must all be allowlisted values.";
+
+                            break;
+                        }
+
+                        if (in_array($outcome, $seenOutcomes, true)) {
+                            $errors[] = "Milestone [{$index}] has duplicate outcome [{$outcome}].";
+
+                            break;
+                        }
+
+                        $seenOutcomes[] = $outcome;
+                    }
+                }
+            }
+
+            if (array_key_exists('roles', $definition)) {
+                $roles = $definition['roles'];
+                if (! is_array($roles) || ! array_is_list($roles) || $roles === [] || count($roles) > count(RewardBeneficiaryRole::cases())) {
+                    $errors[] = "Milestone [{$index}] roles must be a non-empty allowlisted list.";
+                } else {
+                    $seenRoles = [];
+
+                    foreach ($roles as $role) {
+                        if (! is_string($role) || ! in_array($role, RewardBeneficiaryRole::values(), true)) {
+                            $errors[] = "Milestone [{$index}] roles must all be known beneficiary roles.";
+
+                            break;
+                        }
+
+                        if (in_array($role, $seenRoles, true)) {
+                            $errors[] = "Milestone [{$index}] has duplicate role [{$role}].";
+
+                            break;
+                        }
+
+                        $seenRoles[] = $role;
+                    }
+                }
+            }
+
+            if (array_key_exists('min_verification', $definition)
+                && ! RewardVerificationLevel::tryFrom((string) $definition['min_verification']) instanceof RewardVerificationLevel
+            ) {
+                $errors[] = "Milestone [{$index}] min_verification must be a known verification level.";
+            }
+
+            if (array_key_exists('first_only', $definition) && ! is_bool($definition['first_only'])) {
+                $errors[] = "Milestone [{$index}] first_only must be boolean.";
             }
 
             $target = $definition['target_count'] ?? null;
@@ -678,6 +914,10 @@ final class RewardRuleValidator
                 $errors[] = "Milestone [{$index}] reward type must be recognition, points, or badge; cash/benefit settlement is WP6 scope.";
 
                 continue;
+            }
+
+            if (! in_array($type, $mode->allowedComponents(), true)) {
+                $errors[] = "Milestone [{$index}] reward type [{$type->value}] is not allowed in program mode [{$mode->value}].";
             }
 
             $errors = [...$errors, ...$this->singleComponentErrors($type, $reward, "milestone:{$index}")];

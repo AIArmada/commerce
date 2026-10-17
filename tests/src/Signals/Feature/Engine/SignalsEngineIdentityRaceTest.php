@@ -47,8 +47,8 @@ function engineIdentityRendezvous(string $workdir, string $role, string $peer, s
     });
 }
 
-it('recovers duplicate identity creation under genuine concurrency', function (string $engine): void {
-    $this->useEngine($engine);
+it('recovers duplicate identity creation under genuine concurrency', function (): void {
+    $this->useEngine();
 
     for ($round = 0; $round < engineIdentityRepeats(); $round++) {
         $property = $this->engineProperty('Engine Identity Race');
@@ -143,14 +143,11 @@ it('recovers duplicate identity creation under genuine concurrency', function (s
             ->and($sentinelRowB)->not->toBeNull()
             ->and((string) $sentinelRowB->id)->toBe($results['b']['sentinel_id']);
     }
-})->with(['pgsql', 'mysql']);
+});
 
-it('recovers duplicate identity creation inside an outer transaction after a concurrent commit', function (string $engine): void {
-    $this->useEngine($engine);
+it('recovers duplicate identity creation inside an outer transaction after a concurrent commit', function (): void {
+    $this->useEngine();
 
-    if ($engine === 'mysql') {
-        $this->setEngineSessionIsolation('REPEATABLE READ');
-    }
 
     $property = $this->engineProperty('Engine Identity Outer');
     $externalId = 'eng-ident-outer-' . Str::lower(Str::random(10));
@@ -213,4 +210,4 @@ it('recovers duplicate identity creation inside an outer transaction after a con
             ->where('tracked_property_id', $property->id)
             ->where('external_id', $secondExternalId)
             ->count())->toBe(1);
-})->with(['pgsql', 'mysql']);
+});

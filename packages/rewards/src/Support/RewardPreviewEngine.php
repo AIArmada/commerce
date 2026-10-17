@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Rewards\Support;
 
 use AIArmada\Rewards\Contracts\RewardPreviewEvaluator;
+use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
+use AIArmada\Rewards\Enums\RewardComponent;
 use AIArmada\Rewards\Enums\RewardPreviewDecision;
 use AIArmada\Rewards\Enums\RewardPreviewReason;
 use AIArmada\Rewards\Enums\RewardProgramStatus;
@@ -43,6 +45,50 @@ use AIArmada\Rewards\Enums\RewardVerificationLevel;
  */
 final class RewardPreviewEngine implements RewardPreviewEvaluator
 {
+    /**
+     * Resolve the one policy row that applies to a component, outcome, and beneficiary role.
+     *
+     * @param  array<string, mixed>  $rules
+     * @return array{configuration: array<string, mixed>, is_variant: bool}|null
+     */
+    public static function resolveComponentConfiguration(
+        array $rules,
+        RewardComponent $component,
+        string $outcome,
+        RewardBeneficiaryRole $role,
+    ): ?array {
+        foreach ((is_array($rules['components'] ?? null) ? $rules['components'] : []) as $entry) {
+            if (! is_array($entry) || ($entry['type'] ?? null) !== $component->value) {
+                continue;
+            }
+
+            if (! array_key_exists('variants', $entry)) {
+                return ['configuration' => $entry, 'is_variant' => false];
+            }
+
+            $variants = $entry['variants'];
+
+            if (! is_array($variants)) {
+                return null;
+            }
+
+            foreach ($variants as $variant) {
+                if (is_array($variant)
+                    && in_array($outcome, $variant['outcomes'] ?? [], true)
+                    && in_array($role->value, $variant['roles'] ?? [], true)) {
+                    return [
+                        'configuration' => ['type' => $component->value, ...$variant],
+                        'is_variant' => true,
+                    ];
+                }
+            }
+
+            return null;
+        }
+
+        return null;
+    }
+
     public function evaluate(RewardPreviewContext $context): RewardPreviewResult
     {
         $fixture = $context->fixture;
@@ -93,6 +139,19 @@ final class RewardPreviewEngine implements RewardPreviewEvaluator
             return $this->result(RewardPreviewDecision::Ineligible, $context, $reasons, $explanations);
         }
 
+        $componentResolution = self::resolveComponentConfiguration(
+            $rules,
+            $context->requestedComponent,
+            $fixture->outcome,
+            $fixture->beneficiaryRole,
+        );
+
+        if ($componentResolution === null) {
+            $add(RewardPreviewReason::ComponentVariantIneligible, 'No published component variant matches this outcome and beneficiary role.');
+
+            return $this->result(RewardPreviewDecision::Ineligible, $context, $reasons, $explanations);
+        }
+
         if (! $fixture->isValidSource) {
             $add(RewardPreviewReason::SourceInvalid, 'Fixture source is marked invalid; invalid evidence never qualifies.');
 
@@ -111,7 +170,11 @@ final class RewardPreviewEngine implements RewardPreviewEvaluator
             return $this->result(RewardPreviewDecision::Ineligible, $context, $reasons, $explanations);
         }
 
-        $minimum = RewardVerificationLevel::tryFrom((string) ($eligibility['min_verification'] ?? '')) ?? RewardVerificationLevel::ModeratedApproved;
+        $componentConfiguration = $componentResolution['configuration'];
+        $minimumSource = $componentResolution['is_variant']
+            ? ($componentConfiguration['min_verification'] ?? '')
+            : ($eligibility['min_verification'] ?? '');
+        $minimum = RewardVerificationLevel::tryFrom((string) $minimumSource) ?? RewardVerificationLevel::ModeratedApproved;
 
         if (! $fixture->verification->satisfiesFor($minimum, $fixture->outcome)) {
             $add(RewardPreviewReason::VerificationInsufficient, 'Verification [' . $fixture->verification->value . '] does not satisfy [' . $minimum->value . '] for outcome [' . $fixture->outcome . ']; accepted registration is never verified attendance and moderation only vouches for allowlisted outcomes.');
@@ -119,7 +182,11 @@ final class RewardPreviewEngine implements RewardPreviewEvaluator
             return $this->result(RewardPreviewDecision::Ineligible, $context, $reasons, $explanations);
         }
 
-        if (($eligibility['first_only'] ?? false) === true && ! $fixture->isFirstTime) {
+        $firstOnly = $componentResolution['is_variant']
+            ? (($componentConfiguration['first_only'] ?? false) === true)
+            : (($eligibility['first_only'] ?? false) === true);
+
+        if ($firstOnly && ! $fixture->isFirstTime) {
             $add(RewardPreviewReason::RecurringExcluded, 'Recurring evidence is excluded; this version rewards first-time outcomes only.');
 
             return $this->result(RewardPreviewDecision::Ineligible, $context, $reasons, $explanations);

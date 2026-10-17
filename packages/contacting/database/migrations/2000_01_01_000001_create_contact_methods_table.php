@@ -13,7 +13,13 @@ return new class extends Migration
     {
         $tableName = config('contacting.database.tables.contact_methods', 'contact_methods');
         $jsonColumnType = commerce_json_column_type('contacting', 'json');
-        Schema::create($tableName, function (Blueprint $table) use ($jsonColumnType, $tableName): void {
+        $validityIndexName = str_replace(['.', '-', ' '], '_', $tableName) . '_contactable_validity_index';
+        $validityIndexColumns = [
+            'contactable_type', 'contactable_id', 'type', 'purpose',
+            'is_primary', 'valid_from', 'valid_until', 'sort_order',
+        ];
+
+        Schema::create($tableName, function (Blueprint $table) use ($jsonColumnType, $tableName, $validityIndexColumns, $validityIndexName): void {
             $table->uuid('id')->primary();
 
             $table->nullableUuidMorphs('owner');
@@ -52,10 +58,7 @@ return new class extends Migration
                 ['contactable_type', 'contactable_id', 'is_primary'],
                 str_replace(['.', '-', ' '], '_', $tableName) . '_contactable_primary_index',
             );
-            $table->index(
-                ['contactable_type', 'contactable_id', 'type', 'purpose', 'is_primary', 'valid_from', 'valid_until', 'sort_order'],
-                str_replace(['.', '-', ' '], '_', $tableName) . '_contactable_validity_index',
-            );
+            $table->index($validityIndexColumns, $validityIndexName);
         });
 
         $this->createPrimaryUniqueIndexes($tableName);
@@ -66,13 +69,14 @@ return new class extends Migration
         $connection = Schema::getConnection();
         $grammar = $connection->getQueryGrammar();
         $driver = ConnectionDriver::name($connection);
+        $base = str_replace(['.', '-', ' '], '_', $tableName);
+
         if (! in_array($driver, ['pgsql', 'sqlite'], true)) {
             throw new RuntimeException(sprintf(
                 'Contacting primary index migration cannot run on unsupported database driver [%s].',
                 $driver,
             ));
         }
-        $base = str_replace(['.', '-', ' '], '_', $tableName);
         $isPrimary = $driver === 'pgsql'
             ? $grammar->wrap('is_primary') . ' IS TRUE'
             : $grammar->wrap('is_primary') . ' = 1';
@@ -99,4 +103,5 @@ return new class extends Migration
             $grammar->wrap('owner_id'),
         ));
     }
+
 };

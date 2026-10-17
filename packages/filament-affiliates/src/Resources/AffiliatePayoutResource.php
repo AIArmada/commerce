@@ -37,10 +37,11 @@ final class AffiliatePayoutResource extends Resource
             /** @var Builder<Model> $unscopedQuery */
             $unscopedQuery = $query;
 
-            return $unscopedQuery;
+            return $unscopedQuery->whereHasMorph('payee', [Affiliate::class], static fn (Builder $affiliateQuery): Builder => $affiliateQuery->whereCommercialPurpose());
         }
 
-        $scopedQuery = $query->forOwner();
+        $scopedQuery = $query->forOwner()
+            ->whereHasMorph('payee', [Affiliate::class], static fn (Builder $affiliateQuery): Builder => $affiliateQuery->whereCommercialPurpose());
 
         /** @var Builder<Model> $modelQuery */
         $modelQuery = $scopedQuery;
@@ -88,6 +89,7 @@ final class AffiliatePayoutResource extends Resource
                             $pattern = LikeSearch::contains($search);
 
                             return $query
+                                ->whereCommercialPurpose()
                                 ->where(function ($nested) use ($pattern): void {
                                     LikeSearch::whereLike($nested, 'name', $pattern);
                                     LikeSearch::orWhereLike($nested, 'code', $pattern);
@@ -97,7 +99,15 @@ final class AffiliatePayoutResource extends Resource
                                 ->pluck('name', 'id')
                                 ->toArray();
                         })
-                        ->getOptionLabelUsing(fn ($value): ?string => Affiliate::query()->find($value)?->name)
+                        ->getOptionLabelUsing(function ($value): ?string {
+                            $query = Affiliate::query()->whereCommercialPurpose();
+
+                            if ((bool) config('affiliates.owner.enabled', false)) {
+                                $query->forOwner();
+                            }
+
+                            return $query->find($value)?->name;
+                        })
                         ->searchable()
                         ->required(),
 

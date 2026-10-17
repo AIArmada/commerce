@@ -69,6 +69,10 @@ final class EditAffiliateLink extends EditRecord
     {
         $link = AffiliateLink::query()->whereKey($record->getKey())->firstOrFail();
 
+        if ($link->affiliate !== null && ! $link->affiliate->isCommercialPurpose()) {
+            unset($data['destination_url'], $data['tracking_url'], $data['custom_slug']);
+        }
+
         return UpdateTrackingLink::run($link, $data);
     }
 
@@ -76,7 +80,9 @@ final class EditAffiliateLink extends EditRecord
     {
         return [
             Actions\ViewAction::make(),
-            Actions\DeleteAction::make(),
+            Actions\DeleteAction::make()
+                ->authorize(fn (AffiliateLink $record): bool => AffiliateLinkResource::canDelete($record))
+                ->visible(fn (AffiliateLink $record): bool => AffiliateLinkResource::canDelete($record)),
         ];
     }
 

@@ -10,7 +10,7 @@ Ticket prices and registration totals use integer minor units. For example, `500
 
 ### Migrations fail
 
-Ensure the `events` database config key exists and the connection is valid. Check `EVENTS_JSON_COLUMN_TYPE` — use `jsonb` for PostgreSQL and `json` for MySQL if your MySQL version does not support native JSONB.
+Ensure the `events` database config key exists and the connection is valid. Check `EVENTS_JSON_COLUMN_TYPE` — use `jsonb` for PostgreSQL or `json` for SQLite.
 
 ### Search documents are not updating
 

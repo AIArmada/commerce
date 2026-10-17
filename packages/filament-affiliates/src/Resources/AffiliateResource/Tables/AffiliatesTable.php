@@ -13,9 +13,9 @@ use AIArmada\Affiliates\States\Pending;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\FilamentAffiliates\Resources\AffiliateResource;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Support\Icons\Heroicon;
@@ -100,10 +100,9 @@ final class AffiliatesTable
                     ->action(fn (Affiliate $record): bool => self::approveAffiliate($record)),
                 ViewAction::make(),
                 EditAction::make(),
-                DeleteAction::make(),
-            ])
-            ->bulkActions([
-                DeleteBulkAction::make(),
+                DeleteAction::make()
+                    ->authorize(fn (Affiliate $record): bool => AffiliateResource::canDelete($record))
+                    ->visible(fn (Affiliate $record): bool => AffiliateResource::canDelete($record)),
             ]);
     }
 

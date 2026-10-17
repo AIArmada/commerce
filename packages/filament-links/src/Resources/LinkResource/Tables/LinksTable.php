@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentLinks\Resources\LinkResource\Tables;
 
+use AIArmada\FilamentLinks\Resources\LinkResource;
+use AIArmada\FilamentLinks\Resources\LinkResource\Schemas\LinkForm;
 use AIArmada\Links\Actions\DeactivateLink;
 use AIArmada\Links\Actions\GenerateLinkUrl;
 use AIArmada\Links\Actions\ReactivateLink;
 use AIArmada\Links\Models\Link;
 use Filament\Actions\Action;
-use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Notifications\Notification;
 use Filament\Tables;
@@ -105,7 +105,8 @@ final class LinksTable
                     ->icon('heroicon-o-pause')
                     ->color('warning')
                     ->requiresConfirmation()
-                    ->visible(fn (Link $record): bool => $record->deactivated_at === null)
+                    ->visible(fn (Link $record): bool => $record->deactivated_at === null
+                        && ! LinkForm::isProtectedSubject($record))
                     ->action(function (Link $record): void {
                         DeactivateLink::run($record);
 
@@ -116,7 +117,8 @@ final class LinksTable
                     ->label('Reactivate')
                     ->icon('heroicon-o-play')
                     ->color('success')
-                    ->visible(fn (Link $record): bool => $record->deactivated_at !== null)
+                    ->visible(fn (Link $record): bool => $record->deactivated_at !== null
+                        && ! LinkForm::isProtectedSubject($record))
                     ->action(function (Link $record): void {
                         ReactivateLink::run($record);
 
@@ -124,12 +126,9 @@ final class LinksTable
                     }),
 
                 EditAction::make(),
-                DeleteAction::make(),
-            ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
+                DeleteAction::make()
+                    ->authorize(fn (Link $record): bool => LinkResource::canDelete($record))
+                    ->visible(fn (Link $record): bool => LinkResource::canDelete($record)),
             ]);
     }
 }

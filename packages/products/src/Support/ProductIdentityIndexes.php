@@ -82,26 +82,6 @@ final class ProductIdentityIndexes
         $connection = Schema::getConnection();
         $grammar = $connection->getQueryGrammar();
 
-        if ($driver === 'mysql') {
-            $expressions = implode(', ', array_map(
-                fn (string $column): string => sprintf(
-                    '(CASE WHEN %s THEN %s ELSE NULL END)',
-                    $predicate,
-                    $grammar->wrap($column),
-                ),
-                $columns,
-            ));
-
-            $connection->statement(sprintf(
-                'CREATE UNIQUE INDEX %s ON %s (%s)',
-                $grammar->wrap($indexName),
-                $grammar->wrapTable($tableName),
-                $expressions,
-            ));
-
-            return;
-        }
-
         $connection->statement(sprintf(
             'CREATE UNIQUE INDEX IF NOT EXISTS %s ON %s (%s) WHERE %s',
             $grammar->wrap($indexName),
@@ -115,7 +95,7 @@ final class ProductIdentityIndexes
     {
         $driver = ConnectionDriver::name(Schema::getConnection());
 
-        if (! in_array($driver, ['mysql', 'pgsql', 'sqlite'], true)) {
+        if (! in_array($driver, ['pgsql', 'sqlite'], true)) {
             throw new RuntimeException(sprintf(
                 'Product identity migration cannot run on unsupported database driver [%s].',
                 $driver,

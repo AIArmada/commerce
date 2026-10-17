@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Rewards\Actions\EnrollRewardMemberAction;
 use AIArmada\Rewards\Actions\EvaluateRewardEntitlementAction;
 use AIArmada\Rewards\Actions\RecordRewardMilestoneContributionAction;
 use AIArmada\Rewards\Actions\TransitionRewardAwardAction;
@@ -9,20 +10,29 @@ use AIArmada\Rewards\Enums\RewardAwardStatus;
 use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
 use AIArmada\Rewards\Enums\RewardComponent;
 use AIArmada\Rewards\Enums\RewardEvaluationOutcome;
+use AIArmada\Rewards\Enums\RewardMilestoneStatus;
 use AIArmada\Rewards\Enums\RewardProgramMode;
+use AIArmada\Rewards\Enums\RewardVerificationLevel;
+use AIArmada\Rewards\Jobs\EvaluateRewardEntitlementJob;
 use AIArmada\Rewards\Models\RewardAward;
+use AIArmada\Rewards\Models\RewardMilestoneCycle;
 use AIArmada\Rewards\Support\RewardEvaluationCandidates;
 use AIArmada\Rewards\Tests\Ledgers\Support\FakeRewardSourceFactReader;
 use AIArmada\Rewards\Tests\Ledgers\Support\RewardLedgerFixtures;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
 
-function roleMilestoneProgram(string $prefix, string $key, int $target): array
+function roleMilestoneProgram(string $prefix, string $key, int $target, array $criteria = []): array
 {
     [$program, $version, $enrollment, $memberId] = RewardLedgerFixtures::seedActiveEnrolled(
         $prefix,
         RewardProgramMode::Points,
-        ['milestones' => [['key' => $key, 'target_count' => $target, 'window_days' => 30, 'reward' => ['type' => 'points', 'points' => 25, 'unit' => 'pts']]]],
+        ['milestones' => [array_merge([
+            'key' => $key,
+            'target_count' => $target,
+            'window_days' => 30,
+            'reward' => ['type' => 'points', 'points' => 25, 'unit' => 'pts'],
+        ], $criteria)]],
     );
 
     return [$program->refresh(), $memberId];
@@ -126,6 +136,168 @@ it('emits actor-side candidates for unattributed facts and drops the sharer side
     }
 });
 
+it('does not freeze awards for a fact side excluded by every published rule', function (): void {
+    [$program, , , $participantId] = RewardLedgerFixtures::seedActiveEnrolled(
+        'role-excluded-side',
+        RewardProgramMode::Points,
+        [
+            'components' => [[
+                'type' => 'points',
+                'variants' => [[
+                    'outcomes' => ['attendance'],
+                    'roles' => [RewardBeneficiaryRole::Participant->value],
+                    'min_verification' => 'accepted',
+                    'first_only' => false,
+                    'points' => 9,
+                    'unit' => 'pts',
+                ]],
+            ]],
+            'eligibility' => [
+                'outcomes' => ['attendance'],
+                'min_verification' => 'accepted',
+                'first_only' => false,
+            ],
+            'milestones' => [],
+        ],
+    );
+    $sharerId = (string) Str::uuid();
+    $fact = RewardLedgerFixtures::fact('src-role-excluded-side', $sharerId, '2026-06-12T00:00:00Z', 'attendance', [
+        'actorId' => $participantId,
+        'sharerId' => $sharerId,
+        'isAttributed' => true,
+        'verification' => RewardVerificationLevel::StaffVerified,
+    ]);
+    $reader = new FakeRewardSourceFactReader;
+    $reader->seed($fact);
+    $candidates = RewardEvaluationCandidates::for($fact, CarbonImmutable::parse('2026-06-15T00:00:00Z'));
+
+    expect(array_map(
+        static fn (array $candidate): RewardBeneficiaryRole => $candidate['role'],
+        $candidates,
+    ))->toBe([RewardBeneficiaryRole::Participant]);
+
+    (new EvaluateRewardEntitlementJob($fact->sourceBusinessKey))->handle(
+        $reader,
+        new EvaluateRewardEntitlementAction($reader),
+    );
+
+    $awards = RewardAward::query()->where('program_id', $program->getKey())->get();
+
+    expect($awards)->toHaveCount(1)
+        ->and($awards->sole()->beneficiary_role)->toBe(RewardBeneficiaryRole::Participant)
+        ->and($awards->where('beneficiary_role', RewardBeneficiaryRole::Sharer))->toBeEmpty();
+});
+
+it('skips incompatible early milestones and grants later tiers for their own role', function (): void {
+    config(['rewards.outcomes' => ['signup', 'attendance']]);
+
+    $milestones = [];
+    foreach ([
+        ['key' => 'tier-1', 'outcomes' => ['signup'], 'points' => 10],
+        ['key' => 'tier-2', 'outcomes' => ['attendance'], 'points' => 20],
+        ['key' => 'tier-3', 'outcomes' => ['attendance'], 'points' => 30],
+        ['key' => 'tier-4', 'outcomes' => ['attendance'], 'points' => 40],
+        ['key' => 'tier-5', 'outcomes' => ['attendance'], 'points' => 50],
+    ] as $milestone) {
+        $milestones[] = [
+            'key' => $milestone['key'],
+            'label' => ucfirst($milestone['key']),
+            'outcomes' => $milestone['outcomes'],
+            'roles' => [RewardBeneficiaryRole::Sharer->value],
+            'min_verification' => 'accepted',
+            'first_only' => false,
+            'target_count' => 1,
+            'window_days' => 365,
+            'reward' => ['type' => 'points', 'points' => $milestone['points'], 'unit' => 'pts'],
+        ];
+    }
+
+    [$program, $version, , $participantId] = RewardLedgerFixtures::seedActiveEnrolled(
+        'role-multi-tier',
+        RewardProgramMode::Points,
+        [
+            'components' => [[
+                'type' => 'points',
+                'variants' => [[
+                    'outcomes' => ['attendance'],
+                    'roles' => [RewardBeneficiaryRole::Participant->value],
+                    'min_verification' => 'accepted',
+                    'first_only' => false,
+                    'points' => 7,
+                    'unit' => 'pts',
+                ]],
+            ]],
+            'eligibility' => [
+                'outcomes' => ['signup', 'attendance'],
+                'min_verification' => 'accepted',
+                'first_only' => false,
+            ],
+            'milestones' => $milestones,
+        ],
+    );
+
+    $sharerId = (string) Str::uuid();
+    EnrollRewardMemberAction::run(
+        $program,
+        'user',
+        $sharerId,
+        $version,
+        'member-portal',
+        CarbonImmutable::parse('2026-06-10T00:00:00Z'),
+    );
+
+    $fact = RewardLedgerFixtures::fact('src-multi-tier-1', $sharerId, '2026-06-12T00:00:00Z', 'attendance', [
+        'actorId' => $participantId,
+        'sharerId' => $sharerId,
+        'isAttributed' => true,
+        'verification' => RewardVerificationLevel::StaffVerified,
+    ]);
+    $reader = new FakeRewardSourceFactReader;
+    $reader->seed($fact);
+    $decision = CarbonImmutable::parse('2026-06-15T00:00:00Z');
+
+    $candidates = RewardEvaluationCandidates::for($fact, $decision);
+    $candidateMilestoneCount = array_sum(array_map(
+        static fn (array $candidate): int => $candidate['role'] === RewardBeneficiaryRole::Sharer
+            ? count($candidate['milestones'])
+            : 0,
+        $candidates,
+    ));
+    $candidateRoles = array_values(array_unique(array_map(
+        static fn (array $candidate): string => $candidate['role']->value,
+        $candidates,
+    )));
+    sort($candidateRoles);
+
+    expect($candidateMilestoneCount)->toBe(4)
+        ->and($candidateRoles)->toBe([
+            RewardBeneficiaryRole::Participant->value,
+            RewardBeneficiaryRole::Sharer->value,
+        ]);
+
+    (new EvaluateRewardEntitlementJob($fact->sourceBusinessKey))->handle(
+        $reader,
+        new EvaluateRewardEntitlementAction($reader),
+    );
+
+    $cycles = RewardMilestoneCycle::query()
+        ->where('program_id', $program->getKey())
+        ->where('recipient_id', $sharerId)
+        ->get()
+        ->keyBy('milestone_key');
+    $milestoneAwards = RewardAward::query()
+        ->whereIn('id', $cycles->pluck('award_id')->filter())
+        ->orderBy('amount_snapshot->points')
+        ->get();
+
+    expect($cycles->keys()->sort()->values()->all())->toBe(['tier-2', 'tier-3', 'tier-4', 'tier-5'])
+        ->and($cycles->every(fn (RewardMilestoneCycle $cycle): bool => $cycle->status === RewardMilestoneStatus::Achieved && $cycle->current_count === 1))->toBeTrue()
+        ->and($milestoneAwards)->toHaveCount(4)
+        ->and($milestoneAwards->pluck('amount_snapshot')->map(fn (array $amount): int => $amount['points'])->sort()->values()->all())->toBe([20, 30, 40, 50])
+        ->and($milestoneAwards->every(fn (RewardAward $award): bool => $award->beneficiary_role === RewardBeneficiaryRole::Sharer && $award->status === RewardAwardStatus::Approved))->toBeTrue()
+        ->and(RewardAward::query()->where('source_business_key', $fact->sourceBusinessKey)->where('beneficiary_role', RewardBeneficiaryRole::Sharer->value)->where('status', RewardAwardStatus::Rejected)->count())->toBe(0);
+});
+
 it('counts actor-bound milestone contributions from unattributed facts', function (): void {
     [$program, $recipient] = roleMilestoneProgram('role-mile-bind', 'two-checkins', 2);
     $family = $program->family_key;
@@ -153,6 +325,32 @@ it('counts actor-bound milestone contributions from unattributed facts', functio
 
     expect($award->beneficiary_role)->toBe(RewardBeneficiaryRole::Participant)
         ->and($award->status)->toBe(RewardAwardStatus::Approved);
+});
+
+it('completes a named milestone only from its configured outcome, role and verification', function (): void {
+    [$program, $recipient] = roleMilestoneProgram('role-mile-configured', 'bintang-1', 2, [
+        'label' => 'Bintang 1',
+        'outcomes' => ['attendance'],
+        'roles' => [RewardBeneficiaryRole::Participant->value],
+        'min_verification' => 'staff_verified',
+        'first_only' => false,
+    ]);
+    $reader = new FakeRewardSourceFactReader;
+    $programId = (string) $program->getKey();
+    $family = $program->family_key;
+    $factOverrides = [
+        'actorId' => $recipient,
+        'sharerId' => (string) Str::uuid(),
+        'verification' => RewardVerificationLevel::StaffVerified,
+    ];
+
+    $first = roleMilestoneRecord($reader, $recipient, $family, 'bintang-1', 'src-bintang-1', '2026-06-10T00:00:00Z', $programId, RewardBeneficiaryRole::Participant, $factOverrides);
+    $second = roleMilestoneRecord($reader, $recipient, $family, 'bintang-1', 'src-bintang-2', '2026-06-15T00:00:00Z', $programId, RewardBeneficiaryRole::Participant, $factOverrides);
+
+    expect($first['achieved'])->toBeFalse()
+        ->and($second['achieved'])->toBeTrue()
+        ->and($second['cycle']->status)->toBe(RewardMilestoneStatus::Achieved)
+        ->and($second['cycle']->current_count)->toBe(2);
 });
 
 it('refuses milestone contributions that do not bind the contributor role to the recipient', function (): void {

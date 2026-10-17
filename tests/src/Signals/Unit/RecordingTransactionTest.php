@@ -65,7 +65,7 @@ it('propagates concurrency failures untouched instead of marking them', function
 });
 
 it('propagates lost connections and deadlocks untouched', function (): void {
-    $lost = new RuntimeException('SQLSTATE[HY000]: General error: 2006 MySQL server has gone away');
+    $lost = new RuntimeException('SQLSTATE[08006]: Connection failure: server closed the connection unexpectedly');
 
     try {
         RecordingTransaction::run(static function () use ($lost): void {
@@ -135,7 +135,7 @@ it('marks a begin failure that runs no callback', function (): void {
 
 it('marks recognized machinery failures while identity passes through', function (): void {
     $concurrency = recordingTransactionConcurrencyFailure();
-    $lost = new RuntimeException('SQLSTATE[HY000]: General error: 2006 MySQL server has gone away');
+    $lost = new RuntimeException('SQLSTATE[08006]: Connection failure: server closed the connection unexpectedly');
     $deadlock = new DeadlockException('custom boom', 0, new RuntimeException('inner'));
     $callback = new RuntimeException('callback boom');
 

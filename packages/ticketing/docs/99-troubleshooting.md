@@ -91,7 +91,7 @@ Or ensure prices match exactly between ticket type and order.
 // Use the commerce_json_column_type() helper in migrations
 // commerce_json_column_type('ticketing', 'jsonb') // For PostgreSQL
 ```
-- Set `TICKETING_JSON_COLUMN_TYPE=json` env var to use `json` for MySQL compatibility
+- Set `TICKETING_JSON_COLUMN_TYPE=json` to use SQLite-compatible JSON columns
 
 Then refresh:
 

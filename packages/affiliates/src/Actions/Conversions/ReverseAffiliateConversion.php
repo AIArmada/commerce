@@ -79,7 +79,8 @@ final class ReverseAffiliateConversion
             return $existing;
         }
 
-        return AffiliateConversion::create([
+        $reversal = new AffiliateConversion;
+        $reversal->forceFill([
             'idempotency_key' => $idempotencyKey,
             'affiliate_id' => $conversion->affiliate_id,
             'affiliate_code' => $conversion->affiliate_code,
@@ -100,7 +101,9 @@ final class ReverseAffiliateConversion
             'owner_type' => $conversion->owner_type,
             'owner_id' => $conversion->owner_id,
             'occurred_at' => CarbonImmutable::now(),
-        ]);
+        ])->save();
+
+        return $reversal;
     }
 
     private function findCompanionLeg(AffiliateConversion $conversion): ?AffiliateConversion

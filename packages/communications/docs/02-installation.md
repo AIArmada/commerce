@@ -10,6 +10,11 @@ title: Installation
 - Laravel 13.x
 - `aiarmada/commerce-support` (same version)
 
+## Database compatibility
+
+The preference owner/channel/category lookup index is non-unique and uses the
+complete values on PostgreSQL and SQLite.
+
 ## Install
 
 ```bash

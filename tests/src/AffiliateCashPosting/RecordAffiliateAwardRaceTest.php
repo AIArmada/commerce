@@ -38,7 +38,6 @@ function runCashPostRace(CashPostingTestCase $test, string $key, array $affiliat
         $process = new Process([
             PHP_BINARY,
             $worker,
-            '--driver=' . $test->cashPostDriverName(),
             '--db=' . $test->cashPostDatabaseName(),
             '--key=' . $key,
             '--affiliate=' . $affiliateId,
@@ -233,7 +232,6 @@ test('concurrent deactivation during posting is observed instead of slipped thro
     $process = new Process([
         PHP_BINARY,
         __DIR__ . '/Support/cash-post-race-worker.php',
-        '--driver=' . $this->cashPostDriverName(),
         '--db=' . $this->cashPostDatabaseName(),
         '--key=' . $key,
         '--affiliate=' . $affiliateId,

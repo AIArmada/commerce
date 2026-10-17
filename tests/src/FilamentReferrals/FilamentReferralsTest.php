@@ -58,6 +58,21 @@ it('registers the resources and stats widget on a panel with merged config', fun
         ->and(config('filament-referrals.navigation.group'))->toBe('Referrals');
 });
 
+it('renders configured qualifier outcomes as a labeled select field', function (): void {
+    $owner = User::factory()->create();
+    $this->setCurrentOwner($owner);
+    config(['referrals.qualifier_outcomes' => ['first_accepted_registration_or_staff_verified_checkin']]);
+
+    Livewire::actingAs($owner)
+        ->test(CreateReferralProgramPage::class)
+        ->assertFormFieldExists(
+            'qualifier_outcome',
+            static fn (Select $field): bool => $field->getOptions() === [
+                'first_accepted_registration_or_staff_verified_checkin' => 'first_accepted_registration_or_staff_verified_checkin',
+            ],
+        );
+});
+
 it('creates a program with enabled reward specifications when another driver is disabled', function (): void {
     $owner = User::factory()->create();
     $this->setCurrentOwner($owner);

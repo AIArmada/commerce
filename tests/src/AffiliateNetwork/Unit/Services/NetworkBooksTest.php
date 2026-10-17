@@ -213,7 +213,7 @@ describe('NetworkBooks', function (): void {
         $companion = $books->reverse($leg, 'chargeback');
 
         // The column caps at 120: an unbounded ':reversal' suffix would
-        // make this leg permanently un-reversible on MySQL/Postgres.
+        // make this leg exceed the external-reference limit and become un-reversible.
         expect(mb_strlen($companion->external_reference))->toBeLessThanOrEqual(120)
             ->and($companion->commission_minor)->toBe(-1000)
             ->and($leg->fresh()->status)->toBe(LegStatus::Reversed);

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -29,9 +30,19 @@ return new class extends Migration
 
         });
 
-        $grammar = Schema::getConnection()->getQueryGrammar();
+        $connection = Schema::getConnection();
+        $driver = ConnectionDriver::name($connection);
 
-        Schema::getConnection()->statement(sprintf(
+        if (! in_array($driver, ['pgsql', 'sqlite'], true)) {
+            throw new RuntimeException(sprintf(
+                'Person identity migration cannot run on unsupported database driver [%s].',
+                $driver,
+            ));
+        }
+
+        $grammar = $connection->getQueryGrammar();
+
+        $connection->statement(sprintf(
             'CREATE UNIQUE INDEX %s ON %s (%s) WHERE %s IS NOT NULL',
             $grammar->wrap('persons_slug_unique'),
             $grammar->wrapTable($tableName),

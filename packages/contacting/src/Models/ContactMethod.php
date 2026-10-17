@@ -73,6 +73,11 @@ final class ContactMethod extends Model
         'metadata',
     ];
 
+    protected $hidden = [
+        'primary_unique_hash',
+        'primary_owner_unique_hash',
+    ];
+
     protected static string $ownerScopeConfigKey = 'contacting.features.owner';
 
     public function getTable(): string

@@ -57,7 +57,9 @@ final class ProcessScheduledPayoutsCommand extends Command
         $query = AffiliateBalance::query()
             ->where('available_minor', $minimum > 0 ? '>=' : '>', $minimum > 0 ? $minimum : 0)
             ->whereHas('affiliate', static function ($query): void {
-                $query->where('status', AffiliateStatus::normalize(Active::class));
+                $query
+                    ->whereCommercialPurpose()
+                    ->where('status', AffiliateStatus::normalize(Active::class));
             });
 
         if ($affiliateId !== null && $affiliateId !== '') {

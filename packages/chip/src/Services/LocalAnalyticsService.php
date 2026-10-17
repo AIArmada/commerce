@@ -13,7 +13,7 @@ use Carbon\CarbonImmutable;
 /**
  * Local analytics service - computes metrics from local data.
  *
- * All SQL queries are database-agnostic and work with MySQL, PostgreSQL, and SQLite.
+ * Uses portable query-builder expressions supported by PostgreSQL and SQLite.
  */
 class LocalAnalyticsService
 {

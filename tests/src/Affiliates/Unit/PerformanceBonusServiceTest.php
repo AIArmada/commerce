@@ -35,8 +35,8 @@ beforeEach(function (): void {
 
 describe('PerformanceBonusService', function (): void {
     describe('calculateBonuses', function (): void {
-        // Note: calculateBonuses uses MySQL-specific HAVING clauses with non-aggregate queries
-        // which are not compatible with SQLite used in testing. These tests verify method signature only.
+        // calculateBonuses uses HAVING clauses that are not compatible with the
+        // SQLite test connection. These tests verify the method signature only.
 
         test('method signature accepts nullable Carbon parameters', function (): void {
             $reflection = new ReflectionMethod(PerformanceBonusService::class, 'calculateBonuses');

@@ -133,15 +133,11 @@ final class PurchaseTable
                                 "(purchase->>'total')::int >= ?",
                                 [$amount]
                             ),
-                            'mysql', 'mariadb' => $query->whereRaw(
-                                'CAST(JSON_UNQUOTE(JSON_EXTRACT(purchase, "$.total")) AS UNSIGNED) >= ?',
-                                [$amount]
-                            ),
-                            default => $query->whereRaw(
-                                // SQLite
+                            'sqlite' => $query->whereRaw(
                                 "CAST(json_extract(purchase, '$.total') AS INTEGER) >= ?",
                                 [$amount]
                             ),
+                            default => throw new \RuntimeException('Purchase filters support only PostgreSQL and SQLite.'),
                         };
                     }),
             ], layout: FiltersLayout::AboveContent)

@@ -7,7 +7,7 @@ title: Persons Installation
 - PHP 8.5+
 - Laravel 13+
 - `aiarmada/commerce-support`
-- PostgreSQL (partial unique indexes are used for affiliation and slug identity)
+- PostgreSQL (required for person-name partial identity indexes; slug and affiliation indexes select a driver-compatible form).
 
 ## Install
 

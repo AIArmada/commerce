@@ -160,12 +160,12 @@ function engineWebhookDeliveryDispatch(SignalsEngineTestCase $test, User $owner,
     });
 }
 
-it('leaves sent deliveries untouched under genuine concurrent final failure', function (string $engine): void {
-    $this->useEngine($engine);
+it('leaves sent deliveries untouched under genuine concurrent final failure', function (): void {
+    $this->useEngine();
 
     for ($round = 0; $round < engineDeliveryRepeats(); $round++) {
         $owner = $this->engineOwner;
-        [, $delivery] = engineDeliveryDispatch($this, $owner, 'sent-' . $engine . '-' . $round);
+        [, $delivery] = engineDeliveryDispatch($this, $owner, 'sent-' . 'pgsql' . '-' . $round);
 
         $sentAt = CarbonImmutable::parse('2026-10-04T09:00:00Z');
 
@@ -200,14 +200,14 @@ it('leaves sent deliveries untouched under genuine concurrent final failure', fu
             ->and($delivery->dead_at)->toBeNull()
             ->and($delivery->last_error_code)->toBeNull();
     }
-})->with(['pgsql', 'mysql']);
+});
 
-it('leaves dead deliveries untouched under genuine concurrent final failure', function (string $engine): void {
-    $this->useEngine($engine);
+it('leaves dead deliveries untouched under genuine concurrent final failure', function (): void {
+    $this->useEngine();
 
     for ($round = 0; $round < engineDeliveryRepeats(); $round++) {
         $owner = $this->engineOwner;
-        [, $delivery] = engineDeliveryDispatch($this, $owner, 'dead-' . $engine . '-' . $round);
+        [, $delivery] = engineDeliveryDispatch($this, $owner, 'dead-' . 'pgsql' . '-' . $round);
 
         $deadAt = CarbonImmutable::parse('2026-10-04T09:00:00Z');
 
@@ -241,18 +241,18 @@ it('leaves dead deliveries untouched under genuine concurrent final failure', fu
             ->and($delivery->dead_at?->toAtomString())->toBe($deadAt->toAtomString())
             ->and($delivery->last_error_code)->toBe('transport_error');
     }
-})->with(['pgsql', 'mysql']);
+});
 
-it('keeps terminal delivery integrity when final failure races a live send transition', function (string $engine): void {
+it('keeps terminal delivery integrity when final failure races a live send transition', function (): void {
     Mail::fake();
 
-    $this->useEngine($engine);
+    $this->useEngine();
 
     $outcomes = [];
 
     for ($round = 0; $round < 10; $round++) {
         $owner = $this->engineOwner;
-        [, $delivery] = engineDeliveryDispatch($this, $owner, 'mixed-' . $engine . '-' . $round);
+        [, $delivery] = engineDeliveryDispatch($this, $owner, 'mixed-' . 'pgsql' . '-' . $round);
 
         expect($delivery->status)->toBe('pending');
 
@@ -288,14 +288,14 @@ it('keeps terminal delivery integrity when final failure races a live send trans
                 ->and($delivery->sent_at)->toBeNull('mixed terminal timestamps: ' . implode(' ; ', $outcomes));
         }
     }
-})->with(['pgsql', 'mysql']);
+});
 
-it('preserves a final dead row when a paused transport send resumes with success', function (string $engine): void {
-    $this->useEngine($engine);
+it('preserves a final dead row when a paused transport send resumes with success', function (): void {
+    $this->useEngine();
 
     for ($round = 0; $round < engineDeliveryRepeats(); $round++) {
         $owner = $this->engineOwner;
-        [, $delivery] = engineWebhookDeliveryDispatch($this, $owner, 'paused-success-' . $engine . '-' . $round);
+        [, $delivery] = engineWebhookDeliveryDispatch($this, $owner, 'paused-success-' . 'pgsql' . '-' . $round);
 
         expect($delivery->status)->toBe('pending');
 
@@ -352,14 +352,14 @@ it('preserves a final dead row when a paused transport send resumes with success
             ->and($delivery->response_status)->toBeNull()
             ->and($delivery->last_error_code)->toBe($results['failer']['observed_error']);
     }
-})->with(['pgsql', 'mysql']);
+});
 
-it('preserves a final dead row when a paused transport error resumes after it', function (string $engine): void {
-    $this->useEngine($engine);
+it('preserves a final dead row when a paused transport error resumes after it', function (): void {
+    $this->useEngine();
 
     for ($round = 0; $round < engineDeliveryRepeats(); $round++) {
         $owner = $this->engineOwner;
-        [, $delivery] = engineWebhookDeliveryDispatch($this, $owner, 'paused-error-' . $engine . '-' . $round);
+        [, $delivery] = engineWebhookDeliveryDispatch($this, $owner, 'paused-error-' . 'pgsql' . '-' . $round);
 
         expect($delivery->status)->toBe('pending');
 
@@ -426,4 +426,4 @@ it('preserves a final dead row when a paused transport error resumes after it', 
             ->and($delivery->sent_at)->toBeNull()
             ->and($delivery->last_error_code)->toBe('transport_error');
     }
-})->with(['pgsql', 'mysql']);
+});

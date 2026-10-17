@@ -168,8 +168,9 @@ $affiliation->roles()->create([
 language_code)`. `Affiliation::is_primary` is exclusive within its affiliatable
 target. Saving a primary record locks the parent and clears the matching
 siblings, including writes made through Filament relation managers. The
-database backstops are the driver-conditional partial uniques
-`person_names_primary_unique` and `affiliations_primary_unique`.
+database backstops are the driver-compatible unique indexes
+`person_names_primary_unique` and `affiliations_primary_unique`. PostgreSQL
+and SQLite use partial unique indexes for affiliation primaries.
 Affiliation target identity comparisons are byte-exact across supported
 databases; case and trailing spaces in polymorphic type values are significant.
 

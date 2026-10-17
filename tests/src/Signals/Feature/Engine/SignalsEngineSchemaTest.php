@@ -38,35 +38,29 @@ function engineSignalsTables(): array
     ];
 }
 
-it('creates the current signals schema on the engine', function (string $engine): void {
-    $this->useEngine($engine);
+it('creates the current signals schema on the engine', function (): void {
+    $this->useEngine();
 
     $info = $this->engineVersionAndIsolation();
 
     expect($info['version'])->not->toBeEmpty()
         ->and($info['isolation'])->not->toBeEmpty();
 
-    if ($engine === 'pgsql') {
-        $timeZone = (string) (DB::selectOne('show timezone')->TimeZone ?? '');
+    $timeZone = (string) (DB::selectOne('show timezone')->TimeZone ?? '');
 
-        expect($timeZone)->toBe('UTC');
-    } else {
-        $timeZone = (string) (DB::selectOne('SELECT @@session.time_zone AS tz')->tz ?? '');
-
-        expect($timeZone)->toBe('+00:00');
-    }
+    expect($timeZone)->toBe('UTC');
 
     foreach (engineSignalsTables() as $table) {
         expect(Schema::hasTable($table))->toBeTrue('missing table ' . $table);
     }
 
     expect(Schema::hasTable('users'))->toBeTrue();
-})->with(['pgsql', 'mysql']);
+});
 
-it('keeps every signals index name within the engine identifier bound', function (string $engine): void {
-    $this->useEngine($engine);
+it('keeps every signals index name within the engine identifier bound', function (): void {
+    $this->useEngine();
 
-    $bound = $engine === 'pgsql' ? 63 : 64;
+    $bound = 63;
 
     $table = (new SignalEvent)->getTable();
     $indexName = 'signal_events_idem_unique';
@@ -105,4 +99,4 @@ it('keeps every signals index name within the engine identifier bound', function
             expect(mb_strlen((string) $index['name']))->toBeLessThanOrEqual($bound, 'index too long: ' . $index['name']);
         }
     }
-})->with(['pgsql', 'mysql']);
+});

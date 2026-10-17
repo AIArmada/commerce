@@ -58,13 +58,11 @@ return new class extends Migration
 
         $driver = DB::connection()->getDriverName();
 
-        if ($driver === 'mysql') {
-            // MySQL has no portable partial-index syntax, so respondent uniqueness remains code-level there.
-            return;
-        }
-
         if (! in_array($driver, ['pgsql', 'sqlite'], true)) {
-            return;
+            throw new RuntimeException(sprintf(
+                'Feedback respondent identity migration cannot run on unsupported database driver [%s].',
+                $driver,
+            ));
         }
 
         $columns = ['feedback_form_id', 'respondent_type', 'respondent_id'];

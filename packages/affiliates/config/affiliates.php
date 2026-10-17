@@ -212,6 +212,9 @@ return [
         'minimum_amount' => env('AFFILIATES_PAYOUT_MINIMUM_AMOUNT', 5000),
         'minimum_amounts_by_currency' => [],
         'maturity_days' => env('AFFILIATES_PAYOUT_MATURITY_DAYS', 30),
+        'reward_award_settlement' => [
+            'enabled' => env('AFFILIATES_REWARD_AWARD_SETTLEMENT_ENABLED', true),
+        ],
         'multi_level' => [
             'enabled' => env('AFFILIATES_MULTI_LEVEL_ENABLED', true),
             'levels' => array_filter(array_map('floatval', explode(',', (string) env('AFFILIATES_MULTI_LEVEL_LEVELS', '0.1,0.05')))), // percentages of commission (0.1 = 10%)

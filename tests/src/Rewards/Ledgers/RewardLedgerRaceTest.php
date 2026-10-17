@@ -46,21 +46,20 @@ use PHPUnit\Framework\Assert;
 use Symfony\Component\Process\Process;
 
 beforeEach(function (): void {
-    foreach (RewardLedgerWorkerDb::driverConfigs() as $driver => $config) {
-        $socket = @fsockopen((string) $config['host'], (int) $config['port'], $errno, $errstr, 2);
+    $config = RewardLedgerWorkerDb::connectionConfig();
+    $socket = @fsockopen((string) $config['host'], (int) $config['port'], $errno, $errstr, 2);
 
-        if ($socket === false) {
-            $this->markTestSkipped("Race fixtures unavailable: {$driver} at {$config['host']}:{$config['port']} refused.");
-        }
-
-        fclose($socket);
+    if ($socket === false) {
+        $this->markTestSkipped('Isolated PostgreSQL fixture at 127.0.0.1:45432 is unavailable.');
     }
+
+    fclose($socket);
 });
 
-function ledgerRaceReadyDir(string $driver, string $case): string
+function ledgerRaceReadyDir(string $case): string
 {
     $token = ParallelTesting::token();
-    $dir = sys_get_temp_dir() . '/rewards-ledger-race-' . ($token !== false ? $token : 'serial') . '-' . $driver . '-' . $case . '-' . getmypid();
+    $dir = sys_get_temp_dir() . '/rewards-ledger-race-' . ($token !== false ? $token : 'serial') . '-' . $case . '-' . getmypid();
 
     if (! is_dir($dir)) {
         mkdir($dir, 0777, true);
@@ -77,26 +76,18 @@ function ledgerRaceReadyDir(string $driver, string $case): string
  * @param  string|array{0: string, 1: string}  $modes
  * @return array{0: array<string, mixed>, 1: array<string, mixed>}
  */
-function runLedgerRacePair(string $driver, string $database, string | array $modes, array $payload, string $case): array
+function runLedgerRacePair(string $database, string | array $modes, array $payload, string $case): array
 {
-    $readyDir = ledgerRaceReadyDir($driver, $case);
+    $readyDir = ledgerRaceReadyDir($case);
     file_put_contents($readyDir . '/payload.json', json_encode($payload, JSON_THROW_ON_ERROR));
-
-    $configs = RewardLedgerWorkerDb::driverConfigs();
-    $username = (string) $configs[$driver]['username'];
-    $password = (string) $configs[$driver]['password'];
-    $port = $driver === 'pgsql' ? 45432 : 43306;
 
     $worker = __DIR__ . '/RewardLedgerRaceWorker.php';
 
     $make = fn (int $slot): Process => new Process([
         PHP_BINARY, $worker,
-        '--driver=' . $driver,
-        '--host=127.0.0.1',
-        '--port=' . $port,
+
         '--database=' . $database,
-        '--username=' . $username,
-        '--password=' . $password,
+
         '--mode=' . (is_array($modes) ? $modes[$slot] : $modes),
         '--ready-dir=' . $readyDir,
         '--slot=' . $slot,
@@ -195,8 +186,8 @@ function raceSeedProgram(string $family, string $case, ?array $caps = null, arra
     return [$program->refresh(), $version, $memberId];
 }
 
-it('keeps one canonical award under concurrent duplicate evaluations', function (string $driver): void {
-    [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'evaldup');
+it('keeps one canonical award under concurrent duplicate evaluations on isolated PostgreSQL', function (): void {
+    [$database, $previous] = RewardLedgerWorkerDb::setUp('evaldup');
 
     try {
         [$program, , $memberId] = raceSeedProgram('race-evaldup', 'e1');
@@ -211,7 +202,7 @@ it('keeps one canonical award under concurrent duplicate evaluations', function 
             'fact' => raceFactPayload('src-race-dup-1', $memberId),
         ];
 
-        [$a, $b] = runLedgerRacePair($driver, $database, 'evaluate', $payload, 'evaldup');
+        [$a, $b] = runLedgerRacePair($database, 'evaluate', $payload, 'evaldup');
 
         assertLedgerWorkersExited($a, $b);
 
@@ -225,12 +216,12 @@ it('keeps one canonical award under concurrent duplicate evaluations', function 
             ->and(RewardSourceComponentClaim::query()->count())->toBe(1)
             ->and(RewardAward::query()->firstOrFail()->status)->toBe(RewardAwardStatus::Approved);
     } finally {
-        RewardLedgerWorkerDb::tearDown($driver, $database, $previous);
+        RewardLedgerWorkerDb::tearDown($database, $previous);
     }
-})->with(['pgsql', 'mariadb']);
+});
 
-it('freezes the first award when concurrent evaluations race a version switch', function (string $driver): void {
-    [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'evalver');
+it('freezes the first award when concurrent evaluations race a version switch', function (): void {
+    [$database, $previous] = RewardLedgerWorkerDb::setUp('evalver');
 
     try {
         [$program, $v1, $memberId] = raceSeedProgram('race-evalver', 'e2');
@@ -268,7 +259,7 @@ it('freezes the first award when concurrent evaluations race a version switch', 
             'fact' => raceFactPayload('src-race-ver-1', $memberId),
         ];
 
-        [$a, $b] = runLedgerRacePair($driver, $database, 'evaluate', $payload, 'evalver');
+        [$a, $b] = runLedgerRacePair($database, 'evaluate', $payload, 'evalver');
 
         assertLedgerWorkersExited($a, $b);
 
@@ -279,12 +270,12 @@ it('freezes the first award when concurrent evaluations race a version switch', 
             ->and(RewardAward::query()->count())->toBe(1)
             ->and(RewardAward::query()->firstOrFail()->policy_snapshot['policy_version'])->toBe(1);
     } finally {
-        RewardLedgerWorkerDb::tearDown($driver, $database, $previous);
+        RewardLedgerWorkerDb::tearDown($database, $previous);
     }
-})->with(['pgsql', 'mariadb']);
+});
 
-it('serializes two-family exclusivity races to a single claim', function (string $driver): void {
-    [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'excl');
+it('serializes two-family exclusivity races to a single claim', function (): void {
+    [$database, $previous] = RewardLedgerWorkerDb::setUp('excl');
 
     try {
         [$programA, , $memberId] = raceSeedProgram('race-excla', 'x1');
@@ -303,7 +294,7 @@ it('serializes two-family exclusivity races to a single claim', function (string
             'fact' => raceFactPayload('src-race-excl-1', $memberId),
         ];
 
-        [$a, $b] = runLedgerRacePair($driver, $database, 'evaluate', $payload, 'excl');
+        [$a, $b] = runLedgerRacePair($database, 'evaluate', $payload, 'excl');
 
         assertLedgerWorkersExited($a, $b);
 
@@ -317,16 +308,16 @@ it('serializes two-family exclusivity races to a single claim', function (string
             ->and(RewardSourceComponentClaim::query()->count())->toBe(1)
             ->and(RewardAward::query()->count())->toBe(2);
     } finally {
-        RewardLedgerWorkerDb::tearDown($driver, $database, $previous);
+        RewardLedgerWorkerDb::tearDown($database, $previous);
     }
-})->with(['pgsql', 'mariadb']);
+});
 
-it('stacks compatible families concurrently without losing either award', function (string $driver): void {
-    [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'compat');
+it('stacks compatible families concurrently without losing either award', function (): void {
+    [$database, $previous] = RewardLedgerWorkerDb::setUp('compat');
 
     try {
-        $programA = CreateRewardProgramAction::run('race-compa-c1-' . $driver, 'Race program', RewardProgramMode::Points, null, null, 'race-test');
-        $programB = CreateRewardProgramAction::run('race-compb-c1-' . $driver, 'Race program', RewardProgramMode::Points, null, null, 'race-test');
+        $programA = CreateRewardProgramAction::run('race-compa-c1-' . 'pgsql', 'Race program', RewardProgramMode::Points, null, null, 'race-test');
+        $programB = CreateRewardProgramAction::run('race-compb-c1-' . 'pgsql', 'Race program', RewardProgramMode::Points, null, null, 'race-test');
 
         $at = CarbonImmutable::parse('2026-06-01T00:00:00Z');
 
@@ -357,7 +348,7 @@ it('stacks compatible families concurrently without losing either award', functi
             'fact' => raceFactPayload('src-race-comp-1', $memberId),
         ];
 
-        [$a, $b] = runLedgerRacePair($driver, $database, 'evaluate', $payload, 'compat');
+        [$a, $b] = runLedgerRacePair($database, 'evaluate', $payload, 'compat');
 
         assertLedgerWorkersExited($a, $b);
 
@@ -369,12 +360,12 @@ it('stacks compatible families concurrently without losing either award', functi
             ->and(RewardAward::query()->count())->toBe(2)
             ->and(RewardSourceComponentClaim::query()->count())->toBe(2);
     } finally {
-        RewardLedgerWorkerDb::tearDown($driver, $database, $previous);
+        RewardLedgerWorkerDb::tearDown($database, $previous);
     }
-})->with(['pgsql', 'mariadb']);
+});
 
-it('never overspends a cap under concurrent evaluations', function (string $driver): void {
-    [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'caprace');
+it('never overspends a cap under concurrent evaluations', function (): void {
+    [$database, $previous] = RewardLedgerWorkerDb::setUp('caprace');
 
     try {
         [$program, , $memberId] = raceSeedProgram('race-cap', 'c1', [
@@ -394,7 +385,7 @@ it('never overspends a cap under concurrent evaluations', function (string $driv
             'fact' => $fact,
         ];
 
-        [$a, $b] = runLedgerRacePair($driver, $database, 'cap', $payload, 'caprace');
+        [$a, $b] = runLedgerRacePair($database, 'cap', $payload, 'caprace');
 
         assertLedgerWorkersExited($a, $b);
 
@@ -408,16 +399,16 @@ it('never overspends a cap under concurrent evaluations', function (string $driv
         expect($loser['conflict'] ?? false)->toBeTrue()
             ->and(RewardCapCounter::query()->where('scope', 'program_total')->firstOrFail()->consumed)->toBe(1);
     } finally {
-        RewardLedgerWorkerDb::tearDown($driver, $database, $previous);
+        RewardLedgerWorkerDb::tearDown($database, $previous);
     }
-})->with(['pgsql', 'mariadb']);
+});
 
-it('serializes simultaneous point reserves without overspending', function (string $driver): void {
-    [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'rsvrace');
+it('serializes simultaneous point reserves without overspending', function (): void {
+    [$database, $previous] = RewardLedgerWorkerDb::setUp('rsvrace');
 
     try {
         $recipient = (string) Str::uuid();
-        $family = 'race-rsv-' . $driver;
+        $family = 'race-rsv-' . 'pgsql';
 
         CreditRewardPointsAction::run('user', $recipient, $family, 'pts', 100, CarbonImmutable::parse('2026-06-01T00:00:00Z'), null, null, null, 'op:race-rsv-credit', 'system', null, 'race-credit', CarbonImmutable::parse('2026-06-01T00:00:00Z'));
 
@@ -430,7 +421,7 @@ it('serializes simultaneous point reserves without overspending', function (stri
             'occurred_at' => '2026-06-05T00:00:00Z',
         ];
 
-        [$a, $b] = runLedgerRacePair($driver, $database, 'reserve', $payload, 'rsvrace');
+        [$a, $b] = runLedgerRacePair($database, 'reserve', $payload, 'rsvrace');
 
         assertLedgerWorkersExited($a, $b);
 
@@ -443,16 +434,16 @@ it('serializes simultaneous point reserves without overspending', function (stri
         expect($buckets->reserved)->toBe(60)
             ->and($buckets->available)->toBe(40);
     } finally {
-        RewardLedgerWorkerDb::tearDown($driver, $database, $previous);
+        RewardLedgerWorkerDb::tearDown($database, $previous);
     }
-})->with(['pgsql', 'mariadb']);
+});
 
-it('serializes simultaneous point debits without going negative', function (string $driver): void {
-    [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'debrace');
+it('serializes simultaneous point debits without going negative', function (): void {
+    [$database, $previous] = RewardLedgerWorkerDb::setUp('debrace');
 
     try {
         $recipient = (string) Str::uuid();
-        $family = 'race-deb-' . $driver;
+        $family = 'race-deb-' . 'pgsql';
 
         CreditRewardPointsAction::run('user', $recipient, $family, 'pts', 100, CarbonImmutable::parse('2026-06-01T00:00:00Z'), null, null, null, 'op:race-deb-credit', 'system', null, 'race-credit', CarbonImmutable::parse('2026-06-01T00:00:00Z'));
 
@@ -465,7 +456,7 @@ it('serializes simultaneous point debits without going negative', function (stri
             'occurred_at' => '2026-06-05T00:00:00Z',
         ];
 
-        [$a, $b] = runLedgerRacePair($driver, $database, 'debit', $payload, 'debrace');
+        [$a, $b] = runLedgerRacePair($database, 'debit', $payload, 'debrace');
 
         assertLedgerWorkersExited($a, $b);
 
@@ -478,16 +469,16 @@ it('serializes simultaneous point debits without going negative', function (stri
         expect($buckets->spent)->toBe(60)
             ->and($buckets->available)->toBe(40);
     } finally {
-        RewardLedgerWorkerDb::tearDown($driver, $database, $previous);
+        RewardLedgerWorkerDb::tearDown($database, $previous);
     }
-})->with(['pgsql', 'mariadb']);
+});
 
-it('expires a lot exactly once under concurrent expiry runs', function (string $driver): void {
-    [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'exprace');
+it('expires a lot exactly once under concurrent expiry runs', function (): void {
+    [$database, $previous] = RewardLedgerWorkerDb::setUp('exprace');
 
     try {
         $recipient = (string) Str::uuid();
-        $family = 'race-exp-' . $driver;
+        $family = 'race-exp-' . 'pgsql';
 
         CreditRewardPointsAction::run('user', $recipient, $family, 'pts', 50, CarbonImmutable::parse('2026-06-01T00:00:00Z'), CarbonImmutable::parse('2026-07-01T00:00:00Z'), null, null, 'op:race-exp-credit', 'system', null, 'race-credit', CarbonImmutable::parse('2026-06-01T00:00:00Z'));
 
@@ -498,7 +489,7 @@ it('expires a lot exactly once under concurrent expiry runs', function (string $
             'as_of' => '2026-07-02T00:00:00Z',
         ];
 
-        [$a, $b] = runLedgerRacePair($driver, $database, 'expire', $payload, 'exprace');
+        [$a, $b] = runLedgerRacePair($database, 'expire', $payload, 'exprace');
 
         assertLedgerWorkersExited($a, $b);
 
@@ -512,12 +503,12 @@ it('expires a lot exactly once under concurrent expiry runs', function (string $
         expect($buckets->expired)->toBe(50)
             ->and($buckets->available)->toBe(0);
     } finally {
-        RewardLedgerWorkerDb::tearDown($driver, $database, $previous);
+        RewardLedgerWorkerDb::tearDown($database, $previous);
     }
-})->with(['pgsql', 'mariadb']);
+});
 
-it('achieves a milestone exactly once under concurrent contributions', function (string $driver): void {
-    [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'milerace');
+it('achieves a milestone exactly once under concurrent contributions', function (): void {
+    [$database, $previous] = RewardLedgerWorkerDb::setUp('milerace');
 
     try {
         $program = CreateRewardProgramAction::run('race-mile-m1-' . Str::lower(Str::random(4)), 'Race program', RewardProgramMode::Points, null, null, 'race-test');
@@ -551,7 +542,7 @@ it('achieves a milestone exactly once under concurrent contributions', function 
             'program_id' => (string) $program->getKey(),
         ];
 
-        [$a, $b] = runLedgerRacePair($driver, $database, 'milestone', $payload, 'milerace');
+        [$a, $b] = runLedgerRacePair($database, 'milestone', $payload, 'milerace');
 
         assertLedgerWorkersExited($a, $b);
 
@@ -568,12 +559,12 @@ it('achieves a milestone exactly once under concurrent contributions', function 
 
         expect($achieved)->toHaveCount(1);
     } finally {
-        RewardLedgerWorkerDb::tearDown($driver, $database, $previous);
+        RewardLedgerWorkerDb::tearDown($database, $previous);
     }
-})->with(['pgsql', 'mariadb']);
+});
 
-it('keeps buckets coherent when correction races spending', function (string $driver): void {
-    [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'corrrace');
+it('keeps buckets coherent when correction races spending', function (): void {
+    [$database, $previous] = RewardLedgerWorkerDb::setUp('corrrace');
 
     try {
         [$program, , $memberId] = raceSeedProgram('race-corr', 'r1');
@@ -609,7 +600,7 @@ it('keeps buckets coherent when correction races spending', function (string $dr
             'decided_at' => '2026-06-17T00:00:00Z',
         ];
 
-        [$a, $b] = runLedgerRacePair($driver, $database, ['correction-debit', 'correction-reverse'], $payload, 'corrrace');
+        [$a, $b] = runLedgerRacePair($database, ['correction-debit', 'correction-reverse'], $payload, 'corrrace');
 
         assertLedgerWorkersExited($a, $b);
 
@@ -627,16 +618,16 @@ it('keeps buckets coherent when correction races spending', function (string $dr
 
         expect($debits - $clawbacks)->toBe(10);
     } finally {
-        RewardLedgerWorkerDb::tearDown($driver, $database, $previous);
+        RewardLedgerWorkerDb::tearDown($database, $previous);
     }
-})->with(['pgsql', 'mariadb']);
+});
 
-it('collapses concurrent same-key credits onto one lot', function (string $driver): void {
-    [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'creditreplay');
+it('collapses concurrent same-key credits onto one lot', function (): void {
+    [$database, $previous] = RewardLedgerWorkerDb::setUp('creditreplay');
 
     try {
         $recipient = (string) Str::uuid();
-        $family = 'race-crep-' . $driver;
+        $family = 'race-crep-' . 'pgsql';
 
         $payload = [
             'recipient_id' => $recipient,
@@ -647,7 +638,7 @@ it('collapses concurrent same-key credits onto one lot', function (string $drive
             'operation_key' => 'op:race-same-credit',
         ];
 
-        [$a, $b] = runLedgerRacePair($driver, $database, 'credit', $payload, 'creditreplay');
+        [$a, $b] = runLedgerRacePair($database, 'credit', $payload, 'creditreplay');
 
         assertLedgerWorkersExited($a, $b);
 
@@ -658,16 +649,16 @@ it('collapses concurrent same-key credits onto one lot', function (string $drive
             ->and(RewardPointLot::query()->count())->toBe(1)
             ->and(RewardPointMovement::query()->count())->toBe(1);
     } finally {
-        RewardLedgerWorkerDb::tearDown($driver, $database, $previous);
+        RewardLedgerWorkerDb::tearDown($database, $previous);
     }
-})->with(['pgsql', 'mariadb']);
+});
 
-it('collapses concurrent same-key reserves onto one reservation', function (string $driver): void {
-    [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'rsvreplay');
+it('collapses concurrent same-key reserves onto one reservation', function (): void {
+    [$database, $previous] = RewardLedgerWorkerDb::setUp('rsvreplay');
 
     try {
         $recipient = (string) Str::uuid();
-        $family = 'race-rrp-' . $driver;
+        $family = 'race-rrp-' . 'pgsql';
 
         CreditRewardPointsAction::run('user', $recipient, $family, 'pts', 100, CarbonImmutable::parse('2026-06-01T00:00:00Z'), null, null, null, 'op:race-rrp-credit', 'system', null, 'race-credit', CarbonImmutable::parse('2026-06-01T00:00:00Z'));
 
@@ -681,7 +672,7 @@ it('collapses concurrent same-key reserves onto one reservation', function (stri
             'occurred_at' => '2026-06-05T00:00:00Z',
         ];
 
-        [$a, $b] = runLedgerRacePair($driver, $database, 'reserve', $payload, 'rsvreplay');
+        [$a, $b] = runLedgerRacePair($database, 'reserve', $payload, 'rsvreplay');
 
         assertLedgerWorkersExited($a, $b);
 
@@ -695,16 +686,16 @@ it('collapses concurrent same-key reserves onto one reservation', function (stri
         expect($buckets->reserved)->toBe(60)
             ->and($buckets->available)->toBe(40);
     } finally {
-        RewardLedgerWorkerDb::tearDown($driver, $database, $previous);
+        RewardLedgerWorkerDb::tearDown($database, $previous);
     }
-})->with(['pgsql', 'mariadb']);
+});
 
-it('leaves no partial movements when point operations fail on real drivers', function (string $driver): void {
-    [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'atomic');
+it('leaves no partial movements when point operations fail on isolated PostgreSQL', function (): void {
+    [$database, $previous] = RewardLedgerWorkerDb::setUp('atomic');
 
     try {
         $recipient = (string) Str::uuid();
-        $family = 'race-atomic-' . $driver;
+        $family = 'race-atomic-' . 'pgsql';
 
         CreditRewardPointsAction::run('user', $recipient, $family, 'pts', 30, CarbonImmutable::parse('2026-06-01T00:00:00Z'), null, null, null, 'op:race-atomic-credit', 'system', null, 'race-credit', CarbonImmutable::parse('2026-06-01T00:00:00Z'));
 
@@ -721,16 +712,16 @@ it('leaves no partial movements when point operations fail on real drivers', fun
         expect($buckets->available)->toBe(30)
             ->and($buckets->total())->toBe(30);
     } finally {
-        RewardLedgerWorkerDb::tearDown($driver, $database, $previous);
+        RewardLedgerWorkerDb::tearDown($database, $previous);
     }
-})->with(['pgsql', 'mariadb']);
+});
 
-it('collapses concurrent same-key refunds onto one allocation', function (string $driver): void {
-    [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'refundreplay');
+it('collapses concurrent same-key refunds onto one allocation', function (): void {
+    [$database, $previous] = RewardLedgerWorkerDb::setUp('refundreplay');
 
     try {
         $recipient = (string) Str::uuid();
-        $family = 'race-rref-' . $driver;
+        $family = 'race-rref-' . 'pgsql';
 
         CreditRewardPointsAction::run('user', $recipient, $family, 'pts', 50, CarbonImmutable::parse('2026-06-01T00:00:00Z'), null, null, null, 'op:race-rref-credit', 'system', null, 'race-credit', CarbonImmutable::parse('2026-06-01T00:00:00Z'));
         DebitRewardPointsAction::run('user', $recipient, $family, 'pts', 20, 'spend:race-rref-1', 'spend', null, CarbonImmutable::parse('2026-06-05T00:00:00Z'));
@@ -743,7 +734,7 @@ it('collapses concurrent same-key refunds onto one allocation', function (string
             'occurred_at' => '2026-06-06T00:00:00Z',
         ];
 
-        [$a, $b] = runLedgerRacePair($driver, $database, 'refund', $payload, 'refundreplay');
+        [$a, $b] = runLedgerRacePair($database, 'refund', $payload, 'refundreplay');
 
         assertLedgerWorkersExited($a, $b);
 
@@ -759,16 +750,16 @@ it('collapses concurrent same-key refunds onto one allocation', function (string
         expect($buckets->available)->toBe(42)
             ->and($buckets->spent)->toBe(20);
     } finally {
-        RewardLedgerWorkerDb::tearDown($driver, $database, $previous);
+        RewardLedgerWorkerDb::tearDown($database, $previous);
     }
-})->with(['pgsql', 'mariadb']);
+});
 
-it('bounds concurrent distinct partial refunds by the debited total', function (string $driver): void {
-    [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'refundcap');
+it('bounds concurrent distinct partial refunds by the debited total', function (): void {
+    [$database, $previous] = RewardLedgerWorkerDb::setUp('refundcap');
 
     try {
         $recipient = (string) Str::uuid();
-        $family = 'race-rfc-' . $driver;
+        $family = 'race-rfc-' . 'pgsql';
 
         CreditRewardPointsAction::run('user', $recipient, $family, 'pts', 50, CarbonImmutable::parse('2026-06-01T00:00:00Z'), null, null, null, 'op:race-rfc-credit', 'system', null, 'race-credit', CarbonImmutable::parse('2026-06-01T00:00:00Z'));
         DebitRewardPointsAction::run('user', $recipient, $family, 'pts', 20, 'spend:race-rfc-1', 'spend', null, CarbonImmutable::parse('2026-06-05T00:00:00Z'));
@@ -781,7 +772,7 @@ it('bounds concurrent distinct partial refunds by the debited total', function (
             'occurred_at' => '2026-06-06T00:00:00Z',
         ];
 
-        [$a, $b] = runLedgerRacePair($driver, $database, 'refund', $payload, 'refundcap');
+        [$a, $b] = runLedgerRacePair($database, 'refund', $payload, 'refundcap');
 
         assertLedgerWorkersExited($a, $b);
 
@@ -793,12 +784,12 @@ it('bounds concurrent distinct partial refunds by the debited total', function (
 
         expect($refunded)->toBe(15);
     } finally {
-        RewardLedgerWorkerDb::tearDown($driver, $database, $previous);
+        RewardLedgerWorkerDb::tearDown($database, $previous);
     }
-})->with(['pgsql', 'mariadb']);
+});
 
-it('serializes concurrent appeal advances without duplicate decisions', function (string $driver): void {
-    [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'appealrace');
+it('serializes concurrent appeal advances without duplicate decisions', function (): void {
+    [$database, $previous] = RewardLedgerWorkerDb::setUp('appealrace');
 
     try {
         [$program, , $memberId] = raceSeedProgram('race-appeal', 'a1');
@@ -826,7 +817,7 @@ it('serializes concurrent appeal advances without duplicate decisions', function
             'decided_at' => '2026-06-21T00:00:00Z',
         ];
 
-        [$a, $b] = runLedgerRacePair($driver, $database, 'appeal-advance', $payload, 'appealrace');
+        [$a, $b] = runLedgerRacePair($database, 'appeal-advance', $payload, 'appealrace');
 
         assertLedgerWorkersExited($a, $b);
 
@@ -836,17 +827,17 @@ it('serializes concurrent appeal advances without duplicate decisions', function
         expect(RewardAppeal::query()->whereKey($opened->getKey())->firstOrFail()->status->value)->toBe('in_review')
             ->and(RewardAppealDecision::query()->where('appeal_id', $opened->getKey())->count())->toBe(2);
     } finally {
-        RewardLedgerWorkerDb::tearDown($driver, $database, $previous);
+        RewardLedgerWorkerDb::tearDown($database, $previous);
     }
-})->with(['pgsql', 'mariadb']);
+});
 
-it('refuses concurrent mismatched reservation reuse across disjoint recipients', function (string $driver): void {
-    [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'rsvmismatch');
+it('refuses concurrent mismatched reservation reuse across disjoint recipients', function (): void {
+    [$database, $previous] = RewardLedgerWorkerDb::setUp('rsvmismatch');
 
     try {
         $first = (string) Str::uuid();
         $second = (string) Str::uuid();
-        $family = 'race-rmm-' . $driver;
+        $family = 'race-rmm-' . 'pgsql';
 
         foreach ([$first, $second] as $index => $recipient) {
             CreditRewardPointsAction::run('user', $recipient, $family, 'pts', 40, CarbonImmutable::parse('2026-06-01T00:00:00Z'), CarbonImmutable::parse('2026-07-10T00:00:00Z'), null, null, 'op:race-rmm-credit-' . $index . 'a', 'system', null, 'race-credit', CarbonImmutable::parse('2026-06-01T00:00:00Z'));
@@ -862,7 +853,7 @@ it('refuses concurrent mismatched reservation reuse across disjoint recipients',
             'occurred_at' => '2026-06-05T00:00:00Z',
         ];
 
-        [$a, $b] = runLedgerRacePair($driver, $database, 'reserve-mismatch', $payload, 'rsvmismatch');
+        [$a, $b] = runLedgerRacePair($database, 'reserve-mismatch', $payload, 'rsvmismatch');
 
         assertLedgerWorkersExited($a, $b);
 
@@ -901,17 +892,17 @@ it('refuses concurrent mismatched reservation reuse across disjoint recipients',
         expect($recovery)->not->toBe([])
             ->and(RewardPointLedger::balancesFor('user', $loserId, $family, 'pts', CarbonImmutable::parse('2026-06-07T00:00:00Z'))->reserved)->toBe(50);
     } finally {
-        RewardLedgerWorkerDb::tearDown($driver, $database, $previous);
+        RewardLedgerWorkerDb::tearDown($database, $previous);
     }
-})->with(['pgsql', 'mariadb']);
+});
 
-it('refuses concurrent mismatched debit reuse across disjoint recipients', function (string $driver): void {
-    [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'debmismatch');
+it('refuses concurrent mismatched debit reuse across disjoint recipients', function (): void {
+    [$database, $previous] = RewardLedgerWorkerDb::setUp('debmismatch');
 
     try {
         $first = (string) Str::uuid();
         $second = (string) Str::uuid();
-        $family = 'race-dmm-' . $driver;
+        $family = 'race-dmm-' . 'pgsql';
 
         foreach ([$first, $second] as $index => $recipient) {
             CreditRewardPointsAction::run('user', $recipient, $family, 'pts', 40, CarbonImmutable::parse('2026-06-01T00:00:00Z'), CarbonImmutable::parse('2026-07-10T00:00:00Z'), null, null, 'op:race-dmm-credit-' . $index . 'a', 'system', null, 'race-credit', CarbonImmutable::parse('2026-06-01T00:00:00Z'));
@@ -927,7 +918,7 @@ it('refuses concurrent mismatched debit reuse across disjoint recipients', funct
             'occurred_at' => '2026-06-05T00:00:00Z',
         ];
 
-        [$a, $b] = runLedgerRacePair($driver, $database, 'debit-mismatch', $payload, 'debmismatch');
+        [$a, $b] = runLedgerRacePair($database, 'debit-mismatch', $payload, 'debmismatch');
 
         assertLedgerWorkersExited($a, $b);
 
@@ -965,16 +956,16 @@ it('refuses concurrent mismatched debit reuse across disjoint recipients', funct
         expect($recovery)->not->toBe([])
             ->and(RewardPointLedger::balancesFor('user', $loserId, $family, 'pts', CarbonImmutable::parse('2026-06-07T00:00:00Z'))->spent)->toBe(50);
     } finally {
-        RewardLedgerWorkerDb::tearDown($driver, $database, $previous);
+        RewardLedgerWorkerDb::tearDown($database, $previous);
     }
-})->with(['pgsql', 'mariadb']);
+});
 
-it('refuses concurrent refund reuse across different linked debits', function (string $driver): void {
-    [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'refmismatch');
+it('refuses concurrent refund reuse across different linked debits', function (): void {
+    [$database, $previous] = RewardLedgerWorkerDb::setUp('refmismatch');
 
     try {
         $recipient = (string) Str::uuid();
-        $family = 'race-fmm-' . $driver;
+        $family = 'race-fmm-' . 'pgsql';
 
         CreditRewardPointsAction::run('user', $recipient, $family, 'pts', 30, CarbonImmutable::parse('2026-06-01T00:00:00Z'), null, null, null, 'op:race-fmm-credit-a', 'system', null, 'race-credit', CarbonImmutable::parse('2026-06-01T00:00:00Z'));
         CreditRewardPointsAction::run('user', $recipient, $family, 'pts', 30, CarbonImmutable::parse('2026-06-01T00:00:00Z'), null, null, null, 'op:race-fmm-credit-b', 'system', null, 'race-credit', CarbonImmutable::parse('2026-06-01T00:00:00Z'));
@@ -988,7 +979,7 @@ it('refuses concurrent refund reuse across different linked debits', function (s
             'occurred_at' => '2026-06-06T00:00:00Z',
         ];
 
-        [$a, $b] = runLedgerRacePair($driver, $database, 'refund-mismatch', $payload, 'refmismatch');
+        [$a, $b] = runLedgerRacePair($database, 'refund-mismatch', $payload, 'refmismatch');
 
         assertLedgerWorkersExited($a, $b);
 
@@ -1014,12 +1005,12 @@ it('refuses concurrent refund reuse across different linked debits', function (s
         expect($recovery)->not->toBe([])
             ->and((int) RewardPointMovement::query()->where('kind', 'refund')->sum('delta'))->toBe(20);
     } finally {
-        RewardLedgerWorkerDb::tearDown($driver, $database, $previous);
+        RewardLedgerWorkerDb::tearDown($database, $previous);
     }
-})->with(['pgsql', 'mariadb']);
+});
 
-it('serializes concurrent double approvals without duplicate obligations', function (string $driver): void {
-    [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'approve2');
+it('serializes concurrent double approvals without duplicate obligations', function (): void {
+    [$database, $previous] = RewardLedgerWorkerDb::setUp('approve2');
 
     try {
         [$program, , $memberId] = raceSeedProgram('race-approve2', 'p1');
@@ -1046,7 +1037,7 @@ it('serializes concurrent double approvals without duplicate obligations', funct
             'fact' => raceFactPayload('src-race-approve2-1', $memberId),
         ];
 
-        [$a, $b] = runLedgerRacePair($driver, $database, 'approve', $payload, 'approve2');
+        [$a, $b] = runLedgerRacePair($database, 'approve', $payload, 'approve2');
 
         assertLedgerWorkersExited($a, $b);
 
@@ -1058,12 +1049,12 @@ it('serializes concurrent double approvals without duplicate obligations', funct
             ->and(RewardSourceComponentClaim::query()->count())->toBe(1)
             ->and(RewardCapCounter::query()->where('scope', 'recipient_source_component')->firstOrFail()->consumed)->toBe(1);
     } finally {
-        RewardLedgerWorkerDb::tearDown($driver, $database, $previous);
+        RewardLedgerWorkerDb::tearDown($database, $previous);
     }
-})->with(['pgsql', 'mariadb']);
+});
 
-it('keeps direct approval and appeal overturn coherent under contention', function (string $driver): void {
-    [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'approveover');
+it('keeps direct approval and appeal overturn coherent under contention', function (): void {
+    [$database, $previous] = RewardLedgerWorkerDb::setUp('approveover');
 
     try {
         [$program, , $memberId] = raceSeedProgram('race-approveover', 'p2');
@@ -1098,7 +1089,7 @@ it('keeps direct approval and appeal overturn coherent under contention', functi
 
         $staff = RewardLedgerFixtures::staffId();
 
-        [$a, $b] = runLedgerRacePair($driver, $database, ['approve', 'overturn'], [
+        [$a, $b] = runLedgerRacePair($database, ['approve', 'overturn'], [
             'approve' => [
                 'award_id' => (string) $held->award->getKey(),
                 'staff_id' => $staff,
@@ -1123,12 +1114,12 @@ it('keeps direct approval and appeal overturn coherent under contention', functi
             ->and(RewardSourceComponentClaim::query()->count())->toBe(2)
             ->and(RewardAward::query()->whereKey($rejected->award->getKey())->firstOrFail()->entries()->count())->toBe(2);
     } finally {
-        RewardLedgerWorkerDb::tearDown($driver, $database, $previous);
+        RewardLedgerWorkerDb::tearDown($database, $previous);
     }
-})->with(['pgsql', 'mariadb']);
+});
 
-it('keeps milestone fulfillment coherent when a correction races it', function (string $driver): void {
-    [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'milefulfill');
+it('keeps milestone fulfillment coherent when a correction races it', function (): void {
+    [$database, $previous] = RewardLedgerWorkerDb::setUp('milefulfill');
 
     try {
         $program = CreateRewardProgramAction::run('race-milef-m1-' . Str::lower(Str::random(4)), 'Race program', RewardProgramMode::Points, null, null, 'race-test');
@@ -1180,7 +1171,7 @@ it('keeps milestone fulfillment coherent when a correction races it', function (
             $facts[] = $fact;
         }
 
-        [$a, $b] = runLedgerRacePair($driver, $database, ['fulfill', 'invalidate'], [
+        [$a, $b] = runLedgerRacePair($database, ['fulfill', 'invalidate'], [
             'fulfill' => [
                 'award_id' => (string) $award->getKey(),
                 'staff_id' => $staff,
@@ -1204,23 +1195,23 @@ it('keeps milestone fulfillment coherent when a correction races it', function (
             ->and($cycle->status->value)->toBe('achieved')
             ->and(RewardPointLot::query()->where('award_id', $award->getKey())->count())->toBe(1);
     } finally {
-        RewardLedgerWorkerDb::tearDown($driver, $database, $previous);
+        RewardLedgerWorkerDb::tearDown($database, $previous);
     }
-})->with(['pgsql', 'mariadb']);
+});
 
-it('keeps refund and credit coherent under sequence contention', function (string $driver): void {
-    [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'refundcredit');
+it('keeps refund and credit coherent under sequence contention', function (): void {
+    [$database, $previous] = RewardLedgerWorkerDb::setUp('refundcredit');
 
     try {
         $recipient = (string) Str::uuid();
-        $family = 'race-rfc2-' . $driver;
+        $family = 'race-rfc2-' . 'pgsql';
 
         CreditRewardPointsAction::run('user', $recipient, $family, 'pts', 40, CarbonImmutable::parse('2026-06-01T00:00:00Z'), CarbonImmutable::parse('2026-07-10T00:00:00Z'), null, null, 'op:race-rfc2-a', 'system', null, 'race-credit', CarbonImmutable::parse('2026-06-01T00:00:00Z'));
         CreditRewardPointsAction::run('user', $recipient, $family, 'pts', 40, CarbonImmutable::parse('2026-06-01T00:00:00Z'), CarbonImmutable::parse('2026-09-10T00:00:00Z'), null, null, 'op:race-rfc2-b', 'system', null, 'race-credit', CarbonImmutable::parse('2026-06-01T00:00:00Z'));
         CreditRewardPointsAction::run('user', $recipient, $family, 'pts', 40, CarbonImmutable::parse('2026-06-01T00:00:00Z'), null, null, null, 'op:race-rfc2-c', 'system', null, 'race-credit', CarbonImmutable::parse('2026-06-01T00:00:00Z'));
         DebitRewardPointsAction::run('user', $recipient, $family, 'pts', 50, 'spend:race-rfc2-1', 'spend', null, CarbonImmutable::parse('2026-06-05T00:00:00Z'));
 
-        [$a, $b] = runLedgerRacePair($driver, $database, ['refund', 'credit'], [
+        [$a, $b] = runLedgerRacePair($database, ['refund', 'credit'], [
             'refund' => [
                 'linked_aggregate' => 'spend:race-rfc2-1',
                 'points' => 20,
@@ -1252,23 +1243,23 @@ it('keeps refund and credit coherent under sequence contention', function (strin
         expect($buckets->total())->toBe(170)
             ->and($buckets->spent)->toBe(50);
     } finally {
-        RewardLedgerWorkerDb::tearDown($driver, $database, $previous);
+        RewardLedgerWorkerDb::tearDown($database, $previous);
     }
-})->with(['pgsql', 'mariadb']);
+});
 
-it('keeps refund and debit coherent under cross-path contention', function (string $driver): void {
-    [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'refunddebit');
+it('keeps refund and debit coherent under cross-path contention', function (): void {
+    [$database, $previous] = RewardLedgerWorkerDb::setUp('refunddebit');
 
     try {
         $recipient = (string) Str::uuid();
-        $family = 'race-rfd-' . $driver;
+        $family = 'race-rfd-' . 'pgsql';
 
         CreditRewardPointsAction::run('user', $recipient, $family, 'pts', 40, CarbonImmutable::parse('2026-06-01T00:00:00Z'), CarbonImmutable::parse('2026-07-10T00:00:00Z'), null, null, 'op:race-rfd-a', 'system', null, 'race-credit', CarbonImmutable::parse('2026-06-01T00:00:00Z'));
         CreditRewardPointsAction::run('user', $recipient, $family, 'pts', 40, CarbonImmutable::parse('2026-06-01T00:00:00Z'), CarbonImmutable::parse('2026-09-10T00:00:00Z'), null, null, 'op:race-rfd-b', 'system', null, 'race-credit', CarbonImmutable::parse('2026-06-01T00:00:00Z'));
         CreditRewardPointsAction::run('user', $recipient, $family, 'pts', 40, CarbonImmutable::parse('2026-06-01T00:00:00Z'), null, null, null, 'op:race-rfd-c', 'system', null, 'race-credit', CarbonImmutable::parse('2026-06-01T00:00:00Z'));
         DebitRewardPointsAction::run('user', $recipient, $family, 'pts', 50, 'spend:race-rfd-1', 'spend', null, CarbonImmutable::parse('2026-06-05T00:00:00Z'));
 
-        [$a, $b] = runLedgerRacePair($driver, $database, ['refund', 'debit'], [
+        [$a, $b] = runLedgerRacePair($database, ['refund', 'debit'], [
             'refund' => [
                 'linked_aggregate' => 'spend:race-rfd-1',
                 'points' => 20,
@@ -1297,23 +1288,23 @@ it('keeps refund and debit coherent under cross-path contention', function (stri
             ->and($buckets->spent)->toBe(80)
             ->and($buckets->available)->toBe(60);
     } finally {
-        RewardLedgerWorkerDb::tearDown($driver, $database, $previous);
+        RewardLedgerWorkerDb::tearDown($database, $previous);
     }
-})->with(['pgsql', 'mariadb']);
+});
 
-it('keeps refund and expiry coherent under cross-path contention', function (string $driver): void {
-    [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'refundexp');
+it('keeps refund and expiry coherent under cross-path contention', function (): void {
+    [$database, $previous] = RewardLedgerWorkerDb::setUp('refundexp');
 
     try {
         $recipient = (string) Str::uuid();
-        $family = 'race-rfx-' . $driver;
+        $family = 'race-rfx-' . 'pgsql';
 
         CreditRewardPointsAction::run('user', $recipient, $family, 'pts', 40, CarbonImmutable::parse('2026-06-01T00:00:00Z'), CarbonImmutable::parse('2026-07-01T00:00:00Z'), null, null, 'op:race-rfx-a', 'system', null, 'race-credit', CarbonImmutable::parse('2026-06-01T00:00:00Z'));
         CreditRewardPointsAction::run('user', $recipient, $family, 'pts', 40, CarbonImmutable::parse('2026-06-01T00:00:00Z'), CarbonImmutable::parse('2026-07-01T00:00:00Z'), null, null, 'op:race-rfx-b', 'system', null, 'race-credit', CarbonImmutable::parse('2026-06-01T00:00:00Z'));
         CreditRewardPointsAction::run('user', $recipient, $family, 'pts', 40, CarbonImmutable::parse('2026-06-01T00:00:00Z'), null, null, null, 'op:race-rfx-c', 'system', null, 'race-credit', CarbonImmutable::parse('2026-06-01T00:00:00Z'));
         DebitRewardPointsAction::run('user', $recipient, $family, 'pts', 50, 'spend:race-rfx-1', 'spend', null, CarbonImmutable::parse('2026-06-05T00:00:00Z'));
 
-        [$a, $b] = runLedgerRacePair($driver, $database, ['refund', 'expire'], [
+        [$a, $b] = runLedgerRacePair($database, ['refund', 'expire'], [
             'refund' => [
                 'linked_aggregate' => 'spend:race-rfx-1',
                 'points' => 20,
@@ -1341,21 +1332,21 @@ it('keeps refund and expiry coherent under cross-path contention', function (str
             ->and($buckets->expired)->toBe(50)
             ->and($buckets->available)->toBe(40);
     } finally {
-        RewardLedgerWorkerDb::tearDown($driver, $database, $previous);
+        RewardLedgerWorkerDb::tearDown($database, $previous);
     }
-})->with(['pgsql', 'mariadb']);
+});
 
-it('keeps refund and reserve coherent under cross-path contention', function (string $driver): void {
-    [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'refundrsv');
+it('keeps refund and reserve coherent under cross-path contention', function (): void {
+    [$database, $previous] = RewardLedgerWorkerDb::setUp('refundrsv');
 
     try {
         $recipient = (string) Str::uuid();
-        $family = 'race-rrf-' . $driver;
+        $family = 'race-rrf-' . 'pgsql';
 
         CreditRewardPointsAction::run('user', $recipient, $family, 'pts', 100, CarbonImmutable::parse('2026-06-01T00:00:00Z'), null, null, null, 'op:race-rrf-credit', 'system', null, 'race-credit', CarbonImmutable::parse('2026-06-01T00:00:00Z'));
         DebitRewardPointsAction::run('user', $recipient, $family, 'pts', 20, 'spend:race-rrf-1', 'spend', null, CarbonImmutable::parse('2026-06-05T00:00:00Z'));
 
-        [$a, $b] = runLedgerRacePair($driver, $database, ['refund', 'reserve'], [
+        [$a, $b] = runLedgerRacePair($database, ['refund', 'reserve'], [
             'linked_aggregate' => 'spend:race-rrf-1',
             'points' => 10,
             'refund_prefix' => 'refund:race-x-1',
@@ -1379,12 +1370,12 @@ it('keeps refund and reserve coherent under cross-path contention', function (st
             ->and($buckets->spent)->toBe(20)
             ->and($buckets->reserved)->toBe(10);
     } finally {
-        RewardLedgerWorkerDb::tearDown($driver, $database, $previous);
+        RewardLedgerWorkerDb::tearDown($database, $previous);
     }
-})->with(['pgsql', 'mariadb']);
+});
 
-it('converges attested reversal and release with no resurrection', function (string $driver): void {
-    [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'corrrevrel');
+it('converges attested reversal and release with no resurrection', function (): void {
+    [$database, $previous] = RewardLedgerWorkerDb::setUp('corrrevrel');
 
     try {
         [$program, , $memberId] = raceSeedProgram('race-crevrel', 'r1');
@@ -1408,7 +1399,7 @@ it('converges attested reversal and release with no resurrection', function (str
 
         ReserveRewardPointsAction::run('user', $memberId, $program->family_key, 'pts', 10, 'rsv:race-crevrel-1', 'hold', CarbonImmutable::parse('2026-06-16T12:00:00Z'));
 
-        [$a, $b] = runLedgerRacePair($driver, $database, ['reverse', 'release'], [
+        [$a, $b] = runLedgerRacePair($database, ['reverse', 'release'], [
             'reverse' => [
                 'award_id' => (string) $result->award->getKey(),
                 'staff_id' => $staff,
@@ -1439,12 +1430,12 @@ it('converges attested reversal and release with no resurrection', function (str
             ->and($buckets->reserved)->toBe(0)
             ->and($buckets->spent)->toBe(0);
     } finally {
-        RewardLedgerWorkerDb::tearDown($driver, $database, $previous);
+        RewardLedgerWorkerDb::tearDown($database, $previous);
     }
-})->with(['pgsql', 'mariadb']);
+});
 
-it('blocks unattested reversal under release contention, then converges', function (string $driver): void {
-    [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'corrrevun');
+it('blocks unattested reversal under release contention, then converges', function (): void {
+    [$database, $previous] = RewardLedgerWorkerDb::setUp('corrrevun');
 
     try {
         [$program, , $memberId] = raceSeedProgram('race-crevun', 'r2');
@@ -1468,7 +1459,7 @@ it('blocks unattested reversal under release contention, then converges', functi
 
         ReserveRewardPointsAction::run('user', $memberId, $program->family_key, 'pts', 10, 'rsv:race-crevun-1', 'hold', CarbonImmutable::parse('2026-06-16T12:00:00Z'));
 
-        [$a, $b] = runLedgerRacePair($driver, $database, ['reverse', 'release'], [
+        [$a, $b] = runLedgerRacePair($database, ['reverse', 'release'], [
             'reverse' => [
                 'award_id' => (string) $result->award->getKey(),
                 'staff_id' => $staff,
@@ -1504,12 +1495,12 @@ it('blocks unattested reversal under release contention, then converges', functi
         expect($buckets->available)->toBe(0)
             ->and($buckets->reserved)->toBe(0);
     } finally {
-        RewardLedgerWorkerDb::tearDown($driver, $database, $previous);
+        RewardLedgerWorkerDb::tearDown($database, $previous);
     }
-})->with(['pgsql', 'mariadb']);
+});
 
-it('serializes reversal and capture to exactly one settlement', function (string $driver): void {
-    [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'corrrevcap');
+it('serializes reversal and capture to exactly one settlement', function (): void {
+    [$database, $previous] = RewardLedgerWorkerDb::setUp('corrrevcap');
 
     try {
         [$program, , $memberId] = raceSeedProgram('race-crevcap', 'r3');
@@ -1533,7 +1524,7 @@ it('serializes reversal and capture to exactly one settlement', function (string
 
         ReserveRewardPointsAction::run('user', $memberId, $program->family_key, 'pts', 10, 'rsv:race-crevcap-1', 'hold', CarbonImmutable::parse('2026-06-16T12:00:00Z'));
 
-        [$a, $b] = runLedgerRacePair($driver, $database, ['reverse', 'capture'], [
+        [$a, $b] = runLedgerRacePair($database, ['reverse', 'capture'], [
             'reverse' => [
                 'award_id' => (string) $result->award->getKey(),
                 'staff_id' => $staff,
@@ -1574,12 +1565,12 @@ it('serializes reversal and capture to exactly one settlement', function (string
         expect($buckets->available)->toBe(0)
             ->and($buckets->reserved)->toBe(0);
     } finally {
-        RewardLedgerWorkerDb::tearDown($driver, $database, $previous);
+        RewardLedgerWorkerDb::tearDown($database, $previous);
     }
-})->with(['pgsql', 'mariadb']);
+});
 
-it('serializes reversal and refund without resurrecting corrected credit', function (string $driver): void {
-    [$database, $previous] = RewardLedgerWorkerDb::setUp($driver, 'corrrevref');
+it('serializes reversal and refund without resurrecting corrected credit', function (): void {
+    [$database, $previous] = RewardLedgerWorkerDb::setUp('corrrevref');
 
     try {
         [$program, , $memberId] = raceSeedProgram('race-crevref', 'r4');
@@ -1603,7 +1594,7 @@ it('serializes reversal and refund without resurrecting corrected credit', funct
 
         DebitRewardPointsAction::run('user', $memberId, $program->family_key, 'pts', 6, 'spend:race-crevref-1', 'spend', null, CarbonImmutable::parse('2026-06-16T12:00:00Z'));
 
-        [$a, $b] = runLedgerRacePair($driver, $database, ['reverse', 'refund'], [
+        [$a, $b] = runLedgerRacePair($database, ['reverse', 'refund'], [
             'reverse' => [
                 'award_id' => (string) $result->award->getKey(),
                 'staff_id' => $staff,
@@ -1642,6 +1633,6 @@ it('serializes reversal and refund without resurrecting corrected credit', funct
 
         expect($buckets->available)->toBe(0);
     } finally {
-        RewardLedgerWorkerDb::tearDown($driver, $database, $previous);
+        RewardLedgerWorkerDb::tearDown($database, $previous);
     }
-})->with(['pgsql', 'mariadb']);
+});

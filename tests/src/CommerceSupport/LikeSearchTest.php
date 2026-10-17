@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\LikeSearch;
-use Illuminate\Database\MySqlConnection;
 use Illuminate\Database\PostgresConnection;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Database\Schema\Blueprint;
@@ -83,16 +82,6 @@ it('emits a single-backslash escape literal on sqlite', function (): void {
 
     expect($sql)->toContain("ESCAPE '\\'")
         ->and($sql)->not->toContain("ESCAPE '\\\\'");
-});
-
-it('emits a doubled-backslash escape literal on mysql', function (): void {
-    $builder = new QueryBuilder(new MySqlConnection(new PDO('sqlite::memory:'), '', '', ['driver' => 'mysql']));
-
-    $sql = LikeSearch::whereLike($builder->from('like_search_probe'), 'name', LikeSearch::contains('100%'))->toSql();
-
-    // MySQL string literals swallow a lone backslash, so ESCAPE '\' would be
-    // an unterminated literal there; the doubled form is a single backslash.
-    expect($sql)->toContain("ESCAPE '\\\\'");
 });
 
 it('emits ilike with a single-backslash escape literal on pgsql', function (): void {

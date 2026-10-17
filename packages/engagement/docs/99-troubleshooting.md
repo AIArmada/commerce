@@ -15,12 +15,9 @@ sure the package migrations have been run when deploying this behavior.
 
 > **warning**
 >
-> Identity unique indexes include the nullable `owner_type`/`owner_id` columns.
-> MySQL treats `NULL` as distinct in unique indexes, so duplicate **global**
-> (ownerless) rows are still possible on MySQL for counters, follows,
-> bookmarks, responses, reactions, and subscriptions; PostgreSQL and SQLite get a
-> partial unique index for the global-owner case on counters. Keep engagement
-> rows owner-assigned (the default) to stay inside the enforced path.
+> PostgreSQL and SQLite use owner/global partial unique indexes for engagement
+> identities. Keep engagement rows owner-assigned (the default) to stay inside
+> the enforced path.
 
 ### Reminders not sending
 

@@ -29,6 +29,7 @@ enum RewardPreviewReason: string
     case LateAttributionRefused = 'late_attribution_refused';
     case EvidenceAfterDecision = 'evidence_after_decision';
     case ComponentNotEnabled = 'component_not_enabled';
+    case ComponentVariantIneligible = 'component_variant_ineligible';
     case HoldRequired = 'hold_required';
     case StackingConflict = 'stacking_conflict';
     case SourceBotExcluded = 'source_bot_excluded';

@@ -14,11 +14,14 @@ return new class extends Migration
         $tableName = config('contacting.database.tables.social_profiles', 'social_profiles');
         $jsonColumnType = commerce_json_column_type('contacting', 'json');
 
-        $driver = ConnectionDriver::name(Schema::getConnection());
         $connection = Schema::getConnection();
         $validityIndexName = str_replace(['.', '-', ' '], '_', $tableName) . '_socialable_validity_index';
+        $validityIndexColumns = [
+            'socialable_type', 'socialable_id', 'platform', 'purpose',
+            'is_primary', 'valid_from', 'valid_until', 'sort_order',
+        ];
 
-        Schema::create($tableName, function (Blueprint $table) use ($jsonColumnType, $tableName, $validityIndexName): void {
+        Schema::create($tableName, function (Blueprint $table) use ($jsonColumnType, $tableName, $validityIndexColumns, $validityIndexName): void {
             $table->uuid('id')->primary();
 
             $table->nullableUuidMorphs('owner');
@@ -57,10 +60,7 @@ return new class extends Migration
                 str_replace(['.', '-', ' '], '_', $tableName) . '_socialable_primary_index',
             );
 
-            $table->index(
-                ['socialable_type', 'socialable_id', 'platform', 'purpose', 'is_primary', 'valid_from', 'valid_until', 'sort_order'],
-                $validityIndexName,
-            );
+            $table->index($validityIndexColumns, $validityIndexName);
         });
 
         $this->createPrimaryUniqueIndex(
@@ -85,7 +85,6 @@ return new class extends Migration
         $connection = Schema::getConnection();
         $grammar = $connection->getQueryGrammar();
         $driver = ConnectionDriver::name($connection);
-
         if (! in_array($driver, ['pgsql', 'sqlite'], true)) {
             throw new RuntimeException(sprintf(
                 'Contacting primary index migration cannot run on unsupported database driver [%s].',
@@ -115,4 +114,5 @@ return new class extends Migration
             $predicate,
         ));
     }
+
 };

@@ -43,6 +43,15 @@ final class ReferralProgramAttributeNormalizer
             throw ReferralProgramAttributeException::for('qualifier_outcome', 'Referral programs require a name and qualifier outcome.');
         }
 
+        $allowedOutcomes = array_values(array_filter(
+            (array) config('referrals.qualifier_outcomes', []),
+            'is_string',
+        ));
+
+        if ($allowedOutcomes !== [] && ! in_array($outcome, $allowedOutcomes, true)) {
+            throw ReferralProgramAttributeException::for('qualifier_outcome', 'Referral program qualifier outcome is not allowed.');
+        }
+
         $currency = mb_strtoupper(mb_trim((string) ($attributes['currency'] ?? config('referrals.defaults.currency', 'MYR'))));
 
         if (! preg_match('/^[A-Z]{3}$/', $currency)) {

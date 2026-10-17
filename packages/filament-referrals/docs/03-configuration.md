@@ -6,6 +6,14 @@ title: Filament Referrals Configuration
 
 All adapter settings are in config/filament-referrals.php.
 
+## Qualifier field
+
+The form reads `referrals.qualifier_outcomes`, the same allowlist enforced by
+the core create and update actions. An empty list keeps the free-text field;
+a non-empty list renders those values in a select. Labels use the configured
+values themselves, so the UI and validation cannot drift through separate
+lists.
+
 ## Navigation
 
 | Key | Default | Purpose |

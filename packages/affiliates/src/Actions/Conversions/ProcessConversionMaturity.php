@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Actions\Conversions;
 
 use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\Affiliates\States\QualifiedConversion;
 use Carbon\CarbonImmutable;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -32,7 +34,10 @@ final class ProcessConversionMaturity
             ->where('status', QualifiedConversion::value())
             ->where('occurred_at', '<=', CarbonImmutable::now()->subDays($maturityDays))
             ->whereHas('affiliate', static function ($query): void {
-                $query->whereCommercialPurpose();
+                $query->whereCommercialPurpose()
+                    ->where('status', AffiliateStatus::normalize(Active::class))
+                    ->whereNull('paused_at')
+                    ->whereNull('deactivated_at');
             })
             ->with('affiliate')
             ->chunkById(200, function ($conversions) use (&$matured): void {

@@ -161,6 +161,18 @@ $order = Order::create([
 ]);
 ```
 
+Checkout integrations that record commissions from child line items (for
+example, one event registration per paid ticket line) should mark the frozen
+order `payment_data.affiliate_commission.strategy` as `registration_lines`.
+The generic order listener skips that marked order so it cannot create a
+second order-level commission. After payment, the integration can call
+`RecordAffiliateConversion::recordCommercialForFrozenAttribution($cart, $attribution, $payload)` for each eligible child record. This method requires
+a commercial-purpose affiliate and preserves the frozen attribution as the
+sole commission source. Use a stable per-child `idempotency_key` and
+`external_reference`; the normal conversion status and maturity rules still
+apply. Dawah/share-purpose affiliates are impact-only and must never be used
+for paid commissions.
+
 ### Direct Recording
 
 ```php

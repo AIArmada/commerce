@@ -124,6 +124,21 @@ final class CreateOrderStep extends AbstractCheckoutStep
             $session->save();
         }
 
+        // Keep checkout provenance available to OrderPaid subscribers for
+        // carts created through the live-cart bridge as well as the snapshot
+        // builder path. This must be persisted before payment confirmation
+        // dispatches the paid event.
+        $order->forceFill([
+            'metadata' => array_merge(
+                is_array($order->metadata) ? $order->metadata : [],
+                $this->buildOrderMetadata($session, $paymentData),
+            ),
+        ]);
+
+        if ($order->exists) {
+            $order->save();
+        }
+
         // Confirm payment if not a free order (triggers PaymentConfirmed transition → OrderPaid event)
         $paymentConfirmationEnabled = ! $isFreeOrder && config('checkout.create_order.confirm_payment', true);
         $paymentWasConfirmed = false;

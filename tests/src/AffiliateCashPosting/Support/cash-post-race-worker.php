@@ -16,7 +16,6 @@ use AIArmada\Commerce\Tests\AffiliateCashPosting\Support\CashPostingRaceWorkerBo
 use AIArmada\Commerce\Tests\AffiliateCashPosting\Support\FixtureAffiliateAwardPolicy;
 
 $options = getopt('', [
-    'driver:',
     'db:',
     'key:',
     'affiliate:',
@@ -27,7 +26,7 @@ $options = getopt('', [
     'result:',
 ]);
 
-$required = ['driver', 'db', 'key', 'affiliate', 'amount', 'currency', 'ready', 'gate', 'result'];
+$required = ['db', 'key', 'affiliate', 'amount', 'currency', 'ready', 'gate', 'result'];
 
 foreach ($required as $name) {
     if (! isset($options[$name]) || $options[$name] === '') {
@@ -41,12 +40,6 @@ if (! preg_match('/^share_rewards_test_cash_post_[a-z0-9_]+$/', (string) $option
     exit(2);
 }
 
-if ($options['driver'] !== 'pgsql' && $options['driver'] !== 'mysql') {
-    fwrite(STDERR, "cashpost-worker: refused driver [{$options['driver']}]\n");
-    exit(2);
-}
-
-putenv('CASH_POST_DRIVER=' . $options['driver']);
 putenv('CASH_POST_SKIP_MIGRATE=1');
 
 require __DIR__ . '/../../../../vendor/autoload.php';

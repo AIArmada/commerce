@@ -12,8 +12,6 @@ use AIArmada\FilamentAffiliates\Resources\AffiliateLinkResource\Pages\EditAffili
 use AIArmada\FilamentAffiliates\Resources\AffiliateLinkResource\Pages\ListAffiliateLinks;
 use AIArmada\FilamentAffiliates\Resources\AffiliateLinkResource\Pages\ViewAffiliateLink;
 use BackedEnum;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms;
@@ -63,7 +61,9 @@ final class AffiliateLinkResource extends Resource
 
     public static function canDelete(Model $record): bool
     {
-        return FilamentPermission::hasAbility('affiliate.delete');
+        return FilamentPermission::hasAbility('affiliate.delete')
+            && $record instanceof AffiliateLink
+            && ! $record->conversions()->exists();
     }
 
     public static function shouldRegisterNavigation(): bool
@@ -104,7 +104,9 @@ final class AffiliateLinkResource extends Resource
                     Forms\Components\TextInput::make('destination_url')
                         ->url()
                         ->required()
-                        ->maxLength(2048),
+                        ->maxLength(2048)
+                        ->disabled(fn (?AffiliateLink $record): bool => $record?->affiliate !== null && ! $record->affiliate->isCommercialPurpose())
+                        ->dehydrated(fn (?AffiliateLink $record): bool => $record?->affiliate === null || $record->affiliate->isCommercialPurpose()),
 
                     Forms\Components\TextInput::make('tracking_url')
                         ->disabled()->dehydrated(false)->visible(fn (string $operation): bool => $operation !== 'create'),
@@ -211,11 +213,7 @@ final class AffiliateLinkResource extends Resource
                 ViewAction::make(),
                 EditAction::make(),
             ])
-            ->bulkActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
-            ]);
+            ->bulkActions([]);
     }
 
     public static function infolist(Schema $schema): Schema

@@ -142,14 +142,11 @@ final class InvoiceTable
                                 'COALESCE((purchase->>\'total\')::int, (purchase->\'total\'->>\'amount\')::int) >= ?',
                                 [$amount]
                             ),
-                            'mysql', 'mariadb' => $query->whereRaw(
-                                'CAST(COALESCE(JSON_UNQUOTE(JSON_EXTRACT(purchase, "$.total")), JSON_UNQUOTE(JSON_EXTRACT(purchase, "$.total.amount"))) AS UNSIGNED) >= ?',
-                                [$amount]
-                            ),
-                            default => $query->whereRaw(
+                            'sqlite' => $query->whereRaw(
                                 "CAST(COALESCE(json_extract(purchase, '$.total'), json_extract(purchase, '$.total.amount')) AS INTEGER) >= ?",
                                 [$amount]
                             ),
+                            default => throw new \RuntimeException('Invoice filters support only PostgreSQL and SQLite.'),
                         };
                     }),
             ], layout: FiltersLayout::AboveContentCollapsible)

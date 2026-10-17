@@ -313,6 +313,14 @@ After payment confirmation, `CheckoutFinalizer::finalize()` runs:
 4. Transition the session status through `Processing` to `Completed` (which stamps `completed_at`)
 5. Clear the cart
 
+`CreateOrderStep` persists checkout metadata on the resulting order for both
+live-cart and snapshot creation paths. It writes `cart_id`, `checkout_session_id`,
+and the session `payment_data` before confirming payment, so `OrderPaid`
+listeners can consume server-frozen attribution and other checkout provenance.
+Integrations should capture decisions on `CheckoutSession` before payment
+handoff and read the copied order metadata after payment; callback request
+cookies are not a provenance source.
+
 ### Inventory Timing
 
 Checkout does not commit inventory reservations itself. `ReserveInventoryStep` places a group reservation before payment (or first in the post-payment phase when `reserve_before_payment` is `false`), and releases it on failure or cancellation through step compensation. Stock deduction flows through the orders package instead: its `PaymentConfirmed` transition dispatches `OrderProcessingStarted`, which the `DeductInventoryOnPaymentConfirmed` listener turns into an `InventoryDeductionRequired` event for the inventory package to handle idempotently. Free orders (`payment_data.type === 'free_order'`) use the dedicated `FreeOrderConfirmed` transition, which dispatches the same `OrderProcessingStarted` event without a payment record, paid timestamp, or `OrderPaid` event — and rejects the order when it no longer qualifies as free (for example after a live-cart reprice), recording a `free_order_reconciliation` mismatch on the session.

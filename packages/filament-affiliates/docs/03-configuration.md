@@ -44,6 +44,7 @@ return [
             'payouts' => true,
             'programs' => true,
             'commission_management' => true,
+            'volume_tiers' => true,
             'creatives' => true,
             'links' => true,
             'attribution' => true,
@@ -152,6 +153,13 @@ return [
 
 ## Configuration Options
 
+Affiliate identity fields that determine the public tracking identity are
+immutable after creation. The Edit Affiliate form omits them from dehydrated
+state even if a client submits forged values. Affiliate Links are similarly
+protected: their slug, destination, affiliate, and purpose cannot be changed
+through the edit form, and Delete is unavailable. Deactivate a link or
+affiliate to stop new tracking while preserving attribution history.
+
 ### Navigation Group
 
 Set the navigation group for all affiliate resources:
@@ -229,6 +237,7 @@ Auto-detect and enable integrations:
         'payouts' => true,
         'programs' => true,
         'commission_management' => true,
+        'volume_tiers' => true,
         'creatives' => true,
         'links' => true,
         'attribution' => true,
@@ -242,7 +251,7 @@ Auto-detect and enable integrations:
 ],
 ```
 
-`payouts`, `programs`, and `commission_management` are force-disabled by the plugin when `affiliates.features.commission_tracking.enabled` is false.
+`payouts`, `programs`, `commission_management`, and `volume_tiers` are force-disabled by the plugin when `affiliates.features.commission_tracking.enabled` is false. `ranks`, `volume_tiers`, and `upline_visualization` can also be hidden independently when the host does not use those features.
 
 ### Resource Navigation Sort
 

@@ -56,6 +56,12 @@ final class CreateAffiliatePayout extends CreateRecord
             ]);
         }
 
+        if (! $affiliate->isCommercialPurpose()) {
+            throw ValidationException::withMessages([
+                'data.affiliate_id' => 'Only commercial-purpose affiliates can receive manual payouts.',
+            ]);
+        }
+
         $notes = isset($data['notes']) && is_string($data['notes']) ? mb_trim($data['notes']) : null;
         $reason = isset($data['payout_override_reason']) && is_string($data['payout_override_reason'])
             ? mb_trim($data['payout_override_reason'])

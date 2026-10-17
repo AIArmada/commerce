@@ -122,7 +122,7 @@ final class CreateEventSessionAction
             ->where('event_id', $eventId);
 
         if (str_contains($base, '\\')) {
-            // Backslash is the LIKE escape character on MySQL/Postgres but a
+            // Backslash is the LIKE escape character on PostgreSQL but a
             // literal on SQLite, so no LIKE pattern built from such a base is
             // portable. Fall back to the full event-scoped set; candidacy is
             // still decided by exact in-memory comparison below.

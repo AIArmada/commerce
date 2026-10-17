@@ -9,160 +9,100 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\ParallelTesting;
 use PHPUnit\Framework\Assert;
 
-/**
- * Guarded real-driver harness for rewards-ledger concurrency proof. Own
- * implementation: worker-namespaced databases on the isolated PostgreSQL 17
- * (127.0.0.1:45432) and MariaDB 11.4 (127.0.0.1:43306) fixtures, schema built
- * from the actual rewards package migrations (all thirty, unmodified).
- * Never touches the live application database.
- */
+/** Guarded PostgreSQL 17 harness for rewards-ledger concurrency proof. */
 final class RewardLedgerWorkerDb
 {
     public const string WORKER_CONNECTION = 'rewards_ledger_worker';
 
     public const string BASE_CONNECTION = 'rewards_ledger_base';
 
-    /**
-     * @return array{pgsql: array<string, mixed>, mariadb: array<string, mixed>}
-     */
-    public static function driverConfigs(): array
+    /** @return array<string, mixed> */
+    public static function connectionConfig(?string $database = null): array
     {
-        return [
-            'pgsql' => [
-                'driver' => 'pgsql',
-                'host' => '127.0.0.1',
-                'port' => 45432,
-                'database' => 'share_rewards_test',
-                'username' => 'share_rewards_test',
-                'password' => '',
-                'charset' => 'utf8',
-                'prefix' => '',
-                'prefix_indexes' => true,
-                'search_path' => 'public',
-                'sslmode' => 'prefer',
-            ],
-            'mariadb' => [
-                'driver' => 'mariadb',
-                'host' => '127.0.0.1',
-                'port' => 43306,
-                'database' => 'share_rewards_test',
-                'username' => 'root',
-                'password' => '',
-                'charset' => 'utf8mb4',
-                'collation' => 'utf8mb4_unicode_ci',
-                'prefix' => '',
-                'prefix_indexes' => true,
-                'strict' => true,
-                'engine' => null,
-                'timezone' => '+00:00',
-            ],
+        $config = [
+            'driver' => 'pgsql',
+            'host' => '127.0.0.1',
+            'port' => 45432,
+            'database' => 'share_rewards_test',
+            'username' => 'share_rewards_test',
+            'password' => '',
+            'charset' => 'utf8',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'search_path' => 'public',
+            'sslmode' => 'prefer',
+            'timezone' => 'UTC',
         ];
+        self::guardBaseConfig($config);
+        if ($database !== null) {
+            self::guardWorkerDatabaseName($database);
+            $config['database'] = $database;
+        }
+
+        return $config;
     }
 
-    /**
-     * @param  array<string, mixed>  $config
-     */
-    public static function guardBaseConfig(string $driver, array $config): void
+    /** @param array<string, mixed> $config */
+    public static function guardBaseConfig(array $config): void
     {
-        $expectedPort = $driver === 'pgsql' ? 45432 : 43306;
-
+        Assert::assertSame('pgsql', (string) ($config['driver'] ?? ''));
         Assert::assertSame('127.0.0.1', (string) ($config['host'] ?? ''), 'Isolated fixtures are loopback only.');
-        Assert::assertSame($expectedPort, (int) ($config['port'] ?? 0), 'Refusing a non-isolated database port.');
+        Assert::assertSame(45432, (int) ($config['port'] ?? 0), 'Refusing a non-isolated database port.');
         Assert::assertSame('share_rewards_test', (string) ($config['database'] ?? ''), 'Refusing a non-isolated database.');
     }
 
     public static function guardWorkerDatabaseName(string $database): void
     {
-        Assert::assertMatchesRegularExpression(
-            '/^share_rewards_test_rewards_ledger_[a-z0-9_]{1,28}$/',
-            $database,
-            'Worker databases stay inside the isolated rewards-ledger namespace.',
-        );
+        Assert::assertMatchesRegularExpression('/^share_rewards_test_rewards_ledger_[a-z0-9_]{1,28}$/', $database);
     }
 
-    public static function workerDatabaseName(string $driver, string $test): string
+    public static function workerDatabaseName(string $test): string
     {
         $token = ParallelTesting::token();
-        $raw = $driver . '_' . ($token !== false ? $token : 'serial') . '_' . getmypid() . '_' . $test;
+        $raw = ($token !== false ? $token : 'serial').'_'.getmypid().'_'.$test;
         $suffix = mb_strtolower((string) preg_replace('/[^a-z0-9]+/', '_', $raw));
-
-        // The namespace prefix is 34 chars; PostgreSQL truncates
-        // identifiers past 63 bytes, so the suffix keeps 28 max (62 total)
-        // and create/connect always address the same database.
-        $name = 'share_rewards_test_rewards_ledger_' . mb_substr($suffix, 0, 28);
-
+        $name = 'share_rewards_test_rewards_ledger_'.mb_substr($suffix, 0, 28);
         self::guardWorkerDatabaseName($name);
 
         return $name;
     }
 
-    public static function baseConnection(string $driver): Connection
+    public static function baseConnection(): Connection
     {
-        $config = self::driverConfigs()[$driver] ?? null;
-
-        Assert::assertIsArray($config, "Unknown worker driver [{$driver}].");
-        self::guardBaseConfig($driver, $config);
-
-        config(['database.connections.' . self::BASE_CONNECTION => $config]);
+        config(['database.connections.'.self::BASE_CONNECTION => self::connectionConfig()]);
         DB::purge(self::BASE_CONNECTION);
 
         return DB::connection(self::BASE_CONNECTION);
     }
 
-    public static function assertServerIdentity(string $driver, Connection $connection): void
+    public static function assertServerIdentity(Connection $connection): void
     {
         $version = (string) $connection->selectOne('select version() as version')->version;
-
-        if ($driver === 'pgsql') {
-            Assert::assertStringStartsWith('PostgreSQL 17.', $version, 'Expected the isolated PostgreSQL 17 fixture.');
-        } else {
-            Assert::assertStringContainsString('MariaDB', $version, 'Expected the isolated MariaDB fixture.');
-            Assert::assertStringContainsString('11.4.', $version, 'Expected the isolated MariaDB 11.4 fixture.');
-        }
+        Assert::assertStringStartsWith('PostgreSQL 17.', $version, 'Expected isolated PostgreSQL 17.');
     }
 
-    public static function dropWorkerDatabase(string $driver, string $database): void
+    public static function dropWorkerDatabase(string $database): void
     {
         self::guardWorkerDatabaseName($database);
-        $connection = self::baseConnection($driver);
-
-        if ($driver === 'pgsql') {
-            $connection->statement('DROP DATABASE IF EXISTS "' . $database . '"');
-        } else {
-            $connection->statement('DROP DATABASE IF EXISTS `' . $database . '`');
-        }
+        self::baseConnection()->statement('DROP DATABASE IF EXISTS "'.$database.'"');
     }
 
-    public static function createWorkerDatabase(string $driver, string $test): string
+    public static function createWorkerDatabase(string $test): string
     {
-        $database = self::workerDatabaseName($driver, $test);
-        $connection = self::baseConnection($driver);
-
-        self::assertServerIdentity($driver, $connection);
-        self::dropWorkerDatabase($driver, $database);
-
-        if ($driver === 'pgsql') {
-            $connection->statement('CREATE DATABASE "' . $database . '"');
-        } else {
-            $connection->statement('CREATE DATABASE `' . $database . '`');
-        }
+        $database = self::workerDatabaseName($test);
+        $connection = self::baseConnection();
+        self::assertServerIdentity($connection);
+        self::dropWorkerDatabase($database);
+        $connection->statement('CREATE DATABASE "'.$database.'"');
 
         return $database;
     }
 
-    public static function useWorkerDatabase(string $driver, string $database): string
+    public static function useWorkerDatabase(string $database): string
     {
         self::guardWorkerDatabaseName($database);
-        $config = self::driverConfigs()[$driver] ?? null;
-
-        Assert::assertIsArray($config, "Unknown worker driver [{$driver}].");
-        self::guardBaseConfig($driver, $config);
-
-        $config['database'] = $database;
-
-        config(['database.connections.' . self::WORKER_CONNECTION => $config]);
+        config(['database.connections.'.self::WORKER_CONNECTION => self::connectionConfig($database)]);
         DB::purge(self::WORKER_CONNECTION);
-
         $previous = (string) DB::getDefaultConnection();
         DB::setDefaultConnection(self::WORKER_CONNECTION);
 
@@ -176,17 +116,9 @@ final class RewardLedgerWorkerDb
         DB::purge(self::BASE_CONNECTION);
     }
 
-    /**
-     * Runs the actual rewards package migrations against the worker
-     * connection. Fails loudly unless exactly the thirty package files
-     * run — no schema shortening, no index bypass. The package gratitude
-     * hook sits behind the RewardGratitudePlanner contract (Null by
-     * default), so no host digest or communications schema rides along.
-     */
     public static function migrateWorkerDatabase(): void
     {
-        $files = glob(__DIR__ . '/../../../../../packages/rewards/database/migrations/2001_05_01_*_create_reward_*.php');
-
+        $files = glob(__DIR__.'/../../../../../packages/rewards/database/migrations/2001_05_01_*_create_reward_*.php');
         Assert::assertIsArray($files, 'Reward package migrations must exist.');
         sort($files);
         Assert::assertCount(30, $files, 'Exactly the thirty reward package migrations must run.');
@@ -197,24 +129,20 @@ final class RewardLedgerWorkerDb
         }
     }
 
-    /**
-     * @return array{0: string, 1: string} [database, previousDefaultConnection]
-     */
-    public static function setUp(string $driver, string $test): array
+    /** @return array{0: string, 1: string} */
+    public static function setUp(string $test): array
     {
-        $database = self::createWorkerDatabase($driver, $test);
-        $previous = self::useWorkerDatabase($driver, $database);
-
-        config(['rewards.database.json_column_type' => $driver === 'mariadb' ? 'json' : 'jsonb']);
-
+        $database = self::createWorkerDatabase($test);
+        $previous = self::useWorkerDatabase($database);
+        config(['rewards.database.json_column_type' => 'jsonb']);
         self::migrateWorkerDatabase();
 
         return [$database, $previous];
     }
 
-    public static function tearDown(string $driver, string $database, string $previous): void
+    public static function tearDown(string $database, string $previous): void
     {
         self::restoreDefaultConnection($previous);
-        self::dropWorkerDatabase($driver, $database);
+        self::dropWorkerDatabase($database);
     }
 }

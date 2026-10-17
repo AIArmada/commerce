@@ -30,7 +30,7 @@ it('recognizes concurrency failures by code and message', function (): void {
 });
 
 it('recognizes lost connections', function (): void {
-    expect(TransactionFailureClassifier::causedByLostConnection(new RuntimeException('SQLSTATE[HY000]: General error: 2006 MySQL server has gone away')))->toBeTrue()
+    expect(TransactionFailureClassifier::causedByLostConnection(new RuntimeException('SQLSTATE[08006]: Connection failure: server closed the connection unexpectedly')))->toBeTrue()
         ->and(TransactionFailureClassifier::causedByLostConnection(new RuntimeException('SQLSTATE[23000]: Integrity constraint violation')))->toBeFalse();
 });
 
@@ -82,7 +82,7 @@ it('unwraps a deadlock control cause through nested replacements', function (): 
 });
 
 it('keeps lost connections and unrecognized control failures marked', function (): void {
-    $lost = new RuntimeException('SQLSTATE[HY000]: General error: 2006 MySQL server has gone away');
+    $lost = new RuntimeException('SQLSTATE[08006]: Connection failure: server closed the connection unexpectedly');
     $lostMarker = CommerceSignalTransactionControlFailed::fromControlFailure($lost, new RuntimeException('callback boom'));
     $plainMarker = CommerceSignalTransactionControlFailed::fromControlFailure(new RuntimeException('savepoint boom'));
 

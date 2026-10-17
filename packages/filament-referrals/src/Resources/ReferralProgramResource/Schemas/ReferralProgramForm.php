@@ -36,9 +36,7 @@ class ReferralProgramForm
                         ->required()
                         ->disabled(fn (string $operation): bool => $operation === 'edit')
                         ->dehydrated(fn (string $operation): bool => $operation !== 'edit'),
-                    TextInput::make('qualifier_outcome')
-                        ->required()
-                        ->maxLength(191),
+                    self::qualifierOutcomeField(),
                     TextInput::make('invite_expiry_days')
                         ->numeric()
                         ->rules(['integer', 'min:1'])
@@ -84,6 +82,28 @@ class ReferralProgramForm
             array_map(static fn (ReferralProgramStatus $status): string => $status->value, $statuses),
             array_map(static fn (ReferralProgramStatus $status): string => ReferralAdminPresenter::statusLabel($status), $statuses),
         );
+    }
+
+    private static function qualifierOutcomeField(): Select | TextInput
+    {
+        $options = [];
+
+        foreach ((array) config('referrals.qualifier_outcomes', []) as $outcome) {
+            if (is_string($outcome) && $outcome !== '') {
+                $options[$outcome] = $outcome;
+            }
+        }
+
+        if ($options === []) {
+            return TextInput::make('qualifier_outcome')
+                ->required()
+                ->maxLength(191);
+        }
+
+        return Select::make('qualifier_outcome')
+            ->options($options)
+            ->searchable()
+            ->required();
     }
 
     /**

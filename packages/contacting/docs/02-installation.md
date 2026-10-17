@@ -9,7 +9,8 @@ title: Contacting Installation
 - PHP 8.5+
 - Laravel 10+
 - `aiarmada/commerce-support`
-- PostgreSQL (partial unique indexes are used to enforce primary contact identity)
+- PostgreSQL and SQLite (partial unique indexes enforce primary contact identity)
+- PostgreSQL or SQLite (partial unique indexes enforce primary contact identity)
 
 ## Install via Composer
 

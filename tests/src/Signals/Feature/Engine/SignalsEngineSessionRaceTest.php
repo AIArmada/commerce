@@ -48,8 +48,8 @@ function engineSessionRendezvous(string $workdir, string $role, string $peer, st
     });
 }
 
-it('retains the latest session end under genuine concurrent creation and update', function (string $engine): void {
-    $this->useEngine($engine);
+it('retains the latest session end under genuine concurrent creation and update', function (): void {
+    $this->useEngine();
 
     for ($round = 0; $round < engineSessionRepeats(); $round++) {
         $property = $this->engineProperty('Engine Session Race');
@@ -129,10 +129,10 @@ it('retains the latest session end under genuine concurrent creation and update'
             ->and($session->duration_milliseconds)->toBe(600000)
             ->and($session->bounced_at)->toBeNull();
     }
-})->with(['pgsql', 'mysql']);
+});
 
-it('retains the latest session end under genuine concurrent creation without identities', function (string $engine): void {
-    $this->useEngine($engine);
+it('retains the latest session end under genuine concurrent creation without identities', function (): void {
+    $this->useEngine();
 
     for ($round = 0; $round < engineSessionRepeats(); $round++) {
         $property = $this->engineProperty('Engine Session NoIdent');
@@ -208,10 +208,10 @@ it('retains the latest session end under genuine concurrent creation without ide
             ->and($session->bounced_at)->toBeNull()
             ->and($session->signal_identity_id)->toBeNull();
     }
-})->with(['pgsql', 'mysql']);
+});
 
-it('serializes overlapping session transactions in deterministic lock order', function (string $engine): void {
-    $this->useEngine($engine);
+it('serializes overlapping session transactions in deterministic lock order', function (): void {
+    $this->useEngine();
 
     for ($round = 0; $round < engineSessionRepeats(); $round++) {
         $property = $this->engineProperty('Engine Session Overlap');
@@ -342,10 +342,10 @@ it('serializes overlapping session transactions in deterministic lock order', fu
             ->and($session->duration_milliseconds)->toBe(600000)
             ->and($session->bounced_at)->toBeNull();
     }
-})->with(['pgsql', 'mysql']);
+});
 
-it('keeps monotonic session ends for sequential out-of-order events across two connections', function (string $engine): void {
-    $this->useEngine($engine);
+it('keeps monotonic session ends for sequential out-of-order events across two connections', function (): void {
+    $this->useEngine();
 
     $property = $this->engineProperty('Engine Session Order');
     $propertyId = (string) $property->id;
@@ -387,4 +387,4 @@ it('keeps monotonic session ends for sequential out-of-order events across two c
         ->and($session->exit_path)->toBe('/second')
         ->and($session->duration_milliseconds)->toBe(600000)
         ->and($session->bounced_at)->toBeNull();
-})->with(['pgsql', 'mysql']);
+});

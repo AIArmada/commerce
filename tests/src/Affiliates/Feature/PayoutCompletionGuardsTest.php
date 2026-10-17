@@ -274,6 +274,17 @@ test('completing a bare manual payout checks payee eligibility', function (): vo
     expect($payout->fresh()->status->equals(CompletedPayout::class))->toBeTrue();
 });
 
+test('manual completion cannot pay a Dawah-purpose affiliate', function (): void {
+    $affiliate = createCompletionGuardAffiliate();
+    $affiliate->forceFill(['purpose' => 'share_member'])->save();
+    $payout = createBareManualPayout($affiliate);
+
+    expect(fn (): object => UpdatePayoutStatus::run($payout, 'completed'))
+        ->toThrow(InvalidArgumentException::class, 'A non-commercial affiliate payout cannot be completed.');
+
+    expect($payout->fresh()->status->equals(CompletedPayout::class))->toBeFalse();
+});
+
 test('completing a bare manual payout refuses a disabled payee without an override', function (): void {
     $affiliate = createCompletionGuardAffiliate();
     $payout = createBareManualPayout($affiliate);

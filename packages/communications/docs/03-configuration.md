@@ -33,7 +33,7 @@ title: Configuration
 ```
 
 - `database.table_prefix` - prepended to every default table name
-- `database.json_column_type` - column type used for JSON columns in the migrations; set `json` on MySQL and `jsonb` on PostgreSQL (env: `COMMUNICATIONS_JSON_COLUMN_TYPE`)
+- `database.json_column_type` - column type used for JSON columns in the migrations; set `jsonb` on PostgreSQL (env: `COMMUNICATIONS_JSON_COLUMN_TYPE`)
 - `database.tables.destinations` - stores per-recipient channel addresses used by `CommunicationDestinationResolver`
 - `database.tables.notification_inboxes` - stores the inbox rows used by `HasInbox`, `DispatchInboxNotificationAction`, and the inbox Livewire screen
 

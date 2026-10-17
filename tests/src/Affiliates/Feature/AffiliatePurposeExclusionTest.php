@@ -6,6 +6,7 @@ use AIArmada\Affiliates\Actions\Conversions\AllocateUplineCommissions;
 use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
 use AIArmada\Affiliates\Actions\Conversions\ProcessConversionMaturity;
 use AIArmada\Affiliates\Actions\Payouts\ClaimScheduledPayout;
+use AIArmada\Affiliates\Actions\Payouts\CreatePayout;
 use AIArmada\Affiliates\Data\AffiliateConversionData;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
@@ -113,6 +114,102 @@ test('scheduled payout claims refuse purpose-tagged affiliates', function (): vo
 
     expect($claim->isEligibleSnapshot((string) $tagged->getKey(), 0, 'USD'))->toBeFalse()
         ->and($claim->handle((string) $tagged->getKey(), 0, 'USD'))->toBeNull();
+});
+
+test('manual payout creation refuses approved conversions for purpose-tagged affiliates', function (): void {
+    $tagged = createTestAffiliate(['code' => 'PURP-PAYOUT', 'purpose' => 'share_member']);
+    $conversion = AffiliateConversion::create([
+        'affiliate_id' => $tagged->getKey(),
+        'affiliate_code' => $tagged->code,
+        'external_reference' => 'PURP-PAYOUT-' . Str::uuid(),
+        'subject_key' => 'ticket:' . Str::uuid(),
+        'status' => ApprovedConversion::class,
+        'occurred_at' => CarbonImmutable::now(),
+        'subtotal_minor' => 10000,
+        'total_minor' => 10000,
+        'value_minor' => 10000,
+        'commission_minor' => 1000,
+        'currency' => 'USD',
+        'commission_currency' => 'USD',
+    ]);
+
+    expect(fn () => CreatePayout::run([(string) $conversion->getKey()]))
+        ->toThrow(InvalidArgumentException::class, 'Only commercial-purpose');
+});
+
+test('reward-award backings remain payable through the separate award settlement flow', function (): void {
+    config(['affiliates.payouts.reward_award_settlement.enabled' => true]);
+
+    $recipient = createTestAffiliate(['code' => 'PURP-REWARD-PAYOUT', 'purpose' => 'share_reward_recipient']);
+    $conversion = AffiliateConversion::create([
+        'affiliate_id' => $recipient->getKey(),
+        'affiliate_code' => $recipient->code,
+        'external_reference' => 'PURP-REWARD-PAYOUT-' . Str::uuid(),
+        'conversion_type' => 'reward_award',
+        'status' => ApprovedConversion::class,
+        'occurred_at' => CarbonImmutable::now(),
+        'subtotal_minor' => 0,
+        'value_minor' => 0,
+        'commission_minor' => 1000,
+        'commission_currency' => 'USD',
+    ]);
+
+    AffiliateBalance::query()->create([
+        'affiliate_id' => $recipient->getKey(),
+        'currency' => 'USD',
+        'holding_minor' => 0,
+        'available_minor' => 1000,
+        'lifetime_earnings_minor' => 1000,
+        'minimum_payout_minor' => 0,
+    ]);
+
+    $payout = CreatePayout::run([(string) $conversion->getKey()]);
+
+    expect($payout->conversion_count)->toBe(1)
+        ->and($payout->total_minor)->toBe(1000);
+});
+
+test('reward-award settlement is blocked when the explicit switch is off', function (): void {
+    config(['affiliates.payouts.reward_award_settlement.enabled' => false]);
+
+    $recipient = createTestAffiliate(['code' => 'PURP-REWARD-PAYOUT-OFF', 'purpose' => 'share_reward_recipient']);
+    $conversion = AffiliateConversion::create([
+        'affiliate_id' => $recipient->getKey(),
+        'affiliate_code' => $recipient->code,
+        'external_reference' => 'PURP-REWARD-PAYOUT-OFF-' . Str::uuid(),
+        'conversion_type' => 'reward_award',
+        'status' => ApprovedConversion::class,
+        'occurred_at' => CarbonImmutable::now(),
+        'subtotal_minor' => 0,
+        'value_minor' => 0,
+        'commission_minor' => 1000,
+        'commission_currency' => 'USD',
+    ]);
+
+    expect(fn () => CreatePayout::run([(string) $conversion->getKey()]))
+        ->toThrow(InvalidArgumentException::class, 'Only commercial-purpose');
+});
+
+test('reward-award settlement switch never permits mixed purchase payouts', function (): void {
+    config(['affiliates.payouts.reward_award_settlement.enabled' => true]);
+
+    $recipient = createTestAffiliate(['code' => 'PURP-REWARD-MIXED', 'purpose' => 'share_reward_recipient']);
+    $conversions = collect(['reward_award', 'purchase'])->map(fn (string $type): AffiliateConversion => AffiliateConversion::create([
+        'affiliate_id' => $recipient->getKey(),
+        'affiliate_code' => $recipient->code,
+        'external_reference' => 'PURP-REWARD-MIXED-' . $type . '-' . Str::uuid(),
+        'conversion_type' => $type,
+        'status' => ApprovedConversion::class,
+        'occurred_at' => CarbonImmutable::now(),
+        'subtotal_minor' => 1000,
+        'total_minor' => 1000,
+        'value_minor' => 1000,
+        'commission_minor' => 100,
+        'commission_currency' => 'USD',
+    ]));
+
+    expect(fn () => CreatePayout::run($conversions->map(fn (AffiliateConversion $conversion): string => (string) $conversion->getKey())->all()))
+        ->toThrow(InvalidArgumentException::class, 'Only commercial-purpose');
 });
 
 test('performance bonus awards skip purpose-tagged affiliates', function (): void {
