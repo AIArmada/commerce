@@ -346,6 +346,32 @@ final class CreateOrderStep extends AbstractCheckoutStep
             return $metadata;
         }
 
+        $networkAttribution = $cartMetadata['network_attribution'] ?? null;
+
+        if (is_array($networkAttribution)) {
+            $linkCode = $networkAttribution['link_code'] ?? null;
+            $affiliateId = $networkAttribution['affiliate_id'] ?? null;
+            $offerId = $networkAttribution['offer_id'] ?? null;
+            $signature = $networkAttribution['signature'] ?? null;
+
+            if (
+                is_string($linkCode) && mb_trim($linkCode) !== ''
+                && is_string($affiliateId) && mb_trim($affiliateId) !== ''
+                && is_string($offerId) && mb_trim($offerId) !== ''
+                && is_string($signature) && mb_trim($signature) !== ''
+            ) {
+                $metadata['network_attribution'] = [
+                    'link_code' => mb_trim($linkCode),
+                    'affiliate_id' => mb_trim($affiliateId),
+                    'offer_id' => mb_trim($offerId),
+                    'clicked_at' => is_string($networkAttribution['clicked_at'] ?? null)
+                        ? mb_trim($networkAttribution['clicked_at'])
+                        : null,
+                    'signature' => mb_trim($signature),
+                ];
+            }
+        }
+
         $voucherCodes = array_values(array_filter(array_map(
             static fn (mixed $code): ?string => is_string($code) && mb_trim($code) !== '' ? mb_trim($code) : null,
             is_array($cartMetadata['voucher_codes'] ?? null) ? $cartMetadata['voucher_codes'] : [],

@@ -20,16 +20,20 @@ Filament adapters. Package docs stay canonical; this is the map.
 
 The books meet in exactly one place: **fulfillment**. A posted leg goes
 to exactly one payer — the engine fulfills merchant payouts when
-installed, otherwise the host records the run manually. Mutual exclusion
-is structural in the provider, so a leg can never be paid twice.
+installed, otherwise the host explicitly records a run against the leg
+with a non-empty payout reference. Recording a standalone conversion does
+not claim that it has been paid.
 
 ## Touch → order → money
 
 1. **Visit.** `?aff=CODE` (engine cookie) or `?anl=slug` (network cookie)
    lands; `TrackAffiliateCookie` / `TrackNetworkLinkCookie` persist it.
+   The network middleware also writes a validated click snapshot to the
+   current cart metadata.
    Voucher codes attach via the voucher bridge (`default_voucher_code`).
 2. **Cart.** `CartBridge` hydrates cookie attribution onto the cart.
-3. **Checkout.** The merchant records its conversion
+3. **Checkout.** Checkout copies the network snapshot into order metadata,
+   so retries can resume without the visitor's cookies. The merchant records its conversion
    (`RecordAffiliateConversion`, stamped with `origin`/`source_ref`) and —
    for network-referred orders — reports the paid order via
    `NetworkPostbackClient` (idempotent on link + order reference).
@@ -37,6 +41,22 @@ is structural in the provider, so a leg can never be paid twice.
    the engine posts its conversion and the network posts a *provisional*
    leg; the last-touch decider confirms the winner and supersedes the
    loser. Every decision is recorded with a reason.
+
+Remote postbacks use a separate decision because the merchant engine and
+network have no shared order event. `CaptureNetworkReferral` stores the
+server-observed network click time with the link code; the merchant sends that
+time and its engine touch to the network. The network keeps the newer touch,
+with ties going to the engine and a null engine touch defaulting to the
+network. If the response says `winner: network`, the host skips its local
+`RecordAffiliateConversion` call or settles an existing conversion through
+`VoidAffiliateConversion::run($conversion, 'network_attribution_won')`.
+
+Merchant reversals and voids emit a merchant-vocabulary event. When the
+network and engine are installed together, the network mirrors the first
+reversal into its ledger; retries converge on one negated companion leg.
+Remote merchants get the same symmetry over HTTP: after voiding locally,
+`NetworkPostbackClient::voidConversion()` retracts the network leg through
+the idempotent postback void endpoint.
 
 ## The seams (contracts, not classes)
 

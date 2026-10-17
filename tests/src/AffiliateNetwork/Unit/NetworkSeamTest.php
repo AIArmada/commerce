@@ -27,6 +27,7 @@ use AIArmada\AffiliateNetwork\Services\NetworkBooks;
 use AIArmada\AffiliateNetwork\Services\NetworkLedgerReconciliationService;
 use AIArmada\AffiliateNetwork\Services\OfferLinkService;
 use AIArmada\AffiliateNetwork\Services\OfferManagementService;
+use AIArmada\AffiliateNetwork\Support\AffiliateProfileGuard;
 use AIArmada\AffiliateNetwork\Support\UserKeyAffiliateIdentityResolver;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
@@ -234,7 +235,8 @@ describe('Network seam', function (): void {
             'aff-1' => new NetworkAffiliate(id: 'aff-1', code: 'SEAM1', handle: 'seam-one'),
         ]);
 
-        $application = (new ApplyToOffer($identities))->execute($offer, 'aff-1', 'Seam application');
+        $application = (new ApplyToOffer($identities, new AffiliateProfileGuard($identities)))
+            ->execute($offer, 'aff-1', 'Seam application');
 
         expect($application->affiliate_id)->toBe('aff-1')
             ->and($application->offer_id)->toBe($offer->id);
@@ -243,7 +245,9 @@ describe('Network seam', function (): void {
     test('unknown affiliates cannot apply', function (): void {
         [, $offer] = seamFixtures('seam-unknown.example');
 
-        expect(fn () => (new ApplyToOffer(new FakeAffiliateIdentities))->execute($offer, 'ghost'))
+        $identities = new FakeAffiliateIdentities;
+
+        expect(fn () => (new ApplyToOffer($identities, new AffiliateProfileGuard($identities)))->execute($offer, 'ghost'))
             ->toThrow(ModelNotFoundException::class);
     });
 

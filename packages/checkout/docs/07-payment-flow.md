@@ -63,6 +63,14 @@ For guest/direct-capable flows, `resolve_customer` stays read-only. Checkout use
 
 This resolution stage is what lets `cashier-chip` use billable models for authenticated flows while still supporting guest purchases from the same checkout pipeline.
 
+## Order attribution metadata
+
+Checkout copies the validated `network_attribution` snapshot from cart
+metadata into order metadata when it creates or reuses the order. The snapshot
+contains the network link code, affiliate ID, offer ID, and click time. Network
+listeners can therefore resume attribution after payment retries without
+depending on request cookies.
+
 ## Post-Payment Customer Persistence
 
 After `process_payment` succeeds, checkout enters a post-payment phase.

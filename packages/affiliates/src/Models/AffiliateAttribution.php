@@ -53,6 +53,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $owner_id
  * @property array<string, mixed>|null $metadata
  * @property CarbonInterface|null $first_seen_at
+ * @property CarbonInterface|null $last_referred_at
  * @property CarbonInterface|null $last_seen_at
  * @property CarbonInterface|null $last_cookie_seen_at
  * @property CarbonInterface|null $expires_at
@@ -107,6 +108,7 @@ class AffiliateAttribution extends Model
         'fingerprint',
         'metadata',
         'first_seen_at',
+        'last_referred_at',
         'last_seen_at',
         'last_cookie_seen_at',
         'expires_at',
@@ -117,6 +119,7 @@ class AffiliateAttribution extends Model
         'commission_override' => 'array',
         'upline_levels' => 'array',
         'first_seen_at' => 'immutable_datetime',
+        'last_referred_at' => 'immutable_datetime',
         'last_seen_at' => 'immutable_datetime',
         'last_cookie_seen_at' => 'immutable_datetime',
         'expires_at' => 'immutable_datetime',

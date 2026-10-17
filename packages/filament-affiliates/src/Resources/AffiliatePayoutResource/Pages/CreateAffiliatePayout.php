@@ -4,50 +4,83 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource\Pages;
 
+use AIArmada\Affiliates\Actions\Payouts\CreatePayout;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\States\Disabled;
-use AIArmada\Affiliates\States\Paused;
-use AIArmada\Affiliates\States\Pending;
-use AIArmada\Affiliates\States\PendingPayout;
+use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\States\ApprovedConversion;
+use AIArmada\CommerceSupport\Support\LikeSearch;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource;
-use Carbon\CarbonImmutable;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
-use RuntimeException;
 
 final class CreateAffiliatePayout extends CreateRecord
 {
     protected static string $resource = AffiliatePayoutResource::class;
 
-    protected function mutateFormDataBeforeCreate(array $data): array
+    protected function handleRecordCreation(array $data): Model
     {
-        $affiliateId = $data['affiliate_id'] ?? null;
+        $affiliate = $this->resolveAffiliate($data['affiliate_id'] ?? null);
+        $conversionIds = $this->resolveConversionIds($data['conversion_ids'] ?? null);
+        $this->assertConversionsBelongToAffiliate($conversionIds, $affiliate);
 
+        $attributes = [];
+        $notes = isset($data['notes']) && is_string($data['notes']) ? mb_trim($data['notes']) : '';
+        $overrideReason = isset($data['payout_override_reason']) && is_string($data['payout_override_reason'])
+            ? mb_trim($data['payout_override_reason'])
+            : '';
+
+        if ($notes !== '') {
+            $attributes['metadata'] = ['notes' => $notes];
+        }
+
+        if (isset($data['scheduled_at'])) {
+            $attributes['scheduled_at'] = $data['scheduled_at'];
+        }
+
+        if ($overrideReason !== '') {
+            $attributes['payout_override_reason'] = $overrideReason;
+        }
+
+        try {
+            return CreatePayout::run($conversionIds, $attributes);
+        } catch (InvalidArgumentException | ModelNotFoundException $exception) {
+            $field = str_contains($exception->getMessage(), 'cannot receive payouts')
+                ? 'payout_override_reason'
+                : 'conversion_ids';
+
+            throw ValidationException::withMessages([
+                'data.' . $field => $exception->getMessage(),
+            ]);
+        }
+    }
+
+    private function resolveAffiliate(mixed $affiliateId): Affiliate
+    {
         if (! is_string($affiliateId) && ! is_int($affiliateId)) {
             throw ValidationException::withMessages([
                 'data.affiliate_id' => 'The selected affiliate is invalid.',
             ]);
         }
 
-        if (! (bool) config('affiliates.owner.enabled', false)) {
-            $affiliate = Affiliate::query()->find((string) $affiliateId);
-        } else {
-            try {
-                $affiliate = OwnerWriteGuard::findOrFailForOwner(
+        try {
+            $affiliate = (bool) config('affiliates.owner.enabled', false)
+                ? OwnerWriteGuard::findOrFailForOwner(
                     Affiliate::class,
                     (string) $affiliateId,
                     includeGlobal: (bool) config('affiliates.owner.include_global', false),
                     message: 'The selected affiliate is not accessible in the current owner scope.',
-                );
-            } catch (AuthorizationException | InvalidArgumentException | RuntimeException) {
-                throw ValidationException::withMessages([
-                    'data.affiliate_id' => 'The selected affiliate is not accessible in the current owner scope.',
-                ]);
-            }
+                )
+                : Affiliate::query()->find((string) $affiliateId);
+        } catch (AuthorizationException | InvalidArgumentException) {
+            throw ValidationException::withMessages([
+                'data.affiliate_id' => 'The selected affiliate is not accessible in the current owner scope.',
+            ]);
         }
 
         if (! $affiliate instanceof Affiliate) {
@@ -58,66 +91,131 @@ final class CreateAffiliatePayout extends CreateRecord
 
         if (! $affiliate->isCommercialPurpose()) {
             throw ValidationException::withMessages([
-                'data.affiliate_id' => 'Only commercial-purpose affiliates can receive manual payouts.',
+                'data.affiliate_id' => 'Only commercial-purpose affiliates can receive payouts.',
             ]);
         }
 
-        $notes = isset($data['notes']) && is_string($data['notes']) ? mb_trim($data['notes']) : null;
-        $reason = isset($data['payout_override_reason']) && is_string($data['payout_override_reason'])
-            ? mb_trim($data['payout_override_reason'])
-            : '';
+        return $affiliate;
+    }
 
-        $metadata = $notes === null || $notes === '' ? [] : ['notes' => $notes];
-
-        // Mirror CreatePayout::resolvePayoutOverride: stamp only for
-        // disabled affiliates with a reason, throw for everything else
-        // non-payable (catch-all, so future statuses fail closed too) —
-        // including non-payable affiliates with NO reason, so the form
-        // cannot create payouts the completion gate will refuse.
-        if (! $affiliate->canReceivePayout()) {
-            if ($reason === '') {
-                throw ValidationException::withMessages([
-                    'data.affiliate_id' => sprintf(
-                        'Affiliate "%s" cannot receive payouts (status: %s). Pending affiliates must be approved first; paused affiliates must be unpaused; disabled affiliates require an override reason to release earned balances.',
-                        (string) $affiliate->code,
-                        $affiliate->status->getValue(),
-                    ),
-                ]);
-            }
-
-            if (! $affiliate->status instanceof Disabled) {
-                $message = match (true) {
-                    $affiliate->status instanceof Pending => 'Pending affiliates must be approved first; an override reason cannot release their payouts.',
-                    $affiliate->status instanceof Paused => 'Paused affiliates must be unpaused first; an override reason cannot release their payouts.',
-                    default => sprintf(
-                        'Affiliates with status "%s" cannot receive payouts; only disabled affiliates accept an audited override reason.',
-                        $affiliate->status->getValue()
-                    ),
-                };
-
-                throw ValidationException::withMessages([
-                    'data.payout_override_reason' => $message,
-                ]);
-            }
-
-            $metadata['payout_override'] = [
-                'reason' => $reason,
-                'affiliate_status' => $affiliate->status->getValue(),
-                'overridden_at' => CarbonImmutable::now()->toIso8601String(),
-                'overridden_by' => auth()->user()?->getAuthIdentifier(),
-            ];
+    /**
+     * @return array<int, string>
+     */
+    private function resolveConversionIds(mixed $selectedIds): array
+    {
+        if (! is_array($selectedIds) || $selectedIds === []) {
+            throw ValidationException::withMessages([
+                'data.conversion_ids' => 'Select at least one approved conversion for this payout.',
+            ]);
         }
 
-        return [
-            'reference' => 'PAY-' . Str::upper(Str::random(10)),
-            'status' => PendingPayout::class,
-            'total_minor' => (int) ($data['total_minor'] ?? 0),
-            'conversion_count' => 0,
-            'currency' => mb_strtoupper((string) ($data['currency'] ?? 'MYR')),
-            'payee_type' => $affiliate->getMorphClass(),
-            'payee_id' => $affiliate->getKey(),
-            'scheduled_at' => $data['scheduled_at'] ?? null,
-            'metadata' => $metadata === [] ? null : $metadata,
-        ];
+        $conversionIds = [];
+
+        foreach ($selectedIds as $selectedId) {
+            if ((! is_string($selectedId) && ! is_int($selectedId)) || (string) $selectedId === '') {
+                throw ValidationException::withMessages([
+                    'data.conversion_ids' => 'One or more selected conversions are invalid.',
+                ]);
+            }
+
+            $conversionIds[] = (string) $selectedId;
+        }
+
+        return array_values(array_unique($conversionIds));
+    }
+
+    /**
+     * @param  array<int, string>  $conversionIds
+     */
+    private function assertConversionsBelongToAffiliate(array $conversionIds, Affiliate $affiliate): void
+    {
+        $conversions = AffiliateConversion::query()
+            ->forOwner()
+            ->whereIn('id', $conversionIds)
+            ->get();
+
+        if ($conversions->count() !== count($conversionIds)) {
+            throw ValidationException::withMessages([
+                'data.conversion_ids' => 'One or more selected conversions are not accessible in the current owner scope.',
+            ]);
+        }
+
+        foreach ($conversions as $conversion) {
+            if ((string) $conversion->affiliate_id !== (string) $affiliate->getKey()) {
+                throw ValidationException::withMessages([
+                    'data.conversion_ids' => 'Every selected conversion must belong to the selected affiliate.',
+                ]);
+            }
+
+            if (! $conversion->status->equals(ApprovedConversion::class) || $conversion->affiliate_payout_id !== null) {
+                throw ValidationException::withMessages([
+                    'data.conversion_ids' => 'Every selected conversion must be approved and unlinked from another payout.',
+                ]);
+            }
+        }
+    }
+
+    /**
+     * @param  array<int, string>|null  $selectedIds
+     * @return array<string, string>
+     */
+    public static function conversionOptions(mixed $affiliateId, ?string $search, ?array $selectedIds = null): array
+    {
+        if ((! is_string($affiliateId) && ! is_int($affiliateId)) || (string) $affiliateId === '') {
+            return [];
+        }
+
+        $query = AffiliateConversion::query()
+            ->forOwner()
+            ->where('affiliate_id', (string) $affiliateId)
+            ->where('status', ApprovedConversion::value())
+            ->whereNull('affiliate_payout_id');
+
+        if ($selectedIds !== null) {
+            $query->whereIn('id', $selectedIds);
+        } elseif (is_string($search) && mb_trim($search) !== '') {
+            $pattern = LikeSearch::contains($search);
+            $query->where(function ($nested) use ($pattern): void {
+                LikeSearch::whereLike($nested, 'external_reference', $pattern);
+                LikeSearch::orWhereLike($nested, 'source_ref', $pattern);
+            });
+        }
+
+        $conversions = $query
+            ->orderByDesc('occurred_at')
+            ->limit(50)
+            ->get();
+
+        $options = [];
+
+        foreach ($conversions as $conversion) {
+            $reference = $conversion->external_reference ?: $conversion->source_ref ?: (string) $conversion->getKey();
+            $currency = mb_strtoupper((string) $conversion->commission_currency);
+            $amount = MoneyFormatter::decimalFromMinor((int) $conversion->commission_minor, $currency);
+            $options[(string) $conversion->getKey()] = sprintf('%s — %s %s', $reference, $amount, $currency);
+        }
+
+        return $options;
+    }
+
+    public static function affiliateOptions(string $search): array
+    {
+        $query = Affiliate::query()->whereCommercialPurpose();
+
+        if ((bool) config('affiliates.owner.enabled', false)) {
+            $query->forOwner();
+        }
+
+        $pattern = LikeSearch::contains($search);
+
+        return $query
+            ->where(function ($nested) use ($pattern): void {
+                LikeSearch::whereLike($nested, 'name', $pattern);
+                LikeSearch::orWhereLike($nested, 'code', $pattern);
+            })
+            ->orderBy('name')
+            ->limit(50)
+            ->pluck('name', 'id')
+            ->toArray();
     }
 }

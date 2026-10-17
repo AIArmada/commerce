@@ -10,7 +10,6 @@ use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\CompletedPayout;
 use AIArmada\Affiliates\States\FailedPayout;
 use AIArmada\Affiliates\States\PayoutStatus;
-use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Affiliates\States\ProcessingPayout;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
@@ -70,7 +69,7 @@ final class AffiliatePayoutsTable
                     ->color('success')
                     ->requiresConfirmation()
                     ->authorize(fn (): bool => (Filament::auth()->user() ?? auth()->user())?->can('affiliates.payout.update') ?? false)
-                    ->visible(fn (AffiliatePayout $record): bool => ! $record->status->equals(CompletedPayout::class))
+                    ->visible(fn (AffiliatePayout $record): bool => $record->status->canTransitionTo(CompletedPayout::class))
                     ->action(function (AffiliatePayout $record): void {
                         self::markCompleted($record);
                     }),
@@ -80,7 +79,7 @@ final class AffiliatePayoutsTable
                     ->color('warning')
                     ->requiresConfirmation()
                     ->authorize(fn (): bool => (Filament::auth()->user() ?? auth()->user())?->can('affiliates.payout.update') ?? false)
-                    ->visible(fn (AffiliatePayout $record): bool => $record->status->equals(PendingPayout::class))
+                    ->visible(fn (AffiliatePayout $record): bool => $record->status->canTransitionTo(ProcessingPayout::class))
                     ->action(function (AffiliatePayout $record): void {
                         Gate::authorize('update', $record);
 
@@ -96,7 +95,7 @@ final class AffiliatePayoutsTable
                     ->color('danger')
                     ->requiresConfirmation()
                     ->authorize(fn (): bool => (Filament::auth()->user() ?? auth()->user())?->can('affiliates.payout.update') ?? false)
-                    ->visible(fn (AffiliatePayout $record): bool => ! $record->status->equals(FailedPayout::class))
+                    ->visible(fn (AffiliatePayout $record): bool => $record->status->canTransitionTo(FailedPayout::class))
                     ->action(function (AffiliatePayout $record): void {
                         Gate::authorize('update', $record);
 

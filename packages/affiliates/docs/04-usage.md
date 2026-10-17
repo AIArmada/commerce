@@ -150,6 +150,12 @@ When the Orders package is installed, it can emit a commission attribution event
 The Affiliates package resolves the normalized attribution for the original cart and records
 conversions automatically.
 
+Each accepted referral visit updates `last_referred_at`; the first visit keeps
+its `first_seen_at`. The shared checkout winner protocol uses only
+`last_referred_at` as the engine touch; a null value means the engine has no
+touch. A repeat click refreshes that touch without using cookie-maintenance
+timestamps as the business touch time.
+
 ```php
 use AIArmada\Orders\Models\Order;
 

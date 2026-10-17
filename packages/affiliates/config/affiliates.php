@@ -334,6 +334,7 @@ return [
         'token' => env('AFFILIATE_NETWORK_TOKEN'),
         'referral_param' => env('AFFILIATE_NETWORK_REFERRAL_PARAM', 'anl'),
         'session_key' => env('AFFILIATE_NETWORK_SESSION_KEY', 'affiliate_network.link_code'),
+        'connect_timeout_seconds' => env('AFFILIATE_NETWORK_CONNECT_TIMEOUT', 3),
         'timeout_seconds' => env('AFFILIATE_NETWORK_TIMEOUT', 8),
     ],
 

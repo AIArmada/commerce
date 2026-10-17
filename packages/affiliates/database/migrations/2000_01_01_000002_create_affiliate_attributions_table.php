@@ -50,6 +50,7 @@ return new class extends Migration
             $table->nullableUuidMorphs('owner');
             $table->{$jsonType}('metadata')->nullable();
             $table->timestampTz('first_seen_at')->nullable();
+            $table->timestampTz('last_referred_at')->nullable();
             $table->timestampTz('last_seen_at')->nullable();
             $table->timestampTz('last_cookie_seen_at')->nullable();
             $table->timestampTz('expires_at')->nullable()->index();

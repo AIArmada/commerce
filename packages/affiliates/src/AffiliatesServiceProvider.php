@@ -331,7 +331,9 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
     {
         $providers = $this->app->getLoadedProviders();
 
-        return isset($providers['AIArmada\AffiliateNetwork\AffiliateNetworkServiceProvider']);
+        return isset($providers['AIArmada\AffiliateNetwork\AffiliateNetworkServiceProvider'])
+            && config('affiliate-network.checkout.enabled', false)
+            && config('affiliate-network.checkout.listen_for_orders', true);
     }
 
     private function registerAttributionStrategies(): void

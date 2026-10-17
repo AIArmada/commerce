@@ -216,6 +216,8 @@ describe('Merchant portal self-service', function (): void {
             'link_code' => $link->link->slug,
             'external_reference' => 'ORDER-1',
             'revenue_minor' => 100,
+            'engine_touch_at' => null,
+            'network_clicked_at' => now()->toIso8601String(),
         ], [], [], ['HTTP_AUTHORIZATION' => 'Bearer site-secret']);
 
         $response = app(ReportNetworkConversionController::class)($request, app(OfferLinkService::class));

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Merchant;
 
+use Carbon\CarbonImmutable;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -24,10 +25,9 @@ final class CaptureNetworkReferral
             $code = $request->query((string) config('affiliates.merchant.referral_param', 'anl'));
 
             if (is_string($code) && $code !== '') {
-                $request->session()->put(
-                    (string) config('affiliates.merchant.session_key', 'affiliate_network.link_code'),
-                    $code
-                );
+                $sessionKey = (string) config('affiliates.merchant.session_key', 'affiliate_network.link_code');
+                $request->session()->put($sessionKey, $code);
+                $request->session()->put($sessionKey . '_clicked_at', CarbonImmutable::now()->toIso8601String());
             }
         }
 

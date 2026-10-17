@@ -57,6 +57,7 @@ final class AttachAffiliateToCart
         $attribution = $attributionQuery->first();
 
         $payload = $this->buildAttributionPayload($affiliate, $cart, $context);
+        $referredAt = CarbonImmutable::now();
 
         if (! $attribution && isset($payload['cookie_value'])) {
             $attribution = $this->findAttributionByCookie((string) $payload['cookie_value']);
@@ -71,12 +72,13 @@ final class AttachAffiliateToCart
 
             $attribution = new AffiliateAttribution(Arr::except($payload, ['owner_type', 'owner_id']));
             $attribution->forceFill(Arr::only($payload, ['owner_type', 'owner_id']));
-            $attribution->first_seen_at = CarbonImmutable::now();
+            $attribution->first_seen_at = $referredAt;
         }
 
-        $attribution->last_seen_at = CarbonImmutable::now();
+        $attribution->last_referred_at = $referredAt;
+        $attribution->last_seen_at = $referredAt;
         if (isset($payload['cookie_value'])) {
-            $attribution->last_cookie_seen_at = CarbonImmutable::now();
+            $attribution->last_cookie_seen_at = $referredAt;
         }
         $attribution->expires_at = $payload['expires_at'];
         $attribution->save();

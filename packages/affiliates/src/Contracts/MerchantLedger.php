@@ -34,12 +34,12 @@ interface MerchantLedger
     public function findPosting(string $source, string $sourceRef, string $externalReference): ?PostedConversion;
 
     /**
-     * @return array<int, array<string, mixed>> Postings for reconciliation.
+     * @return array<int, array<string, mixed>> Active postings for reconciliation.
      */
     public function postingsForSourceRef(string $source, string $sourceRef): array;
 
     /**
-     * Postings sharing one external reference, across all origins.
+     * Active postings sharing one external reference, across all origins.
      *
      * Feeds the dual-reporting collision report: the same sale posted
      * by two origins (or two source refs) means two systems paid it.

@@ -21,6 +21,8 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Merchant books for externally-attributed conversions.
@@ -31,6 +33,9 @@ use Illuminate\Database\Eloquent\Builder;
  */
 final class MerchantLedgerService implements MerchantLedger
 {
+    /** @var list<string> */
+    private const ACTIVE_POSTING_STATUSES = ['pending', 'approved', 'qualified', 'paid'];
+
     public function __construct(
         private readonly MerchantIdentity $identities,
         private readonly ApplyConversionAccounting $accounting,
@@ -47,20 +52,14 @@ final class MerchantLedgerService implements MerchantLedger
             return null;
         }
 
-        $existing = $this->queryPosted($draft->source, $draft->sourceRef, $draft->externalReference)->first();
-
-        if ($existing instanceof AffiliateConversion) {
-            return self::toPostedConversion($existing);
-        }
-
         $autoApprove = (bool) config('affiliates.commissions.auto_approve', false);
-
-        $conversion = new AffiliateConversion([
-            'idempotency_key' => hash('sha256', implode('|', [
-                $draft->source,
-                $draft->sourceRef,
-                $draft->externalReference,
-            ])),
+        $idempotencyKey = hash('sha256', implode('|', [
+            $draft->source,
+            $draft->sourceRef,
+            $draft->externalReference,
+        ]));
+        $attributes = [
+            'idempotency_key' => $idempotencyKey,
             'affiliate_id' => $affiliate->getKey(),
             'affiliate_code' => $affiliate->code,
             'source_ref' => $draft->sourceRef,
@@ -77,19 +76,30 @@ final class MerchantLedgerService implements MerchantLedger
             'metadata' => $draft->metadata,
             'occurred_at' => CarbonImmutable::now(),
             'approved_at' => $autoApprove ? CarbonImmutable::now() : null,
-        ]);
-        $conversion->forceFill([
             'owner_type' => $affiliate->owner_type,
             'owner_id' => $affiliate->owner_id,
-        ]);
-        $conversion->save();
+        ];
 
-        if (! $this->fraud->analyzeConversion($conversion)['allowed']) {
-            $conversion->update(['status' => RejectedConversion::class]);
-        }
+        $conversion = DB::transaction(function () use ($attributes): AffiliateConversion {
+            $conversion = $this->createIdempotent($attributes);
 
-        $this->accounting->handle($conversion);
-        $this->events->dispatch(new AffiliateConversionRecorded(AffiliateConversionData::fromModel($conversion)));
+            if (! $conversion->wasRecentlyCreated) {
+                return $conversion;
+            }
+
+            if (! $this->fraud->analyzeConversion($conversion)['allowed']) {
+                $conversion->update(['status' => RejectedConversion::class]);
+            }
+
+            $this->accounting->handle($conversion);
+
+            if (! $conversion->status->equals(RejectedConversion::class)) {
+                $conversionData = AffiliateConversionData::fromModel($conversion);
+                DB::connection()->afterCommit(fn () => $this->events->dispatch(new AffiliateConversionRecorded($conversionData)));
+            }
+
+            return $conversion;
+        });
 
         return self::toPostedConversion($conversion->fresh() ?? $conversion);
     }
@@ -136,6 +146,7 @@ final class MerchantLedgerService implements MerchantLedger
             ->withoutOwnerScope()
             ->where('origin', $source)
             ->where('source_ref', $sourceRef)
+            ->whereIn('status', self::ACTIVE_POSTING_STATUSES)
             ->get(['commission_currency', 'value_minor', 'commission_minor', 'external_reference'])
             ->map(fn (AffiliateConversion $row): array => [
                 'commission_currency' => $row->commission_currency,
@@ -151,6 +162,7 @@ final class MerchantLedgerService implements MerchantLedger
         return AffiliateConversion::query()
             ->withoutOwnerScope()
             ->where('external_reference', $externalReference)
+            ->whereIn('status', self::ACTIVE_POSTING_STATUSES)
             ->get(['origin', 'source_ref', 'commission_currency', 'commission_minor'])
             ->map(fn (AffiliateConversion $row): array => [
                 'origin' => $row->origin,
@@ -182,6 +194,53 @@ final class MerchantLedgerService implements MerchantLedger
         $affiliate = Affiliate::query()->withoutOwnerScope()->whereKey($id)->first();
 
         return $affiliate instanceof Affiliate ? $affiliate : null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    private function createIdempotent(array $attributes): AffiliateConversion
+    {
+        $existing = AffiliateConversion::query()
+            ->withoutOwnerScope()
+            ->where('idempotency_key', $attributes['idempotency_key'])
+            ->first();
+
+        if ($existing instanceof AffiliateConversion) {
+            $existing->wasRecentlyCreated = false;
+
+            return $existing;
+        }
+
+        try {
+            $conversion = DB::transaction(function () use ($attributes): AffiliateConversion {
+                $conversion = new AffiliateConversion;
+                $conversion->forceFill($attributes)->save();
+
+                return $conversion;
+            }, attempts: 1);
+        } catch (QueryException $exception) {
+            if (! self::isUniqueViolation($exception)) {
+                throw $exception;
+            }
+
+            $existing = AffiliateConversion::query()
+                ->withoutOwnerScope()
+                ->where('idempotency_key', $attributes['idempotency_key'])
+                ->firstOrFail();
+            $existing->wasRecentlyCreated = false;
+
+            return $existing;
+        }
+
+        $conversion->wasRecentlyCreated = true;
+
+        return $conversion;
+    }
+
+    private static function isUniqueViolation(QueryException $exception): bool
+    {
+        return in_array((string) ($exception->errorInfo[0] ?? $exception->getCode()), ['23000', '23505'], true);
     }
 
     /**

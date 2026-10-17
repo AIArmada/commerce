@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use AIArmada\AffiliateNetwork\AffiliateNetworkServiceProvider;
+use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateToCart;
 use AIArmada\Affiliates\AffiliatesServiceProvider;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
 use AIArmada\Affiliates\Events\AffiliateProgramJoined;
@@ -10,11 +12,16 @@ use AIArmada\Affiliates\Listeners\IncrementAffiliateLinkClicks;
 use AIArmada\Affiliates\Listeners\NotifyConversionRecorded;
 use AIArmada\Affiliates\Listeners\NotifyProgramJoined;
 use AIArmada\Affiliates\Listeners\RecordCommissionForOrder;
+use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Support\Integrations\VoucherIntegrationRegistrar;
 use AIArmada\Affiliates\Support\Middleware\HydratePublicAffiliateReferralContext;
+use AIArmada\Cart\Cart;
 use AIArmada\Cart\Conditions\ConditionProviderRegistry;
+use AIArmada\Cart\Contracts\CartManagerInterface;
+use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\Links\Events\LinkClicked;
 use AIArmada\Orders\Events\CommissionAttributionRequired;
+use AIArmada\Orders\Models\Order;
 use Illuminate\Support\Facades\Event;
 
 afterEach(function (): void {
@@ -132,6 +139,63 @@ it('does not register the commission listener when commission tracking is disabl
 
     $provider = new AffiliatesServiceProvider(app());
     $provider->packageBooted();
+});
+
+it('registers one engine conversion listener across affiliate-network checkout gates', function (): void {
+    config()->set('affiliate-network.checkout.enabled', false);
+    config()->set('affiliates.features.cart_integration.enabled', false);
+    config()->set('affiliates.features.voucher_integration.enabled', false);
+    config()->set('affiliates.cookies.enabled', false);
+    config()->set('affiliates.public_pages.enabled', false);
+
+    app()->register(AffiliateNetworkServiceProvider::class);
+
+    $cases = [
+        ['checkout' => false, 'listen' => true, 'tracking' => true, 'expected' => 1],
+        ['checkout' => true, 'listen' => true, 'tracking' => true, 'expected' => 1],
+        ['checkout' => true, 'listen' => false, 'tracking' => true, 'expected' => 1],
+        ['checkout' => true, 'listen' => true, 'tracking' => false, 'expected' => 0],
+    ];
+
+    foreach ($cases as $case) {
+        Event::forget(CommissionAttributionRequired::class);
+        config()->set('affiliate-network.checkout.enabled', $case['checkout']);
+        config()->set('affiliate-network.checkout.listen_for_orders', $case['listen']);
+        config()->set('affiliates.features.commission_tracking.enabled', $case['tracking']);
+
+        (new AffiliatesServiceProvider(app()))->packageBooted();
+        (new AffiliateNetworkServiceProvider(app()))->packageBooted();
+
+        $listeners = Event::getRawListeners()[CommissionAttributionRequired::class] ?? [];
+        $engineListeners = array_values(array_filter(
+            $listeners,
+            static fn (mixed $listener): bool => $listener === RecordCommissionForOrder::class,
+        ));
+
+        expect($engineListeners)->toHaveCount($case['expected']);
+
+        if (! $case['tracking']) {
+            continue;
+        }
+
+        $affiliate = createTestAffiliate();
+        $cart = new Cart(new InMemoryStorage, 'w1-cart-' . uniqid(), events: null, eventsEnabled: false);
+        $cart->add('w1-item-' . uniqid(), 'Commission item', 10000, 1);
+        app(AttachAffiliateToCart::class)->handle($affiliate, $cart);
+
+        $cartManager = mock(CartManagerInterface::class);
+        $cartManager->shouldReceive('getById')->once()->with($cart->getId())->andReturn($cart);
+        app()->instance(CartManagerInterface::class, $cartManager);
+
+        $order = Order::factory()->paid()->create([
+            'metadata' => ['cart_id' => $cart->getId()],
+        ]);
+
+        event(new CommissionAttributionRequired($order));
+
+        expect(AffiliateConversion::query()->where('affiliate_id', $affiliate->getKey())->count())
+            ->toBe($case['expected']);
+    }
 });
 
 it('registers public-page referral middleware when the feature is enabled', function (): void {

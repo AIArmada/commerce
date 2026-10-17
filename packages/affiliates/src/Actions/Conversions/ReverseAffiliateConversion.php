@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Actions\Conversions;
 
+use AIArmada\Affiliates\Events\AffiliateConversionReversed;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\ReversedConversion;
 use Carbon\CarbonImmutable;
@@ -51,6 +52,7 @@ final class ReverseAffiliateConversion
                 // commission was zeroed must be released, not stranded.
                 $locked->update(['status' => ReversedConversion::class]);
                 $this->accounting->handle($locked, $previousStatus);
+                $this->dispatchReversed($locked, $reason);
 
                 return $locked->refresh();
             }
@@ -60,6 +62,7 @@ final class ReverseAffiliateConversion
             $locked->update(['status' => ReversedConversion::class]);
 
             $this->accounting->handle($locked, $previousStatus);
+            $this->dispatchReversed($locked, $reason);
 
             return $reversal;
         }, attempts: 3);
@@ -112,5 +115,17 @@ final class ReverseAffiliateConversion
             ->where('conversion_type', 'reversal')
             ->where('metadata->reverses_id', (string) $conversion->getKey())
             ->first();
+    }
+
+    private function dispatchReversed(AffiliateConversion $conversion, string $reason): void
+    {
+        DB::connection()->afterCommit(function () use ($conversion, $reason): void {
+            event(new AffiliateConversionReversed(
+                origin: is_string($conversion->origin) ? $conversion->origin : null,
+                sourceRef: is_string($conversion->source_ref) ? $conversion->source_ref : null,
+                externalReference: is_string($conversion->external_reference) ? $conversion->external_reference : null,
+                reason: $reason,
+            ));
+        });
     }
 }

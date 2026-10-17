@@ -18,9 +18,11 @@ use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\States\PayoutStatus;
 use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Affiliates\States\ProcessingPayout;
+use AIArmada\Affiliates\States\ReversedConversion;
 use AIArmada\CommerceSupport\Support\CurrencyConverter;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -362,9 +364,22 @@ final class PayoutReconciliationService
     {
         $currency = mb_strtoupper($currency);
         $approvedCommissions = (int) $affiliate->conversions()->where('status', ApprovedConversion::value())->where('commission_currency', $currency)->sum('commission_minor');
+        $completedPayoutConversions = (int) $affiliate->conversions()
+            ->where('status', PaidConversion::value())
+            ->where('commission_currency', $currency)
+            ->whereHas('payout', static fn (Builder $query): Builder => $query
+                ->where('status', CompletedPayout::value())
+                ->where('currency', $currency))
+            ->sum('commission_minor');
+        $directPaidClawbacks = (int) $affiliate->conversions()
+            ->where('status', ReversedConversion::value())
+            ->whereNull('affiliate_payout_id')
+            ->whereNotNull('paid_at')
+            ->where('commission_currency', $currency)
+            ->sum('commission_minor');
         $paidOut = (int) $affiliate->payouts()->where('status', CompletedPayout::value())->where('currency', $currency)->sum('total_minor');
         $pendingPayouts = (int) $affiliate->payouts()->whereIn('status', [PendingPayout::value(), ProcessingPayout::value()])->where('currency', $currency)->sum('total_minor');
-        $expectedAvailable = $approvedCommissions - $paidOut - $pendingPayouts;
+        $expectedAvailable = $approvedCommissions + $completedPayoutConversions - $paidOut - $pendingPayouts - $directPaidClawbacks;
         $actualAvailable = $affiliate->balanceFor($currency)?->available_minor ?? 0;
         $discrepancy = $expectedAvailable - $actualAvailable;
 
@@ -376,6 +391,8 @@ final class PayoutReconciliationService
             'discrepancy_minor' => $discrepancy,
             'has_discrepancy' => $discrepancy !== 0,
             'approved_commissions_minor' => $approvedCommissions,
+            'completed_payout_conversions_minor' => $completedPayoutConversions,
+            'direct_paid_clawbacks_minor' => $directPaidClawbacks,
             'paid_out_minor' => $paidOut,
             'pending_payouts_minor' => $pendingPayouts,
         ];

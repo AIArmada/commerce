@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateToCart;
+use AIArmada\Affiliates\Actions\Affiliates\TrackAffiliateVisit;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
@@ -42,7 +43,7 @@ function touchCart(Affiliate $affiliate, string $item, CarbonImmutable $touch): 
 
     AffiliateAttribution::query()
         ->where('cart_identifier', $cart->getIdentifier())
-        ->update(['last_cookie_seen_at' => $touch]);
+        ->update(['last_referred_at' => $touch]);
 
     return $cart->getId();
 }
@@ -60,6 +61,49 @@ describe('cross-system winner protocol (engine side)', function (): void {
         expect(AffiliateConversion::query()->count())->toBe(1)
             ->and($metadata['attribution_winner'])->toBe('engine')
             ->and($metadata['engine_touch_at'])->not->toBeNull();
+    });
+
+    test('a repeat referral click refreshes the engine winner touch', function (): void {
+        $affiliate = winnerAffiliate('WIN-REPEAT');
+        $cart = app('cart')->getCurrentCart();
+        $cart->add('winner-repeat', 'Repeat Click Item', 10.00, 1);
+        $firstClick = CarbonImmutable::parse('2026-02-01T10:00:00+00:00');
+        CarbonImmutable::setTestNow($firstClick);
+
+        app(TrackAffiliateVisit::class)->handle($affiliate->code, [
+            'cart_identifier' => $cart->getIdentifier(),
+            'cart_instance' => $cart->instance(),
+        ], 'winner-repeat-cookie');
+
+        $firstAttribution = AffiliateAttribution::query()
+            ->where('cart_identifier', $cart->getIdentifier())
+            ->sole();
+        $firstSeenAt = $firstAttribution->first_seen_at;
+        $secondClick = $firstClick->addHour();
+        CarbonImmutable::setTestNow($secondClick);
+
+        app(TrackAffiliateVisit::class)->handle($affiliate->code, [
+            'cart_identifier' => $cart->getIdentifier(),
+            'cart_instance' => $cart->instance(),
+        ], 'winner-repeat-cookie');
+
+        $order = winnerOrder(
+            $cart->getId(),
+            'ORD-WIN-REPEAT',
+            $firstClick->addMinutes(30)->toIso8601String(),
+        );
+
+        event(new CommissionAttributionRequired($order));
+
+        $attribution = $firstAttribution->fresh();
+        $metadata = $order->fresh()->metadata;
+
+        CarbonImmutable::setTestNow();
+
+        expect($attribution->first_seen_at->equalTo($firstSeenAt))->toBeTrue()
+            ->and($attribution->last_referred_at->equalTo($secondClick))->toBeTrue()
+            ->and(AffiliateConversion::query()->count())->toBe(1)
+            ->and($metadata['attribution_winner'])->toBe('engine');
     });
 
     test('engine yields when the network touch is newest', function (): void {
@@ -126,6 +170,31 @@ describe('cross-system winner protocol (engine side)', function (): void {
         $order = winnerOrder(
             $cart->getId(),
             'ORD-WIN-6',
+            CarbonImmutable::now()->subHour()->toIso8601String(),
+        );
+
+        event(new CommissionAttributionRequired($order));
+
+        $metadata = $order->fresh()->metadata;
+
+        expect(AffiliateConversion::query()->count())->toBe(0)
+            ->and($metadata['attribution_winner'])->toBe('network')
+            ->and($metadata['engine_touch_at'])->toBeNull();
+    });
+
+    test('a null referral timestamp abstains even when first-seen timestamps exist', function (): void {
+        $affiliate = winnerAffiliate('WIN-NULL-REFERRAL');
+        $cartId = touchCart($affiliate, 'winner-null-referral', CarbonImmutable::now());
+        $attribution = AffiliateAttribution::query()
+            ->where('cart_identifier', app('cart')->getCurrentCart()->getIdentifier())
+            ->sole();
+        $attribution->forceFill([
+            'last_referred_at' => null,
+            'first_seen_at' => CarbonImmutable::now(),
+        ])->save();
+        $order = winnerOrder(
+            $cartId,
+            'ORD-WIN-NULL-REFERRAL',
             CarbonImmutable::now()->subHour()->toIso8601String(),
         );
 

@@ -15,6 +15,7 @@ use AIArmada\Affiliates\Models\AffiliateProgramMembership;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Contacting\Data\ContactMethodData;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Str;
 
@@ -74,7 +75,14 @@ describe('network identity join', function (): void {
     test('ledger posts a network user conversion to the email-linked affiliate', function (): void {
         $user = User::factory()->create(['email' => 'linked-' . uniqid() . '@example.com']);
         $affiliate = createTestAffiliate();
-        $affiliate->addContactMethod(ContactMethodData::email($user->email, 'general'));
+        $affiliate->addContactMethod(new ContactMethodData(
+            type: 'email',
+            purpose: 'general',
+            value: $user->email,
+            isPrimary: true,
+            isVerified: true,
+            verifiedAt: CarbonImmutable::now(),
+        ));
 
         $posted = app(NetworkLedger::class)->post(new NetworkConversionDraft(
             linkId: (string) Str::uuid(),

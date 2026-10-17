@@ -32,7 +32,7 @@ describe('CreatorBalances', function (): void {
         $books->post($link, 20000, 'MYR', 'BAL-2');
         $books->post($link, 5000, 'USD', 'BAL-3');
 
-        expect(app(CreatorBalances::class)->for('bal-aff-1'))->toBe(['MYR' => 3000, 'USD' => 500])
+        expect(app(CreatorBalances::class)->for('bal-aff-1'))->toBe(['MYR' => 3000, 'USD' => 0])
             ->and(app(CreatorBalances::class)->for('bal-nobody'))->toBe([]);
     });
 

@@ -141,6 +141,15 @@ it('falls back to the snapshot builder only when the live cart is gone', functio
             'items' => [
                 ['name' => 'Snapshot Item', 'quantity' => 1, 'price' => 900],
             ],
+            'metadata' => [
+                'network_attribution' => [
+                    'link_code' => 'network-link-code',
+                    'affiliate_id' => (string) Str::uuid(),
+                    'offer_id' => (string) Str::uuid(),
+                    'clicked_at' => now()->toIso8601String(),
+                    'signature' => 'signed-cart-snapshot',
+                ],
+            ],
         ],
         'payment_data' => ['type' => 'free_order'],
         'subtotal' => 900,
@@ -181,6 +190,8 @@ it('falls back to the snapshot builder only when the live cart is gone', functio
     expect($result->isSuccessful())->toBeTrue()
         ->and(data_get($capturedOrderData, 'subtotal'))->toBe(900)
         ->and(data_get($capturedOrderData, 'grand_total'))->toBe(900)
+        ->and(data_get($capturedOrderData, 'metadata.network_attribution.link_code'))->toBe('network-link-code')
+        ->and(data_get($capturedOrderData, 'metadata.network_attribution.signature'))->toBe('signed-cart-snapshot')
         ->and($session->fresh()?->order_id)->toBe($order->id);
 });
 

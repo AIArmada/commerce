@@ -77,6 +77,8 @@ final class TrackAffiliateVisit
             $attribution = null;
         }
 
+        $referredAt = CarbonImmutable::now();
+
         if ($attribution) {
             $this->fillAttribution($attribution, $payload);
         } else {
@@ -86,10 +88,11 @@ final class TrackAffiliateVisit
 
             $attribution = new AffiliateAttribution(Arr::except($payload, ['owner_type', 'owner_id']));
             $attribution->forceFill(Arr::only($payload, ['owner_type', 'owner_id']));
-            $attribution->first_seen_at = CarbonImmutable::now();
+            $attribution->first_seen_at = $referredAt;
         }
 
-        $attribution->last_cookie_seen_at = CarbonImmutable::now();
+        $attribution->last_referred_at = $referredAt;
+        $attribution->last_cookie_seen_at = $referredAt;
         $attribution->expires_at = $payload['expires_at'];
         $attribution->save();
 

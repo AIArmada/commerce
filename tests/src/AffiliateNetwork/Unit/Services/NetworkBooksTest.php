@@ -6,6 +6,7 @@ use AIArmada\AffiliateNetwork\Contracts\NetworkLedger;
 use AIArmada\AffiliateNetwork\Data\NetworkConversionDraft;
 use AIArmada\AffiliateNetwork\Data\NetworkPostedConversion;
 use AIArmada\AffiliateNetwork\Enums\LegStatus;
+use AIArmada\AffiliateNetwork\Events\NetworkConversionRecorded;
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
@@ -17,6 +18,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active as AffiliateActive;
 use AIArmada\Affiliates\States\RejectedConversion;
+use Illuminate\Support\Facades\Event;
 
 function booksFixtures(array $offerAttributes = []): AffiliateOfferLink
 {
@@ -78,6 +80,54 @@ describe('NetworkBooks', function (): void {
             ->and(NetworkConversionLeg::query()->count())->toBe(1);
     });
 
+    test('a new reversed leg is rejected before counters, ledger rows, or events change', function (): void {
+        Event::fake([NetworkConversionRecorded::class]);
+
+        $link = booksFixtures();
+
+        expect(fn () => app(OfferLinkService::class)->recordConversion(
+            $link,
+            10000,
+            'MYR',
+            'BOOKS-INITIAL-REVERSED',
+            LegStatus::Reversed,
+        ))->toThrow(InvalidArgumentException::class, 'Create reversal legs with NetworkBooks::reverse().');
+
+        expect(NetworkConversionLeg::query()->count())->toBe(0)
+            ->and(AffiliateConversion::query()->count())->toBe(0)
+            ->and($link->fresh()->conversions)->toBe(0)
+            ->and($link->fresh()->revenue)->toBe(0);
+
+        Event::assertNotDispatched(NetworkConversionRecorded::class);
+    });
+
+    test('an idempotent replay returns its existing leg before reversed status validation', function (): void {
+        $link = booksFixtures();
+        $service = app(OfferLinkService::class);
+
+        $first = $service->recordConversion($link, 10000, 'MYR', 'BOOKS-REVERSED-REPLAY');
+        $replay = $service->recordConversion($link, 10000, 'MYR', 'BOOKS-REVERSED-REPLAY', LegStatus::Reversed);
+
+        expect($first)->toBeInstanceOf(NetworkConversionLeg::class)
+            ->and($replay?->getKey())->toBe($first?->getKey())
+            ->and($replay?->status)->toBe(LegStatus::Posted)
+            ->and($replay?->wasRecentlyCreated)->toBeFalse()
+            ->and(NetworkConversionLeg::query()->count())->toBe(1)
+            ->and($link->fresh()->conversions)->toBe(1)
+            ->and($link->fresh()->revenue)->toBe(10000);
+    });
+
+    test('posting handles a missing offer when the link has no pricing currency', function (): void {
+        $link = booksFixtures();
+        $link->update(['currency' => null]);
+        $link->setRelation('offer', null);
+
+        $leg = app(NetworkBooks::class)->post($link, 10000, 'MYR', 'BOOKS-MISSING-OFFER');
+
+        expect($leg->commission_minor)->toBe(0)
+            ->and($leg->commission_currency)->toBe('MYR');
+    });
+
     test('fixed rate wins over tiers and base', function (): void {
         $link = booksFixtures([
             'rate_fixed_minor' => 2500,
@@ -110,7 +160,7 @@ describe('NetworkBooks', function (): void {
             ->and($second->tier_min_volume_minor)->toBe(100000);
     });
 
-    test('tiers ignore other affiliates and currencies', function (): void {
+    test('currency mismatch does not earn a commission or inherit a tier', function (): void {
         $link = booksFixtures([
             'volume_tiers' => [['min_volume_minor' => 100000, 'rate_bp' => 5000, 'currency' => 'MYR']],
         ]);
@@ -124,7 +174,7 @@ describe('NetworkBooks', function (): void {
 
         $leg = app(NetworkBooks::class)->post($link, 60000, 'USD', 'BOOKS-T3');
 
-        expect($leg->commission_minor)->toBe(6000)
+        expect($leg->commission_minor)->toBe(0)
             ->and($leg->tier_rate_bp)->toBeNull();
     });
 
@@ -149,14 +199,17 @@ describe('NetworkBooks', function (): void {
             ->and($leg->payout_minor)->toBe(0);
     });
 
-    test('legs keep real money on currency mismatch', function (): void {
+    test('legs preserve revenue but post zero commission on currency mismatch', function (): void {
         $link = booksFixtures();
         $link->update(['currency' => 'USD']);
 
         $leg = app(NetworkBooks::class)->post($link, 12345, 'MYR', 'BOOKS-FX');
 
         expect($leg->revenue_minor)->toBe(12345)
-            ->and($leg->revenue_currency)->toBe('MYR');
+            ->and($leg->revenue_currency)->toBe('MYR')
+            ->and($leg->commission_minor)->toBe(0)
+            ->and($leg->fee_minor)->toBe(0)
+            ->and($leg->payout_minor)->toBe(0);
     });
 
     test('confirm and supersede finalize provisional legs once', function (): void {
@@ -235,36 +288,15 @@ describe('NetworkBooks', function (): void {
             ->and(mb_strlen($companionB->external_reference))->toBeLessThanOrEqual(120);
     });
 
-    test('reverse repairs a reversed leg whose companion is missing', function (): void {
-        $link = booksFixtures();
-        $books = app(NetworkBooks::class);
-        $leg = $books->post($link, 10000, 'MYR', 'BOOKS-NOCOMP');
-
-        // Legacy damage: reversed without a companion (a previous
-        // non-transactional implementation could leave this behind).
-        $leg->forceFill(['status' => LegStatus::Reversed])->save();
-
-        $companion = $books->reverse($leg->fresh(), 'chargeback');
-
-        expect($companion->getKey())->not->toBe($leg->getKey())
-            ->and($companion->commission_minor)->toBe(-1000)
-            ->and($companion->status)->toBe(LegStatus::Reversed)
-            ->and($companion->metadata['reverses_id'])->toBe((string) $leg->getKey())
-            ->and(NetworkConversionLeg::query()->where('metadata->reverses_id', (string) $leg->getKey())->count())->toBe(1);
-    });
-
-    test('reversing a reversed leg with a companion still voids the merchant posting', function (): void {
+    test('duplicate reversal returns its companion without voiding the merchant posting twice', function (): void {
         $link = booksFixtures();
         $books = app(NetworkBooks::class);
         $leg = $books->post($link, 10000, 'MYR', 'BOOKS-REVOID');
 
-        // First reversal creates the companion (the real ledger finds no
-        // merchant posting for this fixture link, so nothing is voided).
-        $first = $books->reverse($leg, 'chargeback');
-
         $fake = new RecordingNetworkLedgerFake;
         app()->instance(NetworkLedger::class, $fake);
 
+        $first = $books->reverse($leg, 'chargeback');
         $second = $books->reverse($leg->fresh(), 'chargeback');
 
         expect($second->getKey())->toBe($first->getKey())

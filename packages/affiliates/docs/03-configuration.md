@@ -364,13 +364,15 @@ disabled affiliates require the creation-time audited override described in
     'token' => env('AFFILIATE_NETWORK_TOKEN'),
     'referral_param' => env('AFFILIATE_NETWORK_REFERRAL_PARAM', 'anl'),
     'session_key' => env('AFFILIATE_NETWORK_SESSION_KEY', 'affiliate_network.link_code'),
+    'connect_timeout_seconds' => env('AFFILIATE_NETWORK_CONNECT_TIMEOUT', 3),
     'timeout_seconds' => env('AFFILIATE_NETWORK_TIMEOUT', 8),
 ],
 ```
 
 Only needed on merchant stores that sell through an `aiarmada/affiliate-network` marketplace.
 `network_url` + `site` + `token` let `NetworkPostbackClient` report paid orders; `referral_param`
-and `session_key` drive `CaptureNetworkReferral` middleware.
+and `session_key` drive `CaptureNetworkReferral` middleware. The client uses
+separate connect and total request timeouts.
 
 ## Program Catalog
 

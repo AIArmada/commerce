@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Actions\Conversions;
 
+use AIArmada\Affiliates\Events\AffiliateConversionReversed;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\States\RejectedConversion;
@@ -54,6 +55,14 @@ final class VoidAffiliateConversion
             $locked->update(['status' => RejectedConversion::class]);
 
             $this->accounting->handle($locked, $previousStatus);
+            DB::connection()->afterCommit(function () use ($locked, $reason): void {
+                event(new AffiliateConversionReversed(
+                    origin: is_string($locked->origin) ? $locked->origin : null,
+                    sourceRef: is_string($locked->source_ref) ? $locked->source_ref : null,
+                    externalReference: is_string($locked->external_reference) ? $locked->external_reference : null,
+                    reason: $reason,
+                ));
+            });
 
             return $locked->refresh();
         }, attempts: 3);

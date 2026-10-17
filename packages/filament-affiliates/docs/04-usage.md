@@ -35,6 +35,25 @@ Registration is config-driven:
 - `AffiliateFraudSignalResource` (`features.admin.fraud_monitoring`)
 - `AffiliateCreativeResource` (`features.admin.creatives`)
 
+### Payout creation
+
+The Affiliate Payouts create page requires an affiliate and one or more
+approved, unlinked conversions. Search results show each conversion's
+reference, commission amount, and currency. The page calls the core
+`CreatePayout` action, which derives the total, currency, payee, and initial
+status from the selected conversions and reserves their available balance.
+The client cannot set those accounting fields. A payout can include only one
+affiliate and one currency. Failed or cancelled payouts release the
+reservation through the core payout status action; completed payouts mark the
+selected conversions paid and cannot pay them again.
+
+> **warning**: Breaking change: creating a payout in Filament no longer accepts
+> a freely entered total or currency. Before deployment, update operator
+> procedures to select the approved conversions being settled. Existing
+> manually created payout rows and their linked conversions are left unchanged
+> and are not backfilled. Reconcile those records against processor outcomes
+> and affiliate balances before deciding whether to create any new payout.
+
 ## Admin pages
 
 - `ManageAffiliateCommissionSettings` (always registered)

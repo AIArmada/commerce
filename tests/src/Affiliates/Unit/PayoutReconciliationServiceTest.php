@@ -3,6 +3,9 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
+use AIArmada\Affiliates\Actions\Conversions\ReverseAffiliateConversion;
+use AIArmada\Affiliates\Actions\Payouts\CreatePayout;
+use AIArmada\Affiliates\Actions\Payouts\UpdatePayoutStatus;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
@@ -11,7 +14,10 @@ use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliatePayoutOperation;
 use AIArmada\Affiliates\Services\PayoutReconciliationService;
 use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\CompletedPayout;
+use AIArmada\Affiliates\States\FailedPayout;
+use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Affiliates\States\ProcessingPayout;
 use AIArmada\CommerceSupport\Settings\ExchangeRateSettings;
@@ -33,6 +39,31 @@ beforeEach(function (): void {
         'currency' => 'USD',
     ]);
 });
+
+function reconciliationAuditConversion(Affiliate $affiliate, int $commissionMinor = 10000): AffiliateConversion
+{
+    $conversion = AffiliateConversion::create([
+        'affiliate_id' => $affiliate->getKey(),
+        'affiliate_code' => $affiliate->code,
+        'external_reference' => 'RECON-AUDIT-' . uniqid(),
+        'value_minor' => $commissionMinor * 10,
+        'commission_minor' => $commissionMinor,
+        'commission_currency' => 'USD',
+        'status' => ApprovedConversion::class,
+        'occurred_at' => now(),
+    ]);
+
+    ApplyConversionAccounting::run($conversion);
+
+    return $conversion;
+}
+
+function markReconciliationConversionPaidDirectly(AffiliateConversion $conversion): void
+{
+    $previousStatus = $conversion->status;
+    $conversion->update(['status' => PaidConversion::class]);
+    ApplyConversionAccounting::run($conversion->fresh(), $previousStatus);
+}
 
 describe('PayoutReconciliationService', function (): void {
     describe('reconcilePayout', function (): void {
@@ -390,6 +421,84 @@ describe('PayoutReconciliationService', function (): void {
     });
 
     describe('auditAffiliateBalance', function (): void {
+        test('canonical create and completion reconcile the commission exactly once', function (): void {
+            $conversion = reconciliationAuditConversion($this->affiliate);
+            $payout = CreatePayout::run([(string) $conversion->getKey()]);
+
+            UpdatePayoutStatus::run($payout, CompletedPayout::value());
+
+            $audit = $this->service->auditAffiliateBalance($this->affiliate, 'USD');
+
+            expect($conversion->fresh()->status->equals(PaidConversion::class))->toBeTrue()
+                ->and($audit['approved_commissions_minor'])->toBe(0)
+                ->and($audit['completed_payout_conversions_minor'])->toBe(10000)
+                ->and($audit['paid_out_minor'])->toBe(10000)
+                ->and($audit['expected_available_minor'])->toBe(0)
+                ->and($audit['actual_available_minor'])->toBe(0)
+                ->and($audit['has_discrepancy'])->toBeFalse();
+        });
+
+        test('failure releases the reservation and restores the audit balance once', function (): void {
+            $conversion = reconciliationAuditConversion($this->affiliate);
+            $payout = CreatePayout::run([(string) $conversion->getKey()]);
+
+            UpdatePayoutStatus::run($payout, FailedPayout::value());
+            UpdatePayoutStatus::run($payout, FailedPayout::value());
+
+            $audit = $this->service->auditAffiliateBalance($this->affiliate, 'USD');
+
+            expect($conversion->fresh()->status->equals(ApprovedConversion::class))->toBeTrue()
+                ->and($conversion->fresh()->affiliate_payout_id)->toBeNull()
+                ->and($audit['expected_available_minor'])->toBe(10000)
+                ->and($audit['actual_available_minor'])->toBe(10000)
+                ->and($audit['has_discrepancy'])->toBeFalse();
+        });
+
+        test('a direct mark-paid debits available without counting as a payout settlement', function (): void {
+            $conversion = reconciliationAuditConversion($this->affiliate);
+            markReconciliationConversionPaidDirectly($conversion);
+
+            $audit = $this->service->auditAffiliateBalance($this->affiliate, 'USD');
+
+            expect($conversion->fresh()->affiliate_payout_id)->toBeNull()
+                ->and($audit['completed_payout_conversions_minor'])->toBe(0)
+                ->and($audit['paid_out_minor'])->toBe(0)
+                ->and($audit['expected_available_minor'])->toBe(0)
+                ->and($audit['actual_available_minor'])->toBe(0)
+                ->and($audit['has_discrepancy'])->toBeFalse();
+        });
+
+        test('paid payout reversals retain the completed payout debit as a clawback', function (): void {
+            $conversion = reconciliationAuditConversion($this->affiliate);
+            $payout = CreatePayout::run([(string) $conversion->getKey()]);
+            UpdatePayoutStatus::run($payout, CompletedPayout::value());
+
+            ReverseAffiliateConversion::run($conversion->fresh(), 'refund');
+
+            $audit = $this->service->auditAffiliateBalance($this->affiliate, 'USD');
+
+            expect($conversion->fresh()->reversed_at)->not->toBeNull()
+                ->and($audit['completed_payout_conversions_minor'])->toBe(0)
+                ->and($audit['paid_out_minor'])->toBe(10000)
+                ->and($audit['expected_available_minor'])->toBe(-10000)
+                ->and($audit['actual_available_minor'])->toBe(-10000)
+                ->and($audit['has_discrepancy'])->toBeFalse();
+        });
+
+        test('a reversed direct mark-paid conversion keeps its unpaid clawback visible', function (): void {
+            $conversion = reconciliationAuditConversion($this->affiliate);
+            markReconciliationConversionPaidDirectly($conversion);
+
+            ReverseAffiliateConversion::run($conversion->fresh(), 'refund');
+
+            $audit = $this->service->auditAffiliateBalance($this->affiliate, 'USD');
+
+            expect($audit['direct_paid_clawbacks_minor'])->toBe(10000)
+                ->and($audit['expected_available_minor'])->toBe(-10000)
+                ->and($audit['actual_available_minor'])->toBe(-10000)
+                ->and($audit['has_discrepancy'])->toBeFalse();
+        });
+
         test('returns audit structure', function (): void {
             AffiliateBalance::create([
                 'affiliate_id' => $this->affiliate->id,
@@ -408,6 +517,8 @@ describe('PayoutReconciliationService', function (): void {
                 'discrepancy_minor',
                 'has_discrepancy',
                 'approved_commissions_minor',
+                'completed_payout_conversions_minor',
+                'direct_paid_clawbacks_minor',
                 'paid_out_minor',
                 'pending_payouts_minor',
             ]);

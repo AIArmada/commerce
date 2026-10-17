@@ -386,8 +386,10 @@ source key:
   books. Idempotent on (source, source ref); `postingsForExternalReference`
   feeds the dual-reporting collision report (the same sale posted by two
   origins means two systems paid it).
-- `MerchantIdentity` — resolve merchant affiliates by id or verified email
-  without assuming the network's user model.
+- `MerchantIdentity` — resolve merchant affiliates by id or verified general
+  email without assuming the network's user model. Email lookup prefers the
+  current owner when several active affiliates share an address and ignores
+  unverified contact methods.
 - `MerchantCatalog` — read-only program snapshots for catalog sync; no
   commission or payout rows are ever written through it.
 

@@ -80,28 +80,18 @@ commercial conversion is subject to the normal commercial-purpose gate.
 For Ilmu360, the host pins this switch off in `config/affiliates.php`; cash
 referral fulfillment is also disabled in `config/referrals.php`.
 
-### Manual Creation
+### Record-only payout rows
 
-```php
-use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\States\PendingPayout;
+Creating an `AffiliatePayout` model directly records a payout row only. It
+does not reserve an affiliate balance, claim conversions, or synchronize
+conversion status. Do not use direct model creation or manual conversion
+linking to settle commission. Use `CreatePayout` so eligibility, owner,
+currency, balance reservation, and atomic conversion claims are enforced.
 
-$payout = AffiliatePayout::create([
-    'reference' => 'PO-' . now()->format('Ymd') . '-' . str_pad($sequence, 4, '0', STR_PAD_LEFT),
-    'status' => PendingPayout::class,
-    'total_minor' => $totalAmount,
-    'currency' => $affiliate->currency,
-    'payee_type' => $affiliate->getMorphClass(),
-    'payee_id' => $affiliate->getKey(),
-    'scheduled_at' => now()->addDays(3),
-]);
-
-// Link conversions to payout
-$conversions->each(fn ($c) => $c->update(['affiliate_payout_id' => $payout->id]));
-```
-
-> **warning**
-> Manual linking bypasses the one-currency-per-payout guard in `CreatePayout`. Only attach conversions whose `commission_currency` matches the payout `currency`, and prefer the action so balance reservation stays consistent.
+Existing manually created payout rows are not rewritten or backfilled. Before
+creating replacement settlements, reconcile each outstanding row with the
+payment processor and affiliate balance; do not assume its amount was
+reserved just because the row is pending.
 
 ## Payout Statuses
 
@@ -468,3 +458,10 @@ $uplines = $uplineService->getUpline($conversion->affiliate);
 ## Provider idempotency and reconciliation
 
 Every provider submission is tied to the durable `AffiliatePayoutOperation`. Stripe receives the operation UUID as its `Idempotency-Key`; PayPal receives a stable 30-character identity derived from that UUID as both `sender_batch_id` and `sender_item_id`. Provider calls use bounded connect/read timeouts and retries. Retryable HTTP failures, transport exceptions, and ambiguous duplicate responses are recorded as `unknown`, while the payout remains processing for reconciliation. Raw provider or exception messages are never persisted or shown to operators. Stripe reversals reuse a deterministic reversal idempotency key and are recorded locally as `reversed`.
+
+`PayoutReconciliationService::auditAffiliateBalance()` compares available
+balance with approved commissions, open payout reservations, completed payout
+debits, and paid conversions attached to completed payouts. Directly marked
+paid conversions are already removed from the approved total; a later direct
+paid reversal remains a negative available-balance clawback. This audit does
+not infer reservations for record-only payout rows.

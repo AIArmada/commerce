@@ -26,7 +26,10 @@ use Throwable;
  *
  * - `network_touch_at`: ISO instant of the network touch, explicit null
  *   when the network abstained, key absent when no network ran.
- * - `engine_touch_at`: same, written by this listener.
+ * - `engine_touch_at`: the engine attribution's `last_referred_at`; repeated
+ *   referrals refresh the comparison time without changing the first-seen
+ *   time. A null value means the engine has no touch. Written by this
+ *   listener as an ISO instant.
  * - `attribution_winner`: `network`|`engine`, written by whoever decides.
  *
  * Newest touch wins; ties, malformed timestamps, and missing data resolve
@@ -145,7 +148,11 @@ final readonly class RecordCommissionForOrder
             return null;
         }
 
-        $seen = $attribution->last_cookie_seen_at ?? $attribution->created_at;
+        $seen = $attribution->last_referred_at;
+
+        if ($seen === null) {
+            return null;
+        }
 
         if ($seen instanceof CarbonImmutable) {
             return $seen;

@@ -58,6 +58,27 @@ class AffiliateConversionRecorded
 }
 ```
 
+### AffiliateConversionReversed
+
+Dispatched on the first reversal or non-paid void of a conversion. It carries
+merchant-vocabulary identifiers so optional integrations can mirror the
+change without exposing an affiliate model:
+
+```php
+use AIArmada\Affiliates\Events\AffiliateConversionReversed;
+
+final class UpdateExternalBooks
+{
+    public function handle(AffiliateConversionReversed $event): void
+    {
+        // $event->origin, $event->sourceRef, $event->externalReference, $event->reason
+    }
+}
+```
+
+Repeated calls against an already reversed or rejected conversion dispatch
+no additional event.
+
 ### Orders Integration Event
 
 When the Orders package is installed, it dispatches a `CommissionAttributionRequired` event
@@ -93,6 +114,7 @@ These are the full set of events in `AIArmada\Affiliates\Events`:
 
 ```php
 use AIArmada\Affiliates\Events\AffiliateActivated;
+use AIArmada\Affiliates\Events\AffiliateConversionReversed;
 use AIArmada\Affiliates\Events\AffiliateCreated;
 use AIArmada\Affiliates\Events\AffiliateProgramJoined;
 use AIArmada\Affiliates\Events\AffiliateProgramLeft;
@@ -105,6 +127,7 @@ use AIArmada\Affiliates\Events\HoldingShortfallDetected;
 // Affiliate created (model hook) / activated
 AffiliateCreated::class;        // (Affiliate $affiliate)
 AffiliateActivated::class;      // (Affiliate $affiliate)
+AffiliateConversionReversed::class; // (?string $origin, ?string $sourceRef, ?string $externalReference, string $reason)
 
 // Program membership changes
 AffiliateProgramJoined::class;  // (AffiliateProgramMembership $membership)

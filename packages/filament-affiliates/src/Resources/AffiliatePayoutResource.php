@@ -7,7 +7,6 @@ namespace AIArmada\FilamentAffiliates\Resources;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
-use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource\Pages\CreateAffiliatePayout;
 use AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource\Pages\ListAffiliatePayouts;
 use AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource\Pages\ViewAffiliatePayout;
@@ -17,6 +16,8 @@ use BackedEnum;
 use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
@@ -79,26 +80,7 @@ final class AffiliatePayoutResource extends Resource
                 ->schema([
                     Forms\Components\Select::make('affiliate_id')
                         ->label('Affiliate')
-                        ->getSearchResultsUsing(function (string $search): array {
-                            $query = Affiliate::query();
-
-                            if ((bool) config('affiliates.owner.enabled', false)) {
-                                $query->forOwner();
-                            }
-
-                            $pattern = LikeSearch::contains($search);
-
-                            return $query
-                                ->whereCommercialPurpose()
-                                ->where(function ($nested) use ($pattern): void {
-                                    LikeSearch::whereLike($nested, 'name', $pattern);
-                                    LikeSearch::orWhereLike($nested, 'code', $pattern);
-                                })
-                                ->orderBy('name')
-                                ->limit(50)
-                                ->pluck('name', 'id')
-                                ->toArray();
-                        })
+                        ->getSearchResultsUsing(static fn (string $search): array => CreateAffiliatePayout::affiliateOptions($search))
                         ->getOptionLabelUsing(function ($value): ?string {
                             $query = Affiliate::query()->whereCommercialPurpose();
 
@@ -109,19 +91,29 @@ final class AffiliatePayoutResource extends Resource
                             return $query->find($value)?->name;
                         })
                         ->searchable()
+                        ->live()
+                        ->afterStateUpdated(static function (Set $set): void {
+                            $set('conversion_ids', []);
+                        })
                         ->required(),
 
-                    Forms\Components\TextInput::make('total_minor')
-                        ->label('Amount (minor units)')
-                        ->numeric()
+                    Forms\Components\Select::make('conversion_ids')
+                        ->label('Approved conversions')
+                        ->multiple()
+                        ->searchable()
+                        ->getSearchResultsUsing(static fn (Get $get, ?string $search): array => CreateAffiliatePayout::conversionOptions(
+                            $get('affiliate_id'),
+                            $search,
+                        ))
+                        ->getOptionLabelsUsing(static fn (Get $get, array $values): array => CreateAffiliatePayout::conversionOptions(
+                            $get('affiliate_id'),
+                            null,
+                            $values,
+                        ))
+                        ->disabled(static fn (Get $get): bool => blank($get('affiliate_id')))
                         ->required()
-                        ->minValue(1),
-
-                    Forms\Components\TextInput::make('currency')
-                        ->required()
-                        ->default((string) config('affiliates.currency.default', 'MYR'))
-                        ->maxLength(3)
-                        ->rule('size:3'),
+                        ->minItems(1)
+                        ->helperText('Choose approved, unpaid conversions. The payout amount and currency are derived from these records.'),
 
                     Forms\Components\DateTimePicker::make('scheduled_at')
                         ->label('Scheduled At'),
@@ -132,7 +124,7 @@ final class AffiliatePayoutResource extends Resource
 
                     Forms\Components\Textarea::make('payout_override_reason')
                         ->label('Payout override reason')
-                        ->helperText('Only for disabled affiliates: records an audited reason so the completion gate accepts this payout. Ignored for payable affiliates.')
+                        ->helperText('Only disabled affiliates can use an audited override. Eligibility and override rules are enforced by the payout action.')
                         ->rows(2),
                 ])
                 ->columns(2),
