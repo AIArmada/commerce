@@ -14,6 +14,7 @@ use AIArmada\Growth\Models\Variant;
 use AIArmada\Signals\Models\SignalEvent;
 use AIArmada\Signals\Models\TrackedProperty;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 function excludedCurrencyOwner(): User
@@ -57,6 +58,29 @@ function excludedCurrencyExperiment(User $owner): Experiment
     });
 }
 
+function excludedCurrencyLegacyEvent(User $owner, Experiment $experiment, array $properties, string $eventName, int $revenueMinor, string $currency): void
+{
+    $now = CarbonImmutable::now();
+
+    DB::table((new SignalEvent)->getTable())->insert([
+        'id' => (string) Str::uuid(),
+        'tracked_property_id' => $experiment->tracked_property_id,
+        'signal_session_id' => null,
+        'signal_identity_id' => null,
+        'owner_type' => $owner->getMorphClass(),
+        'owner_id' => (string) $owner->getKey(),
+        'occurred_at' => $now,
+        'event_name' => $eventName,
+        'event_category' => 'conversion',
+        'ingestion_source' => SignalEvent::INGESTION_SOURCE_TRUSTED,
+        'revenue_minor' => $revenueMinor,
+        'currency' => $currency,
+        'properties' => json_encode($properties, JSON_THROW_ON_ERROR),
+        'created_at' => $now,
+        'updated_at' => $now,
+    ]);
+}
+
 describe('Metrics excluded-currency visibility', function (): void {
     it('reports other-currency revenue separately instead of dropping it', function (): void {
         $owner = excludedCurrencyOwner();
@@ -75,21 +99,18 @@ describe('Metrics excluded-currency visibility', function (): void {
 
         $properties = OwnerContext::withOwner($owner, fn (): array => app(BuildExperimentSignalProperties::class)->handle($assignment));
 
-        foreach ([
-            ['order.paid', 2000, 'MYR'],
-            ['order.paid', 1000, 'USD'],
-            ['order.refunded', 400, 'USD'],
-        ] as [$eventName, $revenueMinor, $currency]) {
-            OwnerContext::withOwner($owner, fn (): SignalEvent => SignalEvent::query()->create([
-                'tracked_property_id' => $experiment->tracked_property_id,
-                'occurred_at' => CarbonImmutable::now(),
-                'event_name' => $eventName,
-                'event_category' => 'conversion',
-                'revenue_minor' => $revenueMinor,
-                'currency' => $currency,
-                'properties' => $properties,
-            ]));
-        }
+        OwnerContext::withOwner($owner, fn (): SignalEvent => SignalEvent::query()->create([
+            'tracked_property_id' => $experiment->tracked_property_id,
+            'occurred_at' => CarbonImmutable::now(),
+            'event_name' => 'order.paid',
+            'event_category' => 'conversion',
+            'revenue_minor' => 2000,
+            'currency' => 'MYR',
+            'properties' => $properties,
+        ]));
+
+        excludedCurrencyLegacyEvent($owner, $experiment, $properties, 'order.paid', 1000, 'USD');
+        excludedCurrencyLegacyEvent($owner, $experiment, $properties, 'order.refunded', 400, 'USD');
 
         $metrics = OwnerContext::withOwner($owner, fn (): array => app(AggregateExperimentMetrics::class)->handle($experiment));
 

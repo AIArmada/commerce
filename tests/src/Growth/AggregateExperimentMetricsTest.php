@@ -82,6 +82,30 @@ function growthMetricsEvent(User $owner, Experiment $experiment, Assignment $ass
     ]));
 }
 
+function growthMetricsLegacyEvent(User $owner, Experiment $experiment, Assignment $assignment, string $eventName, int $revenueMinor, string $currency): void
+{
+    $properties = OwnerContext::withOwner($owner, fn (): array => app(BuildExperimentSignalProperties::class)->handle($assignment));
+    $now = CarbonImmutable::now();
+
+    DB::table((new SignalEvent)->getTable())->insert([
+        'id' => (string) Str::uuid(),
+        'tracked_property_id' => $experiment->tracked_property_id,
+        'signal_session_id' => null,
+        'signal_identity_id' => null,
+        'owner_type' => $owner->getMorphClass(),
+        'owner_id' => (string) $owner->getKey(),
+        'occurred_at' => $now,
+        'event_name' => $eventName,
+        'event_category' => str_contains($eventName, 'checkout') ? 'checkout' : 'conversion',
+        'ingestion_source' => SignalEvent::INGESTION_SOURCE_TRUSTED,
+        'revenue_minor' => $revenueMinor,
+        'currency' => $currency,
+        'properties' => json_encode($properties, JSON_THROW_ON_ERROR),
+        'created_at' => $now,
+        'updated_at' => $now,
+    ]);
+}
+
 it('aggregates per-variant revenue and conversion metrics from signal events', function (): void {
     $owner = growthMetricsOwner();
     $experiment = growthMetricsExperiment($owner);
@@ -487,7 +511,7 @@ it('ignores revenue from signal events recorded in a different currency than the
     $assignmentB = growthMetricsAssignment($owner, $experiment, $variantB, 'identity:currency-b');
 
     growthMetricsEvent($owner, $experiment, $assignmentA, 'order.paid', 12000, 'MYR');
-    growthMetricsEvent($owner, $experiment, $assignmentB, 'order.paid', 99000, 'USD');
+    growthMetricsLegacyEvent($owner, $experiment, $assignmentB, 'order.paid', 99000, 'USD');
 
     $metrics = OwnerContext::withOwner($owner, fn (): array => app(AggregateExperimentMetrics::class)->handle($experiment));
 
