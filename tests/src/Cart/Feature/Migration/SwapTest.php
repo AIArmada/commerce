@@ -6,6 +6,7 @@ use AIArmada\Cart\CartManager;
 use AIArmada\Cart\Conditions\ConditionTarget;
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Cart\Services\CartMigrationService;
+use AIArmada\Cart\Storage\CartRevision;
 use AIArmada\Cart\Storage\DatabaseStorage;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -87,9 +88,8 @@ it('refuses to swap when the target identifier already holds a cart', function (
     ];
 
     // Store data with both identifiers
-    $storage->putBoth('guest_session_123', 'default', $guestItems, []);
-    $storage->putBoth('user_42', 'default', $userItems, $userConditions);
-
+    $storage->putBoth('guest_session_123', 'default', $guestItems, [], CartRevision::none());
+    $storage->putBoth('user_42', 'default', $userItems, $userConditions, CartRevision::none());
     // Verify both carts exist initially
     expect($storage->getItems('guest_session_123', 'default'))->toHaveCount(1);
     expect($storage->getItems('user_42', 'default'))->toHaveCount(1);
@@ -145,8 +145,7 @@ it('transfers source cart when target cart does not exist', function (): void {
     ];
 
     // Store data with guest identifier only
-    $storage->putBoth('guest_session_123', 'default', $guestItems, $guestConditions);
-
+    $storage->putBoth('guest_session_123', 'default', $guestItems, $guestConditions, CartRevision::none());
     // Verify guest cart exists and user cart is empty
     expect($storage->getItems('guest_session_123', 'default'))->toHaveCount(2);
     expect($storage->getItems('user_42', 'default'))->toBeEmpty();
@@ -178,8 +177,7 @@ it('swaps even when source cart is empty', function (): void {
     $storage = $this->storage;
 
     // Create an empty guest cart (cart exists but has no items)
-    $storage->putBoth('guest_session_empty', 'default', [], []);
-
+    $storage->putBoth('guest_session_empty', 'default', [], [], CartRevision::none());
     // Verify guest cart exists but is empty
     expect($storage->has('guest_session_empty', 'default'))->toBeTrue();
     expect($storage->getItems('guest_session_empty', 'default'))->toBeEmpty();
@@ -237,8 +235,7 @@ it('can swap cart ownership for specific instances', function (): void {
     ];
 
     // Store data with guest identifier in wishlist instance
-    $storage->putBoth('guest_session_456', 'wishlist', $wishlistItems, []);
-
+    $storage->putBoth('guest_session_456', 'wishlist', $wishlistItems, [], CartRevision::none());
     // Verify guest wishlist exists
     $guestWishlistBefore = $storage->getItems('guest_session_456', 'wishlist');
     expect($guestWishlistBefore)->toHaveCount(1);
@@ -274,8 +271,7 @@ it('can swap through cart facade', function (): void {
     ];
 
     // Store data with guest identifier
-    $storage->putBoth('guest_session_facade', 'default', $guestItems, []);
-
+    $storage->putBoth('guest_session_facade', 'default', $guestItems, [], CartRevision::none());
     // Create a cart manager with our test storage
     $cartManager = new CartManager($storage);
 
@@ -332,8 +328,7 @@ it('can swap guest cart using convenience method', function (): void {
     ];
 
     // Store data with guest identifier
-    $storage->putBoth('guest_session_conv', 'default', $guestItems, []);
-
+    $storage->putBoth('guest_session_conv', 'default', $guestItems, [], CartRevision::none());
     // Verify guest cart exists
     expect($storage->getItems('guest_session_conv', 'default'))->toHaveCount(1);
 
@@ -347,4 +342,49 @@ it('can swap guest cart using convenience method', function (): void {
 
     $userItems = $storage->getItems('999', 'default');
     expect($userItems['product-1']['name'])->toBe('Convenience Test Product');
+});
+
+it('swaps a guest cart to the exact UUID user key', function (): void {
+    $storage = $this->storage;
+    $uuid = '019a1234-5b6c-7d8e-9f01-23456789abcd';
+
+    $storage->putBoth('guest_session_uuid', 'default', [
+        'product-1' => [
+            'id' => 'product-1',
+            'name' => 'UUID Swap Product',
+            'price' => 1999,
+            'quantity' => 1,
+            'attributes' => [],
+            'conditions' => [],
+        ],
+    ], [], CartRevision::none());
+
+    $result = $this->cartMigration->swapGuestCartToUser($uuid, 'default', 'guest_session_uuid');
+
+    expect($result)->toBeTrue()
+        ->and($storage->getItems($uuid, 'default'))->toHaveCount(1)
+        ->and($storage->getItems('019', 'default'))->toBeEmpty()
+        ->and($storage->getItems('19', 'default'))->toBeEmpty()
+        ->and($storage->getItems('guest_session_uuid', 'default'))->toBeEmpty();
+});
+
+it('rejects an empty user key when swapping instead of creating a truncated identity', function (): void {
+    $storage = $this->storage;
+
+    $storage->putBoth('guest_session_empty_key', 'default', [
+        'product-1' => [
+            'id' => 'product-1',
+            'name' => 'Empty Key Product',
+            'price' => 999,
+            'quantity' => 1,
+            'attributes' => [],
+            'conditions' => [],
+        ],
+    ], [], CartRevision::none());
+
+    expect(fn () => $this->cartMigration->swapGuestCartToUser('', 'default', 'guest_session_empty_key'))
+        ->toThrow(InvalidArgumentException::class);
+
+    expect($storage->getItems('guest_session_empty_key', 'default'))->toHaveCount(1)
+        ->and($storage->getItems('', 'default'))->toBeEmpty();
 });

@@ -63,7 +63,7 @@ it('passes the checkout session key to guest CHIP purchases', function (): void 
 
     Chip::shouldReceive('createPurchase')
         ->once()
-        ->with(Mockery::on(fn (array $payload): bool => $payload['idempotency_key'] === 'guest-session-123'))
+        ->with(Mockery::on(fn (array $payload): bool => $payload['idempotency_key'] === 'guest-session-123'), 'guest-session-123')
         ->andReturn($purchase);
 
     $session = new CheckoutSession;

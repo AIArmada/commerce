@@ -7,8 +7,10 @@ namespace AIArmada\FilamentProducts\Resources\AttributeResource\Schemas;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
+use AIArmada\FilamentProducts\Support\OwnerScopedRelationshipSelect;
 use AIArmada\Products\Enums\AttributeType;
 use AIArmada\Products\Models\Attribute;
+use AIArmada\Products\Models\AttributeGroup;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -72,6 +74,7 @@ class AttributeForm
                                     return OwnerQuery::applyToEloquentBuilder($query, $owner);
                                 }
                             )
+                            ->saveRelationshipsBeforeChildrenUsing(OwnerScopedRelationshipSelect::guard(AttributeGroup::class))
                             ->preload()
                             ->searchable()
                             ->createOptionForm([

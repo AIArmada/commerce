@@ -19,6 +19,12 @@ class WildcardPermissionResolver
 
     /**
      * Check if a specific permission matches a wildcard pattern.
+     *
+     * Every wildcard segment participates in the match. A pattern ending with
+     * the configured separator followed by '*' matches the whole trailing
+     * subtree; wildcards in other positions match exactly one segment.
+     * Literal characters are quoted, and the configured permission separator
+     * is honored.
      */
     public function matches(string $wildcardPattern, string $permission): bool
     {
@@ -30,29 +36,35 @@ class WildcardPermissionResolver
             return true;
         }
 
-        if (str_ends_with($wildcardPattern, '.*')) {
-            $prefix = mb_substr($wildcardPattern, 0, -2);
-
-            return str_starts_with($permission, $prefix . '.');
+        if (! str_contains($wildcardPattern, '*')) {
+            return false;
         }
 
-        if (str_contains($wildcardPattern, '*')) {
-            $pattern = $this->wildcardToRegex($wildcardPattern);
-
-            return preg_match($pattern, $permission) === 1;
-        }
-
-        return false;
+        return preg_match($this->compile($wildcardPattern), $permission) === 1;
     }
 
-    /**
-     * Convert a wildcard pattern to a regex pattern.
-     */
-    protected function wildcardToRegex(string $wildcard): string
+    protected function compile(string $wildcardPattern): string
     {
-        $escaped = preg_quote($wildcard, '/');
-        $pattern = str_replace('\*', '[^.]+', $escaped);
+        $separator = $this->separator();
+        $quotedSeparator = preg_quote($separator, '/');
+        $segment = '[^' . $quotedSeparator . ']+';
 
-        return '/^' . $pattern . '$/';
+        $suffix = '';
+
+        if (str_ends_with($wildcardPattern, $separator . '*')) {
+            $wildcardPattern = mb_substr($wildcardPattern, 0, -(mb_strlen($separator) + 1));
+            $suffix = $quotedSeparator . $segment . '(?:' . $quotedSeparator . $segment . ')*';
+        }
+
+        $pattern = str_replace('\*', $segment, preg_quote($wildcardPattern, '/'));
+
+        return '/^' . $pattern . $suffix . '$/';
+    }
+
+    protected function separator(): string
+    {
+        $separator = config('authz.permissions.separator', '.');
+
+        return is_string($separator) && $separator !== '' ? $separator : '.';
     }
 }

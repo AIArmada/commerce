@@ -15,7 +15,7 @@ use AIArmada\Authz\Services\WildcardPermissionResolver;
 use AIArmada\Authz\Support\AuthzScopeContext;
 use AIArmada\Authz\Support\AuthzScopeTeamResolver;
 use AIArmada\Authz\Support\UserRoleChecker;
-use AIArmada\Authz\Support\WildcardPermissionCache;
+use AIArmada\Authz\Support\UserWildcardPermissions;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerContextTeamResolver;
 use Illuminate\Auth\AuthManager;
@@ -56,7 +56,6 @@ final class AuthzServiceProvider extends PackageServiceProvider
         $this->configureSpatiePermissions();
 
         $this->app->scoped(AuthzScopeContext::class, static fn (): AuthzScopeContext => new AuthzScopeContext);
-        $this->app->scoped(WildcardPermissionCache::class, static fn (): WildcardPermissionCache => new WildcardPermissionCache);
 
         $this->app->singleton(WildcardPermissionResolver::class);
         $this->app->singleton(PermissionKeyBuilder::class);
@@ -121,10 +120,7 @@ final class AuthzServiceProvider extends PackageServiceProvider
                     return null;
                 }
 
-                $isSuperAdmin = app(WildcardPermissionCache::class)
-                    ->rememberSuperAdmin($user, $superAdminRole, static fn (): bool => UserRoleChecker::hasGlobalRole($user, $superAdminRole));
-
-                return $isSuperAdmin ? true : null;
+                return UserRoleChecker::hasGlobalRole($user, $superAdminRole) ? true : null;
             });
         }
 
@@ -135,9 +131,8 @@ final class AuthzServiceProvider extends PackageServiceProvider
                 }
 
                 $resolver = app(WildcardPermissionResolver::class);
-                $userPermissions = app(WildcardPermissionCache::class)->get($user);
 
-                foreach ($userPermissions as $permission) {
+                foreach (UserWildcardPermissions::for($user) as $permission) {
                     if ($resolver->isWildcard($permission) && $resolver->matches($permission, $ability)) {
                         return true;
                     }

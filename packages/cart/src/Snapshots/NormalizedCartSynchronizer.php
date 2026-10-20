@@ -49,20 +49,13 @@ class NormalizedCartSynchronizer
         $identifier = $cart->getIdentifier();
         $instance = $cart->instance();
 
-        $owner = CartSnapshot::resolveCurrentOwner();
+        $owner = $this->resolveSourceOwner($cart);
 
         $items = $cart->getItems();
         $conditions = $cart->getStoredConditions();
         $metadata = $cart->getAllMetadata();
 
         $currency = $this->resolveCurrency();
-
-        if (CartSnapshot::ownerScopingEnabled()) {
-            OwnerContext::assertResolvedOrExplicitGlobal(
-                $owner,
-                CartSnapshot::class . ' requires an owner context or explicit global context.',
-            );
-        }
 
         $cartModel = CartSnapshot::query()->forOwner($owner)->firstOrNew([
             'identifier' => $identifier,
@@ -142,6 +135,51 @@ class NormalizedCartSynchronizer
         $code = (string) ($exception->errorInfo[0] ?? $exception->getCode());
 
         return in_array($code, ['23000', '23505'], true);
+    }
+
+    /**
+     * Derive the owner scope that owns the source cart and validate it.
+     *
+     * The snapshot must be written under the owner of the source cart's
+     * storage, never under whatever ambient owner happens to be active when
+     * the sync runs (listeners, queued jobs, admin tooling). A global source
+     * cart requires explicit global context; an owned source cart requires an
+     * ambient owner that matches the source tuple.
+     *
+     * @throws AuthorizationException When the ambient context does not match the source cart owner
+     */
+    private function resolveSourceOwner(BaseCart $cart): ?EloquentModel
+    {
+        if (! CartSnapshot::ownerScopingEnabled()) {
+            return null;
+        }
+
+        $storage = $cart->storage();
+        $ownerType = $storage->getOwnerType();
+        $ownerId = $storage->getOwnerId();
+
+        if ($ownerType === null && $ownerId === null) {
+            OwnerContext::assertResolvedOrExplicitGlobal(
+                null,
+                CartSnapshot::class . ' requires an owner context or explicit global context.',
+            );
+
+            return null;
+        }
+
+        $owner = OwnerContext::fromTypeAndId($ownerType, $ownerId);
+        $ambient = OwnerContext::resolve();
+
+        if ($ambient === null
+            || $ambient->getMorphClass() !== $ownerType
+            || (string) $ambient->getKey() !== (string) $ownerId
+        ) {
+            throw new AuthorizationException(
+                'Cart snapshot can only be synchronized inside the owner scope of the source cart.'
+            );
+        }
+
+        return $owner;
     }
 
     /**

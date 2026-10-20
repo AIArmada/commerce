@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Cart\Traits;
 
+use AIArmada\Cart\Collections\CartCollection;
 use AIArmada\Cart\Collections\CartConditionCollection;
 use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Conditions\ConditionTarget;
@@ -112,19 +113,24 @@ trait ManagesConditions
      */
     public function removeCondition(string $name): bool
     {
-        // Use getConditionsFromStorage() to avoid recursion during dynamic condition evaluation
-        $conditions = $this->getConditionsFromStorage();
+        $removedCondition = null;
 
-        if (! $conditions->has($name)) {
+        $mutated = $this->mutateConditions(function (CartConditionCollection $conditions) use ($name, &$removedCondition): ?CartConditionCollection {
+            if (! $conditions->has($name)) {
+                return null;
+            }
+
+            // Get the condition before removing it for the event
+            $removedCondition = $conditions->get($name);
+
+            $conditions->forget($name);
+
+            return $conditions;
+        });
+
+        if (! $mutated) {
             return false;
         }
-
-        // Get the condition before removing it for the event
-        $removedCondition = $conditions->get($name);
-
-        $conditions->forget($name);
-        $conditionsArray = $conditions->toArray();
-        $this->storage->putConditions($this->getIdentifier(), $this->instance(), $conditionsArray);
 
         // Invalidate pipeline cache after condition modification
         $this->invalidatePipelineCache();
@@ -142,7 +148,7 @@ trait ManagesConditions
      */
     public function clearConditions(): bool
     {
-        $this->storage->putConditions($this->getIdentifier(), $this->instance(), []);
+        $this->mutateConditions(static fn (): CartConditionCollection => new CartConditionCollection);
 
         // Invalidate pipeline cache after condition modification
         $this->invalidatePipelineCache();
@@ -163,20 +169,23 @@ trait ManagesConditions
      */
     public function removeConditionsByType(string $type): bool
     {
-        // Use getConditionsFromStorage() to avoid recursion during dynamic condition evaluation
-        $conditions = $this->getConditionsFromStorage();
-        $conditionsToRemove = $conditions->filter(fn (CartCondition $condition) => $condition->getType() === $type);
+        $mutated = $this->mutateConditions(function (CartConditionCollection $conditions) use ($type): ?CartConditionCollection {
+            $conditionsToRemove = $conditions->filter(fn (CartCondition $condition) => $condition->getType() === $type);
 
-        if ($conditionsToRemove->isEmpty()) {
+            if ($conditionsToRemove->isEmpty()) {
+                return null;
+            }
+
+            foreach ($conditionsToRemove as $condition) {
+                $conditions->forget($condition->getName());
+            }
+
+            return $conditions;
+        });
+
+        if (! $mutated) {
             return false;
         }
-
-        foreach ($conditionsToRemove as $condition) {
-            $conditions->forget($condition->getName());
-        }
-
-        $conditionsArray = $conditions->toArray();
-        $this->storage->putConditions($this->getIdentifier(), $this->instance(), $conditionsArray);
 
         // Invalidate pipeline cache after condition modification
         $this->invalidatePipelineCache();
@@ -189,17 +198,21 @@ trait ManagesConditions
      */
     public function addItemCondition(string $itemId, CartCondition $condition): bool
     {
-        $cartItems = $this->getItems();
+        $mutated = $this->mutateItems(function (CartCollection $cartItems) use ($itemId, $condition): ?CartCollection {
+            if (! $cartItems->has($itemId)) {
+                return null;
+            }
 
-        if (! $cartItems->has($itemId)) {
+            $item = $cartItems->get($itemId);
+            assert($item !== null, 'Item should exist since we checked has()');
+            $cartItems->put($itemId, $item->addCondition($condition));
+
+            return $cartItems;
+        });
+
+        if (! $mutated) {
             return false;
         }
-
-        $item = $cartItems->get($itemId);
-        assert($item !== null, 'Item should exist since we checked has()');
-        $item = $item->addCondition($condition);
-        $cartItems->put($itemId, $item);
-        $this->save($cartItems);
 
         // Invalidate pipeline cache after condition modification
         $this->invalidatePipelineCache();
@@ -215,26 +228,31 @@ trait ManagesConditions
      */
     public function removeItemCondition(string $itemId, string $conditionName): bool
     {
-        $cartItems = $this->getItems();
+        $removedCondition = null;
 
-        if (! $cartItems->has($itemId)) {
+        $mutated = $this->mutateItems(function (CartCollection $cartItems) use ($itemId, $conditionName, &$removedCondition): ?CartCollection {
+            if (! $cartItems->has($itemId)) {
+                return null;
+            }
+
+            $item = $cartItems->get($itemId);
+            assert($item !== null, 'Item should exist since we checked has()');
+
+            // Check if the condition exists before removing
+            if (! $item->conditions->has($conditionName)) {
+                return null;
+            }
+
+            // Get the condition before removing it for the event
+            $removedCondition = $item->conditions->get($conditionName);
+            $cartItems->put($itemId, $item->removeCondition($conditionName));
+
+            return $cartItems;
+        });
+
+        if (! $mutated) {
             return false;
         }
-
-        $item = $cartItems->get($itemId);
-        assert($item !== null, 'Item should exist since we checked has()');
-
-        // Check if the condition exists before removing
-        if (! $item->conditions->has($conditionName)) {
-            return false;
-        }
-
-        // Get the condition before removing it for the event
-        $removedCondition = $item->conditions->get($conditionName);
-
-        $item = $item->removeCondition($conditionName);
-        $cartItems->put($itemId, $item);
-        $this->save($cartItems);
 
         // Invalidate pipeline cache after condition modification
         $this->invalidatePipelineCache();
@@ -252,17 +270,21 @@ trait ManagesConditions
      */
     public function clearItemConditions(string $itemId): bool
     {
-        $cartItems = $this->getItems();
+        $mutated = $this->mutateItems(function (CartCollection $cartItems) use ($itemId): ?CartCollection {
+            if (! $cartItems->has($itemId)) {
+                return null;
+            }
 
-        if (! $cartItems->has($itemId)) {
+            $item = $cartItems->get($itemId);
+            assert($item !== null, 'Item should exist since we checked has()');
+            $cartItems->put($itemId, $item->clearConditions());
+
+            return $cartItems;
+        });
+
+        if (! $mutated) {
             return false;
         }
-
-        $item = $cartItems->get($itemId);
-        assert($item !== null, 'Item should exist since we checked has()');
-        $item = $item->clearConditions();
-        $cartItems->put($itemId, $item);
-        $this->save($cartItems);
 
         // Invalidate pipeline cache after condition modification
         $this->invalidatePipelineCache();
@@ -463,11 +485,11 @@ trait ManagesConditions
      */
     private function addCartCondition(CartCondition $condition): void
     {
-        // Use getConditionsFromStorage() to avoid recursion during dynamic condition evaluation
-        $conditions = $this->getConditionsFromStorage();
-        $conditions->put($condition->getName(), $condition);
-        $conditionsArray = $conditions->toArray();
-        $this->storage->putConditions($this->getIdentifier(), $this->instance(), $conditionsArray);
+        $this->mutateConditions(function (CartConditionCollection $conditions) use ($condition): CartConditionCollection {
+            $conditions->put($condition->getName(), $condition);
+
+            return $conditions;
+        });
 
         // Invalidate pipeline cache after condition modification
         $this->invalidatePipelineCache();

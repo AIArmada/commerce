@@ -16,6 +16,7 @@ use AIArmada\Checkout\Exceptions\MissingPaymentGatewayException;
 use AIArmada\Checkout\Listeners\RedeemVouchersOnCheckoutCompleted;
 use AIArmada\Checkout\Services\CheckoutService;
 use AIArmada\Checkout\Services\CheckoutStepRegistry;
+use AIArmada\Checkout\Services\PaymentAttemptManager;
 use AIArmada\Checkout\Services\PaymentGatewayResolver;
 use AIArmada\Checkout\Services\StepExecutor;
 use AIArmada\Checkout\Steps\CalculatePricingStep;
@@ -26,6 +27,7 @@ use AIArmada\Checkout\Steps\PersistCustomerStep;
 use AIArmada\Checkout\Steps\ProcessPaymentStep;
 use AIArmada\Checkout\Steps\ResolveCustomerStep;
 use AIArmada\Checkout\Steps\ValidateCartStep;
+use AIArmada\Checkout\Support\CheckoutProcessGuard;
 use AIArmada\Checkout\Support\CheckoutStepOrderPolicy;
 use AIArmada\Checkout\Support\ChipIntegrationRegistrar;
 use AIArmada\Checkout\Support\RegisterBuiltInPaymentProcessors;
@@ -36,6 +38,8 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Traits\ValidatesConfiguration;
 use AIArmada\Vouchers\VoucherServiceProvider;
 use Illuminate\Contracts\Events\Dispatcher;
+use Laravel\Octane\Events\RequestReceived;
+use Laravel\Octane\Events\RequestTerminated;
 use RuntimeException;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -82,6 +86,8 @@ final class CheckoutServiceProvider extends PackageServiceProvider
 
         $this->validateStepConfiguration();
         $this->validateOwnerConfiguration();
+
+        $this->registerOctaneListeners();
         $this->validateCallbackTokenConfiguration();
         $this->validatePaymentGatewayConfiguration();
         $this->registerDefaultSteps();
@@ -171,10 +177,13 @@ final class CheckoutServiceProvider extends PackageServiceProvider
             stepExecutor: $app->make(StepExecutor::class),
             finalizer: $app->make(CheckoutFinalizer::class),
             paymentResolver: $app->make(PaymentGatewayResolverInterface::class),
+            attemptManager: $app->make(PaymentAttemptManager::class),
         ));
 
         $this->app->alias(CheckoutService::class, CheckoutServiceInterface::class);
         $this->app->alias(CheckoutService::class, 'checkout');
+
+        $this->app->scoped(CheckoutProcessGuard::class, fn (): CheckoutProcessGuard => new CheckoutProcessGuard);
     }
 
     protected function registerDefaultSteps(): void
@@ -189,6 +198,23 @@ final class CheckoutServiceProvider extends PackageServiceProvider
         $registry->registerLazy('persist_customer', fn () => $this->app->make(PersistCustomerStep::class));
         $registry->registerLazy('create_order', fn () => $this->app->make(CreateOrderStep::class));
         $registry->registerLazy('dispatch_documents', fn () => $this->app->make(DispatchDocumentGenerationStep::class));
+    }
+
+    protected function registerOctaneListeners(): void
+    {
+        if (! class_exists(RequestReceived::class)) {
+            return;
+        }
+
+        $this->app['events']->listen(RequestReceived::class, function (): void {
+            $this->app->make(CheckoutProcessGuard::class)->flushState();
+        });
+
+        if (class_exists(RequestTerminated::class)) {
+            $this->app['events']->listen(RequestTerminated::class, function (): void {
+                $this->app->make(CheckoutProcessGuard::class)->flushState();
+            });
+        }
     }
 
     protected function registerOptionalIntegrations(): void

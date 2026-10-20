@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Cart\Events\CartMerged;
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Cart\Services\CartMigrationService;
+use AIArmada\Cart\Storage\CartRevision;
 use Illuminate\Support\Facades\Event;
 
 it('dispatches CartMerged with correct payload when migrating empty user cart', function (): void {
@@ -28,7 +29,7 @@ it('dispatches CartMerged with correct payload when migrating empty user cart', 
         ],
     ];
 
-    $storage->putItems($guestIdentifier, $instance, $guestItems);
+    $storage->putItems($guestIdentifier, $instance, $guestItems, CartRevision::none());
 
     config(['cart.events' => true]);
     config(['cart.migration.merge_strategy' => 'add_quantities']);
@@ -70,7 +71,7 @@ it('uses the configured merge strategy and reports guest-only quantities when ca
             'attributes' => [],
             'conditions' => [],
         ],
-    ]);
+    ], CartRevision::none());
 
     $storage->putItems($userIdentifier, $instance, [
         'product-1' => [
@@ -81,7 +82,7 @@ it('uses the configured merge strategy and reports guest-only quantities when ca
             'attributes' => [],
             'conditions' => [],
         ],
-    ]);
+    ], CartRevision::none());
 
     Event::fake();
 

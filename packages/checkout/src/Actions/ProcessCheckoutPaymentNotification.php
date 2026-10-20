@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Checkout\Actions;
 
 use AIArmada\Checkout\Models\CheckoutSession;
+use AIArmada\Checkout\Services\PaymentAttemptManager;
 use AIArmada\Checkout\Support\CheckoutNotificationCallbackResolver;
 use AIArmada\Checkout\Support\CheckoutPaymentReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -20,6 +21,7 @@ final class ProcessCheckoutPaymentNotification
     public function __construct(
         private readonly HandleCheckoutPaymentCallback $handleCallback,
         private readonly CheckoutNotificationCallbackResolver $callbackResolver,
+        private readonly ?PaymentAttemptManager $attemptManager = null,
     ) {}
 
     /**
@@ -78,6 +80,7 @@ final class ProcessCheckoutPaymentNotification
                 sessionId: $sessionId,
                 callbackType: $callbackType,
                 payload: $payload,
+                expectedGateways: $expectedGateways,
             );
         });
     }
@@ -88,10 +91,12 @@ final class ProcessCheckoutPaymentNotification
      */
     private function gatewayMatches(CheckoutSession $session, array $expectedGateways, array $context): bool
     {
-        if (! in_array((string) $session->selected_payment_gateway, $expectedGateways, true)) {
+        $gateway = $this->attemptManager()->currentAttemptGateway($session);
+
+        if ($gateway === null || ! in_array($gateway, $expectedGateways, true)) {
             Log::info('Checkout payment notification ignored for unexpected payment gateway', $this->logContext($context, [
                 'session_id' => $session->getKey(),
-                'selected_payment_gateway' => $session->selected_payment_gateway,
+                'current_attempt_gateway' => $gateway,
                 'expected_gateways' => $expectedGateways,
             ]));
 
@@ -99,6 +104,11 @@ final class ProcessCheckoutPaymentNotification
         }
 
         return true;
+    }
+
+    private function attemptManager(): PaymentAttemptManager
+    {
+        return $this->attemptManager ?? app(PaymentAttemptManager::class);
     }
 
     /**

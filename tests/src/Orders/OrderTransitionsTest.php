@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Orders\Enums\PaymentStatus;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderPayment;
 use AIArmada\Orders\States\Canceled;
@@ -156,7 +157,16 @@ describe('Order Transitions', function (): void {
                 'grand_total' => 10000,
             ]);
 
-            $transition = new RefundProcessed($order, 5000, 'ref_txn_123', 'Customer request');
+            $payment = OrderPayment::create([
+                'order_id' => $order->id,
+                'gateway' => 'stripe',
+                'amount' => 10000,
+                'currency' => 'MYR',
+                'status' => PaymentStatus::Completed,
+                'paid_at' => now(),
+            ]);
+
+            $transition = new RefundProcessed($order, 5000, 'ref_txn_123', 'Customer request', [], $payment);
             $result = $transition->handle();
 
             expect($result)->toBe($order);
@@ -164,7 +174,7 @@ describe('Order Transitions', function (): void {
             expect($order->refunds)->toHaveCount(1);
             expect($order->refunds->first()->amount)->toBe(5000);
 
-            $transition = new RefundProcessed($order, 5000, 'ref_txn_124', 'Customer request');
+            $transition = new RefundProcessed($order, 5000, 'ref_txn_124', 'Customer request', [], $payment);
             $transition->handle();
 
             expect($order->status)->toBeInstanceOf(Refunded::class)

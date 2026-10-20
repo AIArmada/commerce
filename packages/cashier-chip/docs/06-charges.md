@@ -83,6 +83,35 @@ return $checkout->redirect();
 
 See [Checkout Sessions](07-checkout.md) for detailed checkout documentation.
 
+## Frozen Checkout Replays
+
+Checkout drives `charge()` with a frozen customer snapshot. The following
+options are consumed by `PerformsCharges` and should be treated as an internal
+replay contract:
+
+| Option | Meaning |
+|--------|---------|
+| `provider_customer_frozen` | When `true`, the provider identity is frozen and must not be re-read from the model. |
+| `provider_customer_id` | The CHIP `chip_id` observed at claim time. An explicit `null` means guest/client details, not the model's current id. |
+| `client_frozen` | When `true`, use the supplied `client` fields instead of the model's current customer details. |
+| `client` | Frozen `email`, `full_name`, `phone`, `street_address`, `city`, `state`, `zip_code`, and `country` fields. |
+
+```php
+$payment = $user->charge(10000, null, [
+    'provider_customer_frozen' => true,
+    'provider_customer_id' => 'cli_frozen_at_claim',
+    'client_frozen' => true,
+    'client' => [
+        'email' => 'buyer@example.com',
+        'full_name' => 'Aisyah Rahman',
+    ],
+]);
+```
+
+A frozen `provider_customer_id` wins over `chipId()` on the model. When it is
+null, the frozen `client` is used and the model's current `chip_id`, email, and
+name are ignored.
+
 ## Payment Object
 
 All charge methods return a `Payment` object:

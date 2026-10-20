@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\CartManager;
 use AIArmada\Cart\Snapshots\CartSnapshot;
+use AIArmada\Cart\Storage\CartRevision;
 use AIArmada\Cart\Storage\DatabaseStorage;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -23,7 +24,7 @@ it('keeps manager swaps inside the current owner scope', function (): void {
 
     $this->storage->putItems('global-guest', 'default', [
         'product-1' => ['id' => 'product-1', 'name' => 'Global', 'price' => 100, 'quantity' => 1, 'attributes' => []],
-    ]);
+    ], CartRevision::none());
 
     $manager = new CartManager($this->storage);
 
@@ -35,7 +36,7 @@ it('keeps manager swaps inside the current owner scope', function (): void {
     // A swap fully inside the scope still works and leaves global rows alone.
     $this->storage->withOwner($ownerA)->putItems('scoped-guest', 'default', [
         'product-2' => ['id' => 'product-2', 'name' => 'Scoped', 'price' => 200, 'quantity' => 1, 'attributes' => []],
-    ]);
+    ], CartRevision::none());
 
     expect($manager->forOwner($ownerA)->swap('scoped-guest', 'user-a', 'default'))->toBeTrue();
     expect($this->storage->withOwner($ownerA)->getItems('user-a', 'default'))->toHaveCount(1);
@@ -47,10 +48,10 @@ it('flushes only global rows in a global context', function (): void {
 
     $this->storage->putItems('global-flush', 'default', [
         'product-1' => ['id' => 'product-1', 'name' => 'Global', 'price' => 100, 'quantity' => 1, 'attributes' => []],
-    ]);
+    ], CartRevision::none());
     $this->storage->withOwner($owner)->putItems('owner-flush', 'default', [
         'product-2' => ['id' => 'product-2', 'name' => 'Owned', 'price' => 200, 'quantity' => 1, 'attributes' => []],
-    ]);
+    ], CartRevision::none());
 
     $this->storage->flush();
 
@@ -65,7 +66,7 @@ it('rejects deeply nested payloads before encoding', function (): void {
         $deep = ['nest' => $deep];
     }
 
-    expect(fn (): mixed => $this->storage->putItems('deep-cart', 'default', ['item' => $deep]))
+    expect(fn (): mixed => $this->storage->putItems('deep-cart', 'default', ['item' => $deep], CartRevision::none()))
         ->toThrow(InvalidArgumentException::class, 'nesting depth');
 });
 
@@ -96,7 +97,7 @@ it('restores associated models within the cart owner scope', function (): void {
             'attributes' => [], 'conditions' => [],
             'associated_model' => ['class' => CartSnapshot::class, 'id' => $snapshotB->getKey()],
         ],
-    ]);
+    ], CartRevision::none());
 
     $items = (new Cart($scopedStorage, 'assoc-cart'))->getItems();
 

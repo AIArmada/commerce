@@ -315,6 +315,8 @@ it('confirms payment when the reported amount exactly matches the checkout total
     $order->forceFill([
         'id' => (string) Str::uuid(),
         'order_number' => 'ORD-AMOUNT-MATCH',
+        'grand_total' => 1000,
+        'currency' => 'MYR',
     ]);
 
     $orderService = mock(OrderServiceInterface::class);
@@ -454,6 +456,97 @@ it('fails closed when the payment amount is missing', function (): void {
 
     Event::assertNotDispatched(OrderPaid::class);
     Event::assertNotDispatched(OrderProcessingStarted::class);
+});
+
+it('blocks payment confirmation when the order total drifted from the checkout total', function (): void {
+    config()->set('checkout.create_order.confirm_payment', true);
+    Log::spy();
+
+    $order = new Order;
+    $order->forceFill([
+        'id' => (string) Str::uuid(),
+        'order_number' => 'ORD-ORDER-TOTAL-DRIFT',
+        'grand_total' => 1200,
+        'currency' => 'MYR',
+    ]);
+
+    $orderService = mock(OrderServiceInterface::class);
+    $orderService->shouldReceive('createOrder')->once()->andReturn($order);
+    $orderService->shouldReceive('confirmPayment')->never();
+    app()->instance(OrderServiceInterface::class, $orderService);
+
+    $session = createCheckoutAmountReconciliationSession(['amount' => 1000]);
+    $result = app(CreateOrderStep::class)->handle($session);
+    $freshSession = $session->fresh();
+
+    expect($result->isSuccessful())->toBeFalse()
+        ->and(data_get($freshSession?->payment_data, 'order_reconciliation.status'))->toBe('mismatch')
+        ->and(data_get($freshSession?->payment_data, 'order_reconciliation.reason'))->toBe('amount_mismatch')
+        ->and(data_get($freshSession?->payment_data, 'order_reconciliation.session_grand_total'))->toBe(1000)
+        ->and(data_get($freshSession?->payment_data, 'order_reconciliation.order_grand_total'))->toBe(1200)
+        ->and($freshSession?->error_message)->toBe('The order total does not match the checkout total.');
+
+    Log::shouldHaveReceived('warning')->once();
+});
+
+it('blocks payment confirmation when the order currency drifted from the checkout currency', function (): void {
+    config()->set('checkout.create_order.confirm_payment', true);
+    Log::spy();
+
+    $order = new Order;
+    $order->forceFill([
+        'id' => (string) Str::uuid(),
+        'order_number' => 'ORD-ORDER-CURRENCY-DRIFT',
+        'grand_total' => 1000,
+        'currency' => 'USD',
+    ]);
+
+    $orderService = mock(OrderServiceInterface::class);
+    $orderService->shouldReceive('createOrder')->once()->andReturn($order);
+    $orderService->shouldReceive('confirmPayment')->never();
+    app()->instance(OrderServiceInterface::class, $orderService);
+
+    $session = createCheckoutAmountReconciliationSession(['amount' => 1000]);
+    $result = app(CreateOrderStep::class)->handle($session);
+    $freshSession = $session->fresh();
+
+    expect($result->isSuccessful())->toBeFalse()
+        ->and(data_get($freshSession?->payment_data, 'order_reconciliation.status'))->toBe('mismatch')
+        ->and(data_get($freshSession?->payment_data, 'order_reconciliation.reason'))->toBe('currency_mismatch')
+        ->and(data_get($freshSession?->payment_data, 'order_reconciliation.session_currency'))->toBe('MYR')
+        ->and(data_get($freshSession?->payment_data, 'order_reconciliation.order_currency'))->toBe('USD')
+        ->and($freshSession?->error_message)->toBe('The order currency does not match the checkout currency.');
+
+    Log::shouldHaveReceived('warning')->once();
+});
+
+it('blocks payment confirmation when the order carries no total', function (): void {
+    config()->set('checkout.create_order.confirm_payment', true);
+    Log::spy();
+
+    $order = new Order;
+    $order->forceFill([
+        'id' => (string) Str::uuid(),
+        'order_number' => 'ORD-ORDER-TOTAL-MISSING',
+    ]);
+
+    $orderService = mock(OrderServiceInterface::class);
+    $orderService->shouldReceive('createOrder')->once()->andReturn($order);
+    $orderService->shouldReceive('confirmPayment')->never();
+    app()->instance(OrderServiceInterface::class, $orderService);
+
+    $session = createCheckoutAmountReconciliationSession(['amount' => 1000]);
+    $result = app(CreateOrderStep::class)->handle($session);
+    $freshSession = $session->fresh();
+
+    // The order model defaults grand_total to 0, so an order created
+    // without totals fails closed as a total drift, never as a paid order.
+    expect($result->isSuccessful())->toBeFalse()
+        ->and(data_get($freshSession?->payment_data, 'order_reconciliation.reason'))->toBe('amount_mismatch')
+        ->and(data_get($freshSession?->payment_data, 'order_reconciliation.order_grand_total'))->toBe(0)
+        ->and($freshSession?->error_message)->toBe('The order total does not match the checkout total.');
+
+    Log::shouldHaveReceived('warning')->once();
 });
 
 it('confirms free orders for processing without payment', function (): void {

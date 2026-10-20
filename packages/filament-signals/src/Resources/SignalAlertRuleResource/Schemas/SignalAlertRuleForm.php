@@ -10,6 +10,7 @@ use AIArmada\Signals\Models\SignalAlertRule;
 use AIArmada\Signals\Models\TrackedProperty;
 use Filament\Forms;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
@@ -46,7 +47,8 @@ final class SignalAlertRuleForm
                             ),
                         )
                         ->searchable()
-                        ->preload(),
+                        ->preload()
+                        ->live(),
 
                     Forms\Components\Select::make('metric_key')
                         ->options(function (): array {
@@ -66,7 +68,16 @@ final class SignalAlertRuleForm
 
                             return $options;
                         })
-                        ->required(),
+                        ->required()
+                        ->live(),
+
+                    Forms\Components\Select::make('event_filters.currency')
+                        ->label('Revenue currency')
+                        ->options(SignalFormOptionLists::currencies())
+                        ->searchable()
+                        ->helperText('Revenue rules not scoped to a tracked property must declare the currency they monitor.')
+                        ->visible(fn (Get $get): bool => self::isGlobalRevenueRule($get))
+                        ->required(fn (Get $get): bool => self::isGlobalRevenueRule($get)),
 
                     Forms\Components\Select::make('operator')
                         ->options([
@@ -180,5 +191,12 @@ final class SignalAlertRuleForm
                 ])
                 ->columns(2),
         ]);
+    }
+
+    private static function isGlobalRevenueRule(Get $get): bool
+    {
+        return config('signals.features.monetary.enabled', true)
+            && $get('metric_key') === 'revenue_minor'
+            && blank($get('tracked_property_id'));
     }
 }

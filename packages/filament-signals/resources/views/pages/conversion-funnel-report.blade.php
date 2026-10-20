@@ -43,7 +43,7 @@
 @if(config('signals.features.monetary.enabled', true))
             <x-filament::section>
                 <div class="text-center">
-                    <div class="text-2xl font-bold text-success-700">{{ $this->formatMoney($summary['revenue_minor']) }}</div>
+                    <div class="text-2xl font-bold text-success-700">{{ $this->formatRevenue($summary['revenue'] ?? $summary['revenue_minor'] ?? 0, $summary['currency'] ?? null) }}</div>
                     <div class="text-sm text-gray-500">{{ $this->monetaryValueLabel() }}</div>
                 </div>
             </x-filament::section>
@@ -76,7 +76,7 @@
                                 <td class="px-4 py-3">{{ number_format($stage['rate_from_start'], 2) }}%</td>
                                 <td class="px-4 py-3">{{ number_format($stage['drop_off']) }}</td>
                                 @if(config('signals.features.monetary.enabled', true))
-                                <td class="px-4 py-3">{{ $this->formatMoney($stage['revenue_minor']) }}</td>
+                                <td class="px-4 py-3">{{ $this->formatRevenue($stage['revenue'] ?? $stage['revenue_minor'] ?? 0, $stage['currency'] ?? null) }}</td>
                                 @endif
                             </tr>
                         @empty

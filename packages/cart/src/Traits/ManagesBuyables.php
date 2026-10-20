@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Cart\Traits;
 
+use AIArmada\Cart\Collections\CartCollection;
 use AIArmada\Cart\Contracts\BuyableInterface;
 use AIArmada\Cart\Events\ItemUpdated;
 use AIArmada\Cart\Exceptions\ProductNotPurchasableException;
@@ -171,38 +172,45 @@ trait ManagesBuyables
         $changes = [];
         $updatedItems = [];
 
-        $cartItems = $this->getItems();
+        $mutated = $this->mutateItems(function (CartCollection $cartItems) use ($resolver, &$changes, &$updatedItems): ?CartCollection {
+            $changes = [];
+            $updatedItems = [];
 
-        foreach ($cartItems as $item) {
-            $model = $item->getAssociatedModel();
+            foreach ($cartItems as $item) {
+                $model = $item->getAssociatedModel();
 
-            if (! $model instanceof BuyableInterface) {
-                continue;
+                if (! $model instanceof BuyableInterface) {
+                    continue;
+                }
+
+                // Get fresh instance
+                $fresh = $resolver($model);
+
+                if ($fresh === null) {
+                    continue;
+                }
+
+                $oldPrice = (int) $item->price;
+                $newPrice = $fresh->getBuyablePrice();
+
+                if ($oldPrice !== $newPrice) {
+                    $updated = $item->setPrice($newPrice);
+                    $cartItems->put($item->id, $updated);
+                    $updatedItems[$item->id] = $updated;
+                    $changes[$item->id] = ['old' => $oldPrice, 'new' => $newPrice];
+                }
             }
 
-            // Get fresh instance
-            $fresh = $resolver($model);
-
-            if ($fresh === null) {
-                continue;
+            if ($updatedItems === []) {
+                return null;
             }
 
-            $oldPrice = (int) $item->price;
-            $newPrice = $fresh->getBuyablePrice();
+            return $cartItems;
+        });
 
-            if ($oldPrice !== $newPrice) {
-                $updated = $item->setPrice($newPrice);
-                $cartItems->put($item->id, $updated);
-                $updatedItems[$item->id] = $updated;
-                $changes[$item->id] = ['old' => $oldPrice, 'new' => $newPrice];
-            }
-        }
-
-        if ($updatedItems === []) {
+        if (! $mutated) {
             return $changes;
         }
-
-        $this->save($cartItems);
 
         // Invalidate pipeline cache after cart modification
         $this->invalidatePipelineCacheIfEnabled();

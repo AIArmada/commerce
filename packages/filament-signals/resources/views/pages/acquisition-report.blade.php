@@ -40,7 +40,7 @@
             @if(config('signals.features.monetary.enabled', true))
             <x-filament::section>
                 <div class="text-center">
-                    <div class="text-2xl font-bold text-success-700">{{ $this->formatMoney($summary['revenue_minor']) }}</div>
+                    <div class="text-2xl font-bold text-success-700">{{ $this->formatRevenue($summary['revenue'] ?? $summary['revenue_minor'] ?? 0, $summary['currency'] ?? null) }}</div>
                     <div class="text-sm text-gray-500">{{ $this->monetaryValueLabel() }}</div>
                 </div>
             </x-filament::section>

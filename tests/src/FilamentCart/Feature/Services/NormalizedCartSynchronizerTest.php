@@ -233,6 +233,11 @@ describe('NormalizedCartSynchronizer', function (): void {
         $this->storage->shouldReceive('getMetadata')->andReturnUsing(fn () => []);
         $this->storage->shouldReceive('getAllMetadata')->andReturn([]);
 
+        // The synchronizer derives the snapshot owner from the source cart
+        // storage and validates it against the ambient owner context.
+        $this->storage->shouldReceive('getOwnerType')->andReturn($ownerA->getMorphClass());
+        $this->storage->shouldReceive('getOwnerId')->andReturn($ownerA->getKey());
+
         $cart = new BaseCart($this->storage, 'user-123', null, 'default');
 
         OwnerContext::withOwner($ownerA, fn () => $this->synchronizer->syncFromCart($cart));

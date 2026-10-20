@@ -7,12 +7,13 @@ use AIArmada\Checkout\Contracts\PaymentProcessorInterface;
 use AIArmada\Checkout\Data\PaymentResult;
 use AIArmada\Checkout\Exceptions\PaymentException;
 use AIArmada\Checkout\Models\CheckoutSession;
+use AIArmada\Checkout\States\PaymentFailed;
 use AIArmada\Checkout\States\Processing;
 use AIArmada\Checkout\Steps\ProcessPaymentStep;
 
 use function Pest\Laravel\mock;
 
-it('increments payment attempts atomically and enforces the retry limit', function (): void {
+it('claims each attempt once and enforces the retry limit', function (): void {
     config()->set('checkout.payment.retry_limit', 1);
 
     $processor = mock(PaymentProcessorInterface::class);
@@ -20,7 +21,7 @@ it('increments payment attempts atomically and enforces the retry limit', functi
     $processor->shouldReceive('isAvailable')->twice()->andReturnTrue();
     $processor->shouldReceive('createPayment')
         ->once()
-        ->andReturn(PaymentResult::pending('pay_atomic', 'https://gateway.example.test/pay'));
+        ->andReturn(PaymentResult::failed('Declined'));
 
     $resolver = mock(PaymentGatewayResolverInterface::class);
     $resolver->shouldReceive('resolve')->with('chip')->andReturn($processor);
@@ -37,8 +38,9 @@ it('increments payment attempts atomically and enforces the retry limit', functi
     $step = new ProcessPaymentStep($resolver);
     $firstResult = $step->handle($session);
 
-    expect($firstResult->isSuccessful())->toBeTrue()
-        ->and($session->fresh()->payment_attempts)->toBe(1);
+    expect($firstResult->isSuccessful())->toBeFalse()
+        ->and($session->fresh()->payment_attempts)->toBe(1)
+        ->and($session->fresh()->status)->toBeInstanceOf(PaymentFailed::class);
 
     expect(fn (): mixed => $step->handle($staleSession))
         ->toThrow(PaymentException::class, 'Payment retry limit exceeded');

@@ -13,6 +13,7 @@ use AIArmada\Cart\Events\ItemUpdated;
 use AIArmada\Cart\Exceptions\InvalidCartItemException;
 use AIArmada\Cart\Exceptions\UnknownModelException;
 use AIArmada\Cart\Models\CartItem;
+use AIArmada\Cart\Storage\CartRevision;
 use AIArmada\Cart\Support\CartLimits;
 use AIArmada\Cart\Support\CartMoney;
 
@@ -92,49 +93,69 @@ trait ManagesItems
         // Normalize ID to string for consistent handling
         $id = (string) $id;
 
-        $cartItems = $this->getItems();
+        $updated = null;
+        $removed = null;
+        $remaining = null;
 
-        if (! $cartItems->has($id)) {
+        $committedRevision = $this->mutateItems(function (CartCollection $cartItems) use ($id, $data, &$updated, &$removed, &$remaining): ?CartCollection {
+            // Attempt-local results: a losing attempt must not leak its stale
+            // item into the dispatch of the committed attempt.
+            $updated = null;
+            $removed = null;
+            $remaining = null;
+
+            if (! $cartItems->has($id)) {
+                return null;
+            }
+
+            $item = $cartItems->get($id);
+            assert($item !== null, 'Item should exist since we checked has()');
+
+            // Handle quantity updates
+            if (isset($data['quantity'])) {
+                $quantity = $data['quantity'];
+
+                if (is_array($quantity)) {
+                    // Absolute quantity update; a missing value defaults to 0 (removal).
+                    $newQuantity = array_key_exists('value', $quantity)
+                        ? $this->resolveIntQuantity($quantity['value'], 'update quantity')
+                        : 0;
+                } else {
+                    // Relative quantity update (default behavior)
+                    $newQuantity = $item->quantity + $this->resolveIntQuantity($quantity, 'update quantity');
+                }
+
+                // Check for removal BEFORE creating new CartItem to avoid exceptions
+                if ($newQuantity <= 0) {
+                    $cartItems->forget($id);
+                    $removed = $item;
+                    $remaining = $cartItems;
+
+                    return $cartItems;
+                }
+
+                $item = $item->setQuantity($newQuantity);
+            }
+
+            // Update other properties
+            foreach (['name', 'price', 'attributes'] as $property) {
+                if (isset($data[$property])) {
+                    $method = 'set' . ucfirst($property);
+                    $value = $property === 'price' ? $this->normalizePrice($data[$property]) : $data[$property];
+                    $item = $item->$method($value);
+                }
+            }
+
+            $cartItems->put($id, $item);
+            $updated = $item;
+            $remaining = $cartItems;
+
+            return $cartItems;
+        });
+
+        if ($committedRevision === null) {
             return null;
         }
-
-        $item = $cartItems->get($id);
-        assert($item !== null, 'Item should exist since we checked has()');
-
-        // Handle quantity updates
-        if (isset($data['quantity'])) {
-            $quantity = $data['quantity'];
-
-            if (is_array($quantity)) {
-                // Absolute quantity update; a missing value defaults to 0 (removal).
-                $newQuantity = array_key_exists('value', $quantity)
-                    ? $this->resolveIntQuantity($quantity['value'], 'update quantity')
-                    : 0;
-            } else {
-                // Relative quantity update (default behavior)
-                $newQuantity = $item->quantity + $this->resolveIntQuantity($quantity, 'update quantity');
-            }
-
-            // Check for removal BEFORE creating new CartItem to avoid exceptions
-            if ($newQuantity <= 0) {
-                return $this->remove($id);
-            }
-
-            $item = $item->setQuantity($newQuantity);
-        }
-
-        // Update other properties
-        foreach (['name', 'price', 'attributes'] as $property) {
-            if (isset($data[$property])) {
-                $method = 'set' . ucfirst($property);
-                $value = $property === 'price' ? $this->normalizePrice($data[$property]) : $data[$property];
-                $item = $item->$method($value);
-            }
-        }
-
-        // Update cart
-        $cartItems->put($id, $item);
-        $this->save($cartItems);
 
         // Invalidate pipeline cache after cart modification
         $this->invalidatePipelineCacheIfEnabled();
@@ -143,9 +164,22 @@ trait ManagesItems
         // listeners observe the latest cart state.
         $this->markDynamicConditionsDirty();
 
-        $this->dispatchEvent(new ItemUpdated($item, $this));
+        if ($removed !== null) {
+            assert($remaining !== null);
+            $this->dispatchEvent(new ItemRemoved($removed, $this));
 
-        return $item;
+            // Handle empty cart based on configured behavior
+            if ($remaining->isEmpty()) {
+                $this->handleEmptyCart($committedRevision);
+            }
+
+            return $removed;
+        }
+
+        assert($updated !== null);
+        $this->dispatchEvent(new ItemUpdated($updated, $this));
+
+        return $updated;
     }
 
     /**
@@ -156,16 +190,30 @@ trait ManagesItems
         // Normalize ID to string for consistent handling
         $id = (string) $id;
 
-        $cartItems = $this->getItems();
+        $removed = null;
+        $remaining = null;
 
-        if (! $cartItems->has($id)) {
+        $committedRevision = $this->mutateItems(function (CartCollection $cartItems) use ($id, &$removed, &$remaining): ?CartCollection {
+            // Attempt-local results: a losing attempt must not leak its stale
+            // item into the dispatch of the committed attempt.
+            $removed = null;
+            $remaining = null;
+
+            if (! $cartItems->has($id)) {
+                return null;
+            }
+
+            $removed = $cartItems->get($id);
+            assert($removed !== null, 'Item should exist since we checked has()');
+            $cartItems->forget($id);
+            $remaining = $cartItems;
+
+            return $cartItems;
+        });
+
+        if ($committedRevision === null || $removed === null || $remaining === null) {
             return null;
         }
-
-        $item = $cartItems->get($id);
-        assert($item !== null, 'Item should exist since we checked has()');
-        $cartItems->forget($id);
-        $this->save($cartItems);
 
         // Invalidate pipeline cache after cart modification
         $this->invalidatePipelineCacheIfEnabled();
@@ -174,14 +222,14 @@ trait ManagesItems
         // listeners observe the latest cart state.
         $this->markDynamicConditionsDirty();
 
-        $this->dispatchEvent(new ItemRemoved($item, $this));
+        $this->dispatchEvent(new ItemRemoved($removed, $this));
 
         // Handle empty cart based on configured behavior
-        if ($cartItems->isEmpty()) {
-            $this->handleEmptyCart();
+        if ($remaining->isEmpty()) {
+            $this->handleEmptyCart($committedRevision);
         }
 
-        return $item;
+        return $removed;
     }
 
     /**
@@ -239,37 +287,44 @@ trait ManagesItems
         // Normalize ID to string for consistent handling
         $id = (string) $id;
 
-        $cartItems = $this->getItems();
+        $addedItem = null;
+        $isFirstItem = false;
 
-        $limits = CartLimits::fromConfig();
-        if (! $cartItems->has((string) $id) && $cartItems->count() >= $limits->maxItems) {
-            throw new InvalidCartItemException("Cart cannot contain more than {$limits->maxItems} items");
-        }
+        $this->mutateItems(function (CartCollection $cartItems) use ($id, $name, $price, $quantity, $attributes, $conditions, $associatedModel, &$addedItem, &$isFirstItem): ?CartCollection {
+            $limits = CartLimits::fromConfig();
+            if (! $cartItems->has((string) $id) && $cartItems->count() >= $limits->maxItems) {
+                throw new InvalidCartItemException("Cart cannot contain more than {$limits->maxItems} items");
+            }
 
-        // Create cart item
-        $item = $this->createCartItem([
-            'id' => $id,
-            'name' => $name,
-            'price' => $this->normalizePrice($price),
-            'quantity' => $quantity,
-            'attributes' => $attributes,
-            'conditions' => $conditions,
-            'associated_model' => $associatedModel,
-        ]);
+            // Create cart item
+            $item = $this->createCartItem([
+                'id' => $id,
+                'name' => $name,
+                'price' => $this->normalizePrice($price),
+                'quantity' => $quantity,
+                'attributes' => $attributes,
+                'conditions' => $conditions,
+                'associated_model' => $associatedModel,
+            ]);
 
-        // Check if item already exists in cart
-        $isFirstItem = $cartItems->isEmpty();
+            // Check if item already exists in cart
+            $isFirstItem = $cartItems->isEmpty();
 
-        if ($cartItems->has($id)) {
-            // Update existing item quantity
-            $existingItem = $cartItems->get($id);
-            assert($existingItem !== null, 'Item should exist since we checked has()');
-            $item = $item->setQuantity($existingItem->quantity + $quantity);
-        }
+            if ($cartItems->has($id)) {
+                // Update existing item quantity
+                $existingItem = $cartItems->get($id);
+                assert($existingItem !== null, 'Item should exist since we checked has()');
+                $item = $item->setQuantity($existingItem->quantity + $quantity);
+            }
 
-        // Store in cart
-        $cartItems->put($id, $item);
-        $this->save($cartItems);
+            // Store in cart
+            $cartItems->put($id, $item);
+            $addedItem = $item;
+
+            return $cartItems;
+        });
+
+        assert($addedItem !== null);
 
         // Invalidate pipeline cache after cart modification
         $this->invalidatePipelineCacheIfEnabled();
@@ -284,9 +339,9 @@ trait ManagesItems
         }
 
         // Dispatch ItemAdded event
-        $this->dispatchEvent(new ItemAdded($item, $this));
+        $this->dispatchEvent(new ItemAdded($addedItem, $this));
 
-        return $item;
+        return $addedItem;
     }
 
     /**
@@ -299,16 +354,20 @@ trait ManagesItems
 
     /**
      * Handle cart when it becomes empty based on configured behavior.
+     *
+     * The cleanup is guarded by the revision the emptying mutation committed:
+     * it only applies while that revision is still current, so it can never
+     * erase a newer write from an event listener or a concurrent request.
      */
-    private function handleEmptyCart(): void
+    private function handleEmptyCart(CartRevision $committedRevision): void
     {
         $behavior = EmptyCartBehavior::tryFrom(
             config('cart.empty_cart_behavior', 'destroy')
         ) ?? EmptyCartBehavior::Destroy;
 
         match ($behavior) {
-            EmptyCartBehavior::Destroy => $this->destroy(),
-            EmptyCartBehavior::Clear => $this->clear(),
+            EmptyCartBehavior::Destroy => $this->destroyIfUnchanged($committedRevision),
+            EmptyCartBehavior::Clear => $this->clearIfUnchanged($committedRevision),
             EmptyCartBehavior::Preserve => null, // Do nothing, keep conditions and metadata
         };
     }
@@ -336,48 +395,56 @@ trait ManagesItems
             $rows[] = $this->normalizeImportRow($item, $index);
         }
 
-        $cartItems = $this->getItems();
-        $isFirstItem = $cartItems->isEmpty();
+        $added = null;
+        $isFirstItem = false;
 
-        $limits = CartLimits::fromConfig();
-        $seenNew = [];
-        $newDistinct = 0;
+        $this->mutateItems(function (CartCollection $cartItems) use ($rows, &$added, &$isFirstItem): ?CartCollection {
+            $isFirstItem = $cartItems->isEmpty();
 
-        foreach ($rows as $row) {
-            if (! $cartItems->has($row['id']) && ! isset($seenNew[$row['id']])) {
-                $seenNew[$row['id']] = true;
-                $newDistinct++;
-            }
-        }
+            $limits = CartLimits::fromConfig();
+            $seenNew = [];
+            $newDistinct = 0;
 
-        if ($cartItems->count() + $newDistinct > $limits->maxItems) {
-            throw new InvalidCartItemException("Cart cannot contain more than {$limits->maxItems} items");
-        }
-
-        $added = new CartCollection;
-
-        foreach ($rows as $row) {
-            $item = $this->createCartItem([
-                'id' => $row['id'],
-                'name' => $row['name'],
-                'price' => $this->normalizePrice($row['price']),
-                'quantity' => $row['quantity'],
-                'attributes' => $row['attributes'],
-                'conditions' => $row['conditions'],
-                'associated_model' => $row['associated_model'],
-            ]);
-
-            if ($cartItems->has($row['id'])) {
-                $existingItem = $cartItems->get($row['id']);
-                assert($existingItem !== null, 'Item should exist since we checked has()');
-                $item = $item->setQuantity($existingItem->quantity + $row['quantity']);
+            foreach ($rows as $row) {
+                if (! $cartItems->has($row['id']) && ! isset($seenNew[$row['id']])) {
+                    $seenNew[$row['id']] = true;
+                    $newDistinct++;
+                }
             }
 
-            $cartItems->put($row['id'], $item);
-            $added->put($item->id, $item);
-        }
+            if ($cartItems->count() + $newDistinct > $limits->maxItems) {
+                throw new InvalidCartItemException("Cart cannot contain more than {$limits->maxItems} items");
+            }
 
-        $this->save($cartItems);
+            $batch = new CartCollection;
+
+            foreach ($rows as $row) {
+                $item = $this->createCartItem([
+                    'id' => $row['id'],
+                    'name' => $row['name'],
+                    'price' => $this->normalizePrice($row['price']),
+                    'quantity' => $row['quantity'],
+                    'attributes' => $row['attributes'],
+                    'conditions' => $row['conditions'],
+                    'associated_model' => $row['associated_model'],
+                ]);
+
+                if ($cartItems->has($row['id'])) {
+                    $existingItem = $cartItems->get($row['id']);
+                    assert($existingItem !== null, 'Item should exist since we checked has()');
+                    $item = $item->setQuantity($existingItem->quantity + $row['quantity']);
+                }
+
+                $cartItems->put($row['id'], $item);
+                $batch->put($item->id, $item);
+            }
+
+            $added = $batch;
+
+            return $cartItems;
+        });
+
+        assert($added !== null);
 
         // Invalidate pipeline cache after cart modification
         $this->invalidatePipelineCacheIfEnabled();

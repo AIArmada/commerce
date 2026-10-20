@@ -99,6 +99,8 @@ user-facing values.
 
 When owner mode is enabled, cart reads and writes require a resolved owner context or an explicit global context via `OwnerContext::withOwner(null, ...)`.
 
+The ambient cart manager re-resolves storage from the current owner context at every public entry point and partitions its current cart, identifier/instance overrides, and UUID lookup cache per owner. `Cart::forOwner($owner)` remains explicitly pinned to the given owner and never re-resolves ambient context. See [Multi-Tenancy](09-multi-tenancy.md#ambient-vs-pinned-cart-managers).
+
 Installing filament-cart does not enable or rewrite cart.owner.*. Enable
 cart.owner.enabled explicitly for core cart and condition storage. Filament Cart
 uses the same core owner boundary and has no independent owner switch.

@@ -67,13 +67,23 @@ the lifecycle timestamps in sync:
 ## Variant
 
 Variants belong to a product and optional option values. The owner tuple is immutable after
-creation (`HasOwner` blocks reassignment, demotion, and promotion); updates are owner-guarded
-like products.
+creation (`HasOwner` blocks reassignment, demotion, and promotion), and an `updating` guard
+rejects `product_id` changes even when owner enforcement is disabled. Owned variants can only
+be updated from a matching owner context, and tenant contexts cannot update global variants.
+Create a new variant when the parent product changes.
 
-> **warning**
-> `product_id` is **not** immutable. It is in `Variant::$fillable` and no `updating` guard
-> rejects a change, so a variant can be re-parented. Guard it yourself if re-parenting is not
-> a supported operation in your domain.
+Generation identity comes from `combination_key` (`<product id>:<sha256 of the sorted
+option-value IDs>`, built with `Variant::combinationKeyFor()`), which is unique per owner and
+per global scope through partial indexes. `MatrixVariantGenerator` fills the key on insert;
+direct creates may leave it `null`, and later generation adopts a keyless variant when its
+option-value membership matches a combination exactly.
+
+With the default SKU pattern, generated SKUs also carry a bounded deterministic suffix derived
+from the combination key, so ambiguous option-code boundaries cannot collapse distinct
+combinations, and the complete SKU is bounded to the 255-character `sku` column by trimming the
+readable prefix while preserving the identity and collision suffixes. A custom `sku_pattern` is
+used verbatim and fails generation atomically when two combinations collapse, the output exceeds
+the column, or a candidate SKU is already held by a different record.
 
 When the inventory package is installed but the lookup throws (for example the inventory tables
 do not exist), `getStockQuantity()` silently falls back to the local `stock` attribute. It does
@@ -87,6 +97,7 @@ do not exist), `getStockQuantity()` silently falls back to the local `stock` att
 ### Notable methods
 
 - `generateSku()`
+- `combinationKeyFor()`
 - `getFormattedPrice()`
 - `getFormattedComparePrice()`
 - `isEnabled()`
@@ -128,6 +139,10 @@ Collections can be manual or automatic. Automatic-collection conditions accept t
 
 Options describe configurable dimensions such as size or color, and option values provide the actual selectable values. Swatches are validated on save (`swatch_color` must be hex, `swatch_image` a plain path/URL); legacy invalid values render no style. Deleting an option removes its values individually so variant pivots detach.
 
+Parentage is fixed at creation: `Option.product_id` and `OptionValue.option_id` cannot change afterwards, even when owner enforcement is disabled. Re-parenting is rejected before any write, so the original parent keeps its children, the owner tuple, and variant pivots stay unchanged. Create a new option or value under the new parent instead.
+
+On create the referenced parent must exist and be reachable in the current owner context (`OwnerWriteGuard`); existence is validated even when owner enforcement is disabled, and `include_global` additionally allows global parents. A value also resolves through its option to a product and fails when that lineage is broken, so rows whose parent graph is inconsistent are never persisted.
+
 ### Common relationships
 
 - `Option::product()`
@@ -145,6 +160,12 @@ The attribute system is split across:
 - `AttributeValue`
 
 These models are owner-aware and use config-driven table resolution like the rest of the package.
+
+### AttributeValue integrity
+
+`AttributeValue` validates both ends on create: the attributable product/variant must resolve in the current owner context, and the attribute definition must be reachable for the owner that will hold the value (the attributable's owner, otherwise the current owner). `include_global` additionally permits global definitions and global targets; without it, a global definition is rejected instead of saving a value whose owner-scoped `attribute` relation resolves to `null`. Existence is validated even when owner enforcement is disabled.
+
+`attribute_id` and the `attributable_type`/`attributable_id` tuple are immutable after creation, as is the owner tuple. Re-parenting or re-targeting a persisted value is rejected before any write; create a new value instead. Typed values and locale uniqueness stay editable through the `HasAttributes` helpers and `ApplyAttributeChanges`. Direct model writes, relation creates, and the canonical actions share the same guards.
 
 ## `IsCatalogEntity` concern
 

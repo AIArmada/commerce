@@ -54,7 +54,9 @@ $variants = app(GenerateVariants::class)->execute($product);
 // Returns Collection<int, Variant>
 ```
 
-Generation caps at `features.variants.max_generated` (default 200) and throws `VariantGenerationLimitExceeded` above it. Above `features.variants.queue_threshold` (default 50) the request dispatches `GenerateVariantsJob` and returns an empty collection; the job re-runs via `generateSynchronously()`. Writes are chunked in groups of 50 inside `DB::transaction()`, and existing owner-scoped SKUs are returned as-is without inserting duplicates (idempotent retry safe). Filament surfaces the cap as a danger notification (`VariantsRelationManager`).
+Generation caps at `features.variants.max_generated` (default 200) and throws `VariantGenerationLimitExceeded` above it. Above `features.variants.queue_threshold` (default 50) the request dispatches `GenerateVariantsJob` and returns an empty collection; the job re-runs via `generateSynchronously()`. All inserts for one generation run inside a single `DB::transaction()`, so a collision in any combination — including matrices above 50 combinations — rolls the whole batch back instead of leaving partial variants.
+
+Re-running generation is idempotent and identity-safe. Variants are matched by their combination key (product ID plus the sorted option-value IDs, built by `Variant::combinationKeyFor()`) instead of SKU text, so distinct option combinations are never merged into one variant. A matching key whose pivot membership also matches returns the existing variant; pivots edited outside the generator get their stale key repaired; a manually created variant without a key is adopted when its membership matches exactly. With the default `sku_pattern`, each generated SKU carries a bounded deterministic suffix derived from the combination key, so option codes that are ambiguous across option boundaries (`AB`/`AB-CD` against `-C`/`C`) still produce four distinct SKUs; a manual record occupying the exact generated SKU gets the opinionated hash disambiguation. The complete default-generated SKU is bounded to the 255-character `sku` column: the readable prefix is trimmed while the identity suffix is preserved and room is kept for the longest collision suffix, so even a maximum-length or multibyte parent SKU stays insertable. A custom `sku_pattern` is used verbatim: two distinct combinations that map to the same SKU, a candidate already held by a different record on the same or a sibling product, or a candidate that exceeds the 255-character sku column fails the whole batch before any write. Concurrent duplicate inserts resolve to the surviving row. Filament surfaces the cap as a danger notification (`VariantsRelationManager`).
 
 ### ApplyAttributeChanges
 
@@ -189,6 +191,8 @@ $variant->optionValues()->sync([$small->id]);
 $variant->sku = $variant->generateSku();
 $variant->save();
 ```
+
+Options, option values, and variants share the product's owner tuple: an owned product accepts children from its own owner context and rejects a different explicit owner, while a global product requires explicit global context (`OwnerContext::withOwner(null, ...)`) and rejects tenant-owned children. `GenerateVariants` adopts these manual rows by exact option-value membership instead of inserting duplicates.
 
 Use this pattern for digital ticketing as well. A `Digital` parent product can keep `requires_shipping = false` while variants represent seats, sessions, or event dates and still participate in inventory-aware flows.
 

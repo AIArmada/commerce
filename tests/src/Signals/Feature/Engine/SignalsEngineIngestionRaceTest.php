@@ -3,13 +3,13 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Signals\SignalsEngineTestCase;
-use AIArmada\Commerce\Tests\Signals\Support\EngineRace;
 use AIArmada\Signals\Actions\IngestSignalEvent;
 use AIArmada\Signals\Models\SignalEvent;
 use AIArmada\Signals\Models\SignalIdentity;
 use AIArmada\Signals\Models\SignalSession;
 use AIArmada\Signals\Models\TrackedProperty;
 use Illuminate\Support\Str;
+use Tests\Support\EngineRace;
 
 uses(SignalsEngineTestCase::class);
 

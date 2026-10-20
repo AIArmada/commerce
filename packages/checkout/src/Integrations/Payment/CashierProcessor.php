@@ -13,6 +13,7 @@ use AIArmada\Checkout\Data\PaymentResult;
 use AIArmada\Checkout\Enums\PaymentStatus;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\Support\CheckoutPaymentReference;
+use AIArmada\Checkout\Support\ResolvesFrozenBillable;
 use Throwable;
 
 /**
@@ -23,6 +24,8 @@ use Throwable;
  */
 final class CashierProcessor implements ProviderAwarePaymentProcessorInterface
 {
+    use ResolvesFrozenBillable;
+
     public function getIdentifier(): string
     {
         return 'cashier';
@@ -39,26 +42,57 @@ final class CashierProcessor implements ProviderAwarePaymentProcessorInterface
             return false;
         }
 
-        return $this->resolveBillable($session) instanceof BillableContract;
+        $frozen = $this->frozenBillableRequestFromSession($session);
+
+        if ($frozen !== null && $this->hasFrozenBillableIdentity($frozen)) {
+            return $this->resolveFrozenBillableModel($session, $frozen) instanceof BillableContract;
+        }
+
+        return $session->billable instanceof BillableContract;
+    }
+
+    /**
+     * The concrete provider is the explicitly selected one, or the current
+     * cashier default when no provider was selected. Freezing it into the
+     * attempt identity keeps a default change from re-routing a replay.
+     */
+    public function resolveProvider(?string $selectedProvider = null): ?string
+    {
+        $selectedProvider = is_string($selectedProvider) ? mb_trim($selectedProvider) : '';
+
+        if ($selectedProvider !== '') {
+            return $selectedProvider;
+        }
+
+        return (string) app(GatewayManager::class)->getDefaultDriver();
     }
 
     public function createPayment(CheckoutSession $session, PaymentRequest $request): PaymentResult
     {
         try {
-            $billable = $this->resolveBillable($session);
+            $billable = $this->hasFrozenBillableIdentity($request)
+                ? $this->resolveFrozenBillableModel($session, $request)
+                : $session->billable;
 
-            if ($billable === null) {
+            if (! $billable instanceof BillableContract) {
                 return PaymentResult::failed('Cashier requires a billable customer model');
             }
 
             $options = $this->buildChargeOptions($session, $request);
-            $gateway = app(GatewayManager::class)->gateway(null);
+            $requestedProvider = is_string($request->provider) && mb_trim($request->provider) !== ''
+                ? mb_trim($request->provider)
+                : null;
+            $gateway = app(GatewayManager::class)->gateway($requestedProvider);
             $provider = $gateway->name();
             $payment = $gateway->charge($billable, $request->amount, $request->paymentMethod, $options);
 
             return $this->toPaymentResult($payment, $provider);
         } catch (Throwable $e) {
-            return PaymentResult::failed($e->getMessage());
+            $requestedProvider = is_string($request->provider) && mb_trim($request->provider) !== ''
+                ? mb_trim($request->provider)
+                : null;
+
+            return PaymentResult::uncertain($e->getMessage(), null, $requestedProvider);
         }
     }
 
@@ -286,11 +320,6 @@ final class CashierProcessor implements ProviderAwarePaymentProcessorInterface
         };
     }
 
-    private function resolveBillable(CheckoutSession $session): ?BillableContract
-    {
-        return $session->billable instanceof BillableContract ? $session->billable : null;
-    }
-
     private function minorAmount(mixed $amount): ?int
     {
         if (is_int($amount)) {
@@ -330,6 +359,10 @@ final class CashierProcessor implements ProviderAwarePaymentProcessorInterface
             'checkout_gateway' => $this->getIdentifier(),
         ]);
 
+        $idempotencyKey = is_string($request->idempotencyKey) && mb_trim($request->idempotencyKey) !== ''
+            ? mb_trim($request->idempotencyKey)
+            : ($request->metadata['checkout_idempotency_key'] ?? null);
+
         return [
             'description' => $description,
             'product_name' => $description,
@@ -339,6 +372,11 @@ final class CashierProcessor implements ProviderAwarePaymentProcessorInterface
             'currency' => $request->currency,
             'reference' => CheckoutPaymentReference::forSession($session),
             'metadata' => $metadata,
+            'idempotency_key' => $idempotencyKey,
+            'provider_customer_id' => $request->providerCustomerId,
+            'provider_customer_frozen' => $request->providerCustomerFrozen,
+            'client' => $request->client,
+            'client_frozen' => $request->clientFrozen,
         ];
     }
 

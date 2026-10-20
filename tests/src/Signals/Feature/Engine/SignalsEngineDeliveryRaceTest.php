@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Signals\SignalsEngineTestCase;
-use AIArmada\Commerce\Tests\Signals\Support\EngineRace;
 use AIArmada\CommerceSupport\Http\PinnedHttpClient;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\PublicHttpUrlGuard;
@@ -18,6 +17,7 @@ use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
+use Tests\Support\EngineRace;
 
 uses(SignalsEngineTestCase::class);
 

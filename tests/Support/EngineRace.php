@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Commerce\Tests\Signals\Support;
+namespace Tests\Support;
 
 use Closure;
 use Illuminate\Support\Facades\DB;

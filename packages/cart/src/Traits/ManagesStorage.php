@@ -5,18 +5,29 @@ declare(strict_types=1);
 namespace AIArmada\Cart\Traits;
 
 use AIArmada\Cart\Collections\CartCollection;
+use AIArmada\Cart\Collections\CartConditionCollection;
+use AIArmada\Cart\Conditions\CartCondition;
+use AIArmada\Cart\Exceptions\CartConflictException;
 use AIArmada\Cart\Models\CartItem;
+use AIArmada\Cart\Storage\CartRevision;
 use AIArmada\CommerceSupport\Contracts\OwnerScopeConfigurable;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\CommerceSupport\Traits\HasOwner;
+use Closure;
 use Exception;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Eloquent\Model;
 
 trait ManagesStorage
 {
+    /**
+     * Maximum number of times a domain mutation is recomputed against fresh
+     * content after losing a revision race before the conflict is surfaced.
+     */
+    private const MAX_MUTATION_ATTEMPTS = 3;
+
     /**
      * Per-cart resolved associated models, keyed by "class:id".
      *
@@ -46,8 +57,16 @@ trait ManagesStorage
      */
     protected function getItemsFromStorage(): CartCollection
     {
-        $items = $this->storage->getItems($this->getIdentifier(), $this->instance());
+        return $this->hydrateItems($this->storage->getItems($this->getIdentifier(), $this->instance()));
+    }
 
+    /**
+     * Hydrate raw stored item data into a cart collection.
+     *
+     * @param  array<string, mixed>  $items
+     */
+    private function hydrateItems(array $items): CartCollection
+    {
         // Batch-resolve associated models: one query per model class instead of
         // one unscoped query per item.
         $this->warmAssociatedModelCache($items);
@@ -76,6 +95,112 @@ trait ManagesStorage
         }
 
         return $collection;
+    }
+
+    /**
+     * Hydrate raw stored condition data into a condition collection.
+     *
+     * @param  array<string, mixed>  $conditions
+     */
+    private function hydrateConditions(array $conditions): CartConditionCollection
+    {
+        // Convert array back to CartConditionCollection
+        $collection = new CartConditionCollection;
+        foreach ($conditions as $conditionData) {
+            if (isset($conditionData['name'])) {
+                $condition = CartCondition::fromArray($conditionData);
+                $collection->put($condition->getName(), $condition);
+            }
+        }
+
+        return $collection;
+    }
+
+    /**
+     * Run a read/modify/write cycle over cart items.
+     *
+     * The callback receives the freshly hydrated item collection and must
+     * return the replacement collection, or null to skip the write. The
+     * returned payload is committed against the exact revision it was
+     * computed from; when a concurrent mutation wins the race the whole
+     * callback is re-run against fresh content, never against the stale
+     * precomputed payload.
+     *
+     * @param  Closure(CartCollection): (CartCollection|null)  $mutate
+     * @return CartRevision|null The committed revision, or null when the callback skipped the write
+     *
+     * @throws CartConflictException When every bounded retry lost the race
+     */
+    private function mutateItems(Closure $mutate): ?CartRevision
+    {
+        $this->evaluateDynamicConditionsIfDirty();
+
+        for ($attempt = 1; ; $attempt++) {
+            $snapshot = $this->storage->getSnapshot($this->getIdentifier(), $this->instance());
+
+            $updated = $mutate($this->hydrateItems($snapshot?->items ?? []));
+
+            if ($updated === null) {
+                return null;
+            }
+
+            try {
+                return $this->storage->putItems(
+                    $this->getIdentifier(),
+                    $this->instance(),
+                    $updated->toArray(),
+                    $snapshot?->revision() ?? CartRevision::none()
+                );
+            } catch (CartConflictException $exception) {
+                if ($attempt >= self::MAX_MUTATION_ATTEMPTS) {
+                    throw $exception;
+                }
+
+                usleep(25000 * $attempt);
+            }
+        }
+    }
+
+    /**
+     * Run a read/modify/write cycle over cart conditions.
+     *
+     * Dynamic conditions are deliberately not evaluated here: condition
+     * mutations are themselves invoked during dynamic evaluation and must
+     * not recurse into it.
+     *
+     * @param  Closure(CartConditionCollection): (CartConditionCollection|null)  $mutate
+     * @return bool Whether a mutation was committed
+     *
+     * @throws CartConflictException When every bounded retry lost the race
+     */
+    private function mutateConditions(Closure $mutate): bool
+    {
+        for ($attempt = 1; ; $attempt++) {
+            $snapshot = $this->storage->getSnapshot($this->getIdentifier(), $this->instance());
+
+            $updated = $mutate($this->hydrateConditions($snapshot?->conditions ?? []));
+
+            if ($updated === null) {
+                return false;
+            }
+
+            try {
+                $this->storage->putConditions(
+                    $this->getIdentifier(),
+                    $this->instance(),
+                    $updated->toArray(),
+                    $snapshot?->revision() ?? CartRevision::none()
+                );
+
+                return true;
+            } catch (CartConflictException $exception) {
+                if ($attempt >= self::MAX_MUTATION_ATTEMPTS) {
+                    throw $exception;
+                }
+
+                usleep(25000 * $attempt);
+            }
+        }
     }
 
     /**
@@ -130,15 +255,6 @@ trait ManagesStorage
     public function toArray(): array
     {
         return $this->content();
-    }
-
-    /**
-     * Save cart items to storage
-     */
-    private function save(CartCollection $items): void
-    {
-        $itemsArray = $items->toArray();
-        $this->storage->putItems($this->getIdentifier(), $this->instance(), $itemsArray);
     }
 
     /**

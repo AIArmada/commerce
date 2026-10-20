@@ -34,6 +34,8 @@ The acquisition, conversion-funnel, content-performance, journey, and retention 
 
 Saved-report ids, tracked-property ids, and segment ids are sanitized against the current owner scope before the page applies them.
 
+Monetary summaries, funnel stages, and goal rows render multi-currency totals as a joined string such as `MYR 10.00 + USD 20.00`, while single-property totals use the property's currency. Report tables format aggregate revenue with the row property's currency, and live-activity rows use the event's own currency.
+
 ## Resources
 
 - `TrackedPropertyResource`
@@ -79,6 +81,8 @@ Alert rules can be configured with:
 - event property conditions,
 - database/email/webhook/Slack channels,
 - named destination keys.
+
+Revenue rules scoped to a tracked property inherit that property's currency. Global revenue rules show a required `Revenue currency` selector backed by `event_filters.currency`, matching the Signals model contract.
 
 Use cart event names such as `cart.abandoned` or `cart.high_value.detected` when Signals cart integrations are enabled.
 

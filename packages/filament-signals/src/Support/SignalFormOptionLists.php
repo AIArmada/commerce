@@ -4,8 +4,30 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Support;
 
+use Akaunting\Money\Currency;
+
 final class SignalFormOptionLists
 {
+    /**
+     * @return array<string, string>
+     */
+    public static function currencies(): array
+    {
+        $options = [];
+
+        foreach (Currency::getCurrencies() as $code => $details) {
+            $code = mb_strtoupper((string) $code);
+            $name = $details['name'] ?? null;
+            $options[$code] = is_string($name) && $name !== ''
+                ? $code . ' — ' . $name
+                : $code;
+        }
+
+        ksort($options);
+
+        return $options;
+    }
+
     /**
      * @return list<string>
      */

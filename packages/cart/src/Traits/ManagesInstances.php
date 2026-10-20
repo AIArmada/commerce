@@ -6,6 +6,7 @@ namespace AIArmada\Cart\Traits;
 
 use AIArmada\Cart\Events\CartCleared;
 use AIArmada\Cart\Events\CartDestroyed;
+use AIArmada\Cart\Storage\CartRevision;
 use AIArmada\Cart\Storage\StorageInterface;
 
 trait ManagesInstances
@@ -97,6 +98,32 @@ trait ManagesInstances
     }
 
     /**
+     * Destroy the cart only while the committed revision is still current.
+     *
+     * Used by automatic empty-cart handling: the emptying mutation committed
+     * at this revision must not destroy a newer write from an event listener
+     * or a concurrent request. The CartDestroyed event is only dispatched
+     * when the guarded removal actually applied.
+     */
+    private function destroyIfUnchanged(CartRevision $revision): void
+    {
+        $identifier = $this->getIdentifier();
+        $instance = $this->instance();
+
+        if (! $this->storage->forgetIfUnchanged($identifier, $instance, $revision)) {
+            return;
+        }
+
+        $this->dispatchEvent(new CartDestroyed(
+            identifier: $identifier,
+            instance: $instance,
+            cartId: null,
+            owner_type: $this->storage->getOwnerType(),
+            owner_id: $this->storage->getOwnerId(),
+        ));
+    }
+
+    /**
      * Get all cart instances for an identifier
      *
      * @param  string|null  $identifier  Cart identifier (defaults to current)
@@ -137,5 +164,26 @@ trait ManagesInstances
         $this->dispatchEvent(new CartCleared($this));
 
         return true;
+    }
+
+    /**
+     * Clear the cart only while the committed revision is still current.
+     *
+     * Used by automatic empty-cart handling: the emptying mutation committed
+     * at this revision must not clear a newer write from an event listener or
+     * a concurrent request. The CartCleared event is only dispatched when the
+     * guarded clear actually applied.
+     */
+    private function clearIfUnchanged(CartRevision $revision): void
+    {
+        if (! $this->storage->clearAllIfUnchanged($this->getIdentifier(), $this->instance(), $revision)) {
+            return;
+        }
+
+        // Invalidate pipeline cache after clearing cart
+        $this->invalidatePipelineCache();
+
+        // Dispatch CartCleared event
+        $this->dispatchEvent(new CartCleared($this));
     }
 }

@@ -6,6 +6,7 @@ use AIArmada\Checkout\Contracts\CheckoutStepInterface;
 use AIArmada\Checkout\Data\StepResult;
 use AIArmada\Checkout\Enums\StepStatus;
 use AIArmada\Checkout\Exceptions\CheckoutStepException;
+use AIArmada\Checkout\Exceptions\PaymentAttemptExecutionException;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\Services\CheckoutStepRegistry;
 use AIArmada\Checkout\Services\StepExecutor;
@@ -149,15 +150,21 @@ describe('StepExecutor', function (): void {
             ->and($result->message)->toContain('oops');
     });
 
-    it('throws when a dependency is not met', function (): void {
+    it('carries the execution origin when a dependency is not met', function (): void {
         $registry = new CheckoutStepRegistry;
         $registry->register('b', makeStep('b', dependency: 'a'));
 
         $session = CheckoutSession::forceCreate(['cart_id' => 'test-executor-dep']);
         $executor = createExecutor($registry);
 
-        expect(fn () => $executor->run($session))
-            ->toThrow(CheckoutStepException::class);
+        try {
+            $executor->run($session);
+            test()->fail('A missing dependency must still fail the step.');
+        } catch (PaymentAttemptExecutionException $exception) {
+            expect($exception->origin->attempts)->toBe(0)
+                ->and($exception->origin->revision)->toBe(0)
+                ->and($exception->getOriginal())->toBeInstanceOf(CheckoutStepException::class);
+        }
     });
 
     it('handles a single step via processStep', function (): void {

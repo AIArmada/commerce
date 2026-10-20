@@ -987,6 +987,10 @@ abstract class TestCase extends Orchestra
             $table->unsignedInteger('position')->default(0);
             $table->boolean('is_visible')->default(true);
             $table->boolean('is_featured')->default(false);
+            $table->string('status')->default('active');
+            $table->string('visibility')->default('catalog');
+            $table->timestampTz('hidden_at')->nullable();
+            $table->timestampTz('archived_at')->nullable();
             $table->timestamp('published_at')->nullable();
             $table->timestamp('unpublished_at')->nullable();
             $table->string('meta_title')->nullable();
@@ -1077,7 +1081,10 @@ abstract class TestCase extends Orchestra
             $table->text('description')->nullable();
             $table->unsignedInteger('position')->default(0);
             $table->boolean('is_visible')->default(true);
+            $table->string('visibility')->default('visible');
+            $table->timestampTz('hidden_at')->nullable();
             $table->timestamps();
+            $table->index('visibility');
         });
 
         Schema::create('product_attributes', function (Blueprint $table): void {
@@ -1362,6 +1369,7 @@ abstract class TestCase extends Orchestra
             $table->uuid('payment_id')->nullable();
             $table->string('gateway', 50);
             $table->string('transaction_id')->nullable();
+            $table->string('allocation_key')->nullable();
             $table->integer('amount')->default(0);
             $table->string('currency', 3)->default('MYR');
             $table->string('status', 20)->default('pending');

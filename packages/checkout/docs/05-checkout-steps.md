@@ -92,6 +92,7 @@ Creates the order record:
 - Generates order from session
 - Creates order items
 - Sets order addresses
+- Reconciles the payment reference, amount, and currency against the session and the persisted order before confirming payment; drift records a `payment_data.*_reconciliation` diagnostic and skips confirmation
 
 ### DispatchDocumentGenerationStep
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentSignals\Pages;
 
 use AIArmada\FilamentSignals\Pages\Concerns\InteractsWithSavedSignalReportState;
+use AIArmada\Signals\Models\SignalEvent;
 use AIArmada\Signals\Services\AcquisitionReportService;
 use AIArmada\Signals\Services\SavedSignalReportDefinition;
 use AIArmada\Signals\Services\SignalSegmentReportFilter;
@@ -64,7 +65,7 @@ final class AcquisitionReport extends ReportPage implements HasTable
     }
 
     /**
-     * @return array{attributed_events:int,visitors:int,conversions:int,revenue_minor:int,campaigns:int}
+     * @return array{attributed_events:int,visitors:int,conversions:int,campaigns:int,revenue_minor?:int,currency?:string,revenue?:array<string, int>}
      */
     public function getSummary(): array
     {
@@ -128,7 +129,7 @@ final class AcquisitionReport extends ReportPage implements HasTable
                     ->sortable(),
                 TextColumn::make('revenue_minor')
                     ->label($this->monetaryValueLabel())
-                    ->formatStateUsing(fn (mixed $state): string => $this->formatMoney((int) $state))
+                    ->formatStateUsing(fn (mixed $state, SignalEvent $record): string => $this->formatMoney((int) $state, $record->trackedProperty?->currency))
                     ->sortable()
                     ->visible(fn (): bool => (bool) config('signals.features.monetary.enabled', true)),
                 TextColumn::make('last_seen_at')

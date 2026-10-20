@@ -3,12 +3,12 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Signals\SignalsEngineTestCase;
-use AIArmada\Commerce\Tests\Signals\Support\EngineRace;
 use AIArmada\Signals\Actions\IdentifySignalIdentity;
 use AIArmada\Signals\Models\SignalIdentity;
 use AIArmada\Signals\Models\TrackedProperty;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Tests\Support\EngineRace;
 
 uses(SignalsEngineTestCase::class);
 

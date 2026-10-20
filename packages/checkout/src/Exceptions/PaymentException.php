@@ -14,6 +14,14 @@ final class PaymentException extends CheckoutException
         );
     }
 
+    public static function incompleteAttemptIdentity(string $sessionId, int $attempt): self
+    {
+        return new self(
+            "Payment attempt identity is incomplete for session '{$sessionId}' attempt {$attempt}; a frozen provider request snapshot is required.",
+            ['session_id' => $sessionId, 'attempt' => $attempt],
+        );
+    }
+
     public static function retryLimitExceeded(int $attempts, int $limit): self
     {
         return new self(

@@ -6,20 +6,26 @@ namespace AIArmada\Cart\Actions;
 
 use AIArmada\Cart\Contracts\CartMergeStrategyInterface;
 use AIArmada\Cart\Events\CartMerged;
+use AIArmada\Cart\Exceptions\CartConflictException;
 use AIArmada\Cart\Exceptions\InvalidCartItemException;
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Cart\Services\CartMergeStrategyRegistry;
+use AIArmada\Cart\Storage\CartRevision;
 use AIArmada\Cart\Storage\StorageInterface;
 use AIArmada\Cart\Support\CartLimits;
-use AIArmada\Cart\Support\CartOwnerScope;
-use Carbon\CarbonImmutable;
 use Exception;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 use RuntimeException;
 
 final class MigrateGuestCartToUserAction
 {
+    /**
+     * Maximum number of times the whole migration re-runs against fresh
+     * snapshots after losing a revision race before surfacing the conflict.
+     */
+    private const MAX_MERGE_ATTEMPTS = 3;
+
     private ?CartMergeStrategyInterface $mergeStrategy = null;
 
     private ?StorageInterface $storage = null;
@@ -68,100 +74,52 @@ final class MigrateGuestCartToUserAction
      */
     public function execute(int | string $userId, string $instance, string $sessionId, ?CartMergeStrategyInterface $strategy = null, ?string $strategyName = null): bool
     {
-        $mergeStrategy = $strategy ?? $this->mergeStrategy ?? $this->strategyRegistry->resolveFromConfig();
-        $resolvedStrategyName = $strategyName ?? $mergeStrategy::class;
-
         $guestIdentifier = $sessionId;
         $userIdentifier = (string) $userId;
 
+        if ($userIdentifier === '') {
+            throw new InvalidArgumentException('A non-empty user identifier is required to migrate a guest cart.');
+        }
+
+        $mergeStrategy = $strategy ?? $this->mergeStrategy ?? $this->strategyRegistry->resolveFromConfig();
+        $resolvedStrategyName = $strategyName ?? $mergeStrategy::class;
+
         $guestStorage = $this->resolveGlobalStorage();
-        $guestItems = $guestStorage->getItems($guestIdentifier, $instance);
+        $targetStorage = $this->resolveStorage();
+
+        $guestSnapshot = $guestStorage->getSnapshot($guestIdentifier, $instance);
 
         // If guest cart is empty, nothing to migrate
-        if (empty($guestItems)) {
+        if ($guestSnapshot === null || $guestSnapshot->items === []) {
             return false;
         }
 
-        // Get existing user cart items for the same instance
-        $userItems = $this->resolveStorage()->getItems($userIdentifier, $instance);
-        $guestMetadata = $guestStorage->getAllMetadata($guestIdentifier, $instance);
-
-        if (empty($userItems)) {
-            DB::transaction(fn (): bool => $this->swapIdentifierWithStorage($guestIdentifier, $userIdentifier, $instance, $guestStorage, $this->resolveStorage()));
-
-            if (config('cart.events', true)) {
-                $this->dispatchCartMergedEvent(
-                    instance: $instance,
-                    guestIdentifier: $guestIdentifier,
-                    userIdentifier: $userIdentifier,
-                    guestItems: $guestItems,
-                    userItems: [],
-                    totalItemsMerged: $this->sumItemQuantities($guestItems),
-                    hadConflicts: false,
-                    mergeStrategy: $mergeStrategy,
-                    strategyName: $resolvedStrategyName,
-                );
-            }
-
-            return true;
-        }
-
-        // Merge the cart data. All writes run in one transaction so a mid-merge
-        // failure rolls everything back and a retry re-runs cleanly instead of
-        // duplicating items; a retry after success is a no-op (guest is gone).
-        $mergedItems = $this->mergeItems($guestItems, $userItems, $mergeStrategy);
-
-        $guestConditions = $guestStorage->getConditions($guestIdentifier, $instance);
-        $userConditions = $guestConditions === []
-            ? []
-            : $this->resolveStorage()->getConditions($userIdentifier, $instance);
-
-        $userMetadata = $guestMetadata === []
-            ? []
-            : $this->resolveStorage()->getAllMetadata($userIdentifier, $instance);
-
-        $targetStorage = $this->resolveStorage();
-
-        DB::transaction(function () use (
-            $targetStorage,
+        // All writes run in one transaction and the whole cycle re-reads both
+        // carts against fresh snapshots when a concurrent mutation wins the
+        // revision race, so a stale merge payload is never committed. A retry
+        // after success is a no-op (the guest cart is already consumed).
+        $merged = $this->applyMerge(
             $guestStorage,
-            $userIdentifier,
+            $targetStorage,
             $guestIdentifier,
+            $userIdentifier,
             $instance,
-            $mergedItems,
-            $guestConditions,
-            $userConditions,
-            $guestMetadata,
-            $userMetadata,
-        ): void {
-            $targetStorage->putItems($userIdentifier, $instance, $mergedItems);
+            $mergeStrategy,
+        );
 
-            if ($guestConditions !== []) {
-                $targetStorage->putConditions(
-                    $userIdentifier,
-                    $instance,
-                    $this->mergeConditions($guestConditions, $userConditions)
-                );
-            }
-
-            if ($guestMetadata !== []) {
-                $targetStorage->putMetadataBatch($userIdentifier, $instance, array_merge($guestMetadata, $userMetadata));
-            }
-
-            $this->markSourceCartAsMerged($guestIdentifier, $instance, $userIdentifier, $guestStorage, $targetStorage);
-
-            $this->tombstoneSourceCart($guestIdentifier, $instance, $guestStorage);
-        });
+        if ($merged === null) {
+            return false;
+        }
 
         if (config('cart.events', true)) {
             $this->dispatchCartMergedEvent(
                 instance: $instance,
                 guestIdentifier: $guestIdentifier,
                 userIdentifier: $userIdentifier,
-                guestItems: $guestItems,
-                userItems: $userItems,
-                totalItemsMerged: $this->sumItemQuantities($guestItems),
-                hadConflicts: $this->hasMergeConflicts($guestItems, $userItems),
+                guestItems: $merged['guestItems'],
+                userItems: $merged['userItems'],
+                totalItemsMerged: $this->sumItemQuantities($merged['guestItems']),
+                hadConflicts: $this->hasMergeConflicts($merged['guestItems'], $merged['userItems']),
                 mergeStrategy: $mergeStrategy,
                 strategyName: $resolvedStrategyName,
             );
@@ -190,6 +148,15 @@ final class MigrateGuestCartToUserAction
 
         $userId = $user instanceof Model ? $user->getKey() : $user;
 
+        if ($userId === null || $userId === '') {
+            return (object) [
+                'success' => false,
+                'itemsMerged' => 0,
+                'conflicts' => collect(),
+                'message' => 'Cannot migrate cart: the user has no usable ID.',
+            ];
+        }
+
         try {
             $guestItems = $this->resolveGlobalStorage()->getItems($sessionId, $instance);
             $success = $this->execute($userId, $instance, $sessionId);
@@ -210,96 +177,70 @@ final class MigrateGuestCartToUserAction
         }
     }
 
-    private function swapIdentifierWithStorage(
-        string $oldIdentifier,
-        string $newIdentifier,
-        string $instance,
-        StorageInterface $sourceStorage,
-        StorageInterface $targetStorage,
-    ): bool {
-        $items = $sourceStorage->getItems($oldIdentifier, $instance);
-
-        if (empty($items)) {
-            return false;
-        }
-
-        $conditions = $sourceStorage->getConditions($oldIdentifier, $instance);
-        $metadata = $sourceStorage->getAllMetadata($oldIdentifier, $instance);
-
-        $targetStorage->putItems($newIdentifier, $instance, $items);
-
-        if (! empty($conditions)) {
-            $targetStorage->putConditions($newIdentifier, $instance, $conditions);
-        }
-
-        if ($metadata !== []) {
-            $targetStorage->putMetadataBatch($newIdentifier, $instance, $metadata);
-        }
-
-        // Mark only after the target exists so merged_into_id attribution sticks.
-        $this->markSourceCartAsMerged($oldIdentifier, $instance, $newIdentifier, $sourceStorage, $targetStorage);
-
-        $this->tombstoneSourceCart($oldIdentifier, $instance, $sourceStorage);
-
-        return true;
-    }
-
-    private function markSourceCartAsMerged(
-        string $sourceIdentifier,
-        string $instance,
-        string $targetIdentifier,
-        StorageInterface $sourceStorage,
-        StorageInterface $targetStorage,
-    ): void {
-        $table = config('cart.database.table', 'carts');
-
-        $targetQuery = DB::table($table)
-            ->where('identifier', $targetIdentifier)
-            ->where('instance', $instance);
-
-        CartOwnerScope::apply($targetQuery, $targetStorage);
-
-        $targetCart = $targetQuery->first(['id']);
-
-        if ($targetCart === null) {
-            return;
-        }
-
-        $sourceQuery = DB::table($table)
-            ->where('identifier', $sourceIdentifier)
-            ->where('instance', $instance);
-
-        CartOwnerScope::apply($sourceQuery, $sourceStorage);
-
-        $sourceQuery->update([
-            'merged_into_id' => $targetCart->id,
-            'updated_at' => CarbonImmutable::now(),
-        ]);
-    }
-
     /**
-     * Convert the migrated-from cart into a tombstone: content cleared and
-     * expired, but the row (and its merged_into_id attribution) kept.
+     * Commit the guest-to-user migration with bounded retry on revision conflicts.
+     *
+     * When a concurrent mutation wins the revision race the whole cycle (fresh
+     * snapshots, recomputed merge, guarded writes) re-runs, so the committed
+     * payload always derives from the exact state it replaces.
+     *
+     * Two-cart operations follow one documented order: the source cart is read
+     * first, then the target, and the target is written before the exact source
+     * revision is consumed. The guarded consumption conflicts on any
+     * concurrent source write or a second consumer, so a source update is
+     * never silently destroyed by the tombstone.
+     *
+     * @return array{guestItems: array<string, mixed>, userItems: array<string, mixed>}|null The item sets merged, or null when the source cart no longer has items
      */
-    private function tombstoneSourceCart(
-        string $sourceIdentifier,
+    private function applyMerge(
+        StorageInterface $guestStorage,
+        StorageInterface $targetStorage,
+        string $guestIdentifier,
+        string $userIdentifier,
         string $instance,
-        StorageInterface $sourceStorage,
-    ): void {
-        $sourceStorage->clearAll($sourceIdentifier, $instance);
+        CartMergeStrategyInterface $mergeStrategy,
+    ): ?array {
+        for ($attempt = 1; ; $attempt++) {
+            try {
+                $guestSnapshot = $guestStorage->getSnapshot($guestIdentifier, $instance);
 
-        $table = config('cart.database.table', 'carts');
+                if ($guestSnapshot === null || $guestSnapshot->items === []) {
+                    return null;
+                }
 
-        $sourceQuery = DB::table($table)
-            ->where('identifier', $sourceIdentifier)
-            ->where('instance', $instance);
+                $userSnapshot = $targetStorage->getSnapshot($userIdentifier, $instance);
 
-        CartOwnerScope::apply($sourceQuery, $sourceStorage);
+                $guestItems = $guestSnapshot->items;
+                $userItems = $userSnapshot?->items ?? [];
 
-        $sourceQuery->update([
-            'expired_at' => CarbonImmutable::now(),
-            'updated_at' => CarbonImmutable::now(),
-        ]);
+                $mergedItems = $this->mergeItems($guestItems, $userItems, $mergeStrategy);
+                $mergedConditions = $this->mergeConditions($guestSnapshot->conditions, $userSnapshot?->conditions ?? []);
+                $mergedMetadata = array_merge($guestSnapshot->metadata, $userSnapshot?->metadata ?? []);
+
+                // The two-cart atomic boundary lives in the storage backend:
+                // target data and source consumption commit as one unit, using
+                // the connection/backing store that owns the writes.
+                $targetStorage->commitMergeTransfer(
+                    $guestStorage,
+                    $guestIdentifier,
+                    $userIdentifier,
+                    $instance,
+                    $mergedItems,
+                    $mergedConditions,
+                    $mergedMetadata,
+                    $guestSnapshot->revision(),
+                    $userSnapshot?->revision() ?? CartRevision::none(),
+                );
+
+                return ['guestItems' => $guestItems, 'userItems' => $userItems];
+            } catch (CartConflictException $exception) {
+                if ($attempt >= self::MAX_MERGE_ATTEMPTS) {
+                    throw $exception;
+                }
+
+                usleep(25000 * $attempt);
+            }
+        }
     }
 
     /**

@@ -9,6 +9,7 @@ if (! class_exists('Facades\\Livewire\\Features\\SupportFileUploads\\GenerateSig
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Authz\Models\Role;
 use AIArmada\Cart\Conditions\ConditionTarget;
+use AIArmada\Cart\Tests\CartEngineTestCase;
 use AIArmada\Commerce\Tests\Addressing\AddressingDatabaseTestCase;
 use AIArmada\Commerce\Tests\Addressing\AddressingGeographyDataTestCase;
 use AIArmada\Commerce\Tests\Addressing\AddressingGeographyTestCase;
@@ -66,8 +67,11 @@ pest()->extend(TestCase::class)->in(
     // New subdirs under src/Addressing MUST be added to the slim binding.
     'src/Addressing/AddressOwnerGuardTest.php',
     'src/Authz',
-    'src/Cart',
-    'src/Checkout',
+    // NOTE: 'src/Checkout' is bound by file glob (not blanket) so the
+    // engine-race directory can use CheckoutEngineTestCase (opt-in PostgreSQL
+    // via CHECKOUT_ENGINE_PGSQL_DATABASE) through an in-file uses() call.
+    // New src/Checkout test directories MUST be bound explicitly.
+    'src/Checkout/*Test.php',
     'src/Chip',
     'src/CommerceSupport',
     'src/Contacting',
@@ -87,7 +91,11 @@ pest()->extend(TestCase::class)->in(
     'src/FilamentPromotions',
     'src/Vouchers',
     'src/Customers',
-    'src/Orders',
+    // NOTE: 'src/Orders' is bound by file glob (not blanket) so the
+    // engine-race directory can use OrdersEngineTestCase (opt-in PostgreSQL
+    // via ORDERS_ENGINE_PGSQL_DATABASE) through an in-file uses() call.
+    // New src/Orders test directories MUST be bound explicitly.
+    'src/Orders/*Test.php',
     'src/Pricing',
     'src/Promotions',
     'src/FilamentCustomers',
@@ -104,6 +112,30 @@ pest()->extend(TestCase::class)->in(
     'src/Rewards',
     'src/FilamentRewards',
 );
+
+// NOTE: 'src/Cart' is bound per-subdir (not blanket) so that the engine-race
+// directory can use CartEngineTestCase (opt-in PostgreSQL via
+// CART_ENGINE_PGSQL_DATABASE). New src/Cart test directories MUST be added
+// here or bound below.
+pest()->extend(TestCase::class)->in(
+    'src/Cart/Feature/CheckoutableTest.php',
+    'src/Cart/Feature/ConditionOwnerScopingContractTest.php',
+    'src/Cart/Feature/OwnerFillableTest.php',
+    'src/Cart/Feature/OwnerScopedCartManagerIsolationTest.php',
+    'src/Cart/Feature/Concurrency',
+    'src/Cart/Feature/Conditions',
+    'src/Cart/Feature/Console',
+    'src/Cart/Feature/Core',
+    'src/Cart/Feature/Database',
+    'src/Cart/Feature/Events',
+    'src/Cart/Feature/Metadata',
+    'src/Cart/Feature/Migration',
+    'src/Cart/Feature/Money',
+    'src/Cart/Feature/PaymentIntent',
+    'src/Cart/Unit',
+);
+
+pest()->extend(CartEngineTestCase::class)->in('src/Cart/Feature/Engine');
 
 pest()->extend(AffiliateNetworkTestCase::class)->in('src/AffiliateNetwork');
 

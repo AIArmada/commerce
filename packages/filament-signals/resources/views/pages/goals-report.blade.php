@@ -34,7 +34,7 @@
 @if(config('signals.features.monetary.enabled', true))
             <x-filament::section>
                 <div class="text-center">
-                    <div class="text-2xl font-bold text-success-700">{{ $this->formatMoney($summary['revenue_minor']) }}</div>
+                    <div class="text-2xl font-bold text-success-700">{{ $this->formatRevenue($summary['revenue'] ?? $summary['revenue_minor'] ?? 0, $summary['currency'] ?? null) }}</div>
                     <div class="text-sm text-gray-500">{{ $this->monetaryValueLabel() }}</div>
                 </div>
             </x-filament::section>
@@ -82,7 +82,7 @@
                                 <td class="px-4 py-3">{{ number_format($row['visitors']) }}</td>
                                 <td class="px-4 py-3">{{ number_format($row['goal_rate'], 2) }}%</td>
                                 @if(config('signals.features.monetary.enabled', true))
-                                <td class="px-4 py-3">{{ $this->formatMoney($row['revenue_minor']) }}</td>
+                                <td class="px-4 py-3">{{ $this->formatRevenue($row['revenue'] ?? $row['revenue_minor'] ?? 0, $row['currency'] ?? null) }}</td>
                                 @endif
                                 <td class="px-4 py-3">{{ $row['last_hit_at'] ? $this->formatAggregateTimestamp($row['last_hit_at']) : 'Never' }}</td>
                             </tr>

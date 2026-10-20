@@ -15,6 +15,16 @@ use AIArmada\Checkout\Data\PaymentResult;
  */
 interface ProviderAwarePaymentProcessorInterface extends PaymentCompensationInterface, PaymentProcessorInterface
 {
+    /**
+     * Resolve the concrete provider a request carrying the given selected
+     * provider hint will actually be submitted through.
+     *
+     * Called before an attempt identity is frozen so an unresolved default
+     * is never persisted into a claim; replaying the attempt then reuses the
+     * frozen provider instead of re-reading a mutable default.
+     */
+    public function resolveProvider(?string $selectedProvider = null): ?string;
+
     public function refundForProvider(
         string $provider,
         string $paymentId,

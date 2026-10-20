@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Cart\Actions\MigrateGuestCartToUserAction;
 use AIArmada\Cart\Models\CartModel;
 use AIArmada\Cart\Services\CartMergeStrategyRegistry;
+use AIArmada\Cart\Storage\CartRevision;
 use AIArmada\Cart\Storage\DatabaseStorage;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -23,8 +24,8 @@ it('keeps a merged tombstone with attribution when the user cart is empty', func
         'guest-product' => ['id' => 'guest-product', 'name' => 'Guest Product', 'price' => 100, 'quantity' => 2, 'attributes' => []],
     ];
 
-    $this->storage->putItems('tombstone-guest', 'default', $guestItems);
-    $this->storage->putConditions('tombstone-guest', 'default', ['deal' => ['name' => 'deal']]);
+    $revision = $this->storage->putItems('tombstone-guest', 'default', $guestItems, CartRevision::none());
+    $this->storage->putConditions('tombstone-guest', 'default', ['deal' => ['name' => 'deal']], $revision);
     $this->storage->putMetadataBatch('tombstone-guest', 'default', ['note' => 'guest-note']);
 
     expect($this->action->execute('tombstone-user', 'default', 'tombstone-guest'))->toBeTrue();
@@ -53,10 +54,10 @@ it('keeps a merged tombstone with attribution when the user cart is empty', func
 it('keeps a merged tombstone with attribution when merging into an existing user cart', function (): void {
     $this->storage->putItems('merge-user', 'default', [
         'shared' => ['id' => 'shared', 'name' => 'Shared', 'price' => 100, 'quantity' => 1, 'attributes' => []],
-    ]);
+    ], CartRevision::none());
     $this->storage->putItems('merge-guest', 'default', [
         'shared' => ['id' => 'shared', 'name' => 'Shared', 'price' => 100, 'quantity' => 2, 'attributes' => []],
-    ]);
+    ], CartRevision::none());
 
     expect($this->action->execute('merge-user', 'default', 'merge-guest'))->toBeTrue();
 

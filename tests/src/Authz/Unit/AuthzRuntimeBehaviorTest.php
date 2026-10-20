@@ -6,7 +6,7 @@ use AIArmada\Authz\Authz;
 use AIArmada\Authz\Console\Commands\SuperAdminCommand;
 use AIArmada\Authz\Models\Role;
 use AIArmada\Authz\Support\UserRoleChecker;
-use AIArmada\Authz\Support\WildcardPermissionCache;
+use AIArmada\Authz\Support\UserWildcardPermissions;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use Illuminate\Support\Collection;
@@ -72,10 +72,13 @@ it('treats team-scoped assignments as global for the super-admin check', functio
         ->and(app(PermissionRegistrar::class)->teams)->toBeTrue();
 });
 
-it('caches wildcard permissions for the current request', function (): void {
+it('reads current wildcard permissions on every check', function (): void {
     $user = new class
     {
         public int $permissionCalls = 0;
+
+        /** @var list<string> */
+        public array $permissions = ['orders.*', 'orders.view'];
 
         public function getAuthIdentifier(): string
         {
@@ -86,23 +89,20 @@ it('caches wildcard permissions for the current request', function (): void {
         {
             $this->permissionCalls++;
 
-            return collect([
-                (object) ['name' => 'orders.*'],
-                (object) ['name' => 'orders.view'],
-            ]);
+            return collect(array_map(
+                static fn (string $name): object => (object) ['name' => $name],
+                $this->permissions,
+            ));
         }
     };
 
-    $cache = app(WildcardPermissionCache::class);
-
-    expect($cache->get($user))->toBe(['orders.*'])
-        ->and($cache->get($user))->toBe(['orders.*'])
+    expect(UserWildcardPermissions::for($user))->toBe(['orders.*'])
         ->and($user->permissionCalls)->toBe(1);
 
-    $cache->clear();
-    $cache->get($user);
+    $user->permissions = [];
 
-    expect($user->permissionCalls)->toBe(2);
+    expect(UserWildcardPermissions::for($user))->toBe([])
+        ->and($user->permissionCalls)->toBe(2);
 });
 
 it('resolves the super admin command email column from authz config', function (): void {

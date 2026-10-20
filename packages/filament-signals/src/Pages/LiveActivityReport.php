@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Pages;
 
+use AIArmada\Signals\Models\SignalEvent;
 use AIArmada\Signals\Services\LiveActivityReportService;
 use AIArmada\Signals\Services\SignalSegmentReportFilter;
 use BackedEnum;
@@ -39,7 +40,7 @@ final class LiveActivityReport extends ReportPage implements HasTable
     }
 
     /**
-     * @return array{events:int,page_views:int,conversions:int,revenue_minor:int}
+     * @return array{events:int,page_views:int,conversions:int,revenue_minor?:int,currency?:string,revenue?:array<string, int>}
      */
     public function getSummary(): array
     {
@@ -93,7 +94,7 @@ final class LiveActivityReport extends ReportPage implements HasTable
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('revenue_minor')
                     ->label($this->monetaryValueLabel())
-                    ->formatStateUsing(fn (mixed $state): string => $this->formatMoney((int) $state))
+                    ->formatStateUsing(fn (mixed $state, SignalEvent $record): string => $this->formatMoney((int) $state, $record->currency))
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->visible(fn (): bool => (bool) config('signals.features.monetary.enabled', true)),
                 TextColumn::make('session.device_type')

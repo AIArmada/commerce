@@ -26,6 +26,7 @@ use AIArmada\Checkout\Integrations\Payment\ChipProcessor;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\Services\CheckoutService;
 use AIArmada\Checkout\Services\CheckoutStepRegistry;
+use AIArmada\Checkout\Services\PaymentAttemptManager;
 use AIArmada\Checkout\Services\PaymentGatewayResolver;
 use AIArmada\Checkout\Services\StepExecutor;
 use AIArmada\Checkout\States\AwaitingPayment;
@@ -133,13 +134,17 @@ function regressionCheckoutService(CheckoutStepRegistry $registry, ?PaymentGatew
     );
 }
 
-function regressionStubProcessor(PaymentResult $callbackResult, ?object $voidTracker = null): PaymentProcessorInterface
-{
-    return new class($callbackResult, $voidTracker) implements PaymentCompensationInterface, PaymentProcessorInterface
+function regressionStubProcessor(
+    PaymentResult $callbackResult,
+    ?object $voidTracker = null,
+    ?Closure $onCreate = null,
+): PaymentProcessorInterface {
+    return new class($callbackResult, $voidTracker, $onCreate) implements PaymentCompensationInterface, PaymentProcessorInterface
     {
         public function __construct(
             private readonly PaymentResult $callbackResult,
             private readonly ?object $voidTracker,
+            private readonly ?Closure $onCreate,
         ) {}
 
         public function getIdentifier(): string
@@ -159,7 +164,9 @@ function regressionStubProcessor(PaymentResult $callbackResult, ?object $voidTra
 
         public function createPayment(CheckoutSession $session, PaymentRequest $request): PaymentResult
         {
-            return PaymentResult::failed('unused');
+            return $this->onCreate !== null
+                ? ($this->onCreate)($session, $request)
+                : PaymentResult::failed('unused');
         }
 
         public function handleCallback(array $payload): PaymentResult
@@ -1364,29 +1371,32 @@ describe('gateway I/O outside transactions', function (): void {
             public array $executed = [];
         };
 
-        $registry = new CheckoutStepRegistry;
-        $registry->register('validate_cart', regressionTrackStep('validate_cart', [], $tracker));
-        $registry->register('process_payment', regressionTrackStep(
-            'process_payment',
-            ['validate_cart'],
-            $tracker,
-            static function (CheckoutSession $session, string $identifier): StepResult {
-                // This run created pay_orphan_2, then a concurrent callback
-                // overwrote the stored payment and cancelled the session.
-                $session->forceFill(['payment_id' => 'pay_orphan_2'])->save();
-                DB::table($session->getTable())
-                    ->where($session->getKeyName(), $session->getKey())
-                    ->update(['payment_id' => 'pay_other_1']);
-                $session->transitionStatus(Cancelled::class);
+        $paymentManager = app(PaymentAttemptManager::class);
+        $paymentResolver = new PaymentGatewayResolver(defaultGateway: 'repair-stub');
+        $paymentResolver->register('repair-stub', regressionStubProcessor(
+            PaymentResult::failed('unused'),
+            $voidTracker,
+            static function (CheckoutSession $session, PaymentRequest $request) use ($paymentManager): PaymentResult {
+                // A verified callback settles a different payment while this
+                // create call is still in flight. Its late response then
+                // identifies this run's now-orphaned provider payment.
+                $paymentManager->recordVerifiedOutcome($session, PaymentResult::success(
+                    'pay_other_1',
+                    amount: 1000,
+                    provider: 'repair-stub',
+                ));
+                $session->persistState(['payment_id' => 'pay_other_1']);
+                $session->transitionStatus(Completed::class);
 
-                return StepResult::success($identifier);
+                return PaymentResult::success('pay_orphan_2', amount: 1000, provider: 'repair-stub');
             },
         ));
-        $registry->register('create_order', regressionTrackStep('create_order', ['process_payment'], $tracker));
-        $registry->setOrder(['validate_cart', 'process_payment', 'create_order']);
 
-        $paymentResolver = new PaymentGatewayResolver(defaultGateway: 'repair-stub');
-        $paymentResolver->register('repair-stub', regressionStubProcessor(PaymentResult::failed('unused'), $voidTracker));
+        $registry = new CheckoutStepRegistry;
+        $registry->register('calculate_shipping', regressionTrackStep('calculate_shipping', [], $tracker));
+        $registry->register('process_payment', new ProcessPaymentStep($paymentResolver));
+        $registry->register('create_order', regressionTrackStep('create_order', ['process_payment'], $tracker));
+        $registry->setOrder(['calculate_shipping', 'process_payment', 'create_order']);
 
         $session = CheckoutSession::forceCreate([
             'cart_id' => 'orphan-void-cart',
@@ -1397,11 +1407,14 @@ describe('gateway I/O outside transactions', function (): void {
         ]);
 
         $result = regressionCheckoutService($registry, $paymentResolver)->processCheckout($session);
+        $fresh = $session->fresh();
 
-        expect($result->success)->toBeFalse()
-            ->and($result->errors)->toHaveKey('interrupted')
+        expect($result->success)->toBeTrue()
             ->and($voidTracker->voided)->toBe(['pay_orphan_2'])
-            ->and($tracker->executed)->not->toContain('create_order');
+            ->and($tracker->executed)->not->toContain('create_order')
+            ->and($fresh->payment_id)->toBe('pay_other_1')
+            ->and(data_get($fresh->payment_data, 'payment_attempt_outcome.payment_id'))->toBe('pay_other_1')
+            ->and($fresh->status)->toBeInstanceOf(Completed::class);
     });
 });
 

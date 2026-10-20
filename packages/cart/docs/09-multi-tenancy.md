@@ -26,6 +26,45 @@ When owner mode is enabled:
 4. commands and listeners must pass or iterate owners explicitly
 5. malformed owner tuples are treated as invalid data, not as safe globals
 
+## Ambient vs pinned cart managers
+
+The ambient manager behind the `Cart` facade and the `CartManagerInterface`
+binding re-resolves storage from the current owner context at every public
+entry point, and keeps the current cart, identifier/instance overrides, and
+UUID (`getById()`) caches partitioned per owner. A context switch
+A → B → A inside one lifecycle restores A's own state without exposing it to B:
+
+```php
+use AIArmada\Cart\Facades\Cart;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+
+OwnerContext::withOwner($tenantA, fn () => Cart::add('SKU-001', 'Product', 999, 1));
+
+$itemsInB = OwnerContext::withOwner($tenantB, fn () => Cart::getItems()); // [] — B's own cart
+
+OwnerContext::withOwner($tenantA, fn () => Cart::getItems()); // A's cart, untouched
+```
+
+`Cart::forOwner($owner)` (and the manager it returns) is deliberately pinned to
+that owner: it never re-resolves ambient owner context, which makes it the safe
+entry point for admin and cross-tenant tooling.
+
+Concrete cart objects obtained from the manager keep the owner they were created
+with. The ambient manager itself never retains a previous owner selection.
+
+When owner mode is enabled and no owner can be resolved, ambient entry points
+fail closed except inside `OwnerContext::withOwner(null, ...)` (explicit
+global), which addresses global carts only.
+
+### Snapshot synchronization
+
+Normalized snapshot sync — including queued `SyncNormalizedCartJob` runs and
+migration flows — derives ownership from the source cart's storage and validates
+it against the ambient owner context. A cart owned by one owner must be mutated
+inside that owner's context; a mismatched combination throws
+`AuthorizationException` instead of silently writing the snapshot under the
+ambient owner. Global source carts require explicit global context.
+
 ## Setting the Owner
 
 ### Via cart manager

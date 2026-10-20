@@ -46,6 +46,15 @@ class MigrateCartOnLoginAction
             $userId = $user instanceof Model
                 ? $user->getKey()
                 : (is_object($user) && isset($user->id) ? $user->id : $user);
+
+            if (! is_int($userId) && ! is_string($userId)) {
+                return [
+                    'success' => false,
+                    'itemsMerged' => 0,
+                    'message' => 'Cannot migrate cart: the user has no usable ID.',
+                ];
+            }
+
             $result = $action->executeForUser($userId, $instance, $sessionId);
 
             return [

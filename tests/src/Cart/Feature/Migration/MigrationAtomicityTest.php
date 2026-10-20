@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Cart\Actions\MigrateGuestCartToUserAction;
 use AIArmada\Cart\Exceptions\InvalidCartItemException;
 use AIArmada\Cart\Services\CartMergeStrategyRegistry;
+use AIArmada\Cart\Storage\CartRevision;
 use AIArmada\Cart\Storage\DatabaseStorage;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -39,9 +40,9 @@ it('rolls back every merge write when a later write fails', function (): void {
         ],
     ];
 
-    $this->storage->putItems('atomic-user', 'default', $userItems);
+    $this->storage->putItems('atomic-user', 'default', $userItems, CartRevision::none());
     $this->storage->putMetadataBatch('atomic-user', 'default', ['user_note' => str_repeat('u', 150)]);
-    $this->storage->putItems('atomic-guest', 'default', $guestItems);
+    $this->storage->putItems('atomic-guest', 'default', $guestItems, CartRevision::none());
     $this->storage->putMetadataBatch('atomic-guest', 'default', ['guest_note' => str_repeat('g', 150)]);
 
     // Merged metadata exceeds the cap, so the batch write fails AFTER items merged.
@@ -58,10 +59,10 @@ it('clamps merged quantities to the configured maximum', function (): void {
 
     $this->storage->putItems('clamp-user', 'default', [
         'shared' => ['id' => 'shared', 'name' => 'Shared', 'price' => 100, 'quantity' => 4, 'attributes' => []],
-    ]);
+    ], CartRevision::none());
     $this->storage->putItems('clamp-guest', 'default', [
         'shared' => ['id' => 'shared', 'name' => 'Shared', 'price' => 100, 'quantity' => 4, 'attributes' => []],
-    ]);
+    ], CartRevision::none());
 
     expect($this->action->execute('clamp-user', 'default', 'clamp-guest'))->toBeTrue();
 
@@ -80,8 +81,8 @@ it('rejects corrupt guest rows without writing anything', function (): void {
         'ok' => ['id' => 'ok', 'name' => 'Ok', 'price' => 100, 'quantity' => 1, 'attributes' => []],
     ];
 
-    $this->storage->putItems('corrupt-user', 'default', $userItems);
-    $this->storage->putItems('corrupt-guest', 'default', $guestItems);
+    $this->storage->putItems('corrupt-user', 'default', $userItems, CartRevision::none());
+    $this->storage->putItems('corrupt-guest', 'default', $guestItems, CartRevision::none());
 
     expect(fn (): bool => $this->action->execute('corrupt-user', 'default', 'corrupt-guest'))
         ->toThrow(InvalidCartItemException::class);

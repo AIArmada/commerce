@@ -7,9 +7,11 @@ namespace AIArmada\Products\Models;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Products\Concerns\IsCatalogEntity;
+use AIArmada\Products\Support\ChildOwnershipGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -157,56 +159,53 @@ class Option extends Model implements Auditable
     {
         static::creating(function (Option $option): void {
             if (! (bool) config('products.features.owner.enabled', true)) {
+                if (! Product::query()->whereKey($option->product_id)->exists()) {
+                    throw new InvalidArgumentException('Invalid product_id: product not found.');
+                }
+
                 return;
             }
 
-            $hasOwnerType = $option->owner_type !== null;
-            $hasOwnerId = $option->owner_id !== null;
+            $includeGlobal = (bool) config('products.features.owner.include_global', false);
 
-            if ($hasOwnerType !== $hasOwnerId) {
-                throw new InvalidArgumentException('Invalid owner columns: owner_type and owner_id must be both set or both null.');
+            $product = OwnerWriteGuard::findOrFailForOwner(
+                Product::class,
+                $option->product_id,
+                includeGlobal: $includeGlobal,
+                message: 'Cross-tenant write blocked: option product is not accessible in the current owner context.',
+            );
+
+            ChildOwnershipGuard::apply($option, $product, 'product');
+        });
+
+        static::updating(function (Option $option): void {
+            // Parent and tenancy are immutable after creation.
+            if ($option->isDirty('product_id') || $option->isDirty('owner_type') || $option->isDirty('owner_id')) {
+                throw new InvalidArgumentException('Cross-tenant write blocked: option product and owner are immutable after creation.');
+            }
+
+            if (! (bool) config('products.features.owner.enabled', true)) {
+                return;
             }
 
             $currentOwner = OwnerContext::resolve();
 
-            if ($currentOwner !== null && $hasOwnerType && ! $option->belongsToOwner($currentOwner)) {
-                throw new InvalidArgumentException('Cross-tenant write blocked: option owner does not match the current owner context.');
-            }
-
-            $product = Product::query()->withoutOwnerScope()->whereKey($option->product_id)->first();
-
-            if ($product === null) {
-                throw new InvalidArgumentException('Invalid product_id: product not found.');
-            }
-
-            if ($currentOwner !== null) {
-                $includeGlobal = (bool) config('products.features.owner.include_global', false);
-
-                if (! $product->belongsToOwner($currentOwner) && ! ($includeGlobal && $product->isGlobal())) {
-                    throw new InvalidArgumentException('Cross-tenant write blocked: option product does not belong to the current owner context.');
-                }
-            }
-
-            if ($hasOwnerType) {
-                $productOwner = $product->owner;
-                if ($productOwner !== null && ! $option->belongsToOwner($productOwner)) {
-                    throw new InvalidArgumentException('Cross-tenant write blocked: option owner does not match its product owner.');
-                }
-
+            // No owner context = system/admin operation, allow it
+            if ($currentOwner === null) {
                 return;
             }
 
-            if (! (bool) config('products.features.owner.auto_assign_on_create', true)) {
-                return;
+            $optionIsGlobal = $option->owner_type === null && $option->owner_id === null;
+
+            // Block tenant from updating global options
+            if ($optionIsGlobal) {
+                throw new InvalidArgumentException('Cross-tenant write blocked: cannot update global option from an owner context.');
             }
 
-            $ownerToAssign = $product?->owner ?? $currentOwner;
-
-            if ($ownerToAssign === null) {
-                return;
+            // Block cross-tenant updates
+            if (! $option->belongsToOwner($currentOwner)) {
+                throw new InvalidArgumentException('Cross-tenant write blocked: option does not belong to the current owner context.');
             }
-
-            $option->assignOwner($ownerToAssign);
         });
 
         static::saving(function (Option $option): void {

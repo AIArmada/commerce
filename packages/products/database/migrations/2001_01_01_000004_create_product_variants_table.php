@@ -27,6 +27,7 @@ return new class extends Migration
 
             // Identification
             $table->string('sku');
+            $table->string('combination_key')->nullable();
             $table->string('barcode')->nullable();
 
             // Price overrides (null = use parent product price)
@@ -56,5 +57,6 @@ return new class extends Migration
         });
 
         ProductIdentityIndexes::owner($tableName, 'sku');
+        ProductIdentityIndexes::owner($tableName, 'combination_key');
     }
 };

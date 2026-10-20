@@ -7,6 +7,7 @@ namespace AIArmada\Checkout\Http\Controllers;
 use AIArmada\Checkout\Actions\BuildCheckoutSessionViewData;
 use AIArmada\Checkout\Actions\HandleCheckoutPaymentCallback;
 use AIArmada\Checkout\Models\CheckoutSession;
+use AIArmada\Checkout\Services\PaymentAttemptManager;
 use AIArmada\Checkout\States\Completed;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
@@ -22,19 +23,21 @@ final class PaymentCallbackController extends Controller
 {
     public function __construct(
         private readonly HandleCheckoutPaymentCallback $handleCallback,
+        private readonly ?PaymentAttemptManager $attemptManager = null,
     ) {}
 
     public function success(Request $request): RedirectResponse | View
     {
-        $sessionId = $this->resolveSessionId($request);
+        $callback = $this->resolveCallback($request);
 
-        if ($sessionId === null) {
+        if ($callback === null) {
             return $this->respondFailure('Checkout session not found');
         }
 
         $outcome = $this->handleCallback->handle(
-            sessionId: $sessionId,
+            sessionId: $callback['id'],
             callbackType: 'success',
+            expectedGateways: $callback['gateway'] !== null ? [$callback['gateway']] : null,
         );
 
         $session = $outcome->session;
@@ -56,15 +59,16 @@ final class PaymentCallbackController extends Controller
 
     public function failure(Request $request): RedirectResponse | View
     {
-        $sessionId = $this->resolveSessionId($request);
+        $callback = $this->resolveCallback($request);
 
-        if ($sessionId === null) {
+        if ($callback === null) {
             return $this->respondFailure('Checkout session not found');
         }
 
         $outcome = $this->handleCallback->handle(
-            sessionId: $sessionId,
+            sessionId: $callback['id'],
             callbackType: 'failure',
+            expectedGateways: $callback['gateway'] !== null ? [$callback['gateway']] : null,
         );
 
         $session = $outcome->session;
@@ -82,15 +86,16 @@ final class PaymentCallbackController extends Controller
 
     public function cancel(Request $request): RedirectResponse | View
     {
-        $sessionId = $this->resolveSessionId($request);
+        $callback = $this->resolveCallback($request);
 
-        if ($sessionId === null) {
+        if ($callback === null) {
             return $this->respondFailure('Checkout session not found');
         }
 
         $outcome = $this->handleCallback->handle(
-            sessionId: $sessionId,
+            sessionId: $callback['id'],
             callbackType: 'cancel',
+            expectedGateways: $callback['gateway'] !== null ? [$callback['gateway']] : null,
         );
 
         $session = $outcome->session;
@@ -106,7 +111,10 @@ final class PaymentCallbackController extends Controller
         return $this->respondCancel($session);
     }
 
-    private function resolveSessionId(Request $request): ?string
+    /**
+     * @return array{id: string, gateway: string|null}|null
+     */
+    private function resolveCallback(Request $request): ?array
     {
         $queryParam = config('checkout.defaults.session_query_param', 'session');
         $sessionId = $request->query($queryParam) ?? $request->query('checkout_session_id');
@@ -123,7 +131,11 @@ final class PaymentCallbackController extends Controller
             return null;
         }
 
-        if (! $this->callbackRouteMatchesGateway($request, $session)) {
+        $route = $this->callbackRouteContext($request);
+
+        // A route that names a configured callback gateway is authoritative:
+        // the frozen active attempt controls it, not the mutable selection.
+        if ($route['matched'] && ! $this->callbackRouteMatchesGateway($session, $route['gateway'])) {
             return null;
         }
 
@@ -144,7 +156,10 @@ final class PaymentCallbackController extends Controller
             return null;
         }
 
-        return $sessionId;
+        return [
+            'id' => $sessionId,
+            'gateway' => $route['matched'] ? $route['gateway'] : null,
+        ];
     }
 
     private function callbackTokenValid(Request $request, CheckoutSession $session): bool
@@ -185,18 +200,21 @@ final class PaymentCallbackController extends Controller
         return hash_equals($expectedToken, $providedToken);
     }
 
-    private function callbackRouteMatchesGateway(Request $request, CheckoutSession $session): bool
+    /**
+     * @return array{matched: bool, gateway: string|null}
+     */
+    private function callbackRouteContext(Request $request): array
     {
         $route = $request->route();
 
         if (! $route instanceof Route) {
-            return true;
+            return ['matched' => false, 'gateway' => null];
         }
 
         $routeName = $route->getName();
 
         if (! is_string($routeName)) {
-            return false;
+            return ['matched' => true, 'gateway' => null];
         }
 
         $segments = explode('.', $routeName);
@@ -204,7 +222,7 @@ final class PaymentCallbackController extends Controller
         $callbackType = $segments[3] ?? null;
 
         if (! is_string($callbackType) || ! in_array($callbackType, ['success', 'failure', 'cancel'], true)) {
-            return false;
+            return ['matched' => true, 'gateway' => null];
         }
 
         $configuredGateways = config("checkout.routes.callbacks.{$callbackType}", []);
@@ -213,10 +231,24 @@ final class PaymentCallbackController extends Controller
             || ! is_string($gateway)
             || ! array_key_exists($gateway, $configuredGateways)
         ) {
+            return ['matched' => true, 'gateway' => null];
+        }
+
+        return ['matched' => true, 'gateway' => $gateway];
+    }
+
+    private function callbackRouteMatchesGateway(CheckoutSession $session, ?string $gateway): bool
+    {
+        if ($gateway === null) {
             return false;
         }
 
-        return (string) $session->selected_payment_gateway === $gateway;
+        return $this->attemptManager()->currentAttemptGateway($session) === $gateway;
+    }
+
+    private function attemptManager(): PaymentAttemptManager
+    {
+        return $this->attemptManager ?? app(PaymentAttemptManager::class);
     }
 
     private function callbackRateLimitKey(Request $request, CheckoutSession $session): string

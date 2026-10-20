@@ -201,6 +201,12 @@ final class CartServiceProvider extends PackageServiceProvider
                 eventsEnabled: config('cart.events', true),
                 conditionResolver: $app->make(CartConditionResolver::class),
                 cartFactory: $app->make(CartFactory::class),
+                storageResolver: static function () use ($app): StorageInterface {
+                    /** @var StorageInterface $storage */
+                    $storage = $app->make('cart.storage');
+
+                    return $storage;
+                },
             );
         });
 

@@ -21,11 +21,8 @@ final class PaymentResult extends Data
         public array $gatewayResponse = [],
         /** @var array<string, string> */
         public array $errors = [],
-        /**
-         * Concrete provider used by a multi-provider processor (for example,
-         * `stripe` behind the generic `cashier` processor).
-         */
         public ?string $provider = null,
+        public bool $uncertain = false,
     ) {}
 
     public static function success(string $paymentId, ?string $transactionId = null, ?int $amount = null, ?string $provider = null): self
@@ -68,6 +65,17 @@ final class PaymentResult extends Data
             paymentId: $paymentId,
             message: $message,
             errors: $errors,
+        );
+    }
+
+    public static function uncertain(string $message, ?string $paymentId = null, ?string $provider = null): self
+    {
+        return new self(
+            status: PaymentStatus::Processing,
+            paymentId: $paymentId,
+            message: $message,
+            uncertain: true,
+            provider: $provider,
         );
     }
 

@@ -98,7 +98,7 @@ it('creates payments through the configured Cashier gateway seam', function (): 
         ->andReturn($payment);
 
     $gatewayManager = mock(GatewayManager::class);
-    $gatewayManager->shouldReceive('gateway')->once()->with(null)->andReturn($gateway);
+    $gatewayManager->shouldReceive('gateway')->once()->with('chip')->andReturn($gateway);
     app()->instance(GatewayManager::class, $gatewayManager);
 
     $session = new CheckoutSession;

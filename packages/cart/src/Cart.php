@@ -309,45 +309,50 @@ final class Cart implements CheckoutableInterface
             return;
         }
 
-        $conditions = $this->getConditionsFromStorage();
-        $original = $conditions->toArray();
         $providerKeys = $registry->providerKeys();
 
-        foreach ($conditions as $condition) {
-            $providerKey = $condition->getAttribute('__provider');
-
-            if (is_string($providerKey) && $providerKey !== '' && ! in_array($providerKey, $providerKeys, true)) {
-                $conditions->forget($condition->getName());
-            }
-        }
-
-        foreach ($providers as $provider) {
-            $providerKey = $provider::class;
+        $mutated = $this->mutateConditions(function (CartConditionCollection $conditions) use ($providers, $providerKeys): ?CartConditionCollection {
+            $original = $conditions->toArray();
 
             foreach ($conditions as $condition) {
-                if ($condition->getAttribute('__provider') !== $providerKey) {
-                    continue;
-                }
+                $providerKey = $condition->getAttribute('__provider');
 
-                if (! $provider->validate($condition, $this)) {
+                if (is_string($providerKey) && $providerKey !== '' && ! in_array($providerKey, $providerKeys, true)) {
                     $conditions->forget($condition->getName());
                 }
             }
 
-            foreach ($provider->getConditionsFor($this) as $condition) {
-                if (! $provider->validate($condition, $this)) {
-                    continue;
+            foreach ($providers as $provider) {
+                $providerKey = $provider::class;
+
+                foreach ($conditions as $condition) {
+                    if ($condition->getAttribute('__provider') !== $providerKey) {
+                        continue;
+                    }
+
+                    if (! $provider->validate($condition, $this)) {
+                        $conditions->forget($condition->getName());
+                    }
                 }
 
-                $condition = $this->withProviderAttribute($condition, $providerKey);
-                $conditions->put($condition->getName(), $condition);
+                foreach ($provider->getConditionsFor($this) as $condition) {
+                    if (! $provider->validate($condition, $this)) {
+                        continue;
+                    }
+
+                    $condition = $this->withProviderAttribute($condition, $providerKey);
+                    $conditions->put($condition->getName(), $condition);
+                }
             }
-        }
 
-        $updated = $conditions->toArray();
+            if ($conditions->toArray() === $original) {
+                return null;
+            }
 
-        if ($original !== $updated) {
-            $this->storage->putConditions($this->getIdentifier(), $this->instance(), $updated);
+            return $conditions;
+        });
+
+        if ($mutated) {
             $this->invalidatePipelineCache();
         }
     }

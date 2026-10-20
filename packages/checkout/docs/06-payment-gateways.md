@@ -30,8 +30,11 @@ provider reads both config values directly, so config is the precedence source.
 ```
 
 The first available gateway in that order is used unless a specific gateway is
-requested. The payment attempt is incremented atomically and cannot exceed
-`payment.retry_limit` before a new provider purchase is created.
+requested. Every new provider purchase is protected by an atomic claim: the
+attempt counter is incremented under the session row lock, can never exceed
+`payment.retry_limit`, and retries reconcile the frozen attempt identity instead
+of creating duplicate purchases. See [Payment Flow](07-payment-flow.md) for the
+claim and fencing rules.
 
 ## Cashier CHIP Bridge Behavior
 
@@ -112,10 +115,27 @@ forged or expired gateway returns, rate-limit attempts per session, and consume
 the token after a successful completion. A completed session may safely replay
 the same return URL without re-running payment confirmation.
 
+Once a generation is claimed, the return route and the provider notification
+action both resolve the gateway from the frozen attempt identity. The mutable
+selection applies only before the first claim of a new generation, so changing
+`selected_payment_gateway` after a claim cannot send a callback to another
+processor.
+
 Provider references sent to checkout are namespaced as `chk_<session-uuid>`.
 The selected gateway is also recorded in `payment_data.gateway` and the
 `checkout_gateway` metadata field; webhook entry points require that gateway
 match before acting.
+
+## Protocol Idempotency
+
+The frozen attempt idempotency key from `payment_data.payment_attempt.idempotency_key`
+is forwarded to every supported gateway using its real transport mechanism:
+
+- Direct CHIP: passed as the second argument to `Chip::createPurchase()` and sent as the `Idempotency-Key` HTTP header.
+- Cashier to CHIP: passed as the top-level `idempotency_key` option, which `cashier-chip` applies through `IdempotencyKey::apply()`.
+- Cashier to Stripe: passed as the Stripe request option `idempotency_key`, which the Stripe SDK sends as the `Idempotency-Key` HTTP header. It is never sent as a PaymentIntent parameter.
+
+Request metadata such as `checkout_idempotency_key` is retained for attribution only and is not a substitute for protocol idempotency. Repeated redrives of one attempt reuse the same key; a definitively separate attempt receives a different key.
 
 ## Payment Request
 
@@ -149,6 +169,32 @@ $request = PaymentRequest::fromArray([
     'metadata' => ['order_id' => 'order_123'],
 ]);
 ```
+
+`ProcessPaymentStep` builds this request once, under the attempt claim, and
+stores it in `payment_data.payment_attempt.request`. Retries and crash recovery
+replay the snapshot with `PaymentRequest::fromSnapshot()`.
+
+The snapshot freezes the customer fields, billing client, callback URLs,
+metadata, provider, payment method, billable identity, provider customer
+identity, and idempotency key. CHIP payloads use the frozen `client` when
+`client_frozen` is true. `billable_frozen` marks the billable tuple as
+authoritative; a frozen null tuple is an explicit guest, while a request without
+a frozen local billable identity keeps using the live session billable. The
+Cashier processors resolve the frozen `billable_type`/`billable_id` to a
+concrete model class, enforce the session owner boundary, and then validate
+their own contract: the unified `cashier` processor requires
+`AIArmada\Cashier\Contracts\BillableContract`, while `cashier-chip` accepts a
+native `AIArmada\CashierChip\Contracts\BillableContract` model without the
+unified package. A frozen identity that cannot be resolved fails the payment
+instead of falling back to a billable later associated with the session.
+
+The provider customer is frozen separately. Stripe uses the snapshot's
+`provider_customer_id` (the billable's `stripe_id` at claim time), and CHIP uses
+the snapshot's `provider_customer_id` (the billable's `chip_id`) or the frozen
+`client` fields when that id is null. `provider_customer_frozen: true` makes the
+snapshot authoritative, including an explicit null: a replay must not read the
+billable's current provider id again. Directly constructed requests without a
+frozen snapshot keep using live session billing for custom processors.
 
 ## Payment Result
 
@@ -325,6 +371,11 @@ if ($result->requiresRedirect()) {
     return redirect($result->redirectUrl);
 }
 
+// Still in flight (another flow owns the attempt)
+if ($result->metadata['processing'] ?? false) {
+    return view('checkout.processing');
+}
+
 // Exceeded retry limit
 if ($session->payment_attempts >= config('checkout.payment.retry_limit')) {
     return view('checkout.payment-failed', [
@@ -332,6 +383,11 @@ if ($session->payment_attempts >= config('checkout.payment.retry_limit')) {
     ]);
 }
 ```
+
+`retryPayment()` reconciles instead of duplicating. After a crash or gateway
+timeout it adopts the frozen attempt identity — amount, currency, reference, and
+gateway idempotency key — so the gateway returns the original purchase. It
+claims a new generation only for a definitive failure or cancellation.
 
 ## Testing Payments
 

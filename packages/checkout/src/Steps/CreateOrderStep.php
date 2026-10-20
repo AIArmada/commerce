@@ -491,6 +491,30 @@ final class CreateOrderStep extends AbstractCheckoutStep
             return false;
         }
 
+        // The order must still match the session that priced it: a live-cart
+        // reprice between order creation and payment confirmation must not
+        // turn a session-total payment into an underpaid fulfilled order.
+        $orderTotal = $this->minorAmount($order->grand_total);
+        $orderCurrency = $this->normalizeCurrency($order->currency);
+
+        if (
+            $orderTotal === null
+            || $orderTotal !== $expectedAmount
+            || $orderCurrency === null
+            || $orderCurrency !== $expectedCurrency
+        ) {
+            $this->recordOrderReconciliationMismatch(
+                $session,
+                $order,
+                $expectedAmount,
+                $orderTotal,
+                $expectedCurrency,
+                $orderCurrency,
+            );
+
+            return false;
+        }
+
         $metadata = [
             'checkout_session_id' => $session->id,
             'payment_id' => $session->payment_id,
@@ -611,6 +635,56 @@ final class CreateOrderStep extends AbstractCheckoutStep
                 'received_amount' => $receivedAmount,
                 'expected_currency' => $expectedCurrency,
                 'received_currency' => $receivedCurrency,
+            ]
+        );
+    }
+
+    private function recordOrderReconciliationMismatch(
+        CheckoutSession $session,
+        Order $order,
+        int $sessionAmount,
+        ?int $orderAmount,
+        ?string $sessionCurrency,
+        ?string $orderCurrency,
+    ): void {
+        $amountMismatch = $orderAmount === null || $orderAmount !== $sessionAmount;
+        $currencyMismatch = $orderCurrency === null || $orderCurrency !== $sessionCurrency;
+
+        $paymentData = $session->payment_data ?? [];
+        $paymentData['order_reconciliation'] = [
+            'status' => 'mismatch',
+            'reason' => match (true) {
+                $orderAmount === null => 'order_amount_missing',
+                $orderCurrency === null => 'order_currency_missing',
+                $amountMismatch && $currencyMismatch => 'amount_and_currency_mismatch',
+                $currencyMismatch => 'currency_mismatch',
+                default => 'amount_mismatch',
+            },
+            'session_grand_total' => $sessionAmount,
+            'order_grand_total' => $orderAmount,
+            'session_currency' => $sessionCurrency,
+            'order_currency' => $orderCurrency,
+            'recorded_at' => CarbonImmutable::now()->toIso8601String(),
+        ];
+
+        $session->persistState([
+            'payment_data' => $paymentData,
+            'error_message' => $amountMismatch
+                ? 'The order total does not match the checkout total.'
+                : 'The order currency does not match the checkout currency.',
+        ]);
+
+        Log::warning(
+            $amountMismatch
+                ? 'Payment confirmation aborted because the order total mismatched the checkout total'
+                : 'Payment confirmation aborted because the order currency mismatched the checkout currency',
+            [
+                'session_id' => $session->id,
+                'order_id' => $order->getKey(),
+                'session_grand_total' => $sessionAmount,
+                'order_grand_total' => $orderAmount,
+                'session_currency' => $sessionCurrency,
+                'order_currency' => $orderCurrency,
             ]
         );
     }

@@ -53,6 +53,7 @@ final class ChipProcessor implements PaymentCompensationInterface, PaymentProces
         try {
             $purchase = Chip::createPurchase(
                 $this->payloadBuilder->build($session, $request),
+                $request->idempotencyKey,
             );
 
             $checkoutUrl = $purchase->checkout_url;
@@ -68,7 +69,7 @@ final class ChipProcessor implements PaymentCompensationInterface, PaymentProces
 
             return PaymentResult::processing($purchaseId, 'chip');
         } catch (Throwable $e) {
-            return PaymentResult::failed($e->getMessage());
+            return PaymentResult::uncertain($e->getMessage(), null, 'chip');
         }
     }
 

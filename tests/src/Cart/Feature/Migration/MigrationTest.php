@@ -27,6 +27,7 @@ use AIArmada\Cart\Facades\Cart;
 use AIArmada\Cart\Listeners\HandleUserLogin;
 use AIArmada\Cart\Listeners\HandleUserLoginAttempt;
 use AIArmada\Cart\Services\CartMigrationService;
+use AIArmada\Cart\Storage\CartRevision;
 use AIArmada\Cart\Storage\DatabaseStorage;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
@@ -143,7 +144,7 @@ it('can handle merge conflicts with add quantities strategy', function (): void 
             'conditions' => [],
         ],
     ];
-    $storage->putItems('1', 'default', $userExistingItems);
+    $storage->putItems('1', 'default', $userExistingItems, CartRevision::none());
 
     // Set merge strategy to add quantities
     config(['cart.migration.merge_strategy' => 'add_quantities']);
@@ -174,7 +175,7 @@ it('can handle merge conflicts with keep highest quantity strategy', function ()
             'conditions' => [],
         ],
     ];
-    $storage->putItems('1', 'default', $userExistingItems);
+    $storage->putItems('1', 'default', $userExistingItems, CartRevision::none());
 
     // Set merge strategy to keep highest quantity
     config(['cart.migration.merge_strategy' => 'keep_highest_quantity']);
@@ -205,7 +206,7 @@ it('can handle merge conflicts with keep user cart strategy', function (): void 
             'conditions' => [],
         ],
     ];
-    $storage->putItems('1', 'default', $userExistingItems);
+    $storage->putItems('1', 'default', $userExistingItems, CartRevision::none());
 
     // Set merge strategy to keep user cart
     config(['cart.migration.merge_strategy' => 'keep_user_cart']);
@@ -236,7 +237,7 @@ it('can handle merge conflicts with replace with guest strategy', function (): v
             'conditions' => [],
         ],
     ];
-    $storage->putItems('1', 'default', $userExistingItems);
+    $storage->putItems('1', 'default', $userExistingItems, CartRevision::none());
 
     // Set merge strategy to replace with guest
     config(['cart.migration.merge_strategy' => 'replace_with_guest']);
@@ -296,7 +297,7 @@ it('handles user login event automatically when configured', function (): void {
             'quantity' => 2,
             'attributes' => [],
         ],
-    ]);
+    ], CartRevision::none());
 
     $listener = new HandleUserLogin(
         app(MigrateCartOnLoginAction::class),
@@ -356,7 +357,7 @@ it('migrates guest carts into the authenticated owner cart when owner scoping is
             'quantity' => 2,
             'attributes' => [],
         ],
-    ]);
+    ], CartRevision::none());
 
     Session::shouldReceive('pull')->with(HandleUserLoginAttempt::PRE_LOGIN_SESSION_KEY)->andReturn($guestSessionId);
     Session::shouldReceive('flash')->withAnyArgs()->andReturnTrue();
@@ -392,7 +393,7 @@ it('migrates guest cart metadata into an existing user cart', function (): void 
             'attributes' => [],
             'conditions' => [],
         ],
-    ]);
+    ], CartRevision::none());
     $storage->putMetadataBatch($guestSessionId, 'default', [
         'email' => 'guest@example.com',
         'timezone' => 'Asia/Kuala_Lumpur',
@@ -407,7 +408,7 @@ it('migrates guest cart metadata into an existing user cart', function (): void 
             'attributes' => [],
             'conditions' => [],
         ],
-    ]);
+    ], CartRevision::none());
     $storage->putMetadataBatch('1', 'default', [
         'customer_note' => 'Keep me',
     ]);
@@ -460,7 +461,7 @@ it('uses the resolved owner boundary when migrating carts in owner mode', functi
             'quantity' => 2,
             'attributes' => [],
         ],
-    ]);
+    ], CartRevision::none());
 
     $result = OwnerContext::withOwner($owner, fn () => $this->cartMigration->migrateGuestCartToUser((string) $user->getKey(), 'default', $guestSessionId));
 
@@ -495,10 +496,10 @@ it('does not mark a same-identity cart belonging to another owner as merged', fu
 
     $storage->withOwner($ownerB)->putItems($userIdentifier, 'default', [
         'foreign-product' => ['id' => 'foreign-product', 'quantity' => 7],
-    ]);
+    ], CartRevision::none());
     $storage->putItems($guestIdentifier, 'default', [
         'guest-product' => ['id' => 'guest-product', 'quantity' => 2],
-    ]);
+    ], CartRevision::none());
 
     $result = OwnerContext::withOwner($ownerA, fn (): bool => $this->cartMigration->migrateGuestCartToUser(
         $userIdentifier,
@@ -547,7 +548,7 @@ it('validates merge strategy configuration', function (): void {
             'conditions' => [],
         ],
     ];
-    $storage->putItems('1', 'default', $userExistingItems);
+    $storage->putItems('1', 'default', $userExistingItems, CartRevision::none());
 
     // Should fall back to default strategy (add_quantities)
     $guestSessionId = session()->getId();

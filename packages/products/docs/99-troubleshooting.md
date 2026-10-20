@@ -32,6 +32,14 @@ The package defaults to minor units.
 - `2999` means RM 29.99 because product prices are always integer minor units. If an older environment stored major units, backfill those values once by multiplying by 100 before using the package.
 - use `getFormattedPrice()` and related helpers for display
 
+## Re-parenting options, option values, or variants fails
+
+`Option.product_id`, `OptionValue.option_id`, and `Variant.product_id` are immutable after creation, even when owner enforcement is disabled. The guard runs before any write, so the original parent keeps its children and variant pivots. Create a new record under the desired parent instead — there is deliberately no reparenting escape hatch.
+
+Creation-time parent checks follow the same rule: a missing parent fails, and a parent that is not reachable in the current owner context fails unless `include_global` allows a global parent. A value whose option points at a missing product is rejected too, so persisted values always resolve through their option to an existing product.
+
+Children must also share the parent's owner tuple. A child carrying a different owner than its product fails with `InvalidArgumentException` ("Cross-tenant write blocked"), and a tenant-owned child of a global product fails the same way because global parents only accept global children. Creating children of a global product requires explicit global context (`OwnerContext::withOwner(null, ...)`); outside it, creation fails with `InvalidArgumentException` when `auto_assign_on_create` is enabled, otherwise `AuthorizationException`.
+
 ## Variant SKU output is unexpected
 
 `Variant::generateSku()` uses `products.features.variants.sku_pattern`. The default pattern is:
@@ -41,6 +49,12 @@ The package defaults to minor units.
 ```
 
 If the parent product has no SKU, the variant falls back to a `PROD-...` prefix derived from the product UUID.
+
+Matrix generation appends a bounded deterministic suffix derived from the variant's combination key when the default pattern is in use, so option codes that are ambiguous across boundaries (for example `AB`/`AB-CD` against `-C`/`C`) cannot collapse two combinations onto one SKU. When the product already uses the exact generated SKU for a different record (manual edits, legacy data), the generator appends a further deterministic hash suffix to the new row.
+
+The complete default-generated SKU is bounded to the 255-character `sku` column. When the parent SKU and option codes would overflow, the generator trims the readable prefix while preserving the combination identity suffix and reserving room for the longest collision suffix, so a maximum-length or multibyte parent SKU cannot produce a value that PostgreSQL rejects.
+
+Any other `sku_pattern` is treated as a custom pattern and used verbatim. It must produce a unique SKU per combination: two distinct combinations that map to the same SKU, an output that exceeds the 255-character `sku` column, or a candidate already held by a different record on the same product or a sibling product, fail the whole generation before any write. The generator never invents a disambiguated variant of a custom SKU — fix the pattern or clear the conflicting record. The owner-level SKU uniqueness index stays in place as the concurrency backstop.
 
 ## Automatic collections are empty
 
@@ -53,6 +67,15 @@ Use `Collection::getMatchingProducts()` for automatic collections. Common causes
 ## Custom attribute values are not saving
 
 Save the owning model first, then call `setCustomAttribute()` or `setCustomAttributes()`.
+
+## Attribute values are rejected with a cross-tenant or invalid reference error
+
+`AttributeValue` writes validate the definition and target before saving:
+
+- `AuthorizationException` — the referenced definition or attributable product/variant is missing or outside the current owner scope. Create the definition for the same owner, or enable `products.features.owner.include_global` to permit global definitions and targets.
+- `InvalidArgumentException` — the morph type is not `Product`/`Variant`, or the write tries to change `attribute_id`, the attributable tuple, or owner columns after creation. Reparenting is not supported; create a new value.
+
+When owner enforcement is disabled, missing definitions and targets still fail with `InvalidArgumentException`. Reads of a global definition from a tenant context require `include_global` to be enabled when the model scope boots; the scope snapshots the policy at boot, so do not flip it at runtime.
 
 ## JSON migrations fail on older database engines
 

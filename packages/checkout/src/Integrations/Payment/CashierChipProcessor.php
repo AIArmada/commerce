@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Checkout\Integrations\Payment;
 
 use AIArmada\CashierChip\Billing\Cashier;
+use AIArmada\CashierChip\Contracts\BillableContract as ChipBillableContract;
 use AIArmada\Checkout\Contracts\PaymentCompensationInterface;
 use AIArmada\Checkout\Contracts\PaymentProcessorInterface;
 use AIArmada\Checkout\Data\PaymentRequest;
@@ -15,13 +16,14 @@ use AIArmada\Checkout\Support\ChipPaymentStatusMapper;
 use AIArmada\Checkout\Support\ChipPurchasePayloadBuilder;
 use AIArmada\Checkout\Support\ChipRefundGateway;
 use AIArmada\Checkout\Support\NormalizesCallbackAmounts;
+use AIArmada\Checkout\Support\ResolvesFrozenBillable;
 use AIArmada\Chip\Facades\Chip;
-use Illuminate\Database\Eloquent\Model;
 use Throwable;
 
 final class CashierChipProcessor implements PaymentCompensationInterface, PaymentProcessorInterface
 {
     use NormalizesCallbackAmounts;
+    use ResolvesFrozenBillable;
 
     public function __construct(
         private readonly ChipPurchasePayloadBuilder $payloadBuilder,
@@ -52,10 +54,33 @@ final class CashierChipProcessor implements PaymentCompensationInterface, Paymen
     public function createPayment(CheckoutSession $session, PaymentRequest $request): PaymentResult
     {
         try {
-            $billable = $session->billable;
-            $customer = $billable instanceof Model ? $billable : $session->customer;
+            if ($this->hasFrozenBillableIdentity($request)) {
+                $frozenIdentity = $request->billableType !== null || $request->billableId !== null;
 
-            if ($customer instanceof Model && method_exists($customer, 'charge')) {
+                if (! $frozenIdentity) {
+                    // Explicit frozen guest: the session's current customer
+                    // must not turn this replay into a billable charge.
+                    return $this->createGuestPayment($session, $request);
+                }
+
+                $billable = $this->resolveFrozenBillableModel($session, $request);
+
+                if (! $billable instanceof ChipBillableContract) {
+                    return PaymentResult::failed('Cashier Chip could not resolve the frozen billable customer');
+                }
+
+                return $this->createBillablePayment(
+                    customer: $billable,
+                    session: $session,
+                    request: $request,
+                );
+            }
+
+            $customer = $session->billable instanceof ChipBillableContract
+                ? $session->billable
+                : $session->customer;
+
+            if ($customer instanceof ChipBillableContract) {
                 return $this->createBillablePayment(
                     customer: $customer,
                     session: $session,
@@ -65,7 +90,7 @@ final class CashierChipProcessor implements PaymentCompensationInterface, Paymen
 
             return $this->createGuestPayment($session, $request);
         } catch (Throwable $e) {
-            return PaymentResult::failed($e->getMessage());
+            return PaymentResult::uncertain($e->getMessage(), null, 'chip');
         }
     }
 
@@ -130,7 +155,7 @@ final class CashierChipProcessor implements PaymentCompensationInterface, Paymen
     }
 
     private function createBillablePayment(
-        Model $customer,
+        ChipBillableContract $customer,
         CheckoutSession $session,
         PaymentRequest $request,
     ): PaymentResult {
@@ -148,7 +173,11 @@ final class CashierChipProcessor implements PaymentCompensationInterface, Paymen
             'metadata' => $metadata,
             'reference' => CheckoutPaymentReference::forSession($session),
             'currency' => $request->currency,
-            'idempotency_key' => $this->payloadBuilder->idempotencyKey($session),
+            'idempotency_key' => $request->idempotencyKey ?? $this->payloadBuilder->idempotencyKey($session),
+            'provider_customer_id' => $request->providerCustomerId,
+            'provider_customer_frozen' => $request->providerCustomerFrozen,
+            'client' => $request->client,
+            'client_frozen' => $request->clientFrozen,
         ]);
 
         $checkoutUrl = $payment->checkoutUrl();
@@ -169,6 +198,7 @@ final class CashierChipProcessor implements PaymentCompensationInterface, Paymen
     {
         $purchase = Chip::createPurchase(
             $this->payloadBuilder->build($session, $request),
+            $request->idempotencyKey ?? $this->payloadBuilder->idempotencyKey($session),
         );
 
         $checkoutUrl = $purchase->checkout_url;

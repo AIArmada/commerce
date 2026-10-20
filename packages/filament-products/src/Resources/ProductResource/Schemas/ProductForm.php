@@ -10,9 +10,11 @@ use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\FilamentProducts\Resources\ProductResource;
+use AIArmada\FilamentProducts\Support\OwnerScopedRelationshipSelect;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Enums\ProductVisibility;
+use AIArmada\Products\Models\Category;
 use AIArmada\Products\Models\Product;
 use Filament\Forms\Components\MarkdownEditor;
 use Filament\Forms\Components\Placeholder;
@@ -367,6 +369,7 @@ class ProductForm
                                         }
                                     )
                                     ->multiple()
+                                    ->saveRelationshipsBeforeChildrenUsing(OwnerScopedRelationshipSelect::guard(Category::class))
                                     ->preload()
                                     ->searchable(),
 

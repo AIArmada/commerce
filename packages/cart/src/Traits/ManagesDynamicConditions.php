@@ -598,9 +598,7 @@ trait ManagesDynamicConditions
      */
     protected function persistDynamicConditionMetadata(CartCondition $condition, string | array $ruleFactoryKey, array $context = []): void
     {
-        $existingMetadata = $this->getDynamicConditionMetadata();
-
-        $existingMetadata[$condition->getName()] = [
+        $entry = [
             'type' => $condition->getType(),
             'target_scope' => $condition->getTargetDefinition()->scope->value,
             'target_definition' => $condition->getTargetDefinition()->toArray(),
@@ -612,11 +610,16 @@ trait ManagesDynamicConditions
             'context' => $context,
         ];
 
-        $this->storage->putMetadata(
+        $this->storage->mutateMetadata(
             $this->getIdentifier(),
             $this->instance(),
             'dynamic_conditions',
-            $existingMetadata
+            function (?array $metadata) use ($condition, $entry): array {
+                $metadata ??= [];
+                $metadata[$condition->getName()] = $entry;
+
+                return $metadata;
+            }
         );
     }
 
@@ -645,18 +648,20 @@ trait ManagesDynamicConditions
      */
     protected function removeDynamicConditionMetadata(string $name): void
     {
-        $metadata = $this->getDynamicConditionMetadata();
+        $this->storage->mutateMetadata(
+            $this->getIdentifier(),
+            $this->instance(),
+            'dynamic_conditions',
+            function (?array $metadata) use ($name): ?array {
+                if (! is_array($metadata) || ! isset($metadata[$name])) {
+                    return $metadata;
+                }
 
-        if (isset($metadata[$name])) {
-            unset($metadata[$name]);
+                unset($metadata[$name]);
 
-            $this->storage->putMetadata(
-                $this->getIdentifier(),
-                $this->instance(),
-                'dynamic_conditions',
-                $metadata
-            );
-        }
+                return $metadata;
+            }
+        );
     }
 
     /**

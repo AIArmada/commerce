@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cart\Storage\CartRevision;
 use Tests\Support\Cart\InMemoryStorage;
 
 it('refuses to swap into an occupied target and leaves both carts untouched', function (): void {
@@ -12,9 +13,9 @@ it('refuses to swap into an occupied target and leaves both carts untouched', fu
     $targetItems = ['target-product' => ['id' => 'target-product', 'quantity' => 1]];
     $targetConditions = ['target-deal' => ['name' => 'target-deal']];
 
-    $storage->putBoth('guest-session', 'default', $sourceItems, $sourceConditions);
+    $storage->putBoth('guest-session', 'default', $sourceItems, $sourceConditions, CartRevision::none());
     $storage->putMetadata('guest-session', 'default', 'note', 'guest-note');
-    $storage->putBoth('user-7', 'default', $targetItems, $targetConditions);
+    $storage->putBoth('user-7', 'default', $targetItems, $targetConditions, CartRevision::none());
     $storage->putMetadata('user-7', 'default', 'note', 'user-note');
 
     expect($storage->swapIdentifier('guest-session', 'user-7', 'default'))->toBeFalse();
@@ -33,7 +34,7 @@ it('treats swapping an identifier onto itself as a no-op', function (): void {
     $items = ['product' => ['id' => 'product', 'quantity' => 2]];
     $conditions = ['deal' => ['name' => 'deal']];
 
-    $storage->putBoth('session-1', 'default', $items, $conditions);
+    $storage->putBoth('session-1', 'default', $items, $conditions, CartRevision::none());
 
     expect($storage->swapIdentifier('session-1', 'session-1', 'default'))->toBeTrue();
 
@@ -48,7 +49,7 @@ it('transfers the cart when the target identifier is free', function (): void {
 
     $items = ['product' => ['id' => 'product', 'quantity' => 2]];
 
-    $storage->putBoth('guest-session', 'default', $items, []);
+    $storage->putBoth('guest-session', 'default', $items, [], CartRevision::none());
 
     expect($storage->swapIdentifier('guest-session', 'user-7', 'default'))->toBeTrue();
 

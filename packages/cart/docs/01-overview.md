@@ -10,7 +10,7 @@ The `aiarmada/cart` package is the cart foundation for the Commerce monorepo. It
 
 ## What this package owns
 
-- Database-backed cart storage and optimistic locking
+- Database-backed cart storage with revision-checked writes
 - Cart items, cart conditions, metadata, and dynamic condition support
 - Cart lifecycle flows such as merge, clear, add, remove, and login migration
 - Optional owner-aware cart persistence through `commerce-support`
@@ -44,7 +44,7 @@ The `aiarmada/cart` package is the cart foundation for the Commerce monorepo. It
 
 ## What stays in cart
 
-- Database-backed cart storage with optimistic locking.
+- Database-backed cart storage with revision-checked writes.
 - Cart item, condition, and metadata APIs.
 - Dynamic condition support.
 - Cart lifecycle events such as item added, item removed, cart cleared, and cart merged.

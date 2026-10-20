@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cart\Storage\CartRevision;
 use AIArmada\Cart\Storage\DatabaseStorage;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use Illuminate\Database\ConnectionInterface;
@@ -23,7 +24,7 @@ describe('DatabaseStorage Integration', function (): void {
                 'item-2' => ['id' => 'item-2', 'name' => 'Product 2', 'price' => 2000, 'quantity' => 1],
             ];
 
-            $this->storage->putItems($identifier, $instance, $items);
+            $this->storage->putItems($identifier, $instance, $items, CartRevision::none());
             $retrieved = $this->storage->getItems($identifier, $instance);
 
             expect($retrieved)->toBeArray();
@@ -36,7 +37,7 @@ describe('DatabaseStorage Integration', function (): void {
                 'discount' => ['name' => 'discount', 'type' => 'discount', 'value' => '-10%'],
             ];
 
-            $this->storage->putConditions($identifier, $instance, $conditions);
+            $this->storage->putConditions($identifier, $instance, $conditions, CartRevision::none());
             $retrieved = $this->storage->getConditions($identifier, $instance);
 
             expect($retrieved)->toBeArray();
@@ -48,7 +49,7 @@ describe('DatabaseStorage Integration', function (): void {
             $items = ['item-1' => ['id' => 'item-1']];
             $conditions = ['cond-1' => ['name' => 'cond-1']];
 
-            $this->storage->putBoth($identifier, $instance, $items, $conditions);
+            $this->storage->putBoth($identifier, $instance, $items, $conditions, CartRevision::none());
 
             expect($this->storage->has($identifier, $instance))->toBeTrue();
         });
@@ -63,7 +64,7 @@ describe('DatabaseStorage Integration', function (): void {
 
         it('returns true for existing cart', function (): void {
             $identifier = 'db-storage-has-' . uniqid();
-            $this->storage->putItems($identifier, 'default', ['item' => []]);
+            $this->storage->putItems($identifier, 'default', ['item' => []], CartRevision::none());
 
             $result = $this->storage->has($identifier, 'default');
 
@@ -74,7 +75,7 @@ describe('DatabaseStorage Integration', function (): void {
     describe('forget', function (): void {
         it('removes cart from storage', function (): void {
             $identifier = 'db-storage-forget-' . uniqid();
-            $this->storage->putItems($identifier, 'default', ['item' => []]);
+            $this->storage->putItems($identifier, 'default', ['item' => []], CartRevision::none());
 
             $this->storage->forget($identifier, 'default');
 
@@ -86,8 +87,8 @@ describe('DatabaseStorage Integration', function (): void {
         it('returns all instances for identifier', function (): void {
             $identifier = 'db-storage-instances-' . uniqid();
 
-            $this->storage->putItems($identifier, 'cart', ['item' => []]);
-            $this->storage->putItems($identifier, 'wishlist', ['item' => []]);
+            $this->storage->putItems($identifier, 'cart', ['item' => []], CartRevision::none());
+            $this->storage->putItems($identifier, 'wishlist', ['item' => []], CartRevision::none());
 
             $instances = $this->storage->getInstances($identifier);
 
@@ -101,8 +102,8 @@ describe('DatabaseStorage Integration', function (): void {
         it('removes all instances for identifier', function (): void {
             $identifier = 'db-storage-forget-all-' . uniqid();
 
-            $this->storage->putItems($identifier, 'cart', ['item' => []]);
-            $this->storage->putItems($identifier, 'wishlist', ['item' => []]);
+            $this->storage->putItems($identifier, 'cart', ['item' => []], CartRevision::none());
+            $this->storage->putItems($identifier, 'wishlist', ['item' => []], CartRevision::none());
 
             $this->storage->forgetIdentifier($identifier);
 
@@ -113,7 +114,7 @@ describe('DatabaseStorage Integration', function (): void {
     describe('metadata operations', function (): void {
         it('stores and retrieves metadata', function (): void {
             $identifier = 'db-storage-meta-' . uniqid();
-            $this->storage->putItems($identifier, 'default', []);
+            $this->storage->putItems($identifier, 'default', [], CartRevision::none());
 
             $this->storage->putMetadata($identifier, 'default', 'customer_note', 'Please gift wrap');
             $value = $this->storage->getMetadata($identifier, 'default', 'customer_note');
@@ -123,7 +124,7 @@ describe('DatabaseStorage Integration', function (): void {
 
         it('stores metadata in batch', function (): void {
             $identifier = 'db-storage-meta-batch-' . uniqid();
-            $this->storage->putItems($identifier, 'default', []);
+            $this->storage->putItems($identifier, 'default', [], CartRevision::none());
 
             $this->storage->putMetadataBatch($identifier, 'default', [
                 'note' => 'Test note',
@@ -138,7 +139,7 @@ describe('DatabaseStorage Integration', function (): void {
 
         it('clears metadata', function (): void {
             $identifier = 'db-storage-meta-clear-' . uniqid();
-            $this->storage->putItems($identifier, 'default', []);
+            $this->storage->putItems($identifier, 'default', [], CartRevision::none());
             $this->storage->putMetadata($identifier, 'default', 'key', 'value');
 
             $this->storage->clearMetadata($identifier, 'default');
@@ -152,8 +153,8 @@ describe('DatabaseStorage Integration', function (): void {
         it('clears all cart data', function (): void {
             $identifier = 'db-storage-clear-all-' . uniqid();
 
-            $this->storage->putItems($identifier, 'default', ['item' => []]);
-            $this->storage->putConditions($identifier, 'default', ['cond' => []]);
+            $revision = $this->storage->putItems($identifier, 'default', ['item' => []], CartRevision::none());
+            $this->storage->putConditions($identifier, 'default', ['cond' => []], $revision);
             $this->storage->putMetadata($identifier, 'default', 'key', 'value');
 
             $this->storage->clearAll($identifier, 'default');
@@ -166,7 +167,7 @@ describe('DatabaseStorage Integration', function (): void {
     describe('version', function (): void {
         it('returns version for cart', function (): void {
             $identifier = 'db-storage-version-' . uniqid();
-            $this->storage->putItems($identifier, 'default', ['item' => []]);
+            $this->storage->putItems($identifier, 'default', ['item' => []], CartRevision::none());
 
             $version = $this->storage->getVersion($identifier, 'default');
 
@@ -206,7 +207,7 @@ describe('DatabaseStorage Integration', function (): void {
             $scoped = $this->storage->withOwner($user);
             $identifier = 'db-storage-owner-scope-' . uniqid();
 
-            $scoped->putItems($identifier, 'default', ['item' => []]);
+            $scoped->putItems($identifier, 'default', ['item' => []], CartRevision::none());
 
             $row = DB::table('carts')
                 ->where('identifier', $identifier)
@@ -240,7 +241,7 @@ describe('DatabaseStorage Integration', function (): void {
         it('stores global carts with null owner columns', function (): void {
             $identifier = 'db-storage-null-owner-' . uniqid();
 
-            $this->storage->putItems($identifier, 'default', ['item' => []]);
+            $this->storage->putItems($identifier, 'default', ['item' => []], CartRevision::none());
 
             $row = DB::table('carts')
                 ->where('identifier', $identifier)

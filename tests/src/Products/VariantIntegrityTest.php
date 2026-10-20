@@ -89,3 +89,69 @@ it('reuses loaded option values across summary calls', function (): void {
 
     expect($queries)->toBeEmpty();
 });
+
+it('requires variant ownership to match its product including global parents', function (): void {
+    config()->set('products.features.owner.include_global', true);
+
+    $owner = User::query()->create(['name' => 'Variant Lineage Owner', 'email' => 'variant-lineage-owner@example.com', 'password' => 'secret']);
+
+    $globalProduct = OwnerContext::withOwner(null, fn (): Product => Product::create(['name' => 'Global Variant Parent', 'price' => 1000]));
+
+    // Tenant contexts can read the global product but cannot attach tenant-owned variants.
+    OwnerContext::withOwner($owner, function () use ($globalProduct, $owner): void {
+        expect(fn () => Variant::create(['product_id' => $globalProduct->id, 'sku' => 'GV-TENANT']))
+            ->toThrow(InvalidArgumentException::class, 'does not match its product owner');
+
+        expect(fn () => Variant::create([
+            'product_id' => $globalProduct->id,
+            'sku' => 'GV-TENANT-EXPLICIT',
+            'owner_type' => $owner->getMorphClass(),
+            'owner_id' => $owner->getKey(),
+        ]))->toThrow(InvalidArgumentException::class, 'does not match its product owner');
+    });
+
+    expect(Variant::query()->withoutOwnerScope()->count())->toBe(0);
+
+    // Global variants are created from explicit-global context and share the global tuple.
+    $globalVariant = OwnerContext::withOwner(null, fn (): Variant => Variant::create([
+        'product_id' => $globalProduct->id,
+        'name' => 'Global Variant',
+        'sku' => 'GV-GLOBAL',
+    ]));
+
+    expect([$globalVariant->owner_type, $globalVariant->owner_id])->toBe([null, null]);
+
+    OwnerContext::withOwner(null, fn () => $globalProduct->delete());
+
+    expect(Variant::query()->withoutOwnerScope()->whereKey($globalVariant->id)->exists())->toBeFalse()
+        ->and(Variant::query()->withoutOwnerScope()->count())->toBe(0);
+});
+
+it('requires explicit variant ownership when auto assignment is disabled', function (): void {
+    config()->set('products.features.owner.auto_assign_on_create', false);
+
+    $owner = User::query()->create(['name' => 'Variant No Assign Owner', 'email' => 'variant-no-assign-owner@example.com', 'password' => 'secret']);
+
+    $product = OwnerContext::withOwner($owner, fn (): Product => Product::create([
+        'name' => 'No Assign Variant Parent',
+        'price' => 1000,
+        'owner_type' => $owner->getMorphClass(),
+        'owner_id' => $owner->getKey(),
+    ]));
+
+    OwnerContext::withOwner($owner, function () use ($owner, $product): void {
+        expect(fn () => Variant::create(['product_id' => $product->id, 'sku' => 'NOASSIGN-1']))
+            ->toThrow(InvalidArgumentException::class, 'Supply the parent owner tuple');
+
+        $variant = Variant::create([
+            'product_id' => $product->id,
+            'sku' => 'NOASSIGN-2',
+            'owner_type' => $owner->getMorphClass(),
+            'owner_id' => $owner->getKey(),
+        ]);
+
+        expect([$variant->owner_type, $variant->owner_id])->toBe([$owner->getMorphClass(), (string) $owner->getKey()]);
+    });
+
+    expect(OwnerContext::withOwner($owner, fn (): int => Variant::query()->where('product_id', $product->id)->count()))->toBe(1);
+});

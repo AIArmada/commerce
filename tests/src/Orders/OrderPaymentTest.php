@@ -241,7 +241,7 @@ describe('OrderPayment Model', function (): void {
 
     describe('OrderPayment Formatting', function (): void {
         it('can format amount in different currencies', function (): void {
-            $order = Order::create([
+            $myrOrder = Order::create([
                 'order_number' => 'ORD-PAY6-' . uniqid(),
                 'status' => Completed::class,
                 'currency' => 'MYR',
@@ -249,8 +249,32 @@ describe('OrderPayment Model', function (): void {
                 'grand_total' => 10000,
             ]);
 
+            $usdOrder = Order::create([
+                'order_number' => 'ORD-PAY6-' . uniqid(),
+                'status' => Completed::class,
+                'currency' => 'USD',
+                'subtotal' => 5000,
+                'grand_total' => 5000,
+            ]);
+
+            $eurOrder = Order::create([
+                'order_number' => 'ORD-PAY6-' . uniqid(),
+                'status' => Completed::class,
+                'currency' => 'EUR',
+                'subtotal' => 7500,
+                'grand_total' => 7500,
+            ]);
+
+            $gbpOrder = Order::create([
+                'order_number' => 'ORD-PAY6-' . uniqid(),
+                'status' => Completed::class,
+                'currency' => 'GBP',
+                'subtotal' => 2500,
+                'grand_total' => 2500,
+            ]);
+
             $myrPayment = OrderPayment::create([
-                'order_id' => $order->id,
+                'order_id' => $myrOrder->id,
                 'gateway' => 'stripe',
                 'amount' => 10000,
                 'currency' => 'MYR',
@@ -258,7 +282,7 @@ describe('OrderPayment Model', function (): void {
             ]);
 
             $usdPayment = OrderPayment::create([
-                'order_id' => $order->id,
+                'order_id' => $usdOrder->id,
                 'gateway' => 'stripe',
                 'amount' => 5000,
                 'currency' => 'USD',
@@ -266,7 +290,7 @@ describe('OrderPayment Model', function (): void {
             ]);
 
             $eurPayment = OrderPayment::create([
-                'order_id' => $order->id,
+                'order_id' => $eurOrder->id,
                 'gateway' => 'stripe',
                 'amount' => 7500,
                 'currency' => 'EUR',
@@ -274,7 +298,7 @@ describe('OrderPayment Model', function (): void {
             ]);
 
             $gbpPayment = OrderPayment::create([
-                'order_id' => $order->id,
+                'order_id' => $gbpOrder->id,
                 'gateway' => 'stripe',
                 'amount' => 2500,
                 'currency' => 'GBP',

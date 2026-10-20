@@ -10,6 +10,7 @@ use AIArmada\Orders\Events\OrderPaid;
 use AIArmada\Orders\OrdersServiceProvider;
 use AIArmada\Orders\Services\OrderService;
 use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Database\Eloquent\Builder;
 
 describe('Orders ↔ Docs Integration', function (): void {
     beforeEach(function (): void {
@@ -78,6 +79,57 @@ describe('Orders ↔ Docs Integration', function (): void {
 
         expect($doc)->not->toBeNull();
         expect($doc->status->equals(Paid::class))->toBeTrue();
+    });
+
+    it('waits for full settlement before creating the paid invoice', function (): void {
+        config()->set('orders.integrations.docs.enabled', true);
+        config()->set('orders.owner.enabled', false);
+
+        app()->register(OrdersServiceProvider::class);
+
+        $service = app(OrderService::class);
+
+        $order = $service->createOrder(
+            [
+                'order_number' => 'ORD-DOCS-PARTIAL-' . uniqid(),
+                'subtotal' => 22700,
+                'shipping_total' => 0,
+                'tax_total' => 0,
+                'discount_total' => 0,
+                'grand_total' => 22700,
+                'currency' => 'MYR',
+            ],
+            [
+                [
+                    'name' => 'Partial Invoice Widget',
+                    'quantity' => 1,
+                    'unit_price' => 22700,
+                    'tax_amount' => 0,
+                    'sku' => 'INV-PARTIAL-001',
+                ],
+            ],
+        );
+
+        $invoiceQuery = fn (): Builder => Doc::query()
+            ->where('docable_type', $order->getMorphClass())
+            ->where('docable_id', $order->getKey())
+            ->where('doc_type', DocType::Invoice->value);
+
+        $service->confirmPayment($order, 'txn_docs_partial_1', 'stripe', 20000);
+
+        $order->refresh();
+
+        expect($order->paid_at)->toBeNull()
+            ->and($order->isFullyPaid())->toBeFalse()
+            ->and($invoiceQuery()->exists())->toBeFalse();
+
+        $service->confirmPayment($order, 'txn_docs_partial_2', 'stripe', 2700);
+
+        $order->refresh();
+
+        expect($order->paid_at)->not->toBeNull()
+            ->and($order->isFullyPaid())->toBeTrue()
+            ->and($invoiceQuery()->exists())->toBeTrue();
     });
 
     it('does not create a document when docs integration is disabled', function (): void {

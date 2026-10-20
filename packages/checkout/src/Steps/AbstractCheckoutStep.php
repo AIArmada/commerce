@@ -58,6 +58,14 @@ abstract class AbstractCheckoutStep implements CheckoutStepInterface
     /**
      * @param  array<string, mixed>  $data
      */
+    protected function observed(?string $message = null, array $data = []): StepResult
+    {
+        return StepResult::observed($this->getIdentifier(), $message, $data);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
     protected function compensated(string $message, array $data = []): StepResult
     {
         return StepResult::compensated($this->getIdentifier(), $message, $data);

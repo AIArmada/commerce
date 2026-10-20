@@ -30,15 +30,17 @@ final class UserRoleChecker
 
         $registrar = app(PermissionRegistrar::class);
 
-        if (! $registrar->teams) {
-            return (bool) $user->hasRole($role);
-        }
-
         // Drop team scoping entirely for the check: a global assignment may
         // itself carry a team id (single-tenant seeders scope everything to
         // the owner), so filtering by "team null" would miss it. This mirrors
         // FilamentPermission::isSuperAdmin, keeping Gate and UI verdicts
         // coherent.
+        //
+        // The refresh below runs in both team modes: a loaded roles relation
+        // can predate a grant, revocation, or sync performed through another
+        // instance, and the verdict must read the current assignment instead
+        // of that snapshot. The previous relation is restored on exit so the
+        // check never mutates caller-visible model state.
         $teams = $registrar->teams;
         $registrar->teams = false;
 

@@ -33,7 +33,7 @@ final class GoalsReport extends ReportPage
     }
 
     /**
-     * @return array{goals:int,goal_hits:int,visitors:int,revenue_minor:int,avg_goal_rate:float}
+     * @return array{goals:int,goal_hits:int,visitors:int,avg_goal_rate:float,revenue_minor?:int,currency?:string,revenue?:array<string, int>}
      */
     public function getSummary(): array
     {
@@ -46,7 +46,7 @@ final class GoalsReport extends ReportPage
     }
 
     /**
-     * @return list<array{id:string,name:string,goal_type:string,event_name:string,event_category:?string,tracked_property_name:?string,goal_hits:int,visitors:int,revenue_minor:int,goal_rate:float,last_hit_at:?string}>
+     * @return list<array{id:string,name:string,goal_type:string,event_name:string,event_category:?string,tracked_property_name:?string,goal_hits:int,visitors:int,goal_rate:float,last_hit_at:?string,revenue_minor?:int,currency?:string,revenue?:array<string, int>}>
      */
     public function getRows(): array
     {

@@ -7,30 +7,31 @@ namespace AIArmada\Checkout\Steps;
 use AIArmada\Checkout\Contracts\PaymentCompensationInterface;
 use AIArmada\Checkout\Contracts\PaymentGatewayResolverInterface;
 use AIArmada\Checkout\Contracts\ProviderAwarePaymentProcessorInterface;
+use AIArmada\Checkout\Data\PaymentAttemptClaim;
+use AIArmada\Checkout\Data\PaymentFailureOrigin;
 use AIArmada\Checkout\Data\PaymentRequest;
 use AIArmada\Checkout\Data\PaymentResult;
 use AIArmada\Checkout\Data\StepResult;
+use AIArmada\Checkout\Enums\PaymentClaimStatus;
 use AIArmada\Checkout\Enums\PaymentStatus;
 use AIArmada\Checkout\Enums\StepStatus;
 use AIArmada\Checkout\Events\CheckoutPaymentCompleted;
+use AIArmada\Checkout\Exceptions\PaymentAttemptExecutionException;
 use AIArmada\Checkout\Exceptions\PaymentException;
 use AIArmada\Checkout\Models\CheckoutSession;
+use AIArmada\Checkout\Services\PaymentAttemptManager;
 use AIArmada\Checkout\States\AwaitingPayment;
-use AIArmada\Checkout\States\PaymentFailed;
-use AIArmada\Checkout\States\PaymentProcessing;
+use AIArmada\Checkout\States\Completed;
 use AIArmada\Checkout\States\Processing;
-use AIArmada\Checkout\Support\CheckoutPaymentReference;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 final class ProcessPaymentStep extends AbstractCheckoutStep
 {
     public function __construct(
         private readonly PaymentGatewayResolverInterface $paymentResolver,
+        private readonly ?PaymentAttemptManager $attemptManager = null,
     ) {}
 
     public function getIdentifier(): string
@@ -65,8 +66,12 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
 
         $gateway = $session->selected_payment_gateway ?? config('checkout.payment.default_gateway');
 
-        if ($gateway !== null && ! $this->paymentResolver->hasGateway($gateway)) {
-            $errors['payment_gateway'] = "Selected payment gateway '{$gateway}' is not available";
+        // An attempt that must be reconciled is validated against its frozen
+        // gateway, never against a newly selected one that does not own it.
+        $gatewayToValidate = $this->attemptManager()->reconcilableGateway($session) ?? $gateway;
+
+        if ($gatewayToValidate !== null && ! $this->paymentResolver->hasGateway($gatewayToValidate)) {
+            $errors['payment_gateway'] = "Selected payment gateway '{$gatewayToValidate}' is not available";
         }
 
         return $errors;
@@ -91,80 +96,146 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
             return $this->success('No payment required - free order');
         }
 
-        $gateway = $session->selected_payment_gateway;
-        $processor = $this->paymentResolver->resolve($gateway);
+        $selectedGateway = $session->selected_payment_gateway ?? $this->paymentResolver->getDefaultGateway();
+        $providerHint = $this->providerHint($session);
 
-        // Check if processor is available for this session
-        if (! $processor->isAvailable($session)) {
-            return $this->failed('Selected payment method is not available', [
-                'payment' => 'Payment method not available for this order',
+        // The frozen identity of a reconcilable attempt decides which
+        // processor is checked and driven. A newly selected gateway only
+        // shapes a genuinely new generation and must not make recovery of
+        // the owning attempt depend on a processor it never used.
+        $reconcilableGateway = $this->attemptManager()->reconcilableGateway($session);
+
+        if ($reconcilableGateway !== null) {
+            $candidateGateway = $reconcilableGateway;
+            $candidateProcessor = $this->paymentResolver->resolve($candidateGateway);
+
+            if (! $candidateProcessor->isAvailable($session)) {
+                return $this->failed('Selected payment method is not available', [
+                    'payment' => 'Payment method not available for this order',
+                ]);
+            }
+
+            $newClaimProvider = null;
+        } else {
+            $candidateGateway = $selectedGateway;
+            $candidateProcessor = $this->paymentResolver->resolve($candidateGateway);
+
+            if (! $candidateProcessor->isAvailable($session)) {
+                return $this->failed('Selected payment method is not available', [
+                    'payment' => 'Payment method not available for this order',
+                ]);
+            }
+
+            // Resolve the concrete provider before the claim is persisted so
+            // an unresolved default is never frozen into the attempt identity.
+            $newClaimProvider = $candidateProcessor instanceof ProviderAwarePaymentProcessorInterface
+                ? $candidateProcessor->resolveProvider($providerHint)
+                : $providerHint;
+        }
+
+        // Claim one immutable attempt generation under the session row lock.
+        // Concurrent callers and stale replays observe the authoritative
+        // state instead of creating a second charge. Adoption keeps the
+        // frozen identity and ignores the current selection/provider.
+        $claim = $this->attemptManager()->claim($session, $selectedGateway, $newClaimProvider);
+
+        if (! $claim->proceeds()) {
+            return $this->observed(
+                $claim->status === PaymentClaimStatus::Completed
+                    ? 'Payment was already completed by another flow'
+                    : 'Payment attempt is owned by another flow',
+                ['payment_claim' => $claim->status->value],
+            );
+        }
+
+        $processor = $candidateProcessor;
+
+        try {
+            if ($claim->gateway !== $candidateGateway) {
+                // The authoritative claim does not match the read-only recovery
+                // hint (a race with a concurrent outcome). Re-resolve from the
+                // claim and verify the frozen processor is usable before I/O.
+                $processor = $this->paymentResolver->resolve($claim->gateway);
+
+                if (! $processor->isAvailable($session)) {
+                    $origin = PaymentFailureOrigin::fromClaim($claim);
+
+                    return $this->failed('Selected payment method is not available', [
+                        'payment' => 'Payment method not available for this order',
+                    ])->withFailureOrigin($origin)
+                        ->withExecutionOrigin($origin);
+                }
+            }
+
+            // Replay the exact request frozen when the attempt was claimed.
+            // A claim without its snapshot is incomplete: reconstructing any
+            // field from mutable session state would send different inputs
+            // under the same idempotency key.
+            if ($claim->request === null) {
+                throw PaymentException::incompleteAttemptIdentity((string) $session->getKey(), $claim->number);
+            }
+
+            $paymentRequest = PaymentRequest::fromSnapshot($claim->request);
+
+            // Gateway I/O happens outside any transaction; the claim already
+            // fenced ownership of this attempt.
+            $result = $processor->createPayment($session, $paymentRequest);
+
+            // Record the result under the row lock, but only while this attempt
+            // still owns the session. A callback winner, a cancel, or a later
+            // attempt rejects the write and this run stays quiet.
+            $recorded = $this->attemptManager()->record($session, $claim, $result);
+        } catch (Throwable $e) {
+            // Carry this execution's claimed generation out of the step so the
+            // pipeline can fence step, compensation, lifecycle, error, and
+            // event writes by attempt identity under the row lock instead of
+            // deciding ownership from the persisted status alone.
+            throw PaymentAttemptExecutionException::during($claim, $e);
+        }
+
+        if (! $recorded) {
+            $this->voidSupersededPayment($session, $claim, $result);
+
+            return $this->observed('Payment result was superseded by a concurrent update', [
+                'payment_claim' => PaymentClaimStatus::Observed->value,
             ]);
         }
 
-        $gatewayIdentifier = $processor->getIdentifier();
-        $this->incrementPaymentAttempts($session, $gatewayIdentifier);
-
-        $this->ensureCallbackToken($session);
-
-        // Build payment request
-        $paymentRequest = $this->buildPaymentRequest($session, $gatewayIdentifier);
-        $session->transitionStatus(PaymentProcessing::class);
-
-        // Process payment
-        $result = $processor->createPayment($session, $paymentRequest);
-
-        // Handle payment result - merge into existing payment_data to preserve callback_token
-        // (ensureCallbackToken() stored it above; replacing the whole array would wipe it,
-        //  causing all redirect-based callbacks to fail token validation).
-        $paymentData = array_merge($session->payment_data ?? [], [
-            'gateway' => $processor->getIdentifier(),
-            'provider' => $result->provider ?? $processor->getIdentifier(),
-            'payment_id' => $result->paymentId,
-            'transaction_id' => $result->transactionId,
-            'status' => $result->status->value,
-            'amount' => $result->amount ?? $session->grand_total,
-            'currency' => $result->currency,
-            'reference' => CheckoutPaymentReference::forSession($session),
-            'gateway_response' => $result->gatewayResponse,
-            'processed_at' => CarbonImmutable::now()->toIso8601String(),
-        ]);
-
-        $session->persistState([
-            'payment_id' => $result->paymentId,
-            'payment_data' => $paymentData,
-        ]);
-
         // Handle redirect-based payments
         if ($result->requiresRedirect()) {
-            $session->persistState(['payment_redirect_url' => $result->redirectUrl]);
-            $session->transitionStatus(AwaitingPayment::class);
-
             return $this->success('Payment initiated - redirect required', [
                 'redirect_url' => $result->redirectUrl,
                 'payment_id' => $result->paymentId,
-            ]);
+            ])->withExecutionOrigin($recorded);
         }
 
         // Handle immediate success
         if ($result->isSuccessful()) {
             event(new CheckoutPaymentCompleted(
                 session: $session,
-                paymentData: $paymentData,
+                paymentData: $session->payment_data ?? [],
             ));
-            if (! $session->status->is(Processing::class)) {
-                $session->transitionStatus(Processing::class);
-            }
 
             return $this->success('Payment completed', [
                 'payment_id' => $result->paymentId,
                 'transaction_id' => $result->transactionId,
+            ])->withExecutionOrigin($recorded);
+        }
+
+        // Unknown or non-terminal outcomes (an uncertain creation response,
+        // a processing charge, or a pending result without a redirect) stay
+        // recoverable: the outcome is recorded and the pipeline observes
+        // instead of failing and compensating before payment truth is known.
+        if (! $result->status->isFinal()) {
+            return $this->observed($result->message ?? 'Payment outcome is not final', [
+                'payment_claim' => PaymentClaimStatus::Observed->value,
+                'payment_status' => $result->status->value,
             ]);
         }
 
-        // Handle failure
-        $session->transitionStatus(PaymentFailed::class);
-
-        return $this->failed($result->message ?? 'Payment failed', $result->errors);
+        return $this->failed($result->message ?? 'Payment failed', $result->errors)
+            ->withFailureOrigin($recorded)
+            ->withExecutionOrigin($recorded);
     }
 
     public function compensate(CheckoutSession $session): StepResult
@@ -180,7 +251,11 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
         }
 
         $paymentData = $session->payment_data ?? [];
-        $provider = data_get($paymentData, 'provider');
+        $frozenClaim = $this->attemptManager()->frozenIdentity($session);
+        $gateway = is_array($frozenClaim) && is_string($frozenClaim['gateway'] ?? null) && $frozenClaim['gateway'] !== ''
+            ? $frozenClaim['gateway']
+            : $session->selected_payment_gateway;
+        $provider = $this->attemptManager()->frozenProvider($session) ?? data_get($paymentData, 'provider');
         $paymentStatus = PaymentStatus::tryFrom((string) data_get($paymentData, 'status', PaymentStatus::Pending->value))
             ?? PaymentStatus::Pending;
         $operation = match ($paymentStatus) {
@@ -208,7 +283,7 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
         }
 
         try {
-            $processor = $this->paymentResolver->resolve($session->selected_payment_gateway);
+            $processor = $this->paymentResolver->resolve($gateway);
 
             if (! $processor instanceof PaymentCompensationInterface) {
                 return $this->failed('Payment processor cannot compensate this payment', [
@@ -311,192 +386,83 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
         return $processor->voidPayment($paymentId, $reason);
     }
 
-    private function buildPaymentRequest(CheckoutSession $session, string $gateway): PaymentRequest
+    /**
+     * The mutable provider hint the host set for the next attempt. Only a
+     * brand-new generation consults it; recovery keeps the frozen provider.
+     */
+    private function providerHint(CheckoutSession $session): ?string
     {
-        $billingData = $session->billing_data ?? [];
-        $customer = $session->customer;
-        $billable = $session->billable;
-        $paymentMethod = data_get($session->payment_data ?? [], 'payment_method');
         $provider = data_get($session->payment_data ?? [], 'provider');
 
-        $customerName = $billingData['name'] ?? null;
-        if ($customerName === null && $customer !== null) {
-            $customerName = $customer->full_name ?? $customer->first_name ?? null;
+        if (! is_string($provider)) {
+            return null;
         }
 
-        if ($customerName === null && $billable !== null) {
-            $customerName = method_exists($billable, 'chipName')
-                ? $billable->chipName()
-                : ($billable->name ?? null);
-        }
+        $provider = mb_trim($provider);
 
-        $customerEmail = $this->cleanString($billingData['email'] ?? null)
-            ?? $this->resolveModelEmail($customer);
-        if ($customerEmail === null && $billable !== null) {
-            $customerEmail = method_exists($billable, 'chipEmail')
-                ? $this->cleanString($billable->chipEmail())
-                : ($billable instanceof Model ? $this->resolveModelEmail($billable) : null);
-        }
-
-        $customerPhone = $this->cleanString($billingData['phone'] ?? null)
-            ?? $this->resolveModelPhone($customer);
-        if ($customerPhone === null && $billable !== null) {
-            $customerPhone = method_exists($billable, 'chipPhone')
-                ? $this->cleanString($billable->chipPhone())
-                : ($billable instanceof Model ? $this->resolveModelPhone($billable) : null);
-        }
-
-        return new PaymentRequest(
-            amount: $session->grand_total,
-            currency: $session->currency,
-            gateway: $gateway,
-            description: "Order checkout - Session {$session->id}",
-            customerEmail: $customerEmail,
-            customerName: $customerName,
-            customerPhone: $customerPhone,
-            successUrl: $this->buildCallbackUrl('success', $session, $gateway),
-            failureUrl: $this->buildCallbackUrl('failure', $session, $gateway),
-            cancelUrl: $this->buildCallbackUrl('cancel', $session, $gateway),
-            metadata: [
-                'checkout_session_id' => CheckoutPaymentReference::forSession($session),
-                'checkout_gateway' => $gateway,
-                'cart_id' => $session->cart_id,
-                'customer_id' => $session->customer_id,
-                'billable_type' => $session->billable_type,
-                'billable_id' => $session->billable_id,
-            ],
-            paymentMethod: is_string($paymentMethod) && mb_trim($paymentMethod) !== ''
-                ? mb_trim($paymentMethod)
-                : null,
-            provider: is_string($provider) && mb_trim($provider) !== ''
-                ? mb_trim($provider)
-                : null,
-        );
+        return $provider !== '' ? $provider : null;
     }
 
-    private function buildCallbackUrl(string $type, CheckoutSession $session, string $gateway): string
+    /**
+     * Void a payment this run created after another flow already owns the
+     * outcome. The void is tied to the losing attempt's processor and
+     * provider, never to the winning payment, and is skipped when the
+     * persisted payment is this same charge (the winner may still settle it)
+     * or when an unknown winner is mid-flight.
+     */
+    private function voidSupersededPayment(CheckoutSession $session, PaymentAttemptClaim $claim, PaymentResult $result): void
     {
-        $callbackToken = $session->payment_data['callback_token'] ?? null;
+        $paymentId = $result->paymentId;
 
-        $routeName = match ($type) {
-            'success' => "checkout.payment.{$gateway}.success",
-            'failure' => "checkout.payment.{$gateway}.failure",
-            'cancel' => "checkout.payment.{$gateway}.cancel",
-            default => "checkout.payment.{$gateway}.success",
-        };
-
-        $queryParam = (string) config('checkout.defaults.session_query_param', 'session');
-
-        if (mb_trim($queryParam) === '') {
-            $queryParam = 'session';
+        if (! is_string($paymentId) || $paymentId === '') {
+            return;
         }
 
-        // Use route if available, fall back to config path
-        if (Route::has($routeName)) {
-            return route($routeName, [
-                $queryParam => $session->id,
-                'checkout_callback_token' => $callbackToken,
+        $persisted = $session->payment_id;
+
+        if (is_string($persisted) && $persisted !== '') {
+            if ($persisted === $paymentId) {
+                return;
+            }
+        } elseif ($session->status->is(Completed::class) || $session->status->is(AwaitingPayment::class)) {
+            // The winning flow may yet settle on this very purchase; do not
+            // void what might be the session's payment.
+            return;
+        }
+
+        try {
+            $processor = $this->paymentResolver->resolve($claim->gateway);
+
+            if (! $processor instanceof PaymentCompensationInterface) {
+                return;
+            }
+
+            $provider = $result->provider ?? $claim->provider;
+            $reason = 'Superseded by a concurrent checkout update';
+
+            if (
+                is_string($provider)
+                && $provider !== ''
+                && $processor instanceof ProviderAwarePaymentProcessorInterface
+                && $provider !== $processor->getIdentifier()
+            ) {
+                $processor->voidPaymentForProvider($provider, $paymentId, $reason);
+
+                return;
+            }
+
+            $processor->voidPayment($paymentId, $reason);
+        } catch (Throwable $e) {
+            Log::warning('Checkout failed to void a superseded payment', [
+                'session_id' => $session->getKey(),
+                'payment_id' => $paymentId,
+                'error' => $e->getMessage(),
             ]);
         }
-
-        $prefix = mb_trim((string) config('checkout.routes.prefix', 'checkout'), '/');
-        $callbackPath = mb_trim((string) config("checkout.routes.callbacks.{$type}.{$gateway}", "payment/{$gateway}/{$type}"), '/');
-        $path = mb_trim($prefix . '/' . $callbackPath, '/');
-        $separator = str_contains($path, '?') ? '&' : '?';
-
-        return url($path . $separator . http_build_query([
-            $queryParam => $session->id,
-            'checkout_callback_token' => $callbackToken,
-        ]));
     }
 
-    private function incrementPaymentAttempts(CheckoutSession $session, string $gateway): void
+    private function attemptManager(): PaymentAttemptManager
     {
-        $retryLimit = max(0, (int) config('checkout.payment.retry_limit', 3));
-        $updated = $session->newQuery()
-            ->whereKey($session->getKey())
-            ->where('payment_attempts', '<', $retryLimit)
-            ->update([
-                'payment_attempts' => DB::raw('payment_attempts + 1'),
-                'selected_payment_gateway' => $gateway,
-            ]);
-
-        if ($updated !== 1) {
-            $attempts = (int) ($session->newQuery()
-                ->whereKey($session->getKey())
-                ->value('payment_attempts') ?? $session->payment_attempts);
-
-            throw PaymentException::retryLimitExceeded($attempts, $retryLimit);
-        }
-
-        $session->setAttribute('payment_attempts', (int) $session->payment_attempts + 1);
-        $session->setAttribute('selected_payment_gateway', $gateway);
-    }
-
-    private function resolveModelEmail(?Model $model): ?string
-    {
-        if ($model === null) {
-            return null;
-        }
-
-        $emailContactMethod = method_exists($model, 'contactMethods')
-            ? $model->contactMethods()
-                ->where('type', 'email')
-                ->orderByDesc('is_primary')
-                ->orderBy('sort_order')
-                ->first()
-            : null;
-
-        return $this->cleanString($emailContactMethod?->normalized_value ?? $emailContactMethod?->value ?? $model->getAttribute('email'));
-    }
-
-    private function resolveModelPhone(?Model $model): ?string
-    {
-        if ($model === null) {
-            return null;
-        }
-
-        $phoneContactMethod = method_exists($model, 'contactMethods')
-            ? $model->contactMethods()
-                ->where('type', 'phone')
-                ->orderByDesc('is_primary')
-                ->orderBy('sort_order')
-                ->first()
-            : null;
-
-        return $this->cleanString($phoneContactMethod?->normalized_value ?? $phoneContactMethod?->value ?? $model->getAttribute('phone'));
-    }
-
-    private function ensureCallbackToken(CheckoutSession $session): string
-    {
-        $paymentData = $session->payment_data ?? [];
-        $callbackToken = $paymentData['callback_token'] ?? null;
-
-        if (is_string($callbackToken)
-            && $callbackToken !== ''
-            && ! is_string($paymentData['callback_token_consumed_at'] ?? null)
-        ) {
-            return $callbackToken;
-        }
-
-        $callbackToken = Str::random(40);
-        $paymentData['callback_token'] = $callbackToken;
-        $paymentData['callback_token_created_at'] = CarbonImmutable::now()->toIso8601String();
-        unset($paymentData['callback_token_consumed_at']);
-
-        $session->persistState(['payment_data' => $paymentData]);
-
-        return $callbackToken;
-    }
-
-    private function cleanString(mixed $value): ?string
-    {
-        if ($value === null || ! is_scalar($value)) {
-            return null;
-        }
-
-        $cleaned = mb_trim((string) $value);
-
-        return $cleaned === '' ? null : $cleaned;
+        return $this->attemptManager ?? app(PaymentAttemptManager::class);
     }
 }

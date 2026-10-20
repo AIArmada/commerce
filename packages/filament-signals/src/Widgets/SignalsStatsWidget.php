@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Widgets;
 
-use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\FilamentSignals\Pages\Concerns\FormatsSignalsReportValues;
 use AIArmada\FilamentSignals\Support\SignalsUiConfig;
 use AIArmada\Signals\Services\SignalsDashboardService;
 use Filament\Widgets\StatsOverviewWidget;
@@ -12,6 +12,8 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
 
 final class SignalsStatsWidget extends StatsOverviewWidget
 {
+    use FormatsSignalsReportValues;
+
     protected ?string $pollingInterval = null;
 
     protected int | string | array $columnSpan = 'full';
@@ -46,18 +48,14 @@ final class SignalsStatsWidget extends StatsOverviewWidget
         ];
 
         if (config('signals.features.monetary.enabled', true)) {
-            $stats[] = Stat::make(SignalsUiConfig::monetaryValueLabel(), $this->formatMoney($summary['revenue_minor']))
+            $stats[] = Stat::make(
+                SignalsUiConfig::monetaryValueLabel(),
+                $this->formatRevenue($summary['revenue'] ?? $summary['revenue_minor'] ?? 0, $summary['currency'] ?? null),
+            )
                 ->description('Tracked monetary value in range')
                 ->color('warning');
         }
 
         return $stats;
-    }
-
-    private function formatMoney(int $minor): string
-    {
-        $currency = (string) config('signals.defaults.currency', 'MYR');
-
-        return mb_strtoupper($currency) . ' ' . MoneyFormatter::decimalFromMinor($minor, $currency);
     }
 }

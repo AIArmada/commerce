@@ -117,6 +117,27 @@ class StripeGateway extends AbstractGateway
      */
     public function charge(BillableContract $billable, int $amount, #[SensitiveParameter] ?string $paymentMethod = null, array $options = []): PaymentContract
     {
+        $idempotencyKey = $options['idempotency_key'] ?? null;
+        $idempotencyKey = is_string($idempotencyKey) && mb_trim($idempotencyKey) !== ''
+            ? mb_trim($idempotencyKey)
+            : null;
+        unset($options['idempotency_key']);
+
+        // A frozen checkout request carries the provider customer identity
+        // observed at claim time. It must win over the billable's mutable
+        // stripe_id on every replay, including an explicit frozen null.
+        $providerCustomerFrozen = ($options['provider_customer_frozen'] ?? false) === true;
+        $providerCustomerId = $options['provider_customer_id'] ?? null;
+        $providerCustomerId = is_string($providerCustomerId) && mb_trim($providerCustomerId) !== ''
+            ? mb_trim($providerCustomerId)
+            : null;
+        unset(
+            $options['provider_customer_id'],
+            $options['provider_customer_frozen'],
+            $options['client'],
+            $options['client_frozen'],
+        );
+
         $chargeOptions = Arr::except($options, [
             'success_url',
             'failure_url',
@@ -130,9 +151,60 @@ class StripeGateway extends AbstractGateway
             $this->name(),
             'charge',
             $billable,
-            fn (): mixed => $paymentMethod !== null
-                ? $this->callBillableMethod($billable, 'charge', [$amount, $paymentMethod, $chargeOptions])
-                : $this->callBillableMethod($billable, 'pay', [$amount, $chargeOptions]),
+            function () use ($billable, $amount, $paymentMethod, $chargeOptions, $idempotencyKey, $providerCustomerFrozen, $providerCustomerId): Payment {
+                $params = array_merge([
+                    'currency' => $billable->preferredCurrency(),
+                ], $chargeOptions);
+                $params['amount'] = $amount;
+
+                if ($providerCustomerFrozen) {
+                    unset($params['customer']);
+
+                    if ($providerCustomerId !== null) {
+                        $params['customer'] = $providerCustomerId;
+                    }
+                } elseif (method_exists($billable, 'hasStripeId') && $billable->hasStripeId()) {
+                    $params['customer'] = method_exists($billable, 'stripeId') ? $billable->stripeId() : null;
+                }
+
+                if (! array_key_exists('customer', $params) || $params['customer'] === null || $params['customer'] === '') {
+                    unset($params['customer']);
+                }
+
+                if ($paymentMethod !== null) {
+                    $params = array_merge([
+                        'confirmation_method' => 'automatic',
+                        'confirm' => true,
+                    ], $params);
+                    $params['payment_method'] = $paymentMethod;
+
+                    $requestOptions = $idempotencyKey !== null
+                        ? ['idempotency_key' => $idempotencyKey]
+                        : [];
+
+                    $payment = new Payment(
+                        $this->client()->paymentIntents->create($params, $requestOptions)
+                    );
+
+                    $payment->validate();
+
+                    return $payment;
+                }
+
+                // Preserve Cashier's `pay()` semantics for the no-explicit-method
+                // path: enable automatic payment methods, drop payment_method_types,
+                // and do not validate an unconfirmed intent.
+                $params['automatic_payment_methods'] = ['enabled' => true];
+                unset($params['payment_method_types']);
+
+                $requestOptions = $idempotencyKey !== null
+                    ? ['idempotency_key' => $idempotencyKey]
+                    : [];
+
+                return new Payment(
+                    $this->client()->paymentIntents->create($params, $requestOptions)
+                );
+            },
         );
 
         return new StripePayment($payment);

@@ -336,10 +336,24 @@ The request uses this fallback order for customer details:
 The resulting request metadata includes:
 
 - `checkout_session_id`
+- `checkout_gateway`
+- `checkout_attempt` — the claimed attempt generation
+- `checkout_idempotency_key` — the frozen gateway idempotency key
+- `checkout_provider` — the frozen concrete provider when one is known
 - `cart_id`
 - `customer_id`
 - `billable_type`
 - `billable_id`
+
+The request is built **once**, under the attempt claim, and persisted in
+`payment_data.payment_attempt.request`. Retries and crash recovery replay that
+snapshot with `PaymentRequest::fromSnapshot()` instead of rebuilding it from
+mutable session, customer, billing, or billable state. The snapshot includes the
+customer fields, billing client, callback URLs, metadata, provider, payment
+method, frozen billable identity, and the provider customer id (Stripe
+`stripe_id` or CHIP `chip_id`) with its frozen flag. Changing any of those after
+a claim cannot alter the in-flight attempt, and an explicitly frozen null
+provider customer never falls back to the model's current id.
 
 For redirect-based gateways, `ProcessPaymentStep` also stores a per-session callback token in `payment_data.callback_token` and preserves it across retries so callback validation keeps working even after multiple payment attempts.
 
@@ -352,6 +366,12 @@ if ($result->success) {
     return redirect()->route('orders.show', $result->orderId);
 }
 ```
+
+Payment attempts are claimed under the session row lock. After a definitive
+failure or cancellation, a retry claims a new generation; after a gateway
+timeout it adopts the existing generation and reuses its frozen idempotency key,
+so the gateway reconciles the original purchase instead of charging twice. See
+[Payment Flow](07-payment-flow.md) for the claim rules.
 
 ### Handling Webhooks
 

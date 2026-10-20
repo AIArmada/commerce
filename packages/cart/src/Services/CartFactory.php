@@ -21,6 +21,24 @@ final class CartFactory
         private readonly bool $eventsEnabled = true,
     ) {}
 
+    /**
+     * Clone the factory with a different storage while keeping every collaborator.
+     *
+     * Used by the ambient cart manager to build one cart per owner partition
+     * without losing the registered condition providers and handlers.
+     */
+    public function withStorage(StorageInterface $storage): self
+    {
+        return new self(
+            storage: $storage,
+            conditionResolver: $this->conditionResolver,
+            conditionProviderRegistry: $this->conditionProviderRegistry,
+            conditionTypeHandlerRegistry: $this->conditionTypeHandlerRegistry,
+            events: $this->events,
+            eventsEnabled: $this->eventsEnabled,
+        );
+    }
+
     public function make(
         string $identifier,
         string $instanceName = 'default',

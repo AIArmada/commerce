@@ -24,6 +24,7 @@ final class CheckoutResult extends Data
         public array $errors = [],
         /** @var array<string, mixed> */
         public array $metadata = [],
+        public ?PaymentFailureOrigin $failureOrigin = null,
     ) {}
 
     public static function fromSession(CheckoutSession $session, ?string $message = null): self
@@ -51,14 +52,19 @@ final class CheckoutResult extends Data
         );
     }
 
-    public static function failed(CheckoutSession $session, string $message, array $errors = []): self
-    {
+    public static function failed(
+        CheckoutSession $session,
+        string $message,
+        array $errors = [],
+        ?PaymentFailureOrigin $failureOrigin = null,
+    ): self {
         return new self(
             success: false,
             status: $session->status,
             sessionId: $session->id,
             message: $message,
             errors: $errors,
+            failureOrigin: $failureOrigin,
         );
     }
 
@@ -70,6 +76,41 @@ final class CheckoutResult extends Data
             sessionId: $session->id,
             redirectUrl: $redirectUrl,
             message: 'Awaiting payment completion',
+        );
+    }
+
+    /**
+     * A payment attempt owned by another flow is still in flight. The caller
+     * must wait for its outcome instead of driving a second charge.
+     */
+    public static function processing(CheckoutSession $session, ?string $message = null): self
+    {
+        return new self(
+            success: false,
+            status: $session->status,
+            sessionId: $session->id,
+            orderId: $session->order_id,
+            paymentId: $session->payment_id,
+            message: $message ?? 'Payment is being processed',
+            metadata: ['processing' => true],
+        );
+    }
+
+    /**
+     * The current attempt generation's outcome is unknown or unrecorded and
+     * must be reconciled against the same frozen charge identity. Callers can
+     * distinguish recovery-in-progress from a newly failed checkout.
+     */
+    public static function reconciliation(CheckoutSession $session, ?string $message = null): self
+    {
+        return new self(
+            success: false,
+            status: $session->status,
+            sessionId: $session->id,
+            orderId: $session->order_id,
+            paymentId: $session->payment_id,
+            message: $message ?? 'Payment is being reconciled',
+            metadata: ['processing' => true, 'reconciliation' => true],
         );
     }
 

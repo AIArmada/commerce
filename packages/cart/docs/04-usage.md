@@ -406,6 +406,11 @@ of distinct line items. Login handling discovers every guest cart instance and
 aggregates that quantity across instances. A login with no discoverable
 instances still attempts the default instance.
 
+User IDs use the repository's scalar key contract: integers and UUID strings
+are both accepted and preserved byte-for-byte, so a UUID user key migrates to
+its exact cart identifier. A user without a usable ID fails clearly — it never
+inherits the guest session or a truncated numeric identity.
+
 ### Direct Migration
 
 ```php

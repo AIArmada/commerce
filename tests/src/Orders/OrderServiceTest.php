@@ -7,7 +7,9 @@ use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Tests\Fixtures\TestOwner;
+use AIArmada\Orders\Enums\PaymentStatus;
 use AIArmada\Orders\Models\Order;
+use AIArmada\Orders\Models\OrderPayment;
 use AIArmada\Orders\Services\OrderService;
 use AIArmada\Orders\States\Canceled;
 use AIArmada\Orders\States\Created;
@@ -513,6 +515,15 @@ describe('OrderService', function (): void {
                 'currency' => 'MYR',
                 'subtotal' => 10000,
                 'grand_total' => 10000,
+            ]);
+
+            OrderPayment::create([
+                'order_id' => $order->id,
+                'gateway' => 'stripe',
+                'amount' => 10000,
+                'currency' => 'MYR',
+                'status' => PaymentStatus::Completed,
+                'paid_at' => now(),
             ]);
 
             $result = $service->processRefund($order, 5000, 'ref_txn_123', 'Customer return');

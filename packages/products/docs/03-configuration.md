@@ -90,14 +90,15 @@ return [
 ### Owner behavior
 
 - `features.owner.enabled` toggles owner enforcement for package models and defaults to secure `true` (override with `PRODUCTS_OWNER_ENABLED=false` only for an explicitly global installation).
-- `features.owner.include_global` controls whether owner-scoped reads may include global rows.
+- `features.owner.include_global` controls whether owner-scoped reads and writes may include global rows.
 - `features.owner.auto_assign_on_create` controls whether owned rows inherit the current owner automatically.
+- Catalog parent references (`Option.product_id`, `OptionValue.option_id`, `Variant.product_id`, `AttributeValue.attribute_id`, and the `AttributeValue` attributable tuple) are validated against the current owner context on create. With `include_global` off, tenant contexts cannot attach children to global parents or reference global attribute definitions; with it on, global parents and definitions are accepted. Parent and definition identity is immutable afterwards regardless of this flag.
 
 ### Variant behavior
 
-- `features.variants.sku_pattern` is used by `Variant::generateSku()`.
+- `features.variants.sku_pattern` is used by `Variant::generateSku()` and by matrix generation for newly inserted variants. With the built-in default (`{parent_sku}-{option_codes}`), generated SKUs append a bounded deterministic suffix derived from the variant's combination key so ambiguous option-code boundaries cannot collapse distinct combinations. The complete SKU is also bounded to the 255-character `sku` column: the readable prefix is trimmed (reserving the separators and the collision suffix) while the identity suffix is preserved, so collision handling and regeneration stay within the same bound. Any other pattern is treated as custom and used verbatim; it must produce a unique SKU per combination, and a candidate that collapses two combinations, exceeds the 255-character column, or is already held by another record fails generation before any write.
 - `features.variants.max_generated` caps one matrix generation request at 200 variants.
-- `features.variants.queue_threshold` queues generation above 50 combinations. Generation is chunked and repeated SKUs are returned without inserting duplicates.
+- `features.variants.queue_threshold` queues generation above 50 combinations. Generation is atomic (one transaction per run), and variants are matched by stored combination key rather than SKU text, so retries never insert duplicates and distinct combinations never merge.
 
 ### Variant generation
 

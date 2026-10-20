@@ -7,33 +7,56 @@ namespace AIArmada\Cart;
 use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\Cart\Services\CartConditionResolver;
 use AIArmada\Cart\Services\CartFactory;
+use AIArmada\Cart\Storage\DatabaseStorage;
 use AIArmada\Cart\Storage\StorageInterface;
-use Illuminate\Contracts\Auth\Factory;
+use AIArmada\Cart\Support\CartIdentifierResolver;
+use AIArmada\CommerceSupport\Support\OwnerScopeKey;
+use Closure;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Session\SessionManager;
-use RuntimeException;
-use Throwable;
 
 /**
- * Cart Manager handles global instance switching for the Cart facade
+ * Cart Manager handles global instance switching for the Cart facade.
+ *
+ * The ambient manager re-resolves storage at every public entry point and keeps
+ * all mutable state partitioned by owner identity, so an A -> B -> A context
+ * switch inside one lifecycle restores A's own state without exposing it to B.
+ *
+ * Managers created through forOwner() are deliberately pinned to a single
+ * owner and never re-resolve ambient storage.
  */
 class CartManager implements CartManagerInterface
 {
-    private Cart $currentCart;
-
-    private string $currentInstance = 'default';
+    /** @var array<string, StorageInterface> */
+    private array $storages = [];
 
     /** @var array<string, Cart> */
-    private array $cartCache = [];
+    private array $currentCarts = [];
 
+    /** @var array<string, string> */
+    private array $currentInstances = [];
+
+    /** @var array<string, array<string, Cart>> */
+    private array $cartCaches = [];
+
+    private CartIdentifierResolver $identifierResolver;
+
+    /**
+     * @param  (Closure(): StorageInterface)|null  $storageResolver  Re-resolves the ambient
+     *                                                               storage for the current owner context on every
+     *                                                               entry point. Null pins this manager to a single
+     *                                                               storage (direct construction, forOwner()).
+     */
     public function __construct(
         private StorageInterface $storage,
         private ?Dispatcher $events = null,
         private bool $eventsEnabled = true,
         private ?CartConditionResolver $conditionResolver = null,
         private ?CartFactory $cartFactory = null,
+        private ?Closure $storageResolver = null,
+        ?CartIdentifierResolver $identifierResolver = null,
     ) {
+        $this->identifierResolver = $identifierResolver ?? app(CartIdentifierResolver::class);
         $this->conditionResolver ??= app(CartConditionResolver::class);
         $this->cartFactory ??= new CartFactory(
             storage: $this->storage,
@@ -42,11 +65,9 @@ class CartManager implements CartManagerInterface
             eventsEnabled: $this->eventsEnabled,
         );
 
-        $this->currentCart = $this->cartFactory->make(
-            identifier: $this->resolveIdentifier(),
-            instanceName: $this->currentInstance,
-            events: $this->events,
-        );
+        // Eagerly initialize the active partition so identifier resolution
+        // failures surface at resolution time, as they historically did.
+        $this->getCurrentCart();
     }
 
     /**
@@ -56,15 +77,22 @@ class CartManager implements CartManagerInterface
      */
     public function __call(string $method, array $arguments): mixed
     {
-        return $this->currentCart->{$method}(...$arguments);
+        return $this->getCurrentCart()->{$method}(...$arguments);
     }
 
     /**
-     * Get the current cart instance
+     * Get the current cart instance for the active owner partition
      */
     public function getCurrentCart(): Cart
     {
-        return $this->currentCart;
+        $storage = $this->resolveStorage();
+        $key = $this->partitionKey($storage);
+
+        return $this->currentCarts[$key] ??= $this->cartFactoryFor($storage)->make(
+            identifier: $this->resolveIdentifier(),
+            instanceName: $this->currentInstances[$key] ?? 'default',
+            events: $this->events,
+        );
     }
 
     /**
@@ -72,7 +100,7 @@ class CartManager implements CartManagerInterface
      */
     public function getCartInstance(string $name, ?string $identifier = null): Cart
     {
-        return $this->cartFactory->make(
+        return $this->cartFactoryFor($this->resolveStorage())->make(
             identifier: $this->resolveIdentifier($identifier),
             instanceName: $name,
             events: $this->events,
@@ -80,11 +108,13 @@ class CartManager implements CartManagerInterface
     }
 
     /**
-     * Get the current instance name
+     * Get the current instance name for the active owner partition
      */
     public function instance(): string
     {
-        return $this->currentInstance;
+        $key = $this->partitionKey($this->resolveStorage());
+
+        return $this->currentInstances[$key] ?? 'default';
     }
 
     /**
@@ -92,15 +122,21 @@ class CartManager implements CartManagerInterface
      */
     public function setInstance(string $name): static
     {
-        if ($this->currentInstance !== $name) {
-            $currentIdentifier = $this->currentCart->getIdentifier();
-            $this->currentInstance = $name;
-            $this->currentCart = $this->cartFactory->make(
-                identifier: $currentIdentifier,
-                instanceName: $name,
-                events: $this->events,
-            );
+        $storage = $this->resolveStorage();
+        $key = $this->partitionKey($storage);
+
+        if (($this->currentInstances[$key] ?? 'default') === $name) {
+            return $this;
         }
+
+        $identifier = $this->getCurrentCart()->getIdentifier();
+
+        $this->currentInstances[$key] = $name;
+        $this->currentCarts[$key] = $this->cartFactoryFor($storage)->make(
+            identifier: $identifier,
+            instanceName: $name,
+            events: $this->events,
+        );
 
         return $this;
     }
@@ -110,13 +146,18 @@ class CartManager implements CartManagerInterface
      */
     public function setIdentifier(string $identifier): static
     {
-        if ($this->currentCart->getIdentifier() !== $identifier) {
-            $this->currentCart = $this->cartFactory->make(
-                identifier: $identifier,
-                instanceName: $this->currentInstance,
-                events: $this->events,
-            );
+        $storage = $this->resolveStorage();
+        $key = $this->partitionKey($storage);
+
+        if ($this->getCurrentCart()->getIdentifier() === $identifier) {
+            return $this;
         }
+
+        $this->currentCarts[$key] = $this->cartFactoryFor($storage)->make(
+            identifier: $identifier,
+            instanceName: $this->currentInstances[$key] ?? 'default',
+            events: $this->events,
+        );
 
         return $this;
     }
@@ -129,12 +170,14 @@ class CartManager implements CartManagerInterface
      */
     public function forgetIdentifier(): static
     {
+        $storage = $this->resolveStorage();
+        $key = $this->partitionKey($storage);
         $defaultIdentifier = $this->resolveIdentifier();
 
-        if ($this->currentCart->getIdentifier() !== $defaultIdentifier) {
-            $this->currentCart = $this->cartFactory->make(
+        if ($this->getCurrentCart()->getIdentifier() !== $defaultIdentifier) {
+            $this->currentCarts[$key] = $this->cartFactoryFor($storage)->make(
                 identifier: $defaultIdentifier,
-                instanceName: $this->currentInstance,
+                instanceName: $this->currentInstances[$key] ?? 'default',
                 events: $this->events,
             );
         }
@@ -146,7 +189,9 @@ class CartManager implements CartManagerInterface
      * Create a new cart manager instance scoped to a specific owner
      *
      * Use this for admin operations that need to operate on a specific owner's carts.
-     * The returned manager has isolated storage that only accesses the specified owner's data.
+     * The returned manager is deliberately pinned to the given owner: it has
+     * isolated storage that only accesses the specified owner's data and never
+     * re-resolves ambient owner context.
      *
      * @param  Model  $owner  The owner model to scope operations to
      */
@@ -154,20 +199,13 @@ class CartManager implements CartManagerInterface
     {
         $scopedStorage = $this->storage->withOwner($owner);
 
-        $scopedFactory = new CartFactory(
-            storage: $scopedStorage,
-            conditionResolver: $this->conditionResolver,
-            events: $this->events,
-            eventsEnabled: $this->eventsEnabled,
-        );
-
         // @phpstan-ignore-next-line late static binding constructor
         return new static(
             storage: $scopedStorage,
             events: $this->events,
             eventsEnabled: $this->eventsEnabled,
             conditionResolver: $this->conditionResolver,
-            cartFactory: $scopedFactory,
+            cartFactory: $this->cartFactoryFor($scopedStorage),
         );
     }
 
@@ -176,7 +214,7 @@ class CartManager implements CartManagerInterface
      */
     public function getOwnerType(): ?string
     {
-        return $this->storage->getOwnerType();
+        return $this->resolveStorage()->getOwnerType();
     }
 
     /**
@@ -184,7 +222,7 @@ class CartManager implements CartManagerInterface
      */
     public function getOwnerId(): string | int | null
     {
-        return $this->storage->getOwnerId();
+        return $this->resolveStorage()->getOwnerId();
     }
 
     /**
@@ -198,21 +236,24 @@ class CartManager implements CartManagerInterface
      */
     public function getById(string $uuid): ?Cart
     {
-        if (isset($this->cartCache[$uuid])) {
-            return $this->cartCache[$uuid];
+        $storage = $this->resolveStorage();
+        $key = $this->partitionKey($storage);
+
+        if (isset($this->cartCaches[$key][$uuid])) {
+            return $this->cartCaches[$key][$uuid];
         }
 
-        if (! $this->storage instanceof Storage\DatabaseStorage) {
+        if (! $storage instanceof DatabaseStorage) {
             return null;
         }
 
-        $snapshot = $this->storage->findSnapshotById($uuid);
+        $snapshot = $storage->findSnapshotById($uuid);
 
         if (! $snapshot) {
             return null;
         }
 
-        return $this->cartCache[$uuid] = $this->getCartInstance($snapshot->instance, $snapshot->identifier);
+        return $this->cartCaches[$key][$uuid] = $this->getCartInstance($snapshot->instance, $snapshot->identifier);
     }
 
     /**
@@ -229,75 +270,60 @@ class CartManager implements CartManagerInterface
      */
     public function swap(string $oldIdentifier, string $newIdentifier, string $instance = 'default'): bool
     {
-        $swapped = $this->storage->swapIdentifier($oldIdentifier, $newIdentifier, $instance);
+        $storage = $this->resolveStorage();
+        $key = $this->partitionKey($storage);
+
+        $swapped = $storage->swapIdentifier($oldIdentifier, $newIdentifier, $instance);
 
         if ($swapped) {
-            $this->cartCache = [];
+            unset($this->cartCaches[$key]);
         }
 
         return $swapped;
     }
 
     /**
-     * Resolve storage identifier (auth()->id() for authenticated users, session()->id() for guests)
+     * Resolve the storage for the currently active owner context.
+     *
+     * Ambient managers re-resolve through the storage resolver on every call;
+     * pinned managers always return their single storage instance.
+     */
+    private function resolveStorage(): StorageInterface
+    {
+        if ($this->storageResolver === null) {
+            return $this->storage;
+        }
+
+        /** @var StorageInterface $storage */
+        $storage = ($this->storageResolver)();
+
+        return $this->storages[$this->partitionKey($storage)] ??= $storage;
+    }
+
+    /**
+     * Partition key for the owner tuple currently bound to the given storage.
+     */
+    private function partitionKey(StorageInterface $storage): string
+    {
+        return OwnerScopeKey::forTypeAndId($storage->getOwnerType(), $storage->getOwnerId());
+    }
+
+    /**
+     * Build a cart factory bound to the given storage while keeping every
+     * registered condition provider, handler, and event setting.
+     */
+    private function cartFactoryFor(StorageInterface $storage): CartFactory
+    {
+        return $this->cartFactory->withStorage($storage);
+    }
+
+    /**
+     * Resolve the storage identifier through the shared resolver: authenticated
+     * user ID first, then session ID for guests. UUID keys are preserved
+     * byte-for-byte and a missing identifier fails instead of degrading.
      */
     private function resolveIdentifier(?string $customIdentifier = null): string
     {
-        // Use custom identifier if provided
-        if ($customIdentifier !== null) {
-            return $customIdentifier;
-        }
-
-        // Try authenticated user first
-        if ($authenticatedId = $this->getAuthenticatedUserId()) {
-            return $authenticatedId;
-        }
-
-        // Fall back to session ID for guests
-        if ($sessionId = $this->getSessionId()) {
-            return $sessionId;
-        }
-
-        // If neither is available, throw exception
-        throw new RuntimeException(
-            'Cart identifier cannot be determined: neither auth nor session services are available'
-        );
-    }
-
-    /**
-     * Get authenticated user ID if available
-     */
-    private function getAuthenticatedUserId(): ?string
-    {
-        try {
-            if (! app()->bound('auth')) {
-                return null;
-            }
-
-            $auth = app(Factory::class);
-            $guard = $auth->guard();
-
-            return $guard->check() ? (string) $guard->id() : null;
-        } catch (Throwable $e) {
-            return null;
-        }
-    }
-
-    /**
-     * Get session ID if available
-     */
-    private function getSessionId(): ?string
-    {
-        try {
-            if (! app()->bound('session')) {
-                return null;
-            }
-
-            $session = app(SessionManager::class);
-
-            return $session->getId();
-        } catch (Throwable $e) {
-            return null;
-        }
+        return $this->identifierResolver->resolve($customIdentifier);
     }
 }

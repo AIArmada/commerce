@@ -14,6 +14,7 @@ use AIArmada\Pricing\Contracts\Priceable as PricingPriceable;
 use AIArmada\Products\Concerns\EnforcesOwnerUniqueIdentity;
 use AIArmada\Products\Contracts\Inventoryable;
 use AIArmada\Products\Contracts\Priceable;
+use AIArmada\Products\Support\ChildOwnershipGuard;
 use AIArmada\Products\Support\ProductMedia;
 use AIArmada\Products\Support\ProductPricing;
 use AIArmada\Products\Traits\HasAttributes;
@@ -41,6 +42,7 @@ use Throwable;
  * @property string $product_id
  * @property string|null $name
  * @property string $sku
+ * @property string|null $combination_key
  * @property string|null $barcode
  * @property int|null $price
  * @property int|null $compare_price
@@ -90,6 +92,7 @@ class Variant extends Model implements Auditable, HasMedia, Inventoryable, Price
         'product_id',
         'name',
         'sku',
+        'combination_key',
         'barcode',
         'price',
         'compare_price',
@@ -415,6 +418,29 @@ class Variant extends Model implements Auditable, HasMedia, Inventoryable, Price
     }
 
     // =========================================================================
+    // COMBINATION IDENTITY
+    // =========================================================================
+
+    /**
+     * Canonical identity for an option combination: the parent product plus
+     * the sorted option-value IDs. Derived from membership only, so it is
+     * independent of mutable labels and of the generated SKU text.
+     *
+     * @param  array<int, string|int>  $optionValueIds
+     */
+    public static function combinationKeyFor(string $productId, array $optionValueIds): string
+    {
+        $ids = array_values(array_unique(array_map(
+            static fn (string | int $id): string => (string) $id,
+            $optionValueIds,
+        )));
+
+        sort($ids);
+
+        return $productId . ':' . hash('sha256', implode(',', $ids));
+    }
+
+    // =========================================================================
     // SKU GENERATION
     // =========================================================================
 
@@ -497,10 +523,6 @@ class Variant extends Model implements Auditable, HasMedia, Inventoryable, Price
 
             $currentOwner = OwnerContext::resolve();
 
-            if ($currentOwner !== null && $hasOwnerType && ! $variant->belongsToOwner($currentOwner)) {
-                throw new InvalidArgumentException('Cross-tenant write blocked: variant owner does not match the current owner context.');
-            }
-
             $product = Product::query()->withoutOwnerScope()->whereKey($variant->product_id)->first();
 
             if ($product === null) {
@@ -515,26 +537,7 @@ class Variant extends Model implements Auditable, HasMedia, Inventoryable, Price
                 }
             }
 
-            if ($hasOwnerType) {
-                $productOwner = $product->owner;
-                if ($productOwner !== null && ! $variant->belongsToOwner($productOwner)) {
-                    throw new InvalidArgumentException('Cross-tenant write blocked: variant owner does not match its product owner.');
-                }
-
-                return;
-            }
-
-            if (! (bool) config('products.features.owner.auto_assign_on_create', true)) {
-                return;
-            }
-
-            $ownerToAssign = $product?->owner ?? $currentOwner;
-
-            if ($ownerToAssign === null) {
-                return;
-            }
-
-            $variant->assignOwner($ownerToAssign);
+            ChildOwnershipGuard::apply($variant, $product, 'product');
         });
 
         static::updating(function (Variant $variant): void {

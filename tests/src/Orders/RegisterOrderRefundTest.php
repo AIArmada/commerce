@@ -111,7 +111,7 @@ describe('RegisterOrderRefund', function (): void {
         $first = $action->createPending($order, 5000, 'same-key', 'Duplicate-safe refund');
         $second = $action->createPending($order, 5000, 'same-key', 'Duplicate-safe refund');
 
-        expect($second->getKey())->toBe($first->getKey())
+        expect($second[0]->getKey())->toBe($first[0]->getKey())
             ->and($order->refresh()->refunds()->count())->toBe(1);
     });
 
@@ -136,9 +136,9 @@ describe('RegisterOrderRefund', function (): void {
         $action = new RegisterOrderRefund;
         $refund = $action->createPending($order, 5000, 'claim-key', 'Claimed refund');
 
-        expect($action->claimPendingSubmission($refund))->toBeTrue()
-            ->and($action->claimPendingSubmission($refund))->toBeFalse()
-            ->and($refund->fresh()->hasProviderSubmissionStarted())->toBeTrue();
+        expect($action->claimPendingSubmission($refund[0]))->toBeTrue()
+            ->and($action->claimPendingSubmission($refund[0]))->toBeFalse()
+            ->and($refund[0]->fresh()->hasProviderSubmissionStarted())->toBeTrue();
     });
 
     it('does not create another refund after a transaction has failed', function (): void {
@@ -161,7 +161,7 @@ describe('RegisterOrderRefund', function (): void {
 
         $action = new RegisterOrderRefund;
         $refund = $action->createPending($order, 5000, 'failed-key', 'Failed refund');
-        $refund->markAsFailed('Provider rejected the refund.');
+        $refund[0]->markAsFailed('Provider rejected the refund.');
 
         expect(fn () => $action->createPending($order, 5000, 'failed-key', 'Retry refund'))
             ->toThrow(RuntimeException::class, 'has already failed')

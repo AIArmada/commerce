@@ -19,6 +19,7 @@ use AIArmada\Checkout\Integrations\VouchersAdapter;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\Services\CheckoutService;
 use AIArmada\Checkout\Services\CheckoutStepRegistry;
+use AIArmada\Checkout\Services\PaymentAttemptManager;
 use AIArmada\Checkout\Services\StepExecutor;
 use AIArmada\Checkout\States\AwaitingPayment;
 use AIArmada\Checkout\States\Cancelled;
@@ -548,6 +549,8 @@ describe('CreateOrderStep', function (): void {
         $order->forceFill([
             'id' => (string) Str::uuid(),
             'order_number' => 'TEST-ORDER-PAYMENT-FAILED',
+            'grand_total' => 1000,
+            'currency' => 'USD',
         ]);
 
         $orderService->shouldReceive('createOrder')->once()->andReturn($order);
@@ -652,6 +655,8 @@ describe('CreateOrderStep', function (): void {
         $order->forceFill([
             'id' => (string) Str::uuid(),
             'order_number' => 'TEST-ORDER-PAID-INVENTORY',
+            'grand_total' => 1000,
+            'currency' => 'USD',
         ]);
 
         $orderService->shouldReceive('createOrder')->once()->andReturn($order);
@@ -1341,8 +1346,12 @@ describe('CheckoutService', function (): void {
     });
 
     it('returns awaiting payment without double-counting attempts on retry redirects', function (): void {
-        $redirectingPaymentStep = new class implements CheckoutStepInterface
+        $redirectingPaymentStep = new class(app(PaymentAttemptManager::class)) implements CheckoutStepInterface
         {
+            public function __construct(
+                private readonly PaymentAttemptManager $attemptManager,
+            ) {}
+
             public function getIdentifier(): string
             {
                 return 'process_payment';
@@ -1360,12 +1369,27 @@ describe('CheckoutService', function (): void {
 
             public function handle(CheckoutSession $session): StepResult
             {
-                $session->persistState([
-                    'payment_attempts' => $session->payment_attempts + 1,
-                    'payment_redirect_url' => 'https://gateway.example.test/redirect',
-                ]);
+                $claim = $this->attemptManager->claim($session, 'repair-stub');
 
-                return StepResult::success($this->getIdentifier());
+                if (! $claim->proceeds()) {
+                    return StepResult::observed($this->getIdentifier());
+                }
+
+                $origin = $this->attemptManager->record($session, $claim, new PaymentResult(
+                    status: PaymentStatus::Pending,
+                    paymentId: 'pay_retry_redirect',
+                    redirectUrl: 'https://gateway.example.test/redirect',
+                    amount: $session->grand_total,
+                    currency: $session->currency,
+                    provider: 'repair-stub',
+                ));
+
+                if ($origin === null) {
+                    return StepResult::observed($this->getIdentifier());
+                }
+
+                return StepResult::success($this->getIdentifier())
+                    ->withExecutionOrigin($origin);
             }
 
             public function canSkip(CheckoutSession $session): bool
@@ -1449,6 +1473,9 @@ describe('CheckoutService', function (): void {
         $session = CheckoutSession::forceCreate([
             'cart_id' => 'test-cart-retry-payment',
             'status' => PaymentFailed::class,
+            'selected_payment_gateway' => 'repair-stub',
+            'grand_total' => 1000,
+            'currency' => 'MYR',
             'step_states' => [
                 'process_payment' => 'failed',
                 'create_order' => 'pending',

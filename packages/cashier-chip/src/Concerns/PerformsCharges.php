@@ -10,6 +10,7 @@ use AIArmada\CashierChip\Exceptions\IncompletePayment;
 use AIArmada\CashierChip\Payment\Payment;
 use AIArmada\CashierChip\Support\IdempotencyKey;
 use AIArmada\CashierChip\Support\RedirectUrlValidator;
+use AIArmada\Chip\Builders\PurchaseBuilder;
 use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Chip\Data\PurchaseData;
 use Illuminate\Support\Facades\RateLimiter;
@@ -67,15 +68,7 @@ trait PerformsCharges // @phpstan-ignore trait.unused
         $productName = $options['product_name'] ?? 'One-time charge';
         $builder->addProductCents($productName, $amount);
 
-        // Add customer details
-        if ($this->hasChipId()) {
-            $builder->clientId($this->chipId());
-        } else {
-            $builder->customer(
-                email: $this->chipEmail() ?? '',
-                fullName: $this->chipName()
-            );
-        }
+        $this->applyChargeCustomer($builder, $options);
 
         // Add redirect URLs if provided
         if (isset($options['success_url'])) {
@@ -170,15 +163,7 @@ trait PerformsCharges // @phpstan-ignore trait.unused
         $productName = $options['product_name'] ?? 'Payment';
         $builder->addProductCents($productName, $amount);
 
-        // Add customer details
-        if ($this->hasChipId()) {
-            $builder->clientId($this->chipId());
-        } else {
-            $builder->customer(
-                email: $this->chipEmail() ?? '',
-                fullName: $this->chipName()
-            );
-        }
+        $this->applyChargeCustomer($builder, $options);
 
         // Add redirect URLs if provided
         if (isset($options['success_url'])) {
@@ -306,6 +291,78 @@ trait PerformsCharges // @phpstan-ignore trait.unused
         return Checkout::customer($this)
             ->addProduct($name, $amount, $quantity)
             ->create($amount * $quantity, array_merge($sessionOptions, $customerOptions));
+    }
+
+    /**
+     * Apply the customer identity that belongs to this charge.
+     *
+     * A frozen checkout request supplies the client identity observed at
+     * claim time. Reading the live billable's chip id/email/name here would
+     * let a later customer mutation change the provider payload under the
+     * same idempotency key, so the frozen values win even when they are null.
+     *
+     * @param  array<string, mixed>  $options
+     */
+    private function applyChargeCustomer(PurchaseBuilder $builder, array $options): void
+    {
+        if (($options['provider_customer_frozen'] ?? false) !== true) {
+            if ($this->hasChipId()) {
+                $builder->clientId((string) $this->chipId());
+
+                return;
+            }
+
+            $builder->customer(
+                email: $this->chipEmail() ?? '',
+                fullName: $this->chipName(),
+            );
+
+            return;
+        }
+
+        $customerId = $options['provider_customer_id'] ?? null;
+        $customerId = is_string($customerId) && mb_trim($customerId) !== ''
+            ? mb_trim($customerId)
+            : null;
+
+        if ($customerId !== null) {
+            $builder->clientId($customerId);
+
+            return;
+        }
+
+        $client = is_array($options['client'] ?? null) ? $options['client'] : [];
+        $email = $this->cleanCustomerString($client['email'] ?? null) ?? '';
+        $fullName = $this->cleanCustomerString($client['full_name'] ?? null);
+        $phone = $this->cleanCustomerString($client['phone'] ?? null);
+        $country = $this->cleanCustomerString($client['country'] ?? null);
+
+        $builder->customer(
+            email: $email,
+            fullName: $fullName,
+            phone: $phone,
+            country: $country,
+        );
+
+        $street = $this->cleanCustomerString($client['street_address'] ?? null);
+        $city = $this->cleanCustomerString($client['city'] ?? null);
+        $zip = $this->cleanCustomerString($client['zip_code'] ?? null);
+        $state = $this->cleanCustomerString($client['state'] ?? null);
+
+        if ($street !== null && $city !== null && $zip !== null) {
+            $builder->billingAddress($street, $city, $zip, $state, $country);
+        }
+    }
+
+    private function cleanCustomerString(mixed $value): ?string
+    {
+        if (! is_scalar($value)) {
+            return null;
+        }
+
+        $cleaned = mb_trim((string) $value);
+
+        return $cleaned === '' ? null : $cleaned;
     }
 
     /**

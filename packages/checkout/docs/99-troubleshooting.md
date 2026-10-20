@@ -79,6 +79,50 @@ $session = Checkout::startCheckout($cartId);
    ]);
    ```
 
+### Payment Stays Processing After a Timeout
+
+**Symptom**: `processCheckout()` returns a processing result and no new gateway
+charge is created.
+
+**Cause**: The attempt generation is already claimed. A crashed or timed-out
+attempt stays claimed with no recorded outcome, so repeated and concurrent calls
+observe it instead of creating a second charge.
+
+**Solutions**:
+1. Recover with an explicit retry, which adopts the frozen attempt identity and
+   idempotency key:
+   ```php
+   $result = Checkout::retryPayment($session);
+   ```
+2. Wait for the gateway callback or webhook to record the outcome.
+3. Inspect `payment_data.payment_attempt` and
+   `payment_data.payment_attempt_outcome` to see the claimed generation and its
+   last recorded status.
+
+### Callback Rejected as a Superseded or Missing Generation
+
+**Symptom**: A provider callback is ignored, leaves the session in
+`PaymentProcessing`, and the failure message mentions a superseded attempt or a
+missing generation.
+
+**Cause**: Checkout now requires the callback to prove which attempt generation
+it belongs to. A callback that arrives before the current attempt's create
+response must carry trusted generation metadata; an old receipt with a retained
+payment id is no longer accepted by session reference alone. The rejected
+receipt may be recorded under `payment_data.obsolete_attempt_receipts` for
+reconciliation.
+
+**Solutions**:
+1. Forward `checkout_attempt`, `checkout_gateway`, and `checkout_provider` in
+   provider metadata. The built-in CHIP and Cashier processors do this
+   automatically; custom processors must forward the request metadata.
+2. Deliver the receipt through the verified webhook route for its provider so
+   checkout receives the trusted metadata and can record an obsolete paid
+   receipt without touching the active attempt.
+3. If the callback is for the current attempt and the processor cannot attach
+   metadata, complete the payment through the browser callback path, which is
+   bound by the rotated per-attempt callback token and the current status check.
+
 ### Inventory Reservation Failed
 
 **Error**: `InventoryException: Insufficient stock for 'xxx'`

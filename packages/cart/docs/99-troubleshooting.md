@@ -47,9 +47,12 @@ configured ISO 4217 currency when normalization fails.
 
 ### CartConflictException
 
-**Cause:** Concurrent requests modified the same cart (optimistic locking detected a conflict).
+**Cause:** A concurrent write modified the same cart between a snapshot read and a revision-checked write. Domain operations retry against a fresh snapshot internally, so this surfaces only after those bounded retries are exhausted under sustained contention.
 
 **Solution:**
+
+Retrying the domain call is safe: it re-reads a fresh snapshot and recomputes.
+
 ```php
 use AIArmada\Cart\Exceptions\CartConflictException;
 
@@ -131,11 +134,36 @@ OwnerContext::withOwner(null, ...).
 
 **Solution:**
 ```php
-// Set owner BEFORE any cart operations
-Cart::forOwner($tenant);
+// Option 1 — ambient owner context: every public Cart entry point
+// re-resolves the current owner
+OwnerContext::withOwner($tenant, function () {
+    Cart::add('SKU-001', 'Product', 999, 1);
+});
 
-// Then perform operations
-Cart::add('SKU-001', 'Product', 999, 1);
+// Option 2 — pinned manager for admin / cross-tenant work
+$tenantCart = Cart::forOwner($tenant);
+$tenantCart->add('SKU-001', 'Product', 999, 1);
+```
+
+Use the pinned manager returned by `Cart::forOwner($tenant)` when operating
+outside that owner's ambient context; calling the facade after discarding the
+result uses the ambient owner instead.
+
+### Snapshot Sync Throws AuthorizationException
+
+**Cause:** A cart owned by one owner is being mutated while a different owner
+(or no owner) is ambient, so the snapshot synchronizer refuses to label the
+snapshot with the wrong owner.
+
+**Solution:** Run the mutation inside the owning context or against the pinned
+manager, for example:
+
+```php
+$tenantCart = Cart::forOwner($tenant);
+
+OwnerContext::withOwner($tenant, function () use ($tenantCart) {
+    $tenantCart->add('SKU-001', 'Product', 999, 1);
+});
 ```
 
 ### Cross-Tenant Data Leakage
@@ -179,7 +207,7 @@ $stats = Cart::getPipelineCacheStats();
 
 **Solution:**
 ```php
-// Disable pessimistic locking (use optimistic only)
+// Disable pessimistic locking (use revision-checked writes only)
 'database' => [
     'lock_for_update' => false,
 ],
@@ -220,6 +248,30 @@ Event::listen(Attempting::class, function ($event) {
 'migration' => [
     'merge_strategy' => 'add_quantities', // or 'keep_highest_quantity'
 ],
+```
+
+### Migration Fails With "the user has no usable ID"
+
+**Cause:** The user key passed to the migration helpers is missing or empty —
+for example an unsaved model (`getKey()` returns `null`), an empty string, or
+an authenticated guard whose user exposes no ID.
+
+**Solution:**
+
+Resolve the authenticated user before migrating and pass its scalar key
+(`int` or UUID string). Identifiers are preserved byte-for-byte and are never
+truncated to a numeric prefix, so UUID keys migrate to their exact cart
+identifier:
+
+```php
+$userId = auth()->user()?->getKey();
+
+if ($userId === null || $userId === '') {
+    // Handle the unauthenticated / unsaved user explicitly
+    return;
+}
+
+$action->execute(userId: $userId, instance: 'default', sessionId: $sessionId);
 ```
 
 ## JSON Column Issues (SQLite)

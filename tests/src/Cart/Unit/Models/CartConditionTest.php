@@ -7,8 +7,7 @@ use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Conditions\ConditionTarget;
 use AIArmada\Cart\Exceptions\InvalidCartConditionException;
 use AIArmada\Cart\Models\CartItem;
-use AIArmada\Cart\Storage\StorageInterface;
-use Illuminate\Database\Eloquent\Model;
+use Tests\Support\Cart\InMemoryStorage;
 
 it('parses valid and invalid percent values', function (): void {
     // Valid percent (charge/fee)
@@ -503,126 +502,7 @@ it('shouldApply returns true for static and evaluates rules for dynamic', functi
         value: '+5'
     );
     $cart = new Cart(
-        storage: new class implements StorageInterface
-        {
-            public function get(string $identifier, string $instance): ?string
-            {
-                return null;
-            }
-
-            public function put(string $identifier, string $instance, string $content): void {}
-
-            public function has(string $identifier, string $instance): bool
-            {
-                return false;
-            }
-
-            public function forget(string $identifier, string $instance): void {}
-
-            public function flush(): void {}
-
-            public function getInstances(string $identifier): array
-            {
-                return [];
-            }
-
-            public function forgetIdentifier(string $identifier): void {}
-
-            public function getItems(string $identifier, string $instance): array
-            {
-                return [];
-            }
-
-            public function getConditions(string $identifier, string $instance): array
-            {
-                return [];
-            }
-
-            public function putItems(string $identifier, string $instance, array $items): void {}
-
-            public function putConditions(string $identifier, string $instance, array $conditions): void {}
-
-            public function putBoth(string $identifier, string $instance, array $items, array $conditions): void {}
-
-            public function putMetadata(string $identifier, string $instance, string $key, mixed $value): void {}
-
-            public function putMetadataBatch(string $identifier, string $instance, array $metadata): void {}
-
-            public function getMetadata(string $identifier, string $instance, string $key): mixed
-            {
-                return null;
-            }
-
-            public function clearMetadata(string $identifier, string $instance): void {}
-
-            public function clearAll(string $identifier, string $instance): void {}
-
-            public function swapIdentifier(string $oldIdentifier, string $newIdentifier, string $instance): bool
-            {
-                return false;
-            }
-
-            public function getVersion(string $identifier, string $instance): ?int
-            {
-                return null;
-            }
-
-            public function getId(string $identifier, string $instance): ?string
-            {
-                return null;
-            }
-
-            public function getAllMetadata(string $identifier, string $instance): array
-            {
-                return [];
-            }
-
-            public function getCreatedAt(string $identifier, string $instance): ?string
-            {
-                return null;
-            }
-
-            public function getUpdatedAt(string $identifier, string $instance): ?string
-            {
-                return null;
-            }
-
-            public function withTenantId(?string $tenantId): static
-            {
-                return $this;
-            }
-
-            public function getTenantId(): ?string
-            {
-                return null;
-            }
-
-            public function withOwner(?Model $owner): static
-            {
-                return $this;
-            }
-
-            public function getOwnerType(): ?string
-            {
-                return null;
-            }
-
-            public function getOwnerId(): string | int | null
-            {
-                return null;
-            }
-
-            // AI/Analytics - Abandonment Tracking
-            public function getExpiresAt(string $identifier, string $instance): ?string
-            {
-                return null;
-            }
-
-            public function isExpired(string $identifier, string $instance): bool
-            {
-                return false;
-            }
-        },
+        storage: new InMemoryStorage,
         identifier: 'test-user'
     );
     $item = new CartItem(

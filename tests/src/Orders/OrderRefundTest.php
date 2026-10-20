@@ -232,7 +232,7 @@ describe('OrderRefund Model', function (): void {
 
     describe('OrderRefund Formatting', function (): void {
         it('can format amount in different currencies', function (): void {
-            $order = Order::create([
+            $myrOrder = Order::create([
                 'order_number' => 'ORD-REF7-' . uniqid(),
                 'status' => Completed::class,
                 'currency' => 'MYR',
@@ -240,8 +240,32 @@ describe('OrderRefund Model', function (): void {
                 'grand_total' => 10000,
             ]);
 
+            $usdOrder = Order::create([
+                'order_number' => 'ORD-REF7-' . uniqid(),
+                'status' => Completed::class,
+                'currency' => 'USD',
+                'subtotal' => 2500,
+                'grand_total' => 2500,
+            ]);
+
+            $eurOrder = Order::create([
+                'order_number' => 'ORD-REF7-' . uniqid(),
+                'status' => Completed::class,
+                'currency' => 'EUR',
+                'subtotal' => 1500,
+                'grand_total' => 1500,
+            ]);
+
+            $gbpOrder = Order::create([
+                'order_number' => 'ORD-REF7-' . uniqid(),
+                'status' => Completed::class,
+                'currency' => 'GBP',
+                'subtotal' => 500,
+                'grand_total' => 500,
+            ]);
+
             $myrRefund = OrderRefund::create([
-                'order_id' => $order->id,
+                'order_id' => $myrOrder->id,
                 'gateway' => 'stripe',
                 'amount' => 7500,
                 'currency' => 'MYR',
@@ -250,7 +274,7 @@ describe('OrderRefund Model', function (): void {
             ]);
 
             $usdRefund = OrderRefund::create([
-                'order_id' => $order->id,
+                'order_id' => $usdOrder->id,
                 'gateway' => 'stripe',
                 'amount' => 2500,
                 'currency' => 'USD',
@@ -259,7 +283,7 @@ describe('OrderRefund Model', function (): void {
             ]);
 
             $eurRefund = OrderRefund::create([
-                'order_id' => $order->id,
+                'order_id' => $eurOrder->id,
                 'gateway' => 'stripe',
                 'amount' => 1500,
                 'currency' => 'EUR',
@@ -268,7 +292,7 @@ describe('OrderRefund Model', function (): void {
             ]);
 
             $gbpRefund = OrderRefund::create([
-                'order_id' => $order->id,
+                'order_id' => $gbpOrder->id,
                 'gateway' => 'stripe',
                 'amount' => 500,
                 'currency' => 'GBP',

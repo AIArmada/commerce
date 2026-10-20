@@ -69,6 +69,11 @@ final readonly class DatabaseStorage implements StorageInterface
         return $this->ownerId;
     }
 
+    public function backingKey(): string
+    {
+        return spl_object_id($this->database) . ':' . $this->table;
+    }
+
     /**
      * Resolve the identifier and instance for a cart row by its UUID.
      *
@@ -97,6 +102,31 @@ final readonly class DatabaseStorage implements StorageInterface
     }
 
     /**
+     * Read the complete cart content together with the revision it was read at.
+     *
+     * Item/condition/metadata content and the optimistic-locking revision are
+     * read in a single query so a replacement computed from them can be
+     * verified against exactly the state it was derived from.
+     */
+    public function getSnapshot(string $identifier, string $instance): ?CartStorageSnapshot
+    {
+        /** @var stdClass|null $row */
+        $row = $this->baseQuery($identifier, $instance)->first(['id', 'version', 'items', 'conditions', 'metadata']);
+
+        if ($row === null) {
+            return null;
+        }
+
+        return new CartStorageSnapshot(
+            id: (string) $row->id,
+            version: (int) $row->version,
+            items: $this->decodeData($row->items, 'items'),
+            conditions: $this->decodeData($row->conditions, 'conditions'),
+            metadata: $this->decodeData($row->metadata, 'metadata'),
+        );
+    }
+
+    /**
      * Retrieve cart conditions from storage
      *
      * @return array<string, mixed>
@@ -107,32 +137,42 @@ final readonly class DatabaseStorage implements StorageInterface
     }
 
     /**
-     * Store cart items in storage
+     * Atomically replace cart items at the expected revision.
      *
      * @param  array<string, mixed>  $items
      */
-    public function putItems(string $identifier, string $instance, array $items): void
+    public function putItems(string $identifier, string $instance, array $items, CartRevision $expectedRevision): CartRevision
     {
-        $this->updateJsonColumn($identifier, $instance, 'items', $items, 'items update');
+        $this->validateDataSize($items, 'items');
+
+        // Convert empty arrays to null for better database efficiency
+        return $this->replace($identifier, $instance, [
+            'items' => empty($items) ? null : $this->encodeData($items, 'items'),
+        ], 'items update', $expectedRevision);
     }
 
     /**
-     * Store cart conditions in storage
+     * Atomically replace cart conditions at the expected revision.
      *
      * @param  array<string, mixed>  $conditions
      */
-    public function putConditions(string $identifier, string $instance, array $conditions): void
+    public function putConditions(string $identifier, string $instance, array $conditions, CartRevision $expectedRevision): CartRevision
     {
-        $this->updateJsonColumn($identifier, $instance, 'conditions', $conditions, 'conditions update');
+        $this->validateDataSize($conditions, 'conditions');
+
+        // Convert empty arrays to null for better database efficiency
+        return $this->replace($identifier, $instance, [
+            'conditions' => empty($conditions) ? null : $this->encodeData($conditions, 'conditions'),
+        ], 'conditions update', $expectedRevision);
     }
 
     /**
-     * Store both items and conditions in storage
+     * Atomically replace both items and conditions at the expected revision.
      *
      * @param  array<string, mixed>  $items
      * @param  array<string, mixed>  $conditions
      */
-    public function putBoth(string $identifier, string $instance, array $items, array $conditions): void
+    public function putBoth(string $identifier, string $instance, array $items, array $conditions, CartRevision $expectedRevision): CartRevision
     {
         $this->validateDataSize($items, 'items');
         $this->validateDataSize($conditions, 'conditions');
@@ -141,10 +181,10 @@ final readonly class DatabaseStorage implements StorageInterface
         $itemsJson = $this->encodeData($items, 'items');
         $conditionsJson = empty($conditions) ? null : $this->encodeData($conditions, 'conditions');
 
-        $this->performCasUpdate($identifier, $instance, [
+        return $this->replace($identifier, $instance, [
             'items' => $itemsJson,
             'conditions' => $conditionsJson,
-        ], 'both items and conditions update');
+        ], 'both items and conditions update', $expectedRevision);
     }
 
     /**
@@ -211,30 +251,63 @@ final readonly class DatabaseStorage implements StorageInterface
     }
 
     /**
-     * Store cart metadata
+     * Store cart metadata (atomic merge owned by the storage).
      */
     public function putMetadata(string $identifier, string $instance, string $key, mixed $value): void
     {
-        $this->database->transaction(function () use ($identifier, $instance, $key, $value): void {
-            // Get existing metadata
-            $existing = $this->baseQuery($identifier, $instance)->value('metadata');
-
-            $metadata = $this->decodeData($existing, 'metadata', []);
-            $metadata[$key] = $value;
-            $this->validateDataSize($metadata, 'metadata');
-
-            // Filter out null values and convert empty metadata to null
-            $metadata = array_filter($metadata, fn ($value) => $value !== null);
-            $metadataJson = empty($metadata) ? null : $this->encodeData($metadata, 'metadata');
-
-            $this->performCasUpdate($identifier, $instance, [
-                'metadata' => $metadataJson,
-            ], 'metadata update');
-        });
+        $this->mutateMetadata($identifier, $instance, $key, static fn (): mixed => $value);
     }
 
     /**
-     * Store multiple metadata values at once
+     * Atomically modify one metadata key from its fresh current value.
+     */
+    public function mutateMetadata(string $identifier, string $instance, string $key, Closure $compute): mixed
+    {
+        $attempt = 0;
+
+        while (true) {
+            $attempt++;
+
+            $snapshot = $this->getSnapshot($identifier, $instance);
+            $metadata = $snapshot?->metadata ?? [];
+
+            $newValue = $compute($metadata[$key] ?? null);
+
+            if ($newValue === null) {
+                unset($metadata[$key]);
+            } else {
+                $metadata[$key] = $newValue;
+            }
+
+            $metadata = array_filter($metadata, fn ($value) => $value !== null);
+            $this->validateDataSize($metadata, 'metadata');
+
+            if ($snapshot !== null && $metadata === $snapshot->metadata) {
+                return $newValue;
+            }
+
+            if ($snapshot === null && $metadata === []) {
+                return $newValue;
+            }
+
+            try {
+                $this->replace($identifier, $instance, [
+                    'metadata' => empty($metadata) ? null : $this->encodeData($metadata, 'metadata'),
+                ], 'metadata update', $snapshot?->revision() ?? CartRevision::none());
+
+                return $newValue;
+            } catch (CartConflictException $exception) {
+                if ($attempt >= self::MAX_METADATA_ATTEMPTS) {
+                    throw $exception;
+                }
+
+                $this->backOffBeforeCasRetry($attempt);
+            }
+        }
+    }
+
+    /**
+     * Store multiple metadata values at once (atomic merge owned by the storage).
      *
      * @param  array<string, mixed>  $metadata
      */
@@ -244,24 +317,41 @@ final readonly class DatabaseStorage implements StorageInterface
             return;
         }
 
-        $this->database->transaction(function () use ($identifier, $instance, $metadata): void {
-            // Get existing metadata
-            $existing = $this->baseQuery($identifier, $instance)->value('metadata');
+        $attempt = 0;
 
-            $existingMetadata = $this->decodeData($existing, 'metadata', []);
+        while (true) {
+            $attempt++;
 
-            // Merge new metadata with existing
-            $mergedMetadata = array_merge($existingMetadata, $metadata);
-            $this->validateDataSize($mergedMetadata, 'metadata');
+            $snapshot = $this->getSnapshot($identifier, $instance);
+
+            $merged = array_merge($snapshot?->metadata ?? [], $metadata);
 
             // Filter out null values and convert empty metadata to null
-            $mergedMetadata = array_filter($mergedMetadata, fn ($value) => $value !== null);
-            $metadataJson = empty($mergedMetadata) ? null : $this->encodeData($mergedMetadata, 'metadata');
+            $merged = array_filter($merged, fn ($value) => $value !== null);
+            $this->validateDataSize($merged, 'metadata');
 
-            $this->performCasUpdate($identifier, $instance, [
-                'metadata' => $metadataJson,
-            ], 'metadata batch update');
-        });
+            if ($snapshot !== null && $merged === $snapshot->metadata) {
+                return;
+            }
+
+            if ($snapshot === null && $merged === []) {
+                return;
+            }
+
+            try {
+                $this->replace($identifier, $instance, [
+                    'metadata' => empty($merged) ? null : $this->encodeData($merged, 'metadata'),
+                ], 'metadata batch update', $snapshot?->revision() ?? CartRevision::none());
+
+                return;
+            } catch (CartConflictException $exception) {
+                if ($attempt >= self::MAX_METADATA_ATTEMPTS) {
+                    throw $exception;
+                }
+
+                $this->backOffBeforeCasRetry($attempt);
+            }
+        }
     }
 
     /**
@@ -297,29 +387,25 @@ final readonly class DatabaseStorage implements StorageInterface
     }
 
     /**
-     * Clear all metadata for a cart
+     * Clear all metadata for a cart (blind write keyed by identifier).
      */
     public function clearMetadata(string $identifier, string $instance): void
     {
-        $this->database->transaction(function () use ($identifier, $instance): void {
-            $this->performCasUpdate($identifier, $instance, [
-                'metadata' => null,
-            ], 'metadata clear');
-        });
+        $this->upsertWrite($identifier, $instance, [
+            'metadata' => null,
+        ], 'metadata clear');
     }
 
     /**
-     * Clear all cart data (items, conditions, metadata) in a single operation
+     * Clear all cart data (items, conditions, metadata) in a single operation.
      */
     public function clearAll(string $identifier, string $instance): void
     {
-        $this->database->transaction(function () use ($identifier, $instance): void {
-            $this->performCasUpdate($identifier, $instance, [
-                'items' => json_encode([]),
-                'conditions' => null,
-                'metadata' => null,
-            ], 'clear all');
-        });
+        $this->upsertWrite($identifier, $instance, [
+            'items' => json_encode([]),
+            'conditions' => null,
+            'metadata' => null,
+        ], 'clear all');
     }
 
     /**
@@ -360,7 +446,7 @@ final readonly class DatabaseStorage implements StorageInterface
         return $this->database->transaction(function () use ($oldIdentifier, $newIdentifier, $instance) {
             $source = $this->applyLockForUpdate(
                 $this->baseQuery($oldIdentifier, $instance)
-            )->first(['id']);
+            )->first(['id', 'version']);
 
             if ($source === null) {
                 return false;
@@ -375,13 +461,143 @@ final readonly class DatabaseStorage implements StorageInterface
             }
 
             $updated = $this->baseQuery($oldIdentifier, $instance)
+                ->where('id', $source->id)
                 ->update([
                     'identifier' => $newIdentifier,
+                    'version' => $source->version + 1,
                     'updated_at' => CarbonImmutable::now(),
                 ]);
 
             return $updated > 0;
         });
+    }
+
+    /**
+     * Consume a source cart for a merge, guarded by the exact revision it was
+     * read at.
+     *
+     * The single guarded write clears items, conditions, and metadata, records
+     * the merge target for attribution, expires the row, and advances the
+     * version. The write is rejected with {@see CartConflictException} when
+     * the row UUID/version no longer matches the expected revision or the row
+     * was already consumed, so a concurrent source write is never destroyed
+     * and a source row can feed at most one committed merge.
+     *
+     * @throws CartConflictException When the source revision no longer matches or was already consumed
+     */
+    public function consumeForMerge(string $identifier, string $instance, CartRevision $expectedRevision, string $mergedIntoId): CartRevision
+    {
+        if ($expectedRevision->isCreation()) {
+            throw new InvalidArgumentException('A merge consumption requires an existing source revision.');
+        }
+
+        $now = CarbonImmutable::now();
+
+        $updated = $this->baseQuery($identifier, $instance)
+            ->where('id', $expectedRevision->cartId)
+            ->where('version', $expectedRevision->version)
+            ->whereNull('merged_into_id')
+            ->update([
+                'items' => null,
+                'conditions' => null,
+                'metadata' => null,
+                'merged_into_id' => $mergedIntoId,
+                'expired_at' => $now,
+                'expires_at' => $this->calculateExpiresAt(),
+                'version' => $expectedRevision->version + 1,
+                'updated_at' => $now,
+            ]);
+
+        if ($updated === 0) {
+            throw $this->buildConflictException($identifier, $instance, $expectedRevision, 'merge consumption');
+        }
+
+        return CartRevision::of($expectedRevision->cartId, $expectedRevision->version + 1);
+    }
+
+    public function commitMergeTransfer(
+        StorageInterface $sourceStorage,
+        string $sourceIdentifier,
+        string $targetIdentifier,
+        string $instance,
+        array $items,
+        array $conditions,
+        array $metadata,
+        CartRevision $sourceRevision,
+        CartRevision $targetRevision,
+    ): CartRevision {
+        if (! $sourceStorage instanceof self) {
+            throw new InvalidArgumentException('Committing a merge transfer requires a compatible storage backend.');
+        }
+
+        if ($sourceStorage->backingKey() !== $this->backingKey()) {
+            throw new InvalidArgumentException('Source and target storage do not share a backing store.');
+        }
+
+        return $this->database->transaction(function () use ($sourceStorage, $sourceIdentifier, $targetIdentifier, $instance, $items, $conditions, $metadata, $sourceRevision, $targetRevision): CartRevision {
+            $revision = $this->putItems($targetIdentifier, $instance, $items, $targetRevision);
+
+            if ($conditions !== []) {
+                $revision = $this->putConditions($targetIdentifier, $instance, $conditions, $revision);
+            }
+
+            if ($metadata !== []) {
+                $this->putMetadataBatch($targetIdentifier, $instance, $metadata);
+            }
+
+            $targetCartId = (string) $revision->cartId;
+
+            return $sourceStorage->consumeForMerge($sourceIdentifier, $instance, $sourceRevision, $targetCartId);
+        });
+    }
+
+    /**
+     * Remove a cart only while the expected revision is still current.
+     *
+     * A rejected guard returns false and leaves the newer write untouched.
+     *
+     * @throws InvalidArgumentException When the expected revision is a creation
+     */
+    public function forgetIfUnchanged(string $identifier, string $instance, CartRevision $expectedRevision): bool
+    {
+        if ($expectedRevision->isCreation()) {
+            throw new InvalidArgumentException('A guarded cart removal requires an existing revision.');
+        }
+
+        $deleted = $this->baseQuery($identifier, $instance)
+            ->where('id', $expectedRevision->cartId)
+            ->where('version', $expectedRevision->version)
+            ->delete();
+
+        return $deleted > 0;
+    }
+
+    /**
+     * Clear a cart only while the expected revision is still current.
+     *
+     * A rejected guard returns false and leaves the newer write untouched.
+     *
+     * @throws InvalidArgumentException When the expected revision is a creation
+     */
+    public function clearAllIfUnchanged(string $identifier, string $instance, CartRevision $expectedRevision): bool
+    {
+        if ($expectedRevision->isCreation()) {
+            throw new InvalidArgumentException('A guarded cart clear requires an existing revision.');
+        }
+
+        $updated = $this->baseQuery($identifier, $instance)
+            ->where('id', $expectedRevision->cartId)
+            ->where('version', $expectedRevision->version)
+            ->update([
+                'items' => json_encode([]),
+                'conditions' => null,
+                'metadata' => null,
+                'version' => $expectedRevision->version + 1,
+                'updated_at' => CarbonImmutable::now(),
+                'expires_at' => $this->calculateExpiresAt(),
+            ]);
+
+        return $updated > 0;
     }
 
     /**
@@ -632,23 +848,6 @@ final readonly class DatabaseStorage implements StorageInterface
     }
 
     /**
-     * Update a single JSON column with CAS
-     *
-     * @param  array<string, mixed>  $data
-     */
-    private function updateJsonColumn(string $identifier, string $instance, string $column, array $data, string $operationName): void
-    {
-        $this->validateDataSize($data, $column);
-
-        // Convert empty arrays to null for better database efficiency
-        $jsonData = empty($data) ? null : $this->encodeData($data, $column);
-
-        $this->performCasUpdate($identifier, $instance, [
-            $column => $jsonData,
-        ], $operationName);
-    }
-
-    /**
      * Encode data to JSON with error handling
      *
      * @param  array<string, mixed>  $data
@@ -698,15 +897,95 @@ final readonly class DatabaseStorage implements StorageInterface
     }
 
     /**
-     * Perform Compare-And-Swap update with optimistic locking.
+     * Maximum number of times a storage-owned metadata merge re-reads fresh
+     * content before surfacing the conflict to the caller.
+     */
+    private const MAX_METADATA_ATTEMPTS = 5;
+
+    /**
+     * Atomically replace a cart row at the expected revision.
      *
-     * The attempt is retried once with backoff when it loses a race: either a
-     * concurrent first-write won the unique key (the retry then takes the
-     * version-checked update path) or a concurrent update moved the version.
+     * An expected creation ({@see CartRevision::none()}) inserts a new row and
+     * conflicts when one already exists. An expected row update is guarded by
+     * both the row UUID and the version, so a snapshot taken before the row
+     * was deleted and recreated can never overwrite the replacement row.
+     *
+     * @param  array<string, mixed>  $data  Raw column payload (already encoded)
+     *
+     * @throws CartConflictException When the expected revision no longer matches
+     */
+    private function replace(string $identifier, string $instance, array $data, string $operationName, CartRevision $expectedRevision): CartRevision
+    {
+        $ownerColumns = $this->ownerTupleColumns();
+        $now = CarbonImmutable::now();
+
+        if ($expectedRevision->isCreation()) {
+            $insertData = array_merge($data, [
+                'id' => Str::uuid(),
+                'identifier' => $identifier,
+                'instance' => $instance,
+                $ownerColumns->ownerTypeColumn => $this->ownerType,
+                $ownerColumns->ownerIdColumn => $this->ownerId !== null ? (string) $this->ownerId : null,
+                'owner_scope' => $this->resolveOwnerScope(),
+                'version' => 1,
+                'expires_at' => $this->calculateExpiresAt(),
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+
+            try {
+                // Run the insert inside a savepoint so a unique-key violation
+                // inside a surrounding transaction (for example a migration
+                // merge) aborts only the savepoint. The connection stays
+                // usable for the conflict diagnostics below and for the
+                // caller's retry, which PostgreSQL would otherwise reject
+                // with "current transaction is aborted".
+                $this->database->transaction(function () use ($insertData): void {
+                    $this->database->table($this->table)->insert($insertData);
+                });
+            } catch (QueryException $exception) {
+                if (! $this->isUniqueViolation($exception)) {
+                    throw $exception;
+                }
+
+                throw $this->buildConflictException($identifier, $instance, $expectedRevision, $operationName);
+            }
+
+            return CartRevision::of((string) $insertData['id'], 1);
+        }
+
+        $updated = $this->baseQuery($identifier, $instance)
+            ->where('id', $expectedRevision->cartId)
+            ->where('version', $expectedRevision->version)
+            ->update(array_merge($data, [
+                $ownerColumns->ownerTypeColumn => $this->ownerType,
+                $ownerColumns->ownerIdColumn => $this->ownerId !== null ? (string) $this->ownerId : null,
+                'owner_scope' => $this->resolveOwnerScope(),
+                'version' => $expectedRevision->version + 1,
+                'updated_at' => $now,
+                'expires_at' => $this->calculateExpiresAt(),
+            ]));
+
+        if ($updated === 0) {
+            throw $this->buildConflictException($identifier, $instance, $expectedRevision, $operationName);
+        }
+
+        return CartRevision::of($expectedRevision->cartId, $expectedRevision->version + 1);
+    }
+
+    /**
+     * Blind upsert write: no expected revision, keyed only by the
+     * identifier/instance/owner scope.
+     *
+     * Used by clear operations whose payload is a fixed reset rather than a
+     * value computed from a read. The attempt is retried once with backoff
+     * when it loses a race: either a concurrent first-write won the unique
+     * key (the retry then takes the version-checked update path) or a
+     * concurrent update moved the version.
      *
      * @param  array<string, mixed>  $data
      */
-    private function performCasUpdate(string $identifier, string $instance, array $data, string $operationName): void
+    private function upsertWrite(string $identifier, string $instance, array $data, string $operationName): CartRevision
     {
         $attempts = 0;
 
@@ -714,7 +993,7 @@ final readonly class DatabaseStorage implements StorageInterface
             $attempts++;
 
             try {
-                $this->database->transaction(function () use ($identifier, $instance, $data, $operationName): void {
+                return $this->database->transaction(function () use ($identifier, $instance, $data, $operationName): CartRevision {
                     $ownerColumns = $this->ownerTupleColumns();
 
                     /** @var stdClass|null $current */
@@ -733,31 +1012,39 @@ final readonly class DatabaseStorage implements StorageInterface
                         ]);
 
                         $updated = $this->baseQuery($identifier, $instance)
+                            ->where('id', $current->id)
                             ->where('version', $current->version)
                             ->update($updateData);
 
                         if ($updated === 0) {
-                            $this->handleCasConflict($identifier, $instance, $current->version, $operationName);
+                            throw $this->buildConflictException(
+                                $identifier,
+                                $instance,
+                                CartRevision::of((string) $current->id, (int) $current->version),
+                                $operationName
+                            );
                         }
-                    } else {
-                        $insertData = array_merge($data, [
-                            'id' => Str::uuid(),
-                            'identifier' => $identifier,
-                            'instance' => $instance,
-                            $ownerColumns->ownerTypeColumn => $this->ownerType,
-                            $ownerColumns->ownerIdColumn => $this->ownerId !== null ? (string) $this->ownerId : null,
-                            'owner_scope' => $this->resolveOwnerScope(),
-                            'version' => 1,
-                            'expires_at' => $this->calculateExpiresAt(),
-                            'created_at' => CarbonImmutable::now(),
-                            'updated_at' => CarbonImmutable::now(),
-                        ]);
 
-                        $this->database->table($this->table)->insert($insertData);
+                        return CartRevision::of((string) $current->id, (int) $current->version + 1);
                     }
-                });
 
-                return;
+                    $insertData = array_merge($data, [
+                        'id' => Str::uuid(),
+                        'identifier' => $identifier,
+                        'instance' => $instance,
+                        $ownerColumns->ownerTypeColumn => $this->ownerType,
+                        $ownerColumns->ownerIdColumn => $this->ownerId !== null ? (string) $this->ownerId : null,
+                        'owner_scope' => $this->resolveOwnerScope(),
+                        'version' => 1,
+                        'expires_at' => $this->calculateExpiresAt(),
+                        'created_at' => CarbonImmutable::now(),
+                        'updated_at' => CarbonImmutable::now(),
+                    ]);
+
+                    $this->database->table($this->table)->insert($insertData);
+
+                    return CartRevision::of((string) $insertData['id'], 1);
+                });
             } catch (CartConflictException $exception) {
                 if ($attempts >= 2) {
                     throw $exception;
@@ -790,20 +1077,17 @@ final readonly class DatabaseStorage implements StorageInterface
     }
 
     /**
-     * Handle CAS conflict by determining current version and throwing appropriate exception
+     * Build a conflict exception describing the expectation and the current
+     * stored revision (0 when no cart row currently exists).
      */
-    private function handleCasConflict(string $identifier, string $instance, int $expectedVersion, string $operationName): void
+    private function buildConflictException(string $identifier, string $instance, CartRevision $expectedRevision, string $operationName): CartConflictException
     {
-        // Get current version for better error details
-        /** @var stdClass|null $currentRecord */
-        $currentRecord = $this->baseQuery($identifier, $instance)->first(['version']);
+        $currentVersion = $this->baseQuery($identifier, $instance)->value('version');
 
-        $currentVersion = $currentRecord ? $currentRecord->version : $expectedVersion + 1;
-
-        throw new CartConflictException(
+        return new CartConflictException(
             "Cart was modified by another request during {$operationName}",
-            $expectedVersion,
-            $currentVersion
+            $expectedRevision->version ?? 0,
+            $currentVersion !== null ? (int) $currentVersion : 0
         );
     }
 

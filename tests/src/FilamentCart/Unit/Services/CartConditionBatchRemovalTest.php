@@ -9,6 +9,8 @@ use AIArmada\Cart\Snapshots\CartInstanceManager;
 use AIArmada\Cart\Snapshots\CartSnapshot as CartModel;
 use AIArmada\Cart\Snapshots\CartSnapshotCondition as CartConditionModel;
 use AIArmada\Cart\Snapshots\CartSyncManager;
+use AIArmada\Cart\Storage\CartRevision;
+use AIArmada\Cart\Storage\CartStorageSnapshot;
 use AIArmada\Cart\Storage\StorageInterface;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -49,19 +51,23 @@ describe('RemoveStoredConditions action', function (): void {
 
         // Create Real Cart with Mocked Storage
         $storage = Mockery::mock(StorageInterface::class);
-        $storage->shouldReceive('getConditions')->andReturn([
-            'Bad Condition' => [
-                'name' => 'Bad Condition',
-                'type' => 'coupon',
-                'target' => 'cart.subtotal',
-                'target_definition' => [
-                    'scope' => 'cart',
-                    'phase' => 'cart_subtotal',
-                    'application' => 'aggregate',
+        $storage->shouldReceive('getSnapshot')->andReturn(new CartStorageSnapshot(
+            id: 'cart-id',
+            version: 1,
+            conditions: [
+                'Bad Condition' => [
+                    'name' => 'Bad Condition',
+                    'type' => 'coupon',
+                    'target' => 'cart.subtotal',
+                    'target_definition' => [
+                        'scope' => 'cart',
+                        'phase' => 'cart_subtotal',
+                        'application' => 'aggregate',
+                    ],
+                    'value' => '-10',
                 ],
-                'value' => '-10',
             ],
-        ]);
+        ));
         $storage->shouldReceive('getItems')->andReturn([]);
         $storage->shouldReceive('getId')->andReturn('cart-id');
         $storage->shouldReceive('getVersion')->andReturn(1);
@@ -70,7 +76,7 @@ describe('RemoveStoredConditions action', function (): void {
 
         $storage->shouldReceive('putConditions')->with('session-123', 'default', Mockery::on(function ($args) {
             return ! isset($args['Bad Condition']);
-        }))->once();
+        }), Mockery::type(CartRevision::class))->once()->andReturn(CartRevision::of('cart-id', 2));
 
         $realCart = new Cart($storage, 'session-123');
 
@@ -172,25 +178,29 @@ describe('RemoveStoredConditions action', function (): void {
         ]);
 
         $storage = Mockery::mock(StorageInterface::class);
-        $storage->shouldReceive('getConditions')->andReturn([
-            'Bad Condition' => [
-                'name' => 'Bad Condition',
-                'type' => 'coupon',
-                'target' => 'cart.subtotal',
-                'target_definition' => [
-                    'scope' => 'cart',
-                    'phase' => 'cart_subtotal',
-                    'application' => 'aggregate',
+        $storage->shouldReceive('getSnapshot')->andReturn(new CartStorageSnapshot(
+            id: 'cart-id',
+            version: 1,
+            conditions: [
+                'Bad Condition' => [
+                    'name' => 'Bad Condition',
+                    'type' => 'coupon',
+                    'target' => 'cart.subtotal',
+                    'target_definition' => [
+                        'scope' => 'cart',
+                        'phase' => 'cart_subtotal',
+                        'application' => 'aggregate',
+                    ],
+                    'value' => '-10',
                 ],
-                'value' => '-10',
             ],
-        ]);
+        ));
         $storage->shouldReceive('getItems')->andReturn([]);
         $storage->shouldReceive('getId')->andReturn('cart-id');
         $storage->shouldReceive('getVersion')->andReturn(1);
         $storage->shouldReceive('getCreatedAt')->andReturn(now()->toIso8601String());
         $storage->shouldReceive('getUpdatedAt')->andReturn(now()->toIso8601String());
-        $storage->shouldReceive('putConditions')->once();
+        $storage->shouldReceive('putConditions')->once()->andReturn(CartRevision::of('cart-id', 2));
 
         $realCart = new Cart($storage, 'session-sync-fail');
 
@@ -316,48 +326,56 @@ describe('RemoveStoredConditions action', function (): void {
         }
 
         $storageA = Mockery::mock(StorageInterface::class);
-        $storageA->shouldReceive('getConditions')->andReturn([
-            'Global Bad Condition' => [
-                'name' => 'Global Bad Condition',
-                'type' => 'coupon',
-                'target' => 'cart@cart_subtotal/aggregate',
-                'target_definition' => [
-                    'scope' => 'cart',
-                    'phase' => 'cart_subtotal',
-                    'application' => 'aggregate',
+        $storageA->shouldReceive('getSnapshot')->andReturn(new CartStorageSnapshot(
+            id: 'cart-a',
+            version: 1,
+            conditions: [
+                'Global Bad Condition' => [
+                    'name' => 'Global Bad Condition',
+                    'type' => 'coupon',
+                    'target' => 'cart@cart_subtotal/aggregate',
+                    'target_definition' => [
+                        'scope' => 'cart',
+                        'phase' => 'cart_subtotal',
+                        'application' => 'aggregate',
+                    ],
+                    'value' => '-10',
+                    'order' => 0,
                 ],
-                'value' => '-10',
-                'order' => 0,
             ],
-        ]);
+        ));
         $storageA->shouldReceive('getItems')->andReturn([]);
         $storageA->shouldReceive('getId')->andReturn('cart-a');
         $storageA->shouldReceive('getVersion')->andReturn(1);
         $storageA->shouldReceive('getCreatedAt')->andReturn(now()->toIso8601String());
         $storageA->shouldReceive('getUpdatedAt')->andReturn(now()->toIso8601String());
-        $storageA->shouldReceive('putConditions')->once();
+        $storageA->shouldReceive('putConditions')->once()->andReturn(CartRevision::of('cart-a', 2));
 
         $storageB = Mockery::mock(StorageInterface::class);
-        $storageB->shouldReceive('getConditions')->andReturn([
-            'Global Bad Condition' => [
-                'name' => 'Global Bad Condition',
-                'type' => 'coupon',
-                'target' => 'cart@cart_subtotal/aggregate',
-                'target_definition' => [
-                    'scope' => 'cart',
-                    'phase' => 'cart_subtotal',
-                    'application' => 'aggregate',
+        $storageB->shouldReceive('getSnapshot')->andReturn(new CartStorageSnapshot(
+            id: 'cart-b',
+            version: 1,
+            conditions: [
+                'Global Bad Condition' => [
+                    'name' => 'Global Bad Condition',
+                    'type' => 'coupon',
+                    'target' => 'cart@cart_subtotal/aggregate',
+                    'target_definition' => [
+                        'scope' => 'cart',
+                        'phase' => 'cart_subtotal',
+                        'application' => 'aggregate',
+                    ],
+                    'value' => '-10',
+                    'order' => 0,
                 ],
-                'value' => '-10',
-                'order' => 0,
             ],
-        ]);
+        ));
         $storageB->shouldReceive('getItems')->andReturn([]);
         $storageB->shouldReceive('getId')->andReturn('cart-b');
         $storageB->shouldReceive('getVersion')->andReturn(1);
         $storageB->shouldReceive('getCreatedAt')->andReturn(now()->toIso8601String());
         $storageB->shouldReceive('getUpdatedAt')->andReturn(now()->toIso8601String());
-        $storageB->shouldReceive('putConditions')->once();
+        $storageB->shouldReceive('putConditions')->once()->andReturn(CartRevision::of('cart-b', 2));
 
         $cartA = new Cart($storageA, 'session-a');
         $cartB = new Cart($storageB, 'session-b');

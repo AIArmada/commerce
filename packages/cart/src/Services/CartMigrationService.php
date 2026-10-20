@@ -7,7 +7,9 @@ namespace AIArmada\Cart\Services;
 use AIArmada\Cart\Actions\MigrateGuestCartToUserAction;
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Cart\Storage\StorageInterface;
-use Illuminate\Support\Facades\Auth;
+use AIArmada\Cart\Support\CartIdentifierResolver;
+use InvalidArgumentException;
+use RuntimeException;
 
 class CartMigrationService
 {
@@ -15,26 +17,35 @@ class CartMigrationService
 
     private ?StorageInterface $storage = null;
 
+    private CartIdentifierResolver $identifierResolver;
+
     public function __construct(
         array $config = [],
         ?StorageInterface $storage = null,
         private readonly ?MigrateGuestCartToUserAction $migrationAction = null,
+        ?CartIdentifierResolver $identifierResolver = null,
     ) {
         $this->config = $config;
         $this->storage = $storage;
+        $this->identifierResolver = $identifierResolver ?? app(CartIdentifierResolver::class);
     }
 
-    public function getIdentifier(?int $userId = null, ?string $sessionId = null): string
+    /**
+     * Resolve an identifier from an explicit scalar user key, an explicit guest
+     * session, or the shared current-context resolution. UUID keys are preserved
+     * byte-for-byte; empty values never silently fall through to another identity.
+     */
+    public function getIdentifier(string | int | null $userId = null, ?string $sessionId = null): string
     {
-        if ($userId) {
+        if ($userId !== null && (string) $userId !== '') {
             return (string) $userId;
         }
 
-        if ($sessionId) {
+        if ($sessionId !== null && $sessionId !== '') {
             return $sessionId;
         }
 
-        return session()->getId();
+        return $this->identifierResolver->resolve();
     }
 
     public function migrateGuestCartToUser(string | int $userId, string $instance, string $sessionId): bool
@@ -51,21 +62,33 @@ class CartMigrationService
 
     public function getCurrentIdentifier(): string
     {
-        if (Auth::check()) {
-            return $this->getIdentifier((int) Auth::id());
-        }
-
-        return $this->getIdentifier(null, session()->getId());
+        return $this->identifierResolver->resolve();
     }
 
     public function getGuestIdentifier(?string $sessionId = null): string
     {
-        return $this->getIdentifier(null, $sessionId ?? session()->getId());
+        if ($sessionId !== null && $sessionId !== '') {
+            return $sessionId;
+        }
+
+        $resolved = $this->identifierResolver->resolveSessionId();
+
+        if ($resolved === null || $resolved === '') {
+            throw new RuntimeException('Guest cart identifier cannot be determined: no session is available');
+        }
+
+        return $resolved;
     }
 
-    public function getUserIdentifier(int $userId): string
+    public function getUserIdentifier(string | int $userId): string
     {
-        return $this->getIdentifier($userId);
+        $identifier = (string) $userId;
+
+        if ($identifier === '') {
+            throw new InvalidArgumentException('A user cart identifier is required: the supplied user key is empty');
+        }
+
+        return $identifier;
     }
 
     public function swap(string $oldIdentifier, string $newIdentifier, string $instance = 'default'): bool
@@ -75,10 +98,10 @@ class CartMigrationService
         return $storage->swapIdentifier($oldIdentifier, $newIdentifier, $instance);
     }
 
-    public function swapGuestCartToUser(int $userId, string $instance = 'default', ?string $guestSessionId = null): bool
+    public function swapGuestCartToUser(string | int $userId, string $instance = 'default', ?string $guestSessionId = null): bool
     {
-        $guestIdentifier = $this->getIdentifier(null, $guestSessionId ?? session()->getId());
-        $userIdentifier = $this->getIdentifier($userId);
+        $guestIdentifier = $this->getGuestIdentifier($guestSessionId);
+        $userIdentifier = $this->getUserIdentifier($userId);
 
         return $this->swap($guestIdentifier, $userIdentifier, $instance);
     }

@@ -7,10 +7,11 @@ namespace AIArmada\Products\Models;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerScope;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Products\Concerns\IsCatalogEntity;
+use AIArmada\Products\Support\ChildOwnershipGuard;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -171,6 +172,15 @@ class AttributeValue extends Model implements Auditable
             }
 
             if (! (bool) config('products.features.owner.enabled', true)) {
+                if (! Attribute::query()->whereKey($attributeValue->attribute_id)->exists()) {
+                    throw new InvalidArgumentException('Invalid attribute_id: attribute not found.');
+                }
+
+                /** @var class-string<Model> $resolvedType */
+                if (! $resolvedType::query()->whereKey($attributeValue->attributable_id)->exists()) {
+                    throw new InvalidArgumentException('Invalid attributable: unable to resolve attributable model for attribute value.');
+                }
+
                 return;
             }
 
@@ -183,76 +193,44 @@ class AttributeValue extends Model implements Auditable
 
             $currentOwner = OwnerContext::resolve();
 
-            if ($currentOwner !== null && $hasOwnerType && ! $attributeValue->belongsToOwner($currentOwner)) {
-                throw new InvalidArgumentException('Cross-tenant write blocked: attribute value owner does not match the current owner context.');
-            }
-
             $includeGlobal = (bool) config('products.features.owner.include_global', false);
 
-            $attributable = null;
-            $attributableType = Relation::getMorphedModel($attributeValue->attributable_type) ?? $attributeValue->attributable_type;
+            /** @var class-string<Model> $resolvedType */
+            $attributable = OwnerWriteGuard::findOrFailForOwner(
+                $resolvedType,
+                $attributeValue->attributable_id,
+                owner: $currentOwner,
+                includeGlobal: $includeGlobal,
+                message: 'Invalid attributable: unable to resolve attributable model for attribute value.',
+            );
 
-            if (is_string($attributableType) && class_exists($attributableType) && is_a($attributableType, Model::class, true)) {
-                /** @var class-string<Model> $attributableType */
-                $query = $attributableType::query();
+            /** @var Model|null $attributableOwner */
+            $attributableOwner = $attributable->getAttribute('owner');
 
-                $query->withoutGlobalScope(OwnerScope::class);
+            // The definition must resolve for the owner that will hold the
+            // value, so the owner-scoped attribute relation never resolves null.
+            OwnerWriteGuard::findOrFailForOwner(
+                Attribute::class,
+                $attributeValue->attribute_id,
+                owner: $attributableOwner ?? $currentOwner,
+                includeGlobal: $includeGlobal,
+                message: 'Cross-tenant write blocked: attribute definition is not accessible for the owning context.',
+            );
 
-                $attributable = $query->whereKey($attributeValue->attributable_id)->first();
+            ChildOwnershipGuard::apply($attributeValue, $attributable, 'attributable');
+        });
+
+        static::updating(function (AttributeValue $attributeValue): void {
+            // Definition, target, and tenancy are immutable after creation.
+            if (
+                $attributeValue->isDirty('attribute_id')
+                || $attributeValue->isDirty('attributable_type')
+                || $attributeValue->isDirty('attributable_id')
+                || $attributeValue->isDirty('owner_type')
+                || $attributeValue->isDirty('owner_id')
+            ) {
+                throw new InvalidArgumentException('Cross-tenant write blocked: attribute value definition, target, and owner are immutable after creation.');
             }
-
-            if (! $attributable instanceof Model) {
-                throw new InvalidArgumentException('Invalid attributable: unable to resolve attributable model for attribute value.');
-            }
-
-            if (method_exists($attributable, 'belongsToOwner') && method_exists($attributable, 'isGlobal')) {
-                if ($currentOwner !== null) {
-                    /** @var bool $belongs */
-                    $belongs = $attributable->belongsToOwner($currentOwner);
-
-                    /** @var bool $isGlobal */
-                    $isGlobal = $attributable->isGlobal();
-
-                    if (! $belongs && ! ($includeGlobal && $isGlobal)) {
-                        throw new InvalidArgumentException('Cross-tenant write blocked: attribute value attributable does not belong to the current owner context.');
-                    }
-                }
-
-                /** @var Model|null $ownerToAssign */
-                $ownerToAssign = $attributable->getAttribute('owner');
-
-                if ($hasOwnerType && $ownerToAssign !== null && ! $attributeValue->belongsToOwner($ownerToAssign)) {
-                    throw new InvalidArgumentException('Cross-tenant write blocked: attribute value owner does not match its attributable owner.');
-                }
-
-                if ($hasOwnerType) {
-                    return;
-                }
-
-                if ($ownerToAssign !== null) {
-                    if (! (bool) config('products.features.owner.auto_assign_on_create', true)) {
-                        return;
-                    }
-
-                    $attributeValue->assignOwner($ownerToAssign);
-
-                    return;
-                }
-            }
-
-            if ($currentOwner === null) {
-                return;
-            }
-
-            if ($hasOwnerType) {
-                return;
-            }
-
-            if (! (bool) config('products.features.owner.auto_assign_on_create', true)) {
-                return;
-            }
-
-            $attributeValue->assignOwner($currentOwner);
         });
     }
 }

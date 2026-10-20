@@ -9,6 +9,7 @@ use AIArmada\Cart\Snapshots\CartSnapshot;
 use AIArmada\Cart\Snapshots\CartSnapshotCondition as CartCondition;
 use AIArmada\Cart\Snapshots\CartSnapshotItem as CartItem;
 use AIArmada\Cart\Snapshots\CleanupSnapshotOnCartMerged;
+use AIArmada\Cart\Storage\CartRevision;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -187,7 +188,7 @@ describe('CartMerged Event Updates', function (): void {
         $storage->putItems('91', 'default', [
             'product-1' => ['id' => 'product-1', 'name' => 'Guest Product', 'price' => 1000, 'quantity' => 1, 'attributes' => [], 'conditions' => []],
             'product-2' => ['id' => 'product-2', 'name' => 'User Product', 'price' => 2000, 'quantity' => 1, 'attributes' => [], 'conditions' => []],
-        ]);
+        ], CartRevision::none());
         $storage->putMetadataBatch('91', 'default', ['email' => 'merged@example.com']);
 
         $event = new CartMerged(
@@ -367,7 +368,7 @@ describe('Integration with Cart Migration', function (): void {
                 'attributes' => [],
                 'conditions' => [],
             ],
-        ]);
+        ], CartRevision::none());
 
         // Create guest snapshot
         $guestSnapshot = CartSnapshot::create([
@@ -434,7 +435,7 @@ describe('Integration with Cart Migration', function (): void {
                 'attributes' => [],
                 'conditions' => [],
             ],
-        ]);
+        ], CartRevision::none());
 
         // Create guest snapshot
         $guestSnapshot = CartSnapshot::create([

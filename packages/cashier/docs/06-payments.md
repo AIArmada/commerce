@@ -30,6 +30,22 @@ $payment = $user->chargeWithGateway(2500, $paymentMethodId, options: [
 ]);
 ```
 
+### Frozen Provider Customer
+
+Checkout replays freeze the provider-facing customer independently of the local
+billable. The Stripe gateway honors these internal options when they are
+present:
+
+| Option | Meaning |
+|--------|---------|
+| `provider_customer_frozen` | When `true`, the supplied id is authoritative even when it is null. |
+| `provider_customer_id` | The Stripe `cus_...` id observed at claim time. |
+
+A frozen id wins over the billable's current `stripe_id`. A frozen null removes
+the `customer` parameter instead of falling back to the model's current id. The
+gateway strips both options (and the CHIP `client`/`client_frozen` keys) before
+calling Stripe.
+
 ### Charge on a Specific Gateway
 
 ```php

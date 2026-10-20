@@ -116,11 +116,15 @@ Cart::clearMetadata();
 ### Multi-tenancy
 
 ```php
-Cart::forOwner($owner);              // CartManager::forOwner(Model $owner) — non-nullable
+Cart::forOwner($owner);              // CartManager::forOwner(Model $owner) — non-nullable, pinned to $owner
 ```
 
 There is no `Cart::forOwner(null)`. For explicit global work use
 `OwnerContext::withOwner(null, fn () => ...)` or `Cart::storage()->withOwner(null)`.
+
+The returned manager is deliberately pinned: it never re-resolves ambient owner
+context. The ambient manager re-resolves at every entry point and partitions
+its state per owner; see [Multi-Tenancy](09-multi-tenancy.md#ambient-vs-pinned-cart-managers).
 
 ### Pipeline Control
 
@@ -138,7 +142,7 @@ Cart::evaluateConditionPipeline();   // ConditionPipelineResult (evaluatePipelin
 ```php
 Cart::getId();                       // UUID or null
 Cart::getIdentifier();               // Session/user ID
-Cart::getVersion();                  // Optimistic lock version
+Cart::getVersion();                  // Current revision version
 ```
 
 ---
@@ -329,6 +333,8 @@ The full contract is documented in [08-storage.md](08-storage.md). Signatures th
 are most commonly used:
 
 ```php
+use AIArmada\Cart\Storage\CartRevision;
+use AIArmada\Cart\Storage\CartStorageSnapshot;
 use Illuminate\Database\Eloquent\Model;
 
 interface StorageInterface
@@ -343,21 +349,21 @@ interface StorageInterface
     public function forget(string $identifier, string $instance): void;
     public function flush(): void;
 
-    // Items
+    // Revisioned reads and writes
+    public function getSnapshot(string $identifier, string $instance): ?CartStorageSnapshot;
+    public function putItems(string $identifier, string $instance, array $items, CartRevision $expectedRevision): CartRevision;
+    public function putConditions(string $identifier, string $instance, array $conditions, CartRevision $expectedRevision): CartRevision;
+    public function putBoth(string $identifier, string $instance, array $items, array $conditions, CartRevision $expectedRevision): CartRevision;
+
+    // Non-revisioned reads
     public function getItems(string $identifier, string $instance): array;
-    public function putItems(string $identifier, string $instance, array $items): void;
-
-    // Conditions
     public function getConditions(string $identifier, string $instance): array;
-    public function putConditions(string $identifier, string $instance, array $conditions): void;
-
-    // Combined
-    public function putBoth(string $identifier, string $instance, array $items, array $conditions): void;
 
     // Metadata
     public function getMetadata(string $identifier, string $instance, string $key): mixed;
     public function getAllMetadata(string $identifier, string $instance): array;
     public function putMetadata(string $identifier, string $instance, string $key, mixed $value): void;
+    public function mutateMetadata(string $identifier, string $instance, string $key, Closure $compute): mixed;
     public function putMetadataBatch(string $identifier, string $instance, array $metadata): void;
     public function clearMetadata(string $identifier, string $instance): void;
     public function clearAll(string $identifier, string $instance): void;
@@ -424,11 +430,14 @@ Base exception class.
 
 ### CartConflictException
 
-Thrown on optimistic lock conflicts.
+Thrown when a revision-checked write detects that a concurrent writer moved
+the cart since the snapshot was read. Domain operations retry internally
+against a fresh snapshot before this surfaces; see
+[08-storage.md](08-storage.md#handling-conflicts).
 
 ```php
-$e->getAttemptedVersion();           // Version client had
-$e->getCurrentVersion();             // Actual version in storage
+$e->getAttemptedVersion();           // Revision this write expected (0 = creation attempt)
+$e->getCurrentVersion();             // Revision in storage (0 = row no longer exists)
 $e->getVersionDifference();          // How many versions behind
 $e->isMinorConflict();               // True if 1 version behind
 $e->getResolutionSuggestions();      // Array of suggestions
@@ -657,6 +666,11 @@ $result->success;          // bool
 $result->itemsMerged;      // int
 $result->conflicts;        // array
 $result->message;          // string
+```
+
+User keys may be integers or UUID strings; they are preserved byte-for-byte
+and are never truncated to a numeric prefix. A missing or empty user ID fails
+clearly instead of falling back to an unrelated guest or truncated identity.
 ```
 
 ### BuiltInRulesFactory

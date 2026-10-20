@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
+use AIArmada\Orders\Enums\PaymentStatus;
 use AIArmada\Orders\Models\Order;
+use AIArmada\Orders\Models\OrderPayment;
 use AIArmada\Orders\States\Canceled;
 use AIArmada\Orders\States\Completed;
 use AIArmada\Orders\States\Created;
@@ -123,18 +125,27 @@ describe('Order State Machine - Full Coverage', function (): void {
                 'grand_total' => 10000,
             ]);
 
+            $payment = OrderPayment::create([
+                'order_id' => $order->id,
+                'gateway' => 'stripe',
+                'amount' => 10000,
+                'currency' => 'MYR',
+                'status' => PaymentStatus::Completed,
+                'paid_at' => now(),
+            ]);
+
             // Shipped -> Returned
             $order->status->transitionTo(Returned::class);
             expect($order->status)->toBeInstanceOf(Returned::class);
 
             // Returned -> Refunded (via RefundProcessed transition)
-            $transition = new RefundProcessed($order, 5000, 'ref_txn_123', 'Customer return');
+            $transition = new RefundProcessed($order, 5000, 'ref_txn_123', 'Customer return', [], $payment);
             $order = $transition->handle();
             expect($order->status)->toBeInstanceOf(Returned::class);
 
             // A second partial refund closes the order once the full amount
             // has been returned.
-            $transition = new RefundProcessed($order, 5000, 'ref_txn_124', 'Customer return');
+            $transition = new RefundProcessed($order, 5000, 'ref_txn_124', 'Customer return', [], $payment);
             $order = $transition->handle();
             expect($order->status)->toBeInstanceOf(Refunded::class);
         });

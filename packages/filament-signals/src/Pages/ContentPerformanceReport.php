@@ -59,7 +59,7 @@ final class ContentPerformanceReport extends ReportPage implements HasTable
     }
 
     /**
-     * @return array{paths:int,views:int,conversions:int,revenue_minor:int,avg_conversion_rate:float}
+     * @return array{paths:int,views:int,conversions:int,avg_conversion_rate:float,revenue_minor?:int,currency?:string,revenue?:array<string, int>}
      */
     public function getSummary(): array
     {
@@ -112,7 +112,7 @@ final class ContentPerformanceReport extends ReportPage implements HasTable
                     ->sortable(),
                 TextColumn::make('revenue_minor')
                     ->label($this->monetaryValueLabel())
-                    ->formatStateUsing(fn (mixed $state): string => $this->formatMoney((int) $state))
+                    ->formatStateUsing(fn (mixed $state, SignalEvent $record): string => $this->formatMoney((int) $state, $record->trackedProperty?->currency))
                     ->sortable()
                     ->visible(fn (): bool => (bool) config('signals.features.monetary.enabled', true)),
                 TextColumn::make('last_seen_at')

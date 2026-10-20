@@ -251,7 +251,7 @@ it('builds dashboard metrics and respects owner scoping', function (): void {
         ->and($summary['sessions'])->toBe(1)
         ->and($summary['events'])->toBe(2)
         ->and($summary['conversions'])->toBe(1)
-        ->and($summary['revenue_minor'])->toBe(129900);
+        ->and($summary['revenue'])->toBe(['MYR' => 129900]);
 
     $trend = $service->trend(
         null,
@@ -262,7 +262,7 @@ it('builds dashboard metrics and respects owner scoping', function (): void {
     expect($trend)->toHaveCount(1)
         ->and($trend[0]['events'])->toBe(2)
         ->and($trend[0]['conversions'])->toBe(1)
-        ->and($trend[0]['revenue_minor'])->toBe(129900);
+        ->and($trend[0]['revenue'])->toBe(['MYR' => 129900]);
 });
 
 it('requires an owner context or explicit global context for dashboard metrics', function (): void {
@@ -321,11 +321,11 @@ it('requires an owner context or explicit global context for dashboard metrics',
         ->and($summary['sessions'])->toBe(5)
         ->and($summary['events'])->toBe(14)
         ->and($summary['conversions'])->toBe(2)
-        ->and($summary['revenue_minor'])->toBe(2500)
+        ->and($summary['revenue'])->toBe(['MYR' => 2500])
         ->and($trend)->toHaveCount(1)
         ->and($trend[0]['events'])->toBe(14)
         ->and($trend[0]['conversions'])->toBe(2)
-        ->and($trend[0]['revenue_minor'])->toBe(2500);
+        ->and($trend[0]['revenue'])->toBe(['MYR' => 2500]);
 });
 
 it('reads dashboard totals and trends from daily rollups', function (): void {
@@ -387,7 +387,7 @@ it('reads dashboard totals and trends from daily rollups', function (): void {
 
     expect($summary['events'])->toBe(14)
         ->and($summary['conversions'])->toBe(2)
-        ->and($summary['revenue_minor'])->toBe(2500)
+        ->and($summary['revenue'])->toBe(['MYR' => 2500])
         ->and($trend)->toHaveCount(1)
         ->and($trend[0]['events'])->toBe(14)
         ->and($sql)->toContain('signal_daily_metrics')
