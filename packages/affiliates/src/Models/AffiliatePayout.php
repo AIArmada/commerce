@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use InvalidArgumentException;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\ModelStates\HasStates;
@@ -152,6 +153,67 @@ class AffiliatePayout extends Model implements Auditable
                 (string) $this->getKey(),
                 $expected,
                 $foreign->implode(','),
+            ));
+        }
+    }
+
+    /**
+     * Fail loud when linked conversions do not belong to this payout's affiliate.
+     */
+    public function assertSingleAffiliateConversions(
+        ?AffiliateConversion $conversion = null,
+        Model | string | null $owner = OwnerContext::CURRENT,
+    ): void {
+        $query = $this->conversions()->forOwner($owner);
+
+        if ($conversion?->exists && $conversion->getKey() !== null) {
+            $query->whereKeyNot($conversion->getKey());
+        }
+
+        $affiliateIds = $query->distinct()->pluck('affiliate_id');
+
+        if ($conversion instanceof AffiliateConversion) {
+            $affiliateIds->push($conversion->affiliate_id);
+        }
+
+        $expectedAffiliateId = null;
+
+        if ($this->affiliate_payout_operation_id !== null) {
+            $expectedAffiliateId = AffiliatePayoutOperation::query()
+                ->forOwner($owner)
+                ->whereKey($this->affiliate_payout_operation_id)
+                ->value('affiliate_id');
+
+            if ($expectedAffiliateId === null) {
+                throw new InvalidArgumentException(sprintf(
+                    'Payout [%s] has no operation in the requested owner scope.',
+                    (string) $this->getKey(),
+                ));
+            }
+        }
+
+        if ($expectedAffiliateId === null && $this->payee_type !== null && $this->payee_id !== null) {
+            $payeeType = Relation::getMorphedModel($this->payee_type) ?? $this->payee_type;
+
+            if (is_a($payeeType, Affiliate::class, true)) {
+                $expectedAffiliateId = Affiliate::query()->forOwner($owner)->whereKey($this->payee_id)->value('id');
+            }
+        }
+
+        if ($expectedAffiliateId !== null) {
+            $affiliateIds->push($expectedAffiliateId);
+        }
+
+        $affiliateIds = $affiliateIds
+            ->map(static fn (mixed $affiliateId): string => (string) $affiliateId)
+            ->filter(static fn (string $affiliateId): bool => $affiliateId !== '')
+            ->unique();
+
+        if ($affiliateIds->count() > 1) {
+            throw new InvalidArgumentException(sprintf(
+                'Payout [%s] links conversions across %d affiliates; a payout must belong to one affiliate.',
+                (string) $this->getKey(),
+                $affiliateIds->count(),
             ));
         }
     }

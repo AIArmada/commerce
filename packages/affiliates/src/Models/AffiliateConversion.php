@@ -237,15 +237,22 @@ class AffiliateConversion extends Model
         });
 
         static::saving(function (self $conversion): void {
-            if (! $conversion->isDirty('affiliate_payout_id') || $conversion->affiliate_payout_id === null) {
+            if (! $conversion->isDirty(['affiliate_payout_id', 'affiliate_id', 'commission_currency'])
+                || $conversion->affiliate_payout_id === null) {
                 return;
             }
 
             $payout = AffiliatePayout::query()->find($conversion->affiliate_payout_id);
 
             if (! $payout instanceof AffiliatePayout) {
-                return;
+                throw new InvalidArgumentException(sprintf(
+                    'Cannot link conversion [%s] to payout [%s]: the payout is missing or outside the owner scope.',
+                    (string) $conversion->getKey(),
+                    (string) $conversion->affiliate_payout_id,
+                ));
             }
+
+            $payout->assertSingleAffiliateConversions($conversion);
 
             $conversionCurrency = mb_strtoupper((string) $conversion->commission_currency);
             $payoutCurrency = mb_strtoupper((string) $payout->currency);

@@ -8,14 +8,16 @@ use AIArmada\Affiliates\Exceptions\PayoutCompletionBlockedException;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
+use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\Disabled;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use InvalidArgumentException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
- * Single completion gate for both payout completion paths (manual
- * status updates and provider reconciliation).
+ * Eligibility gate for provider submission and both payout completion
+ * paths (manual status updates and provider reconciliation).
  *
  * Non-payable affiliates refuse unless the payout carries the
  * creation-time audited override for a disabled affiliate, in which
@@ -28,27 +30,20 @@ final class AssertPayoutCompletable
     /**
      * @return string|null The override reason when this completion rides a creation-time override.
      */
-    public function handle(AffiliatePayout $payout): ?string
+    public function handle(AffiliatePayout $payout, bool $recordCompletion = true): ?string
     {
         // Eligibility evaluates in the payout's own owner scope, never
         // the ambient one: cross-owner console work must resolve the
         // payout's affiliate instead of failing on a scoped miss.
         $owner = $payout->owner;
 
-        // Manual linking bypasses CreatePayout's single-affiliate guard,
-        // so the gate pins the affiliate set instead of reading one
-        // arbitrary row.
-        $affiliateIds = $payout->conversions()->forOwner($owner)->distinct()->pluck('affiliate_id');
-
-        if ($affiliateIds->count() > 1) {
-            throw new PayoutCompletionBlockedException(sprintf(
-                'Payout [%s] links conversions across %d affiliates; a payout must belong to one affiliate.',
-                (string) $payout->getKey(),
-                $affiliateIds->count(),
-            ));
+        try {
+            $payout->assertSingleAffiliateConversions(owner: $owner);
+        } catch (InvalidArgumentException $exception) {
+            throw new PayoutCompletionBlockedException($exception->getMessage(), previous: $exception);
         }
 
-        $affiliateId = $affiliateIds->first();
+        $affiliateId = $payout->conversions()->forOwner($owner)->value('affiliate_id');
 
         if ($affiliateId === null) {
             // Manual-record payouts link no conversions: eligibility
@@ -75,6 +70,22 @@ final class AssertPayoutCompletable
         }
 
         $conversions = $payout->conversions()->forOwner($owner)->get();
+
+        if ($conversions->contains(static fn (AffiliateConversion $conversion): bool => ! $conversion->status->equals(ApprovedConversion::class))) {
+            throw new PayoutCompletionBlockedException('A linked payout conversion has left Approved; reconcile its status before settlement.');
+        }
+
+        $operation = $payout->operation()->forOwner($owner)->first();
+
+        if ($operation?->payout_sequence !== null
+            && ($operation->funds_released_at !== null
+                || $operation->amount_minor !== (int) $payout->total_minor
+                || $operation->amount_minor !== (int) $conversions->sum('commission_minor')
+                || $conversions->count() !== (int) $payout->conversion_count
+                || mb_strtoupper($operation->currency) !== mb_strtoupper($payout->currency))) {
+            throw new PayoutCompletionBlockedException('The payout amount or linked conversions no longer match its balance reservation.');
+        }
+
         $onlyRewardAwards = $conversions->isNotEmpty()
             && $conversions->every(static fn (AffiliateConversion $conversion): bool => $conversion->conversion_type === 'reward_award');
 
@@ -94,9 +105,11 @@ final class AssertPayoutCompletable
             throw new PayoutCompletionBlockedException('This payout cannot be completed because the affiliate can no longer receive payouts. Cancel it and re-create with a payout_override_reason if the balance was legitimately earned.');
         }
 
-        $metadata = $payout->metadata ?? [];
-        $metadata['payout_override']['override_completed_at'] = CarbonImmutable::now()->toIso8601String();
-        $payout->forceFill(['metadata' => $metadata])->save();
+        if ($recordCompletion) {
+            $metadata = $payout->metadata ?? [];
+            $metadata['payout_override']['override_completed_at'] = CarbonImmutable::now()->toIso8601String();
+            $payout->forceFill(['metadata' => $metadata])->save();
+        }
 
         return mb_trim($reason);
     }

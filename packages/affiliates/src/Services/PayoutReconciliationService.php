@@ -29,9 +29,9 @@ use Illuminate\Support\Facades\DB;
 final class PayoutReconciliationService
 {
     /**
-     * Operation code marking a payout the completion gate refused.
-     * Blocked payouts need operator action, not re-polling: the
-     * provider outcome is already known.
+     * Operation code marking refused payout submission or completion.
+     * Blocked payouts need operator action before another provider
+     * attempt or completion.
      */
     public const COMPLETION_BLOCKED_CODE = 'PAYOUT_COMPLETION_BLOCKED';
 
@@ -377,8 +377,17 @@ final class PayoutReconciliationService
             ->whereNotNull('paid_at')
             ->where('commission_currency', $currency)
             ->sum('commission_minor');
-        $paidOut = (int) $affiliate->payouts()->where('status', CompletedPayout::value())->where('currency', $currency)->sum('total_minor');
-        $pendingPayouts = (int) $affiliate->payouts()->whereIn('status', [PendingPayout::value(), ProcessingPayout::value()])->where('currency', $currency)->sum('total_minor');
+        $reservedOperations = AffiliatePayoutOperation::query()
+            ->where('affiliate_id', $affiliate->getKey())
+            ->where('currency', $currency)
+            ->whereNotNull('payout_sequence')
+            ->whereNull('funds_released_at');
+        $paidOut = (int) (clone $reservedOperations)
+            ->whereHas('payout', static fn (Builder $query): Builder => $query->where('status', CompletedPayout::value()))
+            ->sum('amount_minor');
+        $pendingPayouts = (int) (clone $reservedOperations)
+            ->whereHas('payout', static fn (Builder $query): Builder => $query->whereIn('status', [PendingPayout::value(), ProcessingPayout::value()]))
+            ->sum('amount_minor');
         $expectedAvailable = $approvedCommissions + $completedPayoutConversions - $paidOut - $pendingPayouts - $directPaidClawbacks;
         $actualAvailable = $affiliate->balanceFor($currency)?->available_minor ?? 0;
         $discrepancy = $expectedAvailable - $actualAvailable;

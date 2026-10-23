@@ -20,6 +20,7 @@ use AIArmada\Affiliates\States\FailedPayout;
 use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Affiliates\States\ProcessingPayout;
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Settings\ExchangeRateSettings;
 use Illuminate\Support\Facades\Artisan;
 
@@ -421,6 +422,80 @@ describe('PayoutReconciliationService', function (): void {
     });
 
     describe('auditAffiliateBalance', function (): void {
+        test('record-only payout rows never count as reserved funds', function (string $status, bool $withOperation): void {
+            reconciliationAuditConversion($this->affiliate);
+            $operation = $withOperation ? AffiliatePayoutOperation::create([
+                'affiliate_id' => $this->affiliate->id,
+                'operation_key' => 'unreserved:' . uniqid(),
+                'status' => 'claimed',
+                'amount_minor' => 5000,
+                'currency' => 'USD',
+                'claimed_at' => now(),
+            ]) : null;
+            $payout = AffiliatePayout::create([
+                'reference' => 'RECORD-ONLY-' . uniqid(),
+                'affiliate_payout_operation_id' => $operation?->id,
+                'payee_type' => $this->affiliate->getMorphClass(),
+                'payee_id' => $this->affiliate->id,
+                'total_minor' => 5000,
+                'currency' => 'USD',
+                'status' => $status,
+            ]);
+            $operation?->update(['affiliate_payout_id' => $payout->id]);
+
+            $audit = $this->service->auditAffiliateBalance($this->affiliate, 'USD');
+
+            expect($audit['paid_out_minor'])->toBe(0)
+                ->and($audit['pending_payouts_minor'])->toBe(0)
+                ->and($audit['expected_available_minor'])->toBe(10000)
+                ->and($audit['actual_available_minor'])->toBe(10000)
+                ->and($audit['has_discrepancy'])->toBeFalse();
+        })->with([PendingPayout::class, ProcessingPayout::class, CompletedPayout::class])->with([false, true]);
+
+        test('audit follows the reservation affiliate and amount when payout presentation changes', function (bool $complete, bool $alternatePayee): void {
+            $conversion = reconciliationAuditConversion($this->affiliate);
+            $payee = User::query()->create([
+                'name' => 'Alternate payee', 'email' => uniqid() . '@example.com', 'password' => 'secret',
+            ]);
+            $payout = CreatePayout::run([$conversion->id], $alternatePayee ? [
+                'payee_type' => $payee->getMorphClass(), 'payee_id' => $payee->id,
+            ] : []);
+            if ($complete) {
+                UpdatePayoutStatus::run($payout, CompletedPayout::value());
+            }
+
+            $payout->update(['total_minor' => 20000]);
+
+            $audit = $this->service->auditAffiliateBalance($this->affiliate, 'USD');
+
+            expect($audit[$complete ? 'paid_out_minor' : 'pending_payouts_minor'])->toBe(10000)
+                ->and($audit['expected_available_minor'])->toBe(0)
+                ->and($audit['actual_available_minor'])->toBe(0)
+                ->and($audit['has_discrepancy'])->toBeFalse();
+        })->with([false, true])->with([false, true]);
+
+        test('record-only completion does not invent a balance debit for linked conversions', function (): void {
+            $conversion = reconciliationAuditConversion($this->affiliate);
+            $payout = AffiliatePayout::create([
+                'reference' => 'RECORD-LINK-' . uniqid(),
+                'payee_type' => $this->affiliate->getMorphClass(),
+                'payee_id' => $this->affiliate->id,
+                'total_minor' => 10000,
+                'currency' => 'USD',
+                'status' => PendingPayout::class,
+            ]);
+            $conversion->update(['affiliate_payout_id' => $payout->id]);
+
+            UpdatePayoutStatus::run($payout, CompletedPayout::value());
+            $audit = $this->service->auditAffiliateBalance($this->affiliate, 'USD');
+
+            expect($audit['paid_out_minor'])->toBe(0)
+                ->and($audit['completed_payout_conversions_minor'])->toBe(10000)
+                ->and($audit['expected_available_minor'])->toBe(10000)
+                ->and($audit['actual_available_minor'])->toBe(10000)
+                ->and($audit['has_discrepancy'])->toBeFalse();
+        });
+
         test('canonical create and completion reconcile the commission exactly once', function (): void {
             $conversion = reconciliationAuditConversion($this->affiliate);
             $payout = CreatePayout::run([(string) $conversion->getKey()]);

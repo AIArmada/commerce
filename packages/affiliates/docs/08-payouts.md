@@ -65,9 +65,15 @@ UpdatePayoutStatus::run($payout, 'completed', 'Processed successfully');
 
 Payouts are commercial by default. `CreatePayout` and the shared
 `AssertPayoutCompletable` gate require an affiliate with unset or `general`
-purpose. The same completion gate protects manual status updates and provider
-reconciliation, so a purpose-tagged payout cannot bypass the check through a
-second completion path.
+purpose. Provider submission checks this gate before sending money without
+recording an override completion timestamp. The gate also protects manual
+status updates and provider reconciliation, so a purpose-tagged payout cannot
+bypass the check through a second completion path.
+
+Linked conversions must still be approved. For payouts backed by a balance
+reservation, their count, commission total, and currency must match the
+unreleased operation and payout amount. Editing payout amounts or manually
+adding conversions does not change the reservation and blocks settlement.
 
 The only exception is a payout containing exclusively `reward_award` backing
 conversions, and it is controlled by the single switch
@@ -295,6 +301,7 @@ The current maturity flow uses `holding_minor` for pre-payout commission state. 
 ### Processing with PayoutProcessorFactory
 
 ```php
+use AIArmada\Affiliates\Actions\Payouts\AssertPayoutCompletable;
 use AIArmada\Affiliates\Actions\Payouts\UpdatePayoutStatus;
 use AIArmada\Affiliates\Enums\PayoutMethodType;
 use AIArmada\Affiliates\Services\Payouts\PayoutProcessorFactory;
@@ -306,6 +313,8 @@ $processor = $factory->make($method->type);
 $processor = $factory->make('stripe_connect');
 
 // Process payout
+$payout->assertHomogeneousConversions();
+AssertPayoutCompletable::run($payout, false);
 $result = $processor->process($payout);
 
 if ($result->isSuccess()) {
@@ -326,6 +335,9 @@ if ($result->isSuccess()) {
     ])->save();
 }
 ```
+
+Prefer `ProcessAffiliatePayout` for the full claim, validation, provider, and
+reconciliation flow.
 
 `AffiliatePayout` has no `method` column — resolve the method from the
 affiliate's `payoutMethods` relation. `PayoutResult` exposes
@@ -397,7 +409,7 @@ $report['summary']['conversion'];         // ['currency', 'as_of', 'source'] pro
 $report['by_currency']['USD']['total_minor'];
 ```
 
-Use `summarizePayouts($payouts, $start, $end)` for the same settlement summary over an explicit payout set (for example an owner-scoped batch). Every payout holds exactly one currency: linking a mismatched conversion throws, and `reconcilePayout()` refuses to complete a mixed payout — `currency_mismatches` in the report points at corrupt rows.
+Use `summarizePayouts($payouts, $start, $end)` for the same settlement summary over an explicit payout set (for example an owner-scoped batch). Conversions linked to a payout must share one currency and one affiliate: linking a conversion with a different currency or affiliate throws, and provider submission rechecks the linked affiliate set before sending. `reconcilePayout()` also refuses to complete a mixed-currency payout — `currency_mismatches` in the report points at corrupt rows.
 
 ## Artisan Commands
 
@@ -461,7 +473,9 @@ Every provider submission is tied to the durable `AffiliatePayoutOperation`. Str
 
 `PayoutReconciliationService::auditAffiliateBalance()` compares available
 balance with approved commissions, open payout reservations, completed payout
-debits, and paid conversions attached to completed payouts. Directly marked
-paid conversions are already removed from the approved total; a later direct
+debits, and paid conversions attached to completed payouts. Reservation and
+debit amounts come from unreleased operations with a balance sequence, using
+the operation's affiliate and currency even when the payout has another payee.
+Directly marked paid conversions are already removed from the approved total; a later direct
 paid reversal remains a negative available-balance clawback. This audit does
 not infer reservations for record-only payout rows.

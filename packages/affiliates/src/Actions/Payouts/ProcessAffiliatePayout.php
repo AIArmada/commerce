@@ -17,6 +17,7 @@ use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Affiliates\States\ProcessingPayout;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Carbon\CarbonImmutable;
+use InvalidArgumentException;
 use Throwable;
 
 final class ProcessAffiliatePayout
@@ -158,6 +159,13 @@ final class ProcessAffiliatePayout
                 if ($status !== 'not_found') {
                     return $this->recordResult($claimedPayout, PayoutResult::unknown('PROVIDER_RECONCILIATION_REQUIRED'), leaseExpiresAt: $claim['lease_expires_at']);
                 }
+            }
+
+            try {
+                $claimedPayout->assertHomogeneousConversions();
+                AssertPayoutCompletable::run($claimedPayout, false);
+            } catch (InvalidArgumentException $exception) {
+                throw new PayoutCompletionBlockedException($exception->getMessage(), previous: $exception);
             }
 
             return $this->recordResult($claimedPayout, $processor->process($claimedPayout), leaseExpiresAt: $claim['lease_expires_at']);
