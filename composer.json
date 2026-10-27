@@ -24,6 +24,7 @@
         "laravel/boost": "^2.9.0",
         "laravel/cashier": "^16.8.0",
         "laravel/framework": "^13.31.0",
+        "laravel/pao": "^1.1",
         "laravel/pint": "^1.32.1",
         "laravel/prompts": "^0.3.24",
         "league/csv": "^9.28.0",
