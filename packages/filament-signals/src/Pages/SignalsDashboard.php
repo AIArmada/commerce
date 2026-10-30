@@ -19,6 +19,14 @@ final class SignalsDashboard extends Dashboard
 
     protected static ?string $slug = 'signals';
 
+    /**
+     * Never inherit the Dashboard default route path of "/": a plugin
+     * dashboard must not claim the panel home route, or every user lands
+     * on this gated page (403 for anyone without its ability) instead of
+     * the panel redirect.
+     */
+    protected static string $routePath = '/signals';
+
     public static function getNavigationGroup(): ?string
     {
         return config('filament-signals.navigation.group');
