@@ -30,6 +30,9 @@ $tables = [
     'volume_tiers' => $tablePrefix . 'volume_tiers',
     'commission_promotions' => $tablePrefix . 'commission_promotions',
     'commission_templates' => $tablePrefix . 'commission_templates',
+    'credentials' => $tablePrefix . 'credentials',
+    'ownership_capabilities' => $tablePrefix . 'ownership_capabilities',
+    'claims' => $tablePrefix . 'claims',
 ];
 
 return [

@@ -15,6 +15,7 @@ use AIArmada\Commerce\Tests\Addressing\AddressingGeographyDataTestCase;
 use AIArmada\Commerce\Tests\Addressing\AddressingGeographyTestCase;
 use AIArmada\Commerce\Tests\AffiliateNetwork\AffiliateNetworkTestCase;
 use AIArmada\Commerce\Tests\Affiliates\AffiliatesTestCase;
+use AIArmada\Commerce\Tests\Affiliates\Engine\AffiliatesEngineTestCase;
 use AIArmada\Commerce\Tests\Feedback\FeedbackTestCase;
 use AIArmada\Commerce\Tests\FilamentAddressing\FilamentAddressingTestCase;
 use AIArmada\Commerce\Tests\FilamentAffiliateNetwork\FilamentAffiliateNetworkTestCase;
@@ -139,7 +140,13 @@ pest()->extend(CartEngineTestCase::class)->in('src/Cart/Feature/Engine');
 
 pest()->extend(AffiliateNetworkTestCase::class)->in('src/AffiliateNetwork');
 
-pest()->extend(AffiliatesTestCase::class)->in('src/Affiliates');
+pest()->extend(AffiliatesTestCase::class)->in(
+    'src/Affiliates/Feature',
+    'src/Affiliates/Integration',
+    'src/Affiliates/Unit',
+);
+
+pest()->extend(AffiliatesEngineTestCase::class)->in('src/Affiliates/Engine');
 
 pest()->extend(FilamentAffiliateNetworkTestCase::class)->in('src/FilamentAffiliateNetwork');
 
