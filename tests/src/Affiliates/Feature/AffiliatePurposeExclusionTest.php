@@ -140,11 +140,11 @@ test('manual payout creation refuses approved conversions for purpose-tagged aff
 test('reward-award backings remain payable through the separate award settlement flow', function (): void {
     config(['affiliates.payouts.reward_award_settlement.enabled' => true]);
 
-    $recipient = createTestAffiliate(['code' => 'PURP-REWARD-PAYOUT', 'purpose' => 'share_reward_recipient']);
+    $recipient = createTestAffiliate(['code' => 'PURP-HOST-REWARD-PAYOUT', 'purpose' => 'host_reward_recipient']);
     $conversion = AffiliateConversion::create([
         'affiliate_id' => $recipient->getKey(),
         'affiliate_code' => $recipient->code,
-        'external_reference' => 'PURP-REWARD-PAYOUT-' . Str::uuid(),
+        'external_reference' => 'PURP-HOST-REWARD-PAYOUT-' . Str::uuid(),
         'conversion_type' => 'reward_award',
         'status' => ApprovedConversion::class,
         'occurred_at' => CarbonImmutable::now(),
@@ -172,11 +172,11 @@ test('reward-award backings remain payable through the separate award settlement
 test('reward-award settlement is blocked when the explicit switch is off', function (): void {
     config(['affiliates.payouts.reward_award_settlement.enabled' => false]);
 
-    $recipient = createTestAffiliate(['code' => 'PURP-REWARD-PAYOUT-OFF', 'purpose' => 'share_reward_recipient']);
+    $recipient = createTestAffiliate(['code' => 'PURP-HOST-REWARD-PAYOUT-OFF', 'purpose' => 'host_reward_recipient']);
     $conversion = AffiliateConversion::create([
         'affiliate_id' => $recipient->getKey(),
         'affiliate_code' => $recipient->code,
-        'external_reference' => 'PURP-REWARD-PAYOUT-OFF-' . Str::uuid(),
+        'external_reference' => 'PURP-HOST-REWARD-PAYOUT-OFF-' . Str::uuid(),
         'conversion_type' => 'reward_award',
         'status' => ApprovedConversion::class,
         'occurred_at' => CarbonImmutable::now(),
@@ -193,11 +193,11 @@ test('reward-award settlement is blocked when the explicit switch is off', funct
 test('reward-award settlement switch never permits mixed purchase payouts', function (): void {
     config(['affiliates.payouts.reward_award_settlement.enabled' => true]);
 
-    $recipient = createTestAffiliate(['code' => 'PURP-REWARD-MIXED', 'purpose' => 'share_reward_recipient']);
+    $recipient = createTestAffiliate(['code' => 'PURP-HOST-REWARD-MIXED', 'purpose' => 'host_reward_recipient']);
     $conversions = collect(['reward_award', 'purchase'])->map(fn (string $type): AffiliateConversion => AffiliateConversion::create([
         'affiliate_id' => $recipient->getKey(),
         'affiliate_code' => $recipient->code,
-        'external_reference' => 'PURP-REWARD-MIXED-' . $type . '-' . Str::uuid(),
+        'external_reference' => 'PURP-HOST-REWARD-MIXED-' . $type . '-' . Str::uuid(),
         'conversion_type' => $type,
         'status' => ApprovedConversion::class,
         'occurred_at' => CarbonImmutable::now(),

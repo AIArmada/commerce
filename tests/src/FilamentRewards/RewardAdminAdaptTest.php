@@ -35,6 +35,7 @@ use AIArmada\Rewards\Enums\RewardAppealStatus;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
 use AIArmada\Rewards\Enums\RewardBeneficiaryRole;
 use AIArmada\Rewards\Enums\RewardComponent;
+use AIArmada\Rewards\Enums\RewardPayeeStatus;
 use AIArmada\Rewards\Enums\RewardProgramMode;
 use AIArmada\Rewards\Enums\RewardProgramStatus;
 use AIArmada\Rewards\Enums\RewardRecoveryKind;
@@ -45,6 +46,7 @@ use AIArmada\Rewards\Models\RewardAward;
 use AIArmada\Rewards\Models\RewardBenefitItem;
 use AIArmada\Rewards\Models\RewardFundingEntry;
 use AIArmada\Rewards\Models\RewardPayee;
+use AIArmada\Rewards\Models\RewardPayoutRequest;
 use AIArmada\Rewards\Models\RewardProgram;
 use AIArmada\Rewards\Models\RewardProgramVersion;
 use AIArmada\Rewards\Models\RewardRecovery;
@@ -515,7 +517,7 @@ it('renders finance tables and runs record, verify, and approve actions', functi
         ->test(ListRewardPayees::class)
         ->callAction('verify', data: [
             'recipient_id' => $memberId,
-            'method' => 'bank_transfer',
+            'method' => 'manual',
             'account_ref' => 'ACCT-UI',
             'account_display' => 'Desk UI',
             'evidence_note' => 'ui test',
@@ -788,4 +790,180 @@ it('refuses settling a foreign recovery from the admin table', function (): void
         ]))->toThrow(ActionNotResolvableException::class);
 
     expect($recovery->refresh()->status)->toBe(RewardRecoveryStatus::Open);
+});
+
+it('verifies a payee using the configured manual method', function (): void {
+    config()->set('rewards.payouts.methods', ['manual']);
+
+    $recipientId = (string) Str::uuid();
+
+    Livewire::actingAs($this->staff)
+        ->test(ListRewardPayees::class)
+        ->callAction('verify', data: [
+            'recipient_id' => $recipientId,
+            'method' => 'manual',
+            'account_ref' => 'operator-account',
+            'account_display' => 'Bank ••1234',
+            'evidence_note' => 'Independent verification',
+        ])
+        ->assertHasNoActionErrors();
+
+    $payee = RewardPayee::query()
+        ->where('recipient_id', $recipientId)
+        ->sole();
+
+    expect($payee->method)->toBe('manual');
+    expect($payee->status)->toBe(RewardPayeeStatus::Verified);
+    expect($payee->verified_by)->toBe((string) $this->staff->getKey());
+});
+
+it('rejects an unconfigured payee method without registering a destination', function (): void {
+    config()->set('rewards.payouts.methods', ['manual']);
+
+    $recipientId = (string) Str::uuid();
+
+    Livewire::actingAs($this->staff)
+        ->test(ListRewardPayees::class)
+        ->callAction('verify', data: [
+            'recipient_id' => $recipientId,
+            'method' => 'bank_transfer',
+            'account_ref' => 'operator-account',
+            'account_display' => 'Bank ••1234',
+        ])
+        ->assertHasFormErrors(['method' => 'in']);
+
+    expect(RewardPayee::query()
+        ->where('recipient_id', $recipientId)
+        ->exists())->toBeFalse();
+});
+
+it('requests and fulfills a cash award through the awards table', function (): void {
+    [$program, $version] = RewardLedgerFixtures::seedVersionedProgram('admin-reqful', RewardProgramMode::Cash);
+
+    $funder = RewardLedgerFixtures::staffId();
+
+    RecordRewardFundingSourceAction::run(
+        'TREASURY-admin-reqful',
+        'MYR',
+        10000,
+        'user',
+        $funder,
+        'staff',
+        null,
+        CarbonImmutable::parse('2026-06-02T00:00:00Z'),
+    );
+    RecordRewardFundingAction::run(
+        $program,
+        'MYR',
+        10000,
+        'TREASURY-admin-reqful',
+        'user',
+        $funder,
+        'staff',
+        null,
+        CarbonImmutable::parse('2026-06-02T00:00:00Z'),
+    );
+
+    TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Ready);
+    $program = TransitionRewardProgramStatusAction::run($program, RewardProgramStatus::Active);
+
+    $memberId = (string) Str::uuid();
+    $staffId = (string) $this->staff->getKey();
+
+    EnrollRewardMemberAction::run(
+        $program,
+        'user',
+        $memberId,
+        $version,
+        'member-portal',
+        CarbonImmutable::parse('2026-06-10T00:00:00Z'),
+    );
+
+    $reader = new FakeRewardSourceFactReader;
+    $reader->seed(RewardLedgerFixtures::fact('src-admin-reqful-1', $memberId));
+    app()->instance(RewardSourceFactReader::class, $reader);
+
+    $result = (new EvaluateRewardEntitlementAction($reader))->handle(
+        $program,
+        RewardComponent::Cash,
+        'user',
+        $memberId,
+        RewardBeneficiaryRole::Recipient,
+        'src-admin-reqful-1',
+        CarbonImmutable::parse('2026-06-15T00:00:00Z'),
+    );
+
+    VerifyRewardPayeeAction::run(
+        'user',
+        $memberId,
+        'manual',
+        'ACCT-REQFUL',
+        'Desk Reqful',
+        'user',
+        $staffId,
+        'staff',
+        null,
+        CarbonImmutable::parse('2026-06-16T00:00:00Z'),
+    );
+
+    $award = (new TransitionRewardAwardAction(app(RewardFinancialReadinessChecker::class), $reader))->handle(
+        $result->award,
+        RewardAwardStatus::Approved,
+        'user',
+        $staffId,
+        'staff',
+        'policy-ok',
+        null,
+        null,
+        CarbonImmutable::parse('2026-06-17T00:00:00Z'),
+    );
+
+    $payee = RewardPayee::query()->where('recipient_id', $memberId)->sole();
+
+    $approver = User::factory()->create();
+    $approver->assignRole(Role::findOrCreate('admin', 'web'));
+    $confirmer = User::factory()->create();
+    $confirmer->assignRole(Role::findOrCreate('admin', 'web'));
+
+    Livewire::actingAs($this->staff)
+        ->test(ListRewardAwards::class)
+        ->callTableAction('request_payout', $award->getKey(), data: [
+            'payee_id' => (string) $payee->getKey(),
+            'fee_payer' => 'program',
+        ])
+        ->assertHasNoTableActionErrors();
+
+    $request = RewardPayoutRequest::query()->where('award_id', $award->getKey())->sole();
+
+    expect($request->status->value)->toBe('requested');
+
+    Livewire::actingAs($this->staff)
+        ->test(ListRewardPayees::class)
+        ->assertSee('ACCT-REQFUL');
+
+    Livewire::actingAs($this->staff)
+        ->test(ListRewardPayouts::class)
+        ->assertSee('ACCT-REQFUL');
+
+    Livewire::actingAs($approver)
+        ->test(ListRewardPayouts::class)
+        ->callTableAction('approve', $request->getKey(), data: ['reason' => 'Finance ok.'])
+        ->assertHasNoTableActionErrors();
+
+    Livewire::actingAs($this->staff)
+        ->test(ListRewardPayouts::class)
+        ->callTableAction('submit', $request->getKey())
+        ->assertHasNoTableActionErrors();
+
+    Livewire::actingAs($confirmer)
+        ->test(ListRewardPayouts::class)
+        ->callTableAction('confirm', $request->getKey(), data: ['bank_reference' => 'BANK-REQFUL-1'])
+        ->assertHasNoTableActionErrors();
+
+    Livewire::actingAs($this->staff)
+        ->test(ListRewardAwards::class)
+        ->callTableAction('fulfill', $request->award_id, data: ['reason' => 'Transfer confirmed.'])
+        ->assertHasNoTableActionErrors();
+
+    expect($award->refresh()->status)->toBe(RewardAwardStatus::Fulfilled);
 });

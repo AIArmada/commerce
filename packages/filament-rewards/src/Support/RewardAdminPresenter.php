@@ -240,6 +240,17 @@ final class RewardAdminPresenter
         return Gate::forUser($user)->allows($ability, $award);
     }
 
+    public static function canOperatePayout(mixed $request, string $ability): bool
+    {
+        $user = auth()->user();
+
+        if (! $user instanceof Authenticatable) {
+            return false;
+        }
+
+        return Gate::forUser($user)->allows($ability, $request);
+    }
+
     public static function recipientLabel(string $recipientType, string $recipientId): string
     {
         // Deliberately uncached: admin tables are paginated (bounded rows)

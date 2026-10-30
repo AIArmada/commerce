@@ -454,7 +454,7 @@ it('PortalLinks displays no default link until one has been created', function (
     expect($fallback)->toBeNull();
 });
 
-it('PortalProfile updates affiliate profile and default payout method', function (): void {
+it('PortalProfile updates affiliate profile and default payout method', function (string $method, string $label, string $accountRef): void {
     $user = User::create([
         'name' => 'Portal Profile User',
         'email' => 'portal-profile-' . Str::uuid() . '@example.com',
@@ -479,9 +479,9 @@ it('PortalProfile updates affiliate profile and default payout method', function
     $page->name = 'Updated Affiliate Name';
     $page->contactEmail = 'updated-affiliate@example.com';
     $page->websiteUrl = 'https://affiliate.example.com';
-    $page->payoutMethodType = 'paypal';
-    $page->payoutMethodLabel = 'Primary PayPal';
-    $page->payoutMethodAccountRef = 'payouts@example.com';
+    $page->payoutMethodType = $method;
+    $page->payoutMethodLabel = $label;
+    $page->payoutMethodAccountRef = $accountRef;
 
     $page->saveProfile();
 
@@ -496,10 +496,14 @@ it('PortalProfile updates affiliate profile and default payout method', function
         ->and($affiliate->contact_email)->toBe('updated-affiliate@example.com')
         ->and($affiliate->website_url)->toBe('https://affiliate.example.com')
         ->and($payoutMethod)->not->toBeNull()
-        ->and($payoutMethod?->type->value)->toBe('paypal')
-        ->and($payoutMethod?->details['label'] ?? null)->toBe('Primary PayPal')
-        ->and($payoutMethod?->details['account_ref'] ?? null)->toBe('payouts@example.com');
-});
+        ->and($payoutMethod?->type->value)->toBe($method)
+        ->and($payoutMethod?->details['label'] ?? null)->toBe($label)
+        ->and($payoutMethod?->details['account_ref'] ?? null)->toBe($accountRef)
+        ->and($page->getViewData()['payoutMethodOptions']['manual'])->toBe('Manual');
+})->with([
+    'paypal' => ['paypal', 'Primary PayPal', 'payouts@example.com'],
+    'manual' => ['manual', 'Manual transfer', 'operator-account'],
+]);
 
 it('PortalPrograms returns joined programs and creative assets for the current affiliate', function (): void {
     $user = User::create([

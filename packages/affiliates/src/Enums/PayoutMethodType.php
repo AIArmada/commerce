@@ -6,6 +6,7 @@ namespace AIArmada\Affiliates\Enums;
 
 enum PayoutMethodType: string
 {
+    case Manual = 'manual';
     case BankTransfer = 'bank_transfer';
     case PayPal = 'paypal';
     case StripeConnect = 'stripe_connect';
@@ -18,6 +19,7 @@ enum PayoutMethodType: string
     public function label(): string
     {
         return match ($this) {
+            self::Manual => 'Manual',
             self::BankTransfer => 'Bank Transfer',
             self::PayPal => 'PayPal',
             self::StripeConnect => 'Stripe Connect',
@@ -32,6 +34,7 @@ enum PayoutMethodType: string
     public function icon(): string
     {
         return match ($this) {
+            self::Manual => 'heroicon-o-banknotes',
             self::BankTransfer => 'heroicon-o-building-library',
             self::PayPal => 'heroicon-o-credit-card',
             self::StripeConnect => 'heroicon-o-credit-card',

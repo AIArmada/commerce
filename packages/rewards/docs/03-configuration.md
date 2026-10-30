@@ -71,6 +71,12 @@ rail) never reaches another tenant's programs.
 ],
 ```
 
+To disable payout execution explicitly, configure `methods` as an
+empty array and bind `RewardPayoutExecutor` to
+`NullRewardPayoutExecutor`. An empty catalog blocks payee registration,
+activation, and new requests; the null executor also refuses execution
+of existing operations.
+
 > [!warning]
 > `outcomes` and `recipient_types` start empty on purpose: evaluation refuses every outcome and recipient type until the host registers its own. There is no silent default that pays the wrong people.
 

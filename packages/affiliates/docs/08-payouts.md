@@ -170,6 +170,7 @@ AffiliatePayoutMethod::create([
 ```php
 use AIArmada\Affiliates\Enums\PayoutMethodType;
 
+PayoutMethodType::Manual;        // 'manual'
 PayoutMethodType::BankTransfer;  // 'bank_transfer'
 PayoutMethodType::PayPal;        // 'paypal'
 PayoutMethodType::StripeConnect; // 'stripe_connect'
@@ -180,9 +181,9 @@ PayoutMethodType::Wire;          // 'wire'
 PayoutMethodType::Crypto;        // 'crypto'
 ```
 
-There is no `Stripe` or `Manual` case. Manual payouts go through
-`Services\Payouts\ManualPayoutProcessor`, which is selected by type string, not
-by an enum case.
+There is no `Stripe` case; use `StripeConnect`. Both
+`PayoutMethodType::Manual` and the string `manual` resolve through
+`PayoutProcessorFactory` to `ManualPayoutProcessor`.
 
 ## Payout Holds
 

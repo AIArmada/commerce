@@ -292,7 +292,7 @@ use AIArmada\Affiliates\Models\AffiliatePayoutMethod;
 
 | Attribute | Type | Description |
 |-----------|------|-------------|
-| `type` | PayoutMethodType | bank_transfer, paypal, stripe_connect, wise, payoneer, check, wire, crypto |
+| `type` | PayoutMethodType | manual, bank_transfer, paypal, stripe_connect, wise, payoneer, check, wire, crypto |
 | `is_default` | bool | Primary method |
 | `verified_at` | timestamp | When the method was verified by system |
 | `details` | array | Encrypted payout details |

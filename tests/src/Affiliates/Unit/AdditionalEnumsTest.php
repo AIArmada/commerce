@@ -118,8 +118,9 @@ test('MembershipStatus color returns correct colors', function (): void {
 
 // PayoutMethodType Tests
 test('PayoutMethodType enum has all expected cases', function (): void {
-    expect(PayoutMethodType::cases())->toHaveCount(8);
+    expect(PayoutMethodType::cases())->toHaveCount(9);
 
+    expect(PayoutMethodType::Manual->value)->toBe('manual');
     expect(PayoutMethodType::BankTransfer->value)->toBe('bank_transfer');
     expect(PayoutMethodType::PayPal->value)->toBe('paypal');
     expect(PayoutMethodType::StripeConnect->value)->toBe('stripe_connect');
@@ -131,6 +132,7 @@ test('PayoutMethodType enum has all expected cases', function (): void {
 });
 
 test('PayoutMethodType label returns correct labels', function (): void {
+    expect(PayoutMethodType::Manual->label())->toBe('Manual');
     expect(PayoutMethodType::BankTransfer->label())->toBe('Bank Transfer');
     expect(PayoutMethodType::PayPal->label())->toBe('PayPal');
     expect(PayoutMethodType::StripeConnect->label())->toBe('Stripe Connect');
@@ -142,6 +144,7 @@ test('PayoutMethodType label returns correct labels', function (): void {
 });
 
 test('PayoutMethodType icon returns correct icons', function (): void {
+    expect(PayoutMethodType::Manual->icon())->toBe('heroicon-o-banknotes');
     expect(PayoutMethodType::BankTransfer->icon())->toBe('heroicon-o-building-library');
     expect(PayoutMethodType::PayPal->icon())->toBe('heroicon-o-credit-card');
     expect(PayoutMethodType::StripeConnect->icon())->toBe('heroicon-o-credit-card');

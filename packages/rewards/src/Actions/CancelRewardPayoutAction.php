@@ -78,6 +78,12 @@ final readonly class CancelRewardPayoutAction
             throw new InvalidArgumentException('Only requested, approved, or unknown payouts can be cancelled.');
         }
 
+        $preAward = RewardAward::query()->whereKey((string) $pre->award_id)->first();
+
+        if ($preAward instanceof RewardAward && $actorId === (string) $preAward->recipient_id) {
+            throw new InvalidArgumentException('Recipient-owned payout cancellation is prohibited.');
+        }
+
         try {
             return Cache::lock('rewards:payout:' . $requestId, 30)->block(10, function () use (
                 $requestId,

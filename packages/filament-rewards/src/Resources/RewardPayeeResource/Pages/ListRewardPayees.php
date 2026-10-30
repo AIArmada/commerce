@@ -35,13 +35,9 @@ class ListRewardPayees extends ListRecords
                 ->modalDescription('Verification is independent: the verifier must not be the recipient. Only a masked display value is stored.')
                 ->schema([
                     TextInput::make('recipient_id')->label('Recipient user id (UUID)')->required()->uuid(),
-                    Select::make('method')->options([
-                        'bank_transfer' => 'Bank transfer',
-                        'check' => 'Check',
-                        'wire' => 'Wire',
-                        'paypal' => 'PayPal',
-                        'stripe_connect' => 'Stripe Connect',
-                    ])->required(),
+                    Select::make('method')
+                        ->options(RewardAdminPresenter::payeeMethodOptions())
+                        ->required(),
                     TextInput::make('account_ref')->label('Operator account handle')->required()->maxLength(191),
                     TextInput::make('account_display')->label('Masked display (e.g. Bank ••1234)')->required()->maxLength(191),
                     Textarea::make('evidence_note')->label('Verification evidence')->rows(2)->maxLength(500),

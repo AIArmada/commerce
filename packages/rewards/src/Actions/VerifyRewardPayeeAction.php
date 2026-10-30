@@ -21,13 +21,13 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * Registration stores an operator handle plus a masked display value; full
  * credentials stay with the operator/provider. Verification is an
  * independent staff act: the verifier must be a staff/admin user who is
- * not the recipient. For methods the bound catalog serves, the
+ * not the recipient. Only methods the bound catalog serves can be
+ * verified; an unconfigured method is refused. For served methods the
  * destination SHAPE is validated by the bound catalog's own
- * validateDetails contract up front, so a payee that can never be paid
- * is refused at registration instead of at request time. A new
- * registration for the same recipient + method supersedes prior rows;
- * frozen per-operation snapshots keep reconciling against the original
- * terms.
+ * validateDetails contract, so a payee that can never be paid is refused
+ * instead of stranded. A new registration for the same recipient + method
+ * supersedes prior rows; frozen per-operation snapshots keep reconciling
+ * against the original terms.
  */
 final readonly class VerifyRewardPayeeAction
 {
@@ -80,12 +80,16 @@ final readonly class VerifyRewardPayeeAction
             throw new InvalidArgumentException('Payee self-verification is prohibited: the verifier must not be the recipient.');
         }
 
-        if (app(RewardPayoutMethodCatalog::class)->isRegistered($method)) {
-            RewardPayoutTerms::assertValidDestination(
-                $method,
-                RewardPayoutTerms::detailsFor($method, $accountRef)
-            );
+        $catalog = app(RewardPayoutMethodCatalog::class);
+
+        if (! $catalog->isRegistered($method)) {
+            throw new InvalidArgumentException("Payout method [{$method}] is not configured.");
         }
+
+        RewardPayoutTerms::assertValidDestination(
+            $method,
+            RewardPayoutTerms::detailsFor($method, $accountRef)
+        );
 
         $decided = $decidedAt === null
             ? CarbonImmutable::now('UTC')

@@ -44,6 +44,13 @@ class RewardPayoutsTable
                 TextColumn::make('amount_minor')->label('Amount (minor)')->numeric(),
                 TextColumn::make('currency')->badge(),
                 TextColumn::make('processor')->badge(),
+                TextColumn::make('destination')
+                    ->label('Destination')
+                    ->state(function (RewardPayoutRequest $record): string {
+                        $snapshot = $record->payee_snapshot ?? [];
+
+                        return (string) ($snapshot['account_ref'] ?? $snapshot['account_display'] ?? '—');
+                    }),
                 TextColumn::make('status')->badge(),
                 TextColumn::make('requested_at')->dateTime()->toggleable(isToggledHiddenByDefault: true),
             ])
@@ -91,6 +98,7 @@ class RewardPayoutsTable
                     ->action(function (RewardPayoutRequest $record, SubmitRewardPayoutAction $submit): void {
                         $staff = RewardAdminPresenter::staffActor();
                         abort_unless($staff !== null, 403);
+                        abort_unless(RewardAdminPresenter::canOperatePayout($record, 'submit'), 403);
 
                         try {
                             $submit->handle($record, 'user', (string) $staff->getKey(), RewardAdminPresenter::staffRole());
@@ -156,6 +164,7 @@ class RewardPayoutsTable
                     ->action(function (RewardPayoutRequest $record, array $data, CancelRewardPayoutAction $cancel): void {
                         $staff = RewardAdminPresenter::staffActor();
                         abort_unless($staff !== null, 403);
+                        abort_unless(RewardAdminPresenter::canOperatePayout($record, 'cancel'), 403);
 
                         try {
                             $cancel->handle($record, 'user', (string) $staff->getKey(), RewardAdminPresenter::staffRole(), (string) $data['reason']);

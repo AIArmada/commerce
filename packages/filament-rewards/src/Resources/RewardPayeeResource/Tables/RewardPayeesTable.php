@@ -32,6 +32,7 @@ class RewardPayeesTable
                     ->searchable(query: fn ($query, string $search) => $query->where('recipient_id', $search)),
                 TextColumn::make('method')->badge(),
                 TextColumn::make('account_display')->label('Account'),
+                TextColumn::make('account_ref')->label('Account reference'),
                 TextColumn::make('status')->badge(),
                 TextColumn::make('verified_at')->dateTime()->toggleable(isToggledHiddenByDefault: true),
             ])

@@ -18,7 +18,11 @@ title: Rewards overview
 
 ## Host boundaries
 
-The package never implements source, payout, coupon, or notification rails. Hosts bind these contracts; fail-closed defaults ship for all of them:
+The package supplies an operator-driven manual payout executor and
+method catalog; it does not send payments. Hosts provide source,
+coupon and notification integrations and may replace the payout
+contracts for automated rails. Fail-closed defaults ship for all of
+them:
 
 - `RewardSourceFactReader` — current source facts by business key.
 - `RewardPayoutExecutor` / `RewardPayoutMethodCatalog` — payout submission, cancel, status, settlement; method registry with fee schedules.

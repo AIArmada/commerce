@@ -57,7 +57,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * approved) is recorded separately from actual component fulfillment:
  * recognition/points/badge fulfill through their dedicated actions in the
  * same transaction. Cash fulfillment stamps only when a CONFIRMED (paid)
- * payout request with posted backing exists — submitted-but-unpaid is
+ * payout request with a recorded operation and confirmation timestamp
+ * exists — submitted-but-unpaid is
  * never presented as received. The payout pipeline (with provider calls
  * outside every transaction) runs before this transition, and no
  * monetary backing is ever fabricated here.
@@ -1320,13 +1321,10 @@ final readonly class TransitionRewardAwardAction
     }
 
     /**
-     * Cash fulfillment is a guarded recording step: the payout pipeline
-     * (request → independent approve → submit through the real rail) runs
-     * BEFORE this transition, with provider calls outside every
-     * transaction. Fulfillment only stamps when the durable request is
-     * submitted (manual bank awaits independent confirmation against the
-     * frozen snapshot) or confirmed. Unknown/failed requests refuse; the
-     * award stays approved and the operator reconciles or requeues.
+     * Cash fulfillment records an already confirmed payout with its operation
+     * and confirmation timestamp. Manual payouts require independent operator
+     * confirmation; reconciliation alone does not confirm them. External
+     * backing references are optional rail-owned evidence.
      */
     private function fulfillCash(RewardAward $award, CarbonImmutable $decided): void
     {
@@ -1346,8 +1344,10 @@ final readonly class TransitionRewardAwardAction
             );
         }
 
-        if ($request->external_reference_id === null || $request->external_payout_id === null) {
-            throw new InvalidArgumentException('Refused: cash fulfillment requires posted backing and a payout operation.');
+        if ($request->confirmed_at === null || $request->external_payout_id === null) {
+            throw new InvalidArgumentException(
+                'Refused: cash fulfillment requires a confirmed payout timestamp and a payout operation.'
+            );
         }
     }
 

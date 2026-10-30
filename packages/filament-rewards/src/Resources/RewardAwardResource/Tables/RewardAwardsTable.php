@@ -6,13 +6,20 @@ namespace AIArmada\FilamentRewards\Resources\RewardAwardResource\Tables;
 
 use AIArmada\FilamentRewards\Support\RewardAdminPresenter;
 use AIArmada\Rewards\Actions\DismissRewardFraudAction;
+use AIArmada\Rewards\Actions\RequestRewardPayoutAction;
 use AIArmada\Rewards\Actions\ReverseRewardFulfillmentAction;
 use AIArmada\Rewards\Actions\TransitionRewardAwardAction;
 use AIArmada\Rewards\Enums\RewardAwardStatus;
+use AIArmada\Rewards\Enums\RewardComponent;
+use AIArmada\Rewards\Enums\RewardPayeeStatus;
+use AIArmada\Rewards\Enums\RewardPayoutRequestStatus;
 use AIArmada\Rewards\Models\RewardAward;
+use AIArmada\Rewards\Models\RewardPayee;
+use AIArmada\Rewards\Models\RewardPayoutRequest;
 use AIArmada\Rewards\Models\RewardProgram;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
@@ -118,6 +125,93 @@ class RewardAwardsTable
 
                         Notification::make()->title('Fraud dismissed; award held for review')->success()->send();
                     }),
+                Action::make('request_payout')
+                    ->label('Request payout')
+                    ->icon(Heroicon::OutlinedBanknotes)
+                    ->color('primary')
+                    ->modalHeading('Request a payout for this award')
+                    ->modalDescription('Creates the payout request against the verified destination. Approval, submission, and independent confirmation follow in the payouts queue.')
+                    ->schema([
+                        Select::make('payee_id')
+                            ->label('Verified destination')
+                            ->options(fn (RewardAward $record): array => self::verifiedPayeeOptions($record))
+                            ->required()
+                            ->searchable(),
+                        Select::make('fee_payer')
+                            ->label('Fee payer')
+                            ->options(['program' => 'Program', 'recipient' => 'Recipient'])
+                            ->default('program')
+                            ->required(),
+                    ])
+                    ->visible(fn (RewardAward $record): bool => $record->status === RewardAwardStatus::Approved
+                        && $record->component === RewardComponent::Cash
+                        && RewardAdminPresenter::canDecideAward($record, 'requestPayout'))
+                    ->action(function (RewardAward $record, array $data, RequestRewardPayoutAction $request): void {
+                        $staff = self::authorize($record, 'requestPayout');
+
+                        $payee = RewardPayee::query()->whereKey((string) ($data['payee_id'] ?? ''))->first();
+
+                        if (! $payee instanceof RewardPayee) {
+                            throw ValidationException::withMessages(['payee_id' => 'Select a verified destination.']);
+                        }
+
+                        try {
+                            $request->handle(
+                                $record,
+                                $payee,
+                                (string) $payee->method,
+                                (string) ($data['fee_payer'] ?? 'program'),
+                                'user',
+                                (string) $staff->getKey(),
+                                RewardAdminPresenter::staffRole(),
+                            );
+                        } catch (InvalidArgumentException $exception) {
+                            throw ValidationException::withMessages(['payee_id' => $exception->getMessage()]);
+                        }
+
+                        Notification::make()->title('Payout requested')->success()->send();
+                    }),
+                Action::make('fulfill')
+                    ->label('Fulfill')
+                    ->icon(Heroicon::OutlinedCheckBadge)
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->modalHeading('Fulfill this cash award')
+                    ->modalDescription('Fulfillment stamps only a confirmed (paid) payout. The confirmed bank transfer must already exist.')
+                    ->schema([
+                        Textarea::make('reason')->label('Fulfillment note')->required()->maxLength(2000)->rows(3),
+                    ])
+                    ->visible(fn (RewardAward $record): bool => $record->status === RewardAwardStatus::Approved
+                        && $record->component === RewardComponent::Cash
+                        && RewardAdminPresenter::canDecideAward($record, 'fulfill'))
+                    ->action(function (RewardAward $record, array $data, TransitionRewardAwardAction $transition): void {
+                        $staff = self::authorize($record, 'fulfill');
+
+                        $confirmed = RewardPayoutRequest::query()
+                            ->where('award_id', $record->getKey())
+                            ->where('status', RewardPayoutRequestStatus::Confirmed->value)
+                            ->first();
+
+                        if (! $confirmed instanceof RewardPayoutRequest) {
+                            throw ValidationException::withMessages(['reason' => 'No confirmed payout exists for this award.']);
+                        }
+
+                        try {
+                            $transition->handle(
+                                $record,
+                                RewardAwardStatus::Fulfilled,
+                                'user',
+                                (string) $staff->getKey(),
+                                RewardAdminPresenter::staffRole(),
+                                (string) $data['reason'],
+                                ['payout_request_id' => (string) $confirmed->getKey()],
+                            );
+                        } catch (InvalidArgumentException $exception) {
+                            throw ValidationException::withMessages(['reason' => $exception->getMessage()]);
+                        }
+
+                        Notification::make()->title('Award fulfilled')->success()->send();
+                    }),
             ]);
     }
 
@@ -134,6 +228,26 @@ class RewardAwardsTable
         abort_unless(RewardAdminPresenter::canDecideAward($record, $ability), 403);
 
         return $staff;
+    }
+
+    /**
+     * Verified payout destinations for the award recipient, for the
+     * payout-request form. Options are keyed by payee id.
+     *
+     * @return array<string, string>
+     */
+    private static function verifiedPayeeOptions(RewardAward $record): array
+    {
+        return RewardPayee::query()
+            ->where('recipient_type', (string) $record->recipient_type)
+            ->where('recipient_id', (string) $record->recipient_id)
+            ->where('status', RewardPayeeStatus::Verified->value)
+            ->orderByDesc('verified_at')
+            ->get()
+            ->mapWithKeys(static fn (RewardPayee $payee): array => [
+                (string) $payee->getKey() => (string) $payee->method . ' — ' . (string) $payee->account_display,
+            ])
+            ->all();
     }
 
     private static function reverse(

@@ -39,6 +39,13 @@ test('PayoutProcessorFactory make accepts PayoutMethodType enum', function (): v
     expect($processor)->toBeInstanceOf(PayoutProcessorInterface::class);
 });
 
+test('PayoutProcessorFactory make resolves the manual enum to ManualPayoutProcessor', function (): void {
+    $factory = new PayoutProcessorFactory;
+
+    expect($factory->make(PayoutMethodType::Manual))
+        ->toBeInstanceOf(ManualPayoutProcessor::class);
+});
+
 test('PayoutProcessorFactory make throws exception for unknown type', function (): void {
     $factory = new PayoutProcessorFactory;
 

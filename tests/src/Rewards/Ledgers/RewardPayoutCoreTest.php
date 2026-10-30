@@ -208,3 +208,56 @@ it('maps executor outcomes honestly without duplicating money', function (): voi
     expect(fn () => SubmitRewardPayoutAction::run($request->refresh(), 'user', $staff, 'staff'))
         ->toThrow(InvalidArgumentException::class, 'approved');
 });
+
+it('refuses payee registration and verification for unconfigured methods', function (): void {
+    config()->set('rewards.payouts.methods', ['manual']);
+
+    $memberId = (string) Str::uuid();
+    $staff = (string) Str::uuid();
+
+    expect(fn () => RegisterRewardPayeeAction::run(
+        'user',
+        $memberId,
+        'paypal',
+        'member@example.test',
+        'Member PayPal',
+        'user',
+        $memberId,
+        'member',
+    ))->toThrow(InvalidArgumentException::class, 'Payout method [paypal] is not configured.');
+
+    expect(fn () => VerifyRewardPayeeAction::run(
+        'user',
+        $memberId,
+        'paypal',
+        'member@example.test',
+        'Member PayPal',
+        'user',
+        $staff,
+        'staff',
+    ))->toThrow(InvalidArgumentException::class, 'Payout method [paypal] is not configured.');
+
+    expect(RewardPayee::query()->count())->toBe(0);
+});
+
+it('refuses recipient-owned payout submission and cancellation', function (): void {
+    [$program, $award, $memberId, $staff] = payoutHarness('pay-own-1');
+
+    $request = RequestRewardPayoutAction::run(
+        $award,
+        RewardPayee::query()->where('recipient_id', $memberId)->where('status', 'verified')->firstOrFail(),
+        'manual',
+        'program',
+        'user',
+        $staff,
+        'staff',
+    );
+
+    expect(fn () => SubmitRewardPayoutAction::run($request, 'user', $memberId, 'staff'))
+        ->toThrow(InvalidArgumentException::class, 'Recipient-owned payout submission is prohibited.');
+
+    expect(fn () => CancelRewardPayoutAction::run($request, 'user', $memberId, 'staff', 'changed-mind'))
+        ->toThrow(InvalidArgumentException::class, 'Recipient-owned payout cancellation is prohibited.');
+
+    expect($request->refresh()->status)->toBe(RewardPayoutRequestStatus::Requested);
+});

@@ -137,6 +137,12 @@ program data and do not imply a public ranking.
 
 ## Cash payouts (manual rail)
 
+This example starts with an approved cash award in its owning program
+context. The host supplies its canonical source reader and binds
+`FundedRewardReadinessChecker` and
+`FundedRewardFinancialReadinessChecker`. The package already supplies
+the manual payout executor and method catalog.
+
 ```php
 use AIArmada\Rewards\Actions\ApproveRewardPayoutAction;
 use AIArmada\Rewards\Actions\ConfirmRewardPayoutAction;
@@ -145,19 +151,53 @@ use AIArmada\Rewards\Actions\RecordRewardFundingSourceAction;
 use AIArmada\Rewards\Actions\RegisterRewardPayeeAction;
 use AIArmada\Rewards\Actions\RequestRewardPayoutAction;
 use AIArmada\Rewards\Actions\SubmitRewardPayoutAction;
+use AIArmada\Rewards\Actions\TransitionRewardAwardAction;
 use AIArmada\Rewards\Actions\VerifyRewardPayeeAction;
+use AIArmada\Rewards\Enums\RewardAwardStatus;
 
 RecordRewardFundingSourceAction::run('sponsor-2026', 'MYR', 100000, 'user', $staffId, 'staff');
 RecordRewardFundingAction::run($program, 'MYR', 100000, 'sponsor-2026', 'user', $staffId, 'staff');
 
-$payee = RegisterRewardPayeeAction::run('user', $memberId, 'manual', 'acct-1', 'Manual handoff', 'user', $memberId, 'member');
-VerifyRewardPayeeAction::run('user', $memberId, 'manual', 'acct-1', 'Manual handoff', 'user', $staffId, 'staff');
+$payee = VerifyRewardPayeeAction::run('user', $memberId, 'manual', 'acct-1', 'Manual handoff', 'user', $staffId, 'staff');
 
 $request = RequestRewardPayoutAction::run($award, $payee, 'manual', 'program', 'user', $staffId, 'staff');
-ApproveRewardPayoutAction::run($request, 'user', $approverId, 'staff', 'looks-good');
-SubmitRewardPayoutAction::run($request, 'user', $staffId, 'staff'); // manual rail: submitted, awaits confirmation
-ConfirmRewardPayoutAction::run($request, ['bank_reference' => 'bank-ref-1', 'transferred_at' => '2026-06-17T00:00:00Z'], 'user', $confirmerId, 'staff');
+
+$request = ApproveRewardPayoutAction::run($request, 'user', $approverId, 'staff', 'looks-good');
+
+$request = SubmitRewardPayoutAction::run($request, 'user', $staffId, 'staff');
+
+$confirmed = ConfirmRewardPayoutAction::run(
+    $request,
+    [
+        'bank_reference' => 'bank-ref-1',
+        'transferred_at' => '2026-06-17T00:00:00Z',
+    ],
+    'user', $confirmerId, 'staff',
+);
+
+$fulfilled = TransitionRewardAwardAction::run(
+    $award,
+    RewardAwardStatus::Fulfilled,
+    'user',
+    $staffId,
+    'staff',
+    'manual-transfer-confirmed',
+    ['payout_request_id' => (string) $confirmed->getKey()],
+    'fulfill:' . $award->getKey(),
+);
 ```
+
+Submission remains Submitted. Perform the transfer before independent
+confirmation. Confirmation records the transfer evidence, spends the
+reserved budget and stamps `confirmed_at`; award fulfillment is a
+separate transition. Manual requests intentionally have a null
+`external_reference_id`. Reconciliation alone leaves them Submitted.
+Verification returns a new verified payee row, which subsequent
+requests must use.
+
+Registration and verification fail closed: a method missing from
+`rewards.payouts.methods` is refused with `Payout method [x] is not
+configured` instead of storing a destination the host cannot pay.
 
 ## Corrections sweep
 

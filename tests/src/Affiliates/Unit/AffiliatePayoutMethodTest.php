@@ -144,3 +144,23 @@ test('AffiliatePayoutMethod label attribute for bank transfer', function (): voi
 
     expect($method->label)->toBe('Wells Fargo');
 });
+
+test('AffiliatePayoutMethod hydrates the manual type', function (): void {
+    $affiliate = Affiliate::create([
+        'code' => 'PAY004',
+        'name' => 'Manual Payout Test',
+        'status' => Active::class,
+        'commission_type' => 'percentage',
+        'commission_rate' => 1000,
+        'currency' => 'USD',
+    ]);
+
+    $method = AffiliatePayoutMethod::create([
+        'affiliate_id' => $affiliate->getKey(),
+        'type' => 'manual',
+        'details' => ['account_ref' => 'operator-account'],
+        'is_default' => true,
+    ]);
+
+    expect($method->fresh()->type)->toBe(PayoutMethodType::Manual);
+});

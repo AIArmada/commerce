@@ -30,7 +30,7 @@ The awards table transitions held → pending → approved → fulfilled (or rej
 
 ## Money
 
-The funding page records funding sources and program allocations. The payee queue verifies or rejects recipient destinations (verifiers cannot verify their own). The payout queue approves, submits, confirms, cancels, and reconciles payout requests; manual rails await independent confirmation with transfer evidence.
+The funding page records funding sources and program allocations. The payee queue verifies or rejects recipient destinations (verifiers cannot verify their own). Payee registration offers the methods configured in `rewards.payouts.methods`; the package default is `manual`. The payout queue approves, submits, confirms, cancels, and reconciles payout requests; manual rails await independent confirmation with transfer evidence.
 
 ## Benefits and recoveries
 

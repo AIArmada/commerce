@@ -17,9 +17,11 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
  * Member payee registration: the recipient submits a payout destination
- * for staff verification. The row lands Pending and never activates
- * itself; any prior Pending registration for the same recipient + method
- * is superseded, while a live Verified destination stays in force until
+ * for staff verification. Only methods the bound catalog serves can be
+ * registered; an unconfigured method is refused instead of stranding an
+ * unpayable row. The row lands Pending and never activates itself; any
+ * prior Pending registration for the same recipient + method is
+ * superseded, while a live Verified destination stays in force until
  * staff verify the replacement.
  */
 final readonly class RegisterRewardPayeeAction
@@ -65,12 +67,16 @@ final readonly class RegisterRewardPayeeAction
             throw new InvalidArgumentException('Payee account display must be 1..191 characters.');
         }
 
-        if (app(RewardPayoutMethodCatalog::class)->isRegistered($method)) {
-            RewardPayoutTerms::assertValidDestination(
-                $method,
-                RewardPayoutTerms::detailsFor($method, $accountRef)
-            );
+        $catalog = app(RewardPayoutMethodCatalog::class);
+
+        if (! $catalog->isRegistered($method)) {
+            throw new InvalidArgumentException("Payout method [{$method}] is not configured.");
         }
+
+        RewardPayoutTerms::assertValidDestination(
+            $method,
+            RewardPayoutTerms::detailsFor($method, $accountRef)
+        );
 
         $decided = $decidedAt === null
             ? CarbonImmutable::now('UTC')

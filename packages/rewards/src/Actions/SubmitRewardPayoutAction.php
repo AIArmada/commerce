@@ -71,6 +71,12 @@ final readonly class SubmitRewardPayoutAction
 
         $awardId = (string) $pre->award_id;
 
+        $preAward = RewardAward::query()->whereKey($awardId)->first();
+
+        if ($preAward instanceof RewardAward && $actorId === (string) $preAward->recipient_id) {
+            throw new InvalidArgumentException('Recipient-owned payout submission is prohibited.');
+        }
+
         $locked = DB::transaction(function () use ($requestId, $awardId): RewardPayoutRequest {
             $award = RewardAward::query()->whereKey($awardId)->lockForUpdate()->first();
 
