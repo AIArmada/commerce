@@ -42,6 +42,7 @@ return new class extends Migration
             $table->timestampTz('activated_at')->nullable();
             $table->timestampTz('deactivated_at')->nullable();
             $table->timestampTz('paused_at')->nullable();
+            $table->timestampTz('identity_sealed_at')->nullable();
             $table->timestampsTz();
             $table->index(['status', 'activated_at'], 'affiliates_active_idx');
             $table->index(['registration_approval_mode', 'status'], 'affiliates_open_approval_idx');

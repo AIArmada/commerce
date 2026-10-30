@@ -176,3 +176,20 @@ test('expired and consumed capabilities are rejected without sealing', function 
     expect(AffiliateOwnershipCapability::query()->where('affiliate_id', $affiliate2->getKey())->firstOrFail()->consumed_at)
         ->not->toBeNull();
 });
+
+test('the affiliate identity seal is permanent after claim revocation', function (): void {
+    $affiliate = identityTestAffiliate('IDENT-PERMANENT-SEAL');
+    [$type, $id] = identityTestClaimant();
+    $capability = app(IssueOwnershipCapability::class)->run($affiliate);
+    $claim = app(ClaimAffiliateIdentity::class)->run($capability['plaintext_secret'], $type, $id, true);
+    $seal = $affiliate->refresh()->identity_sealed_at;
+
+    expect($seal)->toBeInstanceOf(CarbonImmutable::class)
+        ->and($seal->toDateTimeString())->toBe($claim->claimed_at->toDateTimeString());
+
+    app(RevokeAffiliateClaim::class)->run($claim);
+
+    expect($affiliate->refresh()->identity_sealed_at->equalTo($seal))->toBeTrue();
+    expect(fn () => $affiliate->forceFill(['identity_sealed_at' => null])->save())
+        ->toThrow(LogicException::class, 'identity seal is permanent');
+});

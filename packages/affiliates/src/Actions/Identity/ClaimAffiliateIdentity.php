@@ -77,6 +77,10 @@ final class ClaimAffiliateIdentity
                 throw new InvalidArgumentException('Ownership capability is expired.');
             }
 
+            // Updating the locked row makes stale PostgreSQL snapshots fail
+            // with a serialization error before activity can acquire its lock.
+            $affiliate->forceFill(['identity_sealed_at' => $now])->save();
+
             $claim = AffiliateClaim::query()->create([
                 'affiliate_id' => $affiliate->getKey(),
                 'owner_type' => $affiliate->owner_type,

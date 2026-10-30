@@ -30,7 +30,7 @@ final class RevalidateIdentitySeal
             ->where('affiliate_id', $lockedAffiliate->getKey())
             ->exists();
 
-        if ($sealed) {
+        if ($lockedAffiliate->identity_sealed_at !== null || $sealed) {
             throw SealedIdentityException::forAffiliate((string) $lockedAffiliate->getKey());
         }
     }

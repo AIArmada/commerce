@@ -119,8 +119,12 @@ final class RecordAffiliateOutcome
         if ((bool) config('affiliates.owner.enabled', false)) {
             /** @var Affiliate $affiliate */
             $affiliate = OwnerWriteGuard::findOrFailForOwner(Affiliate::class, $affiliate->getKey());
-        } elseif (! $affiliate->exists || Affiliate::query()->whereKey($affiliate->getKey())->doesntExist()) {
-            return new AffiliateOutcomeResult(AffiliateOutcomeDisposition::NoAffiliate, null);
+        } else {
+            $affiliate = $affiliate->exists ? Affiliate::query()->find($affiliate->getKey()) : null;
+
+            if (! $affiliate instanceof Affiliate) {
+                return new AffiliateOutcomeResult(AffiliateOutcomeDisposition::NoAffiliate, null);
+            }
         }
 
         if ($attribution instanceof AffiliateAttribution) {
@@ -350,22 +354,12 @@ final class RecordAffiliateOutcome
         array $payload,
         array $provenance = [],
     ): void {
-        $linkId = $this->mergedValue($provenance, $payload, $attribution, 'affiliate_link_id');
-        $programId = $this->mergedValue($provenance, $payload, $attribution, 'affiliate_program_id');
-
-        if ($linkId !== null && (string) $linkId !== (string) $attribution->affiliate_link_id) {
-            throw new InvalidArgumentException('Outcome link must match the persisted attribution.');
-        }
-
-        if ($programId !== null && (string) $programId !== (string) $attribution->affiliate_program_id) {
-            throw new InvalidArgumentException('Outcome program must match the persisted attribution.');
-        }
-
         foreach (['affiliate_link_id', 'affiliate_program_id'] as $key) {
-            if (array_key_exists($key, $payload)
-                && ((! is_string($payload[$key]) && ! is_int($payload[$key]) && $payload[$key] !== null)
-                    || (string) $payload[$key] !== (string) $attribution->getAttribute($key))) {
-                throw new InvalidArgumentException(sprintf('Outcome payload [%s] must match the persisted attribution.', $key));
+            $reference = $this->mergedValue($provenance, $payload, $attribution, $key);
+
+            if ((! is_string($reference) && ! is_int($reference) && $reference !== null)
+                || (string) $reference !== (string) $attribution->getAttribute($key)) {
+                throw new InvalidArgumentException(sprintf('Outcome reference [%s] must match the persisted attribution.', $key));
             }
         }
 

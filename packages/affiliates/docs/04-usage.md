@@ -301,7 +301,10 @@ are required; `sharer_user_id`, `actor_user_id`, `affiliate_link_id`, and
 `affiliate_program_id` are optional. Precedence is explicit `$provenance` >
 `$payload` > attribution-derived defaults, and link/program integrity checks
 validate the merged values. A link must belong to the affiliate; a program
-must exist within its allowed owner scope.
+must exist within its allowed owner scope. The affiliate is reloaded before
+recording, so its persisted purpose determines commission eligibility even
+when the caller holds a stale instance. Attributed outcomes apply the same
+provenance precedence before validating link and program references.
 
 ```php
 $result = RecordAffiliateOutcome::run(
@@ -344,7 +347,11 @@ after revocation — throws `SealedIdentityException`. Revocation preserves
 the row as history. Mutating activity writers must hold the affiliate row
 lock, then the credential row lock, then call `RevalidateIdentitySeal`
 immediately before writing, so in-flight activity racing a committing claim
-is sealed instead of appending to sealed history.
+is sealed instead of appending to sealed history. Claiming also permanently
+sets `identity_sealed_at` on the locked affiliate row. Under PostgreSQL
+`REPEATABLE READ`, an older activity transaction fails with SQLSTATE `40001`
+when it tries to lock that changed row. Retry the entire activity transaction;
+the fresh attempt observes the seal and throws `SealedIdentityException`.
 
 ## Commission Calculation
 

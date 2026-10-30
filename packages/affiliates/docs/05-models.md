@@ -35,6 +35,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 | `owner_type` | string | Polymorphic owner type |
 | `owner_id` | uuid | Polymorphic owner ID |
 | `activated_at` | timestamp | When affiliate was activated |
+| `identity_sealed_at` | timestamp | Permanent identity seal; set on claim and retained after revocation |
 
 **Relationships:**
 

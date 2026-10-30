@@ -143,6 +143,10 @@ any other claimant, and any replay after revocation, is sealed.
 2. Mutating writers must revalidate with `RevalidateIdentitySeal` under
 the affiliate row lock immediately before writing; a claim committed
 between validation and write seals the write.
+3. PostgreSQL `REPEATABLE READ` transactions may fail with SQLSTATE `40001`
+when locking an affiliate sealed after their snapshot was established.
+Retry the whole transaction, including credential lookup and lock acquisition;
+do not retry only the final write or continue in the failed transaction.
 
 ### Capability Rejected Without Sealing
 

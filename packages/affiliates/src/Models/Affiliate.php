@@ -66,6 +66,7 @@ use Spatie\ModelStates\HasStates;
  * @property CarbonInterface|null $activated_at
  * @property CarbonInterface|null $deactivated_at
  * @property CarbonInterface|null $paused_at
+ * @property CarbonInterface|null $identity_sealed_at
  * @property CarbonInterface|null $created_at
  * @property CarbonInterface|null $updated_at
  * @property-read string|null $contact_email Alias for the primary email contact method
@@ -167,6 +168,7 @@ class Affiliate extends Model implements Auditable
             'activated_at',
             'deactivated_at',
             'paused_at',
+            'identity_sealed_at',
         ];
     }
 
@@ -476,6 +478,10 @@ class Affiliate extends Model implements Auditable
         });
 
         self::updating(function (self $affiliate): void {
+            if ($affiliate->isDirty('identity_sealed_at') && $affiliate->getRawOriginal('identity_sealed_at') !== null) {
+                throw new LogicException('The identity seal is permanent.');
+            }
+
             if ($affiliate->isDirty('registration_approval_mode')) {
                 throw new LogicException('The registration approval mode is immutable after creation.');
             }
@@ -568,6 +574,7 @@ class Affiliate extends Model implements Auditable
             'activated_at' => 'immutable_datetime',
             'deactivated_at' => 'immutable_datetime',
             'paused_at' => 'immutable_datetime',
+            'identity_sealed_at' => 'immutable_datetime',
         ];
     }
 

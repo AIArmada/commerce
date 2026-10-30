@@ -11,6 +11,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateClaim;
 use AIArmada\Affiliates\Models\AffiliateCredential;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Tests\Support\EngineRace;
@@ -110,4 +111,59 @@ test('activity write racing a committing claim is sealed at revalidation', funct
 
     expect($results['claimer'])->toBe(['claimed' => true])
         ->and($results['writer'])->toBe(['sealed' => true]);
+});
+
+test('repeatable read activity retries after a concurrent identity claim', function (): void {
+    $this->useEngine();
+
+    $affiliate = raceIdentityAffiliate('RACE-SNAPSHOT-' . Str::upper(Str::random(8)));
+    [$type, $id] = raceIdentityClaimant('race-snapshot-' . uniqid() . '@example.com');
+    $capability = app(IssueOwnershipCapability::class)->run($affiliate);
+    $connectionName = DB::getDefaultConnection();
+    $claimerConnection = 'affiliates_snapshot_claimer';
+    config(['database.connections.' . $claimerConnection => config('database.connections.' . $connectionName)]);
+    $writer = DB::connection($connectionName);
+    $writer->beginTransaction();
+
+    try {
+        $writer->statement('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
+        expect(AffiliateClaim::query()->where('affiliate_id', $affiliate->getKey())->exists())->toBeFalse();
+        $issued = app(IssueActivityCredential::class)->run($affiliate);
+
+        DB::setDefaultConnection($claimerConnection);
+        app(ClaimAffiliateIdentity::class)->run($capability['plaintext_secret'], $type, $id, true);
+        DB::setDefaultConnection($connectionName);
+
+        $failure = null;
+
+        try {
+            $lockedAffiliate = Affiliate::query()->lockForUpdate()->findOrFail($affiliate->getKey());
+            $credential = AffiliateCredential::query()->lockForUpdate()->findOrFail($issued['credential']->getKey());
+            app(RevalidateIdentitySeal::class)->run($lockedAffiliate, $credential);
+            $lockedAffiliate->forceFill(['metadata' => ['late_activity' => true]])->save();
+            $writer->commit();
+        } catch (QueryException $exception) {
+            $failure = $exception;
+        }
+
+        expect($failure)->toBeInstanceOf(QueryException::class)
+            ->and((string) $failure->getCode())->toBe('40001');
+    } finally {
+        if ($writer->transactionLevel() > 0) {
+            $writer->rollBack();
+        }
+
+        DB::setDefaultConnection($connectionName);
+        DB::purge($claimerConnection);
+    }
+
+    expect($affiliate->fresh()->metadata['late_activity'] ?? false)->toBeFalse();
+
+    expect(fn () => DB::transaction(function () use ($affiliate): void {
+        DB::statement('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
+        $issued = app(IssueActivityCredential::class)->run($affiliate);
+        $lockedAffiliate = Affiliate::query()->lockForUpdate()->findOrFail($affiliate->getKey());
+        $credential = AffiliateCredential::query()->lockForUpdate()->findOrFail($issued['credential']->getKey());
+        app(RevalidateIdentitySeal::class)->run($lockedAffiliate, $credential);
+    }))->toThrow(SealedIdentityException::class);
 });
