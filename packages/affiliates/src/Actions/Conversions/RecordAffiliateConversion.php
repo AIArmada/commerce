@@ -148,6 +148,10 @@ final class RecordAffiliateConversion
                 ? $affiliate
                 : $this->findAffiliateById($affiliateId);
 
+            if ($beneficiary instanceof Affiliate && ! $beneficiary->isCommercialPurpose()) {
+                $portionCommission = 0;
+            }
+
             $conversionMetadata = $this->buildConversionMetadata(
                 $payload['metadata'] ?? [],
                 $weight,
@@ -328,6 +332,10 @@ final class RecordAffiliateConversion
         array $payload,
         ?AffiliateAttribution $attribution,
     ): int {
+        if (! $affiliate->isCommercialPurpose()) {
+            return 0;
+        }
+
         if (isset($payload['commission'])) {
             return CommissionCaps::clamp($this->resolveMinorAmount($payload['commission'], fn () => 0) ?? 0);
         }

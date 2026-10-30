@@ -167,7 +167,9 @@ final class RecordAffiliateOutcome
                 'conversion_type' => $conversionType,
                 'subtotal_minor' => (int) Arr::get($payload, 'subtotal_minor', 0),
                 'value_minor' => (int) Arr::get($payload, 'value_minor', 0),
-                'commission_minor' => CommissionCaps::clamp((int) Arr::get($payload, 'commission_minor', 0)),
+                'commission_minor' => $affiliate->isCommercialPurpose()
+                    ? CommissionCaps::clamp((int) Arr::get($payload, 'commission_minor', 0))
+                    : 0,
                 'commission_currency' => (string) Arr::get($payload, 'commission_currency', config('affiliates.currency.default', 'MYR')),
                 'status' => Arr::get($payload, 'status', config('affiliates.commissions.default_status', 'pending')),
                 'channel' => Arr::get($payload, 'channel'),
