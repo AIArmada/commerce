@@ -9,7 +9,6 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
-use InvalidArgumentException;
 
 function attributionFreeAffiliate(string $code, ?string $purpose = null): Affiliate
 {

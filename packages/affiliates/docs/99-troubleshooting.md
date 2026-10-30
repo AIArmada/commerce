@@ -124,6 +124,36 @@ $program->commissionRules()
     ->get();
 ```
 
+4. **Opaque purpose:** affiliates with a host-defined non-commercial
+`purpose` always record zero commission. This is intentional — only
+`null`/`general` purposes earn. Fixed `reward_award` settlement is
+unaffected.
+
+## Identity Issues
+
+### Sealed Identity on Claim
+
+**Symptoms:** `ClaimAffiliateIdentity` throws `SealedIdentityException`.
+
+**Check:**
+
+1. A claim row already exists for the affiliate (active or revoked — both
+seal permanently). Replays by the same claimant return the active claim;
+any other claimant, and any replay after revocation, is sealed.
+2. Mutating writers must revalidate with `RevalidateIdentitySeal` under
+the affiliate row lock immediately before writing; a claim committed
+between validation and write seals the write.
+
+### Capability Rejected Without Sealing
+
+**Symptoms:** `InvalidArgumentException` mentioning expired, consumed,
+revoked, or invalid capability.
+
+**Check:** the capability row state (`status`, `expires_at`,
+`consumed_at`, `revoked_at`), not the seal — the seal only fires when a
+claim row exists. A second `IssueOwnershipCapability` while one is
+active throws; wait for expiry/revocation instead of reissuing.
+
 ## Payout Issues
 
 ### Conversions Not Appearing in Payouts

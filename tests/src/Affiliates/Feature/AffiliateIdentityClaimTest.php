@@ -15,7 +15,6 @@ use AIArmada\Affiliates\Models\AffiliateOwnershipCapability;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
-use InvalidArgumentException;
 
 function identityTestAffiliate(string $code): Affiliate
 {

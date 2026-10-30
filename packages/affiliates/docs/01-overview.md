@@ -54,6 +54,7 @@ The `aiarmada/affiliates` package provides a complete affiliate marketing and re
 
 ### Commission Management
 - **Flexible commission types** - percentage (basis points) or fixed amounts
+- **Zero-commission boundary** - opaque (non-commercial) purposes mint no commission on any recording path; fixed `reward_award` settlement is unaffected
 - **Volume-based tiers** for progressive commission rates
 - **Program-specific rules** with custom conditions
 - **Commission templates** for quick affiliate setup

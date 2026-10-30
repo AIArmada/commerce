@@ -371,6 +371,58 @@ Rank definitions (Bronze, Silver, Gold, etc.).
 
 Rank change history for affiliates.
 
+## Identity Models
+
+### AffiliateCredential
+
+Reusable activity credential for affiliates without an owner yet. Only the
+verifier hash is stored; the plaintext secret is returned once at issuance.
+
+**Key Attributes:**
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `affiliate_id` | uuid | Owning affiliate |
+| `verifier_hash` | string | SHA-256 of the issued secret, unique |
+| `status` | string | `active`, `revoked` |
+| `issued_at` | timestamp | When the credential was issued |
+| `expires_at` | timestamp | Expiry, nullable |
+| `last_used_at` | timestamp | Last presentation, nullable |
+| `revoked_at` | timestamp | Revocation time, nullable |
+
+### AffiliateOwnershipCapability
+
+One-time ownership proof for claiming an affiliate identity. Reuse is never
+reissued while an active capability exists; a lost capability is permanent.
+
+**Key Attributes:**
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `affiliate_id` | uuid | Owning affiliate |
+| `verifier_hash` | string | SHA-256 of the issued secret, unique |
+| `status` | string | `active`, `consumed`, `revoked` |
+| `issued_at` | timestamp | When the capability was issued |
+| `expires_at` | timestamp | Expiry, nullable |
+| `consumed_at` | timestamp | Claim time, nullable |
+| `revoked_at` | timestamp | Revocation time, nullable |
+
+### AffiliateClaim
+
+The single immutable association between an affiliate and its claimant.
+Revoked rows are preserved as history and continue to seal the affiliate.
+
+**Key Attributes:**
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `affiliate_id` | uuid | Claimed affiliate, unique |
+| `claimant_type` | string | Polymorphic host model type |
+| `claimant_id` | string | Polymorphic host model id |
+| `status` | string | `active`, `revoked` |
+| `claimed_at` | timestamp | When the claim was created |
+| `revoked_at` | timestamp | Revocation time, nullable |
+
 ## Support Models
 
 ### AffiliateSupportTicket / AffiliateSupportMessage

@@ -293,6 +293,59 @@ Insertion, persisted fraud-rule signals, rejection marking, and accounting run
 in one same-connection transaction. `AffiliateConversionRecorded` dispatches
 after commit only, gated by `dispatch_event`.
 
+### Attribution-Free Outcomes
+
+Outcomes without a landing attribution pass `null` as the first argument and
+an explicit affiliate plus provenance instead. `subject_key` and `origin`
+are required; `sharer_user_id`, `actor_user_id`, `affiliate_link_id`, and
+`affiliate_program_id` are optional. Precedence is explicit `$provenance` >
+`$payload` > attribution-derived defaults, and link/program integrity checks
+validate the merged values. A link must belong to the affiliate; a program
+must exist within its allowed owner scope.
+
+```php
+$result = RecordAffiliateOutcome::run(
+    null,
+    'host_signal',
+    'my-app:signal:'.$sourceId,
+    ['dispatch_event' => false],
+    $affiliate,
+    ['subject_key' => 'subject:abc', 'origin' => 'host_signal'],
+);
+```
+
+### Identity Credentials, Capabilities, and Claims
+
+Reusable activity credentials and one-time ownership capabilities identify
+affiliates that have no owner yet. The plaintext secret is returned once at
+issuance; only its hash is stored.
+
+```php
+use AIArmada\Affiliates\Actions\Identity\ClaimAffiliateIdentity;
+use AIArmada\Affiliates\Actions\Identity\IssueActivityCredential;
+use AIArmada\Affiliates\Actions\Identity\IssueOwnershipCapability;
+use AIArmada\Affiliates\Actions\Identity\RevalidateIdentitySeal;
+use AIArmada\Affiliates\Actions\Identity\RevokeAffiliateClaim;
+
+$credential = IssueActivityCredential::run($affiliate); // reusable, expirable
+$capability = IssueOwnershipCapability::run($affiliate); // one-time, consumable
+
+$claim = ClaimAffiliateIdentity::run(
+    $capability['plaintext_secret'],
+    $claimantType,   // polymorphic host model type
+    $claimantId,     // polymorphic host model id
+    true,            // explicit caller authorization assertion
+);
+```
+
+Exactly one claim row ever exists per affiliate. Replaying a claim with the
+same claimant returns the active claim; any other claimant — and any replay
+after revocation — throws `SealedIdentityException`. Revocation preserves
+the row as history. Mutating activity writers must hold the affiliate row
+lock, then the credential row lock, then call `RevalidateIdentitySeal`
+immediately before writing, so in-flight activity racing a committing claim
+is sealed instead of appending to sealed history.
+
 ## Commission Calculation
 
 The `CommissionCalculator` service handles all commission logic. It takes the subtotal in minor
@@ -337,9 +390,13 @@ participate in automatic rank upgrades, performance bonuses, upline/downline
 metrics, conversion maturity, scheduled payout claims, and payout queues that
 do not specify an affiliate. Hosts may store other opaque purpose values for
 attribution-only or reward-recipient profiles; those values do not opt those
-profiles into those automatic commercial workflows. Attribution, recorded
-outcomes, and explicitly targeted awards or payouts remain available. The
-package does not reinterpret host-specific purpose values.
+profiles into those automatic commercial workflows. Recording paths mint zero
+commission for non-commercial purposes on every path (explicit amounts,
+voucher overrides, program rules, weighted recipients, outcome payloads);
+fixed `reward_award` settlement through the award policy is unaffected.
+Attribution, recorded outcomes, and explicitly targeted awards or payouts
+remain available. The package does not reinterpret host-specific purpose
+values.
 
 ### Creating Affiliates
 
