@@ -59,12 +59,15 @@ final class RecordAffiliateOutcome
 
     /**
      * @param  array<string, mixed>  $payload
+     * @param  array<string, mixed>  $provenance
      */
     public function handle(
-        AffiliateAttribution $attribution,
+        ?AffiliateAttribution $attribution,
         string $conversionType,
         string $businessKey,
         array $payload = [],
+        ?Affiliate $affiliate = null,
+        array $provenance = [],
     ): AffiliateOutcomeResult {
         $conversionType = mb_trim($conversionType);
         $businessKey = mb_trim($businessKey);
@@ -81,29 +84,63 @@ final class RecordAffiliateOutcome
             throw new InvalidArgumentException('Business key must be a non-empty caller-owned namespaced identity of at most 191 characters.');
         }
 
-        $this->assertAttributionConnection($attribution);
+        if ($attribution instanceof AffiliateAttribution) {
+            $this->assertAttributionConnection($attribution);
 
-        if ((bool) config('affiliates.owner.enabled', false)) {
-            /** @var AffiliateAttribution $attribution */
-            $attribution = OwnerWriteGuard::findOrFailForOwner(AffiliateAttribution::class, $attribution->getKey());
-        } else {
-            $attribution = AffiliateAttribution::query()->findOrFail($attribution->getKey());
+            if ((bool) config('affiliates.owner.enabled', false)) {
+                /** @var AffiliateAttribution $attribution */
+                $attribution = OwnerWriteGuard::findOrFailForOwner(AffiliateAttribution::class, $attribution->getKey());
+            } else {
+                $attribution = AffiliateAttribution::query()->findOrFail($attribution->getKey());
+            }
+
+            $resolvedAffiliate = $attribution->affiliate()->first();
+
+            if ($affiliate instanceof Affiliate && $resolvedAffiliate instanceof Affiliate
+                && (string) $affiliate->getKey() !== (string) $resolvedAffiliate->getKey()) {
+                throw new InvalidArgumentException('Outcome affiliate must match the persisted attribution.');
+            }
+
+            $affiliate = $resolvedAffiliate;
         }
 
-        $affiliate = $attribution->affiliate()->first();
+        if (! $affiliate instanceof Affiliate) {
+            if ($attribution instanceof AffiliateAttribution) {
+                $affiliate = $attribution->affiliate()->first();
+            } elseif ($affiliate === null) {
+                return new AffiliateOutcomeResult(AffiliateOutcomeDisposition::NoAffiliate, null);
+            }
+        }
 
-        if ($affiliate === null) {
+        if (! $affiliate instanceof Affiliate) {
             return new AffiliateOutcomeResult(AffiliateOutcomeDisposition::NoAffiliate, null);
         }
 
         if ((bool) config('affiliates.owner.enabled', false)) {
             /** @var Affiliate $affiliate */
             $affiliate = OwnerWriteGuard::findOrFailForOwner(Affiliate::class, $affiliate->getKey());
+        } elseif (! $affiliate->exists || Affiliate::query()->whereKey($affiliate->getKey())->doesntExist()) {
+            return new AffiliateOutcomeResult(AffiliateOutcomeDisposition::NoAffiliate, null);
         }
 
-        $this->assertSameConnection($attribution, $affiliate);
-        $this->assertSameOwner($attribution, $affiliate);
-        $this->assertAttributionReferences($attribution, $affiliate, $payload);
+        if ($attribution instanceof AffiliateAttribution) {
+            $this->assertSameConnection($attribution, $affiliate);
+            $this->assertSameOwner($attribution, $affiliate);
+            $this->assertAttributionReferences($attribution, $affiliate, $payload, $provenance);
+        } else {
+            $this->assertStandaloneReferences($affiliate, $payload, $provenance);
+        }
+
+        $subjectKey = $this->mergedValue($provenance, $payload, $attribution, 'subject_key');
+        $origin = $this->mergedValue($provenance, $payload, $attribution, 'origin');
+
+        if ($attribution === null && ($subjectKey === null || $subjectKey === '')) {
+            throw new InvalidArgumentException('Attribution-free outcomes require an explicit subject_key.');
+        }
+
+        if ($attribution === null && ($origin === null || $origin === '')) {
+            throw new InvalidArgumentException('Attribution-free outcomes require an explicit origin.');
+        }
 
         $idempotencyKey = hash('sha256', $businessKey);
         $dispatchEvent = (bool) Arr::get($payload, 'dispatch_event', true);
@@ -133,6 +170,11 @@ final class RecordAffiliateOutcome
             $externalReference = mb_substr($businessKey, 0, 120);
         }
 
+        $linkId = $this->mergedValue($provenance, $payload, $attribution, 'affiliate_link_id');
+        $programId = $this->mergedValue($provenance, $payload, $attribution, 'affiliate_program_id');
+        $sharerUserId = $this->mergedValue($provenance, $payload, $attribution, 'sharer_user_id');
+        $actorUserId = $this->mergedValue($provenance, $payload, $attribution, 'actor_user_id');
+
         $connection = (new AffiliateConversion)->getConnection();
 
         /** @var array{disposition: AffiliateOutcomeDisposition, conversion_id: string} $committed */
@@ -144,7 +186,13 @@ final class RecordAffiliateOutcome
             $idempotencyKey,
             $externalReference,
             $metadata,
-            $payload
+            $payload,
+            $subjectKey,
+            $origin,
+            $linkId,
+            $programId,
+            $sharerUserId,
+            $actorUserId
         ): array {
             // Fresh instance per attempt: reusing a saved model across
             // outer-transaction retries leaves exists=true after rollback,
@@ -152,18 +200,18 @@ final class RecordAffiliateOutcome
             $conversion = new AffiliateConversion([
                 'idempotency_key' => $idempotencyKey,
                 'affiliate_id' => $affiliate->getKey(),
-                'affiliate_attribution_id' => $attribution->getKey(),
-                'affiliate_program_id' => $attribution->affiliate_program_id,
+                'affiliate_attribution_id' => $attribution?->getKey(),
+                'affiliate_program_id' => $programId,
                 'affiliate_code' => $affiliate->code,
-                'subject_type' => Arr::get($payload, 'subject_type', $attribution->subject_type),
-                'subject_key' => Arr::get($payload, 'subject_key', $attribution->subject_key),
-                'subject_instance' => Arr::get($payload, 'subject_instance', $attribution->subject_instance),
-                'subject_title_snapshot' => Arr::get($payload, 'subject_title_snapshot', $attribution->subject_title_snapshot),
-                'subject_id' => Arr::get($payload, 'subject_id', $attribution->subject_id),
-                'affiliate_link_id' => $attribution->affiliate_link_id,
+                'subject_type' => Arr::get($payload, 'subject_type', $attribution?->subject_type),
+                'subject_key' => $subjectKey !== '' ? $subjectKey : null,
+                'subject_instance' => Arr::get($payload, 'subject_instance', $attribution?->subject_instance),
+                'subject_title_snapshot' => Arr::get($payload, 'subject_title_snapshot', $attribution?->subject_title_snapshot),
+                'subject_id' => Arr::get($payload, 'subject_id', $attribution?->subject_id),
+                'affiliate_link_id' => $linkId,
                 'external_reference' => $externalReference,
-                'commission_override' => Arr::get($payload, 'commission_override', $attribution->commission_override),
-                'upline_levels' => Arr::get($payload, 'upline_levels', $attribution->upline_levels),
+                'commission_override' => Arr::get($payload, 'commission_override', $attribution?->commission_override),
+                'upline_levels' => Arr::get($payload, 'upline_levels', $attribution?->upline_levels),
                 'conversion_type' => $conversionType,
                 'subtotal_minor' => (int) Arr::get($payload, 'subtotal_minor', 0),
                 'value_minor' => (int) Arr::get($payload, 'value_minor', 0),
@@ -173,9 +221,9 @@ final class RecordAffiliateOutcome
                 'commission_currency' => (string) Arr::get($payload, 'commission_currency', config('affiliates.currency.default', 'MYR')),
                 'status' => Arr::get($payload, 'status', config('affiliates.commissions.default_status', 'pending')),
                 'channel' => Arr::get($payload, 'channel'),
-                'origin' => Arr::get($payload, 'origin', $attribution->origin),
-                'sharer_user_id' => Arr::get($payload, 'sharer_user_id', $attribution->sharer_user_id),
-                'actor_user_id' => Arr::get($payload, 'actor_user_id'),
+                'origin' => $origin !== '' ? $origin : null,
+                'sharer_user_id' => $sharerUserId,
+                'actor_user_id' => $actorUserId,
                 'metadata' => $metadata,
                 'occurred_at' => Arr::get($payload, 'occurred_at', CarbonImmutable::now()),
                 'approved_at' => Arr::get($payload, 'approved_at'),
@@ -273,10 +321,46 @@ final class RecordAffiliateOutcome
     }
 
     /**
+     * Precedence: explicit provenance wins, then payload, then attribution-derived
+     * defaults. Existing payload-over-attribution behavior is preserved.
+     *
      * @param  array<string, mixed>  $payload
+     * @param  array<string, mixed>  $provenance
      */
-    private function assertAttributionReferences(AffiliateAttribution $attribution, Affiliate $affiliate, array $payload): void
+    private function mergedValue(array $provenance, array $payload, ?AffiliateAttribution $attribution, string $key): mixed
     {
+        if (array_key_exists($key, $provenance) && $provenance[$key] !== null) {
+            return $provenance[$key];
+        }
+
+        if (array_key_exists($key, $payload) && $payload[$key] !== null) {
+            return $payload[$key];
+        }
+
+        return $attribution?->getAttribute($key);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @param  array<string, mixed>  $provenance
+     */
+    private function assertAttributionReferences(
+        AffiliateAttribution $attribution,
+        Affiliate $affiliate,
+        array $payload,
+        array $provenance = [],
+    ): void {
+        $linkId = $this->mergedValue($provenance, $payload, $attribution, 'affiliate_link_id');
+        $programId = $this->mergedValue($provenance, $payload, $attribution, 'affiliate_program_id');
+
+        if ($linkId !== null && (string) $linkId !== (string) $attribution->affiliate_link_id) {
+            throw new InvalidArgumentException('Outcome link must match the persisted attribution.');
+        }
+
+        if ($programId !== null && (string) $programId !== (string) $attribution->affiliate_program_id) {
+            throw new InvalidArgumentException('Outcome program must match the persisted attribution.');
+        }
+
         foreach (['affiliate_link_id', 'affiliate_program_id'] as $key) {
             if (array_key_exists($key, $payload)
                 && ((! is_string($payload[$key]) && ! is_int($payload[$key]) && $payload[$key] !== null)
@@ -296,6 +380,32 @@ final class RecordAffiliateOutcome
                 ->whereKey($attribution->affiliate_program_id)
                 ->exists()) {
             throw new InvalidArgumentException('The attribution program is outside the affiliate owner scope.');
+        }
+    }
+
+    /**
+     * Validate explicit references for attribution-free recording. Link and
+     * program integrity is checked against the resolved affiliate: a link
+     * must belong to it, a program must exist within its allowed owner
+     * scope. Precedence never bypasses these checks.
+     *
+     * @param  array<string, mixed>  $payload
+     * @param  array<string, mixed>  $provenance
+     */
+    private function assertStandaloneReferences(Affiliate $affiliate, array $payload, array $provenance): void
+    {
+        $linkId = $this->mergedValue($provenance, $payload, null, 'affiliate_link_id');
+        $programId = $this->mergedValue($provenance, $payload, null, 'affiliate_program_id');
+
+        if ($linkId !== null && ! $affiliate->links()->whereKey($linkId)->exists()) {
+            throw new InvalidArgumentException('The outcome link does not belong to its affiliate.');
+        }
+
+        if ($programId !== null && ! AffiliateProgram::query()
+            ->forOwner($affiliate->owner, includeGlobal: true)
+            ->whereKey($programId)
+            ->exists()) {
+            throw new InvalidArgumentException('The outcome program is outside the affiliate owner scope.');
         }
     }
 
