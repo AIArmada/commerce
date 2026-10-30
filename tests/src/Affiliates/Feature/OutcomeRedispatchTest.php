@@ -394,3 +394,29 @@ test('a deadlock after saving the outcome retries with a fresh conversion', func
     'allowed' => [999, AffiliateOutcomeDisposition::Created],
     'rejected' => [1, AffiliateOutcomeDisposition::Rejected],
 ]);
+
+test('provenance-only keys never read missing attribution attributes', function (): void {
+    Event::fake([AffiliateConversionRecorded::class]);
+
+    // affiliate_attributions has no actor_user_id column; resolving it
+    // through provenance must not touch the attribution row at all.
+    $affiliate = createRedispatchAffiliate('REDISPATCHNOPROV');
+    $attribution = createRedispatchAttribution($affiliate, 'cookie-redispatch-noprov');
+    $actor = (string) Str::uuid();
+
+    $result = app(RecordAffiliateOutcome::class)->handle(
+        $attribution,
+        'referral',
+        'redispatch-test:referral:no-prov-attr',
+        ['dispatch_event' => false],
+        null,
+        ['actor_user_id' => $actor, 'subject_key' => 'subject:no-prov', 'origin' => 'test'],
+    );
+
+    expect($result->disposition)->toBe(AffiliateOutcomeDisposition::Created);
+
+    $stored = AffiliateConversion::query()->where('idempotency_key', hash('sha256', 'redispatch-test:referral:no-prov-attr'))->firstOrFail();
+
+    expect((string) $stored->actor_user_id)->toBe($actor)
+        ->and($stored->subject_key)->toBe('subject:no-prov');
+});

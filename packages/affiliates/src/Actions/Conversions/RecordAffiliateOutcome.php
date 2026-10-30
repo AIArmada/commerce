@@ -341,7 +341,12 @@ final class RecordAffiliateOutcome
             return $payload[$key];
         }
 
-        return $attribution?->getAttribute($key);
+        // Array access, never getAttribute(): the attribution row may not
+        // carry this column at all (e.g. actor_user_id), and attribute
+        // access throws on missing attributes.
+        $attributes = $attribution?->getAttributes() ?? [];
+
+        return $attributes[$key] ?? null;
     }
 
     /**
