@@ -124,7 +124,7 @@ it('formats an address for every country', function (string $formatter, array $i
     [AlandAddressFormatter::class, ['line1' => 'Stadshusparken',
         'city' => 'MARIEHAMN',
         'postcode' => 'AX-22100',
-        'country_code' => 'AX', ], "Stadshusparken\nAX-22100 MARIEHAMN\nAland Islands"],
+        'country_code' => 'AX', ], "Stadshusparken\nAX-22100 MARIEHAMN\nÅland Islands"],
 
     // Algeria
     [AlgeriaAddressFormatter::class, ['line1' => "2, rue de l'Indépendance",

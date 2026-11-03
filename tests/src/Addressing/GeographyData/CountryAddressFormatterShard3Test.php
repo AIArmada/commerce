@@ -122,7 +122,7 @@ it('formats an address for every country', function (string $formatter, array $i
     [AlandAddressFormatter::class, ['line1' => 'Stadshusparken',
         'city' => 'MARIEHAMN',
         'postcode' => '22100',
-        'country_code' => 'AX', ], "Stadshusparken\n22100 MARIEHAMN\nAland Islands"],
+        'country_code' => 'AX', ], "Stadshusparken\n22100 MARIEHAMN\nÅland Islands"],
 
     // AmericanSamoa
     [AmericanSamoaAddressFormatter::class, ['line1' => 'PO BOX 1234',
