@@ -306,7 +306,7 @@ it('formats an address for every country', function (string $formatter, array $i
     [FijiAddressFormatter::class, ['line1' => 'PO Box 123',
         'city' => 'SUVA',
         'postcode' => '9999',
-        'country_code' => 'FJ', ], "PO Box 123\nSUVA\n9999\nFiji Islands"],
+        'country_code' => 'FJ', ], "PO Box 123\nSUVA\n9999\nFiji"],
 
     // FrenchGuiana
     [FrenchGuianaAddressFormatter::class, ['line1' => '3 AVENUE HENRI AGARANDE',
@@ -597,7 +597,7 @@ it('formats an address for every country', function (string $formatter, array $i
     [SaintBarthelemyAddressFormatter::class, ['line1' => '5 RUE VICTOR HUGO',
         'city' => 'SAINT-BARTHELEMY',
         'postcode' => '97133',
-        'country_code' => 'BL', ], "5 RUE VICTOR HUGO\n97133 SAINT-BARTHELEMY\nSaint-Barthelemy"],
+        'country_code' => 'BL', ], "5 RUE VICTOR HUGO\n97133 SAINT-BARTHELEMY\nSaint Barthélemy"],
 
     // SaintKittsAndNevis
     [SaintKittsAndNevisAddressFormatter::class, ['line1' => '2 Fern Street',
@@ -611,7 +611,7 @@ it('formats an address for every country', function (string $formatter, array $i
     [SaintMartinAddressFormatter::class, ['line1' => '5 RUE DES ACACIAS',
         'city' => 'SAINT-MARTIN',
         'postcode' => '97150',
-        'country_code' => 'MF', ], "5 RUE DES ACACIAS\n97150 SAINT-MARTIN\nSaint-Martin (French part)"],
+        'country_code' => 'MF', ], "5 RUE DES ACACIAS\n97150 SAINT-MARTIN\nSaint Martin (French part)"],
 
     // SaintVincentAndTheGrenadines
     [SaintVincentAndTheGrenadinesAddressFormatter::class, ['line1' => 'HALIFAX STREET',

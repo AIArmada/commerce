@@ -293,7 +293,7 @@ it('formats an address for every country', function (string $formatter, array $i
     [FijiAddressFormatter::class, ['line1' => '14 VIRIA STREET',
         'line2' => 'VATUWAQA',
         'city' => 'SUVA',
-        'country_code' => 'FJ', ], "14 VIRIA STREET\nVATUWAQA\nSUVA\nFiji Islands"],
+        'country_code' => 'FJ', ], "14 VIRIA STREET\nVATUWAQA\nSUVA\nFiji"],
 
     // France
     [FranceAddressFormatter::class, ['line1' => '25 RUE DES FLEURS',
@@ -614,7 +614,7 @@ it('formats an address for every country', function (string $formatter, array $i
     [SaoTomeAndPrincipeAddressFormatter::class, ['line1' => 'Rua 3 de Fevereiro',
         'city' => 'São Tomé',
         'postcode' => '99999',
-        'country_code' => 'ST', ], "Rua 3 de Fevereiro\nSão Tomé\n99999\nSao Tome and Principe"],
+        'country_code' => 'ST', ], "Rua 3 de Fevereiro\nSão Tomé\n99999\nSão Tomé and Príncipe"],
 
     // Serbia
     [SerbiaAddressFormatter::class, ['line1' => 'Beogradska 3',

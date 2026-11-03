@@ -568,7 +568,7 @@ it('formats an address for every country', function (string $formatter, array $i
     [ReunionAddressFormatter::class, ['line1' => 'BP 300',
         'city' => 'SAINT-PIERRE',
         'postcode' => '97410',
-        'country_code' => 'RE', ], "BP 300\n97410 SAINT-PIERRE\nReunion"],
+        'country_code' => 'RE', ], "BP 300\n97410 SAINT-PIERRE\nRéunion"],
 
     // Rwanda
     [RwandaAddressFormatter::class, ['line1' => 'B.P. 3425',
@@ -603,7 +603,7 @@ it('formats an address for every country', function (string $formatter, array $i
     // SaoTomeAndPrincipe
     [SaoTomeAndPrincipeAddressFormatter::class, ['line1' => 'Rua 3 de Fevereiro',
         'city' => 'São Tomé',
-        'country_code' => 'ST', ], "Rua 3 de Fevereiro\nSão Tomé\nSao Tome and Principe"],
+        'country_code' => 'ST', ], "Rua 3 de Fevereiro\nSão Tomé\nSão Tomé and Príncipe"],
 
     // Senegal
     [SenegalAddressFormatter::class, ['line1' => 'BP 1534',

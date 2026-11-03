@@ -582,7 +582,7 @@ it('formats an address for every country', function (string $formatter, array $i
     [ReunionAddressFormatter::class, ['line1' => 'Rue de Paris',
         'city' => 'SAINT-DENIS',
         'postcode' => '97400',
-        'country_code' => 'RE', ], "Rue de Paris\n97400 SAINT-DENIS\nReunion"],
+        'country_code' => 'RE', ], "Rue de Paris\n97400 SAINT-DENIS\nRéunion"],
 
     // Russia
     [RussiaAddressFormatter::class, ['line1' => 'ul. Lesnaya d. 5, kv.176',
@@ -594,7 +594,7 @@ it('formats an address for every country', function (string $formatter, array $i
     [SaintBarthelemyAddressFormatter::class, ['line1' => 'Rue de la République 2',
         'city' => 'Gustavia',
         'postcode' => '97133',
-        'country_code' => 'BL', ], "Rue de la République 2\n97133 Gustavia\nSaint-Barthelemy"],
+        'country_code' => 'BL', ], "Rue de la République 2\n97133 Gustavia\nSaint Barthélemy"],
 
     // SaintKittsAndNevis
     [SaintKittsAndNevisAddressFormatter::class, ['line1' => 'Main Street',
@@ -607,7 +607,7 @@ it('formats an address for every country', function (string $formatter, array $i
     [SaintMartinAddressFormatter::class, ['line1' => 'Rue de la République 4',
         'city' => 'Marigot',
         'postcode' => '97150',
-        'country_code' => 'MF', ], "Rue de la République 4\n97150 Marigot\nSaint-Martin (French part)"],
+        'country_code' => 'MF', ], "Rue de la République 4\n97150 Marigot\nSaint Martin (French part)"],
 
     // SaintVincentAndTheGrenadines
     [SaintVincentAndTheGrenadinesAddressFormatter::class, ['line1' => 'P.O BOX BQ400',
