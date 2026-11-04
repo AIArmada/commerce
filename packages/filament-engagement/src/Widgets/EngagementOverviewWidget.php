@@ -21,6 +21,8 @@ final class EngagementOverviewWidget extends StatsOverviewWidget
 
     protected static ?int $sort = 1;
 
+    protected ?string $pollingInterval = null;
+
     protected function getStats(): array
     {
         $owner = OwnerUiScope::resolveOwner(Follow::class);

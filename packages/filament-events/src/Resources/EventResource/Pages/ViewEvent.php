@@ -7,6 +7,7 @@ namespace AIArmada\FilamentEvents\Resources\EventResource\Pages;
 use AIArmada\FilamentEvents\Pages\EventPublicPreview;
 use AIArmada\FilamentEvents\Resources\EventResource;
 use Filament\Actions\Action;
+use Filament\Actions\EditAction;
 use Filament\Resources\Pages\ViewRecord;
 
 final class ViewEvent extends ViewRecord
@@ -16,6 +17,7 @@ final class ViewEvent extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            EditAction::make(),
             Action::make('publicPreview')
                 ->label('Public Preview')
                 ->icon('heroicon-o-eye')

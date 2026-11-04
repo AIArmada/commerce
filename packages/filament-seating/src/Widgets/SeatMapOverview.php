@@ -12,6 +12,10 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
 
 class SeatMapOverview extends BaseWidget
 {
+    protected static bool $isLazy = false;
+
+    protected ?string $pollingInterval = null;
+
     protected function getStats(): array
     {
         $mapCount = SeatMapModel::query()->forOwner()->count();

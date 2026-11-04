@@ -20,6 +20,7 @@
     "require": {
         "php": "^8.5",
         "aiarmada/commerce-support": "self.version",
+        "spatie/eloquent-sortable": "^5.0",
         "spatie/laravel-data": "^4.23.0",
         "spatie/laravel-package-tools": "^1.93.2"
     },

@@ -12,7 +12,7 @@ final class InventoryStatsWidget extends StatsOverviewWidget
 {
     protected static ?int $sort = 10;
 
-    protected ?string $pollingInterval = '30s';
+    protected ?string $pollingInterval = '60s';
 
     public static function canView(): bool
     {

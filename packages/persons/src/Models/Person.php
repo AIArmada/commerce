@@ -27,6 +27,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use LogicException;
+use Spatie\EloquentSortable\Sortable;
+use Spatie\EloquentSortable\SortableTrait;
 
 /**
  * @property string $id
@@ -40,6 +42,8 @@ use LogicException;
  * @property string|null $searchable_name
  * @property array|null $bio
  * @property PersonStatus $status
+ * @property bool $is_featured
+ * @property int|null $order_column
  * @property CarbonImmutable|null $published_at
  * @property-read EloquentCollection<int, PersonName> $names
  * @property-read string $formatted_name
@@ -47,7 +51,7 @@ use LogicException;
  * Person is the shared, global human-identity root. It deliberately has no
  * owner scope; tenant-owned profiles link to it without changing that rule.
  */
-class Person extends Model
+class Person extends Model implements Sortable
 {
     use HasAffiliations;
     use HasCredentials;
@@ -55,9 +59,17 @@ class Person extends Model
     use HasTitles;
     use HasUuids;
     use ParsesPostgresTimestamps;
+    use SortableTrait;
+
+    /** @var array<string, mixed> */
+    public array $sortable = [
+        'order_column_name' => 'order_column',
+        'sort_when_creating' => false,
+    ];
 
     protected $attributes = [
         'status' => PersonStatus::Active->value,
+        'is_featured' => false,
     ];
 
     /** @var list<string> */
@@ -71,6 +83,8 @@ class Person extends Model
         'slug',
         'bio',
         'status',
+        'is_featured',
+        'order_column',
     ];
 
     protected static function booted(): void
@@ -80,6 +94,7 @@ class Person extends Model
             $person->validateBio();
             $person->syncStatusLifecycle();
             $person->normalizeIdentityValues();
+            $person->syncFeaturedOrder();
         });
 
         static::deleting(function (Person $person): void {
@@ -104,6 +119,8 @@ class Person extends Model
             'bio' => 'array',
             'gender' => Gender::class,
             'status' => PersonStatus::class,
+            'is_featured' => 'boolean',
+            'order_column' => 'integer',
             'published_at' => 'immutable_datetime',
         ];
     }
@@ -150,6 +167,15 @@ class Person extends Model
     }
 
     /**
+     * @param  Builder<Person>  $query
+     * @return Builder<Person>
+     */
+    public function scopeFeatured(Builder $query): Builder
+    {
+        return $query->where('is_featured', true);
+    }
+
+    /**
      * Eager-load the title graph consumed by `formatted_name` so list pages
      * avoid one query per person. The accessor stays pure (it never populates
      * relations itself); callers opt in via `Person::withFormattedName()->get()`.
@@ -162,6 +188,24 @@ class Person extends Model
         return $query->with(['titleAssignments' => fn ($assignments): mixed => $assignments
             ->where('status', AssignmentStatus::Active)
             ->with('title.category')]);
+    }
+
+    /**
+     * Assign a curated position the first time a person is featured, and
+     * append a new position when a previously featured person is re-featured.
+     * Explicit positions supplied on create are preserved.
+     */
+    protected function syncFeaturedOrder(): void
+    {
+        if (! $this->is_featured) {
+            return;
+        }
+
+        if ($this->order_column !== null && ! ($this->exists && $this->isDirty('is_featured'))) {
+            return;
+        }
+
+        $this->setHighestOrderNumber();
     }
 
     private function normalizeIdentityValues(): void

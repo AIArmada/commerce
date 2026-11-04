@@ -10,6 +10,7 @@ use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 
@@ -38,6 +39,7 @@ class PersonForm
                             ->options(PersonStatus::class)
                             ->default(PersonStatus::Active->value)
                             ->required(),
+                        self::featuredToggle(),
                     ]),
                 Section::make('Biography')
                     ->components([
@@ -47,5 +49,13 @@ class PersonForm
                             ->addButtonLabel('Add translation'),
                     ]),
             ]);
+    }
+
+    public static function featuredToggle(): Toggle
+    {
+        return Toggle::make('is_featured')
+            ->label(__('Featured'))
+            ->helperText(__('Featured records can appear in curated showcases.'))
+            ->default(false);
     }
 }

@@ -257,3 +257,32 @@ Composition logic:
 1. Active `before_name` titles grouped by `title.category.sort_order`, then sorted by `title.sort_order` → space-separated prefix
 2. Person's `name` field
 3. Active `after_name` titles grouped by `title.category.sort_order`, then sorted by `title.sort_order` → comma-separated suffix
+
+## Featured people
+
+`Person` implements `Spatie\EloquentSortable\Sortable`. Editorial selections
+set `is_featured`, and `order_column` stores the curated position:
+
+```php
+use AIArmada\Persons\Models\Person;
+
+$person->update(['is_featured' => true]); // appends to the featured order
+$person->update(['is_featured' => false]);
+
+$featured = Person::query()
+    ->featured()
+    ->ordered()
+    ->get();
+```
+
+`featured()` filters to selected records. `ordered()` comes from Spatie
+Sortable and sorts by `order_column`. A person that is featured for the first
+time receives the next available position automatically; an explicit
+`order_column` supplied on create is preserved.
+
+When a selection is removed, the stored `order_column` is kept. Featuring the
+person again appends them to the end of the curated order with a new position;
+use the Sortable APIs (`Person::setNewOrder([...])`, `moveOrderUp()`, and so
+on) to move them back deliberately.
+
+`ReorderFeaturedPersonsAction::handle($modelClass, $ids, $afterReordering)` reorders a subset within the full featured sequence, preserving other records’ slots. It validates distinct featured IDs, locks the selection in a transaction, and persists through Spatie Sortable. The optional callback receives the old/new complete ID sequences inside the transaction for application audit integration. Callers must authorize curation.

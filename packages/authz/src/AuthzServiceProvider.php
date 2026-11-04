@@ -82,6 +82,8 @@ final class AuthzServiceProvider extends PackageServiceProvider
         $this->registerBladeDirectives();
         $this->registerImpersonationEventListeners();
         $this->registerGateHooks();
+        UserRoleChecker::flushGlobalRoleCache();
+        UserRoleChecker::registerMutationListener();
     }
 
     public function bootingPackage(): void
@@ -225,6 +227,7 @@ final class AuthzServiceProvider extends PackageServiceProvider
             RequestReceived::class,
             static function (): void {
                 app(PermissionRegistrar::class)->forgetCachedPermissions();
+                UserRoleChecker::flushGlobalRoleCache();
 
                 if (app()->has(Authz::class)) {
                     app(Authz::class)->clearCache();

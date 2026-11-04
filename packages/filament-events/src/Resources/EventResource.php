@@ -17,6 +17,7 @@ use AIArmada\FilamentEvents\Contracts\EventFormExtension;
 use AIArmada\Ticketing\Enums\PricingMode;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Actions\EditAction;
 use Filament\Actions\ExportAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Select;
@@ -133,6 +134,7 @@ final class EventResource extends Resource
             ])
             ->actions([
                 ViewAction::make(),
+                EditAction::make(),
                 Action::make('publish')
                     ->label('Publish')
                     ->icon('heroicon-o-check-circle')

@@ -11,6 +11,8 @@ final class AbcAnalysisChart extends ChartWidget
 {
     protected ?string $heading = 'ABC Analysis';
 
+    protected ?string $pollingInterval = null;
+
     protected static ?int $sort = 7;
 
     protected ?string $maxHeight = '300px';
@@ -20,7 +22,7 @@ final class AbcAnalysisChart extends ChartWidget
         return config('filament-inventory.features.abc_analysis_chart', true);
     }
 
-    public function getDescription(): ?string
+    public function getDescription(): string
     {
         $report = app(StockLevelReport::class);
         $analysis = $report->getAbcAnalysis();

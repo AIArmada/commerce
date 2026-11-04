@@ -5,10 +5,20 @@ declare(strict_types=1);
 namespace AIArmada\Authz\Support;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Events\QueryExecuted;
+use Illuminate\Support\Facades\DB;
 use Spatie\Permission\PermissionRegistrar;
+use WeakMap;
 
 final class UserRoleChecker
 {
+    /**
+     * Request-scoped verdict cache keyed by user object and role name.
+     *
+     * @var WeakMap<object, array<string, bool>>|null
+     */
+    private static ?WeakMap $globalRoleCache = null;
+
     public static function hasRole(mixed $user, string $role): bool
     {
         return is_object($user)
@@ -28,6 +38,13 @@ final class UserRoleChecker
             return false;
         }
 
+        $cache = self::$globalRoleCache ??= new WeakMap;
+        $cachedRoles = $cache[$user] ?? [];
+
+        if (array_key_exists($role, $cachedRoles)) {
+            return $cachedRoles[$role];
+        }
+
         $registrar = app(PermissionRegistrar::class);
 
         // Drop team scoping entirely for the check: a global assignment may
@@ -36,11 +53,12 @@ final class UserRoleChecker
         // FilamentPermission::isSuperAdmin, keeping Gate and UI verdicts
         // coherent.
         //
-        // The refresh below runs in both team modes: a loaded roles relation
-        // can predate a grant, revocation, or sync performed through another
-        // instance, and the verdict must read the current assignment instead
-        // of that snapshot. The previous relation is restored on exit so the
-        // check never mutates caller-visible model state.
+        // A loaded roles relation can predate a grant, revocation, or sync
+        // performed through another instance, so the relation is refreshed
+        // for the first check in this request. The verdict is then reused
+        // until a role assignment mutation invalidates the request cache;
+        // otherwise every Filament navigation item would issue the same
+        // count query (100+ per admin page).
         $teams = $registrar->teams;
         $registrar->teams = false;
 
@@ -52,7 +70,7 @@ final class UserRoleChecker
         }
 
         try {
-            return (bool) $user->hasRole($role);
+            $verdict = (bool) $user->hasRole($role);
         } finally {
             $registrar->teams = $teams;
 
@@ -64,5 +82,38 @@ final class UserRoleChecker
                 }
             }
         }
+
+        $cachedRoles[$role] = $verdict;
+        $cache[$user] = $cachedRoles;
+
+        return $verdict;
+    }
+
+    public static function flushGlobalRoleCache(): void
+    {
+        self::$globalRoleCache = null;
+    }
+
+    /**
+     * Invalidate the request cache whenever a role assignment or role record
+     * is written, so same-request grants/revocations remain visible without
+     * re-querying on every subsequent authorization check.
+     */
+    public static function registerMutationListener(): void
+    {
+        DB::listen(static function (QueryExecuted $query): void {
+            $sql = mb_ltrim($query->sql);
+
+            if (! preg_match('/^(insert|update|delete)\b/i', $sql)) {
+                return;
+            }
+
+            $roleTable = (string) config('permission.table_names.roles', 'roles');
+            $assignmentTable = (string) config('permission.table_names.model_has_roles', 'model_has_roles');
+
+            if (str_contains($sql, $assignmentTable) || str_contains($sql, $roleTable)) {
+                self::flushGlobalRoleCache();
+            }
+        });
     }
 }

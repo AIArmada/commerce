@@ -12,6 +12,10 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
 
 final class AffiliateStatsWidget extends BaseWidget
 {
+    protected static bool $isLazy = false;
+
+    protected ?string $pollingInterval = null;
+
     protected function getStats(): array
     {
         /** @var array{active_affiliates: int, total_affiliates: int, pending_affiliates: int, pending_commission_minor: int|null, paid_commission_minor: int|null, commission_currency: string, commission_converted: bool, conversion_rate: float|null} $overview */

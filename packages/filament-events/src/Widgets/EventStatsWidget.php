@@ -18,6 +18,8 @@ final class EventStatsWidget extends StatsOverviewWidget
 {
     protected static ?int $sort = 1;
 
+    protected ?string $pollingInterval = null;
+
     protected function getStats(): array
     {
         $eventQuery = OwnerUiScope::apply(Event::query(), includeGlobal: false);

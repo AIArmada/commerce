@@ -24,7 +24,7 @@ final class PerformanceOverviewWidget extends StatsOverviewWidget
 {
     protected static ?int $sort = 1;
 
-    protected ?string $pollingInterval = '30s';
+    protected ?string $pollingInterval = '60s';
 
     protected function getStats(): array
     {

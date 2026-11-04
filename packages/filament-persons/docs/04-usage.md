@@ -54,3 +54,18 @@ components if the panel is cached:
 ```
 
 The other resource flags may be configured independently.
+
+## Featured people
+
+The Persons table exposes a **Featured** column and ternary filter built from
+the domain `is_featured` field. The Person form includes a **Featured** toggle;
+applications can relabel or add helper text when the selection powers a
+specific surface.
+
+The table is reorderable by `order_column`. Reordering is authorized with the
+same `person.update` ability as editing, using `FilamentPermission`, so only
+administrators who can curate people can change the order. Filter the table to
+**Featured** before dragging to keep the curated list in view; the reorder
+request persists the new positions through the Sortable APIs.
+
+The standard Persons list uses the domain reorder action, preserving filtered-out featured positions. Reorder mode lists featured records only. Applications overriding the list page must route `reorderTable()` through that action, enforce their curation authorization, and record application audit outcomes through its transactional callback.
