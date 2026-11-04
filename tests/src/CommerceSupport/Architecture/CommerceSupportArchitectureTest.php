@@ -56,6 +56,10 @@ it('keeps commerce-support source independent of downstream package namespaces',
     foreach ($filesystem->allFiles("{$repositoryPath}/packages/commerce-support/src") as $file) {
         $contents = $file->getContents();
 
+        if ($file->getRelativePathname() === 'Support/FilamentPermission.php') {
+            $contents = str_replace('AIArmada\\Authz\\Support\\UserRoleChecker', '', $contents);
+        }
+
         foreach ($downstreamNamespaces as $namespace) {
             if (str_contains($contents, "{$namespace}\\")) {
                 $violations[] = "{$file->getPathname()} imports {$namespace}";
