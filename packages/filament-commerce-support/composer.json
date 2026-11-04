@@ -9,9 +9,9 @@
     },
     "require": {
         "aiarmada/commerce-support": "self.version",
-        "filament/filament": "^5.8.1",
-        "owen-it/laravel-auditing": "^14.0.6",
-        "spatie/laravel-settings": "^3.9.0",
+        "filament/filament": "^5.11.1",
+        "owen-it/laravel-auditing": "^14.0.7",
+        "spatie/laravel-settings": "^3.10.1",
         "php": "^8.5"
     },
     "autoload": {
