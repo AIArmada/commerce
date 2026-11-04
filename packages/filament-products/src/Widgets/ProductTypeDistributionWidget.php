@@ -21,25 +21,38 @@ final class ProductTypeDistributionWidget extends BaseWidget
     protected function getStats(): array
     {
         return $this->withResolvedOwnerOrExplicitGlobal(function (): array {
-            $physicalProducts = Product::query()->forOwner()
-                ->where('status', ProductStatus::Active)
-                ->whereIn('type', [ProductType::Simple, ProductType::Configurable, ProductType::Bundle])
-                ->where('requires_shipping', true)
-                ->count();
+            $counts = Product::query()->forOwner()
+                ->toBase()
+                ->selectRaw(
+                    'SUM(CASE WHEN status = ? AND type IN (?, ?, ?) AND requires_shipping = ? THEN 1 ELSE 0 END) AS physical_products',
+                    [
+                        ProductStatus::Active->value,
+                        ProductType::Simple->value,
+                        ProductType::Configurable->value,
+                        ProductType::Bundle->value,
+                        true,
+                    ],
+                )
+                ->selectRaw(
+                    'SUM(CASE WHEN status = ? AND type = ? THEN 1 ELSE 0 END) AS digital_products',
+                    [ProductStatus::Active->value, ProductType::Digital->value],
+                )
+                ->selectRaw(
+                    'SUM(CASE WHEN status = ? AND type = ? THEN 1 ELSE 0 END) AS subscription_products',
+                    [ProductStatus::Active->value, ProductType::Subscription->value],
+                )
+                ->selectRaw(
+                    'SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) AS total_active',
+                    [ProductStatus::Active->value],
+                )
+                ->first();
 
-            $digitalProducts = Product::query()->forOwner()
-                ->where('status', ProductStatus::Active)
-                ->where('type', ProductType::Digital)
-                ->count();
+            $counts = (array) ($counts ?? []);
 
-            $subscriptionProducts = Product::query()->forOwner()
-                ->where('status', ProductStatus::Active)
-                ->where('type', ProductType::Subscription)
-                ->count();
-
-            $totalActive = Product::query()->forOwner()
-                ->where('status', ProductStatus::Active)
-                ->count();
+            $physicalProducts = (int) ($counts['physical_products'] ?? 0);
+            $digitalProducts = (int) ($counts['digital_products'] ?? 0);
+            $subscriptionProducts = (int) ($counts['subscription_products'] ?? 0);
+            $totalActive = (int) ($counts['total_active'] ?? 0);
 
             return [
                 Stat::make('Physical Products', $physicalProducts)

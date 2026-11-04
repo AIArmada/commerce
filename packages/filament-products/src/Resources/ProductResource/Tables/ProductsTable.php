@@ -133,7 +133,6 @@ class ProductsTable
 
                 Tables\Columns\TextColumn::make('variants_count')
                     ->label('Variants')
-                    ->counts('variants')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
@@ -256,7 +255,8 @@ class ProductsTable
                     )
                     ->getOptionLabelFromRecordUsing(fn ($record) => $record->name)
                     ->multiple()
-                    ->preload(),
+                    ->searchable()
+                    ->native(false),
             ])
             ->actions([
                 ViewAction::make(),

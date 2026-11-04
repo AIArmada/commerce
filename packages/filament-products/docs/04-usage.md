@@ -8,6 +8,11 @@ title: Usage
 
 The ProductResource provides a comprehensive interface for managing products.
 
+### Table filters
+
+The product category filter searches categories on the server and limits the
+results to the current owner scope.
+
 ### Product type vs behavior
 
 The product form now separates **fulfillment/category semantics** from **behavior semantics**:

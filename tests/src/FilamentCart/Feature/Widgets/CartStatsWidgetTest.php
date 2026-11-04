@@ -12,6 +12,7 @@ use Akaunting\Money\Money;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
 
@@ -120,5 +121,37 @@ describe('CartStatsWidget', function (): void {
         expect($stats[0]->getValue())->toBe('2');
         expect($stats[2]->getValue())->toBe('0');
         expect($stats[3]->getValue())->toBe((string) Money::USD(2500));
+    });
+
+    it('aggregates dashboard counters in a bounded number of queries', function (): void {
+        config()->set('cart.owner.enabled', false);
+        config()->set('cart.money.default_currency', 'USD');
+
+        Cache::flush();
+
+        CartSnapshot::query()->create([
+            'identifier' => 'bounded-query-cart',
+            'instance' => 'default',
+            'currency' => 'USD',
+            'items_count' => 2,
+            'last_activity_at' => now(),
+            'quantity' => 2,
+            'subtotal' => 2500,
+            'total' => 2500,
+        ]);
+
+        DB::enableQueryLog();
+        DB::flushQueryLog();
+
+        $widget = new CartStatsWidget;
+        $method = (new ReflectionClass($widget))->getMethod('getStats');
+        $stats = $method->invoke($widget);
+
+        $queries = DB::getQueryLog();
+
+        DB::disableQueryLog();
+
+        expect($stats[0]->getValue())->toBe('1')
+            ->and(count($queries))->toBeLessThanOrEqual(3);
     });
 });

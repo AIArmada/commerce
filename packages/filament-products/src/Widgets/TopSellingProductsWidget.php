@@ -69,8 +69,7 @@ final class TopSellingProductsWidget extends BaseWidget
                     ->color(fn ($state) => $state->color()),
 
                 Tables\Columns\TextColumn::make('variants_count')
-                    ->label('Variants')
-                    ->getStateUsing(fn (Product $record): int => $this->getVariantsCount($record)),
+                    ->label('Variants'),
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Added')
@@ -88,13 +87,5 @@ final class TopSellingProductsWidget extends BaseWidget
         );
 
         return $callback();
-    }
-
-    private function getVariantsCount(Product $record): int
-    {
-        /** @var int $count */
-        $count = $this->withResolvedOwnerOrExplicitGlobal(static fn (): int => $record->variants()->count());
-
-        return $count;
     }
 }

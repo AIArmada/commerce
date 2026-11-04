@@ -80,10 +80,16 @@ final class CustomersTable
                     ->label('Accepts Marketing'),
 
                 SelectFilter::make('segments')
-                    ->options(static fn (): array => OwnerUiScope::apply(Segment::query(), includeGlobal: false)
+                    ->options(static fn (SelectFilter $filter): array => self::segmentOptionsForValues(
+                        (array) ($filter->getState()['values'] ?? []),
+                    ))
+                    ->getSearchResultsUsing(static fn (string $search): array => self::segmentOptionsQuery()
+                        ->whereLike('name', '%' . $search . '%', caseSensitive: false)
                         ->orderBy('name')
+                        ->limit(50)
                         ->pluck('name', 'id')
                         ->all())
+                    ->getOptionLabelsUsing(static fn (array $values): array => self::segmentOptionsForValues($values))
                     ->query(static function (Builder $query, array $data): Builder {
                         $values = array_values(array_filter($data['values'] ?? []));
 
@@ -97,7 +103,8 @@ final class CustomersTable
                         });
                     })
                     ->multiple()
-                    ->preload(),
+                    ->searchable()
+                    ->native(false),
 
                 Filter::make('recent')
                     ->label('New (Last 30 days)')
@@ -136,5 +143,35 @@ final class CustomersTable
                         }),
                 ]),
             ]);
+    }
+
+    /**
+     * @param  array<mixed>  $values
+     * @return array<string, string>
+     */
+    private static function segmentOptionsForValues(array $values): array
+    {
+        $values = array_values(array_filter($values));
+
+        if ($values === []) {
+            return [];
+        }
+
+        /** @var array<string, string> $options */
+        $options = self::segmentOptionsQuery()
+            ->whereKey($values)
+            ->orderBy('name')
+            ->pluck('name', 'id')
+            ->all();
+
+        return $options;
+    }
+
+    /**
+     * @return Builder<Segment>
+     */
+    private static function segmentOptionsQuery(): Builder
+    {
+        return OwnerUiScope::apply(Segment::query(), includeGlobal: false);
     }
 }

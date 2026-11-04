@@ -20,16 +20,32 @@ final class ProductStatsAggregator
             $owner = OwnerContext::resolve();
 
             return OwnerCache::remember($owner, ProductStatsCache::KEY, 60, function (): array {
-                $totalProducts = Product::query()->forOwner()->count();
-                $activeProducts = Product::query()->forOwner()->where('status', ProductStatus::Active)->count();
-                $draftProducts = Product::query()->forOwner()->where('status', ProductStatus::Draft)->count();
+                $now = CarbonImmutable::now();
+                $lastWeekStart = $now->subWeek();
+                $previousWeekStart = $now->subWeeks(2);
+
+                $productStats = Product::query()->forOwner()
+                    ->toBase()
+                    ->selectRaw('COUNT(*) AS total_products')
+                    ->selectRaw('SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) AS active_products', [ProductStatus::Active->value])
+                    ->selectRaw('SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) AS draft_products', [ProductStatus::Draft->value])
+                    ->selectRaw('SUM(CASE WHEN created_at >= ? THEN 1 ELSE 0 END) AS last_week_products', [$lastWeekStart])
+                    ->selectRaw(
+                        'SUM(CASE WHEN created_at >= ? AND created_at <= ? THEN 1 ELSE 0 END) AS previous_week_products',
+                        [$previousWeekStart, $lastWeekStart],
+                    )
+                    ->first();
+
+                $productStats = (array) ($productStats ?? []);
+
+                $totalProducts = (int) ($productStats['total_products'] ?? 0);
+                $activeProducts = (int) ($productStats['active_products'] ?? 0);
+                $draftProducts = (int) ($productStats['draft_products'] ?? 0);
+                $lastWeekProducts = (int) ($productStats['last_week_products'] ?? 0);
+                $previousWeekProducts = (int) ($productStats['previous_week_products'] ?? 0);
+
                 $totalCategories = Category::query()->forOwner()->count();
                 $totalCollections = Collection::query()->forOwner()->visible()->count();
-
-                $lastWeekProducts = Product::query()->forOwner()->where('created_at', '>=', CarbonImmutable::now()->subWeek())->count();
-                $previousWeekProducts = Product::query()->forOwner()
-                    ->whereBetween('created_at', [CarbonImmutable::now()->subWeeks(2), CarbonImmutable::now()->subWeek()])
-                    ->count();
 
                 $trend = $previousWeekProducts > 0
                     ? round((($lastWeekProducts - $previousWeekProducts) / $previousWeekProducts) * 100)

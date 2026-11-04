@@ -30,6 +30,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema as SchemaFacade;
 
 uses(TestCase::class);
@@ -283,13 +284,13 @@ it('builds top selling products query in explicit global context when no owner i
         ->and($query->first()?->name)->toBe('Global Active Product');
 });
 
-it('counts variants for top selling widget in explicit global context when no owner is resolved', function (): void {
+it('uses the preloaded variant count for the top selling widget without per-row queries', function (): void {
     Carbon::setTestNow(Carbon::parse('2025-01-10 10:00:00'));
 
     app()->forgetInstance(OwnerResolverInterface::class);
 
-    $product = OwnerContext::withOwner(null, static function (): Product {
-        return Product::query()->create([
+    OwnerContext::withOwner(null, static function (): void {
+        $product = Product::query()->create([
             'name' => 'Global Variant Product',
             'slug' => 'global-variant-product',
             'status' => ProductStatus::Active,
@@ -297,9 +298,7 @@ it('counts variants for top selling widget in explicit global context when no ow
             'price' => 1000,
             'requires_shipping' => true,
         ]);
-    });
 
-    OwnerContext::withOwner(null, static function () use ($product): void {
         Variant::query()->create([
             'product_id' => $product->id,
             'sku' => 'GVP-001',
@@ -307,11 +306,35 @@ it('counts variants for top selling widget in explicit global context when no ow
     });
 
     $widget = app(TopSellingProductsWidget::class);
-    $method = new ReflectionMethod(TopSellingProductsWidget::class, 'getVariantsCount');
+    $method = new ReflectionMethod(TopSellingProductsWidget::class, 'getRecentProductsQuery');
 
-    $count = OwnerContext::withOwner(null, fn (): int => $method->invoke($widget, $product));
+    $product = OwnerContext::withOwner(null, static function () use ($widget, $method): ?Product {
+        /** @var Builder<Product> $query */
+        $query = $method->invoke($widget);
 
-    expect($count)->toBe(1);
+        return $query->first();
+    });
+
+    $table = OwnerContext::withOwner(null, static fn (): Table => $widget->table(makeProductsTable()));
+    $column = $table->getColumn('variants_count');
+
+    if (! $product instanceof Product || $column === null) {
+        throw new RuntimeException('The top selling widget did not resolve its product column.');
+    }
+
+    $column->record($product);
+
+    DB::enableQueryLog();
+    DB::flushQueryLog();
+
+    $state = $column->getState();
+
+    $queries = DB::getQueryLog();
+
+    DB::disableQueryLog();
+
+    expect($state)->toBe(1)
+        ->and($queries)->toBe([]);
 });
 
 it('renders category distribution chart in explicit global context when no owner is resolved', function (): void {

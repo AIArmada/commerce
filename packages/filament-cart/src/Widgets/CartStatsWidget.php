@@ -41,10 +41,38 @@ final class CartStatsWidget extends BaseWidget
         $highValueThreshold = (int) config('cart.snapshots.analytics.high_value_threshold_minor', 10000);
         $yesterday = CarbonImmutable::now()->subDay();
 
-        $activeCarts = (clone $base)->where('last_activity_at', '>=', $recentCutoff)->count();
-        $cartsWithItems = (clone $base)->where('items_count', '>', 0)->where('last_activity_at', '>=', $recentCutoff)->count();
-        $checkoutsInProgress = (clone $base)->whereNotNull('checkout_started_at')->whereNull('checkout_abandoned_at')->count();
-        $recentAbandonments = (clone $base)->where('checkout_abandoned_at', '>=', $recentCutoff)->count();
+        $counts = (clone $base)
+            ->toBase()
+            ->selectRaw(
+                'SUM(CASE WHEN last_activity_at >= ? THEN 1 ELSE 0 END) AS active_carts',
+                [$recentCutoff],
+            )
+            ->selectRaw(
+                'SUM(CASE WHEN items_count > ? AND last_activity_at >= ? THEN 1 ELSE 0 END) AS carts_with_items',
+                [0, $recentCutoff],
+            )
+            ->selectRaw(
+                'SUM(CASE WHEN checkout_started_at IS NOT NULL AND checkout_abandoned_at IS NULL THEN 1 ELSE 0 END) AS checkouts_in_progress',
+            )
+            ->selectRaw(
+                'SUM(CASE WHEN checkout_abandoned_at >= ? THEN 1 ELSE 0 END) AS recent_abandonments',
+                [$recentCutoff],
+            )
+            ->selectRaw(
+                'SUM(CASE WHEN total >= ? THEN 1 ELSE 0 END) AS high_value_carts',
+                [$highValueThreshold],
+            )
+            ->selectRaw(
+                'SUM(CASE WHEN checkout_started_at IS NOT NULL AND checkout_started_at >= ? THEN 1 ELSE 0 END) AS checkouts_started_24h',
+                [$yesterday],
+            )
+            ->selectRaw(
+                'SUM(CASE WHEN checkout_abandoned_at IS NOT NULL AND checkout_abandoned_at >= ? THEN 1 ELSE 0 END) AS abandoned_24h',
+                [$yesterday],
+            )
+            ->first();
+
+        $counts = (array) ($counts ?? []);
 
         $totalsByCurrency = (clone $base)
             ->where('items_count', '>', 0)
@@ -52,17 +80,14 @@ final class CartStatsWidget extends BaseWidget
             ->groupBy('currency')
             ->orderByDesc('total_sum')
             ->get();
-        $highValueCarts = (clone $base)->where('total', '>=', $highValueThreshold)->count();
 
-        $checkoutsStarted24h = (clone $base)
-            ->whereNotNull('checkout_started_at')
-            ->where('checkout_started_at', '>=', $yesterday)
-            ->count();
-
-        $abandoned24h = (clone $base)
-            ->whereNotNull('checkout_abandoned_at')
-            ->where('checkout_abandoned_at', '>=', $yesterday)
-            ->count();
+        $activeCarts = (int) ($counts['active_carts'] ?? 0);
+        $cartsWithItems = (int) ($counts['carts_with_items'] ?? 0);
+        $checkoutsInProgress = (int) ($counts['checkouts_in_progress'] ?? 0);
+        $recentAbandonments = (int) ($counts['recent_abandonments'] ?? 0);
+        $highValueCarts = (int) ($counts['high_value_carts'] ?? 0);
+        $checkoutsStarted24h = (int) ($counts['checkouts_started_24h'] ?? 0);
+        $abandoned24h = (int) ($counts['abandoned_24h'] ?? 0);
 
         return [
             Stat::make('Active Carts', (string) $activeCarts)

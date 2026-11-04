@@ -33,7 +33,6 @@ class CollectionsTable
 
                 Tables\Columns\TextColumn::make('products_count')
                     ->label('Products')
-                    ->counts('products')
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('status')

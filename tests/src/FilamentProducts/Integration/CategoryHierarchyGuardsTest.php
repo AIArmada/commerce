@@ -11,6 +11,7 @@ use AIArmada\FilamentProducts\Resources\CategoryResource\Tables\CategoriesTable;
 use AIArmada\Products\Models\Category;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
@@ -131,9 +132,59 @@ it('loads the category parent map scoped to the resolved owner', function (): vo
         'slug' => 'map-hidden',
     ]));
 
-    $load = new ReflectionMethod(CategoriesTable::class, 'loadParentMap');
-    $map = $load->invoke(null);
+    $load = new ReflectionMethod(CategoriesTable::class, 'loadAncestorMap');
+    $map = $load->invoke(null, [$visible->id]);
 
     expect($map)->toHaveKey($visible->id)
         ->and($map)->toHaveCount(1);
+});
+
+it('loads only the ancestors of the categories on the current page', function (): void {
+    $owner = TestOwner::query()->create(['name' => 'Owner']);
+    resolveCategoryOwner($owner);
+
+    [$root, $child, $grandchild, $unrelated] = OwnerContext::withOwner($owner, static function (): array {
+        $root = Category::query()->create(['name' => 'Root', 'slug' => 'bounded-root']);
+        $child = Category::query()->create(['name' => 'Child', 'slug' => 'bounded-child', 'parent_id' => $root->id]);
+        $grandchild = Category::query()->create(['name' => 'Grandchild', 'slug' => 'bounded-grandchild', 'parent_id' => $child->id]);
+        $unrelated = Category::query()->create(['name' => 'Unrelated', 'slug' => 'bounded-unrelated']);
+
+        return [$root, $child, $grandchild, $unrelated];
+    });
+
+    DB::enableQueryLog();
+    DB::flushQueryLog();
+
+    $load = new ReflectionMethod(CategoriesTable::class, 'loadAncestorMap');
+    $map = $load->invoke(null, [$grandchild->id]);
+
+    $queries = DB::getQueryLog();
+
+    DB::disableQueryLog();
+
+    expect($map)
+        ->toHaveKeys([$grandchild->id, $child->id, $root->id])
+        ->not->toHaveKey($unrelated->id)
+        ->and(count($queries))->toBeLessThanOrEqual(4);
+});
+
+it('stops loading ancestors when the parent chain cycles', function (): void {
+    $owner = TestOwner::query()->create(['name' => 'Owner']);
+    resolveCategoryOwner($owner);
+
+    [$first, $second] = OwnerContext::withOwner($owner, static function (): array {
+        $first = Category::query()->create(['name' => 'First', 'slug' => 'cycle-map-first']);
+        $second = Category::query()->create(['name' => 'Second', 'slug' => 'cycle-map-second', 'parent_id' => $first->id]);
+
+        $first->update(['parent_id' => $second->id]);
+
+        return [$first, $second];
+    });
+
+    $load = new ReflectionMethod(CategoriesTable::class, 'loadAncestorMap');
+    $map = $load->invoke(null, [$first->id]);
+
+    expect($map)
+        ->toHaveKeys([$first->id, $second->id])
+        ->toHaveCount(2);
 });

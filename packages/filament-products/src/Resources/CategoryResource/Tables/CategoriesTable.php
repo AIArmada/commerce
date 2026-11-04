@@ -18,6 +18,8 @@ use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Contracts\Pagination\CursorPaginator;
+use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
@@ -33,8 +35,8 @@ class CategoriesTable
                     ->label('Category')
                     ->searchable()
                     ->sortable()
-                    ->formatStateUsing(function ($record) use (&$parentMap) {
-                        $parentMap ??= self::loadParentMap();
+                    ->formatStateUsing(function ($record, Table $table) use (&$parentMap): string {
+                        $parentMap ??= self::loadAncestorMap(self::currentPageCategoryIds($table));
                         $depth = self::depthFromMap((string) $record->getKey(), $parentMap);
                         $prefix = str_repeat('— ', $depth);
 
@@ -49,7 +51,6 @@ class CategoriesTable
 
                 Tables\Columns\TextColumn::make('products_count')
                     ->label('Products')
-                    ->counts('products')
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('status')
@@ -140,21 +141,88 @@ class CategoriesTable
     }
 
     /**
+     * @return list<string>
+     */
+    private static function currentPageCategoryIds(Table $table): array
+    {
+        $records = $table->getRecords();
+
+        if ($records instanceof Paginator || $records instanceof CursorPaginator) {
+            $records = $records->items();
+        }
+
+        $ids = [];
+
+        foreach ($records as $record) {
+            if ($record instanceof Category) {
+                $ids[] = (string) $record->getKey();
+            }
+        }
+
+        return array_values(array_unique($ids));
+    }
+
+    /**
+     * Load only the ancestors of the categories on the current page.
+     *
+     * Each query resolves one level of the ancestor chain, so the loaded row
+     * count is bounded by the visible page rather than the whole category tree.
+     * The loop terminates when no new parents are found or when a cycle is
+     * encountered, because every queued ID is marked as visited.
+     *
+     * @param  list<string>  $categoryIds
      * @return array<string, string|null>
      */
-    private static function loadParentMap(): array
+    private static function loadAncestorMap(array $categoryIds): array
     {
+        if ($categoryIds === []) {
+            return [];
+        }
+
         $owner = OwnerContext::resolve();
+        $includeGlobal = (bool) config('products.features.owner.include_global', false);
+
+        /** @var array<string, bool> $visited */
+        $visited = [];
+        $pending = [];
+
+        foreach ($categoryIds as $categoryId) {
+            if (! isset($visited[$categoryId])) {
+                $visited[$categoryId] = true;
+                $pending[] = $categoryId;
+            }
+        }
 
         /** @var array<string, string|null> $map */
-        $map = OwnerQuery::applyToEloquentBuilder(
-            Category::query()->select(['id', 'parent_id']),
-            $owner,
-            (bool) config('products.features.owner.include_global', false)
-        )
-            ->pluck('parent_id', 'id')
-            ->map(static fn (mixed $parentId): ?string => $parentId === null ? null : (string) $parentId)
-            ->all();
+        $map = [];
+
+        while ($pending !== []) {
+            $next = [];
+
+            foreach (array_chunk($pending, 500) as $chunk) {
+                $categories = OwnerQuery::applyToEloquentBuilder(
+                    Category::query()->select(['id', 'parent_id']),
+                    $owner,
+                    $includeGlobal,
+                )
+                    ->whereIn('id', $chunk)
+                    ->get();
+
+                foreach ($categories as $category) {
+                    $categoryId = (string) $category->getKey();
+                    $parentId = $category->parent_id === null ? null : (string) $category->parent_id;
+
+                    $map[$categoryId] = $parentId;
+
+                    if ($parentId !== null && ! isset($visited[$parentId])) {
+                        $visited[$parentId] = true;
+                        $next[] = $parentId;
+                    }
+                }
+            }
+
+            $pending = $next;
+        }
 
         return $map;
     }

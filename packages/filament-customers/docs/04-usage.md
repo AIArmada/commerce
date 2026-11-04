@@ -28,7 +28,7 @@ The customer list includes:
 **Filters:**
 - Status (Active, Inactive, Suspended, Pending Verification)
 - Accepts Marketing (Yes/No/All)
-- Segments (multi-select)
+- Segments (multi-select with server-side search, owner-scoped)
 
 **Actions:**
 - View customer details
