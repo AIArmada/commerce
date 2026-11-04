@@ -168,7 +168,7 @@ describe('page impersonate action', function (): void {
 
         expect($method->invoke($action))->toBeFalse()
             ->and(session()->has(ImpersonateManager::SESSION_IMPERSONATOR_ID))->toBeFalse()
-            ->and(session('filament.notifications'))->not->toBeEmpty();
+            ->and(sent_filament_notifications())->not->toBeEmpty();
     });
 
     it('returns false without an authenticated user', function (): void {

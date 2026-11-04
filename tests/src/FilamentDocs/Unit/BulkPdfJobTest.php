@@ -46,7 +46,7 @@ it('queues bulk pdf generation in chunks instead of rendering in-request (M4)', 
     Queue::assertPushed(GenerateDocPdfsJob::class, fn (GenerateDocPdfsJob $job): bool => count($job->docIds) === 25);
     Queue::assertPushed(GenerateDocPdfsJob::class, fn (GenerateDocPdfsJob $job): bool => count($job->docIds) === 5);
 
-    $notifications = session()->get('filament.notifications', []);
+    $notifications = sent_filament_notifications();
     expect(collect($notifications)->last()['title'])->toContain('queued');
 });
 
@@ -61,7 +61,7 @@ it('refuses oversized bulk pdf selections (M4)', function (): void {
 
     Queue::assertNotPushed(GenerateDocPdfsJob::class);
 
-    $notifications = session()->get('filament.notifications', []);
+    $notifications = sent_filament_notifications();
     expect(collect($notifications)->last()['title'])->toContain('Too many');
 });
 

@@ -164,7 +164,7 @@ describe('Bulk label failures', function (): void {
         $livewire = Mockery::mock(Component::class);
         $closure(new Collection([$shipment]), $livewire);
 
-        $notifications = collect(session('filament.notifications', []));
+        $notifications = collect(sent_filament_notifications());
         $bodies = $notifications->pluck('body')->filter()->implode("\n");
 
         expect($bodies)->toContain('label generation failed')

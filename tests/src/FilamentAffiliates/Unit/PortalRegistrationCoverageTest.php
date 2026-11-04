@@ -130,11 +130,11 @@ it('blocks register() and sends a danger notification when disabled', function (
     $enabled = $reflection->getProperty('registrationEnabled');
     $enabled->setValue($page, false);
 
-    session()->forget('filament.notifications');
+    forget_filament_notifications();
 
     expect($page->register())->toBeNull();
 
-    $notifications = session('filament.notifications');
+    $notifications = sent_filament_notifications();
     expect($notifications)->toBeArray()->not->toBeEmpty();
 
     $first = $notifications[0] ?? null;
@@ -155,12 +155,12 @@ it('afterRegister() sends a success notification with mode-specific message', fu
     $approvalMode = $reflection->getProperty('approvalMode');
     $approvalMode->setValue($page, 'open');
 
-    session()->forget('filament.notifications');
+    forget_filament_notifications();
 
     $method = $reflection->getMethod('afterRegister');
     $method->invoke($page);
 
-    $notifications = session('filament.notifications');
+    $notifications = sent_filament_notifications();
     expect($notifications)->toBeArray()->not->toBeEmpty();
 
     $first = $notifications[0] ?? null;

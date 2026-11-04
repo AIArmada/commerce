@@ -41,7 +41,7 @@ it('duplicates email templates with collision-free slugs and feedback (L3)', fun
     expect(DocEmailTemplate::query()->where('slug', $first->slug)->count())->toBe(1);
     expect(DocEmailTemplate::query()->where('slug', $second->slug)->count())->toBe(1);
 
-    $notifications = session()->get('filament.notifications', []);
+    $notifications = sent_filament_notifications();
     expect($notifications)->not()->toBeEmpty();
     expect(collect($notifications)->last()['title'])->toBe('Email template duplicated');
 });

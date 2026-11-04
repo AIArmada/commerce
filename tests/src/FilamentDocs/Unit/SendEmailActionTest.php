@@ -147,7 +147,7 @@ it('sends email successfully and pushes a success notification to the session', 
 
     expect($doc->emails()->count())->toBe(1);
 
-    $notifications = session()->get('filament.notifications', []);
+    $notifications = sent_filament_notifications();
     expect($notifications)->not()->toBeEmpty();
     expect(collect($notifications)->last()['title'])->toBe('Email Sent');
 });
@@ -201,7 +201,7 @@ it('handles email failures and pushes an error notification to the session', fun
 
     $method->invoke(null, $doc, ['to' => 'to@example.test']);
 
-    $notifications = session()->get('filament.notifications', []);
+    $notifications = sent_filament_notifications();
     expect($notifications)->not()->toBeEmpty();
     expect(collect($notifications)->last()['title'])->toBe('Email Failed');
 });

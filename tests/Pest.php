@@ -36,6 +36,7 @@ use AIArmada\Events\Models\EventSession;
 use AIArmada\Events\Support\EventTicketScope;
 use AIArmada\Ticketing\Models\Pass;
 use AIArmada\Ticketing\Models\TicketType;
+use Filament\Notifications\NotificationMailbox;
 use Illuminate\Support\Facades\DB;
 
 /*
@@ -358,4 +359,27 @@ function captureAfterCommitHooks(): Closure
             $callback();
         }
     };
+}
+
+/**
+ * Drain the Filament notification mailbox written during the current test.
+ *
+ * @return array<int, array<string, mixed>>
+ */
+function sent_filament_notifications(): array
+{
+    $mailbox = app(NotificationMailbox::class);
+    $mailbox->flush();
+
+    return $mailbox->pull();
+}
+
+/**
+ * Discard any notifications still pending in the mailbox for the current test.
+ */
+function forget_filament_notifications(): void
+{
+    $mailbox = app(NotificationMailbox::class);
+    $mailbox->flush();
+    $mailbox->pull();
 }

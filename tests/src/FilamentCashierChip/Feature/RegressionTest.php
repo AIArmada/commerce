@@ -173,11 +173,11 @@ function regression_makeSchemaLivewire(): LivewireComponent & HasSchemas
 }
 
 /**
- * @return array<string, mixed>
+ * @return array<int, string>
  */
 function regression_notificationTitles(): array
 {
-    return collect(session()->get('filament.notifications', []))->pluck('title')->all();
+    return collect(sent_filament_notifications())->pluck('title')->all();
 }
 
 function regression_enableOwnerScoping(): void
@@ -558,7 +558,7 @@ it('portal failures show generic messages without leaking internals', function (
     $page->cancelSubscription('sub_1');
     $page->resumeSubscription('sub_1');
 
-    $notifications = collect(session()->get('filament.notifications', []));
+    $notifications = collect(sent_filament_notifications());
 
     expect($notifications->pluck('title')->all())
         ->toContain('Failed to cancel subscription', 'Failed to resume subscription');
@@ -595,7 +595,7 @@ it('payment method failures show generic messages without leaking internals', fu
     $page->setAsDefault('pm_1');
     $page->deletePaymentMethod('pm_1');
 
-    $notifications = collect(session()->get('filament.notifications', []));
+    $notifications = collect(sent_filament_notifications());
 
     expect($notifications->pluck('title')->all())
         ->toContain('Failed to update default payment method', 'Failed to delete payment method');

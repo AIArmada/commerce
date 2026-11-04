@@ -17,7 +17,6 @@ use AIArmada\Authz\Models\Permission;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentAffiliates\Actions\UpdateAffiliateFraudSignalStatus;
-use Filament\Notifications\Notification;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Str;
@@ -390,13 +389,11 @@ it('keeps the review when the linked conversion is reserved by an open payout', 
             ->and($signal->fresh()->evidence['review_notes'])->toBe('Analyst notes kept')
             ->and($conversion->fresh()->status->equals(ApprovedConversion::class))->toBeTrue();
 
-        // Read the flash before assertNotified: mounting the
-        // notifications component consumes it.
-        $bodies = collect(session('filament.notifications', []))->pluck('body')->filter()->all();
+        $notifications = collect(sent_filament_notifications());
+        $bodies = $notifications->pluck('body')->filter()->all();
 
-        expect($bodies)->not->toBeEmpty();
-
-        Notification::assertNotified('Review saved; linked conversion kept');
+        expect($notifications->pluck('title')->all())->toContain('Review saved; linked conversion kept')
+            ->and($bodies)->not->toBeEmpty();
 
         foreach ($bodies as $body) {
             if (str_contains((string) $body, $payoutId)) {

@@ -44,7 +44,7 @@ it('shows an authentication required notification when unauthenticated', functio
     $order->refresh();
     expect($order->status)->not()->toBe('cancelled');
 
-    $notifications = session()->get('filament.notifications', []);
+    $notifications = sent_filament_notifications();
     expect(collect($notifications)->last()['title'])->toBe('Authentication Required');
 });
 
@@ -97,7 +97,7 @@ it('cancels an order and updates the record when authenticated', function (): vo
     expect($captured['reason'])->toBe('Customer requested cancellation');
     expect($captured['trackingNumber'])->toBe('TRK-3');
 
-    $notifications = session()->get('filament.notifications', []);
+    $notifications = sent_filament_notifications();
     expect(collect($notifications)->last()['title'])->toBe('Order Cancelled');
 });
 
@@ -125,7 +125,7 @@ it('does not cancel when a cancellation reason is missing', function (): void {
     $order->refresh();
     expect($order->status)->not()->toBe('cancelled');
 
-    $notifications = session()->get('filament.notifications', []);
+    $notifications = sent_filament_notifications();
     expect(collect($notifications)->last()['title'])->toBe('Invalid Request');
 });
 
@@ -153,7 +153,7 @@ it('does not cancel when Other is selected without details', function (): void {
     $order->refresh();
     expect($order->status)->not()->toBe('cancelled');
 
-    $notifications = session()->get('filament.notifications', []);
+    $notifications = sent_filament_notifications();
     expect(collect($notifications)->last()['title'])->toBe('Additional Details Required');
 });
 
@@ -194,7 +194,7 @@ it('rejects tampered cancellation reasons that are not in the supported enum lis
 
     expect($called)->toBeFalse();
 
-    $notifications = session()->get('filament.notifications', []);
+    $notifications = sent_filament_notifications();
     expect(collect($notifications)->last()['title'])->toBe('Invalid Request');
 });
 
@@ -238,7 +238,7 @@ it('rejects oversized custom cancellation details', function (): void {
 
     expect($called)->toBeFalse();
 
-    $notifications = session()->get('filament.notifications', []);
+    $notifications = sent_filament_notifications();
     expect(collect($notifications)->last()['title'])->toBe('Invalid Request');
 });
 
@@ -277,7 +277,7 @@ it('handles service exceptions and shows a failure notification', function (): v
     $order->refresh();
     expect($order->status)->not()->toBe('cancelled');
 
-    $notifications = session()->get('filament.notifications', []);
+    $notifications = sent_filament_notifications();
     expect(collect($notifications)->last()['title'])->toBe('Cancellation Failed');
 });
 
@@ -324,6 +324,6 @@ it('blocks cancelling global rows without explicit global context', function ():
 
     expect($called)->toBeFalse();
 
-    $notifications = session()->get('filament.notifications', []);
+    $notifications = sent_filament_notifications();
     expect(collect($notifications)->last()['title'])->toBe('Not Authorized');
 });

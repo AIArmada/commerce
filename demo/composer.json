@@ -233,9 +233,9 @@
     ],
     "require": {
         "php": "^8.5",
-        "laravel/framework": "^13.6",
-        "laravel/tinker": "^3.0",
-        "filament/filament": "^5.6",
+        "laravel/framework": "^13.40.0",
+        "laravel/tinker": "^3.0.2",
+        "filament/filament": "^5.11.1",
         "aiarmada/cashier": "*",
         "aiarmada/checkout": "*",
         "aiarmada/customers": "*",
@@ -279,13 +279,13 @@
         "aiarmada/filament-addressing": "*"
     },
     "require-dev": {
-        "fakerphp/faker": "^1.23",
-        "laravel/pail": "^1.2.2",
-        "laravel/pint": "^1.24",
-        "laravel/sail": "^1.41",
-        "mockery/mockery": "^1.6",
-        "nunomaduro/collision": "^8.9.1",
-        "pestphp/pest": "^5.2.0",
+        "fakerphp/faker": "^1.24.1",
+        "laravel/pail": "^1.2.7",
+        "laravel/pint": "^1.32.1",
+        "laravel/sail": "^1.69.0",
+        "mockery/mockery": "^1.6.15",
+        "nunomaduro/collision": "^8.9.5",
+        "pestphp/pest": "^5.3.5",
         "pestphp/pest-plugin-laravel": "^5.0.1"
     },
     "autoload": {

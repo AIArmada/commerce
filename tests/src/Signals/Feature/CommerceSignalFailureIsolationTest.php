@@ -1255,12 +1255,12 @@ it('marks a lost connection thrown from rollback during ingestion', function ():
                 'control_failure_class' => RuntimeException::class,
                 'callback_failure_class' => LogicException::class,
             ])
-            // The bookkeeping is fully restored — level zero, no server
-            // transaction, same connection — yet the marked failure
-            // still propagates instead of being swallowed.
+            // The bookkeeping is fully restored — level zero, and Laravel
+            // discards the lost connection so the next query reconnects —
+            // yet the marked failure still propagates instead of being
+            // swallowed.
             ->and(DB::transactionLevel())->toBe(0)
-            ->and(DB::getPdo())->toBe($spy)
-            ->and(DB::getPdo()->inTransaction())->toBeFalse();
+            ->and(DB::getPdo())->toBeNull();
     } finally {
         DB::connection()->setPdo($real);
     }

@@ -19,6 +19,7 @@ use BladeUI\Heroicons\BladeHeroiconsServiceProvider;
 use BladeUI\Icons\BladeIconsServiceProvider;
 use DateInterval;
 use Filament\FilamentServiceProvider;
+use Filament\Notifications\NotificationsServiceProvider;
 use Filament\Support\SupportServiceProvider;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -67,6 +68,7 @@ abstract class TestCase extends Orchestra
             BladeIconsServiceProvider::class,
             SupportServiceProvider::class,
             FilamentServiceProvider::class,
+            NotificationsServiceProvider::class,
             LivewireServiceProvider::class,
             ChipServiceProvider::class,
             CashierChipServiceProvider::class,
