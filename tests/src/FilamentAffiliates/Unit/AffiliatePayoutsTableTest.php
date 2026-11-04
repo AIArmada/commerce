@@ -20,7 +20,6 @@ use AIArmada\Authz\Models\Permission;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource\Pages\ListAffiliatePayouts;
 use AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource\Tables\AffiliatePayoutsTable;
-use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
@@ -58,13 +57,11 @@ test('mark completed surfaces a blocked gate as a danger notification instead of
 
     expect($payout->fresh()->status->equals(PendingPayout::class))->toBeTrue();
 
-    $flashed = collect(session('filament.notifications', []));
+    $flashed = collect(sent_filament_notifications());
     $danger = $flashed->firstWhere('status', 'danger');
 
     expect($danger['title'] ?? null)->toBe('Payout cannot be completed')
         ->and($danger['body'] ?? '')->toContain('can no longer receive payouts');
-
-    Notification::assertNotified('Payout cannot be completed');
 });
 
 test('mark completed still completes an eligible payout', function (): void {

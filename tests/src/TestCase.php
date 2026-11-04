@@ -69,6 +69,7 @@ use DateTimeInterface;
 use Filament\Actions\ActionsServiceProvider;
 use Filament\FilamentServiceProvider;
 use Filament\Forms\FormsServiceProvider;
+use Filament\Notifications\NotificationsServiceProvider;
 use Filament\Schemas\SchemasServiceProvider;
 use Filament\Tables\TablesServiceProvider;
 use Illuminate\Cache\CacheServiceProvider;
@@ -173,6 +174,7 @@ abstract class TestCase extends Orchestra
             FormsServiceProvider::class,
             TablesServiceProvider::class,
             FilamentServiceProvider::class,
+            NotificationsServiceProvider::class,
             CartServiceProvider::class,
             CheckoutServiceProvider::class,
             ChipServiceProvider::class,

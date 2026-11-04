@@ -20,6 +20,6 @@ it('marks only eligible documents as sent and reports skips (M6)', function (): 
     expect($draft->fresh()->status->equals(Sent::class))->toBeTrue();
     expect($sent->fresh()->status->equals(Sent::class))->toBeTrue();
 
-    $notifications = session()->get('filament.notifications', []);
+    $notifications = sent_filament_notifications();
     expect(collect($notifications)->last()['title'])->toContain('marked as sent');
 });

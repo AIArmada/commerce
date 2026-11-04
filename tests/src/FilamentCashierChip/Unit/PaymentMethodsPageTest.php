@@ -67,7 +67,7 @@ it('gracefully handles billables without payment method mutator methods', functi
     $page->setAsDefault('pm_missing');
     $page->deletePaymentMethod('pm_missing');
 
-    $notifications = session()->get('filament.notifications', []);
+    $notifications = sent_filament_notifications();
     $titles = collect($notifications)->pluck('title')->all();
 
     expect($titles)

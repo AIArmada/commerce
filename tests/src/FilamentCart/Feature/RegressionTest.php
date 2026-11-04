@@ -245,7 +245,7 @@ describe('bulk operation resilience', function (): void {
 
         $method->invoke(null, new Collection([$foreign]), 'clear');
 
-        $notifications = session('filament.notifications', []);
+        $notifications = sent_filament_notifications();
 
         expect($notifications)->not->toBe([]);
         expect((string) json_encode($notifications))->toContain('failed');

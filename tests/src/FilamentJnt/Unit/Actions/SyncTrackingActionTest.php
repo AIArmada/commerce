@@ -51,7 +51,7 @@ it('shows an authentication required notification when unauthenticated', functio
 
     $handler($order);
 
-    $notifications = session()->get('filament.notifications', []);
+    $notifications = sent_filament_notifications();
     expect(collect($notifications)->last()['title'])->toBe('Authentication Required');
 });
 
@@ -92,7 +92,7 @@ it('syncs tracking and shows a success notification when authenticated', functio
 
     expect($called)->toBeTrue();
 
-    $notifications = session()->get('filament.notifications', []);
+    $notifications = sent_filament_notifications();
     expect(collect($notifications)->last()['title'])->toBe('Tracking Synced');
 });
 
@@ -125,7 +125,7 @@ it('handles sync failures and shows a failure notification', function (): void {
 
     $handler($order);
 
-    $notifications = session()->get('filament.notifications', []);
+    $notifications = sent_filament_notifications();
     expect(collect($notifications)->last()['title'])->toBe('Sync Failed');
 });
 
@@ -169,6 +169,6 @@ it('blocks syncing global rows without explicit global context', function (): vo
 
     expect($called)->toBeFalse();
 
-    $notifications = session()->get('filament.notifications', []);
+    $notifications = sent_filament_notifications();
     expect(collect($notifications)->last()['title'])->toBe('Not Authorized');
 });

@@ -86,7 +86,7 @@ it('uses safely encoded javascript when opening AWB urls', function (): void {
     $tableHandler = $tableAction->getActionFunction();
     $tableHandler($order, $livewire);
 
-    $notifications = session()->get('filament.notifications', []);
+    $notifications = sent_filament_notifications();
     expect(collect($notifications)->pluck('title'))->toContain('AWB Ready');
 });
 
@@ -129,6 +129,6 @@ it('does not open a download when waybill base64 payload is invalid', function (
     $tableHandler = $tableAction->getActionFunction();
     $tableHandler($order, $livewire);
 
-    $notifications = session()->get('filament.notifications', []);
+    $notifications = sent_filament_notifications();
     expect(collect($notifications)->pluck('title'))->toContain('AWB Not Available');
 });

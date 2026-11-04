@@ -61,7 +61,7 @@ it('notifies instead of throwing when payment recording fails unexpectedly (M1)'
         'paid_at' => now(),
     ]);
 
-    $notifications = session()->get('filament.notifications', []);
+    $notifications = sent_filament_notifications();
     expect($notifications)->not()->toBeEmpty();
     expect(collect($notifications)->last()['title'])->toBe('Payment Failed');
 });
