@@ -209,6 +209,7 @@ class CategoriesTable
                     ->get();
 
                 foreach ($categories as $category) {
+                    /** @var Category $category */
                     $categoryId = (string) $category->getKey();
                     $parentId = $category->parent_id === null ? null : (string) $category->parent_id;
 

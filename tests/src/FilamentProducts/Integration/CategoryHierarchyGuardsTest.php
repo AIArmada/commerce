@@ -176,7 +176,10 @@ it('stops loading ancestors when the parent chain cycles', function (): void {
         $first = Category::query()->create(['name' => 'First', 'slug' => 'cycle-map-first']);
         $second = Category::query()->create(['name' => 'Second', 'slug' => 'cycle-map-second', 'parent_id' => $first->id]);
 
-        $first->update(['parent_id' => $second->id]);
+        // Seed corrupted legacy data without disabling production cycle prevention.
+        DB::table((new Category)->getTable())
+            ->where('id', $first->id)
+            ->update(['parent_id' => $second->id]);
 
         return [$first, $second];
     });

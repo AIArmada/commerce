@@ -6,6 +6,7 @@ use AIArmada\Authz\Authz;
 use AIArmada\Authz\Models\Role;
 use AIArmada\Authz\Support\UserRoleChecker;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\FilamentPermission;
 use Spatie\Permission\DefaultTeamResolver;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -42,6 +43,26 @@ function az02bSuperAdminRole(): Role
         'guard_name' => 'web',
     ]);
 }
+
+it('keeps filament super-admin verdicts fresh through the authz integration', function (): void {
+    az02bUseTeams(false);
+    config()->set('authz.super_admin_role', 'Super Admin');
+
+    $user = az02bUser('filament-role-freshness@example.com');
+    $viewer = User::query()->findOrFail($user->getKey());
+    $role = az02bSuperAdminRole();
+    $check = new ReflectionMethod(FilamentPermission::class, 'isSuperAdmin');
+
+    expect($check->invoke(null, $viewer))->toBeFalse();
+
+    $user->assignRole($role);
+
+    expect($check->invoke(null, $viewer))->toBeTrue();
+
+    $user->removeRole($role);
+
+    expect($check->invoke(null, $viewer))->toBeFalse();
+});
 
 it('reflects a super-admin revocation on the next gate check when teams are disabled', function (): void {
     az02bUseTeams(false);
