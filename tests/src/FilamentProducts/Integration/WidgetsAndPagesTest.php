@@ -43,6 +43,8 @@ function makeProductsTable(): Table
 {
     /** @var HasTable $livewire */
     $livewire = Mockery::mock(HasTable::class);
+    $livewire->shouldReceive('getTableRecordKey')
+        ->andReturnUsing(static fn (Model $record): string => (string) $record->getKey());
 
     return Table::make($livewire);
 }
