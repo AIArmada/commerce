@@ -64,5 +64,6 @@ jobs:
         run: composer install --prefer-dist --no-interaction --no-progress
 
       - name: Execute tests
-        # NOTE: `--ci` disables TIA (see ci.yml) so shards run the full suite.
-        run: vendor/bin/pest --ci --colors=always --parallel --shard=${{ matrix.shard }}/20
+        # Disable TIA explicitly because Pest's parallel test-discovery child
+        # process does not inherit the `--ci` flag.
+        run: vendor/bin/pest --no-tia --colors=always --parallel --shard=${{ matrix.shard }}/20
