@@ -46,6 +46,7 @@ use Spatie\ModelStates\HasStates;
  * @property string $visibility
  * @property string $delivery_mode
  * @property int|null $capacity
+ * @property bool $is_featured
  * @property CarbonImmutable|null $published_at
  * @property CarbonImmutable|null $delayed_at
  * @property CarbonImmutable|null $postponed_at
@@ -127,7 +128,7 @@ final class EventOccurrence extends Model implements HasMedia
         'event_id',
         'title', 'slug',
         'starts_at', 'ends_at', 'timezone',
-        'status', 'visibility', 'delivery_mode', 'capacity',
+        'status', 'visibility', 'delivery_mode', 'capacity', 'is_featured',
         'pricing_mode', 'registration_mode', 'issue_passes_for_free',
         'published_at', 'delayed_at', 'postponed_at', 'rescheduled_at',
         'cancelled_at', 'completed_at', 'archived_at',
@@ -165,6 +166,7 @@ final class EventOccurrence extends Model implements HasMedia
             'completed_at' => 'immutable_datetime',
             'archived_at' => 'immutable_datetime',
             'capacity' => 'integer',
+            'is_featured' => 'boolean',
             'metadata' => 'array',
         ];
     }
@@ -496,6 +498,15 @@ final class EventOccurrence extends Model implements HasMedia
         }
 
         return $this->event?->shouldIssuePassesForFree() ?? true;
+    }
+
+    /**
+     * @param  Builder<EventOccurrence>  $query
+     * @return Builder<EventOccurrence>
+     */
+    public function scopeFeatured(Builder $query): Builder
+    {
+        return $query->where('is_featured', true);
     }
 
     /**

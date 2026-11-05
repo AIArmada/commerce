@@ -30,6 +30,11 @@ final class EventOccurrenceFactory extends Factory
         ];
     }
 
+    public function featured(): static
+    {
+        return $this->state(fn () => ['is_featured' => true]);
+    }
+
     public function pricingMode(PricingMode $mode): static
     {
         return $this->state(fn () => ['pricing_mode' => $mode]);

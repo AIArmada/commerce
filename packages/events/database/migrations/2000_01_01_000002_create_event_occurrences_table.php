@@ -27,6 +27,7 @@ return new class extends Migration
             $table->string('visibility')->index();
             $table->string('delivery_mode')->nullable()->index();
             $table->integer('capacity')->nullable();
+            $table->boolean('is_featured')->default(false)->index();
             $table->timestampTz('published_at')->nullable();
             $table->timestampTz('delayed_at')->nullable();
             $table->timestampTz('postponed_at')->nullable();
