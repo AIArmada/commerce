@@ -570,3 +570,32 @@ final class NavmgrEnumGroupPageFixture extends Page
         return NavmgrGroupFixture::Shop;
     }
 }
+
+it('searches allowed component labels without accepting unknown values', function (): void {
+    navmgrMockSettings([], ['Navmgr\\StaleResource' => []], false);
+    Filament::getCurrentOrDefaultPanel()->pages([NavmgrEnumGroupPageFixture::class]);
+
+    $page = new ManageCommerceNavigation('navmgr-test');
+    $search = new ReflectionMethod(ManageCommerceNavigation::class, 'searchComponentOptions');
+    $label = new ReflectionMethod(ManageCommerceNavigation::class, 'componentOptionLabel');
+    $results = $search->invoke($page, 'shop');
+
+    expect($results)->toHaveKey(NavmgrEnumGroupPageFixture::class)
+        ->and($results[NavmgrEnumGroupPageFixture::class])->toContain('[Shop]')
+        ->and($label->invoke($page, NavmgrEnumGroupPageFixture::class))->toBe($results[NavmgrEnumGroupPageFixture::class])
+        ->and($label->invoke($page, 'Navmgr\\StaleResource'))->toBe('[Unregistered] Navmgr\\StaleResource')
+        ->and($label->invoke($page, 'Navmgr\\EvilClass'))->toBeNull();
+});
+
+it('limits component search results to fifty allowed entries', function (): void {
+    $overrides = [];
+    foreach (range(1, 60) as $number) {
+        $overrides['Navmgr\\Stored' . $number] = [];
+    }
+    navmgrMockSettings([], $overrides, false);
+
+    $page = new ManageCommerceNavigation('navmgr-test');
+    $search = new ReflectionMethod(ManageCommerceNavigation::class, 'searchComponentOptions');
+
+    expect($search->invoke($page, 'stored'))->toHaveCount(50);
+});

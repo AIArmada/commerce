@@ -41,6 +41,9 @@ class ManageCommerceNavigation extends Page
 
     private bool $settingsFallbackWarned = false;
 
+    /** @var array<string, string>|null */
+    private ?array $componentOptions = null;
+
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-bars-3';
 
     public static function getNavigationLabel(): string
@@ -286,8 +289,10 @@ class ManageCommerceNavigation extends Page
                             ->schema([
                                 Select::make('component')
                                     ->label(__('Component'))
-                                    ->options(fn (): array => $this->getComponentOptions())
                                     ->searchable()
+                                    ->getSearchResultsUsing(fn (string $search): array => $this->searchComponentOptions($search))
+                                    ->getOptionLabelUsing(fn (mixed $value): ?string => $this->componentOptionLabel($value))
+                                    ->in(fn (): array => array_keys($this->getComponentOptions()))
                                     ->required()
                                     ->columnSpanFull(),
 
@@ -726,8 +731,46 @@ class ManageCommerceNavigation extends Page
     /**
      * @return array<string, string>
      */
+    private function searchComponentOptions(string $search): array
+    {
+        $needle = mb_strtolower($search);
+        $options = [];
+
+        foreach ($this->getComponentOptions() as $value => $label) {
+            if (
+                $needle === ''
+                || str_contains(mb_strtolower($label), $needle)
+                || str_contains(mb_strtolower($value), $needle)
+            ) {
+                $options[$value] = $label;
+            }
+
+            if (count($options) >= 50) {
+                break;
+            }
+        }
+
+        return $options;
+    }
+
+    private function componentOptionLabel(mixed $value): ?string
+    {
+        if (! is_string($value) || $value === '') {
+            return null;
+        }
+
+        return $this->getComponentOptions()[$value] ?? null;
+    }
+
+    /**
+     * @return array<string, string>
+     */
     private function getComponentOptions(): array
     {
+        if ($this->componentOptions !== null) {
+            return $this->componentOptions;
+        }
+
         $options = [];
 
         foreach (CommerceNavigation::registeredNavigationComponents() as $class) {
@@ -757,7 +800,7 @@ class ManageCommerceNavigation extends Page
 
         ksort($options);
 
-        return $options;
+        return $this->componentOptions = $options;
     }
 
     private function getGroupKeyOptions(): array
