@@ -30,10 +30,39 @@ final class ConversionFunnelReport extends ReportPage
 
     protected string $view = 'filament-signals::pages.conversion-funnel-report';
 
+    /**
+     * @var array{summary: array{started:int,completed:int,paid:int,started_label:string,completed_label:string,paid_label:string,start_to_complete_rate:float,complete_to_paid_rate:float,overall_rate:float,start_drop_off:int,complete_drop_off:int,revenue_minor?:int,currency?:string,revenue?:array<string, int>}, stages: list<array{label:string,event_name:string,count:int,rate_from_previous:float,rate_from_start:float,drop_off:int,revenue_minor?:int,currency?:string,revenue?:array<string, int>}>}|null
+     */
+    private ?array $reportCache = null;
+
+    /** @var list<string|null> */
+    private array $reportCacheParameters = [];
+
     public function mount(): void
     {
         $this->initializeDefaultDateRange();
         $this->sanitizeSavedReportState();
+    }
+
+    /**
+     * @return array{summary: array{started:int,completed:int,paid:int,started_label:string,completed_label:string,paid_label:string,start_to_complete_rate:float,complete_to_paid_rate:float,overall_rate:float,start_drop_off:int,complete_drop_off:int,revenue_minor?:int,currency?:string,revenue?:array<string, int>}, stages: list<array{label:string,event_name:string,count:int,rate_from_previous:float,rate_from_start:float,drop_off:int,revenue_minor?:int,currency?:string,revenue?:array<string, int>}>}
+     */
+    private function report(): array
+    {
+        $parameters = [
+            $this->trackedPropertyId !== '' ? $this->trackedPropertyId : null,
+            $this->dateFrom,
+            $this->dateTo,
+            $this->signalSegmentId !== '' ? $this->signalSegmentId : null,
+            $this->savedReportId !== '' ? $this->savedReportId : null,
+        ];
+
+        if ($this->reportCache === null || $this->reportCacheParameters !== $parameters) {
+            $this->reportCache = app(ConversionFunnelReportService::class)->report(...$parameters);
+            $this->reportCacheParameters = $parameters;
+        }
+
+        return $this->reportCache;
     }
 
     protected function savedReportType(): string
@@ -57,13 +86,7 @@ final class ConversionFunnelReport extends ReportPage
      */
     public function getSummary(): array
     {
-        return app(ConversionFunnelReportService::class)->summary(
-            $this->trackedPropertyId !== '' ? $this->trackedPropertyId : null,
-            $this->dateFrom,
-            $this->dateTo,
-            $this->signalSegmentId !== '' ? $this->signalSegmentId : null,
-            $this->savedReportId !== '' ? $this->savedReportId : null,
-        );
+        return $this->report()['summary'];
     }
 
     /**
@@ -71,13 +94,7 @@ final class ConversionFunnelReport extends ReportPage
      */
     public function getStages(): array
     {
-        return app(ConversionFunnelReportService::class)->stages(
-            $this->trackedPropertyId !== '' ? $this->trackedPropertyId : null,
-            $this->dateFrom,
-            $this->dateTo,
-            $this->signalSegmentId !== '' ? $this->signalSegmentId : null,
-            $this->savedReportId !== '' ? $this->savedReportId : null,
-        );
+        return $this->report()['stages'];
     }
 
     protected function getHeaderActions(): array

@@ -30,10 +30,39 @@ final class RetentionReport extends ReportPage
 
     protected string $view = 'filament-signals::pages.retention-report';
 
+    /**
+     * @var array{summary: array{cohorts:int,identities:int,windows:list<array{days:int,retained:int,avg_retention_rate:float}>}, rows: list<array{cohort_date:string,cohort_size:int,windows:list<array{days:int,retained:int,retention_rate:float}>}>}|null
+     */
+    private ?array $reportCache = null;
+
+    /** @var list<string|null> */
+    private array $reportCacheParameters = [];
+
     public function mount(): void
     {
         $this->initializeDefaultDateRange();
         $this->sanitizeSavedReportState();
+    }
+
+    /**
+     * @return array{summary: array{cohorts:int,identities:int,windows:list<array{days:int,retained:int,avg_retention_rate:float}>}, rows: list<array{cohort_date:string,cohort_size:int,windows:list<array{days:int,retained:int,retention_rate:float}>}>}
+     */
+    private function report(): array
+    {
+        $parameters = [
+            $this->trackedPropertyId !== '' ? $this->trackedPropertyId : null,
+            $this->dateFrom,
+            $this->dateTo,
+            $this->signalSegmentId !== '' ? $this->signalSegmentId : null,
+            $this->savedReportId !== '' ? $this->savedReportId : null,
+        ];
+
+        if ($this->reportCache === null || $this->reportCacheParameters !== $parameters) {
+            $this->reportCache = app(RetentionReportService::class)->report(...$parameters);
+            $this->reportCacheParameters = $parameters;
+        }
+
+        return $this->reportCache;
     }
 
     protected function savedReportType(): string
@@ -57,13 +86,7 @@ final class RetentionReport extends ReportPage
      */
     public function getSummary(): array
     {
-        return app(RetentionReportService::class)->summary(
-            $this->trackedPropertyId !== '' ? $this->trackedPropertyId : null,
-            $this->dateFrom,
-            $this->dateTo,
-            $this->signalSegmentId !== '' ? $this->signalSegmentId : null,
-            $this->savedReportId !== '' ? $this->savedReportId : null,
-        );
+        return $this->report()['summary'];
     }
 
     /**
@@ -71,13 +94,7 @@ final class RetentionReport extends ReportPage
      */
     public function getRows(): array
     {
-        return app(RetentionReportService::class)->rows(
-            $this->trackedPropertyId !== '' ? $this->trackedPropertyId : null,
-            $this->dateFrom,
-            $this->dateTo,
-            $this->signalSegmentId !== '' ? $this->signalSegmentId : null,
-            $this->savedReportId !== '' ? $this->savedReportId : null,
-        );
+        return $this->report()['rows'];
     }
 
     protected function getHeaderActions(): array

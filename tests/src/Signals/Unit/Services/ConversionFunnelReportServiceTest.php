@@ -135,6 +135,9 @@ it('builds an owner-safe conversion funnel summary', function (): void {
     $summary = $service->summary($propertyA->id, '2026-03-10', '2026-03-10');
     $stages = $service->stages($propertyA->id, '2026-03-10', '2026-03-10');
 
+    expect($service->report($propertyA->id, '2026-03-10', '2026-03-10'))
+        ->toBe(['summary' => $summary, 'stages' => $stages]);
+
     expect($summary['started'])->toBe(2)
         ->and($summary['completed'])->toBe(1)
         ->and($summary['paid'])->toBe(1)
