@@ -11,7 +11,7 @@ return new class extends Migration
     public function up(): void
     {
         $tableName = config('contacting.database.tables.contact_snapshots', 'contact_snapshots');
-        $jsonColumnType = commerce_json_column_type('contacting', 'json');
+        $jsonColumnType = commerce_json_column_type('contacting', 'jsonb');
 
         Schema::create($tableName, function (Blueprint $table) use ($jsonColumnType): void {
             $table->uuid('id')->primary();

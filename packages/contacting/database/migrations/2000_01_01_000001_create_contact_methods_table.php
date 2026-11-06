@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         $tableName = config('contacting.database.tables.contact_methods', 'contact_methods');
-        $jsonColumnType = commerce_json_column_type('contacting', 'json');
+        $jsonColumnType = commerce_json_column_type('contacting', 'jsonb');
         $validityIndexName = str_replace(['.', '-', ' '], '_', $tableName) . '_contactable_validity_index';
         $validityIndexColumns = [
             'contactable_type', 'contactable_id', 'type', 'purpose',
