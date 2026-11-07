@@ -12,6 +12,7 @@ use AIArmada\Events\Enums\RegistrationMode;
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\States\OccurrenceStatus\OccurrenceStatus as OccurrenceStatusState;
 use AIArmada\FilamentEvents\Actions\Exporter\EventOccurrenceExporter;
+use AIArmada\FilamentEvents\Contracts\EventOccurrenceFormExtension;
 use AIArmada\Ticketing\Enums\PricingMode;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -25,6 +26,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Contracts\HasColor;
@@ -80,6 +82,9 @@ final class EventOccurrenceResource extends Resource
                 Tables\Columns\TextColumn::make('visibility')
                     ->badge()
                     ->color(fn (mixed $state): string => $state === 'hidden' ? 'danger' : 'gray'),
+                Tables\Columns\IconColumn::make('is_featured')
+                    ->label('Featured')
+                    ->boolean(),
                 Tables\Columns\TextColumn::make('capacity')
                     ->numeric(),
                 Tables\Columns\TextColumn::make('published_at')
@@ -92,6 +97,8 @@ final class EventOccurrenceResource extends Resource
                     ->options(OccurrenceStatusState::options()),
                 Tables\Filters\SelectFilter::make('visibility')
                     ->options(EventVisibility::options()),
+                Tables\Filters\TernaryFilter::make('is_featured')
+                    ->label('Featured'),
                 Tables\Filters\SelectFilter::make('event_id')
                     ->label('Event')
                     ->relationship(
@@ -122,7 +129,7 @@ final class EventOccurrenceResource extends Resource
                     ->requiresConfirmation(),
                 Action::make('postpone')
                     ->label('Postpone')
-                    ->icon('heroicon-o-calendar-x')
+                    ->icon('heroicon-o-calendar-days')
                     ->color('warning')
                     ->form([
                         Textarea::make('reason')->required(),
@@ -239,6 +246,7 @@ final class EventOccurrenceResource extends Resource
                             ->minValue(0)
                             ->nullable(),
                     ])->columns(2),
+                ...self::configuredFormExtensions(),
                 Section::make('Media')
                     ->schema([
                         SpatieMediaLibraryFileUpload::make('cover')
@@ -285,6 +293,32 @@ final class EventOccurrenceResource extends Resource
                             ->helperText('Leave blank to use the inherited or configured default.'),
                     ])->columns(2),
             ]);
+    }
+
+    /**
+     * @return array<int, Component>
+     */
+    private static function configuredFormExtensions(): array
+    {
+        $configuredExtensions = config('filament-events.resources.occurrence_form_extensions', []);
+
+        if (! is_array($configuredExtensions)) {
+            return [];
+        }
+
+        $components = [];
+
+        foreach ($configuredExtensions as $extensionClass) {
+            if (! is_string($extensionClass) || ! is_a($extensionClass, EventOccurrenceFormExtension::class, true)) {
+                continue;
+            }
+
+            /** @var EventOccurrenceFormExtension $extension */
+            $extension = app($extensionClass);
+            $components = [...$components, ...$extension->components()];
+        }
+
+        return $components;
     }
 
     public static function getPages(): array

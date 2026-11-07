@@ -21,7 +21,9 @@ use AIArmada\CommerceSupport\Support\OwnerContextTeamResolver;
 use Illuminate\Auth\AuthManager;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
+use Illuminate\Database\Events\TransactionRolledBack;
 use Illuminate\Foundation\Application;
+use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\View\Compilers\BladeCompiler;
@@ -73,6 +75,7 @@ final class AuthzServiceProvider extends PackageServiceProvider
         $this->registerTeamResolver();
         $this->registerAuthDriver();
         $this->registerOctaneListeners();
+        $this->registerCacheBoundaryListeners();
     }
 
     public function packageBooted(): void
@@ -83,6 +86,7 @@ final class AuthzServiceProvider extends PackageServiceProvider
         $this->registerImpersonationEventListeners();
         $this->registerGateHooks();
         UserRoleChecker::flushGlobalRoleCache();
+        UserWildcardPermissions::flushCache();
         UserRoleChecker::registerMutationListener();
     }
 
@@ -228,12 +232,36 @@ final class AuthzServiceProvider extends PackageServiceProvider
             static function (): void {
                 app(PermissionRegistrar::class)->forgetCachedPermissions();
                 UserRoleChecker::flushGlobalRoleCache();
+                UserWildcardPermissions::flushCache();
 
                 if (app()->has(Authz::class)) {
                     app(Authz::class)->clearCache();
                 }
             }
         );
+
+    }
+
+    private function registerCacheBoundaryListeners(): void
+    {
+        $this->app['events']->listen(
+            TransactionRolledBack::class,
+            static function (): void {
+                app(PermissionRegistrar::class)->forgetCachedPermissions();
+                UserRoleChecker::flushGlobalRoleCache();
+                UserWildcardPermissions::flushCache();
+            }
+        );
+
+        if (class_exists(JobProcessing::class)) {
+            $this->app['events']->listen(
+                JobProcessing::class,
+                static function (): void {
+                    UserRoleChecker::flushGlobalRoleCache();
+                    UserWildcardPermissions::flushCache();
+                }
+            );
+        }
     }
 
     private function registerAuthDriver(): void

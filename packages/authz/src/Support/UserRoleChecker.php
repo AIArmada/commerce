@@ -13,11 +13,18 @@ use WeakMap;
 final class UserRoleChecker
 {
     /**
-     * Request-scoped verdict cache keyed by user object and role name.
+     * Request-scoped verdict cache keyed by model identity and role name.
+     *
+     * @var array<string, bool>
+     */
+    private static array $globalRoleCache = [];
+
+    /**
+     * Request-scoped verdict cache for non-model users.
      *
      * @var WeakMap<object, array<string, bool>>|null
      */
-    private static ?WeakMap $globalRoleCache = null;
+    private static ?WeakMap $objectRoleCache = null;
 
     public static function hasRole(mixed $user, string $role): bool
     {
@@ -38,11 +45,10 @@ final class UserRoleChecker
             return false;
         }
 
-        $cache = self::$globalRoleCache ??= new WeakMap;
-        $cachedRoles = $cache[$user] ?? [];
+        $cached = self::cachedVerdict($user, $role);
 
-        if (array_key_exists($role, $cachedRoles)) {
-            return $cachedRoles[$role];
+        if ($cached !== null) {
+            return $cached;
         }
 
         $registrar = app(PermissionRegistrar::class);
@@ -83,19 +89,19 @@ final class UserRoleChecker
             }
         }
 
-        $cachedRoles[$role] = $verdict;
-        $cache[$user] = $cachedRoles;
+        self::storeVerdict($user, $role, $verdict);
 
         return $verdict;
     }
 
     public static function flushGlobalRoleCache(): void
     {
-        self::$globalRoleCache = null;
+        self::$globalRoleCache = [];
+        self::$objectRoleCache = null;
     }
 
     /**
-     * Invalidate the request cache whenever a role assignment or role record
+     * Invalidate the request caches whenever a permission or role assignment
      * is written, so same-request grants/revocations remain visible without
      * re-querying on every subsequent authorization check.
      */
@@ -103,17 +109,96 @@ final class UserRoleChecker
     {
         DB::listen(static function (QueryExecuted $query): void {
             $sql = mb_ltrim($query->sql);
+            $identifier = '(?:"[^"]+"|`[^`]+`|\[[^\]]+\]|[a-zA-Z0-9_$]+)';
 
-            if (! preg_match('/^(insert|update|delete)\b/i', $sql)) {
+            if (! preg_match('/^(?:insert(?:\s+or\s+ignore|\s+ignore)?\s+into|update|delete\s+from)\s+(' . $identifier . '(?:\s*\.\s*' . $identifier . ')*)/i', $sql, $matches)) {
                 return;
             }
 
-            $roleTable = (string) config('permission.table_names.roles', 'roles');
-            $assignmentTable = (string) config('permission.table_names.model_has_roles', 'model_has_roles');
+            $table = self::unqualifiedTableName($matches[1]);
+            $permissionTables = [
+                (string) config('permission.table_names.roles', 'roles'),
+                (string) config('permission.table_names.permissions', 'permissions'),
+                (string) config('permission.table_names.model_has_roles', 'model_has_roles'),
+                (string) config('permission.table_names.model_has_permissions', 'model_has_permissions'),
+                (string) config('permission.table_names.role_has_permissions', 'role_has_permissions'),
+            ];
 
-            if (str_contains($sql, $assignmentTable) || str_contains($sql, $roleTable)) {
+            foreach ($permissionTables as $permissionTable) {
+                $wrappedTable = $query->connection->getQueryGrammar()->wrapTable($permissionTable);
+
+                if ($table !== self::unqualifiedTableName($wrappedTable)) {
+                    continue;
+                }
+
                 self::flushGlobalRoleCache();
+                UserWildcardPermissions::flushCache();
+
+                return;
             }
         });
+    }
+
+    private static function unqualifiedTableName(string $table): string
+    {
+        $segments = explode('.', $table);
+
+        return mb_trim($segments[array_key_last($segments)], " \t\n\r\0\x0B\"`[]");
+    }
+
+    private static function cachedVerdict(object $user, string $role): ?bool
+    {
+        if ($user instanceof Model) {
+            $key = self::modelCacheKey($user, $role);
+
+            if ($key === null) {
+                return null;
+            }
+
+            return array_key_exists($key, self::$globalRoleCache)
+                ? self::$globalRoleCache[$key]
+                : null;
+        }
+
+        $cache = self::$objectRoleCache ??= new WeakMap;
+        $roles = $cache[$user] ?? [];
+
+        return array_key_exists($role, $roles) ? $roles[$role] : null;
+    }
+
+    private static function storeVerdict(object $user, string $role, bool $verdict): void
+    {
+        if ($user instanceof Model) {
+            $key = self::modelCacheKey($user, $role);
+
+            if ($key !== null) {
+                self::$globalRoleCache[$key] = $verdict;
+            }
+
+            return;
+        }
+
+        $cache = self::$objectRoleCache ??= new WeakMap;
+        $roles = $cache[$user] ?? [];
+        $roles[$role] = $verdict;
+        $cache[$user] = $roles;
+    }
+
+    private static function modelCacheKey(Model $user, string $role): ?string
+    {
+        $key = $user->getKey();
+
+        if ($key === null || $key === '') {
+            return null;
+        }
+
+        return json_encode([
+            $user->getConnection()->getName(),
+            $user->getConnection()->getDatabaseName(),
+            $user->getTable(),
+            $user->getMorphClass(),
+            $key,
+            $role,
+        ], JSON_THROW_ON_ERROR);
     }
 }

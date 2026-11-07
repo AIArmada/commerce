@@ -89,6 +89,9 @@ it('builds an owner-safe retention cohort report', function (): void {
     $summary = $service->summary($propertyA->id, '2026-01-01', '2026-01-31');
     $rows = $service->rows($propertyA->id, '2026-01-01', '2026-01-31');
 
+    expect($service->report($propertyA->id, '2026-01-01', '2026-01-31'))
+        ->toBe(['summary' => $summary, 'rows' => $rows]);
+
     expect($summary['cohorts'])->toBe(2)
         ->and($summary['identities'])->toBe(3)
         ->and($summary['windows'])->toBe([

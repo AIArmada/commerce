@@ -10,6 +10,8 @@ use AIArmada\Authz\Services\PermissionKeyBuilder;
 use AIArmada\Authz\Support\AuthzScopeContext;
 use AIArmada\Authz\Support\AuthzScopeResolver;
 use AIArmada\Authz\Support\AuthzScopeTeamResolver;
+use AIArmada\Authz\Support\UserRoleChecker;
+use AIArmada\Authz\Support\UserWildcardPermissions;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerContextTeamResolver;
 use Closure;
@@ -151,6 +153,8 @@ class Authz
     public function clearCache(): void
     {
         app(PermissionRegistrar::class)->forgetCachedPermissions();
+        UserRoleChecker::flushGlobalRoleCache();
+        UserWildcardPermissions::flushCache();
         $this->resetScopeState();
     }
 

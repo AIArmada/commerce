@@ -141,7 +141,7 @@ final class EventSessionResource extends Resource
                     ->requiresConfirmation(),
                 Action::make('postpone')
                     ->label('Postpone')
-                    ->icon('heroicon-o-calendar-x')
+                    ->icon('heroicon-o-calendar-days')
                     ->color('warning')
                     ->form([
                         Textarea::make('reason')->required(),

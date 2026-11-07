@@ -3,8 +3,11 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\FilamentSignals\FilamentSignalsTestCase;
+use AIArmada\FilamentSignals\Pages\ConversionFunnelReport;
+use AIArmada\FilamentSignals\Pages\RetentionReport;
 use AIArmada\FilamentSignals\Support\SignalsReportStateSanitizer;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
 
 uses(FilamentSignalsTestCase::class);
 
@@ -38,3 +41,34 @@ it('clamps ranges that exceed one year', function (): void {
     expect($range['to'])->toBe('2026-09-01')
         ->and($span)->toBeLessThan(SignalsReportStateSanitizer::MAX_DATE_RANGE_DAYS);
 });
+
+it('reuses a report within a render and recomputes after its date filter changes', function (string $pageClass, string $rowsMethod): void {
+    $page = new $pageClass;
+    $page->dateFrom = '2026-08-01';
+    $page->dateTo = '2026-08-31';
+
+    $connection = DB::connection();
+    $connection->enableQueryLog();
+    $connection->flushQueryLog();
+
+    try {
+        $summary = $page->getSummary();
+        $firstQueryCount = count($connection->getQueryLog());
+        $page->$rowsMethod();
+
+        expect($firstQueryCount)->toBeGreaterThan(0)
+            ->and(count($connection->getQueryLog()))->toBe($firstQueryCount)
+            ->and($page->getSummary())->toBe($summary);
+
+        $page->dateFrom = '2026-09-01';
+        $page->dateTo = '2026-09-30';
+        $page->getSummary();
+
+        expect(count($connection->getQueryLog()))->toBeGreaterThan($firstQueryCount);
+    } finally {
+        $connection->disableQueryLog();
+    }
+})->with([
+    'conversion funnel' => [ConversionFunnelReport::class, 'getStages'],
+    'retention' => [RetentionReport::class, 'getRows'],
+]);
