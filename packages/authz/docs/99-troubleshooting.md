@@ -64,12 +64,13 @@ scoped operation.
 
 ## Gate Allows a Revoked Wildcard
 
-Wildcard verdicts are read from current scoped assignments on every check, so
-a revocation applies to the next Gate check even on user instances loaded
-before the change. If a stale verdict still appears, confirm the check runs
-through the Gate and that no application-level authorization cache holds the
-old result; `Authz::clearCache()` clears Spatie's permission collection and
-the caller's loaded relations for the current request.
+Scoped wildcard permissions are cached per request and invalidated on writes
+to permission and role tables, including schema-qualified queries and
+`insertOrIgnore()` grants. A revocation applies to the next Gate check even
+on user instances loaded before the change. If a stale verdict still appears,
+confirm the check runs through the Gate and that no application-level
+authorization cache holds the old result. `Authz::clearCache()` clears
+Spatie's permission collection and Authz's wildcard and global role caches.
 
 ## Permission Keys Differ
 

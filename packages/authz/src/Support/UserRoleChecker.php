@@ -109,20 +109,13 @@ final class UserRoleChecker
     {
         DB::listen(static function (QueryExecuted $query): void {
             $sql = mb_ltrim($query->sql);
+            $identifier = '(?:"[^"]+"|`[^`]+`|\[[^\]]+\]|[a-zA-Z0-9_$]+)';
 
-            if (! preg_match('/^(?:insert\s+into|update|delete\s+from)\s+["`]?([a-zA-Z0-9_.]+)["`]?/i', $sql, $matches)) {
+            if (! preg_match('/^(?:insert(?:\s+or\s+ignore|\s+ignore)?\s+into|update|delete\s+from)\s+(' . $identifier . '(?:\s*\.\s*' . $identifier . ')*)/i', $sql, $matches)) {
                 return;
             }
 
-            $table = $matches[1];
-            $dot = mb_strrpos($table, '.');
-
-            if ($dot !== false) {
-                $table = mb_substr($table, $dot + 1);
-            }
-
-            $table = mb_trim($table, '"`');
-
+            $table = self::unqualifiedTableName($matches[1]);
             $permissionTables = [
                 (string) config('permission.table_names.roles', 'roles'),
                 (string) config('permission.table_names.permissions', 'permissions'),
@@ -131,13 +124,26 @@ final class UserRoleChecker
                 (string) config('permission.table_names.role_has_permissions', 'role_has_permissions'),
             ];
 
-            if (! in_array($table, $permissionTables, true)) {
+            foreach ($permissionTables as $permissionTable) {
+                $wrappedTable = $query->connection->getQueryGrammar()->wrapTable($permissionTable);
+
+                if ($table !== self::unqualifiedTableName($wrappedTable)) {
+                    continue;
+                }
+
+                self::flushGlobalRoleCache();
+                UserWildcardPermissions::flushCache();
+
                 return;
             }
-
-            self::flushGlobalRoleCache();
-            UserWildcardPermissions::flushCache();
         });
+    }
+
+    private static function unqualifiedTableName(string $table): string
+    {
+        $segments = explode('.', $table);
+
+        return mb_trim($segments[array_key_last($segments)], " \t\n\r\0\x0B\"`[]");
     }
 
     private static function cachedVerdict(object $user, string $role): ?bool

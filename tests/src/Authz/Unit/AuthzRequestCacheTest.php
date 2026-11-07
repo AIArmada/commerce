@@ -12,6 +12,65 @@ use Illuminate\Queue\Jobs\SyncJob;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\PermissionRegistrar;
 
+it('invalidates authorization verdicts after schema-qualified revocations', function (bool $configureSchema): void {
+    $user = User::query()->create([
+        'name' => 'Schema Cache User',
+        'email' => 'schema-cache@example.com',
+        'password' => 'secret',
+    ]);
+    $role = Role::create(['name' => 'Schema Cache Role', 'guard_name' => 'web']);
+    $user->assignRole($role);
+    $user->givePermissionTo(Permission::findOrCreate('schema-cache.*', 'web'));
+
+    if ($configureSchema) {
+        foreach (['model_has_roles', 'model_has_permissions'] as $key) {
+            $table = config("permission.table_names.{$key}");
+            config()->set("permission.table_names.{$key}", 'main.' . $table);
+        }
+    }
+
+    expect(UserRoleChecker::hasGlobalRole($user, 'Schema Cache Role'))->toBeTrue()
+        ->and(UserWildcardPermissions::for($user))->toBe(['schema-cache.*']);
+
+    foreach (['model_has_roles', 'model_has_permissions'] as $key) {
+        $table = config("permission.table_names.{$key}");
+        DB::table($configureSchema ? $table : 'main.' . $table)
+            ->where('model_id', $user->getKey())->delete();
+    }
+
+    expect(UserRoleChecker::hasGlobalRole($user, 'Schema Cache Role'))->toBeFalse()
+        ->and(UserWildcardPermissions::for($user))->toBe([]);
+})->with([false, true]);
+
+it('invalidates authorization verdicts after insert-or-ignore grants', function (): void {
+    $user = User::query()->create([
+        'name' => 'Insert Cache User',
+        'email' => 'insert-cache@example.com',
+        'password' => 'secret',
+    ]);
+    $role = Role::create(['name' => 'Insert Cache Role', 'guard_name' => 'web']);
+    $permission = Permission::findOrCreate('insert-cache.*', 'web');
+    $assignment = [
+        'model_type' => $user->getMorphClass(),
+        'model_id' => $user->getKey(),
+        'team_id' => getPermissionsTeamId(),
+    ];
+
+    expect(UserRoleChecker::hasGlobalRole($user, 'Insert Cache Role'))->toBeFalse()
+        ->and(UserWildcardPermissions::for($user))->toBe([]);
+
+    DB::table(config('permission.table_names.model_has_roles'))
+        ->insertOrIgnore(['role_id' => $role->getKey(), ...$assignment]);
+
+    expect(UserRoleChecker::hasGlobalRole($user, 'Insert Cache Role'))->toBeTrue()
+        ->and(UserWildcardPermissions::for($user))->toBe([]);
+
+    DB::table(config('permission.table_names.model_has_permissions'))
+        ->insertOrIgnore(['permission_id' => $permission->getKey(), ...$assignment]);
+
+    expect(UserWildcardPermissions::for($user))->toBe(['insert-cache.*']);
+});
+
 it('caches wildcard permissions for eloquent users within a request', function (): void {
     $user = User::query()->create([
         'name' => 'Wildcard Cache User',

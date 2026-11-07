@@ -69,11 +69,14 @@ When `authz.wildcard_permissions` is enabled, a granted permission containing
   `orders.view.own`.
 - The configured `authz.permissions.separator` is honored, so a `:` separator
   matches `orders:*` against `orders:view`.
-- Verdicts are read from the user's current scoped assignments on every check.
-  Grants, revocations, role changes, role permission syncs, and super-admin
+- Scoped wildcard permissions and global role verdicts are cached per request.
+  Writes to the permission and role tables invalidate those caches, including
+  schema-qualified queries and `insertOrIgnore()` grants. Grants, revocations,
+  role changes, role permission syncs, and super-admin
   role removals apply to the next Gate check — including on user instances
   that were loaded before the change and with permission teams enabled or
-  disabled — without clearing any internal cache.
+  disabled — without manually clearing the cache. Transaction rollbacks,
+  queue job starts, and Octane request starts also invalidate the caches.
 
 ## Impersonation
 
