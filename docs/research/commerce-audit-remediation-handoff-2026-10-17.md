@@ -286,7 +286,7 @@ For each ID: first add a test asserting the **desired** behavior and show it fai
 
 **Regression gate:** With 10,000 paid and 3,000 settled, cancellation reserves 7,000; with another 2,000 pending, it reserves 5,000; no remainder creates no new refund. Multiple payments stay within each payment's remaining balance. Retried/concurrent cancellation and refund completion cannot exceed total paid or double-reserve.
 
-**Schema:** Reuse refund identity where possible. Edit `2000_11_01_000005_create_order_refunds_table.php` in place if a reservation identity/index is needed. Add no data-reinterpretation logic.
+**Schema:** Reuse refund identity where possible. Edit `2000_11_01_000004_create_order_refunds_table.php` in place if a reservation identity/index is needed. Add no data-reinterpretation logic.
 
 ## 7. Checkout fix
 

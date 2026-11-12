@@ -302,7 +302,7 @@ Configure each engine suite's `*_ENGINE_PGSQL_HOST`, `*_PORT`, `*_USER`, and `*_
 
 ### Schema ownership if needed
 
-The findings should mostly use existing identity/currency columns and corrected contracts. If additional persisted attempt attribution is required, edit `packages/checkout/database/migrations/2024_01_01_000001_create_checkout_sessions_table.php` in place. Refund schema belongs to `packages/orders/database/migrations/2000_11_01_000005_create_order_refunds_table.php`; variant identity belongs to `packages/products/database/migrations/2001_01_01_000004_create_product_variants_table.php`. Start new fields clean; add no compatibility interpretation of historical nulls.
+The findings should mostly use existing identity/currency columns and corrected contracts. If additional persisted attempt attribution is required, edit `packages/checkout/database/migrations/2024_01_01_000001_create_checkout_sessions_table.php` in place. Refund schema belongs to `packages/orders/database/migrations/2000_11_01_000004_create_order_refunds_table.php`; variant identity belongs to `packages/products/database/migrations/2001_01_01_000004_create_product_variants_table.php`. Start new fields clean; add no compatibility interpretation of historical nulls.
 
 ### Delivery checklist
 

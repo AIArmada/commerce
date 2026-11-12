@@ -189,7 +189,7 @@ The existing PostgreSQL migration race test covers a competing **target** write.
 
 **Permanent tests:** Two 5,000 receipts with a 7,000 refund; prior refund on the first receipt; different gateways; pending/failed/completed reservations; retries; specified-payment over-capacity rejection; cancellation after an earlier split refund; provider completion races; never-paid order rejection; exact cached totals and events.
 
-**Schema:** Prefer existing refund/payment identity fields. If a parent request/allocation identity is needed, edit `packages/orders/database/migrations/2000_11_01_000005_create_order_refunds_table.php` in place. Update service contracts, Filament actions, provider integrations, and refund docs together.
+**Schema:** Prefer existing refund/payment identity fields. If a parent request/allocation identity is needed, edit `packages/orders/database/migrations/2000_11_01_000004_create_order_refunds_table.php` in place. Update service contracts, Filament actions, provider integrations, and refund docs together.
 
 **Done when:** Pending plus completed refunds never exceed money received globally or for any referenced payment.
 

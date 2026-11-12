@@ -206,7 +206,7 @@ it('processes all commerce webhooks by default', function (): void {
 it('deduplicates concurrent same-event deliveries through the unique claim', function (): void {
     Schema::dropIfExists('webhook_calls');
 
-    commerceSupportMigration('1970_01_01_000004_create_webhook_calls_table.php.stub')->up();
+    commerceSupportMigration('1970_01_01_000003_create_webhook_calls_table.php.stub')->up();
 
     $payload = ['event_type' => 'payment.completed', 'id' => 'evt_race_1'];
 

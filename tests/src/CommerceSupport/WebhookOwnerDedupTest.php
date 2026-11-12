@@ -13,7 +13,7 @@ beforeEach(function (): void {
 
     Schema::dropIfExists('webhook_calls');
 
-    ownerDedupMigration('1970_01_01_000004_create_webhook_calls_table.php.stub')->up();
+    ownerDedupMigration('1970_01_01_000003_create_webhook_calls_table.php.stub')->up();
 });
 
 it('processes identical provider events for two different owners', function (): void {
