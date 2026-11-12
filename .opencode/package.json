@@ -1,0 +1,11 @@
+{
+  "$schema": "https://www.schemastore.org/package.json",
+  "name": ".opencode",
+  "private": true,
+  "dependencies": {
+    "@opencode-ai/plugin": "1.2.21"
+  },
+  "overrides": {
+    "zod": "4.6.7"
+  }
+}
