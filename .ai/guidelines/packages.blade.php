@@ -10,9 +10,13 @@
 - When a capability may grow variants, prefer stable extension seams such as contracts, metadata, hooks, domain events, resolvers, and support classes. Put shared seams in `commerce-support` when multiple packages may benefit.
 - Prefer tagged registrars or contributor interfaces for optional integrations instead of hard-coded service-provider branching.
 - Keep foundation service providers lean. If they start enumerating downstream packages, split the registration into registrars or support classes.
-- When orchestration repeats across HTTP, jobs, listeners, commands, or UI entry points, extract a reusable Action, Service, or Use Case.
 
-## Money And Storage
+## Reusable Orchestration
+- Prefer Laravel Actions for reusable orchestration that spans transactions, side effects, normalization, or multiple entry points.
+- When orchestration repeats across HTTP, jobs, listeners, commands, or UI entry points, extract a reusable Action, Service, or Use Case.
+- Keep trivial single-step handlers inline when extraction adds no clarity.
+- Reuse existing Actions before creating new ones.
+
+## Money
 - Treat money as integer minor units plus an explicit currency code.
 - Use `commerce-support` money primitives before rolling your own: `MoneyNormalizer` for normalization, `FormatsMoney` or Akaunting `money(..., ..., false)` for display or value formatting, and package or domain `Money` objects where contracts already expect them.
-- No soft deletes (`SoftDeletes`).

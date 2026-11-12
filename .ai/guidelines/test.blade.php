@@ -22,6 +22,5 @@
 ## Coverage
 - Always include `--parallel` when using `--coverage`.
 - Command: `./vendor/bin/pest --coverage --parallel`
-- Do not run full coverage if `0% files > 10%`.
 - Targets: Core >=80%, Filament >=70%, Support >=80%.
 - Always pipe output with `2>&1 | tee /tmp/out.txt`.

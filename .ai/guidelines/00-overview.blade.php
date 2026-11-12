@@ -2,6 +2,21 @@
 
 These files are intentionally split by concern for easier maintenance. Read and apply all of them, and keep each rule in the narrowest subject file that fits it.
 
+## Guideline Map
+- `00-overview` — contract, runtime baseline, verification baseline, repo navigation.
+- `general` — agent interaction, planning, change shape, proof, git safety.
+- `development` — tooling scope, code conventions, compatibility policy.
+- `database` — schema, columns, lifecycle timestamps, migrations, persistence policy.
+- `model` — Eloquent base contract, relations, state-machine wiring.
+- `config` — config keys, section order, JSON column type.
+- `packages` — package boundaries, shared foundations, money, reusable orchestration.
+- `docs` — package documentation structure and style.
+- `filament` — Filament adapter and navigation rules.
+- `multitenancy` — owner boundary, scoping, and enforcement.
+- `phpstan` — static analysis and runtime-extension safety.
+- `spatie` — preferred Spatie packages.
+- `test` — test execution, parallelism, coverage.
+
 ## Rule Hierarchy
 - Follow the strictest rule when guidance overlaps: security > data isolation > correctness > style.
 - If instructions conflict or cannot both be satisfied, say so explicitly, explain the conflict, and choose the safest alternative.

@@ -5,6 +5,22 @@
 
 These files are intentionally split by concern for easier maintenance. Read and apply all of them, and keep each rule in the narrowest subject file that fits it.
 
+## Guideline Map
+
+- `00-overview` — contract, runtime baseline, verification baseline, repo navigation.
+- `general` — agent interaction, planning, change shape, proof, git safety.
+- `development` — tooling scope, code conventions, compatibility policy.
+- `database` — schema, columns, lifecycle timestamps, migrations, persistence policy.
+- `model` — Eloquent base contract, relations, state-machine wiring.
+- `config` — config keys, section order, JSON column type.
+- `packages` — package boundaries, shared foundations, money, reusable orchestration.
+- `docs` — package documentation structure and style.
+- `filament` — Filament adapter and navigation rules.
+- `multitenancy` — owner boundary, scoping, and enforcement.
+- `phpstan` — static analysis and runtime-extension safety.
+- `spatie` — preferred Spatie packages.
+- `test` — test execution, parallelism, coverage.
+
 ## Rule Hierarchy
 
 - Follow the strictest rule when guidance overlaps: security > data isolation > correctness > style.
@@ -53,7 +69,7 @@ These files are intentionally split by concern for easier maintenance. Read and 
 
 - Keep config keys minimal. If a key is defined but never read, remove it.
 - Prefer opinionated defaults over excessive `env()` usage. Use env vars only for secrets or deploy-time values.
-- Comments should be section headers only; inline comments are only for non-obvious values.
+- Config comments should be section headers only; inline comments are only for non-obvious values.
 
 ## Section Order
 
@@ -86,16 +102,33 @@ These files are intentionally split by concern for easier maintenance. Read and 
 
 - Never add database-level constraints or cascades: no `->constrained()`, no `->cascadeOnDelete()`, no FK constraints.
 - Enforce cascades and integrity in application logic through models, Actions, and services.
+- No soft deletes: never use the `SoftDeletes` trait and never add `deleted_at` columns.
+
+## Lifecycle Columns
+
+- Lifecycle columns are always named `status`. The `state` column name is reserved for geographic address regions (province/state next to `city`/`postcode`) or for mirroring an external API field name.
+- Record business-critical terminal transitions in dedicated `timestampTz` columns.
+- Use `*_at` for the actual transition time and keep scheduled deadlines such as `expires_at` separate.
+- Non-terminal states use toggle timestamps (set on entry, cleared on exit, e.g. `held_at`); terminal states record once and never clear.
+- Binary active/inactive lifecycles may use a single toggle timestamp (`deactivated_at`/`hidden_at`) with a scope instead of a `status` column.
+- Do not bury lifecycle events in JSON or booleans when the timestamp matters operationally.
 
 ## Migrations
 
 - Keep migrations safe and idempotent.
 - No `down()` method is required.
 - Evolve schema by editing the owning migration in place; do not add a new migration file per schema change and do not drop and recreate tables to alter them.
+- Do not write data backfills or migrations that reinterpret legacy semantics; new columns start clean with no legacy null meaning.
+
+## JSON Columns
+
+- JSON columns use the package's configured `json_column_type`; never hardcode `json` or `jsonb` in a migration.
 
 ## Verification
 
 - Ensure no constraints or cascades slipped in: `rg -n -- "constrained\(|cascadeOnDelete\(" packages/*/database`
+- Ensure no soft deletes slipped in: `rg -n -- "softDeletes\(|SoftDeletes" packages/*/database packages/*/src`
+- Ensure JSON columns use package config: `rg -n -- "->json\(|->jsonb\(" packages/*/database`
 
 === .ai/development rules ===
 
@@ -119,7 +152,6 @@ These files are intentionally split by concern for easier maintenance. Read and 
 
 - Breaking changes are allowed when they improve the system. Backward compatibility is not required unless a task explicitly asks for it.
 - Do not add backward-compatibility shims, legacy aliases, or deprecated-code paths; remove the old path instead of keeping both.
-- Do not write data backfills or migrations that reinterpret legacy semantics; new columns start clean with no legacy null meaning.
 
 === .ai/docs rules ===
 
@@ -234,18 +266,6 @@ Use this file for cross-cutting judgment, planning, and change execution.
 - Mention unrelated dead code instead of deleting it.
 - Remove only imports, variables, or functions your change makes unused.
 
-## Runtime Extension Safety
-
-- Before removing a method that static analysis reports as undefined, verify runtime extension sources first.
-- Check `macro()` / `hasMacro()` registrations, package mixins or traits, and framework or plugin extension points.
-- If the method is runtime-provided, preserve behavior and fix analysis with a narrow, targeted change.
-
-## Reusable Orchestration
-
-- Prefer Laravel Actions for reusable orchestration that spans transactions, side effects, normalization, or multiple entry points.
-- Keep trivial single-step handlers inline when extraction adds no clarity.
-- Reuse existing Actions before creating new ones.
-
 ## Proof
 
 - Verify behavior before declaring done.
@@ -285,14 +305,9 @@ Use this file for cross-cutting judgment, planning, and change execution.
 ## Lifecycle
 
 - When a model has a status or state machine, keep the enum, transition code, and lifecycle columns in sync.
-- Lifecycle columns are always named `status`. The `state` column name is reserved for geographic address regions (province/state next to `city`/`postcode`) or for mirroring an external API field name.
-- Record business-critical terminal transitions in dedicated `timestampTz` columns.
-- Use `*_at` for the actual transition time and keep scheduled deadlines such as `expires_at` separate.
-- Non-terminal states use toggle timestamps (set on entry, cleared on exit, e.g. `held_at`); terminal states record once and never clear.
-- Binary active/inactive lifecycles may use a single toggle timestamp (`deactivated_at`/`hidden_at`) with a scope instead of a `status` column.
-- Do not bury lifecycle events in JSON or booleans when the timestamp matters operationally.
 - Keep the state-to-timestamp mapping centralised in the transition method or supporting trait.
 - Use immutable date casts for lifecycle timestamps when the model supports them.
+- Lifecycle column naming and timestamp shape are defined in the database guidelines.
 
 === .ai/multitenancy rules ===
 
@@ -392,13 +407,18 @@ Use this file for cross-cutting judgment, planning, and change execution.
 - When a capability may grow variants, prefer stable extension seams such as contracts, metadata, hooks, domain events, resolvers, and support classes. Put shared seams in `commerce-support` when multiple packages may benefit.
 - Prefer tagged registrars or contributor interfaces for optional integrations instead of hard-coded service-provider branching.
 - Keep foundation service providers lean. If they start enumerating downstream packages, split the registration into registrars or support classes.
-- When orchestration repeats across HTTP, jobs, listeners, commands, or UI entry points, extract a reusable Action, Service, or Use Case.
 
-## Money And Storage
+## Reusable Orchestration
+
+- Prefer Laravel Actions for reusable orchestration that spans transactions, side effects, normalization, or multiple entry points.
+- When orchestration repeats across HTTP, jobs, listeners, commands, or UI entry points, extract a reusable Action, Service, or Use Case.
+- Keep trivial single-step handlers inline when extraction adds no clarity.
+- Reuse existing Actions before creating new ones.
+
+## Money
 
 - Treat money as integer minor units plus an explicit currency code.
 - Use `commerce-support` money primitives before rolling your own: `MoneyNormalizer` for normalization, `FormatsMoney` or Akaunting `money(..., ..., false)` for display or value formatting, and package or domain `Money` objects where contracts already expect them.
-- No soft deletes (`SoftDeletes`).
 
 === .ai/phpstan rules ===
 
@@ -412,6 +432,12 @@ Use this file for cross-cutting judgment, planning, and change execution.
 ## Rules
 
 - Do not add new `ignoreErrors` entries unless root-cause fixes are exhausted.
+
+## Runtime Extensions
+
+- Before removing a method that static analysis reports as undefined, verify runtime extension sources first.
+- Check `macro()` / `hasMacro()` registrations, package mixins or traits, and framework or plugin extension points.
+- If the method is runtime-provided, preserve behavior and fix analysis with a narrow, targeted change.
 
 ## Verification
 
@@ -461,7 +487,6 @@ Use this file for cross-cutting judgment, planning, and change execution.
 
 - Always include `--parallel` when using `--coverage`.
 - Command: `./vendor/bin/pest --coverage --parallel`
-- Do not run full coverage if `0% files > 10%`.
 - Targets: Core >=80%, Filament >=70%, Support >=80%.
 - Always pipe output with `2>&1 | tee /tmp/out.txt`.
 

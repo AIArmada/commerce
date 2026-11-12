@@ -15,4 +15,3 @@
 ## Compatibility Policy
 - Breaking changes are allowed when they improve the system. Backward compatibility is not required unless a task explicitly asks for it.
 - Do not add backward-compatibility shims, legacy aliases, or deprecated-code paths; remove the old path instead of keeping both.
-- Do not write data backfills or migrations that reinterpret legacy semantics; new columns start clean with no legacy null meaning.

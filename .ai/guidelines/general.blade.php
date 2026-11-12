@@ -25,16 +25,6 @@ Use this file for cross-cutting judgment, planning, and change execution.
 - Mention unrelated dead code instead of deleting it.
 - Remove only imports, variables, or functions your change makes unused.
 
-## Runtime Extension Safety
-- Before removing a method that static analysis reports as undefined, verify runtime extension sources first.
-- Check `macro()` / `hasMacro()` registrations, package mixins or traits, and framework or plugin extension points.
-- If the method is runtime-provided, preserve behavior and fix analysis with a narrow, targeted change.
-
-## Reusable Orchestration
-- Prefer Laravel Actions for reusable orchestration that spans transactions, side effects, normalization, or multiple entry points.
-- Keep trivial single-step handlers inline when extraction adds no clarity.
-- Reuse existing Actions before creating new ones.
-
 ## Proof
 - Verify behavior before declaring done.
 - Write a brief success criterion for multi-step work.
