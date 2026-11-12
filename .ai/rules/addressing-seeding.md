@@ -1,3 +1,13 @@
+---
+paths:
+  - packages/addressing/src/Actions/Seed*.php
+  - packages/addressing/src/Commands/Seed*.php
+  - packages/addressing/src/Support/CitySeedRowReader.php
+  - packages/addressing/src/Support/SeedAddressingSummary.php
+  - packages/addressing/database/seeders/**
+  - packages/addressing/config/addressing.php
+---
+
 # Addressing Seeding
 
 Applies to the seed actions, commands, seeders, and readers that populate

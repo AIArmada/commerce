@@ -1,3 +1,12 @@
+---
+paths:
+  - packages/addressing/resources/geography/*
+  - packages/addressing/src/Geography/**
+  - packages/addressing/docs/05-country-data.md
+  - packages/addressing/docs/15-locality-expansion.md
+  - tests/src/Addressing/Geography/*
+---
+
 # Country Data Expansion
 
 Applies to every country geography dataset, provider, and the docs/tests
