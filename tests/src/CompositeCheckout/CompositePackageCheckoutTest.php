@@ -18,14 +18,22 @@ use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventoryMovement;
 use AIArmada\Inventory\Models\InventoryReservation;
 use AIArmada\Inventory\Services\InventoryService;
+use AIArmada\Orders\Contracts\FulfillmentHandler;
 use AIArmada\Orders\Models\Order;
+use AIArmada\Orders\Services\OrderService;
 use AIArmada\Pricing\Models\Price;
 use AIArmada\Pricing\Models\PriceList;
 use AIArmada\Products\Actions\CreateCompositeProduct;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Models\Product;
-use AIArmada\Shipping\Integrations\OrderFulfillmentHandler;
+use AIArmada\Shipping\Contracts\ShippingDriverInterface;
+use AIArmada\Shipping\Data\AddressData;
+use AIArmada\Shipping\Data\CarrierOperationResult;
+use AIArmada\Shipping\Data\RateQuoteData;
+use AIArmada\Shipping\Models\Shipment;
+use AIArmada\Shipping\ShippingManager;
+use Illuminate\Support\Collection;
 use Mockery\CompositeExpectation;
 
 function bindCompositeCheckoutPayment(int $amount = 8800, bool $redirect = false): CompositeExpectation
@@ -198,29 +206,61 @@ it('reserves and commits five component units once for a paid composite checkout
 });
 
 it('ships the package and the standalone line as five units of the same stock identity', function (): void {
-    bindCompositeCheckoutPayment();
+    bindCompositeCheckoutPayment(9800);
 
     [$mouse, $package] = compositeCheckoutCatalog();
     $cartId = compositeCheckoutCart($package, $mouse);
 
     $checkout = app(CheckoutServiceInterface::class);
-    $checkout->processCheckout($checkout->startCheckout($cartId));
+    $checkoutResult = $checkout->processCheckout($checkout->startCheckout($cartId));
+    expect($checkoutResult->success)->toBeTrue();
 
     $order = Order::query()->findOrFail(
         CheckoutSession::query()->where('cart_id', $cartId)->value('order_id'),
     );
 
-    $handler = app(OrderFulfillmentHandler::class);
+    app(OrderService::class)->addAddress($order, [
+        'name' => 'Checkout Customer',
+        'line1' => '456 Shipping Road',
+        'city' => 'Johor Bahru',
+        'state' => 'Johor',
+        'postcode' => '80000',
+        'country' => 'MY',
+    ], 'shipping');
 
-    $shipmentItems = (new ReflectionMethod($handler, 'shipmentItemsForOrder'))->invoke($handler, $order);
-    $packages = (new ReflectionMethod($handler, 'packagesForOrder'))->invoke($handler, $order);
+    $driver = mock(ShippingDriverInterface::class);
+    $driver->shouldReceive('servicesDestination')->once()->andReturnTrue();
+    $driver->shouldReceive('getRates')->once()->andReturnUsing(
+        static function (AddressData $origin, AddressData $destination, array $packages): Collection {
+            expect(array_column($packages, 'weight'))->toBe([1000, 250])
+                ->and(array_column($packages, 'length'))->toBe([12, 12]);
 
-    expect(array_sum(array_map(static fn ($item): int => $item->quantity, $shipmentItems)))->toBe(5)
-        ->and(array_unique(array_map(static fn ($item): ?string => $item->shippableItemId, $shipmentItems)))
-        ->toBe([(string) $mouse->getKey()])
-        ->and(array_map(static fn ($item): int => $item->quantity, $shipmentItems))->toBe([4, 1])
-        ->and(array_sum(array_map(static fn ($package): int => $package->weight, $packages)))->toBe(1250)
-        ->and(array_map(static fn ($package): ?int => $package->length, $packages))->toBe([12, 12]);
+            return collect([new RateQuoteData('manual', 'standard', 1000, 'USD', 3)]);
+        },
+    );
+    $driver->shouldReceive('createShipment')->once()->andReturn(CarrierOperationResult::succeeded('COMPOSITE-TRACK'));
+    $manager = mock(ShippingManager::class);
+    $manager->shouldReceive('getAvailableDrivers')->once()->andReturn(['manual']);
+    $manager->shouldReceive('driver')->with('manual')->andReturn($driver);
+    app()->instance(ShippingManager::class, $manager);
+
+    $handler = app(FulfillmentHandler::class);
+    expect($handler->getRates($order))->toHaveCount(1);
+
+    $result = $handler->createShipment($order, ['carrier' => 'manual']);
+    expect($result['error'])->toBeNull();
+
+    $shipment = Shipment::query()->findOrFail($result['shipment_id']);
+    $items = $shipment->items()->get();
+    $packageItems = $items->whereNotNull('package_unit_ordinal')->sortBy('package_unit_ordinal')->values();
+    $standaloneItems = $items->whereNull('package_unit_ordinal');
+
+    expect($shipment->total_weight)->toBe(1250)
+        ->and($items->sum('quantity'))->toBe(5)
+        ->and($items->pluck('shippable_item_id')->unique()->values()->all())->toBe([(string) $mouse->getKey()])
+        ->and($packageItems->pluck('package_unit_ordinal')->all())->toBe([1, 2])
+        ->and($packageItems->pluck('quantity')->all())->toBe([2, 2])
+        ->and($standaloneItems->pluck('quantity')->values()->all())->toBe([1]);
 });
 
 it('rolls the reservation back and creates no order when component stock runs out before payment', function (): void {
