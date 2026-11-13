@@ -9,6 +9,8 @@ use AIArmada\Cart\Models\CartItem;
 use AIArmada\CommerceSupport\Contracts\Buyable;
 use AIArmada\Ticketing\Models\TicketType;
 use AIArmada\Ticketing\Models\TicketTypeProduct;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
 
 final class AutoAddRequiredTicketBundlesAction
 {
@@ -24,7 +26,7 @@ final class AutoAddRequiredTicketBundlesAction
 
         $ticketType->loadMissing('requiredBundleProducts.product', 'requiredBundleProducts.variant');
 
-        /** @var \Illuminate\Support\Collection<int, TicketTypeProduct> $bundles */
+        /** @var Collection<int, TicketTypeProduct> $bundles */
         $bundles = $ticketType->requiredBundleProducts;
         $expectedLineIds = [];
 
@@ -66,7 +68,7 @@ final class AutoAddRequiredTicketBundlesAction
 
     private function lineIdentifier(TicketType $ticketType, TicketTypeProduct $bundle, Buyable $target): string
     {
-        $type = $target instanceof \Illuminate\Database\Eloquent\Model
+        $type = $target instanceof Model
             ? $target->getMorphClass()
             : $target::class;
 

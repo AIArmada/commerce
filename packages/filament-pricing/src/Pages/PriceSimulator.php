@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentPricing\Pages;
 
+use AIArmada\CommerceSupport\Contracts\Priceable;
 use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\CommerceSupport\Contracts\Priceable;
 use AIArmada\Pricing\Contracts\PriceCalculatorInterface;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;

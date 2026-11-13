@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Pricing\Services;
 
+use AIArmada\CommerceSupport\Contracts\Priceable;
 use AIArmada\CommerceSupport\Support\MoneyNormalizer;
 use AIArmada\Pricing\Contracts\CustomerPriceResolverInterface;
-use AIArmada\CommerceSupport\Contracts\Priceable;
 use AIArmada\Pricing\Contracts\PriceCalculatorInterface;
 use AIArmada\Pricing\Contracts\SegmentPriceResolverInterface;
 use AIArmada\Pricing\Contracts\TierResolverInterface;

@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Pricing\Actions\ApplyPromotionalAdjustment;
 use AIArmada\CommerceSupport\Contracts\Priceable;
+use AIArmada\Pricing\Actions\ApplyPromotionalAdjustment;
 use AIArmada\Pricing\Models\Price;
 use AIArmada\Pricing\Models\PriceList;
 use AIArmada\Pricing\Services\PriceCalculator;
