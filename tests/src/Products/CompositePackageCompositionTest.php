@@ -94,8 +94,8 @@ it('creates an active composite package with real components and no parent inven
         'price' => 2999,
         'price_mode' => 'fixed',
     ], [
-        ['product_id' => $mouse->id, 'quantity' => 2],
-        ['product_id' => $cable->id, 'quantity' => 1],
+        ['component_product_id' => $mouse->id, 'quantity' => 2],
+        ['component_product_id' => $cable->id, 'quantity' => 1],
     ]);
 
     expect($package->status)->toBe(ProductStatus::Active)
@@ -126,7 +126,7 @@ it('rolls back an active replacement that would leave the package empty', functi
     $mouse = makeComponentProduct();
     $parent = makeCompositeParent();
     app(ReplaceProductComponents::class)->handle($parent, [
-        ['product_id' => $mouse->id, 'quantity' => 1],
+        ['component_product_id' => $mouse->id, 'quantity' => 1],
     ]);
     $published = app(PublishCompositeProduct::class)->handle($parent);
 
@@ -145,7 +145,7 @@ it('rejects publishing an empty package and allows it after components are suppl
     $component = makeComponentProduct();
 
     app(ReplaceProductComponents::class)->handle($parent, [
-        ['product_id' => $component->id, 'quantity' => 1],
+        ['component_product_id' => $component->id, 'quantity' => 1],
     ]);
 
     $published = app(PublishCompositeProduct::class)->handle($parent);
@@ -167,7 +167,7 @@ it('blocks deleting the last component from an active package', function (): voi
     $component = makeComponentProduct();
     $parent = makeCompositeParent();
     app(ReplaceProductComponents::class)->handle($parent, [
-        ['product_id' => $component->id, 'quantity' => 1],
+        ['component_product_id' => $component->id, 'quantity' => 1],
     ]);
     $published = app(PublishCompositeProduct::class)->handle($parent);
     $row = ProductComponent::query()->where('product_id', $published->id)->firstOrFail();
@@ -183,12 +183,12 @@ it('replaces components transactionally without touching the old set on validati
     $parent = makeCompositeParent();
 
     app(ReplaceProductComponents::class)->handle($parent, [
-        ['product_id' => $mouse->id, 'quantity' => 1],
+        ['component_product_id' => $mouse->id, 'quantity' => 1],
     ]);
 
     expect(fn () => app(ReplaceProductComponents::class)->handle($parent, [
-        ['product_id' => $mouse->id, 'quantity' => 2],
-        ['product_id' => $cable->id, 'quantity' => 0],
+        ['component_product_id' => $mouse->id, 'quantity' => 2],
+        ['component_product_id' => $cable->id, 'quantity' => 0],
     ]))->toThrow(InvalidCompositePackageException::class, 'at least one');
 
     $components = ProductComponent::query()->where('product_id', $parent->id)->get();
@@ -203,11 +203,11 @@ it('rejects self references and nested composite components', function (): void 
     $nested = makeCompositeParent(['sku' => 'NESTED-PKG']);
 
     expect(fn () => app(ReplaceProductComponents::class)->handle($parent, [
-        ['product_id' => $parent->id, 'quantity' => 1],
+        ['component_product_id' => $parent->id, 'quantity' => 1],
     ]))->toThrow(InvalidCompositePackageException::class, 'cannot contain itself');
 
     expect(fn () => app(ReplaceProductComponents::class)->handle($parent, [
-        ['product_id' => $nested->id, 'quantity' => 1],
+        ['component_product_id' => $nested->id, 'quantity' => 1],
     ]))->toThrow(InvalidCompositePackageException::class, 'Nested composite');
 });
 
@@ -219,15 +219,15 @@ it('requires an exact variant for configurable components and rejects misplaced 
     $parent = makeCompositeParent();
 
     expect(fn () => app(ReplaceProductComponents::class)->handle($parent, [
-        ['product_id' => $configurable->id, 'quantity' => 1],
+        ['component_product_id' => $configurable->id, 'quantity' => 1],
     ]))->toThrow(InvalidCompositePackageException::class, 'exact variant');
 
     expect(fn () => app(ReplaceProductComponents::class)->handle($parent, [
-        ['product_id' => $configurable->id, 'variant_id' => $otherVariant->id, 'quantity' => 1],
+        ['component_product_id' => $configurable->id, 'variant_id' => $otherVariant->id, 'quantity' => 1],
     ]))->toThrow(InvalidCompositePackageException::class, 'does not belong');
 
     $components = app(ReplaceProductComponents::class)->handle($parent, [
-        ['product_id' => $configurable->id, 'variant_id' => $variant->id, 'quantity' => 1],
+        ['component_product_id' => $configurable->id, 'variant_id' => $variant->id, 'quantity' => 1],
     ]);
 
     expect($components->first()->variant_id)->toBe($variant->id);
@@ -235,7 +235,7 @@ it('requires an exact variant for configurable components and rejects misplaced 
     $simple = makeComponentProduct();
 
     expect(fn () => app(ReplaceProductComponents::class)->handle($parent, [
-        ['product_id' => $simple->id, 'variant_id' => $otherVariant->id, 'quantity' => 1],
+        ['component_product_id' => $simple->id, 'variant_id' => $otherVariant->id, 'quantity' => 1],
     ]))->toThrow(InvalidCompositePackageException::class, 'Only configurable components');
 });
 
@@ -244,8 +244,8 @@ it('rejects duplicate components, non-physical components, and inconsistent mone
     $parent = makeCompositeParent();
 
     expect(fn () => app(ReplaceProductComponents::class)->handle($parent, [
-        ['product_id' => $mouse->id, 'quantity' => 1],
-        ['product_id' => $mouse->id, 'quantity' => 1],
+        ['component_product_id' => $mouse->id, 'quantity' => 1],
+        ['component_product_id' => $mouse->id, 'quantity' => 1],
     ]))->toThrow(InvalidCompositePackageException::class, 'same component twice');
 
     $digital = makeComponentProduct([
@@ -255,19 +255,19 @@ it('rejects duplicate components, non-physical components, and inconsistent mone
     ]);
 
     expect(fn () => app(ReplaceProductComponents::class)->handle($parent, [
-        ['product_id' => $digital->id, 'quantity' => 1],
+        ['component_product_id' => $digital->id, 'quantity' => 1],
     ]))->toThrow(InvalidCompositePackageException::class, 'physical product');
 
     $otherCurrency = makeComponentProduct(['currency' => 'USD']);
 
     expect(fn () => app(ReplaceProductComponents::class)->handle($parent, [
-        ['product_id' => $otherCurrency->id, 'quantity' => 1],
+        ['component_product_id' => $otherCurrency->id, 'quantity' => 1],
     ]))->toThrow(InvalidCompositePackageException::class, 'package currency');
 
     $otherTax = makeComponentProduct(['is_taxable' => false]);
 
     expect(fn () => app(ReplaceProductComponents::class)->handle($parent, [
-        ['product_id' => $otherTax->id, 'quantity' => 1],
+        ['component_product_id' => $otherTax->id, 'quantity' => 1],
     ]))->toThrow(InvalidCompositePackageException::class, 'same tax treatment');
 });
 
@@ -299,7 +299,7 @@ it('isolates composite package reads and writes by owner', function (): void {
 
     OwnerContext::withOwner($ownerA, function () use ($parentA, $componentA): void {
         app(ReplaceProductComponents::class)->handle($parentA, [
-            ['product_id' => $componentA->id, 'quantity' => 1],
+            ['component_product_id' => $componentA->id, 'quantity' => 1],
         ]);
     });
 
@@ -308,7 +308,7 @@ it('isolates composite package reads and writes by owner', function (): void {
 
     OwnerContext::withOwner($ownerA, function () use ($parentA, $componentB): void {
         expect(fn () => app(ReplaceProductComponents::class)->handle($parentA, [
-            ['product_id' => $componentB->id, 'quantity' => 1],
+            ['component_product_id' => $componentB->id, 'quantity' => 1],
         ]))->toThrow(AuthorizationException::class);
     });
 
@@ -324,7 +324,7 @@ it('protects referenced component products and variants from deletion', function
     $parent = makeCompositeParent();
 
     app(ReplaceProductComponents::class)->handle($parent, [
-        ['product_id' => $configurable->id, 'variant_id' => $variant->id, 'quantity' => 1],
+        ['component_product_id' => $configurable->id, 'variant_id' => $variant->id, 'quantity' => 1],
     ]);
 
     expect(fn () => $configurable->delete())
@@ -338,7 +338,7 @@ it('removes component rows when the composite parent is deleted', function (): v
     $mouse = makeComponentProduct();
     $parent = makeCompositeParent();
     app(ReplaceProductComponents::class)->handle($parent, [
-        ['product_id' => $mouse->id, 'quantity' => 1],
+        ['component_product_id' => $mouse->id, 'quantity' => 1],
     ]);
 
     $parent->delete();
@@ -361,8 +361,8 @@ it('wires composite base price and canonical buyable line data to the snapshot',
     $parent = makeCompositeParent(['sku' => 'LINE-KIT', 'price' => 2999]);
 
     app(ReplaceProductComponents::class)->handle($parent, [
-        ['product_id' => $mouse->id, 'quantity' => 2],
-        ['product_id' => $cable->id, 'quantity' => 1],
+        ['component_product_id' => $mouse->id, 'quantity' => 2],
+        ['component_product_id' => $cable->id, 'quantity' => 1],
     ]);
 
     $parent = $parent->fresh();
@@ -406,8 +406,8 @@ it('reflects actual component availability through product stock helpers', funct
     $parent = makeCompositeParent();
 
     app(ReplaceProductComponents::class)->handle($parent, [
-        ['product_id' => $mouse->id, 'quantity' => 2],
-        ['product_id' => $cable->id, 'quantity' => 3],
+        ['component_product_id' => $mouse->id, 'quantity' => 2],
+        ['component_product_id' => $cable->id, 'quantity' => 3],
     ]);
 
     $parent = app(PublishCompositeProduct::class)->handle($parent);
@@ -433,7 +433,7 @@ it('reports zero package availability for a disabled component variant', functio
     $parent = makeCompositeParent();
 
     app(ReplaceProductComponents::class)->handle($parent, [
-        ['product_id' => $configurable->id, 'variant_id' => $variant->id, 'quantity' => 1],
+        ['component_product_id' => $configurable->id, 'variant_id' => $variant->id, 'quantity' => 1],
     ]);
 
     $resolver->stock[$variant->getMorphClass() . ':' . $variant->getKey()] = 10;
@@ -456,7 +456,7 @@ it('blocks retyping a composite parent that still has components', function (): 
     $parent = makeCompositeParent();
 
     app(ReplaceProductComponents::class)->handle($parent, [
-        ['product_id' => $component->id, 'quantity' => 1],
+        ['component_product_id' => $component->id, 'quantity' => 1],
     ]);
 
     expect(fn () => $parent->update(['type' => ProductType::Simple]))
@@ -471,7 +471,7 @@ it('blocks retyping or disabling products and variants referenced by a package',
     $parent = makeCompositeParent();
 
     app(ReplaceProductComponents::class)->handle($parent, [
-        ['product_id' => $configurable->id, 'variant_id' => $variant->id, 'quantity' => 1],
+        ['component_product_id' => $configurable->id, 'variant_id' => $variant->id, 'quantity' => 1],
     ]);
 
     expect(fn () => $configurable->update(['type' => ProductType::Digital]))

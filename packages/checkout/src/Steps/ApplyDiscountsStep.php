@@ -13,6 +13,7 @@ use AIArmada\Checkout\Integrations\PromotionsAdapter;
 use AIArmada\Checkout\Integrations\VouchersAdapter;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\Services\DiscountCompositionService;
+use AIArmada\Checkout\Support\CompositeCartRevalidator;
 use Carbon\CarbonImmutable;
 
 final class ApplyDiscountsStep extends AbstractCheckoutStep
@@ -96,7 +97,9 @@ final class ApplyDiscountsStep extends AbstractCheckoutStep
         ]);
         $session->calculateTotals();
         $session->save();
-        $this->refreshCartSnapshot($session);
+        if (! CompositeCartRevalidator::supports($session)) {
+            $this->refreshCartSnapshot($session);
+        }
 
         return $this->success('Discounts applied', [
             'total_discount' => $totalDiscount,

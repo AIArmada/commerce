@@ -21,9 +21,9 @@ use AIArmada\Checkout\Exceptions\PaymentException;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\Services\PaymentAttemptManager;
 use AIArmada\Checkout\States\AwaitingPayment;
-use AIArmada\Checkout\Support\CompositeCartRevalidator;
 use AIArmada\Checkout\States\Completed;
 use AIArmada\Checkout\States\Processing;
+use AIArmada\Checkout\Support\CompositeCartRevalidator;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -61,7 +61,8 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
     {
         $errors = [];
 
-        if (CompositeCartRevalidator::supports($session)) {
+        if (CompositeCartRevalidator::supports($session)
+            && $this->attemptManager()->outcomeClassification($session)->requiresNewAttemptBudget()) {
             $cartErrors = ($this->cartRevalidator ?? app(CompositeCartRevalidator::class))->validate($session);
 
             if ($cartErrors !== []) {

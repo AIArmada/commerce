@@ -7,6 +7,7 @@ namespace AIArmada\Inventory\Cart;
 use AIArmada\Cart\Models\CartItem;
 use AIArmada\Orders\Models\OrderItem;
 use Illuminate\Database\Eloquent\Model;
+use RuntimeException;
 
 /**
  * Builds one aggregated demand row per actual inventory model.
@@ -16,6 +17,7 @@ use Illuminate\Database\Eloquent\Model;
  * same row so allocation and deduction happen exactly once for that stock
  * identity.
  */
+/** @phpstan-import-type Component from \AIArmada\CommerceSupport\Support\CompositeComponents */
 final class InventoryDemandResolver
 {
     /**
@@ -41,69 +43,26 @@ final class InventoryDemandResolver
 
     /**
      * @param  iterable<OrderItem>  $items
-     * @param  array<string, mixed>  $orderMetadata
      * @return array<string, array{
      *     model: Model,
      *     quantity: int,
      *     sources: array<string, array{name: string, quantity: int}>
      * }>
      */
-    public static function forOrder(iterable $items, array $orderMetadata = []): array
+    public static function forOrder(iterable $items): array
     {
-        $items = is_array($items) ? array_values($items) : iterator_to_array($items, false);
         $demand = [];
-        $itemComponents = [];
 
         foreach ($items as $item) {
-            if (! $item instanceof OrderItem) {
+            $components = CompositeComponents::fromOrderItem($item);
+
+            if ($components === null) {
+                self::addOrdinaryOrderItem($demand, $item);
+
                 continue;
             }
 
-            $components = CompositeComponents::fromOrderItem($item);
-
-            if ($components !== null) {
-                $itemComponents[(string) $item->getKey()] = $components;
-            }
-        }
-
-        if ($itemComponents !== []) {
-            foreach ($items as $item) {
-                if (! $item instanceof OrderItem) {
-                    continue;
-                }
-
-                $key = (string) $item->getKey();
-
-                if (array_key_exists($key, $itemComponents)) {
-                    self::addComponents(
-                        $demand,
-                        $itemComponents[$key],
-                        (int) $item->quantity,
-                        $key,
-                        $item->name,
-                    );
-
-                    continue;
-                }
-
-                self::addOrdinaryOrderItem($demand, $item);
-            }
-
-            return self::sorted($demand);
-        }
-
-        $orderComponents = CompositeComponents::fromMetadata($orderMetadata);
-
-        if ($orderComponents !== null) {
-            self::addComponents($demand, $orderComponents, 1, 'order', 'order');
-
-            return self::sorted($demand);
-        }
-
-        foreach ($items as $item) {
-            if ($item instanceof OrderItem) {
-                self::addOrdinaryOrderItem($demand, $item);
-            }
+            self::addComponents($demand, $components, $item->quantity, (string) $item->getKey(), $item->name);
         }
 
         return self::sorted($demand);
@@ -169,7 +128,7 @@ final class InventoryDemandResolver
      *     quantity: int,
      *     sources: array<string, array{name: string, quantity: int}>
      * }>  $demand
-     * @param  list<array<string, mixed>>  $components
+     * @param  list<Component>  $components
      */
     private static function addComponents(
         array &$demand,
@@ -183,23 +142,17 @@ final class InventoryDemandResolver
         }
 
         foreach ($components as $component) {
-            $tracksInventory = $component['tracks_inventory'] ?? null;
-
-            if ($tracksInventory === false) {
+            if (! $component['tracks_inventory']) {
                 continue;
             }
 
             $model = CompositeComponents::resolveInventoryModel($component);
 
             if (! $model instanceof Model) {
-                continue;
+                throw new RuntimeException('Inventory for a composite component could not be resolved.');
             }
 
-            if ($tracksInventory === null && ! CompositeComponents::tracksInventory($model)) {
-                continue;
-            }
-
-            $quantity = (int) $component['quantity'] * $packageQuantity;
+            $quantity = $component['quantity'] * $packageQuantity;
 
             self::addDemand($demand, $model, $quantity, $sourceId, $sourceName);
         }

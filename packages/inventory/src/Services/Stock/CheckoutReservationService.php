@@ -282,15 +282,17 @@ final class CheckoutReservationService implements CheckoutReservationServiceInte
 
     public function find(string $reference): ReservationOutcome
     {
-        $group = $this->findGroup($reference);
+        return DB::transaction(function () use ($reference): ReservationOutcome {
+            $group = $this->lockGroup($reference);
 
-        if ($group === null) {
-            return new ReservationOutcome(reference: $reference, state: 'not_found');
-        }
+            if ($group === null) {
+                return new ReservationOutcome(reference: $reference, state: 'not_found');
+            }
 
-        $this->expireIfNeeded($group);
+            $this->expireIfNeeded($group);
 
-        return $this->outcome($group->refresh());
+            return $this->outcome($group);
+        });
     }
 
     /**
@@ -398,15 +400,6 @@ final class CheckoutReservationService implements CheckoutReservationServiceInte
         $this->allocationService->releaseAllForReservationGroup($group->id);
         $group->update(['status' => InventoryReservation::STATE_EXPIRED]);
         $group->refresh();
-    }
-
-    private function findGroup(string $reference): ?InventoryReservation
-    {
-        $query = InventoryOwnerScope::applyToLocationQuery(
-            InventoryReservation::query()->where('reference', $reference)
-        );
-
-        return $query->first();
     }
 
     private function lockGroup(string $reference): ?InventoryReservation

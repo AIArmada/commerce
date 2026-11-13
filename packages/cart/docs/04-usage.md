@@ -49,11 +49,9 @@ $items = Cart::add([
 ]);
 ```
 
-Raw lines never carry a composite composition. `add()` and `update()` drop the
-`components` and `components_fingerprint` attributes, because checkout,
-inventory, orders, and shipping trust those keys to describe a package that was
-priced by the catalog. Composite lines can only be created through
-[`addBuyable()`](#adding-catalog-buyables).
+Use [`addBuyable()`](#adding-catalog-buyables) to add a composite package and
+`updateBuyable()` to change its quantity. The catalog supplies the composition.
+Raw and bulk adds discard caller-supplied composition attributes.
 
 ### Adding Catalog Buyables
 

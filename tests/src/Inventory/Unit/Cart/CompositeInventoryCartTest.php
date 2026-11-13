@@ -85,15 +85,15 @@ final class CompositeFakeCartManager implements CartManagerInterface
 function compositeComponentSnapshot(array $components): array
 {
     return array_map(static fn (array $component): array => [
-        'product_id' => $component['product']->getKey(),
+        'product_id' => (string) $component['product']->getKey(),
         'variant_id' => null,
         'inventoryable_type' => $component['product']->getMorphClass(),
-        'inventoryable_id' => $component['product']->getKey(),
+        'inventoryable_id' => (string) $component['product']->getKey(),
         'quantity' => $component['quantity'],
         'tracks_inventory' => true,
         'requires_shipping' => true,
         'name' => $component['product']->name,
-        'sku' => 'SKU-' . $component['product']->getKey(),
+        'sku' => 'SKU-' . (string) $component['product']->getKey(),
         'weight' => 100,
         'dimensions' => ['length' => 10, 'width' => 10, 'height' => 10],
     ], $components);
@@ -252,19 +252,17 @@ describe('composite cart inventory demand', function (): void {
             ->and(InventoryAllocation::query()->count())->toBe(0);
     });
 
-    it('never allocates a composite parent with an empty component snapshot', function (): void {
+    it('rejects an empty composite snapshot before writing the cart', function (): void {
         $parent = InventoryItem::create(['name' => 'Empty Bundle']);
         $this->inventoryService->receive($parent, $this->location->id, 10);
 
         $cart = new Cart(new InMemoryStorage, 'empty-composite-cart');
-        $cart->addBuyable(
+        expect(fn () => $cart->addBuyable(
             compositeCartBuyable('empty-bundle', 'Empty Bundle', 1000, [], $parent),
             3,
-        );
+        ))->toThrow(InvalidArgumentException::class, 'requires a non-empty list');
 
-        $manager = CartManagerWithInventory::fromCartManager(new CompositeFakeCartManager($cart));
-
-        expect($manager->allocateAllInventory())->toBe([])
+        expect($cart->isEmpty())->toBeTrue()
             ->and(InventoryAllocation::query()->count())->toBe(0)
             ->and($this->inventoryService->getLevel($parent, $this->location->id)?->fresh()->quantity_reserved)->toBe(0);
     });

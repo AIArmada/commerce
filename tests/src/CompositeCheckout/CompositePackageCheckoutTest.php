@@ -19,6 +19,8 @@ use AIArmada\Inventory\Models\InventoryMovement;
 use AIArmada\Inventory\Models\InventoryReservation;
 use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Orders\Models\Order;
+use AIArmada\Pricing\Models\Price;
+use AIArmada\Pricing\Models\PriceList;
 use AIArmada\Products\Actions\CreateCompositeProduct;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
@@ -26,19 +28,25 @@ use AIArmada\Products\Models\Product;
 use AIArmada\Shipping\Integrations\OrderFulfillmentHandler;
 use Mockery\CompositeExpectation;
 
-function bindCompositeCheckoutPayment(int $amount = 8800): CompositeExpectation
+function bindCompositeCheckoutPayment(int $amount = 8800, bool $redirect = false): CompositeExpectation
 {
     $processor = mock(PaymentProcessorInterface::class);
     $processor->shouldReceive('getIdentifier')->andReturn('chip');
     $processor->shouldReceive('isAvailable')->andReturnTrue();
-    $expectation = $processor->shouldReceive('createPayment')->andReturn(new PaymentResult(
+    $completed = new PaymentResult(
         status: PaymentStatus::Completed,
         paymentId: 'pay_composite_checkout',
         transactionId: 'txn_composite_checkout',
         amount: $amount,
         currency: 'USD',
         provider: 'chip',
-    ));
+    );
+    $expectation = $processor->shouldReceive('createPayment')->andReturn(
+        $redirect ? PaymentResult::pending('pay_composite_checkout', 'https://gateway.example.test/pay', 'chip') : $completed,
+    );
+    if ($redirect) {
+        $processor->shouldReceive('handleCallback')->andReturn($completed);
+    }
 
     $resolver = mock(PaymentGatewayResolverInterface::class);
     $resolver->shouldReceive('hasGateway')->andReturnTrue();
@@ -127,6 +135,7 @@ beforeEach(function (): void {
     config()->set('products.features.owner.include_global', true);
     config()->set('orders.owner.enabled', false);
     config()->set('inventory.owner.enabled', false);
+    config()->set('pricing.features.owner.enabled', false);
 });
 
 it('reserves and commits five component units once for a paid composite checkout', function (): void {
@@ -181,11 +190,11 @@ it('reserves and commits five component units once for a paid composite checkout
             ->where('type', MovementType::Shipment->value)
             ->count())->toBe(0);
 
-    $reservation = InventoryReservation::query()->where('reference', $cartId)->firstOrFail();
+    $reservation = InventoryReservation::query()->where('reference', $session->getKey())->firstOrFail();
 
     expect($reservation->status)->toBe(InventoryReservation::STATE_COMMITTED)
         ->and($reservation->order_id)->toBe($order->getKey())
-        ->and(InventoryAllocation::query()->where('cart_id', $cartId)->count())->toBe(0);
+        ->and(InventoryAllocation::query()->where('cart_id', $session->getKey())->count())->toBe(0);
 });
 
 it('ships the package and the standalone line as five units of the same stock identity', function (): void {
@@ -253,4 +262,79 @@ it('refuses to charge when the package price changed after checkout started', fu
         ->and(Order::query()->count())->toBe(0);
 
     $payment->never();
+});
+
+it('completes a redirected composite payment once across repeated callbacks', function (): void {
+    bindCompositeCheckoutPayment(9800, redirect: true)->once();
+
+    [$mouse, $package, $location] = compositeCheckoutCatalog();
+    $cartId = compositeCheckoutCart($package, $mouse);
+    $checkout = app(CheckoutServiceInterface::class);
+    $session = $checkout->startCheckout($cartId);
+
+    $checkout->processCheckout($session);
+    $session->refresh();
+
+    expect($session->payment_id)->toBe('pay_composite_checkout')
+        ->and($session->order_id)->toBeNull();
+
+    OwnerContext::withOwner(null, static fn () => $package->update(['price' => 3500]));
+
+    OwnerContext::withOwner(null, static function () use ($cartId): void {
+        CartFacade::getById($cartId)->add('new-cart-line', 'Next purchase', 100);
+    });
+
+    $payload = ['id' => 'pay_composite_checkout', 'status' => 'paid'];
+    $first = $checkout->handlePaymentCallback($session, 'success', $payload);
+    $second = $checkout->handlePaymentCallback($session, 'success', $payload);
+
+    expect($first->success)->toBeTrue()
+        ->and($second->success)->toBeTrue()
+        ->and(Order::query()->count())->toBe(1)
+        ->and($session->fresh()->order_id)->toBe($first->orderId)
+        ->and(app(InventoryService::class)->getLevel($mouse, $location->id)?->quantity_on_hand)->toBe(5)
+        ->and(OwnerContext::withOwner(null, static fn () => CartFacade::getById($cartId)?->has('new-cart-line')))->toBeTrue()
+        ->and(InventoryMovement::query()->where('type', MovementType::Shipment->value)->count())->toBe(1)
+        ->and(InventoryReservation::query()->where('reference', $session->id)->value('status'))
+        ->toBe(InventoryReservation::STATE_COMMITTED);
+});
+
+it('charges the reviewed package price list amount once', function (): void {
+    bindCompositeCheckoutPayment(8800)->once();
+
+    [$mouse, $package] = compositeCheckoutCatalog();
+    OwnerContext::withOwner(null, static function () use ($package): void {
+        $list = PriceList::query()->create([
+            'name' => 'Package Prices',
+            'slug' => 'package-prices',
+            'currency' => 'USD',
+            'is_active' => true,
+            'is_default' => true,
+        ]);
+        Price::query()->create([
+            'price_list_id' => $list->getKey(),
+            'priceable_type' => $package->getMorphClass(),
+            'priceable_id' => $package->getKey(),
+            'amount' => 3500,
+            'currency' => 'USD',
+            'min_quantity' => 1,
+        ]);
+    });
+
+    $cartId = compositeCheckoutCart($package, $mouse);
+    $checkout = app(CheckoutServiceInterface::class);
+    $session = $checkout->startCheckout($cartId);
+    expect(array_column($session->cart_snapshot['items'], 'price'))->toContain(3500);
+
+    $result = $checkout->processCheckout($session);
+    self::assertTrue($result->success, json_encode([
+        $result->message, $result->errors, $session->fresh()->pricing_data,
+    ], JSON_THROW_ON_ERROR));
+    $order = Order::query()->findOrFail($result->orderId);
+    $line = $order->items()->where('purchasable_id', $package->getKey())->firstOrFail();
+
+    expect($order->grand_total)->toBe(8800)
+        ->and($line->unit_price)->toBe(4000)
+        ->and($line->discount_amount)->toBe(1000)
+        ->and($line->total)->toBe(7000);
 });

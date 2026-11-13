@@ -6,6 +6,7 @@ namespace AIArmada\Inventory\Listeners;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Cart\InventoryDemandResolver;
+use AIArmada\Inventory\Exceptions\InvalidReservationTransition;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryOperation;
 use AIArmada\Inventory\Models\InventoryReservation;
@@ -24,7 +25,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
-use Throwable;
+use RuntimeException;
 
 /**
  * Deducts inventory when an order payment is confirmed.
@@ -132,19 +133,17 @@ final class DeductInventoryFromOrder
                 return;
             }
 
+            $reference = $order->metadata['inventory_reservation_reference'] ?? null;
             $cartId = $this->extractCartId($order);
 
-            if ($cartId !== null) {
-                $committed = $this->tryCommitAllocations($cartId, $order);
+            if ((is_string($reference) && $this->commitReservation($reference, $order))
+                || ($reference === null && $cartId !== null && $this->tryCommitAllocations($cartId, $order))) {
+                $operation->update([
+                    'status' => InventoryOperation::STATUS_COMPLETED,
+                    'completed_at' => CarbonImmutable::now(),
+                ]);
 
-                if ($committed) {
-                    $operation->update([
-                        'status' => InventoryOperation::STATUS_COMPLETED,
-                        'completed_at' => CarbonImmutable::now(),
-                    ]);
-
-                    return;
-                }
+                return;
             }
 
             $this->deductDirectly($order);
@@ -229,24 +228,12 @@ final class DeductInventoryFromOrder
         }
 
         try {
-            $current = $this->reservationService->find($cartId);
-        } catch (Throwable $exception) {
-            Log::warning('Inventory reservation lookup failed before commit', [
-                'order_id' => $order->id,
-                'cart_id' => $cartId,
-                'reason' => $exception->getMessage(),
-            ]);
+            $outcome = $this->reservationService->commit($cartId, (string) $order->getKey());
+        } catch (InvalidReservationTransition) {
+            $this->reservationService->find($cartId);
 
             return false;
         }
-
-        if ($current->state !== InventoryReservation::STATE_RESERVED
-            && $current->state !== InventoryReservation::STATE_COMMITTED
-        ) {
-            return false;
-        }
-
-        $outcome = $this->reservationService->commit($cartId, (string) $order->getKey());
 
         if ($outcome->state !== InventoryReservation::STATE_COMMITTED) {
             return false;
@@ -268,7 +255,8 @@ final class DeductInventoryFromOrder
         DB::transaction(function () use ($order): void {
             $order->loadMissing('items.purchasable');
 
-            $demand = InventoryDemandResolver::forOrder($order->items, $order->metadata ?? []);
+            $demand = InventoryDemandResolver::forOrder($order->items);
+            $hasComposite = $order->items->contains(static fn ($item): bool => array_key_exists('components', $item->metadata ?? []));
 
             /** @var list<array{0: Model, 1: int}> $deductibles */
             $deductibles = [];
@@ -287,6 +275,10 @@ final class DeductInventoryFromOrder
                 $locationId = $this->pickDeductionLocation($key, $quantity, $order, $availability);
 
                 if ($locationId === null) {
+                    if ($hasComposite) {
+                        throw new RuntimeException('Insufficient inventory to deduct the complete composite order.');
+                    }
+
                     Log::warning('No inventory location found for deduction', [
                         'order_id' => $order->id,
                         'model_type' => $purchasable->getMorphClass(),

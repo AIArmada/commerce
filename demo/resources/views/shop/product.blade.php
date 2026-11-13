@@ -39,9 +39,9 @@
                         📦
                     @endif
                 </span>
-                @if($product->compare_price && $product->compare_price > $product->price)
+                @if($product->compare_price && $product->compare_price > $product->getBuyablePrice())
                 <span class="absolute top-4 left-4 bg-red-500 text-white text-sm font-bold px-3 py-1 rounded">
-                    {{ round((1 - $product->price / $product->compare_price) * 100) }}% OFF
+                    {{ round((1 - $product->getBuyablePrice() / $product->compare_price) * 100) }}% OFF
                 </span>
                 @endif
             </div>
@@ -61,11 +61,11 @@
 
                 <!-- Price -->
                 <div class="flex items-baseline gap-4 mb-6">
-                    <span class="text-4xl font-bold text-amber-600">RM {{ number_format($product->price / 100, 2) }}</span>
-                    @if($product->compare_price && $product->compare_price > $product->price)
+                    <span class="text-4xl font-bold text-amber-600">RM {{ number_format($product->getBuyablePrice() / 100, 2) }}</span>
+                    @if($product->compare_price && $product->compare_price > $product->getBuyablePrice())
                     <span class="text-xl text-gray-400 line-through">RM {{ number_format($product->compare_price / 100, 2) }}</span>
                     <span class="text-sm bg-red-100 text-red-700 px-2 py-1 rounded font-medium">
-                        Save RM {{ number_format(($product->compare_price - $product->price) / 100, 2) }}
+                        Save RM {{ number_format(($product->compare_price - $product->getBuyablePrice()) / 100, 2) }}
                     </span>
                     @endif
                 </div>

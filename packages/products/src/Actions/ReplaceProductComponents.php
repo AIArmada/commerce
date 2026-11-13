@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Products\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Exceptions\InvalidCompositePackageException;
 use AIArmada\Products\Models\Product;
@@ -30,8 +31,7 @@ final class ReplaceProductComponents
 
     /**
      * @param  list<array{
-     *     product_id?: string,
-     *     component_product_id?: string,
+     *     component_product_id: string,
      *     variant_id?: string|null,
      *     quantity?: int,
      *     position?: int
@@ -69,7 +69,7 @@ final class ReplaceProductComponents
 
             $current = $this->service->componentsFor($parent);
 
-            if ($parent->status === \AIArmada\Products\Enums\ProductStatus::Active) {
+            if ($parent->status === ProductStatus::Active) {
                 $this->service->assertPublishable($parent, $current);
             }
 
@@ -87,7 +87,7 @@ final class ReplaceProductComponents
         $seen = [];
 
         foreach (array_values($components) as $index => $component) {
-            $componentProductId = (string) ($component['product_id'] ?? $component['component_product_id'] ?? '');
+            $componentProductId = (string) ($component['component_product_id'] ?? '');
 
             if ($componentProductId === '') {
                 throw new InvalidCompositePackageException('Every composite component requires a component product ID.');

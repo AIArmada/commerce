@@ -5,13 +5,17 @@ declare(strict_types=1);
 namespace AIArmada\Orders\Actions;
 
 use AIArmada\Cart\Cart;
+use AIArmada\Cart\Contracts\BuyablePriceResolver;
 use AIArmada\Cart\Contracts\CartManagerInterface;
+use AIArmada\CommerceSupport\Contracts\Buyable;
+use AIArmada\CommerceSupport\Support\CompositeComponents;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScopeConfig;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Support\CartLineSnapshot;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use InvalidArgumentException;
 
 final class CreateOrderFromCart
@@ -60,6 +64,10 @@ final class CreateOrderFromCart
 
         foreach ($cart->getItems() as $cartItem) {
             $line = CartLineSnapshot::fromArray($cartItem->toArray());
+            if ($line->hasComponents()) {
+                $this->assertCurrentPackage($cart, $line);
+            }
+
             $itemSubtotal = $cartItem->getRawSubtotal();
             $metadata = $cartItem->getAttribute('metadata');
             $metadata = is_array($metadata) ? $metadata : $cartItem->getLineItemMetadata();
@@ -80,6 +88,43 @@ final class CreateOrderFromCart
         }
 
         return $this->createOrder->execute($orderData, $items, $billingAddress, $shippingAddress, $intakeSource, $intakeId);
+    }
+
+    private function assertCurrentPackage(Cart $cart, CartLineSnapshot $line): void
+    {
+        $type = $line->purchasableType ?? '';
+        $class = Relation::getMorphedModel($type) ?? $type;
+        $package = is_a($class, Model::class, true) && is_a($class, Buyable::class, true)
+            ? $class::query()->find($line->purchasableId)
+            : null;
+
+        if (! $package instanceof Buyable || ! $package->canBePurchased($line->quantity)) {
+            throw new InvalidArgumentException('The composite package is unavailable. Review the cart before creating the order.');
+        }
+
+        $attributes = $package->getBuyableAttributes();
+        $components = CompositeComponents::read($attributes['components'] ?? null);
+        if ($components !== $line->components || $package->getBuyableCurrency() !== $line->currency
+            || (bool) ($attributes['is_taxable'] ?? true) !== $line->isTaxable
+            || (string) ($attributes['tax_class'] ?? '') !== (string) $line->taxClass) {
+            throw new InvalidArgumentException('The composite package has changed. Review the cart before creating the order.');
+        }
+
+        $context = ['currency' => $line->currency];
+        foreach (['customer_id', 'customer_type'] as $key) {
+            $value = $cart->getMetadata($key);
+            if (is_string($value) || is_int($value)) {
+                $context[$key] = $value;
+            }
+        }
+
+        $price = app()->bound(BuyablePriceResolver::class)
+            ? app(BuyablePriceResolver::class)->resolve($package, $line->quantity, $context)->unitPrice
+            : $package->getBuyablePrice();
+
+        if ($price !== $line->unitPrice) {
+            throw new InvalidArgumentException('The composite package price has changed. Review the cart before creating the order.');
+        }
     }
 
     private function resolveCustomer(Model $customer): Model

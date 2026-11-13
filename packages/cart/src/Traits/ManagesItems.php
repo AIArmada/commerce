@@ -110,6 +110,7 @@ trait ManagesItems
 
             $item = $cartItems->get($id);
             assert($item !== null, 'Item should exist since we checked has()');
+            $this->assertRawLineCanBeChanged($item);
 
             // Handle quantity updates
             if (isset($data['quantity'])) {
@@ -321,6 +322,7 @@ trait ManagesItems
                 // Update existing item quantity
                 $existingItem = $cartItems->get($id);
                 assert($existingItem !== null, 'Item should exist since we checked has()');
+                $this->assertRawLineCanBeChanged($existingItem);
                 $item = $item->setQuantity($existingItem->quantity + $quantity);
             }
 
@@ -439,6 +441,7 @@ trait ManagesItems
                 if ($cartItems->has($row['id'])) {
                     $existingItem = $cartItems->get($row['id']);
                     assert($existingItem !== null, 'Item should exist since we checked has()');
+                    $this->assertRawLineCanBeChanged($existingItem);
                     $item = $item->setQuantity($existingItem->quantity + $row['quantity']);
                 }
 
@@ -497,7 +500,7 @@ trait ManagesItems
             'name' => $item['name'] ?? null,
             'price' => $item['price'] ?? null,
             'quantity' => $this->resolveIntQuantity($item['quantity'] ?? 1, "import row [{$index}] quantity"),
-            'attributes' => $attributes,
+            'attributes' => $this->withoutCanonicalCompositeAttributes($attributes),
             'conditions' => $item['conditions'] ?? null,
             'associated_model' => $item['associated_model'] ?? null,
         ];
@@ -521,6 +524,13 @@ trait ManagesItems
         }
 
         throw new InvalidCartItemException("Cart item quantity for {$context} must be an integer.");
+    }
+
+    private function assertRawLineCanBeChanged(CartItem $item): void
+    {
+        if ($item->hasAttribute('components')) {
+            throw new InvalidCartItemException('Use updateBuyable() to change a composite cart line.');
+        }
     }
 
     /**

@@ -77,6 +77,7 @@ final class CheckoutService implements CheckoutServiceInterface
             'customer_id' => $customerId,
             'status' => Pending::class,
             'cart_snapshot' => $this->createCartSnapshot($cart),
+            'currency' => $cart->getMetadata('currency', config('checkout.defaults.currency', 'MYR')),
             'step_states' => $this->initializeStepStates(),
             'current_step' => $this->getFirstStepIdentifier(),
             'expires_at' => CarbonImmutable::now()->addSeconds(config('checkout.defaults.session_ttl', 86400)),
@@ -520,6 +521,7 @@ final class CheckoutService implements CheckoutServiceInterface
         $total = $cart->total()->getAmount();
 
         return [
+            'version' => $cart->getVersion(),
             'items' => $cart->getItems()->toArray(),
             'metadata' => $metadata,
             'conditions' => $conditions,
@@ -982,13 +984,21 @@ final class CheckoutService implements CheckoutServiceInterface
             if (is_string($currentPaymentId) && $currentPaymentId !== ''
                 && is_string($resultPaymentId) && $resultPaymentId !== ''
                 && $currentPaymentId !== $resultPaymentId) {
-                $this->recordVerificationFailure($session);
+                if (! $session->status->is(Completed::class)) {
+                    $this->recordVerificationFailure($session);
+                }
 
                 return CheckoutResult::failed($session, 'Payment identity mismatch');
             }
 
             $paymentVerified = $paymentResult->status === PaymentStatus::Completed;
             $hasPaymentEvidence = $this->hasPaymentEvidence($paymentResult);
+
+            if ($session->status->is(Completed::class)) {
+                return $paymentVerified && $hasPaymentEvidence
+                    ? CheckoutResult::success($session)
+                    : CheckoutResult::failed($session, 'Payment could not be verified');
+            }
 
             if ($paymentVerified && $hasPaymentEvidence) {
                 $this->attemptManager()->recordVerifiedOutcome($session, $paymentResult);
@@ -1034,7 +1044,9 @@ final class CheckoutService implements CheckoutServiceInterface
         }
 
         if (! $paymentVerified || ! $hasPaymentEvidence) {
-            $this->recordVerificationFailure($session);
+            if (! $session->status->is(Completed::class)) {
+                $this->recordVerificationFailure($session);
+            }
 
             return CheckoutResult::failed($session, 'Payment could not be verified');
         }

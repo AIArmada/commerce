@@ -16,6 +16,7 @@ use AIArmada\Cart\Support\BuyablePriceData;
 use AIArmada\Cart\Support\CartMoney;
 use AIArmada\CommerceSupport\Contracts\Buyable;
 use AIArmada\CommerceSupport\Support\BuyableLineData;
+use AIArmada\CommerceSupport\Support\CompositeComponents;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 
@@ -47,7 +48,7 @@ trait ManagesBuyables
             throw new InvalidArgumentException('Quantity must be at least one.');
         }
 
-        $line = BuyableLineData::fromBuyable($buyable, $quantity, $extraAttributes);
+        $line = BuyableLineData::fromBuyable($buyable, $quantity, $this->withoutCanonicalCompositeAttributes($extraAttributes));
         $lineId = $this->resolveBuyableLineIdentifier($buyable, $lineIdentifier);
 
         $addedItem = null;
@@ -62,12 +63,15 @@ trait ManagesBuyables
             $this->rememberCartCurrency($line->currency);
 
             $existingItem = $cartItems->get($lineId);
+            if ($existingItem instanceof CartItem) {
+                $this->assertBuyableMatchesLine($buyable, $existingItem);
+            }
             $lineQuantity = ($existingItem?->quantity ?? 0) + $quantity;
             $accumulatedQuantity = $this->accumulatedBuyableQuantity($cartItems, $buyable) + $quantity;
 
             $this->validateBuyable($buyable, $accumulatedQuantity);
 
-            $pricing = $this->quoteBuyable($buyable, $accumulatedQuantity);
+            $pricing = $this->quoteBuyable($buyable, $lineQuantity);
             $attributes = $this->buildBuyableAttributes(
                 $buyable,
                 $line,
@@ -125,7 +129,7 @@ trait ManagesBuyables
             return $this->remove($lineId);
         }
 
-        $line = BuyableLineData::fromBuyable($buyable, $newQuantity, $extraAttributes);
+        $line = BuyableLineData::fromBuyable($buyable, $newQuantity, $this->withoutCanonicalCompositeAttributes($extraAttributes));
 
         $updatedItem = null;
 
@@ -142,11 +146,12 @@ trait ManagesBuyables
                 return null;
             }
 
+            $this->assertBuyableMatchesLine($buyable, $existingItem);
             $accumulatedQuantity = $this->accumulatedBuyableQuantity($cartItems, $buyable, $lineId) + $newQuantity;
 
             $this->validateBuyable($buyable, $accumulatedQuantity);
 
-            $pricing = $this->quoteBuyable($buyable, $accumulatedQuantity);
+            $pricing = $this->quoteBuyable($buyable, $newQuantity);
             $attributes = $this->buildBuyableAttributes(
                 $buyable,
                 $line,
@@ -292,17 +297,25 @@ trait ManagesBuyables
                     continue;
                 }
 
+                $this->assertBuyableMatchesLine($fresh, $item);
+                $this->assertBuyableOwner($fresh);
+                $line = BuyableLineData::fromBuyable($fresh, $item->quantity);
+                $this->assertBuyableCurrency($fresh, $line);
                 $pricing = $this->quoteBuyable($fresh, $item->quantity);
-                $oldPrice = (int) $item->price;
+                $attributes = $this->buildBuyableAttributes($fresh, $line, $pricing, $item->attributes->toArray());
+                $oldPrice = $item->price;
 
-                if ($oldPrice === $pricing->unitPrice) {
+                if ($oldPrice === $pricing->unitPrice && $attributes === $item->attributes->toArray()) {
                     continue;
                 }
 
-                $updated = $item->setPrice($pricing->unitPrice);
+                $updated = $item->with(['price' => $pricing->unitPrice, 'attributes' => $attributes, 'associated_model' => $fresh]);
                 $cartItems->put($item->id, $updated);
                 $updatedItems[$item->id] = $updated;
-                $changes[$item->id] = ['old' => $oldPrice, 'new' => $pricing->unitPrice];
+
+                if ($oldPrice !== $pricing->unitPrice) {
+                    $changes[$item->id] = ['old' => $oldPrice, 'new' => $pricing->unitPrice];
+                }
             }
 
             if ($updatedItems === []) {
@@ -420,6 +433,13 @@ trait ManagesBuyables
         }
 
         return $quantity;
+    }
+
+    private function assertBuyableMatchesLine(Buyable $buyable, CartItem $item): void
+    {
+        if ($this->cartItemMerchandiseKey($item) !== $this->buyableMerchandiseKey($buyable)) {
+            throw new InvalidCartItemException('The cart line identifier already belongs to another item.');
+        }
     }
 
     private function buyableMerchandiseKey(Buyable $buyable): string
@@ -597,6 +617,10 @@ trait ManagesBuyables
     ): array {
         $type = $buyable instanceof Model ? $buyable->getMorphClass() : $buyable::class;
         $catalogId = $line->catalogIdentifier ?? $line->identifier;
+        $existingAttributes = array_diff_key($existingAttributes, array_flip([
+            'components', 'components_fingerprint', 'original_unit_price', 'discount_amount',
+            'discount_source', 'price_list', 'tier', 'promotion', 'pricing_breakdown',
+        ]));
         $attributes = array_merge($existingAttributes, $line->attributes, [
             'purchasable_type' => $type,
             'purchasable_id' => $line->identifier,
@@ -604,6 +628,10 @@ trait ManagesBuyables
             'currency' => $line->currency,
             'product_id' => $catalogId,
         ]);
+
+        if (array_key_exists('components', $attributes)) {
+            $attributes['components'] = CompositeComponents::read($attributes['components']);
+        }
 
         if ($catalogId !== $line->identifier) {
             $attributes['variant_id'] = $line->identifier;

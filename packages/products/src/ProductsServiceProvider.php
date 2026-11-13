@@ -8,7 +8,6 @@ use AIArmada\Products\Contracts\CompositeStockResolverInterface;
 use AIArmada\Products\Contracts\VariantGeneratorInterface;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
-use AIArmada\Products\Exceptions\InvalidCompositePackageException;
 use AIArmada\Products\Models\Attribute;
 use AIArmada\Products\Models\AttributeGroup;
 use AIArmada\Products\Models\AttributeSet;
@@ -18,7 +17,6 @@ use AIArmada\Products\Models\Collection;
 use AIArmada\Products\Models\Option;
 use AIArmada\Products\Models\OptionValue;
 use AIArmada\Products\Models\Product;
-use AIArmada\Products\Models\ProductComponent;
 use AIArmada\Products\Models\Variant;
 use AIArmada\Products\Policies\AttributeGroupPolicy;
 use AIArmada\Products\Policies\AttributePolicy;
@@ -70,6 +68,7 @@ final class ProductsServiceProvider extends PackageServiceProvider
                 return;
             }
 
+            $product->setAttribute('requires_shipping', true);
             $product->setAttribute('tracks_inventory', false);
             $product->setAttribute('supports_variants', false);
 
@@ -84,46 +83,6 @@ final class ProductsServiceProvider extends PackageServiceProvider
             }
         });
 
-        Product::deleting(function (Product $product): void {
-            if ((bool) config('products.features.owner.enabled', true)) {
-                $accessible = Product::query()->whereKey($product->getKey())->exists();
-
-                if (! $accessible) {
-                    throw new InvalidCompositePackageException('Cross-tenant write blocked: product is not accessible in the current owner context.');
-                }
-            }
-
-            $referenced = ProductComponent::query()
-                ->withoutOwnerScope()
-                ->where('component_product_id', $product->getKey())
-                ->exists();
-
-            if ($referenced) {
-                throw new InvalidCompositePackageException(sprintf(
-                    'Product [%s] is referenced by a composite package and cannot be deleted.',
-                    $product->sku ?: $product->getKey(),
-                ));
-            }
-
-            ProductComponent::query()
-                ->withoutOwnerScope()
-                ->where('product_id', $product->getKey())
-                ->delete();
-        });
-
-        Variant::deleting(function (Variant $variant): void {
-            $referenced = ProductComponent::query()
-                ->withoutOwnerScope()
-                ->where('variant_id', $variant->getKey())
-                ->exists();
-
-            if ($referenced) {
-                throw new InvalidCompositePackageException(sprintf(
-                    'Variant [%s] is referenced by a composite package and cannot be deleted.',
-                    $variant->sku,
-                ));
-            }
-        });
     }
 
     protected function registerPolicies(): void

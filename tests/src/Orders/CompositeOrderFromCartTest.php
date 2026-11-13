@@ -137,3 +137,13 @@ it('keeps package and standalone lines distinct when both are in the cart', func
         ->and($standaloneItem->metadata['components'] ?? null)->toBeNull()
         ->and($order->subtotal)->toBe(4000 + 1000);
 });
+
+it('requires cart review when a direct order would use an outdated package price', function (): void {
+    $package = createCompositeOrderPackage(createCompositeOrderProduct(), createCompositeOrderProduct());
+    $cart = new Cart(new InMemoryStorage, 'stale-composite-order-cart');
+    $cart->addBuyable($package);
+    $package->update(['price' => 3500]);
+
+    expect(fn () => (new CreateOrderFromCart(new CreateOrder))->execute($cart, User::factory()->create()))
+        ->toThrow(InvalidArgumentException::class, 'The composite package price has changed.');
+});

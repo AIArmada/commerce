@@ -60,13 +60,13 @@ $package = app(CreateCompositeProduct::class)->handle([
     'price' => 12999,
     'price_mode' => 'fixed',
 ], [
-    ['product_id' => $mouse->id, 'quantity' => 2],
-    ['product_id' => $keyboard->id, 'variant_id' => $keyboardUsVariant->id, 'quantity' => 1],
+    ['component_product_id' => $mouse->id, 'quantity' => 2],
+    ['component_product_id' => $keyboard->id, 'variant_id' => $keyboardUsVariant->id, 'quantity' => 1],
 ]);
 
 app(ReplaceProductComponents::class)->handle($package, [
-    ['product_id' => $mouse->id, 'quantity' => 3],
-    ['product_id' => $keyboard->id, 'variant_id' => $keyboardUsVariant->id, 'quantity' => 1],
+    ['component_product_id' => $mouse->id, 'quantity' => 3],
+    ['component_product_id' => $keyboard->id, 'variant_id' => $keyboardUsVariant->id, 'quantity' => 1],
 ]);
 
 $package = app(PublishCompositeProduct::class)->handle($package);

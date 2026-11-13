@@ -66,14 +66,4 @@ trait HasComponents
     {
         return app(CompositePackageService::class)->availability($this);
     }
-
-    protected static function bootHasComponents(): void
-    {
-        static::deleting(function (Model $product): void {
-            ProductComponent::query()
-                ->withoutOwnerScope()
-                ->where('product_id', $product->getKey())
-                ->delete();
-        });
-    }
 }

@@ -848,6 +848,7 @@ describe('CreateOrderStep', function (): void {
                 'instance' => 'public-checkout',
                 'items' => [
                     [
+                        'id' => 'priced-item',
                         'name' => 'Priced Item',
                         'quantity' => 1,
                         'price' => 1000,
@@ -858,6 +859,7 @@ describe('CreateOrderStep', function (): void {
                 'items' => [
                     [
                         'quantity' => 1,
+                        'item_id' => 'priced-item',
                         'unit_price' => 800,
                         'original_unit_price' => 1000,
                         'line_total' => 800,

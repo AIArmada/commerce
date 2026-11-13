@@ -669,6 +669,10 @@ class Variant extends Model implements Auditable, Buyable, HasMedia, Inventoryab
         });
 
         static::deleting(function (Variant $variant): void {
+            if (ProductComponent::query()->withoutOwnerScope()->where('variant_id', $variant->getKey())->exists()) {
+                throw new InvalidCompositePackageException('A component variant referenced by a composite package cannot be deleted.');
+            }
+
             $variant->optionValues()->detach();
         });
     }

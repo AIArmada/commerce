@@ -1504,6 +1504,7 @@ abstract class TestCase extends Orchestra
             $table->integer('priority')->default(0);
             $table->boolean('is_default')->default(false);
             $table->boolean('is_active')->default(true);
+            $table->timestampTz('deactivated_at')->nullable();
             $table->timestamp('starts_at')->nullable();
             $table->timestamp('ends_at')->nullable();
             $table->timestamps();
@@ -1518,6 +1519,7 @@ abstract class TestCase extends Orchestra
             $table->integer('compare_amount')->nullable();
             $table->string('currency')->default('MYR');
             $table->integer('min_quantity')->default(1);
+            $table->timestampTz('deactivated_at')->nullable();
             $table->timestamp('starts_at')->nullable();
             $table->timestamp('ends_at')->nullable();
             $table->timestamps();
@@ -1527,6 +1529,7 @@ abstract class TestCase extends Orchestra
         Schema::create('price_tiers', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('price_list_id')->nullable();
+            $table->nullableMorphs('owner');
             $table->uuidMorphs('tierable');
             $table->integer('min_quantity')->default(1);
             $table->integer('max_quantity')->nullable();

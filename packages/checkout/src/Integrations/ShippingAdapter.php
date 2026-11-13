@@ -170,7 +170,7 @@ final class ShippingAdapter
             $attributes = is_array($item['attributes'] ?? null) ? $item['attributes'] : [];
             $quantity = max(1, (int) ($item['quantity'] ?? 1));
             $components = ComponentLines::fromMixed(
-                $attributes['components'] ?? $item['components'] ?? null,
+                $attributes['components'] ?? null,
             );
 
             if ($components !== []) {

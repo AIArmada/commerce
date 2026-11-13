@@ -421,5 +421,12 @@ describe('ManagesBuyables Trait', function (): void {
         $this->cart->update('raw-1', ['attributes' => $injected]);
 
         expect($this->cart->get('raw-1')?->getAttribute('components'))->toBeNull();
+
+        $this->cart->add([['id' => 'bulk-1', 'name' => 'Bulk line', 'price' => 100, 'attributes' => $injected]]);
+        $buyable = $this->cart->addBuyable(createTestBuyable(), extraAttributes: $injected);
+
+        expect($this->cart->get('bulk-1')?->getAttribute('components'))->toBeNull()
+            ->and($this->cart->get('bulk-1')?->getAttribute('legitimate'))->toBe('kept')
+            ->and($buyable->getAttribute('components'))->toBeNull();
     });
 });

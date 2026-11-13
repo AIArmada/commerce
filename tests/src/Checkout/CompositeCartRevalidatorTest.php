@@ -192,3 +192,13 @@ it('rejects a package whose catalog price changed after checkout started', funct
     expect((new CompositeCartRevalidator($manager))->validate($session))
         ->toBe([CompositeCartRevalidator::ERROR_KEY => CompositeCartRevalidator::PRICE_CHANGED]);
 });
+
+it('rejects a package that was archived after checkout started', function (): void {
+    [$cart, $package, , $manager] = revalidatorScenario();
+    $session = revalidatorSession($cart);
+
+    $package->archive();
+
+    expect((new CompositeCartRevalidator($manager))->validate($session))
+        ->toBe([CompositeCartRevalidator::ERROR_KEY => CompositeCartRevalidator::CONTENTS_CHANGED]);
+});

@@ -6,9 +6,12 @@ namespace AIArmada\Checkout\Support;
 
 use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\Checkout\Models\CheckoutSession;
+use AIArmada\CommerceSupport\Support\CompositeComponents;
 use AIArmada\Orders\Support\CartLineSnapshot;
-use Illuminate\Database\Eloquent\Model;
-use Throwable;
+use AIArmada\Pricing\Contracts\PriceCalculatorInterface;
+use AIArmada\Products\Exceptions\InvalidCompositePackageException;
+use AIArmada\Products\Models\Product;
+use Illuminate\Database\Eloquent\Relations\Relation;
 
 /**
  * Rechecks a composite cart immediately before payment.
@@ -33,7 +36,7 @@ final class CompositeCartRevalidator
     public static function supports(CheckoutSession $session): bool
     {
         foreach (self::items($session->cart_snapshot ?? []) as $item) {
-            if (CartLineSnapshot::fromArray($item)->hasComponents()) {
+            if (array_key_exists('components', (array) ($item['attributes'] ?? []))) {
                 return true;
             }
         }
@@ -46,10 +49,6 @@ final class CompositeCartRevalidator
      */
     public function validate(CheckoutSession $session): array
     {
-        if (! self::supports($session)) {
-            return [];
-        }
-
         $snapshot = is_array($session->cart_snapshot ?? null) ? $session->cart_snapshot : [];
         $snapshotItems = self::items($snapshot);
 
@@ -63,18 +62,19 @@ final class CompositeCartRevalidator
             return [self::ERROR_KEY => self::CONTENTS_CHANGED];
         }
 
-        $liveSnapshot = (array) $cart->content();
+        $liveSnapshot = $cart->content();
         $liveItems = self::items($liveSnapshot);
 
-        if ($this->contentSignature($liveItems) !== $this->contentSignature($snapshotItems)) {
+        if (($liveSnapshot['metadata']['currency'] ?? $session->currency) !== $session->currency
+            || $this->contentSignature($liveItems) !== $this->contentSignature($snapshotItems)) {
             return [self::ERROR_KEY => self::CONTENTS_CHANGED];
         }
 
-        if ($this->priceChanged($cart, $liveSnapshot, $snapshot, $liveItems, $snapshotItems)) {
+        if ($this->priceChanged($liveSnapshot, $snapshot, $liveItems, $snapshotItems)) {
             return [self::ERROR_KEY => self::PRICE_CHANGED];
         }
 
-        return match ($this->catalogChange($snapshotItems)) {
+        return match ($this->catalogChange($session, $snapshotItems)) {
             'contents' => [self::ERROR_KEY => self::CONTENTS_CHANGED],
             'price' => [self::ERROR_KEY => self::PRICE_CHANGED],
             default => [],
@@ -118,7 +118,6 @@ final class CompositeCartRevalidator
      * @param  array<int, array<string, mixed>>  $snapshotItems
      */
     private function priceChanged(
-        object $cart,
         array $liveSnapshot,
         array $snapshot,
         array $liveItems,
@@ -140,24 +139,24 @@ final class CompositeCartRevalidator
             return true;
         }
 
-        $snapshotSubtotal = (int) ($snapshot['subtotal'] ?? 0);
-        $snapshotTotal = (int) ($snapshot['total'] ?? 0);
-        $liveSubtotal = (int) $cart->getRawSubtotal();
-        $liveTotal = (int) $cart->getRawTotal();
-
-        if ($snapshotSubtotal > 0 && $liveSubtotal !== $snapshotSubtotal) {
-            return true;
-        }
-
-        return $snapshotTotal > 0 && $liveTotal !== $snapshotTotal;
+        return (int) ($snapshot['subtotal'] ?? 0) !== (int) ($liveSnapshot['subtotal'] ?? 0)
+            || (int) ($snapshot['total'] ?? 0) !== (int) ($liveSnapshot['total'] ?? 0);
     }
 
     /**
      * @param  array<int, array<string, mixed>>  $snapshotItems
      * @return 'contents'|'price'|null
      */
-    private function catalogChange(array $snapshotItems): ?string
+    private function catalogChange(CheckoutSession $session, array $snapshotItems): ?string
     {
+        $quotedPrices = [];
+
+        foreach ($session->pricing_data['items'] ?? [] as $pricingItem) {
+            if (isset($pricingItem['item_id'], $pricingItem['unit_price'])) {
+                $quotedPrices[(string) $pricingItem['item_id']] = (int) $pricingItem['unit_price'];
+            }
+        }
+
         foreach ($snapshotItems as $item) {
             $line = CartLineSnapshot::fromArray($item);
 
@@ -167,26 +166,37 @@ final class CompositeCartRevalidator
 
             $product = $this->resolveProduct($line);
 
-            if (! $product instanceof Model || ! method_exists($product, 'compositeSnapshot')) {
-                continue;
+            if (! $product instanceof Product || ! $product->isCompositeProduct() || ! $product->isPurchasable()) {
+                return 'contents';
             }
 
             try {
                 $fresh = $product->compositeSnapshot();
-            } catch (Throwable) {
-                // Owner-scoped catalog lookup failure is not proof of a
-                // shopper change. The live cart comparison above remains the
-                // authoritative pre-payment check.
-                continue;
-            }
-
-            $entries = CartLineSnapshot::normalizeComponents($fresh->entries ?? null);
-
-            if ($entries !== $line->components) {
+            } catch (InvalidCompositePackageException) {
                 return 'contents';
             }
 
-            if (isset($fresh->price) && (int) $fresh->price !== $line->unitPrice) {
+            if ($fresh->entries === []) {
+                return 'contents';
+            }
+
+            $entries = CompositeComponents::read($fresh->entries);
+
+            if ($entries !== $line->components
+                || $fresh->currency !== $line->currency
+                || (bool) $product->requires_shipping !== $line->requiresShipping
+                || (bool) $product->is_taxable !== $line->isTaxable
+                || (string) $product->tax_class !== (string) $line->taxClass) {
+                return 'contents';
+            }
+
+            $context = ['customer_id' => $session->customer_id, 'currency' => $session->currency];
+            $currentPrice = app()->bound(PriceCalculatorInterface::class)
+                ? app(PriceCalculatorInterface::class)->calculate($product, $line->quantity, $context)->finalPrice
+                : $fresh->price;
+
+            if ($currentPrice !== $line->unitPrice
+                || (isset($quotedPrices[$line->lineId]) && $currentPrice !== $quotedPrices[$line->lineId])) {
                 return 'price';
             }
         }
@@ -194,18 +204,22 @@ final class CompositeCartRevalidator
         return null;
     }
 
-    private function resolveProduct(CartLineSnapshot $line): ?Model
+    private function resolveProduct(CartLineSnapshot $line): ?Product
     {
         $type = $line->purchasableType;
-        $id = $line->productId ?? $line->purchasableId;
 
-        if ($type === null || $id === null || ! class_exists($type) || ! is_subclass_of($type, Model::class)) {
+        if ($type === null || $line->purchasableId === null) {
             return null;
         }
 
-        /** @var class-string<Model> $type */
-        $model = $type::query()->find($id);
+        $class = Relation::getMorphedModel($type) ?? $type;
 
-        return $model instanceof Model ? $model : null;
+        if (! is_a($class, Product::class, true)) {
+            return null;
+        }
+
+        $product = $class::query()->find($line->purchasableId);
+
+        return $product instanceof Product ? $product : null;
     }
 }

@@ -19,8 +19,7 @@ final class CreateCompositeProduct
     /**
      * @param  array<string, mixed>  $attributes
      * @param  list<array{
-     *     product_id?: string,
-     *     component_product_id?: string,
+     *     component_product_id: string,
      *     variant_id?: string|null,
      *     quantity?: int,
      *     position?: int

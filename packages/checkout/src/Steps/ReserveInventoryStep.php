@@ -9,6 +9,7 @@ use AIArmada\Checkout\Data\StepResult;
 use AIArmada\Checkout\Exceptions\InventoryException;
 use AIArmada\Checkout\Integrations\InventoryAdapter;
 use AIArmada\Checkout\Models\CheckoutSession;
+use AIArmada\Checkout\Support\CompositeCartRevalidator;
 use AIArmada\Inventory\Data\ReservationLine;
 use AIArmada\Inventory\Exceptions\InsufficientInventoryException;
 use AIArmada\Orders\Support\CartLineSnapshot;
@@ -96,7 +97,7 @@ final class ReserveInventoryStep extends AbstractCheckoutStep
         $cartSnapshot = $session->cart_snapshot ?? [];
         $items = $cartSnapshot['items'] ?? [];
         $reservationTtl = config('checkout.integrations.inventory.reservation_ttl', 900);
-        $reference = $session->cart_id;
+        $reference = CompositeCartRevalidator::supports($session) ? (string) $session->getKey() : $session->cart_id;
 
         try {
             $lines = [];

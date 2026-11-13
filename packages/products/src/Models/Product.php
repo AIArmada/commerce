@@ -416,7 +416,7 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
     {
         $currency = mb_strtoupper($this->currency ?: config('products.defaults.currency', 'MYR'));
 
-        return ProductPricing::formatMinorAmount($this->price, $currency);
+        return ProductPricing::formatMinorAmount($this->getBuyablePrice(), $currency);
     }
 
     public function getFormattedComparePrice(): ?string
@@ -445,7 +445,7 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
     {
         $currency = mb_strtoupper($this->currency ?: config('products.defaults.currency', 'MYR'));
 
-        return Money::$currency($this->price, false);
+        return Money::$currency($this->getBuyablePrice(), false);
     }
 
     // =========================================================================
@@ -982,6 +982,15 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
         });
 
         static::deleting(function (Product $product): void {
+            if ((bool) config('products.features.owner.enabled', true)
+                && ! Product::query()->whereKey($product->getKey())->exists()) {
+                throw new InvalidCompositePackageException('Cross-tenant write blocked: product is not accessible in the current owner context.');
+            }
+
+            if (ProductComponent::query()->withoutOwnerScope()->where('component_product_id', $product->getKey())->exists()) {
+                throw new InvalidCompositePackageException('A component product referenced by a composite package cannot be deleted.');
+            }
+
             DB::transaction(function () use ($product): void {
                 // Delete variants individually to trigger model events (for pivot cleanup)
                 $product->variants()->chunkById(100, function ($variants): void {
@@ -996,6 +1005,10 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
 
                 $product->categories()->detach();
                 $product->collections()->detach();
+
+                if ($product->isCompositeProduct()) {
+                    ProductComponent::query()->where('product_id', $product->getKey())->delete();
+                }
             });
         });
 

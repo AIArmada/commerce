@@ -22,15 +22,15 @@ use AIArmada\Orders\States\PendingPayment;
 function frozenOrderComponentSnapshot(array $components): array
 {
     return array_map(static fn (array $component): array => [
-        'product_id' => $component['product']->getKey(),
+        'product_id' => (string) $component['product']->getKey(),
         'variant_id' => null,
         'inventoryable_type' => $component['product']->getMorphClass(),
-        'inventoryable_id' => $component['product']->getKey(),
+        'inventoryable_id' => (string) $component['product']->getKey(),
         'quantity' => $component['quantity'],
         'tracks_inventory' => true,
         'requires_shipping' => true,
         'name' => $component['product']->name,
-        'sku' => 'SKU-' . $component['product']->getKey(),
+        'sku' => 'SKU-' . (string) $component['product']->getKey(),
         'weight' => 250,
         'dimensions' => ['length' => 20, 'width' => 10, 'height' => 5],
     ], $components);
@@ -147,7 +147,7 @@ describe('composite direct order inventory', function (): void {
                 ->count())->toBe(1);
     });
 
-    it('deducts an order-level frozen component snapshot without touching the parent line', function (): void {
+    it('reads components only from order items', function (): void {
         $order = createCompositeInventoryOrder('ORD-COMP-META-' . uniqid(), [
             'components' => frozenOrderComponentSnapshot([
                 ['product' => $this->mouse, 'quantity' => 4],
@@ -166,9 +166,8 @@ describe('composite direct order inventory', function (): void {
 
         app(DeductInventoryFromOrder::class)->handle(new InventoryDeductionRequired($order));
 
-        expect($this->inventoryService->getLevel($this->parent, $this->location->id)?->fresh()->quantity_on_hand)->toBe(10)
-            ->and($this->inventoryService->getLevel($this->mouse, $this->location->id)?->fresh()->quantity_on_hand)->toBe(6)
-            ->and(InventoryMovement::query()->where('type', MovementType::Shipment->value)->count())->toBe(1);
+        expect($this->inventoryService->getLevel($this->parent, $this->location->id)?->fresh()->quantity_on_hand)->toBe(8)
+            ->and($this->inventoryService->getLevel($this->mouse, $this->location->id)?->fresh()->quantity_on_hand)->toBe(10);
     });
 
     it('does not deduct a composite parent without a component snapshot', function (): void {
@@ -184,9 +183,9 @@ describe('composite direct order inventory', function (): void {
             'metadata' => ['components' => []],
         ]);
 
-        app(DeductInventoryFromOrder::class)->handle(new InventoryDeductionRequired($order));
-
-        expect($this->inventoryService->getLevel($this->parent, $this->location->id)?->fresh()->quantity_on_hand)->toBe(10)
+        expect(fn () => app(DeductInventoryFromOrder::class)->handle(new InventoryDeductionRequired($order)))
+            ->toThrow(InvalidArgumentException::class, 'requires a non-empty list')
+            ->and($this->inventoryService->getLevel($this->parent, $this->location->id)?->fresh()->quantity_on_hand)->toBe(10)
             ->and(InventoryMovement::query()->where('type', MovementType::Shipment->value)->count())->toBe(0);
     });
 });

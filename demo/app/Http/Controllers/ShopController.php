@@ -12,6 +12,7 @@ use AIArmada\Chip\Events\PurchasePaid;
 use AIArmada\Chip\Events\WebhookReceived;
 use AIArmada\Chip\Facades\Chip;
 use AIArmada\Chip\Testing\WebhookSimulator;
+use AIArmada\CommerceSupport\Contracts\Buyable;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Jnt\Models\JntOrder;
 use AIArmada\Orders\Models\Order;
@@ -303,19 +304,10 @@ final class ShopController extends Controller
 
         $quantity = max(1, (int) $request->quantity);
 
-        $owner = OwnerContext::resolve();
+        $buyable = Cart::get($itemId)?->getAssociatedModel();
 
-        $product = Product::query()
-            ->when(
-                $owner,
-                fn ($query) => $query->forOwner($owner),
-                fn ($query) => $query->whereRaw('1 = 0'),
-            )
-            ->whereKey($itemId)
-            ->first();
-
-        if ($product !== null) {
-            Cart::updateBuyable($product, $quantity);
+        if ($buyable instanceof Buyable) {
+            Cart::updateBuyable($buyable, $quantity, $itemId);
         } else {
             Cart::update($itemId, [
                 'quantity' => [

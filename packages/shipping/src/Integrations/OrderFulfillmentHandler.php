@@ -198,6 +198,10 @@ final class OrderFulfillmentHandler implements FulfillmentHandler
 
         foreach ($order->items as $orderItem) {
             $metadata = is_array($orderItem->metadata) ? $orderItem->metadata : [];
+            if (($metadata['requires_shipping'] ?? true) === false) {
+                continue;
+            }
+
             $components = ComponentLines::expand(
                 ComponentLines::fromOrderItemMetadata($metadata),
                 (int) $orderItem->quantity,
@@ -210,14 +214,14 @@ final class OrderFulfillmentHandler implements FulfillmentHandler
                     }
 
                     $items[] = ShipmentItemData::from([
-                        'name' => $component['name'] !== '' ? $component['name'] : $orderItem->name,
-                        'sku' => $component['sku'] !== '' ? $component['sku'] : $orderItem->sku,
+                        'name' => $component['name'],
+                        'sku' => $component['sku'],
                         'quantity' => $component['quantity'],
                         'weight' => $component['weight'] ?? 0,
                         // The parent order item remains the single commercial
                         // sale line; component snapshots do not duplicate it.
                         'declaredValue' => 0,
-                        'shippableItemId' => $component['inventoryable_id'] ?? $component['product_id'],
+                        'shippableItemId' => $component['inventoryable_id'],
                         'shippableItemType' => $component['inventoryable_type'],
                     ]);
                 }
@@ -248,6 +252,10 @@ final class OrderFulfillmentHandler implements FulfillmentHandler
 
         foreach ($order->items as $orderItem) {
             $metadata = is_array($orderItem->metadata) ? $orderItem->metadata : [];
+            if (($metadata['requires_shipping'] ?? true) === false) {
+                continue;
+            }
+
             $components = ComponentLines::expand(
                 ComponentLines::fromOrderItemMetadata($metadata),
                 (int) $orderItem->quantity,
@@ -315,6 +323,10 @@ final class OrderFulfillmentHandler implements FulfillmentHandler
 
         foreach ($order->items as $orderItem) {
             $metadata = is_array($orderItem->metadata) ? $orderItem->metadata : [];
+            if (($metadata['requires_shipping'] ?? true) === false) {
+                continue;
+            }
+
             $components = ComponentLines::expand(
                 ComponentLines::fromOrderItemMetadata($metadata),
                 (int) $orderItem->quantity,
@@ -327,15 +339,11 @@ final class OrderFulfillmentHandler implements FulfillmentHandler
                     }
 
                     $items[] = [
-                        'variant_id' => (string) ($component['inventoryable_id'] ?? $component['product_id']),
+                        'variant_id' => (string) ($component['inventoryable_id']),
                         'quantity' => (int) $component['quantity'],
                     ];
                 }
 
-                continue;
-            }
-
-            if (! (bool) ($metadata['requires_shipping'] ?? true)) {
                 continue;
             }
 
@@ -587,6 +595,10 @@ final class OrderFulfillmentHandler implements FulfillmentHandler
 
         foreach ($order->items as $item) {
             $metadata = is_array($item->metadata) ? $item->metadata : [];
+            if (($metadata['requires_shipping'] ?? true) === false) {
+                continue;
+            }
+
             $components = ComponentLines::expand(
                 ComponentLines::fromOrderItemMetadata($metadata),
                 (int) $item->quantity,

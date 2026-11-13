@@ -7,6 +7,7 @@ namespace AIArmada\Checkout\Steps;
 use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\Checkout\Data\StepResult;
 use AIArmada\Checkout\Models\CheckoutSession;
+use AIArmada\Checkout\Support\CompositeCartRevalidator;
 use Carbon\CarbonImmutable;
 
 final class ValidateCartStep extends AbstractCheckoutStep
@@ -59,7 +60,11 @@ final class ValidateCartStep extends AbstractCheckoutStep
             return $this->failed('Cart is empty', ['cart' => 'Cart is empty']);
         }
 
-        $snapshot = (array) $cart->content();
+        if (CompositeCartRevalidator::supports($session)) {
+            return $this->success('Composite cart snapshot retained for payment review');
+        }
+
+        $snapshot = $cart->content();
 
         $totals = [
             'subtotal' => (int) ($snapshot['subtotal'] ?? $cart->subtotal()->getAmount()),

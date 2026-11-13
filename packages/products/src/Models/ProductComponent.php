@@ -155,12 +155,13 @@ class ProductComponent extends Model implements Auditable
         static::creating(function (ProductComponent $component): void {
             [$parent, $componentProduct, $variant] = self::resolveComposition($component);
 
-            app(CompositePackageValidator::class)->assertComponent(
-                $parent,
-                $componentProduct,
-                $variant,
-                (int) $component->quantity,
-            );
+            $validator = app(CompositePackageValidator::class);
+
+            if ($parent->status === ProductStatus::Active) {
+                $validator->assertPublishableComponent($parent, $componentProduct, $variant, (int) $component->quantity);
+            } else {
+                $validator->assertComponent($parent, $componentProduct, $variant, (int) $component->quantity);
+            }
 
             ChildOwnershipGuard::apply($component, $parent, 'product');
         });
@@ -176,12 +177,13 @@ class ProductComponent extends Model implements Auditable
 
             [$parent, $componentProduct, $variant] = self::resolveComposition($component);
 
-            app(CompositePackageValidator::class)->assertComponent(
-                $parent,
-                $componentProduct,
-                $variant,
-                (int) $component->quantity,
-            );
+            $validator = app(CompositePackageValidator::class);
+
+            if ($parent->status === ProductStatus::Active) {
+                $validator->assertPublishableComponent($parent, $componentProduct, $variant, (int) $component->quantity);
+            } else {
+                $validator->assertComponent($parent, $componentProduct, $variant, (int) $component->quantity);
+            }
         });
 
         static::deleting(function (ProductComponent $component): void {

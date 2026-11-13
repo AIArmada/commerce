@@ -78,8 +78,8 @@ it('builds a canonical composition snapshot with exact shared entry keys and uni
         'price_mode' => 'fixed',
         'currency' => 'MYR',
     ], [
-        ['product_id' => $mouse->id, 'quantity' => 2, 'position' => 0],
-        ['product_id' => $keyboardProduct->id, 'variant_id' => $keyboardVariant->id, 'quantity' => 3, 'position' => 1],
+        ['component_product_id' => $mouse->id, 'quantity' => 2, 'position' => 0],
+        ['component_product_id' => $keyboardProduct->id, 'variant_id' => $keyboardVariant->id, 'quantity' => 3, 'position' => 1],
     ]);
 
     $snapshot = app(CompositePackageService::class)->snapshot($parent);
@@ -165,8 +165,8 @@ it('prices fixed packages from the parent and sum packages from canonical compon
         'price' => 9999,
         'price_mode' => 'sum',
     ], [
-        ['product_id' => $mouse->id, 'quantity' => 2],
-        ['product_id' => $keyboardProduct->id, 'variant_id' => $keyboardVariant->id, 'quantity' => 3],
+        ['component_product_id' => $mouse->id, 'quantity' => 2],
+        ['component_product_id' => $keyboardProduct->id, 'variant_id' => $keyboardVariant->id, 'quantity' => 3],
     ]);
 
     $fixedPackage = app(CreateCompositeProduct::class)->handle([
@@ -175,7 +175,7 @@ it('prices fixed packages from the parent and sum packages from canonical compon
         'price' => 4321,
         'price_mode' => 'fixed',
     ], [
-        ['product_id' => $mouse->id, 'quantity' => 2],
+        ['component_product_id' => $mouse->id, 'quantity' => 2],
     ]);
 
     $service = app(CompositePackageService::class);
@@ -193,7 +193,7 @@ it('changes the snapshot fingerprint when current catalog contents or prices cha
         'sku' => 'FP-KIT',
         'price_mode' => 'sum',
     ], [
-        ['product_id' => $mouse->id, 'quantity' => 2],
+        ['component_product_id' => $mouse->id, 'quantity' => 2],
     ]);
 
     $service = app(CompositePackageService::class);
@@ -220,8 +220,8 @@ it('reports package availability from the bottleneck actual inventory SKU', func
         'sku' => 'BOTTLENECK-KIT',
         'price_mode' => 'fixed',
     ], [
-        ['product_id' => $mouse->id, 'quantity' => 2],
-        ['product_id' => $cable->id, 'quantity' => 3],
+        ['component_product_id' => $mouse->id, 'quantity' => 2],
+        ['component_product_id' => $cable->id, 'quantity' => 3],
     ]);
 
     $resolver->stock[$mouse->getMorphClass() . ':' . $mouse->getKey()] = 7;
@@ -246,7 +246,7 @@ it('exposes composition helpers through the HasComponents concern', function ():
         'sku' => 'CONCERN-KIT',
         'price_mode' => 'sum',
     ], [
-        ['product_id' => $mouse->id, 'quantity' => 2],
+        ['component_product_id' => $mouse->id, 'quantity' => 2],
     ]);
 
     $model = CompositeConcernTestProduct::query()->whereKey($parent->id)->firstOrFail();

@@ -128,9 +128,9 @@
                                         📦
                                     @endif
                                 </div>
-                                @if($product->compare_price && $product->compare_price > $product->price)
+                                @if($product->compare_price && $product->compare_price > $product->getBuyablePrice())
                                 <span class="absolute top-3 left-3 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
-                                    {{ round((1 - $product->price / $product->compare_price) * 100) }}% OFF
+                                    {{ round((1 - $product->getBuyablePrice() / $product->compare_price) * 100) }}% OFF
                                 </span>
                                 @endif
                                 @if(! $product->isInStock())
@@ -149,8 +149,8 @@
                             <p class="text-sm text-gray-500 mb-3 line-clamp-2">{{ Str::limit($product->description, 80) }}</p>
                             @endif
                             <div class="flex items-center gap-2 mb-3">
-                                <span class="text-lg font-bold text-amber-600">RM {{ number_format($product->price / 100, 2) }}</span>
-                                @if($product->compare_price && $product->compare_price > $product->price)
+                                <span class="text-lg font-bold text-amber-600">RM {{ number_format($product->getBuyablePrice() / 100, 2) }}</span>
+                                @if($product->compare_price && $product->compare_price > $product->getBuyablePrice())
                                 <span class="text-sm text-gray-400 line-through">RM {{ number_format($product->compare_price / 100, 2) }}</span>
                                 @endif
                             </div>

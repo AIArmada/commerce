@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Orders\Support;
 
+use AIArmada\CommerceSupport\Support\CompositeComponents;
 use JsonException;
 
 /**
  * Immutable, normalized view of one sellable cart line.
+ *
+ * @phpstan-import-type Component from CompositeComponents
  *
  * Composite lines carry a trusted `components` snapshot. The parent line keeps
  * the commercial identity and price; components describe the actual inventory
@@ -18,19 +21,7 @@ final readonly class CartLineSnapshot
     /**
      * @param  array<string, mixed>  $attributes
      * @param  array{length: int|null, width: int|null, height: int|null}|null  $dimensionsCm
-     * @param  list<array{
-     *     product_id: string,
-     *     variant_id: string|null,
-     *     inventoryable_type: string|null,
-     *     inventoryable_id: string|null,
-     *     quantity: int,
-     *     sku: string,
-     *     name: string,
-     *     weight: int|null,
-     *     dimensions: array{length: int, width: int, height: int}|null,
-     *     requires_shipping: bool,
-     *     tracks_inventory: bool
-     * }>  $components
+     * @param  list<Component>  $components
      */
     public function __construct(
         public string $lineId,
@@ -93,7 +84,9 @@ final readonly class CartLineSnapshot
                 $dimensions['width'] ?? null,
                 $dimensions['height'] ?? null,
             ]),
-            components: self::normalizeComponents($attributes['components'] ?? null),
+            components: array_key_exists('components', $attributes)
+                ? CompositeComponents::read($attributes['components'])
+                : [],
             attributes: $attributes,
         );
     }
@@ -110,12 +103,19 @@ final readonly class CartLineSnapshot
     public function contentFingerprint(): string
     {
         return $this->hash([
+            'line_id' => $this->lineId,
             'purchasable_id' => $this->purchasableId,
             'purchasable_type' => $this->purchasableType,
             'product_id' => $this->productId,
             'variant_id' => $this->variantId,
             'sku' => $this->sku,
             'quantity' => $this->quantity,
+            'currency' => $this->currency,
+            'requires_shipping' => $this->requiresShipping,
+            'is_taxable' => $this->isTaxable,
+            'tax_class' => $this->taxClass,
+            'weight' => $this->weightGrams,
+            'dimensions' => $this->dimensionsCm,
             'components' => $this->components,
         ]);
     }
@@ -123,6 +123,7 @@ final readonly class CartLineSnapshot
     public function priceFingerprint(): string
     {
         return $this->hash([
+            'line_id' => $this->lineId,
             'purchasable_id' => $this->purchasableId,
             'quantity' => $this->quantity,
             'unit_price' => $this->unitPrice,
@@ -136,6 +137,11 @@ final readonly class CartLineSnapshot
     public function orderItemMetadata(array $base = []): array
     {
         $metadata = $base;
+        unset($metadata['components'], $metadata['components_fingerprint']);
+
+        if (array_key_exists('requires_shipping', $this->attributes)) {
+            $metadata['requires_shipping'] = $this->requiresShipping;
+        }
 
         if ($this->components !== []) {
             $metadata['components'] = $this->components;
@@ -158,87 +164,10 @@ final readonly class CartLineSnapshot
         return $metadata;
     }
 
-    /**
-     * @return list<array{product_id: string, variant_id: string|null, inventoryable_type: string|null, inventoryable_id: string|null, quantity: int, sku: string, name: string, weight: int|null, dimensions: array{length: int, width: int, height: int}|null, requires_shipping: bool, tracks_inventory: bool}>
-     */
+    /** @return list<Component> */
     public function expandedComponents(): array
     {
-        $expanded = [];
-
-        foreach ($this->components as $component) {
-            $component['quantity'] *= $this->quantity;
-            $expanded[] = $component;
-        }
-
-        return $expanded;
-    }
-
-    /**
-     * @return list<array{product_id: string, variant_id: string|null, inventoryable_type: string|null, inventoryable_id: string|null, quantity: int, sku: string, name: string, weight: int|null, dimensions: array{length: int, width: int, height: int}|null, requires_shipping: bool, tracks_inventory: bool}>
-     */
-    public static function normalizeComponents(mixed $raw): array
-    {
-        if (! is_array($raw)) {
-            return [];
-        }
-
-        $components = [];
-
-        foreach (array_values($raw) as $component) {
-            if (! is_array($component)) {
-                continue;
-            }
-
-            $productId = self::firstString([
-                $component['product_id'] ?? null,
-            ]);
-
-            if ($productId === null) {
-                continue;
-            }
-
-            $quantity = self::toInt($component['quantity'] ?? 0);
-
-            if ($quantity < 1) {
-                continue;
-            }
-
-            $variantId = self::firstString([
-                $component['variant_id'] ?? null,
-            ]);
-
-            $rawDimensions = is_array($component['dimensions'] ?? null) ? $component['dimensions'] : [];
-
-            $dimensions = self::normalizeDimensions([
-                $rawDimensions['length'] ?? null,
-                $rawDimensions['width'] ?? null,
-                $rawDimensions['height'] ?? null,
-            ]);
-
-            $components[] = [
-                'product_id' => $productId,
-                'variant_id' => $variantId,
-                'inventoryable_type' => self::firstString([
-                    $component['inventoryable_type'] ?? null,
-                ]),
-                'inventoryable_id' => self::firstString([
-                    $component['inventoryable_id'] ?? null,
-                    $variantId,
-                    $productId,
-                ]),
-                'quantity' => $quantity,
-                'sku' => self::firstString([$component['sku'] ?? null]) ?? '',
-                'name' => self::firstString([$component['name'] ?? null]) ?? '',
-                'weight' => self::firstInt([
-                    $component['weight'] ?? null,
-                ]),
-                'dimensions' => $dimensions,
-                'requires_shipping' => self::toBool($component['requires_shipping'] ?? true),
-                'tracks_inventory' => self::toBool($component['tracks_inventory'] ?? true),
-            ];
-        }
-
-        return $components;
+        return CompositeComponents::expand($this->components, $this->quantity);
     }
 
     /**

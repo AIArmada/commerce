@@ -174,7 +174,7 @@ trait ManagesInstances
      * a concurrent request. The CartCleared event is only dispatched when the
      * guarded clear actually applied.
      */
-    private function clearIfUnchanged(CartRevision $revision): void
+    public function clearIfUnchanged(CartRevision $revision): void
     {
         if (! $this->storage->clearAllIfUnchanged($this->getIdentifier(), $this->instance(), $revision)) {
             return;
