@@ -59,13 +59,7 @@ final class CreateOrderFromCart
         $items = [];
 
         foreach ($cart->getItems() as $cartItem) {
-            $itemData = $cartItem->toArray();
-            $itemData['purchasable_id'] = $cartItem->getAttribute('purchasable_id');
-            $itemData['purchasable_type'] = $cartItem->getAttribute('purchasable_type');
-            $itemData['metadata'] = $cartItem->getAttribute('metadata');
-            $itemData['options'] = $cartItem->getAttribute('options');
-
-            $line = CartLineSnapshot::fromArray($itemData);
+            $line = CartLineSnapshot::fromArray($cartItem->toArray());
             $itemSubtotal = $cartItem->getRawSubtotal();
             $metadata = $cartItem->getAttribute('metadata');
             $metadata = is_array($metadata) ? $metadata : $cartItem->getLineItemMetadata();

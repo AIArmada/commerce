@@ -964,9 +964,11 @@ describe('CreateOrderStep', function (): void {
                         'name' => 'Variant Item',
                         'quantity' => 1,
                         'price' => 1000,
-                        'product_id' => 'product-123',
-                        'purchasable_id' => 'variant-123',
-                        'purchasable_type' => 'variant-model',
+                        'attributes' => [
+                            'product_id' => 'product-123',
+                            'purchasable_id' => 'variant-123',
+                            'purchasable_type' => 'variant-model',
+                        ],
                     ],
                 ],
             ],
@@ -1061,8 +1063,10 @@ describe('CreateOrderStep', function (): void {
                     [
                         'name' => 'Reserved Item',
                         'quantity' => 2,
-                        'product_id' => 'product-123',
-                        'variant_id' => 'variant-123',
+                        'attributes' => [
+                            'product_id' => 'product-123',
+                            'variant_id' => 'variant-123',
+                        ],
                     ],
                 ],
             ],

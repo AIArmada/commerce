@@ -188,10 +188,7 @@ final class DeductInventoryFromOrder
     {
         $metadata = $order->metadata ?? [];
 
-        return $metadata['cart_id']
-            ?? $metadata['cartId']
-            ?? $metadata['cart_identifier']
-            ?? null;
+        return $metadata['cart_id'] ?? null;
     }
 
     /**

@@ -48,7 +48,7 @@ final class CalculatePricingStep extends AbstractCheckoutStep
             $itemPrice = $item['price'] ?? 0;
             $quantity = $item['quantity'] ?? 1;
             $lineTotal = $itemPrice * $quantity;
-            $productId = $item['product_id'] ?? data_get($item, 'attributes.product_id');
+            $productId = data_get($item, 'attributes.product_id');
 
             $pricingData['items'][] = [
                 'item_id' => $item['id'] ?? null,
@@ -112,7 +112,7 @@ final class CalculatePricingStep extends AbstractCheckoutStep
         foreach ($items as $index => $item) {
             $quantity = (int) ($item['quantity'] ?? 1);
             $unitPrice = (int) ($item['price'] ?? 0);
-            $productId = $item['product_id'] ?? data_get($item, 'attributes.product_id');
+            $productId = data_get($item, 'attributes.product_id');
 
             $originalUnitPrice = null;
             $discountAmount = 0;

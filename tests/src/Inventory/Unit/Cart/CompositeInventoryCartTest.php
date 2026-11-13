@@ -7,6 +7,7 @@ use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\Cart\Contracts\CartValidationResult;
 use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
+use AIArmada\CommerceSupport\Contracts\Buyable;
 use AIArmada\Inventory\Cart\CartManagerWithInventory;
 use AIArmada\Inventory\Cart\InventoryValidator;
 use AIArmada\Inventory\Exceptions\InsufficientInventoryException;
@@ -98,6 +99,89 @@ function compositeComponentSnapshot(array $components): array
     ], $components);
 }
 
+/**
+ * Build the canonical buyable a catalog composite product exposes, so cart
+ * lines are created through `addBuyable()` instead of forging attributes.
+ *
+ * @param  list<array<string, mixed>>  $componentSnapshot
+ */
+function compositeCartBuyable(string $id, string $name, int $price, array $componentSnapshot, Model $parent): Buyable
+{
+    return new class($id, $name, $price, $componentSnapshot, $parent) implements Buyable
+    {
+        /**
+         * @param  list<array<string, mixed>>  $componentSnapshot
+         */
+        public function __construct(
+            private readonly string $identifier,
+            private readonly string $buyableName,
+            private readonly int $unitPrice,
+            private readonly array $componentSnapshot,
+            private readonly Model $parent,
+        ) {}
+
+        public function getBuyableIdentifier(): string
+        {
+            return $this->identifier;
+        }
+
+        public function getBuyableCatalogIdentifier(): ?string
+        {
+            return (string) $this->parent->getKey();
+        }
+
+        public function getBuyableName(): string
+        {
+            return $this->buyableName;
+        }
+
+        public function getBuyablePrice(): int
+        {
+            return $this->unitPrice;
+        }
+
+        public function getBuyableCurrency(): string
+        {
+            return 'USD';
+        }
+
+        public function getBuyableAttributes(): array
+        {
+            return [
+                'components' => $this->componentSnapshot,
+                'inventoryable_type' => $this->parent->getMorphClass(),
+                'inventoryable_id' => (string) $this->parent->getKey(),
+                'product_id' => (string) $this->parent->getKey(),
+            ];
+        }
+
+        public function canBePurchased(?int $quantity = null): bool
+        {
+            return true;
+        }
+
+        public function getBuyableStock(): ?int
+        {
+            return null;
+        }
+
+        public function getBuyableMinimumQuantity(): int
+        {
+            return 1;
+        }
+
+        public function getBuyableMaximumQuantity(): ?int
+        {
+            return null;
+        }
+
+        public function getBuyableQuantityIncrement(): int
+        {
+            return 1;
+        }
+    };
+}
+
 beforeEach(function (): void {
     $this->inventoryService = app(InventoryService::class);
     $this->allocationService = app(InventoryAllocationService::class);
@@ -119,19 +203,10 @@ describe('composite cart inventory demand', function (): void {
         $this->inventoryService->receive($parent, $this->location->id, 50);
 
         $cart = new Cart(new InMemoryStorage, 'composite-demand-cart');
-        $cart->add(
-            id: 'mouse-bundle',
-            name: 'Mouse Bundle',
-            price: 2000,
-            quantity: 2,
-            attributes: [
-                'components' => compositeComponentSnapshot([
-                    ['product' => $mouse, 'quantity' => 2],
-                    ['product' => $cable, 'quantity' => 1],
-                ]),
-            ],
-            associatedModel: $parent,
-        );
+        $cart->addBuyable(compositeCartBuyable('mouse-bundle', 'Mouse Bundle', 2000, compositeComponentSnapshot([
+            ['product' => $mouse, 'quantity' => 2],
+            ['product' => $cable, 'quantity' => 1],
+        ]), $parent), 2);
         $cart->add(id: 'standalone-mouse', name: 'Mouse', price: 500, quantity: 1, associatedModel: $mouse);
 
         $manager = CartManagerWithInventory::fromCartManager(new CompositeFakeCartManager($cart));
@@ -164,19 +239,10 @@ describe('composite cart inventory demand', function (): void {
         $this->inventoryService->receive($parent, $this->location->id, 50);
 
         $cart = new Cart(new InMemoryStorage, 'composite-short-cart');
-        $cart->add(
-            id: 'mouse-bundle',
-            name: 'Mouse Bundle',
-            price: 2000,
-            quantity: 2,
-            attributes: [
-                'components' => compositeComponentSnapshot([
-                    ['product' => $mouse, 'quantity' => 2],
-                    ['product' => $cable, 'quantity' => 1],
-                ]),
-            ],
-            associatedModel: $parent,
-        );
+        $cart->addBuyable(compositeCartBuyable('mouse-bundle', 'Mouse Bundle', 2000, compositeComponentSnapshot([
+            ['product' => $mouse, 'quantity' => 2],
+            ['product' => $cable, 'quantity' => 1],
+        ]), $parent), 2);
         $cart->add(id: 'standalone-mouse', name: 'Mouse', price: 500, quantity: 1, associatedModel: $mouse);
 
         $manager = CartManagerWithInventory::fromCartManager(new CompositeFakeCartManager($cart));
@@ -191,13 +257,9 @@ describe('composite cart inventory demand', function (): void {
         $this->inventoryService->receive($parent, $this->location->id, 10);
 
         $cart = new Cart(new InMemoryStorage, 'empty-composite-cart');
-        $cart->add(
-            id: 'empty-bundle',
-            name: 'Empty Bundle',
-            price: 1000,
-            quantity: 3,
-            attributes: ['components' => []],
-            associatedModel: $parent,
+        $cart->addBuyable(
+            compositeCartBuyable('empty-bundle', 'Empty Bundle', 1000, [], $parent),
+            3,
         );
 
         $manager = CartManagerWithInventory::fromCartManager(new CompositeFakeCartManager($cart));
@@ -215,18 +277,9 @@ describe('composite cart inventory demand', function (): void {
         $this->inventoryService->receive($parent, $this->location->id, 10);
 
         $cart = new Cart(new InMemoryStorage, 'composite-validator-cart');
-        $cart->add(
-            id: 'mouse-pair',
-            name: 'Mouse Pair',
-            price: 1000,
-            quantity: 2,
-            attributes: [
-                'components' => compositeComponentSnapshot([
-                    ['product' => $mouse, 'quantity' => 2],
-                ]),
-            ],
-            associatedModel: $parent,
-        );
+        $cart->addBuyable(compositeCartBuyable('mouse-pair', 'Mouse Pair', 1000, compositeComponentSnapshot([
+            ['product' => $mouse, 'quantity' => 2],
+        ]), $parent), 2);
         $cart->add(id: 'standalone-mouse', name: 'Mouse', price: 500, quantity: 1, associatedModel: $mouse);
 
         $validator = new InventoryValidator($this->allocationService);
@@ -257,18 +310,9 @@ describe('composite add and checkout reservation listeners', function (): void {
         $this->inventoryService->receive($parent, $this->location->id, 10);
 
         $cart = new Cart(new InMemoryStorage, 'composite-add-short-cart', app('events'));
-        $cart->add(
-            id: 'mouse-pair',
-            name: 'Mouse Pair',
-            price: 1000,
-            quantity: 2,
-            attributes: [
-                'components' => compositeComponentSnapshot([
-                    ['product' => $mouse, 'quantity' => 2],
-                ]),
-            ],
-            associatedModel: $parent,
-        );
+        $cart->addBuyable(compositeCartBuyable('mouse-pair', 'Mouse Pair', 1000, compositeComponentSnapshot([
+            ['product' => $mouse, 'quantity' => 2],
+        ]), $parent), 2);
 
         expect(fn () => $cart->add(
             id: 'standalone-mouse',
@@ -293,18 +337,9 @@ describe('composite add and checkout reservation listeners', function (): void {
         $this->inventoryService->receive($parent, $this->location->id, 10);
 
         $cart = new Cart(new InMemoryStorage, 'composite-add-auto-cart', app('events'));
-        $cart->add(
-            id: 'mouse-pair',
-            name: 'Mouse Pair',
-            price: 1000,
-            quantity: 2,
-            attributes: [
-                'components' => compositeComponentSnapshot([
-                    ['product' => $mouse, 'quantity' => 2],
-                ]),
-            ],
-            associatedModel: $parent,
-        );
+        $cart->addBuyable(compositeCartBuyable('mouse-pair', 'Mouse Pair', 1000, compositeComponentSnapshot([
+            ['product' => $mouse, 'quantity' => 2],
+        ]), $parent), 2);
         $cart->add(id: 'standalone-mouse', name: 'Mouse', price: 500, quantity: 1, associatedModel: $mouse);
 
         expect(InventoryAllocation::query()
@@ -328,18 +363,9 @@ describe('composite add and checkout reservation listeners', function (): void {
         $this->inventoryService->receive($parent, $this->location->id, 10);
 
         $cart = new Cart(new InMemoryStorage, 'composite-checkout-cart');
-        $cart->add(
-            id: 'mouse-pair',
-            name: 'Mouse Pair',
-            price: 1000,
-            quantity: 2,
-            attributes: [
-                'components' => compositeComponentSnapshot([
-                    ['product' => $mouse, 'quantity' => 2],
-                ]),
-            ],
-            associatedModel: $parent,
-        );
+        $cart->addBuyable(compositeCartBuyable('mouse-pair', 'Mouse Pair', 1000, compositeComponentSnapshot([
+            ['product' => $mouse, 'quantity' => 2],
+        ]), $parent), 2);
         $cart->add(id: 'standalone-mouse', name: 'Mouse', price: 500, quantity: 1, associatedModel: $mouse);
 
         $listener = new ReserveStockOnCheckout($this->allocationService);

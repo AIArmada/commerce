@@ -134,8 +134,8 @@ final class ReserveInventoryStep extends AbstractCheckoutStep
                 }
 
                 $attributes = is_array($item['attributes'] ?? null) ? $item['attributes'] : [];
-                $inventoryableType = $item['inventoryable_type'] ?? $attributes['inventoryable_type'] ?? null;
-                $inventoryableId = $item['inventoryable_id'] ?? $attributes['inventoryable_id'] ?? null;
+                $inventoryableType = $attributes['inventoryable_type'] ?? null;
+                $inventoryableId = $attributes['inventoryable_id'] ?? null;
 
                 $lines[] = new ReservationLine(
                     productId: $line->productId

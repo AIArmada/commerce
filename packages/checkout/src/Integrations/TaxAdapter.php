@@ -152,10 +152,10 @@ final class TaxAdapter
             $pricingItem = $pricingItems[$index] ?? [];
             $cartItem = $cartItems[$index] ?? [];
             $attributes = is_array($cartItem['attributes'] ?? null) ? $cartItem['attributes'] : [];
-            $isTaxable = (bool) ($cartItem['is_taxable'] ?? $attributes['is_taxable'] ?? true);
+            $isTaxable = (bool) ($attributes['is_taxable'] ?? true);
 
             $taxableItems[] = [
-                'tax_class' => $cartItem['tax_class'] ?? $attributes['tax_class'] ?? $pricingItem['tax_class'] ?? 'standard',
+                'tax_class' => $attributes['tax_class'] ?? $pricingItem['tax_class'] ?? 'standard',
                 'taxable_amount' => $isTaxable
                     ? max(0, $baseAmount - ($allocatedDiscounts[$index] ?? 0))
                     : 0,

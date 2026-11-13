@@ -58,90 +58,42 @@ final readonly class CartLineSnapshot
     public static function fromArray(array $item): self
     {
         $attributes = is_array($item['attributes'] ?? null) ? $item['attributes'] : [];
-        $associated = is_array($item['associated_model'] ?? null) ? $item['associated_model'] : null;
-        $associatedData = is_array($associated['data'] ?? null) ? $associated['data'] : [];
-
-        $productId = self::firstString([
-            $item['product_id'] ?? null,
-            $attributes['product_id'] ?? null,
-            $associatedData['product_id'] ?? null,
-        ]);
-
-        $variantId = self::firstString([
-            $item['variant_id'] ?? null,
-            $attributes['variant_id'] ?? null,
-            $associatedData['variant_id'] ?? null,
-        ]);
-
-        $purchasableId = self::firstString([
-            $item['purchasable_id'] ?? null,
-            $attributes['purchasable_id'] ?? null,
-            $associated['id'] ?? null,
-            $productId,
-            $variantId,
-            $item['id'] ?? null,
-        ]);
-
-        $purchasableType = self::firstString([
-            $item['purchasable_type'] ?? null,
-            $attributes['purchasable_type'] ?? null,
-            $associated['class'] ?? null,
-            $associatedData['purchasable_type'] ?? null,
-        ]);
-
-        $components = self::normalizeComponents($attributes['components'] ?? null);
-
-        $weight = self::firstInt([
-            $item['weight_grams'] ?? null,
-            $attributes['weight_grams'] ?? null,
-            $item['weight'] ?? null,
-            $attributes['weight'] ?? null,
-            $associatedData['weight'] ?? null,
-        ]);
-
-        $currency = self::firstString([
-            $item['currency'] ?? null,
-            $attributes['currency'] ?? null,
-            $associatedData['currency'] ?? null,
-        ]);
-
-        $taxClass = self::firstString([
-            $item['tax_class'] ?? null,
-            $attributes['tax_class'] ?? null,
-            $attributes['tax_category'] ?? null,
-            $associatedData['tax_class'] ?? null,
-            $associatedData['tax_category'] ?? null,
-        ]);
+        $associated = is_array($item['associated_model'] ?? null) ? $item['associated_model'] : [];
+        $dimensions = is_array($attributes['dimensions'] ?? null) ? $attributes['dimensions'] : [];
+        $currency = self::firstString([$attributes['currency'] ?? null]);
+        $productId = self::firstString([$attributes['product_id'] ?? null]);
+        $variantId = self::firstString([$attributes['variant_id'] ?? null]);
 
         return new self(
             lineId: self::firstString([$item['id'] ?? null]) ?? '',
             name: self::firstString([$item['name'] ?? null]) ?? '',
-            quantity: max(1, self::toInt($item['quantity'] ?? $item['line_quantity'] ?? 1)),
-            unitPrice: max(0, self::toInt($item['price'] ?? $item['unit_price'] ?? 0)),
-            purchasableId: $purchasableId,
-            purchasableType: $purchasableType,
+            quantity: max(1, self::toInt($item['quantity'] ?? 1)),
+            unitPrice: max(0, self::toInt($item['price'] ?? 0)),
+            purchasableId: self::firstString([
+                $attributes['purchasable_id'] ?? null,
+                $associated['id'] ?? null,
+                $productId,
+                $variantId,
+                $item['id'] ?? null,
+            ]),
+            purchasableType: self::firstString([
+                $attributes['purchasable_type'] ?? null,
+                $associated['class'] ?? null,
+            ]),
             productId: $productId,
             variantId: $variantId,
-            sku: self::firstString([
-                $item['sku'] ?? null,
-                $attributes['sku'] ?? null,
-                $associatedData['sku'] ?? null,
-            ]),
+            sku: self::firstString([$attributes['sku'] ?? null]),
             currency: $currency !== null ? mb_strtoupper($currency) : null,
-            requiresShipping: self::toBool(
-                $item['requires_shipping'] ?? $attributes['requires_shipping'] ?? true,
-            ),
-            isTaxable: self::toBool(
-                $item['is_taxable'] ?? $attributes['is_taxable'] ?? $attributes['taxable'] ?? true,
-            ),
-            taxClass: $taxClass,
-            weightGrams: $weight,
-            dimensionsCm: self::firstDimensions([
-                $item['dimensions'] ?? null,
-                $attributes['dimensions'] ?? null,
-                $associatedData['dimensions'] ?? null,
-            ], $item, $attributes),
-            components: $components,
+            requiresShipping: self::toBool($attributes['requires_shipping'] ?? true),
+            isTaxable: self::toBool($attributes['is_taxable'] ?? true),
+            taxClass: self::firstString([$attributes['tax_class'] ?? null]),
+            weightGrams: self::firstInt([$attributes['weight'] ?? null]),
+            dimensionsCm: self::normalizeDimensions([
+                $dimensions['length'] ?? null,
+                $dimensions['width'] ?? null,
+                $dimensions['height'] ?? null,
+            ]),
+            components: self::normalizeComponents($attributes['components'] ?? null),
             attributes: $attributes,
         );
     }
@@ -290,36 +242,6 @@ final readonly class CartLineSnapshot
     }
 
     /**
-     * @param  array<string, mixed>  $item
-     * @param  array<string, mixed>  $attributes
-     * @return array{length: int, width: int, height: int}|null
-     */
-    private static function firstDimensions(array $candidates, array $item, array $attributes): ?array
-    {
-        foreach ($candidates as $candidate) {
-            if (! is_array($candidate)) {
-                continue;
-            }
-
-            $dimensions = self::normalizeDimensions([
-                $candidate['length'] ?? null,
-                $candidate['width'] ?? null,
-                $candidate['height'] ?? null,
-            ]);
-
-            if ($dimensions !== null) {
-                return $dimensions;
-            }
-        }
-
-        return self::normalizeDimensions([
-            $item['length_cm'] ?? $attributes['length_cm'] ?? null,
-            $item['width_cm'] ?? $attributes['width_cm'] ?? null,
-            $item['height_cm'] ?? $attributes['height_cm'] ?? null,
-        ]);
-    }
-
-    /**
      * @param  array<int, mixed>  $values
      * @return array{length: int, width: int, height: int}|null
      */
@@ -351,8 +273,7 @@ final readonly class CartLineSnapshot
 
     private function hasExplicitTaxability(): bool
     {
-        return array_key_exists('is_taxable', $this->attributes)
-            || array_key_exists('taxable', $this->attributes);
+        return array_key_exists('is_taxable', $this->attributes);
     }
 
     /**

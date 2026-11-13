@@ -672,9 +672,9 @@ describe('pricing priceable resolution', function (): void {
             $products[] = $product;
             $items[] = [
                 'id' => 'line-' . $i,
-                'product_id' => $product->getKey(),
                 'price' => 2500,
                 'quantity' => 1,
+                'attributes' => ['product_id' => $product->getKey()],
                 'associated_model' => ['class' => Product::class, 'id' => $product->getKey()],
             ];
         }
@@ -736,9 +736,9 @@ describe('pricing priceable resolution', function (): void {
                 'items' => [
                     [
                         'id' => 'line-1',
-                        'product_id' => $foreignProduct->getKey(),
                         'price' => 2500,
                         'quantity' => 1,
+                        'attributes' => ['product_id' => $foreignProduct->getKey()],
                         'associated_model' => ['class' => Product::class, 'id' => $foreignProduct->getKey()],
                     ],
                 ],
@@ -779,9 +779,9 @@ describe('pricing priceable resolution', function (): void {
                 'items' => [
                     [
                         'id' => 'line-1',
-                        'product_id' => $globalProduct->getKey(),
                         'price' => 3000,
                         'quantity' => 1,
+                        'attributes' => ['product_id' => $globalProduct->getKey()],
                         'associated_model' => ['class' => Product::class, 'id' => $globalProduct->getKey()],
                     ],
                 ],

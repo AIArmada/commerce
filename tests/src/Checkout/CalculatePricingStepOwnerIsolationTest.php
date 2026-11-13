@@ -43,9 +43,9 @@ it('rejects cross-tenant associated models when resolving checkout pricing', fun
                 'items' => [
                     [
                         'id' => 'line-1',
-                        'product_id' => $productOwnedByB->id,
                         'price' => 2500,
                         'quantity' => 1,
+                        'attributes' => ['product_id' => $productOwnedByB->id],
                         'associated_model' => [
                             'class' => Product::class,
                             'id' => $productOwnedByB->id,
