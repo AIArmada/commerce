@@ -13,6 +13,7 @@ use AIArmada\Orders\States\Delivered;
 use AIArmada\Orders\States\PendingPayment;
 use AIArmada\Orders\States\Processing;
 use AIArmada\Orders\States\Shipped;
+use AIArmada\Orders\Support\PackageUnit;
 use Filament\Actions;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Select;
@@ -27,6 +28,21 @@ use Throwable;
 class ViewOrder extends ViewRecord
 {
     protected static string $resource = OrderResource::class;
+
+    /** @return array<string, string> */
+    private function packageUnitOptions(Order $order): array
+    {
+        $options = [];
+        foreach ($order->items()->get() as $item) {
+            if (PackageUnit::componentsOf($item) !== []) {
+                for ($ordinal = 1; $ordinal <= $item->quantity; $ordinal++) {
+                    $options[$item->id . ':' . $ordinal] = $item->name . ' / unit ' . $ordinal;
+                }
+            }
+        }
+
+        return $options;
+    }
 
     protected function getFooterWidgets(): array
     {
@@ -104,7 +120,7 @@ class ViewOrder extends ViewRecord
 
                     return $user ? Gate::forUser($user)->allows('update', $record) : false;
                 })
-                ->form(function (): array {
+                ->form(function (Order $record): array {
                     $fulfillmentHandler = $this->getBoundFulfillmentHandler();
                     $carriers = $this->getAvailableCarriers();
 
@@ -118,6 +134,12 @@ class ViewOrder extends ViewRecord
                             TextInput::make('service')
                                 ->label('Service')
                                 ->required(),
+                            Select::make('package_units')
+                                ->multiple()
+                                ->label('Package units')
+                                ->options(fn (): array => $this->packageUnitOptions($record))
+                                ->visible(fn (): bool => $this->packageUnitOptions($record) !== [])
+                                ->helperText('Leave empty to ship all remaining items.'),
                         ];
                     }
 
@@ -139,9 +161,16 @@ class ViewOrder extends ViewRecord
 
                         if ($fulfillmentHandler !== null && $carriers !== [] && ! isset($data['tracking_number'])) {
 
+                            $units = [];
+                            foreach ($data['package_units'] ?? [] as $selection) {
+                                [$orderItemId, $ordinal] = explode(':', $selection, 2);
+                                $units[$orderItemId][] = (int) $ordinal;
+                            }
+
                             $result = $fulfillmentHandler->createShipment($record, [
                                 'carrier' => $data['carrier'],
                                 'service' => $data['service'],
+                                'package_units' => $units === [] ? null : $units,
                             ]);
 
                             if (! $result['success']) {
@@ -151,7 +180,7 @@ class ViewOrder extends ViewRecord
                             // Update order with tracking info from API
                             $carrierName = $this->getCarrierName($data['carrier']);
 
-                            $service->ship($record, $carrierName, $result['tracking_number'] ?? 'PENDING');
+                            $service->ship($record, $carrierName, $result['tracking_number'] ?? 'PENDING', $result['shipment_id']);
 
                             Notification::make()
                                 ->title('Order shipped via ' . $carrierName)

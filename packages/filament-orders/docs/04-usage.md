@@ -138,3 +138,8 @@ On the order list:
 - Invoices are generated on-demand
 - Requires `spatie/laravel-pdf` to be configured
 - Customize invoice template in `resources/views/vendor/orders`
+
+
+### Shipping composite orders
+
+In **Ship Order**, select the package units that belong in this shipment. Leave the selection empty to ship all remaining items. The order moves to Shipped when its last shipment is recorded.

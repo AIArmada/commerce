@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentShipping\Resources\ReturnAuthorizationResource\RelationManagers;
 
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
+use AIArmada\Shipping\Models\ReturnAuthorization;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
@@ -36,7 +37,7 @@ class ItemsRelationManager extends RelationManager
                     ->label('SKU')
                     ->maxLength(100),
 
-                Forms\Components\TextInput::make('quantity')
+                Forms\Components\TextInput::make('quantity_requested')
                     ->numeric()
                     ->required()
                     ->default(1)
@@ -71,7 +72,9 @@ class ItemsRelationManager extends RelationManager
 
             $owner = $this->getOwnerRecord();
 
-            return $user->can('update', $owner);
+            return $owner instanceof ReturnAuthorization
+                && ! $owner->isPackageReturn()
+                && $user->can('update', $owner);
         };
 
         return $table
@@ -85,7 +88,7 @@ class ItemsRelationManager extends RelationManager
                     ->searchable()
                     ->placeholder('-'),
 
-                Tables\Columns\TextColumn::make('quantity')
+                Tables\Columns\TextColumn::make('quantity_requested')
                     ->numeric()
                     ->sortable(),
 

@@ -8,6 +8,7 @@ use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Orders\Actions\CreateOrder;
 use AIArmada\Orders\Actions\CreateOrderFromCart;
+use AIArmada\Orders\Support\PackageUnit;
 use AIArmada\Products\Actions\CreateCompositeProduct;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
@@ -146,4 +147,22 @@ it('requires cart review when a direct order would use an outdated package price
 
     expect(fn () => (new CreateOrderFromCart(new CreateOrder))->execute($cart, User::factory()->create()))
         ->toThrow(InvalidArgumentException::class, 'The composite package price has changed.');
+});
+
+it('records the cart discount and tax allocated to a package line for unit refunds', function (): void {
+    $package = createCompositeOrderPackage(createCompositeOrderProduct(), createCompositeOrderProduct());
+    $cart = new Cart(new InMemoryStorage, 'composite-order-refund-basis');
+    $cart->addBuyable($package, 2);
+    $cart->addDiscount('promotion', '101');
+    $cart->addShipping('shipping', 500);
+    $cart->addTax('tax', '99');
+
+    $order = (new CreateOrderFromCart(new CreateOrder))->execute($cart, User::factory()->create());
+    $item = $order->items()->firstOrFail();
+
+    expect($item->discount_amount)->toBe(101)
+        ->and($item->tax_amount)->toBe(99)
+        ->and(new PackageUnit($item, 1)->refundAmount())->toBe(4000)
+        ->and(new PackageUnit($item, 2)->refundAmount())->toBe(3998)
+        ->and($order->grand_total)->toBe(8498);
 });

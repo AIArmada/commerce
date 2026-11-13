@@ -94,6 +94,10 @@ Draft → Pending → Approved → Received → Completed
 5. If approved, the return transitions to Approved status, and a return shipping label can be generated
 6. Once items are received, mark as Received; then Complete to finalize
 
+### Returning a package unit
+
+Open its original shipment and choose **Return Package Unit**. After approval, use **Receive and Inspect Package** to record every component's quantity and condition. Select which inspected components go back into sellable stock. Use **Complete Package Return** after the refund settles.
+
 ## Pages
 
 ### Shipping Dashboard

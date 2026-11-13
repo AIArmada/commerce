@@ -4,11 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentShipping\Resources\ShipmentResource\Pages;
 
+use AIArmada\FilamentShipping\Resources\ReturnAuthorizationResource;
 use AIArmada\FilamentShipping\Resources\ShipmentResource;
+use AIArmada\Shipping\Enums\ReturnReason;
+use AIArmada\Shipping\Integrations\PackageReturns;
+use AIArmada\Shipping\Models\ReturnAuthorization;
 use AIArmada\Shipping\Models\Shipment;
 use AIArmada\Shipping\Services\ShipmentService;
 use Exception;
 use Filament\Actions;
+use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 
@@ -20,6 +25,29 @@ class ViewShipment extends ViewRecord
     {
         return [
             Actions\EditAction::make(),
+
+            Actions\Action::make('return_package')
+                ->label('Return Package Unit')
+                ->visible(fn (Shipment $record): bool => $record->shipped_at !== null
+                    && $record->items()->whereNotNull('package_unit_ordinal')->exists())
+                ->authorize(fn (): bool => auth()->user()?->can('create', ReturnAuthorization::class) ?? false)
+                ->schema(fn (Shipment $record): array => [
+                    Select::make('unit')
+                        ->label('Package Unit')
+                        ->options(fn (): array => app(PackageReturns::class)->shippedUnits($record))
+                        ->required(),
+                    Select::make('reason')
+                        ->options(collect(ReturnReason::cases())->mapWithKeys(fn (ReturnReason $reason): array => [
+                            $reason->value => $reason->getLabel(),
+                        ])->all())
+                        ->required(),
+                ])
+                ->action(function (Shipment $record, array $data): void {
+                    [$itemId, $ordinal] = explode(':', $data['unit'], 2);
+                    $rma = app(PackageReturns::class)->request($record, $itemId, (int) $ordinal, $data['reason']);
+
+                    $this->redirect(ReturnAuthorizationResource::getUrl('view', ['record' => $rma]));
+                }),
 
             Actions\Action::make('ship')
                 ->label('Ship')

@@ -9,6 +9,7 @@ use AIArmada\FilamentOrders\Resources\OrderResource;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Services\OrderService;
 use AIArmada\Orders\States\Processing;
+use AIArmada\Orders\Support\PackageUnit;
 use BackedEnum;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
@@ -139,7 +140,7 @@ class FulfillmentQueue extends Page implements HasTable
                 Order::query()
                     ->forOwner($owner, includeGlobal: $includeGlobal)
                     ->whereState('status', Processing::class)
-                    ->with(['customer'])
+                    ->with(['customer', 'items'])
             )
             ->columns([
                 Tables\Columns\TextColumn::make('order_number')
@@ -233,6 +234,7 @@ class FulfillmentQueue extends Page implements HasTable
             ->actions([
                 Action::make('fulfill')
                     ->label('Ship')
+                    ->visible(fn (Order $record): bool => ! $this->hasPackageUnits($record))
                     ->icon('heroicon-o-truck')
                     ->color('success')
                     ->authorize(function (Order $record): bool {
@@ -266,6 +268,11 @@ class FulfillmentQueue extends Page implements HasTable
                     })
                     ->modalHeading('Ship Order')
                     ->modalDescription(fn ($record) => "Complete shipment for order {$record->order_number}"),
+
+                Action::make('ship_package_units')
+                    ->label('Ship Package Units')
+                    ->visible(fn (Order $record): bool => $this->hasPackageUnits($record))
+                    ->url(fn (Order $record): string => $this->getOrderViewUrl($record)),
 
                 Action::make('view')
                     ->label('View')
@@ -358,6 +365,11 @@ class FulfillmentQueue extends Page implements HasTable
     /**
      * Get the URL to view an order.
      */
+    private function hasPackageUnits(Order $order): bool
+    {
+        return $order->items->contains(fn ($item): bool => PackageUnit::componentsOf($item) !== []);
+    }
+
     protected function getOrderViewUrl(Order $order): string
     {
         if (class_exists(OrderResource::class)) {
