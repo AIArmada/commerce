@@ -10,6 +10,7 @@ use AIArmada\Checkout\Exceptions\InventoryException;
 use AIArmada\Checkout\Integrations\InventoryAdapter;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Inventory\Data\ReservationLine;
+use AIArmada\Inventory\Exceptions\InsufficientInventoryException;
 use AIArmada\Orders\Support\CartLineSnapshot;
 use Carbon\CarbonImmutable;
 use Throwable;
@@ -173,6 +174,13 @@ final class ReserveInventoryStep extends AbstractCheckoutStep
                 'reference' => $outcome->reference,
                 'state' => $outcome->state,
                 'expires_in' => $reservationTtl,
+            ]);
+        } catch (InsufficientInventoryException $e) {
+            // A short component is a shopper-facing stock change, not an
+            // infrastructure fault: fail the step so compensation releases the
+            // partial reservation and the shopper can review the cart.
+            return $this->failed('The selected quantity is no longer available.', [
+                'inventory' => $e->getMessage(),
             ]);
         } catch (Throwable $e) {
             throw InventoryException::reservationFailed(

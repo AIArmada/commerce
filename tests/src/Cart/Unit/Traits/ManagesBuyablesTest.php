@@ -400,4 +400,26 @@ describe('ManagesBuyables Trait', function (): void {
             ->and($item->getAttribute('currency'))->toBe('USD')
             ->and($item->getAttribute('bundle_source'))->toBe('ticket_type:t1');
     });
+
+    it('strips composition attributes from raw cart lines', function (): void {
+        $injected = [
+            'components' => [[
+                'product_id' => 'expensive-item',
+                'quantity' => 99,
+                'tracks_inventory' => true,
+            ]],
+            'components_fingerprint' => 'forged-fingerprint',
+            'legitimate' => 'kept',
+        ];
+
+        $item = $this->cart->add('raw-1', 'Raw line', 100, 1, $injected);
+
+        expect($item->getAttribute('components'))->toBeNull()
+            ->and($item->getAttribute('components_fingerprint'))->toBeNull()
+            ->and($item->getAttribute('legitimate'))->toBe('kept');
+
+        $this->cart->update('raw-1', ['attributes' => $injected]);
+
+        expect($this->cart->get('raw-1')?->getAttribute('components'))->toBeNull();
+    });
 });

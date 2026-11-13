@@ -16,6 +16,7 @@ use AIArmada\Commerce\Tests\Addressing\AddressingGeographyTestCase;
 use AIArmada\Commerce\Tests\AffiliateNetwork\AffiliateNetworkTestCase;
 use AIArmada\Commerce\Tests\Affiliates\AffiliatesTestCase;
 use AIArmada\Commerce\Tests\Affiliates\Engine\AffiliatesEngineTestCase;
+use AIArmada\Commerce\Tests\CompositeCheckout\CompositeCheckoutTestCase;
 use AIArmada\Commerce\Tests\Feedback\FeedbackTestCase;
 use AIArmada\Commerce\Tests\FilamentAddressing\FilamentAddressingTestCase;
 use AIArmada\Commerce\Tests\FilamentAffiliateNetwork\FilamentAffiliateNetworkTestCase;
@@ -114,6 +115,8 @@ pest()->extend(TestCase::class)->in(
     'src/Rewards',
     'src/FilamentRewards',
 );
+
+pest()->extend(CompositeCheckoutTestCase::class)->in('src/CompositeCheckout');
 
 // NOTE: 'src/Cart' is bound per-subdir (not blanket) so that the engine-race
 // directory can use CartEngineTestCase (opt-in PostgreSQL via

@@ -142,6 +142,11 @@ trait ManagesItems
                 if (isset($data[$property])) {
                     $method = 'set' . ucfirst($property);
                     $value = $property === 'price' ? $this->normalizePrice($data[$property]) : $data[$property];
+
+                    if ($property === 'attributes' && is_array($value)) {
+                        $value = $this->withoutCanonicalCompositeAttributes($value);
+                    }
+
                     $item = $item->$method($value);
                 }
             }
@@ -286,6 +291,8 @@ trait ManagesItems
     ): CartItem {
         // Normalize ID to string for consistent handling
         $id = (string) $id;
+
+        $attributes = $this->withoutCanonicalCompositeAttributes($attributes);
 
         $addedItem = null;
         $isFirstItem = false;
@@ -514,6 +521,24 @@ trait ManagesItems
         }
 
         throw new InvalidCartItemException("Cart item quantity for {$context} must be an integer.");
+    }
+
+    /**
+     * Strip composition keys from caller-supplied raw line attributes.
+     *
+     * A composite composition is only ever produced by the canonical buyable
+     * path. Checkout, inventory, orders, and shipping all trust a line that
+     * declares `components`, so a raw add or update must never be able to
+     * declare itself composite.
+     *
+     * @param  array<string, mixed>  $attributes
+     * @return array<string, mixed>
+     */
+    private function withoutCanonicalCompositeAttributes(array $attributes): array
+    {
+        unset($attributes['components'], $attributes['components_fingerprint']);
+
+        return $attributes;
     }
 
     /**

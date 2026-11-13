@@ -8,7 +8,9 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Cart\InventoryDemandResolver;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryOperation;
+use AIArmada\Inventory\Models\InventoryReservation;
 use AIArmada\Inventory\Services\InventoryService;
+use AIArmada\Inventory\Services\Stock\CheckoutReservationService;
 use AIArmada\Inventory\Services\Stock\InventoryAllocationService;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use AIArmada\Orders\Events\InventoryDeductionRequired;
@@ -22,6 +24,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
+use Throwable;
 
 /**
  * Deducts inventory when an order payment is confirmed.
@@ -29,10 +32,11 @@ use InvalidArgumentException;
  * This listener bridges the orders package with inventory management.
  * It handles two scenarios:
  *
- * 1. **With cart allocations**: If inventory was pre-allocated during checkout
- *    (via cart integration), commit those allocations.
+ * 1. **With a checkout reservation**: If checkout reserved the composition,
+ *    commit that reservation group so the reserved units become one shipment
+ *    deduction and the group reaches its committed state.
  *
- * 2. **Without allocations**: If the order was created directly without cart
+ * 2. **Without a reservation**: If the order was created directly without cart
  *    allocations (API, admin, etc.), deduct inventory directly.
  */
 final class DeductInventoryFromOrder
@@ -40,6 +44,7 @@ final class DeductInventoryFromOrder
     public function __construct(
         private readonly InventoryService $inventoryService,
         private readonly InventoryAllocationService $allocationService,
+        private readonly ?CheckoutReservationService $reservationService = null,
     ) {}
 
     public function handle(InventoryDeductionRequired $event): void
@@ -194,6 +199,10 @@ final class DeductInventoryFromOrder
      */
     private function tryCommitAllocations(string $cartId, Order $order): bool
     {
+        if ($this->commitReservation($cartId, $order)) {
+            return true;
+        }
+
         $allocations = $this->allocationService->getAllocationsForCart($cartId);
 
         if ($allocations->isEmpty()) {
@@ -206,6 +215,49 @@ final class DeductInventoryFromOrder
             'order_id' => $order->id,
             'cart_id' => $cartId,
             'allocation_count' => $allocations->count(),
+        ]);
+
+        return true;
+    }
+
+    /**
+     * Commit the checkout reservation that owns this cart, when one exists and
+     * still holds stock. An expired reservation has already released its units,
+     * so the caller must fall back to direct deduction.
+     */
+    private function commitReservation(string $cartId, Order $order): bool
+    {
+        if (! $this->reservationService instanceof CheckoutReservationService) {
+            return false;
+        }
+
+        try {
+            $current = $this->reservationService->find($cartId);
+        } catch (Throwable $exception) {
+            Log::warning('Inventory reservation lookup failed before commit', [
+                'order_id' => $order->id,
+                'cart_id' => $cartId,
+                'reason' => $exception->getMessage(),
+            ]);
+
+            return false;
+        }
+
+        if ($current->state !== InventoryReservation::STATE_RESERVED
+            && $current->state !== InventoryReservation::STATE_COMMITTED
+        ) {
+            return false;
+        }
+
+        $outcome = $this->reservationService->commit($cartId, (string) $order->getKey());
+
+        if ($outcome->state !== InventoryReservation::STATE_COMMITTED) {
+            return false;
+        }
+
+        Log::info('Inventory committed from checkout reservation', [
+            'order_id' => $order->id,
+            'cart_id' => $cartId,
         ]);
 
         return true;

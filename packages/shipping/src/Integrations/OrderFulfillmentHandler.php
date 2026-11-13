@@ -231,6 +231,8 @@ final class OrderFulfillmentHandler implements FulfillmentHandler
                 'quantity' => $orderItem->quantity,
                 'weight' => $metadata['weight'] ?? 100,
                 'declaredValue' => $orderItem->total,
+                'shippableItemId' => (string) ($orderItem->purchasable_id ?? $orderItem->getKey()),
+                'shippableItemType' => $orderItem->purchasable_type,
             ]);
         }
 
