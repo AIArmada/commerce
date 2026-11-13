@@ -6,17 +6,20 @@ namespace AIArmada\Products\Models;
 
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
+use AIArmada\CommerceSupport\Contracts\Buyable;
+use AIArmada\CommerceSupport\Contracts\Priceable;
+use AIArmada\CommerceSupport\Support\BuyableLineData;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Inventory\Services\InventoryService;
-use AIArmada\Pricing\Contracts\Priceable as PricingPriceable;
 use AIArmada\Products\Concerns\EnforcesOwnerUniqueIdentity;
 use AIArmada\Products\Contracts\Inventoryable;
-use AIArmada\Products\Contracts\Priceable;
+use AIArmada\Products\Exceptions\InvalidCompositePackageException;
 use AIArmada\Products\Support\ChildOwnershipGuard;
 use AIArmada\Products\Support\ProductMedia;
 use AIArmada\Products\Support\ProductPricing;
+use AIArmada\Products\Support\ProductShipping;
 use AIArmada\Products\Traits\HasAttributes;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -62,7 +65,7 @@ use Throwable;
  * @property-read Collection<int, Media> $display_images
  * @property-read \Illuminate\Database\Eloquent\Collection<int, AttributeValue> $attributeValues
  */
-class Variant extends Model implements Auditable, HasMedia, Inventoryable, Priceable, PricingPriceable
+class Variant extends Model implements Auditable, Buyable, HasMedia, Inventoryable, Priceable
 {
     use EnforcesOwnerUniqueIdentity;
     use HasAttributes;
@@ -266,19 +269,95 @@ class Variant extends Model implements Auditable, HasMedia, Inventoryable, Price
         return (string) $this->getKey();
     }
 
-    public function getBasePrice(): int
+    public function getBuyableCatalogIdentifier(): ?string
+    {
+        return (string) $this->product_id;
+    }
+
+    public function getBuyableName(): string
+    {
+        $name = $this->name;
+
+        return is_string($name) && mb_trim($name) !== '' ? $name : $this->getFullName();
+    }
+
+    public function getBuyablePrice(): int
     {
         return $this->getEffectivePrice();
     }
 
-    /**
-     * Get the calculated price after applying rules.
-     *
-     * @param  array<string, mixed>  $context  Context for pricing (customer, quantity, etc.)
-     */
-    public function getCalculatedPrice(array $context = []): int
+    public function getBuyableCurrency(): string
     {
-        return $this->getBasePrice();
+        $currency = $this->product?->currency ?: config('products.defaults.currency', 'MYR');
+
+        return mb_strtoupper((string) $currency);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function getBuyableAttributes(): array
+    {
+        $product = $this->product;
+
+        return [
+            BuyableLineData::ATTRIBUTE_SKU => $this->sku,
+            BuyableLineData::ATTRIBUTE_WEIGHT => ProductShipping::weightGrams(
+                $this->weight ?? $product?->weight,
+                $product?->weight_unit,
+            ),
+            BuyableLineData::ATTRIBUTE_DIMENSIONS => ProductShipping::dimensionsCm(
+                $this->length ?? $product?->length,
+                $this->width ?? $product?->width,
+                $this->height ?? $product?->height,
+                $product?->dimension_unit,
+            ),
+            BuyableLineData::ATTRIBUTE_REQUIRES_SHIPPING => (bool) ($product?->requires_shipping ?? true),
+            BuyableLineData::ATTRIBUTE_IS_TAXABLE => (bool) ($product?->is_taxable ?? true),
+            BuyableLineData::ATTRIBUTE_TAX_CLASS => $product?->tax_class,
+            'inventoryable_type' => $this->getMorphClass(),
+            'inventoryable_id' => (string) $this->getKey(),
+            'product_id' => (string) $this->product_id,
+            'variant_id' => (string) $this->getKey(),
+        ];
+    }
+
+    public function canBePurchased(?int $quantity = null): bool
+    {
+        if (! $this->isPurchasable()) {
+            return false;
+        }
+
+        if ($quantity === null || ! $this->tracksInventory()) {
+            return true;
+        }
+
+        return $this->hasStock($quantity);
+    }
+
+    public function getBuyableStock(): ?int
+    {
+        return $this->tracksInventory() ? $this->getStockQuantity() : null;
+    }
+
+    public function getBuyableMinimumQuantity(): int
+    {
+        return 1;
+    }
+
+    public function getBuyableMaximumQuantity(): ?int
+    {
+        return null;
+    }
+
+    public function getBuyableQuantityIncrement(): int
+    {
+        return 1;
+    }
+
+    public function getBasePrice(): int
+    {
+        return $this->getEffectivePrice();
     }
 
     public function getComparePrice(): ?int
@@ -571,6 +650,19 @@ class Variant extends Model implements Auditable, HasMedia, Inventoryable, Price
         });
 
         static::saving(function (Variant $variant): void {
+            if ($variant->isDirty('is_enabled') && ! $variant->is_enabled) {
+                $referenced = ProductComponent::query()
+                    ->withoutOwnerScope()
+                    ->where('variant_id', $variant->getKey())
+                    ->exists();
+
+                if ($referenced) {
+                    throw new InvalidCompositePackageException(
+                        'A component variant referenced by a composite package cannot be disabled.',
+                    );
+                }
+            }
+
             if ($variant->isDirty('is_enabled')) {
                 $variant->deactivated_at = $variant->is_enabled ? null : CarbonImmutable::now();
             }

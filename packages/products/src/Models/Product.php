@@ -6,17 +6,19 @@ namespace AIArmada\Products\Models;
 
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
+use AIArmada\CommerceSupport\Contracts\Buyable;
+use AIArmada\CommerceSupport\Contracts\Priceable;
+use AIArmada\CommerceSupport\Support\BuyableLineData;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Inventory\Services\InventoryService;
-use AIArmada\Pricing\Contracts\Priceable as PricingPriceable;
 use AIArmada\Pricing\Models\Price;
 use AIArmada\Products\Concerns\EnforcesOwnerUniqueIdentity;
-use AIArmada\Products\Contracts\Buyable;
+use AIArmada\Products\Concerns\HasComponents;
 use AIArmada\Products\Contracts\Inventoryable;
-use AIArmada\Products\Contracts\Priceable;
 use AIArmada\Products\Database\Factories\ProductFactory;
+use AIArmada\Products\Enums\CompositePriceMode;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Enums\ProductVisibility;
@@ -24,8 +26,10 @@ use AIArmada\Products\Events\ProductCreated;
 use AIArmada\Products\Events\ProductDeleted;
 use AIArmada\Products\Events\ProductStatusChanged;
 use AIArmada\Products\Events\ProductUpdated;
+use AIArmada\Products\Exceptions\InvalidCompositePackageException;
 use AIArmada\Products\Support\ProductMedia;
 use AIArmada\Products\Support\ProductPricing;
+use AIArmada\Products\Support\ProductShipping;
 use AIArmada\Products\Traits\HasAttributes;
 use Akaunting\Money\Currency;
 use Akaunting\Money\Money;
@@ -63,6 +67,7 @@ use Throwable;
  * @property ProductStatus $status
  * @property ProductVisibility $visibility
  * @property int $price
+ * @property CompositePriceMode $price_mode
  * @property int|null $compare_price
  * @property int|null $cost
  * @property string $currency
@@ -92,11 +97,12 @@ use Throwable;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Collection> $collections
  * @property-read \Illuminate\Database\Eloquent\Collection<int, AttributeValue> $attributeValues
  */
-class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryable, Priceable, PricingPriceable
+class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryable, Priceable
 {
     use EnforcesOwnerUniqueIdentity;
     use HasAttributes;
     use HasCommerceAudit;
+    use HasComponents;
     use HasFactory;
     use HasOwner {
         scopeForOwner as baseScopeForOwner;
@@ -131,6 +137,7 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
         'status',
         'visibility',
         'price',
+        'price_mode',
         'compare_price',
         'cost',
         'currency',
@@ -168,6 +175,7 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
             'status' => ProductStatus::class,
             'visibility' => ProductVisibility::class,
             'price' => 'integer',
+            'price_mode' => CompositePriceMode::class,
             'compare_price' => 'integer',
             'cost' => 'integer',
             'weight' => 'decimal:2',
@@ -629,27 +637,121 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
 
     public function getBuyableIdentifier(): string
     {
-        return $this->id;
+        return (string) $this->getKey();
     }
 
-    public function getBuyableDescription(): string
+    public function getBuyableCatalogIdentifier(): ?string
+    {
+        return (string) $this->getKey();
+    }
+
+    public function getBuyableName(): string
     {
         return $this->name;
     }
 
     public function getBuyablePrice(): int
     {
-        return $this->price ?? 0;
+        return $this->isCompositeProduct()
+            ? $this->compositePrice()
+            : (int) ($this->price ?? 0);
     }
 
-    public function getBuyableWeight(): ?float
+    public function getBuyableCurrency(): string
     {
-        return $this->weight !== null ? (float) $this->weight : null;
+        return mb_strtoupper((string) ($this->currency ?: config('products.defaults.currency', 'MYR')));
     }
 
-    public function isBuyable(): bool
+    /**
+     * @return array<string, mixed>
+     */
+    public function getBuyableAttributes(): array
     {
-        return $this->isPurchasable();
+        $attributes = [
+            BuyableLineData::ATTRIBUTE_SKU => $this->sku,
+            BuyableLineData::ATTRIBUTE_WEIGHT => ProductShipping::weightGrams($this->weight, $this->weight_unit),
+            BuyableLineData::ATTRIBUTE_DIMENSIONS => ProductShipping::dimensionsCm(
+                $this->length,
+                $this->width,
+                $this->height,
+                $this->dimension_unit,
+            ),
+            BuyableLineData::ATTRIBUTE_REQUIRES_SHIPPING => (bool) $this->requires_shipping,
+            BuyableLineData::ATTRIBUTE_IS_TAXABLE => (bool) $this->is_taxable,
+            BuyableLineData::ATTRIBUTE_TAX_CLASS => $this->tax_class,
+            'inventoryable_type' => $this->getMorphClass(),
+            'inventoryable_id' => (string) $this->getKey(),
+            'product_id' => (string) $this->getKey(),
+        ];
+
+        if (! $this->isCompositeProduct()) {
+            return $attributes;
+        }
+
+        $snapshot = $this->compositeSnapshot();
+        $packageWeight = null;
+
+        foreach ($snapshot->entries as $entry) {
+            $weight = $entry['weight'] ?? null;
+
+            if (! is_numeric($weight)) {
+                continue;
+            }
+
+            $packageWeight = ($packageWeight ?? 0) + ((int) $weight * (int) $entry['quantity']);
+        }
+
+        if ($packageWeight !== null && $packageWeight > 0) {
+            $attributes[BuyableLineData::ATTRIBUTE_WEIGHT] = $packageWeight;
+        }
+
+        $attributes['components'] = $snapshot->entries;
+        $attributes['components_fingerprint'] = $snapshot->fingerprint;
+
+        return $attributes;
+    }
+
+    public function canBePurchased(?int $quantity = null): bool
+    {
+        if (! $this->isPurchasable()) {
+            return false;
+        }
+
+        if ($this->isCompositeProduct()) {
+            $packages = $this->compositeAvailability()->packages;
+
+            return $quantity === null ? $packages > 0 : $packages >= $quantity;
+        }
+
+        if ($quantity === null || ! $this->tracksInventory()) {
+            return true;
+        }
+
+        return $this->hasStock($quantity);
+    }
+
+    public function getBuyableStock(): ?int
+    {
+        if ($this->isCompositeProduct()) {
+            return $this->compositeAvailability()->packages;
+        }
+
+        return $this->tracksInventory() ? $this->getStockQuantity() : null;
+    }
+
+    public function getBuyableMinimumQuantity(): int
+    {
+        return 1;
+    }
+
+    public function getBuyableMaximumQuantity(): ?int
+    {
+        return null;
+    }
+
+    public function getBuyableQuantityIncrement(): int
+    {
+        return 1;
     }
 
     // =========================================================================
@@ -658,16 +760,9 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
 
     public function getBasePrice(): int
     {
-        return $this->price ?? 0;
-    }
-
-    /**
-     * @param  array<string, mixed>  $context
-     */
-    public function getCalculatedPrice(array $context = []): int
-    {
-        // For now, return base price. Pricing package will extend this.
-        return $this->getBasePrice();
+        return $this->isCompositeProduct()
+            ? $this->compositePrice()
+            : (int) ($this->price ?? 0);
     }
 
     public function getComparePrice(): ?int
@@ -691,6 +786,10 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
 
     public function getStockQuantity(): int
     {
+        if ($this->isCompositeProduct()) {
+            return $this->compositeAvailability()->packages;
+        }
+
         if (! $this->tracksInventory()) {
             return 0;
         }
@@ -721,6 +820,10 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
 
     public function isInStock(): bool
     {
+        if ($this->isCompositeProduct()) {
+            return $this->compositeAvailability()->packages > 0;
+        }
+
         if (! $this->tracksInventory()) {
             return true;
         }
@@ -730,6 +833,10 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
 
     public function hasStock(int $quantity): bool
     {
+        if ($this->isCompositeProduct()) {
+            return $this->compositeAvailability()->packages >= $quantity;
+        }
+
         if (! $this->tracksInventory()) {
             return true;
         }
@@ -767,6 +874,50 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
             }
 
             $product->currency = $code;
+        });
+
+        static::saving(function (Product $product): void {
+            if ($product->exists || ! $product->isCompositeProduct()) {
+                return;
+            }
+
+            if ($product->status === ProductStatus::Active) {
+                throw new InvalidCompositePackageException('An active composite package must contain at least one component.');
+            }
+        });
+
+        static::updating(function (Product $product): void {
+            if ($product->isDirty('type')
+                && ProductComponent::query()
+                    ->withoutOwnerScope()
+                    ->where('product_id', $product->getKey())
+                    ->exists()) {
+                throw new InvalidCompositePackageException('A composite package with components cannot be retyped.');
+            }
+
+            $componentFields = [
+                'status',
+                'type',
+                'requires_shipping',
+                'tracks_inventory',
+                'supports_variants',
+                'currency',
+                'is_taxable',
+                'tax_class',
+            ];
+
+            if (! $product->isDirty($componentFields)) {
+                return;
+            }
+
+            if (ProductComponent::query()
+                ->withoutOwnerScope()
+                ->where('component_product_id', $product->getKey())
+                ->exists()) {
+                throw new InvalidCompositePackageException(
+                    'A component product referenced by a composite package cannot change its type, status, fulfilment, tax, or currency.',
+                );
+            }
         });
 
         static::creating(function (Product $product): void {

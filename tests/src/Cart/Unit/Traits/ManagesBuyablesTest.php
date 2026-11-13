@@ -3,12 +3,17 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Cart;
-use AIArmada\Cart\Contracts\BuyableInterface;
+use AIArmada\Cart\Contracts\BuyablePriceResolver;
+use AIArmada\Cart\Exceptions\InvalidCartItemException;
 use AIArmada\Cart\Exceptions\ProductNotPurchasableException;
+use AIArmada\Cart\Support\BuyablePriceData;
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Contracts\Buyable;
+use Illuminate\Database\Eloquent\Model;
 use Tests\Support\Cart\InMemoryStorage;
 
 /**
- * Create a mock buyable product for testing
+ * Create a mock buyable product for testing.
  */
 function createTestBuyable(
     string $id = 'product-1',
@@ -18,44 +23,67 @@ function createTestBuyable(
     int $minQty = 1,
     ?int $maxQty = null,
     int $increment = 1,
-    bool $purchasable = true
-): BuyableInterface {
-    return new class($id, $name, $price, $stock, $minQty, $maxQty, $increment, $purchasable) implements BuyableInterface
+    bool $purchasable = true,
+    string $currency = 'USD',
+    ?string $catalogId = null,
+    ?string $ownerType = null,
+    string | int | null $ownerId = null,
+): Buyable {
+    return new class($id, $name, $price, $stock, $minQty, $maxQty, $increment, $purchasable, $currency, $catalogId, $ownerType, $ownerId) extends Model implements Buyable
     {
+        public $timestamps = false;
+
+        protected $guarded = [];
+
         public function __construct(
-            private string $id,
-            private string $name,
-            private int $price,
-            private ?int $stock,
-            private int $minQty,
-            private ?int $maxQty,
-            private int $increment,
-            private bool $purchasable
-        ) {}
+            private string $buyableId = 'test-buyable',
+            private string $buyableName = 'Test buyable',
+            private int $buyablePrice = 0,
+            private ?int $buyableStock = null,
+            private int $minQty = 1,
+            private ?int $maxQty = null,
+            private int $increment = 1,
+            private bool $purchasable = true,
+            private string $currency = 'MYR',
+            private ?string $catalogId = null,
+            ?string $ownerType = null,
+            string | int | null $ownerId = null,
+        ) {
+            parent::__construct([
+                'id' => $buyableId,
+                'owner_type' => $ownerType,
+                'owner_id' => $ownerId,
+            ]);
+        }
 
         public function getBuyableIdentifier(): string
         {
-            return $this->id;
+            return $this->buyableId;
+        }
+
+        public function getBuyableCatalogIdentifier(): ?string
+        {
+            return $this->catalogId;
         }
 
         public function getBuyableName(): string
         {
-            return $this->name;
-        }
-
-        public function getBuyableDescription(): ?string
-        {
-            return 'Test description';
+            return $this->buyableName;
         }
 
         public function getBuyablePrice(): int
         {
-            return $this->price;
+            return $this->buyablePrice;
+        }
+
+        public function getBuyableCurrency(): string
+        {
+            return $this->currency;
         }
 
         public function getBuyableStock(): ?int
         {
-            return $this->stock;
+            return $this->buyableStock;
         }
 
         public function canBePurchased(?int $quantity = null): bool
@@ -63,7 +91,8 @@ function createTestBuyable(
             if (! $this->purchasable) {
                 return false;
             }
-            if ($quantity !== null && $this->stock !== null && $quantity > $this->stock) {
+
+            if ($quantity !== null && $this->buyableStock !== null && $quantity > $this->buyableStock) {
                 return false;
             }
 
@@ -72,47 +101,29 @@ function createTestBuyable(
 
         public function getBuyableAttributes(): array
         {
-            return ['sku' => 'TEST-SKU', 'weight' => 500];
+            return [
+                'sku' => 'TEST-SKU',
+                'weight' => 500,
+                'dimensions' => ['length' => 10, 'width' => 10, 'height' => 5],
+                'requires_shipping' => true,
+                'is_taxable' => true,
+                'tax_class' => 'standard',
+            ];
         }
 
-        public function getBuyableSku(): ?string
-        {
-            return 'TEST-SKU';
-        }
-
-        public function getBuyableWeight(): ?int
-        {
-            return 500;
-        }
-
-        public function getBuyableDimensions(): ?array
-        {
-            return ['length' => 100, 'width' => 100, 'height' => 50];
-        }
-
-        public function getMinimumQuantity(): int
+        public function getBuyableMinimumQuantity(): int
         {
             return $this->minQty;
         }
 
-        public function getMaximumQuantity(): ?int
+        public function getBuyableMaximumQuantity(): ?int
         {
             return $this->maxQty;
         }
 
-        public function getQuantityIncrement(): int
+        public function getBuyableQuantityIncrement(): int
         {
             return $this->increment;
-        }
-
-        public function isTaxable(): bool
-        {
-            return true;
-        }
-
-        public function getTaxCategory(): ?string
-        {
-            return 'standard';
         }
     };
 }
@@ -277,5 +288,116 @@ describe('ManagesBuyables Trait', function (): void {
         $errors = $this->cart->validateAllBuyables(fn () => createTestBuyable());
 
         expect($errors)->toBeEmpty();
+    });
+
+    it('validates the accumulated quantity before writing a repeated add', function (): void {
+        $buyable = createTestBuyable(stock: 5);
+
+        $this->cart->addBuyable($buyable, 3);
+
+        expect(fn () => $this->cart->addBuyable($buyable, 3))
+            ->toThrow(ProductNotPurchasableException::class);
+
+        expect($this->cart->getBuyable($buyable)?->quantity)->toBe(3);
+    });
+
+    it('validates the accumulated quantity when updating a line', function (): void {
+        $buyable = createTestBuyable(stock: 5);
+
+        $this->cart->addBuyable($buyable, 4);
+
+        expect(fn () => $this->cart->updateBuyable($buyable, 6))
+            ->toThrow(ProductNotPurchasableException::class);
+
+        expect($this->cart->getBuyable($buyable)?->quantity)->toBe(4);
+
+        $this->cart->updateBuyable($buyable, 5);
+
+        expect($this->cart->getBuyable($buyable)?->quantity)->toBe(5);
+    });
+
+    it('keeps distinct line identities while summing the same merchandise stock', function (): void {
+        $buyable = createTestBuyable(stock: 5, catalogId: 'catalog-1');
+
+        $this->cart->addBuyable($buyable, 2, [], 'ticket-a');
+        $this->cart->addBuyable($buyable, 1, [], 'ticket-b');
+
+        expect($this->cart->get('ticket-a')?->quantity)->toBe(2)
+            ->and($this->cart->get('ticket-b')?->quantity)->toBe(1)
+            ->and($this->cart->countItems())->toBe(2);
+
+        expect(fn () => $this->cart->addBuyable($buyable, 3, [], 'ticket-b'))
+            ->toThrow(ProductNotPurchasableException::class);
+
+        expect($this->cart->get('ticket-b')?->quantity)->toBe(1);
+    });
+
+    it('sums individually purchased merchandise with ticket-attached merchandise', function (): void {
+        $buyable = createTestBuyable(stock: 5);
+
+        $this->cart->addBuyable($buyable, 2);
+        $this->cart->addBuyable($buyable, 3, ['bundle_parent_line_id' => 'ticket-1'], 'ticket-bundle:ticket-1:test:product-1');
+
+        expect($this->cart->getTotalQuantity())->toBe(5);
+
+        expect(fn () => $this->cart->addBuyable($buyable, 1))
+            ->toThrow(ProductNotPurchasableException::class);
+    });
+
+    it('rejects a buyable whose currency differs from the cart currency', function (): void {
+        $buyable = createTestBuyable(currency: 'MYR');
+
+        expect(fn () => $this->cart->addBuyable($buyable))
+            ->toThrow(InvalidCartItemException::class, 'currency');
+    });
+
+    it('rejects a buyable owned by another owner when cart owner mode is enabled', function (): void {
+        config()->set('cart.owner.enabled', true);
+
+        $owner = new User;
+        $owner->forceFill(['id' => 'owner-a']);
+        $storage = (new InMemoryStorage)->withOwner($owner);
+        $cart = new Cart($storage, 'owner-scoped-cart');
+
+        $buyable = createTestBuyable(
+            ownerType: $owner->getMorphClass(),
+            ownerId: 'owner-b',
+        );
+
+        expect(fn () => $cart->addBuyable($buyable))
+            ->toThrow(InvalidCartItemException::class, 'owner');
+    });
+
+    it('stores canonical line attributes and quotes through the pricing seam', function (): void {
+        app()->instance(BuyablePriceResolver::class, new class implements BuyablePriceResolver
+        {
+            public function resolve(Buyable $buyable, int $quantity, array $context = []): BuyablePriceData
+            {
+                return new BuyablePriceData(
+                    unitPrice: 900,
+                    currency: 'USD',
+                    originalUnitPrice: 1000,
+                    discountAmount: 100,
+                    discountSource: 'test',
+                );
+            }
+        });
+
+        $buyable = createTestBuyable(stock: 5, catalogId: 'catalog-1');
+
+        $item = $this->cart->addBuyable($buyable, 2, ['bundle_source' => 'ticket_type:t1'], 'ticket-bundle:t1');
+
+        expect($item->price)->toBe(900)
+            ->and($item->quantity)->toBe(2)
+            ->and($item->getAttribute('purchasable_id'))->toBe('product-1')
+            ->and($item->getAttribute('catalog_id'))->toBe('catalog-1')
+            ->and($item->getAttribute('variant_id'))->toBe('product-1')
+            ->and($item->getAttribute('weight'))->toBe(500)
+            ->and($item->getAttribute('dimensions'))->toBe(['length' => 10, 'width' => 10, 'height' => 5])
+            ->and($item->getAttribute('requires_shipping'))->toBeTrue()
+            ->and($item->getAttribute('is_taxable'))->toBeTrue()
+            ->and($item->getAttribute('tax_class'))->toBe('standard')
+            ->and($item->getAttribute('currency'))->toBe('USD')
+            ->and($item->getAttribute('bundle_source'))->toBe('ticket_type:t1');
     });
 });

@@ -6,9 +6,13 @@ return [
     'type' => [
         'simple' => 'Simple Product',
         'configurable' => 'Configurable Product',
-        'bundle' => 'Bundle',
+        'composite' => 'Composite Package',
         'digital' => 'Digital Product',
         'subscription' => 'Subscription',
+    ],
+    'composite_price_mode' => [
+        'fixed' => 'Fixed package price',
+        'sum' => 'Sum of component prices',
     ],
     'status' => [
         'draft' => 'Draft',

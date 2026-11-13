@@ -10,14 +10,18 @@ use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\FilamentProducts\Resources\ProductResource;
+use AIArmada\FilamentProducts\Support\CompositeComponentsFormData;
 use AIArmada\FilamentProducts\Support\OwnerScopedRelationshipSelect;
+use AIArmada\Products\Enums\CompositePriceMode;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Enums\ProductVisibility;
 use AIArmada\Products\Models\Category;
 use AIArmada\Products\Models\Product;
+use AIArmada\Products\Models\Variant;
 use Filament\Forms\Components\MarkdownEditor;
 use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Components\SpatieTagsInput;
@@ -118,6 +122,66 @@ class ProductForm
                             ])
                             ->columns(2),
 
+                        Section::make('Composite Package')
+                            ->description('Components are the physical SKUs that make up this package.')
+                            ->schema([
+                                Select::make('price_mode')
+                                    ->label('Price Mode')
+                                    ->options(
+                                        collect(CompositePriceMode::cases())
+                                            ->mapWithKeys(fn (CompositePriceMode $mode) => [$mode->value => $mode->label()])
+                                    )
+                                    ->default(CompositePriceMode::Fixed->value)
+                                    ->required()
+                                    ->helperText('Fixed uses the package price above. Sum uses the component prices.'),
+
+                                Repeater::make('components')
+                                    ->label('Components')
+                                    ->schema([
+                                        Select::make('component_product_id')
+                                            ->label('Component Product')
+                                            ->options(fn (?Product $record): array => self::componentProductOptions($record))
+                                            ->searchable()
+                                            ->required()
+                                            ->live()
+                                            ->afterStateUpdated(fn (Set $set) => $set('component_variant_id', null)),
+
+                                        Select::make('component_variant_id')
+                                            ->label('Variant')
+                                            ->options(fn (Get $get): array => self::componentVariantOptions($get))
+                                            ->searchable()
+                                            ->placeholder('No variant'),
+
+                                        TextInput::make('quantity')
+                                            ->label('Quantity')
+                                            ->numeric()
+                                            ->integer()
+                                            ->minValue(1)
+                                            ->default(1)
+                                            ->required(),
+
+                                        TextInput::make('position')
+                                            ->label('Position')
+                                            ->numeric()
+                                            ->integer()
+                                            ->minValue(0)
+                                            ->default(0)
+                                            ->required(),
+                                    ])
+                                    ->columns(4)
+                                    ->defaultItems(1)
+                                    ->addActionLabel('Add component')
+                                    ->default(function (?Product $record): array {
+                                        if (! $record instanceof Product || ! self::isCompositeType($record->type)) {
+                                            return [];
+                                        }
+
+                                        return CompositeComponentsFormData::fromProduct($record);
+                                    })
+                                    ->columnSpanFull(),
+                            ])
+                            ->visible(fn (Get $get): bool => self::isCompositeType($get('type'))),
+
                         Section::make('Shipping')
                             ->schema([
                                 Toggle::make('requires_shipping')
@@ -205,6 +269,10 @@ class ProductForm
                                         $set('requires_shipping', $type->requiresShippingByDefault());
                                         $set('supports_variants', $type->supportsVariantsByDefault());
                                         $set('tracks_inventory', $type->tracksInventoryByDefault());
+
+                                        if ($type === ProductType::Composite) {
+                                            $set('price_mode', CompositePriceMode::Fixed->value);
+                                        }
                                     }),
 
                                 Toggle::make('supports_variants')
@@ -382,5 +450,66 @@ class ProductForm
                     ->columnSpan(['lg' => 1]),
             ])
             ->columns(3);
+    }
+
+    private static function isCompositeType(mixed $type): bool
+    {
+        $productType = $type instanceof ProductType ? $type : ProductType::tryFrom((string) $type);
+
+        return $productType === ProductType::Composite;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private static function componentProductOptions(?Product $record): array
+    {
+        $query = Product::query()
+            ->whereIn('type', [ProductType::Simple->value, ProductType::Configurable->value])
+            ->orderBy('name');
+
+        if ($record instanceof Product && $record->exists) {
+            $query->whereKeyNot($record->getKey());
+        }
+
+        return $query
+            ->limit(100)
+            ->get()
+            ->mapWithKeys(static function (Product $product): array {
+                $label = $product->name;
+
+                if (is_string($product->sku) && $product->sku !== '') {
+                    $label .= ' (' . $product->sku . ')';
+                }
+
+                return [(string) $product->getKey() => $label];
+            })
+            ->all();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private static function componentVariantOptions(Get $get): array
+    {
+        $componentProductId = $get('component_product_id');
+
+        if (! is_string($componentProductId) || $componentProductId === '') {
+            return [];
+        }
+
+        return Variant::query()
+            ->where('product_id', $componentProductId)
+            ->where('is_enabled', true)
+            ->orderBy('sku')
+            ->get()
+            ->mapWithKeys(static function (Variant $variant): array {
+                $label = is_string($variant->sku) && $variant->sku !== ''
+                    ? $variant->sku
+                    : (string) $variant->getKey();
+
+                return [(string) $variant->getKey() => $label];
+            })
+            ->all();
     }
 }

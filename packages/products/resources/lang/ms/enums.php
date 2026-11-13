@@ -6,9 +6,13 @@ return [
     'type' => [
         'simple' => 'Produk Mudah',
         'configurable' => 'Produk Boleh Konfigurasi',
-        'bundle' => 'Pakej',
+        'composite' => 'Pakej Komposit',
         'digital' => 'Produk Digital',
         'subscription' => 'Langganan',
+    ],
+    'composite_price_mode' => [
+        'fixed' => 'Harga pakej tetap',
+        'sum' => 'Jumlah harga komponen',
     ],
     'status' => [
         'draft' => 'Draf',

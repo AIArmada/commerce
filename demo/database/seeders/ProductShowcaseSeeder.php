@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Products\Actions\CreateCompositeProduct;
 use AIArmada\Products\Enums\AttributeType;
+use AIArmada\Products\Enums\CompositePriceMode;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Enums\ProductVisibility;
@@ -930,41 +933,101 @@ final class ProductShowcaseSeeder extends Seeder
         $premium->products()->attach($luxuryWatch->id, ['position' => 1]);
         $luxuryWatch->attachTags(['luxury', 'watch', 'swiss', 'automatic', 'premium']);
 
-        // Product 6: Bundle Product (represented as Simple with metadata)
-        $gamingBundle = Product::create([
-            'name' => 'Ultimate Gaming Bundle',
-            'slug' => 'ultimate-gaming-bundle',
-            'sku' => 'BUNDLE-GAMING',
-            'description' => 'Complete gaming setup including gaming headset, mechanical keyboard, and precision mouse.',
-            'short_description' => 'Headset + Keyboard + Mouse',
-            'type' => ProductType::Bundle,
+        // Product 6: Composite Product with real component SKUs
+        $gamingHeadset = Product::create([
+            'name' => 'Gaming Headset',
+            'slug' => 'gaming-headset',
+            'sku' => 'HEADSET-G1',
+            'description' => 'Surround-sound gaming headset with a detachable microphone.',
+            'short_description' => 'Surround Sound | Detachable Mic',
+            'type' => ProductType::Simple,
             'status' => ProductStatus::Active,
             'visibility' => ProductVisibility::CatalogSearch,
-            'price' => 59900, // RM599
-            'compare_price' => 79900, // Save RM200
+            'price' => 24900, // RM249
             'currency' => 'MYR',
-            'weight' => 2.5,
-            'is_featured' => true,
+            'weight' => 0.4,
+            'is_featured' => false,
             'is_taxable' => true,
             'requires_shipping' => true,
+            'tracks_inventory' => true,
             'tax_class' => 'standard',
             'published_at' => now(),
-            'metadata' => [
-                'bundle_items' => [
-                    ['name' => 'Gaming Headset', 'sku' => 'HEADSET-G1', 'value' => 24900],
-                    ['name' => 'Mechanical Keyboard', 'sku' => 'KB-MECH-1', 'value' => 34900],
-                    ['name' => 'Gaming Mouse', 'sku' => 'MOUSE-G1', 'value' => 19900],
-                ],
-                'savings' => 19800,
-            ],
         ]);
+
+        $gamingKeyboard = Product::create([
+            'name' => 'Mechanical Keyboard',
+            'slug' => 'mechanical-keyboard',
+            'sku' => 'KB-MECH-1',
+            'description' => 'Hot-swappable mechanical keyboard with per-key RGB lighting.',
+            'short_description' => 'Hot-swappable | Per-key RGB',
+            'type' => ProductType::Simple,
+            'status' => ProductStatus::Active,
+            'visibility' => ProductVisibility::CatalogSearch,
+            'price' => 34900, // RM349
+            'currency' => 'MYR',
+            'weight' => 1.1,
+            'is_featured' => false,
+            'is_taxable' => true,
+            'requires_shipping' => true,
+            'tracks_inventory' => true,
+            'tax_class' => 'standard',
+            'published_at' => now(),
+        ]);
+
+        $gamingMouse = Product::create([
+            'name' => 'Gaming Mouse',
+            'slug' => 'gaming-mouse',
+            'sku' => 'MOUSE-G1',
+            'description' => 'Lightweight gaming mouse with a high-precision optical sensor.',
+            'short_description' => 'Lightweight | High-precision Sensor',
+            'type' => ProductType::Simple,
+            'status' => ProductStatus::Active,
+            'visibility' => ProductVisibility::CatalogSearch,
+            'price' => 19900, // RM199
+            'currency' => 'MYR',
+            'weight' => 0.1,
+            'is_featured' => false,
+            'is_taxable' => true,
+            'requires_shipping' => true,
+            'tracks_inventory' => true,
+            'tax_class' => 'standard',
+            'published_at' => now(),
+        ]);
+
+        $gamingComposite = OwnerContext::withOwner(null, static fn (): Product => app(CreateCompositeProduct::class)->handle(
+            [
+                'name' => 'Ultimate Gaming Bundle',
+                'slug' => 'ultimate-gaming-bundle',
+                'sku' => 'BUNDLE-GAMING',
+                'description' => 'Complete gaming setup including gaming headset, mechanical keyboard, and precision mouse.',
+                'short_description' => 'Headset + Keyboard + Mouse',
+                'type' => ProductType::Composite,
+                'status' => ProductStatus::Active,
+                'visibility' => ProductVisibility::CatalogSearch,
+                'price' => 59900, // RM599
+                'price_mode' => CompositePriceMode::Fixed->value,
+                'compare_price' => 79900, // Save RM200
+                'currency' => 'MYR',
+                'weight' => 2.5,
+                'is_featured' => true,
+                'is_taxable' => true,
+                'requires_shipping' => true,
+                'tax_class' => 'standard',
+                'published_at' => now(),
+            ],
+            [
+                ['component_product_id' => $gamingHeadset->id, 'quantity' => 1, 'position' => 0],
+                ['component_product_id' => $gamingKeyboard->id, 'quantity' => 1, 'position' => 1],
+                ['component_product_id' => $gamingMouse->id, 'quantity' => 1, 'position' => 2],
+            ],
+        ));
 
         $gamingCategory = Category::where('slug', 'gaming')->first();
         if ($gamingCategory) {
-            $gamingBundle->categories()->attach($gamingCategory->id);
+            $gamingComposite->categories()->attach($gamingCategory->id);
         }
-        $bestSellers->products()->attach($gamingBundle->id, ['position' => 3]);
-        $gamingBundle->attachTags(['gaming', 'bundle', 'accessories', 'value-pack']);
+        $bestSellers->products()->attach($gamingComposite->id, ['position' => 3]);
+        $gamingComposite->attachTags(['gaming', 'composite', 'accessories', 'value-pack']);
 
         // Product 7: Draft Product (not published)
         $draftProduct = Product::create([

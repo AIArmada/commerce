@@ -10,6 +10,7 @@ return [
         'tables' => [
             'products' => 'products',
             'variants' => 'product_variants',
+            'product_components' => 'product_components',
             'options' => 'product_options',
             'option_values' => 'product_option_values',
             'variant_options' => 'product_variant_options',

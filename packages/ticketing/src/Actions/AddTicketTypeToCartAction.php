@@ -111,7 +111,7 @@ final class AddTicketTypeToCartAction
         $cartItem = $this->addOrUpdateCartItem($cart, $ticketType, $totalQuantity, $mergedAttributes);
 
         if (TicketingIntegration::productsAvailable()) {
-            app(AutoAddRequiredTicketBundlesAction::class)->handle($cart, $ticketType, $quantity);
+            app(AutoAddRequiredTicketBundlesAction::class)->handle($cart, $ticketType);
         }
 
         return $cartItem;

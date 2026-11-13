@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Pricing\Events;
 
-use AIArmada\Pricing\Contracts\Priceable;
+use AIArmada\CommerceSupport\Contracts\Priceable;
 use AIArmada\Pricing\Data\PriceResultData;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;

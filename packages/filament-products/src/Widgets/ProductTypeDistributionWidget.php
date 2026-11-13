@@ -29,7 +29,7 @@ final class ProductTypeDistributionWidget extends BaseWidget
                         ProductStatus::Active->value,
                         ProductType::Simple->value,
                         ProductType::Configurable->value,
-                        ProductType::Bundle->value,
+                        ProductType::Composite->value,
                         true,
                     ],
                 )

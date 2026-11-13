@@ -8,7 +8,7 @@ enum ProductType: string
 {
     case Simple = 'simple';
     case Configurable = 'configurable';
-    case Bundle = 'bundle';
+    case Composite = 'composite';
     case Digital = 'digital';
     case Subscription = 'subscription';
 
@@ -17,7 +17,7 @@ enum ProductType: string
         return match ($this) {
             self::Simple => __('products::enums.type.simple'),
             self::Configurable => __('products::enums.type.configurable'),
-            self::Bundle => __('products::enums.type.bundle'),
+            self::Composite => __('products::enums.type.composite'),
             self::Digital => __('products::enums.type.digital'),
             self::Subscription => __('products::enums.type.subscription'),
         };
@@ -39,7 +39,7 @@ enum ProductType: string
     public function tracksInventoryByDefault(): bool
     {
         return match ($this) {
-            self::Digital => false,
+            self::Digital, self::Composite => false,
             default => true,
         };
     }
@@ -52,9 +52,14 @@ enum ProductType: string
     public function isPhysical(): bool
     {
         return match ($this) {
-            self::Simple, self::Configurable, self::Bundle => true,
+            self::Simple, self::Configurable, self::Composite => true,
             default => false,
         };
+    }
+
+    public function isComposite(): bool
+    {
+        return $this === self::Composite;
     }
 
     public function icon(): string
@@ -62,7 +67,7 @@ enum ProductType: string
         return match ($this) {
             self::Simple => 'heroicon-o-cube',
             self::Configurable => 'heroicon-o-squares-2x2',
-            self::Bundle => 'heroicon-o-rectangle-group',
+            self::Composite => 'heroicon-o-cube-transparent',
             self::Digital => 'heroicon-o-cloud-arrow-down',
             self::Subscription => 'heroicon-o-arrow-path',
         };

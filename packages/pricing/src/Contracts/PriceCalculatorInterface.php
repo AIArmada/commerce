@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Pricing\Contracts;
 
+use AIArmada\CommerceSupport\Contracts\Priceable;
 use AIArmada\Pricing\Data\PriceResultData;
 
 /**

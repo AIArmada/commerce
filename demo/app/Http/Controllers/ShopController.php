@@ -16,7 +16,6 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Jnt\Models\JntOrder;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
-use AIArmada\Pricing\Services\PriceCalculator;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Models\Category;
 use AIArmada\Products\Models\Product;
@@ -283,24 +282,9 @@ final class ShopController extends Controller
 
         $quantity = max(1, (int) $request->quantity);
 
-        /** @var PriceCalculator $priceCalculator */
-        $priceCalculator = app(PriceCalculator::class);
-
-        $priceResult = $priceCalculator->calculate($product, $quantity, [
-            'currency' => 'MYR',
-        ]);
-
-        Cart::add([
-            'id' => $product->id,
-            'name' => $product->name,
-            'price' => $priceResult->finalPrice,
-            'quantity' => $quantity,
-            'associated_model' => $product,
-            'attributes' => [
-                'sku' => $product->sku,
-                'category' => $product->categories->first()?->name,
-                'slug' => $product->slug,
-            ],
+        Cart::addBuyable($product, $quantity, [
+            'category' => $product->categories->first()?->name,
+            'slug' => $product->slug,
         ]);
 
         session(['cart_count' => Cart::getTotalQuantity()]);
@@ -330,26 +314,16 @@ final class ShopController extends Controller
             ->whereKey($itemId)
             ->first();
 
-        $unitPrice = null;
-
         if ($product !== null) {
-            /** @var PriceCalculator $priceCalculator */
-            $priceCalculator = app(PriceCalculator::class);
-
-            $priceResult = $priceCalculator->calculate($product, $quantity, [
-                'currency' => 'MYR',
+            Cart::updateBuyable($product, $quantity);
+        } else {
+            Cart::update($itemId, [
+                'quantity' => [
+                    'relative' => false,
+                    'value' => $quantity,
+                ],
             ]);
-
-            $unitPrice = $priceResult->finalPrice;
         }
-
-        Cart::update($itemId, [
-            'quantity' => [
-                'relative' => false,
-                'value' => $quantity,
-            ],
-            ...($unitPrice !== null ? ['price' => $unitPrice] : []),
-        ]);
 
         session(['cart_count' => Cart::getTotalQuantity()]);
 
@@ -701,28 +675,13 @@ final class ShopController extends Controller
 
         $quantity = max(1, (int) $request->quantity);
 
-        /** @var PriceCalculator $priceCalculator */
-        $priceCalculator = app(PriceCalculator::class);
-
-        $priceResult = $priceCalculator->calculate($product, $quantity, [
-            'currency' => 'MYR',
-        ]);
-
         // Clear cart and add single item
         Cart::clear();
         Cart::clearConditions();
 
-        Cart::add([
-            'id' => $product->id,
-            'name' => $product->name,
-            'price' => $priceResult->finalPrice,
-            'quantity' => $quantity,
-            'associated_model' => $product,
-            'attributes' => [
-                'sku' => $product->sku,
-                'category' => $product->categories->first()?->name,
-                'slug' => $product->slug,
-            ],
+        Cart::addBuyable($product, $quantity, [
+            'category' => $product->categories->first()?->name,
+            'slug' => $product->slug,
         ]);
 
         session(['cart_count' => Cart::getTotalQuantity()]);

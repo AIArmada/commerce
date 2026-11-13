@@ -921,6 +921,7 @@ abstract class TestCase extends Orchestra
         Schema::dropIfExists('product_collections');
         Schema::dropIfExists('product_categories');
         Schema::dropIfExists('products');
+        Schema::dropIfExists('product_components');
 
         Schema::create('products', function (Blueprint $table): void {
             $table->uuid('id')->primary();
@@ -935,6 +936,7 @@ abstract class TestCase extends Orchestra
             $table->string('status')->default('draft');
             $table->string('visibility')->default('catalog_search');
             $table->unsignedBigInteger('price')->default(0);
+            $table->string('price_mode')->default('fixed');
             $table->unsignedBigInteger('compare_price')->nullable();
             $table->unsignedBigInteger('cost')->nullable();
             $table->string('currency', 3)->default('MYR');
@@ -954,7 +956,28 @@ abstract class TestCase extends Orchestra
             $table->string('tax_class')->nullable();
             $table->json('metadata')->nullable();
             $table->timestamp('published_at')->nullable();
+            $table->timestampTz('deactivated_at')->nullable();
+            $table->timestampTz('archived_at')->nullable();
             $table->timestamps();
+        });
+
+        Schema::create('product_components', function (Blueprint $table): void {
+            $table->uuid('id')->primary();
+            $table->nullableUuidMorphs('owner');
+            $table->foreignUuid('product_id');
+            $table->foreignUuid('component_product_id');
+            $table->foreignUuid('variant_id')->nullable();
+            $table->unsignedInteger('quantity');
+            $table->unsignedInteger('position')->default(0);
+            $table->timestampsTz();
+
+            $table->index(['product_id', 'position']);
+            $table->index('component_product_id');
+            $table->index('variant_id');
+            $table->unique(
+                ['product_id', 'component_product_id', 'variant_id'],
+                'product_components_parent_component_variant_unique',
+            );
         });
 
         Schema::create('product_categories', function (Blueprint $table): void {

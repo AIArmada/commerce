@@ -10,7 +10,7 @@ The calculator is the supported entry point for complete price resolution. For i
 
 ```php
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
-use AIArmada\Pricing\Contracts\Priceable;
+use AIArmada\CommerceSupport\Contracts\Priceable;
 
 // Read the raw base price (minor units) from a priceable item.
 $basePrice = $item->getBasePrice();
@@ -91,7 +91,7 @@ $results = $calculator->calculateMany([
 Your models must implement the `Priceable` interface to work with the pricing engine:
 
 ```php
-use AIArmada\Pricing\Contracts\Priceable;
+use AIArmada\CommerceSupport\Contracts\Priceable;
 
 class Product extends Model implements Priceable
 {

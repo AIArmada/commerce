@@ -33,7 +33,10 @@ class ProductFactory extends Factory
     public function definition(): array
     {
         $name = $this->faker->unique()->words(3, true);
-        $type = $this->faker->randomElement(ProductType::cases());
+        $type = $this->faker->randomElement(array_values(array_filter(
+            ProductType::cases(),
+            static fn (ProductType $type): bool => $type !== ProductType::Composite,
+        )));
         $requiresShipping = $type->requiresShippingByDefault();
 
         $data = [
@@ -114,6 +117,17 @@ class ProductFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'is_featured' => true,
+        ]);
+    }
+
+    public function composite(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'type' => ProductType::Composite,
+            'status' => ProductStatus::Draft,
+            'requires_shipping' => true,
+            'supports_variants' => false,
+            'tracks_inventory' => false,
         ]);
     }
 

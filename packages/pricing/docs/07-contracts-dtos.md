@@ -107,10 +107,10 @@ interface TierResolverInterface
 
 ### Priceable
 
-Interface for items that can have dynamic pricing:
+Interface for items that can have dynamic pricing. It lives in the shared foundation package so Products, Pricing, and Checkout all reference one contract:
 
 ```php
-namespace AIArmada\Pricing\Contracts;
+namespace AIArmada\CommerceSupport\Contracts;
 
 interface Priceable
 {
@@ -144,7 +144,7 @@ interface Priceable
 #### Implementation Example
 
 ```php
-use AIArmada\Pricing\Contracts\Priceable;
+use AIArmada\CommerceSupport\Contracts\Priceable;
 use Illuminate\Database\Eloquent\Model;
 
 class Product extends Model implements Priceable

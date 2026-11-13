@@ -49,6 +49,36 @@ $items = Cart::add([
 ]);
 ```
 
+### Adding Catalog Buyables
+
+For catalog models, implement `AIArmada\CommerceSupport\Contracts\Buyable` and use
+the canonical buyable API. Cart validates accumulated quantity, owner, currency,
+quantity rules, and stock before writing, and optionally quotes through the
+Pricing calculator when `aiarmada/pricing` is installed.
+
+```php
+use AIArmada\Cart\Facades\Cart;
+
+$item = Cart::addBuyable($product, quantity: 2, extraAttributes: [
+    'gift_wrap' => true,
+]);
+
+// Distinct line identity for merchandise attached to another purchase line.
+$bundleItem = Cart::addBuyable(
+    $variant,
+    quantity: 2,
+    extraAttributes: ['bundle_source' => 'ticket_type:'.$ticketType->getKey()],
+    lineIdentifier: 'ticket-bundle:'.$ticketType->getKey().':'.$variant->getKey(),
+);
+
+Cart::updateBuyable($variant, 3, 'ticket-bundle:'.$ticketType->getKey().':'.$variant->getKey());
+Cart::removeBuyable($variant, 'ticket-bundle:'.$ticketType->getKey().':'.$variant->getKey());
+```
+
+`getBuyableAttributes()` should expose canonical `weight` (grams),
+`dimensions` (centimetres), `requires_shipping`, `is_taxable`, and `tax_class`
+values so shipping and tax integrations consume the same line data.
+
 ### Updating Items
 
 ```php

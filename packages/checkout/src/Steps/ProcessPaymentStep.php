@@ -21,6 +21,7 @@ use AIArmada\Checkout\Exceptions\PaymentException;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\Services\PaymentAttemptManager;
 use AIArmada\Checkout\States\AwaitingPayment;
+use AIArmada\Checkout\Support\CompositeCartRevalidator;
 use AIArmada\Checkout\States\Completed;
 use AIArmada\Checkout\States\Processing;
 use Carbon\CarbonImmutable;
@@ -32,6 +33,7 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
     public function __construct(
         private readonly PaymentGatewayResolverInterface $paymentResolver,
         private readonly ?PaymentAttemptManager $attemptManager = null,
+        private readonly ?CompositeCartRevalidator $cartRevalidator = null,
     ) {}
 
     public function getIdentifier(): string
@@ -58,6 +60,14 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
     public function validate(CheckoutSession $session): array
     {
         $errors = [];
+
+        if (CompositeCartRevalidator::supports($session)) {
+            $cartErrors = ($this->cartRevalidator ?? app(CompositeCartRevalidator::class))->validate($session);
+
+            if ($cartErrors !== []) {
+                return $cartErrors;
+            }
+        }
 
         if ($session->grand_total <= 0) {
             // Free order - no payment needed

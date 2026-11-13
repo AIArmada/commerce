@@ -10,6 +10,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScopeConfig;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Orders\Models\Order;
+use AIArmada\Orders\Support\CartLineSnapshot;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 
@@ -56,32 +57,31 @@ final class CreateOrderFromCart
         ];
 
         $items = [];
+
         foreach ($cart->getItems() as $cartItem) {
-            $associatedModel = $cartItem->getAssociatedModel();
-            $purchasableId = $cartItem->getAttribute('purchasable_id');
-            $purchasableType = $cartItem->getAttribute('purchasable_type');
+            $itemData = $cartItem->toArray();
+            $itemData['purchasable_id'] = $cartItem->getAttribute('purchasable_id');
+            $itemData['purchasable_type'] = $cartItem->getAttribute('purchasable_type');
+            $itemData['metadata'] = $cartItem->getAttribute('metadata');
+            $itemData['options'] = $cartItem->getAttribute('options');
 
-            if ($associatedModel instanceof Model) {
-                $purchasableId = $associatedModel->getKey();
-                $purchasableType = $associatedModel->getMorphClass();
-            }
-
-            if ($purchasableId === null) {
-                $purchasableId = $cartItem->getLineItemId();
-            }
-
+            $line = CartLineSnapshot::fromArray($itemData);
             $itemSubtotal = $cartItem->getRawSubtotal();
+            $metadata = $cartItem->getAttribute('metadata');
+            $metadata = is_array($metadata) ? $metadata : $cartItem->getLineItemMetadata();
+
             $items[] = [
-                'purchasable_id' => $purchasableId,
-                'purchasable_type' => $purchasableType,
+                'purchasable_id' => $line->purchasableId ?? $cartItem->getLineItemId(),
+                'purchasable_type' => $line->purchasableType,
                 'name' => $cartItem->getLineItemName(),
-                'sku' => $cartItem->getLineItemSku(),
+                'sku' => $line->sku ?? $cartItem->getLineItemSku(),
                 'quantity' => $cartItem->getLineItemQuantity(),
                 'unit_price' => (int) $cartItem->getLineItemPrice()->getAmount(),
                 'discount_amount' => (int) $cartItem->getLineItemDiscount()->getAmount(),
                 'tax_amount' => $cartItem->getConditions()->byType('tax')->getTotalCharges($itemSubtotal),
+                'currency' => $line->currency,
                 'options' => $cartItem->getAttribute('options'),
-                'metadata' => $cartItem->getAttribute('metadata', $cartItem->getLineItemMetadata()),
+                'metadata' => $line->orderItemMetadata($metadata),
             ];
         }
 

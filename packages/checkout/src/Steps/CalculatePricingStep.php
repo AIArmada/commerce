@@ -6,7 +6,7 @@ namespace AIArmada\Checkout\Steps;
 
 use AIArmada\Checkout\Data\StepResult;
 use AIArmada\Checkout\Models\CheckoutSession;
-use AIArmada\Pricing\Contracts\Priceable;
+use AIArmada\CommerceSupport\Contracts\Priceable;
 use AIArmada\Pricing\Contracts\PriceCalculatorInterface;
 use AIArmada\Pricing\PricingServiceProvider;
 use Carbon\CarbonImmutable;

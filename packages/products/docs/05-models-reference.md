@@ -6,9 +6,9 @@ title: Models Reference
 
 ## Product
 
-The main catalog model. `Product` is owner-aware, media-aware, slugged, and implements the package buyable, inventory, and pricing contracts.
+The main catalog model. `Product` is owner-aware, media-aware, slugged, and implements the canonical shared `Buyable` and `Priceable` contracts from `aiarmada/commerce-support`, plus the package inventory contract.
 
-Prices are integer minor units end to end. `getBuyablePrice()` and `getCalculatedPrice()` both return the canonical minor-unit integer consumed by downstream cart, pricing, inventory, and checkout integrations.
+Prices are integer minor units end to end. `getBuyablePrice()` and `getBasePrice()` both return the canonical minor-unit integer consumed by downstream cart, pricing, inventory, and checkout integrations. The optional pricing package is not required for the model to boot or be used as a cart buyable.
 
 `currency` must be a supported ISO 4217 code (validated on save, stored uppercase); anything else throws `InvalidArgumentException` instead of failing later in formatting. `ProductCreated`/`ProductUpdated` fire exactly once per action call via `$dispatchesEvents` (which also maps `deleted` → `ProductDeleted`). Deleting a product removes its variants, options, option values, and variant pivots in a transaction with model events. Returning to draft via `UpdateProductStatus` clears `published_at` (and `archived_at` / `deactivated_at`).
 
@@ -52,7 +52,11 @@ the lifecycle timestamps in sync:
 - `isDraft()`
 - `isVisible()`
 - `isPurchasable()`
-- `isBuyable()`
+- `canBePurchased(?int $quantity = null)`
+- `getBuyableIdentifier()` / `getBuyableCatalogIdentifier()`
+- `getBuyablePrice()` / `getBuyableCurrency()`
+- `getBuyableAttributes()`
+- `getBuyableStock()`
 - `isOnSale()`
 - `hasDiscount()`
 - `getDiscountPercentage()`
@@ -104,6 +108,35 @@ do not exist), `getStockQuantity()` silently falls back to the local `stock` att
 - `isPurchasable()`
 - `isOnSale()`
 - `getDiscountPercentage()`
+
+## ProductComponent
+
+`ProductComponent` stores one physical sellable SKU inside a composite package. It is owner-aware
+and config-driven through `products.database.tables.product_components`.
+
+- `product_id` points at the composite parent.
+- `component_product_id` points at the physical component product.
+- `variant_id` is set only for a configurable component and must belong to the component product.
+- `quantity` is the positive number of actual inventory units included per package.
+
+Create and update guards validate owner, parent type, physical/shipping/inventory tracking,
+currency, tax treatment, SKU presence, positive quantity, exact variant membership, self
+references, and nested composite rejection. Identity and owner are immutable after creation,
+and an active package cannot lose its last component. Referenced component products and variants
+are protected from deletion.
+
+Price and availability are package-level concerns:
+
+- `fixed` uses the parent `price`.
+- `sum` uses canonical component base prices multiplied by per-package quantities.
+- Availability is limited by the component SKU with the smallest `floor(available / quantity)`.
+- `CompositePackageService` builds the canonical snapshot used downstream. Entry keys are
+  `product_id`, `variant_id`, `inventoryable_type`, `inventoryable_id`, `quantity`, `sku`, `name`,
+  `weight` (grams), `dimensions` (centimetres), `requires_shipping`, and `tracks_inventory`.
+
+`HasComponents` provides `components()`, `isCompositeProduct()`, `compositePriceMode()`,
+`compositePrice()`, `compositeSnapshot()`, `compositeEntries()`, and `compositeAvailability()` to
+product models that apply the concern.
 
 ## Category
 

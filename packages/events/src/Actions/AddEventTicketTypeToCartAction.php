@@ -101,7 +101,7 @@ final class AddEventTicketTypeToCartAction
         $cartItem = $this->addOrUpdateCartItem($cart, $ticketType, $totalQuantity, $mergedAttributes);
 
         if (CommerceIntegration::aiArmadaCheckoutAvailable()) {
-            app(AutoAddRequiredTicketBundlesAction::class)->handle($cart, $ticketType, $quantity);
+            app(AutoAddRequiredTicketBundlesAction::class)->handle($cart, $ticketType);
         }
 
         return $cartItem;

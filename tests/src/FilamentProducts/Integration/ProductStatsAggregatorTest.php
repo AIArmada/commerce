@@ -10,6 +10,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentProducts\Support\ProductStatsAggregator;
 use AIArmada\FilamentProducts\Support\ProductStatsCache;
 use AIArmada\FilamentProducts\Widgets\ProductTypeDistributionWidget;
+use AIArmada\Products\Actions\CreateCompositeProduct;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Models\Product;
@@ -60,6 +61,7 @@ function createProductStatsProduct(Model $owner, array $attributes, ?CarbonImmut
         $product = Product::query()->create([
             'name' => 'Product ' . uniqid(),
             'slug' => 'product-' . uniqid(),
+            'sku' => 'sku-' . uniqid(),
             'price' => 1000,
             ...$attributes,
         ]);
@@ -160,7 +162,7 @@ it('keeps product type distribution values while aggregating them in one query',
 
     bindProductStatsOwner($ownerA);
 
-    createProductStatsProduct($ownerA, [
+    $component = createProductStatsProduct($ownerA, [
         'status' => ProductStatus::Active,
         'type' => ProductType::Simple,
         'requires_shipping' => true,
@@ -170,11 +172,12 @@ it('keeps product type distribution values while aggregating them in one query',
         'type' => ProductType::Configurable,
         'requires_shipping' => true,
     ]);
-    createProductStatsProduct($ownerA, [
+    OwnerContext::withOwner($ownerA, static fn (): Product => app(CreateCompositeProduct::class)->handle([
+        'name' => 'Product package',
+        'sku' => 'package-test',
+        'price' => 1000,
         'status' => ProductStatus::Active,
-        'type' => ProductType::Bundle,
-        'requires_shipping' => false,
-    ]);
+    ], [['component_product_id' => (string) $component->getKey(), 'quantity' => 1]]));
     createProductStatsProduct($ownerA, [
         'status' => ProductStatus::Active,
         'type' => ProductType::Digital,
@@ -207,7 +210,7 @@ it('keeps product type distribution values while aggregating them in one query',
 
     DB::disableQueryLog();
 
-    expect($stats[0]->getValue())->toBe(2)
+    expect($stats[0]->getValue())->toBe(3)
         ->and($stats[1]->getValue())->toBe(1)
         ->and($stats[2]->getValue())->toBe(1)
         ->and($stats[3]->getValue())->toBe(5)

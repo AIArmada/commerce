@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Listeners;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Inventory\Cart\InventoryDemandResolver;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryOperation;
 use AIArmada\Inventory\Services\InventoryService;
@@ -218,28 +219,18 @@ final class DeductInventoryFromOrder
         DB::transaction(function () use ($order): void {
             $order->loadMissing('items.purchasable');
 
+            $demand = InventoryDemandResolver::forOrder($order->items, $order->metadata ?? []);
+
             /** @var list<array{0: Model, 1: int}> $deductibles */
             $deductibles = [];
 
-            foreach ($order->items as $item) {
-                $purchasable = $item->purchasable;
-
-                if (! $purchasable instanceof Model) {
-                    continue;
-                }
-
-                // Check if this model tracks inventory
-                if (! $this->tracksInventory($purchasable)) {
-                    continue;
-                }
-
-                $deductibles[] = [$purchasable, (int) $item->quantity];
+            foreach ($demand as $entry) {
+                $deductibles[] = [$entry['model'], $entry['quantity']];
             }
 
             // One query for every level the order may touch, instead of a
-            // location search per line. In-memory tracking mirrors the
-            // previous fresh-read-per-line semantics for sequential lines
-            // sharing a SKU, while ship() still re-checks under a row lock.
+            // location search per line. Composite parent lines are absent
+            // from the demand and their frozen components carry the quantity.
             $availability = $this->preloadLevelAvailability($deductibles);
 
             foreach ($deductibles as [$purchasable, $quantity]) {
@@ -381,18 +372,5 @@ final class DeductInventoryFromOrder
         }
 
         return null;
-    }
-
-    /**
-     * Check if a model tracks inventory.
-     */
-    private function tracksInventory(Model $model): bool
-    {
-        if (method_exists($model, 'tracksInventory')) {
-            return $model->tracksInventory();
-        }
-
-        // Default: assume it tracks inventory if it's a purchasable
-        return true;
     }
 }

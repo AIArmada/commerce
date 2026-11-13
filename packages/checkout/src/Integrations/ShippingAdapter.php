@@ -11,6 +11,7 @@ use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\PackageData;
 use AIArmada\Shipping\Data\RateQuoteData;
 use AIArmada\Shipping\ShippingManager;
+use AIArmada\Shipping\Support\ComponentLines;
 use Illuminate\Support\Collection;
 
 final class ShippingAdapter
@@ -159,28 +160,82 @@ final class ShippingAdapter
             return [];
         }
 
-        return array_values(array_filter(array_map(function (array $item): ?PackageData {
-            $attributes = $item['attributes'] ?? [];
-            $quantity = (int) ($item['quantity'] ?? 1);
+        $packages = [];
 
-            $weight = (int) ($item['weight'] ?? $attributes['weight'] ?? 0);
-            $weight *= max(1, $quantity);
-
-            if ($weight <= 0) {
-                return null;
+        foreach ($items as $item) {
+            if (! is_array($item)) {
+                continue;
             }
 
-            $dimensions = $item['dimensions'] ?? $attributes['dimensions'] ?? null;
+            $attributes = is_array($item['attributes'] ?? null) ? $item['attributes'] : [];
+            $quantity = max(1, (int) ($item['quantity'] ?? 1));
+            $components = ComponentLines::fromMixed(
+                $attributes['components'] ?? $item['components'] ?? null,
+            );
 
-            return PackageData::from([
-                'weight' => $weight,
+            if ($components !== []) {
+                $declaredValue = (int) ($item['price'] ?? 0) * $quantity;
+                $allocatedDeclaredValue = false;
+
+                foreach (ComponentLines::expand($components, $quantity) as $component) {
+                    if (! $component['requires_shipping'] || $component['weight'] === null) {
+                        continue;
+                    }
+
+                    $weight = (int) $component['weight'] * (int) $component['quantity'];
+
+                    if ($weight <= 0) {
+                        continue;
+                    }
+
+                    $packages[] = PackageData::from([
+                        'weight' => $weight,
+                        'length' => $component['dimensions']['length'] ?? null,
+                        'width' => $component['dimensions']['width'] ?? null,
+                        'height' => $component['dimensions']['height'] ?? null,
+                        'declaredValue' => $allocatedDeclaredValue ? null : $declaredValue,
+                        'quantity' => 1,
+                    ]);
+
+                    $allocatedDeclaredValue = true;
+                }
+
+                continue;
+            }
+
+            $requiresShipping = (bool) ($item['requires_shipping'] ?? $attributes['requires_shipping'] ?? true);
+
+            if (! $requiresShipping) {
+                continue;
+            }
+
+            $weight = ComponentLines::grams([
+                $item['weight_grams'] ?? null,
+                $attributes['weight_grams'] ?? null,
+                $item['weight'] ?? null,
+                $attributes['weight'] ?? null,
+            ]);
+
+            if ($weight === null) {
+                continue;
+            }
+
+            $dimensions = ComponentLines::dimensions([
+                $item['dimensions'] ?? null,
+                $attributes['dimensions'] ?? null,
+            ], $item + $attributes);
+
+            $packages[] = PackageData::from([
+                'weight' => $weight * $quantity,
                 'length' => $dimensions['length'] ?? null,
                 'width' => $dimensions['width'] ?? null,
                 'height' => $dimensions['height'] ?? null,
                 'declaredValue' => $item['price'] ?? null,
                 'quantity' => 1,
             ]);
-        }, $items)));
+        }
+
+        return $packages;
     }
 
     private function getOriginAddress(): ?AddressData

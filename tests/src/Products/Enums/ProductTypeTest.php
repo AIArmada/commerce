@@ -9,7 +9,7 @@ describe('ProductType Enum', function (): void {
         it('has all expected values', function (): void {
             expect(ProductType::Simple->value)->toBe('simple')
                 ->and(ProductType::Configurable->value)->toBe('configurable')
-                ->and(ProductType::Bundle->value)->toBe('bundle')
+                ->and(ProductType::Composite->value)->toBe('composite')
                 ->and(ProductType::Digital->value)->toBe('digital')
                 ->and(ProductType::Subscription->value)->toBe('subscription');
         });
@@ -17,9 +17,13 @@ describe('ProductType Enum', function (): void {
         it('can be created from string', function (): void {
             expect(ProductType::from('simple'))->toBe(ProductType::Simple)
                 ->and(ProductType::from('configurable'))->toBe(ProductType::Configurable)
-                ->and(ProductType::from('bundle'))->toBe(ProductType::Bundle)
+                ->and(ProductType::from('composite'))->toBe(ProductType::Composite)
                 ->and(ProductType::from('digital'))->toBe(ProductType::Digital)
                 ->and(ProductType::from('subscription'))->toBe(ProductType::Subscription);
+        });
+
+        it('no longer contains the catalog bundle type', function (): void {
+            expect(ProductType::tryFrom('bundle'))->toBeNull();
         });
     });
 
@@ -32,8 +36,8 @@ describe('ProductType Enum', function (): void {
             expect(ProductType::Configurable->label())->not->toBeEmpty();
         });
 
-        it('returns translation key for bundle', function (): void {
-            expect(ProductType::Bundle->label())->not->toBeEmpty();
+        it('returns translation key for composite', function (): void {
+            expect(ProductType::Composite->label())->not->toBeEmpty();
         });
 
         it('returns translation key for digital', function (): void {
@@ -54,8 +58,8 @@ describe('ProductType Enum', function (): void {
             expect(ProductType::Simple->supportsVariantsByDefault())->toBeFalse();
         });
 
-        it('returns false for bundle', function (): void {
-            expect(ProductType::Bundle->supportsVariantsByDefault())->toBeFalse();
+        it('returns false for composite', function (): void {
+            expect(ProductType::Composite->supportsVariantsByDefault())->toBeFalse();
         });
 
         it('returns false for digital', function (): void {
@@ -81,6 +85,10 @@ describe('ProductType Enum', function (): void {
             expect(ProductType::Configurable->tracksInventoryByDefault())->toBeTrue();
         });
 
+        it('returns false for composite parents', function (): void {
+            expect(ProductType::Composite->tracksInventoryByDefault())->toBeFalse();
+        });
+
         it('returns false for digital', function (): void {
             expect(ProductType::Digital->tracksInventoryByDefault())->toBeFalse();
         });
@@ -89,7 +97,8 @@ describe('ProductType Enum', function (): void {
     describe('requiresShippingByDefault()', function (): void {
         it('returns true for physical types', function (): void {
             expect(ProductType::Simple->requiresShippingByDefault())->toBeTrue()
-                ->and(ProductType::Configurable->requiresShippingByDefault())->toBeTrue();
+                ->and(ProductType::Configurable->requiresShippingByDefault())->toBeTrue()
+                ->and(ProductType::Composite->requiresShippingByDefault())->toBeTrue();
         });
 
         it('returns false for digital fulfillment types', function (): void {
@@ -107,8 +116,8 @@ describe('ProductType Enum', function (): void {
             expect(ProductType::Configurable->isPhysical())->toBeTrue();
         });
 
-        it('returns true for bundle', function (): void {
-            expect(ProductType::Bundle->isPhysical())->toBeTrue();
+        it('returns true for composite', function (): void {
+            expect(ProductType::Composite->isPhysical())->toBeTrue();
         });
 
         it('returns false for digital', function (): void {
@@ -117,6 +126,13 @@ describe('ProductType Enum', function (): void {
 
         it('returns false for subscription', function (): void {
             expect(ProductType::Subscription->isPhysical())->toBeFalse();
+        });
+    });
+
+    describe('isComposite()', function (): void {
+        it('only returns true for composite', function (): void {
+            expect(ProductType::Composite->isComposite())->toBeTrue()
+                ->and(ProductType::Simple->isComposite())->toBeFalse();
         });
     });
 
@@ -129,8 +145,8 @@ describe('ProductType Enum', function (): void {
             expect(ProductType::Configurable->icon())->toBe('heroicon-o-squares-2x2');
         });
 
-        it('returns correct icon for bundle', function (): void {
-            expect(ProductType::Bundle->icon())->toBe('heroicon-o-rectangle-group');
+        it('returns correct icon for composite', function (): void {
+            expect(ProductType::Composite->icon())->toBe('heroicon-o-cube-transparent');
         });
 
         it('returns correct icon for digital', function (): void {

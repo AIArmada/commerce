@@ -99,7 +99,7 @@ class CollectionForm
                                             ->options([
                                                 'simple' => 'Simple',
                                                 'configurable' => 'Configurable',
-                                                'bundle' => 'Bundle',
+                                                'composite' => 'Composite',
                                                 'digital' => 'Digital',
                                                 'subscription' => 'Subscription',
                                             ])

@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\CommerceSupport\Targeting\TargetingContext;
 use AIArmada\CommerceSupport\Targeting\TargetingEngine;
 use AIArmada\Pricing\Actions\ApplyPromotionalAdjustment;
-use AIArmada\Pricing\Contracts\Priceable;
+use AIArmada\CommerceSupport\Contracts\Priceable;
 use AIArmada\Pricing\Data\PriceResultData;
 use AIArmada\Pricing\Models\Price;
 use AIArmada\Pricing\Models\PriceList;

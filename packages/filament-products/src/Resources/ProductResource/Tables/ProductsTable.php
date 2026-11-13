@@ -68,7 +68,7 @@ class ProductsTable
                     ->color(fn (ProductType | string | null $state): string => match ($state instanceof ProductType ? $state : ProductType::tryFrom((string) $state)) {
                         ProductType::Simple => 'gray',
                         ProductType::Configurable => 'info',
-                        ProductType::Bundle => 'warning',
+                        ProductType::Composite => 'warning',
                         ProductType::Digital => 'success',
                         ProductType::Subscription => 'primary',
                         null => 'gray',

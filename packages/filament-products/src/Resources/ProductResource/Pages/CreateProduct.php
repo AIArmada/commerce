@@ -6,7 +6,12 @@ namespace AIArmada\FilamentProducts\Resources\ProductResource\Pages;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerScopedIds;
 use AIArmada\FilamentProducts\Resources\ProductResource;
+use AIArmada\FilamentProducts\Support\CompositeComponentsFormData;
+use AIArmada\Products\Actions\CreateCompositeProduct;
+use AIArmada\Products\Actions\CreateProduct as CreateProductAction;
+use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Models\Category;
+use AIArmada\Products\Models\Product;
 use Filament\Resources\Pages\CreateRecord;
 
 final class CreateProduct extends CreateRecord
@@ -22,5 +27,24 @@ final class CreateProduct extends CreateRecord
         }
 
         return $data;
+    }
+
+    protected function handleRecordCreation(array $data): Product
+    {
+        /** @var array<array-key, mixed> $components */
+        $components = is_array($data['components'] ?? null) ? $data['components'] : [];
+        unset($data['components']);
+
+        $type = $data['type'] ?? null;
+        $type = $type instanceof ProductType ? $type : ProductType::tryFrom((string) $type);
+
+        if ($type === ProductType::Composite) {
+            return app(CreateCompositeProduct::class)->handle(
+                $data,
+                CompositeComponentsFormData::toActionPayload($components),
+            );
+        }
+
+        return app(CreateProductAction::class)->execute($data);
     }
 }

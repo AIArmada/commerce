@@ -45,6 +45,49 @@ use AIArmada\Products\Enums\ProductStatus;
 app(UpdateProductStatus::class)->execute($product, ProductStatus::Active);
 ```
 
+### Composite packages
+
+```php
+use AIArmada\Products\Actions\CreateCompositeProduct;
+use AIArmada\Products\Actions\PublishCompositeProduct;
+use AIArmada\Products\Actions\ReplaceProductComponents;
+use AIArmada\Products\Enums\ProductStatus;
+
+$package = app(CreateCompositeProduct::class)->handle([
+    'name' => 'Work From Home Kit',
+    'sku' => 'WFH-KIT',
+    'status' => ProductStatus::Draft,
+    'price' => 12999,
+    'price_mode' => 'fixed',
+], [
+    ['product_id' => $mouse->id, 'quantity' => 2],
+    ['product_id' => $keyboard->id, 'variant_id' => $keyboardUsVariant->id, 'quantity' => 1],
+]);
+
+app(ReplaceProductComponents::class)->handle($package, [
+    ['product_id' => $mouse->id, 'quantity' => 3],
+    ['product_id' => $keyboard->id, 'variant_id' => $keyboardUsVariant->id, 'quantity' => 1],
+]);
+
+$package = app(PublishCompositeProduct::class)->handle($package);
+```
+
+Replacement is transactional: every submitted row is validated before the old set is deleted. Draft packages may be empty; publishing requires at least one valid component. Use `sum` for a package priced from component base prices, or `fixed` to use the parent price. The parent never allocates or deducts inventory.
+
+`CompositePackageService` exposes the current package state:
+
+```php
+use AIArmada\Products\Services\CompositePackageService;
+
+$service = app(CompositePackageService::class);
+
+$service->priceFor($package);
+$service->availability($package); // bottleneck package count and per-component rows
+$snapshot = $service->snapshot($package); // canonical frozen composition
+```
+
+The snapshot entry keys are stable across cart, checkout, orders, shipping, and inventory: `product_id`, `variant_id`, `inventoryable_type`, `inventoryable_id`, `quantity`, `sku`, `name`, `weight` (grams), `dimensions` (centimetres), `requires_shipping`, and `tracks_inventory`.
+
 ### GenerateVariants
 
 ```php

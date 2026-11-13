@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Pricing\Contracts;
+namespace AIArmada\CommerceSupport\Contracts;
 
 /**
- * Interface for items that can have dynamic pricing.
+ * Canonical contract for an item that can have dynamic pricing.
  */
 interface Priceable
 {
@@ -15,12 +15,12 @@ interface Priceable
     public function getBuyableIdentifier(): string;
 
     /**
-     * Get the base price in cents.
+     * Get the base price in integer minor units.
      */
     public function getBasePrice(): int;
 
     /**
-     * Get the compare price (original/MSRP) in cents.
+     * Get the compare price (original/MSRP) in integer minor units.
      */
     public function getComparePrice(): ?int;
 

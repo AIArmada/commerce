@@ -7,6 +7,7 @@ namespace AIArmada\Checkout\Steps;
 use AIArmada\Checkout\Data\StepResult;
 use AIArmada\Checkout\Integrations\ShippingAdapter;
 use AIArmada\Checkout\Models\CheckoutSession;
+use AIArmada\Orders\Support\CartLineSnapshot;
 use Carbon\CarbonImmutable;
 
 final class CalculateShippingStep extends AbstractCheckoutStep
@@ -167,11 +168,26 @@ final class CalculateShippingStep extends AbstractCheckoutStep
         $cartSnapshot = $session->cart_snapshot ?? [];
         $items = $cartSnapshot['items'] ?? [];
 
-        // Check if all items are digital/non-physical
+        // Check if all items are digital/non-physical. Composite lines are
+        // judged by their actual components, not by the parent package flag.
         foreach ($items as $item) {
-            $requiresShipping = $item['requires_shipping'] ?? data_get($item, 'attributes.requires_shipping', true);
+            if (! is_array($item)) {
+                continue;
+            }
 
-            if ($requiresShipping) {
+            $line = CartLineSnapshot::fromArray($item);
+
+            if ($line->hasComponents()) {
+                foreach ($line->components as $component) {
+                    if ($component['requires_shipping']) {
+                        return false;
+                    }
+                }
+
+                continue;
+            }
+
+            if ($line->requiresShipping) {
                 return false;
             }
         }

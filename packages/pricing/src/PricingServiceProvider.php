@@ -34,6 +34,8 @@ final class PricingServiceProvider extends PackageServiceProvider
         $this->app->singleton(Services\PriceCalculator::class);
         $this->app->alias(Services\PriceCalculator::class, PriceCalculatorInterface::class);
 
+        $this->registerCartPricingIntegration();
+
         $this->registerSettingsMigrationPath();
     }
 
@@ -44,6 +46,20 @@ final class PricingServiceProvider extends PackageServiceProvider
                 __DIR__ . '/../database/settings' => database_path('settings'),
             ], 'pricing-settings');
         }
+    }
+
+    private function registerCartPricingIntegration(): void
+    {
+        $resolverContract = 'AIArmada\\Cart\\Contracts\\BuyablePriceResolver';
+
+        if (! interface_exists($resolverContract)) {
+            return;
+        }
+
+        $this->app->singleton(
+            $resolverContract,
+            Support\CartBuyablePriceResolver::class,
+        );
     }
 
     private function registerSettingsMigrationPath(): void

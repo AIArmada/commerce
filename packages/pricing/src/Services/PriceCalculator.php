@@ -6,7 +6,7 @@ namespace AIArmada\Pricing\Services;
 
 use AIArmada\CommerceSupport\Support\MoneyNormalizer;
 use AIArmada\Pricing\Contracts\CustomerPriceResolverInterface;
-use AIArmada\Pricing\Contracts\Priceable;
+use AIArmada\CommerceSupport\Contracts\Priceable;
 use AIArmada\Pricing\Contracts\PriceCalculatorInterface;
 use AIArmada\Pricing\Contracts\SegmentPriceResolverInterface;
 use AIArmada\Pricing\Contracts\TierResolverInterface;

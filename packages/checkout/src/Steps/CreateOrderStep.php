@@ -11,6 +11,7 @@ use AIArmada\Checkout\Support\CheckoutCartResolver;
 use AIArmada\Orders\Contracts\OrderServiceInterface;
 use AIArmada\Orders\Exceptions\OrderNotAwaitingPayment;
 use AIArmada\Orders\Models\Order;
+use AIArmada\Orders\Support\CartLineSnapshot;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
@@ -78,7 +79,12 @@ final class CreateOrderStep extends AbstractCheckoutStep
             $shippingData = $session->shipping_data ?? [];
             $billingData = $session->billing_data ?? [];
 
-            $liveCart = app(CheckoutCartResolver::class)->resolveLiveCart($session);
+            // A composite checkout is sold from its frozen snapshot. Re-reading
+            // the live cart here could swap the reviewed composition or price
+            // after payment has already been taken.
+            $liveCart = $this->hasCompositeSnapshot($session)
+                ? null
+                : app(CheckoutCartResolver::class)->resolveLiveCart($session);
 
             if ($liveCart !== null) {
                 if (! $customer instanceof Model) {
@@ -201,12 +207,15 @@ final class CreateOrderStep extends AbstractCheckoutStep
         $pricingByItemId = $this->pricingItemsById($pricingItems);
 
         $lineBases = [];
+        $lines = [];
 
         foreach ($cartItems as $index => $cartItem) {
             $pricingItem = $this->pricingItemForCartItem($cartItem, $index, $pricingItems, $pricingByItemId);
-            $quantity = max(1, (int) ($pricingItem['quantity'] ?? $cartItem['quantity'] ?? 1));
-            $baseUnitPrice = (int) ($pricingItem['original_unit_price'] ?? $pricingItem['unit_price'] ?? $cartItem['price'] ?? $cartItem['unit_price'] ?? 0);
+            $line = CartLineSnapshot::fromArray($cartItem);
+            $quantity = max(1, (int) ($pricingItem['quantity'] ?? $line->quantity));
+            $baseUnitPrice = (int) ($pricingItem['original_unit_price'] ?? $pricingItem['unit_price'] ?? $line->unitPrice);
 
+            $lines[$index] = $line;
             $lineBases[$index] = $baseUnitPrice * $quantity;
         }
 
@@ -216,54 +225,62 @@ final class CreateOrderStep extends AbstractCheckoutStep
 
         foreach ($cartItems as $index => $cartItem) {
             $pricingItem = $this->pricingItemForCartItem($cartItem, $index, $pricingItems, $pricingByItemId);
-            $quantity = max(1, (int) ($pricingItem['quantity'] ?? $cartItem['quantity'] ?? 1));
-            $baseUnitPrice = (int) ($pricingItem['original_unit_price'] ?? $pricingItem['unit_price'] ?? $cartItem['price'] ?? $cartItem['unit_price'] ?? 0);
-            $finalUnitPrice = (int) ($pricingItem['unit_price'] ?? $cartItem['price'] ?? $cartItem['unit_price'] ?? $baseUnitPrice);
+            $line = $lines[$index];
+            $quantity = max(1, (int) ($pricingItem['quantity'] ?? $line->quantity));
+            $baseUnitPrice = (int) ($pricingItem['original_unit_price'] ?? $pricingItem['unit_price'] ?? $line->unitPrice);
+            $finalUnitPrice = (int) ($pricingItem['unit_price'] ?? $line->unitPrice);
             $pricingDiscount = max(0, ($baseUnitPrice - $finalUnitPrice) * $quantity);
 
-            $taxBases[$index] = max(0, ($lineBases[$index] ?? 0) - $pricingDiscount - ($checkoutDiscountAllocations[$index] ?? 0));
+            $taxBases[$index] = $line->isTaxable
+                ? max(0, ($lineBases[$index] ?? 0) - $pricingDiscount - ($checkoutDiscountAllocations[$index] ?? 0))
+                : 0;
         }
 
         $taxAllocations = $this->allocateAmount((int) $session->tax_total, $taxBases);
 
-        return array_map(function (array $cartItem, int $index) use ($pricingItems, $pricingByItemId, $checkoutDiscountAllocations, $taxAllocations): array {
+        return array_map(function (array $cartItem, int $index) use ($session, $pricingItems, $pricingByItemId, $lines, $checkoutDiscountAllocations, $taxAllocations): array {
             $pricingItem = $this->pricingItemForCartItem($cartItem, $index, $pricingItems, $pricingByItemId);
-            $quantity = max(1, (int) ($pricingItem['quantity'] ?? $cartItem['quantity'] ?? 1));
-            $baseUnitPrice = (int) ($pricingItem['original_unit_price'] ?? $pricingItem['unit_price'] ?? $cartItem['price'] ?? $cartItem['unit_price'] ?? 0);
-            $finalUnitPrice = (int) ($pricingItem['unit_price'] ?? $cartItem['price'] ?? $cartItem['unit_price'] ?? $baseUnitPrice);
+            $line = $lines[$index];
+            $quantity = max(1, (int) ($pricingItem['quantity'] ?? $line->quantity));
+            $baseUnitPrice = (int) ($pricingItem['original_unit_price'] ?? $pricingItem['unit_price'] ?? $line->unitPrice);
+            $finalUnitPrice = (int) ($pricingItem['unit_price'] ?? $line->unitPrice);
             $pricingDiscount = max(0, ($baseUnitPrice - $finalUnitPrice) * $quantity);
-            $associatedModel = $cartItem['associated_model'] ?? null;
-            $attributes = is_array($cartItem['attributes'] ?? null) ? $cartItem['attributes'] : [];
-            $purchasableId = $cartItem['purchasable_id']
-                ?? $attributes['purchasable_id']
-                ?? $cartItem['product_id']
-                ?? $attributes['product_id']
-                ?? (is_array($associatedModel) ? $associatedModel['id'] ?? null : null);
-            $purchasableType = $cartItem['purchasable_type']
-                ?? $attributes['purchasable_type']
-                ?? (is_array($associatedModel) ? $associatedModel['class'] ?? null : null);
-            $sku = $cartItem['sku']
-                ?? $attributes['sku']
-                ?? (is_array($associatedModel) ? data_get($associatedModel, 'data.sku') : null);
-            $currency = $cartItem['currency'] ?? $attributes['currency'] ?? null;
+            $metadata = is_array($cartItem['metadata'] ?? null) ? $cartItem['metadata'] : [];
 
             return [
-                'purchasable_id' => $purchasableId,
-                'purchasable_type' => $purchasableType,
-                'name' => $cartItem['name'] ?? '',
-                'sku' => $sku,
+                'purchasable_id' => $line->purchasableId,
+                'purchasable_type' => $line->purchasableType,
+                'name' => $cartItem['name'] ?? $line->name,
+                'sku' => $line->sku,
                 'quantity' => $quantity,
                 'unit_price' => $baseUnitPrice,
                 'discount_amount' => $pricingDiscount + ($checkoutDiscountAllocations[$index] ?? 0),
                 'tax_amount' => $taxAllocations[$index] ?? 0,
-                'currency' => $currency,
-                'options' => $cartItem['attributes'] ?? $cartItem['options'] ?? null,
-                'metadata' => array_merge(
-                    $cartItem['metadata'] ?? [],
+                'currency' => $line->currency ?? $session->currency,
+                'options' => $line->attributes !== [] ? $line->attributes : ($cartItem['options'] ?? null),
+                'metadata' => $line->orderItemMetadata(array_merge(
+                    $metadata,
                     ['pricing_breakdown' => $pricingItem['pricing_breakdown'] ?? []],
-                ),
+                )),
             ];
         }, $cartItems, array_keys($cartItems));
+    }
+
+    private function hasCompositeSnapshot(CheckoutSession $session): bool
+    {
+        $items = $session->cart_snapshot['items'] ?? [];
+
+        if (! is_array($items)) {
+            return false;
+        }
+
+        foreach ($items as $item) {
+            if (is_array($item) && CartLineSnapshot::fromArray($item)->hasComponents()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

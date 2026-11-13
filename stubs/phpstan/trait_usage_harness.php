@@ -6,8 +6,6 @@ namespace AIArmada\Commerce\PHPStan\TraitUsageHarness;
 
 use AIArmada\Authz\Concerns\HasAuthzScope;
 use AIArmada\Authz\Models\AuthzScope;
-use AIArmada\Cart\Concerns\Buyable;
-use AIArmada\Cart\Contracts\BuyableInterface;
 use AIArmada\CommerceSupport\Traits\FormatsMoney;
 use AIArmada\CommerceSupport\Traits\HasPaymentStatus;
 use AIArmada\CommerceSupport\Traits\OwnerContextJob;
@@ -40,11 +38,6 @@ abstract class WidgetHarnessBase
     {
         return true;
     }
-}
-
-abstract class BuyableHarness extends Model implements BuyableInterface
-{
-    use Buyable;
 }
 
 abstract class PaymentStatusHarness extends Model

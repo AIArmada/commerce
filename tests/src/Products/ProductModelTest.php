@@ -555,38 +555,49 @@ describe('Product Model', function (): void {
     });
 
     describe('Buyable Interface', function (): void {
-        it('can get buyable identifier', function (): void {
+        it('uses the product key as the stable sellable identity', function (): void {
             $product = Product::create(['name' => 'Buyable Product', 'price' => 1000]);
 
-            expect($product->getBuyableIdentifier())->toBe($product->id);
+            expect($product->getBuyableIdentifier())->toBe($product->id)
+                ->and($product->getBuyableCatalogIdentifier())->toBe($product->id)
+                ->and($product->getBuyableName())->toBe('Buyable Product')
+                ->and($product->getBuyablePrice())->toBe(1000)
+                ->and($product->getBuyableCurrency())->toBe('MYR');
         });
 
-        it('can get buyable description', function (): void {
-            $product = Product::create(['name' => 'Buyable Description', 'price' => 1000]);
+        it('normalizes weight to grams and dimensions to centimetres', function (): void {
+            $product = Product::create([
+                'name' => 'Measured',
+                'price' => 1000,
+                'weight' => 2.5,
+                'weight_unit' => 'kg',
+                'length' => 10,
+                'width' => 5,
+                'height' => 2,
+                'dimension_unit' => 'cm',
+            ]);
 
-            expect($product->getBuyableDescription())->toBe('Buyable Description');
+            $attributes = $product->getBuyableAttributes();
+
+            expect($attributes['weight'])->toBe(2500)
+                ->and($attributes['dimensions'])->toBe(['length' => 10, 'width' => 5, 'height' => 2])
+                ->and($attributes['requires_shipping'])->toBeTrue()
+                ->and($attributes['is_taxable'])->toBeTrue();
         });
 
-        it('can get buyable price', function (): void {
-            $product = Product::create(['name' => 'Buyable Price', 'price' => 1500]);
-
-            expect($product->getBuyablePrice())->toBe(1500);
-        });
-
-        it('can get buyable weight', function (): void {
-            $product = Product::create(['name' => 'Weighted', 'price' => 1000, 'weight' => 2.5]);
-
-            expect($product->getBuyableWeight())->toBe(2.5);
-        });
-
-        it('is buyable when purchasable', function (): void {
+        it('reports purchasability from status and stock', function (): void {
             $product = Product::create([
                 'name' => 'Buyable',
                 'price' => 1000,
                 'status' => ProductStatus::Active,
+                'tracks_inventory' => false,
             ]);
 
-            expect($product->isBuyable())->toBeTrue();
+            expect($product->canBePurchased())->toBeTrue()
+                ->and($product->getBuyableStock())->toBeNull()
+                ->and($product->getBuyableMinimumQuantity())->toBe(1)
+                ->and($product->getBuyableMaximumQuantity())->toBeNull()
+                ->and($product->getBuyableQuantityIncrement())->toBe(1);
         });
     });
 
@@ -595,12 +606,6 @@ describe('Product Model', function (): void {
             $product = Product::create(['name' => 'Base Price', 'price' => 2000]);
 
             expect($product->getBasePrice())->toBe(2000);
-        });
-
-        it('can get calculated price', function (): void {
-            $product = Product::create(['name' => 'Calculated', 'price' => 2000]);
-
-            expect($product->getCalculatedPrice())->toBe(2000);
         });
 
         it('can get compare price', function (): void {

@@ -12,6 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         $tableName = (string) config('products.database.tables.products', 'products');
+        $componentTableName = (string) config('products.database.tables.product_components', 'product_components');
 
         Schema::create($tableName, function (Blueprint $table): void {
             $jsonColumnType = commerce_json_column_type('products', 'jsonb');
@@ -29,12 +30,13 @@ return new class extends Migration
             $table->string('barcode')->nullable();
 
             // Type and status
-            $table->string('type')->default('simple'); // simple, configurable, bundle, digital, subscription
+            $table->string('type')->default('simple'); // simple, configurable, composite, digital, subscription
             $table->string('status')->default('draft'); // draft, active, disabled, archived
             $table->string('visibility')->default('catalog_search'); // catalog, search, catalog_search, individual, hidden
 
             // Pricing (stored in cents)
             $table->unsignedBigInteger('price')->default(0);
+            $table->string('price_mode')->default('fixed'); // fixed, sum
             $table->unsignedBigInteger('compare_price')->nullable();
             $table->unsignedBigInteger('cost')->nullable();
             $table->string('currency', 3)->default('MYR');
@@ -83,5 +85,30 @@ return new class extends Migration
 
         ProductIdentityIndexes::owner($tableName, 'slug');
         ProductIdentityIndexes::owner($tableName, 'sku');
+
+        Schema::create($componentTableName, function (Blueprint $table): void {
+            $table->uuid('id')->primary();
+
+            // Owner (for multi-tenancy)
+            $table->nullableUuidMorphs('owner');
+
+            // The composite parent and the exact physical sellable component.
+            $table->foreignUuid('product_id');
+            $table->foreignUuid('component_product_id');
+            $table->foreignUuid('variant_id')->nullable();
+
+            $table->unsignedInteger('quantity');
+            $table->unsignedInteger('position')->default(0);
+
+            $table->timestampsTz();
+
+            $table->index(['product_id', 'position']);
+            $table->index('component_product_id');
+            $table->index('variant_id');
+            $table->unique(
+                ['product_id', 'component_product_id', 'variant_id'],
+                'product_components_parent_component_variant_unique',
+            );
+        });
     }
 };

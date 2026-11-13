@@ -14,6 +14,7 @@ return [
         'tables' => [
             'products' => 'products',
             'variants' => 'product_variants',
+            'product_components' => 'product_components',
             'options' => 'product_options',
             'option_values' => 'product_option_values',
             'variant_options' => 'product_variant_options',
@@ -93,6 +94,15 @@ return [
 - `features.owner.include_global` controls whether owner-scoped reads and writes may include global rows.
 - `features.owner.auto_assign_on_create` controls whether owned rows inherit the current owner automatically.
 - Catalog parent references (`Option.product_id`, `OptionValue.option_id`, `Variant.product_id`, `AttributeValue.attribute_id`, and the `AttributeValue` attributable tuple) are validated against the current owner context on create. With `include_global` off, tenant contexts cannot attach children to global parents or reference global attribute definitions; with it on, global parents and definitions are accepted. Parent and definition identity is immutable afterwards regardless of this flag.
+
+### Composite package behavior
+
+- `ProductType::Composite` parents default to `tracks_inventory = false` and `supports_variants = false`; the package is sold through exact component inventories, never the parent SKU.
+- `products.price_mode` accepts `fixed` or `sum`. Fixed packages use the parent price. Sum packages use each component's canonical base price multiplied by its per-package quantity.
+- `product_components` is resolved through `database.tables.product_components`. Component rows are owner-scoped and must share the parent owner tuple.
+- Components must be physical, shipped, inventory-tracked products with a SKU. Configurable components require an exact variant belonging to that component product.
+- Activating a package validates at least one component, component availability state, currency, and tax consistency. Referenced component products and variants cannot be deleted.
+- `CompositePackageService` is the canonical read surface for owner-scoped components, package price, bottleneck availability, publish validation, and the shared composition snapshot.
 
 ### Variant behavior
 

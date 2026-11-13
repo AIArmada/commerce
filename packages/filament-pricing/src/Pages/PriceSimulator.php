@@ -9,7 +9,7 @@ use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\Pricing\Contracts\Priceable;
+use AIArmada\CommerceSupport\Contracts\Priceable;
 use AIArmada\Pricing\Contracts\PriceCalculatorInterface;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;

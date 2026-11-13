@@ -62,6 +62,26 @@ describe('CheckoutReservationService', function (): void {
             ->and(InventoryAllocation::query()->where('cart_id', 'ref-polymorphic')->sum('quantity'))->toBe(3);
     });
 
+    it('combines product and polymorphic demand for the same stock identity', function (): void {
+        $id = (string) $this->item->getKey();
+        $lines = [
+            new ReservationLine(productId: $id, quantity: 2),
+            new ReservationLine(
+                productId: $id,
+                quantity: 3,
+                inventoryableType: $this->item->getMorphClass(),
+                inventoryableId: $id,
+            ),
+        ];
+
+        $outcome = $this->reservationService->reserve('ref-shared-sku', $lines, 900);
+        $retry = $this->reservationService->reserve('ref-shared-sku', array_reverse($lines), 900);
+
+        expect(array_values($outcome->lines))->toBe([['requested' => 5, 'reserved' => 5]])
+            ->and($retry->lines)->toBe($outcome->lines)
+            ->and(InventoryAllocation::query()->where('cart_id', 'ref-shared-sku')->sum('quantity'))->toBe(5);
+    });
+
     it('commit transitions group and deducts stock', function (): void {
         $lines = [new ReservationLine(productId: $this->item->getKey(), quantity: 4)];
         $this->reservationService->reserve('ref-commit', $lines, 900);

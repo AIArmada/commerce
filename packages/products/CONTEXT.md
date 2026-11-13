@@ -41,9 +41,9 @@ keywords:
 - Owner/security: Owner-scoped (all 10).
 
 ## Key surfaces
-- Models: `Attribute`, `AttributeGroup`, `AttributeSet`, `AttributeValue`, `Category`, `Collection`, `Option`, `OptionValue`, `Product`, `Variant`
-- Actions/Services: `Actions/ApplyAttributeChanges`, `Actions/CreateProduct`, `Actions/GenerateVariants`, `Actions/UpdateProduct`, `Actions/UpdateProductStatus`
-- Config `products.php`: `database` (→ `table_prefix`, `json_column_type`, `tables.*`), `defaults` (→ `currency`), `features` (→ `owner.*`, `variants.sku_pattern`, `variants.max_generated`, `variants.queue_threshold`), `media` (→ `collections.*`, `conversions.*`), `seo` (→ `slug_max_length`)
+- Models: `Attribute`, `AttributeGroup`, `AttributeSet`, `AttributeValue`, `Category`, `Collection`, `Option`, `OptionValue`, `Product`, `ProductComponent`, `Variant`
+- Actions/Services: `Actions/ApplyAttributeChanges`, `Actions/CreateCompositeProduct`, `Actions/CreateProduct`, `Actions/GenerateVariants`, `Actions/PublishCompositeProduct`, `Actions/ReplaceProductComponents`, `Actions/UpdateProduct`, `Actions/UpdateProductStatus`, `Services/CompositePackageService`, `Services/CompositePackageValidator`
+- Config `products.php`: `database` (→ `table_prefix`, `json_column_type`, `tables.*` including `product_components`), `defaults` (→ `currency`), `features` (→ `owner.*`, `variants.sku_pattern`, `variants.max_generated`, `variants.queue_threshold`), `media` (→ `collections.*`, `conversions.*`), `seo` (→ `slug_max_length`)
 
 ## Docs map
 - Start: `01-overview` → `03-configuration` → `04-usage` → `99-troubleshooting`
