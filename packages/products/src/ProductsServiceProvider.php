@@ -74,8 +74,7 @@ final class ProductsServiceProvider extends PackageServiceProvider
             // Shipping belongs to the components, not the commercial parent.
             $requiresShipping = $product->exists && $this->app
                 ->make(CompositePackageService::class)
-                ->componentsFor($product)
-                ->contains(static fn (ProductComponent $component): bool => (bool) $component->componentProduct?->requires_shipping);
+                ->requiresShippingFor($product);
             $product->setAttribute('requires_shipping', $requiresShipping);
             $product->setAttribute('tracks_inventory', false);
             $product->setAttribute('supports_variants', false);
