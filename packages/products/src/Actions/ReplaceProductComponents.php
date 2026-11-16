@@ -108,7 +108,8 @@ final class ReplaceProductComponents
             $componentProductId = (string) ($component['component_product_id'] ?? '');
 
             $buyableType = $component['buyable_type'] ?? null;
-            $buyableId = $component['buyable_id'] ?? null;
+            $rawBuyableId = $component['buyable_id'] ?? null;
+            $buyableId = is_string($rawBuyableId) || is_int($rawBuyableId) ? (string) $rawBuyableId : null;
             $hasProduct = $componentProductId !== '';
             $hasExternal = $buyableType !== null || $buyableId !== null;
 

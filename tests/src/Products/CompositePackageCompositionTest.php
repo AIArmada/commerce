@@ -109,7 +109,7 @@ it('creates an active composite package with real components and no parent inven
         ->and(ProductComponent::query()->where('product_id', $package->id)->count())->toBe(2);
 });
 
-it('forces composite parents to be non-inventory and non-variant identities', function (): void {
+it('allows opted-in composite variants while keeping parent inventory disabled', function (): void {
     $parent = Product::create([
         'name' => 'Invariant Kit',
         'sku' => 'INVARIANT-KIT',
@@ -119,7 +119,7 @@ it('forces composite parents to be non-inventory and non-variant identities', fu
         'tracks_inventory' => true,
     ]);
 
-    expect($parent->fresh()->supports_variants)->toBeFalse()
+    expect($parent->fresh()->supports_variants)->toBeTrue()
         ->and($parent->fresh()->tracks_inventory)->toBeFalse()
         ->and($parent->fresh()->getAttribute('price_mode'))->toBe(CompositePriceMode::Fixed);
 });
