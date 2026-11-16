@@ -72,7 +72,7 @@ app(ReplaceProductComponents::class)->handle($package, [
 $package = app(PublishCompositeProduct::class)->handle($package);
 ```
 
-Replacement is transactional: every submitted row is validated before the old set is deleted. Draft packages may be empty; publishing requires at least one valid component. Use `sum` for a package priced from component base prices, or `fixed` to use the parent price. The parent never allocates or deducts inventory.
+Replacement is transactional: every submitted row is validated before the old set is deleted. Draft packages may be empty; publishing requires at least one valid component. Use `sum` for catalog prices or optional per-component `unit_price` overrides, or `fixed` for the parent price. The parent never allocates or deducts inventory.
 
 `CompositePackageService` exposes the current package state:
 
@@ -82,11 +82,11 @@ use AIArmada\Products\Services\CompositePackageService;
 $service = app(CompositePackageService::class);
 
 $service->priceFor($package);
-$service->availability($package); // bottleneck package count and per-component rows
+$service->availability($package); // finite bottleneck count, or null when unbounded
 $snapshot = $service->snapshot($package); // canonical frozen composition
 ```
 
-The snapshot entry keys are stable across cart, checkout, orders, shipping, and inventory: `product_id`, `variant_id`, `inventoryable_type`, `inventoryable_id`, `quantity`, `sku`, `name`, `weight` (grams), `dimensions` (centimetres), `requires_shipping`, and `tracks_inventory`.
+The core snapshot entry keys remain stable across cart, checkout, orders, shipping, and inventory: `product_id`, `variant_id`, `inventoryable_type`, `inventoryable_id`, `quantity`, `sku`, `name`, `weight` (grams), `dimensions` (centimetres), `requires_shipping`, and `tracks_inventory`. Optional `unit_price` and `metadata` survive snapshots. Untracked components are not reserved as warehouse stock; consuming applications handle any additional capacity reservations.
 
 ### GenerateVariants
 
@@ -149,7 +149,7 @@ $product = OwnerContext::withOwner($team, function () {
 This means:
 
 - `Configurable` remains the type for physical configurable goods.
-- `Digital` stays non-shipping by default.
+- `Digital` and `Service` default to non-shipping and untracked inventory.
 - `Digital` can opt into variants and inventory when you need ticket-style or seat-style stock buckets.
 
 ```php

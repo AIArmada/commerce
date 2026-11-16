@@ -73,14 +73,14 @@ Use this package when you need the source-of-truth catalog domain: products, var
 
 ## Composite packages
 
-`ProductType::Composite` represents a merchant-configured fixed package of physical sellable SKUs. The parent SKU is the commercial identity and has no inventory of its own. Each `ProductComponent` references an exact physical product or, for configurable products, an exact variant, plus a positive per-package quantity.
+`ProductType::Composite` represents a merchant-configured package of physical, digital, and service catalog items. The parent SKU is the commercial identity and has no inventory of its own. Each `ProductComponent` references an exact product or, where variants are enabled, an exact variant, plus a positive quantity.
 
 - `CompositePriceMode::Fixed` uses the parent `price`.
-- `CompositePriceMode::Sum` multiplies each component's canonical base price by its per-package quantity.
+- `CompositePriceMode::Sum` multiplies component catalog prices or optional `unit_price` overrides (integer minor units) by their per-package quantities.
 - Components must share the package owner, currency, and tax treatment.
-- Nested composites, self references, duplicate components, non-physical components, untracked inventory, and missing exact variants are rejected in the domain.
+- Nested composites, self references, duplicate components and missing exact variants are rejected. Components may be non-shipping or untracked.
 - An active package must contain at least one valid component; referenced products and variants cannot be deleted.
-- `CompositePackageService` builds the canonical snapshot consumed by cart, checkout, orders, shipping, and inventory. Snapshot entries expose `product_id`, `variant_id`, `inventoryable_type`, `inventoryable_id`, `quantity`, `sku`, `name`, `weight` in grams, `dimensions` in centimetres, `requires_shipping`, and `tracks_inventory`.
+- `CompositePackageService` builds canonical snapshots for cart, checkout, orders, shipping, and inventory. Snapshot entries retain the established shipping/inventory fields and can include `unit_price` and arbitrary `metadata`. The package shipping flag is derived from its components. Availability returns `null` when no component imposes a finite limit.
 
 ## Highlights
 
@@ -102,6 +102,7 @@ Use this package when you need the source-of-truth catalog domain: products, var
 | `Configurable` | `configurable` |
 | `Composite` | `composite` |
 | `Digital` | `digital` |
+| `Service` | `service` |
 | `Subscription` | `subscription` |
 
 ### Product statuses

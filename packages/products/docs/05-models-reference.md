@@ -111,16 +111,18 @@ do not exist), `getStockQuantity()` silently falls back to the local `stock` att
 
 ## ProductComponent
 
-`ProductComponent` stores one physical sellable SKU inside a composite package. It is owner-aware
+`ProductComponent` stores one exact physical, digital, or service SKU inside a composite package. It is owner-aware
 and config-driven through `products.database.tables.product_components`.
 
 - `product_id` points at the composite parent.
-- `component_product_id` points at the physical component product.
+- `component_product_id` points at the component product.
 - `variant_id` is set only for a configurable component and must belong to the component product.
-- `quantity` is the positive number of actual inventory units included per package.
+- `quantity` is the positive number of component units included per package.
+- `unit_price` optionally overrides the catalog price for `sum` pricing, in integer minor units.
+- `metadata` stores arbitrary application-specific JSON retained in the frozen package snapshot.
 
-Create and update guards validate owner, parent type, physical/shipping/inventory tracking,
-currency, tax treatment, SKU presence, positive quantity, exact variant membership, self
+Create and update guards validate owner, parent type, currency, tax treatment,
+SKU presence, positive quantity, exact variant membership, self
 references, and nested composite rejection. Identity and owner are immutable after creation,
 and an active package cannot lose its last component. Referenced component products and variants
 are protected from deletion.
@@ -128,11 +130,11 @@ are protected from deletion.
 Price and availability are package-level concerns:
 
 - `fixed` uses the parent `price`.
-- `sum` uses canonical component base prices multiplied by per-package quantities.
-- Availability is limited by the component SKU with the smallest `floor(available / quantity)`.
+- `sum` uses catalog prices or per-unit overrides multiplied by per-package quantities.
+- Availability is limited by the smallest finite `floor(available / quantity)`; `null` means unbounded.
 - `CompositePackageService` builds the canonical snapshot used downstream. Entry keys are
   `product_id`, `variant_id`, `inventoryable_type`, `inventoryable_id`, `quantity`, `sku`, `name`,
-  `weight` (grams), `dimensions` (centimetres), `requires_shipping`, and `tracks_inventory`.
+  `weight` (grams), `dimensions` (centimetres), `requires_shipping`, and `tracks_inventory`, plus optional `unit_price` and `metadata`.
 
 `HasComponents` provides `components()`, `isCompositeProduct()`, `compositePriceMode()`,
 `compositePrice()`, `compositeSnapshot()`, `compositeEntries()`, and `compositeAvailability()` to

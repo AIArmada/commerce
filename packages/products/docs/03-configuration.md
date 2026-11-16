@@ -97,12 +97,12 @@ return [
 
 ### Composite package behavior
 
-- `ProductType::Composite` parents default to `tracks_inventory = false` and `supports_variants = false`; the package is sold through exact component inventories, never the parent SKU.
-- `products.price_mode` accepts `fixed` or `sum`. Fixed packages use the parent price. Sum packages use each component's canonical base price multiplied by its per-package quantity.
+- `ProductType::Composite` parents have `tracks_inventory = false` and `supports_variants = false`; their `requires_shipping` flag is derived from the included components instead of being hardcoded.
+- `products.price_mode` accepts `fixed` or `sum`. Fixed packages use the parent price. Sum packages use component catalog prices or optional per-component integer `unit_price` overrides multiplied by per-package quantities.
 - `product_components` is resolved through `database.tables.product_components`. Component rows are owner-scoped and must share the parent owner tuple.
-- Components must be physical, shipped, inventory-tracked products with a SKU. Configurable components require an exact variant belonging to that component product.
+- Components may be physical, digital, or service products, with independent `requires_shipping` and `tracks_inventory` flags. Every component requires a SKU. A product that supports variants requires an exact variant. Component `metadata` is an optional application-defined JSON object carried in frozen snapshots.
 - Activating a package validates at least one component, component availability state, currency, and tax consistency. Referenced component products and variants cannot be deleted.
-- `CompositePackageService` is the canonical read surface for owner-scoped components, package price, bottleneck availability, publish validation, and the shared composition snapshot.
+- `CompositePackageService` is the canonical read surface for owner-scoped components, package price, bottleneck availability, publish validation, and the shared composition snapshot. `CompositeStockResolverInterface::availableFor()` returns `?int`; `null` means no finite limit, while zero blocks a purchase. Bind a custom resolver for externally constrained capacity. Date/session-specific reservations belong to the consuming application.
 
 ### Variant behavior
 
