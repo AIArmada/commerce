@@ -9,6 +9,7 @@ use AIArmada\Checkout\Steps\CommitScopedCapacityStep;
 use AIArmada\Checkout\Steps\ReserveScopedCapacityStep;
 use AIArmada\Inventory\Contracts\ScopedCapacityReservationServiceInterface;
 use AIArmada\Inventory\Data\ScopedCapacityLine;
+use AIArmada\Inventory\InventoryServiceProvider;
 use AIArmada\Inventory\Models\CapacityHold;
 use Illuminate\Support\Str;
 
@@ -29,6 +30,9 @@ final class UnwritableCapacityCheckoutSession extends CheckoutSession
 }
 
 beforeEach(function (): void {
+    // The shared package TestCase does not eagerly boot Inventory. Load its
+    // real provider here to exercise the production reservation binding.
+    app()->register(InventoryServiceProvider::class);
     app()->instance(ScopedCapacityCheckoutProviderInterface::class, new TestCapacityCheckoutProvider);
     app(ScopedCapacityReservationServiceInterface::class)
         ->setCapacity('scoped-resource', 'window-2026-12-01', 4);
