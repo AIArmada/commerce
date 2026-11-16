@@ -431,7 +431,7 @@ it('reflects actual component availability through product stock helpers', funct
 
 it('reports zero package availability for a disabled component variant', function (): void {
     $resolver = new CompositePackageCompositionCapacityResolver;
-    app()->instance(CompositeStockResolverInterface::class, $resolver);
+    app()->instance(CompositeCapacityResolverInterface::class, $resolver);
 
     $configurable = makeConfigurableComponent();
     $variant = makeComponentVariant($configurable, ['is_enabled' => false]);

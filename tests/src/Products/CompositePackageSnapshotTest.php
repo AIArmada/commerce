@@ -241,7 +241,7 @@ it('reports package availability from the bottleneck actual inventory SKU', func
 
 it('exposes composition helpers through the HasComponents concern', function (): void {
     $resolver = new CompositeTestCapacityResolver;
-    app()->instance(CompositeStockResolverInterface::class, $resolver);
+    app()->instance(CompositeCapacityResolverInterface::class, $resolver);
 
     $mouse = makeSnapshotComponent(['sku' => 'CONCERN-MOUSE', 'price' => 1000]);
     $parent = app(CreateCompositeProduct::class)->handle([
