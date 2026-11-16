@@ -170,8 +170,26 @@ final class CompositeCartRevalidator
                 return 'contents';
             }
 
+            $variant = null;
+
+            if ($product->supportsVariants()) {
+                if ($line->variantId === null) {
+                    return 'contents';
+                }
+
+                $variant = \AIArmada\Products\Models\Variant::query()
+                    ->whereKey($line->variantId)
+                    ->where('product_id', $product->getKey())
+                    ->where('is_enabled', true)
+                    ->first();
+
+                if (! $variant instanceof \AIArmada\Products\Models\Variant) {
+                    return 'contents';
+                }
+            }
+
             try {
-                $fresh = $product->compositeSnapshot();
+                $fresh = $product->compositeSnapshot($variant);
             } catch (InvalidCompositePackageException) {
                 return 'contents';
             }
@@ -184,7 +202,7 @@ final class CompositeCartRevalidator
 
             if ($entries !== $line->components
                 || $fresh->currency !== $line->currency
-                || (bool) $product->requires_shipping !== $line->requiresShipping
+                || collect($fresh->entries)->contains(static fn (array $entry): bool => $entry['requires_shipping']) !== $line->requiresShipping
                 || (bool) $product->is_taxable !== $line->isTaxable
                 || (string) $product->tax_class !== (string) $line->taxClass) {
                 return 'contents';
@@ -198,7 +216,7 @@ final class CompositeCartRevalidator
             }
 
             $currentPrice = app()->bound(PriceCalculatorInterface::class)
-                ? app(PriceCalculatorInterface::class)->calculate($product, $line->quantity, $context)->finalPrice
+                ? app(PriceCalculatorInterface::class)->calculate($variant ?? $product, $line->quantity, $context)->finalPrice
                 : $fresh->price;
 
             if ($currentPrice !== $line->unitPrice
