@@ -37,7 +37,7 @@ final readonly class PurchaseContext
     }
 
     /**
-     * @param array<string, mixed> $attributes
+     * @param  array<string, mixed>  $attributes
      */
     public static function fromAttributes(array $attributes): ?self
     {

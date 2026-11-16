@@ -6,13 +6,14 @@ use AIArmada\Cart\Cart;
 use AIArmada\Cart\Contracts\CartValidationResult;
 use AIArmada\Cart\Contracts\ContextualBuyableValidatorInterface;
 use AIArmada\Cart\Exceptions\InvalidCartItemException;
+use AIArmada\Cart\Exceptions\ProductNotPurchasableException;
 use AIArmada\CommerceSupport\Contracts\Buyable;
 use AIArmada\CommerceSupport\Support\PurchaseContext;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Models\Product;
-use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 use Tests\Support\Cart\InMemoryStorage;
 
 final class ContextTestBuyable extends Model implements Buyable
@@ -143,7 +144,7 @@ it('keeps contextual cart lines separate and aggregates identical selections', f
     expect($cart->getBuyable($buyable, null, $am)?->quantity)->toBe(4);
 
     expect(fn () => $cart->addBuyable($buyable, 4, [], null, $pm))
-        ->toThrow(\AIArmada\Cart\Exceptions\ProductNotPurchasableException::class);
+        ->toThrow(ProductNotPurchasableException::class);
 });
 
 it('rejects changing selection of an existing contextual line', function (): void {

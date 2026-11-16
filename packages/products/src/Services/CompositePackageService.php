@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Products\Services;
 
-use AIArmada\Products\Contracts\CompositeCapacityResolverInterface;
 use AIArmada\Products\Contracts\CompositeCapacityDemandResolverInterface;
+use AIArmada\Products\Contracts\CompositeCapacityResolverInterface;
 use AIArmada\Products\Enums\CompositePriceMode;
 use AIArmada\Products\Exceptions\InvalidCompositePackageException;
 use AIArmada\Products\Models\Product;

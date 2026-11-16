@@ -500,7 +500,7 @@ trait ManagesBuyables
      * Revalidates persisted selections, including context integrity, with
      * aggregate quantity across lines sharing the same resource selection.
      *
-     * @return array<string, string>  Errors by cart line identifier
+     * @return array<string, string> Errors by cart line identifier
      */
     public function validateContextualBuyables(): array
     {
