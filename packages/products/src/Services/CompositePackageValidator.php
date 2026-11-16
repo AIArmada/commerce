@@ -251,6 +251,7 @@ final class CompositePackageValidator
             $children = ProductComponent::query()
                 ->withoutOwnerScope()
                 ->where('product_id', $id)
+                ->whereNotNull('component_product_id')
                 ->pluck('component_product_id');
 
             foreach ($children as $next) {

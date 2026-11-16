@@ -201,6 +201,7 @@ final class CompositeCartRevalidator
             $entries = CompositeComponents::read($fresh->entries);
 
             if ($entries !== $line->components
+                || ($line->attributes['components_fingerprint'] ?? null) !== $fresh->fingerprint
                 || $fresh->currency !== $line->currency
                 || collect($fresh->entries)->contains(static fn (array $entry): bool => $entry['requires_shipping']) !== $line->requiresShipping
                 || (bool) $product->is_taxable !== $line->isTaxable

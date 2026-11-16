@@ -676,6 +676,16 @@ class Variant extends Model implements Auditable, Buyable, HasMedia, Inventoryab
         });
 
         static::saving(function (Variant $variant): void {
+            $product = $variant->product;
+            if ($product instanceof Product && $product->isCompositeProduct()) {
+                $discount = $variant->discount_basis_points;
+                if ($discount !== null && ($discount < 0 || $discount > 10000)) {
+                    throw new InvalidCompositePackageException('Composite variant discount must be between 0 and 10000 basis points.');
+                }
+            }
+        });
+
+        static::saving(function (Variant $variant): void {
             if ($variant->isDirty('is_enabled') && ! $variant->is_enabled) {
                 $referenced = ProductComponent::query()
                     ->withoutOwnerScope()
