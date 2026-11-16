@@ -94,6 +94,59 @@ Nested composites are flattened into purchasable leaf products; the product hier
 
 The core snapshot entry keys remain stable across cart, checkout, orders, shipping, and inventory: `product_id`, `variant_id`, `inventoryable_type`, `inventoryable_id`, `quantity`, `sku`, `name`, `weight` (grams), `dimensions` (centimetres), `requires_shipping`, and `tracks_inventory`. Optional `unit_price` and `metadata` survive snapshots. Untracked components are not reserved as warehouse stock; consuming applications handle any additional capacity reservations.
 
+#### Scoped and shared capacity demands
+
+When Products consume resource pools that are shared, windowed or weighted,
+implement `CompositeCapacityDemandResolverInterface`. It extends the
+existing `CompositeCapacityResolverInterface`, so older stock-only
+implementations remain valid.
+
+```php
+use AIArmada\Products\Contracts\CompositeCapacityDemandResolverInterface;
+use AIArmada\Products\Models\Product;
+use AIArmada\Products\Models\ProductComponent;
+use AIArmada\Products\Support\CompositeCapacityDemand;
+
+final class ScopedCapacityResolver implements CompositeCapacityDemandResolverInterface
+{
+    public function availableFor(Product $parent, ProductComponent $component, array $context = []): ?int
+    {
+        return $this->demandFor($parent, $component, $context)->available;
+    }
+
+    public function demandFor(Product $parent, ProductComponent $component, array $context = []): CompositeCapacityDemand
+    {
+        $resourceKey = $this->resourceKey($component, $context);
+        $scopeKey = $this->scopeKey($context);
+
+        return new CompositeCapacityDemand(
+            resourceKey: $resourceKey,
+            scopeKey: $scopeKey,
+            unitsPerComponent: 1,
+            available: $this->availableUnits($resourceKey, $scopeKey),
+        );
+    }
+}
+
+// In your service provider:
+$this->app->bind(CompositeCapacityResolverInterface::class, ScopedCapacityResolver::class);
+```
+
+Composite availability now groups matching `(resourceKey, scopeKey)`
+demands. Different Products consuming the same resource and scope share
+one capacity constraint. The same Product in independent windows does not
+compete across windows. `unitsPerComponent` expresses the number of pool
+units consumed by each leaf component.
+
+Nested component ancestry and optional edge metadata are passed in
+`context['composition_path']`. Custom resolvers should return available
+units for the *whole pool*, not one component's share; if observations
+for the same pool differ, the lower value is used conservatively.
+
+The legacy resolver still groups by inventoryable identity with an
+unscoped key, preserving existing stock behavior. No reservation or
+booking holds are performed by this read-only calculation.
+
 ### GenerateVariants
 
 ```php
