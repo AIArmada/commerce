@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Checkout\Support;
 
 use AIArmada\Checkout\Contracts\MutableStepRegistryInterface;
+use AIArmada\Checkout\Contracts\ScopedCapacityCheckoutProviderInterface;
+use AIArmada\Checkout\Steps\ReserveScopedCapacityStep;
+use AIArmada\Checkout\Steps\CommitScopedCapacityStep;
 use AIArmada\Checkout\Integrations\InventoryAdapter;
 use AIArmada\Checkout\Integrations\PromotionsAdapter;
 use AIArmada\Checkout\Integrations\TaxAdapter;
@@ -22,6 +25,7 @@ final class RegisterCheckoutOptionalSteps
     public function register(MutableStepRegistryInterface $registry): void
     {
         $this->registerInventoryStep($registry);
+        $this->registerScopedCapacitySteps($registry);
         $this->registerTaxStep($registry);
         $this->registerDiscountStep($registry);
     }
@@ -37,6 +41,19 @@ final class RegisterCheckoutOptionalSteps
         } else {
             $registry->disable('reserve_inventory');
         }
+    }
+
+    private function registerScopedCapacitySteps(MutableStepRegistryInterface $registry): void
+    {
+        if (! $this->hasInventoryPackage() || ! app()->bound(ScopedCapacityCheckoutProviderInterface::class)) {
+            $registry->disable('reserve_scoped_capacity');
+            $registry->disable('commit_scoped_capacity');
+
+            return;
+        }
+
+        $registry->registerLazy('reserve_scoped_capacity', fn () => app(ReserveScopedCapacityStep::class));
+        $registry->registerLazy('commit_scoped_capacity', fn () => app(CommitScopedCapacityStep::class));
     }
 
     private function registerTaxStep(MutableStepRegistryInterface $registry): void
