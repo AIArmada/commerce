@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Contracts\Buyable;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\CompositeComponents;
 use AIArmada\Products\Actions\CreateCompositeProduct;
 use AIArmada\Products\Enums\ProductStatus;
@@ -99,6 +100,8 @@ it('prices and flattens mixed Product and registered Buyable components', functi
         'id' => (string) Str::uuid(),
         'title' => 'External Time Slot',
         'price' => 300,
+        'owner_type' => OwnerContext::resolve()?->getMorphClass(),
+        'owner_id' => OwnerContext::resolve()?->getKey(),
     ]);
     $product = Product::query()->create([
         'name' => 'Physical Product Component',
@@ -149,4 +152,23 @@ it('rejects unregistered Buyable types and cross-owner component identities', fu
     ], [
         ['buyable_type' => 'unregistered', 'buyable_id' => $external->id, 'quantity' => 1],
     ]))->toThrow(InvalidCompositePackageException::class);
+});
+
+it('rejects foreign or global Buyable components in an owned composite', function (): void {
+    $external = CompositeExternalSellable::query()->create([
+        'id' => (string) Str::uuid(),
+        'title' => 'Foreign Owner Slot',
+        'price' => 250,
+        'owner_type' => null,
+        'owner_id' => null,
+    ]);
+
+    expect(fn () => app(CreateCompositeProduct::class)->handle([
+        'name' => 'Owned Composite With Foreign Component',
+        'slug' => 'foreign-component-' . Str::random(8),
+        'sku' => 'BAD-OWNER-' . Str::random(8),
+        'price_mode' => 'sum',
+    ], [
+        ['buyable_type' => 'external_component', 'buyable_id' => $external->getKey(), 'quantity' => 1],
+    ]))->toThrow(InvalidCompositePackageException::class, 'same explicit owner tuple');
 });
