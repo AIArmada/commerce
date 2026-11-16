@@ -30,7 +30,7 @@ final class CompositeBuyableRegistry
         return $class;
     }
 
-    public function resolve(Product $parent, string $alias, string $id): Model&Buyable
+    public function resolve(Product $parent, string $alias, string $id): Model & Buyable
     {
         $class = $this->classFor($alias);
 

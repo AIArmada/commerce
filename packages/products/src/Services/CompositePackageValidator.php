@@ -5,14 +5,15 @@ declare(strict_types=1);
 namespace AIArmada\Products\Services;
 
 use AIArmada\CommerceSupport\Contracts\Buyable;
-use Illuminate\Database\Eloquent\Model;
 use AIArmada\Products\Enums\CompositePriceMode;
 use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Exceptions\InvalidCompositePackageException;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\ProductComponent;
 use AIArmada\Products\Models\Variant;
+use AIArmada\Products\Support\CompositeBuyableRegistry;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * Domain rules for merchant-configured composite packages.
@@ -84,7 +85,7 @@ final class CompositePackageValidator
         }
     }
 
-    public function assertBuyableComponent(Product $parent, Model&Buyable $buyable, int $quantity, bool $publishable = false): void
+    public function assertBuyableComponent(Product $parent, Model & Buyable $buyable, int $quantity, bool $publishable = false): void
     {
         if ($quantity < 1 || ! $parent->isCompositeProduct()) {
             throw new InvalidCompositePackageException('A composite Buyable requires a composite parent and positive quantity.');
@@ -190,7 +191,7 @@ final class CompositePackageValidator
             $variant = $component->variant;
 
             if (! $componentProduct instanceof Product) {
-                $buyable = app(\AIArmada\Products\Support\CompositeBuyableRegistry::class)
+                $buyable = app(CompositeBuyableRegistry::class)
                     ->resolve($parent, (string) $component->buyable_type, (string) $component->buyable_id);
                 $this->assertBuyableComponent($parent, $buyable, (int) $component->quantity, true);
                 $identity = $component->buyable_type . ':' . $component->buyable_id;

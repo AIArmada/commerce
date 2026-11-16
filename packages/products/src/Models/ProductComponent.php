@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Products\Models;
 
-use AIArmada\CommerceSupport\Contracts\Buyable;
-use AIArmada\Products\Support\CompositeBuyableRegistry;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
+use AIArmada\CommerceSupport\Contracts\Buyable;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\CommerceSupport\Traits\HasOwner;
@@ -17,6 +16,7 @@ use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Exceptions\InvalidCompositePackageException;
 use AIArmada\Products\Services\CompositePackageValidator;
 use AIArmada\Products\Support\ChildOwnershipGuard;
+use AIArmada\Products\Support\CompositeBuyableRegistry;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -196,7 +196,9 @@ class ProductComponent extends Model implements Auditable
                     throw new InvalidCompositePackageException('Composite Buyable could not be resolved.');
                 }
                 $validator->assertBuyableComponent(
-                    $parent, $buyable, (int) $component->quantity,
+                    $parent,
+                    $buyable,
+                    (int) $component->quantity,
                     $parent->status === ProductStatus::Active,
                 );
             }
@@ -233,7 +235,9 @@ class ProductComponent extends Model implements Auditable
                     throw new InvalidCompositePackageException('Composite Buyable could not be resolved.');
                 }
                 $validator->assertBuyableComponent(
-                    $parent, $buyable, (int) $component->quantity,
+                    $parent,
+                    $buyable,
+                    (int) $component->quantity,
                     $parent->status === ProductStatus::Active,
                 );
             }

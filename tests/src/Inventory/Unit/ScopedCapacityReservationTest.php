@@ -55,6 +55,7 @@ it('expires holds and returns capacity to the same pool without affecting anothe
     $service->setCapacity('seat', 'session-b', 4);
 
     CarbonImmutable::setTestNow('2026-12-01 10:00:00');
+
     try {
         $service->reserve('temp-1', [new ScopedCapacityLine('seat', 'session-a', 3)], 60);
         $service->reserve('temp-2', [new ScopedCapacityLine('seat', 'session-b', 2)], 3600);

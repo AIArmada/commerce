@@ -11,6 +11,7 @@ use AIArmada\Orders\Support\CartLineSnapshot;
 use AIArmada\Pricing\Contracts\PriceCalculatorInterface;
 use AIArmada\Products\Exceptions\InvalidCompositePackageException;
 use AIArmada\Products\Models\Product;
+use AIArmada\Products\Models\Variant;
 use Illuminate\Database\Eloquent\Relations\Relation;
 
 /**
@@ -177,13 +178,13 @@ final class CompositeCartRevalidator
                     return 'contents';
                 }
 
-                $variant = \AIArmada\Products\Models\Variant::query()
+                $variant = Variant::query()
                     ->whereKey($line->variantId)
                     ->where('product_id', $product->getKey())
                     ->where('is_enabled', true)
                     ->first();
 
-                if (! $variant instanceof \AIArmada\Products\Models\Variant) {
+                if (! $variant instanceof Variant) {
                     return 'contents';
                 }
             }

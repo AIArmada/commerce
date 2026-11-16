@@ -6,6 +6,7 @@ namespace AIArmada\Inventory\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -19,7 +20,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $quantity
  * @property string $state
  * @property string|null $order_id
- * @property \Carbon\CarbonImmutable $expires_at
+ * @property CarbonImmutable $expires_at
  * @property-read CapacityPool $pool
  */
 final class CapacityHold extends Model

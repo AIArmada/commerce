@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Checkout\Steps;
 
 use AIArmada\Checkout\Contracts\ScopedCapacityCheckoutProviderInterface;
+use AIArmada\Checkout\Data\StepResult;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Inventory\Contracts\ScopedCapacityReservationServiceInterface;
 use Throwable;
@@ -32,7 +33,7 @@ final class ReserveScopedCapacityStep extends AbstractCheckoutStep
             || ! app()->bound(ScopedCapacityReservationServiceInterface::class);
     }
 
-    public function handle(CheckoutSession $session): \AIArmada\Checkout\Data\StepResult
+    public function handle(CheckoutSession $session): StepResult
     {
         if ($this->canSkip($session)) {
             return $this->skipped('No scoped capacity integration configured');
@@ -69,7 +70,7 @@ final class ReserveScopedCapacityStep extends AbstractCheckoutStep
         ]);
     }
 
-    public function compensate(CheckoutSession $session): \AIArmada\Checkout\Data\StepResult
+    public function compensate(CheckoutSession $session): StepResult
     {
         $reservation = data_get($session->pricing_data ?? [], 'scoped_capacity_reservation');
 

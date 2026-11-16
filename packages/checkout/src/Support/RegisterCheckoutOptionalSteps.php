@@ -6,15 +6,15 @@ namespace AIArmada\Checkout\Support;
 
 use AIArmada\Checkout\Contracts\MutableStepRegistryInterface;
 use AIArmada\Checkout\Contracts\ScopedCapacityCheckoutProviderInterface;
-use AIArmada\Checkout\Steps\ReserveScopedCapacityStep;
-use AIArmada\Checkout\Steps\CommitScopedCapacityStep;
 use AIArmada\Checkout\Integrations\InventoryAdapter;
 use AIArmada\Checkout\Integrations\PromotionsAdapter;
 use AIArmada\Checkout\Integrations\TaxAdapter;
 use AIArmada\Checkout\Integrations\VouchersAdapter;
 use AIArmada\Checkout\Steps\ApplyDiscountsStep;
 use AIArmada\Checkout\Steps\CalculateTaxStep;
+use AIArmada\Checkout\Steps\CommitScopedCapacityStep;
 use AIArmada\Checkout\Steps\ReserveInventoryStep;
+use AIArmada\Checkout\Steps\ReserveScopedCapacityStep;
 use AIArmada\Inventory\InventoryServiceProvider;
 use AIArmada\Promotions\PromotionsServiceProvider;
 use AIArmada\Tax\TaxServiceProvider;

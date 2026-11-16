@@ -17,7 +17,6 @@ use AIArmada\Products\Models\Collection;
 use AIArmada\Products\Models\Option;
 use AIArmada\Products\Models\OptionValue;
 use AIArmada\Products\Models\Product;
-use AIArmada\Products\Models\ProductComponent;
 use AIArmada\Products\Models\Variant;
 use AIArmada\Products\Policies\AttributeGroupPolicy;
 use AIArmada\Products\Policies\AttributePolicy;
@@ -32,8 +31,8 @@ use AIArmada\Products\Policies\VariantPolicy;
 use AIArmada\Products\Services\CompositePackageService;
 use AIArmada\Products\Strategies\MatrixVariantGenerator;
 use AIArmada\Products\Support\StockBackedCompositeCapacityResolver;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Facades\Gate;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 

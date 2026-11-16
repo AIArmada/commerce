@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Products\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Products\Support\CompositeBuyableRegistry;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Exceptions\InvalidCompositePackageException;
@@ -14,6 +13,7 @@ use AIArmada\Products\Models\ProductComponent;
 use AIArmada\Products\Models\Variant;
 use AIArmada\Products\Services\CompositePackageService;
 use AIArmada\Products\Services\CompositePackageValidator;
+use AIArmada\Products\Support\CompositeBuyableRegistry;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 

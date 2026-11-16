@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Products\Services;
 
 use AIArmada\CommerceSupport\Contracts\Buyable;
-use AIArmada\Products\Support\CompositeBuyableRegistry;
-use Illuminate\Database\Eloquent\Model;
 use AIArmada\Products\Contracts\CompositeCapacityDemandResolverInterface;
 use AIArmada\Products\Contracts\CompositeCapacityResolverInterface;
 use AIArmada\Products\Enums\CompositePriceMode;
@@ -15,10 +13,12 @@ use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\ProductComponent;
 use AIArmada\Products\Models\Variant;
 use AIArmada\Products\Support\CompositeAvailability;
+use AIArmada\Products\Support\CompositeBuyableRegistry;
 use AIArmada\Products\Support\CompositeSnapshot;
 use AIArmada\Products\Support\ProductShipping;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
 
 final class CompositePackageService
 {
@@ -373,7 +373,7 @@ final class CompositePackageService
         }
     }
 
-    private function resolveChild(Product $parent, ProductComponent $component): Product|Buyable
+    private function resolveChild(Product $parent, ProductComponent $component): Product | Buyable
     {
         if ($component->component_product_id === null) {
             $buyable = app(CompositeBuyableRegistry::class)->resolve(
@@ -425,7 +425,7 @@ final class CompositePackageService
      *   metadata?: array<string,mixed>
      * }
      */
-    private function entryFor(Product|Buyable $sellable, ProductComponent $component, int $quantity): array
+    private function entryFor(Product | Buyable $sellable, ProductComponent $component, int $quantity): array
     {
         if (! $sellable instanceof Product) {
             $attributes = $sellable->getBuyableAttributes();

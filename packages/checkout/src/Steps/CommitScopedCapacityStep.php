@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Checkout\Steps;
 
+use AIArmada\Checkout\Data\StepResult;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Inventory\Contracts\ScopedCapacityReservationServiceInterface;
 use Throwable;
@@ -30,7 +31,7 @@ final class CommitScopedCapacityStep extends AbstractCheckoutStep
         return ! is_array(data_get($session->pricing_data ?? [], 'scoped_capacity_reservation'));
     }
 
-    public function handle(CheckoutSession $session): \AIArmada\Checkout\Data\StepResult
+    public function handle(CheckoutSession $session): StepResult
     {
         if ($this->canSkip($session)) {
             return $this->skipped('No scoped capacity hold');

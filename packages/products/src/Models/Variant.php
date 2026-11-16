@@ -15,6 +15,7 @@ use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Products\Concerns\EnforcesOwnerUniqueIdentity;
 use AIArmada\Products\Contracts\Inventoryable;
+use AIArmada\Products\Enums\CompositePriceMode;
 use AIArmada\Products\Exceptions\InvalidCompositePackageException;
 use AIArmada\Products\Support\ChildOwnershipGuard;
 use AIArmada\Products\Support\ProductMedia;
@@ -48,7 +49,7 @@ use Throwable;
  * @property string|null $combination_key
  * @property string|null $barcode
  * @property int|null $price
- * @property \AIArmada\Products\Enums\CompositePriceMode|null $price_mode
+ * @property CompositePriceMode|null $price_mode
  * @property int|null $discount_basis_points
  * @property int|null $compare_price
  * @property int|null $cost
@@ -118,7 +119,7 @@ class Variant extends Model implements Auditable, Buyable, HasMedia, Inventoryab
     {
         return [
             'price' => 'integer',
-            'price_mode' => \AIArmada\Products\Enums\CompositePriceMode::class,
+            'price_mode' => CompositePriceMode::class,
             'discount_basis_points' => 'integer',
             'compare_price' => 'integer',
             'cost' => 'integer',
