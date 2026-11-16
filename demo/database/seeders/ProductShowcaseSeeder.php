@@ -31,7 +31,7 @@ use Illuminate\Support\Str;
  * Demonstrates ALL features of the products package:
  * - Categories (Hierarchical, Featured, with Metadata)
  * - Collections (Manual & Automatic/Rule-based)
- * - Products (Simple, Configurable, Digital, Subscription)
+ * - Products (Simple, Configurable, Digital, Service, Subscription)
  * - Variants (with Options like Size/Color)
  * - Attributes (Text, Number, Select, Boolean, Color, Date)
  * - Attribute Groups & Sets (Organized attribute management)
@@ -817,7 +817,27 @@ final class ProductShowcaseSeeder extends Seeder
         $bestSellers->products()->attach($software->id, ['position' => 2]);
         $software->attachTags(['software', 'subscription', 'office', 'productivity', 'digital']);
 
-        // Product 3: Subscription Product
+        // Product 3: Service Product
+        $consultation = Product::create([
+            'name' => 'Personal Technology Consultation',
+            'slug' => 'personal-technology-consultation',
+            'sku' => 'CONSULT-TECH-60',
+            'description' => 'A one-hour professional consultation delivered online.',
+            'short_description' => 'One-hour online consultation',
+            'type' => ProductType::Service,
+            'status' => ProductStatus::Active,
+            'visibility' => ProductVisibility::CatalogSearch,
+            'price' => 15000,
+            'currency' => 'MYR',
+            'is_taxable' => true,
+            'requires_shipping' => false,
+            'tracks_inventory' => false,
+            'published_at' => now(),
+        ]);
+
+        $consultation->attachTags(['consultation', 'service', 'professional']);
+
+        // Product 4: Subscription Product
         $subscription = Product::create([
             'name' => 'Premium Membership',
             'slug' => 'premium-membership',

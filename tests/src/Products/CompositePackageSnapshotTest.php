@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 use AIArmada\Products\Actions\CreateCompositeProduct;
 use AIArmada\Products\Concerns\HasComponents;
-use AIArmada\Products\Contracts\CompositeStockResolverInterface;
+use AIArmada\Products\Contracts\CompositeCapacityResolverInterface;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Models\Product;
+use AIArmada\Products\Models\ProductComponent;
 use AIArmada\Products\Models\Variant;
 use AIArmada\Products\Services\CompositePackageService;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
 final class CompositeConcernTestProduct extends Product
@@ -18,13 +18,16 @@ final class CompositeConcernTestProduct extends Product
     use HasComponents;
 }
 
-final class CompositeTestStockResolver implements CompositeStockResolverInterface
+final class CompositeTestCapacityResolver implements CompositeCapacityResolverInterface
 {
     /** @var array<string, int> */
     public array $stock = [];
 
-    public function availableFor(Model $inventoryable): int
+    /** @param array<string, mixed> $context */
+    public function availableFor(Product $parent, ProductComponent $component, array $context = []): ?int
     {
+        $inventoryable = $component->variant ?? $component->componentProduct;
+
         return $this->stock[$inventoryable->getMorphClass() . ':' . $inventoryable->getKey()] ?? 0;
     }
 }
@@ -210,8 +213,8 @@ it('changes the snapshot fingerprint when current catalog contents or prices cha
 });
 
 it('reports package availability from the bottleneck actual inventory SKU', function (): void {
-    $resolver = new CompositeTestStockResolver;
-    app()->instance(CompositeStockResolverInterface::class, $resolver);
+    $resolver = new CompositeTestCapacityResolver;
+    app()->instance(CompositeCapacityResolverInterface::class, $resolver);
 
     $mouse = makeSnapshotComponent(['sku' => 'BOTTLENECK-MOUSE']);
     $cable = makeSnapshotComponent(['sku' => 'BOTTLENECK-CABLE']);
@@ -237,8 +240,8 @@ it('reports package availability from the bottleneck actual inventory SKU', func
 });
 
 it('exposes composition helpers through the HasComponents concern', function (): void {
-    $resolver = new CompositeTestStockResolver;
-    app()->instance(CompositeStockResolverInterface::class, $resolver);
+    $resolver = new CompositeTestCapacityResolver;
+    app()->instance(CompositeCapacityResolverInterface::class, $resolver);
 
     $mouse = makeSnapshotComponent(['sku' => 'CONCERN-MOUSE', 'price' => 1000]);
     $parent = app(CreateCompositeProduct::class)->handle([

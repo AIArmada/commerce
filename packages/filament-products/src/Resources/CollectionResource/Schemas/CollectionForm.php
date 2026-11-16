@@ -101,6 +101,7 @@ class CollectionForm
                                                 'configurable' => 'Configurable',
                                                 'composite' => 'Composite',
                                                 'digital' => 'Digital',
+                                                'service' => 'Service',
                                                 'subscription' => 'Subscription',
                                             ])
                                             ->visible(fn (Get $get) => $get('field') === 'type'),

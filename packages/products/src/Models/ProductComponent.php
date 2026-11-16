@@ -33,6 +33,8 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string|null $variant_id
  * @property int $quantity
  * @property int $position
+ * @property int|null $unit_price
+ * @property array<string, mixed>|null $metadata
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Product $product
@@ -60,6 +62,8 @@ class ProductComponent extends Model implements Auditable
         'variant_id',
         'quantity',
         'position',
+        'unit_price',
+        'metadata',
     ];
 
     protected function casts(): array
@@ -67,6 +71,8 @@ class ProductComponent extends Model implements Auditable
         return [
             'quantity' => 'integer',
             'position' => 'integer',
+            'unit_price' => 'integer',
+            'metadata' => 'array',
         ];
     }
 
@@ -163,6 +169,7 @@ class ProductComponent extends Model implements Auditable
                 $validator->assertComponent($parent, $componentProduct, $variant, (int) $component->quantity);
             }
 
+            self::assertComponentPricing($component);
             ChildOwnershipGuard::apply($component, $parent, 'product');
         });
 
@@ -184,6 +191,16 @@ class ProductComponent extends Model implements Auditable
             } else {
                 $validator->assertComponent($parent, $componentProduct, $variant, (int) $component->quantity);
             }
+
+            self::assertComponentPricing($component);
+        });
+
+        static::saved(static function (ProductComponent $component): void {
+            self::syncParentShipping($component);
+        });
+
+        static::deleted(static function (ProductComponent $component): void {
+            self::syncParentShipping($component);
         });
 
         static::deleting(function (ProductComponent $component): void {
@@ -251,6 +268,26 @@ class ProductComponent extends Model implements Auditable
         }
 
         return [$parent, $componentProduct, $variant];
+    }
+
+    private static function assertComponentPricing(ProductComponent $component): void
+    {
+        if ($component->unit_price !== null && $component->unit_price < 0) {
+            throw new InvalidCompositePackageException('A component unit price must be a non-negative integer in minor units.');
+        }
+
+        if ($component->metadata !== null && ! is_array($component->metadata)) {
+            throw new InvalidCompositePackageException('Composite component metadata must be an array.');
+        }
+    }
+
+    private static function syncParentShipping(ProductComponent $component): void
+    {
+        $parent = Product::query()->whereKey($component->product_id)->first();
+
+        if ($parent instanceof Product) {
+            $parent->save();
+        }
     }
 
     protected static function newFactory(): ProductComponentFactory

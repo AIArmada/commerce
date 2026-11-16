@@ -181,6 +181,22 @@ describe('Product Model', function (): void {
                 ->and($product->tracksInventory())->toBeFalse();
         });
 
+        it('can be a non-shipping service product', function (): void {
+            $product = Product::create([
+                'name' => 'Consultation Service',
+                'price' => 2500,
+                'status' => ProductStatus::Active,
+                'type' => ProductType::Service,
+            ]);
+
+            expect($product->isService())->toBeTrue()
+                ->and($product->isPhysical())->toBeFalse()
+                ->and($product->requires_shipping)->toBeFalse()
+                ->and($product->supportsVariants())->toBeFalse()
+                ->and($product->tracksInventory())->toBeFalse()
+                ->and($product->getBuyableStock())->toBeNull();
+        });
+
         it('can be subscription product', function (): void {
             $product = Product::create([
                 'name' => 'Subscription Product',

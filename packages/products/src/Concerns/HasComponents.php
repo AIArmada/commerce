@@ -62,8 +62,11 @@ trait HasComponents
         return $this->compositeSnapshot()->entries;
     }
 
-    public function compositeAvailability(): CompositeAvailability
+    /**
+     * @param  array<string, mixed>  $context
+     */
+    public function compositeAvailability(array $context = []): CompositeAvailability
     {
-        return app(CompositePackageService::class)->availability($this);
+        return app(CompositePackageService::class)->availability($this, context: $context);
     }
 }

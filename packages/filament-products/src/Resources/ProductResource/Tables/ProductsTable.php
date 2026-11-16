@@ -70,6 +70,7 @@ class ProductsTable
                         ProductType::Configurable => 'info',
                         ProductType::Composite => 'warning',
                         ProductType::Digital => 'success',
+                        ProductType::Service => 'info',
                         ProductType::Subscription => 'primary',
                         null => 'gray',
                     })

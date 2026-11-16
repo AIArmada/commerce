@@ -244,11 +244,12 @@ it('renders product type distribution in explicit global context when no owner i
     $method = new ReflectionMethod(ProductTypeDistributionWidget::class, 'getStats');
     $stats = OwnerContext::withOwner(null, fn (): array => $method->invoke($widget));
 
-    expect($stats)->toHaveCount(4)
+    expect($stats)->toHaveCount(5)
         ->and($stats[0]->getValue())->toBe(1)
         ->and($stats[1]->getValue())->toBe(1)
         ->and($stats[2]->getValue())->toBe(0)
-        ->and($stats[3]->getValue())->toBe(2);
+        ->and($stats[3]->getValue())->toBe(0)
+        ->and($stats[4]->getValue())->toBe(2);
 });
 
 it('builds top selling products query in explicit global context when no owner is resolved', function (): void {

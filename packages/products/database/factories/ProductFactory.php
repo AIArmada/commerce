@@ -125,9 +125,23 @@ class ProductFactory extends Factory
         return $this->state(fn (array $attributes): array => [
             'type' => ProductType::Composite,
             'status' => ProductStatus::Draft,
-            'requires_shipping' => true,
+            'requires_shipping' => false,
             'supports_variants' => false,
             'tracks_inventory' => false,
+        ]);
+    }
+
+    public function service(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'type' => ProductType::Service,
+            'requires_shipping' => false,
+            'supports_variants' => false,
+            'tracks_inventory' => false,
+            'weight' => null,
+            'length' => null,
+            'width' => null,
+            'height' => null,
         ]);
     }
 

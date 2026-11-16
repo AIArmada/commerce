@@ -969,6 +969,8 @@ abstract class TestCase extends Orchestra
             $table->foreignUuid('variant_id')->nullable();
             $table->unsignedInteger('quantity');
             $table->unsignedInteger('position')->default(0);
+            $table->unsignedBigInteger('unit_price')->nullable();
+            $table->json('metadata')->nullable();
             $table->timestampsTz();
 
             $table->index(['product_id', 'position']);

@@ -97,12 +97,12 @@ return [
 
 ### Composite package behavior
 
-- `ProductType::Composite` parents default to `tracks_inventory = false` and `supports_variants = false`; the package is sold through exact component inventories, never the parent SKU.
-- `products.price_mode` accepts `fixed` or `sum`. Fixed packages use the parent price. Sum packages use each component's canonical base price multiplied by its per-package quantity.
+- `ProductType::Composite` parents have `tracks_inventory = false` and `supports_variants = false`; their `requires_shipping` flag is derived from the included components instead of being hardcoded.
+- `products.price_mode` accepts `fixed` or `sum`. Fixed packages use the parent price. Sum packages use component catalog prices or optional per-component integer `unit_price` overrides multiplied by per-package quantities.
 - `product_components` is resolved through `database.tables.product_components`. Component rows are owner-scoped and must share the parent owner tuple.
-- Components must be physical, shipped, inventory-tracked products with a SKU. Configurable components require an exact variant belonging to that component product.
+- Components may be physical, digital, service, or another composite. Nested graphs are acyclic, bounded to 32 levels, and recursively flattened before fulfillment. Physical shipping and finite inventory are calculated only from leaf products. Every component requires a SKU. A product that supports variants requires an exact variant. Component `metadata` is an optional application-defined JSON object carried in frozen snapshots.
 - Activating a package validates at least one component, component availability state, currency, and tax consistency. Referenced component products and variants cannot be deleted.
-- `CompositePackageService` is the canonical read surface for owner-scoped components, package price, bottleneck availability, publish validation, and the shared composition snapshot.
+- `CompositePackageService` is the canonical read surface for owner-scoped recursive composition, nested pricing, shared-leaf bottleneck availability, publish validation, and the immutable flattened composition snapshot. `CompositeCapacityResolverInterface::availableFor()` returns `?int`; `null` means no finite limit, while zero blocks a purchase. `StockBackedCompositeCapacityResolver` is the default direct warehouse-stock implementation. Bind `CompositeCapacityResolverInterface` to access the parent, component (including its metadata), and arbitrary application context; date/session-specific reservations and capacity allocation belong to the consuming application.
 
 ### Variant behavior
 

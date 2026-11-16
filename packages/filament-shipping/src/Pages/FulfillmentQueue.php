@@ -367,7 +367,7 @@ class FulfillmentQueue extends Page implements HasTable
      */
     private function hasPackageUnits(Order $order): bool
     {
-        return $order->items->contains(fn ($item): bool => PackageUnit::componentsOf($item) !== []);
+        return $order->items->contains(fn ($item): bool => PackageUnit::hasShippableComponents($item));
     }
 
     protected function getOrderViewUrl(Order $order): string

@@ -7,7 +7,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Actions\CreateCompositeProduct;
 use AIArmada\Products\Actions\PublishCompositeProduct;
 use AIArmada\Products\Actions\ReplaceProductComponents;
-use AIArmada\Products\Contracts\CompositeStockResolverInterface;
+use AIArmada\Products\Contracts\CompositeCapacityResolverInterface;
 use AIArmada\Products\Enums\CompositePriceMode;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
@@ -16,7 +16,6 @@ use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\ProductComponent;
 use AIArmada\Products\Models\Variant;
 use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
 function makeCompositeParent(array $attributes = []): Product
@@ -72,13 +71,16 @@ function makeComponentVariant(Product $product, array $attributes = []): Variant
     ]);
 }
 
-final class CompositePackageCompositionStockResolver implements CompositeStockResolverInterface
+final class CompositePackageCompositionCapacityResolver implements CompositeCapacityResolverInterface
 {
     /** @var array<string, int> */
     public array $stock = [];
 
-    public function availableFor(Model $inventoryable): int
+    /** @param array<string, mixed> $context */
+    public function availableFor(Product $parent, ProductComponent $component, array $context = []): ?int
     {
+        $inventoryable = $component->variant ?? $component->componentProduct;
+
         return $this->stock[$inventoryable->getMorphClass() . ':' . $inventoryable->getKey()] ?? 0;
     }
 }
@@ -198,17 +200,26 @@ it('replaces components transactionally without touching the old set on validati
         ->and($components->first()->quantity)->toBe(1);
 });
 
-it('rejects self references and nested composite components', function (): void {
-    $parent = makeCompositeParent();
-    $nested = makeCompositeParent(['sku' => 'NESTED-PKG']);
+it('rejects self references while accepting nested composite components', function (): void {
+    $parent = makeCompositeParent(['currency' => 'MYR']);
+    $nested = makeCompositeParent(['sku' => 'NESTED-PKG', 'currency' => 'MYR']);
+    $leaf = makeComponentProduct(['sku' => 'NESTED-LEAF', 'currency' => 'MYR']);
 
     expect(fn () => app(ReplaceProductComponents::class)->handle($parent, [
         ['component_product_id' => $parent->id, 'quantity' => 1],
     ]))->toThrow(InvalidCompositePackageException::class, 'cannot contain itself');
 
-    expect(fn () => app(ReplaceProductComponents::class)->handle($parent, [
-        ['component_product_id' => $nested->id, 'quantity' => 1],
-    ]))->toThrow(InvalidCompositePackageException::class, 'Nested composite');
+    app(ReplaceProductComponents::class)->handle($nested, [
+        ['component_product_id' => $leaf->id, 'quantity' => 2],
+    ]);
+
+    app(ReplaceProductComponents::class)->handle($parent, [
+        ['component_product_id' => $nested->id, 'quantity' => 3],
+    ]);
+
+    expect($parent->compositeSnapshot()->entries)->toHaveCount(1)
+        ->and($parent->compositeSnapshot()->entries[0]['product_id'])->toBe($leaf->id)
+        ->and($parent->compositeSnapshot()->entries[0]['quantity'])->toBe(6);
 });
 
 it('requires an exact variant for configurable components and rejects misplaced variants', function (): void {
@@ -236,10 +247,10 @@ it('requires an exact variant for configurable components and rejects misplaced 
 
     expect(fn () => app(ReplaceProductComponents::class)->handle($parent, [
         ['component_product_id' => $simple->id, 'variant_id' => $otherVariant->id, 'quantity' => 1],
-    ]))->toThrow(InvalidCompositePackageException::class, 'Only configurable components');
+    ]))->toThrow(InvalidCompositePackageException::class, 'Only components supporting variants');
 });
 
-it('rejects duplicate components, non-physical components, and inconsistent money or tax', function (): void {
+it('rejects duplicate components and inconsistent money or tax', function (): void {
     $mouse = makeComponentProduct();
     $parent = makeCompositeParent();
 
@@ -254,9 +265,12 @@ it('rejects duplicate components, non-physical components, and inconsistent mone
         'tracks_inventory' => false,
     ]);
 
-    expect(fn () => app(ReplaceProductComponents::class)->handle($parent, [
+    $rows = app(ReplaceProductComponents::class)->handle($parent, [
         ['component_product_id' => $digital->id, 'quantity' => 1],
-    ]))->toThrow(InvalidCompositePackageException::class, 'physical product');
+    ]);
+
+    expect($rows)->toHaveCount(1)
+        ->and($parent->fresh()->requires_shipping)->toBeFalse();
 
     $otherCurrency = makeComponentProduct(['currency' => 'USD']);
 
@@ -398,8 +412,8 @@ it('leaves ordinary product buyable lines free of composition data', function ()
 });
 
 it('reflects actual component availability through product stock helpers', function (): void {
-    $resolver = new CompositePackageCompositionStockResolver;
-    app()->instance(CompositeStockResolverInterface::class, $resolver);
+    $resolver = new CompositePackageCompositionCapacityResolver;
+    app()->instance(CompositeCapacityResolverInterface::class, $resolver);
 
     $mouse = makeComponentProduct(['sku' => 'STOCK-MOUSE']);
     $cable = makeComponentProduct(['sku' => 'STOCK-CABLE']);
@@ -425,8 +439,8 @@ it('reflects actual component availability through product stock helpers', funct
 });
 
 it('reports zero package availability for a disabled component variant', function (): void {
-    $resolver = new CompositePackageCompositionStockResolver;
-    app()->instance(CompositeStockResolverInterface::class, $resolver);
+    $resolver = new CompositePackageCompositionCapacityResolver;
+    app()->instance(CompositeCapacityResolverInterface::class, $resolver);
 
     $configurable = makeConfigurableComponent();
     $variant = makeComponentVariant($configurable, ['is_enabled' => false]);

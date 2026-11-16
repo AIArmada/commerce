@@ -10,6 +10,7 @@ enum ProductType: string
     case Configurable = 'configurable';
     case Composite = 'composite';
     case Digital = 'digital';
+    case Service = 'service';
     case Subscription = 'subscription';
 
     public function label(): string
@@ -19,6 +20,7 @@ enum ProductType: string
             self::Configurable => __('products::enums.type.configurable'),
             self::Composite => __('products::enums.type.composite'),
             self::Digital => __('products::enums.type.digital'),
+            self::Service => __('products::enums.type.service'),
             self::Subscription => __('products::enums.type.subscription'),
         };
     }
@@ -39,20 +41,20 @@ enum ProductType: string
     public function tracksInventoryByDefault(): bool
     {
         return match ($this) {
-            self::Digital, self::Composite => false,
+            self::Digital, self::Service, self::Composite => false,
             default => true,
         };
     }
 
     public function requiresShippingByDefault(): bool
     {
-        return $this->isPhysical();
+        return $this !== self::Composite && $this->isPhysical();
     }
 
     public function isPhysical(): bool
     {
         return match ($this) {
-            self::Simple, self::Configurable, self::Composite => true,
+            self::Simple, self::Configurable => true,
             default => false,
         };
     }
@@ -69,6 +71,7 @@ enum ProductType: string
             self::Configurable => 'heroicon-o-squares-2x2',
             self::Composite => 'heroicon-o-cube-transparent',
             self::Digital => 'heroicon-o-cloud-arrow-down',
+            self::Service => 'heroicon-o-wrench-screwdriver',
             self::Subscription => 'heroicon-o-arrow-path',
         };
     }

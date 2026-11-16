@@ -10,6 +10,8 @@ namespace AIArmada\Products\Support;
  * Entry keys are shared with cart, checkout, orders, shipping, and inventory:
  * product_id, variant_id, inventoryable_type, inventoryable_id, quantity,
  * sku, name, weight, dimensions, requires_shipping, and tracks_inventory.
+ * Nested packages are recursively flattened to leaf entries. The optional
+ * composition_path on each nested entry preserves the original ancestry.
  */
 final class CompositeSnapshot
 {
@@ -27,7 +29,10 @@ final class CompositeSnapshot
      *     weight: int|null,
      *     dimensions: array{length: int, width: int, height: int}|null,
      *     requires_shipping: bool,
-     *     tracks_inventory: bool
+     *     tracks_inventory: bool,
+     *     unit_price?: int,
+     *     metadata?: array<string, mixed>,
+     *     composition_path?: list<array{product_id: string, component_id: string, quantity: positive-int, unit_price?: int, metadata?: array<string, mixed>}>
      * }>  $entries
      */
     public function __construct(

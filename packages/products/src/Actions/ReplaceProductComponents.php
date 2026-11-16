@@ -34,7 +34,9 @@ final class ReplaceProductComponents
      *     component_product_id: string,
      *     variant_id?: string|null,
      *     quantity?: int,
-     *     position?: int
+     *     position?: int,
+     *     unit_price?: int|null,
+     *     metadata?: array<string, mixed>|null
      * }>  $components
      * @return Collection<int, ProductComponent>
      */
@@ -69,6 +71,10 @@ final class ReplaceProductComponents
 
             $current = $this->service->componentsFor($parent);
 
+            // Recalculate the persisted parent shipping flag from the exact
+            // composition, including when a draft package becomes empty.
+            $parent->save();
+
             if ($parent->status === ProductStatus::Active) {
                 $this->service->assertPublishable($parent, $current);
             }
@@ -102,6 +108,16 @@ final class ReplaceProductComponents
 
             $this->validator->assertComponent($parent, $componentProduct, $variant, $quantity);
 
+            $unitPrice = $component['unit_price'] ?? null;
+            if ($unitPrice !== null && (! is_int($unitPrice) || $unitPrice < 0)) {
+                throw new InvalidCompositePackageException('A component unit price must be a non-negative integer in minor units.');
+            }
+
+            $metadata = $component['metadata'] ?? null;
+            if ($metadata !== null && ! is_array($metadata)) {
+                throw new InvalidCompositePackageException('Composite component metadata must be an array.');
+            }
+
             $identity = $componentProduct->getKey() . ':' . ($variant?->getKey() ?? '');
 
             if (isset($seen[$identity])) {
@@ -118,6 +134,8 @@ final class ReplaceProductComponents
                 'variant_id' => $variant instanceof Variant ? (string) $variant->getKey() : null,
                 'quantity' => $quantity,
                 'position' => (int) ($component['position'] ?? $index),
+                'unit_price' => $unitPrice,
+                'metadata' => $metadata,
             ];
         }
 

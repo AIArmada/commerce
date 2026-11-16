@@ -12,7 +12,7 @@ use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
 /**
- * Displays product distribution by type (Physical, Digital, Subscription).
+ * Displays catalog distribution across physical, digital, service, and subscription offerings.
  */
 final class ProductTypeDistributionWidget extends BaseWidget
 {
@@ -38,6 +38,10 @@ final class ProductTypeDistributionWidget extends BaseWidget
                     [ProductStatus::Active->value, ProductType::Digital->value],
                 )
                 ->selectRaw(
+                    'SUM(CASE WHEN status = ? AND type = ? THEN 1 ELSE 0 END) AS service_products',
+                    [ProductStatus::Active->value, ProductType::Service->value],
+                )
+                ->selectRaw(
                     'SUM(CASE WHEN status = ? AND type = ? THEN 1 ELSE 0 END) AS subscription_products',
                     [ProductStatus::Active->value, ProductType::Subscription->value],
                 )
@@ -51,6 +55,7 @@ final class ProductTypeDistributionWidget extends BaseWidget
 
             $physicalProducts = (int) ($counts['physical_products'] ?? 0);
             $digitalProducts = (int) ($counts['digital_products'] ?? 0);
+            $serviceProducts = (int) ($counts['service_products'] ?? 0);
             $subscriptionProducts = (int) ($counts['subscription_products'] ?? 0);
             $totalActive = (int) ($counts['total_active'] ?? 0);
 
@@ -64,6 +69,11 @@ final class ProductTypeDistributionWidget extends BaseWidget
                     ->description('Downloadable')
                     ->descriptionIcon('heroicon-o-cloud-arrow-down')
                     ->color('success'),
+
+                Stat::make('Services', $serviceProducts)
+                    ->description('Non-physical offerings')
+                    ->descriptionIcon('heroicon-o-wrench-screwdriver')
+                    ->color('info'),
 
                 Stat::make('Subscriptions', $subscriptionProducts)
                     ->description('Recurring billing')
