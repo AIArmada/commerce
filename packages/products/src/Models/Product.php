@@ -892,6 +892,13 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
         });
 
         static::saving(function (Product $product): void {
+            if ($product->exists && $product->isCompositeProduct()) {
+                $product->requires_shipping = app(\\AIArmada\\Products\\Services\\CompositePackageService::class)
+                    ->requiresShippingFor($product);
+            }
+        });
+
+        static::saving(function (Product $product): void {
             if ($product->exists || ! $product->isCompositeProduct()) {
                 return;
             }
@@ -913,7 +920,6 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
             $componentFields = [
                 'status',
                 'type',
-                'requires_shipping',
                 'tracks_inventory',
                 'supports_variants',
                 'currency',
@@ -921,7 +927,8 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
                 'tax_class',
             ];
 
-            if (! $product->isDirty($componentFields)) {
+            if (! $product->isDirty($componentFields)
+                && ! (! $product->isCompositeProduct() && $product->isDirty('requires_shipping'))) {
                 return;
             }
 
@@ -1025,6 +1032,18 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
                     ProductComponent::query()->where('product_id', $product->getKey())->delete();
                 }
             });
+        });
+
+        static::updated(function (Product $product): void {
+            if ($product->isCompositeProduct() && $product->wasChanged('requires_shipping')) {
+                ProductComponent::query()
+                    ->where('component_product_id', $product->getKey())
+                    ->with('product')
+                    ->get()
+                    ->each(static function (ProductComponent $reference): void {
+                        $reference->product?->save();
+                    });
+            }
         });
 
         static::updated(function (Product $product): void {

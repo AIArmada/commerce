@@ -20,6 +20,8 @@ use Illuminate\Database\Eloquent\Collection;
  */
 final class CompositePackageValidator
 {
+    public const int MAX_DEPTH = 32;
+
     public function assertComponent(Product $parent, Product $componentProduct, ?Variant $variant, int $quantity): void
     {
         if ($quantity < 1) {
@@ -32,10 +34,6 @@ final class CompositePackageValidator
 
         if ($this->typeOf($parent) !== ProductType::Composite) {
             throw new InvalidCompositePackageException('Only a composite product can own package components.');
-        }
-
-        if ($this->typeOf($componentProduct) === ProductType::Composite) {
-            throw new InvalidCompositePackageException('Nested composite packages are not supported.');
         }
 
         if (! $this->sameOwner($parent, $componentProduct)) {
@@ -53,6 +51,14 @@ final class CompositePackageValidator
         if ((bool) $parent->is_taxable !== (bool) $componentProduct->is_taxable
             || (string) $parent->tax_class !== (string) $componentProduct->tax_class) {
             throw new InvalidCompositePackageException('Composite components must use the same tax treatment as the package.');
+        }
+
+        if ($this->typeOf($componentProduct) === ProductType::Composite) {
+            if ($variant instanceof Variant) {
+                throw new InvalidCompositePackageException('Composite components cannot select a variant of a nested package.');
+            }
+
+            $this->assertAcyclicReference($parent, $componentProduct);
         }
 
         if ($componentProduct->supportsVariants()) {
@@ -126,6 +132,22 @@ final class CompositePackageValidator
             throw new InvalidCompositePackageException('A composite package requires a valid fixed or sum price mode.');
         }
 
+        $this->validateGraph($parent, $components, []);
+    }
+
+    /**
+     * @param Collection<int, ProductComponent> $components
+     * @param list<string> $ancestors
+     */
+    private function validateGraph(Product $parent, Collection $components, array $ancestors): void
+    {
+        $id = (string) $parent->getKey();
+
+        if (in_array($id, $ancestors, true) || count($ancestors) >= self::MAX_DEPTH) {
+            throw new InvalidCompositePackageException('Composite package composition contains a cycle or exceeds maximum depth.');
+        }
+
+        $ancestors[] = $id;
         $seen = [];
 
         foreach ($components as $component) {
@@ -145,6 +167,50 @@ final class CompositePackageValidator
             }
 
             $seen[$identity] = true;
+
+            if ($componentProduct->isCompositeProduct()) {
+                $nested = ProductComponent::query()
+                    ->where('product_id', $componentProduct->getKey())
+                    ->with(['componentProduct', 'variant'])
+                    ->ordered()
+                    ->get();
+
+                if ($nested->isEmpty()) {
+                    throw new InvalidCompositePackageException('An active nested composite package must contain components.');
+                }
+
+                $this->validateGraph($componentProduct, $nested, $ancestors);
+            }
+        }
+    }
+
+    private function assertAcyclicReference(Product $parent, Product $child): void
+    {
+        $target = (string) $parent->getKey();
+        $stack = [[$child->getKey(), []]];
+
+        while ($stack !== []) {
+            [$current, $ancestors] = array_pop($stack);
+            $id = (string) $current;
+
+            if ($id === $target || in_array($id, $ancestors, true)) {
+                throw new InvalidCompositePackageException('Composite package composition contains a cycle.');
+            }
+
+            if (count($ancestors) >= self::MAX_DEPTH) {
+                throw new InvalidCompositePackageException('Composite package nesting exceeds the maximum depth.');
+            }
+
+            $ancestors[] = $id;
+
+            $children = ProductComponent::query()
+                ->withoutOwnerScope()
+                ->where('product_id', $id)
+                ->pluck('component_product_id');
+
+            foreach ($children as $next) {
+                $stack[] = [(string) $next, $ancestors];
+            }
         }
     }
 

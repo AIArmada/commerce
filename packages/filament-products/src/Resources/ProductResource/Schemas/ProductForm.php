@@ -123,7 +123,7 @@ class ProductForm
                             ->columns(2),
 
                         Section::make('Composite Package')
-                            ->description('Combine physical products, digital items and services. Shipping is derived from components.')
+                            ->description('Combine products, services and reusable composite packages. Shipping and inventory resolve through nested leaf components.')
                             ->schema([
                                 Select::make('price_mode')
                                     ->label('Price Mode')
@@ -480,7 +480,6 @@ class ProductForm
     private static function componentProductOptions(?Product $record): array
     {
         $query = Product::query()
-            ->where('type', '!=', ProductType::Composite->value)
             ->orderBy('name');
 
         if ($record instanceof Product && $record->exists) {

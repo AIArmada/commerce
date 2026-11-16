@@ -20,7 +20,8 @@ use InvalidArgumentException;
  *     requires_shipping: bool,
  *     tracks_inventory: bool,
  *     unit_price?: int,
- *     metadata?: array<string, mixed>
+ *     metadata?: array<string, mixed>,
+ *     composition_path?: list<array{product_id: string, component_id: string, quantity: positive-int}>
  * }
  */
 final class CompositeComponents
@@ -52,6 +53,7 @@ final class CompositeComponents
             $tracksInventory = $entry['tracks_inventory'] ?? null;
             $unitPrice = $entry['unit_price'] ?? null;
             $metadata = $entry['metadata'] ?? null;
+            $compositionPath = $entry['composition_path'] ?? null;
 
             if (! is_string($productId) || $productId === ''
                 || ! array_key_exists('variant_id', $entry) || ($variantId !== null && (! is_string($variantId) || $variantId === ''))
@@ -64,7 +66,8 @@ final class CompositeComponents
                 || ! array_key_exists('dimensions', $entry)
                 || ! is_bool($requiresShipping) || ! is_bool($tracksInventory)
                 || ($unitPrice !== null && (! is_int($unitPrice) || $unitPrice < 0))
-                || ($metadata !== null && ! is_array($metadata))) {
+                || ($metadata !== null && ! is_array($metadata))
+                || (array_key_exists('composition_path', $entry) && (! is_array($compositionPath) || ! array_is_list($compositionPath) || $compositionPath === []))) {
                 throw new InvalidArgumentException('Invalid composite component snapshot.');
             }
 
@@ -103,6 +106,23 @@ final class CompositeComponents
 
             if (array_key_exists('metadata', $entry)) {
                 $component['metadata'] = $metadata;
+            }
+
+            if (array_key_exists('composition_path', $entry)) {
+                foreach ($compositionPath as $step) {
+                    if (! is_array($step)
+                        || ! is_string($step['product_id'] ?? null) || $step['product_id'] === ''
+                        || ! is_string($step['component_id'] ?? null) || $step['component_id'] === ''
+                        || ! is_int($step['quantity'] ?? null) || $step['quantity'] < 1) {
+                        throw new InvalidArgumentException('Invalid nested composite provenance path.');
+                    }
+                }
+
+                $component['composition_path'] = array_map(static fn (array $step): array => [
+                    'product_id' => $step['product_id'],
+                    'component_id' => $step['component_id'],
+                    'quantity' => $step['quantity'],
+                ], $compositionPath);
             }
 
             $components[] = $component;

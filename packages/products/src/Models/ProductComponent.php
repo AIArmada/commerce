@@ -286,7 +286,6 @@ class ProductComponent extends Model implements Auditable
         $parent = Product::query()->whereKey($component->product_id)->first();
 
         if ($parent instanceof Product) {
-            // The product saving guard derives shipping from the current rows.
             $parent->save();
         }
     }
