@@ -33,6 +33,8 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string|null $variant_id
  * @property int $quantity
  * @property int $position
+ * @property int|null $unit_price
+ * @property array<string, mixed>|null $metadata
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Product $product
@@ -60,6 +62,8 @@ class ProductComponent extends Model implements Auditable
         'variant_id',
         'quantity',
         'position',
+        'unit_price',
+        'metadata',
     ];
 
     protected function casts(): array
@@ -67,6 +71,8 @@ class ProductComponent extends Model implements Auditable
         return [
             'quantity' => 'integer',
             'position' => 'integer',
+            'unit_price' => 'integer',
+            'metadata' => 'array',
         ];
     }
 
@@ -186,6 +192,14 @@ class ProductComponent extends Model implements Auditable
             }
         });
 
+        static::saved(static function (ProductComponent $component): void {
+            self::syncParentShipping($component);
+        });
+
+        static::deleted(static function (ProductComponent $component): void {
+            self::syncParentShipping($component);
+        });
+
         static::deleting(function (ProductComponent $component): void {
             $parent = Product::query()->whereKey($component->product_id)->first();
 
@@ -251,6 +265,16 @@ class ProductComponent extends Model implements Auditable
         }
 
         return [$parent, $componentProduct, $variant];
+    }
+
+    private static function syncParentShipping(ProductComponent $component): void
+    {
+        $parent = Product::query()->whereKey($component->product_id)->first();
+
+        if ($parent instanceof Product) {
+            // The product saving guard derives shipping from the current rows.
+            $parent->save();
+        }
     }
 
     protected static function newFactory(): ProductComponentFactory

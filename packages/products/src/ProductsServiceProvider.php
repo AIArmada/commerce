@@ -17,6 +17,7 @@ use AIArmada\Products\Models\Collection;
 use AIArmada\Products\Models\Option;
 use AIArmada\Products\Models\OptionValue;
 use AIArmada\Products\Models\Product;
+use AIArmada\Products\Models\ProductComponent;
 use AIArmada\Products\Models\Variant;
 use AIArmada\Products\Policies\AttributeGroupPolicy;
 use AIArmada\Products\Policies\AttributePolicy;
@@ -68,7 +69,12 @@ final class ProductsServiceProvider extends PackageServiceProvider
                 return;
             }
 
-            $product->setAttribute('requires_shipping', true);
+            // Shipping belongs to the components, not the commercial parent.
+            $requiresShipping = $product->exists && $this->app
+                ->make(CompositePackageService::class)
+                ->componentsFor($product)
+                ->contains(static fn (ProductComponent $component): bool => (bool) $component->componentProduct?->requires_shipping);
+            $product->setAttribute('requires_shipping', $requiresShipping);
             $product->setAttribute('tracks_inventory', false);
             $product->setAttribute('supports_variants', false);
 

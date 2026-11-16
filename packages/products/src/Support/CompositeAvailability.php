@@ -12,12 +12,12 @@ final class CompositeAvailability
      *     variant_id: string|null,
      *     sku: string,
      *     quantity: int,
-     *     available: int,
-     *     packages: int
+     *     available: int|null,
+     *     packages: int|null
      * }>  $components
      */
     public function __construct(
-        public readonly int $packages,
+        public readonly ?int $packages,
         public readonly ?string $limitingSku,
         public readonly ?int $limitingAvailableQuantity,
         public readonly array $components,
@@ -25,7 +25,7 @@ final class CompositeAvailability
 
     /**
      * @return array{
-     *     packages: int,
+     *     packages: int|null,
      *     limiting_sku: string|null,
      *     limiting_available_quantity: int|null,
      *     components: list<array<string, mixed>>

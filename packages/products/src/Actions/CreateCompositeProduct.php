@@ -54,7 +54,7 @@ final class CreateCompositeProduct
                 'type' => ProductType::Composite,
                 'status' => ProductStatus::Draft,
                 'price_mode' => $requestedMode->value,
-                'requires_shipping' => true,
+                'requires_shipping' => false,
                 'supports_variants' => false,
                 'tracks_inventory' => false,
             ]);

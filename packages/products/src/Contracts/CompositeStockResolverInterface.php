@@ -8,5 +8,5 @@ use Illuminate\Database\Eloquent\Model;
 
 interface CompositeStockResolverInterface
 {
-    public function availableFor(Model $inventoryable): int;
+    public function availableFor(Model $inventoryable): ?int;
 }

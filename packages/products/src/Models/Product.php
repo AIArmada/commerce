@@ -692,6 +692,10 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
         $packageWeight = null;
 
         foreach ($snapshot->entries as $entry) {
+            if (! $entry['requires_shipping']) {
+                continue;
+            }
+
             $weight = $entry['weight'] ?? null;
 
             if (! is_numeric($weight)) {
@@ -705,6 +709,8 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
             $attributes[BuyableLineData::ATTRIBUTE_WEIGHT] = $packageWeight;
         }
 
+        $attributes[BuyableLineData::ATTRIBUTE_REQUIRES_SHIPPING] = collect($snapshot->entries)
+            ->contains(static fn (array $entry): bool => $entry['requires_shipping']);
         $attributes['components'] = $snapshot->entries;
         $attributes['components_fingerprint'] = $snapshot->fingerprint;
 
@@ -720,7 +726,7 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
         if ($this->isCompositeProduct()) {
             $packages = $this->compositeAvailability()->packages;
 
-            return $quantity === null ? $packages > 0 : $packages >= $quantity;
+            return $packages === null || ($quantity === null ? $packages > 0 : $packages >= $quantity);
         }
 
         if ($quantity === null || ! $this->tracksInventory()) {
@@ -787,7 +793,7 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
     public function getStockQuantity(): int
     {
         if ($this->isCompositeProduct()) {
-            return $this->compositeAvailability()->packages;
+            return $this->compositeAvailability()->packages ?? 0;
         }
 
         if (! $this->tracksInventory()) {
@@ -821,7 +827,9 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
     public function isInStock(): bool
     {
         if ($this->isCompositeProduct()) {
-            return $this->compositeAvailability()->packages > 0;
+            $packages = $this->compositeAvailability()->packages;
+
+            return $packages === null || $packages > 0;
         }
 
         if (! $this->tracksInventory()) {
@@ -834,7 +842,9 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
     public function hasStock(int $quantity): bool
     {
         if ($this->isCompositeProduct()) {
-            return $this->compositeAvailability()->packages >= $quantity;
+            $packages = $this->compositeAvailability()->packages;
+
+            return $packages === null || $packages >= $quantity;
         }
 
         if (! $this->tracksInventory()) {

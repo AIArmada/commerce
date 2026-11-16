@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\Collection;
  * Domain rules for merchant-configured composite packages.
  *
  * The parent product is only a commercial identity: it has no inventory of
- * its own and every sellable unit resolves to exact physical component SKUs.
+ * its own; individual components control shipping and inventory behavior.
  */
 final class CompositePackageValidator
 {
@@ -40,14 +40,6 @@ final class CompositePackageValidator
 
         if (! $this->sameOwner($parent, $componentProduct)) {
             throw new InvalidCompositePackageException('A composite component product must share the package owner.');
-        }
-
-        if (! $this->typeOf($componentProduct)->isPhysical() || ! (bool) $componentProduct->requires_shipping) {
-            throw new InvalidCompositePackageException('A composite component must be a physical product that requires shipping.');
-        }
-
-        if (! (bool) $componentProduct->tracks_inventory) {
-            throw new InvalidCompositePackageException('A composite component must track inventory.');
         }
 
         if (mb_trim((string) $componentProduct->sku) === '') {

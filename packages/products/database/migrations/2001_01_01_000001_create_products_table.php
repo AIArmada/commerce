@@ -30,7 +30,7 @@ return new class extends Migration
             $table->string('barcode')->nullable();
 
             // Type and status
-            $table->string('type')->default('simple'); // simple, configurable, composite, digital, subscription
+            $table->string('type')->default('simple'); // simple, configurable, composite, digital, service, subscription
             $table->string('status')->default('draft'); // draft, active, disabled, archived
             $table->string('visibility')->default('catalog_search'); // catalog, search, catalog_search, individual, hidden
 
@@ -92,13 +92,16 @@ return new class extends Migration
             // Owner (for multi-tenancy)
             $table->nullableUuidMorphs('owner');
 
-            // The composite parent and the exact physical sellable component.
+            // The composite parent and each exact sellable component.
             $table->foreignUuid('product_id');
             $table->foreignUuid('component_product_id');
             $table->foreignUuid('variant_id')->nullable();
 
             $table->unsignedInteger('quantity');
             $table->unsignedInteger('position')->default(0);
+            $table->unsignedBigInteger('unit_price')->nullable(); // sum-mode per-unit override, minor units
+            $jsonColumnType = commerce_json_column_type('products', 'jsonb');
+            $table->{$jsonColumnType}('metadata')->nullable();
 
             $table->timestampsTz();
 

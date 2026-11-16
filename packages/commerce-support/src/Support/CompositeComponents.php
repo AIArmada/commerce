@@ -18,7 +18,9 @@ use InvalidArgumentException;
  *     weight: int|null,
  *     dimensions: array{length: int, width: int, height: int}|null,
  *     requires_shipping: bool,
- *     tracks_inventory: bool
+ *     tracks_inventory: bool,
+ *     unit_price?: int,
+ *     metadata?: array<string, mixed>
  * }
  */
 final class CompositeComponents
@@ -48,6 +50,8 @@ final class CompositeComponents
             $dimensions = $entry['dimensions'] ?? null;
             $requiresShipping = $entry['requires_shipping'] ?? null;
             $tracksInventory = $entry['tracks_inventory'] ?? null;
+            $unitPrice = $entry['unit_price'] ?? null;
+            $metadata = $entry['metadata'] ?? null;
 
             if (! is_string($productId) || $productId === ''
                 || ! array_key_exists('variant_id', $entry) || ($variantId !== null && (! is_string($variantId) || $variantId === ''))
@@ -58,7 +62,9 @@ final class CompositeComponents
                 || ! is_string($name) || $name === ''
                 || ! array_key_exists('weight', $entry) || ($weight !== null && (! is_int($weight) || $weight < 1))
                 || ! array_key_exists('dimensions', $entry)
-                || ! is_bool($requiresShipping) || ! is_bool($tracksInventory)) {
+                || ! is_bool($requiresShipping) || ! is_bool($tracksInventory)
+                || ($unitPrice !== null && (! is_int($unitPrice) || $unitPrice < 0))
+                || ($metadata !== null && ! is_array($metadata))) {
                 throw new InvalidArgumentException('Invalid composite component snapshot.');
             }
 
@@ -77,7 +83,7 @@ final class CompositeComponents
                 ];
             }
 
-            $components[] = [
+            $component = [
                 'product_id' => $productId,
                 'variant_id' => $variantId,
                 'inventoryable_type' => $type,
@@ -90,6 +96,16 @@ final class CompositeComponents
                 'requires_shipping' => $requiresShipping,
                 'tracks_inventory' => $tracksInventory,
             ];
+
+            if (array_key_exists('unit_price', $entry)) {
+                $component['unit_price'] = $unitPrice;
+            }
+
+            if (array_key_exists('metadata', $entry)) {
+                $component['metadata'] = $metadata;
+            }
+
+            $components[] = $component;
         }
 
         return $components;

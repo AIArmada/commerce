@@ -111,14 +111,14 @@ final class CompositePackageService
                 (int) $component->quantity,
             );
 
-            $inventoryable = $this->inventoryModelFor($component);
             $sellable = $componentProduct->isPurchasable()
                 && (! $variant instanceof Variant || $variant->is_enabled);
             $available = $sellable
-                ? max(0, $this->stockResolver->availableFor($inventoryable))
+                ? $this->stockResolver->availableFor($this->inventoryModelFor($component))
                 : 0;
-            $quantity = max(1, (int) $component->quantity);
-            $possiblePackages = intdiv($available, $quantity);
+            $available = $available !== null ? max(0, $available) : null;
+            $quantity = (int) $component->quantity;
+            $possiblePackages = $available === null ? null : intdiv($available, $quantity);
             $sku = (string) ($variant?->sku ?? $componentProduct->sku);
 
             $rows[] = [
@@ -130,7 +130,9 @@ final class CompositePackageService
                 'packages' => $possiblePackages,
             ];
 
-            if ($packages === null || $possiblePackages < $packages) {
+            // null means unbounded, not zero. A disabled/unavailable component
+            // still yields an explicit zero and blocks the package.
+            if ($possiblePackages !== null && ($packages === null || $possiblePackages < $packages)) {
                 $packages = $possiblePackages;
                 $limitingSku = $sku;
                 $limitingAvailable = $available;
@@ -138,7 +140,7 @@ final class CompositePackageService
         }
 
         return new CompositeAvailability(
-            packages: $packages ?? 0,
+            packages: $packages,
             limitingSku: $limitingSku,
             limitingAvailableQuantity: $limitingAvailable,
             components: $rows,
@@ -199,7 +201,7 @@ final class CompositePackageService
                 throw new InvalidCompositePackageException('Composite component product could not be resolved.');
             }
 
-            $unitPrice = $this->basePriceFor($componentProduct, $component->variant);
+            $unitPrice = $component->unit_price ?? $this->basePriceFor($componentProduct, $component->variant);
 
             $total += $unitPrice * (int) $component->quantity;
         }
@@ -228,7 +230,9 @@ final class CompositePackageService
      *     weight: int|null,
      *     dimensions: array{length: int, width: int, height: int}|null,
      *     requires_shipping: bool,
-     *     tracks_inventory: bool
+     *     tracks_inventory: bool,
+     *     unit_price?: int,
+     *     metadata?: array<string, mixed>
      * }
      */
     private function entryFor(Product $parent, ProductComponent $component): array
@@ -244,7 +248,7 @@ final class CompositePackageService
 
         $inventoryable = $variant instanceof Variant ? $variant : $componentProduct;
 
-        return [
+        $entry = [
             'product_id' => (string) $componentProduct->getKey(),
             'variant_id' => $variant instanceof Variant ? (string) $variant->getKey() : null,
             'inventoryable_type' => $inventoryable->getMorphClass(),
@@ -265,6 +269,16 @@ final class CompositePackageService
             'requires_shipping' => (bool) $componentProduct->requires_shipping,
             'tracks_inventory' => (bool) $componentProduct->tracks_inventory,
         ];
+
+        if ($component->unit_price !== null) {
+            $entry['unit_price'] = (int) $component->unit_price;
+        }
+
+        if (is_array($component->metadata) && $component->metadata !== []) {
+            $entry['metadata'] = $component->metadata;
+        }
+
+        return $entry;
     }
 
     private function assertParentAccessible(Product $product): void
