@@ -39,9 +39,9 @@ return new class extends Migration
             $table->index('variant_id');
             $table->index(['product_id', 'parent_variant_id']);
             $table->index(['buyable_type', 'buyable_id']);
-            $table->unique(['product_id', 'buyable_type', 'buyable_id'], 'product_components_parent_buyable_unique');
+            $table->unique(['product_id', 'parent_variant_id', 'buyable_type', 'buyable_id'], 'product_components_parent_buyable_unique');
             $table->unique(
-                ['product_id', 'component_product_id', 'variant_id'],
+                ['product_id', 'parent_variant_id', 'component_product_id', 'variant_id'],
                 'product_components_parent_component_variant_unique',
             );
         });
