@@ -36,6 +36,8 @@ use AIArmada\Inventory\Services\Serial\SerialLookupService;
 use AIArmada\Inventory\Services\Serial\SerialService;
 use AIArmada\Inventory\Services\Stock\BackorderService;
 use AIArmada\Inventory\Services\Stock\CheckoutReservationService;
+use AIArmada\Inventory\Services\Stock\ScopedCapacityReservationService;
+use AIArmada\Inventory\Contracts\ScopedCapacityReservationServiceInterface;
 use AIArmada\Inventory\Services\Stock\DemandForecastService;
 use AIArmada\Inventory\Services\Stock\InventoryAllocationService;
 use AIArmada\Inventory\Services\Stock\ReplenishmentService;
@@ -181,6 +183,7 @@ final class InventoryServiceProvider extends PackageServiceProvider
         // Checkout reservation group service
         $this->app->singleton(CheckoutReservationService::class);
         $this->app->bind(CheckoutReservationServiceInterface::class, CheckoutReservationService::class);
+        $this->app->bind(ScopedCapacityReservationServiceInterface::class, ScopedCapacityReservationService::class);
     }
 
     /**
