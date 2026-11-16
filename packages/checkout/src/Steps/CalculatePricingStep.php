@@ -112,10 +112,19 @@ final class CalculatePricingStep extends AbstractCheckoutStep
 
             $priceable = $priceables[$index] ?? null;
             if ($priceable !== null) {
-                $result = $calculator->calculate($priceable, $quantity, [
+                $context = [
                     'customer_id' => $session->customer_id,
                     'currency' => $session->currency,
-                ]);
+                ];
+
+                $purchaseContext = data_get($item, 'attributes.purchase_context');
+
+                if (is_array($purchaseContext)) {
+                    $context['purchase_context'] = $purchaseContext;
+                    $context['purchase_context_fingerprint'] = data_get($item, 'attributes.purchase_context_fingerprint');
+                }
+
+                $result = $calculator->calculate($priceable, $quantity, $context);
 
                 $unitPrice = $result->finalPrice;
                 $originalUnitPrice = $result->originalPrice;

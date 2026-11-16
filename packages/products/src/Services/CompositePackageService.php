@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Products\Services;
 
+use AIArmada\Products\Contracts\CompositeCapacityDemandResolverInterface;
 use AIArmada\Products\Contracts\CompositeCapacityResolverInterface;
 use AIArmada\Products\Enums\CompositePriceMode;
 use AIArmada\Products\Exceptions\InvalidCompositePackageException;
@@ -94,8 +95,9 @@ final class CompositePackageService
             return new CompositeAvailability(0, null, null, []);
         }
 
-        // The same inventoryable can occur in multiple branches. Its stock is
-        // shared, so sum ALL requirements before calculating package capacity.
+        // Aggregate by the actual capacity resource and scope, not only the
+        // Product identity. Different products may draw from one shared pool;
+        // one product may draw from distinct windows or other independent scopes.
         $grouped = [];
 
         foreach ($leaves as $leaf) {
@@ -103,13 +105,28 @@ final class CompositePackageService
             $variant = $component->variant;
             $componentProduct = $leaf['product'];
             $inventoryable = $variant instanceof Variant ? $variant : $componentProduct;
-            $key = $inventoryable->getMorphClass() . ':' . $inventoryable->getKey();
+            $inventoryKey = $inventoryable->getMorphClass() . ':' . $inventoryable->getKey();
             $sellable = $leaf['sellable'] && (! $variant instanceof Variant || $variant->is_enabled);
             $leafContext = count($leaf['path']) > 1
                 ? array_replace($context, ['composition_path' => $leaf['path']])
                 : $context;
-            $available = $sellable ? $this->capacityResolver->availableFor($product, $component, $leafContext) : 0;
-            $available = $available === null ? null : max(0, $available);
+
+            $resourceKey = $inventoryKey;
+            $scopeKey = '';
+            $required = $leaf['quantity'];
+
+            if ($this->capacityResolver instanceof CompositeCapacityDemandResolverInterface) {
+                $demand = $this->capacityResolver->demandFor($product, $component, $leafContext);
+                $resourceKey = $demand->resourceKey;
+                $scopeKey = $demand->scopeKey;
+                $required = $this->safeMultiply($required, $demand->unitsPerComponent);
+                $available = $sellable ? $demand->available : 0;
+            } else {
+                $available = $sellable ? $this->capacityResolver->availableFor($product, $component, $leafContext) : 0;
+                $available = $available === null ? null : max(0, $available);
+            }
+
+            $key = json_encode([$resourceKey, $scopeKey], JSON_THROW_ON_ERROR);
 
             if (! isset($grouped[$key])) {
                 $grouped[$key] = [
@@ -120,10 +137,18 @@ final class CompositePackageService
                     'available' => null,
                     'packages' => null,
                 ];
+
+                if ($this->capacityResolver instanceof CompositeCapacityDemandResolverInterface) {
+                    $grouped[$key]['resource_key'] = $resourceKey;
+                    $grouped[$key]['scope_key'] = $scopeKey;
+                }
             }
 
-            $grouped[$key]['quantity'] = $this->safeAdd($grouped[$key]['quantity'], $leaf['quantity']);
-            // A finite limit in any occurrence bounds the shared capacity.
+            $grouped[$key]['quantity'] = $this->safeAdd($grouped[$key]['quantity'], $required);
+
+            // Capacity observations for the same pool must be consistent.
+            // If different edges report different values, use the conservative
+            // lower bound rather than allowing an oversell.
             if ($available !== null) {
                 $current = $grouped[$key]['available'];
                 $grouped[$key]['available'] = $current === null ? $available : min($current, $available);

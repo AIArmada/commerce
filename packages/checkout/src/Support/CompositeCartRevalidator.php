@@ -191,6 +191,12 @@ final class CompositeCartRevalidator
             }
 
             $context = ['customer_id' => $session->customer_id, 'currency' => $session->currency];
+
+            if (is_array($line->attributes['purchase_context'] ?? null)) {
+                $context['purchase_context'] = $line->attributes['purchase_context'];
+                $context['purchase_context_fingerprint'] = $line->attributes['purchase_context_fingerprint'] ?? null;
+            }
+
             $currentPrice = app()->bound(PriceCalculatorInterface::class)
                 ? app(PriceCalculatorInterface::class)->calculate($product, $line->quantity, $context)->finalPrice
                 : $fresh->price;

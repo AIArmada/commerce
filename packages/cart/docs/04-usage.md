@@ -83,6 +83,69 @@ Cart::removeBuyable($variant, 'ticket-bundle:'.$ticketType->getKey().':'.$varian
 `dimensions` (centimetres), `requires_shipping`, `is_taxable`, and `tax_class`
 values so shipping and tax integrations consume the same line data.
 
+### Contextual buyables
+
+When a sellable's selection affects availability or pricing (a window,
+location, configuration, or another application-defined resource), pass an
+immutable `PurchaseContext` to the canonical cart API. Do not supply the
+canonical `purchase_context` or `purchase_context_fingerprint` keys in extra
+attributes: the cart owns them.
+
+```php
+use AIArmada\CommerceSupport\Support\PurchaseContext;
+
+$morning = new PurchaseContext(['window' => 'morning', 'location' => 'north']);
+$evening = new PurchaseContext(['window' => 'evening', 'location' => 'north']);
+
+$cart->addBuyable($buyable, 2, purchaseContext: $morning);
+$cart->addBuyable($buyable, 1, purchaseContext: $evening);
+$cart->updateBuyable($buyable, 3, purchaseContext: $morning);
+$morningLine = $cart->getBuyable($buyable, purchaseContext: $morning);
+```
+
+Associative keys are sorted recursively, so equivalent selections have the
+same fingerprint regardless of key order; array list ordering remains
+significant. Selections with different fingerprints remain separate lines.
+Without an explicit line identifier, a contextual buyable gets a stable
+derived ID. An explicit line ID cannot be reused with a different selection.
+
+The context and fingerprint are persisted with the cart line and carried
+into order-item metadata. Checkout's content fingerprint also includes them.
+Ordinary shared stock availability still applies across all contextual lines.
+
+Applications can supply a contextual policy with the existing
+`CartValidationResult` type:
+
+```php
+use AIArmada\Cart\Contracts\CartValidationResult;
+use AIArmada\Cart\Contracts\ContextualBuyableValidatorInterface;
+use AIArmada\CommerceSupport\Contracts\Buyable;
+use AIArmada\CommerceSupport\Support\PurchaseContext;
+
+final class ApplicationSelectionValidator implements ContextualBuyableValidatorInterface
+{
+    public function validate(Buyable $buyable, int $quantity, PurchaseContext $context): CartValidationResult
+    {
+        // Resolve capacity from your application's resource store.
+        return $this->availableUnits($buyable, $context->values) >= $quantity
+            ? CartValidationResult::valid()
+            : CartValidationResult::invalid('The selected capacity is unavailable.');
+    }
+}
+
+// In your service provider:
+$this->app->bind(ContextualBuyableValidatorInterface::class, ApplicationSelectionValidator::class);
+```
+
+The optional validator runs on add/update and during checkout's cart
+validation step. It sees the aggregate quantity for matching buyable and
+context. `$cart->validateContextualBuyables()` returns per-line validation
+errors for quote/review screens. The optional cart price resolver receives
+`purchase_context` and `purchase_context_fingerprint` in its pricing context.
+
+**Context validation is read-only, not a hold.** Applications must reserve
+scarce resources with their own concurrency-safe checkout allocation flow.
+
 ### Updating Items
 
 ```php

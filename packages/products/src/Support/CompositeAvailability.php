@@ -13,7 +13,9 @@ final class CompositeAvailability
      *     sku: string,
      *     quantity: int,
      *     available: int|null,
-     *     packages: int|null
+     *     packages: int|null,
+     *     resource_key?: string,
+     *     scope_key?: string
      * }>  $components
      */
     public function __construct(

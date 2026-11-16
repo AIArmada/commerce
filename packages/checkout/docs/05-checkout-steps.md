@@ -19,6 +19,13 @@ Validates the cart before checkout:
 - Validates item availability
 - Checks purchasable constraints
 
+For contextual buyables, `ValidateCartStep` also verifies each
+`purchase_context_fingerprint` and runs the optional
+`ContextualBuyableValidatorInterface`. This check precedes the
+composite-snapshot fast path so nesting cannot bypass it. The validation
+is read-only; applications must still reserve scarce resources atomically
+through their booking or checkout allocation service.
+
 ### ResolveCustomerStep
 
 Resolves customer information:
