@@ -14,6 +14,7 @@ return [
     'composite_price_mode' => [
         'fixed' => 'Fixed package price',
         'sum' => 'Sum of component prices',
+        'percentage_discount' => 'Percentage discount from component subtotal',
     ],
     'status' => [
         'draft' => 'Draft',
