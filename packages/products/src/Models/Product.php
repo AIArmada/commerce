@@ -692,7 +692,7 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
             'product_id' => (string) $this->getKey(),
         ];
 
-        if (! $this->isCompositeProduct()) {
+        if (! $this->isCompositeProduct() || $this->supportsVariants()) {
             return $attributes;
         }
 
@@ -732,6 +732,10 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
         }
 
         if ($this->isCompositeProduct()) {
+            if ($this->supportsVariants()) {
+                return false;
+            }
+
             $packages = $this->compositeAvailability()->packages;
 
             return $packages === null || ($quantity === null ? $packages > 0 : $packages >= $quantity);

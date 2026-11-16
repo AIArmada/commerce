@@ -98,6 +98,8 @@ class Variant extends Model implements Auditable, Buyable, HasMedia, Inventoryab
         'combination_key',
         'barcode',
         'price',
+        'price_mode',
+        'discount_basis_points',
         'compare_price',
         'cost',
         'weight',
@@ -114,6 +116,8 @@ class Variant extends Model implements Auditable, Buyable, HasMedia, Inventoryab
     {
         return [
             'price' => 'integer',
+            'price_mode' => \AIArmada\Products\Enums\CompositePriceMode::class,
+            'discount_basis_points' => 'integer',
             'compare_price' => 'integer',
             'cost' => 'integer',
             'weight' => 'decimal:2',

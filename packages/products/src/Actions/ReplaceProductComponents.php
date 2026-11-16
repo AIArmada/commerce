@@ -41,9 +41,9 @@ final class ReplaceProductComponents
      * }>  $components
      * @return Collection<int, ProductComponent>
      */
-    public function handle(Product $product, array $components): Collection
+    public function handle(Product $product, array $components, ?Variant $parentVariant = null): Collection
     {
-        return DB::transaction(function () use ($product, $components): Collection {
+        return DB::transaction(function () use ($product, $components, $parentVariant): Collection {
             $parent = Product::query()
                 ->whereKey($product->getKey())
                 ->lockForUpdate()
@@ -59,25 +59,36 @@ final class ReplaceProductComponents
                 throw new InvalidCompositePackageException('Only composite products can own package components.');
             }
 
-            $prepared = $this->prepareComponents($parent, $components);
+            if ($parent->supportsVariants() !== ($parentVariant instanceof Variant)) {
+                throw new InvalidCompositePackageException('Variant-specific composite products require a parent variant.');
+            }
+
+            if ($parentVariant instanceof Variant
+                && ((string) $parentVariant->product_id !== (string) $parent->getKey()
+                    || ! $parentVariant->is_enabled)) {
+                throw new InvalidCompositePackageException('The selected composite variant is not enabled on this product.');
+            }
+
+            $prepared = $this->prepareComponents($parent, $components, $parentVariant);
 
             ProductComponent::query()
                 ->withoutOwnerScope()
                 ->where('product_id', $parent->getKey())
+                ->where('parent_variant_id', $parentVariant?->getKey())
                 ->delete();
 
             foreach ($prepared as $row) {
                 ProductComponent::query()->create($row);
             }
 
-            $current = $this->service->componentsFor($parent);
+            $current = $this->service->componentsFor($parent, $parentVariant);
 
             // Recalculate the persisted parent shipping flag from the exact
             // composition, including when a draft package becomes empty.
             $parent->save();
 
             if ($parent->status === ProductStatus::Active) {
-                $this->service->assertPublishable($parent, $current);
+                $this->service->assertPublishable($parent, $current, $parentVariant);
             }
 
             return $current;
@@ -88,7 +99,7 @@ final class ReplaceProductComponents
      * @param  array<int, array<string, mixed>>  $components
      * @return list<array<string, mixed>>
      */
-    private function prepareComponents(Product $parent, array $components): array
+    private function prepareComponents(Product $parent, array $components, ?Variant $parentVariant): array
     {
         $prepared = [];
         $seen = [];
@@ -146,6 +157,7 @@ final class ReplaceProductComponents
                 'owner_type' => $parent->owner_type,
                 'owner_id' => $parent->owner_id,
                 'product_id' => (string) $parent->getKey(),
+                'parent_variant_id' => $parentVariant?->getKey(),
                 'component_product_id' => $componentProduct instanceof Product ? (string) $componentProduct->getKey() : null,
                 'buyable_type' => $isExternal ? $buyableType : null,
                 'buyable_id' => $isExternal ? $buyableId : null,

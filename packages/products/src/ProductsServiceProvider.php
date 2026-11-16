@@ -77,7 +77,8 @@ final class ProductsServiceProvider extends PackageServiceProvider
                 ->requiresShippingFor($product);
             $product->setAttribute('requires_shipping', $requiresShipping);
             $product->setAttribute('tracks_inventory', false);
-            $product->setAttribute('supports_variants', false);
+            // Composite variants own independent component graphs; do not override
+            // an explicitly enabled supports_variants capability.
 
             if ($product->getAttribute('price_mode') === null || $product->getAttribute('price_mode') === '') {
                 $product->setAttribute('price_mode', 'fixed');

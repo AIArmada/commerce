@@ -55,7 +55,7 @@ final class CreateCompositeProduct
                 'status' => ProductStatus::Draft,
                 'price_mode' => $requestedMode->value,
                 'requires_shipping' => false,
-                'supports_variants' => false,
+                'supports_variants' => (bool) ($attributes['supports_variants'] ?? false),
                 'tracks_inventory' => false,
             ]);
             $parent->save();

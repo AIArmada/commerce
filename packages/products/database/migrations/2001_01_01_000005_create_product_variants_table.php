@@ -32,6 +32,8 @@ return new class extends Migration
 
             // Price overrides (null = use parent product price)
             $table->unsignedBigInteger('price')->nullable();
+            $table->string('price_mode')->nullable();
+            $table->unsignedInteger('discount_basis_points')->nullable();
             $table->unsignedBigInteger('compare_price')->nullable();
             $table->unsignedBigInteger('cost')->nullable();
 

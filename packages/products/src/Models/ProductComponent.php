@@ -61,6 +61,7 @@ class ProductComponent extends Model implements Auditable
         'owner_type',
         'owner_id',
         'product_id',
+        'parent_variant_id',
         'component_product_id',
         'buyable_type',
         'buyable_id',
@@ -140,6 +141,12 @@ class ProductComponent extends Model implements Auditable
         return $this->belongsTo(Product::class, 'component_product_id');
     }
 
+    /** @return BelongsTo<Variant, $this> */
+    public function parentVariant(): BelongsTo
+    {
+        return $this->belongsTo(Variant::class, 'parent_variant_id');
+    }
+
     /**
      * @return BelongsTo<Variant, $this>
      */
@@ -171,6 +178,7 @@ class ProductComponent extends Model implements Auditable
     {
         static::creating(function (ProductComponent $component): void {
             [$parent, $componentProduct, $variant, $buyable] = self::resolveComposition($component);
+            self::assertParentVariant($component, $parent);
 
             $validator = app(CompositePackageValidator::class);
 
@@ -196,6 +204,7 @@ class ProductComponent extends Model implements Auditable
 
         static::updating(function (ProductComponent $component): void {
             if ($component->isDirty('product_id')
+                || $component->isDirty('parent_variant_id')
                 || $component->isDirty('component_product_id')
                 || $component->isDirty('variant_id')
                 || $component->isDirty('buyable_type')
@@ -205,7 +214,8 @@ class ProductComponent extends Model implements Auditable
                 throw new InvalidArgumentException('Composite component identity and owner are immutable after creation.');
             }
 
-            [$parent, $componentProduct, $variant] = self::resolveComposition($component);
+            [$parent, $componentProduct, $variant, $buyable] = self::resolveComposition($component);
+            self::assertParentVariant($component, $parent);
 
             $validator = app(CompositePackageValidator::class);
 
@@ -245,6 +255,7 @@ class ProductComponent extends Model implements Auditable
 
             $remaining = ProductComponent::query()
                 ->where('product_id', $component->product_id)
+                ->where('parent_variant_id', $component->parent_variant_id)
                 ->whereKeyNot($component->getKey())
                 ->count();
 
@@ -313,6 +324,30 @@ class ProductComponent extends Model implements Auditable
             : null;
 
         return [$parent, $componentProduct, $variant, $buyable];
+    }
+
+    private static function assertParentVariant(ProductComponent $component, Product $parent): void
+    {
+        if (! $parent->supportsVariants()) {
+            if ($component->parent_variant_id !== null) {
+                throw new InvalidCompositePackageException('A product without composite variants cannot own variant-specific components.');
+            }
+
+            return;
+        }
+
+        if ($component->parent_variant_id === null) {
+            throw new InvalidCompositePackageException('Composite variants require their own component graph.');
+        }
+
+        $variant = Variant::query()->whereKey($component->parent_variant_id)->first();
+
+        if (! $variant instanceof Variant
+            || (string) $variant->product_id !== (string) $parent->getKey()
+            || (string) ($variant->owner_type ?? '') !== (string) ($parent->owner_type ?? '')
+            || (string) ($variant->owner_id ?? '') !== (string) ($parent->owner_id ?? '')) {
+            throw new InvalidCompositePackageException('Composite parent variant must belong to the same product and owner.');
+        }
     }
 
     private static function assertComponentPricing(ProductComponent $component): void
