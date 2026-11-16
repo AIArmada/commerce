@@ -16,7 +16,6 @@ use AIArmada\Products\Support\CompositeSnapshot;
 use AIArmada\Products\Support\ProductShipping;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\Model;
 
 final class CompositePackageService
 {
@@ -173,19 +172,6 @@ final class CompositePackageService
         }
 
         return $mode;
-    }
-
-    public function inventoryModelFor(ProductComponent $component): Model
-    {
-        if ($component->variant instanceof Variant) {
-            return $component->variant;
-        }
-
-        if ($component->componentProduct instanceof Product) {
-            return $component->componentProduct;
-        }
-
-        throw new InvalidCompositePackageException('Composite component inventory model could not be resolved.');
     }
 
     /**

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Products;
 
 use AIArmada\Products\Contracts\CompositeCapacityResolverInterface;
-use AIArmada\Products\Contracts\CompositeStockResolverInterface;
 use AIArmada\Products\Contracts\VariantGeneratorInterface;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
@@ -32,7 +31,6 @@ use AIArmada\Products\Policies\ProductPolicy;
 use AIArmada\Products\Policies\VariantPolicy;
 use AIArmada\Products\Services\CompositePackageService;
 use AIArmada\Products\Strategies\MatrixVariantGenerator;
-use AIArmada\Products\Support\ModelStockResolver;
 use AIArmada\Products\Support\StockBackedCompositeCapacityResolver;
 use Illuminate\Support\Facades\Gate;
 use Spatie\LaravelPackageTools\Package;
@@ -53,7 +51,6 @@ final class ProductsServiceProvider extends PackageServiceProvider
     public function packageRegistered(): void
     {
         $this->app->bind(VariantGeneratorInterface::class, MatrixVariantGenerator::class);
-        $this->app->bind(CompositeStockResolverInterface::class, ModelStockResolver::class);
         $this->app->bind(CompositeCapacityResolverInterface::class, StockBackedCompositeCapacityResolver::class);
     }
 

@@ -6,14 +6,12 @@ use AIArmada\CommerceSupport\Support\CompositeComponents;
 use AIArmada\Products\Actions\CreateCompositeProduct;
 use AIArmada\Products\Actions\ReplaceProductComponents;
 use AIArmada\Products\Contracts\CompositeCapacityResolverInterface;
-use AIArmada\Products\Contracts\CompositeStockResolverInterface;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\ProductComponent;
 use AIArmada\Products\Models\Variant;
 use AIArmada\Products\Services\CompositePackageService;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
 function genericComponent(ProductType $type, string $label, array $attributes = []): Product
@@ -30,13 +28,16 @@ function genericComponent(ProductType $type, string $label, array $attributes = 
     ]);
 }
 
-final class GenericCompositeCapacityResolver implements CompositeStockResolverInterface
+final class GenericCompositeCapacityResolver implements CompositeCapacityResolverInterface
 {
     /** @var array<string, int|null> */
     public array $capacity = [];
 
-    public function availableFor(Model $inventoryable): ?int
+    /** @param array<string, mixed> $context */
+    public function availableFor(Product $parent, ProductComponent $component, array $context = []): ?int
     {
+        $inventoryable = $component->variant ?? $component->componentProduct;
+
         return $this->capacity[(string) $inventoryable->getKey()] ?? null;
     }
 }
@@ -89,7 +90,7 @@ it('sells an entirely non-shipping package without fake stock or shipments', fun
 
 it('limits mixed packages only by finite component capacity', function (): void {
     $resolver = new GenericCompositeCapacityResolver;
-    app()->instance(CompositeStockResolverInterface::class, $resolver);
+    app()->instance(CompositeCapacityResolverInterface::class, $resolver);
 
     $goods = genericComponent(ProductType::Simple, 'Printed Handbook', [
         'requires_shipping' => true,

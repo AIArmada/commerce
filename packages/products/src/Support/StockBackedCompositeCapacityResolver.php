@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Products\Support;
 
 use AIArmada\Products\Contracts\CompositeCapacityResolverInterface;
-use AIArmada\Products\Contracts\CompositeStockResolverInterface;
 use AIArmada\Products\Exceptions\InvalidCompositePackageException;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\ProductComponent;
@@ -17,10 +16,6 @@ use AIArmada\Products\Models\Variant;
  */
 final class StockBackedCompositeCapacityResolver implements CompositeCapacityResolverInterface
 {
-    public function __construct(
-        private readonly CompositeStockResolverInterface $stockResolver,
-    ) {}
-
     /**
      * @param array<string, mixed> $context
      */
@@ -34,6 +29,10 @@ final class StockBackedCompositeCapacityResolver implements CompositeCapacityRes
             throw new InvalidCompositePackageException('Composite component inventory model could not be resolved.');
         }
 
-        return $this->stockResolver->availableFor($inventoryable);
+        if (! $inventoryable->tracksInventory()) {
+            return null;
+        }
+
+        return max(0, $inventoryable->getStockQuantity());
     }
 }

@@ -7,7 +7,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Actions\CreateCompositeProduct;
 use AIArmada\Products\Actions\PublishCompositeProduct;
 use AIArmada\Products\Actions\ReplaceProductComponents;
-use AIArmada\Products\Contracts\CompositeStockResolverInterface;
+use AIArmada\Products\Contracts\CompositeCapacityResolverInterface;
 use AIArmada\Products\Enums\CompositePriceMode;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
@@ -72,13 +72,16 @@ function makeComponentVariant(Product $product, array $attributes = []): Variant
     ]);
 }
 
-final class CompositePackageCompositionStockResolver implements CompositeStockResolverInterface
+final class CompositePackageCompositionStockResolver implements CompositeCapacityResolverInterface
 {
     /** @var array<string, int> */
     public array $stock = [];
 
-    public function availableFor(Model $inventoryable): int
+    /** @param array<string, mixed> $context */
+    public function availableFor(Product $parent, ProductComponent $component, array $context = []): ?int
     {
+        $inventoryable = $component->variant ?? $component->componentProduct;
+
         return $this->stock[$inventoryable->getMorphClass() . ':' . $inventoryable->getKey()] ?? 0;
     }
 }
@@ -402,7 +405,7 @@ it('leaves ordinary product buyable lines free of composition data', function ()
 
 it('reflects actual component availability through product stock helpers', function (): void {
     $resolver = new CompositePackageCompositionStockResolver;
-    app()->instance(CompositeStockResolverInterface::class, $resolver);
+    app()->instance(CompositeCapacityResolverInterface::class, $resolver);
 
     $mouse = makeComponentProduct(['sku' => 'STOCK-MOUSE']);
     $cable = makeComponentProduct(['sku' => 'STOCK-CABLE']);
