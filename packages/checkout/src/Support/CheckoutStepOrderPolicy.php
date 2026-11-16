@@ -71,7 +71,13 @@ final readonly class CheckoutStepOrderPolicy
     {
         $order = array_values(array_filter($configuredOrder, 'is_string'));
 
-        return $this->ensureStepPrecedes($order, 'persist_customer', 'create_order');
+        // Scoped capacity must be held before any charge, and committed only
+        // after the order and every other configured built-in step are done.
+        $order = $this->ensureStepPrecedes($order, 'reserve_scoped_capacity', 'process_payment');
+        $order = $this->ensureStepPrecedes($order, 'persist_customer', 'create_order');
+        $order = $this->ensureStepPrecedes($order, 'create_order', 'commit_scoped_capacity');
+
+        return $this->ensureStepPrecedes($order, 'dispatch_documents', 'commit_scoped_capacity');
     }
 
     /**
