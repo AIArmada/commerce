@@ -732,7 +732,7 @@ class Variant extends Model implements Auditable, Buyable, HasMedia, Inventoryab
         });
 
         static::saving(function (Variant $variant): void {
-            if ($variant->isDirty('is_enabled') && ! $variant->is_enabled) {
+            if ($variant->exists && $variant->isDirty('is_enabled') && ! $variant->is_enabled) {
                 $referenced = ProductComponent::query()
                     ->withoutOwnerScope()
                     ->where('variant_id', $variant->getKey())
