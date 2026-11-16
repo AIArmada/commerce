@@ -247,7 +247,9 @@ class Variant extends Model implements Auditable, Buyable, HasMedia, Inventoryab
      */
     public function getEffectivePrice(): int
     {
-        return $this->price ?? $this->product->price;
+        return $this->product->isCompositeProduct()
+            ? $this->product->compositePrice($this)
+            : ($this->price ?? $this->product->price);
     }
 
     /**
@@ -304,7 +306,7 @@ class Variant extends Model implements Auditable, Buyable, HasMedia, Inventoryab
     {
         $product = $this->product;
 
-        return [
+        $attributes = [
             BuyableLineData::ATTRIBUTE_SKU => $this->sku,
             BuyableLineData::ATTRIBUTE_WEIGHT => ProductShipping::weightGrams(
                 $this->weight ?? $product?->weight,
@@ -324,12 +326,28 @@ class Variant extends Model implements Auditable, Buyable, HasMedia, Inventoryab
             'product_id' => (string) $this->product_id,
             'variant_id' => (string) $this->getKey(),
         ];
+
+        if ($product instanceof Product && $product->isCompositeProduct()) {
+            $snapshot = $product->compositeSnapshot($this);
+            $attributes['components'] = $snapshot->entries;
+            $attributes['components_fingerprint'] = $snapshot->fingerprint;
+            $attributes[BuyableLineData::ATTRIBUTE_REQUIRES_SHIPPING] = collect($snapshot->entries)
+                ->contains(static fn (array $entry): bool => $entry['requires_shipping']);
+        }
+
+        return $attributes;
     }
 
     public function canBePurchased(?int $quantity = null): bool
     {
         if (! $this->isPurchasable()) {
             return false;
+        }
+
+        if ($this->product->isCompositeProduct()) {
+            $packages = $this->product->compositeAvailability(parentVariant: $this)->packages;
+
+            return $packages === null || ($quantity === null ? $packages > 0 : $packages >= $quantity);
         }
 
         if ($quantity === null || ! $this->tracksInventory()) {
@@ -341,7 +359,9 @@ class Variant extends Model implements Auditable, Buyable, HasMedia, Inventoryab
 
     public function getBuyableStock(): ?int
     {
-        return $this->tracksInventory() ? $this->getStockQuantity() : null;
+        return $this->product->isCompositeProduct()
+            ? $this->product->compositeAvailability(parentVariant: $this)->packages
+            : ($this->tracksInventory() ? $this->getStockQuantity() : null);
     }
 
     public function getBuyableMinimumQuantity(): int
@@ -497,7 +517,7 @@ class Variant extends Model implements Auditable, Buyable, HasMedia, Inventoryab
 
     public function tracksInventory(): bool
     {
-        return $this->product->tracksInventory();
+        return ! $this->product->isCompositeProduct() && $this->product->tracksInventory();
     }
 
     // =========================================================================

@@ -140,6 +140,10 @@ final class CompositeComponents
                         'quantity' => $step['quantity'],
                     ];
 
+                    if (isset($step['variant_id'])) {
+                        $normalized['variant_id'] = $step['variant_id'];
+                    }
+
                     if (isset($step['buyable_type'], $step['buyable_id'])) {
                         $normalized['buyable_type'] = $step['buyable_type'];
                         $normalized['buyable_id'] = $step['buyable_id'];

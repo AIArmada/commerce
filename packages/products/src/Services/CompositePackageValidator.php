@@ -56,10 +56,6 @@ final class CompositePackageValidator
         }
 
         if ($this->typeOf($componentProduct) === ProductType::Composite) {
-            if ($variant instanceof Variant) {
-                throw new InvalidCompositePackageException('Composite components cannot select a variant of a nested package.');
-            }
-
             $this->assertAcyclicReference($parent, $componentProduct);
         }
 
@@ -219,6 +215,7 @@ final class CompositePackageValidator
             if ($componentProduct->isCompositeProduct()) {
                 $nested = ProductComponent::query()
                     ->where('product_id', $componentProduct->getKey())
+                    ->where('parent_variant_id', $variant?->getKey())
                     ->with(['componentProduct', 'variant'])
                     ->ordered()
                     ->get();

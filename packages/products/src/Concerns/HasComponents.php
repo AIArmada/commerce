@@ -7,6 +7,7 @@ namespace AIArmada\Products\Concerns;
 use AIArmada\Products\Enums\CompositePriceMode;
 use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Models\ProductComponent;
+use AIArmada\Products\Models\Variant;
 use AIArmada\Products\Services\CompositePackageService;
 use AIArmada\Products\Support\CompositeAvailability;
 use AIArmada\Products\Support\CompositeSnapshot;
@@ -39,19 +40,19 @@ trait HasComponents
             : ProductType::tryFrom((string) $type) === ProductType::Composite;
     }
 
-    public function compositePriceMode(): CompositePriceMode
+    public function compositePriceMode(?Variant $parentVariant = null): CompositePriceMode
     {
-        return app(CompositePackageService::class)->priceModeFor($this);
+        return app(CompositePackageService::class)->priceModeFor($this, $parentVariant);
     }
 
-    public function compositePrice(): int
+    public function compositePrice(?Variant $parentVariant = null): int
     {
-        return app(CompositePackageService::class)->priceFor($this);
+        return app(CompositePackageService::class)->priceFor($this, parentVariant: $parentVariant);
     }
 
-    public function compositeSnapshot(): CompositeSnapshot
+    public function compositeSnapshot(?Variant $parentVariant = null): CompositeSnapshot
     {
-        return app(CompositePackageService::class)->snapshot($this);
+        return app(CompositePackageService::class)->snapshot($this, parentVariant: $parentVariant);
     }
 
     /**
@@ -65,8 +66,8 @@ trait HasComponents
     /**
      * @param  array<string, mixed>  $context
      */
-    public function compositeAvailability(array $context = []): CompositeAvailability
+    public function compositeAvailability(array $context = [], ?Variant $parentVariant = null): CompositeAvailability
     {
-        return app(CompositePackageService::class)->availability($this, context: $context);
+        return app(CompositePackageService::class)->availability($this, context: $context, parentVariant: $parentVariant);
     }
 }
