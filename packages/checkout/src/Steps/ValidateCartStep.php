@@ -45,6 +45,10 @@ final class ValidateCartStep extends AbstractCheckoutStep
             $errors['cart'] = 'Cart is empty';
         }
 
+        foreach ($cart->validateContextualBuyables() as $lineId => $message) {
+            $errors['purchase_context.' . $lineId] = $message;
+        }
+
         return $errors;
     }
 
@@ -58,6 +62,12 @@ final class ValidateCartStep extends AbstractCheckoutStep
 
         if ($cart->isEmpty()) {
             return $this->failed('Cart is empty', ['cart' => 'Cart is empty']);
+        }
+
+        $contextErrors = $cart->validateContextualBuyables();
+
+        if ($contextErrors !== []) {
+            return $this->failed('Purchase context validation failed', $contextErrors);
         }
 
         if (CompositeCartRevalidator::supports($session)) {

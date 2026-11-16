@@ -531,6 +531,10 @@ trait ManagesItems
         if ($item->hasAttribute('components')) {
             throw new InvalidCartItemException('Use updateBuyable() to change a composite cart line.');
         }
+
+        if ($item->hasAttribute('purchase_context') || $item->hasAttribute('purchase_context_fingerprint')) {
+            throw new InvalidCartItemException('Use updateBuyable() to change a contextual cart line.');
+        }
     }
 
     /**
@@ -546,7 +550,12 @@ trait ManagesItems
      */
     private function withoutCanonicalCompositeAttributes(array $attributes): array
     {
-        unset($attributes['components'], $attributes['components_fingerprint']);
+        unset(
+            $attributes['components'],
+            $attributes['components_fingerprint'],
+            $attributes['purchase_context'],
+            $attributes['purchase_context_fingerprint'],
+        );
 
         return $attributes;
     }
