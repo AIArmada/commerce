@@ -76,6 +76,39 @@ Reserves inventory for items as a single group:
 - Compensates by releasing the entire reference group
 - Runs before `process_payment` by default and moves to the start of the post-payment phase when `integrations.inventory.reserve_before_payment` is `false`
 
+### ReserveScopedCapacityStep and CommitScopedCapacityStep
+
+An application can bind `ScopedCapacityCheckoutProviderInterface` to derive
+`list<ScopedCapacityLine>` from the frozen checkout cart snapshot. When bound
+and the Inventory package is installed, Checkout registers two additional
+optional steps: `reserve_scoped_capacity` before payment and
+`commit_scoped_capacity` after `create_order`.
+
+```php
+use AIArmada\Checkout\Contracts\ScopedCapacityCheckoutProviderInterface;
+use AIArmada\Checkout\Models\CheckoutSession;
+use AIArmada\Inventory\Data\ScopedCapacityLine;
+
+final class CheckoutCapacityProvider implements ScopedCapacityCheckoutProviderInterface
+{
+    public function linesFor(CheckoutSession $session): array
+    {
+        // Read reviewed selections, resolve and aggregate application
+        // resources and scope keys. Do not trust arbitrary client values.
+        return [
+            new ScopedCapacityLine('resource-id', 'window-key', 2),
+        ];
+    }
+}
+```
+
+The reserve step records a reference on the CheckoutSession and releases
+uncommitted holds through the step compensation mechanism. The confirm step
+commits the hold to the created order. Retry uses the same reference.
+Unbound applications run neither step. Committed capacity is irreversible
+through the temporary-hold release API; applications must use their own
+domain cancellation/credit workflow for confirmed bookings.
+
 ### ProcessPaymentStep
 
 Processes the payment:

@@ -147,6 +147,94 @@ The legacy resolver still groups by inventoryable identity with an
 unscoped key, preserving existing stock behavior. No reservation or
 booking holds are performed by this read-only calculation.
 
+#### Percentage-based composite pricing
+
+`price_mode: percentage_discount` applies `discount_basis_points` to the
+calculated subtotal of all component edges. 10000 basis points means a 100%
+discount; 2000 means 20%. This uses integer minor units and half-up rounding
+without overflowing the subtotal. A nested percentage package applies its
+discount at that sub-package boundary before the outer parent is priced.
+Per-edge `unit_price` overrides are included before the percentage is applied.
+
+```php
+$bundle = app(CreateCompositeProduct::class)->handle([
+    'name' => 'Service Bundle',
+    'slug' => 'service-bundle',
+    'sku' => 'SERVICE-BUNDLE',
+    'price_mode' => 'percentage_discount',
+    'discount_basis_points' => 2000,
+], [
+    ['component_product_id' => $service->id, 'quantity' => 2],
+]);
+```
+
+#### External Buyable components
+
+A composite may contain Products, Product variants, nested Products and
+**registered Eloquent Buyable models**, without copying foreign catalogue
+rows into Products. External model classes must be explicitly registered in
+`products.composite_buyable_types` as alias-to-class mappings, and must
+implement `AIArmada\CommerceSupport\Contracts\Buyable`.
+
+```php
+// config/products.php
+'composite_buyable_types' => [
+    'external_slot' => App\Models\SellableSlot::class,
+],
+
+// Product component inputs:
+[
+    ['component_product_id' => $service->id, 'quantity' => 1],
+    ['buyable_type' => 'external_slot', 'buyable_id' => $slot->getKey(), 'quantity' => 2],
+]
+```
+
+The external Eloquent record must have an explicit matching `owner_type` and
+`owner_id`, matching tax treatment and currency. Its type alias is allow-listed;
+arbitrary PHP class names cannot be requested as components. External records
+are currently **non-shipping leaves**; physical merchandise should use Product
+components and standard warehouse fulfillment. Scoped capacity reservation of
+non-Product services is supported separately through Inventory. Snapshot
+entries include `buyable_type`, `buyable_id`, and a null `product_id` for such
+leaves. Graph provenance, price, selected identity and quantities are frozen
+in the composite fingerprint.
+
+#### Variant-specific composite packages
+
+A composite Product with `supports_variants: true` defines a separate
+composition for each enabled Product Variant. Create the parent in Draft
+status, add the variants, replace each variant's components, and then publish.
+
+```php
+$parent = app(CreateCompositeProduct::class)->handle([
+    'name' => 'Service Tiers',
+    'slug' => 'service-tiers',
+    'sku' => 'SERVICE-TIERS',
+    'supports_variants' => true,
+    'price_mode' => 'sum',
+]);
+
+$bronze = Variant::create([
+    'product_id' => $parent->id,
+    'sku' => 'BRONZE-SERVICE',
+    'name' => 'Bronze',
+]);
+
+app(ReplaceProductComponents::class)->handle($parent, [
+    ['component_product_id' => $service->id, 'quantity' => 2],
+], parentVariant: $bronze);
+
+// Repeat for each enabled variant before publishing.
+app(PublishCompositeProduct::class)->handle($parent);
+$cart->addBuyable($bronze);
+```
+
+Variant-specific `price`, `price_mode` and `discount_basis_points` may override
+the parent settings. Nested composites can select an exact child variant.
+Only selected variants are sold, not their parent Product. Price,
+availability, fulfillment flags, and fingerprint are derived from the exact
+selected variant graph.
+
 ### GenerateVariants
 
 ```php
