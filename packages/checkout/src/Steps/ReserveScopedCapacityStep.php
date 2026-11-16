@@ -8,6 +8,8 @@ use AIArmada\Checkout\Contracts\ScopedCapacityCheckoutProviderInterface;
 use AIArmada\Checkout\Data\StepResult;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Inventory\Contracts\ScopedCapacityReservationServiceInterface;
+use Illuminate\Support\Str;
+use RuntimeException;
 use Throwable;
 
 final class ReserveScopedCapacityStep extends AbstractCheckoutStep
@@ -46,7 +48,30 @@ final class ReserveScopedCapacityStep extends AbstractCheckoutStep
             return $this->skipped('No scoped capacity demand');
         }
 
-        $reference = 'checkout:' . $session->getKey();
+        $pricingData = $session->pricing_data ?? [];
+        $reference = data_get($pricingData, 'scoped_capacity_reservation.reference');
+
+        if (! is_string($reference) || mb_trim($reference) === '') {
+            // Persist the intent BEFORE allocating capacity. If a worker
+            // crashes after reserve(), the same reference can be recovered
+            // and retried without acquiring a second hold.
+            $reference = 'checkout:' . $session->getKey() . ':' . Str::uuid();
+            $pricingData['scoped_capacity_reservation'] = [
+                'reference' => $reference,
+                'expires_at' => null,
+            ];
+
+            try {
+                if (! $session->persistState(['pricing_data' => $pricingData])) {
+                    throw new RuntimeException('Checkout session could not persist the capacity reservation intent.');
+                }
+            } catch (Throwable $exception) {
+                return $this->failed('Failed to persist capacity reservation intent', [
+                    'capacity' => $exception->getMessage(),
+                ]);
+            }
+        }
+
         $ttl = (int) config('checkout.integrations.scoped_capacity.reservation_ttl', 900);
 
         try {
@@ -65,11 +90,11 @@ final class ReserveScopedCapacityStep extends AbstractCheckoutStep
             ];
 
             if (! $session->persistState(['pricing_data' => $pricingData])) {
-                throw new \RuntimeException('Checkout session could not persist the capacity hold reference.');
+                throw new RuntimeException('Checkout session could not persist the confirmed capacity hold.');
             }
         } catch (Throwable $exception) {
-            // The hold is not recoverable from the session if persistence
-            // failed. Release it immediately rather than leaking capacity.
+            // The durable reference is available for recovery, but release
+            // immediately on a failed checkout step to avoid leaking capacity.
             try {
                 app(ScopedCapacityReservationServiceInterface::class)->release($reference);
             } catch (Throwable $releaseException) {
@@ -118,7 +143,16 @@ final class ReserveScopedCapacityStep extends AbstractCheckoutStep
 
         $pricingData = $session->pricing_data ?? [];
         unset($pricingData['scoped_capacity_reservation']);
-        $session->persistState(['pricing_data' => $pricingData]);
+
+        try {
+            if (! $session->persistState(['pricing_data' => $pricingData])) {
+                throw new RuntimeException('Checkout session could not clear the released capacity reference.');
+            }
+        } catch (Throwable $exception) {
+            return $this->failed('Scoped capacity released but reference could not be cleared', [
+                'capacity' => $exception->getMessage(),
+            ]);
+        }
 
         return $this->compensated('Scoped capacity released');
     }
