@@ -8,6 +8,10 @@ use AIArmada\Cart\Contracts\ContextualBuyableValidatorInterface;
 use AIArmada\Cart\Exceptions\InvalidCartItemException;
 use AIArmada\CommerceSupport\Contracts\Buyable;
 use AIArmada\CommerceSupport\Support\PurchaseContext;
+use AIArmada\Products\Enums\ProductStatus;
+use AIArmada\Products\Enums\ProductType;
+use AIArmada\Products\Models\Product;
+use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Model;
 use Tests\Support\Cart\InMemoryStorage;
 
@@ -163,7 +167,15 @@ it('validates context capacity on cart add and revalidation', function (): void 
     app()->instance(ContextualBuyableValidatorInterface::class, $validator);
 
     $cart = new Cart(new InMemoryStorage, 'context-policy-cart');
-    $buyable = new ContextTestBuyable;
+    $buyable = Product::query()->create([
+        'name' => 'Persisted Context Service',
+        'slug' => 'persisted-context-service-' . Str::random(8),
+        'sku' => 'CTX-' . mb_strtoupper(Str::random(8)),
+        'type' => ProductType::Service,
+        'status' => ProductStatus::Active,
+        'price' => 1000,
+        'currency' => 'MYR',
+    ]);
     $am = new PurchaseContext(['window' => 'am']);
     $pm = new PurchaseContext(['window' => 'pm']);
 
