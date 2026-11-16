@@ -6,6 +6,7 @@ namespace AIArmada\Cart\Traits;
 
 use AIArmada\Cart\Collections\CartCollection;
 use AIArmada\Cart\Contracts\BuyablePriceResolver;
+use AIArmada\Cart\Contracts\ContextualBuyableValidatorInterface;
 use AIArmada\Cart\Events\CartCreated;
 use AIArmada\Cart\Events\ItemAdded;
 use AIArmada\Cart\Events\ItemUpdated;
@@ -17,6 +18,7 @@ use AIArmada\Cart\Support\CartMoney;
 use AIArmada\CommerceSupport\Contracts\Buyable;
 use AIArmada\CommerceSupport\Support\BuyableLineData;
 use AIArmada\CommerceSupport\Support\CompositeComponents;
+use AIArmada\CommerceSupport\Support\PurchaseContext;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 
@@ -43,18 +45,19 @@ trait ManagesBuyables
         int $quantity = 1,
         array $extraAttributes = [],
         ?string $lineIdentifier = null,
+        ?PurchaseContext $purchaseContext = null,
     ): CartItem {
         if ($quantity < 1) {
             throw new InvalidArgumentException('Quantity must be at least one.');
         }
 
         $line = BuyableLineData::fromBuyable($buyable, $quantity, $this->withoutCanonicalCompositeAttributes($extraAttributes));
-        $lineId = $this->resolveBuyableLineIdentifier($buyable, $lineIdentifier);
+        $lineId = $this->resolveBuyableLineIdentifier($buyable, $lineIdentifier, $purchaseContext);
 
         $addedItem = null;
         $isFirstItem = false;
 
-        $this->mutateItems(function (CartCollection $cartItems) use ($buyable, $line, $quantity, $lineId, &$addedItem, &$isFirstItem): ?CartCollection {
+        $this->mutateItems(function (CartCollection $cartItems) use ($buyable, $line, $quantity, $lineId, $purchaseContext, &$addedItem, &$isFirstItem): ?CartCollection {
             $addedItem = null;
             $isFirstItem = false;
 
@@ -64,12 +67,22 @@ trait ManagesBuyables
 
             $existingItem = $cartItems->get($lineId);
             if ($existingItem instanceof CartItem) {
-                $this->assertBuyableMatchesLine($buyable, $existingItem);
+                $this->assertBuyableMatchesLine($buyable, $existingItem, $purchaseContext);
             }
             $lineQuantity = ($existingItem?->quantity ?? 0) + $quantity;
             $accumulatedQuantity = $this->accumulatedBuyableQuantity($cartItems, $buyable) + $quantity;
 
             $this->validateBuyable($buyable, $accumulatedQuantity);
+            $this->validateContextualBuyable(
+                $buyable,
+                $purchaseContext,
+                $this->accumulatedContextQuantity($cartItems, $buyable, $purchaseContext, $lineId) + $newQuantity,
+            );
+            $this->validateContextualBuyable(
+                $buyable,
+                $purchaseContext,
+                $this->accumulatedContextQuantity($cartItems, $buyable, $purchaseContext) + $quantity,
+            );
 
             $pricing = $this->quoteBuyable($buyable, $lineQuantity);
             $attributes = $this->buildBuyableAttributes(
@@ -77,6 +90,7 @@ trait ManagesBuyables
                 $line,
                 $pricing,
                 $existingItem?->attributes->toArray() ?? [],
+                $purchaseContext,
             );
 
             $item = $this->createCartItem([
@@ -122,8 +136,9 @@ trait ManagesBuyables
         int $newQuantity,
         ?string $lineIdentifier = null,
         array $extraAttributes = [],
+        ?PurchaseContext $purchaseContext = null,
     ): ?CartItem {
-        $lineId = $this->resolveBuyableLineIdentifier($buyable, $lineIdentifier);
+        $lineId = $this->resolveBuyableLineIdentifier($buyable, $lineIdentifier, $purchaseContext);
 
         if ($newQuantity <= 0) {
             return $this->remove($lineId);
@@ -133,7 +148,7 @@ trait ManagesBuyables
 
         $updatedItem = null;
 
-        $this->mutateItems(function (CartCollection $cartItems) use ($buyable, $line, $newQuantity, $lineId, &$updatedItem): ?CartCollection {
+        $this->mutateItems(function (CartCollection $cartItems) use ($buyable, $line, $newQuantity, $lineId, $purchaseContext, &$updatedItem): ?CartCollection {
             $updatedItem = null;
 
             $this->assertBuyableOwner($buyable);
@@ -146,7 +161,7 @@ trait ManagesBuyables
                 return null;
             }
 
-            $this->assertBuyableMatchesLine($buyable, $existingItem);
+            $this->assertBuyableMatchesLine($buyable, $existingItem, $purchaseContext);
             $accumulatedQuantity = $this->accumulatedBuyableQuantity($cartItems, $buyable, $lineId) + $newQuantity;
 
             $this->validateBuyable($buyable, $accumulatedQuantity);
@@ -157,6 +172,7 @@ trait ManagesBuyables
                 $line,
                 $pricing,
                 $existingItem->attributes->toArray(),
+                $purchaseContext,
             );
 
             $item = $this->createCartItem([
@@ -189,25 +205,25 @@ trait ManagesBuyables
     /**
      * Remove a canonical buyable line.
      */
-    public function removeBuyable(Buyable $buyable, ?string $lineIdentifier = null): ?CartItem
+    public function removeBuyable(Buyable $buyable, ?string $lineIdentifier = null, ?PurchaseContext $purchaseContext = null): ?CartItem
     {
-        return $this->remove($this->resolveBuyableLineIdentifier($buyable, $lineIdentifier));
+        return $this->remove($this->resolveBuyableLineIdentifier($buyable, $lineIdentifier, $purchaseContext));
     }
 
     /**
      * Check whether a canonical buyable line exists.
      */
-    public function hasBuyable(Buyable $buyable, ?string $lineIdentifier = null): bool
+    public function hasBuyable(Buyable $buyable, ?string $lineIdentifier = null, ?PurchaseContext $purchaseContext = null): bool
     {
-        return $this->has($this->resolveBuyableLineIdentifier($buyable, $lineIdentifier));
+        return $this->has($this->resolveBuyableLineIdentifier($buyable, $lineIdentifier, $purchaseContext));
     }
 
     /**
      * Get a canonical buyable line.
      */
-    public function getBuyable(Buyable $buyable, ?string $lineIdentifier = null): ?CartItem
+    public function getBuyable(Buyable $buyable, ?string $lineIdentifier = null, ?PurchaseContext $purchaseContext = null): ?CartItem
     {
-        return $this->get($this->resolveBuyableLineIdentifier($buyable, $lineIdentifier));
+        return $this->get($this->resolveBuyableLineIdentifier($buyable, $lineIdentifier, $purchaseContext));
     }
 
     /**
@@ -297,12 +313,13 @@ trait ManagesBuyables
                     continue;
                 }
 
-                $this->assertBuyableMatchesLine($fresh, $item);
+                $itemContext = $this->contextForCartItem($item);
+                $this->assertBuyableMatchesLine($fresh, $item, $itemContext);
                 $this->assertBuyableOwner($fresh);
                 $line = BuyableLineData::fromBuyable($fresh, $item->quantity);
                 $this->assertBuyableCurrency($fresh, $line);
-                $pricing = $this->quoteBuyable($fresh, $item->quantity);
-                $attributes = $this->buildBuyableAttributes($fresh, $line, $pricing, $item->attributes->toArray());
+                $pricing = $this->quoteBuyable($fresh, $item->quantity, $itemContext);
+                $attributes = $this->buildBuyableAttributes($fresh, $line, $pricing, $item->attributes->toArray(), $itemContext);
                 $oldPrice = $item->price;
 
                 if ($oldPrice === $pricing->unitPrice && $attributes === $item->attributes->toArray()) {
@@ -407,11 +424,139 @@ trait ManagesBuyables
         return $totalWeight;
     }
 
-    private function resolveBuyableLineIdentifier(Buyable $buyable, ?string $lineIdentifier): string
-    {
+    private function resolveBuyableLineIdentifier(
+        Buyable $buyable,
+        ?string $lineIdentifier,
+        ?PurchaseContext $purchaseContext = null,
+    ): string {
         $lineIdentifier = mb_trim((string) $lineIdentifier);
 
-        return $lineIdentifier !== '' ? $lineIdentifier : $buyable->getBuyableIdentifier();
+        if ($lineIdentifier !== '') {
+            return $lineIdentifier;
+        }
+
+        if ($purchaseContext !== null && ! $purchaseContext->isEmpty()) {
+            return 'ctx:' . hash('sha256', $buyable->getBuyableIdentifier() . ':' . $purchaseContext->fingerprint);
+        }
+
+        return $buyable->getBuyableIdentifier();
+    }
+
+    private function accumulatedContextQuantity(
+        CartCollection $cartItems,
+        Buyable $buyable,
+        ?PurchaseContext $purchaseContext,
+        ?string $excludeLineId = null,
+    ): int {
+        if ($purchaseContext === null) {
+            return 0;
+        }
+
+        $key = $this->buyableMerchandiseKey($buyable);
+        $quantity = 0;
+
+        foreach ($cartItems as $item) {
+            if ($excludeLineId !== null && $item->id === $excludeLineId) {
+                continue;
+            }
+
+            if ($this->cartItemMerchandiseKey($item) !== $key) {
+                continue;
+            }
+
+            $existingContext = $this->contextForCartItem($item);
+
+            if ($existingContext?->fingerprint === $purchaseContext->fingerprint) {
+                $quantity += $item->quantity;
+            }
+        }
+
+        return $quantity;
+    }
+
+    private function contextForCartItem(CartItem $item): ?PurchaseContext
+    {
+        try {
+            return PurchaseContext::fromAttributes($item->attributes->toArray());
+        } catch (InvalidArgumentException $exception) {
+            throw new InvalidCartItemException('Invalid purchase context on cart line [' . $item->id . ']: ' . $exception->getMessage());
+        }
+    }
+
+    private function validateContextualBuyable(Buyable $buyable, ?PurchaseContext $context, int $quantity): void
+    {
+        if ($context === null || ! function_exists('app') || ! app()->bound(ContextualBuyableValidatorInterface::class)) {
+            return;
+        }
+
+        $result = app(ContextualBuyableValidatorInterface::class)->validate($buyable, $quantity, $context);
+
+        if (! $result->isValid) {
+            throw new InvalidCartItemException($result->message ?? 'The selected purchase context is unavailable.');
+        }
+    }
+
+    /**
+     * Revalidates persisted selections, including context integrity, with
+     * aggregate quantity across lines sharing the same resource selection.
+     *
+     * @return array<string, string>  Errors by cart line identifier
+     */
+    public function validateContextualBuyables(): array
+    {
+        $errors = [];
+        $groups = [];
+
+        foreach ($this->getItems() as $item) {
+            try {
+                $context = $this->contextForCartItem($item);
+            } catch (InvalidCartItemException $exception) {
+                $errors[$item->id] = $exception->getMessage();
+
+                continue;
+            }
+
+            if ($context === null) {
+                continue;
+            }
+
+            $model = $item->getAssociatedModel();
+
+            if (! $model instanceof Buyable) {
+                $errors[$item->id] = 'The selected purchase context cannot be validated without its buyable.';
+
+                continue;
+            }
+
+            $key = $this->buyableMerchandiseKey($model) . ':' . $context->fingerprint;
+
+            if (! isset($groups[$key])) {
+                $groups[$key] = ['buyable' => $model, 'context' => $context, 'quantity' => 0, 'items' => []];
+            }
+
+            $groups[$key]['quantity'] += $item->quantity;
+            $groups[$key]['items'][] = $item->id;
+        }
+
+        if (! function_exists('app') || ! app()->bound(ContextualBuyableValidatorInterface::class)) {
+            return $errors;
+        }
+
+        foreach ($groups as $group) {
+            $result = app(ContextualBuyableValidatorInterface::class)->validate(
+                $group['buyable'],
+                $group['quantity'],
+                $group['context'],
+            );
+
+            if (! $result->isValid) {
+                foreach ($group['items'] as $lineId) {
+                    $errors[$lineId] = $result->message ?? 'The selected purchase context is unavailable.';
+                }
+            }
+        }
+
+        return $errors;
     }
 
     private function accumulatedBuyableQuantity(
@@ -435,10 +580,20 @@ trait ManagesBuyables
         return $quantity;
     }
 
-    private function assertBuyableMatchesLine(Buyable $buyable, CartItem $item): void
-    {
+    private function assertBuyableMatchesLine(
+        Buyable $buyable,
+        CartItem $item,
+        ?PurchaseContext $purchaseContext = null,
+    ): void {
         if ($this->cartItemMerchandiseKey($item) !== $this->buyableMerchandiseKey($buyable)) {
             throw new InvalidCartItemException('The cart line identifier already belongs to another item.');
+        }
+
+        $existingContext = $this->contextForCartItem($item);
+
+        if ($existingContext?->fingerprint !== $purchaseContext?->fingerprint
+            && ! ($existingContext === null && $purchaseContext?->isEmpty())) {
+            throw new InvalidCartItemException('A cart line cannot combine different purchase contexts.');
         }
     }
 
@@ -475,7 +630,7 @@ trait ManagesBuyables
         return null;
     }
 
-    private function quoteBuyable(Buyable $buyable, int $quantity): BuyablePriceData
+    private function quoteBuyable(Buyable $buyable, int $quantity, ?PurchaseContext $purchaseContext = null): BuyablePriceData
     {
         $cartCurrency = $this->cartCurrency();
 
@@ -483,7 +638,7 @@ trait ManagesBuyables
             $pricing = app(BuyablePriceResolver::class)->resolve(
                 $buyable,
                 $quantity,
-                $this->buyablePricingContext($cartCurrency),
+                $this->buyablePricingContext($cartCurrency, $purchaseContext),
             );
         } else {
             $pricing = new BuyablePriceData(
@@ -512,9 +667,14 @@ trait ManagesBuyables
     /**
      * @return array<string, mixed>
      */
-    private function buyablePricingContext(string $currency): array
+    private function buyablePricingContext(string $currency, ?PurchaseContext $purchaseContext = null): array
     {
         $context = ['currency' => $currency];
+
+        if ($purchaseContext !== null) {
+            $context['purchase_context'] = $purchaseContext->values;
+            $context['purchase_context_fingerprint'] = $purchaseContext->fingerprint;
+        }
         $customerId = $this->getMetadata('customer_id');
 
         if (is_string($customerId) || is_int($customerId)) {
@@ -614,12 +774,14 @@ trait ManagesBuyables
         BuyableLineData $line,
         BuyablePriceData $pricing,
         array $existingAttributes,
+        ?PurchaseContext $purchaseContext = null,
     ): array {
         $type = $buyable instanceof Model ? $buyable->getMorphClass() : $buyable::class;
         $catalogId = $line->catalogIdentifier ?? $line->identifier;
         $existingAttributes = array_diff_key($existingAttributes, array_flip([
             'components', 'components_fingerprint', 'original_unit_price', 'discount_amount',
             'discount_source', 'price_list', 'tier', 'promotion', 'pricing_breakdown',
+            PurchaseContext::ATTRIBUTE_CONTEXT, PurchaseContext::ATTRIBUTE_FINGERPRINT,
         ]));
         $attributes = array_merge($existingAttributes, $line->attributes, [
             'purchasable_type' => $type,
@@ -628,6 +790,11 @@ trait ManagesBuyables
             'currency' => $line->currency,
             'product_id' => $catalogId,
         ]);
+
+        if ($purchaseContext !== null) {
+            $attributes[PurchaseContext::ATTRIBUTE_CONTEXT] = $purchaseContext->values;
+            $attributes[PurchaseContext::ATTRIBUTE_FINGERPRINT] = $purchaseContext->fingerprint;
+        }
 
         if (array_key_exists('components', $attributes)) {
             $attributes['components'] = CompositeComponents::read($attributes['components']);
