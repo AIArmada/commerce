@@ -9,6 +9,7 @@ use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\CommerceSupport\Contracts\Buyable;
 use AIArmada\Inventory\Cart\CartManagerWithInventory;
+use AIArmada\Inventory\Cart\CompositeComponents;
 use AIArmada\Inventory\Cart\InventoryValidator;
 use AIArmada\Inventory\Exceptions\InsufficientInventoryException;
 use AIArmada\Inventory\Listeners\ReserveStockOnCheckout;
@@ -17,6 +18,31 @@ use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Inventory\Services\Stock\InventoryAllocationService;
 use Illuminate\Database\Eloquent\Model;
+
+it('recognizes only typed catalog composites under strict Eloquent attribute access', function (): void {
+    $original = Model::preventsAccessingMissingAttributes();
+    Model::preventAccessingMissingAttributes(true);
+
+    try {
+        $ticketLike = new class extends Model {};
+        $ticketLike->setRawAttributes(['id' => 'ticket-like'], true);
+        $ticketLike->exists = true;
+
+        expect(CompositeComponents::isCompositeModel($ticketLike))->toBeFalse();
+
+        $typed = new class extends Model {};
+        $typed->setRawAttributes(['id' => 'catalog', 'type' => 'composite'], true);
+        $typed->exists = true;
+
+        expect(CompositeComponents::isCompositeModel($typed))->toBeTrue();
+
+        $typed->setRawAttributes(['id' => 'catalog', 'type' => 'simple'], true);
+
+        expect(CompositeComponents::isCompositeModel($typed))->toBeFalse();
+    } finally {
+        Model::preventAccessingMissingAttributes($original);
+    }
+});
 
 final class CompositeFakeCartManager implements CartManagerInterface
 {
