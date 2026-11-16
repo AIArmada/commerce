@@ -260,6 +260,19 @@ class ProductComponent extends Model implements Auditable
                 return;
             }
 
+            if ($component->parent_variant_id !== null) {
+                $parentVariant = Variant::query()
+                    ->whereKey($component->parent_variant_id)
+                    ->where('product_id', $parent->getKey())
+                    ->first();
+
+                if ($parentVariant instanceof Variant && ! $parentVariant->is_enabled) {
+                    // A retired tier may be emptied so its owning Variant can
+                    // be deleted without affecting active purchasable tiers.
+                    return;
+                }
+            }
+
             $remaining = ProductComponent::query()
                 ->where('product_id', $component->product_id)
                 ->where('parent_variant_id', $component->parent_variant_id)

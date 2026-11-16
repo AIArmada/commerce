@@ -188,3 +188,27 @@ it('keeps published composite variants complete and preserves at least one enabl
     expect(fn () => $silver->delete())
         ->toThrow(InvalidCompositePackageException::class, 'component graph');
 });
+
+it('allows disabled tiers to be configured and retired without emptying an enabled variant', function (): void {
+    $leaf = variantCompositeLeaf('Retired Tier Service', 150);
+    $parent = variantCompositeParent('Retired Tier Lifecycle');
+    $active = variantCompositeOption($parent, 'Live Plan');
+    $retired = variantCompositeOption($parent, 'Retired Plan', ['is_enabled' => false]);
+
+    app(ReplaceProductComponents::class)->handle($parent, [
+        ['component_product_id' => $leaf->id, 'quantity' => 1],
+    ], $active);
+
+    app(ReplaceProductComponents::class)->handle($parent, [
+        ['component_product_id' => $leaf->id, 'quantity' => 2],
+    ], $retired);
+
+    app(PublishCompositeProduct::class)->handle($parent);
+
+    expect(fn () => app(ReplaceProductComponents::class)->handle($parent, [], $active))
+        ->toThrow(InvalidCompositePackageException::class, 'at least one component');
+
+    expect(app(ReplaceProductComponents::class)->handle($parent, [], $retired))->toHaveCount(0)
+        ->and($active->fresh()->canBePurchased(1))->toBeTrue()
+        ->and($retired->delete())->toBeTrue();
+});

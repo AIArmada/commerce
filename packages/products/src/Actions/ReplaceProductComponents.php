@@ -63,10 +63,21 @@ final class ReplaceProductComponents
                 throw new InvalidCompositePackageException('Variant-specific composite products require a parent variant.');
             }
 
-            if ($parentVariant instanceof Variant
-                && ((string) $parentVariant->product_id !== (string) $parent->getKey()
-                    || ! $parentVariant->is_enabled)) {
-                throw new InvalidCompositePackageException('The selected composite variant is not enabled on this product.');
+            if ($parentVariant instanceof Variant) {
+                // Re-read the selected tier under the same transaction as the
+                // graph replacement. A stale enabled flag must not allow the
+                // final component of a published tier to be removed.
+                $parentVariant = Variant::query()
+                    ->whereKey($parentVariant->getKey())
+                    ->where('product_id', $parent->getKey())
+                    ->lockForUpdate()
+                    ->first();
+
+                if (! $parentVariant instanceof Variant
+                    || (string) ($parentVariant->owner_type ?? '') !== (string) ($parent->owner_type ?? '')
+                    || (string) ($parentVariant->owner_id ?? '') !== (string) ($parent->owner_id ?? '')) {
+                    throw new InvalidCompositePackageException('The selected composite variant is not accessible on this product.');
+                }
             }
 
             $prepared = $this->prepareComponents($parent, $components, $parentVariant);
@@ -87,7 +98,8 @@ final class ReplaceProductComponents
             // composition, including when a draft package becomes empty.
             $parent->save();
 
-            if ($parent->status === ProductStatus::Active) {
+            if ($parent->status === ProductStatus::Active
+                && (! $parentVariant instanceof Variant || $parentVariant->is_enabled)) {
                 $this->service->assertPublishable($parent, $current, $parentVariant);
             }
 
