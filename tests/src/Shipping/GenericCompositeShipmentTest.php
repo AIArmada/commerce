@@ -57,3 +57,52 @@ it('only demands shippable components when verifying a mixed package shipment', 
     expect(PackageUnit::hasShippableComponents($orderItem))->toBeFalse()
         ->and(PackageUnit::componentsOf($orderItem))->toHaveCount(1);
 });
+
+it('verifies exactly the shippable leaf indices of a deeply nested composition', function (): void {
+    $component = static function (string $id, int $quantity, bool $shipping): array {
+        return [
+            'product_id' => $id,
+            'variant_id' => null,
+            'inventoryable_type' => 'product',
+            'inventoryable_id' => $id,
+            'quantity' => $quantity,
+            'sku' => $id,
+            'name' => $id,
+            'weight' => $shipping ? 250 : null,
+            'dimensions' => null,
+            'requires_shipping' => $shipping,
+            'tracks_inventory' => $shipping,
+        ];
+    };
+
+    $items = [
+        $component('nested-service', 2, false),
+        [
+            ...$component('nested-good', 6, true),
+            'composition_path' => [
+                ['product_id' => 'child-package', 'component_id' => 'child-edge', 'quantity' => 2],
+                ['product_id' => 'nested-good', 'component_id' => 'leaf-edge', 'quantity' => 3],
+            ],
+        ],
+        $component('other-service', 1, false),
+    ];
+
+    $orderItem = new OrderItem;
+    $orderItem->quantity = 1;
+    $orderItem->metadata = ['requires_shipping' => true, 'components' => $items];
+
+    $unit = new PackageUnit($orderItem, 1);
+    $line = new ShipmentItem;
+    $line->package_component_index = 1;
+    $line->quantity = 6;
+    $line->shippable_item_id = 'nested-good';
+    $line->shippable_item_type = 'product';
+
+    expect(OrderShipmentUnits::assertUnit($unit, new Collection([$line])))->toHaveCount(1)
+        ->and(PackageUnit::hasShippableComponents($orderItem))->toBeTrue();
+
+    $line->quantity = 3;
+
+    expect(fn () => OrderShipmentUnits::assertUnit($unit, new Collection([$line])))
+        ->toThrow(\\DomainException::class);
+});

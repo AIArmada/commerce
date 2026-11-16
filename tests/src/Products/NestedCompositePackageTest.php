@@ -206,3 +206,74 @@ it('updates ancestor shipping requirements when a nested child composition chang
         ->and($parent->fresh()->requires_shipping)->toBeTrue()
         ->and($parent->compositeSnapshot()->entries[0]['requires_shipping'])->toBeTrue();
 });
+
+it('aggregates warehouse demand from flattened nested order snapshots', function (): void {
+    $goods = nestedLeaf(ProductType::Simple, 'Warehouse Nested Item', 250);
+    $service = nestedLeaf(ProductType::Service, 'Warehouse Nested Service', 80);
+    $child = nestedPackage('Warehouse Nested Kit', 'sum', [
+        ['component_product_id' => $goods->id, 'quantity' => 3],
+        ['component_product_id' => $service->id, 'quantity' => 1],
+    ]);
+    $root = nestedPackage('Warehouse Nested Order', 'sum', [
+        ['component_product_id' => $child->id, 'quantity' => 2],
+        ['component_product_id' => $goods->id, 'quantity' => 1],
+    ]);
+
+    $orderItem = new OrderItem;
+    $orderItem->quantity = 2;
+    $orderItem->metadata = [
+        'requires_shipping' => true,
+        'components' => $root->compositeSnapshot()->entries,
+    ];
+
+    $demand = \\AIArmada\\Inventory\\Cart\\InventoryDemandResolver::forOrder([$orderItem]);
+
+    expect($demand)->toHaveCount(1);
+
+    $row = array_values($demand)[0];
+    expect($row['model']->getKey())->toBe($goods->id)
+        ->and($row['quantity'])->toBe(14);
+});
+
+it('preserves ancestor component overrides and metadata in immutable nested snapshots', function (): void {
+    $service = nestedLeaf(ProductType::Service, 'Nested Audit Service', 150);
+    $child = nestedPackage('Nested Audit Child', 'fixed', [
+        ['component_product_id' => $service->id, 'quantity' => 2],
+    ], price: 300);
+    $parent = nestedPackage('Nested Audit Parent', 'fixed', [
+        ['component_product_id' => $child->id, 'quantity' => 1, 'unit_price' => 275, 'metadata' => ['campaign' => 'fall']],
+    ], price: 450);
+
+    $original = $parent->compositeSnapshot();
+    $path = $original->entries[0]['composition_path'];
+
+    expect($path[0]['unit_price'])->toBe(275)
+        ->and($path[0]['metadata'])->toBe(['campaign' => 'fall'])
+        ->and(CompositeComponents::read($original->entries))->toBe($original->entries);
+
+    $component = ProductComponent::query()->where('product_id', $parent->id)->firstOrFail();
+    $component->update(['metadata' => ['campaign' => 'winter']]);
+
+    $updated = $parent->compositeSnapshot();
+
+    expect($updated->price)->toBe(450)
+        ->and($updated->fingerprint)->not->toBe($original->fingerprint)
+        ->and($updated->entries[0]['composition_path'][0]['metadata'])->toBe(['campaign' => 'winter']);
+});
+
+it('rejects a direct model mutation that would introduce a cycle', function (): void {
+    $a = nestedPackage('Direct Mutation A', 'sum', [], active: false);
+    $b = nestedPackage('Direct Mutation B', 'sum', [], active: false);
+
+    app(ReplaceProductComponents::class)->handle($a, [
+        ['component_product_id' => $b->id, 'quantity' => 1],
+    ]);
+
+    expect(fn () => ProductComponent::query()->create([
+        'product_id' => $b->id,
+        'component_product_id' => $a->id,
+        'quantity' => 1,
+    ]))->toThrow(InvalidCompositePackageException::class, 'cycle');
+
+    expect($b->components()->count())->toBe(0);
+});
