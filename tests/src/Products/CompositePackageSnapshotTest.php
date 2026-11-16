@@ -18,7 +18,7 @@ final class CompositeConcernTestProduct extends Product
     use HasComponents;
 }
 
-final class CompositeTestStockResolver implements CompositeCapacityResolverInterface
+final class CompositeTestCapacityResolver implements CompositeCapacityResolverInterface
 {
     /** @var array<string, int> */
     public array $stock = [];
@@ -213,7 +213,7 @@ it('changes the snapshot fingerprint when current catalog contents or prices cha
 });
 
 it('reports package availability from the bottleneck actual inventory SKU', function (): void {
-    $resolver = new CompositeTestStockResolver;
+    $resolver = new CompositeTestCapacityResolver;
     app()->instance(CompositeCapacityResolverInterface::class, $resolver);
 
     $mouse = makeSnapshotComponent(['sku' => 'BOTTLENECK-MOUSE']);
@@ -240,7 +240,7 @@ it('reports package availability from the bottleneck actual inventory SKU', func
 });
 
 it('exposes composition helpers through the HasComponents concern', function (): void {
-    $resolver = new CompositeTestStockResolver;
+    $resolver = new CompositeTestCapacityResolver;
     app()->instance(CompositeStockResolverInterface::class, $resolver);
 
     $mouse = makeSnapshotComponent(['sku' => 'CONCERN-MOUSE', 'price' => 1000]);

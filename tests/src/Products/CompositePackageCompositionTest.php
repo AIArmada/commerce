@@ -71,7 +71,7 @@ function makeComponentVariant(Product $product, array $attributes = []): Variant
     ]);
 }
 
-final class CompositePackageCompositionStockResolver implements CompositeCapacityResolverInterface
+final class CompositePackageCompositionCapacityResolver implements CompositeCapacityResolverInterface
 {
     /** @var array<string, int> */
     public array $stock = [];
@@ -403,7 +403,7 @@ it('leaves ordinary product buyable lines free of composition data', function ()
 });
 
 it('reflects actual component availability through product stock helpers', function (): void {
-    $resolver = new CompositePackageCompositionStockResolver;
+    $resolver = new CompositePackageCompositionCapacityResolver;
     app()->instance(CompositeCapacityResolverInterface::class, $resolver);
 
     $mouse = makeComponentProduct(['sku' => 'STOCK-MOUSE']);
@@ -430,7 +430,7 @@ it('reflects actual component availability through product stock helpers', funct
 });
 
 it('reports zero package availability for a disabled component variant', function (): void {
-    $resolver = new CompositePackageCompositionStockResolver;
+    $resolver = new CompositePackageCompositionCapacityResolver;
     app()->instance(CompositeStockResolverInterface::class, $resolver);
 
     $configurable = makeConfigurableComponent();
