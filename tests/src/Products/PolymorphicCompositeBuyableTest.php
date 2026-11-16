@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Contracts\Buyable;
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\CompositeComponents;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Actions\CreateCompositeProduct;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
