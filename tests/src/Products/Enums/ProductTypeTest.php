@@ -11,6 +11,7 @@ describe('ProductType Enum', function (): void {
                 ->and(ProductType::Configurable->value)->toBe('configurable')
                 ->and(ProductType::Composite->value)->toBe('composite')
                 ->and(ProductType::Digital->value)->toBe('digital')
+                ->and(ProductType::Service->value)->toBe('service')
                 ->and(ProductType::Subscription->value)->toBe('subscription');
         });
 
@@ -19,6 +20,7 @@ describe('ProductType Enum', function (): void {
                 ->and(ProductType::from('configurable'))->toBe(ProductType::Configurable)
                 ->and(ProductType::from('composite'))->toBe(ProductType::Composite)
                 ->and(ProductType::from('digital'))->toBe(ProductType::Digital)
+                ->and(ProductType::from('service'))->toBe(ProductType::Service)
                 ->and(ProductType::from('subscription'))->toBe(ProductType::Subscription);
         });
 
@@ -44,6 +46,10 @@ describe('ProductType Enum', function (): void {
             expect(ProductType::Digital->label())->not->toBeEmpty();
         });
 
+        it('returns translation key for service', function (): void {
+            expect(ProductType::Service->label())->not->toBeEmpty();
+        });
+
         it('returns translation key for subscription', function (): void {
             expect(ProductType::Subscription->label())->not->toBeEmpty();
         });
@@ -66,8 +72,9 @@ describe('ProductType Enum', function (): void {
             expect(ProductType::Digital->supportsVariantsByDefault())->toBeFalse();
         });
 
-        it('returns false for subscription', function (): void {
-            expect(ProductType::Subscription->supportsVariantsByDefault())->toBeFalse();
+        it('returns false for service and subscription', function (): void {
+            expect(ProductType::Service->supportsVariantsByDefault())->toBeFalse()
+                ->and(ProductType::Subscription->supportsVariantsByDefault())->toBeFalse();
         });
 
         it('keeps hasVariants as an alias for default variant support', function (): void {
@@ -89,8 +96,9 @@ describe('ProductType Enum', function (): void {
             expect(ProductType::Composite->tracksInventoryByDefault())->toBeFalse();
         });
 
-        it('returns false for digital', function (): void {
-            expect(ProductType::Digital->tracksInventoryByDefault())->toBeFalse();
+        it('returns false for digital and service', function (): void {
+            expect(ProductType::Digital->tracksInventoryByDefault())->toBeFalse()
+                ->and(ProductType::Service->tracksInventoryByDefault())->toBeFalse();
         });
     });
 
@@ -98,11 +106,12 @@ describe('ProductType Enum', function (): void {
         it('returns true for physical types', function (): void {
             expect(ProductType::Simple->requiresShippingByDefault())->toBeTrue()
                 ->and(ProductType::Configurable->requiresShippingByDefault())->toBeTrue()
-                ->and(ProductType::Composite->requiresShippingByDefault())->toBeTrue();
+                ->and(ProductType::Composite->requiresShippingByDefault())->toBeFalse();
         });
 
         it('returns false for digital fulfillment types', function (): void {
             expect(ProductType::Digital->requiresShippingByDefault())->toBeFalse()
+                ->and(ProductType::Service->requiresShippingByDefault())->toBeFalse()
                 ->and(ProductType::Subscription->requiresShippingByDefault())->toBeFalse();
         });
     });
@@ -116,12 +125,13 @@ describe('ProductType Enum', function (): void {
             expect(ProductType::Configurable->isPhysical())->toBeTrue();
         });
 
-        it('returns true for composite', function (): void {
-            expect(ProductType::Composite->isPhysical())->toBeTrue();
+        it('returns false for composite without component context', function (): void {
+            expect(ProductType::Composite->isPhysical())->toBeFalse();
         });
 
-        it('returns false for digital', function (): void {
-            expect(ProductType::Digital->isPhysical())->toBeFalse();
+        it('returns false for digital and service', function (): void {
+            expect(ProductType::Digital->isPhysical())->toBeFalse()
+                ->and(ProductType::Service->isPhysical())->toBeFalse();
         });
 
         it('returns false for subscription', function (): void {
@@ -151,6 +161,10 @@ describe('ProductType Enum', function (): void {
 
         it('returns correct icon for digital', function (): void {
             expect(ProductType::Digital->icon())->toBe('heroicon-o-cloud-arrow-down');
+        });
+
+        it('returns correct icon for service', function (): void {
+            expect(ProductType::Service->icon())->toBe('heroicon-o-wrench-screwdriver');
         });
 
         it('returns correct icon for subscription', function (): void {

@@ -27,7 +27,9 @@ final class CompositeSnapshot
      *     weight: int|null,
      *     dimensions: array{length: int, width: int, height: int}|null,
      *     requires_shipping: bool,
-     *     tracks_inventory: bool
+     *     tracks_inventory: bool,
+     *     unit_price?: int,
+     *     metadata?: array<string, mixed>
      * }>  $entries
      */
     public function __construct(

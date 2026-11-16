@@ -530,6 +530,11 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
         return $this->type === ProductType::Digital;
     }
 
+    public function isService(): bool
+    {
+        return $this->type === ProductType::Service;
+    }
+
     public function isSubscription(): bool
     {
         return $this->type === ProductType::Subscription;
