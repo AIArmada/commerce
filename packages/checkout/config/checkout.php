@@ -88,8 +88,8 @@ return [
             'process_payment',
             'persist_customer',
             'create_order',
-            'commit_scoped_capacity',
             'dispatch_documents',
+            'commit_scoped_capacity',
         ],
     ],
 

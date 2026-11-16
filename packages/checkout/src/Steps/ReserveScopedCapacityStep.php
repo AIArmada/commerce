@@ -57,12 +57,32 @@ final class ReserveScopedCapacityStep extends AbstractCheckoutStep
             ]);
         }
 
-        $pricingData = $session->pricing_data ?? [];
-        $pricingData['scoped_capacity_reservation'] = [
-            'reference' => $reference,
-            'expires_at' => $outcome->expiresAt,
-        ];
-        $session->persistState(['pricing_data' => $pricingData]);
+        try {
+            $pricingData = $session->pricing_data ?? [];
+            $pricingData['scoped_capacity_reservation'] = [
+                'reference' => $reference,
+                'expires_at' => $outcome->expiresAt,
+            ];
+
+            if (! $session->persistState(['pricing_data' => $pricingData])) {
+                throw new \RuntimeException('Checkout session could not persist the capacity hold reference.');
+            }
+        } catch (Throwable $exception) {
+            // The hold is not recoverable from the session if persistence
+            // failed. Release it immediately rather than leaking capacity.
+            try {
+                app(ScopedCapacityReservationServiceInterface::class)->release($reference);
+            } catch (Throwable $releaseException) {
+                return $this->failed('Failed to persist or release scoped capacity hold', [
+                    'capacity' => $exception->getMessage(),
+                    'release' => $releaseException->getMessage(),
+                ]);
+            }
+
+            return $this->failed('Failed to persist scoped capacity hold', [
+                'capacity' => $exception->getMessage(),
+            ]);
+        }
 
         return $this->success('Scoped resource capacity held', [
             'reference' => $reference,
@@ -79,7 +99,17 @@ final class ReserveScopedCapacityStep extends AbstractCheckoutStep
         }
 
         try {
-            app(ScopedCapacityReservationServiceInterface::class)->release($reservation['reference']);
+            $capacity = app(ScopedCapacityReservationServiceInterface::class);
+            $current = $capacity->find($reservation['reference']);
+
+            // Confirmed capacity belongs to the created order, not to a
+            // temporary checkout hold. A failed subsequent optional step
+            // must not silently cancel a committed allocation.
+            if ($current->state === 'committed') {
+                return $this->compensated('Scoped capacity already committed to an order; not released');
+            }
+
+            $capacity->release($reservation['reference']);
         } catch (Throwable $exception) {
             return $this->failed('Failed to release scoped capacity', [
                 'capacity' => $exception->getMessage(),
