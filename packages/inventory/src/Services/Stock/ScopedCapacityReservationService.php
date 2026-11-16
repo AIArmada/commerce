@@ -65,16 +65,30 @@ final class ScopedCapacityReservationService implements ScopedCapacityReservatio
                     return $this->outcome($reference, $existing);
                 }
 
-                $pools = [];
+                // Resolve pool identities first, then lock all pool rows in
+                // UUID order. Commit/release/expiry use that same lock order;
+                // sorting the caller's resource keys would allow deadlocks
+                // when two workflows use different multi-pool combinations.
+                $poolIds = [];
+
                 foreach ($requirements as $line) {
-                    $pool = $this->poolQuery($line->resourceKey, $line->scopeKey)->lockForUpdate()->first();
+                    $pool = $this->poolQuery($line->resourceKey, $line->scopeKey)->first();
+
                     if (! $pool instanceof CapacityPool) {
                         throw new RuntimeException('Requested capacity resource has not been provisioned.');
                     }
-                    $pools[$line->key()] = $pool;
+
+                    $poolIds[$line->key()] = (string) $pool->getKey();
                 }
 
-                $this->expireHolds(array_map(fn (CapacityPool $pool): string => (string) $pool->id, array_values($pools)));
+                $locked = $this->lockPools(array_values($poolIds));
+                $pools = [];
+
+                foreach ($poolIds as $key => $poolId) {
+                    $pools[$key] = $locked[$poolId];
+                }
+
+                $this->expireHolds(array_values($poolIds));
 
                 foreach ($requirements as $line) {
                     $pool = $pools[$line->key()];
