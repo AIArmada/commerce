@@ -106,7 +106,9 @@ final class CompositePackageService
             $inventoryable = $variant instanceof Variant ? $variant : $componentProduct;
             $key = $inventoryable->getMorphClass() . ':' . $inventoryable->getKey();
             $sellable = $leaf['sellable'] && (! $variant instanceof Variant || $variant->is_enabled);
-            $leafContext = array_replace($context, ['composition_path' => $leaf['path']]);
+            $leafContext = count($leaf['path']) > 1
+                ? array_replace($context, ['composition_path' => $leaf['path']])
+                : $context;
             $available = $sellable ? $this->capacityResolver->availableFor($product, $component, $leafContext) : 0;
             $available = $available === null ? null : max(0, $available);
 
