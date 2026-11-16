@@ -201,9 +201,9 @@ it('replaces components transactionally without touching the old set on validati
 });
 
 it('rejects self references while accepting nested composite components', function (): void {
-    $parent = makeCompositeParent();
-    $nested = makeCompositeParent(['sku' => 'NESTED-PKG']);
-    $leaf = makeComponentProduct(['sku' => 'NESTED-LEAF']);
+    $parent = makeCompositeParent(['currency' => 'MYR']);
+    $nested = makeCompositeParent(['sku' => 'NESTED-PKG', 'currency' => 'MYR']);
+    $leaf = makeComponentProduct(['sku' => 'NESTED-LEAF', 'currency' => 'MYR']);
 
     expect(fn () => app(ReplaceProductComponents::class)->handle($parent, [
         ['component_product_id' => $parent->id, 'quantity' => 1],

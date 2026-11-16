@@ -221,6 +221,7 @@ it('aggregates warehouse demand from flattened nested order snapshots', function
     ]);
 
     $orderItem = new OrderItem;
+    $orderItem->name = 'Warehouse Nested Order';
     $orderItem->quantity = 2;
     $orderItem->metadata = [
         'requires_shipping' => true,
