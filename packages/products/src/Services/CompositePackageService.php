@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Products\Services;
 
-use AIArmada\Products\Contracts\CompositeStockResolverInterface;
+use AIArmada\Products\Contracts\CompositeCapacityResolverInterface;
 use AIArmada\Products\Enums\CompositePriceMode;
 use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Exceptions\InvalidCompositePackageException;
@@ -22,7 +22,7 @@ final class CompositePackageService
 {
     public function __construct(
         private readonly CompositePackageValidator $validator,
-        private readonly CompositeStockResolverInterface $stockResolver,
+        private readonly CompositeCapacityResolverInterface $capacityResolver,
     ) {}
 
     /**
@@ -81,8 +81,9 @@ final class CompositePackageService
 
     /**
      * @param  Collection<int, ProductComponent>|null  $components
+     * @param  array<string, mixed>  $context
      */
-    public function availability(Product $product, ?Collection $components = null): CompositeAvailability
+    public function availability(Product $product, ?Collection $components = null, array $context = []): CompositeAvailability
     {
         $this->assertParentAccessible($product);
         $components ??= $this->componentsFor($product);
@@ -114,7 +115,7 @@ final class CompositePackageService
             $sellable = $componentProduct->isPurchasable()
                 && (! $variant instanceof Variant || $variant->is_enabled);
             $available = $sellable
-                ? $this->stockResolver->availableFor($this->inventoryModelFor($component))
+                ? $this->capacityResolver->availableFor($product, $component, $context)
                 : 0;
             $available = $available !== null ? max(0, $available) : null;
             $quantity = (int) $component->quantity;

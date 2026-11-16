@@ -83,8 +83,11 @@ $service = app(CompositePackageService::class);
 
 $service->priceFor($package);
 $service->availability($package); // finite bottleneck count, or null when unbounded
+$service->availability($package, context: ['session' => 'morning']); // app-defined context
 $snapshot = $service->snapshot($package); // canonical frozen composition
 ```
+
+The default stock-backed resolver handles warehouse quantities, while applications can bind `CompositeCapacityResolverInterface` for context-dependent capacity. It receives the package parent, component row, and a free-form context array. **This is an availability check, not a reservation**; applications must independently enforce concurrency-safe booking and allocations in their own checkout workflow.
 
 The core snapshot entry keys remain stable across cart, checkout, orders, shipping, and inventory: `product_id`, `variant_id`, `inventoryable_type`, `inventoryable_id`, `quantity`, `sku`, `name`, `weight` (grams), `dimensions` (centimetres), `requires_shipping`, and `tracks_inventory`. Optional `unit_price` and `metadata` survive snapshots. Untracked components are not reserved as warehouse stock; consuming applications handle any additional capacity reservations.
 

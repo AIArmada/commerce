@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\CommerceSupport\Support\CompositeComponents;
 use AIArmada\Products\Actions\CreateCompositeProduct;
 use AIArmada\Products\Actions\ReplaceProductComponents;
+use AIArmada\Products\Contracts\CompositeCapacityResolverInterface;
 use AIArmada\Products\Contracts\CompositeStockResolverInterface;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
@@ -174,4 +175,43 @@ it('accepts variants on any component that explicitly supports variants', functi
 
     expect($package->compositeSnapshot()->entries[0]['variant_id'])->toBe($variant->id)
         ->and($package->fresh()->requires_shipping)->toBeFalse();
+});
+
+
+final class ContextualCompositeResolver implements CompositeCapacityResolverInterface
+{
+    /** @var list<array<string, mixed>> */
+    public array $receivedContext = [];
+
+    /**
+     * @param array<string, mixed> $context
+     */
+    public function availableFor(Product $parent, ProductComponent $component, array $context = []): ?int
+    {
+        $this->receivedContext[] = $context;
+
+        return ($context['session'] ?? null) === 'unavailable' ? 0 : 8;
+    }
+}
+
+it('passes generic availability context to the application resolver', function (): void {
+    $resolver = new ContextualCompositeResolver;
+    app()->instance(CompositeCapacityResolverInterface::class, $resolver);
+
+    $service = genericComponent(ProductType::Service, 'Capacity limited consulting');
+    $package = app(CreateCompositeProduct::class)->handle([
+        'name' => 'Contextual Consulting Package',
+        'slug' => 'contextual-consulting-package',
+        'sku' => 'GEN-CONTEXT-KIT',
+        'status' => ProductStatus::Active,
+    ], [
+        ['component_product_id' => $service->id, 'quantity' => 2, 'metadata' => ['segment' => 'standard']],
+    ]);
+
+    expect($package->compositeAvailability(['session' => 'morning'])->packages)->toBe(4)
+        ->and($package->compositeAvailability(['session' => 'unavailable'])->packages)->toBe(0)
+        ->and($resolver->receivedContext)->toBe([
+            ['session' => 'morning'],
+            ['session' => 'unavailable'],
+        ]);
 });
