@@ -283,6 +283,10 @@ final class OrderFulfillmentHandler implements FulfillmentHandler
                     $unit = new PackageUnit($orderItem, $ordinal);
 
                     foreach ($unit->components as $index => $component) {
+                        if (! $component['requires_shipping']) {
+                            continue;
+                        }
+
                         $items[] = new ShipmentItemData(
                             name: $component['name'],
                             quantity: $component['quantity'],

@@ -123,7 +123,7 @@ class ProductForm
                             ->columns(2),
 
                         Section::make('Composite Package')
-                            ->description('Components are the physical SKUs that make up this package.')
+                            ->description('Combine physical products, digital items and services. Shipping is derived from components.')
                             ->schema([
                                 Select::make('price_mode')
                                     ->label('Price Mode')
@@ -133,7 +133,7 @@ class ProductForm
                                     )
                                     ->default(CompositePriceMode::Fixed->value)
                                     ->required()
-                                    ->helperText('Fixed uses the package price above. Sum uses the component prices.'),
+                                    ->helperText('Fixed uses the package price. Sum supports component-level price overrides.'),
 
                                 Repeater::make('components')
                                     ->label('Components')
@@ -159,6 +159,21 @@ class ProductForm
                                             ->minValue(1)
                                             ->default(1)
                                             ->required(),
+
+                                        TextInput::make('unit_price')
+                                            ->label('Unit price override')
+                                            ->numeric()
+                                            ->minValue(0)
+                                            ->step(0.01)
+                                            ->helperText('Optional, sum mode only. Leave blank to use catalog price.')
+                                            ->formatStateUsing(fn (?int $state): ?float => $state === null ? null : $state / 100)
+                                            ->dehydrateStateUsing(fn (?string $state): ?int => $state === null || $state === '' ? null : (int) round(((float) $state) * 100)),
+
+                                        Textarea::make('metadata_json')
+                                            ->label('Component metadata (JSON)')
+                                            ->rows(2)
+                                            ->rules(['nullable', 'json'])
+                                            ->helperText('Optional application-specific data. The catalog does not interpret it.'),
 
                                         TextInput::make('position')
                                             ->label('Position')
@@ -465,7 +480,7 @@ class ProductForm
     private static function componentProductOptions(?Product $record): array
     {
         $query = Product::query()
-            ->whereIn('type', [ProductType::Simple->value, ProductType::Configurable->value])
+            ->where('type', '!=', ProductType::Composite->value)
             ->orderBy('name');
 
         if ($record instanceof Product && $record->exists) {

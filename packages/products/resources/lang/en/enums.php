@@ -8,6 +8,7 @@ return [
         'configurable' => 'Configurable Product',
         'composite' => 'Composite Package',
         'digital' => 'Digital Product',
+        'service' => 'Service',
         'subscription' => 'Subscription',
     ],
     'composite_price_mode' => [

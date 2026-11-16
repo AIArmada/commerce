@@ -8,6 +8,7 @@ return [
         'configurable' => 'Produk Boleh Konfigurasi',
         'composite' => 'Pakej Komposit',
         'digital' => 'Produk Digital',
+        'service' => 'Perkhidmatan',
         'subscription' => 'Langganan',
     ],
     'composite_price_mode' => [

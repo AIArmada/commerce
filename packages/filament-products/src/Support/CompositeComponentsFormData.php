@@ -28,6 +28,10 @@ final class CompositeComponentsFormData
                 'component_variant_id' => $component->variant_id !== null ? (string) $component->variant_id : null,
                 'quantity' => (int) $component->quantity,
                 'position' => (int) $component->position,
+                'unit_price' => $component->unit_price,
+                'metadata_json' => $component->metadata !== null
+                    ? json_encode($component->metadata, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT)
+                    : null,
             ])
             ->all();
     }
@@ -63,6 +67,10 @@ final class CompositeComponentsFormData
                 'variant_id' => $variantId !== '' ? $variantId : null,
                 'quantity' => max(1, (int) ($component['quantity'] ?? 1)),
                 'position' => (int) ($component['position'] ?? count($payload)),
+                'unit_price' => $component['unit_price'] ?? null,
+                'metadata' => isset($component['metadata_json']) && trim((string) $component['metadata_json']) !== ''
+                    ? json_decode((string) $component['metadata_json'], true, 512, JSON_THROW_ON_ERROR)
+                    : null,
             ];
         }
 

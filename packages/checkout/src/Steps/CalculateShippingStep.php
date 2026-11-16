@@ -41,7 +41,7 @@ final class CalculateShippingStep extends AbstractCheckoutStep
             return true;
         }
 
-        // Skip if all items are digital (don't require shipping)
+        // Skip when no standalone item or package component requires shipping
         return $this->isShippingNotRequired($session);
     }
 
@@ -66,6 +66,21 @@ final class CalculateShippingStep extends AbstractCheckoutStep
     public function handle(CheckoutSession $session): StepResult
     {
         $shippingData = $session->shipping_data ?? [];
+
+        if ($this->isShippingNotRequired($session)) {
+            $session->forceFill([
+                'shipping_total' => 0,
+                'selected_shipping_method' => null,
+                'shipping_data' => [
+                    'not_required' => true,
+                    'reason' => 'No shippable items',
+                ],
+            ]);
+            $session->calculateTotals();
+            $session->save();
+
+            return $this->success('Shipping not required for this order');
+        }
 
         // Cart conditions are the source of truth for shipping.
         // Check if a shipping condition was already calculated by ShippingConditionProvider.
@@ -106,18 +121,6 @@ final class CalculateShippingStep extends AbstractCheckoutStep
         $rates = $this->shippingAdapter->getRates($session);
 
         if (empty($rates)) {
-            if ($this->isShippingNotRequired($session)) {
-                $session->persistState([
-                    'shipping_total' => 0,
-                    'shipping_data' => array_merge($shippingData, [
-                        'not_required' => true,
-                        'reason' => 'Digital products only',
-                    ]),
-                ]);
-
-                return $this->success('Shipping not required for this order');
-            }
-
             return $this->failed('No shipping rates available', ['shipping' => 'No shipping methods available for your location']);
         }
 
