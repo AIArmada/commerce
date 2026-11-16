@@ -46,5 +46,14 @@ it('only demands shippable components when verifying a mixed package shipment', 
     $result = OrderShipmentUnits::assertUnit($unit, new Collection([$shipmentItem]));
 
     expect($result)->toHaveCount(1)
-        ->and($result->keys()->all())->toBe([1]);
+        ->and($result->keys()->all())->toBe([1])
+        ->and(PackageUnit::hasShippableComponents($orderItem))->toBeTrue();
+
+    $orderItem->metadata = [
+        'requires_shipping' => false,
+        'components' => [$component('service', false)],
+    ];
+
+    expect(PackageUnit::hasShippableComponents($orderItem))->toBeFalse()
+        ->and(PackageUnit::componentsOf($orderItem))->toHaveCount(1);
 });

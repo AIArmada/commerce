@@ -28,7 +28,7 @@ final class OrderShipmentUnits
 
     public static function hasActivePackageShipment(Order $order): bool
     {
-        if (! $order->items()->get()->contains(fn ($item): bool => PackageUnit::componentsOf($item) !== [])) {
+        if (! $order->items()->get()->contains(fn ($item): bool => PackageUnit::hasShippableComponents($item))) {
             return false;
         }
 

@@ -34,7 +34,7 @@ class ViewOrder extends ViewRecord
     {
         $options = [];
         foreach ($order->items()->get() as $item) {
-            if (PackageUnit::componentsOf($item) !== []) {
+            if (PackageUnit::hasShippableComponents($item)) {
                 for ($ordinal = 1; $ordinal <= $item->quantity; $ordinal++) {
                     $options[$item->id . ':' . $ordinal] = $item->name . ' / unit ' . $ordinal;
                 }
