@@ -200,17 +200,26 @@ it('replaces components transactionally without touching the old set on validati
         ->and($components->first()->quantity)->toBe(1);
 });
 
-it('rejects self references and nested composite components', function (): void {
+it('rejects self references while accepting nested composite components', function (): void {
     $parent = makeCompositeParent();
     $nested = makeCompositeParent(['sku' => 'NESTED-PKG']);
+    $leaf = makeComponentProduct(['sku' => 'NESTED-LEAF']);
 
     expect(fn () => app(ReplaceProductComponents::class)->handle($parent, [
         ['component_product_id' => $parent->id, 'quantity' => 1],
     ]))->toThrow(InvalidCompositePackageException::class, 'cannot contain itself');
 
-    expect(fn () => app(ReplaceProductComponents::class)->handle($parent, [
-        ['component_product_id' => $nested->id, 'quantity' => 1],
-    ]))->toThrow(InvalidCompositePackageException::class, 'Nested composite');
+    app(ReplaceProductComponents::class)->handle($nested, [
+        ['component_product_id' => $leaf->id, 'quantity' => 2],
+    ]);
+
+    app(ReplaceProductComponents::class)->handle($parent, [
+        ['component_product_id' => $nested->id, 'quantity' => 3],
+    ]);
+
+    expect($parent->compositeSnapshot()->entries)->toHaveCount(1)
+        ->and($parent->compositeSnapshot()->entries[0]['product_id'])->toBe($leaf->id)
+        ->and($parent->compositeSnapshot()->entries[0]['quantity'])->toBe(6);
 });
 
 it('requires an exact variant for configurable components and rejects misplaced variants', function (): void {
