@@ -115,6 +115,9 @@ final class CompositePackageService
             $variant = $component->variant;
             $componentProduct = $leaf['product'];
             $inventoryable = $variant instanceof Variant ? $variant : $componentProduct;
+            if (! $inventoryable instanceof Model) {
+                throw new InvalidCompositePackageException('Composite capacity requires an Eloquent inventory identity.');
+            }
             $inventoryKey = $inventoryable->getMorphClass() . ':' . $inventoryable->getKey();
             $sellable = $leaf['sellable'] && (! $variant instanceof Variant || $variant->is_enabled);
             $leafContext = count($leaf['path']) > 1
@@ -142,7 +145,9 @@ final class CompositePackageService
                 $grouped[$key] = [
                     'product_id' => $componentProduct instanceof Product ? (string) $componentProduct->getKey() : null,
                     'variant_id' => $variant instanceof Variant ? (string) $variant->getKey() : null,
-                    'sku' => (string) ($variant?->sku ?? $componentProduct->sku),
+                    'sku' => $componentProduct instanceof Product
+                        ? (string) ($variant?->sku ?? $componentProduct->sku)
+                        : (string) ($componentProduct->getBuyableAttributes()['sku'] ?? $componentProduct->getBuyableIdentifier()),
                     'quantity' => 0,
                     'available' => null,
                     'packages' => null,

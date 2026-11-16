@@ -13,6 +13,7 @@ use AIArmada\Inventory\Models\CapacityPool;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -293,7 +294,8 @@ final class ScopedCapacityReservationService implements ScopedCapacityReservatio
         }
     }
 
-    private function outcome(string $reference, \Illuminate\Database\Eloquent\Collection $holds): ScopedCapacityOutcome
+    /** @param Collection<int, CapacityHold> $holds */
+    private function outcome(string $reference, Collection $holds): ScopedCapacityOutcome
     {
         if ($holds->isEmpty()) {
             return new ScopedCapacityOutcome($reference, 'not_found', []);
@@ -315,7 +317,8 @@ final class ScopedCapacityReservationService implements ScopedCapacityReservatio
         );
     }
 
-    private function referenceHolds(string $reference): \Illuminate\Database\Eloquent\Collection
+    /** @return Collection<int, CapacityHold> */
+    private function referenceHolds(string $reference): Collection
     {
         return $this->ownerQuery(CapacityHold::query())
             ->where('reference', $reference)

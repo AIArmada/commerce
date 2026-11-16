@@ -109,11 +109,19 @@ final class ReplaceProductComponents
 
             $buyableType = $component['buyable_type'] ?? null;
             $buyableId = $component['buyable_id'] ?? null;
-            $isExternal = is_string($buyableType) && $buyableType !== '' && is_string($buyableId) && $buyableId !== '';
+            $hasProduct = $componentProductId !== '';
+            $hasExternal = $buyableType !== null || $buyableId !== null;
 
-            if (($componentProductId === '') === ! $isExternal) {
+            if ($hasProduct === $hasExternal) {
                 throw new InvalidCompositePackageException('Every component requires exactly one Product or registered Buyable identity.');
             }
+
+            if ($hasExternal && (! is_string($buyableType) || mb_trim($buyableType) === ''
+                || ! is_string($buyableId) || mb_trim($buyableId) === '')) {
+                throw new InvalidCompositePackageException('External component requires a registered Buyable type and a non-empty ID.');
+            }
+
+            $isExternal = $hasExternal;
 
             $variantId = $component['variant_id'] ?? null;
             $variantId = $variantId !== null && (string) $variantId !== '' ? (string) $variantId : null;

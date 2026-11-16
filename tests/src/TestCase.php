@@ -937,6 +937,7 @@ abstract class TestCase extends Orchestra
             $table->string('visibility')->default('catalog_search');
             $table->unsignedBigInteger('price')->default(0);
             $table->string('price_mode')->default('fixed');
+            $table->unsignedInteger('discount_basis_points')->default(0);
             $table->unsignedBigInteger('compare_price')->nullable();
             $table->unsignedBigInteger('cost')->nullable();
             $table->string('currency', 3)->default('MYR');
@@ -965,7 +966,10 @@ abstract class TestCase extends Orchestra
             $table->uuid('id')->primary();
             $table->nullableUuidMorphs('owner');
             $table->foreignUuid('product_id');
-            $table->foreignUuid('component_product_id');
+            $table->foreignUuid('parent_variant_id')->nullable();
+            $table->foreignUuid('component_product_id')->nullable();
+            $table->string('buyable_type')->nullable();
+            $table->string('buyable_id')->nullable();
             $table->foreignUuid('variant_id')->nullable();
             $table->unsignedInteger('quantity');
             $table->unsignedInteger('position')->default(0);
@@ -976,8 +980,11 @@ abstract class TestCase extends Orchestra
             $table->index(['product_id', 'position']);
             $table->index('component_product_id');
             $table->index('variant_id');
+            $table->index(['product_id', 'parent_variant_id']);
+            $table->index(['buyable_type', 'buyable_id']);
+            $table->unique(['product_id', 'parent_variant_id', 'buyable_type', 'buyable_id'], 'product_components_parent_buyable_unique');
             $table->unique(
-                ['product_id', 'component_product_id', 'variant_id'],
+                ['product_id', 'parent_variant_id', 'component_product_id', 'variant_id'],
                 'product_components_parent_component_variant_unique',
             );
         });
@@ -1061,6 +1068,8 @@ abstract class TestCase extends Orchestra
             $table->string('sku')->nullable()->index();
             $table->string('barcode')->nullable();
             $table->unsignedBigInteger('price')->nullable();
+            $table->string('price_mode')->nullable();
+            $table->unsignedInteger('discount_basis_points')->nullable();
             $table->unsignedBigInteger('cost')->nullable();
             $table->unsignedBigInteger('compare_price')->nullable();
             $table->integer('stock_quantity')->default(0);
