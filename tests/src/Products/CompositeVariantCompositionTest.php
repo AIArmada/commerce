@@ -153,3 +153,38 @@ it('derives physical shipping weight and shipment requirement from the selected 
         ->and($attributes['components'][0]['requires_shipping'])->toBeTrue()
         ->and($attributes['components'][0]['quantity'])->toBe(2);
 });
+
+it('keeps published composite variants complete and preserves at least one enabled tier', function (): void {
+    $leaf = variantCompositeLeaf('Published Tier Service', 100);
+    $parent = variantCompositeParent('Published Tier Lifecycle');
+    $bronze = variantCompositeOption($parent, 'Published Bronze');
+    app(ReplaceProductComponents::class)->handle($parent, [
+        ['component_product_id' => $leaf->id, 'quantity' => 1],
+    ], $bronze);
+    app(PublishCompositeProduct::class)->handle($parent);
+
+    expect(fn () => variantCompositeOption($parent, 'Incomplete New Tier'))
+        ->toThrow(InvalidCompositePackageException::class, 'Create the variant disabled');
+
+    expect(fn () => $bronze->update(['is_enabled' => false]))
+        ->toThrow(InvalidCompositePackageException::class, 'at least one enabled variant');
+
+    $silver = variantCompositeOption($parent, 'Pending Silver', ['is_enabled' => false]);
+    expect(fn () => $silver->update(['is_enabled' => true]))
+        ->toThrow(InvalidCompositePackageException::class, 'at least one component');
+
+    app(ReplaceProductComponents::class)->handle($parent, [
+        ['component_product_id' => $leaf->id, 'quantity' => 2],
+    ], $silver);
+
+    expect($silver->update(['is_enabled' => true]))->toBeTrue()
+        ->and($silver->fresh()->canBePurchased(1))->toBeTrue();
+
+    expect($bronze->update(['is_enabled' => false]))->toBeTrue();
+
+    expect(fn () => $silver->update(['is_enabled' => false]))
+        ->toThrow(InvalidCompositePackageException::class, 'at least one enabled variant');
+
+    expect(fn () => $silver->delete())
+        ->toThrow(InvalidCompositePackageException::class, 'component graph');
+});

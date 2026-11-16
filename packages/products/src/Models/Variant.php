@@ -16,7 +16,9 @@ use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Products\Concerns\EnforcesOwnerUniqueIdentity;
 use AIArmada\Products\Contracts\Inventoryable;
 use AIArmada\Products\Enums\CompositePriceMode;
+use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Exceptions\InvalidCompositePackageException;
+use AIArmada\Products\Services\CompositePackageService;
 use AIArmada\Products\Support\ChildOwnershipGuard;
 use AIArmada\Products\Support\ProductMedia;
 use AIArmada\Products\Support\ProductPricing;
@@ -691,12 +693,41 @@ class Variant extends Model implements Auditable, Buyable, HasMedia, Inventoryab
         });
 
         static::saving(function (Variant $variant): void {
-            $product = $variant->product;
-            if ($product instanceof Product && $product->isCompositeProduct()) {
-                $discount = $variant->discount_basis_points;
-                if ($discount !== null && ($discount < 0 || $discount > 10000)) {
-                    throw new InvalidCompositePackageException('Composite variant discount must be between 0 and 10000 basis points.');
-                }
+            // Always read the authoritative parent state. A cached relation
+            // from a Draft parent must not bypass Active graph invariants.
+            $product = $variant->product()->first();
+            if (! $product instanceof Product || ! $product->isCompositeProduct()) {
+                return;
+            }
+
+            $discount = $variant->discount_basis_points;
+            if ($discount !== null && ($discount < 0 || $discount > 10000)) {
+                throw new InvalidCompositePackageException('Composite variant discount must be between 0 and 10000 basis points.');
+            }
+
+            if ($product->status !== ProductStatus::Active) {
+                return;
+            }
+
+            if (! $variant->exists && $variant->is_enabled) {
+                throw new InvalidCompositePackageException(
+                    'An active composite cannot add an enabled variant without a complete component graph. Create the variant disabled, configure its graph, then enable it.',
+                );
+            }
+
+            if ($variant->exists && $variant->isDirty('is_enabled') && $variant->is_enabled) {
+                app(CompositePackageService::class)->assertPublishable($product, parentVariant: $variant);
+            }
+
+            if ($variant->exists && $variant->isDirty('is_enabled') && ! $variant->is_enabled
+                && ! Variant::query()
+                    ->where('product_id', $product->getKey())
+                    ->where('is_enabled', true)
+                    ->whereKeyNot($variant->getKey())
+                    ->exists()) {
+                throw new InvalidCompositePackageException(
+                    'An active composite must retain at least one enabled variant.',
+                );
             }
         });
 
@@ -722,6 +753,22 @@ class Variant extends Model implements Auditable, Buyable, HasMedia, Inventoryab
         static::deleting(function (Variant $variant): void {
             if (ProductComponent::query()->withoutOwnerScope()->where('variant_id', $variant->getKey())->exists()) {
                 throw new InvalidCompositePackageException('A component variant referenced by a composite package cannot be deleted.');
+            }
+
+            if (ProductComponent::query()->withoutOwnerScope()->where('parent_variant_id', $variant->getKey())->exists()) {
+                throw new InvalidCompositePackageException('A composite variant with a component graph cannot be deleted.');
+            }
+
+            $product = $variant->product()->first();
+
+            if ($product instanceof Product && $product->isCompositeProduct()
+                && $product->status === ProductStatus::Active && $variant->is_enabled
+                && ! Variant::query()
+                    ->where('product_id', $product->getKey())
+                    ->where('is_enabled', true)
+                    ->whereKeyNot($variant->getKey())
+                    ->exists()) {
+                throw new InvalidCompositePackageException('An active composite must retain at least one enabled variant.');
             }
 
             $variant->optionValues()->detach();
