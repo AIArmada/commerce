@@ -40,7 +40,7 @@ it('revalidates restored contextual cart selections before checkout', function (
         'type' => ProductType::Service,
         'status' => ProductStatus::Active,
         'price' => 500,
-        'currency' => 'MYR',
+        'currency' => 'USD',
     ]);
 
     $cart = new Cart(new InMemoryStorage, 'context-checkout-cart');

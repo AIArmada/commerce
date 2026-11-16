@@ -48,7 +48,7 @@ final class ContextTestBuyable extends Model implements Buyable
 
     public function getBuyableCurrency(): string
     {
-        return 'MYR';
+        return 'USD';
     }
 
     public function getBuyableAttributes(): array
@@ -174,7 +174,7 @@ it('validates context capacity on cart add and revalidation', function (): void 
         'type' => ProductType::Service,
         'status' => ProductStatus::Active,
         'price' => 1000,
-        'currency' => 'MYR',
+        'currency' => 'USD',
     ]);
     $am = new PurchaseContext(['window' => 'am']);
     $pm = new PurchaseContext(['window' => 'pm']);
