@@ -32,7 +32,10 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string|null $owner_type
  * @property string|null $owner_id
  * @property string $product_id
- * @property string $component_product_id
+ * @property string|null $component_product_id
+ * @property string|null $parent_variant_id
+ * @property string|null $buyable_type
+ * @property string|null $buyable_id
  * @property string|null $variant_id
  * @property int $quantity
  * @property int $position
@@ -313,10 +316,6 @@ class ProductComponent extends Model implements Auditable
 
         if (! $parent instanceof Product || (! $isBuyable && ! $componentProduct instanceof Product)) {
             throw new InvalidCompositePackageException('Composite parent and component must both exist.');
-        }
-
-        if ($variant !== null && ! $variant instanceof Variant) {
-            throw new InvalidCompositePackageException('Composite component variant could not be resolved.');
         }
 
         $buyable = $isBuyable

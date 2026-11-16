@@ -10,6 +10,16 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property string $id
+ * @property string|null $owner_type
+ * @property string|null $owner_id
+ * @property string $resource_key
+ * @property string $scope_key
+ * @property int $capacity
+ * @property int $reserved
+ * @property int $committed
+ */
 final class CapacityPool extends Model
 {
     use HasOwner;

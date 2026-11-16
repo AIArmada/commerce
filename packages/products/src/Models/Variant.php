@@ -48,6 +48,8 @@ use Throwable;
  * @property string|null $combination_key
  * @property string|null $barcode
  * @property int|null $price
+ * @property \AIArmada\Products\Enums\CompositePriceMode|null $price_mode
+ * @property int|null $discount_basis_points
  * @property int|null $compare_price
  * @property int|null $cost
  * @property float|null $weight

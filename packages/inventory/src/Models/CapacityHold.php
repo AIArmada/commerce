@@ -10,6 +10,18 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property string $id
+ * @property string $pool_id
+ * @property string|null $owner_type
+ * @property string|null $owner_id
+ * @property string $reference
+ * @property int $quantity
+ * @property string $state
+ * @property string|null $order_id
+ * @property \Carbon\CarbonImmutable $expires_at
+ * @property-read CapacityPool $pool
+ */
 final class CapacityHold extends Model
 {
     use HasOwner;

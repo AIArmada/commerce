@@ -12,6 +12,7 @@ use AIArmada\Inventory\Models\CapacityHold;
 use AIArmada\Inventory\Models\CapacityPool;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -72,7 +73,7 @@ final class ScopedCapacityReservationService implements ScopedCapacityReservatio
                     $pools[$line->key()] = $pool;
                 }
 
-                $this->expireHolds(array_map(fn (CapacityPool $pool): string => $pool->id, array_values($pools)));
+                $this->expireHolds(array_map(fn (CapacityPool $pool): string => (string) $pool->id, array_values($pools)));
 
                 foreach ($requirements as $line) {
                     $pool = $pools[$line->key()];
@@ -331,6 +332,11 @@ final class ScopedCapacityReservationService implements ScopedCapacityReservatio
             ->where('scope_key', $scopeKey);
     }
 
+    /**
+     * @template TModel of Model
+     * @param Builder<TModel> $query
+     * @return Builder<TModel>
+     */
     private function ownerQuery(Builder $query): Builder
     {
         $owner = $this->owner();

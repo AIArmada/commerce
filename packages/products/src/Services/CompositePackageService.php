@@ -302,7 +302,7 @@ final class CompositePackageService
      * @param  Collection<int, ProductComponent>|null  $components
      * @param  list<string>  $ancestors
      * @param  list<array{product_id: string, component_id: string, quantity: int}>  $path
-     * @return list<array{product: Product, component: ProductComponent, quantity: int, sellable: bool, path: list<array{product_id: string, component_id: string, quantity: int}>}>
+     * @return list<array{product: Product|Buyable, component: ProductComponent, quantity: int, sellable: bool, path: list<array<string, mixed>>}>
      */
     private function flatten(Product $product, ?Collection $components, int $multiplier, array $ancestors, array $path, ?Variant $parentVariant = null): array
     {
