@@ -76,15 +76,10 @@ trait ManagesBuyables
             $this->validateContextualBuyable(
                 $buyable,
                 $purchaseContext,
-                $this->accumulatedContextQuantity($cartItems, $buyable, $purchaseContext, $lineId) + $newQuantity,
-            );
-            $this->validateContextualBuyable(
-                $buyable,
-                $purchaseContext,
                 $this->accumulatedContextQuantity($cartItems, $buyable, $purchaseContext) + $quantity,
             );
 
-            $pricing = $this->quoteBuyable($buyable, $lineQuantity);
+            $pricing = $this->quoteBuyable($buyable, $lineQuantity, $purchaseContext);
             $attributes = $this->buildBuyableAttributes(
                 $buyable,
                 $line,
@@ -165,8 +160,13 @@ trait ManagesBuyables
             $accumulatedQuantity = $this->accumulatedBuyableQuantity($cartItems, $buyable, $lineId) + $newQuantity;
 
             $this->validateBuyable($buyable, $accumulatedQuantity);
+            $this->validateContextualBuyable(
+                $buyable,
+                $purchaseContext,
+                $this->accumulatedContextQuantity($cartItems, $buyable, $purchaseContext, $lineId) + $newQuantity,
+            );
 
-            $pricing = $this->quoteBuyable($buyable, $newQuantity);
+            $pricing = $this->quoteBuyable($buyable, $newQuantity, $purchaseContext);
             $attributes = $this->buildBuyableAttributes(
                 $buyable,
                 $line,
