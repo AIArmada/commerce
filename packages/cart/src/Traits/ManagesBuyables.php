@@ -506,6 +506,7 @@ trait ManagesBuyables
     {
         $errors = [];
         $groups = [];
+        $validatorBound = function_exists('app') && app()->bound(ContextualBuyableValidatorInterface::class);
 
         foreach ($this->getItems() as $item) {
             try {
@@ -516,7 +517,10 @@ trait ManagesBuyables
                 continue;
             }
 
-            if ($context === null) {
+            // Context integrity is checked for every persisted selection, even
+            // without a bound policy. Unbound policies must not prevent plain
+            // (potentially non-Eloquent) Buyable records from being quoted.
+            if ($context === null || ! $validatorBound) {
                 continue;
             }
 
@@ -538,7 +542,7 @@ trait ManagesBuyables
             $groups[$key]['items'][] = $item->id;
         }
 
-        if (! function_exists('app') || ! app()->bound(ContextualBuyableValidatorInterface::class)) {
+        if (! $validatorBound) {
             return $errors;
         }
 
