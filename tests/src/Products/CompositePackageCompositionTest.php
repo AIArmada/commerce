@@ -236,10 +236,10 @@ it('requires an exact variant for configurable components and rejects misplaced 
 
     expect(fn () => app(ReplaceProductComponents::class)->handle($parent, [
         ['component_product_id' => $simple->id, 'variant_id' => $otherVariant->id, 'quantity' => 1],
-    ]))->toThrow(InvalidCompositePackageException::class, 'Only configurable components');
+    ]))->toThrow(InvalidCompositePackageException::class, 'Only components supporting variants');
 });
 
-it('rejects duplicate components, non-physical components, and inconsistent money or tax', function (): void {
+it('rejects duplicate components and inconsistent money or tax', function (): void {
     $mouse = makeComponentProduct();
     $parent = makeCompositeParent();
 
@@ -254,9 +254,12 @@ it('rejects duplicate components, non-physical components, and inconsistent mone
         'tracks_inventory' => false,
     ]);
 
-    expect(fn () => app(ReplaceProductComponents::class)->handle($parent, [
+    $rows = app(ReplaceProductComponents::class)->handle($parent, [
         ['component_product_id' => $digital->id, 'quantity' => 1],
-    ]))->toThrow(InvalidCompositePackageException::class, 'physical product');
+    ]);
+
+    expect($rows)->toHaveCount(1)
+        ->and($parent->fresh()->requires_shipping)->toBeFalse();
 
     $otherCurrency = makeComponentProduct(['currency' => 'USD']);
 

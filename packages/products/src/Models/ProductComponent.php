@@ -169,6 +169,7 @@ class ProductComponent extends Model implements Auditable
                 $validator->assertComponent($parent, $componentProduct, $variant, (int) $component->quantity);
             }
 
+            self::assertComponentPricing($component);
             ChildOwnershipGuard::apply($component, $parent, 'product');
         });
 
@@ -190,6 +191,8 @@ class ProductComponent extends Model implements Auditable
             } else {
                 $validator->assertComponent($parent, $componentProduct, $variant, (int) $component->quantity);
             }
+
+            self::assertComponentPricing($component);
         });
 
         static::saved(static function (ProductComponent $component): void {
@@ -265,6 +268,17 @@ class ProductComponent extends Model implements Auditable
         }
 
         return [$parent, $componentProduct, $variant];
+    }
+
+    private static function assertComponentPricing(ProductComponent $component): void
+    {
+        if ($component->unit_price !== null && $component->unit_price < 0) {
+            throw new InvalidCompositePackageException('A component unit price must be a non-negative integer in minor units.');
+        }
+
+        if ($component->metadata !== null && ! is_array($component->metadata)) {
+            throw new InvalidCompositePackageException('Composite component metadata must be an array.');
+        }
     }
 
     private static function syncParentShipping(ProductComponent $component): void

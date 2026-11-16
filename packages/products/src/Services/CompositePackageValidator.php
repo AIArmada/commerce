@@ -55,11 +55,9 @@ final class CompositePackageValidator
             throw new InvalidCompositePackageException('Composite components must use the same tax treatment as the package.');
         }
 
-        $componentType = $this->typeOf($componentProduct);
-
-        if ($componentType === ProductType::Configurable) {
+        if ($componentProduct->supportsVariants()) {
             if (! $variant instanceof Variant) {
-                throw new InvalidCompositePackageException('A configurable component requires an exact variant.');
+                throw new InvalidCompositePackageException('A component supporting variants requires an exact variant.');
             }
 
             if ((string) $variant->product_id !== (string) $componentProduct->getKey()) {
@@ -78,7 +76,7 @@ final class CompositePackageValidator
         }
 
         if ($variant instanceof Variant) {
-            throw new InvalidCompositePackageException('Only configurable components may select a variant.');
+            throw new InvalidCompositePackageException('Only components supporting variants may select a variant.');
         }
     }
 
