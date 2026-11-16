@@ -27,6 +27,7 @@ use AIArmada\Products\Events\ProductDeleted;
 use AIArmada\Products\Events\ProductStatusChanged;
 use AIArmada\Products\Events\ProductUpdated;
 use AIArmada\Products\Exceptions\InvalidCompositePackageException;
+use AIArmada\Products\Services\CompositePackageService;
 use AIArmada\Products\Support\ProductMedia;
 use AIArmada\Products\Support\ProductPricing;
 use AIArmada\Products\Support\ProductShipping;
@@ -893,7 +894,7 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
 
         static::saving(function (Product $product): void {
             if ($product->exists && $product->isCompositeProduct()) {
-                $product->requires_shipping = app(\\AIArmada\\Products\\Services\\CompositePackageService::class)
+                $product->requires_shipping = app(CompositePackageService::class)
                     ->requiresShippingFor($product);
             }
         });
