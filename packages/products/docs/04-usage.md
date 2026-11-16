@@ -73,7 +73,7 @@ app(ReplaceProductComponents::class)->handle($package, [
 $package = app(PublishCompositeProduct::class)->handle($package);
 ```
 
-Replacement is transactional: every submitted row is validated before the old set is deleted. Draft packages may be empty; publishing requires at least one valid component. Use `sum` for catalog prices or optional per-component `unit_price` overrides, or `fixed` for the parent price. The parent never allocates or deducts inventory.
+Replacement is transactional: every submitted row is validated before the old set is deleted. Draft packages may be empty; publishing requires at least one valid component. Composite children may themselves contain other composites; direct and indirect cycles are rejected. Use `sum` for catalog prices or optional per-component `unit_price` overrides, or `fixed` for the parent price. The parent never allocates or deducts inventory.
 
 `CompositePackageService` exposes the current package state:
 
@@ -89,6 +89,8 @@ $snapshot = $service->snapshot($package); // canonical frozen composition
 ```
 
 The default `StockBackedCompositeCapacityResolver` handles warehouse quantities directly. Applications can bind `CompositeCapacityResolverInterface` for context-dependent capacity. It receives the package parent, component row, and a free-form context array. **This is an availability check, not a reservation**; applications must independently enforce concurrency-safe booking and allocations in their own checkout workflow.
+
+Nested composites are flattened into purchasable leaf products; the product hierarchy never enters warehouse stock or shipments. Quantities multiply along each branch (2 × 3 units becomes 6), and finite availability groups identical leaf inventory identities across separate branches before evaluating capacity. Nested entries carry a `composition_path` with each traversed child product ID, component row ID, quantity, and optional `unit_price`/`metadata`; changing this ancestry changes the snapshot fingerprint and triggers checkout revalidation. The capacity resolver additionally receives this path through its generic context for nested leaves.
 
 The core snapshot entry keys remain stable across cart, checkout, orders, shipping, and inventory: `product_id`, `variant_id`, `inventoryable_type`, `inventoryable_id`, `quantity`, `sku`, `name`, `weight` (grams), `dimensions` (centimetres), `requires_shipping`, and `tracks_inventory`. Optional `unit_price` and `metadata` survive snapshots. Untracked components are not reserved as warehouse stock; consuming applications handle any additional capacity reservations.
 

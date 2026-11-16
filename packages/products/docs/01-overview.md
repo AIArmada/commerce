@@ -79,9 +79,9 @@ Use this package when you need the source-of-truth catalog domain: products, var
 - `CompositePriceMode::Fixed` uses the parent `price`.
 - `CompositePriceMode::Sum` multiplies component catalog prices or optional `unit_price` overrides (integer minor units) by their per-package quantities.
 - Components must share the package owner, currency, and tax treatment.
-- Nested composites, self references, duplicate components and missing exact variants are rejected. Components may be non-shipping or untracked.
+- Composites may contain other composites to a depth of 32. Direct/indirect cycles, self references, duplicate direct components and missing exact variants are rejected. Components may be non-shipping or untracked.
 - An active package must contain at least one valid component; referenced products and variants cannot be deleted.
-- `CompositePackageService` builds canonical snapshots for cart, checkout, orders, shipping, and inventory. Snapshot entries retain the established shipping/inventory fields and can include `unit_price` and arbitrary `metadata`. The package shipping flag is derived from its components. Availability returns `null` when no component imposes a finite limit.
+- `CompositePackageService` recursively expands nested packages into exact leaf components, multiplying quantities at each edge. Each nested leaf includes a provenance `composition_path`; pricing honours nested `fixed`, `sum` and edge-level `unit_price` overrides. Downstream cart, checkout, orders, shipping, and inventory consume only flattened leaves. Availability sums shared leaf requirements before resolving the finite bottleneck (`null` means unbounded). Parent shipping is derived recursively from physical leaves.
 
 ## Highlights
 

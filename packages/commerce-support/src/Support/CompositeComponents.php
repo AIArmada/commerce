@@ -21,7 +21,7 @@ use InvalidArgumentException;
  *     tracks_inventory: bool,
  *     unit_price?: int,
  *     metadata?: array<string, mixed>,
- *     composition_path?: list<array{product_id: string, component_id: string, quantity: positive-int}>
+ *     composition_path?: list<array{product_id: string, component_id: string, quantity: positive-int, unit_price?: int, metadata?: array<string, mixed>}>
  * }
  */
 final class CompositeComponents
@@ -113,16 +113,30 @@ final class CompositeComponents
                     if (! is_array($step)
                         || ! is_string($step['product_id'] ?? null) || $step['product_id'] === ''
                         || ! is_string($step['component_id'] ?? null) || $step['component_id'] === ''
-                        || ! is_int($step['quantity'] ?? null) || $step['quantity'] < 1) {
+                        || ! is_int($step['quantity'] ?? null) || $step['quantity'] < 1
+                        || (isset($step['unit_price']) && (! is_int($step['unit_price']) || $step['unit_price'] < 0))
+                        || (isset($step['metadata']) && ! is_array($step['metadata']))) {
                         throw new InvalidArgumentException('Invalid nested composite provenance path.');
                     }
                 }
 
-                $component['composition_path'] = array_map(static fn (array $step): array => [
-                    'product_id' => $step['product_id'],
-                    'component_id' => $step['component_id'],
-                    'quantity' => $step['quantity'],
-                ], $compositionPath);
+                $component['composition_path'] = array_map(static function (array $step): array {
+                    $normalized = [
+                        'product_id' => $step['product_id'],
+                        'component_id' => $step['component_id'],
+                        'quantity' => $step['quantity'],
+                    ];
+
+                    if (array_key_exists('unit_price', $step)) {
+                        $normalized['unit_price'] = $step['unit_price'];
+                    }
+
+                    if (array_key_exists('metadata', $step)) {
+                        $normalized['metadata'] = $step['metadata'];
+                    }
+
+                    return $normalized;
+                }, $compositionPath);
             }
 
             $components[] = $component;

@@ -6,7 +6,6 @@ namespace AIArmada\Products\Services;
 
 use AIArmada\Products\Contracts\CompositeCapacityResolverInterface;
 use AIArmada\Products\Enums\CompositePriceMode;
-use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Exceptions\InvalidCompositePackageException;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\ProductComponent;
@@ -236,11 +235,21 @@ final class CompositePackageService
         foreach ($components as $component) {
             $child = $this->resolveChild($product, $component);
             $quantity = $this->safeMultiply($multiplier, (int) $component->quantity);
-            $childPath = [...$path, [
+            $step = [
                 'product_id' => (string) $child->getKey(),
                 'component_id' => (string) $component->getKey(),
                 'quantity' => (int) $component->quantity,
-            ]];
+            ];
+
+            if ($component->unit_price !== null) {
+                $step['unit_price'] = (int) $component->unit_price;
+            }
+
+            if (is_array($component->metadata) && $component->metadata !== []) {
+                $step['metadata'] = $component->metadata;
+            }
+
+            $childPath = [...$path, $step];
 
             if ($child->isCompositeProduct()) {
                 array_push($leaves, ...$this->flatten($child, null, $quantity, $ancestors, $childPath));
