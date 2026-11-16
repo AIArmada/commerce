@@ -201,7 +201,6 @@ final class CompositeCartRevalidator
             $entries = CompositeComponents::read($fresh->entries);
 
             if ($entries !== $line->components
-                || ($line->attributes['components_fingerprint'] ?? null) !== $fresh->fingerprint
                 || $fresh->currency !== $line->currency
                 || collect($fresh->entries)->contains(static fn (array $entry): bool => $entry['requires_shipping']) !== $line->requiresShipping
                 || (bool) $product->is_taxable !== $line->isTaxable
@@ -223,6 +222,13 @@ final class CompositeCartRevalidator
             if ($currentPrice !== $line->unitPrice
                 || (isset($quotedPrices[$line->lineId]) && $currentPrice !== $quotedPrices[$line->lineId])) {
                 return 'price';
+            }
+
+            // Preserve the distinction between changed pricing and changed
+            // catalogue policy. A percentage configuration may change yet
+            // round to the same price; that still invalidates the quote.
+            if (($line->attributes['components_fingerprint'] ?? null) !== $fresh->fingerprint) {
+                return 'contents';
             }
         }
 

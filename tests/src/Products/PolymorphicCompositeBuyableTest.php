@@ -10,6 +10,7 @@ use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Exceptions\InvalidCompositePackageException;
 use AIArmada\Products\Models\Product;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -17,6 +18,8 @@ use Illuminate\Support\Str;
 
 final class CompositeExternalSellable extends Model implements Buyable
 {
+    use HasUuids;
+
     protected $table = 'test_composite_external_sellables';
 
     public $timestamps = false;
