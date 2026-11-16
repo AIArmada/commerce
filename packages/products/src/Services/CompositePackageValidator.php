@@ -129,7 +129,12 @@ final class CompositePackageValidator
         }
 
         if (! $mode instanceof CompositePriceMode) {
-            throw new InvalidCompositePackageException('A composite package requires a valid fixed or sum price mode.');
+            throw new InvalidCompositePackageException('A composite package requires a valid price mode.');
+        }
+
+        $discount = (int) ($parent->discount_basis_points ?? 0);
+        if ($discount < 0 || $discount > 10000) {
+            throw new InvalidCompositePackageException('Composite discount basis points must be between 0 and 10000.');
         }
 
         $this->validateGraph($parent, $components, []);

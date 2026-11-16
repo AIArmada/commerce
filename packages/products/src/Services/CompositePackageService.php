@@ -74,6 +74,7 @@ final class CompositePackageService
             currency: mb_strtoupper((string) $product->currency),
             priceMode: $this->priceModeFor($product)->value,
             entries: $entries,
+            discountBasisPoints: (int) ($product->discount_basis_points ?? 0),
         );
     }
 
@@ -193,7 +194,7 @@ final class CompositePackageService
         $mode = CompositePriceMode::tryFrom((string) $value);
 
         if (! $mode instanceof CompositePriceMode) {
-            throw new InvalidCompositePackageException('A composite package requires a valid fixed or sum price mode.');
+            throw new InvalidCompositePackageException('A composite package requires a valid price mode.');
         }
 
         return $mode;
@@ -219,7 +220,8 @@ final class CompositePackageService
     {
         $this->assertNotCyclic($product, $ancestors);
 
-        if ($this->priceModeFor($product) === CompositePriceMode::Fixed) {
+        $mode = $this->priceModeFor($product);
+        if ($mode === CompositePriceMode::Fixed) {
             return (int) $product->price;
         }
 
@@ -239,6 +241,20 @@ final class CompositePackageService
             }
 
             $total = $this->safeAdd($total, $this->safeMultiply((int) $unitPrice, (int) $component->quantity));
+        }
+
+        if ($mode === CompositePriceMode::PercentageDiscount) {
+            $basisPoints = (int) ($product->discount_basis_points ?? 0);
+            if ($basisPoints < 0 || $basisPoints > 10000) {
+                throw new InvalidCompositePackageException('Composite discount basis points must be between 0 and 10000.');
+            }
+
+            // Compute a half-up rounded discount without multiplying a potentially
+            // 64-bit basket amount by 10000 (which would overflow PHP integers).
+            $discount = intdiv($total, 10000) * $basisPoints
+                + intdiv(($total % 10000) * $basisPoints + 5000, 10000);
+
+            return $total - $discount;
         }
 
         return $total;

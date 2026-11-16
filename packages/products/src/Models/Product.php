@@ -139,6 +139,7 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
         'visibility',
         'price',
         'price_mode',
+        'discount_basis_points',
         'compare_price',
         'cost',
         'currency',
@@ -177,6 +178,7 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
             'visibility' => ProductVisibility::class,
             'price' => 'integer',
             'price_mode' => CompositePriceMode::class,
+            'discount_basis_points' => 'integer',
             'compare_price' => 'integer',
             'cost' => 'integer',
             'weight' => 'decimal:2',
@@ -890,6 +892,17 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
             }
 
             $product->currency = $code;
+        });
+
+        static::saving(function (Product $product): void {
+            if (! $product->isCompositeProduct()) {
+                return;
+            }
+
+            $basisPoints = (int) ($product->discount_basis_points ?? 0);
+            if ($basisPoints < 0 || $basisPoints > 10000) {
+                throw new InvalidCompositePackageException('Composite discount basis points must be between 0 and 10000.');
+            }
         });
 
         static::saving(function (Product $product): void {
