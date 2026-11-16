@@ -432,8 +432,6 @@ final class CompositePackageService
             $entry = [
                 'product_id' => null,
                 'variant_id' => null,
-                'buyable_type' => (string) $component->buyable_type,
-                'buyable_id' => (string) $component->buyable_id,
                 'inventoryable_type' => $sellable instanceof Model ? $sellable->getMorphClass() : (string) $component->buyable_type,
                 'inventoryable_id' => (string) $component->buyable_id,
                 'quantity' => $quantity,
@@ -443,6 +441,8 @@ final class CompositePackageService
                 'dimensions' => null,
                 'requires_shipping' => false,
                 'tracks_inventory' => false,
+                'buyable_type' => (string) $component->buyable_type,
+                'buyable_id' => (string) $component->buyable_id,
             ];
         } else {
             $variant = $component->variant;
