@@ -927,6 +927,14 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
         });
 
         static::updating(function (Product $product): void {
+            if ($product->isCompositeProduct() && $product->isDirty('supports_variants')
+                && (
+                    ProductComponent::query()->withoutOwnerScope()->where('product_id', $product->getKey())->exists()
+                    || Variant::query()->withoutOwnerScope()->where('product_id', $product->getKey())->exists()
+                )) {
+                throw new InvalidCompositePackageException('Composite variant mode is immutable once a variant or component exists.');
+            }
+
             if ($product->isDirty('type')
                 && ProductComponent::query()
                     ->withoutOwnerScope()

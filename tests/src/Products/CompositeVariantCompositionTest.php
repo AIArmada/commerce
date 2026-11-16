@@ -212,3 +212,11 @@ it('allows disabled tiers to be configured and retired without emptying an enabl
         ->and($active->fresh()->canBePurchased(1))->toBeTrue()
         ->and($retired->delete())->toBeTrue();
 });
+
+it('prevents changing variant composition mode after variants or component graphs exist', function (): void {
+    $parent = variantCompositeParent('Immutable Variant Mode');
+    variantCompositeOption($parent, 'Active Tier');
+
+    expect(fn () => $parent->update(['supports_variants' => false]))
+        ->toThrow(InvalidCompositePackageException::class, 'variant mode is immutable');
+});
