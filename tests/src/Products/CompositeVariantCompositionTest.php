@@ -123,3 +123,33 @@ it('does not allow a variant to change another product composite graph', functio
         ['component_product_id' => $leaf->id, 'quantity' => 1],
     ], $variant))->toThrow(InvalidCompositePackageException::class);
 });
+
+it('derives physical shipping weight and shipment requirement from the selected composite variant', function (): void {
+    $goods = Product::query()->create([
+        'name' => 'Physical Variant Merchandise',
+        'slug' => 'physical-variant-merchandise-' . Str::random(8),
+        'sku' => 'VAR-GOODS-' . mb_strtoupper(Str::random(8)),
+        'type' => ProductType::Simple,
+        'status' => ProductStatus::Active,
+        'price' => 200,
+        'currency' => 'MYR',
+        'requires_shipping' => true,
+        'tracks_inventory' => false,
+        'weight' => 0.5,
+        'weight_unit' => 'kg',
+    ]);
+    $parent = variantCompositeParent('Physical Variant Package');
+    $variant = variantCompositeOption($parent, 'Physical Tier');
+
+    app(ReplaceProductComponents::class)->handle($parent, [
+        ['component_product_id' => $goods->id, 'quantity' => 2],
+    ], $variant);
+
+    app(PublishCompositeProduct::class)->handle($parent);
+    $attributes = $variant->fresh()->getBuyableAttributes();
+
+    expect($attributes['requires_shipping'])->toBeTrue()
+        ->and($attributes['weight'])->toBe(1000)
+        ->and($attributes['components'][0]['requires_shipping'])->toBeTrue()
+        ->and($attributes['components'][0]['quantity'])->toBe(2);
+});

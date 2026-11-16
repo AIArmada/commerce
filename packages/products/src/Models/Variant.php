@@ -331,6 +331,20 @@ class Variant extends Model implements Auditable, Buyable, HasMedia, Inventoryab
 
         if ($product instanceof Product && $product->isCompositeProduct()) {
             $snapshot = $product->compositeSnapshot($this);
+            $shippingWeight = null;
+
+            foreach ($snapshot->entries as $entry) {
+                if (! $entry['requires_shipping'] || ! is_numeric($entry['weight'] ?? null)) {
+                    continue;
+                }
+
+                $shippingWeight = ($shippingWeight ?? 0) + ((int) $entry['weight'] * (int) $entry['quantity']);
+            }
+
+            if ($shippingWeight !== null && $shippingWeight > 0) {
+                $attributes[BuyableLineData::ATTRIBUTE_WEIGHT] = $shippingWeight;
+            }
+
             $attributes['components'] = $snapshot->entries;
             $attributes['components_fingerprint'] = $snapshot->fingerprint;
             $attributes[BuyableLineData::ATTRIBUTE_REQUIRES_SHIPPING] = collect($snapshot->entries)
