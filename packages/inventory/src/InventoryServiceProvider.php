@@ -106,6 +106,8 @@ final class InventoryServiceProvider extends PackageServiceProvider
             FulfillmentLocationService::class,
             CheckoutReservationServiceInterface::class,
             CheckoutReservationService::class,
+            ScopedCapacityReservationServiceInterface::class,
+            ScopedCapacityReservationService::class,
             'inventory',
             'inventory.allocations',
         ];

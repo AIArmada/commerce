@@ -31,8 +31,10 @@ final class ReserveScopedCapacityStep extends AbstractCheckoutStep
 
     public function canSkip(CheckoutSession $session): bool
     {
-        return ! app()->bound(ScopedCapacityCheckoutProviderInterface::class)
-            || ! app()->bound(ScopedCapacityReservationServiceInterface::class);
+        // Inventory registers its reservation contract in a deferred
+        // provider. An app()->bound() check can be false until make() loads
+        // that provider, so only the application-owned policy is optional.
+        return ! app()->bound(ScopedCapacityCheckoutProviderInterface::class);
     }
 
     public function handle(CheckoutSession $session): StepResult
