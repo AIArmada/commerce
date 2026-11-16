@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Products\Services;
 
+use AIArmada\CommerceSupport\Contracts\Buyable;
+use AIArmada\Products\Support\CompositeBuyableRegistry;
+use Illuminate\Database\Eloquent\Model;
 use AIArmada\Products\Contracts\CompositeCapacityDemandResolverInterface;
 use AIArmada\Products\Contracts\CompositeCapacityResolverInterface;
 use AIArmada\Products\Enums\CompositePriceMode;
@@ -131,7 +134,7 @@ final class CompositePackageService
 
             if (! isset($grouped[$key])) {
                 $grouped[$key] = [
-                    'product_id' => (string) $componentProduct->getKey(),
+                    'product_id' => $componentProduct instanceof Product ? (string) $componentProduct->getKey() : null,
                     'variant_id' => $variant instanceof Variant ? (string) $variant->getKey() : null,
                     'sku' => (string) ($variant?->sku ?? $componentProduct->sku),
                     'quantity' => 0,
@@ -204,7 +207,7 @@ final class CompositePackageService
     public function requiresShippingFor(Product $product): bool
     {
         foreach ($this->flatten($product, null, 1, [], []) as $leaf) {
-            if ($leaf['product']->requires_shipping) {
+            if ($leaf['product'] instanceof Product && $leaf['product']->requires_shipping) {
                 return true;
             }
         }
@@ -235,9 +238,11 @@ final class CompositePackageService
 
             $unitPrice = $component->unit_price;
             if ($unitPrice === null) {
-                $unitPrice = $child->isCompositeProduct()
+                $unitPrice = $child instanceof Product && $child->isCompositeProduct()
                     ? $this->recursivePrice($child, null, $ancestors)
-                    : (int) ($variant instanceof Variant && $variant->price !== null ? $variant->price : $child->price);
+                    : ($child instanceof Product
+                        ? (int) ($variant instanceof Variant && $variant->price !== null ? $variant->price : $child->price)
+                        : $child->getBuyablePrice());
             }
 
             $total = $this->safeAdd($total, $this->safeMultiply((int) $unitPrice, (int) $component->quantity));
@@ -277,10 +282,15 @@ final class CompositePackageService
             $child = $this->resolveChild($product, $component);
             $quantity = $this->safeMultiply($multiplier, (int) $component->quantity);
             $step = [
-                'product_id' => (string) $child->getKey(),
+                'product_id' => $child instanceof Product ? (string) $child->getKey() : null,
                 'component_id' => (string) $component->getKey(),
                 'quantity' => (int) $component->quantity,
             ];
+
+            if (! $child instanceof Product) {
+                $step['buyable_type'] = (string) $component->buyable_type;
+                $step['buyable_id'] = (string) $component->buyable_id;
+            }
 
             if ($component->unit_price !== null) {
                 $step['unit_price'] = (int) $component->unit_price;
@@ -292,7 +302,7 @@ final class CompositePackageService
 
             $childPath = [...$path, $step];
 
-            if ($child->isCompositeProduct()) {
+            if ($child instanceof Product && $child->isCompositeProduct()) {
                 array_push($leaves, ...$this->flatten($child, null, $quantity, $ancestors, $childPath));
 
                 continue;
@@ -302,7 +312,7 @@ final class CompositePackageService
                 'product' => $child,
                 'component' => $component,
                 'quantity' => $quantity,
-                'sellable' => $child->isPurchasable(),
+                'sellable' => $child instanceof Product ? $child->isPurchasable() : $child->canBePurchased(),
                 'path' => $childPath,
             ];
         }
@@ -321,8 +331,20 @@ final class CompositePackageService
         }
     }
 
-    private function resolveChild(Product $parent, ProductComponent $component): Product
+    private function resolveChild(Product $parent, ProductComponent $component): Product|Buyable
     {
+        if ($component->component_product_id === null) {
+            $buyable = app(CompositeBuyableRegistry::class)->resolve(
+                $parent,
+                (string) $component->buyable_type,
+                (string) $component->buyable_id,
+            );
+
+            $this->validator->assertBuyableComponent($parent, $buyable, (int) $component->quantity);
+
+            return $buyable;
+        }
+
         $child = $component->componentProduct;
 
         if (! $child instanceof Product) {
@@ -361,28 +383,47 @@ final class CompositePackageService
      *   metadata?: array<string,mixed>
      * }
      */
-    private function entryFor(Product $product, ProductComponent $component, int $quantity): array
+    private function entryFor(Product|Buyable $sellable, ProductComponent $component, int $quantity): array
     {
-        $variant = $component->variant;
-        $inventoryable = $variant instanceof Variant ? $variant : $product;
-        $entry = [
-            'product_id' => (string) $product->getKey(),
-            'variant_id' => $variant instanceof Variant ? (string) $variant->getKey() : null,
-            'inventoryable_type' => $inventoryable->getMorphClass(),
-            'inventoryable_id' => (string) $inventoryable->getKey(),
-            'quantity' => $quantity,
-            'sku' => (string) ($variant?->sku ?? $product->sku),
-            'name' => (string) (($variant?->name ?? '') !== '' ? $variant->name : $product->name),
-            'weight' => ProductShipping::weightGrams($variant?->weight ?? $product->weight, $product->weight_unit),
-            'dimensions' => ProductShipping::dimensionsCm(
-                $variant?->length ?? $product->length,
-                $variant?->width ?? $product->width,
-                $variant?->height ?? $product->height,
-                $product->dimension_unit,
-            ),
-            'requires_shipping' => (bool) $product->requires_shipping,
-            'tracks_inventory' => (bool) $product->tracks_inventory,
-        ];
+        if (! $sellable instanceof Product) {
+            $attributes = $sellable->getBuyableAttributes();
+            $entry = [
+                'product_id' => null,
+                'variant_id' => null,
+                'buyable_type' => (string) $component->buyable_type,
+                'buyable_id' => (string) $component->buyable_id,
+                'inventoryable_type' => $sellable instanceof Model ? $sellable->getMorphClass() : (string) $component->buyable_type,
+                'inventoryable_id' => (string) $component->buyable_id,
+                'quantity' => $quantity,
+                'sku' => (string) ($attributes['sku'] ?? $sellable->getBuyableIdentifier()),
+                'name' => $sellable->getBuyableName(),
+                'weight' => null,
+                'dimensions' => null,
+                'requires_shipping' => false,
+                'tracks_inventory' => false,
+            ];
+        } else {
+            $variant = $component->variant;
+            $inventoryable = $variant instanceof Variant ? $variant : $sellable;
+            $entry = [
+                'product_id' => (string) $sellable->getKey(),
+                'variant_id' => $variant instanceof Variant ? (string) $variant->getKey() : null,
+                'inventoryable_type' => $inventoryable->getMorphClass(),
+                'inventoryable_id' => (string) $inventoryable->getKey(),
+                'quantity' => $quantity,
+                'sku' => (string) ($variant?->sku ?? $sellable->sku),
+                'name' => (string) (($variant?->name ?? '') !== '' ? $variant->name : $sellable->name),
+                'weight' => ProductShipping::weightGrams($variant?->weight ?? $sellable->weight, $sellable->weight_unit),
+                'dimensions' => ProductShipping::dimensionsCm(
+                    $variant?->length ?? $sellable->length,
+                    $variant?->width ?? $sellable->width,
+                    $variant?->height ?? $sellable->height,
+                    $sellable->dimension_unit,
+                ),
+                'requires_shipping' => (bool) $sellable->requires_shipping,
+                'tracks_inventory' => (bool) $sellable->tracks_inventory,
+            ];
+        }
 
         if ($component->unit_price !== null) {
             $entry['unit_price'] = (int) $component->unit_price;
