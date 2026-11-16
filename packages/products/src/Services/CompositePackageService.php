@@ -77,8 +77,8 @@ final class CompositePackageService
     }
 
     /**
-     * @param Collection<int, ProductComponent>|null $components
-     * @param array<string, mixed> $context
+     * @param  Collection<int, ProductComponent>|null  $components
+     * @param  array<string, mixed>  $context
      */
     public function availability(Product $product, ?Collection $components = null, array $context = []): CompositeAvailability
     {
@@ -187,8 +187,8 @@ final class CompositePackageService
     }
 
     /**
-     * @param Collection<int, ProductComponent>|null $components
-     * @param list<string> $ancestors
+     * @param  Collection<int, ProductComponent>|null  $components
+     * @param  list<string>  $ancestors
      */
     private function recursivePrice(Product $product, ?Collection $components, array $ancestors): int
     {
@@ -220,9 +220,9 @@ final class CompositePackageService
     }
 
     /**
-     * @param Collection<int, ProductComponent>|null $components
-     * @param list<string> $ancestors
-     * @param list<array{product_id: string, component_id: string, quantity: int}> $path
+     * @param  Collection<int, ProductComponent>|null  $components
+     * @param  list<string>  $ancestors
+     * @param  list<array{product_id: string, component_id: string, quantity: int}>  $path
      * @return list<array{product: Product, component: ProductComponent, quantity: int, sellable: bool, path: list<array{product_id: string, component_id: string, quantity: int}>}>
      */
     private function flatten(Product $product, ?Collection $components, int $multiplier, array $ancestors, array $path): array

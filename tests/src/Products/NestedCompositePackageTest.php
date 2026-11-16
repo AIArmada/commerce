@@ -3,6 +3,9 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\CompositeComponents;
+use AIArmada\Inventory\Cart\InventoryDemandResolver;
+use AIArmada\Orders\Models\OrderItem;
+use AIArmada\Orders\Support\PackageUnit;
 use AIArmada\Products\Actions\CreateCompositeProduct;
 use AIArmada\Products\Actions\PublishCompositeProduct;
 use AIArmada\Products\Actions\ReplaceProductComponents;
@@ -12,8 +15,6 @@ use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Exceptions\InvalidCompositePackageException;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\ProductComponent;
-use AIArmada\Orders\Models\OrderItem;
-use AIArmada\Orders\Support\PackageUnit;
 use Illuminate\Support\Str;
 
 function nestedLeaf(ProductType $type, string $name, int $price): Product
@@ -226,7 +227,7 @@ it('aggregates warehouse demand from flattened nested order snapshots', function
         'components' => $root->compositeSnapshot()->entries,
     ];
 
-    $demand = \AIArmada\Inventory\Cart\InventoryDemandResolver::forOrder([$orderItem]);
+    $demand = InventoryDemandResolver::forOrder([$orderItem]);
 
     expect($demand)->toHaveCount(1);
 

@@ -104,5 +104,5 @@ it('verifies exactly the shippable leaf indices of a deeply nested composition',
     $line->quantity = 3;
 
     expect(fn () => OrderShipmentUnits::assertUnit($unit, new Collection([$line])))
-        ->toThrow(\DomainException::class);
+        ->toThrow(DomainException::class);
 });

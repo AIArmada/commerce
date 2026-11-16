@@ -136,8 +136,8 @@ final class CompositePackageValidator
     }
 
     /**
-     * @param Collection<int, ProductComponent> $components
-     * @param list<string> $ancestors
+     * @param  Collection<int, ProductComponent>  $components
+     * @param  list<string>  $ancestors
      */
     private function validateGraph(Product $parent, Collection $components, array $ancestors): void
     {
