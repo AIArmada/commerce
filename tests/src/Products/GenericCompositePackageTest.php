@@ -177,14 +177,13 @@ it('accepts variants on any component that explicitly supports variants', functi
         ->and($package->fresh()->requires_shipping)->toBeFalse();
 });
 
-
 final class ContextualCompositeResolver implements CompositeCapacityResolverInterface
 {
     /** @var list<array<string, mixed>> */
     public array $receivedContext = [];
 
     /**
-     * @param array<string, mixed> $context
+     * @param  array<string, mixed>  $context
      */
     public function availableFor(Product $parent, ProductComponent $component, array $context = []): ?int
     {

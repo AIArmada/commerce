@@ -17,7 +17,7 @@ use AIArmada\Products\Models\Variant;
 final class StockBackedCompositeCapacityResolver implements CompositeCapacityResolverInterface
 {
     /**
-     * @param array<string, mixed> $context
+     * @param  array<string, mixed>  $context
      */
     public function availableFor(Product $parent, ProductComponent $component, array $context = []): ?int
     {

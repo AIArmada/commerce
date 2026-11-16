@@ -68,7 +68,7 @@ final class CompositeComponentsFormData
                 'quantity' => max(1, (int) ($component['quantity'] ?? 1)),
                 'position' => (int) ($component['position'] ?? count($payload)),
                 'unit_price' => $component['unit_price'] ?? null,
-                'metadata' => isset($component['metadata_json']) && trim((string) $component['metadata_json']) !== ''
+                'metadata' => isset($component['metadata_json']) && mb_trim((string) $component['metadata_json']) !== ''
                     ? json_decode((string) $component['metadata_json'], true, 512, JSON_THROW_ON_ERROR)
                     : null,
             ];

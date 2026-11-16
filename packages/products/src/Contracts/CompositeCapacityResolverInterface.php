@@ -16,7 +16,7 @@ use AIArmada\Products\Models\ProductComponent;
 interface CompositeCapacityResolverInterface
 {
     /**
-     * @param array<string, mixed> $context
+     * @param  array<string, mixed>  $context
      */
     public function availableFor(Product $parent, ProductComponent $component, array $context = []): ?int;
 }
