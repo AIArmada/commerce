@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Products\Models;
 
+use AIArmada\CommerceSupport\Contracts\Buyable;
+use AIArmada\Products\Support\CompositeBuyableRegistry;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -20,6 +22,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
 use InvalidArgumentException;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -59,6 +62,8 @@ class ProductComponent extends Model implements Auditable
         'owner_id',
         'product_id',
         'component_product_id',
+        'buyable_type',
+        'buyable_id',
         'variant_id',
         'quantity',
         'position',
@@ -143,6 +148,12 @@ class ProductComponent extends Model implements Auditable
         return $this->belongsTo(Variant::class, 'variant_id');
     }
 
+    /** @return MorphTo<Model, $this> */
+    public function componentBuyable(): MorphTo
+    {
+        return $this->morphTo(__FUNCTION__, 'buyable_type', 'buyable_id');
+    }
+
     // =========================================================================
     // SCOPES
     // =========================================================================
@@ -159,14 +170,24 @@ class ProductComponent extends Model implements Auditable
     protected static function booted(): void
     {
         static::creating(function (ProductComponent $component): void {
-            [$parent, $componentProduct, $variant] = self::resolveComposition($component);
+            [$parent, $componentProduct, $variant, $buyable] = self::resolveComposition($component);
 
             $validator = app(CompositePackageValidator::class);
 
-            if ($parent->status === ProductStatus::Active) {
-                $validator->assertPublishableComponent($parent, $componentProduct, $variant, (int) $component->quantity);
+            if ($componentProduct instanceof Product) {
+                if ($parent->status === ProductStatus::Active) {
+                    $validator->assertPublishableComponent($parent, $componentProduct, $variant, (int) $component->quantity);
+                } else {
+                    $validator->assertComponent($parent, $componentProduct, $variant, (int) $component->quantity);
+                }
             } else {
-                $validator->assertComponent($parent, $componentProduct, $variant, (int) $component->quantity);
+                if (! $buyable instanceof Model || ! $buyable instanceof Buyable) {
+                    throw new InvalidCompositePackageException('Composite Buyable could not be resolved.');
+                }
+                $validator->assertBuyableComponent(
+                    $parent, $buyable, (int) $component->quantity,
+                    $parent->status === ProductStatus::Active,
+                );
             }
 
             self::assertComponentPricing($component);
@@ -177,6 +198,8 @@ class ProductComponent extends Model implements Auditable
             if ($component->isDirty('product_id')
                 || $component->isDirty('component_product_id')
                 || $component->isDirty('variant_id')
+                || $component->isDirty('buyable_type')
+                || $component->isDirty('buyable_id')
                 || $component->isDirty('owner_type')
                 || $component->isDirty('owner_id')) {
                 throw new InvalidArgumentException('Composite component identity and owner are immutable after creation.');
@@ -186,10 +209,20 @@ class ProductComponent extends Model implements Auditable
 
             $validator = app(CompositePackageValidator::class);
 
-            if ($parent->status === ProductStatus::Active) {
-                $validator->assertPublishableComponent($parent, $componentProduct, $variant, (int) $component->quantity);
+            if ($componentProduct instanceof Product) {
+                if ($parent->status === ProductStatus::Active) {
+                    $validator->assertPublishableComponent($parent, $componentProduct, $variant, (int) $component->quantity);
+                } else {
+                    $validator->assertComponent($parent, $componentProduct, $variant, (int) $component->quantity);
+                }
             } else {
-                $validator->assertComponent($parent, $componentProduct, $variant, (int) $component->quantity);
+                if (! $buyable instanceof Model || ! $buyable instanceof Buyable) {
+                    throw new InvalidCompositePackageException('Composite Buyable could not be resolved.');
+                }
+                $validator->assertBuyableComponent(
+                    $parent, $buyable, (int) $component->quantity,
+                    $parent->status === ProductStatus::Active,
+                );
             }
 
             self::assertComponentPricing($component);
@@ -222,15 +255,23 @@ class ProductComponent extends Model implements Auditable
     }
 
     /**
-     * @return array{0: Product, 1: Product, 2: Variant|null}
+     * @return array{0: Product, 1: Product|null, 2: Variant|null, 3: Buyable|null}
      */
     private static function resolveComposition(ProductComponent $component): array
     {
+        $isBuyable = $component->buyable_type !== null || $component->buyable_id !== null;
+        if ($isBuyable === ($component->component_product_id !== null)) {
+            throw new InvalidCompositePackageException('A component must reference exactly one Product or registered Buyable.');
+        }
+        if ($isBuyable && $component->variant_id !== null) {
+            throw new InvalidCompositePackageException('External Buyable components cannot specify Product variants.');
+        }
+
         $includeGlobal = (bool) config('products.features.owner.include_global', false);
 
         if (! (bool) config('products.features.owner.enabled', true)) {
             $parent = Product::query()->whereKey($component->product_id)->first();
-            $componentProduct = Product::query()->whereKey($component->component_product_id)->first();
+            $componentProduct = $isBuyable ? null : Product::query()->whereKey($component->component_product_id)->first();
             $variant = $component->variant_id !== null
                 ? Variant::query()->whereKey($component->variant_id)->first()
                 : null;
@@ -242,7 +283,7 @@ class ProductComponent extends Model implements Auditable
                 message: 'Cross-tenant write blocked: composite parent is not accessible in the current owner context.',
             );
 
-            $componentProduct = OwnerWriteGuard::findOrFailForOwner(
+            $componentProduct = $isBuyable ? null : OwnerWriteGuard::findOrFailForOwner(
                 Product::class,
                 $component->component_product_id,
                 includeGlobal: $includeGlobal,
@@ -259,15 +300,19 @@ class ProductComponent extends Model implements Auditable
                 : null;
         }
 
-        if (! $parent instanceof Product || ! $componentProduct instanceof Product) {
-            throw new InvalidCompositePackageException('Composite parent and component product must both exist.');
+        if (! $parent instanceof Product || (! $isBuyable && ! $componentProduct instanceof Product)) {
+            throw new InvalidCompositePackageException('Composite parent and component must both exist.');
         }
 
         if ($variant !== null && ! $variant instanceof Variant) {
             throw new InvalidCompositePackageException('Composite component variant could not be resolved.');
         }
 
-        return [$parent, $componentProduct, $variant];
+        $buyable = $isBuyable
+            ? app(CompositeBuyableRegistry::class)->resolve($parent, (string) $component->buyable_type, (string) $component->buyable_id)
+            : null;
+
+        return [$parent, $componentProduct, $variant, $buyable];
     }
 
     private static function assertComponentPricing(ProductComponent $component): void

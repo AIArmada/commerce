@@ -33,6 +33,7 @@ use AIArmada\Products\Services\CompositePackageService;
 use AIArmada\Products\Strategies\MatrixVariantGenerator;
 use AIArmada\Products\Support\StockBackedCompositeCapacityResolver;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -56,6 +57,7 @@ final class ProductsServiceProvider extends PackageServiceProvider
 
     public function bootingPackage(): void
     {
+        Relation::morphMap((array) config('products.composite_buyable_types', []));
         $this->registerPolicies();
         $this->registerCompositeGuards();
     }

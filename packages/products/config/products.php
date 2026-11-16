@@ -3,6 +3,9 @@
 declare(strict_types=1);
 
 return [
+    // Explicit allow-list of polymorphic Eloquent Buyable component classes.
+    // Example: ['booking_type' => App\\Models\\BookingType::class].
+    'composite_buyable_types' => [],
     /* Database */
     'database' => [
         'table_prefix' => 'product_',

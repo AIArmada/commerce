@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Products\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Products\Support\CompositeBuyableRegistry;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Exceptions\InvalidCompositePackageException;
@@ -95,18 +96,31 @@ final class ReplaceProductComponents
         foreach (array_values($components) as $index => $component) {
             $componentProductId = (string) ($component['component_product_id'] ?? '');
 
-            if ($componentProductId === '') {
-                throw new InvalidCompositePackageException('Every composite component requires a component product ID.');
+            $buyableType = $component['buyable_type'] ?? null;
+            $buyableId = $component['buyable_id'] ?? null;
+            $isExternal = is_string($buyableType) && $buyableType !== '' && is_string($buyableId) && $buyableId !== '';
+
+            if (($componentProductId === '') === ! $isExternal) {
+                throw new InvalidCompositePackageException('Every component requires exactly one Product or registered Buyable identity.');
             }
 
             $variantId = $component['variant_id'] ?? null;
             $variantId = $variantId !== null && (string) $variantId !== '' ? (string) $variantId : null;
             $quantity = (int) ($component['quantity'] ?? 0);
 
-            $componentProduct = $this->resolveComponentProduct($componentProductId);
+            $componentProduct = $isExternal ? null : $this->resolveComponentProduct($componentProductId);
             $variant = $variantId !== null ? $this->resolveVariant($variantId) : null;
 
-            $this->validator->assertComponent($parent, $componentProduct, $variant, $quantity);
+            if ($componentProduct instanceof Product) {
+                $this->validator->assertComponent($parent, $componentProduct, $variant, $quantity);
+            } else {
+                if ($variant !== null) {
+                    throw new InvalidCompositePackageException('External Buyable components cannot select a Product variant.');
+                }
+
+                $buyable = app(CompositeBuyableRegistry::class)->resolve($parent, $buyableType, $buyableId);
+                $this->validator->assertBuyableComponent($parent, $buyable, $quantity);
+            }
 
             $unitPrice = $component['unit_price'] ?? null;
             if ($unitPrice !== null && (! is_int($unitPrice) || $unitPrice < 0)) {
@@ -118,7 +132,9 @@ final class ReplaceProductComponents
                 throw new InvalidCompositePackageException('Composite component metadata must be an array.');
             }
 
-            $identity = $componentProduct->getKey() . ':' . ($variant?->getKey() ?? '');
+            $identity = $componentProduct instanceof Product
+                ? $componentProduct->getKey() . ':' . ($variant?->getKey() ?? '')
+                : 'buyable:' . $buyableType . ':' . $buyableId;
 
             if (isset($seen[$identity])) {
                 throw new InvalidCompositePackageException('A composite package cannot contain the same component twice.');
@@ -130,7 +146,9 @@ final class ReplaceProductComponents
                 'owner_type' => $parent->owner_type,
                 'owner_id' => $parent->owner_id,
                 'product_id' => (string) $parent->getKey(),
-                'component_product_id' => (string) $componentProduct->getKey(),
+                'component_product_id' => $componentProduct instanceof Product ? (string) $componentProduct->getKey() : null,
+                'buyable_type' => $isExternal ? $buyableType : null,
+                'buyable_id' => $isExternal ? $buyableId : null,
                 'variant_id' => $variant instanceof Variant ? (string) $variant->getKey() : null,
                 'quantity' => $quantity,
                 'position' => (int) ($component['position'] ?? $index),

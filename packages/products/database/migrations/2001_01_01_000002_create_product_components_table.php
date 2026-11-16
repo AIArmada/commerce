@@ -20,7 +20,9 @@ return new class extends Migration
 
             // The composite parent and each exact sellable component.
             $table->foreignUuid('product_id');
-            $table->foreignUuid('component_product_id');
+            $table->foreignUuid('component_product_id')->nullable();
+            $table->string('buyable_type')->nullable(); // registered Eloquent Buyable morph alias
+            $table->string('buyable_id')->nullable();
             $table->foreignUuid('variant_id')->nullable();
 
             $table->unsignedInteger('quantity');
@@ -34,6 +36,8 @@ return new class extends Migration
             $table->index(['product_id', 'position']);
             $table->index('component_product_id');
             $table->index('variant_id');
+            $table->index(['buyable_type', 'buyable_id']);
+            $table->unique(['product_id', 'buyable_type', 'buyable_id'], 'product_components_parent_buyable_unique');
             $table->unique(
                 ['product_id', 'component_product_id', 'variant_id'],
                 'product_components_parent_component_variant_unique',

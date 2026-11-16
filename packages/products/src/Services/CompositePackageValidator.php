@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Products\Services;
 
+use AIArmada\CommerceSupport\Contracts\Buyable;
+use Illuminate\Database\Eloquent\Model;
 use AIArmada\Products\Enums\CompositePriceMode;
 use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Exceptions\InvalidCompositePackageException;
@@ -86,6 +88,38 @@ final class CompositePackageValidator
         }
     }
 
+    public function assertBuyableComponent(Product $parent, Model&Buyable $buyable, int $quantity, bool $publishable = false): void
+    {
+        if ($quantity < 1 || ! $parent->isCompositeProduct()) {
+            throw new InvalidCompositePackageException('A composite Buyable requires a composite parent and positive quantity.');
+        }
+
+        if (mb_strtoupper($buyable->getBuyableCurrency()) !== mb_strtoupper((string) $parent->currency)) {
+            throw new InvalidCompositePackageException('Composite Buyables must use the parent currency.');
+        }
+
+        $attributes = $buyable->getBuyableAttributes();
+        if ((bool) ($attributes['is_taxable'] ?? true) !== (bool) $parent->is_taxable
+            || (string) ($attributes['tax_class'] ?? '') !== (string) ($parent->tax_class ?? '')) {
+            throw new InvalidCompositePackageException('Composite Buyables must share the package tax treatment.');
+        }
+
+        if (! is_string($buyable->getBuyableIdentifier()) || mb_trim($buyable->getBuyableIdentifier()) === '') {
+            throw new InvalidCompositePackageException('Composite Buyable identifier must be non-empty.');
+        }
+
+        // No implicit generic shipping or stock adapter exists for a foreign
+        // domain record. The application must model physical merchandise as a
+        // Product, while non-product capacities can use scoped reservations.
+        if ((bool) ($attributes['requires_shipping'] ?? false)) {
+            throw new InvalidCompositePackageException('Non-Product composite Buyables must not require generic warehouse shipping.');
+        }
+
+        if ($publishable && ! $buyable->canBePurchased()) {
+            throw new InvalidCompositePackageException('Composite Buyable must be purchasable before the package is published.');
+        }
+    }
+
     public function assertPublishableComponent(Product $parent, Product $componentProduct, ?Variant $variant, int $quantity): void
     {
         $this->assertComponent($parent, $componentProduct, $variant, $quantity);
@@ -160,7 +194,16 @@ final class CompositePackageValidator
             $variant = $component->variant;
 
             if (! $componentProduct instanceof Product) {
-                throw new InvalidCompositePackageException('Composite component product could not be resolved.');
+                $buyable = app(\AIArmada\Products\Support\CompositeBuyableRegistry::class)
+                    ->resolve($parent, (string) $component->buyable_type, (string) $component->buyable_id);
+                $this->assertBuyableComponent($parent, $buyable, (int) $component->quantity, true);
+                $identity = $component->buyable_type . ':' . $component->buyable_id;
+                if (isset($seen[$identity])) {
+                    throw new InvalidCompositePackageException('Duplicate composite Buyable component.');
+                }
+                $seen[$identity] = true;
+
+                continue;
             }
 
             $this->assertPublishableComponent($parent, $componentProduct, $variant, (int) $component->quantity);
