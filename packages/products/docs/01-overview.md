@@ -61,6 +61,7 @@ Use this package when you need the source-of-truth catalog domain: products, var
 ## Contracts
 
 - `VariantGeneratorInterface` — implement to provide custom variant generation strategies
+- `CompositeCapacityResolverInterface` — implement finite or unlimited component capacity rules using the parent, component, and application-supplied context; this contract does not allocate or reserve capacity.
 
 ## Strategies
 

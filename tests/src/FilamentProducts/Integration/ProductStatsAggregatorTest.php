@@ -212,7 +212,8 @@ it('keeps product type distribution values while aggregating them in one query',
 
     expect($stats[0]->getValue())->toBe(3)
         ->and($stats[1]->getValue())->toBe(1)
-        ->and($stats[2]->getValue())->toBe(1)
-        ->and($stats[3]->getValue())->toBe(5)
+        ->and($stats[2]->getValue())->toBe(0)
+        ->and($stats[3]->getValue())->toBe(1)
+        ->and($stats[4]->getValue())->toBe(5)
         ->and(count($queries))->toBeLessThanOrEqual(1);
 });

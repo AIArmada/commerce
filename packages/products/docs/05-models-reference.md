@@ -66,7 +66,7 @@ the lifecycle timestamps in sync:
 - `archive()`
 - `hasVariants()`
 - `supportsVariants()`
-- `isPhysical()` / `isDigital()` / `isSubscription()`
+- `isPhysical()` / `isDigital()` / `isService()` / `isSubscription()`
 
 ## Variant
 
@@ -116,7 +116,7 @@ and config-driven through `products.database.tables.product_components`.
 
 - `product_id` points at the composite parent.
 - `component_product_id` points at the component product.
-- `variant_id` is set only for a configurable component and must belong to the component product.
+- `variant_id` is required for any component with `supports_variants = true`, and must belong to its component product.
 - `quantity` is the positive number of component units included per package.
 - `unit_price` optionally overrides the catalog price for `sum` pricing, in integer minor units.
 - `metadata` stores arbitrary application-specific JSON retained in the frozen package snapshot.

@@ -131,6 +131,20 @@ class ProductFactory extends Factory
         ]);
     }
 
+    public function service(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'type' => ProductType::Service,
+            'requires_shipping' => false,
+            'supports_variants' => false,
+            'tracks_inventory' => false,
+            'weight' => null,
+            'length' => null,
+            'width' => null,
+            'height' => null,
+        ]);
+    }
+
     public function digital(): static
     {
         return $this->state(fn (array $attributes) => [
