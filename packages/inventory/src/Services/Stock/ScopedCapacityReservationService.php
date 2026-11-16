@@ -45,13 +45,16 @@ final class ScopedCapacityReservationService implements ScopedCapacityReservatio
                     $recorded = [];
 
                     foreach ($existing as $hold) {
-                        $recorded[$hold->pool->resource_key . ':' . $hold->pool->scope_key] = (int) $hold->quantity;
+                        $recorded[json_encode([$hold->pool->resource_key, $hold->pool->scope_key], JSON_THROW_ON_ERROR)] = (int) $hold->quantity;
                     }
 
                     $requested = [];
                     foreach ($requirements as $line) {
-                        $requested[$line->resourceKey . ':' . $line->scopeKey] = $line->quantity;
+                        $requested[$line->key()] = $line->quantity;
                     }
+
+                    ksort($recorded);
+                    ksort($requested);
 
                     if ($recorded !== $requested || $existing->contains(fn (CapacityHold $hold): bool => $hold->state !== CapacityHold::HELD)) {
                         throw new RuntimeException('Capacity reference has already been used for another or terminal reservation.');
@@ -238,6 +241,9 @@ final class ScopedCapacityReservationService implements ScopedCapacityReservatio
                 $pools = $this->lockPools($holds->pluck('pool_id')->all());
                 $this->expireHolds($holds->pluck('pool_id')->all());
                 $holds = $this->referenceHolds($reference);
+                foreach ($pools as $pool) {
+                    $pool->refresh();
+                }
 
                 foreach ($holds as $hold) {
                     $mutate($hold, $pools[$hold->pool_id]);
@@ -294,7 +300,7 @@ final class ScopedCapacityReservationService implements ScopedCapacityReservatio
 
         $lines = [];
         foreach ($holds as $hold) {
-            $lines[$hold->pool->resource_key . ':' . $hold->pool->scope_key] = (int) $hold->quantity;
+            $lines[json_encode([$hold->pool->resource_key, $hold->pool->scope_key], JSON_THROW_ON_ERROR)] = (int) $hold->quantity;
         }
 
         $first = $holds->first();
