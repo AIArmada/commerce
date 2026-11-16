@@ -16,7 +16,6 @@ use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\ProductComponent;
 use AIArmada\Products\Models\Variant;
 use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
 function makeCompositeParent(array $attributes = []): Product

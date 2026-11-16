@@ -11,7 +11,6 @@ use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\ProductComponent;
 use AIArmada\Products\Models\Variant;
-use AIArmada\Products\Services\CompositePackageService;
 use Illuminate\Support\Str;
 
 function genericComponent(ProductType $type, string $label, array $attributes = []): Product

@@ -11,7 +11,6 @@ use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\ProductComponent;
 use AIArmada\Products\Models\Variant;
 use AIArmada\Products\Services\CompositePackageService;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
 final class CompositeConcernTestProduct extends Product

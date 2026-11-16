@@ -55,6 +55,7 @@ use AIArmada\Products\Enums\ProductStatus;
 
 $package = app(CreateCompositeProduct::class)->handle([
     'name' => 'Work From Home Kit',
+    'slug' => 'work-from-home-kit',
     'sku' => 'WFH-KIT',
     'status' => ProductStatus::Draft,
     'price' => 12999,
