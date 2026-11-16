@@ -226,7 +226,7 @@ it('aggregates warehouse demand from flattened nested order snapshots', function
         'components' => $root->compositeSnapshot()->entries,
     ];
 
-    $demand = \\AIArmada\\Inventory\\Cart\\InventoryDemandResolver::forOrder([$orderItem]);
+    $demand = \AIArmada\Inventory\Cart\InventoryDemandResolver::forOrder([$orderItem]);
 
     expect($demand)->toHaveCount(1);
 
