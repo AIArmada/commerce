@@ -43,7 +43,7 @@ final class CreateCompositeProduct
                 : CompositePriceMode::tryFrom((string) $requestedModeValue);
 
             if (! $requestedMode instanceof CompositePriceMode) {
-                throw new InvalidCompositePackageException('Composite package price mode must be fixed or sum.');
+                throw new InvalidCompositePackageException('Composite package price mode is invalid.');
             }
 
             unset($attributes['status'], $attributes['price_mode']);
@@ -55,7 +55,7 @@ final class CreateCompositeProduct
                 'status' => ProductStatus::Draft,
                 'price_mode' => $requestedMode->value,
                 'requires_shipping' => false,
-                'supports_variants' => false,
+                'supports_variants' => (bool) ($attributes['supports_variants'] ?? false),
                 'tracks_inventory' => false,
             ]);
             $parent->save();

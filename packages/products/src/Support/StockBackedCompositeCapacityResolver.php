@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Products\Support;
 
+use AIArmada\CommerceSupport\Contracts\Buyable;
 use AIArmada\Products\Contracts\CompositeCapacityResolverInterface;
 use AIArmada\Products\Exceptions\InvalidCompositePackageException;
 use AIArmada\Products\Models\Product;
@@ -26,7 +27,12 @@ final class StockBackedCompositeCapacityResolver implements CompositeCapacityRes
             : $component->componentProduct;
 
         if (! $inventoryable instanceof Product && ! $inventoryable instanceof Variant) {
-            throw new InvalidCompositePackageException('Composite component inventory model could not be resolved.');
+            $buyable = $component->componentBuyable;
+            if (! $buyable instanceof Buyable) {
+                throw new InvalidCompositePackageException('Composite component Buyable could not be resolved.');
+            }
+
+            return $buyable->getBuyableStock();
         }
 
         if (! $inventoryable->tracksInventory()) {

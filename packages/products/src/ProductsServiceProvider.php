@@ -17,7 +17,6 @@ use AIArmada\Products\Models\Collection;
 use AIArmada\Products\Models\Option;
 use AIArmada\Products\Models\OptionValue;
 use AIArmada\Products\Models\Product;
-use AIArmada\Products\Models\ProductComponent;
 use AIArmada\Products\Models\Variant;
 use AIArmada\Products\Policies\AttributeGroupPolicy;
 use AIArmada\Products\Policies\AttributePolicy;
@@ -32,6 +31,7 @@ use AIArmada\Products\Policies\VariantPolicy;
 use AIArmada\Products\Services\CompositePackageService;
 use AIArmada\Products\Strategies\MatrixVariantGenerator;
 use AIArmada\Products\Support\StockBackedCompositeCapacityResolver;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Gate;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -56,6 +56,7 @@ final class ProductsServiceProvider extends PackageServiceProvider
 
     public function bootingPackage(): void
     {
+        Relation::morphMap((array) config('products.composite_buyable_types', []));
         $this->registerPolicies();
         $this->registerCompositeGuards();
     }
@@ -72,11 +73,11 @@ final class ProductsServiceProvider extends PackageServiceProvider
             // Shipping belongs to the components, not the commercial parent.
             $requiresShipping = $product->exists && $this->app
                 ->make(CompositePackageService::class)
-                ->componentsFor($product)
-                ->contains(static fn (ProductComponent $component): bool => (bool) $component->componentProduct?->requires_shipping);
+                ->requiresShippingFor($product);
             $product->setAttribute('requires_shipping', $requiresShipping);
             $product->setAttribute('tracks_inventory', false);
-            $product->setAttribute('supports_variants', false);
+            // Composite variants own independent component graphs; do not override
+            // an explicitly enabled supports_variants capability.
 
             if ($product->getAttribute('price_mode') === null || $product->getAttribute('price_mode') === '') {
                 $product->setAttribute('price_mode', 'fixed');

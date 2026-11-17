@@ -44,6 +44,7 @@ final class CompositeSnapshot
         public readonly string $currency,
         public readonly string $priceMode,
         public readonly array $entries,
+        public readonly int $discountBasisPoints = 0,
     ) {
         $this->fingerprint = hash('sha256', json_encode($this->canonicalPayload(), JSON_THROW_ON_ERROR));
     }
@@ -96,6 +97,7 @@ final class CompositeSnapshot
             'price' => $this->price,
             'currency' => $this->currency,
             'price_mode' => $this->priceMode,
+            'discount_basis_points' => $this->discountBasisPoints,
             'entries' => $this->entries,
         ];
     }

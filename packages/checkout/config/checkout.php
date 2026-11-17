@@ -69,6 +69,8 @@ return [
             'calculate_shipping' => true,
             'calculate_tax' => true,
             'reserve_inventory' => true,
+            'reserve_scoped_capacity' => true,
+            'commit_scoped_capacity' => true,
             'process_payment' => true,
             'persist_customer' => true,
             'create_order' => true,
@@ -82,10 +84,12 @@ return [
             'calculate_shipping',
             'calculate_tax',
             'reserve_inventory',
+            'reserve_scoped_capacity',
             'process_payment',
             'persist_customer',
             'create_order',
             'dispatch_documents',
+            'commit_scoped_capacity',
         ],
     ],
 
@@ -143,6 +147,7 @@ return [
     |--------------------------------------------------------------------------
     */
     'integrations' => [
+        'scoped_capacity' => ['reservation_ttl' => 900],
         'inventory' => [
             'enabled' => true,
             'validate_stock' => true,

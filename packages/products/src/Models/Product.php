@@ -139,6 +139,7 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
         'visibility',
         'price',
         'price_mode',
+        'discount_basis_points',
         'compare_price',
         'cost',
         'currency',
@@ -177,6 +178,7 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
             'visibility' => ProductVisibility::class,
             'price' => 'integer',
             'price_mode' => CompositePriceMode::class,
+            'discount_basis_points' => 'integer',
             'compare_price' => 'integer',
             'cost' => 'integer',
             'weight' => 'decimal:2',
@@ -690,7 +692,7 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
             'product_id' => (string) $this->getKey(),
         ];
 
-        if (! $this->isCompositeProduct()) {
+        if (! $this->isCompositeProduct() || $this->supportsVariants()) {
             return $attributes;
         }
 
@@ -730,6 +732,10 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
         }
 
         if ($this->isCompositeProduct()) {
+            if ($this->supportsVariants()) {
+                return false;
+            }
+
             $packages = $this->compositeAvailability()->packages;
 
             return $packages === null || ($quantity === null ? $packages > 0 : $packages >= $quantity);
@@ -893,6 +899,17 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
         });
 
         static::saving(function (Product $product): void {
+            if (! $product->isCompositeProduct()) {
+                return;
+            }
+
+            $basisPoints = (int) ($product->discount_basis_points ?? 0);
+            if ($basisPoints < 0 || $basisPoints > 10000) {
+                throw new InvalidCompositePackageException('Composite discount basis points must be between 0 and 10000.');
+            }
+        });
+
+        static::saving(function (Product $product): void {
             if ($product->exists && $product->isCompositeProduct()) {
                 $product->requires_shipping = app(CompositePackageService::class)
                     ->requiresShippingFor($product);
@@ -910,6 +927,14 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
         });
 
         static::updating(function (Product $product): void {
+            if ($product->isCompositeProduct() && $product->isDirty('supports_variants')
+                && (
+                    ProductComponent::query()->withoutOwnerScope()->where('product_id', $product->getKey())->exists()
+                    || Variant::query()->withoutOwnerScope()->where('product_id', $product->getKey())->exists()
+                )) {
+                throw new InvalidCompositePackageException('Composite variant mode is immutable once a variant or component exists.');
+            }
+
             if ($product->isDirty('type')
                 && ProductComponent::query()
                     ->withoutOwnerScope()

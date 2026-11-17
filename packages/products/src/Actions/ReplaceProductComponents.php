@@ -13,6 +13,7 @@ use AIArmada\Products\Models\ProductComponent;
 use AIArmada\Products\Models\Variant;
 use AIArmada\Products\Services\CompositePackageService;
 use AIArmada\Products\Services\CompositePackageValidator;
+use AIArmada\Products\Support\CompositeBuyableRegistry;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -40,9 +41,9 @@ final class ReplaceProductComponents
      * }>  $components
      * @return Collection<int, ProductComponent>
      */
-    public function handle(Product $product, array $components): Collection
+    public function handle(Product $product, array $components, ?Variant $parentVariant = null): Collection
     {
-        return DB::transaction(function () use ($product, $components): Collection {
+        return DB::transaction(function () use ($product, $components, $parentVariant): Collection {
             $parent = Product::query()
                 ->whereKey($product->getKey())
                 ->lockForUpdate()
@@ -58,25 +59,48 @@ final class ReplaceProductComponents
                 throw new InvalidCompositePackageException('Only composite products can own package components.');
             }
 
-            $prepared = $this->prepareComponents($parent, $components);
+            if ($parent->supportsVariants() !== ($parentVariant instanceof Variant)) {
+                throw new InvalidCompositePackageException('Variant-specific composite products require a parent variant.');
+            }
+
+            if ($parentVariant instanceof Variant) {
+                // Re-read the selected tier under the same transaction as the
+                // graph replacement. A stale enabled flag must not allow the
+                // final component of a published tier to be removed.
+                $parentVariant = Variant::query()
+                    ->whereKey($parentVariant->getKey())
+                    ->where('product_id', $parent->getKey())
+                    ->lockForUpdate()
+                    ->first();
+
+                if (! $parentVariant instanceof Variant
+                    || (string) ($parentVariant->owner_type ?? '') !== (string) ($parent->owner_type ?? '')
+                    || (string) ($parentVariant->owner_id ?? '') !== (string) ($parent->owner_id ?? '')) {
+                    throw new InvalidCompositePackageException('The selected composite variant is not accessible on this product.');
+                }
+            }
+
+            $prepared = $this->prepareComponents($parent, $components, $parentVariant);
 
             ProductComponent::query()
                 ->withoutOwnerScope()
                 ->where('product_id', $parent->getKey())
+                ->where('parent_variant_id', $parentVariant?->getKey())
                 ->delete();
 
             foreach ($prepared as $row) {
                 ProductComponent::query()->create($row);
             }
 
-            $current = $this->service->componentsFor($parent);
+            $current = $this->service->componentsFor($parent, $parentVariant);
 
             // Recalculate the persisted parent shipping flag from the exact
             // composition, including when a draft package becomes empty.
             $parent->save();
 
-            if ($parent->status === ProductStatus::Active) {
-                $this->service->assertPublishable($parent, $current);
+            if ($parent->status === ProductStatus::Active
+                && (! $parentVariant instanceof Variant || $parentVariant->is_enabled)) {
+                $this->service->assertPublishable($parent, $current, $parentVariant);
             }
 
             return $current;
@@ -87,7 +111,7 @@ final class ReplaceProductComponents
      * @param  array<int, array<string, mixed>>  $components
      * @return list<array<string, mixed>>
      */
-    private function prepareComponents(Product $parent, array $components): array
+    private function prepareComponents(Product $parent, array $components, ?Variant $parentVariant): array
     {
         $prepared = [];
         $seen = [];
@@ -95,18 +119,40 @@ final class ReplaceProductComponents
         foreach (array_values($components) as $index => $component) {
             $componentProductId = (string) ($component['component_product_id'] ?? '');
 
-            if ($componentProductId === '') {
-                throw new InvalidCompositePackageException('Every composite component requires a component product ID.');
+            $buyableType = $component['buyable_type'] ?? null;
+            $rawBuyableId = $component['buyable_id'] ?? null;
+            $buyableId = is_string($rawBuyableId) || is_int($rawBuyableId) ? (string) $rawBuyableId : null;
+            $hasProduct = $componentProductId !== '';
+            $hasExternal = $buyableType !== null || $buyableId !== null;
+
+            if ($hasProduct === $hasExternal) {
+                throw new InvalidCompositePackageException('Every component requires exactly one Product or registered Buyable identity.');
             }
+
+            if ($hasExternal && (! is_string($buyableType) || mb_trim($buyableType) === ''
+                || ! is_string($buyableId) || mb_trim($buyableId) === '')) {
+                throw new InvalidCompositePackageException('External component requires a registered Buyable type and a non-empty ID.');
+            }
+
+            $isExternal = $hasExternal;
 
             $variantId = $component['variant_id'] ?? null;
             $variantId = $variantId !== null && (string) $variantId !== '' ? (string) $variantId : null;
             $quantity = (int) ($component['quantity'] ?? 0);
 
-            $componentProduct = $this->resolveComponentProduct($componentProductId);
+            $componentProduct = $isExternal ? null : $this->resolveComponentProduct($componentProductId);
             $variant = $variantId !== null ? $this->resolveVariant($variantId) : null;
 
-            $this->validator->assertComponent($parent, $componentProduct, $variant, $quantity);
+            if ($componentProduct instanceof Product) {
+                $this->validator->assertComponent($parent, $componentProduct, $variant, $quantity);
+            } else {
+                if ($variant !== null) {
+                    throw new InvalidCompositePackageException('External Buyable components cannot select a Product variant.');
+                }
+
+                $buyable = app(CompositeBuyableRegistry::class)->resolve($parent, $buyableType, $buyableId);
+                $this->validator->assertBuyableComponent($parent, $buyable, $quantity);
+            }
 
             $unitPrice = $component['unit_price'] ?? null;
             if ($unitPrice !== null && (! is_int($unitPrice) || $unitPrice < 0)) {
@@ -118,7 +164,9 @@ final class ReplaceProductComponents
                 throw new InvalidCompositePackageException('Composite component metadata must be an array.');
             }
 
-            $identity = $componentProduct->getKey() . ':' . ($variant?->getKey() ?? '');
+            $identity = $componentProduct instanceof Product
+                ? $componentProduct->getKey() . ':' . ($variant?->getKey() ?? '')
+                : 'buyable:' . $buyableType . ':' . $buyableId;
 
             if (isset($seen[$identity])) {
                 throw new InvalidCompositePackageException('A composite package cannot contain the same component twice.');
@@ -130,7 +178,10 @@ final class ReplaceProductComponents
                 'owner_type' => $parent->owner_type,
                 'owner_id' => $parent->owner_id,
                 'product_id' => (string) $parent->getKey(),
-                'component_product_id' => (string) $componentProduct->getKey(),
+                'parent_variant_id' => $parentVariant?->getKey(),
+                'component_product_id' => $componentProduct instanceof Product ? (string) $componentProduct->getKey() : null,
+                'buyable_type' => $isExternal ? $buyableType : null,
+                'buyable_id' => $isExternal ? $buyableId : null,
                 'variant_id' => $variant instanceof Variant ? (string) $variant->getKey() : null,
                 'quantity' => $quantity,
                 'position' => (int) ($component['position'] ?? $index),

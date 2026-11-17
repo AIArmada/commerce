@@ -202,3 +202,13 @@ it('rejects a package that was archived after checkout started', function (): vo
     expect((new CompositeCartRevalidator($manager))->validate($session))
         ->toBe([CompositeCartRevalidator::ERROR_KEY => CompositeCartRevalidator::CONTENTS_CHANGED]);
 });
+
+it('invalidates reviewed composite fingerprint when a discount configuration changes without changing price', function (): void {
+    [$cart, $package, , $manager] = revalidatorScenario();
+    $session = revalidatorSession($cart);
+
+    $package->update(['discount_basis_points' => 1]);
+
+    expect((new CompositeCartRevalidator($manager))->validate($session))
+        ->toBe([CompositeCartRevalidator::ERROR_KEY => CompositeCartRevalidator::CONTENTS_CHANGED]);
+});

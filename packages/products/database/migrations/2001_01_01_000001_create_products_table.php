@@ -35,7 +35,8 @@ return new class extends Migration
 
             // Pricing (stored in cents)
             $table->unsignedBigInteger('price')->default(0);
-            $table->string('price_mode')->default('fixed'); // fixed, sum
+            $table->string('price_mode')->default('fixed'); // fixed, sum, percentage_discount
+            $table->unsignedInteger('discount_basis_points')->default(0); // 10000 = 100%, integer-safe
             $table->unsignedBigInteger('compare_price')->nullable();
             $table->unsignedBigInteger('cost')->nullable();
             $table->string('currency', 3)->default('MYR');

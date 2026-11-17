@@ -15,7 +15,10 @@ use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Products\Concerns\EnforcesOwnerUniqueIdentity;
 use AIArmada\Products\Contracts\Inventoryable;
+use AIArmada\Products\Enums\CompositePriceMode;
+use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Exceptions\InvalidCompositePackageException;
+use AIArmada\Products\Services\CompositePackageService;
 use AIArmada\Products\Support\ChildOwnershipGuard;
 use AIArmada\Products\Support\ProductMedia;
 use AIArmada\Products\Support\ProductPricing;
@@ -48,6 +51,8 @@ use Throwable;
  * @property string|null $combination_key
  * @property string|null $barcode
  * @property int|null $price
+ * @property CompositePriceMode|null $price_mode
+ * @property int|null $discount_basis_points
  * @property int|null $compare_price
  * @property int|null $cost
  * @property float|null $weight
@@ -98,6 +103,8 @@ class Variant extends Model implements Auditable, Buyable, HasMedia, Inventoryab
         'combination_key',
         'barcode',
         'price',
+        'price_mode',
+        'discount_basis_points',
         'compare_price',
         'cost',
         'weight',
@@ -114,6 +121,8 @@ class Variant extends Model implements Auditable, Buyable, HasMedia, Inventoryab
     {
         return [
             'price' => 'integer',
+            'price_mode' => CompositePriceMode::class,
+            'discount_basis_points' => 'integer',
             'compare_price' => 'integer',
             'cost' => 'integer',
             'weight' => 'decimal:2',
@@ -243,7 +252,9 @@ class Variant extends Model implements Auditable, Buyable, HasMedia, Inventoryab
      */
     public function getEffectivePrice(): int
     {
-        return $this->price ?? $this->product->price;
+        return $this->product->isCompositeProduct()
+            ? $this->product->compositePrice($this)
+            : ($this->price ?? $this->product->price);
     }
 
     /**
@@ -300,7 +311,7 @@ class Variant extends Model implements Auditable, Buyable, HasMedia, Inventoryab
     {
         $product = $this->product;
 
-        return [
+        $attributes = [
             BuyableLineData::ATTRIBUTE_SKU => $this->sku,
             BuyableLineData::ATTRIBUTE_WEIGHT => ProductShipping::weightGrams(
                 $this->weight ?? $product?->weight,
@@ -320,12 +331,42 @@ class Variant extends Model implements Auditable, Buyable, HasMedia, Inventoryab
             'product_id' => (string) $this->product_id,
             'variant_id' => (string) $this->getKey(),
         ];
+
+        if ($product instanceof Product && $product->isCompositeProduct()) {
+            $snapshot = $product->compositeSnapshot($this);
+            $shippingWeight = null;
+
+            foreach ($snapshot->entries as $entry) {
+                if (! $entry['requires_shipping'] || ! is_numeric($entry['weight'] ?? null)) {
+                    continue;
+                }
+
+                $shippingWeight = ($shippingWeight ?? 0) + ((int) $entry['weight'] * (int) $entry['quantity']);
+            }
+
+            if ($shippingWeight !== null && $shippingWeight > 0) {
+                $attributes[BuyableLineData::ATTRIBUTE_WEIGHT] = $shippingWeight;
+            }
+
+            $attributes['components'] = $snapshot->entries;
+            $attributes['components_fingerprint'] = $snapshot->fingerprint;
+            $attributes[BuyableLineData::ATTRIBUTE_REQUIRES_SHIPPING] = collect($snapshot->entries)
+                ->contains(static fn (array $entry): bool => $entry['requires_shipping']);
+        }
+
+        return $attributes;
     }
 
     public function canBePurchased(?int $quantity = null): bool
     {
         if (! $this->isPurchasable()) {
             return false;
+        }
+
+        if ($this->product->isCompositeProduct()) {
+            $packages = $this->product->compositeAvailability(parentVariant: $this)->packages;
+
+            return $packages === null || ($quantity === null ? $packages > 0 : $packages >= $quantity);
         }
 
         if ($quantity === null || ! $this->tracksInventory()) {
@@ -337,7 +378,9 @@ class Variant extends Model implements Auditable, Buyable, HasMedia, Inventoryab
 
     public function getBuyableStock(): ?int
     {
-        return $this->tracksInventory() ? $this->getStockQuantity() : null;
+        return $this->product->isCompositeProduct()
+            ? $this->product->compositeAvailability(parentVariant: $this)->packages
+            : ($this->tracksInventory() ? $this->getStockQuantity() : null);
     }
 
     public function getBuyableMinimumQuantity(): int
@@ -493,7 +536,7 @@ class Variant extends Model implements Auditable, Buyable, HasMedia, Inventoryab
 
     public function tracksInventory(): bool
     {
-        return $this->product->tracksInventory();
+        return ! $this->product->isCompositeProduct() && $this->product->tracksInventory();
     }
 
     // =========================================================================
@@ -650,7 +693,46 @@ class Variant extends Model implements Auditable, Buyable, HasMedia, Inventoryab
         });
 
         static::saving(function (Variant $variant): void {
-            if ($variant->isDirty('is_enabled') && ! $variant->is_enabled) {
+            // Always read the authoritative parent state. A cached relation
+            // from a Draft parent must not bypass Active graph invariants.
+            $product = $variant->product()->first();
+            if (! $product instanceof Product || ! $product->isCompositeProduct()) {
+                return;
+            }
+
+            $discount = $variant->discount_basis_points;
+            if ($discount !== null && ($discount < 0 || $discount > 10000)) {
+                throw new InvalidCompositePackageException('Composite variant discount must be between 0 and 10000 basis points.');
+            }
+
+            if ($product->status !== ProductStatus::Active) {
+                return;
+            }
+
+            if (! $variant->exists && $variant->is_enabled) {
+                throw new InvalidCompositePackageException(
+                    'An active composite cannot add an enabled variant without a complete component graph. Create the variant disabled, configure its graph, then enable it.',
+                );
+            }
+
+            if ($variant->exists && $variant->isDirty('is_enabled') && $variant->is_enabled) {
+                app(CompositePackageService::class)->assertPublishable($product, parentVariant: $variant);
+            }
+
+            if ($variant->exists && $variant->isDirty('is_enabled') && ! $variant->is_enabled
+                && ! Variant::query()
+                    ->where('product_id', $product->getKey())
+                    ->where('is_enabled', true)
+                    ->whereKeyNot($variant->getKey())
+                    ->exists()) {
+                throw new InvalidCompositePackageException(
+                    'An active composite must retain at least one enabled variant.',
+                );
+            }
+        });
+
+        static::saving(function (Variant $variant): void {
+            if ($variant->exists && $variant->isDirty('is_enabled') && ! $variant->is_enabled) {
                 $referenced = ProductComponent::query()
                     ->withoutOwnerScope()
                     ->where('variant_id', $variant->getKey())
@@ -671,6 +753,22 @@ class Variant extends Model implements Auditable, Buyable, HasMedia, Inventoryab
         static::deleting(function (Variant $variant): void {
             if (ProductComponent::query()->withoutOwnerScope()->where('variant_id', $variant->getKey())->exists()) {
                 throw new InvalidCompositePackageException('A component variant referenced by a composite package cannot be deleted.');
+            }
+
+            if (ProductComponent::query()->withoutOwnerScope()->where('parent_variant_id', $variant->getKey())->exists()) {
+                throw new InvalidCompositePackageException('A composite variant with a component graph cannot be deleted.');
+            }
+
+            $product = $variant->product()->first();
+
+            if ($product instanceof Product && $product->isCompositeProduct()
+                && $product->status === ProductStatus::Active && $variant->is_enabled
+                && ! Variant::query()
+                    ->where('product_id', $product->getKey())
+                    ->where('is_enabled', true)
+                    ->whereKeyNot($variant->getKey())
+                    ->exists()) {
+                throw new InvalidCompositePackageException('An active composite must retain at least one enabled variant.');
             }
 
             $variant->optionValues()->detach();
