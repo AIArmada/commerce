@@ -14,32 +14,31 @@
     "var",
     "vendor",
     "docs",
-    "demo"
+    "demo",
+    "resources/boost"
   ],
   "rules": {
     "declare_strict_types": true,
     "strict_comparison": true,
     "visibility_required": true,
-
     "no_superfluous_elseif": true,
     "no_useless_else": true,
     "no_multiple_statements_per_line": true,
-
-    "concat_space": { "spacing": "one" },
+    "concat_space": {
+      "spacing": "one"
+    },
     "method_argument_space": true,
-    "types_spaces": { "space": "single" },
-
+    "types_spaces": {
+      "space": "single"
+    },
     "mb_str_functions": true,
     "modernize_types_casting": true,
-
     "blank_line_before_statement": true,
-
     "global_namespace_import": {
       "import_classes": true,
       "import_constants": false,
       "import_functions": false
     },
-
     "ordered_class_elements": false,
     "protected_to_private": false,
     "final_internal_class": false,

@@ -51,3 +51,4 @@ parameters:
             - 'packages/*/vendor/*'
             - '*/Testing/*'
             - 'packages/*/resources/data/*'
+            - 'packages/*/resources/boost/*/assets/*'
