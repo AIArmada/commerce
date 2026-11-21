@@ -18,7 +18,7 @@ final class FeatureCatalog
 
     public static function cachePath(string $root): string
     {
-        return mb_rtrim($root, '/') . '/bootstrap/cache/platform.php';
+        return rtrim($root, '/').'/bootstrap/cache/platform.php';
     }
 
     /**
@@ -31,7 +31,7 @@ final class FeatureCatalog
      */
     public static function load(string $root, bool $useCache = true): array
     {
-        $normalized = mb_rtrim($root, '/');
+        $normalized = rtrim($root, '/');
 
         if ($useCache && isset(self::$memory[$normalized])) {
             return self::$memory[$normalized];
@@ -70,12 +70,12 @@ final class FeatureCatalog
         $writes = [];
         $extensions = [];
 
-        $paths = glob($root . '/app/Features/*', GLOB_ONLYDIR) ?: [];
+        $paths = glob($root.'/app/Features/*', GLOB_ONLYDIR) ?: [];
         sort($paths, SORT_STRING);
 
         foreach ($paths as $folder) {
             $name = basename($folder);
-            $manifestPath = $folder . '/feature.json';
+            $manifestPath = $folder.'/feature.json';
 
             if (! is_file($manifestPath)) {
                 throw new RuntimeException("Missing feature manifest: {$manifestPath}. Every folder in app/Features/ must declare feature.json.");
@@ -92,7 +92,7 @@ final class FeatureCatalog
                 || ($data['schema'] ?? null) !== 1
                 || ($data['name'] ?? null) !== $name
                 || ! is_array($data['owns'] ?? null)
-                || ! is_file($folder . '/FeatureServiceProvider.php')) {
+                || ! is_file($folder.'/FeatureServiceProvider.php')) {
                 throw new RuntimeException("Invalid feature manifest or missing FeatureServiceProvider in {$manifestPath}.");
             }
 
@@ -119,13 +119,13 @@ final class FeatureCatalog
                 foreach ($classes as $class) {
                     if (! is_string($class)
                         || ! str_starts_with($class, $prefix)
-                        || ! preg_match('/^(Actions|Persistence)\\\\[A-Za-z_][A-Za-z0-9_\\\\]*$/D', mb_substr($class, mb_strlen($prefix)))) {
+                        || ! preg_match('/^(Actions|Persistence)\\\\[A-Za-z_][A-Za-z0-9_\\\\]*$/D', substr($class, strlen($prefix)))) {
                         throw new RuntimeException("{$manifestPath}: write class '{$class}' for '{$resource}' must live under {$prefix}Actions\\ or {$prefix}Persistence\\.");
                     }
 
-                    $file = $root . '/app/' . str_replace('\\', '/', mb_substr($class, 4)) . '.php';
+                    $file = $root.'/app/'.str_replace('\\', '/', substr($class, 4)).'.php';
                     $realFile = realpath($file);
-                    if ($realFile === false || $realFolder === false || ! str_starts_with($realFile, $realFolder . DIRECTORY_SEPARATOR)) {
+                    if ($realFile === false || $realFolder === false || ! str_starts_with($realFile, $realFolder.DIRECTORY_SEPARATOR)) {
                         throw new RuntimeException("{$manifestPath}: declared write class '{$class}' does not exist at {$file}.");
                     }
 
@@ -146,13 +146,13 @@ final class FeatureCatalog
                     foreach ($extClasses as $extClass) {
                         if (! is_string($extClass)
                             || ! str_starts_with($extClass, $prefix)
-                            || ! preg_match('/^Extensions\\\\[A-Za-z_][A-Za-z0-9_\\\\]*$/D', mb_substr($extClass, mb_strlen($prefix)))) {
+                            || ! preg_match('/^Extensions\\\\[A-Za-z_][A-Za-z0-9_\\\\]*$/D', substr($extClass, strlen($prefix)))) {
                             throw new RuntimeException("{$manifestPath}: extension '{$extClass}' for slot '{$slot}' must live under {$prefix}Extensions\\.");
                         }
 
-                        $extFile = $root . '/app/' . str_replace('\\', '/', mb_substr($extClass, 4)) . '.php';
+                        $extFile = $root.'/app/'.str_replace('\\', '/', substr($extClass, 4)).'.php';
                         $realExt = realpath($extFile);
-                        if ($realExt === false || $realFolder === false || ! str_starts_with($realExt, $realFolder . DIRECTORY_SEPARATOR)) {
+                        if ($realExt === false || $realFolder === false || ! str_starts_with($realExt, $realFolder.DIRECTORY_SEPARATOR)) {
                             throw new RuntimeException("{$manifestPath}: extension class '{$extClass}' not found at {$extFile}.");
                         }
 

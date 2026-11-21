@@ -296,6 +296,7 @@ The root `.ai/` guidance applies to development of `packages/*` in this monorepo
 3. Check `commerce-support` for shared primitives first. Keep foundation code independent of concrete downstream packages; use contracts, tagged contributors, and optional integration registration.
 4. Use the existing package namespace, Composer metadata, service provider, routes, config, migrations, and resources. Add only the files the capability needs. Packages must work standalone; optional integrations remain optional.
 5. Each durable value has an owning package. Call its supported Actions, services, or contracts for mutations rather than duplicating its write logic in another package. Existing documented model and query APIs remain valid public surfaces.
+6. A focused Commerce package is a capability. Keep its existing `src/` layout. Consider a modular layout only for an explicitly scoped package design with independently owned capabilities.
 
 ### Persistence and orchestration
 
@@ -311,7 +312,7 @@ Use graph tools for code discovery and the installed-version documentation tools
 
 The root does not install the standalone app's feature manifests, Platform runtime, architecture checker, or cache commands. Use existing repository checks; describe any unverified boundary honestly. Update existing canonical package docs with public behavior/config changes.
 
-Root skills: `laravel-dune` for package development, `laravel-dune-convert` for moving misplaced responsibilities into their owning package, `laravel-dune-correct` for recurring mistakes, and `laravel-dune-verify` for package-scoped proof.
+Use `laravel-dune` for routine Commerce development, `laravel-dune-package` for package design and conversion, `laravel-dune-convert` for moving misplaced responsibilities into their owning package, `laravel-dune-correct` for recurring mistakes, and `laravel-dune-verify` for package-scoped proof.
 
 === .ai/model rules ===
 

@@ -7,6 +7,8 @@ paths:
 
 Read the owning package's `CONTEXT.md` and canonical docs first. Use its Composer namespace, service provider, and existing directory conventions.
 
+Treat each focused package as one capability. Use the existing `src/` layout and provider. Before a structural conversion, inventory the Composer provider and aliases, facades, config keys, commands, publish tags, and migrations that downstream apps use. Use `laravel-dune-package` when choosing a package layout or planning a conversion.
+
 Core packages own models, state transitions, calculations, persistence, and reusable orchestration. Filament packages own resources, pages, widgets, forms, and admin actions that delegate domain operations to core APIs.
 
 Prefer concrete Actions for orchestration across transactions, side effects, normalization, or entry points. Reuse existing Actions and keep trivial handlers inline. Enforce owner-safe IDs and authorization in the callable write path, not only in forms.

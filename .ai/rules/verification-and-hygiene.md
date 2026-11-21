@@ -18,7 +18,7 @@ Use existing tests before creating a separate verification harness. For runtime-
 
 ## Honest enforcement
 
-Use only checks actually installed and wired in this repository. The standalone-app Dune scaffold is not the root architecture. Do not claim its AST ownership rules or manifest/cache tooling enforce package boundaries.
+Use the monorepo's installed checks as evidence. The consumer Dune templates include optional app and Composer package architecture checkers. Establish enforcement by wiring a check into the relevant package and demonstrating that it catches a representative violation.
 
 For a recurring mistake, prefer a shared boundary correction, types/static analysis, or a focused behavioral/architecture test. Prove any new check rejects the bad behavior and accepts the supported path. Record judgment-only rules in the narrowest matching rule file and synchronize the index.
 

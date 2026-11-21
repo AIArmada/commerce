@@ -14,3 +14,5 @@ Read `CONTEXT-MAP.md`, the owning `packages/<pkg>/CONTEXT.md`, its canonical doc
 5. Update existing canonical docs when public behavior/config changes. Run package-scoped proof with `laravel-dune-verify`.
 
 Complete when observable behavior passes affected checks and any remaining verification gaps are stated. This skill develops Composer packages; consumer-app scaffolding is distributed separately by `commerce-support`.
+
+For package layout selection or structural conversion, use [laravel-dune-package](../laravel-dune-package/SKILL.md).
