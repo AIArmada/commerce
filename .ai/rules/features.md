@@ -1,20 +1,29 @@
 ---
 paths:
   - packages/**
+  - demo/app/Features/**
 ---
 
-# Package-Owned Capabilities
+# Feature Modules
 
-Read the owning package's `CONTEXT.md` and canonical docs first. Use its Composer namespace, service provider, and existing directory conventions.
+> **Monorepo root:** Under `packages/<pkg>/`, each focused package is its own capability (`src/`, Composer service provider, `laravel-dune-package`), and models follow `.ai/guidelines/model.blade.php` and `.ai/guidelines/database.blade.php` (UUIDs, config-backed `getTable()`, and application-level cascades in `booted()`). Under `demo/app/Features/**`, the standalone app rules below apply directly.
 
-Treat each focused package as one capability. Use the existing `src/` layout and provider. Before a structural conversion, inventory the Composer provider and aliases, facades, config keys, commands, publish tags, and migrations that downstream apps use. Use `laravel-dune-package` when choosing a package layout or planning a conversion.
+## Owned Capability Folder & Manifest
+- Every directory under `app/Features/<PascalCase>/` must contain `feature.json` (schema v1) and `FeatureServiceProvider.php` extending `App\Platform\FeatureModule`.
+- Declare every owned `table:<name>` and `store:<name>` in `feature.json` with the exact local `Actions\` or `Persistence\` FQCNs permitted to mutate it. Never register an `EntryPoints\` class as a write owner.
+- Multiple named actions in the same feature (e.g. `PlaceOrder`, `CancelOrder`) may write the same owned table—do not create a god-class `OrderWriter`.
 
-Core packages own models, state transitions, calculations, persistence, and reusable orchestration. Filament packages own resources, pages, widgets, forms, and admin actions that delegate domain operations to core APIs.
+## Concrete Actions by Default
+- Use concrete `final readonly class` Actions resolved automatically by Laravel's container. Do not create a redundant interface or repository for single-feature use cases.
+- Actions own their `DB::transaction(...)` boundaries, explicit actor/tenant authorization checks (so jobs and CLI cannot bypass HTTP FormRequests), and idempotency on retried operations.
 
-Prefer concrete Actions for orchestration across transactions, side effects, normalization, or entry points. Reuse existing Actions and keep trivial handlers inline. Enforce owner-safe IDs and authorization in the callable write path, not only in forms.
+## Models Stay Private & Explicit
+- Every concrete Eloquent model under `Models/` MUST declare an explicit literal `protected $table = '...';` matching a `table:*` owned by this feature.
+- Never import another feature's `Models/`, `Actions/`, `Persistence/`, or `EntryPoints/`. Cross-feature reads/writes go strictly through the owning feature's `Api/` namespace.
+- Keep mutation side effects out of Eloquent Observers and `booted()` hooks; observers/listeners may only delegate to a declared named Action.
 
-Models use UUIDs, config-backed `getTable()`, typed relations, and application-level cascades in `booted()`. Preserve instance table aliases for self-relations. Follow lifecycle and migration rules from the monorepo contract.
-
-Use existing package APIs for cross-package work. Keep optional dependencies optional and auto-register integrations through established provider/contributor seams. Shared primitives belong in `commerce-support` when multiple packages benefit.
-
-Update existing canonical docs with public behavior or configuration changes. Verify the owning package and any affected paired adapter.
+## Thin EntryPoints & Isolated Routes
+- `EntryPoints/{Http,Jobs,Console,Livewire,Filament}/` only parse/validate transport input, authorize the actor, call the Action/Query, and format the response.
+- Feature route files (`Routes/web.php`, `Routes/api.php`, `Routes/console.php`) MUST declare their own middleware, URI prefixes, and route name groups explicitly.
+- If overriding `FeatureServiceProvider::boot()`, always call `parent::boot()`.
+- For repeatable domain plugs (widgets, tools, renderers, handlers), add an isolated class under `Extensions/` and register it with `ExtensionRegistry` instead of branching in a shared root file.

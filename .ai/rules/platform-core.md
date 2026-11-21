@@ -1,16 +1,18 @@
 ---
 paths:
   - packages/commerce-support/**
+  - demo/app/Platform/**
 ---
 
-# Shared Package Foundation
+# Platform Core
 
-Read `packages/commerce-support/CONTEXT.md` before discovery. Check its existing primitives before introducing shared infrastructure.
+> **Monorepo root:** Maps to `packages/commerce-support/**` (shared package foundation, independent of concrete downstream packages) and `demo/app/Platform/**`.
 
-Keep foundation code independent of concrete downstream domains and Filament adapters. Use contracts, tagged registrars, metadata, or contributor interfaces for optional integrations. Keep providers lean and optional packages optional.
+## Strict One-Way Dependency
+`app/Platform/**` MUST NEVER import or reference any class under `App\Features\*` or `App\Host\*`. Use generic contracts, PHP attributes, or manifest metadata (`feature.json`) instead.
 
-Package code must run in arbitrary consumer applications. Resolve host-specific classes through configured bindings or contracts. Keep Eloquent strictness, global mass-assignment settings, destructive command policy, and the global date factory under host control.
+## Zero Per-Request Disk Globs in Production
+`FeatureCatalog::load()` MUST memoize in-memory per process and read from `bootstrap/cache/platform.php` when present. Any change to discovery or manifest loading must keep `php artisan platform:cache` and `php artisan optimize` compatible.
 
-Owner enforcement, contexts, write guards, owner-aware caches and filesystems belong here. Preserve explicit global-context semantics and tenant isolation on every entry point. Verify affected dependents when changing a shared contract.
-
-Assume long-lived workers: scope mutable owner/request state to the request or container lifecycle. Test cleanup after exceptions when modifying scoped context behavior.
+## Narrow Architecture Exceptions Only
+Low-level framework mechanics (reflection, runtime strictness switches, service-provider wiring) belong here rather than in product features. Changes to `app/Platform/**` are architecture changes and require explicit review plus regression tests proving both passing and failing boundary cases.

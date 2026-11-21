@@ -5,14 +5,18 @@ paths:
   - packages/*/src/Data/**
   - packages/*/src/DTOs/**
   - packages/*/src/Api/**
+  - demo/app/Features/*/Api/**
+  - demo/app/Shared/Contracts/**
 ---
 
-# Package Public Contracts
+# Public API & Shared Contracts
 
-Read the owning package's documented public API and Composer dependencies before changing a boundary. Public package surfaces may include models, query scopes, services, Actions, events, contracts, and DTOs; preserve the package's established conventions.
+> **Monorepo root:** Applies to package contract/DTO/API surfaces under `packages/*/src/{Contracts,Data,DTOs,Api}` as well as `demo/app/Features/*/Api/**` and `demo/app/Shared/Contracts/**`.
 
-Introduce interfaces for real substitution or cross-package integration needs. Prefer the existing domain value objects or Spatie Laravel Data for DTOs. Use typed signatures, generics, immutable dates, and integer minor units with an explicit currency for money.
+## Pure Immutable Boundary Shapes
+- All classes in `app/Features/*/Api/**` and `app/Shared/Contracts/**` must be `interface`, `enum`, or `final readonly class` value objects / DTOs.
+- NEVER expose Eloquent `Model`, `Builder`, `Collection`, `Request`, `Response`, or any `Illuminate\*` runtime type in public signatures or DTO properties. Use scalar/branded IDs, backed enums, `CarbonImmutable`, or immutable DTOs.
 
-Parse untrusted payloads at the entry boundary and revalidate inbound foreign IDs for the current owner on writes. Document ownership and global-row semantics where they affect callers.
-
-Update callers and canonical docs in the same change. Verify affected dependents; remove replaced paths instead of adding compatibility aliases.
+## Parse Once at the Boundary
+- Validate and parse external/untrusted payloads once at the transport or Host boundary into typed DTOs. Inside features, trust typed domain values—do not duplicate defensive null/array checks.
+- Public contracts may depend only on PHP built-ins, backed enums, `App\Shared\Contracts\*`, or another feature's `Api\*` types.

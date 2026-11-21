@@ -1,18 +1,18 @@
 ---
 paths:
-  - packages/*/src/**
-  - packages/*/routes/**
-  - demo/**
+  - packages/*/src/Drivers/**
+  - demo/app/Host/**
 ---
 
-# Integrations and Application Adapters
+# Host & External Boundaries
 
-External SDKs, HTTP clients, webhook handling, and process adapters belong to the package owning that integration. Keep vendor payload parsing at that boundary; expose the package's supported contracts and data shapes to callers.
+> **Monorepo root:** Applies to package drivers under `packages/*/src/Drivers/**` (implementing package `Contracts/`) and external host integrations under `demo/app/Host/**`.
 
-Bind implementations in the owning package's provider using existing conventions. Keep optional integrations conditional and independently installable. Reuse shared infrastructure from `commerce-support`.
+## Keep Privileged Runtime & SDKs in the Box
+- All third-party HTTP/SDK integrations (Stripe, LLM providers, mail/SMS APIs, webhooks), filesystem gateways, and OS/process execution (`Process::run`) live in `app/Host/<Integration>/`.
+- Each Host integration implements a pure interface defined in `app/Shared/Contracts/` and is bound in `App\Providers\AppServiceProvider` (or a dedicated Host provider).
 
-Keep drivers independently swappable through supported package contracts. Verify provider discovery and driver selection in a booted Laravel test host when changing integration wiring.
-
-`demo/` is a consumer and integration surface. Keep reusable domain behavior in core packages and reusable admin behavior in paired Filament packages. Read both package contexts before cross-boundary changes.
-
-HTTP routes, jobs, webhooks, commands, and Filament handlers enforce the same authorization and owner boundary. Jobs carry explicit owner context rather than depending on ambient web authentication. Test retries and side effects when changing integration orchestration.
+## Direction & Isolation
+- `app/Host/**` MUST NEVER import any class under `App\Features\*`.
+- Parse raw third-party responses/webhooks at the Host boundary into immutable contract DTOs or domain exceptions—never leak vendor SDK objects or raw HTTP arrays into Features.
+- Features call Host behavior exclusively through the typed interface in `App\Shared\Contracts\*`, making external boundaries trivially fakeable in tests without mocking internals.

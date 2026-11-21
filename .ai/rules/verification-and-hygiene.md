@@ -3,25 +3,45 @@ paths:
   - packages/**
   - tests/**
   - demo/**
-  - .ai/**
+  - verify/**
 ---
 
-# Package Verification and Hygiene
+# Verification, Hygiene & Anti-Slop Governance
 
-## Scope and evidence
+> **Monorepo root:** Run scoped checks on affected packages (`./vendor/bin/pint` on changed files, `./vendor/bin/phpstan analyse packages/<pkg>/src --level=6`, and `./vendor/bin/pest --parallel <affected-test-path>`), plus `composer arch:check` where a package or `demo/` installs the Dune checker. Refresh Boost outputs at the monorepo root with `php artisan commerce:boost-update` and `php artisan commerce:boost-index-rules`.
 
-Define observable success criteria. Locate the owning package's tests through Composer mappings and test configuration. Run affected tests with `--parallel`, including cross-tenant read/write cases for ownership changes. Verify affected paired adapters and contract consumers when applicable.
+## Comment-Sicko Policy (~99% Comment Ban)
+Only five comment types may remain in committed code:
+1. Legal or license headers.
+2. Verified external vendor/framework quirks we cannot reshape (proven on a live path).
+3. Purely stylistic formatter ignores (`// prettier-ignore`). Never keep correctness/type suppressions (`@phpstan-ignore*`, `phpcs:ignore`).
+4. Public API contract docblocks (`Api/`, `Shared/Contracts/`, PHPStan generic templates).
+5. Issue or RFC links explaining an unavoidable external constraint.
 
-Run Pint on changed PHP files and PHPStan on changed package source at level 6. Pipe test/analysis output with `2>&1 | tee /tmp/<task-specific-log>.txt`; preserve failure status with shell `pipefail`. Avoid repository-wide formatting and test sweeps.
+Delete all narrating comments, commented-out code, workaround justifications, and over-rotated PR feedback (`// X said never do this`). Convert `DO NOT REMOVE` comments into types, lints, or tests.
 
-Use existing tests before creating a separate verification harness. For runtime-only integration behavior, use the existing demo/test host and inspect observable responses and persisted effects in isolated test data. Avoid mutating developer data or caches as routine verification.
+## Banned Shortcuts
+- No `sleep()`, `usleep()`, `time_nanosleep()`, or `Sleep::sleep()` synchronization hacks in `app/`.
+- No `env()` calls outside `config/`.
+- No `Model::unguard()` or disabling mass-assignment protection in `app/`.
+- No service-locator `app(...)` / `resolve(...)` inside Feature Actions when constructor DI works.
+- No backward-compatibility shims, pass-through legacy wrappers, compatibility aliases, or leftover dead files—migrate callers directly and delete superseded code in the same change.
 
-## Honest enforcement
+## Proof Before Done ("Prove It Works")
+- Always run `composer arch:check` (AST boundaries + Larastan `OwnedWriteRule` + normal PHPStan) and affected Pest/PHPUnit tests.
+- Test observable behavior (HTTP status/JSON, persisted DB state read back, authorization/tenant isolation, rollback on failure, idempotency on retry)—never pin tests to private helper calls.
+- Verify route/config/platform caches (`php artisan route:cache`, `config:cache`, `platform:cache`) on structural changes and clear temporary caches after.
+- Use Laravel Boost MCP (`last-error`, `browser-logs`, `database-query`) to confirm zero silent runtime errors.
 
-Use the monorepo's installed checks as evidence. The consumer Dune templates include optional app and Composer package architecture checkers. Establish enforcement by wiring a check into the relevant package and demonstrating that it catches a representative violation.
+## Rule → Enforcement Table (Updated via `laravel-dune-correct`)
 
-For a recurring mistake, prefer a shared boundary correction, types/static analysis, or a focused behavioral/architecture test. Prove any new check rejects the bad behavior and accepts the supported path. Record judgment-only rules in the narrowest matching rule file and synchronize the index.
-
-## Surgical changes
-
-Retain useful PHPDoc generics, public contracts, config section headers, and explanations of non-obvious behavior. Remove only comments and code made obsolete by the requested change. Fix static analysis at its source; inspect runtime macros and extensions before deleting apparently undefined methods.
+| Mistake Class | Mechanical Enforcer | Layer |
+| --- | --- | --- |
+| Cross-feature private import | `php tools/architecture-check.php` (`feature-private`) | L2 AST |
+| `app/Platform` / `app/Host` / `app/Shared` importing feature | `php tools/architecture-check.php` (`layer-direction`) | L2 AST |
+| Unregistered DB / Cache / Storage / Redis write | PHPStan `OwnedWriteRule` (`architecture.writeOwner`) | L2 Type |
+| Missing literal `$table` on feature model | `php tools/architecture-check.php` (`model-table`) | L2 AST |
+| Mutable Laravel / Eloquent leak in `Api/` or `Contracts/` | `php tools/architecture-check.php` (`api-shape`, `api-leak`) | L2 AST |
+| `sleep()` / `env()` / `Model::unguard()` / `@phpstan-ignore` | `php tools/architecture-check.php` (`banned-footgun`, `no-suppression`) | L2 AST |
+| Narrative / workaround comment slop | `php tools/architecture-check.php` (`comment-hygiene`) + `laravel-dune-correct` | L2/L4 |
+| Behavioral regressions & broken routes | `verify/feature-map/` + Pest feature & arch tests + Boost MCP | L3 Verify |
