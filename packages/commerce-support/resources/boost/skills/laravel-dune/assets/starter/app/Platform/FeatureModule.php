@@ -14,18 +14,18 @@ abstract class FeatureModule extends ServiceProvider
         $root = dirname((string) (new ReflectionClass($this))->getFileName());
 
         foreach (['web', 'api', 'console'] as $transport) {
-            $routeFile = $root.'/Routes/'.$transport.'.php';
+            $routeFile = $root . '/Routes/' . $transport . '.php';
             if (is_file($routeFile)) {
                 $this->loadRoutesFrom($routeFile);
             }
         }
 
-        if (is_dir($root.'/Views')) {
-            $this->loadViewsFrom($root.'/Views', strtolower(basename($root)));
+        if (is_dir($root . '/Views')) {
+            $this->loadViewsFrom($root . '/Views', mb_strtolower(basename($root)));
         }
 
-        if (is_dir($root.'/Database/Migrations')) {
-            $this->loadMigrationsFrom($root.'/Database/Migrations');
+        if (is_dir($root . '/Database/Migrations')) {
+            $this->loadMigrationsFrom($root . '/Database/Migrations');
         }
     }
 }

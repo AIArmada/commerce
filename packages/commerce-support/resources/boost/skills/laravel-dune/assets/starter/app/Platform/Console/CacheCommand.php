@@ -18,9 +18,9 @@ final class CacheCommand extends Command
         $root = $this->laravel->basePath();
         $catalog = FeatureCatalog::scan($root);
         $target = FeatureCatalog::cachePath($root);
-        $temp = $target.'.'.getmypid().'.tmp';
+        $temp = $target . '.' . getmypid() . '.tmp';
 
-        $payload = "<?php\n\nreturn ".var_export($catalog, true).";\n";
+        $payload = "<?php\n\nreturn " . var_export($catalog, true) . ";\n";
         file_put_contents($temp, $payload, LOCK_EX);
         rename($temp, $target);
         FeatureCatalog::flushMemory();

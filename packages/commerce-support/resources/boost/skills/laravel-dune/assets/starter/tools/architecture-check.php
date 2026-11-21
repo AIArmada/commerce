@@ -11,19 +11,19 @@ use PhpParser\ParserFactory;
 
 $options = getopt('', ['root:', 'json', 'diff-base:']);
 $root = realpath($options['root'] ?? dirname(__DIR__));
-if ($root === false || ! is_file($root.'/vendor/autoload.php')) {
+if ($root === false || ! is_file($root . '/vendor/autoload.php')) {
     fwrite(STDERR, "Run composer install (including dev dependencies) first.\n");
     exit(2);
 }
 
-require $root.'/vendor/autoload.php';
+require $root . '/vendor/autoload.php';
 
 if (! class_exists(ParserFactory::class)) {
     fwrite(STDERR, "Install PHP-Parser: composer require --dev 'nikic/php-parser:^5'\n");
     exit(2);
 }
 
-$diffBase = is_string($options['diff-base'] ?? null) ? trim($options['diff-base']) : null;
+$diffBase = is_string($options['diff-base'] ?? null) ? mb_trim($options['diff-base']) : null;
 $changedFiles = null;
 if ($diffBase !== null && $diffBase !== '') {
     $cmd = sprintf('git -C %s diff --name-only --diff-filter=ACMRT %s 2>/dev/null', escapeshellarg($root), escapeshellarg($diffBase));
@@ -34,12 +34,12 @@ if ($diffBase !== null && $diffBase !== '') {
         fwrite(STDERR, "Unable to compute git diff against '{$diffBase}'.\n");
         exit(2);
     }
-    $changedFiles = array_flip(array_map(static fn (string $p): string => str_replace('\\', '/', trim($p)), $out));
+    $changedFiles = array_flip(array_map(static fn (string $p): string => str_replace('\\', '/', mb_trim($p)), $out));
 }
 
 $findings = [];
 $report = static function (string $rule, string $file, int $line, string $target, string $message) use (&$findings): void {
-    $key = $rule.'|'.$file.'|'.$line.'|'.$target;
+    $key = $rule . '|' . $file . '|' . $line . '|' . $target;
     $findings[$key] = compact('rule', 'file', 'line', 'target', 'message');
 };
 
@@ -47,11 +47,11 @@ $featureOf = static function (string $name): ?string {
     return preg_match('/^App\\\\Features\\\\([A-Z][A-Za-z0-9]*)\\\\/', $name, $match) ? $match[1] : null;
 };
 
-$finder = new NodeFinder();
-$parser = (new ParserFactory())->createForNewestSupportedVersion();
+$finder = new NodeFinder;
+$parser = (new ParserFactory)->createForNewestSupportedVersion();
 
 try {
-    $configPath = $root.'/tools/architecture.json';
+    $configPath = $root . '/tools/architecture.json';
     if (! is_file($configPath)) {
         throw new RuntimeException("Missing {$configPath}. Run arch_scaffold.py init --apply first.");
     }
@@ -70,14 +70,14 @@ try {
 
     $paths = [];
     foreach (['app', 'routes', 'bootstrap', 'config'] as $directory) {
-        if (! is_dir($root.'/'.$directory)) {
+        if (! is_dir($root . '/' . $directory)) {
             continue;
         }
         $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($root.'/'.$directory, FilesystemIterator::SKIP_DOTS)
+            new RecursiveDirectoryIterator($root . '/' . $directory, FilesystemIterator::SKIP_DOTS)
         );
         foreach ($iterator as $file) {
-            $relative = str_replace('\\', '/', substr($file->getPathname(), strlen($root) + 1));
+            $relative = str_replace('\\', '/', mb_substr($file->getPathname(), mb_strlen($root) + 1));
             if ($file->isFile() && $file->getExtension() === 'php' && ! str_starts_with($relative, 'bootstrap/cache/')) {
                 $paths[$relative] = $file->getPathname();
             }
@@ -88,8 +88,8 @@ try {
     foreach ($paths as $relative => $path) {
         $sourceCode = (string) file_get_contents($path);
         $ast = $parser->parse($sourceCode) ?? [];
-        $traverser = new NodeTraverser();
-        $traverser->addVisitor(new NameResolver());
+        $traverser = new NodeTraverser;
+        $traverser->addVisitor(new NameResolver);
         $ast = $traverser->traverse($ast);
 
         $sourceFeature = preg_match('~^app/Features/([^/]+)/~', $relative, $match) ? $match[1] : null;
@@ -104,7 +104,7 @@ try {
         $applyAntiSlop = $isArchOwned || ($changedFiles === null) || isset($changedFiles[$relative]);
 
         $expectedClass = str_starts_with($relative, 'app/')
-            ? 'App\\'.str_replace('/', '\\', substr($relative, 4, -4))
+            ? 'App\\' . str_replace('/', '\\', mb_substr($relative, 4, -4))
             : null;
 
         foreach ($finder->findInstanceOf($ast, Node\Stmt\ClassLike::class) as $class) {
@@ -149,13 +149,13 @@ try {
                         $declared,
                         "Declare an explicit literal `protected \$table = '...';` on feature models so ownership survives moves and OwnedWriteRule can verify writes."
                     );
-                } elseif (($owners['table:'.$table] ?? null) !== $sourceFeature) {
-                    $currentOwner = $owners['table:'.$table] ?? 'unclaimed';
+                } elseif (($owners['table:' . $table] ?? null) !== $sourceFeature) {
+                    $currentOwner = $owners['table:' . $table] ?? 'unclaimed';
                     $report(
                         'resource-owner',
                         $relative,
                         $class->getStartLine(),
-                        'table:'.$table,
+                        'table:' . $table,
                         "Model table 'table:{$table}' is owned by '{$currentOwner}'. Register it under app/Features/{$sourceFeature}/feature.json or call {$currentOwner}'s Api."
                     );
                 }
@@ -173,7 +173,7 @@ try {
             $report,
             $features
         ): void {
-            $target = ltrim($target, '\\');
+            $target = mb_ltrim($target, '\\');
             $targetFeature = $featureOf($target);
 
             if ($targetFeature !== null && ! isset($features[$targetFeature])) {
@@ -278,13 +278,13 @@ try {
             }
             if ($node instanceof Node\Stmt\GroupUse) {
                 foreach ($node->uses as $use) {
-                    $checkDependency($node->prefix->toString().'\\'.$use->name->toString(), $use->getStartLine());
+                    $checkDependency($node->prefix->toString() . '\\' . $use->name->toString(), $use->getStartLine());
                 }
             }
             if ($node instanceof Node\Name\FullyQualified) {
                 $checkDependency($node->toString(), $node->getStartLine());
             }
-            if ($node instanceof Node\Scalar\String_ && str_starts_with(ltrim($node->value, '\\'), 'App\\')) {
+            if ($node instanceof Node\Scalar\String_ && str_starts_with(mb_ltrim($node->value, '\\'), 'App\\')) {
                 $checkDependency($node->value, $node->getStartLine());
             }
 
@@ -293,13 +293,13 @@ try {
             }
 
             if ($node instanceof Node\Expr\FuncCall && $node->name instanceof Node\Name) {
-                $fn = strtolower($node->name->toString());
+                $fn = mb_strtolower($node->name->toString());
                 if (($antiSlop['banSleep'] ?? true) && in_array($fn, ['sleep', 'usleep', 'time_nanosleep', 'time_sleep_until'], true)) {
                     $report(
                         'banned-footgun',
                         $relative,
                         $node->getStartLine(),
-                        $fn.'()',
+                        $fn . '()',
                         'Imperative sleep/timer hacks are banned in app code. Model delays with queued jobs (`->delay()`), backoff, or state transitions.'
                     );
                 }
@@ -317,21 +317,21 @@ try {
                         'banned-footgun',
                         $relative,
                         $node->getStartLine(),
-                        $fn.'()',
+                        $fn . '()',
                         'Debug dump calls are banned in application code. Use structured logging or verification tests.'
                     );
                 }
             }
 
             if ($node instanceof Node\Expr\StaticCall && $node->class instanceof Node\Name && $node->name instanceof Node\Identifier) {
-                $cls = ltrim($node->class->toString(), '\\');
-                $method = strtolower($node->name->toString());
+                $cls = mb_ltrim($node->class->toString(), '\\');
+                $method = mb_strtolower($node->name->toString());
                 if (($antiSlop['banModelUnguard'] ?? true) && $method === 'unguard' && str_ends_with($cls, 'Model')) {
                     $report(
                         'banned-footgun',
                         $relative,
                         $node->getStartLine(),
-                        $cls.'::unguard',
+                        $cls . '::unguard',
                         'Model::unguard() is banned. Declare explicit $fillable or construct validated attributes in the owning Action.'
                     );
                 }
@@ -340,7 +340,7 @@ try {
                         'banned-footgun',
                         $relative,
                         $node->getStartLine(),
-                        'Sleep::'.$method,
+                        'Sleep::' . $method,
                         'Imperative Sleep hacks are banned in app code. Use queued jobs or explicit state transitions.'
                     );
                 }
@@ -362,7 +362,7 @@ try {
                         'no-suppression',
                         $relative,
                         $line,
-                        trim(strtok($text, "\n") ?: 'suppression'),
+                        mb_trim(strtok($text, "\n") ?: 'suppression'),
                         'Inline type/lint suppressions are banned. Fix the root cause or record an exact expiry-dated exception in tools/architecture.json.'
                     );
                 }
@@ -375,7 +375,7 @@ try {
                             'comment-hygiene',
                             $relative,
                             $line,
-                            trim(strtok($text, "\n") ?: 'comment'),
+                            mb_trim(strtok($text, "\n") ?: 'comment'),
                             'Workaround or claimed-constraint comments are unenforceable liabilities. Encode the invariant as a type, lint, or test and delete the comment.'
                         );
                     }
@@ -387,11 +387,11 @@ try {
     $suppressible = ['feature-private', 'feature-external'];
     foreach ($config['exceptions'] as $exception) {
         foreach (['rule', 'file', 'target', 'reason', 'owner', 'expires'] as $field) {
-            if (! is_string($exception[$field] ?? null) || trim($exception[$field]) === '') {
+            if (! is_string($exception[$field] ?? null) || mb_trim($exception[$field]) === '') {
                 throw new RuntimeException("Architecture exception requires non-empty '{$field}'.");
             }
         }
-        if (! in_array($exception['rule'], $suppressible, true) || strpbrk($exception['file'].$exception['target'], '*?') !== false) {
+        if (! in_array($exception['rule'], $suppressible, true) || strpbrk($exception['file'] . $exception['target'], '*?') !== false) {
             throw new RuntimeException("Exception for {$exception['file']} must use an allowed rule and exact file/target (no wildcards).");
         }
         $date = DateTimeImmutable::createFromFormat('!Y-m-d', $exception['expires']);
@@ -413,7 +413,7 @@ try {
         }
     }
 } catch (Throwable $error) {
-    fwrite(STDERR, 'Architecture check error: '.$error->getMessage()."\n");
+    fwrite(STDERR, 'Architecture check error: ' . $error->getMessage() . "\n");
     exit(2);
 }
 
@@ -423,12 +423,12 @@ if (isset($options['json'])) {
         'schema' => 1,
         'features' => array_keys($features),
         'findings' => $findings,
-    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)."\n";
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n";
 } else {
     foreach ($findings as $finding) {
         echo "{$finding['file']}:{$finding['line']} [{$finding['rule']}] {$finding['target']}: {$finding['message']}\n";
     }
-    echo count($findings).' architecture violation(s); '.count($features)." feature(s) checked.\n";
+    echo count($findings) . ' architecture violation(s); ' . count($features) . " feature(s) checked.\n";
 }
 
 exit($findings !== [] ? 1 : 0);
