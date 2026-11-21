@@ -22,13 +22,12 @@ final class CreateSite
             $data['domain'] = mb_strtolower(mb_trim($data['domain']));
         }
 
-        $validated = Validator::make($data, self::siteRules(), self::siteValidationMessages())->validate();
-        $validated = self::normalizeSiteData($validated);
-        $validated['status'] ??= AffiliateSite::STATUS_PENDING;
+        $data += ['status' => AffiliateSite::STATUS_PENDING];
+        $validated = self::normalizeSiteData(Validator::make($data, self::siteRules(), self::siteValidationMessages())->validate());
 
-        if ($validated['status'] === AffiliateSite::STATUS_VERIFIED && empty($validated['verified_at'])) {
-            $validated['verified_at'] = CarbonImmutable::now();
-        }
+        $validated['verified_at'] = $validated['status'] === AffiliateSite::STATUS_VERIFIED
+            ? ($validated['verified_at'] ?? CarbonImmutable::now())
+            : null;
 
         return AffiliateSite::query()->create($validated);
     }

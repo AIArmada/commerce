@@ -6,7 +6,11 @@ namespace AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Sch
 
 use AIArmada\AffiliateNetwork\Enums\OfferStatus;
 use AIArmada\AffiliateNetwork\Enums\OfferVisibility;
+use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Models\AffiliateOfferCategory;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\KeyValue;
@@ -35,17 +39,15 @@ final class AffiliateOfferForm
                         // (no unbounded preload) with explicit global scope bypass.
                         Select::make('site_id')
                             ->label('Site')
-                            ->relationship('site', 'name', modifyQueryUsing: fn (Builder $query): Builder => $query
-                                ->withoutGlobalScope(OwnerScope::class)
-                                ->where('status', AffiliateSite::STATUS_VERIFIED))
+                            ->relationship('site', 'name', modifyQueryUsing: self::siteOptions(...))
                             ->required()
+                            ->live()
+                            ->afterStateUpdated(fn (Set $set) => $set('category_id', null))
                             ->searchable(),
 
                         Select::make('category_id')
                             ->label('Category')
-                            ->relationship('category', 'name', modifyQueryUsing: fn (Builder $query): Builder => $query
-                                ->withoutGlobalScope(OwnerScope::class)
-                                ->where('is_active', true))
+                            ->relationship('category', 'name', modifyQueryUsing: self::categoryOptions(...))
                             ->searchable()
                             ->nullable(),
 
@@ -211,5 +213,56 @@ final class AffiliateOfferForm
                     ])
                     ->collapsed(),
             ]);
+    }
+
+    /**
+     * @param  Builder<AffiliateSite>  $query
+     * @return Builder<AffiliateSite>
+     */
+    private static function siteOptions(Builder $query, ?AffiliateOffer $record): Builder
+    {
+        $query->withoutGlobalScope(OwnerScope::class)
+            ->where(function (Builder $query) use ($record): void {
+                $query->where('status', AffiliateSite::STATUS_VERIFIED)->whereNotNull('verified_at');
+
+                if ($record !== null) {
+                    $query->orWhereKey($record->site_id);
+                }
+            });
+
+        if ($record === null || ! config('affiliate-network.owner.enabled', false)) {
+            return $query;
+        }
+
+        $site = AffiliateSite::query()->withoutOwnerScope()->findOrFail($record->site_id);
+        $owner = OwnerContext::fromTypeAndId($site->owner_type, $site->owner_id);
+
+        return OwnerQuery::applyToEloquentBuilder($query, $owner);
+    }
+
+    /**
+     * @param  Builder<AffiliateOfferCategory>  $query
+     * @return Builder<AffiliateOfferCategory>
+     */
+    private static function categoryOptions(Builder $query, Get $get): Builder
+    {
+        $query->withoutGlobalScope(OwnerScope::class)->where('is_active', true);
+
+        if (! config('affiliate-network.owner.enabled', false)) {
+            return $query;
+        }
+
+        $siteId = $get('site_id');
+        $site = is_string($siteId) && $siteId !== ''
+            ? AffiliateSite::query()->withoutOwnerScope()->find($siteId)
+            : null;
+
+        if ($site === null) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        $owner = OwnerContext::fromTypeAndId($site->owner_type, $site->owner_id);
+
+        return OwnerQuery::applyToEloquentBuilder($query, $owner, (bool) config('affiliate-network.owner.include_global', false));
     }
 }

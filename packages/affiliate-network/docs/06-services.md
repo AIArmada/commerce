@@ -126,8 +126,9 @@ $instructions = $verificationService->getInstructions($site, 'file');
 
 ## Site lifecycle
 
-Operator transitions live in the core package as explicit actions. They keep
-the `verified_at` invariant and reject illegal source states:
+Operator transitions live in the core package as explicit actions and validate
+the current status before writing. A suspended site retains its verification
+timestamp for reinstatement.
 
 ```php
 use AIArmada\AffiliateNetwork\Actions\RejectSite;
@@ -136,9 +137,10 @@ use AIArmada\AffiliateNetwork\Actions\SuspendSite;
 use AIArmada\AffiliateNetwork\Actions\VerifySite;
 
 app(VerifySite::class)->execute($site);     // pending -> verified
-app(RejectSite::class)->execute($site);     // pending -> rejected
 app(SuspendSite::class)->execute($site);    // verified -> suspended
 app(ReinstateSite::class)->execute($site);  // suspended -> verified
+
+app(RejectSite::class)->execute($anotherPendingSite);
 ```
 
 `CreateSite` and `UpdateSite` own operator form writes, including domain

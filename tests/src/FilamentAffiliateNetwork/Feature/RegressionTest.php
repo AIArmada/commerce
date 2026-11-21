@@ -448,6 +448,35 @@ describe('category cycle protection', function (): void {
 });
 
 describe('relationship selects', function (): void {
+    test('offer site and category options match the current offer owner', function (): void {
+        config(['affiliate-network.owner.enabled' => true, 'affiliate-network.owner.include_global' => false]);
+        $owner = User::factory()->create();
+        $other = User::factory()->create();
+
+        [$site, $offer, $category] = OwnerContext::withOwner($owner, function () use ($owner): array {
+            $site = AffiliateSite::factory()->verified()->forOwner($owner)->create(['name' => 'Merchant site']);
+            $offer = AffiliateOffer::factory()->forSite($site)->create();
+            $category = AffiliateOfferCategory::factory()->forOwner($owner)->create(['name' => 'Merchant category', 'is_active' => true]);
+
+            return [$site, $offer, $category];
+        });
+        OwnerContext::withOwner($other, function () use ($other): void {
+            AffiliateSite::factory()->verified()->forOwner($other)->create(['name' => 'Other merchant site']);
+            AffiliateOfferCategory::factory()->forOwner($other)->create(['name' => 'Other merchant category', 'is_active' => true]);
+        });
+        $global = OwnerContext::withOwner(null, fn () => AffiliateOfferCategory::factory()->create(['name' => 'Global merchant category', 'is_active' => true]));
+
+        $schema = AffiliateOfferForm::configure(Schema::make(new RepairSchemaHostComponent)->model($offer)->statePath('data'));
+        $schema->fill(['site_id' => $site->getKey()]);
+
+        expect($schema->getComponent('site_id')->getSearchResults('merchant'))->toBe([$site->getKey() => $site->name])
+            ->and($schema->getComponent('category_id')->getSearchResults('merchant'))->toBe([$category->getKey() => $category->name]);
+
+        config(['affiliate-network.owner.include_global' => true]);
+        expect($schema->getComponent('category_id')->getSearchResults('merchant'))
+            ->toHaveKeys([$category->getKey(), $global->getKey()]);
+    });
+
     test('site, category, and parent selects use server-side relationships', function (): void {
         $offerSchema = AffiliateOfferForm::configure(
             Schema::make(new RepairSchemaHostComponent)->model(AffiliateOffer::class)->statePath('data')
@@ -607,7 +636,7 @@ describe('site domain and verified lifecycle', function (): void {
             'status' => AffiliateSite::STATUS_SUSPENDED,
         ]);
 
-        expect($exit->verified_at)->toBeNull();
+        expect($exit->verified_at)->toEqual($verifiedSite->verified_at);
 
         $entry = app(UpdateSite::class)->execute($pendingSite, [
             'name' => $pendingSite->name,

@@ -97,12 +97,14 @@ final class CreativesRelationManager extends RelationManager
     public function saveCreative(array $data, ?AffiliateOfferCreative $record = null): AffiliateOfferCreative
     {
         return $this->withOfferOwner(function () use ($data, $record): AffiliateOfferCreative {
-            if ($record !== null) {
-                return app(UpdateCreative::class)->execute($record, $data);
-            }
-
             /** @var AffiliateOffer $offer */
             $offer = $this->getOwnerRecord();
+
+            if ($record !== null) {
+                $record = $offer->creatives()->whereKey($record->getKey())->firstOrFail();
+
+                return app(UpdateCreative::class)->execute($record, $data);
+            }
 
             return app(CreateCreative::class)->execute($offer, $data);
         });
@@ -110,7 +112,13 @@ final class CreativesRelationManager extends RelationManager
 
     private function deleteCreative(AffiliateOfferCreative $record): bool
     {
-        return $this->withOfferOwner(fn (): bool => app(DeleteCreative::class)->execute($record));
+        return $this->withOfferOwner(function () use ($record): bool {
+            /** @var AffiliateOffer $offer */
+            $offer = $this->getOwnerRecord();
+            $creative = $offer->creatives()->whereKey($record->getKey())->firstOrFail();
+
+            return app(DeleteCreative::class)->execute($creative);
+        });
     }
 
     /**

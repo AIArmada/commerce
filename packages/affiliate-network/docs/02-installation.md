@@ -4,6 +4,13 @@ title: Installation
 
 # Installation
 
+> **warning**
+> Affiliate sites and offers no longer provide the Contacting package's contact
+> method and social profile relationships. Before upgrading, move any attached
+> records to the merchant's contactable and socialable models using Contacting.
+> Update callers to use those models. Deleting a site or offer after upgrading
+> will leave any legacy attachments in place.
+
 ## Requirements
 
 - PHP 8.5+

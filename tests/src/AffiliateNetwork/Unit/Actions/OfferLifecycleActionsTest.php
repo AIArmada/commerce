@@ -3,7 +3,9 @@
 declare(strict_types=1);
 
 use AIArmada\AffiliateNetwork\Actions\ArchiveOffer;
+use AIArmada\AffiliateNetwork\Actions\CreateOffer;
 use AIArmada\AffiliateNetwork\Actions\PublishOffer;
+use AIArmada\AffiliateNetwork\Actions\UpdateOffer;
 use AIArmada\AffiliateNetwork\Enums\OfferStatus;
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
@@ -13,6 +15,23 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Validation\ValidationException;
 
 describe('offer lifecycle actions', function (): void {
+    test('offer form writes stamp lifecycle entries and preserve the stamp on a repeated status', function (): void {
+        $site = AffiliateSite::factory()->verified()->create();
+        $published = app(CreateOffer::class)->execute($site, [
+            'name' => 'Published offer',
+            'status' => OfferStatus::Published->value,
+        ]);
+
+        expect($published->published_at)->not->toBeNull();
+
+        $this->travel(1)->minute();
+        $unchanged = app(UpdateOffer::class)->execute($published, ['status' => OfferStatus::Published->value]);
+        $archived = app(UpdateOffer::class)->execute($published, ['status' => OfferStatus::Archived->value]);
+
+        expect($unchanged->published_at)->toEqual($published->published_at)
+            ->and($archived->archived_at)->not->toBeNull();
+    });
+
     test('publishes a verified site offer with lifecycle timestamps', function (): void {
         $site = AffiliateSite::factory()->verified()->create();
         $offer = AffiliateOffer::factory()->draft()->forSite($site)->create();

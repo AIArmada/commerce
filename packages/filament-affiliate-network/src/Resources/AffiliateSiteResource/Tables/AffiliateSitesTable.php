@@ -7,12 +7,11 @@ namespace AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource\Tabl
 use AIArmada\AffiliateNetwork\Actions\ReinstateSite;
 use AIArmada\AffiliateNetwork\Actions\RejectSite;
 use AIArmada\AffiliateNetwork\Actions\SuspendSite;
-use AIArmada\AffiliateNetwork\Actions\SyncSiteOffers;
 use AIArmada\AffiliateNetwork\Actions\VerifySite;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\FilamentAffiliateNetwork\Actions\SyncSiteCatalog;
 use Filament\Actions;
-use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -66,29 +65,7 @@ final class AffiliateSitesTable
             ])
             ->actions([
                 Actions\EditAction::make(),
-                Actions\Action::make('sync_catalog')
-                    ->label('Sync catalog')
-                    ->icon('heroicon-o-arrow-path')
-                    ->color('info')
-                    ->requiresConfirmation()
-                    ->action(function (AffiliateSite $record): array {
-                        $result = app(SyncSiteOffers::class)->execute($record);
-
-                        Notification::make()
-                            ->title('Catalog sync complete')
-                            ->body(sprintf(
-                                '%d program(s): %d created, %d updated, %d skipped, %d failed.',
-                                $result['programs'],
-                                $result['created'],
-                                $result['updated'],
-                                $result['skipped'],
-                                $result['failed'],
-                            ))
-                            ->success()
-                            ->send();
-
-                        return $result;
-                    }),
+                SyncSiteCatalog::make(),
                 Actions\Action::make('verify')
                     ->icon('heroicon-o-check-badge')
                     ->color('success')

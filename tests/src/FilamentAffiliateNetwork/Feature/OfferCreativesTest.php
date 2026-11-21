@@ -79,6 +79,18 @@ test('creative mutation requires network administrator authorization on every re
     expect($this->offer->creatives()->count())->toBe(0);
 });
 
+test('admin creative edits stay within the current offer even for another offer at the same site', function (): void {
+    $otherOffer = AffiliateOffer::factory()->create(['site_id' => $this->offer->site_id]);
+    $creative = $otherOffer->creatives()->create(['name' => 'Original', 'type' => 'text']);
+    $manager = new CreativesRelationManager;
+    $manager->ownerRecord = $this->offer;
+
+    expect(fn () => $manager->saveCreative([
+        'name' => 'Edited', 'type' => 'text', 'is_active' => true, 'sort_order' => 0,
+    ], $creative))->toThrow(ModelNotFoundException::class);
+    expect($creative->fresh()->name)->toBe('Original');
+});
+
 test('manual creatives can be created with an uploaded file through the relation manager', function (): void {
     Storage::fake('public');
     Livewire::test(CreativesRelationManager::class, [

@@ -60,7 +60,6 @@ The canonical orchestration surface is the `Actions` tree. Prefer these over dir
 ```php
 use AIArmada\AffiliateNetwork\Actions\CreateSite;
 use AIArmada\AffiliateNetwork\Actions\ReinstateSite;
-use AIArmada\AffiliateNetwork\Actions\RejectSite;
 use AIArmada\AffiliateNetwork\Actions\SuspendSite;
 use AIArmada\AffiliateNetwork\Actions\UpdateSite;
 use AIArmada\AffiliateNetwork\Actions\VerifySite;
@@ -76,7 +75,6 @@ $site = app(UpdateSite::class)->execute($site, [
     'domain' => 'mystore.com',
 ]);
 $site = app(VerifySite::class)->execute($site);     // pending -> verified
-$site = app(RejectSite::class)->execute($site);     // pending -> rejected
 $site = app(SuspendSite::class)->execute($site);    // verified -> suspended
 $site = app(ReinstateSite::class)->execute($site);  // suspended -> verified
 ```

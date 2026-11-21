@@ -2,16 +2,51 @@
 
 declare(strict_types=1);
 
+use AIArmada\AffiliateNetwork\Actions\CreateSite;
 use AIArmada\AffiliateNetwork\Actions\ReinstateSite;
 use AIArmada\AffiliateNetwork\Actions\RejectSite;
 use AIArmada\AffiliateNetwork\Actions\SuspendSite;
+use AIArmada\AffiliateNetwork\Actions\UpdateSite;
 use AIArmada\AffiliateNetwork\Actions\VerifySite;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Validation\ValidationException;
 
 describe('site lifecycle actions', function (): void {
+    test('validates normalized domain uniqueness and catalog URL storage length', function (): void {
+        $site = AffiliateSite::factory()->create(['domain' => 'merchant.example']);
+
+        expect(fn () => app(CreateSite::class)->execute([
+            'name' => 'Duplicate',
+            'domain' => ' MERCHANT.EXAMPLE ',
+        ]))->toThrow(ValidationException::class);
+
+        expect(fn () => app(UpdateSite::class)->execute($site, [
+            'name' => $site->name,
+            'domain' => $site->domain,
+            'catalog_url' => 'https://merchant.example/' . str_repeat('a', 255),
+        ]))->toThrow(ValidationException::class);
+    });
+
+    test('rejects an explicit null status and keeps unverified sites unstamped', function (): void {
+        $site = app(CreateSite::class)->execute([
+            'name' => 'Pending merchant',
+            'domain' => 'pending.example',
+            'verified_at' => '2025-01-01',
+        ]);
+
+        expect($site->verified_at)->toBeNull();
+
+        $data = ['name' => $site->name, 'domain' => $site->domain];
+        $updated = app(UpdateSite::class)->execute($site, $data + ['verified_at' => '2025-01-01']);
+
+        expect($updated->verified_at)->toBeNull();
+        expect(fn () => app(UpdateSite::class)->execute($site, $data + ['status' => null]))
+            ->toThrow(ValidationException::class);
+    });
+
     test('verifies a pending site and stamps verified_at', function (): void {
         $site = AffiliateSite::factory()->pending()->create();
 

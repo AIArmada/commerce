@@ -7,6 +7,7 @@ namespace AIArmada\AffiliateNetwork\Actions;
 use AIArmada\AffiliateNetwork\Actions\Concerns\ValidatesSiteInput;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 final class UpdateSite
@@ -22,18 +23,20 @@ final class UpdateSite
             $data['domain'] = mb_strtolower(mb_trim($data['domain']));
         }
 
-        $site = AffiliateSite::query()->whereKey($site->getKey())->firstOrFail();
-        $validated = Validator::make($data, self::siteRules(), self::siteValidationMessages())->validate();
-        $validated = self::normalizeSiteData($validated);
+        return DB::transaction(function () use ($site, $data): AffiliateSite {
+            $site = AffiliateSite::query()->whereKey($site->getKey())->lockForUpdate()->firstOrFail();
+            $data += ['status' => $site->status];
+            $validated = self::normalizeSiteData(Validator::make($data, self::siteRules($site), self::siteValidationMessages())->validate());
 
-        if (array_key_exists('status', $validated)) {
-            $validated['verified_at'] = $validated['status'] === AffiliateSite::STATUS_VERIFIED
-                ? ($validated['verified_at'] ?? $site->verified_at ?? CarbonImmutable::now())
-                : null;
-        }
+            $validated['verified_at'] = match ($validated['status']) {
+                AffiliateSite::STATUS_VERIFIED => $validated['verified_at'] ?? $site->verified_at ?? CarbonImmutable::now(),
+                AffiliateSite::STATUS_SUSPENDED => $site->verified_at,
+                default => null,
+            };
 
-        $site->update($validated);
+            $site->update($validated);
 
-        return $site->refresh();
+            return $site->refresh();
+        });
     }
 }

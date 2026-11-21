@@ -51,7 +51,7 @@ Manage merchant sites/domains.
 **Status:**
 - Status (pending, verified, suspended, rejected)
 - Verification method
-- Verified at (read-only; stamped when the status becomes verified and cleared when it leaves verified)
+- Verified at (read-only; records verification and retains that timestamp while the site is suspended)
 
 **Catalog Sync:**
 - Catalog URL (merchant API base; empty for locally-managed offers)

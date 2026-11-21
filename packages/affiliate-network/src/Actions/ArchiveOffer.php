@@ -6,7 +6,6 @@ namespace AIArmada\AffiliateNetwork\Actions;
 
 use AIArmada\AffiliateNetwork\Enums\OfferStatus;
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
-use Carbon\CarbonImmutable;
 
 final class ArchiveOffer
 {
@@ -18,7 +17,6 @@ final class ArchiveOffer
     {
         return $this->updateOffer->execute($offer, [
             'status' => OfferStatus::Archived,
-            'archived_at' => CarbonImmutable::now(),
         ]);
     }
 }

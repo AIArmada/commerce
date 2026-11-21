@@ -27,7 +27,7 @@ final class EditAffiliateOffer extends EditRecord
 
         $owner = OwnerContext::fromTypeAndId($site->owner_type, $site->owner_id);
 
-        return OwnerContext::withOwner($owner, fn (): Model => app(UpdateOffer::class)->execute($record, $data));
+        return $this->record = OwnerContext::withOwner($owner, fn (): Model => app(UpdateOffer::class)->execute($record, $data));
     }
 
     protected function getHeaderActions(): array
