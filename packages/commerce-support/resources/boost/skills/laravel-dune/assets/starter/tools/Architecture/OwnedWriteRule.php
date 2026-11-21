@@ -49,7 +49,7 @@ final class OwnedWriteRule implements Rule
             return [];
         }
 
-        $method = strtolower($node->name->toString());
+        $method = mb_strtolower($node->name->toString());
 
         $type = $node instanceof Node\Expr\StaticCall
             ? ($node->class instanceof Node\Name ? new ObjectType($scope->resolveName($node->class)) : $scope->getType($node->class))
@@ -101,7 +101,7 @@ final class OwnedWriteRule implements Rule
         }
 
         $file = str_replace('\\', '/', $scope->getFile());
-        $relative = ltrim(substr($file, strlen(str_replace('\\', '/', $this->projectRoot))), '/');
+        $relative = mb_ltrim(mb_substr($file, mb_strlen(str_replace('\\', '/', $this->projectRoot))), '/');
 
         if (str_contains($relative, '/Database/Migrations/')) {
             return [];
@@ -148,7 +148,7 @@ final class OwnedWriteRule implements Rule
             $ownerFeature = $owner ?? $feature ?? 'Unknown';
             $suggested = $this->declaredWritersFor($resource);
             $hint = $suggested !== []
-                ? 'Delegate to: '.implode(', ', $suggested)
+                ? 'Delegate to: ' . implode(', ', $suggested)
                 : "Register a dedicated Actions\\ or Persistence\\ class in app/Features/{$ownerFeature}/feature.json";
 
             return [$this->error(
@@ -207,10 +207,10 @@ final class OwnedWriteRule implements Rule
     {
         while ($node instanceof Node\Expr\MethodCall || $node instanceof Node\Expr\NullsafeMethodCall || $node instanceof Node\Expr\StaticCall) {
             if ($node->name instanceof Node\Identifier
-                && in_array(strtolower($node->name->toString()), ['table', 'from'], true)
+                && in_array(mb_strtolower($node->name->toString()), ['table', 'from'], true)
                 && isset($node->args[0])
                 && $node->args[0]->value instanceof Node\Scalar\String_) {
-                return 'table:'.$node->args[0]->value->value;
+                return 'table:' . $node->args[0]->value->value;
             }
             if ($node instanceof Node\Expr\StaticCall) {
                 break;
@@ -225,10 +225,10 @@ final class OwnedWriteRule implements Rule
     {
         while ($node instanceof Node\Expr\MethodCall || $node instanceof Node\Expr\NullsafeMethodCall || $node instanceof Node\Expr\StaticCall) {
             if ($node->name instanceof Node\Identifier
-                && in_array(strtolower($node->name->toString()), ['disk', 'store', 'connection'], true)
+                && in_array(mb_strtolower($node->name->toString()), ['disk', 'store', 'connection'], true)
                 && isset($node->args[0])
                 && $node->args[0]->value instanceof Node\Scalar\String_) {
-                return 'store:'.$node->args[0]->value->value;
+                return 'store:' . $node->args[0]->value->value;
             }
             if ($node instanceof Node\Expr\StaticCall) {
                 break;
@@ -255,17 +255,17 @@ final class OwnedWriteRule implements Rule
             return null;
         }
 
-        $ast = (new ParserFactory())->createForNewestSupportedVersion()->parse((string) file_get_contents($file)) ?? [];
-        $shortName = substr($model, strrpos($model, '\\') + 1);
+        $ast = (new ParserFactory)->createForNewestSupportedVersion()->parse((string) file_get_contents($file)) ?? [];
+        $shortName = mb_substr($model, mb_strrpos($model, '\\') + 1);
 
-        foreach ((new NodeFinder())->findInstanceOf($ast, Node\Stmt\Class_::class) as $class) {
+        foreach ((new NodeFinder)->findInstanceOf($ast, Node\Stmt\Class_::class) as $class) {
             if ($class->name?->toString() !== $shortName) {
                 continue;
             }
             foreach ($class->getProperties() as $property) {
                 foreach ($property->props as $prop) {
                     if ($prop->name->toString() === 'table' && $prop->default instanceof Node\Scalar\String_) {
-                        return $this->modelResources[$model] = 'table:'.$prop->default->value;
+                        return $this->modelResources[$model] = 'table:' . $prop->default->value;
                     }
                 }
             }

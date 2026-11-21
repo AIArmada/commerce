@@ -28,7 +28,7 @@ final class PlatformServiceProvider extends ServiceProvider
             foreach (array_keys($catalog['features']) as $feature) {
                 $provider = "App\\Features\\{$feature}\\FeatureServiceProvider";
                 if (! is_subclass_of($provider, FeatureModule::class)) {
-                    throw new RuntimeException("{$provider} must extend ".FeatureModule::class.'.');
+                    throw new RuntimeException("{$provider} must extend " . FeatureModule::class . '.');
                 }
                 $this->app->register($provider);
             }
