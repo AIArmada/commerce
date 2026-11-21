@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+use AIArmada\AffiliateNetwork\Actions\CreateSite;
+use AIArmada\AffiliateNetwork\Actions\SyncSiteOffers;
+use AIArmada\AffiliateNetwork\Actions\UpdateSite;
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
@@ -13,7 +16,6 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateCommissionRule;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\FilamentAffiliateNetwork\Actions\SyncSiteCatalog;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\RelationManagers\LinksRelationManager;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Schemas\AffiliateOfferForm;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource\Schemas\AffiliateSiteForm;
@@ -74,17 +76,23 @@ describe('site catalog sync operations', function (): void {
             ->and($schema->getComponent('catalog_token'))->not->toBeNull();
     });
 
-    test('catalog token merge encrypts and preserves blanks', function (): void {
-        $merged = AffiliateSiteForm::mergeCatalogToken(['name' => 'x', 'catalog_token' => 'secret-token']);
+    test('site actions encrypt catalog tokens and preserve blanks', function (): void {
+        $site = app(CreateSite::class)->execute([
+            'name' => 'Token Site',
+            'domain' => 'token-' . uniqid() . '.example.com',
+            'catalog_token' => 'secret-token',
+        ]);
 
-        expect($merged['catalog_token_encrypted'])->not->toBe('secret-token')
-            ->and(decrypt($merged['catalog_token_encrypted']))->toBe('secret-token')
-            ->and($merged)->not->toHaveKey('catalog_token');
+        expect($site->catalog_token_encrypted)->not->toBe('secret-token')
+            ->and(decrypt($site->catalog_token_encrypted))->toBe('secret-token');
 
-        $untouched = AffiliateSiteForm::mergeCatalogToken(['name' => 'x', 'catalog_token' => '']);
+        $updated = app(UpdateSite::class)->execute($site, [
+            'name' => 'Token Site',
+            'domain' => $site->domain,
+            'catalog_token' => '',
+        ]);
 
-        expect($untouched)->not->toHaveKey('catalog_token_encrypted')
-            ->and($untouched)->not->toHaveKey('catalog_token');
+        expect($updated->catalog_token_encrypted)->toBe($site->catalog_token_encrypted);
     });
 
     test('sync catalog action imports local offers', function (): void {
@@ -107,7 +115,7 @@ describe('site catalog sync operations', function (): void {
 
         expect($action)->not->toBeNull();
 
-        $result = app(SyncSiteCatalog::class)->handle($site);
+        $result = app(SyncSiteOffers::class)->execute($site);
 
         expect($result['programs'])->toBe(1)
             ->and($result['created'])->toBe(1)

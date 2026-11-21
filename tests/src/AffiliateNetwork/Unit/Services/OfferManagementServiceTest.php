@@ -39,9 +39,7 @@ describe('OfferManagementService', function (): void {
             expect($offer->slug)->toBe('custom-slug');
         });
 
-        test('creates offer with pending status when approval required', function (): void {
-            config(['affiliate-network.offers.require_approval' => true]);
-
+        test('creates offer as draft by default', function (): void {
             $offer = $this->service->createOffer($this->site, [
                 'name' => 'Test Offer',
             ]);

@@ -694,11 +694,13 @@ local figure with no signal anywhere.
 | `features.owner.customer_resolver` | `cashier-chip` |
 | `invoices.vendor_address` | `cashier-chip` |
 | `currency_locale` | `cashier-chip` |
-| `offers.require_approval` | `affiliate-network` |
-| `marketplace.show_commission_rates`, `marketplace.show_cookie_duration` | `filament-affiliate-network` |
 | `carriers` | `filament-shipping` |
 | `billing_portal.enabled`, `billing_portal.features.{payment_methods,invoices,gateway_switching}` | `filament-cashier` |
 | `resources.snapshots.read_only` | `filament-addressing` |
+
+The `marketplace.*` keys in `filament-affiliate-network` and the
+`offers.require_approval` key in `affiliate-network` were removed during the
+package conversion; they are no longer part of the shipped config.
 
 **Read by code but absent from the shipped config** (so only the inline default is ever
 effective): `cashier-chip.renewals.{chunk_size,lease_minutes}`,

@@ -157,9 +157,7 @@ final class AffiliateOfferApplicationsTable
                             /** @var AffiliateOfferApplication $record */
                             foreach ($records as $record) {
                                 if ($record->isPending()) {
-                                    $application = $record;
-
-                                    self::withApplicationOwnerContext($application, fn (): AffiliateOfferApplication => $service->approveApplication($application, $reviewer));
+                                    self::withApplicationOwnerContext($record, fn (): AffiliateOfferApplication => $service->approveApplication($record, $reviewer));
                                 }
                             }
 
@@ -177,10 +175,9 @@ final class AffiliateOfferApplicationsTable
      * Run an application mutation inside the owning affiliate's owner context.
      *
      * The admin table lists applications cross-tenant (scope bypassed), but the
-     * domain service re-queries under ScopesByBelongsToOwner. Entering the
-     * affiliate's own context makes those re-queries match truthfully when
-     * owner scoping is on, instead of 404ing on cross-owner rows. Without an
-     * identity resolver the mutations run unscoped.
+     * domain actions re-query under ScopesByBelongsToOwner. Entering the
+     * affiliate's own context keeps that re-query truthful when owner scoping
+     * is enabled.
      *
      * @template TResult
      *

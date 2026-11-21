@@ -44,7 +44,7 @@ keywords:
 - Relation managers: `AffiliateOfferResource/RelationManagers/LinksRelationManager`, `…/LegsRelationManager` (reverse action)
 - Page actions: `EditAffiliateSite` rotate-catalog-token header action
 - Actions/Services: `Support/NetworkAdminAccess`, `Support/NetworkStatsAggregator`
-- Config `filament-affiliate-network.php`: `navigation`, `group`, `sort`, `authorization`, `admin_ability`, `marketplace`, `show_commission_rates`, `show_cookie_duration`
+- Config `filament-affiliate-network.php`: `navigation.group`, `navigation.sort`, `authorization.admin_ability`
 
 ## Docs map
 - Start: `01-overview` → `03-configuration` → `04-usage` → `99-troubleshooting`

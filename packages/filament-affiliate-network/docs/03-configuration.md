@@ -18,11 +18,6 @@ return [
     'authorization' => [
         'admin_ability' => 'affiliate-network.admin',
     ],
-
-    'marketplace' => [
-        'show_commission_rates' => true,
-        'show_cookie_duration' => true,
-    ],
 ];
 ```
 
@@ -46,16 +41,6 @@ The host application must authorize this ability. The guarded surfaces intention
 ```php
 Gate::define('affiliate-network.admin', fn (User $user): bool => $user->is_admin);
 ```
-
-### Marketplace
-
-| Key | Description | Default |
-|-----|-------------|---------|
-| `show_commission_rates` | Reserved; **not read by the current code** | `true` |
-| `show_cookie_duration` | Reserved; **not read by the current code** | `true` |
-
-There is no marketplace page in this package, so nothing consumes these keys
-today. Treat them as placeholders.
 
 ## Customizing Resources
 

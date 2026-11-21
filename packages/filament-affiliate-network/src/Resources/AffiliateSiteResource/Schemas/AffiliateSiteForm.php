@@ -103,26 +103,4 @@ final class AffiliateSiteForm
                     ->collapsed(),
             ]);
     }
-
-    /**
-     * Fold a submitted catalog token into the encrypted column.
-     *
-     * A blank token leaves the stored value untouched so edits never wipe
-     * credentials by accident.
-     *
-     * @param  array<string, mixed>  $data
-     * @return array<string, mixed>
-     */
-    public static function mergeCatalogToken(array $data): array
-    {
-        $token = $data['catalog_token'] ?? null;
-        unset($data['catalog_token']);
-
-        if (is_string($token) && $token !== '') {
-            $data['catalog_token_encrypted'] = encrypt($token);
-            $data['catalog_token_issued_at'] = now();
-        }
-
-        return $data;
-    }
 }

@@ -104,8 +104,7 @@ TextInput::make('domain')->unique(ignoreRecord: true)
 > **info**
 > This package ships no affiliate marketplace page. If you are looking for
 > `/affiliate-network/marketplace`, it belongs to another package or to a
-> custom page of your own. The `marketplace.*` config keys are placeholders —
-> nothing in the code reads them.
+> custom page of your own.
 
 ### Can't Apply to Offers
 

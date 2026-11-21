@@ -5,6 +5,8 @@ declare(strict_types=1);
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
+use AIArmada\AffiliateNetwork\Models\NetworkConversionLeg;
+use AIArmada\AffiliateNetwork\Notifications\NetworkConversionNotification;
 use AIArmada\AffiliateNetwork\Services\OfferLinkService;
 use AIArmada\AffiliateNetwork\Services\OfferManagementService;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
@@ -90,5 +92,17 @@ describe('network notifications', function (): void {
         app(OfferManagementService::class)->applyForOffer($offer, (string) $user->getKey());
 
         expect(Communication::query()->exists())->toBeFalse();
+    });
+
+    test('conversion notifications format the payout with currency precision', function (): void {
+        $leg = NetworkConversionLeg::factory()->create([
+            'payout_minor' => 1234,
+            'commission_currency' => 'JPY',
+        ]);
+
+        $mail = (new NetworkConversionNotification($leg))->toMail(new User);
+
+        expect($mail->subject)->toBe('New earnings: ¥1,234')
+            ->and($mail->introLines)->toContain('One of your links converted and earned ¥1,234.');
     });
 });

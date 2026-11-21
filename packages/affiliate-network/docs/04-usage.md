@@ -55,6 +55,32 @@ with owner mode enabled and no ambient owner (plain console).
 
 The canonical orchestration surface is the `Actions` tree. Prefer these over direct service calls:
 
+### Site Lifecycle
+
+```php
+use AIArmada\AffiliateNetwork\Actions\CreateSite;
+use AIArmada\AffiliateNetwork\Actions\ReinstateSite;
+use AIArmada\AffiliateNetwork\Actions\RejectSite;
+use AIArmada\AffiliateNetwork\Actions\SuspendSite;
+use AIArmada\AffiliateNetwork\Actions\UpdateSite;
+use AIArmada\AffiliateNetwork\Actions\VerifySite;
+
+$site = app(CreateSite::class)->execute([
+    'name' => 'My Store',
+    'domain' => 'mystore.com',
+    'catalog_token' => $plaintextToken,
+]);
+
+$site = app(UpdateSite::class)->execute($site, [
+    'name' => 'My Store',
+    'domain' => 'mystore.com',
+]);
+$site = app(VerifySite::class)->execute($site);     // pending -> verified
+$site = app(RejectSite::class)->execute($site);     // pending -> rejected
+$site = app(SuspendSite::class)->execute($site);    // verified -> suspended
+$site = app(ReinstateSite::class)->execute($site);  // suspended -> verified
+```
+
 ### Create an Offer
 
 ```php

@@ -92,6 +92,16 @@ final class FakeAffiliateIdentities implements AffiliateIdentityResolver
 
         return null;
     }
+
+    public function requiresMerchantProfile(): bool
+    {
+        return false;
+    }
+
+    public function hasMerchantProfile(string $affiliateId): bool
+    {
+        return false;
+    }
 }
 
 final class FakeNetworkLedger implements NetworkLedger

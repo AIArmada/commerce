@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\RelationManagers;
 
+use AIArmada\AffiliateNetwork\Actions\CreateCreative;
+use AIArmada\AffiliateNetwork\Actions\DeleteCreative;
+use AIArmada\AffiliateNetwork\Actions\UpdateCreative;
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferCreative;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
@@ -25,8 +28,6 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Validator;
 
 final class CreativesRelationManager extends RelationManager
 {
@@ -86,12 +87,7 @@ final class CreativesRelationManager extends RelationManager
             ->recordActions([
                 EditAction::make()->using(fn (AffiliateOfferCreative $record, array $data): AffiliateOfferCreative => $this->saveCreative($data, $record)),
                 DeleteAction::make()->visible(fn (AffiliateOfferCreative $record): bool => $record->external_creative_id === null)
-                    ->using(fn (AffiliateOfferCreative $record): bool => $this->withOfferOwner(function (AffiliateOffer $offer) use ($record): bool {
-                        $creative = $offer->creatives()->whereKey($record->getKey())->firstOrFail();
-                        abort_if($creative->external_creative_id !== null, 403);
-
-                        return (bool) $creative->delete();
-                    })),
+                    ->using(fn (AffiliateOfferCreative $record): bool => $this->deleteCreative($record)),
             ]);
     }
 
@@ -100,54 +96,45 @@ final class CreativesRelationManager extends RelationManager
      */
     public function saveCreative(array $data, ?AffiliateOfferCreative $record = null): AffiliateOfferCreative
     {
-        return $this->withOfferOwner(function (AffiliateOffer $offer) use ($data, $record): AffiliateOfferCreative {
-            $creative = $record !== null ? $offer->creatives()->whereKey($record->getKey())->firstOrFail() : null;
-            $rules = ['is_active' => ['required', 'boolean'], 'sort_order' => ['required', 'integer', 'min:0']];
-
-            if ($creative?->external_creative_id === null) {
-                $rules += [
-                    'name' => ['required', 'string', 'max:255'],
-                    'type' => ['required', 'in:banner,text,image,video,document,email,html'],
-                    'description' => ['nullable', 'string'],
-                    'destination_url' => ['nullable', 'url:http,https', 'max:2048'],
-                    'width' => ['nullable', 'integer', 'min:1', 'max:65535'],
-                    'height' => ['nullable', 'integer', 'min:1', 'max:65535'],
-                    'html_code' => ['nullable', 'string'],
-                ];
+        return $this->withOfferOwner(function () use ($data, $record): AffiliateOfferCreative {
+            if ($record !== null) {
+                return app(UpdateCreative::class)->execute($record, $data);
             }
 
-            $validated = Validator::make(Arr::only($data, array_keys($rules)), $rules)->validate();
+            /** @var AffiliateOffer $offer */
+            $offer = $this->getOwnerRecord();
 
-            if ($creative !== null) {
-                $creative->update($validated);
-
-                return $creative;
-            }
-
-            return $offer->creatives()->create($validated);
+            return app(CreateCreative::class)->execute($offer, $data);
         });
     }
 
+    private function deleteCreative(AffiliateOfferCreative $record): bool
+    {
+        return $this->withOfferOwner(fn (): bool => app(DeleteCreative::class)->execute($record));
+    }
+
     /**
+     * Admin write context: the table lists creatives cross-tenant, while the
+     * core actions re-query through the offer's owner scope.
+     *
      * @template TResult
      *
-     * @param  callable(AffiliateOffer): TResult  $callback
+     * @param  callable(): TResult  $callback
      * @return TResult
      */
     private function withOfferOwner(callable $callback): mixed
     {
         abort_unless(NetworkAdminAccess::allows(), 403);
         $offerId = $this->getOwnerRecord()->getKey();
-        // Re-resolve parent and site on every write; client record IDs are
-        // then checked through the scoped parent relationship.
+
         $site = OwnerContext::withOwner(null, function () use ($offerId): AffiliateSite {
             $offer = AffiliateOffer::query()->withoutOwnerScope()->whereKey($offerId)->firstOrFail();
 
             return AffiliateSite::query()->withoutOwnerScope()->whereKey($offer->site_id)->firstOrFail();
         });
 
-        return OwnerContext::withOwner($site->owner, function () use ($offerId, $callback): mixed {
-            return $callback(AffiliateOffer::query()->whereKey($offerId)->firstOrFail());
-        });
+        $owner = OwnerContext::fromTypeAndId($site->owner_type, $site->owner_id);
+
+        return OwnerContext::withOwner($owner, $callback);
     }
 }

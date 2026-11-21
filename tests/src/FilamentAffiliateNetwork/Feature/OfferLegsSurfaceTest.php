@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use AIArmada\AffiliateNetwork\Actions\CreateSite;
+use AIArmada\AffiliateNetwork\Actions\UpdateSite;
 use AIArmada\AffiliateNetwork\Enums\LegStatus;
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
@@ -13,7 +15,6 @@ use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\RelationM
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\RelationManagers\LinksRelationManager;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Tables\AffiliateOffersTable;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource\Pages\EditAffiliateSite;
-use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource\Schemas\AffiliateSiteForm;
 use Filament\Actions\Action;
 use Filament\Schemas\Concerns\InteractsWithSchemas;
 use Filament\Schemas\Contracts\HasSchemas;
@@ -106,16 +107,32 @@ describe('offer legs surface', function (): void {
         expect($table->getColumn('network_fee_bp'))->not->toBeNull();
     });
 
-    test('mergeCatalogToken stamps issuance when a token is set', function (): void {
-        $data = AffiliateSiteForm::mergeCatalogToken(['catalog_token' => 'tok-secret']);
+    test('site creation encrypts the catalog token', function (): void {
+        $site = app(CreateSite::class)->execute([
+            'name' => 'Token Site',
+            'domain' => 'token-' . uniqid() . '.example.com',
+            'catalog_token' => 'tok-secret',
+        ]);
 
-        expect($data)->not->toHaveKey('catalog_token')
-            ->and($data['catalog_token_encrypted'] ?? null)->not->toBeNull()
-            ->and($data['catalog_token_issued_at'] ?? null)->not->toBeNull();
+        expect($site->catalog_token_encrypted)->not->toBeNull()
+            ->and(decrypt($site->catalog_token_encrypted))->toBe('tok-secret')
+            ->and($site->catalog_token_issued_at)->not->toBeNull();
     });
 
-    test('mergeCatalogToken leaves issuance alone when no token is set', function (): void {
-        expect(AffiliateSiteForm::mergeCatalogToken(['name' => 'No Token']))->toBe(['name' => 'No Token']);
+    test('a blank catalog token leaves the stored token alone', function (): void {
+        $site = app(CreateSite::class)->execute([
+            'name' => 'Token Site',
+            'domain' => 'token-' . uniqid() . '.example.com',
+            'catalog_token' => 'tok-secret',
+        ]);
+
+        $updated = app(UpdateSite::class)->execute($site, [
+            'name' => $site->name,
+            'domain' => $site->domain,
+            'catalog_token' => '',
+        ]);
+
+        expect($updated->catalog_token_encrypted)->toBe($site->catalog_token_encrypted);
     });
 
     test('site edit page wires the rotate token header action', function (): void {

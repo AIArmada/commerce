@@ -77,8 +77,6 @@ filament-affiliate-network/
 └── src/
     ├── FilamentAffiliateNetworkPlugin.php
     ├── FilamentAffiliateNetworkServiceProvider.php
-    ├── Actions/
-    │   └── SyncSiteCatalog.php
     ├── Pages/
     │   └── MerchantDashboardPage.php
     ├── Policies/

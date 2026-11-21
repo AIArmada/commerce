@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Tables;
 
-use AIArmada\AffiliateNetwork\Actions\UpdateOffer;
+use AIArmada\AffiliateNetwork\Actions\ArchiveOffer;
+use AIArmada\AffiliateNetwork\Actions\PublishOffer;
 use AIArmada\AffiliateNetwork\Enums\OfferStatus;
 use AIArmada\AffiliateNetwork\Enums\OfferVisibility;
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScope;
-use Carbon\CarbonImmutable;
 use Filament\Actions;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -116,7 +116,7 @@ final class AffiliateOffersTable
                         ? null
                         : 'Verify the site before publishing its offers.')
                     ->action(function (AffiliateOffer $record): void {
-                        self::transitionOffer($record, OfferStatus::Published);
+                        self::withOfferOwner($record, fn (): AffiliateOffer => app(PublishOffer::class)->execute($record));
                     }),
                 Actions\Action::make('pause')
                     ->icon('heroicon-o-pause')
@@ -124,7 +124,7 @@ final class AffiliateOffersTable
                     ->requiresConfirmation()
                     ->visible(fn (AffiliateOffer $record): bool => $record->status === OfferStatus::Published)
                     ->action(function (AffiliateOffer $record): void {
-                        self::transitionOffer($record, OfferStatus::Archived);
+                        self::withOfferOwner($record, fn (): AffiliateOffer => app(ArchiveOffer::class)->execute($record));
                     }),
             ])
             ->bulkActions([
@@ -135,43 +135,20 @@ final class AffiliateOffersTable
     }
 
     /**
-     * Transition an offer through the domain update action inside the owning
-     * site's owner context.
+     * @template TResult
      *
-     * The admin table lists offers cross-tenant (scope bypassed), but
-     * UpdateOffer re-queries under ScopesByBelongsToOwner. Entering the
-     * site's own context makes that re-query match truthfully when
-     * affiliate-network.owner.enabled=true, keeps the update on the domain
-     * path (field allowlist, relocation guards, OfferUpdated event), and
-     * maintains the published/archived lifecycle timestamps.
+     * @param  callable(): TResult  $callback
+     * @return TResult
      */
-    private static function transitionOffer(AffiliateOffer $record, OfferStatus $status): void
+    private static function withOfferOwner(AffiliateOffer $record, callable $callback): mixed
     {
-        $site = $record->getRelationValue('site');
+        $site = OwnerContext::withOwner(null, fn (): AffiliateSite => AffiliateSite::query()
+            ->withoutOwnerScope()
+            ->whereKey($record->site_id)
+            ->firstOrFail());
 
-        if (! $site instanceof AffiliateSite) {
-            $site = OwnerContext::withOwner(null, fn (): AffiliateSite => AffiliateSite::query()
-                ->withoutOwnerScope()
-                ->whereKey($record->site_id)
-                ->firstOrFail());
-        }
+        $owner = OwnerContext::fromTypeAndId($site->owner_type, $site->owner_id);
 
-        /** @var string|null $ownerType */
-        $ownerType = $site->owner_type;
-        /** @var string|null $ownerId */
-        $ownerId = $site->owner_id;
-
-        OwnerContext::withOwner(OwnerContext::fromTypeAndId($ownerType, $ownerId), function () use ($record, $status): void {
-            app(UpdateOffer::class)->execute($record, $status === OfferStatus::Published
-                ? [
-                    'status' => OfferStatus::Published,
-                    'published_at' => CarbonImmutable::now(),
-                    'archived_at' => null,
-                ]
-                : [
-                    'status' => OfferStatus::Archived,
-                    'archived_at' => CarbonImmutable::now(),
-                ]);
-        });
+        return OwnerContext::withOwner($owner, $callback);
     }
 }

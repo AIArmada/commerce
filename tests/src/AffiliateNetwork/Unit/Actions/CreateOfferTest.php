@@ -31,17 +31,7 @@ describe('CreateOffer', function (): void {
         Event::assertDispatched(OfferCreated::class, fn (OfferCreated $event): bool => $event->offer->id === $offer->id);
     });
 
-    test('creates offer with draft status when approval required', function (): void {
-        config(['affiliate-network.offers.require_approval' => true]);
-
-        $offer = $this->action->execute($this->site, ['name' => 'Test Offer']);
-
-        expect($offer->status)->toBe(OfferStatus::Draft);
-    });
-
-    test('creates offer with draft status when approval not required', function (): void {
-        config(['affiliate-network.offers.require_approval' => false]);
-
+    test('creates offer with draft status by default', function (): void {
         $offer = $this->action->execute($this->site, ['name' => 'Test Offer']);
 
         expect($offer->status)->toBe(OfferStatus::Draft);

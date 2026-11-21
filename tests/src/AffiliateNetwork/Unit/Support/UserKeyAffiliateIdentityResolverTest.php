@@ -54,6 +54,13 @@ describe('UserKeyAffiliateIdentityResolver', function (): void {
             ->and((new UserKeyAffiliateIdentityResolver)->findIdForVerifiedEmail('ghost@example.com'))->toBeNull();
     });
 
+    test('user-key identity does not require a merchant profile', function (): void {
+        $resolver = new UserKeyAffiliateIdentityResolver;
+
+        expect($resolver->requiresMerchantProfile())->toBeFalse()
+            ->and($resolver->hasMerchantProfile('any-id'))->toBeFalse();
+    });
+
     test('engine adapter still wins the container binding when installed', function (): void {
         expect(app(AffiliateIdentityResolver::class))->toBeInstanceOf(AffiliatesIdentityReader::class);
     });

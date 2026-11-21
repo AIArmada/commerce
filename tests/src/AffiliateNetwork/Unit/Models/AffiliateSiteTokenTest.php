@@ -28,4 +28,19 @@ describe('site catalog tokens', function (): void {
         expect($second)->not->toBe($first)
             ->and(decrypt($site->fresh()->catalog_token_encrypted))->toBe($second);
     });
+
+    test('token matching is constant-time and fails closed', function (): void {
+        $site = AffiliateSite::factory()->verified()->create(['domain' => 'token-match.example']);
+        $token = $site->issueCatalogToken();
+        $site = $site->fresh();
+
+        expect($site->matchesCatalogToken($token))->toBeTrue()
+            ->and($site->matchesCatalogToken('wrong-token'))->toBeFalse()
+            ->and($site->matchesCatalogToken(null))->toBeFalse()
+            ->and($site->matchesCatalogToken(''))->toBeFalse();
+
+        $site->forceFill(['catalog_token_encrypted' => 'not-encrypted'])->save();
+
+        expect($site->fresh()->matchesCatalogToken('not-encrypted'))->toBeFalse();
+    });
 });

@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use AIArmada\AffiliateNetwork\Actions\CreateSite;
+use AIArmada\AffiliateNetwork\Actions\UpdateSite;
 use AIArmada\AffiliateNetwork\Enums\ApplicationStatus;
 use AIArmada\AffiliateNetwork\Enums\OfferStatus;
 use AIArmada\AffiliateNetwork\Enums\OfferVisibility;
@@ -23,8 +25,6 @@ use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferCategoryResource\S
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Schemas\AffiliateOfferForm;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Tables\AffiliateOffersTable;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource;
-use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource\Pages\CreateAffiliateSite;
-use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource\Pages\EditAffiliateSite;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource\Schemas\AffiliateSiteForm;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource\Tables\AffiliateSitesTable;
 use AIArmada\FilamentAffiliateNetwork\Support\NetworkAdminAccess;
@@ -571,30 +571,29 @@ describe('site domain and verified lifecycle', function (): void {
     });
 
     test('create normalizes the domain and stamps verified_at for verified sites', function (): void {
-        $page = (new ReflectionClass(CreateAffiliateSite::class))->newInstanceWithoutConstructor();
-        $method = new ReflectionMethod(CreateAffiliateSite::class, 'mutateFormDataBeforeCreate');
-        $method->setAccessible(true);
+        $action = app(CreateSite::class);
+        $verifiedDomain = 'Verified-' . uniqid() . '-Example.com';
 
-        $verified = $method->invoke($page, [
+        $verified = $action->execute([
             'name' => 'L4 Verified',
-            'domain' => '  Verified-Example.com ',
+            'domain' => '  ' . $verifiedDomain . ' ',
             'status' => AffiliateSite::STATUS_VERIFIED,
         ]);
 
-        expect($verified['domain'])->toBe('verified-example.com')
-            ->and($verified['verified_at'])->not->toBeNull();
+        expect($verified->domain)->toBe(mb_strtolower($verifiedDomain))
+            ->and($verified->verified_at)->not->toBeNull();
 
-        $pending = $method->invoke($page, [
+        $pending = $action->execute([
             'name' => 'L4 Pending',
-            'domain' => 'Pending-Example.com',
+            'domain' => 'Pending-' . uniqid() . '-Example.com',
             'status' => AffiliateSite::STATUS_PENDING,
         ]);
 
-        expect($pending['domain'])->toBe('pending-example.com')
-            ->and($pending)->not->toHaveKey('verified_at');
+        expect($pending->domain)->toStartWith('pending-')
+            ->and($pending->verified_at)->toBeNull();
     });
 
-    test('edit keeps verified_at in sync with status transitions', function (): void {
+    test('site updates keep verified_at in sync with status transitions', function (): void {
         $verifiedSite = AffiliateSite::factory()->verified()->create(['domain' => 'l4sync-v-' . uniqid() . '.example']);
         $pendingSite = AffiliateSite::factory()->create([
             'domain' => 'l4sync-p-' . uniqid() . '.example',
@@ -602,26 +601,29 @@ describe('site domain and verified lifecycle', function (): void {
             'verified_at' => null,
         ]);
 
-        $mutate = function (AffiliateSite $record, array $data): array {
-            $page = (new ReflectionClass(EditAffiliateSite::class))->newInstanceWithoutConstructor();
-            $page->record = $record;
-            $method = new ReflectionMethod(EditAffiliateSite::class, 'mutateFormDataBeforeSave');
-            $method->setAccessible(true);
+        $exit = app(UpdateSite::class)->execute($verifiedSite, [
+            'name' => $verifiedSite->name,
+            'domain' => $verifiedSite->domain,
+            'status' => AffiliateSite::STATUS_SUSPENDED,
+        ]);
 
-            return $method->invoke($page, $data);
-        };
+        expect($exit->verified_at)->toBeNull();
 
-        $exit = $mutate($verifiedSite, ['domain' => $verifiedSite->domain, 'status' => AffiliateSite::STATUS_SUSPENDED]);
+        $entry = app(UpdateSite::class)->execute($pendingSite, [
+            'name' => $pendingSite->name,
+            'domain' => $pendingSite->domain,
+            'status' => AffiliateSite::STATUS_VERIFIED,
+        ]);
 
-        expect($exit['verified_at'])->toBeNull();
+        expect($entry->verified_at)->not->toBeNull();
 
-        $entry = $mutate($pendingSite, ['domain' => $pendingSite->domain, 'status' => AffiliateSite::STATUS_VERIFIED]);
+        $unchanged = app(UpdateSite::class)->execute($pendingSite->fresh(), [
+            'name' => $pendingSite->name,
+            'domain' => $pendingSite->domain,
+            'status' => AffiliateSite::STATUS_PENDING,
+        ]);
 
-        expect($entry['verified_at'])->not->toBeNull();
-
-        $unchanged = $mutate($pendingSite, ['domain' => $pendingSite->domain, 'status' => AffiliateSite::STATUS_PENDING]);
-
-        expect($unchanged)->not->toHaveKey('verified_at');
+        expect($unchanged->verified_at)->toBeNull();
     });
 });
 

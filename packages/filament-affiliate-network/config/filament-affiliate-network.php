@@ -16,14 +16,4 @@ return [
     'authorization' => [
         'admin_ability' => 'affiliate-network.admin',
     ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Marketplace
-    |--------------------------------------------------------------------------
-    */
-    'marketplace' => [
-        'show_commission_rates' => true,
-        'show_cookie_duration' => true,
-    ],
 ];
