@@ -183,6 +183,7 @@ pest()->extend(AddressingDatabaseTestCase::class)->in(
     'src/Addressing/Actions',
     'src/Addressing/Casts',
     'src/Addressing/Data',
+    'src/Addressing/GooglePlaces',
     'src/Addressing/Models',
     'src/Addressing/Rules',
     'src/Addressing/Support',

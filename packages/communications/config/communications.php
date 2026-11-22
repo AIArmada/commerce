@@ -115,4 +115,15 @@ return [
         'payload_retention_days' => (int) env('COMMUNICATIONS_PAYLOAD_RETENTION_DAYS', 90),
     ],
 
+    /* Redaction */
+    'redaction' => [
+        'sensitive_substrings' => [],
+        'exact_keys' => [],
+    ],
+
+    /* Delivery Fencing */
+    'fencing' => [
+        'attempt_metadata_key' => env('COMMUNICATIONS_FENCING_METADATA_KEY', 'delivery_fence'),
+    ],
+
 ];

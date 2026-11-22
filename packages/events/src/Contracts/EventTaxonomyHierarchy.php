@@ -29,4 +29,7 @@ interface EventTaxonomyHierarchy
 
     /** @param list<mixed> $termIds @return list<string> */
     public function minimalTermIds(string $taxonomyCode, array $termIds, bool $activeOnly = true): array;
+
+    /** @return list<array{id: string, label: string, code: string}> */
+    public function searchTerms(string $taxonomyCode, ?string $search = null, int $limit = 50): array;
 }

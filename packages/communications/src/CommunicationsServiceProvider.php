@@ -15,6 +15,7 @@ use AIArmada\Communications\Contracts\CommunicationManager;
 use AIArmada\Communications\Contracts\CommunicationRecorder;
 use AIArmada\Communications\Contracts\ConsentResolver;
 use AIArmada\Communications\Contracts\ContentRenderer;
+use AIArmada\Communications\Contracts\DeliveryFencing;
 use AIArmada\Communications\Contracts\DestinationProtector;
 use AIArmada\Communications\Contracts\DestinationResolver;
 use AIArmada\Communications\Contracts\IdempotencyLock;
@@ -33,6 +34,7 @@ use AIArmada\Communications\Listeners\RecordNativeNotificationSent;
 use AIArmada\Communications\Services\CommunicationDestinationResolver;
 use AIArmada\Communications\Services\CommunicationManagerService;
 use AIArmada\Communications\Services\CommunicationRecorderService;
+use AIArmada\Communications\Services\DeliveryFencingService;
 use AIArmada\Communications\Services\NullCommunicationAuditRecorder;
 use AIArmada\Communications\Services\NullContentRenderer;
 use AIArmada\Communications\Services\NullRecipientSnapshotResolver;
@@ -99,6 +101,7 @@ final class CommunicationsServiceProvider extends PackageServiceProvider
     {
         $this->app->singleton(CommunicationManager::class, CommunicationManagerService::class);
         $this->app->singleton(CommunicationRecorder::class, CommunicationRecorderService::class);
+        $this->app->singleton(DeliveryFencing::class, DeliveryFencingService::class);
         $this->app->singleton(DestinationProtector::class, DestinationProtectorService::class);
         $this->app->singleton(PayloadRedactor::class, PayloadRedactorService::class);
         $this->app->singleton(IdempotencyLock::class, IdempotencyLockService::class);

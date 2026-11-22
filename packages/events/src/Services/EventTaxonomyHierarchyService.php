@@ -206,4 +206,34 @@ final class EventTaxonomyHierarchyService implements EventTaxonomyHierarchy
             $this->appendDescendants($childId, $children, $result, $visited);
         }
     }
+
+    /**
+     * @return list<array{id: string, label: string, code: string}>
+     */
+    public function searchTerms(string $taxonomyCode, ?string $search = null, int $limit = 50): array
+    {
+        $terms = $this->terms($taxonomyCode, true);
+
+        if ($terms->isEmpty()) {
+            return [];
+        }
+
+        $normalizedSearch = mb_trim((string) $search);
+
+        if ($normalizedSearch !== '') {
+            $terms = $terms->filter(
+                static fn (EventTerm $term): bool => mb_stripos((string) $term->name, $normalizedSearch) !== false,
+            );
+        }
+
+        return $terms
+            ->take(max(1, $limit))
+            ->values()
+            ->map(static fn (EventTerm $term): array => [
+                'id' => (string) $term->getKey(),
+                'label' => (string) $term->name,
+                'code' => (string) $term->code,
+            ])
+            ->all();
+    }
 }

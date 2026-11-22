@@ -38,7 +38,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\Rules\Unique;
 use UnitEnum;
 
-final class EventResource extends Resource
+class EventResource extends Resource
 {
     protected static ?string $model = null;
 
@@ -77,214 +77,262 @@ final class EventResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->columns([
-                Tables\Columns\TextColumn::make('title')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('status')
-                    ->badge()
-                    ->color(fn (mixed $state): string | array | null => $state instanceof HasColor ? $state->getColor() : 'gray'),
-                Tables\Columns\TextColumn::make('visibility')
-                    ->badge()
-                    ->formatStateUsing(fn (mixed $state): string => self::extractString($state))
-                    ->color(fn (mixed $state): string => match (self::extractString($state)) {
-                        'public' => 'success',
-                        'unlisted' => 'warning',
-                        'private', 'internal', 'hidden' => 'danger',
-                        default => 'gray',
-                    }),
-                Tables\Columns\TextColumn::make('delivery_mode')
-                    ->badge()
-                    ->formatStateUsing(fn (mixed $state): string => self::extractString($state))
-                    ->color(fn (mixed $state): string => match (self::extractString($state)) {
-                        'physical' => 'info',
-                        'online' => 'success',
-                        'hybrid' => 'warning',
-                        default => 'gray',
-                    }),
-                Tables\Columns\TextColumn::make('occurrences_count')
-                    ->label('Occurrences')
-                    ->counts('occurrences'),
-                Tables\Columns\TextColumn::make('published_at')
-                    ->dateTime()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('last_state_change_at')
-                    ->dateTime()
-                    ->label('Last Status Change')
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable(),
-            ])
-            ->filters([
-                Tables\Filters\SelectFilter::make('status')
-                    ->options(fn (): array => static::getStatusOptions()),
-                Tables\Filters\SelectFilter::make('visibility')
-                    ->options(EventVisibility::options()),
-                Tables\Filters\SelectFilter::make('delivery_mode')
-                    ->options([
-                        'physical' => 'Physical',
-                        'online' => 'Online',
-                        'hybrid' => 'Hybrid',
-                    ]),
-            ])
-            ->headerActions([
-                ExportAction::make()
-                    ->exporter(EventExporter::class)
-                    ->label('Export Events'),
-            ])
-            ->actions([
-                ViewAction::make(),
-                EditAction::make(),
-                Action::make('publish')
-                    ->label('Publish')
-                    ->icon('heroicon-o-check-circle')
-                    ->color('success')
-                    ->action(function (Event $record): void {
-                        app(EventLifecycleWorkflow::class)->publish($record);
-                    })
-                    ->visible(fn (?Event $record) => $record !== null && in_array((string) $record->status, ['draft', 'pending', 'pending_review', 'needs_changes'], true))
-                    ->requiresConfirmation(),
-                Action::make('archive')
-                    ->label('Archive')
-                    ->icon('heroicon-o-archive-box')
-                    ->color('warning')
-                    ->action(function (Event $record): void {
-                        app(EventLifecycleWorkflow::class)->archive($record);
-                    })
-                    ->visible(fn (?Event $record) => $record !== null && (string) $record->status === 'approved')
-                    ->requiresConfirmation(),
-                Action::make('cancel')
-                    ->label('Cancel')
-                    ->icon('heroicon-o-x-circle')
-                    ->color('danger')
-                    ->form([
-                        Textarea::make('reason')->required(),
-                    ])
-                    ->action(function (array $data, Event $record): void {
-                        app(EventLifecycleWorkflow::class)->cancel($record, $data['reason']);
-                    })
-                    ->visible(fn (?Event $record) => $record !== null && ! in_array((string) $record->status, ['cancelled', 'completed', 'archived'], true))
-                    ->requiresConfirmation(),
-                Action::make('clone')
-                    ->label('Clone')
-                    ->icon('heroicon-o-document-duplicate')
-                    ->color('gray')
-                    ->action(function (Event $record): void {
-                        $clone = app(EventCloneService::class)->cloneEvent($record, [
-                            'clone_occurrences' => false,
-                        ]);
-                        redirect(EventResource::getUrl('edit', ['record' => $clone]));
-                    })
-                    ->requiresConfirmation(),
-            ]);
+            ->columns(static::getTableColumns())
+            ->filters(static::getTableFilters())
+            ->headerActions(static::getTableHeaderActions())
+            ->actions(static::getTableRecordActions());
     }
 
     public static function infolist(Schema $schema): Schema
     {
         return $schema
-            ->schema([
-                Section::make('Identity')
-                    ->schema([
-                        TextEntry::make('title'),
-                        TextEntry::make('slug'),
-                        TextEntry::make('summary'),
-                        TextEntry::make('description'),
-                        TextEntry::make('type'),
-                    ])->columns(2),
-                Section::make('Lifecycle')
-                    ->schema([
-                        TextEntry::make('status')->badge(),
-                        TextEntry::make('visibility')->badge()->formatStateUsing(fn (mixed $state): string => self::extractString($state)),
-                        TextEntry::make('delivery_mode')->badge()->formatStateUsing(fn (mixed $state): string => self::extractString($state)),
-                        TextEntry::make('published_at')->dateTime(),
-                        TextEntry::make('cancelled_at')->dateTime(),
-                        TextEntry::make('postponed_at')->dateTime(),
-                        TextEntry::make('archived_at')->dateTime(),
-                        TextEntry::make('completed_at')->dateTime(),
-                        TextEntry::make('last_state_change_at')->dateTime()->label('Last Status Change'),
-                    ])->columns(2),
-                Section::make('Ownership')
-                    ->schema([
-                        TextEntry::make('owner_type'),
-                        TextEntry::make('owner_id'),
-                    ])->columns(2),
-                Section::make('Metadata')
-                    ->schema([
-                        CodeEntry::make('metadata')
-                            ->visible(fn (?array $state): bool => ! empty($state)),
-                    ]),
-            ]);
+            ->schema(static::getInfolistSections());
     }
 
     public static function form(Schema $form): Schema
     {
         return $form
-            ->schema([
-                Section::make('Basic Details')
-                    ->schema([
-                        TextInput::make('title')->required()->maxLength(255),
-                        TextInput::make('slug')->required()->maxLength(255)->unique(ignoreRecord: true, modifyRuleUsing: function (Unique $rule): Unique {
-                            if (! Event::ownerScopeConfig()->enabled) {
-                                return $rule;
-                            }
+            ->schema(static::getFormSections());
+    }
 
-                            $owner = OwnerContext::resolve();
+    /**
+     * @return array<int, Tables\Columns\Column>
+     */
+    protected static function getTableColumns(): array
+    {
+        return [
+            Tables\Columns\TextColumn::make('title')
+                ->searchable(),
+            Tables\Columns\TextColumn::make('status')
+                ->badge()
+                ->color(static fn (mixed $state): string | array | null => $state instanceof HasColor ? $state->getColor() : 'gray'),
+            Tables\Columns\TextColumn::make('visibility')
+                ->badge()
+                ->formatStateUsing(static fn (mixed $state): string => static::extractString($state))
+                ->color(static fn (mixed $state): string => match (static::extractString($state)) {
+                    'public' => 'success',
+                    'unlisted' => 'warning',
+                    'private', 'internal', 'hidden' => 'danger',
+                    default => 'gray',
+                }),
+            Tables\Columns\TextColumn::make('delivery_mode')
+                ->badge()
+                ->formatStateUsing(static fn (mixed $state): string => static::extractString($state))
+                ->color(static fn (mixed $state): string => match (static::extractString($state)) {
+                    'physical' => 'info',
+                    'online' => 'success',
+                    'hybrid' => 'warning',
+                    default => 'gray',
+                }),
+            Tables\Columns\TextColumn::make('occurrences_count')
+                ->label('Occurrences')
+                ->counts('occurrences'),
+            Tables\Columns\TextColumn::make('published_at')
+                ->dateTime()
+                ->sortable(),
+            Tables\Columns\TextColumn::make('last_state_change_at')
+                ->dateTime()
+                ->label('Last Status Change')
+                ->sortable(),
+            Tables\Columns\TextColumn::make('updated_at')
+                ->dateTime()
+                ->sortable(),
+        ];
+    }
 
-                            if (! $owner instanceof Model) {
-                                return $rule->whereNull('owner_type')->whereNull('owner_id');
-                            }
+    /**
+     * @return array<int, Tables\Filters\BaseFilter>
+     */
+    protected static function getTableFilters(): array
+    {
+        return [
+            Tables\Filters\SelectFilter::make('status')
+                ->options(static fn (): array => static::getStatusOptions()),
+            Tables\Filters\SelectFilter::make('visibility')
+                ->options(EventVisibility::options()),
+            Tables\Filters\SelectFilter::make('delivery_mode')
+                ->options([
+                    'physical' => 'Physical',
+                    'online' => 'Online',
+                    'hybrid' => 'Hybrid',
+                ]),
+        ];
+    }
 
-                            return $rule->where('owner_type', $owner->getMorphClass())->where('owner_id', $owner->getKey());
-                        }),
-                        Textarea::make('summary')->rows(3),
-                        Textarea::make('description')->rows(5),
-                    ])->columns(2),
-                ...self::configuredFormExtensions(),
-                Section::make('Lifecycle')
-                    ->schema([
-                        Select::make('status')
-                            ->options(fn (): array => static::getStatusOptions())
-                            ->default('draft')
-                            ->hiddenOn('edit')
-                            ->required(),
-                        Select::make('visibility')
-                            ->options(EventVisibility::options())
-                            ->default('public')
-                            ->hiddenOn('edit')
-                            ->required(),
-                        Select::make('delivery_mode')
-                            ->options([
-                                'physical' => 'Physical',
-                                'online' => 'Online',
-                                'hybrid' => 'Hybrid',
-                            ])
-                            ->default('physical'),
-                    ])->columns(3),
-                Section::make('Pricing & Registration')
-                    ->schema([
-                        Select::make('pricing_mode')
-                            ->options(PricingMode::options())
-                            ->placeholder('Derive from ticket types'),
-                        Select::make('registration_mode')
-                            ->options(RegistrationMode::options())
-                            ->placeholder('Use config default'),
-                        Select::make('issue_passes_for_free')
-                            ->label('Issue passes for free registrations')
-                            ->nullable()
-                            ->options([
-                                1 => 'Issue passes',
-                                0 => 'Do not issue passes',
-                            ])
-                            ->placeholder('Inherit from parent/config')
-                            ->helperText('Leave blank to use the configured or inherited default.'),
-                    ])->columns(2),
-            ]);
+    /**
+     * @return array<int, Action>
+     */
+    protected static function getTableHeaderActions(): array
+    {
+        return [
+            ExportAction::make()
+                ->exporter(EventExporter::class)
+                ->label('Export Events'),
+        ];
+    }
+
+    /**
+     * @return array<int, Action>
+     */
+    protected static function getTableRecordActions(): array
+    {
+        return [
+            ViewAction::make(),
+            EditAction::make(),
+            Action::make('publish')
+                ->label('Publish')
+                ->icon('heroicon-o-check-circle')
+                ->color('success')
+                ->action(static function (Event $record): void {
+                    app(EventLifecycleWorkflow::class)->publish($record);
+                })
+                ->visible(static fn (?Event $record): bool => $record !== null && in_array((string) $record->status, ['draft', 'pending', 'pending_review', 'needs_changes'], true))
+                ->requiresConfirmation(),
+            Action::make('archive')
+                ->label('Archive')
+                ->icon('heroicon-o-archive-box')
+                ->color('warning')
+                ->action(static function (Event $record): void {
+                    app(EventLifecycleWorkflow::class)->archive($record);
+                })
+                ->visible(static fn (?Event $record): bool => $record !== null && (string) $record->status === 'approved')
+                ->requiresConfirmation(),
+            Action::make('cancel')
+                ->label('Cancel')
+                ->icon('heroicon-o-x-circle')
+                ->color('danger')
+                ->form([
+                    Textarea::make('reason')->required(),
+                ])
+                ->action(static function (array $data, Event $record): void {
+                    app(EventLifecycleWorkflow::class)->cancel($record, $data['reason']);
+                })
+                ->visible(static fn (?Event $record): bool => $record !== null && ! in_array((string) $record->status, ['cancelled', 'completed', 'archived'], true))
+                ->requiresConfirmation(),
+            Action::make('clone')
+                ->label('Clone')
+                ->icon('heroicon-o-document-duplicate')
+                ->color('gray')
+                ->action(static function (Event $record): void {
+                    $clone = app(EventCloneService::class)->cloneEvent($record, [
+                        'clone_occurrences' => false,
+                    ]);
+                    redirect(static::getUrl('edit', ['record' => $clone]));
+                })
+                ->requiresConfirmation(),
+        ];
     }
 
     /**
      * @return array<int, Component>
      */
-    private static function configuredFormExtensions(): array
+    protected static function getInfolistSections(): array
+    {
+        return [
+            Section::make('Identity')
+                ->schema([
+                    TextEntry::make('title'),
+                    TextEntry::make('slug'),
+                    TextEntry::make('summary'),
+                    TextEntry::make('description'),
+                    TextEntry::make('type'),
+                ])->columns(2),
+            Section::make('Lifecycle')
+                ->schema([
+                    TextEntry::make('status')->badge(),
+                    TextEntry::make('visibility')->badge()->formatStateUsing(static fn (mixed $state): string => static::extractString($state)),
+                    TextEntry::make('delivery_mode')->badge()->formatStateUsing(static fn (mixed $state): string => static::extractString($state)),
+                    TextEntry::make('published_at')->dateTime(),
+                    TextEntry::make('cancelled_at')->dateTime(),
+                    TextEntry::make('postponed_at')->dateTime(),
+                    TextEntry::make('archived_at')->dateTime(),
+                    TextEntry::make('completed_at')->dateTime(),
+                    TextEntry::make('last_state_change_at')->dateTime()->label('Last Status Change'),
+                ])->columns(2),
+            Section::make('Ownership')
+                ->schema([
+                    TextEntry::make('owner_type'),
+                    TextEntry::make('owner_id'),
+                ])->columns(2),
+            Section::make('Metadata')
+                ->schema([
+                    CodeEntry::make('metadata')
+                        ->visible(static fn (?array $state): bool => ! empty($state)),
+                ]),
+        ];
+    }
+
+    /**
+     * @return array<int, Component>
+     */
+    protected static function getFormSections(): array
+    {
+        return [
+            Section::make('Basic Details')
+                ->schema([
+                    TextInput::make('title')->required()->maxLength(255),
+                    TextInput::make('slug')->required()->maxLength(255)->unique(ignoreRecord: true, modifyRuleUsing: static function (Unique $rule): Unique {
+                        if (! Event::ownerScopeConfig()->enabled) {
+                            return $rule;
+                        }
+
+                        $owner = OwnerContext::resolve();
+
+                        if (! $owner instanceof Model) {
+                            return $rule->whereNull('owner_type')->whereNull('owner_id');
+                        }
+
+                        return $rule->where('owner_type', $owner->getMorphClass())->where('owner_id', $owner->getKey());
+                    }),
+                    Textarea::make('summary')->rows(3),
+                    Textarea::make('description')->rows(5),
+                ])->columns(2),
+            ...static::configuredFormExtensions(),
+            Section::make('Lifecycle')
+                ->schema([
+                    Select::make('status')
+                        ->options(static fn (): array => static::getStatusOptions())
+                        ->default('draft')
+                        ->hiddenOn('edit')
+                        ->required(),
+                    Select::make('visibility')
+                        ->options(EventVisibility::options())
+                        ->default('public')
+                        ->hiddenOn('edit')
+                        ->required(),
+                    Select::make('delivery_mode')
+                        ->options([
+                            'physical' => 'Physical',
+                            'online' => 'Online',
+                            'hybrid' => 'Hybrid',
+                        ])
+                        ->default('physical'),
+                ])->columns(3),
+            Section::make('Pricing & Registration')
+                ->schema([
+                    Select::make('pricing_mode')
+                        ->options(PricingMode::options())
+                        ->placeholder('Derive from ticket types'),
+                    Select::make('registration_mode')
+                        ->options(RegistrationMode::options())
+                        ->placeholder('Use config default'),
+                    Select::make('issue_passes_for_free')
+                        ->label('Issue passes for free registrations')
+                        ->nullable()
+                        ->options([
+                            1 => 'Issue passes',
+                            0 => 'Do not issue passes',
+                        ])
+                        ->placeholder('Inherit from parent/config')
+                        ->helperText('Leave blank to use the configured or inherited default.'),
+                ])->columns(2),
+        ];
+    }
+
+    /**
+     * @return array<int, Component>
+     */
+    protected static function configuredFormExtensions(): array
     {
         $configuredExtensions = config('filament-events.resources.event_form_extensions', []);
 
@@ -307,9 +355,12 @@ final class EventResource extends Resource
         return $components;
     }
 
-    public static function getRelations(): array
+    /**
+     * @return array<int, class-string>
+     */
+    protected static function getDefaultRelationManagers(): array
     {
-        $relations = [
+        return [
             EventResource\RelationManagers\OccurrencesRelationManager::class,
             EventResource\RelationManagers\SessionsRelationManager::class,
             EventResource\RelationManagers\LocationsRelationManager::class,
@@ -318,6 +369,11 @@ final class EventResource extends Resource
             EventResource\RelationManagers\AttendancesRelationManager::class,
             EventResource\RelationManagers\ClassificationsRelationManager::class,
         ];
+    }
+
+    public static function getRelations(): array
+    {
+        $relations = static::getDefaultRelationManagers();
 
         $configuredRelations = config('filament-events.resources.event_relation_managers', []);
 
@@ -370,7 +426,7 @@ final class EventResource extends Resource
     protected static function extractString(mixed $value): string
     {
         if ($value instanceof BackedEnum) {
-            return $value->value;
+            return (string) $value->value;
         }
 
         if (is_string($value)) {

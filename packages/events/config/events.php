@@ -125,6 +125,10 @@ return [
             'open_door_mode' => env('EVENTS_OPEN_DOOR_MODE', 'block'),
         ],
         'enforce_scope_capacity_on_paid_registrations' => (bool) env('EVENTS_ENFORCE_SCOPE_CAPACITY_PAID', false),
+        'commerce' => [
+            'refunds_enabled_by_default' => (bool) env('EVENTS_REFUNDS_ENABLED_BY_DEFAULT', false),
+            'refund_self_service_hours' => (int) env('EVENTS_REFUND_SELF_SERVICE_HOURS', 48),
+        ],
     ],
 
     /* Defaults */

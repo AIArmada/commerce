@@ -450,7 +450,7 @@ class EventRegistration extends Model
     /**
      * @return array<string, string>|string|null
      */
-    public function routeNotificationForMail(Notification $notification): array | string | null
+    public function routeNotificationForMail(?Notification $notification = null): array | string | null
     {
         $participant = $this->resolvePrimaryParticipant();
 

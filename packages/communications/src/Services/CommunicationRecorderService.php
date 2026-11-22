@@ -49,7 +49,17 @@ class CommunicationRecorderService implements CommunicationRecorder
     {
         $delivery = CommunicationDelivery::query()->find($deliveryId);
 
-        if ($delivery === null) {
+        if ($delivery === null || $delivery->cancelled_at !== null) {
+            return;
+        }
+
+        $communication = Communication::query()->find($communicationId);
+
+        if ($communication !== null && ($communication->cancelled_at !== null || $communication->status === CommunicationStatus::Cancelled)) {
+            return;
+        }
+
+        if ($this->isAlreadySettledForSending($delivery)) {
             return;
         }
 
@@ -109,7 +119,7 @@ class CommunicationRecorderService implements CommunicationRecorder
     {
         $communication = Communication::query()->find($communicationId);
 
-        if ($communication === null) {
+        if ($communication === null || $communication->cancelled_at !== null || $communication->status === CommunicationStatus::Cancelled) {
             return;
         }
 
@@ -139,5 +149,40 @@ class CommunicationRecorderService implements CommunicationRecorder
         }
 
         $communication->save();
+    }
+
+    private function isAlreadySettledForSending(CommunicationDelivery $delivery): bool
+    {
+        if ($delivery->status instanceof DeliveryStatus && ! in_array($delivery->status, [
+            DeliveryStatus::Pending,
+            DeliveryStatus::Scheduled,
+            DeliveryStatus::Queued,
+            DeliveryStatus::Sending,
+        ], true)) {
+            return true;
+        }
+
+        foreach ([
+            'accepted_at',
+            'sent_at',
+            'received_at',
+            'delivered_at',
+            'opened_at',
+            'read_at',
+            'clicked_at',
+            'replied_at',
+            'failed_at',
+            'bounced_at',
+            'complained_at',
+            'expired_at',
+            'suppressed_at',
+            'unsubscribed_at',
+        ] as $timestampColumn) {
+            if ($delivery->{$timestampColumn} !== null) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

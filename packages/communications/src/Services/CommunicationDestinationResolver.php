@@ -8,6 +8,8 @@ use AIArmada\Communications\Contracts\DestinationProtector;
 use AIArmada\Communications\Contracts\DestinationResolver;
 use AIArmada\Communications\Data\ResolvedDestinationData;
 use AIArmada\Communications\Models\CommunicationDestination;
+use Illuminate\Notifications\Notification;
+use TypeError;
 
 final class CommunicationDestinationResolver implements DestinationResolver
 {
@@ -50,13 +52,32 @@ final class CommunicationDestinationResolver implements DestinationResolver
         $destination = null;
 
         if (method_exists($notifiable, 'routeNotificationFor')) {
-            $destination = $notifiable->routeNotificationFor($channel);
+            try {
+                $destination = $notifiable->routeNotificationFor($channel);
+            } catch (TypeError) {
+                $destination = $notifiable->routeNotificationFor($channel, $this->blankProbeNotification());
+            }
         }
 
         if ($destination === null || $destination === '') {
             $driverMethod = 'routeNotificationFor' . ucfirst($channel);
             if (method_exists($notifiable, $driverMethod)) {
-                $destination = $notifiable->{$driverMethod}();
+                try {
+                    $destination = $notifiable->{$driverMethod}();
+                } catch (TypeError) {
+                    $destination = $notifiable->{$driverMethod}($this->blankProbeNotification());
+                }
+            }
+        }
+
+        if (is_array($destination)) {
+            $firstKey = array_key_first($destination);
+
+            if (is_string($firstKey) && mb_trim($firstKey) !== '') {
+                $destination = $firstKey;
+            } else {
+                $firstValue = reset($destination);
+                $destination = is_string($firstValue) && mb_trim($firstValue) !== '' ? $firstValue : null;
             }
         }
 
@@ -71,6 +92,11 @@ final class CommunicationDestinationResolver implements DestinationResolver
         }
 
         return $destination;
+    }
+
+    private function blankProbeNotification(): Notification
+    {
+        return new class extends Notification {};
     }
 
     private function buildResult(string $destination, string $channel): ResolvedDestinationData

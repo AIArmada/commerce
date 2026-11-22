@@ -7,6 +7,7 @@ namespace AIArmada\Events;
 use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\Checkout\Contracts\CheckoutServiceInterface;
 use AIArmada\Checkout\Contracts\StepContributor;
+use AIArmada\CommerceSupport\Events\PaymentRefunded;
 use AIArmada\Engagement\EngagementServiceProvider;
 use AIArmada\Engagement\Integrations\Events\EngagementEventEngagementManager;
 use AIArmada\Events\Actions\CreateEventComponentRegistrationsAction;
@@ -31,6 +32,7 @@ use AIArmada\Events\Contracts\EventLifecycleWorkflow;
 use AIArmada\Events\Contracts\EventModerationWorkflow;
 use AIArmada\Events\Contracts\EventOrderItemFulfillmentResolver;
 use AIArmada\Events\Contracts\EventReferenceResolver;
+use AIArmada\Events\Contracts\EventRefundEligibility;
 use AIArmada\Events\Contracts\EventRegistrationEligibility;
 use AIArmada\Events\Contracts\EventRegistrationQuestionResolver;
 use AIArmada\Events\Contracts\EventRegistrationScopeResolver;
@@ -52,6 +54,7 @@ use AIArmada\Events\Events\RegistrationCheckedIn;
 use AIArmada\Events\Integrations\NullEventEngagementManager;
 use AIArmada\Events\Listeners\AllocateEventSeatsOnPassIssued;
 use AIArmada\Events\Listeners\CancelBundleChildrenOnParentCanceled;
+use AIArmada\Events\Listeners\CompletePendingRefundOnPaymentRefunded;
 use AIArmada\Events\Listeners\DispatchEventChangeNoticeNotifications;
 use AIArmada\Events\Listeners\IssueEventPassesOnFreeRegistrationConfirmed;
 use AIArmada\Events\Listeners\ObserveEventTicketTypePricingConsistency;
@@ -90,6 +93,7 @@ use AIArmada\Events\Resolvers\DefaultEventClassificationResolver;
 use AIArmada\Events\Resolvers\DefaultEventDisplayTimezoneResolver;
 use AIArmada\Events\Resolvers\DefaultEventOrderItemFulfillmentResolver;
 use AIArmada\Events\Resolvers\DefaultEventReferenceResolver;
+use AIArmada\Events\Resolvers\DefaultEventRefundEligibility;
 use AIArmada\Events\Resolvers\DefaultEventRegistrationEligibility;
 use AIArmada\Events\Resolvers\DefaultEventRegistrationQuestionResolver;
 use AIArmada\Events\Resolvers\DefaultEventRegistrationScopeResolver;
@@ -190,6 +194,7 @@ final class EventsServiceProvider extends PackageServiceProvider
         $this->app->bind(EventRegistrationScopeResolver::class, DefaultEventRegistrationScopeResolver::class);
         $this->app->bind(EventRegistrationQuestionResolver::class, DefaultEventRegistrationQuestionResolver::class);
         $this->app->bind(EventRegistrationEligibility::class, DefaultEventRegistrationEligibility::class);
+        $this->app->bind(EventRefundEligibility::class, DefaultEventRefundEligibility::class);
 
         $this->app->singleton(RegisterForFreeAction::class);
         $this->app->singleton(PromoteInterestedToConfirmedAction::class);
@@ -233,6 +238,7 @@ final class EventsServiceProvider extends PackageServiceProvider
             $dispatcher->listen(OrderRefunded::class, SyncEventOrderRegistrationsOnOrderRefunded::class);
             $dispatcher->listen(OrderRefundFailed::class, SyncEventOrderRegistrationsOnOrderRefundFailed::class);
             $dispatcher->listen(RegistrationCheckedIn::class, SyncEventOrderCompletionOnRegistrationCheckedIn::class);
+            $dispatcher->listen(PaymentRefunded::class, [CompletePendingRefundOnPaymentRefunded::class, 'handle']);
         }
 
         $this->app->make(Dispatcher::class)->listen(EventRegistrationApproved::class, function (EventRegistrationApproved $event): void {

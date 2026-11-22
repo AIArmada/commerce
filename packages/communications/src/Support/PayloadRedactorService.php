@@ -56,18 +56,28 @@ class PayloadRedactorService implements PayloadRedactor
         return $redacted ?? $text;
     }
 
+    /**
+     * @param  array<int|string, mixed>  $data
+     * @return array<int|string, mixed>
+     */
     private function redactRecursive(array $data): array
     {
         $result = [];
 
         foreach ($data as $key => $value) {
+            if (is_string($key) && $this->isSensitive($key)) {
+                $result[$key] = '**[REDACTED]**';
+
+                continue;
+            }
+
             if (is_array($value)) {
                 $result[$key] = $this->redactRecursive($value);
-            } elseif ($this->isSensitive($key)) {
-                $result[$key] = '**[REDACTED]**';
-            } else {
-                $result[$key] = $value;
+
+                continue;
             }
+
+            $result[$key] = $value;
         }
 
         return $result;
@@ -77,12 +87,67 @@ class PayloadRedactorService implements PayloadRedactor
     {
         $lower = mb_strtolower($key);
 
+        foreach ($this->configuredExactKeys() as $exactKey) {
+            if ($lower === $exactKey) {
+                return true;
+            }
+        }
+
         foreach (self::SENSITIVE_KEYS as $sensitive) {
             if (str_contains($lower, $sensitive)) {
                 return true;
             }
         }
 
+        foreach ($this->configuredSensitiveSubstrings() as $sensitive) {
+            if (str_contains($lower, $sensitive)) {
+                return true;
+            }
+        }
+
         return false;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function configuredExactKeys(): array
+    {
+        $configured = config('communications.redaction.exact_keys', []);
+
+        return $this->normalizeKeyList(is_array($configured) ? $configured : []);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function configuredSensitiveSubstrings(): array
+    {
+        $configured = config('communications.redaction.sensitive_substrings', []);
+
+        return $this->normalizeKeyList(is_array($configured) ? $configured : []);
+    }
+
+    /**
+     * @param  array<int|string, mixed>  $items
+     * @return list<string>
+     */
+    private function normalizeKeyList(array $items): array
+    {
+        $normalized = [];
+
+        foreach ($items as $item) {
+            if (! is_string($item)) {
+                continue;
+            }
+
+            $candidate = mb_strtolower(mb_trim($item));
+
+            if ($candidate !== '') {
+                $normalized[] = $candidate;
+            }
+        }
+
+        return array_values(array_unique($normalized));
     }
 }
