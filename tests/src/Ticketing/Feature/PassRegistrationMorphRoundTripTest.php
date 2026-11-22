@@ -48,21 +48,22 @@ it('round-trips a uuid registration id through pass issuance', function (): void
     expect($pass->registration_id)->toBe((string) $registration->getKey());
 });
 
-it('round-trips an integer-like registration id as a string', function (): void {
+it('round-trips a custom uuid registration id on a non-owner-scoped morph target', function (): void {
     $owner = User::query()->create([
         'name' => 'Registration Morph Owner Two',
         'email' => 'registration-morph-two@example.com',
         'password' => 'secret',
     ]);
+    $registrationId = '00000000-0000-4000-8000-000000000042';
 
     // User is not an owner-scoped model, so the ticketing owner guard skips
     // existence validation and this pins pure storage semantics for the morph.
     $pass = OwnerContext::withOwner($owner, fn (): Pass => Pass::factory()->create([
         'registration_type' => User::class,
-        'registration_id' => '42',
+        'registration_id' => $registrationId,
     ]));
 
-    expect($pass->fresh()->registration_id)->toBe('42');
+    expect($pass->fresh()->registration_id)->toBe($registrationId);
 });
 
 it('revokes passes by uuid registration through the string morph', function (): void {

@@ -9,6 +9,7 @@ use AIArmada\Contacting\Concerns\HasContactMethods;
 use AIArmada\Contacting\Concerns\HasSocialProfiles;
 use AIArmada\Contacting\Models\ContactMethod;
 use AIArmada\Events\Database\Factories\VenueFactory;
+use AIArmada\Events\Support\ModelResolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -45,6 +46,10 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property string|null $geocoding_source
  * @property string $status
  * @property string $visibility
+ * @property CarbonImmutable|null $verified_at
+ * @property CarbonImmutable|null $rejected_at
+ * @property CarbonImmutable|null $last_state_change_at
+ * @property string|null $verified_by
  * @property-read string|null $phone
  * @property-read string|null $email
  * @property-read string|null $website_url
@@ -73,6 +78,7 @@ class Venue extends Model implements HasMedia
         'parent_venue_id',
         'name', 'slug', 'venue_type',
         'status', 'visibility',
+        'verified_at', 'rejected_at', 'last_state_change_at', 'verified_by',
         'metadata',
     ];
 
@@ -94,6 +100,9 @@ class Venue extends Model implements HasMedia
             'latitude' => 'float',
             'longitude' => 'float',
             'geocoded_at' => 'immutable_datetime',
+            'verified_at' => 'immutable_datetime',
+            'rejected_at' => 'immutable_datetime',
+            'last_state_change_at' => 'immutable_datetime',
             'metadata' => 'array',
         ];
     }
@@ -134,7 +143,10 @@ class Venue extends Model implements HasMedia
      */
     public function spaces(): HasMany
     {
-        return $this->hasMany(VenueSpace::class);
+        /** @var class-string<TSpace> $spaceClass */
+        $spaceClass = ModelResolver::venueSpaceClass();
+
+        return $this->hasMany($spaceClass);
     }
 
     /**

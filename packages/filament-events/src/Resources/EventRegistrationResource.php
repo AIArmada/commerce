@@ -160,7 +160,9 @@ final class EventRegistrationResource extends Resource
             ->headerActions([
                 ImportAction::make()
                     ->importer(EventRegistrationImporter::class)
-                    ->label('Import Registrations'),
+                    ->label('Import Registrations')
+                    ->visible(fn (): bool => static::canCreate())
+                    ->authorize(fn (): bool => static::canCreate()),
                 ExportAction::make()
                     ->exporter(EventRegistrationExporter::class)
                     ->label('Export Registrations'),

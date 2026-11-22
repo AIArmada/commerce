@@ -15,7 +15,7 @@ return new class extends Migration
             $table->uuid('category_id')->index();
             $table->string('name', 100);
             $table->string('short_form', 50)->nullable();
-            $table->uuid('country_id')->nullable();
+            $table->uuid('country_id')->nullable()->index();
             $table->string('language_code', 10)->nullable();
             $table->string('usage_position', 20);
             $table->unsignedInteger('sort_order')->default(0);

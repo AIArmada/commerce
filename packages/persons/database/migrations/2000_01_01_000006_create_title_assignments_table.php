@@ -15,7 +15,7 @@ return new class extends Migration
             $table->string('titleable_type');
             $table->uuid('titleable_id');
             $table->uuid('title_id')->index();
-            $table->uuid('issuer_id')->nullable();
+            $table->uuid('issuer_id')->nullable()->index();
             $table->date('date_awarded')->nullable();
             $table->date('date_expired')->nullable();
             $table->string('status', 20)->default('active')->index();

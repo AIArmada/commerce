@@ -21,7 +21,7 @@ return new class extends Migration
             $table->string('transferred_by_type')->nullable();
             $table->string('transferred_by_id')->nullable();
             $table->{$jsonType}('metadata')->nullable();
-            $table->nullableMorphs('owner');
+            $table->nullableUuidMorphs('owner');
             $table->timestampsTz();
 
             $table->index(['pass_id', 'created_at']);

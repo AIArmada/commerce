@@ -10,9 +10,11 @@ use AIArmada\FilamentAuthz\Facades\FilamentAuthz;
 use AIArmada\FilamentAuthz\Resources\UserResource\Pages;
 use AIArmada\FilamentAuthz\Support\UserAuthzForm;
 use AIArmada\FilamentAuthz\Tables\Actions\ImpersonateTableAction;
+use DateTimeZone;
 use Filament\Actions;
 use Filament\Forms;
 use Filament\Panel;
+use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -47,7 +49,13 @@ class UserResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return ImpersonationScopeGuard::applyScopeToUserQuery(parent::getEloquentQuery());
+        $query = parent::getEloquentQuery();
+
+        if (method_exists(static::getModel(), 'roles')) {
+            $query->with('roles');
+        }
+
+        return ImpersonationScopeGuard::applyScopeToUserQuery($query);
     }
 
     public static function canViewAny(): bool
@@ -202,7 +210,29 @@ class UserResource extends Resource
     }
 
     /**
-     * @return list<Forms\Components\TextInput>
+     * @return array<int, class-string<RelationManager>>
+     */
+    public static function getRelations(): array
+    {
+        $configuredRelations = config('filament-authz.user_resource.relation_managers', []);
+
+        if (! is_array($configuredRelations)) {
+            return [];
+        }
+
+        $relations = [];
+
+        foreach ($configuredRelations as $relationClass) {
+            if (is_string($relationClass) && is_a($relationClass, RelationManager::class, true)) {
+                $relations[] = $relationClass;
+            }
+        }
+
+        return array_values(array_unique($relations));
+    }
+
+    /**
+     * @return list<Forms\Components\Field>
      */
     protected static function getDefaultFormFields(): array
     {
@@ -236,6 +266,21 @@ class UserResource extends Resource
                         return $operation === 'create';
                     })
                     ->maxLength(255),
+                'timezone' => Forms\Components\Select::make('timezone')
+                    ->searchable()
+                    ->options(static function (): array {
+                        $timezones = DateTimeZone::listIdentifiers();
+
+                        return array_combine($timezones, $timezones);
+                    })
+                    ->default(static fn (): string => is_string(config('app.timezone')) && config('app.timezone') !== ''
+                        ? config('app.timezone')
+                        : 'UTC')
+                    ->nullable(),
+                'email_verified_at' => Forms\Components\DateTimePicker::make('email_verified_at')
+                    ->nullable(),
+                'phone_verified_at' => Forms\Components\DateTimePicker::make('phone_verified_at')
+                    ->nullable(),
                 default => Forms\Components\TextInput::make((string) $field)
                     ->maxLength(255),
             };

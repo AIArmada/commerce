@@ -87,6 +87,7 @@ return [
             'role_scope_mode' => 'all',
             'permissions' => true,
         ],
+        'relation_managers' => [],
     ],
 
     'impersonate' => [

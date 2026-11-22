@@ -287,11 +287,12 @@ Additional permissions beyond discovered entities. This key lives in `config/aut
         'icon'  => 'heroicon-o-user-group',
     ],
     'form' => [
-        'fields'          => ['name', 'email', 'password'],
+        'fields'          => ['name', 'email', 'password'], // supports 'timezone', 'email_verified_at', 'phone_verified_at'
         'roles'           => true,
         'role_scope_mode' => 'all', // all, global_only, scoped_only
         'permissions'     => true,
     ],
+    'relation_managers' => [],
 ],
 ```
 

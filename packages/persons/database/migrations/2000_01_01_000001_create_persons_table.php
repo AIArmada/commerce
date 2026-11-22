@@ -28,7 +28,15 @@ return new class extends Migration
             $table->boolean('is_featured')->default(false)->index();
             $table->unsignedInteger('order_column')->nullable()->index();
             $table->timestampTz('published_at')->nullable()->index();
+            $table->timestampTz('verified_at')->nullable();
+            $table->foreignUuid('verified_by')->nullable()->index();
+            $table->timestampTz('rejected_at')->nullable();
+            $table->timestampTz('last_state_change_at')->nullable();
             $table->timestampsTz();
+
+            $table->index(['status', 'name'], 'persons_status_name');
+            $table->index(['gender', 'status', 'name'], 'persons_gender_status_name');
+            $table->index('updated_at', 'persons_sitemap');
 
         });
 

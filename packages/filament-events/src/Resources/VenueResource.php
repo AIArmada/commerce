@@ -6,6 +6,7 @@ namespace AIArmada\FilamentEvents\Resources;
 
 use AIArmada\Addressing\Models\Address;
 use AIArmada\Events\Models\Venue;
+use AIArmada\Events\Support\ModelResolver;
 use AIArmada\FilamentEvents\Actions\Exporter\VenueExporter;
 use AIArmada\FilamentEvents\Actions\Importer\VenueImporter;
 use BackedEnum;
@@ -13,6 +14,7 @@ use Filament\Actions\ExportAction;
 use Filament\Actions\ImportAction;
 use Filament\Actions\ViewAction;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -21,15 +23,22 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
-final class VenueResource extends Resource
+class VenueResource extends Resource
 {
-    protected static ?string $model = Venue::class;
-
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-map-pin';
+
+    /**
+     * @return class-string<Venue>
+     */
+    public static function getModel(): string
+    {
+        return ModelResolver::venueClass();
+    }
 
     public static function getNavigationGroup(): string | UnitEnum | null
     {
-        return config('filament-events.navigation.group');
+        return config('filament-events.resources.navigation_group.venue')
+            ?? config('filament-events.navigation.group');
     }
 
     public static function getNavigationSort(): ?int
@@ -83,7 +92,9 @@ final class VenueResource extends Resource
             ->headerActions([
                 ImportAction::make()
                     ->importer(VenueImporter::class)
-                    ->label('Import Venues'),
+                    ->label('Import Venues')
+                    ->visible(fn (): bool => static::canCreate())
+                    ->authorize(fn (): bool => static::canCreate()),
                 ExportAction::make()
                     ->exporter(VenueExporter::class)
                     ->label('Export Venues'),
@@ -163,12 +174,34 @@ final class VenueResource extends Resource
         ];
     }
 
-    private static function address(Venue $venue): ?Address
+    /**
+     * @return array<int, class-string<RelationManager>>
+     */
+    public static function getRelations(): array
+    {
+        $configuredRelations = config('filament-events.resources.venue_relation_managers', []);
+
+        if (! is_array($configuredRelations)) {
+            return [];
+        }
+
+        $relations = [];
+
+        foreach ($configuredRelations as $relationClass) {
+            if (is_string($relationClass) && is_a($relationClass, RelationManager::class, true)) {
+                $relations[] = $relationClass;
+            }
+        }
+
+        return array_values(array_unique($relations));
+    }
+
+    protected static function address(Venue $venue): ?Address
     {
         return $venue->primaryAddress();
     }
 
-    private static function directions(Venue $venue): ?string
+    protected static function directions(Venue $venue): ?string
     {
         $directions = static::address($venue)?->metadata['directions'] ?? null;
 

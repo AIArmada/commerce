@@ -15,7 +15,7 @@ return new class extends Migration
 
         Schema::create(config('seating.database.tables.seats', 'seats'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
-            $table->nullableMorphs('owner');
+            $table->nullableUuidMorphs('owner');
             $table->uuid('seat_section_id')->index();
             $table->string('row_label');
             $table->string('seat_label');

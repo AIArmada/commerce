@@ -6,6 +6,22 @@ title: Configuration
 
 The `config/events.php` file controls all Events package behavior.
 
+### Model overrides
+
+```php
+'models' => [
+    'event' => AIArmada\Events\Models\Event::class,
+    'registration' => AIArmada\Events\Models\EventRegistration::class,
+    'attendance' => AIArmada\Events\Models\EventAttendance::class,
+    'submission' => AIArmada\Events\Models\EventSubmission::class,
+    'registration_question' => AIArmada\Events\Models\EventRegistrationQuestion::class,
+    'venue' => AIArmada\Events\Models\Venue::class,
+    'venue_space' => AIArmada\Events\Models\VenueSpace::class,
+],
+```
+
+Configured model classes resolve at runtime through `AIArmada\Events\Support\ModelResolver` (including `venueClass()` and `venueSpaceClass()`).
+
 ### Database
 
 ```php

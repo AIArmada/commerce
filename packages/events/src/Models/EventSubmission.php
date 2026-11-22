@@ -36,6 +36,9 @@ use Spatie\ModelStates\HasStates;
  * @property array|null $metadata
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @property-read TEvent|null $event
+ *
+ * @template TEvent of Model = Event
  */
 class EventSubmission extends Model
 {
@@ -104,7 +107,7 @@ class EventSubmission extends Model
     }
 
     /**
-     * @return BelongsTo<Event, $this>
+     * @return BelongsTo<TEvent, $this>
      */
     public function event(): BelongsTo
     {

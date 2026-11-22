@@ -7,6 +7,8 @@ namespace AIArmada\FilamentEvents\Actions\Importer;
 use AIArmada\Addressing\Models\Address;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Events\Models\Venue;
+use AIArmada\Events\Support\ModelResolver;
+use AIArmada\FilamentEvents\Actions\Importer\Concerns\AuthorizesImportedRecords;
 use Filament\Actions\Imports\ImportColumn;
 use Filament\Actions\Imports\Importer;
 use Filament\Actions\Imports\Models\Import;
@@ -18,7 +20,15 @@ use LogicException;
 
 final class VenueImporter extends Importer
 {
-    protected static ?string $model = Venue::class;
+    use AuthorizesImportedRecords;
+
+    /**
+     * @return class-string<Venue>
+     */
+    public static function getModel(): string
+    {
+        return ModelResolver::venueClass();
+    }
 
     public static function getColumns(): array
     {
@@ -73,7 +83,24 @@ final class VenueImporter extends Importer
 
     public function resolveRecord(): ?Venue
     {
-        return new Venue;
+        $venueClass = static::getModel();
+        $record = new $venueClass;
+
+        if (! $record instanceof Venue) {
+            throw new LogicException('Configured venue model must extend Venue.');
+        }
+
+        return $record;
+    }
+
+    protected function beforeCreate(): void
+    {
+        $this->authorizeRecordCreate();
+    }
+
+    protected function beforeUpdate(): void
+    {
+        $this->authorizeRecordUpdate();
     }
 
     public static function getCompletedNotificationBody(Import $import): string

@@ -9,6 +9,7 @@ use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventRegistration;
 use AIArmada\Events\Support\ModelResolver;
+use AIArmada\FilamentEvents\Actions\Importer\Concerns\AuthorizesImportedRecords;
 use Closure;
 use Filament\Actions\Imports\ImportColumn;
 use Filament\Actions\Imports\Importer;
@@ -21,6 +22,8 @@ use LogicException;
 
 final class EventRegistrationImporter extends Importer
 {
+    use AuthorizesImportedRecords;
+
     /**
      * @return class-string<EventRegistration>
      */
@@ -93,6 +96,7 @@ final class EventRegistrationImporter extends Importer
 
     protected function beforeCreate(): void
     {
+        $this->authorizeRecordCreate();
         $this->assertEventScope($this->data['event_id'] ?? null, $this->data['event_occurrence_id'] ?? null);
 
         $record = $this->record;
@@ -111,6 +115,21 @@ final class EventRegistrationImporter extends Importer
                 'status' => $exception->getMessage(),
             ]);
         }
+    }
+
+    protected function beforeUpdate(): void
+    {
+        $this->authorizeRecordUpdate();
+
+        $record = $this->record;
+        $eventId = array_key_exists('event_id', $this->data)
+            ? $this->data['event_id']
+            : $record?->getAttribute('event_id');
+        $occurrenceId = array_key_exists('event_occurrence_id', $this->data)
+            ? $this->data['event_occurrence_id']
+            : $record?->getAttribute('event_occurrence_id');
+
+        $this->assertEventScope($eventId, $occurrenceId);
     }
 
     private function assertEventScope(mixed $eventId, mixed $occurrenceId): void

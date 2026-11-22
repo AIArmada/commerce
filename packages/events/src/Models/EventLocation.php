@@ -7,6 +7,7 @@ namespace AIArmada\Events\Models;
 use AIArmada\Addressing\Traits\HasAddresses;
 use AIArmada\Events\Database\Factories\EventLocationFactory;
 use AIArmada\Events\Models\Concerns\ScopesByEventOwner;
+use AIArmada\Events\Support\ModelResolver;
 use Carbon\CarbonImmutable;
 use Eloquent;
 use Illuminate\Database\Eloquent\Collection;
@@ -160,7 +161,7 @@ final class EventLocation extends Model
      */
     public function venue(): BelongsTo
     {
-        return $this->belongsTo(Venue::class);
+        return $this->belongsTo(ModelResolver::venueClass());
     }
 
     /**
@@ -168,7 +169,7 @@ final class EventLocation extends Model
      */
     public function venueSpace(): BelongsTo
     {
-        return $this->belongsTo(VenueSpace::class);
+        return $this->belongsTo(ModelResolver::venueSpaceClass());
     }
 
     /**

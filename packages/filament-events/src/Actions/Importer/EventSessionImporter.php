@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventSession;
+use AIArmada\FilamentEvents\Actions\Importer\Concerns\AuthorizesImportedRecords;
 use Filament\Actions\Imports\ImportColumn;
 use Filament\Actions\Imports\Importer;
 use Filament\Actions\Imports\Models\Import;
@@ -17,6 +18,8 @@ use Illuminate\Validation\ValidationException;
 
 final class EventSessionImporter extends Importer
 {
+    use AuthorizesImportedRecords;
+
     protected static ?string $model = EventSession::class;
 
     public static function getColumns(): array
@@ -64,7 +67,23 @@ final class EventSessionImporter extends Importer
 
     public function beforeCreate(): void
     {
+        $this->authorizeRecordCreate();
         $this->assertEventScope($this->data['event_id'] ?? null, $this->data['event_occurrence_id'] ?? null);
+    }
+
+    protected function beforeUpdate(): void
+    {
+        $this->authorizeRecordUpdate();
+
+        $record = $this->record;
+        $eventId = array_key_exists('event_id', $this->data)
+            ? $this->data['event_id']
+            : $record?->getAttribute('event_id');
+        $occurrenceId = array_key_exists('event_occurrence_id', $this->data)
+            ? $this->data['event_occurrence_id']
+            : $record?->getAttribute('event_occurrence_id');
+
+        $this->assertEventScope($eventId, $occurrenceId);
     }
 
     private function assertEventScope(mixed $eventId, mixed $occurrenceId): void

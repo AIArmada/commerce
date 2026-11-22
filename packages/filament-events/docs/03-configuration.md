@@ -14,7 +14,16 @@ The `config/filament-events.php` file controls plugin behavior.
 ],
 ```
 
-Customize the navigation group label for all event resources and pages.
+Customize the navigation group label for all event resources and pages, or override individual resources such as venues and venue spaces:
+
+```php
+'resources' => [
+    'navigation_group' => [
+        'venue' => 'Places',
+        'venue_space' => 'Places',
+    ],
+],
+```
 
 ### Resource toggles
 
@@ -59,7 +68,7 @@ Each resource can be individually disabled by setting its key to `false`. The re
 
 ### Relation manager extensions
 
-Append application-owned relation managers to the event, occurrence, or session resources:
+Append application-owned relation managers to the event, occurrence, session, venue, or venue space resources:
 
 ```php
 'resources' => [
@@ -68,6 +77,8 @@ Append application-owned relation managers to the event, occurrence, or session 
     ],
     'occurrence_relation_managers' => [],
     'session_relation_managers' => [],
+    'venue_relation_managers' => [],
+    'venue_space_relation_managers' => [],
 ],
 ```
 

@@ -258,7 +258,7 @@ class Event extends Model implements HasMedia, TicketableInterface
     }
 
     /**
-     * @return HasMany<EventInvolvement, $this>
+     * @return HasMany<covariant EventInvolvement, $this>
      */
     public function involvements(): HasMany
     {
@@ -274,7 +274,7 @@ class Event extends Model implements HasMedia, TicketableInterface
     }
 
     /**
-     * @return HasMany<EventRegistration, $this>
+     * @return HasMany<covariant EventRegistration, $this>
      */
     public function registrations(): HasMany
     {
@@ -440,7 +440,7 @@ class Event extends Model implements HasMedia, TicketableInterface
     }
 
     /**
-     * @return HasMany<EventSubmission, $this>
+     * @return HasMany<covariant EventSubmission, $this>
      */
     public function submissions(): HasMany
     {

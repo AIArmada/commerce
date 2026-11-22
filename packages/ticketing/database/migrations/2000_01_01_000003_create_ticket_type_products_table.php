@@ -23,7 +23,7 @@ return new class extends Migration
             $table->string('inclusion_mode', 20)->default('required')->index();
             $table->integer('sort_order')->default(0);
             $table->{$jsonType}('metadata')->nullable();
-            $table->nullableMorphs('owner');
+            $table->nullableUuidMorphs('owner');
             $table->timestampsTz();
 
             $table->index(['ticket_type_id', 'product_id', 'variant_id'], 'ticket_type_products_type_prod_variant_idx');

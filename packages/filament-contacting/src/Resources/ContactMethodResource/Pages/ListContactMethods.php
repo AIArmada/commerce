@@ -28,7 +28,9 @@ final class ListContactMethods extends ListRecords
         return [
             ImportAction::make()
                 ->importer(ContactMethodImporter::class)
-                ->label('Import Contact Methods'),
+                ->label('Import Contact Methods')
+                ->visible(fn (): bool => ContactMethodResource::canCreate())
+                ->authorize(fn (): bool => ContactMethodResource::canCreate()),
         ];
     }
 }

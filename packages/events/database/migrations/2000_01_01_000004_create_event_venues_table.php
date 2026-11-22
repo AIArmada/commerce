@@ -21,6 +21,10 @@ return new class extends Migration
             $table->string('venue_type')->nullable()->index();
             $table->string('status')->index();
             $table->string('visibility')->index();
+            $table->timestampTz('verified_at')->nullable();
+            $table->timestampTz('rejected_at')->nullable();
+            $table->timestampTz('last_state_change_at')->nullable();
+            $table->foreignUuid('verified_by')->nullable()->index();
             $table->{$jsonType}('metadata')->nullable();
             $table->timestampsTz();
         });

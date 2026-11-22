@@ -28,7 +28,9 @@ final class ListSocialProfiles extends ListRecords
         return [
             ImportAction::make()
                 ->importer(SocialProfileImporter::class)
-                ->label('Import Social Profiles'),
+                ->label('Import Social Profiles')
+                ->visible(fn (): bool => SocialProfileResource::canCreate())
+                ->authorize(fn (): bool => SocialProfileResource::canCreate()),
         ];
     }
 }

@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('seatable_type')->nullable();
             $table->string('seatable_id')->nullable();
             $table->index(['seatable_type', 'seatable_id']);
-            $table->nullableMorphs('owner');
+            $table->nullableUuidMorphs('owner');
             $table->string('name');
             $table->string('slug')->nullable();
             $table->integer('version')->default(1);

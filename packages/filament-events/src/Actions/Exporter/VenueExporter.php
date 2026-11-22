@@ -6,13 +6,20 @@ namespace AIArmada\FilamentEvents\Actions\Exporter;
 
 use AIArmada\Addressing\Models\Address;
 use AIArmada\Events\Models\Venue;
+use AIArmada\Events\Support\ModelResolver;
 use Filament\Actions\Exports\ExportColumn;
 use Filament\Actions\Exports\Exporter;
 use Filament\Actions\Exports\Models\Export;
 
 final class VenueExporter extends Exporter
 {
-    protected static ?string $model = Venue::class;
+    /**
+     * @return class-string<Venue>
+     */
+    public static function getModel(): string
+    {
+        return ModelResolver::venueClass();
+    }
 
     public static function getColumns(): array
     {

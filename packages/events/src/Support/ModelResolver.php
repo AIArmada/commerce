@@ -9,6 +9,8 @@ use AIArmada\Events\Models\EventAttendance;
 use AIArmada\Events\Models\EventRegistration;
 use AIArmada\Events\Models\EventRegistrationQuestion;
 use AIArmada\Events\Models\EventSubmission;
+use AIArmada\Events\Models\Venue;
+use AIArmada\Events\Models\VenueSpace;
 
 /**
  * Resolves host application model subclasses configured for the events package.
@@ -66,6 +68,28 @@ final class ModelResolver
     {
         /** @var class-string<EventSubmission> $modelClass */
         $modelClass = config('events.models.submission', EventSubmission::class);
+
+        return $modelClass;
+    }
+
+    /**
+     * @return class-string<Venue>
+     */
+    public static function venueClass(): string
+    {
+        /** @var class-string<Venue> $modelClass */
+        $modelClass = config('events.models.venue', Venue::class);
+
+        return $modelClass;
+    }
+
+    /**
+     * @return class-string<VenueSpace>
+     */
+    public static function venueSpaceClass(): string
+    {
+        /** @var class-string<VenueSpace> $modelClass */
+        $modelClass = config('events.models.venue_space', VenueSpace::class);
 
         return $modelClass;
     }

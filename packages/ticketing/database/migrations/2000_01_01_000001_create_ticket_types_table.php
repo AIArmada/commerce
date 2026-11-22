@@ -32,7 +32,7 @@ return new class extends Migration
             $table->string('visibility')->index();
             $table->integer('sort_order')->default(0)->index();
             $table->{$jsonType}('metadata')->nullable();
-            $table->nullableMorphs('owner');
+            $table->nullableUuidMorphs('owner');
             $table->timestampsTz();
 
             $table->index(['ticketable_id', 'ticketable_type']);

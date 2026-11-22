@@ -18,7 +18,7 @@ return new class extends Migration
             $table->uuid('component_ticket_type_id')->index();
             $table->integer('quantity')->default(1);
             $table->{$jsonType}('metadata')->nullable();
-            $table->nullableMorphs('owner');
+            $table->nullableUuidMorphs('owner');
             $table->timestampsTz();
 
             $table->unique(['parent_ticket_type_id', 'component_ticket_type_id'], 'ticket_type_components_pair_unique');

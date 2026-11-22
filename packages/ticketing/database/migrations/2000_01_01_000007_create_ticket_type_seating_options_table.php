@@ -20,7 +20,7 @@ return new class extends Migration
             $table->integer('included_quantity')->nullable();
             $table->integer('allowed_quantity')->nullable();
             $table->{$jsonType}('metadata')->nullable();
-            $table->nullableMorphs('owner');
+            $table->nullableUuidMorphs('owner');
             $table->timestampsTz();
         });
     }

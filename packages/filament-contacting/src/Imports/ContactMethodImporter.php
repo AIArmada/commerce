@@ -7,6 +7,7 @@ namespace AIArmada\FilamentContacting\Imports;
 use AIArmada\Contacting\Enums\ContactMethodType;
 use AIArmada\Contacting\Models\ContactMethod;
 use AIArmada\Contacting\Support\ContactingModelReferenceGuard;
+use AIArmada\FilamentContacting\Imports\Concerns\AuthorizesContactingImports;
 use Filament\Actions\Imports\Exceptions\RowImportFailedException;
 use Filament\Actions\Imports\ImportColumn;
 use Filament\Actions\Imports\Importer;
@@ -17,6 +18,8 @@ use InvalidArgumentException;
 
 final class ContactMethodImporter extends Importer
 {
+    use AuthorizesContactingImports;
+
     protected static ?string $model = ContactMethod::class;
 
     public static function getColumns(): array
@@ -82,6 +85,16 @@ final class ContactMethodImporter extends Importer
         } catch (QueryException $exception) {
             throw new RowImportFailedException($this->saveFailureMessage($exception), previous: $exception);
         }
+    }
+
+    protected function beforeCreate(): void
+    {
+        $this->authorizeContactingCreate(self::contactingUiGuard()->contactMethodsReadOnly());
+    }
+
+    protected function beforeUpdate(): void
+    {
+        $this->authorizeContactingUpdate(self::contactingUiGuard()->contactMethodsReadOnly());
     }
 
     public static function getModelLabel(): string

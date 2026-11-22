@@ -22,7 +22,7 @@ return new class extends Migration
             $table->boolean('is_current')->default(true);
             $table->timestampTz('transferred_at')->nullable();
             $table->{$jsonType}('metadata')->nullable();
-            $table->nullableMorphs('owner');
+            $table->nullableUuidMorphs('owner');
             $table->timestampsTz();
 
             $table->index(['pass_id', 'holder_type', 'holder_id']);

@@ -20,5 +20,6 @@ return [
             'title_issuer' => 11,
             'credential_definition' => 12,
         ],
+        'person_relation_managers' => [],
     ],
 ];

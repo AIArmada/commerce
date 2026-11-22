@@ -15,7 +15,7 @@ return new class extends Migration
             $table->string('credentialable_type');
             $table->uuid('credentialable_id');
             $table->uuid('credential_id')->index();
-            $table->uuid('issuing_institution_id')->nullable();
+            $table->uuid('issuing_institution_id')->nullable()->index();
             $table->string('registration_number', 100)->nullable();
             $table->date('date_obtained')->nullable();
             $table->date('date_expired')->nullable();

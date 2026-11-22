@@ -28,8 +28,8 @@ final class ListAddressAreas extends ListRecords
             $actions[] = ImportAction::make()
                 ->importer(AddressAreaImporter::class)
                 ->label('Import Areas')
-                ->visible(fn (): bool => ! AddressAreaResource::isReadOnly())
-                ->authorize(fn (): bool => ! AddressAreaResource::isReadOnly());
+                ->visible(fn (): bool => ! AddressAreaResource::isReadOnly() && AddressAreaResource::canCreate())
+                ->authorize(fn (): bool => ! AddressAreaResource::isReadOnly() && AddressAreaResource::canCreate());
         }
 
         if (config('filament-addressing.features.area_export')) {

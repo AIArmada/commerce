@@ -37,6 +37,10 @@ return [
             'change_log' => 99,
             'event_template' => 98,
         ],
+        'navigation_group' => [
+            'venue' => null,
+            'venue_space' => null,
+        ],
         'event_form_extensions' => [
             DefaultEventMediaExtension::class,
         ],
@@ -45,5 +49,7 @@ return [
         'event_relation_managers' => [],
         'occurrence_relation_managers' => [],
         'session_relation_managers' => [],
+        'venue_relation_managers' => [],
+        'venue_space_relation_managers' => [],
     ],
 ];

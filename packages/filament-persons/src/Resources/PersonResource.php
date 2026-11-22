@@ -17,7 +17,9 @@ use AIArmada\FilamentPersons\Resources\PersonResource\Schemas\PersonForm;
 use AIArmada\FilamentPersons\Resources\PersonResource\Schemas\PersonInfolist;
 use AIArmada\FilamentPersons\Resources\PersonResource\Tables\PersonsTable;
 use AIArmada\Persons\Models\Person;
+use AIArmada\Persons\Support\ModelResolver;
 use BackedEnum;
+use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
@@ -27,11 +29,17 @@ use UnitEnum;
 
 class PersonResource extends Resource
 {
-    protected static ?string $model = Person::class;
-
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-user-group';
 
     protected static ?string $recordTitleAttribute = 'name';
+
+    /**
+     * @return class-string<Person>
+     */
+    public static function getModel(): string
+    {
+        return ModelResolver::personClass();
+    }
 
     public static function getNavigationGroup(): string | UnitEnum | null
     {
@@ -98,12 +106,26 @@ class PersonResource extends Resource
 
     public static function getRelations(): array
     {
-        return [
+        $relations = [
             NamesRelationManager::class,
             TitleAssignmentsRelationManager::class,
             CredentialAssignmentsRelationManager::class,
             AffiliationsRelationManager::class,
         ];
+
+        $configuredRelations = config('filament-persons.resources.person_relation_managers', []);
+
+        if (! is_array($configuredRelations)) {
+            return $relations;
+        }
+
+        foreach ($configuredRelations as $relationClass) {
+            if (is_string($relationClass) && is_a($relationClass, RelationManager::class, true)) {
+                $relations[] = $relationClass;
+            }
+        }
+
+        return array_values(array_unique($relations));
     }
 
     public static function getPages(): array

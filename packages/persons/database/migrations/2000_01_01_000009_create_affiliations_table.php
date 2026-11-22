@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -31,6 +32,7 @@ return new class extends Migration
             $table->uuid('affiliatable_id');
             $table->uuid('institution_id')->nullable()->index();
             $table->string('affiliation_type', 50)->nullable();
+            $table->string('position', 50)->nullable();
             $table->date('joined_at')->nullable();
             $table->date('left_at')->nullable();
             $table->boolean('is_primary')->default(false);
@@ -40,6 +42,13 @@ return new class extends Migration
             $table->index(['affiliatable_type', 'affiliatable_id', 'is_primary'], 'affiliations_target_primary_index');
 
         });
+
+        if ($driver === 'pgsql') {
+            DB::statement(sprintf(
+                'ALTER TABLE %s ALTER COLUMN id SET DEFAULT gen_random_uuid()',
+                $grammar->wrapTable($tableName),
+            ));
+        }
 
         $predicate = $driver === 'pgsql'
             ? sprintf('%s IS TRUE', $grammar->wrap('is_primary'))

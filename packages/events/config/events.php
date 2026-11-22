@@ -7,6 +7,8 @@ use AIArmada\Events\Models\EventAttendance;
 use AIArmada\Events\Models\EventRegistration;
 use AIArmada\Events\Models\EventRegistrationQuestion;
 use AIArmada\Events\Models\EventSubmission;
+use AIArmada\Events\Models\Venue;
+use AIArmada\Events\Models\VenueSpace;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
@@ -30,6 +32,8 @@ return [
         'attendance' => EventAttendance::class,
         'submission' => EventSubmission::class,
         'registration_question' => EventRegistrationQuestion::class,
+        'venue' => Venue::class,
+        'venue_space' => VenueSpace::class,
     ],
 
     /* Database */

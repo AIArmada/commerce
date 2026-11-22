@@ -12,7 +12,7 @@ return new class extends Migration
     {
         Schema::create(config('persons.database.tables.title_issuers', 'title_issuers'), function (Blueprint $table): void {
             $table->uuid('id')->primary();
-            $table->uuid('country_id')->nullable();
+            $table->uuid('country_id')->nullable()->index();
             $table->uuid('institution_id')->nullable()->index();
             $table->string('issuer_name');
             $table->string('issuer_type', 50)->index();

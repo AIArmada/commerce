@@ -6,6 +6,7 @@ namespace AIArmada\Events\Models;
 
 use AIArmada\Addressing\Traits\HasAddresses;
 use AIArmada\Events\Database\Factories\VenueSpaceFactory;
+use AIArmada\Events\Support\ModelResolver;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -88,7 +89,7 @@ class VenueSpace extends Model
      */
     public function venue(): BelongsTo
     {
-        return $this->belongsTo(Venue::class);
+        return $this->belongsTo(ModelResolver::venueClass());
     }
 
     /**

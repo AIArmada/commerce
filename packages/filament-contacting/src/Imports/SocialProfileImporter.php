@@ -7,6 +7,7 @@ namespace AIArmada\FilamentContacting\Imports;
 use AIArmada\Contacting\Enums\SocialPlatform;
 use AIArmada\Contacting\Models\SocialProfile;
 use AIArmada\Contacting\Support\ContactingModelReferenceGuard;
+use AIArmada\FilamentContacting\Imports\Concerns\AuthorizesContactingImports;
 use Filament\Actions\Imports\Exceptions\RowImportFailedException;
 use Filament\Actions\Imports\ImportColumn;
 use Filament\Actions\Imports\Importer;
@@ -17,6 +18,8 @@ use InvalidArgumentException;
 
 final class SocialProfileImporter extends Importer
 {
+    use AuthorizesContactingImports;
+
     protected static ?string $model = SocialProfile::class;
 
     public static function getColumns(): array
@@ -79,6 +82,16 @@ final class SocialProfileImporter extends Importer
         } catch (InvalidArgumentException $exception) {
             throw new RowImportFailedException($exception->getMessage(), previous: $exception);
         }
+    }
+
+    protected function beforeCreate(): void
+    {
+        $this->authorizeContactingCreate(self::contactingUiGuard()->socialProfilesReadOnly());
+    }
+
+    protected function beforeUpdate(): void
+    {
+        $this->authorizeContactingUpdate(self::contactingUiGuard()->socialProfilesReadOnly());
     }
 
     protected function beforeSave(): void

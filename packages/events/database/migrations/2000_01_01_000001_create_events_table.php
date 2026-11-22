@@ -14,10 +14,10 @@ return new class extends Migration
 
         Schema::create(config('events.database.tables.events', 'events'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
-            $table->string('owner_type')->nullable()->index();
+            $table->string('owner_type')->nullable();
             $table->uuid('owner_id')->nullable()->index();
             $table->index(['owner_type', 'owner_id']);
-            $table->string('created_by_type')->nullable()->index();
+            $table->string('created_by_type')->nullable();
             $table->uuid('created_by_id')->nullable()->index();
             $table->index(['created_by_type', 'created_by_id']);
             $table->string('title');
@@ -44,6 +44,9 @@ return new class extends Migration
             $table->string('pricing_mode')->nullable()->index();
             $table->string('registration_mode')->nullable()->index();
             $table->boolean('issue_passes_for_free')->default(true);
+
+            $table->index(['status', 'visibility'], 'events_public_listing_idx');
+            $table->index('updated_at', 'events_updated_at_idx');
         });
     }
 };

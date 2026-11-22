@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerConte
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\CommerceSupport\Support\OwnerScope;
+use AIArmada\Persons\Models\Affiliation;
 use AIArmada\Persons\Support\ModelResolver;
 use AIArmada\Persons\Support\PersonsModelReferenceGuard;
 use Filament\Actions\CreateAction;
@@ -16,10 +17,12 @@ use Filament\Actions\EditAction;
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
@@ -37,7 +40,7 @@ class AffiliationsRelationManager extends RelationManager
     /**
      * @return array<string, string>
      */
-    public static function getInstitutionOptions(): array
+    public static function getInstitutionOptions(?string $search = null, int $limit = 50): array
     {
         $class = ModelResolver::institutionClass();
 
@@ -45,22 +48,34 @@ class AffiliationsRelationManager extends RelationManager
             return [];
         }
 
-        $query = $class::query();
+        $query = self::scopedInstitutionQuery($class);
+        $trimmedSearch = $search !== null ? mb_trim($search) : '';
 
-        if (method_exists($class, 'ownerScopeConfig') && $class::ownerScopeConfig()->enabled) {
-            $config = $class::ownerScopeConfig();
+        if ($trimmedSearch !== '') {
+            /** @var Model $modelInstance */
+            $modelInstance = new $class;
+            $connection = $modelInstance->getConnection();
+            $columns = $connection->getSchemaBuilder()->getColumnListing($modelInstance->getTable());
+            $searchableColumns = array_values(array_intersect(['name', 'title', 'label'], $columns));
 
-            $query = OwnerQuery::applyToEloquentBuilder(
-                $query->withoutGlobalScope(OwnerScope::class),
-                OwnerContext::resolve(),
-                $config->includeGlobal,
-                $config->ownerTypeColumn,
-                $config->ownerIdColumn,
-            );
+            if ($searchableColumns === []) {
+                return [];
+            }
+
+            $grammar = $connection->getQueryGrammar();
+            $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], mb_strtolower($trimmedSearch));
+            $like = '%' . $escaped . '%';
+
+            $query->where(static function (Builder $builder) use ($searchableColumns, $grammar, $like): void {
+                foreach ($searchableColumns as $index => $column) {
+                    $method = $index === 0 ? 'whereRaw' : 'orWhereRaw';
+                    $builder->{$method}('LOWER(' . $grammar->wrap($column) . ') LIKE ?', [$like]);
+                }
+            });
         }
 
         /** @var array<string, string> $options */
-        $options = $query->limit(500)->get()->mapWithKeys(
+        $options = $query->limit(max(1, min($limit, 500)))->get()->mapWithKeys(
             static fn (Model $model): array => [(string) $model->getKey() => self::institutionLabel($model)]
         )->all();
 
@@ -69,7 +84,42 @@ class AffiliationsRelationManager extends RelationManager
 
     public static function getInstitutionLabel(string $id): ?string
     {
-        return static::getInstitutionOptions()[$id] ?? null;
+        if ($id === '') {
+            return null;
+        }
+
+        $class = ModelResolver::institutionClass();
+
+        if ($class === null) {
+            return null;
+        }
+
+        $model = self::scopedInstitutionQuery($class)->find($id);
+
+        return $model instanceof Model ? self::institutionLabel($model) : null;
+    }
+
+    /**
+     * @param  class-string<Model>  $class
+     * @return Builder<Model>
+     */
+    private static function scopedInstitutionQuery(string $class): Builder
+    {
+        $query = $class::query();
+
+        if (method_exists($class, 'ownerScopeConfig') && $class::ownerScopeConfig()->enabled) {
+            $config = $class::ownerScopeConfig();
+
+            return OwnerQuery::applyToEloquentBuilder(
+                $query->withoutGlobalScope(OwnerScope::class),
+                OwnerContext::resolve(),
+                $config->includeGlobal,
+                $config->ownerTypeColumn,
+                $config->ownerIdColumn,
+            );
+        }
+
+        return $query;
     }
 
     public function form(Schema $schema): Schema
@@ -84,11 +134,14 @@ class AffiliationsRelationManager extends RelationManager
                         'partner' => 'Partner',
                     ])
                     ->required(),
+                TextInput::make('position')
+                    ->maxLength(50)
+                    ->nullable(),
                 Select::make('institution_id')
                     ->label('Institution')
-                    ->options(static::getInstitutionOptions())
                     ->searchable()
-                    ->preload(),
+                    ->getSearchResultsUsing(static fn (string $search): array => static::getInstitutionOptions($search, 50))
+                    ->getOptionLabelUsing(static fn (?string $value): ?string => filled($value) ? static::getInstitutionLabel((string) $value) : null),
                 DatePicker::make('joined_at'),
                 DatePicker::make('left_at'),
                 Checkbox::make('is_primary'),
@@ -98,13 +151,33 @@ class AffiliationsRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(static function (Builder $query): Builder {
+                if (ModelResolver::institutionClass() !== null) {
+                    $query->with('institution');
+                }
+
+                return $query;
+            })
             ->columns([
                 Tables\Columns\TextColumn::make('affiliation_type')
                     ->badge()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('position')
+                    ->placeholder('-')
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('institution_id')
                     ->label('Institution')
-                    ->formatStateUsing(fn (string $state): string => static::getInstitutionLabel($state) ?? $state)
+                    ->formatStateUsing(static function (string $state, ?Model $record): string {
+                        if ($record instanceof Affiliation && $record->relationLoaded('institution')) {
+                            $institution = $record->getRelationValue('institution');
+
+                            if ($institution instanceof Model) {
+                                return self::institutionLabel($institution);
+                            }
+                        }
+
+                        return static::getInstitutionLabel($state) ?? $state;
+                    })
                     ->placeholder('-'),
                 Tables\Columns\IconColumn::make('is_primary')
                     ->boolean(),

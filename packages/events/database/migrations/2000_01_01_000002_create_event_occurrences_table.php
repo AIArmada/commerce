@@ -14,8 +14,7 @@ return new class extends Migration
 
         Schema::create(config('events.database.tables.event_occurrences', 'event_occurrences'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
-            $table->uuid('event_id')->index();
-            $table->index(['event_id', 'starts_at']);
+            $table->uuid('event_id');
             $table->index(['event_id', 'starts_at', 'created_at', 'id']);
             $table->string('title')->nullable();
             $table->string('slug')->nullable();
@@ -24,6 +23,8 @@ return new class extends Migration
             $table->string('timezone')->nullable();
             $table->string('status')->index();
             $table->index(['event_id', 'status', 'starts_at']);
+            $table->index(['status', 'visibility', 'starts_at'], 'event_occurrences_public_schedule_idx');
+            $table->index(['is_featured', 'status', 'starts_at'], 'event_occurrences_featured_schedule_idx');
             $table->string('visibility')->index();
             $table->string('delivery_mode')->nullable()->index();
             $table->integer('capacity')->nullable();

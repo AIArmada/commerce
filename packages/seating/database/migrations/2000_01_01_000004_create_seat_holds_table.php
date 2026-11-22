@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('held_by_type')->nullable();
             $table->string('held_by_id')->nullable();
             $table->index(['held_by_type', 'held_by_id']);
-            $table->nullableMorphs('owner');
+            $table->nullableUuidMorphs('owner');
             $table->uuid('seat_id')->index();
             $table->string('reference')->nullable()->index();
             $table->timestampTz('expires_at')->index();

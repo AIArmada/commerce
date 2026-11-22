@@ -119,7 +119,9 @@ final class EventSessionResource extends Resource
             ->headerActions([
                 ImportAction::make()
                     ->importer(EventSessionImporter::class)
-                    ->label('Import Sessions'),
+                    ->label('Import Sessions')
+                    ->visible(fn (): bool => static::canCreate())
+                    ->authorize(fn (): bool => static::canCreate()),
                 ExportAction::make()
                     ->exporter(EventSessionExporter::class)
                     ->label('Export Sessions'),

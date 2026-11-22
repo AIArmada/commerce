@@ -43,13 +43,15 @@ use Illuminate\Support\Carbon;
  * @property array|null $metadata
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read Event $event
+ * @property-read TEvent $event
  * @property-read EventOccurrence|null $occurrence
  * @property-read EventSession|null $session
  * @property-read EventRole|null $role
  * @property-read Model|Eloquent $involveable
  * @property-read EventInvolvement|null $replacedByInvolvement
  * @property-read Collection<int, EventInvolvement> $replacementFor
+ *
+ * @template TEvent of Model = Event
  */
 class EventInvolvement extends Model
 {
@@ -89,7 +91,7 @@ class EventInvolvement extends Model
     }
 
     /**
-     * @return BelongsTo<Event, $this>
+     * @return BelongsTo<TEvent, $this>
      */
     public function event(): BelongsTo
     {

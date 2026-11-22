@@ -31,7 +31,8 @@
     },
     "autoload": {
         "psr-4": {
-            "AIArmada\\Engagement\\": "src/"
+            "AIArmada\\Engagement\\": "src/",
+            "AIArmada\\Engagement\\Database\\Factories\\": "database/factories/"
         }
     },
     "extra": {

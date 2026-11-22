@@ -45,6 +45,10 @@ use Spatie\EloquentSortable\SortableTrait;
  * @property bool $is_featured
  * @property int|null $order_column
  * @property CarbonImmutable|null $published_at
+ * @property CarbonImmutable|null $verified_at
+ * @property string|null $verified_by
+ * @property CarbonImmutable|null $rejected_at
+ * @property CarbonImmutable|null $last_state_change_at
  * @property-read EloquentCollection<int, PersonName> $names
  * @property-read string $formatted_name
  *
@@ -85,6 +89,10 @@ class Person extends Model implements Sortable
         'status',
         'is_featured',
         'order_column',
+        'verified_at',
+        'verified_by',
+        'rejected_at',
+        'last_state_change_at',
     ];
 
     protected static function booted(): void
@@ -122,6 +130,9 @@ class Person extends Model implements Sortable
             'is_featured' => 'boolean',
             'order_column' => 'integer',
             'published_at' => 'immutable_datetime',
+            'verified_at' => 'immutable_datetime',
+            'rejected_at' => 'immutable_datetime',
+            'last_state_change_at' => 'immutable_datetime',
         ];
     }
 

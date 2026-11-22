@@ -25,12 +25,14 @@ return [
             'title_issuer' => 11,
             'credential_definition' => 12,
         ],
+        'person_relation_managers' => [],
     ],
 ];
 ```
 
 Set an entry in `resources.enabled` to `false` to keep that resource out of
-the panel. `navigation.sort` registers the group order with the Commerce
+the panel. `resources.person_relation_managers` accepts additional `RelationManager`
+class names appended to `PersonResource::getRelations()`. `navigation.sort` registers the group order with the Commerce
 navigation builder; `resources.navigation_sort.*` controls item order. All
 values are read at runtime, so panel-specific navigation overrides remain
 possible.

@@ -68,7 +68,7 @@ use Spatie\ModelStates\HasStates;
  * @property array<string, mixed>|null $metadata
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read Event $event
+ * @property-read TEvent $event
  * @property-read EventOccurrence|null $occurrence
  * @property-read EventSession|null $session
  * @property-read EventRegistration|null $parentRegistration
@@ -79,6 +79,8 @@ use Spatie\ModelStates\HasStates;
  * @property-read Collection<int, EventRegistrationItem> $items
  * @property-read Collection<int, Pass> $passes
  * @property-read Collection<int, EventAttendance> $attendances
+ *
+ * @template TEvent of Model = Event
  */
 class EventRegistration extends Model
 {
@@ -246,13 +248,13 @@ class EventRegistration extends Model
     }
 
     /**
-     * @return BelongsTo<Event, $this>
+     * @return BelongsTo<TEvent, $this>
      */
     public function event(): BelongsTo
     {
-        /** @var class-string<Event> $modelClass */
+        /** @var class-string<TEvent> $modelClass */
         $modelClass = static::eventModelClass();
-        /** @var BelongsTo<Event, $this> $relation */
+        /** @var BelongsTo<TEvent, $this> $relation */
         $relation = $this->belongsTo($modelClass, 'event_id');
 
         return $relation;
