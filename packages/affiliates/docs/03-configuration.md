@@ -167,7 +167,7 @@ this flag.
 | `route.destination_parameter` | Query-string key used to choose a configured destination |
 | `route.destinations` | Allowed destinations, keyed by public destination name; feeds the referral payload links |
 
-Entry capture is handled by the `CaptureAffiliateReferralFromPath` middleware (alias `affiliates.referral_path`), which is prepended globally when `enabled` and `auto_register_middleware` are both true. It captures any URL ending in the referral suffix and redirects back to the prefix path.
+Entry capture is handled by the `CaptureAffiliateReferralFromPath` middleware (alias `affiliates.referral_path`), which is appended to the global middleware stack when `enabled` and `auto_register_middleware` are both true. It runs after the framework's global prerequisites (trusted proxies, maintenance, owner context) but still before routing, so it captures any URL ending in the referral suffix and redirects back to the prefix path. The global `TrackAffiliateCookie` tracker is appended after it, so a successful path redirect short-circuits the tracker instead of overwriting the cookie capture just issued.
 
 ## Voucher Integration
 

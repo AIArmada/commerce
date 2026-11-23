@@ -93,7 +93,7 @@ Cookie::queue('affiliate_consent', '1', 60 * 24 * 365);
 
 ## Public Referral Entry Capture
 
-When `affiliates.public_pages.enabled` and `affiliates.public_pages.auto_register_middleware` are both `true`, the package prepends the `CaptureAffiliateReferralFromPath` middleware (alias `affiliates.referral_path`) globally. No entry route is registered; instead, any URL ending in `/r/{affiliateCode}` is captured:
+When `affiliates.public_pages.enabled` and `affiliates.public_pages.auto_register_middleware` are both `true`, the package appends the `CaptureAffiliateReferralFromPath` middleware (alias `affiliates.referral_path`) to the global middleware stack. It runs after the framework's global prerequisites but before routing, so no entry route is registered; instead, any URL ending in `/r/{affiliateCode}` is captured. The global `TrackAffiliateCookie` tracker is appended after it, so a successful path capture short-circuits the tracker and its issued cookie is not overwritten by the request's prior cookie:
 
 Examples:
 

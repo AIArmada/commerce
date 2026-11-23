@@ -127,6 +127,42 @@ test('tracked visit stores a single IP hash and never the raw address', function
         ->and((string) json_encode($attribution->metadata ?? []))->not->toContain($rawIp);
 });
 
+test('path referral redirect preserves its emitted cookie instead of the tracker overwriting it', function (): void {
+    $cookieName = (string) config('affiliates.cookies.name', 'affiliate_session');
+
+    $previous = Affiliate::create([
+        'code' => 'PREVIOUS-AFF-' . uniqid(),
+        'name' => 'Previous Partner',
+        'status' => Active::class,
+        'commission_type' => 'percentage',
+        'commission_rate' => 100,
+        'currency' => 'USD',
+        'default_voucher_code' => 'REFPREV' . uniqid(),
+    ]);
+
+    app(TrackAffiliateVisit::class)->handle(
+        $previous->code,
+        ['user_agent' => 'previous-agent', 'ip_address' => '203.0.113.5'],
+        'previous-cookie',
+    );
+
+    $response = $this
+        ->withUnencryptedCookie($cookieName, 'previous-cookie')
+        ->withHeaders(['User-Agent' => 'new-agent'])
+        ->get('/r/' . $this->affiliate->code);
+
+    $response->assertRedirect();
+
+    $emitted = $response->getCookie($cookieName, false);
+    $attribution = AffiliateAttribution::query()
+        ->where('affiliate_code', $this->affiliate->code)
+        ->sole();
+
+    expect($emitted)->not->toBeNull()
+        ->and($attribution->cookie_value)->not->toBe('previous-cookie')
+        ->and($emitted->getValue())->toBe($attribution->cookie_value);
+});
+
 test('touching attribution preserves the stored hash unless a new raw IP arrives', function (): void {
     $firstIp = '198.51.100.11';
     $secondIp = '198.51.100.22';

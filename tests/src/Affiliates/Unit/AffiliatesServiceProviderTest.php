@@ -14,7 +14,9 @@ use AIArmada\Affiliates\Listeners\NotifyProgramJoined;
 use AIArmada\Affiliates\Listeners\RecordCommissionForOrder;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Support\Integrations\VoucherIntegrationRegistrar;
+use AIArmada\Affiliates\Support\Middleware\CaptureAffiliateReferralFromPath;
 use AIArmada\Affiliates\Support\Middleware\HydratePublicAffiliateReferralContext;
+use AIArmada\Affiliates\Support\Middleware\TrackAffiliateCookie;
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Conditions\ConditionProviderRegistry;
 use AIArmada\Cart\Contracts\CartManagerInterface;
@@ -22,6 +24,9 @@ use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\Links\Events\LinkClicked;
 use AIArmada\Orders\Events\CommissionAttributionRequired;
 use AIArmada\Orders\Models\Order;
+use Illuminate\Contracts\Http\Kernel;
+use Illuminate\Foundation\Http\Middleware\PreventRequestsDuringMaintenance;
+use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Support\Facades\Event;
 
 afterEach(function (): void {
@@ -198,7 +203,7 @@ it('registers one engine conversion listener across affiliate-network checkout g
     }
 });
 
-it('registers public-page referral middleware when the feature is enabled', function (): void {
+it('registers public-page referral middleware on the bound kernel and router when enabled', function (): void {
     config()->set('affiliates.features.cart_integration.enabled', false);
     config()->set('affiliates.features.voucher_integration.enabled', false);
     config()->set('affiliates.features.commission_tracking.enabled', false);
@@ -210,8 +215,56 @@ it('registers public-page referral middleware when the feature is enabled', func
     $provider->packageBooted();
 
     $router = app('router');
+    $kernel = app(Kernel::class);
 
     expect($router->getMiddleware()['affiliates.public_context'] ?? null)
         ->toBe(HydratePublicAffiliateReferralContext::class)
+        ->and($kernel->getMiddlewareGroups()['web'] ?? [])->toContain(HydratePublicAffiliateReferralContext::class)
         ->and($router->getMiddlewareGroups()['web'] ?? [])->toContain(HydratePublicAffiliateReferralContext::class);
+});
+
+it('runs path capture after framework prerequisites but before routing', function (): void {
+    config()->set('affiliates.features.cart_integration.enabled', false);
+    config()->set('affiliates.features.voucher_integration.enabled', false);
+    config()->set('affiliates.features.commission_tracking.enabled', false);
+    config()->set('affiliates.cookies.enabled', false);
+    config()->set('affiliates.public_pages.enabled', true);
+    config()->set('affiliates.public_pages.auto_register_middleware', true);
+
+    $provider = new AffiliatesServiceProvider(app());
+    $provider->packageBooted();
+
+    $global = app(Kernel::class)->getGlobalMiddleware();
+
+    $capture = array_search(CaptureAffiliateReferralFromPath::class, $global, true);
+    $proxies = array_search(TrustProxies::class, $global, true);
+    $maintenance = array_search(PreventRequestsDuringMaintenance::class, $global, true);
+
+    expect($capture)->not->toBeFalse()
+        ->and($proxies)->not->toBeFalse()
+        ->and($maintenance)->not->toBeFalse()
+        ->and($capture)->toBeGreaterThan($proxies)
+        ->and($capture)->toBeGreaterThan($maintenance);
+});
+
+it('runs path capture before the affiliate cookie tracker', function (): void {
+    config()->set('affiliates.features.cart_integration.enabled', false);
+    config()->set('affiliates.features.voucher_integration.enabled', false);
+    config()->set('affiliates.features.commission_tracking.enabled', false);
+    config()->set('affiliates.cookies.enabled', true);
+    config()->set('affiliates.cookies.auto_register_middleware', true);
+    config()->set('affiliates.public_pages.enabled', true);
+    config()->set('affiliates.public_pages.auto_register_middleware', true);
+
+    $provider = new AffiliatesServiceProvider(app());
+    $provider->packageBooted();
+
+    $global = app(Kernel::class)->getGlobalMiddleware();
+
+    $capture = array_search(CaptureAffiliateReferralFromPath::class, $global, true);
+    $tracker = array_search(TrackAffiliateCookie::class, $global, true);
+
+    expect($capture)->not->toBeFalse()
+        ->and($tracker)->not->toBeFalse()
+        ->and($tracker)->toBeGreaterThan($capture);
 });

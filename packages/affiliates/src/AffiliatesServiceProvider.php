@@ -191,6 +191,8 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
         Event::listen(AffiliateConversionRecorded::class, NotifyConversionRecorded::class);
         Event::listen(AffiliateConversionRecorded::class, AutoApproveOpenAffiliate::class);
 
+        $this->registerPublicPageSupport();
+
         if (config('affiliates.cookies.enabled', true)) {
             $this->registerCookieTrackingMiddleware();
         }
@@ -199,8 +201,6 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
             $this->app->tag([Support\Links\AffiliateLinkGate::class], LinkGateInterface::class);
             Event::listen(LinkClicked::class, Listeners\IncrementAffiliateLinkClicks::class);
         }
-
-        $this->registerPublicPageSupport();
     }
 
     private function registerMorphMap(): void
@@ -251,7 +251,7 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
         $router->aliasMiddleware('affiliates.cookie', TrackAffiliateCookie::class);
 
         if (config('affiliates.cookies.auto_register_middleware', true) && $this->app->bound(Kernel::class)) {
-            $this->app->make(Kernel::class)->prependMiddleware(TrackAffiliateCookie::class);
+            $this->app->make(Kernel::class)->pushMiddleware(TrackAffiliateCookie::class);
         }
     }
 
@@ -288,12 +288,11 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
             $router->aliasMiddleware('affiliates.public_context', HydratePublicAffiliateReferralContext::class);
             $router->aliasMiddleware('affiliates.referral_path', CaptureAffiliateReferralFromPath::class);
 
-            if (config('affiliates.public_pages.auto_register_middleware', true)) {
-                $router->pushMiddlewareToGroup('web', HydratePublicAffiliateReferralContext::class);
-
-                if ($this->app->bound(Kernel::class)) {
-                    $this->app->make(Kernel::class)->prependMiddleware(CaptureAffiliateReferralFromPath::class);
-                }
+            if (config('affiliates.public_pages.auto_register_middleware', true) && $this->app->bound(Kernel::class)) {
+                /** @var \Illuminate\Foundation\Http\Kernel $kernel */
+                $kernel = $this->app->make(Kernel::class);
+                $kernel->appendMiddlewareToGroup('web', HydratePublicAffiliateReferralContext::class);
+                $kernel->pushMiddleware(CaptureAffiliateReferralFromPath::class);
             }
         }
 

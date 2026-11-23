@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\Signals\Support\Http\Middleware\BootstrapSignalsBrowserContext;
+use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Cookie;
 
@@ -24,4 +25,13 @@ it('issues browser cookies on the first web request', function (): void {
         ->and($cookies)->toHaveKeys(['sig_vid', 'sig_sid'])
         ->and($cookies['sig_vid']->getValue())->toStartWith('sigv_')
         ->and($cookies['sig_sid']->getValue())->toStartWith('sigs_');
+});
+
+it('registers the browser context middleware on the bound http kernel web group', function (): void {
+    $kernel = app(Kernel::class);
+
+    expect($kernel->getMiddlewareGroups()['web'] ?? [])
+        ->toContain(BootstrapSignalsBrowserContext::class)
+        ->and(app('router')->getMiddlewareGroups()['web'] ?? [])
+        ->toContain(BootstrapSignalsBrowserContext::class);
 });
