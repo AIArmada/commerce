@@ -29,7 +29,7 @@ beforeEach(function (): void {
     $this->invitation = $this->withMembershipOwner(fn (): MembershipInvitation => $this->createInvitation([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
-        'email' => 'invitee@example.com',
+        'recipient' => 'invitee@example.com',
         'role' => MemberRole::Admin->spatieRoleName(),
         'invited_by' => $this->inviter->getKey(),
     ]));

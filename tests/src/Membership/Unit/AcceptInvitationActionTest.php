@@ -34,7 +34,7 @@ beforeEach(function (): void {
     $this->invitation = $this->withMembershipOwner(fn (): MembershipInvitation => $this->createInvitation([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
-        'email' => 'acceptor@app.com',
+        'recipient' => 'acceptor@app.com',
         'role' => MemberRole::Admin->spatieRoleName(),
         'invited_by' => $this->inviter->getKey(),
         'expires_at' => now()->addDays(7),
@@ -130,7 +130,7 @@ it('throws on already accepted invitation', function (): void {
     );
 });
 
-it('rejects an accepting user with a different email', function (): void {
+it('rejects an accepting user who does not own the recipient identity', function (): void {
     $otherUser = User::query()->create([
         'name' => 'Other User',
         'email' => 'other@app.com',
@@ -140,7 +140,7 @@ it('rejects an accepting user with a different email', function (): void {
     expect(fn () => AcceptInvitationAction::make()->handle(
         invitation: $this->invitation,
         user: $otherUser,
-    ))->toThrow(RuntimeException::class, 'Invitation email does not match');
+    ))->toThrow(RuntimeException::class, 'Invitation recipient identity could not be verified.');
 
     expect($this->invitation->fresh()->accepted_at)->toBeNull();
 });

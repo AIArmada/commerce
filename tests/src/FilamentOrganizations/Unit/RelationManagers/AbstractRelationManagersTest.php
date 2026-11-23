@@ -51,10 +51,11 @@ test('abstract members and invitations relation managers expose reusable hooks a
     {
         protected function createInvitation(
             Model $owner,
-            string $email,
+            string $recipient,
             string $role,
             Model $actor,
             ?CarbonInterface $expiresAt,
+            string $channel,
         ): void {}
 
         protected function revokeInvitation(

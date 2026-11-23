@@ -18,7 +18,8 @@ return new class extends Migration
             $table->nullableUuidMorphs('owner');
             $table->string('subject_type');
             $table->uuid('subject_id');
-            $table->string('email');
+            $table->string('channel')->index();
+            $table->string('recipient');
             $table->string('role');
             $table->string('token', $tokenLength)->unique();
             $table->string('status')->default('pending')->index();
@@ -33,12 +34,8 @@ return new class extends Migration
             $table->timestampsTz();
 
             $table->index(['subject_type', 'subject_id']);
-            $table->index('email');
+            $table->index('recipient');
             $table->index('invited_by');
-            $table->unique(
-                ['subject_type', 'subject_id', 'email', 'role', 'status'],
-                'membership_invitations_subject_email_role_status_unique',
-            );
         });
     }
 };

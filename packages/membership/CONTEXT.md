@@ -40,8 +40,9 @@ keywords:
 
 ## Key surfaces
 - Models: `MembershipApplication`, `MembershipInvitation`, `MembershipPivot`
-- Actions/Services: `Actions/AcceptInvitationAction`, `Actions/AddMemberAction`, `Actions/ApplyForMembershipAction`, `Actions/ApproveMembershipApplicationAction`, `Actions/CancelMembershipApplicationAction`, `Actions/ChangeMemberRoleAction`, `Actions/InviteMemberAction`, `Actions/RejectMembershipApplicationAction`, `Actions/RemoveMemberAction`, `Actions/RevokeInvitationAction`, `Services/MembershipRoleSyncService`
-- Config `membership.php`: `database` (`json_column_type`, `tables.applications`, `tables.invitations`), `invitations` (`token_length`, `default_expiry_days`), `pivot.table_suffix`, `role_mapping`, `role_permissions`, `owner` (`enabled`, `include_global`, `auto_assign_on_create`, `owner_type_column`, `owner_id_column`), `features.team_scoped_roles`
+- Actions/Services: `Actions/AcceptInvitationAction`, `Actions/AddMemberAction`, `Actions/ApplyForMembershipAction`, `Actions/ApproveMembershipApplicationAction`, `Actions/CancelMembershipApplicationAction`, `Actions/ChangeMemberRoleAction`, `Actions/InviteMemberAction`, `Actions/RejectMembershipApplicationAction`, `Actions/RemoveMemberAction`, `Actions/RevokeInvitationAction`, `Services/MembershipRoleSyncService`, `Channels/InvitationChannelManager`
+- Contracts: `Contracts/InvitationChannel`, `Contracts/InvitationRecipientVerifier`
+- Config `membership.php`: `database` (`json_column_type`, `tables.applications`, `tables.invitations`), `invitations` (`token_length`, `default_expiry_days`, `default_channel`, `channels`, `verifiers`), `pivot.table_suffix`, `role_mapping`, `role_permissions`, `owner` (`enabled`, `include_global`, `auto_assign_on_create`, `owner_type_column`, `owner_id_column`), `features.team_scoped_roles`
 
 ## Docs map
 - Start: `01-overview` → `03-configuration` → `04-usage` → `99-troubleshooting`

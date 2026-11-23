@@ -133,7 +133,7 @@ trait MembershipOwnerScopingContractTests
             MembershipInvitation::class => $this->createInvitation([
                 'subject_type' => $subject->getMorphClass(),
                 'subject_id' => $subject->getKey(),
-                'email' => 'contract-' . Str::uuid() . '@example.com',
+                'recipient' => 'contract-' . Str::uuid() . '@example.com',
                 'role' => MemberRole::Viewer->spatieRoleName(),
                 'invited_by' => $actor->getKey(),
             ]),

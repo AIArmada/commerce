@@ -70,7 +70,7 @@ it('rejects cross-owner membership mutations and owner mass assignment', functio
     $invitationB = OwnerContext::withOwner($ownerB, fn (): MembershipInvitation => $this->createInvitation([
         'subject_type' => $subject->getMorphClass(),
         'subject_id' => $subject->getKey(),
-        'email' => 'member@example.com',
+        'recipient' => 'member@example.com',
         'role' => 'viewer',
         'invited_by' => $ownerB->getKey(),
     ]));

@@ -66,7 +66,7 @@ it('member invitations are scoped to the subject', function (): void {
     $invitation1 = $this->createInvitation([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
-        'email' => 'user1@app.com',
+        'recipient' => 'user1@app.com',
         'role' => 'admin',
         'invited_by' => $this->user->getKey(),
     ]);
@@ -74,7 +74,7 @@ it('member invitations are scoped to the subject', function (): void {
     $invitation2 = $this->createInvitation([
         'subject_type' => $this->subject2->getMorphClass(),
         'subject_id' => $this->subject2->getKey(),
-        'email' => 'user2@app.com',
+        'recipient' => 'user2@app.com',
         'role' => 'editor',
         'invited_by' => $this->user->getKey(),
     ]);
@@ -101,14 +101,14 @@ it('cancels pending records and preserves terminal history when a subject is del
     $pendingInvitation = $this->createInvitation([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
-        'email' => 'pending@example.com',
+        'recipient' => 'pending@example.com',
         'role' => MemberRole::Viewer->spatieRoleName(),
         'invited_by' => $this->user->getKey(),
     ]);
     $terminalInvitation = $this->createInvitation([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
-        'email' => 'accepted@example.com',
+        'recipient' => 'accepted@example.com',
         'role' => MemberRole::Viewer->spatieRoleName(),
         'invited_by' => $this->user->getKey(),
     ]);
@@ -167,7 +167,7 @@ it('cascades pending lifecycle records across owner scopes', function (): void {
     $invitation = OwnerContext::withOwner($ownerB, fn (): MembershipInvitation => $this->createInvitation([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
-        'email' => 'cross-owner@example.com',
+        'recipient' => 'cross-owner@example.com',
         'role' => MemberRole::Viewer->spatieRoleName(),
         'invited_by' => $ownerB->getKey(),
     ]));

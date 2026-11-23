@@ -14,6 +14,9 @@ return [
     'invitations' => [
         'token_length' => 64,
         'default_expiry_days' => 14,
+        'default_channel' => 'email',
+        'channels' => [],
+        'verifiers' => [],
     ],
 
     'pivot' => [

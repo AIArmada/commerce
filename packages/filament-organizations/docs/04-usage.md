@@ -27,3 +27,8 @@ members through a capped async search and re-validates membership on submit.
 Relation action handlers receive the relation manager as `$livewire` and
 resolve the organization via `getOwnerRecord()`; type-hinting the
 organization model directly is not injectable and throws at runtime.
+
+To invite a member, select a channel and enter its recipient identifier. The
+channel list comes from the membership package and includes integrations
+registered by the host application. See the
+[membership integration guide](../../membership/docs/04-usage.md#adding-a-channel-integration).

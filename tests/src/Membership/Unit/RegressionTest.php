@@ -49,7 +49,7 @@ it('creates a fresh invitation when the previous one expired', function (): void
     $stale = $this->withMembershipOwner(fn (): MembershipInvitation => $this->createInvitation([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
-        'email' => 'returning@example.com',
+        'recipient' => 'returning@example.com',
         'role' => MemberRole::Viewer->spatieRoleName(),
         'invited_by' => $this->inviter->getKey(),
         'expires_at' => now()->subDay(),
@@ -57,7 +57,7 @@ it('creates a fresh invitation when the previous one expired', function (): void
 
     $fresh = InviteMemberAction::make()->handle(
         subject: $this->subject,
-        email: 'returning@example.com',
+        recipient: 'returning@example.com',
         role: MemberRole::Viewer,
         inviter: $this->inviter,
     );
@@ -73,7 +73,7 @@ it('self-heals a past-due invitation on read instead of relying on a sweep', fun
     $due = $this->withMembershipOwner(fn (): MembershipInvitation => $this->createInvitation([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
-        'email' => 'due@example.com',
+        'recipient' => 'due@example.com',
         'role' => MemberRole::Viewer->spatieRoleName(),
         'invited_by' => $this->inviter->getKey(),
         'expires_at' => now()->subMinute(),
@@ -81,7 +81,7 @@ it('self-heals a past-due invitation on read instead of relying on a sweep', fun
     $upcoming = $this->withMembershipOwner(fn (): MembershipInvitation => $this->createInvitation([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
-        'email' => 'upcoming@example.com',
+        'recipient' => 'upcoming@example.com',
         'role' => MemberRole::Viewer->spatieRoleName(),
         'invited_by' => $this->inviter->getKey(),
         'expires_at' => now()->addMinute(),
@@ -105,7 +105,7 @@ it('refuses a past-due invitation at the accept gate without any sweep', functio
     $invitation = $this->withMembershipOwner(fn (): MembershipInvitation => $this->createInvitation([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
-        'email' => 'expired-accept@example.com',
+        'recipient' => 'expired-accept@example.com',
         'role' => MemberRole::Viewer->spatieRoleName(),
         'invited_by' => $this->inviter->getKey(),
         'expires_at' => now()->subMinute(),
@@ -121,7 +121,7 @@ it('verifies the invitation token when one is provided', function (): void {
     $invitation = $this->withMembershipOwner(fn (): MembershipInvitation => $this->createInvitation([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
-        'email' => 'token-acceptor@app.com',
+        'recipient' => 'token-acceptor@app.com',
         'role' => MemberRole::Viewer->spatieRoleName(),
         'invited_by' => $this->inviter->getKey(),
         'expires_at' => now()->addDays(7),

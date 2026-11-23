@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerConte
 use AIArmada\FilamentOrganizations\Resources\OrganizationResource;
 use AIArmada\Membership\Actions\InviteMemberAction;
 use AIArmada\Membership\Actions\RevokeInvitationAction;
+use AIArmada\Membership\Channels\InvitationChannelManager;
 use AIArmada\Membership\Enums\InvitationStatus;
 use AIArmada\Membership\Enums\MemberRole;
 use AIArmada\Membership\Models\MembershipInvitation;
@@ -31,7 +32,8 @@ final class InvitationsRelationManager extends RelationManager
     {
         return $table
             ->columns([
-                TextColumn::make('email')->searchable(),
+                TextColumn::make('channel')->badge(),
+                TextColumn::make('recipient')->searchable(),
                 TextColumn::make('role')->badge(),
                 TextColumn::make('expires_at')->dateTime(),
                 TextColumn::make('accepted_at')->dateTime()->placeholder('-'),
@@ -40,7 +42,11 @@ final class InvitationsRelationManager extends RelationManager
             ->headerActions([
                 Action::make('invite')
                     ->form([
-                        TextInput::make('email')->email()->required(),
+                        Select::make('channel')
+                            ->options(fn (): array => app(InvitationChannelManager::class)->options())
+                            ->default(fn (): string => app(InvitationChannelManager::class)->defaultChannelName())
+                            ->required(),
+                        TextInput::make('recipient')->required()->maxLength(255),
                         Select::make('role')->options(collect(MemberRole::cases())->mapWithKeys(fn (MemberRole $role): array => [$role->value => $role->label()])->all())->default(MemberRole::Viewer->value)->required(),
                     ])
                     ->action(function (InvitationsRelationManager $livewire, array $data): void {
@@ -48,7 +54,14 @@ final class InvitationsRelationManager extends RelationManager
                         $actor = Filament::auth()->user();
                         abort_unless($actor instanceof Model, 403);
                         OrganizationResource::authorizeRecord($organization, 'organization.manage-members');
-                        app(InviteMemberAction::class)->handle($organization, $data['email'], MemberRole::from($data['role']), $actor);
+                        app(InviteMemberAction::class)->handle(
+                            $organization,
+                            $data['recipient'],
+                            MemberRole::from($data['role']),
+                            $actor,
+                            null,
+                            $data['channel'],
+                        );
                     }),
             ])
             ->actions([

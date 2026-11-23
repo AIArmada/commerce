@@ -45,10 +45,10 @@ it('invites through the relation action', function (): void {
     [$org, $owner, $manager] = invitationOrganization();
 
     invitationAction('invite', $manager)->call([
-        'data' => ['email' => 'invited-member@example.com', 'role' => MemberRole::Viewer->value],
+        'data' => ['channel' => 'email', 'recipient' => 'invited-member@example.com', 'role' => MemberRole::Viewer->value],
     ]);
 
-    expect($org->invitations()->where('email', 'invited-member@example.com')->exists())->toBeTrue();
+    expect($org->invitations()->where('recipient', 'invited-member@example.com')->exists())->toBeTrue();
 });
 
 it('revokes pending invitations through the row action', function (): void {

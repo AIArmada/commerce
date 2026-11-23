@@ -9,7 +9,6 @@ use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Membership\Enums\InvitationStatus;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
-use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -21,7 +20,8 @@ use LogicException;
  * @property string $id
  * @property string $subject_type
  * @property string $subject_id
- * @property string $email
+ * @property string $channel
+ * @property string $recipient
  * @property string $role
  * @property string $token
  * @property InvitationStatus $status
@@ -45,7 +45,8 @@ class MembershipInvitation extends Model
     protected $fillable = [
         'subject_type',
         'subject_id',
-        'email',
+        'channel',
+        'recipient',
         'role',
         'invited_by',
     ];
@@ -201,13 +202,6 @@ class MembershipInvitation extends Model
         $this->transitionStatus(InvitationStatus::Expired);
 
         return true;
-    }
-
-    protected function email(): Attribute
-    {
-        return Attribute::make(
-            set: fn (string $value) => mb_strtolower($value),
-        );
     }
 
     public function subject(): MorphTo

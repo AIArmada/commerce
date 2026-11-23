@@ -7,7 +7,7 @@ title: Membership Overview
 `aiarmada/membership` adds reusable membership workflows to any Eloquent subject:
 
 - Membership applications with approval, rejection, and cancellation
-- Email invitations with hashed token storage
+- Channel-agnostic invitations (email built in; SMS, WhatsApp, social DMs, and future integrations pluggable) with hashed token storage
 - Subject-member pivot management
 - Team-scoped Spatie role synchronization for `Owner`, `Admin`, `Editor`, and `Viewer`
 - Configurable permission sets per role (`role_permissions`), including full access for owners
@@ -18,7 +18,9 @@ title: Membership Overview
 - Models `MembershipApplication`, `MembershipInvitation` (both `HasOwner`-scoped), and the host-extensible `MembershipPivot`
 - Actions `ApplyForMembershipAction`, `ApproveMembershipApplicationAction`, `RejectMembershipApplicationAction`, `CancelMembershipApplicationAction`, `InviteMemberAction`, `AcceptInvitationAction`, `RevokeInvitationAction`, `AddMemberAction`, `RemoveMemberAction`, `ChangeMemberRoleAction`
 - `Services\MembershipRoleSyncService` — pivot → Spatie team-role sync
-- Config `membership.php`: `database`, `invitations` (token length and expiry), `pivot`, `role_mapping`, `role_permissions`, `owner`, `features`
+- `Channels\InvitationChannelManager` — registry for invitation channels and recipient verifiers
+- Contracts `InvitationChannel` and `InvitationRecipientVerifier`; plugin point for new delivery integrations
+- Config `membership.php`: `database`, `invitations` (token length, expiry, default channel, channel/verifier classes), `pivot`, `role_mapping`, `role_permissions`, `owner`, `features`
 
 ## What this package does not own
 

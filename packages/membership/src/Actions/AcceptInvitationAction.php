@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Membership\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Membership\Channels\InvitationChannelManager;
+use AIArmada\Membership\Data\InvitationActorData;
 use AIArmada\Membership\Enums\InvitationStatus;
 use AIArmada\Membership\Enums\MemberRole;
 use AIArmada\Membership\Events\MembershipInvitationAccepted;
@@ -18,13 +20,13 @@ final class AcceptInvitationAction
 {
     use AsAction;
 
+    public function __construct(
+        private readonly InvitationChannelManager $channels,
+    ) {}
+
     public function handle(MembershipInvitation $invitation, Model $user, ?string $token = null): void
     {
-        $userEmail = method_exists($user, 'getEmailForVerification')
-            ? $user->getEmailForVerification()
-            : $user->getAttribute('email');
-
-        $acceptedInvitation = DB::transaction(function () use ($invitation, $token, $user, $userEmail): MembershipInvitation {
+        $acceptedInvitation = DB::transaction(function () use ($invitation, $token, $user): MembershipInvitation {
             $guardedInvitation = OwnerWriteGuard::findOrFailForOwner(
                 MembershipInvitation::class,
                 (string) $invitation->getKey(),
@@ -43,8 +45,13 @@ final class AcceptInvitationAction
                 throw new RuntimeException('Invitation token is invalid.');
             }
 
-            if (! is_string($userEmail) || mb_strtolower($userEmail) !== $lockedInvitation->email) {
-                throw new RuntimeException('Invitation email does not match the accepting user.');
+            $actor = new InvitationActorData(
+                id: (string) $user->getKey(),
+                email: $this->emailFor($user),
+            );
+
+            if (! $this->channels->verifyRecipient((string) $lockedInvitation->channel, (string) $lockedInvitation->recipient, $actor)) {
+                throw new RuntimeException('Invitation recipient identity could not be verified.');
             }
 
             $role = MemberRole::fromSpatieRoleName($lockedInvitation->role);
@@ -65,5 +72,14 @@ final class AcceptInvitationAction
         });
 
         MembershipInvitationAccepted::dispatch($acceptedInvitation->fresh());
+    }
+
+    private function emailFor(Model $user): ?string
+    {
+        $email = method_exists($user, 'getEmailForVerification')
+            ? $user->getEmailForVerification()
+            : $user->getAttribute('email');
+
+        return is_string($email) ? $email : null;
     }
 }

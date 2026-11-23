@@ -24,34 +24,36 @@ it('creates a membership invitation', function (): void {
     $invitation = $this->createInvitation([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
-        'email' => 'invitee@example.com',
+        'recipient' => 'invitee@example.com',
         'role' => 'admin',
         'invited_by' => $this->inviter->getKey(),
     ]);
 
     expect($invitation)
         ->id->toBeUuid()
-        ->email->toBe('invitee@example.com')
+        ->recipient->toBe('invitee@example.com')
+        ->channel->toBe('email')
         ->role->toBe('admin');
 });
 
-it('lowercases email on create', function (): void {
+it('stores the recipient exactly as provided by the fixture', function (): void {
     $invitation = $this->createInvitation([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
-        'email' => 'UpperCase@Example.Com',
+        'recipient' => 'UpperCase@Example.Com',
         'role' => 'editor',
         'invited_by' => $this->inviter->getKey(),
     ]);
 
-    expect($invitation->email)->toBe('uppercase@example.com');
+    expect($invitation->recipient)->toBe('UpperCase@Example.Com')
+        ->and($invitation->channel)->toBe('email');
 });
 
 it('generates a unique token', function (): void {
     $invitation1 = $this->createInvitation([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
-        'email' => 'user1@example.com',
+        'recipient' => 'user1@example.com',
         'role' => 'viewer',
         'invited_by' => $this->inviter->getKey(),
     ]);
@@ -59,7 +61,7 @@ it('generates a unique token', function (): void {
     $invitation2 = $this->createInvitation([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
-        'email' => 'user2@example.com',
+        'recipient' => 'user2@example.com',
         'role' => 'viewer',
         'invited_by' => $this->inviter->getKey(),
     ]);
@@ -72,7 +74,7 @@ it('matches a plaintext token against hashed storage', function (): void {
     $invitation = $this->createInvitation([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
-        'email' => 'token@example.com',
+        'recipient' => 'token@example.com',
         'role' => 'viewer',
         'invited_by' => $this->inviter->getKey(),
     ], $token);
@@ -86,7 +88,7 @@ it('has polymorphic subject relationship', function (): void {
     $invitation = $this->createInvitation([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
-        'email' => 'test@example.com',
+        'recipient' => 'test@example.com',
         'role' => 'admin',
         'invited_by' => $this->inviter->getKey(),
     ]);
@@ -98,7 +100,7 @@ it('is valid when not accepted, revoked, or expired', function (): void {
     $invitation = $this->createInvitation([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
-        'email' => 'test@example.com',
+        'recipient' => 'test@example.com',
         'role' => 'admin',
         'invited_by' => $this->inviter->getKey(),
         'expires_at' => now()->addDays(7),
@@ -111,7 +113,7 @@ it('is not valid when expired', function (): void {
     $invitation = $this->createInvitation([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
-        'email' => 'test@example.com',
+        'recipient' => 'test@example.com',
         'role' => 'admin',
         'invited_by' => $this->inviter->getKey(),
         'expires_at' => now()->subDay(),
@@ -124,7 +126,7 @@ it('does not accept an invitation after its expiry deadline', function (): void 
     $invitation = $this->createInvitation([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
-        'email' => 'expired@example.com',
+        'recipient' => 'expired@example.com',
         'role' => 'admin',
         'invited_by' => $this->inviter->getKey(),
         'expires_at' => now()->subDay(),
@@ -142,7 +144,7 @@ it('records the actual expiration transition separately from the expiry deadline
     $invitation = $this->createInvitation([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
-        'email' => 'expired@example.com',
+        'recipient' => 'expired@example.com',
         'role' => 'admin',
         'invited_by' => $this->inviter->getKey(),
         'expires_at' => now()->subDay(),
@@ -161,7 +163,7 @@ it('is not valid when accepted', function (): void {
     $invitation = $this->createInvitation([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
-        'email' => 'test@example.com',
+        'recipient' => 'test@example.com',
         'role' => 'admin',
         'invited_by' => $this->inviter->getKey(),
     ]);
@@ -174,7 +176,7 @@ it('is not valid when revoked', function (): void {
     $invitation = $this->createInvitation([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
-        'email' => 'test@example.com',
+        'recipient' => 'test@example.com',
         'role' => 'admin',
         'invited_by' => $this->inviter->getKey(),
     ]);

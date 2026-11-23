@@ -97,9 +97,10 @@ AddMemberAction::run($team, $founder, MemberRole::Owner);
 
 When resolving an invitation from a request, use the bearer token as the
 capability: hash it with `MembershipInvitation::tokenForStorage()` and query
-the invitation under the current owner context. Confirm the accepting user's
-email only after the token-selected invitation is loaded, then call
-`AcceptInvitationAction`. A successful acceptance is single-use.
+the invitation under the current owner context. Acceptance verifies the
+accepting user against the invitation's channel through the registered
+`InvitationRecipientVerifier`, then call `AcceptInvitationAction`. A
+successful acceptance is single-use.
 
 ```php
 use AIArmada\Membership\Actions\AcceptInvitationAction;
@@ -111,6 +112,17 @@ Pass the raw invitation credential as the third argument whenever the host
 resolves the invitation by id or route-model binding instead of by token-hash
 lookup. Acceptance is rejected when the credential does not match the
 invitation.
+
+Acceptance is recipient-bound on every channel. The email verifier compares
+the accepting user's email with the stored recipient. Hosts should enforce
+email verification before calling the action for untrusted requests. A non-email
+invitation is accepted only when its registered verifier confirms the
+accepting user owns the recipient identity (for example, an SMS integration
+that has verified the user's phone number). If a channel has no verifier, or
+the verifier returns false, acceptance fails with
+`Invitation recipient identity could not be verified.` The package never
+accepts a caller-supplied identity string as proof and never degrades an
+invitation into a bearer-only token.
 
 When a member is added, `MembershipRoleSyncService` ensures the mapped Spatie role exists, syncs permissions from `membership.role_permissions` (prefixing non-wildcard names with the subject basename when possible), and assigns the role to the user under the current team context when team-scoped roles are enabled.
 
@@ -130,19 +142,118 @@ $invitation = OwnerContext::withOwner(
     $team,
     fn () => InviteMemberAction::run(
         subject: $team,
-        email: 'member@example.com',
+        recipient: 'member@example.com',
         role: MemberRole::Viewer,
         inviter: $administrator,
     ),
 );
 ```
 
-Pending invitations are unique per subject, normalized email, role, and
-status. Repeating the same invitation request returns the existing pending
-invitation without sending another `MembershipInvitationSent` event. A new
-invitation can be created after the previous invitation reaches a terminal
+The channel defaults to `membership.invitations.default_channel` (email).
+Pass a channel explicitly for other integrations:
+
+```php
+$invitation = InviteMemberAction::run(
+    subject: $team,
+    recipient: '+60123456789',
+    role: MemberRole::Viewer,
+    inviter: $administrator,
+    channel: 'sms',
+);
+```
+
+The channel validates and normalizes the recipient before anything is
+persisted, so an invalid recipient throws `InvalidArgumentException` and no
+invitation row or event is created. An unregistered channel also throws
+instead of silently falling back to email.
+
+Pending invitations are deduplicated within the current owner scope by subject,
+channel, normalized recipient, and role. Repeating the same invitation request returns the existing
+pending invitation without sending another `MembershipInvitationSent` event. A
+new invitation can be created after the previous invitation reaches a terminal
 status. Re-inviting after the expiry deadline transitions the stale row to
 `expired` and creates a fresh invitation with a new event.
+
+After the transaction commits, every new invitation dispatches one `MembershipInvitationSent` event carrying
+an `InvitationDeliveryData` with the channel, recipient, plaintext token, and
+expiry. The event is the single notification seam for all channels: an email
+listener sends mail, an SMS integration sends an SMS message. Channels that
+must push over an external transport also receive the delivery through
+`InvitationChannel::deliver()`. Choose one delivery path per channel. For
+external transports, enqueue delivery using the invitation ID as the
+idempotency key and let the job retry provider failures.
+
+### Adding a channel integration
+
+Implement `InvitationChannel` to describe the channel, normalize recipients,
+and optionally push the delivery:
+
+```php
+use AIArmada\Membership\Contracts\InvitationChannel;
+use AIArmada\Membership\Data\InvitationDeliveryData;
+use InvalidArgumentException;
+
+final class SmsInvitationChannel implements InvitationChannel
+{
+    public function channel(): string
+    {
+        return 'sms';
+    }
+
+    public function label(): string
+    {
+        return 'SMS';
+    }
+
+    public function normalize(string $identifier): string
+    {
+        $identifier = trim($identifier);
+
+        if (preg_match('/^\+[1-9]\d{6,14}$/', $identifier) !== 1) {
+            throw new InvalidArgumentException('A valid E.164 phone number is required.');
+        }
+
+        return $identifier;
+    }
+
+    public function deliver(InvitationDeliveryData $delivery): void
+    {
+        // Hand off to your SMS provider here.
+    }
+}
+```
+
+Implement `InvitationRecipientVerifier` to prove that an accepting user owns
+the recipient identity. Verification must use a trusted source, such as a
+verified phone number on the user record or a provider callback — never an
+identity string supplied by the accepting request:
+
+```php
+use AIArmada\Membership\Contracts\InvitationRecipientVerifier;
+use AIArmada\Membership\Data\InvitationActorData;
+use AIArmada\Membership\Data\InvitationRecipientData;
+
+final class SmsInvitationRecipientVerifier implements InvitationRecipientVerifier
+{
+    public function channel(): string
+    {
+        return 'sms';
+    }
+
+    public function verify(InvitationRecipientData $recipient, InvitationActorData $actor): bool
+    {
+        return $this->verifiedPhoneFor($actor->id) === $recipient->identifier;
+    }
+}
+```
+
+Register both classes in `membership.invitations.channels` and
+`membership.invitations.verifiers`, or call
+`InvitationChannelManager::registerChannel()` and `registerVerifier()` from a
+service provider.
+
+Host UIs can read `InvitationChannelManager::options()` for a
+`name => label` map and `defaultChannelName()` for the default selection.
 
 Acceptance is gated on the date, not the stored status: `isValid()` consults
 `isExpired()`, so a past-due invitation is refused whether or not anything has
@@ -188,9 +299,9 @@ calling them.
 ## Rate Limiting
 
 Invite and apply endpoints must be throttled by the host. Unique indexes only
-deduplicate identical subject/email/role or subject/applicant keys, so varying
-emails or justifications can otherwise create unbounded rows, and every new
-invitation emits a mail-driving `MembershipInvitationSent` event.
+deduplicate identical subject/channel/recipient/role or subject/applicant keys,
+so varying recipients or justifications can otherwise create unbounded rows, and
+every new invitation emits a delivery event.
 
 ## Deleting a Subject
 
@@ -221,3 +332,11 @@ $application = OwnerContext::withOwner(
 Only one pending application is kept for a subject and applicant. Repeated or
 concurrent submissions return that application without dispatching a duplicate
 `MembershipApplicationSubmitted` event.
+
+## Upgrading invitation callers
+
+The invitation schema now stores `channel` and `recipient` where it previously
+stored `email`. Fresh installs use the updated original migration. Databases
+that already ran it need their invitation schema updated before deploying this
+version. Update invitation callers to pass `recipient` and update event
+listeners to read the event's `delivery` payload.

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Membership;
 
+use AIArmada\Membership\Channels\InvitationChannelManager;
 use AIArmada\Membership\Console\Commands\SyncRolesCommand;
 use AIArmada\Membership\Services\MembershipRoleSyncService;
 use Spatie\LaravelPackageTools\Package;
@@ -26,5 +27,6 @@ final class MembershipServiceProvider extends PackageServiceProvider
     public function packageRegistered(): void
     {
         $this->app->singleton(MembershipRoleSyncService::class);
+        $this->app->singleton(InvitationChannelManager::class);
     }
 }

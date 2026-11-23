@@ -29,14 +29,14 @@ beforeEach(function (): void {
 it('creates an invitation', function (): void {
     $invitation = InviteMemberAction::make()->handle(
         subject: $this->subject,
-        email: 'invitee@example.com',
+        recipient: 'invitee@example.com',
         role: MemberRole::Admin,
         inviter: $this->inviter,
     );
 
     expect($invitation)
         ->toBeInstanceOf(MembershipInvitation::class)
-        ->email->toBe('invitee@example.com')
+        ->recipient->toBe('invitee@example.com')
         ->role->toBe(MemberRole::Admin->spatieRoleName())
         ->token->not->toBeNull();
 });
@@ -44,23 +44,23 @@ it('creates an invitation', function (): void {
 it('dispatches MembershipInvitationSent event', function (): void {
     $invitation = InviteMemberAction::make()->handle(
         subject: $this->subject,
-        email: 'invitee@example.com',
+        recipient: 'invitee@example.com',
         role: MemberRole::Editor,
         inviter: $this->inviter,
     );
 
     Event::assertDispatched(
         MembershipInvitationSent::class,
-        fn (MembershipInvitationSent $event): bool => $event->invitation->is($invitation)
-            && $event->token !== $invitation->token
-            && $invitation->matchesToken($event->token),
+        fn (MembershipInvitationSent $event): bool => $event->delivery->invitationId === (string) $invitation->getKey()
+            && $event->delivery->token !== $invitation->token
+            && $invitation->matchesToken($event->delivery->token),
     );
 });
 
 it('sets expiry date from config by default', function (): void {
     $invitation = InviteMemberAction::make()->handle(
         subject: $this->subject,
-        email: 'invitee@example.com',
+        recipient: 'invitee@example.com',
         role: MemberRole::Viewer,
         inviter: $this->inviter,
     );
@@ -73,7 +73,7 @@ it('accepts custom expiry date', function (): void {
 
     $invitation = InviteMemberAction::make()->handle(
         subject: $this->subject,
-        email: 'invitee@example.com',
+        recipient: 'invitee@example.com',
         role: MemberRole::Admin,
         inviter: $this->inviter,
         expiresAt: $expiresAt,
@@ -82,27 +82,27 @@ it('accepts custom expiry date', function (): void {
     expect($invitation->expires_at->toDateString())->toBe($expiresAt->toDateString());
 });
 
-it('lowercases email', function (): void {
+it('normalizes the email recipient', function (): void {
     $invitation = InviteMemberAction::make()->handle(
         subject: $this->subject,
-        email: 'UPPERCASE@Example.Com',
+        recipient: 'UPPERCASE@Example.Com',
         role: MemberRole::Viewer,
         inviter: $this->inviter,
     );
 
-    expect($invitation->email)->toBe('uppercase@example.com');
+    expect($invitation->recipient)->toBe('uppercase@example.com');
 });
 
-it('reuses a pending invitation for the same subject, email, and role', function (): void {
+it('reuses a pending invitation for the same subject, recipient, and role', function (): void {
     $first = InviteMemberAction::make()->handle(
         subject: $this->subject,
-        email: 'pending@example.com',
+        recipient: 'pending@example.com',
         role: MemberRole::Viewer,
         inviter: $this->inviter,
     );
     $second = InviteMemberAction::make()->handle(
         subject: $this->subject,
-        email: ' PENDING@example.com ',
+        recipient: ' PENDING@example.com ',
         role: MemberRole::Viewer,
         inviter: $this->inviter,
     );
@@ -110,7 +110,7 @@ it('reuses a pending invitation for the same subject, email, and role', function
     expect($second->is($first))->toBeTrue()
         ->and(MembershipInvitation::query()
             ->where('subject_id', $this->subject->getKey())
-            ->where('email', 'pending@example.com')
+            ->where('recipient', 'pending@example.com')
             ->where('role', MemberRole::Viewer->spatieRoleName())
             ->count())->toBe(1);
 

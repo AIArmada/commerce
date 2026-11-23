@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentOrganizations\RelationManagers;
 
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
+use AIArmada\Membership\Channels\InvitationChannelManager;
 use AIArmada\Membership\Enums\InvitationStatus;
 use AIArmada\Membership\Enums\MemberRole;
 use AIArmada\Membership\Models\MembershipInvitation;
@@ -38,9 +39,13 @@ abstract class AbstractMemberInvitationsRelationManager extends RelationManager
                 Action::make('inviteMember')
                     ->label('Invite member')
                     ->form([
-                        TextInput::make('email')
-                            ->label('Email')
-                            ->email()
+                        Select::make('channel')
+                            ->label('Channel')
+                            ->options(fn (): array => $this->channelOptions())
+                            ->default($this->defaultInviteChannel())
+                            ->required(),
+                        TextInput::make('recipient')
+                            ->label('Recipient')
                             ->required()
                             ->maxLength(255),
                         Select::make('role')
@@ -61,10 +66,11 @@ abstract class AbstractMemberInvitationsRelationManager extends RelationManager
 
                         $this->createInvitation(
                             $owner,
-                            (string) $data['email'],
+                            (string) $data['recipient'],
                             (string) ($data['role'] ?? $this->defaultInviteRole()),
                             $actor,
                             $this->normalizeExpiresAt($data['expires_at'] ?? null),
+                            (string) ($data['channel'] ?? $this->defaultInviteChannel()),
                         );
                     }),
             ])
@@ -90,10 +96,11 @@ abstract class AbstractMemberInvitationsRelationManager extends RelationManager
 
     abstract protected function createInvitation(
         Model $owner,
-        string $email,
+        string $recipient,
         string $role,
         Model $actor,
         ?CarbonInterface $expiresAt,
+        string $channel,
     ): void;
 
     abstract protected function revokeInvitation(
@@ -119,7 +126,11 @@ abstract class AbstractMemberInvitationsRelationManager extends RelationManager
     protected function getInvitationColumns(): array
     {
         return [
-            TextColumn::make('email')
+            TextColumn::make('channel')
+                ->label('Channel')
+                ->badge()
+                ->formatStateUsing(fn (string $state): string => $this->channelLabel($state)),
+            TextColumn::make('recipient')
                 ->searchable()
                 ->sortable(),
             TextColumn::make('role')
@@ -154,6 +165,30 @@ abstract class AbstractMemberInvitationsRelationManager extends RelationManager
     protected function defaultInviteRole(): string
     {
         return MemberRole::Viewer->value;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function channelOptions(): array
+    {
+        return app(InvitationChannelManager::class)->options();
+    }
+
+    protected function defaultInviteChannel(): string
+    {
+        return app(InvitationChannelManager::class)->defaultChannelName();
+    }
+
+    protected function channelLabel(string $channel): string
+    {
+        $manager = app(InvitationChannelManager::class);
+
+        if (! $manager->hasChannel($channel)) {
+            return $channel;
+        }
+
+        return $manager->channel($channel)->label();
     }
 
     protected function invitationStatusLabel(MembershipInvitation $invitation): string

@@ -30,7 +30,7 @@ it('creates membership invitations table', function (): void {
 
     expect($schema->hasTable('membership_invitations'))->toBeTrue()
         ->and($schema->hasColumns('membership_invitations', ['owner_type', 'owner_id']))->toBeTrue()
-        ->and($schema->hasIndex('membership_invitations', 'membership_invitations_subject_email_role_status_unique'))->toBeTrue();
+        ->and($schema->hasColumns('membership_invitations', ['channel', 'recipient']))->toBeTrue();
 });
 
 it('reads owner scoping from the top-level membership owner configuration', function (): void {
