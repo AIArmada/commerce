@@ -14,7 +14,7 @@ trait EnforcesOwnerUniqueIdentity
     {
         static::saving(
             function (self $model): void {
-                if (! (bool) config('products.features.owner.enabled', true)) {
+                if (! (bool) config('products.features.owner.enabled', false)) {
                     return;
                 }
 

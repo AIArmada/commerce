@@ -403,7 +403,7 @@ class Collection extends Model implements Auditable, HasMedia
     protected static function booted(): void
     {
         static::creating(function (Collection $collection): void {
-            if (! (bool) config('products.features.owner.enabled', true)) {
+            if (! (bool) config('products.features.owner.enabled', false)) {
                 return;
             }
 
@@ -525,7 +525,7 @@ class Collection extends Model implements Auditable, HasMedia
      */
     protected function applyOwnerScopeToProductsQuery(Builder $query): void
     {
-        if (! (bool) config('products.features.owner.enabled', true)) {
+        if (! (bool) config('products.features.owner.enabled', false)) {
             return;
         }
 

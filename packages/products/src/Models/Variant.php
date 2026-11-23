@@ -632,7 +632,7 @@ class Variant extends Model implements Auditable, Buyable, HasMedia, Inventoryab
     protected static function booted(): void
     {
         static::creating(function (Variant $variant): void {
-            if (! (bool) config('products.features.owner.enabled', true)) {
+            if (! (bool) config('products.features.owner.enabled', false)) {
                 return;
             }
 
@@ -668,7 +668,7 @@ class Variant extends Model implements Auditable, Buyable, HasMedia, Inventoryab
                 throw new InvalidArgumentException('Cross-tenant write blocked: variant product and owner are immutable after creation.');
             }
 
-            if (! (bool) config('products.features.owner.enabled', true)) {
+            if (! (bool) config('products.features.owner.enabled', false)) {
                 return;
             }
 

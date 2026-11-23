@@ -223,7 +223,7 @@ class Category extends Model implements Auditable, HasMedia
      */
     protected function applyOwnerScopeToProductsQuery(Builder $query): void
     {
-        if (! (bool) config('products.features.owner.enabled', true)) {
+        if (! (bool) config('products.features.owner.enabled', false)) {
             return;
         }
 
@@ -494,7 +494,7 @@ class Category extends Model implements Auditable, HasMedia
     protected static function booted(): void
     {
         static::creating(function (Category $category): void {
-            if (! (bool) config('products.features.owner.enabled', true)) {
+            if (! (bool) config('products.features.owner.enabled', false)) {
                 return;
             }
 
@@ -561,7 +561,7 @@ class Category extends Model implements Auditable, HasMedia
 
         $this->rejectHierarchyCycle($parent);
 
-        if (! (bool) config('products.features.owner.enabled', true)) {
+        if (! (bool) config('products.features.owner.enabled', false)) {
             return;
         }
 

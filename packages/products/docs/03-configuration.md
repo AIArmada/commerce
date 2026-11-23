@@ -38,7 +38,7 @@ return [
 
     'features' => [
         'owner' => [
-            'enabled' => env('PRODUCTS_OWNER_ENABLED', true),
+            'enabled' => env('PRODUCTS_OWNER_ENABLED', false),
             'include_global' => false,
             'auto_assign_on_create' => true,
         ],
@@ -90,7 +90,7 @@ return [
 
 ### Owner behavior
 
-- `features.owner.enabled` toggles owner enforcement for package models and defaults to secure `true` (override with `PRODUCTS_OWNER_ENABLED=false` only for an explicitly global installation).
+- `features.owner.enabled` toggles owner enforcement for package models and defaults to `false`. Set `PRODUCTS_OWNER_ENABLED=true` only for multi-tenant installations, where you must also bind an `OwnerResolverInterface` or enter explicit global context.
 - `features.owner.include_global` controls whether owner-scoped reads and writes may include global rows.
 - `features.owner.auto_assign_on_create` controls whether owned rows inherit the current owner automatically.
 - Catalog parent references (`Option.product_id`, `OptionValue.option_id`, `Variant.product_id`, `AttributeValue.attribute_id`, and the `AttributeValue` attributable tuple) are validated against the current owner context on create. With `include_global` off, tenant contexts cannot attach children to global parents or reference global attribute definitions; with it on, global parents and definitions are accepted. Parent and definition identity is immutable afterwards regardless of this flag.

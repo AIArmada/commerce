@@ -300,7 +300,7 @@ class ProductComponent extends Model implements Auditable
 
         $includeGlobal = (bool) config('products.features.owner.include_global', false);
 
-        if (! (bool) config('products.features.owner.enabled', true)) {
+        if (! (bool) config('products.features.owner.enabled', false)) {
             $parent = Product::query()->whereKey($component->product_id)->first();
             $componentProduct = $isBuyable ? null : Product::query()->whereKey($component->component_product_id)->first();
             $variant = $component->variant_id !== null

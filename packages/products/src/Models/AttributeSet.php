@@ -191,7 +191,7 @@ class AttributeSet extends Model implements Auditable
     protected static function booted(): void
     {
         static::creating(function (AttributeSet $set): void {
-            if (! (bool) config('products.features.owner.enabled', true)) {
+            if (! (bool) config('products.features.owner.enabled', false)) {
                 return;
             }
 

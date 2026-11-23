@@ -171,7 +171,7 @@ class AttributeValue extends Model implements Auditable
                 throw new InvalidArgumentException('Invalid attributable: attribute values may only attach to products or variants.');
             }
 
-            if (! (bool) config('products.features.owner.enabled', true)) {
+            if (! (bool) config('products.features.owner.enabled', false)) {
                 if (! Attribute::query()->whereKey($attributeValue->attribute_id)->exists()) {
                     throw new InvalidArgumentException('Invalid attribute_id: attribute not found.');
                 }

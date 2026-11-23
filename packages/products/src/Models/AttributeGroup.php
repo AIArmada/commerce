@@ -164,7 +164,7 @@ class AttributeGroup extends Model implements Auditable
     protected static function booted(): void
     {
         static::creating(function (AttributeGroup $group): void {
-            if (! (bool) config('products.features.owner.enabled', true)) {
+            if (! (bool) config('products.features.owner.enabled', false)) {
                 return;
             }
 

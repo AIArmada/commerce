@@ -158,7 +158,7 @@ class Option extends Model implements Auditable
     protected static function booted(): void
     {
         static::creating(function (Option $option): void {
-            if (! (bool) config('products.features.owner.enabled', true)) {
+            if (! (bool) config('products.features.owner.enabled', false)) {
                 if (! Product::query()->whereKey($option->product_id)->exists()) {
                     throw new InvalidArgumentException('Invalid product_id: product not found.');
                 }
@@ -184,7 +184,7 @@ class Option extends Model implements Auditable
                 throw new InvalidArgumentException('Cross-tenant write blocked: option product and owner are immutable after creation.');
             }
 
-            if (! (bool) config('products.features.owner.enabled', true)) {
+            if (! (bool) config('products.features.owner.enabled', false)) {
                 return;
             }
 

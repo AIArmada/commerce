@@ -971,7 +971,7 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
         static::creating(function (Product $product): void {
             $product->applyTypeDefaultsOnCreate();
 
-            if (! (bool) config('products.features.owner.enabled', true)) {
+            if (! (bool) config('products.features.owner.enabled', false)) {
                 return;
             }
 
@@ -1005,7 +1005,7 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
         });
 
         static::updating(function (Product $product): void {
-            if (! (bool) config('products.features.owner.enabled', true)) {
+            if (! (bool) config('products.features.owner.enabled', false)) {
                 return;
             }
 
@@ -1030,7 +1030,7 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
         });
 
         static::deleting(function (Product $product): void {
-            if ((bool) config('products.features.owner.enabled', true)
+            if ((bool) config('products.features.owner.enabled', false)
                 && ! Product::query()->whereKey($product->getKey())->exists()) {
                 throw new InvalidCompositePackageException('Cross-tenant write blocked: product is not accessible in the current owner context.');
             }

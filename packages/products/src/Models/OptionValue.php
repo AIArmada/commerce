@@ -202,7 +202,7 @@ class OptionValue extends Model implements Auditable
     protected static function booted(): void
     {
         static::creating(function (OptionValue $optionValue): void {
-            if (! (bool) config('products.features.owner.enabled', true)) {
+            if (! (bool) config('products.features.owner.enabled', false)) {
                 $option = Option::query()->whereKey($optionValue->option_id)->first();
 
                 if ($option === null) {
@@ -247,7 +247,7 @@ class OptionValue extends Model implements Auditable
                 throw new InvalidArgumentException('Cross-tenant write blocked: option value option and owner are immutable after creation.');
             }
 
-            if (! (bool) config('products.features.owner.enabled', true)) {
+            if (! (bool) config('products.features.owner.enabled', false)) {
                 return;
             }
 

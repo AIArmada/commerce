@@ -11,7 +11,7 @@ trait HandlesOwnerScoping
 {
     private function canAccess(Model $model): bool
     {
-        if (! (bool) config('products.features.owner.enabled', true)) {
+        if (! (bool) config('products.features.owner.enabled', false)) {
             return true;
         }
 

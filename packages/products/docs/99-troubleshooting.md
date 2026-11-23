@@ -11,7 +11,7 @@ If `products.features.owner.enabled` is `true`, owner-aware reads require either
 - a resolved current owner, or
 - explicit global context via `OwnerContext::withOwner(null, ...)`
 
-Verify your `OwnerResolverInterface` binding first.
+Owner scoping is off by default; set `PRODUCTS_OWNER_ENABLED=true` only for multi-tenant installations, and verify your `OwnerResolverInterface` binding first.
 
 ## Global record writes are rejected
 

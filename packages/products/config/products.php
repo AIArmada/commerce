@@ -39,7 +39,7 @@ return [
     /* Features / Behavior */
     'features' => [
         'owner' => [
-            'enabled' => env('PRODUCTS_OWNER_ENABLED', true),
+            'enabled' => env('PRODUCTS_OWNER_ENABLED', false),
             'include_global' => false,
             'auto_assign_on_create' => true,
         ],

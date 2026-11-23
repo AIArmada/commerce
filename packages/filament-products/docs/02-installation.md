@@ -41,7 +41,9 @@ php artisan migrate
 
 ## Configure owner resolution
 
-The Filament package follows the owner context from `commerce-support`, so your app must bind an `OwnerResolverInterface` implementation.
+Owner scoping is off by default (`products.features.owner.enabled`). For a single-tenant or global catalog no owner setup is required.
+
+For multi-tenant installs, enable owner scoping and bind an `OwnerResolverInterface` implementation so the panel can resolve the current owner:
 
 ```php
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
@@ -52,4 +54,4 @@ public function register(): void
 }
 ```
 
-Once that is in place, the plugin resources and pages will scope queries and revalidate submitted foreign IDs against the current owner.
+Once both are in place, the plugin resources and pages will scope queries and revalidate submitted foreign IDs against the current owner. If you enable owner scoping without a resolver, panel requests must instead enter explicit global context (`OwnerContext::withOwner(null, ...)` or `SetExplicitGlobalOwnerContext`).

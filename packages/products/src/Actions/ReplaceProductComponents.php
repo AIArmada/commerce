@@ -195,7 +195,7 @@ final class ReplaceProductComponents
 
     private function resolveComponentProduct(string $id): Product
     {
-        if (! (bool) config('products.features.owner.enabled', true)) {
+        if (! (bool) config('products.features.owner.enabled', false)) {
             $product = Product::query()->whereKey($id)->first();
 
             if (! $product instanceof Product) {
@@ -218,7 +218,7 @@ final class ReplaceProductComponents
 
     private function resolveVariant(string $id): Variant
     {
-        if (! (bool) config('products.features.owner.enabled', true)) {
+        if (! (bool) config('products.features.owner.enabled', false)) {
             $variant = Variant::query()->whereKey($id)->first();
 
             if (! $variant instanceof Variant) {
