@@ -2,15 +2,20 @@
 
 declare(strict_types=1);
 
-use AIArmada\AffiliateNetwork\Actions\CreateSite;
-use AIArmada\AffiliateNetwork\Actions\UpdateSite;
-use AIArmada\AffiliateNetwork\Enums\LegStatus;
-use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
-use AIArmada\AffiliateNetwork\Models\AffiliateSite;
-use AIArmada\AffiliateNetwork\Models\NetworkConversionLeg;
+use AIArmada\AffiliateNetwork\Data\LegStatus;
+use AIArmada\AffiliateNetwork\Data\SiteStatus;
+use AIArmada\AffiliateNetwork\Features\Attribution\Models\AffiliateOfferLink;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Features\Ledger\Models\NetworkConversionLeg;
+use AIArmada\AffiliateNetwork\Features\Sites\Actions\CreateSite;
+use AIArmada\AffiliateNetwork\Features\Sites\Actions\RotateCatalogToken;
+use AIArmada\AffiliateNetwork\Features\Sites\Actions\UpdateSite;
+use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource;
+use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\RelationManagers\CouponsRelationManager;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\RelationManagers\CreativesRelationManager;
+use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\RelationManagers\DealsRelationManager;
+use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\RelationManagers\InvitationsRelationManager;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\RelationManagers\LegsRelationManager;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\RelationManagers\LinksRelationManager;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Tables\AffiliateOffersTable;
@@ -23,10 +28,12 @@ use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Livewire\Component;
 
-class OfferLegsSurfaceHostComponent extends Component implements HasSchemas, HasTable
+class FilamentOfferHarness extends Component implements HasSchemas, HasTable
 {
     use InteractsWithSchemas;
     use InteractsWithTable;
+
+    public ?array $data = [];
 
     public function render()
     {
@@ -34,40 +41,20 @@ class OfferLegsSurfaceHostComponent extends Component implements HasSchemas, Has
     }
 }
 
-function offerLegsSurfaceOffer(): AffiliateOffer
-{
-    $site = AffiliateSite::create([
-        'name' => 'Legs Site',
-        'domain' => 'legs-' . uniqid() . '.example.com',
-        'status' => AffiliateSite::STATUS_VERIFIED,
-        'verified_at' => now(),
-    ]);
-
-    return AffiliateOffer::factory()->forSite($site)->create([
-        'requires_approval' => false,
-    ]);
-}
-
-function offerLegsSurfaceLeg(AffiliateOffer $offer): NetworkConversionLeg
-{
-    $link = AffiliateOfferLink::factory()->forOffer($offer)->forAffiliateId('aff-' . uniqid())->create();
-
-    return NetworkConversionLeg::factory()->forLink($link)->create([
-        'status' => LegStatus::Posted,
-    ]);
-}
-
 describe('offer legs surface', function (): void {
-    test('offer resource registers links and legs relation managers', function (): void {
+    test('offer resource registers links, legs, creatives and marketplace relation managers', function (): void {
         expect(AffiliateOfferResource::getRelations())->toBe([
             LinksRelationManager::class,
             LegsRelationManager::class,
             CreativesRelationManager::class,
+            InvitationsRelationManager::class,
+            DealsRelationManager::class,
+            CouponsRelationManager::class,
         ]);
     });
 
     test('legs table exposes money columns and the reference', function (): void {
-        $table = (new LegsRelationManager)->table(Table::make(new OfferLegsSurfaceHostComponent));
+        $table = (new LegsRelationManager)->table(Table::make(new FilamentOfferHarness));
 
         expect($table->getColumn('external_reference'))->not->toBeNull()
             ->and($table->getColumn('commission_minor'))->not->toBeNull()
@@ -77,10 +64,17 @@ describe('offer legs surface', function (): void {
     });
 
     test('legs table reverse action reverses a posted leg', function (): void {
-        $offer = offerLegsSurfaceOffer();
-        $leg = offerLegsSurfaceLeg($offer);
+        $site = AffiliateSite::factory()->verified()->create(['domain' => 'legs-' . uniqid() . '.example']);
+        $offer = AffiliateOffer::factory()->forSite($site)->create(['requires_approval' => false]);
+        $link = AffiliateOfferLink::factory()
+            ->forOffer($offer)
+            ->forAffiliateId('aff-' . uniqid())
+            ->create();
+        $leg = NetworkConversionLeg::factory()
+            ->forLink($link)
+            ->create(['status' => LegStatus::Posted]);
 
-        $host = new OfferLegsSurfaceHostComponent;
+        $host = new FilamentOfferHarness;
         $action = (new LegsRelationManager)->table(Table::make($host))->getAction('reverse');
 
         expect($action)->not->toBeNull();
@@ -89,20 +83,17 @@ describe('offer legs surface', function (): void {
         $action->record($leg);
         $action->call(['data' => ['reason' => 'refund']]);
 
-        // Companions are keyed by original leg (reason lives in metadata),
-        // so look up by reverses_id like NetworkBooks::findCompanionLeg.
         $companion = NetworkConversionLeg::query()
             ->where('metadata->reverses_id', (string) $leg->getKey())
             ->first();
 
         expect($leg->fresh()->status)->toBe(LegStatus::Reversed)
             ->and($companion)->not->toBeNull()
-            ->and($companion->metadata['reverses_id'] ?? null)->toBe((string) $leg->getKey())
             ->and($companion->metadata['reversal_reason'] ?? null)->toBe('refund');
     });
 
-    test('offers table exposes the platform fee column', function (): void {
-        $table = AffiliateOffersTable::configure(Table::make(new OfferLegsSurfaceHostComponent));
+    test('credits table exposes the platform fee column', function (): void {
+        $table = AffiliateOffersTable::configure(Table::make(new FilamentOfferHarness));
 
         expect($table->getColumn('network_fee_bp'))->not->toBeNull();
     });
@@ -150,11 +141,11 @@ describe('offer legs surface', function (): void {
         $site = AffiliateSite::create([
             'name' => 'Rotate Site',
             'domain' => 'rotate-' . uniqid() . '.example.com',
-            'status' => AffiliateSite::STATUS_VERIFIED,
+            'status' => SiteStatus::Verified,
             'verified_at' => now(),
         ]);
 
-        $token = $site->rotateCatalogToken();
+        $token = app(RotateCatalogToken::class)->execute($site);
 
         expect($token)->toBeString()
             ->and($site->fresh()->hasCatalogToken())->toBeTrue()

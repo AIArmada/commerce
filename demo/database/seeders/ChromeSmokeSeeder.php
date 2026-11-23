@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
-use AIArmada\AffiliateNetwork\Enums\LegStatus;
-use AIArmada\AffiliateNetwork\Enums\OfferStatus;
-use AIArmada\AffiliateNetwork\Enums\OfferVisibility;
-use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
-use AIArmada\AffiliateNetwork\Models\AffiliateSite;
-use AIArmada\AffiliateNetwork\Models\NetworkConversionLeg;
+use AIArmada\AffiliateNetwork\Data\LegStatus;
+use AIArmada\AffiliateNetwork\Data\OfferStatus;
+use AIArmada\AffiliateNetwork\Data\OfferVisibility;
+use AIArmada\AffiliateNetwork\Data\SiteStatus;
+use AIArmada\AffiliateNetwork\Features\Attribution\Models\AffiliateOfferLink;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Features\Ledger\Models\NetworkConversionLeg;
+use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
@@ -51,7 +52,7 @@ final class ChromeSmokeSeeder extends Seeder
             ['domain' => 'chrome.example.com'],
             [
                 'name' => 'CHROME-SITE',
-                'status' => AffiliateSite::STATUS_VERIFIED,
+                'status' => SiteStatus::Verified,
                 'verified_at' => now(),
             ],
         );
@@ -89,6 +90,7 @@ final class ChromeSmokeSeeder extends Seeder
             'site_id' => $site->getKey(),
             'affiliate_id' => (string) $affiliate->getKey(),
             'link_code' => $link->link->slug ?? Str::random(16),
+            'idempotency_key' => 'leg:link:' . $link->getKey() . ':CHROME-LEG-001:purchase',
             'revenue_minor' => 89900,
             'revenue_currency' => 'MYR',
             'commission_minor' => 13485,

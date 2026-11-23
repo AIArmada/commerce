@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
-use AIArmada\AffiliateNetwork\Models\AffiliateSite;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Features\Enrollment\Models\AffiliateOfferApplication;
+use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -159,7 +159,7 @@ describe('AffiliateOfferApplication Model', function (): void {
                 ->forAffiliateId((string) $affiliate->getKey())
                 ->pending()
                 ->create());
-        })->throws(RuntimeException::class, 'inaccessible or missing owner relation');
+        })->throws(RuntimeException::class, 'without an accessible owner relation');
 
         test('explicit global context only returns applications linked to global affiliates', function (): void {
             config([
@@ -180,6 +180,9 @@ describe('AffiliateOfferApplication Model', function (): void {
                 'currency' => 'USD',
             ]));
 
+            $globalSite = OwnerContext::withOwner(null, fn () => AffiliateSite::factory()->verified()->create());
+            $globalOffer = OwnerContext::withOwner(null, fn () => AffiliateOffer::factory()->forSite($globalSite)->create());
+
             $globalAffiliate = OwnerContext::withOwner(null, fn () => Affiliate::create([
                 'code' => 'AFF' . uniqid(),
                 'name' => 'Global Affiliate',
@@ -196,7 +199,7 @@ describe('AffiliateOfferApplication Model', function (): void {
                 ->create());
 
             $globalApplication = OwnerContext::withOwner(null, fn () => AffiliateOfferApplication::factory()
-                ->forOffer($offer)
+                ->forOffer($globalOffer)
                 ->forAffiliateId((string) $globalAffiliate->getKey())
                 ->pending()
                 ->create());

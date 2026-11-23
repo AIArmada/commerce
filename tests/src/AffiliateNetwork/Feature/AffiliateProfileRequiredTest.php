@@ -2,19 +2,21 @@
 
 declare(strict_types=1);
 
-use AIArmada\AffiliateNetwork\Actions\ApplyToOffer;
 use AIArmada\AffiliateNetwork\Contracts\AffiliateIdentityResolver;
+use AIArmada\AffiliateNetwork\Data\CreativeType;
+use AIArmada\AffiliateNetwork\Drivers\UserKeyIdentityDriver;
 use AIArmada\AffiliateNetwork\Exceptions\AffiliateProfileRequired;
-use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferCreative;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
-use AIArmada\AffiliateNetwork\Models\AffiliateSite;
-use AIArmada\AffiliateNetwork\Models\NetworkConversionLeg;
-use AIArmada\AffiliateNetwork\Services\NetworkBooks;
-use AIArmada\AffiliateNetwork\Services\OfferLinkService;
-use AIArmada\AffiliateNetwork\Support\AffiliateProfileGuard;
-use AIArmada\AffiliateNetwork\Support\UserKeyAffiliateIdentityResolver;
+use AIArmada\AffiliateNetwork\Features\Attribution\Actions\CreateCreativeLink;
+use AIArmada\AffiliateNetwork\Features\Attribution\Actions\CreateOfferLink;
+use AIArmada\AffiliateNetwork\Features\Attribution\Models\AffiliateOfferLink;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOfferCreative;
+use AIArmada\AffiliateNetwork\Features\Enrollment\Actions\ApplyToOffer;
+use AIArmada\AffiliateNetwork\Features\Enrollment\Models\AffiliateOfferApplication;
+use AIArmada\AffiliateNetwork\Features\Ledger\Actions\PostConversionLeg;
+use AIArmada\AffiliateNetwork\Features\Ledger\Models\NetworkConversionLeg;
+use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
+use AIArmada\AffiliateNetwork\Platform\AffiliateProfileGuard;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -31,7 +33,7 @@ function affiliateProfileRequiredFixtures(User $owner, string $domain): array
             'requires_approval' => false,
         ]);
         $creative = $offer->creatives()->create([
-            'type' => AffiliateOfferCreative::TYPE_TEXT,
+            'type' => CreativeType::Text,
             'name' => 'Profile requirement creative',
             'destination_url' => 'https://' . $domain . '/creative',
         ]);
@@ -63,20 +65,24 @@ describe('affiliate profile requirement for network writes', function (): void {
         $message = 'Complete affiliate registration before writing affiliate-owned network records';
 
         expect(fn () => OwnerContext::withOwner($actor, fn () => app(ApplyToOffer::class)
-            ->execute($offer, (string) $actor->getKey())))
+            ->execute($offer->id, (string) $actor->getKey())))
             ->toThrow(AffiliateProfileRequired::class, $message);
 
-        expect(fn () => OwnerContext::withOwner($actor, fn () => app(OfferLinkService::class)
-            ->createLink($offer, (string) $actor->getKey())))
+        expect(fn () => OwnerContext::withOwner($actor, fn () => app(CreateOfferLink::class)
+            ->execute($offer->id, (string) $actor->getKey())))
             ->toThrow(AffiliateProfileRequired::class, $message);
 
-        expect(fn () => OwnerContext::withOwner($actor, fn () => app(OfferLinkService::class)
-            ->createCreativeLink($creative, (string) $actor->getKey())))
+        expect(fn () => OwnerContext::withOwner($actor, fn () => app(CreateCreativeLink::class)
+            ->execute((string) $creative->getKey(), (string) $actor->getKey())))
             ->toThrow(AffiliateProfileRequired::class, $message);
 
-        $unpersistedLink = new AffiliateOfferLink(['affiliate_id' => (string) $actor->getKey()]);
-        expect(fn () => OwnerContext::withOwner($actor, fn () => app(NetworkBooks::class)
-            ->post($unpersistedLink, 1000, 'MYR', 'PROFILE-REQUIRED-LEG')))
+        expect(fn () => OwnerContext::withOwner($actor, fn () => app(PostConversionLeg::class)->execute(
+            offerId: (string) $offer->getKey(),
+            affiliateId: (string) $actor->getKey(),
+            revenueMinor: 1000,
+            currency: 'MYR',
+            externalReference: 'PROFILE-REQUIRED-LEG',
+        )))
             ->toThrow(AffiliateProfileRequired::class, $message);
 
         expect(AffiliateOfferApplication::query()->withoutOwnerScope()->count())->toBe(0)
@@ -92,7 +98,7 @@ describe('affiliate profile requirement for network writes', function (): void {
         [, $offer] = affiliateProfileRequiredFixtures($actor, 'engine-owner-mode.example');
 
         expect(fn () => OwnerContext::withOwner($actor, fn () => app(ApplyToOffer::class)
-            ->execute($offer, 'missing-affiliate-profile')))
+            ->execute($offer->id, 'missing-affiliate-profile')))
             ->toThrow(AffiliateProfileRequired::class);
     });
 
@@ -112,10 +118,17 @@ describe('affiliate profile requirement for network writes', function (): void {
         ]));
 
         OwnerContext::withOwner($owner, function () use ($affiliate, $offer, $creative): void {
-            $application = app(ApplyToOffer::class)->execute($offer, (string) $affiliate->getKey());
-            $link = app(OfferLinkService::class)->createLink($offer, (string) $affiliate->getKey());
-            $creativeLink = app(OfferLinkService::class)->createCreativeLink($creative, (string) $affiliate->getKey());
-            $leg = app(NetworkBooks::class)->post($link, 1200, 'MYR', 'PROFILE-POSTED-LEG');
+            $application = app(ApplyToOffer::class)->execute($offer->id, (string) $affiliate->getKey());
+            $link = app(CreateOfferLink::class)->execute($offer->id, (string) $affiliate->getKey());
+            $creativeLink = app(CreateCreativeLink::class)->execute((string) $creative->getKey(), (string) $affiliate->getKey());
+            $leg = app(PostConversionLeg::class)->execute(
+                offerId: (string) $offer->getKey(),
+                affiliateId: (string) $affiliate->getKey(),
+                revenueMinor: 1200,
+                currency: 'MYR',
+                externalReference: 'PROFILE-POSTED-LEG',
+                linkId: (string) $link->getKey(),
+            );
 
             expect($application->affiliate_id)->toBe((string) $affiliate->getKey())
                 ->and($link->affiliate_id)->toBe((string) $affiliate->getKey())
@@ -134,8 +147,8 @@ describe('affiliate profile requirement for network writes', function (): void {
         [, $offer] = affiliateProfileRequiredFixtures($actor, 'owner-off.example');
 
         OwnerContext::withOwner($actor, function () use ($actor, $offer): void {
-            $application = app(ApplyToOffer::class)->execute($offer, (string) $actor->getKey());
-            $link = app(OfferLinkService::class)->createLink($offer, (string) $actor->getKey());
+            $application = app(ApplyToOffer::class)->execute($offer->id, (string) $actor->getKey());
+            $link = app(CreateOfferLink::class)->execute($offer->id, (string) $actor->getKey());
 
             expect($application->affiliate_id)->toBe((string) $actor->getKey())
                 ->and($link->affiliate_id)->toBe((string) $actor->getKey());
@@ -145,9 +158,7 @@ describe('affiliate profile requirement for network writes', function (): void {
     });
 
     test('standalone UserKey identity bypasses the profile gate and keeps owner-off writes', function (): void {
-        app()->instance(AffiliateIdentityResolver::class, new UserKeyAffiliateIdentityResolver);
-        app()->forgetInstance(OfferLinkService::class);
-        app()->forgetInstance(ApplyToOffer::class);
+        app()->instance(AffiliateIdentityResolver::class, new UserKeyIdentityDriver);
         app()->forgetInstance(AffiliateProfileGuard::class);
         config(['affiliate-network.models.affiliate' => User::class]);
 
@@ -163,8 +174,8 @@ describe('affiliate profile requirement for network writes', function (): void {
         ]);
 
         OwnerContext::withOwner($actor, function () use ($actor, $offer): void {
-            $application = app(ApplyToOffer::class)->execute($offer, (string) $actor->getKey());
-            $link = app(OfferLinkService::class)->createLink($offer, (string) $actor->getKey());
+            $application = app(ApplyToOffer::class)->execute($offer->id, (string) $actor->getKey());
+            $link = app(CreateOfferLink::class)->execute($offer->id, (string) $actor->getKey());
 
             expect($application->affiliate_id)->toBe((string) $actor->getKey())
                 ->and($link->affiliate_id)->toBe((string) $actor->getKey());

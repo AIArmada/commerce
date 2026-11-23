@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource\Pages;
 
-use AIArmada\AffiliateNetwork\Actions\UpdateSite;
-use AIArmada\AffiliateNetwork\Models\AffiliateSite;
+use AIArmada\AffiliateNetwork\Features\Sites\Actions\RotateCatalogToken;
+use AIArmada\AffiliateNetwork\Features\Sites\Actions\UpdateSite;
+use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentAffiliateNetwork\Actions\SyncSiteCatalog;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource;
@@ -39,10 +40,7 @@ final class EditAffiliateSite extends EditRecord
                 ->action(function (AffiliateSite $record): void {
                     $owner = OwnerContext::fromTypeAndId($record->owner_type, $record->owner_id);
 
-                    $token = OwnerContext::withOwner($owner, fn (): string => AffiliateSite::query()
-                        ->whereKey($record->getKey())
-                        ->firstOrFail()
-                        ->rotateCatalogToken());
+                    $token = OwnerContext::withOwner($owner, fn (): string => app(RotateCatalogToken::class)->execute($record));
 
                     Notification::make()
                         ->title('New catalog token')

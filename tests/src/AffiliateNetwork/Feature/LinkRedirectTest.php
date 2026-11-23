@@ -2,16 +2,22 @@
 
 declare(strict_types=1);
 
-use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
-use AIArmada\AffiliateNetwork\Models\AffiliateSite;
-use AIArmada\AffiliateNetwork\Services\OfferLinkService;
+use AIArmada\AffiliateNetwork\Features\Attribution\Actions\CreateOfferLink;
+use AIArmada\AffiliateNetwork\Features\Attribution\Models\AffiliateOfferLink;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Features\Enrollment\Models\AffiliateOfferApplication;
+use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Links\Actions\GenerateLinkUrl;
 use AIArmada\Links\Actions\UpdateLink;
 use AIArmada\Links\Events\LinkBlocked;
 use AIArmada\Links\Models\LinkClick;
 use Illuminate\Support\Facades\Event;
+
+function trackingUrlFor(AffiliateOfferLink $link): string
+{
+    return GenerateLinkUrl::run($link->link);
+}
 
 describe('affiliate network redirect', function (): void {
     beforeEach(function (): void {
@@ -36,9 +42,8 @@ describe('affiliate network redirect', function (): void {
 
     test('service links stay clean and record attributed clicks beyond the signature TTL', function (): void {
         config(['links.routing.signature_ttl_minutes' => 60 * 24 * 30]);
-        $service = app(OfferLinkService::class);
-        $link = $service->createLink($this->offer, (string) $this->affiliate->getKey(), ['sub_id' => 'bio']);
-        $url = $service->generateTrackingUrl($link);
+        $link = app(CreateOfferLink::class)->execute($this->offer->id, (string) $this->affiliate->getKey(), ['sub_id' => 'bio']);
+        $url = trackingUrlFor($link);
 
         expect($url)->toBe(route('links.redirect', ['slug' => $link->link->slug]))
             ->and(parse_url($url, PHP_URL_QUERY))->toBeNull()
@@ -46,7 +51,7 @@ describe('affiliate network redirect', function (): void {
 
         $this->get($url)->assertStatus(302);
         $this->travel(365)->days();
-        expect($service->generateTrackingUrl($link->fresh()))->toBe($url);
+        expect(trackingUrlFor($link->fresh()))->toBe($url);
         $response = $this->get($url);
         $response->assertStatus(302);
         expect($response->headers->get('Location'))->toContain('anl=' . $link->link->slug)
@@ -56,9 +61,8 @@ describe('affiliate network redirect', function (): void {
     });
 
     test('unsigned service links still enforce row controls', function (string $control): void {
-        $service = app(OfferLinkService::class);
-        $link = $service->createLink($this->offer, (string) $this->affiliate->getKey());
-        $url = $service->generateTrackingUrl($link);
+        $link = app(CreateOfferLink::class)->execute($this->offer->id, (string) $this->affiliate->getKey());
+        $url = trackingUrlFor($link);
         $attributes = match ($control) {
             'deactivation' => ['deactivated_at' => now()],
             'expiry' => ['expires_at' => now()->subMinute()],
@@ -76,8 +80,6 @@ describe('affiliate network redirect', function (): void {
     test('tracking url uses the public links route with the slug', function (): void {
         config(['affiliate-network.links.parameter' => 'anl']);
 
-        $service = app(OfferLinkService::class);
-
         $link = AffiliateOfferLink::factory()
             ->forOffer($this->offer)
             ->forAffiliateId((string) $this->affiliate->getKey())
@@ -85,9 +87,7 @@ describe('affiliate network redirect', function (): void {
             ->withTarget('https://merchant.example/offers/spring')
             ->create();
 
-        $trackingUrl = $service->generateTrackingUrl($link);
-
-        expect($trackingUrl)->toBe(route('links.redirect', ['slug' => 'public-slug']));
+        expect(trackingUrlFor($link))->toBe(route('links.redirect', ['slug' => 'public-slug']));
     });
 
     test('public redirect records a click and preserves attribution', function (): void {
@@ -99,7 +99,7 @@ describe('affiliate network redirect', function (): void {
             ->withSubIds('news', 'mail', 'hero')
             ->create();
 
-        $response = $this->get(app(OfferLinkService::class)->generateTrackingUrl($link));
+        $response = $this->get(trackingUrlFor($link));
 
         $response->assertRedirect();
         expect($response->headers->get('Location'))->toContain('anl=click-slug')
@@ -115,7 +115,7 @@ describe('affiliate network redirect', function (): void {
             ->create();
 
         $response = $this->get(
-            app(OfferLinkService::class)->generateTrackingUrl($link),
+            trackingUrlFor($link),
             [
                 'User-Agent' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
                 'Referer' => 'https://publisher.example/review',
@@ -149,7 +149,7 @@ describe('affiliate network redirect', function (): void {
             ->withTarget('https://suspended-redirect.example/deal')
             ->create();
 
-        $response = $this->get(app(OfferLinkService::class)->generateTrackingUrl($link));
+        $response = $this->get(trackingUrlFor($link));
 
         $response->assertGone();
         expect($link->fresh()->clicks)->toBe(0)
@@ -166,7 +166,7 @@ describe('affiliate network redirect', function (): void {
             ->withSlug('draft-slug')
             ->create();
 
-        $this->get(app(OfferLinkService::class)->generateTrackingUrl($link))->assertGone();
+        $this->get(trackingUrlFor($link))->assertGone();
 
         expect($link->fresh()->clicks)->toBe(0);
     });
@@ -179,7 +179,7 @@ describe('affiliate network redirect', function (): void {
             ->withSlug('inactive-slug')
             ->create();
 
-        $this->get(app(OfferLinkService::class)->generateTrackingUrl($link))->assertGone();
+        $this->get(trackingUrlFor($link))->assertGone();
 
         expect($link->fresh()->clicks)->toBe(0);
     });
@@ -193,7 +193,7 @@ describe('affiliate network redirect', function (): void {
             ->withSlug('gated-slug')
             ->create();
 
-        $this->get(app(OfferLinkService::class)->generateTrackingUrl($link))->assertGone();
+        $this->get(trackingUrlFor($link))->assertGone();
 
         expect($link->fresh()->clicks)->toBe(0);
     });
@@ -214,7 +214,7 @@ describe('affiliate network redirect', function (): void {
             ->withTarget('https://merchant.example/offers/spring')
             ->create();
 
-        $response = $this->get(app(OfferLinkService::class)->generateTrackingUrl($link));
+        $response = $this->get(trackingUrlFor($link));
 
         $response->assertRedirect();
         expect($link->fresh()->clicks)->toBe(1);
@@ -229,7 +229,7 @@ describe('affiliate network redirect', function (): void {
             ->create();
 
         $response = $this->get(
-            app(OfferLinkService::class)->generateTrackingUrl($link),
+            trackingUrlFor($link),
             ['User-Agent' => 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'],
         );
 
@@ -246,7 +246,7 @@ describe('affiliate network redirect', function (): void {
             ->withSlug('expired-slug')
             ->create();
 
-        $response = $this->get(app(OfferLinkService::class)->generateTrackingUrl($link));
+        $response = $this->get(trackingUrlFor($link));
 
         $response->assertGone();
         expect($link->fresh()->clicks)->toBe(0)

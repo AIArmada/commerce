@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource\Tables;
 
-use AIArmada\AffiliateNetwork\Actions\ReinstateSite;
-use AIArmada\AffiliateNetwork\Actions\RejectSite;
-use AIArmada\AffiliateNetwork\Actions\SuspendSite;
-use AIArmada\AffiliateNetwork\Actions\VerifySite;
-use AIArmada\AffiliateNetwork\Models\AffiliateSite;
+use AIArmada\AffiliateNetwork\Data\SiteStatus;
+use AIArmada\AffiliateNetwork\Features\Sites\Actions\ReinstateSite;
+use AIArmada\AffiliateNetwork\Features\Sites\Actions\RejectSite;
+use AIArmada\AffiliateNetwork\Features\Sites\Actions\SuspendSite;
+use AIArmada\AffiliateNetwork\Features\Sites\Actions\VerifySite;
+use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentAffiliateNetwork\Actions\SyncSiteCatalog;
 use Filament\Actions;
@@ -33,11 +34,8 @@ final class AffiliateSitesTable
 
                 TextColumn::make('status')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        AffiliateSite::STATUS_VERIFIED => 'success',
-                        AffiliateSite::STATUS_PENDING => 'warning',
-                        default => 'danger',
-                    }),
+                    ->formatStateUsing(fn (SiteStatus | string $state): string => $state instanceof SiteStatus ? $state->label() : (SiteStatus::tryFrom((string) $state)?->label() ?? (string) $state))
+                    ->color(fn (SiteStatus | string $state): string => $state instanceof SiteStatus ? $state->color() : (SiteStatus::tryFrom((string) $state)?->color() ?? 'gray')),
 
                 TextColumn::make('offers_count')
                     ->label('Offers')
@@ -56,12 +54,7 @@ final class AffiliateSitesTable
             ])
             ->filters([
                 SelectFilter::make('status')
-                    ->options([
-                        AffiliateSite::STATUS_PENDING => 'Pending',
-                        AffiliateSite::STATUS_VERIFIED => 'Verified',
-                        AffiliateSite::STATUS_SUSPENDED => 'Suspended',
-                        AffiliateSite::STATUS_REJECTED => 'Rejected',
-                    ]),
+                    ->options(self::statusOptions()),
             ])
             ->actions([
                 Actions\EditAction::make(),
@@ -104,6 +97,20 @@ final class AffiliateSitesTable
                     Actions\DeleteBulkAction::make(),
                 ]),
             ]);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private static function statusOptions(): array
+    {
+        $options = [];
+
+        foreach (SiteStatus::cases() as $status) {
+            $options[$status->value] = $status->label();
+        }
+
+        return $options;
     }
 
     /**

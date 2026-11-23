@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Schemas;
 
-use AIArmada\AffiliateNetwork\Enums\OfferStatus;
-use AIArmada\AffiliateNetwork\Enums\OfferVisibility;
-use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferCategory;
-use AIArmada\AffiliateNetwork\Models\AffiliateSite;
+use AIArmada\AffiliateNetwork\Data\OfferSource;
+use AIArmada\AffiliateNetwork\Data\OfferStatus;
+use AIArmada\AffiliateNetwork\Data\OfferVisibility;
+use AIArmada\AffiliateNetwork\Data\SiteStatus;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOfferCategory;
+use AIArmada\AffiliateNetwork\Features\Sites\Api\SiteRecord;
+use AIArmada\AffiliateNetwork\Features\Sites\Api\SitesApi;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\CommerceSupport\Support\OwnerScope;
@@ -24,6 +27,7 @@ use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Unique;
 
@@ -35,8 +39,6 @@ final class AffiliateOfferForm
             ->components([
                 Section::make('Offer Details')
                     ->schema([
-                        // Admin form: cross-tenant — relationship selects search server-side
-                        // (no unbounded preload) with explicit global scope bypass.
                         Select::make('site_id')
                             ->label('Site')
                             ->relationship('site', 'name', modifyQueryUsing: self::siteOptions(...))
@@ -78,10 +80,6 @@ final class AffiliateOfferForm
 
                 Section::make('Commission')
                     ->schema([
-                        // Integer money/count fields use explicit rules instead of
-                        // ->integer(): the integer state cast would silently truncate
-                        // decimals (10.5 becomes 10) before validation runs, while the
-                        // domain rejects them — the form must reject them too.
                         TextInput::make('rate_base_bp')
                             ->label('Base rate (basis points)')
                             ->rule('integer')
@@ -111,11 +109,8 @@ final class AffiliateOfferForm
 
                         Select::make('source')
                             ->label('Source')
-                            ->options([
-                                'mirrored' => 'Mirrored from catalog',
-                                'manual' => 'Manually managed',
-                            ])
-                            ->default('manual')
+                            ->options(self::sourceOptions())
+                            ->default(OfferSource::Manual->value)
                             ->helperText('Editing any rate field flips this to manual; sync then holds rates back until you switch it back.'),
 
                         TextInput::make('network_fee_bp')
@@ -157,23 +152,61 @@ final class AffiliateOfferForm
                     ])
                     ->columns(4),
 
+                Section::make('Caps & Locking')
+                    ->schema([
+                        TextInput::make('locking_days')
+                            ->label('Locking days')
+                            ->rule('integer')
+                            ->minValue(0)
+                            ->nullable(),
+
+                        TextInput::make('daily_conversion_cap')
+                            ->label('Daily conversion cap')
+                            ->rule('integer')
+                            ->minValue(0)
+                            ->nullable(),
+
+                        TextInput::make('monthly_conversion_cap')
+                            ->label('Monthly conversion cap')
+                            ->rule('integer')
+                            ->minValue(0)
+                            ->nullable(),
+
+                        TextInput::make('total_conversion_cap')
+                            ->label('Total conversion cap')
+                            ->rule('integer')
+                            ->minValue(0)
+                            ->nullable(),
+
+                        TextInput::make('per_affiliate_conversion_cap')
+                            ->label('Per-affiliate conversion cap')
+                            ->rule('integer')
+                            ->minValue(0)
+                            ->nullable(),
+
+                        TextInput::make('monthly_payout_cap_minor')
+                            ->label('Monthly payout cap (minor)')
+                            ->rule('integer')
+                            ->minValue(0)
+                            ->nullable(),
+
+                        TextInput::make('total_payout_cap_minor')
+                            ->label('Total payout cap (minor)')
+                            ->rule('integer')
+                            ->minValue(0)
+                            ->nullable(),
+                    ])
+                    ->columns(4),
+
                 Section::make('Settings')
                     ->schema([
                         Select::make('status')
-                            ->options([
-                                OfferStatus::Draft->value => 'Draft',
-                                OfferStatus::Published->value => 'Published',
-                                OfferStatus::Archived->value => 'Archived',
-                            ])
+                            ->options(self::statusOptions())
                             ->required()
                             ->default(OfferStatus::Draft->value),
 
                         Select::make('visibility')
-                            ->options([
-                                OfferVisibility::Public->value => 'Public',
-                                OfferVisibility::Private->value => 'Private',
-                                OfferVisibility::Unlisted->value => 'Unlisted',
-                            ])
+                            ->options(self::visibilityOptions())
                             ->default(OfferVisibility::Public->value)
                             ->helperText('Controls marketplace visibility'),
 
@@ -186,11 +219,27 @@ final class AffiliateOfferForm
                             ->default(true)
                             ->helperText('Affiliates must apply to promote'),
 
+                        Toggle::make('allow_deep_linking')
+                            ->label('Allow deep linking')
+                            ->default(true),
+
                         TextInput::make('landing_url')
                             ->label('Landing Page URL')
                             ->url()
                             ->maxLength(500)
                             ->columnSpanFull(),
+
+                        TextInput::make('fallback_url')
+                            ->label('Fallback URL')
+                            ->url()
+                            ->maxLength(2048)
+                            ->columnSpanFull()
+                            ->helperText('Sent to the redirect gate when the offer is no longer available.'),
+
+                        TextInput::make('fallback_offer_id')
+                            ->label('Fallback offer ID')
+                            ->maxLength(36)
+                            ->nullable(),
 
                         DateTimePicker::make('starts_at')
                             ->nullable(),
@@ -203,6 +252,16 @@ final class AffiliateOfferForm
 
                 Section::make('Advanced')
                     ->schema([
+                        KeyValue::make('event_rates')
+                            ->label('Event rates')
+                            ->nullable()
+                            ->columnSpanFull(),
+
+                        KeyValue::make('active_promotions')
+                            ->label('Active promotions')
+                            ->nullable()
+                            ->columnSpanFull(),
+
                         KeyValue::make('restrictions')
                             ->nullable()
                             ->columnSpanFull(),
@@ -216,14 +275,56 @@ final class AffiliateOfferForm
     }
 
     /**
-     * @param  Builder<AffiliateSite>  $query
-     * @return Builder<AffiliateSite>
+     * @return array<string, string>
+     */
+    private static function sourceOptions(): array
+    {
+        $options = [];
+
+        foreach (OfferSource::cases() as $source) {
+            $options[$source->value] = $source->label();
+        }
+
+        return $options;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private static function statusOptions(): array
+    {
+        $options = [];
+
+        foreach (OfferStatus::cases() as $status) {
+            $options[$status->value] = $status->label();
+        }
+
+        return $options;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private static function visibilityOptions(): array
+    {
+        $options = [];
+
+        foreach (OfferVisibility::cases() as $visibility) {
+            $options[$visibility->value] = $visibility->label();
+        }
+
+        return $options;
+    }
+
+    /**
+     * @param  Builder<Model>  $query
+     * @return Builder<Model>
      */
     private static function siteOptions(Builder $query, ?AffiliateOffer $record): Builder
     {
         $query->withoutGlobalScope(OwnerScope::class)
             ->where(function (Builder $query) use ($record): void {
-                $query->where('status', AffiliateSite::STATUS_VERIFIED)->whereNotNull('verified_at');
+                $query->where('status', SiteStatus::Verified->value)->whereNotNull('verified_at');
 
                 if ($record !== null) {
                     $query->orWhereKey($record->site_id);
@@ -234,8 +335,10 @@ final class AffiliateOfferForm
             return $query;
         }
 
-        $site = AffiliateSite::query()->withoutOwnerScope()->findOrFail($record->site_id);
-        $owner = OwnerContext::fromTypeAndId($site->owner_type, $site->owner_id);
+        $site = app(SitesApi::class)->findByIdUnscoped((string) $record->site_id);
+        $owner = $site instanceof SiteRecord
+            ? OwnerContext::fromTypeAndId($site->ownerType, $site->ownerId)
+            : null;
 
         return OwnerQuery::applyToEloquentBuilder($query, $owner);
     }
@@ -254,14 +357,14 @@ final class AffiliateOfferForm
 
         $siteId = $get('site_id');
         $site = is_string($siteId) && $siteId !== ''
-            ? AffiliateSite::query()->withoutOwnerScope()->find($siteId)
+            ? app(SitesApi::class)->findByIdUnscoped($siteId)
             : null;
 
-        if ($site === null) {
+        if (! $site instanceof SiteRecord) {
             return $query->whereRaw('1 = 0');
         }
 
-        $owner = OwnerContext::fromTypeAndId($site->owner_type, $site->owner_id);
+        $owner = OwnerContext::fromTypeAndId($site->ownerType, $site->ownerId);
 
         return OwnerQuery::applyToEloquentBuilder($query, $owner, (bool) config('affiliate-network.owner.include_global', false));
     }

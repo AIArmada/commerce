@@ -190,7 +190,73 @@ final class RecordLinkClick
             $properties['click_ids'] = [...$existing, ...$clickIds];
         }
 
+        $subIds = $this->subIds($context);
+
+        if ($subIds !== []) {
+            $existing = $properties['sub_ids'] ?? null;
+            $existing = is_array($existing) ? $existing : [];
+            $properties['sub_ids'] = [...$existing, ...$subIds];
+        }
+
         return $properties !== [] ? $properties : null;
+    }
+
+    /**
+     * Dynamic sub IDs from explicit context, then the current request.
+     *
+     * @param  array<string, mixed>  $context
+     * @return array<string, string>
+     */
+    private function subIds(array $context): array
+    {
+        $ids = [];
+
+        $map = $context['sub_ids'] ?? null;
+
+        if (is_array($map)) {
+            foreach ($map as $key => $value) {
+                $value = $this->subIdValue($value);
+
+                if (is_string($key) && in_array($key, ['sub1', 'sub2', 'sub3'], true) && $value !== null) {
+                    $ids[$key] = $value;
+                }
+            }
+        }
+
+        foreach (['sub1', 'sub2', 'sub3'] as $key) {
+            $explicit = $this->subIdValue($context[$key] ?? null);
+
+            if ($explicit !== null) {
+                $ids[$key] = $explicit;
+
+                continue;
+            }
+
+            if (isset($ids[$key])) {
+                continue;
+            }
+
+            if (app()->bound('request')) {
+                $fromRequest = request()->query($key);
+
+                if (is_string($fromRequest) && $fromRequest !== '') {
+                    $ids[$key] = $fromRequest;
+                }
+            }
+        }
+
+        return $ids;
+    }
+
+    private function subIdValue(mixed $value): ?string
+    {
+        $value = $this->stringValue($value);
+
+        if ($value === null || mb_strlen($value) > 255) {
+            return null;
+        }
+
+        return $value;
     }
 
     /**

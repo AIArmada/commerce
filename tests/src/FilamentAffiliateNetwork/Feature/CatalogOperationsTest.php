@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\AffiliateNetwork\Actions\CreateSite;
-use AIArmada\AffiliateNetwork\Actions\SyncSiteOffers;
-use AIArmada\AffiliateNetwork\Actions\UpdateSite;
-use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
-use AIArmada\AffiliateNetwork\Models\AffiliateSite;
+use AIArmada\AffiliateNetwork\Features\Attribution\Models\AffiliateOfferLink;
+use AIArmada\AffiliateNetwork\Features\Catalog\Actions\SyncSiteOffers;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Features\Sites\Actions\CreateSite;
+use AIArmada\AffiliateNetwork\Features\Sites\Actions\UpdateSite;
+use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
@@ -44,11 +44,9 @@ class CatalogOperationsHostComponent extends Component implements HasSchemas, Ha
 
 function catalogOperationsSite(): AffiliateSite
 {
-    return AffiliateSite::create([
+    return AffiliateSite::factory()->verified()->create([
         'name' => 'Catalog Site',
         'domain' => 'catalog-' . uniqid() . '.example.com',
-        'status' => AffiliateSite::STATUS_VERIFIED,
-        'verified_at' => now(),
     ]);
 }
 
@@ -115,7 +113,7 @@ describe('site catalog sync operations', function (): void {
 
         expect($action)->not->toBeNull();
 
-        $result = app(SyncSiteOffers::class)->execute($site);
+        $result = app(SyncSiteOffers::class)->execute($site->toRecord());
 
         expect($result['programs'])->toBe(1)
             ->and($result['created'])->toBe(1)
@@ -134,7 +132,6 @@ describe('offer catalog operations', function (): void {
 
     test('links relation manager exposes a reconcile action', function (): void {
         $site = catalogOperationsSite();
-        $program = catalogOperationsProgram();
 
         $offer = AffiliateOffer::factory()->forSite($site)->create([
             'landing_url' => 'https://catalog.example.com/landing',

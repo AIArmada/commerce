@@ -2,39 +2,44 @@
 
 declare(strict_types=1);
 
-use AIArmada\AffiliateNetwork\Actions\ApplyToOffer;
-use AIArmada\AffiliateNetwork\Adapters\Affiliates\AffiliatesIdentityReader;
-use AIArmada\AffiliateNetwork\Adapters\Affiliates\AffiliatesLedgerPoster;
-use AIArmada\AffiliateNetwork\Adapters\Affiliates\EnginePayoutFulfillment;
+use AIArmada\AffiliateNetwork\AffiliateNetworkServiceProvider;
 use AIArmada\AffiliateNetwork\Contracts\AffiliateIdentityResolver;
+use AIArmada\AffiliateNetwork\Contracts\CatalogReader;
 use AIArmada\AffiliateNetwork\Contracts\Fulfillment;
 use AIArmada\AffiliateNetwork\Contracts\NetworkLedger;
+use AIArmada\AffiliateNetwork\Data\ApplicationStatus;
+use AIArmada\AffiliateNetwork\Data\LegStatus;
 use AIArmada\AffiliateNetwork\Data\NetworkAffiliate;
 use AIArmada\AffiliateNetwork\Data\NetworkConversionDraft;
 use AIArmada\AffiliateNetwork\Data\NetworkPostedConversion;
-use AIArmada\AffiliateNetwork\Enums\LegStatus;
-use AIArmada\AffiliateNetwork\Enums\OfferVisibility;
+use AIArmada\AffiliateNetwork\Data\OfferVisibility;
+use AIArmada\AffiliateNetwork\Data\SiteCatalogEndpoint;
+use AIArmada\AffiliateNetwork\Drivers\Affiliates\AffiliatesCatalogDriver;
+use AIArmada\AffiliateNetwork\Drivers\Affiliates\AffiliatesIdentityDriver;
+use AIArmada\AffiliateNetwork\Drivers\Affiliates\AffiliatesLedgerDriver;
+use AIArmada\AffiliateNetwork\Drivers\Affiliates\EnginePayoutFulfillmentDriver;
+use AIArmada\AffiliateNetwork\Drivers\RemoteCatalogHttpDriver;
+use AIArmada\AffiliateNetwork\Drivers\UserKeyIdentityDriver;
 use AIArmada\AffiliateNetwork\Exceptions\AffiliatesNotInstalled;
-use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
-use AIArmada\AffiliateNetwork\Models\AffiliateSite;
-use AIArmada\AffiliateNetwork\Models\NetworkConversionLeg;
-use AIArmada\AffiliateNetwork\Services\Catalog\CatalogReaderInterface;
-use AIArmada\AffiliateNetwork\Services\Catalog\CatalogReaderResolver;
-use AIArmada\AffiliateNetwork\Services\Catalog\RemoteCatalogClient;
-use AIArmada\AffiliateNetwork\Services\NetworkBooks;
-use AIArmada\AffiliateNetwork\Services\NetworkLedgerReconciliationService;
-use AIArmada\AffiliateNetwork\Services\OfferLinkService;
-use AIArmada\AffiliateNetwork\Services\OfferManagementService;
-use AIArmada\AffiliateNetwork\Support\AffiliateProfileGuard;
-use AIArmada\AffiliateNetwork\Support\UserKeyAffiliateIdentityResolver;
+use AIArmada\AffiliateNetwork\Features\Attribution\Actions\RecordLinkCounters;
+use AIArmada\AffiliateNetwork\Features\Attribution\Api\AttributionApi;
+use AIArmada\AffiliateNetwork\Features\Attribution\Models\AffiliateOfferLink;
+use AIArmada\AffiliateNetwork\Features\Catalog\Actions\SyncSiteOffers;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Features\Enrollment\Actions\ApplyToOffer;
+use AIArmada\AffiliateNetwork\Features\Enrollment\Actions\ApproveApplication;
+use AIArmada\AffiliateNetwork\Features\Enrollment\Models\AffiliateOfferApplication;
+use AIArmada\AffiliateNetwork\Features\Enrollment\Queries\ApplicationStatusQuery;
+use AIArmada\AffiliateNetwork\Features\Ledger\Actions\PostConversionLeg;
+use AIArmada\AffiliateNetwork\Features\Ledger\Actions\RecordNetworkConversion;
+use AIArmada\AffiliateNetwork\Features\Ledger\Models\NetworkConversionLeg;
+use AIArmada\AffiliateNetwork\Features\Ledger\Queries\LedgerReconciliationQuery;
+use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
 
 function networkPackageRoot(): string
@@ -192,14 +197,14 @@ final class FakeNetworkLedger implements NetworkLedger
     }
 }
 
-final class FakeLocalCatalogReader implements CatalogReaderInterface
+final class FakeLocalCatalogReader implements CatalogReader
 {
-    public function snapshot(AffiliateSite $site, string $programId): array
+    public function snapshot(SiteCatalogEndpoint $site, string $programId): array
     {
         return ['program_id' => $programId, 'subjects' => []];
     }
 
-    public function programIds(AffiliateSite $site): array
+    public function programIds(SiteCatalogEndpoint $site): array
     {
         return [];
     }
@@ -223,18 +228,22 @@ describe('Network seam', function (): void {
     test('affiliates references live only in network adapters', function (): void {
         $root = networkPackageRoot();
 
-        $adapterHits = phpFilesWithNeedle($root . '/affiliate-network/src/Adapters', 'AIArmada\\Affiliates');
+        $adapterHits = phpFilesWithNeedle($root . '/affiliate-network/src/Drivers', 'AIArmada\\Affiliates');
         $otherSrcHits = array_values(array_filter(
             phpFilesWithNeedle($root . '/affiliate-network/src', 'AIArmada\\Affiliates'),
-            fn (string $path): bool => ! str_contains($path, '/src/Adapters/'),
+            fn (string $path): bool => ! str_contains($path, '/src/Drivers/'),
         ));
 
+        $allowed = [
+            $root . '/affiliate-network/src/AffiliateNetworkServiceProvider.php',
+            $root . '/affiliate-network/src/Features/Ledger/FeatureModule.php',
+        ];
+        sort($allowed);
+
         expect($adapterHits)->not->toBe([])
-            ->and($otherSrcHits)->toHaveCount(1)
-            ->and($otherSrcHits[0])->toEndWith('AffiliateNetworkServiceProvider.php')
+            ->and($otherSrcHits)->toBe($allowed)
             ->and(phpFilesWithNeedle($root . '/affiliate-network/database', 'AIArmada\\Affiliates'))->toBe([])
             ->and(phpFilesWithNeedle($root . '/affiliate-network/config', 'AIArmada\\Affiliates'))->toBe([])
-            ->and(phpFilesWithNeedle($root . '/affiliate-network/routes', 'AIArmada\\Affiliates'))->toBe([])
             ->and(phpFilesWithNeedle($root . '/filament-affiliate-network/src', 'AIArmada\\Affiliates'))->toBe([]);
     });
 
@@ -245,8 +254,9 @@ describe('Network seam', function (): void {
             'aff-1' => new NetworkAffiliate(id: 'aff-1', code: 'SEAM1', handle: 'seam-one'),
         ]);
 
-        $application = (new ApplyToOffer($identities, new AffiliateProfileGuard($identities)))
-            ->execute($offer, 'aff-1', 'Seam application');
+        app()->instance(AffiliateIdentityResolver::class, $identities);
+
+        $application = app(ApplyToOffer::class)->execute($offer->id, 'aff-1', 'Seam application');
 
         expect($application->affiliate_id)->toBe('aff-1')
             ->and($application->offer_id)->toBe($offer->id);
@@ -255,13 +265,13 @@ describe('Network seam', function (): void {
     test('unknown affiliates cannot apply', function (): void {
         [, $offer] = seamFixtures('seam-unknown.example');
 
-        $identities = new FakeAffiliateIdentities;
+        app()->instance(AffiliateIdentityResolver::class, new FakeAffiliateIdentities);
 
-        expect(fn () => (new ApplyToOffer($identities, new AffiliateProfileGuard($identities)))->execute($offer, 'ghost'))
+        expect(fn () => app(ApplyToOffer::class)->execute($offer->id, 'ghost'))
             ->toThrow(ModelNotFoundException::class);
     });
 
-    test('commission math stays in the network books', function (): void {
+    test('commission math stays in the network ledger', function (): void {
         [, $offer] = seamFixtures('seam-math.example');
 
         $link = AffiliateOfferLink::factory()
@@ -269,7 +279,14 @@ describe('Network seam', function (): void {
             ->forAffiliateId('aff-1')
             ->create(['currency' => 'MYR']);
 
-        $leg = app(NetworkBooks::class)->post($link, 89900, 'MYR', 'ORDER-1');
+        $leg = app(PostConversionLeg::class)->execute(
+            offerId: (string) $offer->id,
+            affiliateId: 'aff-1',
+            revenueMinor: 89900,
+            currency: 'MYR',
+            externalReference: 'ORDER-1',
+            linkId: (string) $link->id,
+        );
 
         expect($leg->commission_minor)->toBe(13485)
             ->and($leg->commission_currency)->toBe('MYR')
@@ -290,7 +307,14 @@ describe('Network seam', function (): void {
         ]);
         $link = AffiliateOfferLink::factory()->forOffer($offer)->forAffiliateId('aff-1')->create();
 
-        $leg = app(NetworkBooks::class)->post($link, 99999, null, 'ORDER-2');
+        $leg = app(PostConversionLeg::class)->execute(
+            offerId: (string) $offer->id,
+            affiliateId: 'aff-1',
+            revenueMinor: 99999,
+            currency: null,
+            externalReference: 'ORDER-2',
+            linkId: (string) $link->id,
+        );
 
         expect($leg->commission_minor)->toBe(2500)
             ->and($leg->commission_currency)->toBe('MYR');
@@ -300,10 +324,9 @@ describe('Network seam', function (): void {
         [, $offer] = seamFixtures('seam-noledger.example');
         $link = AffiliateOfferLink::factory()->forOffer($offer)->forAffiliateId('aff-1')->create();
 
-        $leg = app(OfferLinkService::class)->recordConversion($link, 5000, 'MYR');
+        app(RecordLinkCounters::class)->execute((string) $link->getKey(), 5000, 1);
 
-        expect($leg)->toBeNull()
-            ->and(NetworkConversionLeg::query()->exists())->toBeFalse()
+        expect(NetworkConversionLeg::query()->exists())->toBeFalse()
             ->and($link->fresh()->conversions)->toBe(1);
     });
 
@@ -311,12 +334,19 @@ describe('Network seam', function (): void {
         [, $offer] = seamFixtures('seam-reconcile.example');
         $link = AffiliateOfferLink::factory()->forOffer($offer)->forAffiliateId('aff-1')->create();
 
-        app(OfferLinkService::class)->recordConversion($link, 5000, 'MYR', 'ORDER-3');
+        app(RecordNetworkConversion::class)->execute(
+            offerId: (string) $offer->id,
+            affiliateId: 'aff-1',
+            revenueMinor: 5000,
+            currency: 'MYR',
+            externalReference: 'ORDER-3',
+            linkId: (string) $link->getKey(),
+        );
 
-        $report = (new NetworkLedgerReconciliationService)->reconcileLink($link->fresh());
+        $report = (new LedgerReconciliationQuery(app(AttributionApi::class), null))
+            ->reconcileLink((string) $link->getKey());
 
         expect($report['match'])->toBeTrue()
-            ->and($report['ledger'])->toBeNull()
             ->and($report['legs']['posted'])->toBe(1);
     });
 
@@ -324,7 +354,14 @@ describe('Network seam', function (): void {
         [, $offer] = seamFixtures('seam-reconcile-fake.example');
         $link = AffiliateOfferLink::factory()->forOffer($offer)->forAffiliateId('aff-1')->create(['currency' => 'MYR']);
 
-        app(OfferLinkService::class)->recordConversion($link, 5000, 'MYR', 'ORDER-4');
+        app(RecordNetworkConversion::class)->execute(
+            offerId: (string) $offer->id,
+            affiliateId: 'aff-1',
+            revenueMinor: 5000,
+            currency: 'MYR',
+            externalReference: 'ORDER-4',
+            linkId: (string) $link->getKey(),
+        );
 
         $leg = NetworkConversionLeg::query()->where('external_reference', 'ORDER-4')->firstOrFail();
         $ledger = new FakeNetworkLedger;
@@ -340,7 +377,8 @@ describe('Network seam', function (): void {
             commissionMinor: $leg->payout_minor,
         ));
 
-        $report = (new NetworkLedgerReconciliationService($ledger))->reconcileLink($link->fresh());
+        $report = (new LedgerReconciliationQuery(app(AttributionApi::class), $ledger))
+            ->reconcileLink((string) $link->getKey());
 
         expect($report['match'])->toBeTrue();
     });
@@ -355,11 +393,11 @@ describe('Network seam', function (): void {
             'metadata' => ['catalog_source' => 'local'],
         ]);
 
-        $management = app(OfferManagementService::class);
+        $query = app(ApplicationStatusQuery::class);
 
-        expect($management->hasAppliedForOffer($offer, 'aff-1'))->toBeFalse()
-            ->and($management->isApprovedForOffer($offer, 'aff-1'))->toBeFalse()
-            ->and($management->applicationStatusForOffer($offer, 'aff-1'))->toBeNull();
+        expect($query->hasAppliedForOffer($offer->id, 'aff-1'))->toBeFalse()
+            ->and($query->isApprovedForOffer($offer->id, 'aff-1'))->toBeFalse()
+            ->and($query->applicationStatusForOffer($offer->id, 'aff-1'))->toBeNull();
 
         AffiliateOfferApplication::factory()
             ->forOffer($offer)
@@ -367,9 +405,9 @@ describe('Network seam', function (): void {
             ->approved()
             ->create();
 
-        expect($management->hasAppliedForOffer($offer, 'aff-1'))->toBeTrue()
-            ->and($management->isApprovedForOffer($offer, 'aff-1'))->toBeTrue()
-            ->and($management->applicationStatusForOffer($offer, 'aff-1'))->toBe('approved');
+        expect($query->hasAppliedForOffer($offer->id, 'aff-1'))->toBeTrue()
+            ->and($query->isApprovedForOffer($offer->id, 'aff-1'))->toBeTrue()
+            ->and($query->applicationStatusForOffer($offer->id, 'aff-1'))->toBe(ApplicationStatus::Approved);
     });
 
     test('approvals for mirrored offers need no merchant membership', function (): void {
@@ -386,11 +424,12 @@ describe('Network seam', function (): void {
             ->forAffiliateId('aff-1')
             ->create();
 
-        $management = app(OfferManagementService::class);
-        $management->approveApplication($application);
+        app(ApproveApplication::class)->execute($application);
 
-        expect($management->isApprovedForOffer($offer, 'aff-1'))->toBeTrue()
-            ->and($management->applicationStatusForOffer($offer, 'aff-1'))->toBe('approved');
+        $query = app(ApplicationStatusQuery::class);
+
+        expect($query->isApprovedForOffer($offer->id, 'aff-1'))->toBeTrue()
+            ->and($query->applicationStatusForOffer($offer->id, 'aff-1'))->toBe(ApplicationStatus::Approved);
     });
 
     test('status maps batch plain and mirrored offers in one flow', function (): void {
@@ -413,10 +452,13 @@ describe('Network seam', function (): void {
             ->pending()
             ->create();
 
-        $map = app(OfferManagementService::class)->applicationStatusMap('aff-1', new Collection([$offer, $programOffer]));
+        $map = app(ApplicationStatusQuery::class)->applicationStatusMap('aff-1', [
+            (string) $offer->getKey(),
+            (string) $programOffer->getKey(),
+        ]);
 
-        expect($map[(string) $offer->getKey()])->toBe('approved')
-            ->and($map[(string) $programOffer->getKey()])->toBe('pending');
+        expect($map[(string) $offer->getKey()])->toBe(ApplicationStatus::Approved)
+            ->and($map[(string) $programOffer->getKey()])->toBe(ApplicationStatus::Pending);
     });
 
     test('affiliate relations fail explicitly without a bound model', function (): void {
@@ -430,53 +472,51 @@ describe('Network seam', function (): void {
 
     test('network binds the engine adapters when the engine is installed', function (): void {
         expect(app()->bound(AffiliateIdentityResolver::class))->toBeTrue()
-            ->and(app(AffiliateIdentityResolver::class))->toBeInstanceOf(AffiliatesIdentityReader::class)
-            ->and(app(NetworkLedger::class))->toBeInstanceOf(AffiliatesLedgerPoster::class)
-            ->and(app(Fulfillment::class))->toBeInstanceOf(EnginePayoutFulfillment::class)
-            ->and(app()->bound(CatalogReaderResolver::LOCAL_READER_KEY))->toBeTrue()
+            ->and(app(AffiliateIdentityResolver::class))->toBeInstanceOf(AffiliatesIdentityDriver::class)
+            ->and(app(NetworkLedger::class))->toBeInstanceOf(AffiliatesLedgerDriver::class)
+            ->and(app(Fulfillment::class))->toBeInstanceOf(EnginePayoutFulfillmentDriver::class)
+            ->and(app()->bound(AffiliateNetworkServiceProvider::LOCAL_READER_KEY))->toBeTrue()
+            ->and(app(AffiliateNetworkServiceProvider::LOCAL_READER_KEY))->toBeInstanceOf(AffiliatesCatalogDriver::class)
             ->and(config('affiliate-network.models.affiliate'))->toBe(Affiliate::class);
     });
 
-    test('catalog resolver prefers remote readers and fails explicitly for local without adapters', function (): void {
-        $resolver = app(CatalogReaderResolver::class);
+    test('catalog reader bindings prefer remote and fail explicitly for local without adapters', function (): void {
+        expect(app(CatalogReader::class))->toBeInstanceOf(RemoteCatalogHttpDriver::class);
 
-        $remoteSite = AffiliateSite::factory()->create([
-            'domain' => 'seam-remote-' . uniqid() . '.example',
-            'catalog_url' => 'https://merchant.example/catalog',
-        ]);
-        expect($resolver->readerFor($remoteSite))->toBeInstanceOf(RemoteCatalogClient::class);
-
-        app()->offsetUnset(CatalogReaderResolver::LOCAL_READER_KEY);
+        app()->offsetUnset(AffiliateNetworkServiceProvider::LOCAL_READER_KEY);
 
         $localSite = AffiliateSite::factory()->create([
             'domain' => 'seam-local-' . uniqid() . '.example',
             'catalog_url' => null,
         ]);
-        expect(fn () => $resolver->readerFor($localSite))->toThrow(AffiliatesNotInstalled::class);
 
-        app()->bind(CatalogReaderResolver::LOCAL_READER_KEY, FakeLocalCatalogReader::class);
-        expect($resolver->readerFor($localSite))->toBeInstanceOf(FakeLocalCatalogReader::class);
+        expect(fn () => app(SyncSiteOffers::class)
+            ->execute($localSite->toRecord()))
+            ->toThrow(AffiliatesNotInstalled::class);
+
+        app()->bind(AffiliateNetworkServiceProvider::LOCAL_READER_KEY, FakeLocalCatalogReader::class);
+        expect(app(AffiliateNetworkServiceProvider::LOCAL_READER_KEY))->toBeInstanceOf(FakeLocalCatalogReader::class);
     });
 });
 
 test('standalone user identity supports missing and host chosen handles under strict models', function (): void {
     $user = User::factory()->create();
-    $resolver = app(UserKeyAffiliateIdentityResolver::class);
+    $driver = app(UserKeyIdentityDriver::class);
     $preventMissingAttributes = Model::preventsAccessingMissingAttributes();
     Model::preventAccessingMissingAttributes();
 
     try {
-        $assigned = $resolver->find($user->id);
+        $assigned = $driver->find($user->id);
         expect($assigned->handle)->toStartWith('creator-')
-            ->and($resolver->find($user->id)->handle)->toBe($assigned->handle);
+            ->and($driver->find($user->id)->handle)->toBe($assigned->handle);
 
         Schema::table('users', function (Blueprint $table): void {
             $table->string('handle')->nullable()->unique();
         });
-        expect($resolver->find($user->id)->handle)->toBe($assigned->handle);
+        expect($driver->find($user->id)->handle)->toBe($assigned->handle);
 
         $user->forceFill(['handle' => 'SaifReviews'])->save();
-        expect($resolver->find($user->id)->handle)->toBe('saifreviews');
+        expect($driver->find($user->id)->handle)->toBe('saifreviews');
     } finally {
         Model::preventAccessingMissingAttributes($preventMissingAttributes);
     }

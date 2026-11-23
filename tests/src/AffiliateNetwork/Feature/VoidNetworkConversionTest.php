@@ -2,24 +2,23 @@
 
 declare(strict_types=1);
 
-use AIArmada\AffiliateNetwork\Contracts\AffiliateIdentityResolver;
-use AIArmada\AffiliateNetwork\Data\NetworkAffiliate;
-use AIArmada\AffiliateNetwork\Enums\LegStatus;
-use AIArmada\AffiliateNetwork\Http\Controllers\ReportNetworkConversionController;
-use AIArmada\AffiliateNetwork\Http\Controllers\VoidNetworkConversionController;
-use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
-use AIArmada\AffiliateNetwork\Models\AffiliateSite;
-use AIArmada\AffiliateNetwork\Models\NetworkConversionLeg;
-use AIArmada\AffiliateNetwork\Services\CreatorBalances;
-use AIArmada\AffiliateNetwork\Services\NetworkBooks;
-use AIArmada\AffiliateNetwork\Services\OfferLinkService;
+use AIArmada\AffiliateNetwork\Data\LegStatus;
+use AIArmada\AffiliateNetwork\Features\Attribution\Models\AffiliateOfferLink;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Features\Ledger\Actions\PostConversionLeg;
+use AIArmada\AffiliateNetwork\Features\Ledger\Actions\ReverseConversionLeg;
+use AIArmada\AffiliateNetwork\Features\Ledger\EntryPoints\Http\Controllers\ReportNetworkConversionController;
+use AIArmada\AffiliateNetwork\Features\Ledger\EntryPoints\Http\Controllers\VoidNetworkConversionController;
+use AIArmada\AffiliateNetwork\Features\Ledger\Models\NetworkConversionLeg;
+use AIArmada\AffiliateNetwork\Features\Ledger\Queries\CreatorBalancesQuery;
+use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Testing\TestResponse;
 
 function voidFixtures(string $domain, int $rateBp = 1500): array
@@ -55,7 +54,6 @@ function voidFixtures(string $domain, int $rateBp = 1500): array
 
 function reportForVoid(AffiliateOfferLink $link, string $reference, ?CarbonImmutable $engineTouchAt = null): void
 {
-    $server = ['HTTP_AUTHORIZATION' => 'Bearer site-secret'];
     $request = Request::create('/api/affiliate-network/conversions', 'POST', [
         'site' => $link->site->domain,
         'link_code' => $link->link->slug,
@@ -64,19 +62,21 @@ function reportForVoid(AffiliateOfferLink $link, string $reference, ?CarbonImmut
         'currency' => 'MYR',
         'engine_touch_at' => $engineTouchAt?->toIso8601String(),
         'network_clicked_at' => CarbonImmutable::now()->subMinutes(10)->toIso8601String(),
-    ], [], [], $server);
+    ], [], [], ['HTTP_AUTHORIZATION' => 'Bearer site-secret']);
 
-    $response = app(ReportNetworkConversionController::class)($request, app(OfferLinkService::class));
+    $response = app()->call(ReportNetworkConversionController::class, ['request' => $request]);
 
     expect($response->getStatusCode())->toBe(200);
 }
 
-function voidRequest(array $payload, ?string $token): Request
+function voidConversion(array $payload, ?string $token)
 {
     $server = $token !== null ? ['HTTP_AUTHORIZATION' => 'Bearer ' . $token] : [];
     $payload = array_merge(['reason' => 'refund'], $payload);
 
-    return Request::create('/api/affiliate-network/conversions/void', 'POST', $payload, [], [], $server);
+    return app()->call(VoidNetworkConversionController::class, [
+        'request' => Request::create('/api/affiliate-network/conversions/void', 'POST', $payload, [], [], $server),
+    ]);
 }
 
 function voidOwner(string $suffix): User
@@ -128,17 +128,25 @@ function voidOwnedSiteLink(User $siteOwner, User $creatorOwner, string $domain, 
 
 function postVoidOwnedLeg(AffiliateOfferLink $link, User $creatorOwner, string $reference): NetworkConversionLeg
 {
-    return OwnerContext::withOwner($creatorOwner, fn (): NetworkConversionLeg => app(NetworkBooks::class)
-        ->post($link, 89900, 'MYR', $reference));
+    return OwnerContext::withOwner($creatorOwner, fn (): NetworkConversionLeg => app(PostConversionLeg::class)->execute(
+        offerId: (string) $link->offer_id,
+        affiliateId: (string) $link->affiliate_id,
+        revenueMinor: 89900,
+        currency: 'MYR',
+        externalReference: $reference,
+        linkId: (string) $link->getKey(),
+    ));
 }
 
 function registerVoidPostbackRoute(): void
 {
     config()->set('affiliate-network.postbacks.enabled', true);
-    config()->set('affiliate-network.postbacks.prefix', 'api/affiliate-network');
-    config()->set('affiliate-network.postbacks.middleware', []);
 
-    require dirname(__DIR__, 4) . '/packages/affiliate-network/routes/api.php';
+    Route::middleware([])
+        ->prefix('api/affiliate-network')
+        ->group(function (): void {
+            Route::post('/conversions/void', VoidNetworkConversionController::class);
+        });
 }
 
 describe('VoidNetworkConversionController', function (): void {
@@ -147,29 +155,27 @@ describe('VoidNetworkConversionController', function (): void {
 
         reportForVoid($link, 'ORDER-VOID-1');
 
-        expect(app(CreatorBalances::class)->for((string) $affiliate->getKey()))->toBe(['MYR' => 13485]);
+        expect(app(CreatorBalancesQuery::class)->for((string) $affiliate->getKey())['MYR']->paidMinor)->toBe(13485);
 
-        $response = app(VoidNetworkConversionController::class)(
-            voidRequest([
-                'site' => 'void-posted.example',
-                'link_code' => $link->link->slug,
-                'external_reference' => 'ORDER-VOID-1',
-            ], 'site-secret'),
-            app(NetworkBooks::class),
-            app(AffiliateIdentityResolver::class),
-        );
+        $response = voidConversion([
+            'site' => 'void-posted.example',
+            'link_code' => $link->link->slug,
+            'external_reference' => 'ORDER-VOID-1',
+        ], 'site-secret');
 
         expect($response->getStatusCode())->toBe(200);
 
         $payload = $response->getData(true);
         $legs = NetworkConversionLeg::query()->where('link_id', $link->getKey())->get();
+        $balance = app(CreatorBalancesQuery::class)->for((string) $affiliate->getKey())['MYR'];
 
         expect($payload['ok'])->toBeTrue()
             ->and($payload['duplicate'])->toBeFalse()
-            ->and($payload['leg_status'])->toBe(LegStatus::Reversed->value)
+            ->and($payload['conversion']['status'])->toBe(LegStatus::Reversed->value)
             ->and($legs)->toHaveCount(2)
             ->and($legs->where('status', LegStatus::Reversed))->toHaveCount(2)
-            ->and(app(CreatorBalances::class)->for((string) $affiliate->getKey())['MYR'] ?? 0)->toBe(0);
+            ->and($balance->payableMinor)->toBe(0)
+            ->and($balance->netPayableMinor)->toBe(-13485);
 
         $merchantConversion = AffiliateConversion::where('external_reference', 'ORDER-VOID-1')->firstOrFail();
         $merchantStatus = mb_strtolower(class_basename($merchantConversion->status->getMorphClass()));
@@ -182,23 +188,19 @@ describe('VoidNetworkConversionController', function (): void {
 
         reportForVoid($link, 'ORDER-VOID-2');
 
-        $void = fn () => app(VoidNetworkConversionController::class)(
-            voidRequest([
-                'site' => 'void-twice.example',
-                'link_code' => $link->link->slug,
-                'external_reference' => 'ORDER-VOID-2',
-            ], 'site-secret'),
-            app(NetworkBooks::class),
-            app(AffiliateIdentityResolver::class),
-        );
+        $payload = [
+            'site' => 'void-twice.example',
+            'link_code' => $link->link->slug,
+            'external_reference' => 'ORDER-VOID-2',
+        ];
 
-        $first = $void();
-        $second = $void();
+        $first = voidConversion($payload, 'site-secret');
+        $second = voidConversion($payload, 'site-secret');
 
         expect($first->getStatusCode())->toBe(200)
             ->and($second->getStatusCode())->toBe(200)
             ->and($second->getData(true)['duplicate'])->toBeTrue()
-            ->and($second->getData(true)['leg_status'])->toBe(LegStatus::Reversed->value)
+            ->and($second->getData(true)['conversion']['status'])->toBe(LegStatus::Reversed->value)
             ->and(NetworkConversionLeg::query()->where('link_id', $link->getKey())->count())->toBe(2);
     });
 
@@ -207,18 +209,14 @@ describe('VoidNetworkConversionController', function (): void {
 
         reportForVoid($link, 'ORDER-VOID-3', CarbonImmutable::now()->subMinute());
 
-        $response = app(VoidNetworkConversionController::class)(
-            voidRequest([
-                'site' => 'void-superseded.example',
-                'link_code' => $link->link->slug,
-                'external_reference' => 'ORDER-VOID-3',
-            ], 'site-secret'),
-            app(NetworkBooks::class),
-            app(AffiliateIdentityResolver::class),
-        );
+        $response = voidConversion([
+            'site' => 'void-superseded.example',
+            'link_code' => $link->link->slug,
+            'external_reference' => 'ORDER-VOID-3',
+        ], 'site-secret');
 
         expect($response->getStatusCode())->toBe(200)
-            ->and($response->getData(true)['leg_status'])->toBe(LegStatus::Superseded->value)
+            ->and($response->getData(true)['conversion']['status'])->toBe(LegStatus::Superseded->value)
             ->and($response->getData(true)['duplicate'])->toBeTrue()
             ->and(NetworkConversionLeg::query()->where('link_id', $link->getKey())->count())->toBe(1);
     });
@@ -226,23 +224,27 @@ describe('VoidNetworkConversionController', function (): void {
     test('unknown reference is 404 and bad credentials are 401', function (): void {
         [$site, $offer, $affiliate, $link] = voidFixtures('void-missing.example');
 
-        $call = fn (?string $token) => app(VoidNetworkConversionController::class)(
-            voidRequest([
-                'site' => 'void-missing.example',
-                'link_code' => $link->link->slug,
-                'external_reference' => 'ORDER-UNKNOWN',
-            ], $token),
-            app(NetworkBooks::class),
-            app(AffiliateIdentityResolver::class),
-        );
+        $payload = [
+            'site' => 'void-missing.example',
+            'link_code' => $link->link->slug,
+            'external_reference' => 'ORDER-UNKNOWN',
+        ];
 
-        expect($call('site-secret')->getStatusCode())->toBe(404)
-            ->and($call('wrong-secret')->getStatusCode())->toBe(401);
+        expect(voidConversion($payload, 'site-secret')->getStatusCode())->toBe(404)
+            ->and(voidConversion($payload, 'wrong-secret')->getStatusCode())->toBe(401);
     });
 
     test('refuses remote voids for provisional checkout-owned legs', function (): void {
         [$site, $offer, $affiliate, $link] = voidFixtures('void-provisional.example');
-        $leg = app(NetworkBooks::class)->post($link, 89900, 'MYR', 'ORDER-PROVISIONAL', LegStatus::Provisional);
+        $leg = app(PostConversionLeg::class)->execute(
+            offerId: (string) $offer->getKey(),
+            affiliateId: (string) $affiliate->getKey(),
+            revenueMinor: 89900,
+            currency: 'MYR',
+            externalReference: 'ORDER-PROVISIONAL',
+            status: LegStatus::Provisional,
+            linkId: (string) $link->getKey(),
+        );
         registerVoidPostbackRoute();
 
         $response = $this->withToken('site-secret')->postJson('/api/affiliate-network/conversions/void', [
@@ -254,7 +256,6 @@ describe('VoidNetworkConversionController', function (): void {
 
         $response->assertUnprocessable()
             ->assertJsonPath('message', fn (string $message): bool => str_contains($message, 'provisional'));
-
         expect($leg->fresh()->status)->toBe(LegStatus::Provisional)
             ->and(NetworkConversionLeg::query()->where('link_id', $link->getKey())->count())->toBe(1);
     });
@@ -274,7 +275,7 @@ describe('VoidNetworkConversionController', function (): void {
 
         $response->assertSuccessful()
             ->assertJsonPath('duplicate', false)
-            ->assertJsonPath('leg_status', LegStatus::Reversed->value);
+            ->assertJsonPath('conversion.status', LegStatus::Reversed->value);
 
         expect(NetworkConversionLeg::query()->where('link_id', $link->getKey())->count())->toBe(2);
     });
@@ -292,7 +293,7 @@ describe('VoidNetworkConversionController', function (): void {
         [$siteA] = voidOwnedSiteLink($ownerA, $ownerA, 'void-site-a.example', 'tenant-a');
         [, , $affiliateB, $linkB] = voidOwnedSiteLink($ownerB, $ownerB, 'void-site-b.example', 'tenant-b');
         $legB = postVoidOwnedLeg($linkB, $ownerB, 'ORDER-TENANT-B');
-        $balanceBefore = OwnerContext::withOwner($ownerB, fn (): array => app(CreatorBalances::class)
+        $balanceBefore = OwnerContext::withOwner($ownerB, fn (): array => app(CreatorBalancesQuery::class)
             ->for((string) $affiliateB->getKey()));
 
         registerVoidPostbackRoute();
@@ -305,7 +306,7 @@ describe('VoidNetworkConversionController', function (): void {
                 'reason' => 'refund',
             ]));
 
-        $balanceAfter = OwnerContext::withOwner($ownerB, fn (): array => app(CreatorBalances::class)
+        $balanceAfter = OwnerContext::withOwner($ownerB, fn (): array => app(CreatorBalancesQuery::class)
             ->for((string) $affiliateB->getKey()));
         $legCount = OwnerContext::withOwner($ownerB, fn (): int => NetworkConversionLeg::query()
             ->where('link_id', $linkB->getKey())
@@ -315,7 +316,7 @@ describe('VoidNetworkConversionController', function (): void {
 
         $response->assertNotFound();
         expect($freshLeg->status)->toBe(LegStatus::Posted)
-            ->and($balanceAfter)->toBe($balanceBefore)
+            ->and($balanceAfter['MYR']->payableMinor)->toBe($balanceBefore['MYR']->payableMinor)
             ->and($legCount)->toBe(1);
     });
 
@@ -351,15 +352,16 @@ describe('VoidNetworkConversionController', function (): void {
         $legCount = OwnerContext::withOwner($creatorOwner, fn (): int => NetworkConversionLeg::query()
             ->where('link_id', $link->getKey())
             ->count());
+        $balance = OwnerContext::withOwner($creatorOwner, fn (): array => app(CreatorBalancesQuery::class)
+            ->for((string) $affiliate->getKey()));
 
         $response->assertSuccessful()
             ->assertJsonPath('duplicate', false)
-            ->assertJsonPath('leg_status', LegStatus::Reversed->value);
+            ->assertJsonPath('conversion.status', LegStatus::Reversed->value);
 
         expect($freshLeg->status)->toBe(LegStatus::Reversed)
             ->and($legCount)->toBe(2)
-            ->and(OwnerContext::withOwner($creatorOwner, fn (): array => app(CreatorBalances::class)
-                ->for((string) $affiliate->getKey())))->toBe([]);
+            ->and($balance['MYR']->netPayableMinor ?? 0)->toBe(0);
     });
 
     test('reports a concurrent reversal as duplicate after the original was read stale', function (): void {
@@ -370,29 +372,14 @@ describe('VoidNetworkConversionController', function (): void {
             ->where('external_reference', 'ORDER-STALE-READ')
             ->firstOrFail();
 
-        $identities = app(AffiliateIdentityResolver::class);
-        $identity = $identities->find((string) $affiliate->getKey());
-        expect($identity)->toBeInstanceOf(NetworkAffiliate::class);
+        app(ReverseConversionLeg::class)
+            ->execute((string) $leg->getKey(), 'first concurrent refund');
 
-        $racingIdentities = Mockery::mock(AffiliateIdentityResolver::class);
-        $racingIdentities->shouldReceive('find')
-            ->once()
-            ->with((string) $affiliate->getKey())
-            ->andReturnUsing(function (string $affiliateId) use ($identity, $leg): NetworkAffiliate {
-                app(NetworkBooks::class)->reverse($leg, 'first concurrent refund');
-
-                return $identity;
-            });
-
-        $response = app(VoidNetworkConversionController::class)(
-            voidRequest([
-                'site' => 'void-stale-read.example',
-                'link_code' => $link->link->slug,
-                'external_reference' => 'ORDER-STALE-READ',
-            ], 'site-secret'),
-            app(NetworkBooks::class),
-            $racingIdentities,
-        );
+        $response = voidConversion([
+            'site' => 'void-stale-read.example',
+            'link_code' => $link->link->slug,
+            'external_reference' => 'ORDER-STALE-READ',
+        ], 'site-secret');
 
         expect($response->getStatusCode())->toBe(200)
             ->and($response->getData(true)['duplicate'])->toBeTrue()

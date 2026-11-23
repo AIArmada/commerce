@@ -4,277 +4,326 @@ title: Usage
 
 # Usage
 
-This guide covers the shipped admin resources and the flows around them.
+This guide covers every shipped surface. All resources are owner-safe; the
+network-wide admin surfaces are noted explicitly.
 
-The plugin provides four Filament resources (sites, offers, categories, applications), a merchant dashboard page, and two network reporting widgets. There is no marketplace page in this package.
+The plugin provides **five resources** (sites, offers, categories,
+applications, merchant statements), **six offer relation managers**, a merchant
+dashboard page, and two network reporting widgets. There is no marketplace page
+in this package.
 
-The site, offer, category, application, merchant dashboard, and network widget surfaces require the configured `affiliate-network.admin` ability.
+Every resource, page, table, and widget action gates on
+`NetworkAdminAccess::allows()`, which reads
+`filament-affiliate-network.authorization.admin_ability` (default
+`affiliate-network.admin`).
 
-Merchant dashboard counts and lists are scoped to the current merchant owner. The
-network stats and top-offers widgets are separate, deliberate network-wide admin
-reporting surfaces and cache their global result for 30 seconds.
+Merchant dashboard counts and lists are owner-scoped. `MerchantStatementResource`
+and the two widgets are deliberate network-wide admin reporting surfaces that
+bypass owner scope.
 
-The network owns discovery, enrollment, link metrics, and its own money
-legs: every offer enrolls through network applications, and joining never
-requires or creates a merchant-side account. `affiliates` owns
-merchant-local attribution, commissions, and payouts; program memberships
-stay merchant-side only and are never read or written by marketplace
-enrollment. Merchant-ledger postings arrive through the fulfillment step,
-never inline.
+The network owns discovery, enrollment, link metrics, and its own money legs:
+every offer enrolls through network applications. `affiliates` owns merchant
+local attribution, commissions, and payouts. Merchant-ledger postings arrive
+through the fulfillment step, never inline or from this adapter.
 
-If checkout observes both boundaries for one order, the last-touch decider
-settles it: a provisional network leg is confirmed on a network win and
-superseded on an engine win, so exactly one side pays. Network legs are
-the network money source of truth; engine commission and payout records
-are the merchant execution records.
+---
 
 ## AffiliateSiteResource
 
-Manage merchant sites/domains.
+Manage merchant sites, verification, catalog sync, tokens, and settlement.
 
-### Table Columns
+### Table columns
 
-- Name (searchable, sortable)
-- Domain (searchable, copyable)
-- Status (badge with colors)
-- Offers count
-- Verified at (toggleable)
-- Created at (toggleable)
+Name, domain (copyable), status (badge), offers count, verified at, created at.
 
-### Form Sections
+### Form sections
 
-**Site Details:**
-- Name
-- Domain (unique; normalized to lowercase and validated as a bare domain without scheme, path, or whitespace)
-- Description
+**Site Details** — name; domain; description. The domain field lowercases/trims
+input and validates with `Platform\DomainHostValidator::isValidHostname()`: a
+bare hostname, no scheme/path/whitespace, no IP or `localhost`/`.local`, max 253
+chars. It also enforces uniqueness.
 
-**Status:**
-- Status (pending, verified, suspended, rejected)
-- Verification method
-- Verified at (read-only; records verification and retains that timestamp while the site is suspended)
+**Status** — status (`pending`, `verified`, `suspended`, `rejected`),
+verification method (`dns`, `meta_tag`, `file`), read-only `verified_at`.
+Suspending retains `verified_at`; changing a verified domain resets to pending.
 
-**Catalog Sync:**
-- Catalog URL (merchant API base; empty for locally-managed offers)
-- Catalog API token (stored encrypted; setting it stamps issuance; leave empty to keep)
+**Catalog Sync** — catalog URL (empty for locally-managed offers); catalog API
+token (stored encrypted; setting it stamps `catalog_token_issued_at`; leave
+empty to keep).
 
-**Settings:**
-- Settings (key-value)
-- Metadata (key-value)
+**Settlement & Locking** — `default_locking_days`, `prepaid_balance_minor`,
+`budget_currency`, `monthly_spend_cap_minor`,
+`require_settled_for_payout` (pay-when-paid gate).
+
+**Settings** — `settings`, `metadata` key/value.
 
 ### Actions
 
-| Action | Description |
-|--------|-------------|
-| Edit | Edit site details |
-| Verify | Manually verify a pending site (runs inside the site's owner context) |
-| Sync catalog | Pull the merchant catalog now |
-| Reject | Reject a site |
-| Suspend | Suspend a site |
-| Reinstate | Reinstate a suspended/rejected site |
-| Delete | Delete site |
+| Action | Visibility | Effect |
+|---|---|---|
+| Edit | always | Edit details |
+| Sync catalog | always | `Actions\SyncSiteCatalog` pulls offers now (confirmation) |
+| Verify | `isPending()` | Runs inside the site owner context |
+| Reject | `isPending()` | Reject |
+| Suspend | `isVerified()` | Suspend (keeps `verified_at`) |
+| Reinstate | `isSuspended()` | Restore to verified |
+| Delete | always | Delete site + dependents |
 
-The edit page adds two header actions: **Sync catalog** (pull the
-merchant catalog now) and **Rotate catalog token** (issues a fresh
-postback token; the previous one dies immediately and the new plaintext
-is shown once in a persistent notification).
+The edit page adds header actions **Sync catalog** and **Rotate catalog token**
+(issues a fresh token; the previous dies immediately and the plaintext is shown
+once in a persistent notification).
 
-### Status Colors
+```php
+use AIArmada\AffiliateNetwork\Features\Sites\Actions\RotateCatalogToken;
+use Filament\Actions\Action;
+use Filament\Notifications\Notification;
 
-| Status | Color |
-|--------|-------|
-| `pending` | Warning (yellow) |
-| `verified` | Success (green) |
-| `suspended` | Danger (red) |
-| `rejected` | Danger (red) |
+Action::make('rotate_catalog_token')
+    ->label('Rotate catalog token')
+    ->icon('heroicon-o-key')
+    ->color('warning')
+    ->requiresConfirmation()
+    ->modalDescription('The previous token stops working immediately. Copy the new token now — it is shown once.')
+    ->action(function ($record): void {
+        $token = app(RotateCatalogToken::class)->execute($record);
+
+        Notification::make()
+            ->title('New catalog token')
+            ->body($token)
+            ->persistent()
+            ->send();
+    });
+```
+
+### Status colors
+
+`pending` warning · `verified` success · `suspended` danger · `rejected` danger.
 
 ---
 
 ## AffiliateOfferResource
 
-Manage affiliate offers.
+Manage offers, pricing, caps, fallback, promotions, and the six relation tabs.
 
-### Table Columns
+### Table columns
 
-- Name (searchable, sortable)
-- Site name
-- Category name (toggleable)
-- Status (badge)
-- Commission (formatted)
-- Fee in basis points (toggleable; blank uses the configured default)
-- Source (badge: mirrored/manual)
-- Featured (icon)
-- Visibility (badge)
-- Applications count
-- Created at (toggleable, hidden by default)
+Name, site, category, status, commission (formatted), fee bp, source,
+featured, visibility, applications count, created at.
 
-### Form Sections
+### Form sections
 
-**Offer Details:**
-- Site (async search over verified sites)
-- Category (optional; async search over active categories)
-- Name (auto-generates slug)
-- Slug (unique per site)
-- Description
-- Terms & Conditions
+**Offer Details** — site (verified sites only), category, name (auto-slug),
+slug (unique per site), description, terms.
 
-**Commission:**
-- Base rate in basis points (percentage; negatives rejected)
-- Fixed amount in minor units (per conversion; takes precedence when set)
-- Currency (three-letter code)
-- Cookie duration (whole days; negatives rejected)
-- Source (mirrored/manual; editing any rate-block field flips to manual)
-- Network fee in basis points (marketplace take-rate; empty uses the configured default)
-- Volume tiers (repeater: floor in minor units + rate in basis points)
+**Commission** — base rate bp, fixed amount minor, currency, cookie days,
+source (`mirrored`/`manual`), network fee bp, volume tiers repeater.
 
-**Settings:**
-- Status (draft/published/archived)
-- Visibility (public/private/unlisted)
-- Featured toggle
-- Requires approval toggle
-- Landing page URL
-- Start/end dates (end must be on or after start)
+**Caps & Locking** — `locking_days`, `daily_conversion_cap`,
+`monthly_conversion_cap`, `total_conversion_cap`,
+`per_affiliate_conversion_cap`, `monthly_payout_cap_minor`,
+`total_payout_cap_minor`.
 
-**Advanced:**
-- Restrictions (key-value)
-- Metadata (key-value)
+**Settings** — status (`draft`/`published`/`archived`), visibility
+(`public`/`private`/`unlisted`), featured, requires approval, allow deep
+linking, landing URL, **fallback URL**, **fallback offer ID**, start/end dates.
 
-### Relation Managers
-
-The edit page carries three relation tabs:
-
-- **Creatives:** imported and manual materials, with source badges and the
-  source program ID. Imported content is read-only; operators may change
-  active visibility and sort order. Manual rows support file uploads through
-  the official Spatie Media Library field, destination URLs, and templates.
-  Manual asset URLs are derived from media; there is no asset URL input.
-  Only manual rows can be deleted here. Re-sync reconciles imported deletions.
-- **Links:** issued tracking links with clicks, conversions, and revenue,
-  plus a reconcile action proving every counted conversion posted to the
-  merchant ledger exactly once.
-- **Legs:** posted money legs (reference, revenue, commission, fee,
-  payout, status). Operators cannot edit legs, but a **Reverse**
-  action on posted legs records a reason and posts the negated
-  companion leg.
+**Advanced** — `event_rates` (multi-event CPA), `active_promotions`,
+`restrictions` (country/channel/device/order), `metadata` key/value
+(collapsed).
 
 ### Actions
 
-| Action | Description |
-|--------|-------------|
-| Edit | Edit offer |
-| Activate | Publish via the domain update action (stamps published_at, clears archived_at) |
-| Pause | Archive via the domain update action (stamps archived_at) |
-| Delete | Delete offer |
+| Action | Visibility | Effect |
+|---|---|---|
+| Edit | always | Edit offer |
+| Activate | not published | Publish via core action (`published_at` stamped, site must be verified) |
+| Pause | published | Archive via core action (`archived_at` stamped) |
+| Delete | always | Delete offer + dependents |
 
-Activate and pause run inside the owning site's owner context and fire the domain `OfferUpdated` event.
+Activate/pause run inside the owning site's owner context and dispatch the
+domain `OfferUpdated` event.
 
 ### Filters
 
-- Status
-- Visibility
-- Site
-- Featured (ternary)
+Status, visibility, site, featured (ternary).
+
+### Relation managers
+
+**Creatives** — imported and manual assets. Imported rows are read-only except
+`is_active`/`sort_order`; manual rows support the Spatie Media Library field,
+destination URL, and HTML/template. Only manual rows can be deleted. Re-sync
+reconciles imported deletions.
+
+**Links** — issued tracking links with clicks/conversions/revenue, plus a
+reconcile action that proves every counted conversion posted to the merchant
+ledger exactly once.
+
+**Legs** — posted money legs (reference, event, coupon, sub id, revenue,
+commission, fee, payout, status, locks at, occurred). Header action **Lock
+matured**; row actions **Adjust** (pending/posted originals) and **Reverse**
+(posted only).
+
+**Invitations** — token, affiliate, auto-approve, expiry/accepted/revoked.
+Header action **Invite affiliate**; row action **Revoke**.
+
+**Deals** — per-affiliate rate base/fixed/fee/currency/active. Header action
+**Upsert deal**; row action **Revoke**.
+
+**Coupons** — code, affiliate, site, window, active. Header action **Assign
+coupon**; row action **Revoke**.
+
+```php
+use AIArmada\AffiliateNetwork\Features\Ledger\Actions\AdjustConversionLeg;
+use AIArmada\AffiliateNetwork\Features\Ledger\Actions\LockMaturedLegs;
+use AIArmada\AffiliateNetwork\Features\Ledger\Actions\ReverseConversionLeg;
+use AIArmada\AffiliateNetwork\Data\LegStatus;
+use Filament\Actions\Action;
+
+// Lock matured legs (header)
+Action::make('lock_matured')
+    ->label('Lock matured')
+    ->action(fn () => app(LockMaturedLegs::class)->execute());
+
+// Adjust a pending/posted original
+Action::make('adjust')
+    ->visible(fn ($record): bool => in_array($record->status, [LegStatus::Pending, LegStatus::Posted], true)
+        && $record->parent_leg_id === null)
+    ->action(fn ($record, array $data) => app(AdjustConversionLeg::class)->execute(
+        (string) $record->getKey(),
+        (string) $data['adjustment_reference'],
+        (int) $data['delta_revenue_minor'],
+        (string) $data['reason'],
+    ));
+
+// Reverse a posted leg
+Action::make('reverse')
+    ->visible(fn ($record): bool => $record->status === LegStatus::Posted)
+    ->action(fn ($record, array $data) => app(ReverseConversionLeg::class)->execute(
+        (string) $record->getKey(),
+        (string) $data['reason'],
+    ));
+```
+
+```php
+use AIArmada\AffiliateNetwork\Features\Enrollment\Actions\InviteAffiliateToOffer;
+
+app(InviteAffiliateToOffer::class)->execute(
+    (string) $offerId,
+    $affiliateId,          // null for a shareable token
+    null,
+    null,
+    autoApprove: true,
+);
+
+use AIArmada\AffiliateNetwork\Features\Enrollment\Actions\UpsertOfferDeal;
+
+app(UpsertOfferDeal::class)->execute((string) $offerId, $affiliateId, [
+    'rate_base_bp' => 2000,
+    'network_fee_bp' => 500,
+]);
+
+use AIArmada\AffiliateNetwork\Features\Attribution\Actions\AssignOfferCoupon;
+
+app(AssignOfferCoupon::class)->execute((string) $offerId, $affiliateId, 'SUMMER10');
+```
+
+> **warning**
+> Editing any rate-block field on the offer form flips `source` to `manual`.
+> Later catalog syncs then hold those rates back (`locked`) instead of
+> reverting them.
 
 ---
 
 ## AffiliateOfferCategoryResource
 
-Manage offer categories.
+Hierarchical category management.
 
-### Table Columns
-
-- Name (searchable)
-- Slug
-- Parent category
-- Offers count
-- Active (icon)
-- Sort order
-- Created at (toggleable)
-
-### Form Fields
-
-- Parent category (optional; async search; the record itself is excluded)
-- Name
-- Slug
-- Description
-- Icon
-- Sort order
-- Active toggle
-
-### Features
-
-- Hierarchical categories (parent/child)
-- Cycle protection: a category cannot be assigned to itself or one of its descendants
-- Sort ordering
-- Soft re-parenting on delete
+- Columns: name, slug, parent, offers count, active, sort order, created at.
+- Fields: parent (excludes self/descendants), name, slug, description, icon,
+  sort order, active.
+- Cycle protection prevents assigning a category to itself or a descendant.
+- Sortable by `sort_order`; deleting re-parents children safely.
 
 ---
 
 ## AffiliateOfferApplicationResource
 
-Review affiliate applications.
+Review creator applications.
 
-### Table Columns
+- Columns: affiliate ID, offer, status, reviewed by, reviewed at, submitted at.
+- Infolist: offer/affiliate/status/reason and review data.
+- Actions: View, Approve, Reject (reason), Revoke (reason).
+- Bulk: Approve selected (pending only).
+- Filters: status, offer.
 
-- Affiliate ID (searchable, copyable, toggleable)
-- Offer name (searchable, sortable)
-- Status (badge)
-- Reviewed by (toggleable)
-- Reviewed at (toggleable)
-- Submitted at
-
-Approve, reject, revoke, and bulk-approve run each mutation inside the owning affiliate's owner context so cross-tenant review works when owner scoping is enabled.
-
-### Form Sections
-
-**Application Details:**
-- Offer (read-only)
-- Affiliate (read-only)
-- Status
-- Application reason (read-only)
-
-**Review:**
-- Rejection reason
-- Reviewed by
-- Reviewed at
-
-### Actions
-
-| Action | Description |
-|--------|-------------|
-| View | View application details |
-| Approve | Approve application |
-| Reject | Reject with reason |
-| Revoke | Revoke approved application |
-
-### Filters
-
-- Status (pending, approved, rejected, revoked)
-- Offer
-
-### Status Colors
-
-| Status | Color |
-|--------|-------|
-| `pending` | Warning (yellow) |
-| `approved` | Success (green) |
-| `rejected` | Danger (red) |
-| `revoked` | Danger (red, default) |
+Approve/reject/revoke/bulk run each mutation inside the owning affiliate's owner
+context so cross-tenant review works with owner scoping enabled.
 
 ---
 
-## Extending Resources
+## MerchantStatementResource (admin-only)
 
-### Add a Custom Resource
+Aggregate, issue, pay, and void merchant statements network-wide.
 
-Every shipped resource is `final`. Write your own resource and reuse the
-shipped schema/table classes:
+`canViewAny()` and `shouldRegisterNavigation()` require
+`NetworkAdminAccess::allows()`. `getEloquentQuery()` calls
+`withoutOwnerScope()` so operators see every merchant's statements.
+
+### Table columns
+
+Statement number (copyable), site, status, currency, legs, commission, fee,
+payout, period start/end, issued/due/paid.
+
+### Actions
+
+| Action | Visibility | Effect |
+|---|---|---|
+| **Generate** (header) | always | `GenerateMerchantStatement` for a chosen site/currency/period, inside the site's owner context |
+| View | always | Infolist |
+| **Issue** | `draft` | `IssueMerchantStatement` (`issued_at`/`due_at`) |
+| **Mark Paid** | `draft` or `issued` | `MarkMerchantStatementPaid` with optional payment reference (fulfils attached legs when the site requires settlement) |
+| **Void** | `draft` or `issued` | `VoidMerchantStatement` (detaches legs) |
+
+### Infolist
+
+Sections: Statement (number, site, status, currency, period), Amounts (legs,
+commission, fee, payout), Settlement (issued/due/paid timestamps, payment
+reference).
+
+```php
+use AIArmada\AffiliateNetwork\Features\Ledger\Actions\GenerateMerchantStatement;
+use AIArmada\AffiliateNetwork\Features\Ledger\Actions\IssueMerchantStatement;
+use AIArmada\AffiliateNetwork\Features\Ledger\Actions\MarkMerchantStatementPaid;
+use AIArmada\AffiliateNetwork\Features\Ledger\Actions\VoidMerchantStatement;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+
+$statement = OwnerContext::withOwner($owner, fn () => app(GenerateMerchantStatement::class)->execute(
+    $siteId,
+    'USD',
+    CarbonImmutable::parse($periodStart)->startOfDay(),
+    CarbonImmutable::parse($periodEnd)->endOfDay(),
+));
+
+app(IssueMerchantStatement::class)->execute((string) $statement->getKey());
+app(MarkMerchantStatementPaid::class)->execute((string) $statement->getKey(), 'BANK-REF');
+app(VoidMerchantStatement::class)->execute((string) $statement->getKey());
+```
+
+---
+
+## Extending resources
+
+Every shipped resource, page, and widget is `final`. Reuse the schema/table
+classes from your own resource:
 
 ```php
 namespace App\Filament\Resources;
 
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
+use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\RelationManagers\CouponsRelationManager;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Schemas\AffiliateOfferForm;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Tables\AffiliateOffersTable;
-use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
+use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 
@@ -307,30 +356,26 @@ class AffiliateOfferResource extends Resource
     public static function getRelations(): array
     {
         return [
-            RelationManagers\LinksRelationManager::class,
-            RelationManagers\LegsRelationManager::class,
+            \AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\RelationManagers\CreativesRelationManager::class,
+            \AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\RelationManagers\LinksRelationManager::class,
+            \AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\RelationManagers\LegsRelationManager::class,
+            \AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\RelationManagers\InvitationsRelationManager::class,
+            \AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\RelationManagers\DealsRelationManager::class,
+            \AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\RelationManagers\CouponsRelationManager::class,
         ];
     }
 }
 ```
 
-### Register the Custom Resource
-
-`FilamentAffiliateNetworkPlugin` registers a fixed set and exposes no
-`resources()` method. Register your own resource from the panel provider
-instead:
-
-The plugin registers a fixed set, so register overrides on the panel:
+Register it on the panel (the shipped plugin registers a fixed set):
 
 ```php
 $panel->resources([
     \App\Filament\Resources\AffiliateOfferResource::class,
-    // ...plus any default resources you still want
 ]);
 ```
 
-
-The offer link ledger displays the handle snapshot alongside the globally unique
-slug for branded links. Link creation remains in the host's application flow;
-pass `link_style` and `link_label` to `OfferLinkService` there. Handles are owned
-by the configured identity source, not this adapter.
+> **warning**
+> Do not spread money in strings or divide by 100. Use
+> `AIArmada\CommerceSupport\Support\MoneyFormatter::formatMinor($minor, $currency)`;
+> the minor-unit scale is currency-dependent (JPY and KWD are not 2-decimal).

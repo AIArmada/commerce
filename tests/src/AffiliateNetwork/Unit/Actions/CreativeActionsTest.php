@@ -2,12 +2,13 @@
 
 declare(strict_types=1);
 
-use AIArmada\AffiliateNetwork\Actions\CreateCreative;
-use AIArmada\AffiliateNetwork\Actions\DeleteCreative;
-use AIArmada\AffiliateNetwork\Actions\UpdateCreative;
-use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferCreative;
-use AIArmada\AffiliateNetwork\Models\AffiliateSite;
+use AIArmada\AffiliateNetwork\Data\CreativeType;
+use AIArmada\AffiliateNetwork\Features\Catalog\Actions\CreateCreative;
+use AIArmada\AffiliateNetwork\Features\Catalog\Actions\DeleteCreative;
+use AIArmada\AffiliateNetwork\Features\Catalog\Actions\UpdateCreative;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOfferCreative;
+use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -46,7 +47,7 @@ describe('creative actions', function (): void {
         ]);
 
         expect($updated->name)->toBe('Merchant hero')
-            ->and($updated->type)->toBe('image')
+            ->and($updated->type)->toBe(CreativeType::Image)
             ->and($updated->is_active)->toBeFalse()
             ->and($updated->sort_order)->toBe(8);
     });

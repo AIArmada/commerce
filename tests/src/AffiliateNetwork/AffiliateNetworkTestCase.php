@@ -12,10 +12,12 @@ use AIArmada\CommerceSupport\SupportServiceProvider as CommerceSupportServicePro
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\Contacting\ContactingServiceProvider;
 use AIArmada\Links\LinksServiceProvider;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 use Orchestra\Testbench\TestCase as Orchestra;
 use Spatie\LaravelData\LaravelDataServiceProvider;
 use Spatie\MediaLibrary\MediaLibraryServiceProvider;
@@ -47,6 +49,10 @@ abstract class AffiliateNetworkTestCase extends Orchestra
         // Reset any leaked static unguarded state from a previous test so every
         // test starts at the framework default (guarded). Mirrors the base case.
         Model::reguard();
+
+        Factory::guessFactoryNamesUsing(function (string $modelName): string {
+            return 'AIArmada\\AffiliateNetwork\\Database\\Factories\\' . Str::afterLast($modelName, '\\') . 'Factory';
+        });
 
         if (! Schema::hasTable('media')) {
             (require base_path('vendor/spatie/laravel-medialibrary/database/migrations/create_media_table.php.stub'))->up();

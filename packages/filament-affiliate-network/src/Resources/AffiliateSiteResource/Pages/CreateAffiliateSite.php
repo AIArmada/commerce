@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource\Pages;
 
-use AIArmada\AffiliateNetwork\Actions\CreateSite;
+use AIArmada\AffiliateNetwork\Features\Sites\Actions\CreateSite;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;

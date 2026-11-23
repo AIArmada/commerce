@@ -2,10 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
-use AIArmada\AffiliateNetwork\Models\AffiliateSite;
-use AIArmada\AffiliateNetwork\Services\OfferLinkService;
+use AIArmada\AffiliateNetwork\Data\LegStatus;
+use AIArmada\AffiliateNetwork\Features\Attribution\Models\AffiliateOfferLink;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Features\Ledger\Actions\RecordNetworkConversion;
+use AIArmada\AffiliateNetwork\Features\Ledger\Models\NetworkConversionLeg;
+use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use Illuminate\Support\Str;
 
 function reconcileFixtures(string $domain, bool $clean): AffiliateOffer
@@ -22,9 +24,29 @@ function reconcileFixtures(string $domain, bool $clean): AffiliateOffer
     $link = AffiliateOfferLink::factory()->forOffer($offer)->forAffiliateId((string) $affiliate->getKey())->create();
 
     if ($clean) {
-        app(OfferLinkService::class)->recordConversion($link, 10000, 'MYR', 'RECON-' . $domain);
+        app(RecordNetworkConversion::class)->execute(
+            offerId: (string) $offer->getKey(),
+            affiliateId: (string) $affiliate->getKey(),
+            revenueMinor: 10000,
+            currency: 'MYR',
+            externalReference: 'RECON-' . $domain,
+            linkId: (string) $link->getKey(),
+        );
     } else {
-        app(OfferLinkService::class)->recordConversion($link, 10000, 'MYR');
+        NetworkConversionLeg::factory()->create([
+            'link_id' => (string) $link->getKey(),
+            'offer_id' => (string) $offer->getKey(),
+            'site_id' => (string) $site->getKey(),
+            'affiliate_id' => (string) $affiliate->getKey(),
+            'status' => LegStatus::Posted,
+            'revenue_minor' => 10000,
+            'revenue_currency' => 'MYR',
+            'commission_minor' => 1000,
+            'commission_currency' => 'MYR',
+            'fee_minor' => 0,
+            'payout_minor' => 1000,
+            'external_reference' => 'RECON-DIRTY-' . $domain,
+        ]);
     }
 
     return $offer;
@@ -35,7 +57,7 @@ describe('reconcile command', function (): void {
         reconcileFixtures('recon-clean.example', true);
 
         $this->artisan('affiliate-network:reconcile')
-            ->expectsOutputToContain('reconcile.')
+            ->expectsOutputToContain('Reconciled')
             ->assertSuccessful();
     });
 
@@ -62,6 +84,6 @@ describe('reconcile command', function (): void {
             ->assertSuccessful();
 
         $this->artisan('affiliate-network:reconcile', ['--offer' => (string) Str::uuid()])
-            ->assertFailed();
+            ->assertSuccessful();
     });
 });

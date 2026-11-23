@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\AffiliateNetwork\Adapters\Affiliates\AffiliatesCatalogReader;
+use AIArmada\AffiliateNetwork\Data\SiteCatalogEndpoint;
+use AIArmada\AffiliateNetwork\Drivers\Affiliates\AffiliatesCatalogDriver;
 use AIArmada\AffiliateNetwork\Exceptions\OfferNotFoundException;
-use AIArmada\AffiliateNetwork\Models\AffiliateSite;
+use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\ProgramVisibility;
@@ -37,6 +38,18 @@ function createOwnedSite(object $owner, string $suffix): AffiliateSite
         ->create(['domain' => "reader-{$suffix}-" . uniqid() . '.example.com']));
 }
 
+function catalogEndpoint(AffiliateSite $site): SiteCatalogEndpoint
+{
+    return new SiteCatalogEndpoint(
+        siteId: (string) $site->getKey(),
+        domain: (string) $site->domain,
+        catalogUrl: $site->catalog_url,
+        catalogTokenEncrypted: $site->catalog_token_encrypted,
+        ownerType: $site->owner_type,
+        ownerId: $site->owner_id,
+    );
+}
+
 beforeEach(function (): void {
     config([
         'affiliate-network.owner.enabled' => true,
@@ -45,13 +58,12 @@ beforeEach(function (): void {
         'affiliates.owner.include_global' => false,
     ]);
 
-    // Production console has no ambient owner.
     app()->instance(OwnerResolverInterface::class, new NullOwnerResolver);
 
-    $this->reader = app(AffiliatesCatalogReader::class);
+    $this->reader = app(AffiliatesCatalogDriver::class);
 });
 
-describe('AffiliatesCatalogReader', function (): void {
+describe('AffiliatesCatalogDriver', function (): void {
     test('lists only the site owner programs', function (): void {
         $ownerA = User::factory()->create();
         $ownerB = User::factory()->create();
@@ -60,7 +72,7 @@ describe('AffiliatesCatalogReader', function (): void {
         $programA = createOwnedProgram($ownerA, 'a');
         createOwnedProgram($ownerB, 'b');
 
-        $ids = $this->reader->programIds($siteA);
+        $ids = $this->reader->programIds(catalogEndpoint($siteA));
 
         expect($ids)->toBe([(string) $programA->getKey()]);
     });
@@ -69,16 +81,14 @@ describe('AffiliatesCatalogReader', function (): void {
         $ownerA = User::factory()->create();
         $ownerB = User::factory()->create();
 
-        // Ambient owner differs from the site owner (e.g. scheduled job or
-        // an operator session): the site still determines visibility.
         app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($ownerB));
 
         $siteA = createOwnedSite($ownerA, 'a');
         $programA = createOwnedProgram($ownerA, 'a');
         createOwnedProgram($ownerB, 'b');
 
-        expect($this->reader->programIds($siteA))->toBe([(string) $programA->getKey()])
-            ->and($this->reader->snapshot($siteA, (string) $programA->getKey())['program_id'])
+        expect($this->reader->programIds(catalogEndpoint($siteA)))->toBe([(string) $programA->getKey()])
+            ->and($this->reader->snapshot(catalogEndpoint($siteA), (string) $programA->getKey())['program_id'])
             ->toBe((string) $programA->getKey());
     });
 
@@ -87,7 +97,7 @@ describe('AffiliatesCatalogReader', function (): void {
         $site = createOwnedSite($owner, 'a');
         $program = createOwnedProgram($owner, 'a');
 
-        $snapshot = $this->reader->snapshot($site, (string) $program->getKey());
+        $snapshot = $this->reader->snapshot(catalogEndpoint($site), (string) $program->getKey());
 
         expect($snapshot['program_id'])->toBe((string) $program->getKey())
             ->and($snapshot['subjects'])->toBeArray();
@@ -100,7 +110,7 @@ describe('AffiliatesCatalogReader', function (): void {
         $siteA = createOwnedSite($ownerA, 'a');
         $programB = createOwnedProgram($ownerB, 'b');
 
-        $this->reader->snapshot($siteA, (string) $programB->getKey());
+        $this->reader->snapshot(catalogEndpoint($siteA), (string) $programB->getKey());
     })->throws(OfferNotFoundException::class);
 
     test('lists every program when owner scoping is disabled', function (): void {
@@ -115,7 +125,7 @@ describe('AffiliatesCatalogReader', function (): void {
         $programA = createOwnedProgram(User::factory()->create(), 'a');
         $programB = createOwnedProgram(User::factory()->create(), 'b');
 
-        $ids = $this->reader->programIds($site);
+        $ids = $this->reader->programIds(catalogEndpoint($site));
 
         expect($ids)->toHaveCount(2)
             ->and($ids)->toContain((string) $programA->getKey(), (string) $programB->getKey());

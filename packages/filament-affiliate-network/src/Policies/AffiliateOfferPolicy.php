@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliateNetwork\Policies;
 
-use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
 use AIArmada\FilamentAffiliateNetwork\Support\NetworkAdminAccess;
 use Illuminate\Contracts\Auth\Access\Authorizable;
 

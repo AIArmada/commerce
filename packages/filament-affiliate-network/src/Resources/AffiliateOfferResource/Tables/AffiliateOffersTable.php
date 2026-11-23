@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Tables;
 
-use AIArmada\AffiliateNetwork\Actions\ArchiveOffer;
-use AIArmada\AffiliateNetwork\Actions\PublishOffer;
-use AIArmada\AffiliateNetwork\Enums\OfferStatus;
-use AIArmada\AffiliateNetwork\Enums\OfferVisibility;
-use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
-use AIArmada\AffiliateNetwork\Models\AffiliateSite;
+use AIArmada\AffiliateNetwork\Data\OfferSource;
+use AIArmada\AffiliateNetwork\Data\OfferStatus;
+use AIArmada\AffiliateNetwork\Data\OfferVisibility;
+use AIArmada\AffiliateNetwork\Features\Catalog\Actions\ArchiveOffer;
+use AIArmada\AffiliateNetwork\Features\Catalog\Actions\PublishOffer;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Features\Sites\Api\SitesApi;
+use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use Filament\Actions;
@@ -41,7 +43,7 @@ final class AffiliateOffersTable
 
                 TextColumn::make('status')
                     ->badge()
-                    ->color(fn (OfferStatus $state): string => $state->color()),
+                    ->color(fn (OfferStatus | string $state): string => $state instanceof OfferStatus ? $state->color() : (OfferStatus::tryFrom((string) $state)?->color() ?? 'gray')),
 
                 TextColumn::make('rate_base_bp')
                     ->label('Commission')
@@ -58,7 +60,8 @@ final class AffiliateOffersTable
                 TextColumn::make('source')
                     ->label('Source')
                     ->badge()
-                    ->color(fn (string $state): string => $state === 'manual' ? 'warning' : 'success')
+                    ->formatStateUsing(fn (OfferSource | string $state): string => $state instanceof OfferSource ? $state->label() : (OfferSource::tryFrom((string) $state)?->label() ?? (string) $state))
+                    ->color(fn (OfferSource | string $state): string => $state instanceof OfferSource ? $state->color() : (OfferSource::tryFrom((string) $state)?->color() ?? 'gray'))
                     ->toggleable(),
 
                 IconColumn::make('is_featured')
@@ -68,7 +71,7 @@ final class AffiliateOffersTable
 
                 TextColumn::make('visibility')
                     ->badge()
-                    ->color(fn (OfferVisibility $state): string => $state->color())
+                    ->color(fn (OfferVisibility | string $state): string => $state instanceof OfferVisibility ? $state->color() : (OfferVisibility::tryFrom((string) $state)?->color() ?? 'gray'))
                     ->toggleable(),
 
                 TextColumn::make('applications_count')
@@ -83,18 +86,10 @@ final class AffiliateOffersTable
             ])
             ->filters([
                 SelectFilter::make('status')
-                    ->options([
-                        OfferStatus::Draft->value => 'Draft',
-                        OfferStatus::Published->value => 'Published',
-                        OfferStatus::Archived->value => 'Archived',
-                    ]),
+                    ->options(self::statusOptions()),
 
                 SelectFilter::make('visibility')
-                    ->options([
-                        OfferVisibility::Public->value => 'Public',
-                        OfferVisibility::Private->value => 'Private',
-                        OfferVisibility::Unlisted->value => 'Unlisted',
-                    ]),
+                    ->options(self::visibilityOptions()),
 
                 // Admin filter: cross-tenant — show all sites for filtering.
                 SelectFilter::make('site_id')
@@ -111,8 +106,8 @@ final class AffiliateOffersTable
                     ->color('success')
                     ->requiresConfirmation()
                     ->visible(fn (AffiliateOffer $record): bool => $record->status !== OfferStatus::Published)
-                    ->disabled(fn (AffiliateOffer $record): bool => ! AffiliateSite::isVerifiedKey($record->site_id))
-                    ->tooltip(fn (AffiliateOffer $record): ?string => AffiliateSite::isVerifiedKey($record->site_id)
+                    ->disabled(fn (AffiliateOffer $record): bool => ! self::isSiteVerified((string) $record->site_id))
+                    ->tooltip(fn (AffiliateOffer $record): ?string => self::isSiteVerified((string) $record->site_id)
                         ? null
                         : 'Verify the site before publishing its offers.')
                     ->action(function (AffiliateOffer $record): void {
@@ -132,6 +127,39 @@ final class AffiliateOffersTable
                     Actions\DeleteBulkAction::make(),
                 ]),
             ]);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private static function statusOptions(): array
+    {
+        $options = [];
+
+        foreach (OfferStatus::cases() as $status) {
+            $options[$status->value] = $status->label();
+        }
+
+        return $options;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private static function visibilityOptions(): array
+    {
+        $options = [];
+
+        foreach (OfferVisibility::cases() as $visibility) {
+            $options[$visibility->value] = $visibility->label();
+        }
+
+        return $options;
+    }
+
+    private static function isSiteVerified(string $siteId): bool
+    {
+        return app(SitesApi::class)->isVerified($siteId);
     }
 
     /**

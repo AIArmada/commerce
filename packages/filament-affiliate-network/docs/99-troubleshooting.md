@@ -4,278 +4,200 @@ title: Troubleshooting
 
 # Troubleshooting
 
-Common issues and solutions for the Filament Affiliate Network plugin.
+## Installation
 
-## Installation Issues
+### Plugin not appearing
 
-### Plugin Not Appearing
-
-**Symptoms:** Resources and pages don't show in panel.
-
-**Solutions:**
-
-1. Verify plugin registration:
 ```php
 FilamentAffiliateNetworkPlugin::make(),
 ```
 
-2. Clear caches:
+Then clear caches:
+
 ```bash
 php artisan filament:clear-cached-components
 php artisan view:clear
 php artisan config:clear
 ```
 
-3. Verify core package is installed:
-```bash
-composer require aiarmada/affiliate-network
-```
+Confirm `aiarmada/affiliate-network` is installed.
 
-### Missing Heroicons
+### Missing icons
 
-**Symptoms:** Icons don't display.
+The plugin uses Filament v5 Heroicons; run `php artisan filament:install`.
 
-**Solution:** Plugin uses Filament v5 Heroicons. Ensure Filament is properly installed:
+## Authorization
 
-```bash
-php artisan filament:install
-```
+### Surfaces return 403
 
-## Resource Issues
-
-### Network Admin Surfaces Return 403
-
-The network-wide resources and merchant dashboard require the ability configured at `filament-affiliate-network.authorization.admin_ability`.
-
-Define that ability in the host application's authorization layer before registering the plugin:
+Resources, the merchant dashboard, and both widgets gate on
+`filament-affiliate-network.authorization.admin_ability` (default
+`affiliate-network.admin`):
 
 ```php
 Gate::define('affiliate-network.admin', fn (User $user): bool => $user->is_admin);
 ```
 
-### Empty Tables
+`MerchantStatementResource` returns `403` without it even for admins, because it
+is a network-wide surface.
 
-**Symptoms:** Resources show no data.
+### Actions do nothing for a tenant user
 
-**Solutions:**
+Actions revalidate the record owner inside the core action. A tenant user acting
+on another owner's record is rejected by `ScopesByBelongsToOwner` even when the
+list filter showed it. This is expected; do not add `withoutOwnerScope()` to fix
+it.
 
-1. Check data exists:
+## Resources
+
+### Empty tables
+
 ```php
-AffiliateSite::withoutGlobalScopes()->count();
+AffiliateSite::query()->withoutGlobalScopes()->count();
+app(\AIarmada\CommerceSupport\Contracts\OwnerResolverInterface::class)->resolve();
 ```
 
-2. Verify owner scoping:
-```php
-app(OwnerResolverInterface::class)->resolve();
+If the count is non-zero but the table is empty, owner scoping is filtering
+rows. If the count is zero, check migrations/seeding.
+
+### Offer site select is empty
+
+The site select only lists **verified** sites (`status = verified` and
+`verified_at` not null). Verify the site first. Editing an existing offer still
+shows its current site even if unverified.
+
+### "Enter a bare domain name…"
+
+`AffiliateSiteForm` validates with `Platform\DomainHostValidator::isValidHostname()`:
+no scheme, path, whitespace, IP address, or `localhost`/`.local`/`.internal`.
+Enter `example.com`.
+
+### Accidental rate lock (`source = manual`)
+
+Editing any rate-block field flips `source` to `manual`, and later catalog syncs
+hold the rates back (`locked`). Switch `source` back to `mirrored` to let the
+next sync re-apply catalog rates.
+
+## Relation managers
+
+### Verify/approve actions missing
+
+Visibility is state-driven: Verify/Reject only for `pending`, Suspend only for
+`verified`, Reinstate only for `suspended`; Approve/Reject only for `pending`
+applications, Revoke only for `approved`. Refresh the row.
+
+### Cannot delete an imported creative
+
+Imported creatives (`external_creative_id` not null) are catalog-owned. Only
+`is_active`/`sort_order` are editable; `SyncSiteCreatives` reconciles deletions.
+Manual rows can be deleted.
+
+### `Adjust` hidden on a leg
+
+Adjust requires `pending` or `posted` status and no `parent_leg_id`.
+Companion legs and terminal legs (reversed/superseded) cannot be adjusted.
+
+### `Reverse` hidden on a leg
+
+Only `posted` legs reverse. A `pending` leg matures via **Lock matured**, and a
+`provisional`/`superseded` leg never pays.
+
+## Merchant statements
+
+### Generate produces an empty statement
+
+Only `posted` legs with no `statement_id` and no `parent_leg_id` attach. Confirm
+the site/currency/period match posted legs. An empty statement is valid (leg
+count 0).
+
+### "Paid or void statements cannot be voided."
+
+Void applies only to `draft`/`issued`. Paid is terminal.
+
+### Mark Paid does not fulfil legs
+
+Fulfillment only runs when the site has `require_settled_for_payout = true` and
+the engine fulfills automatically. Otherwise the statement is marked paid and
+payout happens out of band.
+
+### Statement list looks empty for a merchant
+
+`MerchantStatementResource` uses `withoutOwnerScope()` and is admin-only. It is
+not a merchant surface; a merchant user will get `403`.
+
+## Pages and widgets
+
+### Merchant dashboard 404
+
+```bash
+php artisan route:list | grep merchant-dashboard
+php artisan route:clear
 ```
-
-3. Check global scopes aren't over-filtering.
-
-### Form Validation Errors
-
-**Symptoms:** Forms fail to save.
-
-**Solutions:**
-
-1. Check required fields are filled.
-
-2. Verify unique constraints:
-```php
-// Domain must be unique
-TextInput::make('domain')->unique(ignoreRecord: true)
-```
-
-3. Check foreign key relationships exist.
-
-## Page Issues
-
-### Merchant Dashboard Returns 404
-
-**Symptoms:** `/affiliate-network/merchant-dashboard` not found.
-
-**Solutions:**
-
-1. Verify the plugin is registered on the panel, then re-check routes:
-   ```bash
-   php artisan route:list | grep merchant-dashboard
-   php artisan route:clear
-   ```
 
 > **info**
-> This package ships no affiliate marketplace page. If you are looking for
-> `/affiliate-network/marketplace`, it belongs to another package or to a
-> custom page of your own.
+> There is no `/affiliate-network/marketplace` page in this package.
 
-### Can't Apply to Offers
+### Widgets missing
 
-**Symptoms:** Apply button doesn't work or shows error.
+Widgets auto-register via the plugin. Verify the plugin is registered and
+`NetworkAdminAccess::allows()` is true, or register them explicitly:
 
-**Solutions:**
-
-1. User must have affiliate record:
-```php
-$user->affiliate; // Must not be null
-```
-
-2. Check affiliate email matches user:
-```php
-Affiliate::where('contact_email', $user->email)->first();
-```
-
-3. Check cooldown period for rejected applications.
-
-### Links Not Generating
-
-**Symptoms:** "Get Link" button fails.
-
-**Solutions:**
-
-1. Verify application is approved:
-```php
-$application->status === 'approved';
-```
-
-2. Check OfferLinkService is registered:
-```php
-app(\AIArmada\AffiliateNetwork\Services\OfferLinkService::class);
-```
-
-## Widget Issues
-
-### Widgets Not Displaying
-
-**Symptoms:** Dashboard widgets missing.
-
-**Solutions:**
-
-1. Widgets auto-register via plugin. Verify plugin is registered.
-
-2. Check authorization:
-```php
-public static function canView(): bool
-{
-    return true; // Ensure this returns true
-}
-```
-
-3. Manually register widgets:
 ```php
 $panel->widgets([
-    NetworkStatsWidget::class,
-    TopOffersWidget::class,
+    \AIarmada\FilamentAffiliateNetwork\Widgets\NetworkStatsWidget::class,
+    \AIarmada\FilamentAffiliateNetwork\Widgets\TopOffersWidget::class,
 ]);
 ```
 
-### Widget Shows Wrong Data
+### Widget data stale
 
-**Symptoms:** Stats don't match expected values.
+Both widgets cache for 30 seconds via `OwnerCache::remember(null, ...)`. Clear
+the cache between assertions or after mutations.
 
-**Solutions:**
+## Multi-tenancy
 
-1. Check owner scoping is consistent.
+### Cross-tenant data visible
 
-2. Verify query logic:
+- `AFFILIATE_NETWORK_OWNER_ENABLED=true`.
+- Align the Filament panel tenant with the owner resolver.
+- Admin surfaces intentionally bypass scope; treat that as privileged, not
+  tenant-visible.
+
+### Custom resource leaks tenant data
+
+Return owner-safe queries and revalidate IDs in action handlers:
+
 ```php
-AffiliateOfferLink::sum('clicks');
-```
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
+use Illuminate\Database\Eloquent\Builder;
 
-3. Clear cache if using cached queries.
-
-## View Issues
-
-### Views Not Found
-
-**Symptoms:** View file errors.
-
-**Solutions:**
-
-1. Publish views:
-```bash
-php artisan vendor:publish --tag=filament-affiliate-network-views
-```
-
-2. Clear view cache:
-```bash
-php artisan view:clear
-```
-
-### Blade Component Errors
-
-**Symptoms:** Unknown component errors.
-
-**Solutions:**
-
-1. Ensure Filament components are available:
-```bash
-php artisan filament:install
-```
-
-2. Check Livewire is installed:
-```bash
-composer require livewire/livewire
-```
-
-## Multi-Tenancy Issues
-
-### Cross-Tenant Data Visible
-
-**Symptoms:** Users see other tenants' data.
-
-**Solutions:**
-
-1. Verify owner scoping enabled in core package:
-```env
-AFFILIATE_NETWORK_OWNER_ENABLED=true
-```
-
-2. Check Filament tenant configuration aligns with owner resolver.
-
-3. Override `getEloquentQuery()` in resources if needed:
-```php
 public static function getEloquentQuery(): Builder
 {
-    return parent::getEloquentQuery()
-        // Add additional scoping if needed
-        ->where('some_condition', true);
+    /** @var Builder<AffiliateOffer> $query */
+    $query = parent::getEloquentQuery();
+
+    return $query->with(['site', 'category']);
 }
 ```
 
-## Debugging Tips
-
-### Enable Debug Mode
-
-```php
-// config/app.php
-'debug' => true,
-```
-
-### Check Logs
+## Views
 
 ```bash
-tail -f storage/logs/laravel.log
+php artisan vendor:publish --tag=filament-affiliate-network-views
+php artisan view:clear
 ```
 
-### Inspect Component
+The only shipped view is the merchant dashboard page.
 
-In browser dev tools, find Livewire component and check:
-- Component properties
-- Method calls
-- Error messages
+## Debugging
 
-### Filament Debug Bar
+- `tail -f storage/logs/laravel.log`
+- Filament debug bar: `composer require --dev barryvdh/laravel-debugbar`
+- Inspect the Livewire component in browser dev tools.
 
-```bash
-composer require --dev barryvdh/laravel-debugbar
-```
+## Getting help
 
-## Getting Help
-
-If issues persist:
-
-1. Check [core package troubleshooting](../../affiliate-network/docs/99-troubleshooting.md)
-2. Review Filament v5 documentation
-3. Open an issue with:
-   - PHP/Laravel/Filament versions
-   - Package versions
-   - Full error message
-   - Steps to reproduce
+1. Check [core troubleshooting](../../affiliate-network/docs/99-troubleshooting.md).
+2. Review Filament v5 docs.
+3. Open an issue with PHP/Laravel/Filament versions, package versions, full
+   error, and reproduction steps.

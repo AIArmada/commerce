@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferApplicationResource\Schemas;
 
-use AIArmada\AffiliateNetwork\Models\Concerns\ScopesByBelongsToOwner;
+use AIArmada\AffiliateNetwork\Data\ApplicationStatus;
+use AIArmada\AffiliateNetwork\Platform\ScopesByBelongsToOwner;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -23,7 +24,6 @@ final class AffiliateOfferApplicationForm
                     ->schema([
                         Select::make('offer_id')
                             ->label('Offer')
-                            // Admin resource: cross-tenant — show all offers regardless of owner scope.
                             ->relationship('offer', 'name', modifyQueryUsing: fn (Builder $query): Builder => $query->withoutGlobalScope(ScopesByBelongsToOwner::class))
                             ->required()
                             ->disabled(),
@@ -35,12 +35,7 @@ final class AffiliateOfferApplicationForm
                             ->disabled(),
 
                         Select::make('status')
-                            ->options([
-                                'pending' => 'Pending',
-                                'approved' => 'Approved',
-                                'rejected' => 'Rejected',
-                                'revoked' => 'Revoked',
-                            ])
+                            ->options(self::statusOptions())
                             ->required(),
 
                         Textarea::make('reason')
@@ -60,5 +55,19 @@ final class AffiliateOfferApplicationForm
                     ])
                     ->columns(2),
             ]);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private static function statusOptions(): array
+    {
+        $options = [];
+
+        foreach (ApplicationStatus::cases() as $status) {
+            $options[$status->value] = $status->label();
+        }
+
+        return $options;
     }
 }

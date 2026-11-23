@@ -2,13 +2,15 @@
 
 declare(strict_types=1);
 
-use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
-use AIArmada\AffiliateNetwork\Models\AffiliateSite;
-use AIArmada\AffiliateNetwork\Models\NetworkConversionLeg;
+use AIArmada\AffiliateNetwork\Data\NotificationPayload;
+use AIArmada\AffiliateNetwork\Features\Attribution\Actions\RecordLinkCounters;
+use AIArmada\AffiliateNetwork\Features\Attribution\Models\AffiliateOfferLink;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Features\Enrollment\Actions\ApplyToOffer;
+use AIArmada\AffiliateNetwork\Features\Enrollment\Actions\ApproveApplication;
+use AIArmada\AffiliateNetwork\Features\Ledger\Actions\RecordNetworkConversion;
+use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use AIArmada\AffiliateNetwork\Notifications\NetworkConversionNotification;
-use AIArmada\AffiliateNetwork\Services\OfferLinkService;
-use AIArmada\AffiliateNetwork\Services\OfferManagementService;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Communications\CommunicationsServiceProvider;
 use AIArmada\Communications\Models\Communication;
@@ -17,7 +19,10 @@ use Livewire\LivewireServiceProvider;
 
 function notificationOffer(string $domain): AffiliateOffer
 {
-    $site = AffiliateSite::factory()->verified()->create(['domain' => $domain]);
+    $site = AffiliateSite::factory()->verified()->create([
+        'domain' => $domain,
+        'require_settled_for_payout' => true,
+    ]);
 
     return AffiliateOffer::factory()->published()->forSite($site)->create([
         'landing_url' => "https://{$domain}/landing",
@@ -46,7 +51,7 @@ describe('network notifications', function (): void {
         $offer->site->forceFill(['owner_type' => $owner->getMorphClass(), 'owner_id' => $owner->getKey()])->save();
         $user = User::factory()->create();
 
-        app(OfferManagementService::class)->applyForOffer($offer, (string) $user->getKey());
+        app(ApplyToOffer::class)->execute((string) $offer->getKey(), (string) $user->getKey());
 
         expect(Communication::query()->where('purpose', 'affiliate-network.application_submitted')->exists())->toBeTrue();
     });
@@ -55,8 +60,8 @@ describe('network notifications', function (): void {
         $offer = notificationOffer('notify-approve.example');
         $user = User::factory()->create();
 
-        $application = app(OfferManagementService::class)->applyForOffer($offer, (string) $user->getKey());
-        app(OfferManagementService::class)->approveApplication($application);
+        $application = app(ApplyToOffer::class)->execute((string) $offer->getKey(), (string) $user->getKey());
+        app(ApproveApplication::class)->execute($application);
 
         $communication = Communication::query()->where('purpose', 'affiliate-network.application_approved')->firstOrFail();
 
@@ -68,7 +73,14 @@ describe('network notifications', function (): void {
         $user = User::factory()->create();
         $link = AffiliateOfferLink::factory()->forOffer($offer)->forAffiliateId((string) $user->getKey())->create();
 
-        app(OfferLinkService::class)->recordConversion($link, 10000, 'MYR', 'NOTIFY-NET-1');
+        app(RecordNetworkConversion::class)->execute(
+            offerId: (string) $offer->getKey(),
+            affiliateId: (string) $user->getKey(),
+            revenueMinor: 10000,
+            currency: 'MYR',
+            externalReference: 'NOTIFY-NET-1',
+            linkId: (string) $link->getKey(),
+        );
 
         expect(Communication::query()->where('purpose', 'affiliate-network.conversion_recorded')->exists())->toBeTrue();
     });
@@ -78,7 +90,7 @@ describe('network notifications', function (): void {
         $user = User::factory()->create();
         $link = AffiliateOfferLink::factory()->forOffer($offer)->forAffiliateId((string) $user->getKey())->create();
 
-        app(OfferLinkService::class)->recordConversion($link, 10000, 'MYR');
+        app(RecordLinkCounters::class)->execute((string) $link->getKey(), 10000, 1);
 
         expect(Communication::query()->exists())->toBeFalse();
     });
@@ -89,18 +101,18 @@ describe('network notifications', function (): void {
         $offer = notificationOffer('notify-off.example');
         $user = User::factory()->create();
 
-        app(OfferManagementService::class)->applyForOffer($offer, (string) $user->getKey());
+        app(ApplyToOffer::class)->execute((string) $offer->getKey(), (string) $user->getKey());
 
         expect(Communication::query()->exists())->toBeFalse();
     });
 
-    test('conversion notifications format the payout with currency precision', function (): void {
-        $leg = NetworkConversionLeg::factory()->create([
-            'payout_minor' => 1234,
-            'commission_currency' => 'JPY',
-        ]);
+    test('conversion notifications pass the payload through to mail', function (): void {
+        $notification = new NetworkConversionNotification(new NotificationPayload(
+            title: 'New earnings: ¥1,234',
+            body: 'One of your links converted and earned ¥1,234.',
+        ));
 
-        $mail = (new NetworkConversionNotification($leg))->toMail(new User);
+        $mail = $notification->toMail(new User);
 
         expect($mail->subject)->toBe('New earnings: ¥1,234')
             ->and($mail->introLines)->toContain('One of your links converted and earned ¥1,234.');

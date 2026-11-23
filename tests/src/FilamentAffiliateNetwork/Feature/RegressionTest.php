@@ -2,17 +2,18 @@
 
 declare(strict_types=1);
 
-use AIArmada\AffiliateNetwork\Actions\CreateSite;
-use AIArmada\AffiliateNetwork\Actions\UpdateSite;
-use AIArmada\AffiliateNetwork\Enums\ApplicationStatus;
-use AIArmada\AffiliateNetwork\Enums\OfferStatus;
-use AIArmada\AffiliateNetwork\Enums\OfferVisibility;
+use AIArmada\AffiliateNetwork\Data\ApplicationStatus;
+use AIArmada\AffiliateNetwork\Data\OfferStatus;
+use AIArmada\AffiliateNetwork\Data\OfferVisibility;
+use AIArmada\AffiliateNetwork\Data\SiteStatus;
 use AIArmada\AffiliateNetwork\Events\OfferUpdated;
-use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferCategory;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
-use AIArmada\AffiliateNetwork\Models\AffiliateSite;
+use AIArmada\AffiliateNetwork\Features\Attribution\Models\AffiliateOfferLink;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOfferCategory;
+use AIArmada\AffiliateNetwork\Features\Enrollment\Models\AffiliateOfferApplication;
+use AIArmada\AffiliateNetwork\Features\Sites\Actions\CreateSite;
+use AIArmada\AffiliateNetwork\Features\Sites\Actions\UpdateSite;
+use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
@@ -137,7 +138,7 @@ describe('admin verify action on owned sites', function (): void {
         $owner = User::factory()->create();
         $site = OwnerContext::withOwner($owner, fn (): AffiliateSite => AffiliateSite::factory()->forOwner($owner)->create([
             'domain' => 'h1-owned.example',
-            'status' => AffiliateSite::STATUS_PENDING,
+            'status' => SiteStatus::Pending,
             'verified_at' => null,
         ]));
 
@@ -152,7 +153,7 @@ describe('admin verify action on owned sites', function (): void {
 
         $site->refresh();
 
-        expect($site->status)->toBe(AffiliateSite::STATUS_VERIFIED)
+        expect($site->status)->toBe(SiteStatus::Verified)
             ->and($site->verified_at)->not->toBeNull();
     });
 });
@@ -409,11 +410,11 @@ describe('category cycle protection', function (): void {
     test('rejects a descendant as parent', function (): void {
         $page = (new ReflectionClass(EditAffiliateOfferCategory::class))->newInstanceWithoutConstructor();
         $page->record = $this->parent;
-        $method = new ReflectionMethod(EditAffiliateOfferCategory::class, 'mutateFormDataBeforeSave');
+        $method = new ReflectionMethod(EditAffiliateOfferCategory::class, 'handleRecordUpdate');
         $method->setAccessible(true);
 
         try {
-            $method->invoke($page, ['parent_id' => $this->grandchild->id]);
+            $method->invoke($page, $this->parent, ['parent_id' => $this->grandchild->id]);
             $this->fail('Expected a ValidationException for a cyclic parent assignment.');
         } catch (ValidationException $e) {
             expect($e->errors())->toHaveKey('data.parent_id');
@@ -423,11 +424,11 @@ describe('category cycle protection', function (): void {
     test('rejects the record itself as parent', function (): void {
         $page = (new ReflectionClass(EditAffiliateOfferCategory::class))->newInstanceWithoutConstructor();
         $page->record = $this->parent;
-        $method = new ReflectionMethod(EditAffiliateOfferCategory::class, 'mutateFormDataBeforeSave');
+        $method = new ReflectionMethod(EditAffiliateOfferCategory::class, 'handleRecordUpdate');
         $method->setAccessible(true);
 
         try {
-            $method->invoke($page, ['parent_id' => $this->parent->id]);
+            $method->invoke($page, $this->parent, ['parent_id' => $this->parent->id]);
             $this->fail('Expected a ValidationException for a self parent assignment.');
         } catch (ValidationException $e) {
             expect($e->errors())->toHaveKey('data.parent_id');
@@ -439,11 +440,13 @@ describe('category cycle protection', function (): void {
 
         $page = (new ReflectionClass(EditAffiliateOfferCategory::class))->newInstanceWithoutConstructor();
         $page->record = $this->parent;
-        $method = new ReflectionMethod(EditAffiliateOfferCategory::class, 'mutateFormDataBeforeSave');
+        $method = new ReflectionMethod(EditAffiliateOfferCategory::class, 'handleRecordUpdate');
         $method->setAccessible(true);
 
-        expect($method->invoke($page, ['parent_id' => null]))->toBe(['parent_id' => null])
-            ->and($method->invoke($page, ['parent_id' => $other->id])['parent_id'])->toBe((string) $other->id);
+        $nullResult = $method->invoke($page, $this->parent, ['parent_id' => null]);
+
+        expect($nullResult->parent_id)->toBeNull()
+            ->and($method->invoke($page, $this->parent, ['parent_id' => $other->id])->parent_id)->toBe((string) $other->id);
     });
 });
 
@@ -591,7 +594,7 @@ describe('site domain and verified lifecycle', function (): void {
     test('domain format is validated', function (): void {
         $base = [
             'name' => 'L4 Site',
-            'status' => AffiliateSite::STATUS_PENDING,
+            'status' => SiteStatus::Pending,
         ];
 
         expect(regressionValidateSiteForm(array_merge($base, ['domain' => 'http://example.com'])))->not->toBeNull()
@@ -606,7 +609,7 @@ describe('site domain and verified lifecycle', function (): void {
         $verified = $action->execute([
             'name' => 'L4 Verified',
             'domain' => '  ' . $verifiedDomain . ' ',
-            'status' => AffiliateSite::STATUS_VERIFIED,
+            'status' => SiteStatus::Verified,
         ]);
 
         expect($verified->domain)->toBe(mb_strtolower($verifiedDomain))
@@ -615,7 +618,7 @@ describe('site domain and verified lifecycle', function (): void {
         $pending = $action->execute([
             'name' => 'L4 Pending',
             'domain' => 'Pending-' . uniqid() . '-Example.com',
-            'status' => AffiliateSite::STATUS_PENDING,
+            'status' => SiteStatus::Pending,
         ]);
 
         expect($pending->domain)->toStartWith('pending-')
@@ -626,14 +629,14 @@ describe('site domain and verified lifecycle', function (): void {
         $verifiedSite = AffiliateSite::factory()->verified()->create(['domain' => 'l4sync-v-' . uniqid() . '.example']);
         $pendingSite = AffiliateSite::factory()->create([
             'domain' => 'l4sync-p-' . uniqid() . '.example',
-            'status' => AffiliateSite::STATUS_PENDING,
+            'status' => SiteStatus::Pending,
             'verified_at' => null,
         ]);
 
         $exit = app(UpdateSite::class)->execute($verifiedSite, [
             'name' => $verifiedSite->name,
             'domain' => $verifiedSite->domain,
-            'status' => AffiliateSite::STATUS_SUSPENDED,
+            'status' => SiteStatus::Suspended,
         ]);
 
         expect($exit->verified_at)->toEqual($verifiedSite->verified_at);
@@ -641,7 +644,7 @@ describe('site domain and verified lifecycle', function (): void {
         $entry = app(UpdateSite::class)->execute($pendingSite, [
             'name' => $pendingSite->name,
             'domain' => $pendingSite->domain,
-            'status' => AffiliateSite::STATUS_VERIFIED,
+            'status' => SiteStatus::Verified,
         ]);
 
         expect($entry->verified_at)->not->toBeNull();
@@ -649,7 +652,7 @@ describe('site domain and verified lifecycle', function (): void {
         $unchanged = app(UpdateSite::class)->execute($pendingSite->fresh(), [
             'name' => $pendingSite->name,
             'domain' => $pendingSite->domain,
-            'status' => AffiliateSite::STATUS_PENDING,
+            'status' => SiteStatus::Pending,
         ]);
 
         expect($unchanged->verified_at)->toBeNull();

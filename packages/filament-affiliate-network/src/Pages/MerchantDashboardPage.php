@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliateNetwork\Pages;
 
-use AIArmada\AffiliateNetwork\Enums\ApplicationStatus;
-use AIArmada\AffiliateNetwork\Enums\OfferStatus;
-use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
-use AIArmada\AffiliateNetwork\Models\AffiliateSite;
+use AIArmada\AffiliateNetwork\Data\ApplicationStatus;
+use AIArmada\AffiliateNetwork\Data\OfferStatus;
+use AIArmada\AffiliateNetwork\Data\SiteStatus;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Features\Enrollment\Models\AffiliateOfferApplication;
+use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use AIArmada\FilamentAffiliateNetwork\Support\NetworkAdminAccess;
 use BackedEnum;
 use Filament\Pages\Page;
@@ -99,7 +100,6 @@ final class MerchantDashboardPage extends Page
      */
     public function getRecentApplications(): Collection
     {
-        // Memoized: the blade calls this twice per render (isEmpty + foreach).
         return $this->memoizedRecentApplications ??= AffiliateOfferApplication::query()
             ->with(['offer', 'affiliate'])
             ->where('status', ApplicationStatus::Pending)
@@ -113,7 +113,6 @@ final class MerchantDashboardPage extends Page
      */
     public function getTopOffers(): Collection
     {
-        // Memoized: the blade calls this twice per render (isEmpty + foreach).
         return $this->memoizedTopOffers ??= AffiliateOffer::query()
             ->with('site')
             ->where('status', OfferStatus::Published)
@@ -131,7 +130,7 @@ final class MerchantDashboardPage extends Page
     public function getVerifiedSitesCount(): int
     {
         return $this->memoizedCounts['verified_sites'] ??= AffiliateSite::query()
-            ->where('status', AffiliateSite::STATUS_VERIFIED)
+            ->where('status', SiteStatus::Verified)
             ->count();
     }
 

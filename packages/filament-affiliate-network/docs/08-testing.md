@@ -4,14 +4,12 @@ title: Testing
 
 # Testing
 
-Guide to testing the Filament Affiliate Network plugin.
+Guide to testing the Filament Affiliate Network plugin with Pest + Livewire.
 
 ## Setup
 
-### Required Dependencies
-
 ```php
-// composer.json (dev dependencies)
+// composer.json (dev)
 "require-dev": {
     "pestphp/pest": "^5.2",
     "pestphp/pest-plugin-livewire": "^5.0",
@@ -19,14 +17,11 @@ Guide to testing the Filament Affiliate Network plugin.
 }
 ```
 
-### Test Case Setup
-
 ```php
 <?php
 
 namespace Tests;
 
-use AIArmada\FilamentAffiliateNetwork\Support\NetworkAdminAccess;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Gate;
@@ -44,56 +39,41 @@ abstract class FilamentTestCase extends TestCase
         $this->admin = User::factory()->create();
         $this->actingAs($this->admin);
 
-        // Every shipped page, table, and widget gates on NetworkAdminAccess.
-        Gate::define(config('filament-affiliate-network.authorization.admin_ability'), fn () => true);
+        Gate::define(
+            config('filament-affiliate-network.authorization.admin_ability'),
+            fn (): bool => true,
+        );
     }
 }
 ```
 
-> **warning:**
-> Resources, pages, and widgets are all gated by
-> `NetworkAdminAccess::allows()`, which reads
-> `filament-affiliate-network.authorization.admin_ability`
-> (`affiliate-network.admin`). Without granting that ability, page and widget
-> tests abort with `403` before rendering. `NetworkAdminAccess` has no
-> `grant()` helper — define the Gate ability in your test case.
+> **warning**
+> Resources, pages, and widgets gate on `NetworkAdminAccess::allows()`, which
+> reads `filament-affiliate-network.authorization.admin_ability`
+> (`affiliate-network.admin`). Without defining that ability, page/widget tests
+> abort with `403` before rendering. `NetworkAdminAccess` has no `grant()` helper.
 
----
+## Testing resources
 
-## Testing Resources
-
-### AffiliateSiteResource Tests
+### Sites
 
 ```php
-use AIArmada\AffiliateNetwork\Models\AffiliateSite;
+use AIArmada\AffiliateNetwork\Data\SiteStatus;
+use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource;
 
 use function Pest\Livewire\livewire;
 
-it('can render sites list page', function () {
-    livewire(AffiliateSiteResource\Pages\ListAffiliateSites::class)
-        ->assertSuccessful();
+it('renders the sites list', function (): void {
+    livewire(AffiliateSiteResource\Pages\ListAffiliateSites::class)->assertSuccessful();
 });
 
-it('can list sites', function () {
-    $sites = AffiliateSite::factory()->count(3)->create();
-
-    livewire(AffiliateSiteResource\Pages\ListAffiliateSites::class)
-        ->assertCanSeeTableRecords($sites);
-});
-
-it('can render create page', function () {
-    livewire(AffiliateSiteResource\Pages\CreateAffiliateSite::class)
-        ->assertSuccessful();
-});
-
-it('can create site', function () {
+it('creates a site', function (): void {
     livewire(AffiliateSiteResource\Pages\CreateAffiliateSite::class)
         ->fillForm([
             'name' => 'Test Store',
             'domain' => 'teststore.com',
-            'description' => 'A test store',
-            'status' => AffiliateSite::STATUS_PENDING,
+            'status' => SiteStatus::Pending->value,
         ])
         ->call('create')
         ->assertHasNoFormErrors();
@@ -101,84 +81,32 @@ it('can create site', function () {
     expect(AffiliateSite::where('domain', 'teststore.com')->exists())->toBeTrue();
 });
 
-it('validates unique domain', function () {
-    AffiliateSite::factory()->create(['domain' => 'existing.com']);
-
+it('validates the bare domain rule', function (): void {
     livewire(AffiliateSiteResource\Pages\CreateAffiliateSite::class)
-        ->fillForm([
-            'name' => 'Another Store',
-            'domain' => 'existing.com',
-        ])
+        ->fillForm(['name' => 'Bad', 'domain' => 'https://example.com/path'])
         ->call('create')
-        ->assertHasFormErrors(['domain' => 'unique']);
+        ->assertHasFormErrors(['domain']);
 });
 
-it('can render edit page', function () {
-    $site = AffiliateSite::factory()->create();
-
-    livewire(AffiliateSiteResource\Pages\EditAffiliateSite::class, [
-        'record' => $site->id,
-    ])
-        ->assertSuccessful();
-});
-
-it('can update site', function () {
-    $site = AffiliateSite::factory()->create();
-
-    livewire(AffiliateSiteResource\Pages\EditAffiliateSite::class, [
-        'record' => $site->id,
-    ])
-        ->fillForm([
-            'name' => 'Updated Name',
-        ])
-        ->call('save')
-        ->assertHasNoFormErrors();
-
-    expect($site->fresh()->name)->toBe('Updated Name');
-});
-
-it('can verify pending site via action', function () {
+it('verifies a pending site via the action', function (): void {
     $site = AffiliateSite::factory()->pending()->create();
 
     livewire(AffiliateSiteResource\Pages\ListAffiliateSites::class)
         ->callTableAction('verify', $site);
 
-    expect($site->fresh())
-        ->status->toBe(AffiliateSite::STATUS_VERIFIED)
-        ->verified_at->not->toBeNull();
-});
-
-it('hides verify action for verified sites', function () {
-    $site = AffiliateSite::factory()->verified()->create();
-
-    livewire(AffiliateSiteResource\Pages\ListAffiliateSites::class)
-        ->assertTableActionHidden('verify', $site);
+    expect($site->fresh()->isVerified())->toBeTrue();
 });
 ```
 
-### AffiliateOfferResource Tests
+### Offers
 
 ```php
-use AIArmada\AffiliateNetwork\Enums\OfferStatus;
-use AIArmada\AffiliateNetwork\Models\AffiliateSite;
-use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Data\OfferStatus;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource;
 
-use function Pest\Livewire\livewire;
-
-it('can render offers list page', function () {
-    livewire(AffiliateOfferResource\Pages\ListAffiliateOffers::class)
-        ->assertSuccessful();
-});
-
-it('can list offers', function () {
-    $offers = AffiliateOffer::factory()->count(3)->create();
-
-    livewire(AffiliateOfferResource\Pages\ListAffiliateOffers::class)
-        ->assertCanSeeTableRecords($offers);
-});
-
-it('can create offer', function () {
+it('creates an offer', function (): void {
     $site = AffiliateSite::factory()->verified()->create();
 
     livewire(AffiliateOfferResource\Pages\CreateAffiliateOffer::class)
@@ -195,7 +123,7 @@ it('can create offer', function () {
     expect(AffiliateOffer::where('slug', 'summer-sale')->exists())->toBeTrue();
 });
 
-it('can publish an archived offer via the activate action', function () {
+it('publishes an archived offer via activate', function (): void {
     $offer = AffiliateOffer::factory()->archived()->create();
 
     livewire(AffiliateOfferResource\Pages\ListAffiliateOffers::class)
@@ -204,7 +132,7 @@ it('can publish an archived offer via the activate action', function () {
     expect($offer->fresh()->status)->toBe(OfferStatus::Published);
 });
 
-it('can archive a published offer via the pause action', function () {
+it('archives a published offer via pause', function (): void {
     $offer = AffiliateOffer::factory()->published()->create();
 
     livewire(AffiliateOfferResource\Pages\ListAffiliateOffers::class)
@@ -212,274 +140,181 @@ it('can archive a published offer via the pause action', function () {
 
     expect($offer->fresh()->status)->toBe(OfferStatus::Archived);
 });
-
-it('filters offers by status', function () {
-    $published = AffiliateOffer::factory()->published()->create();
-    $archived = AffiliateOffer::factory()->archived()->create();
-
-    livewire(AffiliateOfferResource\Pages\ListAffiliateOffers::class)
-        ->filterTable('status', OfferStatus::Published->value)
-        ->assertCanSeeTableRecords([$published])
-        ->assertCanNotSeeTableRecords([$archived]);
-});
 ```
 
-> **warning:**
-> `AffiliateOffer` declares no `STATUS_*` constants and there is no `active` /
-> `paused` status. `OfferStatus` is `Draft | Published | Archived`, and the
-> `activate` / `pause` actions map onto `Published` / `Archived`. The factory
-> has no `active()` or `paused()` state either.
+> **warning**
+> `OfferStatus` is exactly `Draft | Published | Archived`; there are no
+> `STATUS_*` constants and no `active`/`paused` states. `activate`/`pause` map
+> to `Published`/`Archived`.
 
-### AffiliateOfferApplicationResource Tests
+### Applications
 
 ```php
-use AIArmada\AffiliateNetwork\Enums\ApplicationStatus;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
+use AIArmada\AffiliateNetwork\Data\ApplicationStatus;
+use AIArmada\AffiliateNetwork\Features\Enrollment\Models\AffiliateOfferApplication;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferApplicationResource;
 
-use function Pest\Livewire\livewire;
-
-it('can render applications list page', function () {
-    livewire(AffiliateOfferApplicationResource\Pages\ListAffiliateOfferApplications::class)
-        ->assertSuccessful();
-});
-
-it('can approve pending application', function () {
+it('approves a pending application', function (): void {
     $application = AffiliateOfferApplication::factory()->pending()->create();
 
     livewire(AffiliateOfferApplicationResource\Pages\ListAffiliateOfferApplications::class)
         ->callTableAction('approve', $application);
 
-    expect($application->fresh())
-        ->status->toBe(ApplicationStatus::Approved)
-        ->reviewed_at->not->toBeNull();
+    expect($application->fresh()->status)->toBe(ApplicationStatus::Approved);
 });
 
-it('can reject application with reason', function () {
+it('rejects with a reason', function (): void {
     $application = AffiliateOfferApplication::factory()->pending()->create();
 
     livewire(AffiliateOfferApplicationResource\Pages\ListAffiliateOfferApplications::class)
-        ->callTableAction('reject', $application, [
-            'reason' => 'Traffic sources not aligned',
-        ]);
+        ->callTableAction('reject', $application, ['reason' => 'Traffic mismatch']);
 
-    expect($application->fresh())
-        ->status->toBe(ApplicationStatus::Rejected)
-        ->rejection_reason->toBe('Traffic sources not aligned');
-});
-
-it('can revoke approved application', function () {
-    $application = AffiliateOfferApplication::factory()->approved()->create();
-
-    livewire(AffiliateOfferApplicationResource\Pages\ListAffiliateOfferApplications::class)
-        ->callTableAction('revoke', $application, [
-            'reason' => 'Policy violation',
-        ]);
-
-    expect($application->fresh())
-        ->status->toBe(ApplicationStatus::Revoked)
-        ->rejection_reason->toBe('Policy violation');
-});
-
-it('can bulk approve applications', function () {
-    $applications = AffiliateOfferApplication::factory()
-        ->pending()
-        ->count(3)
-        ->create();
-
-    livewire(AffiliateOfferApplicationResource\Pages\ListAffiliateOfferApplications::class)
-        ->callTableBulkAction('approve_selected', $applications);
-
-    foreach ($applications as $application) {
-        expect($application->fresh()->status)->toBe(ApplicationStatus::Approved);
-    }
+    expect($application->fresh()->rejection_reason)->toBe('Traffic mismatch');
 });
 ```
 
-> **warning:**
-> `AffiliateOfferApplication` declares no `STATUS_*` constants. Read the
-> `ApplicationStatus` enum (`Pending | Approved | Rejected | Revoked`).
-
----
-
-## Testing Pages
-
-The package ships one page: `MerchantDashboardPage`. There is no
-marketplace/discovery page.
-
-### Merchant Dashboard Page Tests
+### Merchant statements (admin-only)
 
 ```php
-use AIArmada\AffiliateNetwork\Models\AffiliateSite;
-use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
-use AIArmada\FilamentAffiliateNetwork\Pages\MerchantDashboardPage;
+use AIArmada\AffiliateNetwork\Data\SettlementStatus;
+use AIArmada\AffiliateNetwork\Features\Ledger\Models\MerchantStatement;
+use AIArmada\FilamentAffiliateNetwork\Resources\MerchantStatementResource;
 
-use function Pest\Livewire\livewire;
-
-it('can render merchant dashboard', function () {
-    livewire(MerchantDashboardPage::class)
+it('renders statements for admins', function (): void {
+    livewire(MerchantStatementResource\Pages\ListMerchantStatements::class)
         ->assertSuccessful();
 });
 
-it('shows correct site counts', function () {
-    AffiliateSite::factory()->verified()->count(3)->create();
-    AffiliateSite::factory()->pending()->count(2)->create();
+it('issues a draft statement', function (): void {
+    $statement = MerchantStatement::factory()->draft()->create();
 
-    $component = livewire(MerchantDashboardPage::class);
+    livewire(MerchantStatementResource\Pages\ListMerchantStatements::class)
+        ->callTableAction('issue', $statement);
 
-    expect($component->getSitesCount())->toBe(5);
-    expect($component->getVerifiedSitesCount())->toBe(3);
+    expect($statement->fresh()->status)->toBe(SettlementStatus::Issued);
 });
 
-it('shows correct offer counts', function () {
-    AffiliateOffer::factory()->published()->count(5)->create();
-    AffiliateOffer::factory()->archived()->count(3)->create();
+it('blocks non-admins', function (): void {
+    Gate::define('affiliate-network.admin', fn (): bool => false);
 
-    $component = livewire(MerchantDashboardPage::class);
-
-    expect($component->getActiveOffersCount())->toBe(5);
-});
-
-it('shows pending applications count', function () {
-    AffiliateOfferApplication::factory()->pending()->count(7)->create();
-    AffiliateOfferApplication::factory()->approved()->count(3)->create();
-
-    $component = livewire(MerchantDashboardPage::class);
-
-    expect($component->getPendingApplicationsCount())->toBe(7);
+    livewire(MerchantStatementResource\Pages\ListMerchantStatements::class)
+        ->assertForbidden();
 });
 ```
 
----
-
-## Testing Widgets
-
-### NetworkStatsWidget Tests
+## Testing relation managers
 
 ```php
-use AIArmada\AffiliateNetwork\Models\AffiliateSite;
-use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
+use AIArmada\AffiliateNetwork\Features\Attribution\Models\AffiliateOfferCoupon;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
+use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\RelationManagers\CouponsRelationManager;
+
+use function Pest\Livewire\livewire;
+
+it('assigns a coupon from the offer', function (): void {
+    $offer = AffiliateOffer::factory()->published()->create();
+
+    livewire(CouponsRelationManager::class, [
+        'ownerRecord' => $offer,
+        'pageClass' => \AIarmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Pages\EditAffiliateOffer::class,
+    ])
+        ->callTableAction('assign_coupon', data: [
+            'affiliate_id' => (string) \Illuminate\Support\Str::uuid(),
+            'code' => 'SUMMER10',
+        ])
+        ->assertHasNoTableActionErrors();
+
+    expect(AffiliateOfferCoupon::where('code', 'SUMMER10')->exists())->toBeTrue();
+});
+```
+
+Use the same `ownerRecord` + `pageClass` shape for `InvitationsRelationManager`
+(`invite`), `DealsRelationManager` (`upsert_deal`), `LegsRelationManager`
+(`adjust`, `reverse`, `lock_matured`), `CreativesRelationManager`, and
+`LinksRelationManager`.
+
+### Leg actions
+
+```php
+use AIArmada\AffiliateNetwork\Data\LegStatus;
+use AIArmada\AffiliateNetwork\Features\Ledger\Models\NetworkConversionLeg;
+use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\RelationManagers\LegsRelationManager;
+
+it('reverses a posted leg', function (): void {
+    $offer = AffiliateOffer::factory()->published()->create();
+    $leg = NetworkConversionLeg::factory()->forOffer($offer)->create(['status' => LegStatus::Posted]);
+
+    livewire(LegsRelationManager::class, [
+        'ownerRecord' => $offer,
+        'pageClass' => \AIarmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Pages\EditAffiliateOffer::class,
+    ])
+        ->callTableAction('reverse', $leg, ['reason' => 'refund']);
+
+    expect($leg->fresh()->status)->toBe(LegStatus::Reversed);
+});
+```
+
+## Testing pages and widgets
+
+`MerchantDashboardPage`, `NetworkStatsWidget`, and `TopOffersWidget` are
+network-gated and (for the widgets) network-wide.
+
+```php
+use AIArmada\FilamentAffiliateNetwork\Pages\MerchantDashboardPage;
 use AIArmada\FilamentAffiliateNetwork\Widgets\NetworkStatsWidget;
 
-use function Pest\Livewire\livewire;
-
-it('can render network stats widget', function () {
-    livewire(NetworkStatsWidget::class)
-        ->assertSuccessful();
+it('renders the merchant dashboard', function (): void {
+    livewire(MerchantDashboardPage::class)->assertSuccessful();
 });
 
-it('displays correct statistics', function () {
-    AffiliateSite::factory()->verified()->count(3)->create();
-    AffiliateOffer::factory()->published()->count(5)->create();
-    AffiliateOfferApplication::factory()->pending()->count(2)->create();
-    AffiliateOfferLink::factory()->withStats(1000, 50, 250000)->create();
-
-    $component = livewire(NetworkStatsWidget::class);
-    $stats = $component->getStats();
-
-    expect($stats)->toHaveCount(6);
-    // Active Sites, Active Offers, Pending Applications, Total Clicks, Conversion Rate, Total Revenue
+it('renders network stats', function (): void {
+    livewire(NetworkStatsWidget::class)->assertSuccessful();
 });
 ```
 
-> **warning:**
-> `getStats()` is a `protected` method on the widget. Assert against rendered
-> output or the `NetworkStatsAggregator::aggregate()` array instead of calling
-> it through Livewire.
+> **warning**
+> `NetworkStatsWidget::getStats()` is `protected`. Assert rendered output or
+> `NetworkStatsAggregator::aggregate()` instead of calling it through Livewire.
+> `TopOffersWidget` caches ids for 30s via `OwnerCache`; clear
+> `OwnerCache::forget(null, 'affiliate-network.top-offer-ids')` between assertions.
 
-### TopOffersWidget Tests
+## Authorization tests
 
 ```php
-use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
-use AIArmada\FilamentAffiliateNetwork\Widgets\TopOffersWidget;
+use AIArmada\FilamentAffiliateNetwork\Support\NetworkAdminAccess;
+use Illuminate\Support\Facades\Gate;
 
-use function Pest\Livewire\livewire;
+it('reports admin access from the configured ability', function (): void {
+    Gate::define(config('filament-affiliate-network.authorization.admin_ability'), fn (): bool => true);
 
-it('can render top offers widget', function () {
-    livewire(TopOffersWidget::class)
-        ->assertSuccessful();
-});
-
-it('displays offers ordered by clicks', function () {
-    $lowClicks = AffiliateOffer::factory()->published()->create();
-    AffiliateOfferLink::factory()->forOffer($lowClicks)->withStats(100, 5, 5000)->create();
-
-    $highClicks = AffiliateOffer::factory()->published()->create();
-    AffiliateOfferLink::factory()->forOffer($highClicks)->withStats(1000, 50, 50000)->create();
-
-    livewire(TopOffersWidget::class)
-        ->assertCanSeeTableRecords([$highClicks, $lowClicks]);
+    expect(NetworkAdminAccess::allows())->toBeTrue();
 });
 ```
 
-> **warning:**
-> `TopOffersWidget` caches its top-10 offer ids for 30 seconds via
-> `OwnerCache`. Call
-> `OwnerCache::forget(null, 'affiliate-network.top-offer-ids')` between
-> assertions, or the first test's ids will be reused.
+## Real Chrome smoke test
 
----
+`demo/tests/chrome/affiliate-surfaces.mjs` proves the surfaces in real Chrome via
+Puppeteer: login, offers table, offer Legs tab + reverse/adjust, site token
+rotation, statements list, and postback settings. Deterministic `CHROME-*`
+fixtures come from `demo/database/seeders/ChromeSmokeSeeder.php`.
 
-## Testing Tips
+```bash
+# From demo/, against a migrated + served app:
+npm run chrome:affiliates
+BASE_URL=http://127.0.0.1:8000 npm run chrome:affiliates
+node tests/chrome/affiliate-surfaces.mjs --no-seed
+```
 
-### Authenticate Before Tests
+Screenshots land in `demo/tests/chrome/screenshots/` (gitignored). The script
+exits non-zero with the failing check names.
+
+## Tips
 
 ```php
-beforeEach(function () {
+beforeEach(function (): void {
     $this->actingAs(User::factory()->create());
 });
 ```
 
-### Test With Tenancy
-
-```php
-it('scopes resources to current tenant', function () {
-    $tenant = Tenant::factory()->create();
-    
-    $ownSite = AffiliateSite::factory()->forOwner($tenant)->create();
-    $otherSite = AffiliateSite::factory()->create();
-
-    setCurrentTenant($tenant);
-
-    livewire(AffiliateSiteResource\Pages\ListAffiliateSites::class)
-        ->assertCanSeeTableRecords([$ownSite])
-        ->assertCanNotSeeTableRecords([$otherSite]);
-});
-```
-
-### Assert Notifications
-
-```php
-use Filament\Notifications\Notification;
-
-it('shows success notification on approve', function () {
-    $application = AffiliateOfferApplication::factory()->pending()->create();
-
-    livewire(AffiliateOfferApplicationResource\Pages\ListAffiliateOfferApplications::class)
-        ->callTableAction('approve', $application)
-        ->assertNotified('Application approved');
-});
-```
-
-## Real-Chrome Smoke Test
-
-Pest covers wiring; `demo/tests/chrome/affiliate-surfaces.mjs` proves the
-surfaces in real Chrome via Puppeteer: login, offers table (fee column),
-offer Legs tab + leg reverse, site token rotation, conversions table
-(origin/source ref) + conversion reverse. Deterministic `CHROME-*`
-fixtures come from `demo/database/seeders/ChromeSmokeSeeder.php`, which
-resets its own rows on every run.
-
-```bash
-# From demo/, against a migrated + served app (Herd or artisan serve):
-npm run chrome:affiliates
-BASE_URL=http://127.0.0.1:8000 npm run chrome:affiliates
-node tests/chrome/affiliate-surfaces.mjs --no-seed  # skip re-seeding
-```
-
-Screenshots land in `demo/tests/chrome/screenshots/` (gitignored). The
-script exits non-zero with the failing check names.
+Wrap multi-tenant tests in `OwnerContext::withOwner($merchant, fn () => ...)`.
+Use `MoneyFormatter::formatMinor()` assertions rather than dividing by 100.

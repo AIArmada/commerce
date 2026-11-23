@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferApplicationResource\Tables;
 
-use AIArmada\AffiliateNetwork\Contracts\AffiliateIdentityResolver;
-use AIArmada\AffiliateNetwork\Enums\ApplicationStatus;
-use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
-use AIArmada\AffiliateNetwork\Models\AffiliateSite;
-use AIArmada\AffiliateNetwork\Models\Concerns\ScopesByBelongsToOwner;
-use AIArmada\AffiliateNetwork\Services\OfferManagementService;
+use AIArmada\AffiliateNetwork\Data\ApplicationStatus;
+use AIArmada\AffiliateNetwork\Features\Catalog\Api\CatalogApi;
+use AIArmada\AffiliateNetwork\Features\Catalog\Api\OfferRecord;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Features\Enrollment\Actions\ApproveApplication;
+use AIArmada\AffiliateNetwork\Features\Enrollment\Actions\RejectApplication;
+use AIArmada\AffiliateNetwork\Features\Enrollment\Actions\RevokeApplication;
+use AIArmada\AffiliateNetwork\Features\Enrollment\Models\AffiliateOfferApplication;
+use AIArmada\AffiliateNetwork\Features\Sites\Api\SitesApi;
+use AIArmada\AffiliateNetwork\Platform\ScopesByBelongsToOwner;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Filament\Actions;
 use Filament\Forms\Components\Textarea;
@@ -41,11 +44,7 @@ final class AffiliateOfferApplicationsTable
 
                 TextColumn::make('status')
                     ->badge()
-                    ->color(fn (ApplicationStatus | string $state): string => match ($state instanceof ApplicationStatus ? $state->value : $state) {
-                        'approved' => 'success',
-                        'pending' => 'warning',
-                        default => 'danger',
-                    }),
+                    ->color(fn (ApplicationStatus | string $state): string => $state instanceof ApplicationStatus ? $state->color() : (ApplicationStatus::tryFrom((string) $state)?->color() ?? 'gray')),
 
                 TextColumn::make('reviewed_by')
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -61,12 +60,7 @@ final class AffiliateOfferApplicationsTable
             ])
             ->filters([
                 SelectFilter::make('status')
-                    ->options([
-                        'pending' => 'Pending',
-                        'approved' => 'Approved',
-                        'rejected' => 'Rejected',
-                        'revoked' => 'Revoked',
-                    ]),
+                    ->options(self::statusOptions()),
 
                 // Admin filter: cross-tenant — show all offers regardless of owner scope.
                 SelectFilter::make('offer_id')
@@ -84,9 +78,9 @@ final class AffiliateOfferApplicationsTable
                         ? null
                         : 'Verify the site before approving its applications.')
                     ->action(function (AffiliateOfferApplication $record): void {
-                        self::withApplicationOwnerContext($record, fn (): AffiliateOfferApplication => app(OfferManagementService::class)->approveApplication(
+                        self::withApplicationOwnerContext($record, fn (): AffiliateOfferApplication => app(ApproveApplication::class)->execute(
                             $record,
-                            self::getReviewerName()
+                            self::getReviewerName(),
                         ));
 
                         Notification::make()
@@ -106,10 +100,10 @@ final class AffiliateOfferApplicationsTable
                     ])
                     ->visible(fn (AffiliateOfferApplication $record): bool => $record->isPending())
                     ->action(function (AffiliateOfferApplication $record, array $data): void {
-                        self::withApplicationOwnerContext($record, fn (): AffiliateOfferApplication => app(OfferManagementService::class)->rejectApplication(
+                        self::withApplicationOwnerContext($record, fn (): AffiliateOfferApplication => app(RejectApplication::class)->execute(
                             $record,
                             (string) $data['reason'],
-                            self::getReviewerName()
+                            self::getReviewerName(),
                         ));
 
                         Notification::make()
@@ -129,10 +123,10 @@ final class AffiliateOfferApplicationsTable
                     ])
                     ->visible(fn (AffiliateOfferApplication $record): bool => $record->isApproved())
                     ->action(function (AffiliateOfferApplication $record, array $data): void {
-                        self::withApplicationOwnerContext($record, fn (): AffiliateOfferApplication => app(OfferManagementService::class)->revokeApplication(
+                        self::withApplicationOwnerContext($record, fn (): AffiliateOfferApplication => app(RevokeApplication::class)->execute(
                             $record,
                             (string) $data['reason'],
-                            self::getReviewerName()
+                            self::getReviewerName(),
                         ));
 
                         Notification::make()
@@ -151,13 +145,12 @@ final class AffiliateOfferApplicationsTable
                         ->color('success')
                         ->requiresConfirmation()
                         ->action(function (Collection $records): void {
-                            $service = app(OfferManagementService::class);
                             $reviewer = self::getReviewerName();
 
                             /** @var AffiliateOfferApplication $record */
                             foreach ($records as $record) {
                                 if ($record->isPending()) {
-                                    self::withApplicationOwnerContext($record, fn (): AffiliateOfferApplication => $service->approveApplication($record, $reviewer));
+                                    self::withApplicationOwnerContext($record, fn (): AffiliateOfferApplication => app(ApproveApplication::class)->execute($record, $reviewer));
                                 }
                             }
 
@@ -172,12 +165,26 @@ final class AffiliateOfferApplicationsTable
     }
 
     /**
-     * Run an application mutation inside the owning affiliate's owner context.
+     * @return array<string, string>
+     */
+    private static function statusOptions(): array
+    {
+        $options = [];
+
+        foreach (ApplicationStatus::cases() as $status) {
+            $options[$status->value] = $status->label();
+        }
+
+        return $options;
+    }
+
+    /**
+     * Run an application mutation inside the offer site's owner context.
      *
      * The admin table lists applications cross-tenant (scope bypassed), but the
-     * domain actions re-query under ScopesByBelongsToOwner. Entering the
-     * affiliate's own context keeps that re-query truthful when owner scoping
-     * is enabled.
+     * domain actions re-query under ScopesByBelongsToOwner via offer.site.
+     * Entering that site's owner context keeps the re-query truthful when
+     * owner scoping is enabled.
      *
      * @template TResult
      *
@@ -186,13 +193,16 @@ final class AffiliateOfferApplicationsTable
      */
     private static function withApplicationOwnerContext(AffiliateOfferApplication $record, callable $callback): mixed
     {
-        $resolver = app()->bound(AffiliateIdentityResolver::class)
-            ? app(AffiliateIdentityResolver::class)
+        $offer = app(CatalogApi::class)->findOfferUnscoped((string) $record->offer_id);
+        $site = $offer instanceof OfferRecord
+            ? app(SitesApi::class)->findByIdUnscoped($offer->siteId)
             : null;
 
-        $affiliate = $resolver?->find((string) $record->affiliate_id);
+        $owner = $site === null
+            ? null
+            : OwnerContext::fromTypeAndId($site->ownerType, $site->ownerId);
 
-        return OwnerContext::withOwner($affiliate?->owner(), $callback);
+        return OwnerContext::withOwner($owner, $callback);
     }
 
     private static function isOfferSiteVerified(AffiliateOfferApplication $record): bool
@@ -204,7 +214,7 @@ final class AffiliateOfferApplicationsTable
             ->whereKey($record->offer_id)
             ->value('site_id');
 
-        return $siteId !== null && AffiliateSite::isVerifiedKey($siteId);
+        return is_string($siteId) && app(SitesApi::class)->isVerified($siteId);
     }
 
     private static function getReviewerName(): ?string

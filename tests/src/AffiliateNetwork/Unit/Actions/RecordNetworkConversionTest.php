@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use AIArmada\AffiliateNetwork\Actions\RecordNetworkConversion;
 use AIArmada\AffiliateNetwork\Events\NetworkConversionRecorded;
-use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
-use AIArmada\AffiliateNetwork\Models\AffiliateSite;
+use AIArmada\AffiliateNetwork\Features\Attribution\Models\AffiliateOfferLink;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Features\Ledger\Actions\RecordNetworkConversion;
+use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use AIArmada\Affiliates\Models\Affiliate;
 use Illuminate\Support\Facades\Event;
 
@@ -31,7 +31,14 @@ describe('RecordNetworkConversion', function (): void {
     });
 
     test('increments conversion and revenue', function (): void {
-        $this->action->execute($this->link, 5000);
+        $this->action->execute(
+            offerId: (string) $this->offer->id,
+            affiliateId: (string) $this->affiliate->getKey(),
+            revenueMinor: 5000,
+            currency: 'MYR',
+            externalReference: 'REC-CONV-1',
+            linkId: (string) $this->link->id,
+        );
 
         $fresh = $this->link->fresh();
         expect($fresh->conversions)->toBe(6);
@@ -44,7 +51,14 @@ describe('RecordNetworkConversion', function (): void {
             ->forAffiliateId((string) $this->affiliate->getKey())
             ->create();
 
-        $this->action->execute($link, 0);
+        $this->action->execute(
+            offerId: (string) $this->offer->id,
+            affiliateId: (string) $this->affiliate->getKey(),
+            revenueMinor: 0,
+            currency: 'MYR',
+            externalReference: 'REC-CONV-2',
+            linkId: (string) $link->id,
+        );
 
         $fresh = $link->fresh();
         expect($fresh->conversions)->toBe(1);
@@ -54,8 +68,19 @@ describe('RecordNetworkConversion', function (): void {
     test('dispatches NetworkConversionRecorded event', function (): void {
         Event::fake();
 
-        $this->action->execute($this->link, 5000);
+        $this->action->execute(
+            offerId: (string) $this->offer->id,
+            affiliateId: (string) $this->affiliate->getKey(),
+            revenueMinor: 5000,
+            currency: 'MYR',
+            externalReference: 'REC-CONV-3',
+            linkId: (string) $this->link->id,
+        );
 
-        Event::assertDispatched(NetworkConversionRecorded::class, fn (NetworkConversionRecorded $event): bool => $event->link->id === $this->link->id && $event->revenueMinor === 5000);
+        Event::assertDispatched(
+            NetworkConversionRecorded::class,
+            fn (NetworkConversionRecorded $event): bool => $event->leg->linkId === (string) $this->link->id
+                && $event->counterRevenueMinor === 5000,
+        );
     });
 });

@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-use AIArmada\AffiliateNetwork\Actions\ArchiveOffer;
-use AIArmada\AffiliateNetwork\Actions\CreateOffer;
-use AIArmada\AffiliateNetwork\Actions\PublishOffer;
-use AIArmada\AffiliateNetwork\Actions\UpdateOffer;
-use AIArmada\AffiliateNetwork\Enums\OfferStatus;
-use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
-use AIArmada\AffiliateNetwork\Models\AffiliateSite;
+use AIArmada\AffiliateNetwork\Data\OfferStatus;
+use AIArmada\AffiliateNetwork\Features\Catalog\Actions\ArchiveOffer;
+use AIArmada\AffiliateNetwork\Features\Catalog\Actions\CreateOffer;
+use AIArmada\AffiliateNetwork\Features\Catalog\Actions\PublishOffer;
+use AIArmada\AffiliateNetwork\Features\Catalog\Actions\UpdateOffer;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -17,7 +17,7 @@ use Illuminate\Validation\ValidationException;
 describe('offer lifecycle actions', function (): void {
     test('offer form writes stamp lifecycle entries and preserve the stamp on a repeated status', function (): void {
         $site = AffiliateSite::factory()->verified()->create();
-        $published = app(CreateOffer::class)->execute($site, [
+        $published = app(CreateOffer::class)->execute($site->toRecord(), [
             'name' => 'Published offer',
             'status' => OfferStatus::Published->value,
         ]);

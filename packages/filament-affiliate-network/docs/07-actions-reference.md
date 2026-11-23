@@ -4,428 +4,274 @@ title: Actions Reference
 
 # Actions Reference
 
-Complete reference for all table and form actions provided by the plugin.
+Every action delegates to an `aiarmada/affiliate-network` feature action and runs
+inside the correct owner context; this package never writes domain rows directly.
 
-## AffiliateSiteResource Actions
+## AffiliateSiteResource
 
-### Table Actions
+### Table actions
 
-| Action | Icon | Color | Visibility | Description |
-|--------|------|-------|------------|-------------|
-| Edit | - | - | Always | Open edit form |
-| Sync catalog | `heroicon-o-arrow-path` | Info | Always | Pull the merchant catalog now (requires confirmation) |
-| Verify | `heroicon-o-check-badge` | Success | When `isPending()` | Manually verify site |
-| Sync catalog | - | - | Always | Pull the merchant catalog now |
-| Reject | `heroicon-o-x-mark` | Danger | When `isPending()` | Reject site |
-| Suspend | `heroicon-o-pause` | Warning | When `isVerified()` | Suspend site |
-| Reinstate | `heroicon-o-play` | Success | When `isSuspended()` | Restore to verified |
-
-### Verify Action Implementation
+| Action | Icon | Visibility | Effect |
+|---|---|---|---|
+| Edit | — | always | Edit form |
+| Sync catalog | `heroicon-o-arrow-path` | always | `Actions\SyncSiteCatalog` (confirmation) |
+| Verify | `heroicon-o-check-badge` | `isPending()` | Verify inside the site owner context |
+| Reject | `heroicon-o-x-mark` | `isPending()` | Reject |
+| Suspend | `heroicon-o-pause` | `isVerified()` | Suspend (keeps `verified_at`) |
+| Reinstate | `heroicon-o-play` | `isSuspended()` | Restore to verified |
 
 ```php
-Tables\Actions\Action::make('verify')
+use AIArmada\AffiliateNetwork\Data\SiteStatus;
+use AIArmada\AffiliateNetwork\Features\Sites\Actions\VerifySite;
+use Filament\Actions\Action;
+use Filament\Notifications\Notification;
+
+Action::make('verify')
     ->icon('heroicon-o-check-badge')
     ->color('success')
     ->requiresConfirmation()
-    ->visible(fn (AffiliateSite $record): bool => $record->isPending())
-    ->action(function (AffiliateSite $record): void {
-        self::transitionSite($record, [
-            'status' => AffiliateSite::STATUS_VERIFIED,
-            'verified_at' => CarbonImmutable::now(),
-        ]);
+    ->visible(fn ($record): bool => $record->isPending())
+    ->action(function ($record): void {
+        app(VerifySite::class)->execute($record);
+
+        Notification::make()->title('Site verified')->success()->send();
     });
 ```
 
-Every status transition goes through the table's private
-`transitionSite()` helper, which re-reads the row under a lock and re-checks
-site verification before writing.
+### Edit-page header actions
 
-### Bulk Actions
-
-| Action | Description |
-|--------|-------------|
-| Delete | Delete selected sites (in a `BulkActionGroup`) |
-
----
-
-## AffiliateOfferResource Actions
-
-### Table Actions
-
-| Action | Icon | Color | Visibility | Description |
-|--------|------|-------|------------|-------------|
-| Edit | - | - | Always | Open edit form |
-| Activate | `heroicon-o-play` | Success | When not published | Publish via `UpdateOffer` (stamps `published_at`) |
-| Pause | `heroicon-o-pause` | Warning | When published | Archive via `UpdateOffer` (stamps `archived_at`) |
-
-Activate is disabled until the owning site is verified. Both transitions
-run inside the site's owner context and fire the domain `OfferUpdated`
-event.
-
-### Bulk Actions
-
-| Action | Description |
-|--------|-------------|
-| Delete | Delete selected offers |
-
-### Relation Managers
-
-| Manager | Tab | Actions |
-|---------|-----|---------|
-| `LinksRelationManager` | Links | Reconcile offer, Reconcile (prove legs posted to the merchant ledger exactly once) |
-| `LegsRelationManager` | Legs | Reverse (posted legs only; records a reason and posts the negated companion leg) |
+| Action | Icon | Effect |
+|---|---|---|
+| Sync catalog | `heroicon-o-arrow-path` | Pull the merchant catalog now (confirmation) |
+| Rotate catalog token | `heroicon-o-key` | Issue a fresh token; previous dies immediately, shown once |
+| Delete | — | Delete site + dependents |
 
 ```php
-// Legs reverse action
+use AIArmada\AffiliateNetwork\Features\Sites\Actions\RotateCatalogToken;
+use Filament\Actions\Action;
+use Filament\Notifications\Notification;
+
+Action::make('rotate_catalog_token')
+    ->label('Rotate catalog token')
+    ->icon('heroicon-o-key')
+    ->color('warning')
+    ->requiresConfirmation()
+    ->modalDescription('The previous token stops working immediately. Copy the new token now — it is shown once.')
+    ->action(function ($record): void {
+        $token = app(RotateCatalogToken::class)->execute($record);
+
+        Notification::make()->title('New catalog token')->body($token)->persistent()->send();
+    });
+```
+
+## AffiliateOfferResource
+
+### Table actions
+
+| Action | Icon | Visibility | Effect |
+|---|---|---|---|
+| Edit | — | always | Edit form |
+| Activate | `heroicon-o-play` | not published | Publish (site must be verified; `published_at` stamped) |
+| Pause | `heroicon-o-pause` | published | Archive (`archived_at` stamped) |
+
+Both transitions run inside the owning site's owner context and fire the domain
+`OfferUpdated` event.
+
+### Relation managers (edit page)
+
+#### InvitationsRelationManager
+
+Header **Invite affiliate** (`InviteAffiliateToOffer`); row **Revoke**
+(`RevokeOfferInvitation`). Columns: affiliate ID, token (copyable), auto
+approve, expiry, accepted, revoked.
+
+#### DealsRelationManager
+
+Header **Upsert deal** (`UpsertOfferDeal`); row **Revoke** (`RevokeOfferDeal`).
+Columns: affiliate ID, base bp, fixed minor, fee bp, currency, active.
+
+#### CouponsRelationManager
+
+Header **Assign coupon** (`AssignOfferCoupon`); row **Revoke**
+(`RevokeOfferCoupon`). Columns: code (copyable), affiliate ID, site, window,
+active.
+
+#### CreativesRelationManager
+
+Manual rows support upload/update/delete; imported rows accept only
+`is_active`/`sort_order`. Re-sync reconciles imported deletions.
+
+#### LinksRelationManager
+
+Columns: affiliate, backing slug, clicks, conversions, revenue. **Reconcile**
+proves every counted conversion posted exactly once.
+
+#### LegsRelationManager
+
+Columns: affiliate, reference, event, coupon, sub id, revenue, commission, fee,
+payout, status, locks at, occurred.
+
+| Action | Visibility | Effect |
+|---|---|---|
+| **Lock matured** (header) | always | `LockMaturedLegs::execute()` |
+| **Adjust** | `pending`/`posted` and no parent leg | `AdjustConversionLeg` (reference, delta, reason) |
+| **Reverse** | `posted` | `ReverseConversionLeg` (reason) |
+
+```php
+use AIArmada\AffiliateNetwork\Data\LegStatus;
+use AIArmada\AffiliateNetwork\Features\Ledger\Actions\AdjustConversionLeg;
+use AIArmada\AffiliateNetwork\Features\Ledger\Actions\LockMaturedLegs;
+use AIArmada\AffiliateNetwork\Features\Ledger\Actions\ReverseConversionLeg;
+use Filament\Actions\Action;
+
+Action::make('lock_matured')
+    ->label('Lock matured')
+    ->icon('heroicon-o-lock-closed')
+    ->color('info')
+    ->requiresConfirmation()
+    ->action(fn () => app(LockMaturedLegs::class)->execute());
+
+Action::make('adjust')
+    ->label('Adjust')
+    ->color('warning')
+    ->visible(fn ($record): bool => in_array($record->status, [LegStatus::Pending, LegStatus::Posted], true)
+        && $record->parent_leg_id === null)
+    ->action(fn ($record, array $data) => app(AdjustConversionLeg::class)->execute(
+        (string) $record->getKey(),
+        (string) $data['adjustment_reference'],
+        (int) $data['delta_revenue_minor'],
+        (string) $data['reason'],
+    ));
+
 Action::make('reverse')
     ->label('Reverse')
     ->color('danger')
-    ->visible(fn (NetworkConversionLeg $record): bool => $record->status === LegStatus::Posted)
-    ->form([
-        TextInput::make('reason')->required()->maxLength(120),
-    ])
-    ->action(fn (NetworkConversionLeg $record, array $data) =>
-        app(NetworkBooks::class)->reverse($record, $data['reason']));
+    ->visible(fn ($record): bool => $record->status === LegStatus::Posted)
+    ->action(fn ($record, array $data) => app(ReverseConversionLeg::class)->execute(
+        (string) $record->getKey(),
+        (string) $data['reason'],
+    ));
 ```
 
----
+## AffiliateOfferCategoryResource
 
-## AffiliateSiteResource Header Actions
+Table action **Edit**; bulk **Delete**. Sortable by `sort_order`; cycle-safe
+re-parenting; deleting re-parents children.
 
-The site edit page carries two header actions besides save/delete:
+## AffiliateOfferApplicationResource
 
-| Action | Icon | Color | Description |
-|--------|------|-------|-------------|
-| Sync catalog | `heroicon-o-arrow-path` | Info | Pull the merchant catalog now (requires confirmation) |
-| Rotate catalog token | `heroicon-o-key` | Warning | Issue a fresh postback token (requires confirmation) |
-| Delete | - | Danger | Delete the site |
+| Action | Icon | Visibility | Effect |
+|---|---|---|---|
+| Approve | `heroicon-o-check` | `isPending()` | `ApproveApplication` |
+| Reject | `heroicon-o-x-mark` | `isPending()` | `RejectApplication` with reason |
+| Revoke | `heroicon-o-no-symbol` | `isApproved()` | `RevokeApplication` with reason |
+| View | — | always | Infolist |
+| Approve selected (bulk) | `heroicon-o-check` | pending rows | `ApproveApplication` per row |
+
+Each mutation runs inside the owning affiliate's owner context, so cross-tenant
+review works with owner scoping enabled.
 
 ```php
-Actions\Action::make('rotate_catalog_token')
-    ->label('Rotate catalog token')
-    ->requiresConfirmation()
-    ->modalDescription('The previous token stops working immediately. Copy the new token now — it is shown once.')
-    ->action(function (AffiliateSite $record): void {
-        $token = $record->rotateCatalogToken();
+use AIArmada\AffiliateNetwork\Features\Enrollment\Actions\ApproveApplication;
+use AIArmada\AffiliateNetwork\Features\Enrollment\Actions\RejectApplication;
+use AIArmada\AffiliateNetwork\Features\Enrollment\Actions\RevokeApplication;
+use Filament\Actions\Action;
 
-        Notification::make()
-            ->title('New catalog token')
-            ->body($token)
-            ->persistent()
-            ->send();
-    });
+Action::make('approve')
+    ->visible(fn ($record): bool => $record->isPending())
+    ->action(fn ($record) => app(ApproveApplication::class)->execute($record, auth()->user()?->name));
+
+Action::make('reject')
+    ->visible(fn ($record): bool => $record->isPending())
+    ->action(fn ($record, array $data) => app(RejectApplication::class)->execute($record, (string) $data['reason'], auth()->user()?->name));
+
+Action::make('revoke')
+    ->visible(fn ($record): bool => $record->isApproved())
+    ->action(fn ($record, array $data) => app(RevokeApplication::class)->execute($record, (string) $data['reason'], auth()->user()?->name));
 ```
 
----
+## MerchantStatementResource (admin-only)
 
-## AffiliateOfferCategoryResource Actions
-
-### Table Actions
-
-| Action | Description |
-|--------|-------------|
-| Edit | Open edit form |
-
-### Bulk Actions
-
-| Action | Description |
-|--------|-------------|
-| Delete | Delete selected categories |
-
-### Special Features
-
-- **Reorderable**: Categories support drag-and-drop reordering via `sort_order` column
-- **Default Sort**: Sorted by `sort_order` ascending
-
----
-
-## AffiliateOfferApplicationResource Actions
-
-### Table Actions
-
-| Action | Icon | Color | Visibility | Description |
-|--------|------|-------|------------|-------------|
-| Approve | `heroicon-o-check` | Success | When `isPending()` | Approve application |
-| Reject | `heroicon-o-x-mark` | Danger | When `isPending()` | Reject with reason |
-| Revoke | `heroicon-o-no-symbol` | Danger | When `isApproved()` | Revoke approval |
-| View | - | - | Always | View application details |
-
-### Approve Action Implementation
+| Action | Visibility | Effect |
+|---|---|---|
+| **Generate** (list header) | always | `GenerateMerchantStatement` for a chosen site/currency/period, inside the site owner context |
+| View | always | Infolist |
+| **Issue** | `draft` | `IssueMerchantStatement` (`issued_at`/`due_at`) |
+| **Mark Paid** | `draft`/`issued` | `MarkMerchantStatementPaid` with optional reference |
+| **Void** | `draft`/`issued` | `VoidMerchantStatement` (detaches legs) |
 
 ```php
-Tables\Actions\Action::make('approve')
-    ->icon('heroicon-o-check')
-    ->color('success')
-    ->requiresConfirmation()
-    ->visible(fn (AffiliateOfferApplication $record): bool => $record->isPending())
-    ->action(function (AffiliateOfferApplication $record): void {
-        app(OfferManagementService::class)->approveApplication(
-            $record,
-            self::getReviewerName()
-        );
+use AIArmada\AffiliateNetwork\Data\SettlementStatus;
+use AIArmada\AffiliateNetwork\Features\Ledger\Actions\IssueMerchantStatement;
+use AIArmada\AffiliateNetwork\Features\Ledger\Actions\MarkMerchantStatementPaid;
+use AIArmada\AffiliateNetwork\Features\Ledger\Actions\VoidMerchantStatement;
+use Filament\Actions\Action;
 
-        Notification::make()
-            ->title('Application approved')
-            ->success()
-            ->send();
-    });
+Action::make('issue')
+    ->visible(fn ($record): bool => $record->status === SettlementStatus::Draft)
+    ->action(fn ($record) => app(IssueMerchantStatement::class)->execute((string) $record->getKey()));
+
+Action::make('mark_paid')
+    ->visible(fn ($record): bool => in_array($record->status, [SettlementStatus::Draft, SettlementStatus::Issued], true))
+    ->action(fn ($record, array $data) => app(MarkMerchantStatementPaid::class)->execute(
+        (string) $record->getKey(),
+        $data['payment_reference'] ?? null,
+    ));
+
+Action::make('void')
+    ->visible(fn ($record): bool => in_array($record->status, [SettlementStatus::Draft, SettlementStatus::Issued], true))
+    ->action(fn ($record) => app(VoidMerchantStatement::class)->execute((string) $record->getKey()));
 ```
 
-### Reject Action Implementation
+## Adding custom actions
+
+Shipped resources are `final`; add actions on your own resource/table class
+(instance `table(Table $table)` on a relation manager, static `table()` on a
+resource).
 
 ```php
-Tables\Actions\Action::make('reject')
-    ->icon('heroicon-o-x-mark')
-    ->color('danger')
-    ->form([
-        Textarea::make('reason')
-            ->label('Rejection Reason')
-            ->required(),
-    ])
-    ->visible(fn (AffiliateOfferApplication $record): bool => $record->isPending())
-    ->action(function (AffiliateOfferApplication $record, array $data): void {
-        app(OfferManagementService::class)->rejectApplication(
-            $record,
-            $data['reason'],
-            self::getReviewerName()
-        );
-
-        Notification::make()
-            ->title('Application rejected')
-            ->warning()
-            ->send();
-    });
-```
-
-### Revoke Action Implementation
-
-```php
-Tables\Actions\Action::make('revoke')
-    ->icon('heroicon-o-no-symbol')
-    ->color('danger')
-    ->form([
-        Textarea::make('reason')
-            ->label('Revocation Reason')
-            ->required(),
-    ])
-    ->visible(fn (AffiliateOfferApplication $record): bool => $record->isApproved())
-    ->action(function (AffiliateOfferApplication $record, array $data): void {
-        app(OfferManagementService::class)->revokeApplication(
-            $record,
-            $data['reason'],
-            self::getReviewerName()
-        );
-
-        Notification::make()
-            ->title('Application revoked')
-            ->warning()
-            ->send();
-    });
-```
-
-### Bulk Actions
-
-| Action | Icon | Color | Description |
-|--------|------|-------|-------------|
-| Approve Selected | `heroicon-o-check` | Success | Bulk approve pending applications (in a `BulkActionGroup`) |
-
-### Bulk Approve Implementation
-
-```php
-Tables\Actions\BulkAction::make('approve_selected')
-    ->label('Approve Selected')
-    ->icon('heroicon-o-check')
-    ->color('success')
-    ->requiresConfirmation()
-    ->action(function ($records): void {
-        $service = app(OfferManagementService::class);
-        $reviewer = self::getReviewerName();
-
-        foreach ($records as $record) {
-            if ($record->isPending()) {
-                $service->approveApplication($record, $reviewer);
-            }
-        }
-
-        Notification::make()
-            ->title('Applications approved')
-            ->success()
-            ->send();
-    });
-```
-
----
-
-## Adding Custom Actions
-
-> **warning:**
-> `AffiliateSiteResource`, `AffiliateOfferResource`,
-> `AffiliateOfferCategoryResource`, and `AffiliateOfferApplicationResource` are
-> all `final`. You cannot bolt a `suspend` action onto the shipped site table by
-> subclassing it. In Filament v5, `table()` is an **instance** method and
-> columns/actions live in a `Tables\XTable` class — override the table class on
-> your own resource instead.
-
-### Add Action to a Site Table
-
-```php
-<?php
-
-namespace App\Filament\Resources\AffiliateSiteResource\Tables;
-
-use AIArmada\AffiliateNetwork\Models\AffiliateSite;
-use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource;
-use Filament\Tables;
-use Filament\Tables\Table;
-
-class AffiliateSitesTable
-{
-    public static function configure(Table $table): Table
-    {
-        return $table
-            ->actions([
-                Tables\Actions\EditAction::make(),
-
-                // Add suspend action
-                Tables\Actions\Action::make('suspend')
-                    ->icon('heroicon-o-pause-circle')
-                    ->color('warning')
-                    ->requiresConfirmation()
-                    ->visible(fn (AffiliateSite $record): bool => $record->isVerified())
-                    ->action(fn (AffiliateSite $record) => $record->update([
-                        'status' => AffiliateSite::STATUS_SUSPENDED,
-                    ])),
-
-                // Add reinstate action
-                Tables\Actions\Action::make('reinstate')
-                    ->icon('heroicon-o-arrow-path')
-                    ->color('success')
-                    ->requiresConfirmation()
-                    ->visible(fn (AffiliateSite $record): bool => $record->isSuspended())
-                    ->action(fn (AffiliateSite $record) => $record->update([
-                        'status' => AffiliateSite::STATUS_VERIFIED,
-                    ])),
-            ]);
-    }
-}
-```
-
-Note: the shipped table already provides `suspend` and `reinstate`. This
-example is only meaningful for a resource you own.
-
-### Add Action to an Offer Table
-
-```php
-<?php
-
-namespace App\Filament\Resources\AffiliateOfferResource\Tables;
-
-use AIArmada\AffiliateNetwork\Enums\OfferStatus;
-use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
-use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Data\OfferStatus;
 use Filament\Notifications\Notification;
-use Filament\Tables;
+use Filament\Tables\Actions\Action;
 use Filament\Tables\Table;
 
-class AffiliateOffersTable
+public static function table(Table $table): Table
 {
-    public static function configure(Table $table): Table
-    {
-        return $table
-            ->actions([
-                Tables\Actions\EditAction::make(),
+    return $table->actions([
+        Action::make('duplicate')
+            ->icon('heroicon-o-document-duplicate')
+            ->action(function (AffiliateOffer $record): void {
+                $copy = $record->replicate();
+                $copy->name = $record->name . ' (Copy)';
+                $copy->slug = $record->slug . '-copy-' . now()->timestamp;
+                $copy->status = OfferStatus::Draft;
+                $copy->save();
 
-                // Add duplicate action
-                Tables\Actions\Action::make('duplicate')
-                    ->icon('heroicon-o-document-duplicate')
-                    ->action(function (AffiliateOffer $record) {
-                        $newOffer = $record->replicate();
-                        $newOffer->name = $record->name . ' (Copy)';
-                        $newOffer->slug = $record->slug . '-copy-' . time();
-                        $newOffer->status = OfferStatus::Draft;
-                        $newOffer->save();
-
-                        Notification::make()
-                            ->title('Offer duplicated')
-                            ->success()
-                            ->send();
-                    }),
-
-                // Add export stats action
-                Tables\Actions\Action::make('export_stats')
-                    ->icon('heroicon-o-arrow-down-tray')
-                    ->action(fn (AffiliateOffer $record) => response()->streamDownload(
-                        function () use ($record) {
-                            echo "Link Slug,Clicks,Conversions,Revenue\n";
-                            foreach ($record->links as $link) {
-                                echo $link->link?->slug
-                                    . ',' . $link->clicks
-                                    . ',' . $link->conversions
-                                    . ',' . $link->revenue . "\n";
-                            }
-                        },
-                        "{$record->slug}-stats.csv"
-                    )),
-            ]);
-    }
+                Notification::make()->title('Offer duplicated')->success()->send();
+            }),
+    ]);
 }
 ```
 
-> **warning:**
-> Do not spread money in a string concat or divide by 100. Use
-> `MoneyFormatter::formatMinor($link->revenue, $link->currency)` — the
-> minor-unit scale is currency-dependent.
-
----
-
-## Action Notifications
-
-All actions use Filament's notification system:
+## Notifications
 
 ```php
 use Filament\Notifications\Notification;
 
-// Success notification
-Notification::make()
-    ->title('Operation successful')
-    ->success()
-    ->send();
-
-// Warning notification
-Notification::make()
-    ->title('Warning message')
-    ->warning()
-    ->send();
-
-// Persistent notification (doesn't auto-dismiss)
-Notification::make()
-    ->title('Link Generated')
-    ->body($trackingUrl)
-    ->success()
-    ->persistent()
-    ->send();
+Notification::make()->title('Saved')->success()->send();
+Notification::make()->title('Warning')->warning()->send();
+Notification::make()->title('New token')->body($token)->persistent()->send();
 ```
 
----
+## Authorization
 
-## Action Authorization
-
-Actions respect Filament's authorization:
+Actions respect Filament policy checks:
 
 ```php
-Tables\Actions\Action::make('approve')
-    ->authorize('approve')  // Checks policy method
-    ->action(function ($record) {
-        // Only executed if authorized
-    });
+Action::make('approve')
+    ->authorize('approve')
+    ->action(fn ($record) => /* … */);
 ```
 
-Or with custom logic:
-
-```php
-Tables\Actions\Action::make('approve')
-    ->visible(fn () => auth()->user()->can('approve', AffiliateOfferApplication::class))
-    ->action(function ($record) {
-        // ...
-    });
-```
+The network-wide resources additionally gate on `NetworkAdminAccess::allows()`.

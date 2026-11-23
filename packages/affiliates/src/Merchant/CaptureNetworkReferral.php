@@ -29,6 +29,21 @@ final class CaptureNetworkReferral
                 $request->session()->put($sessionKey, $code);
                 $request->session()->put($sessionKey . '_clicked_at', CarbonImmutable::now()->toIso8601String());
             }
+
+            $subIds = [];
+
+            foreach (['sub1', 'sub2', 'sub3'] as $key) {
+                $value = $request->query($key);
+
+                if (is_string($value) && $value !== '' && mb_strlen($value) <= 255) {
+                    $subIds[$key] = $value;
+                }
+            }
+
+            if ($subIds !== []) {
+                $sessionKey = (string) config('affiliates.merchant.session_key', 'affiliate_network.link_code');
+                $request->session()->put($sessionKey . '_sub_ids', $subIds);
+            }
         }
 
         return $next($request);

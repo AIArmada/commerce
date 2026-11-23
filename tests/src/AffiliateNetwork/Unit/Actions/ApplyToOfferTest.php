@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-use AIArmada\AffiliateNetwork\Actions\ApplyToOffer;
-use AIArmada\AffiliateNetwork\Enums\ApplicationStatus;
+use AIArmada\AffiliateNetwork\Data\ApplicationStatus;
 use AIArmada\AffiliateNetwork\Events\ApplicationApproved;
 use AIArmada\AffiliateNetwork\Events\ApplicationSubmitted;
-use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
-use AIArmada\AffiliateNetwork\Models\AffiliateSite;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Features\Enrollment\Actions\ApplyToOffer;
+use AIArmada\AffiliateNetwork\Features\Enrollment\Models\AffiliateOfferApplication;
+use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 
@@ -25,7 +25,7 @@ describe('ApplyToOffer', function (): void {
 
         $this->offer->update(['requires_approval' => true]);
 
-        $application = $this->action->execute($this->offer, (string) $this->affiliate->getKey());
+        $application = $this->action->execute($this->offer->id, (string) $this->affiliate->getKey());
 
         expect($application)->toBeInstanceOf(AffiliateOfferApplication::class);
         expect($application->offer_id)->toBe($this->offer->id);
@@ -38,7 +38,7 @@ describe('ApplyToOffer', function (): void {
     test('creates approved application for offer not requiring approval', function (): void {
         $this->offer->update(['requires_approval' => false]);
 
-        $application = $this->action->execute($this->offer, (string) $this->affiliate->getKey());
+        $application = $this->action->execute($this->offer->id, (string) $this->affiliate->getKey());
 
         expect($application->status)->toBe(ApplicationStatus::Approved);
         expect($application->reviewed_at)->not->toBeNull();
@@ -47,14 +47,14 @@ describe('ApplyToOffer', function (): void {
     test('creates approved application when auto_approve enabled', function (): void {
         config(['affiliate-network.applications.auto_approve' => true]);
 
-        $application = $this->action->execute($this->offer, (string) $this->affiliate->getKey());
+        $application = $this->action->execute($this->offer->id, (string) $this->affiliate->getKey());
 
         expect($application->status)->toBe(ApplicationStatus::Approved);
     });
 
     test('includes reason in application', function (): void {
         $application = $this->action->execute(
-            $this->offer,
+            $this->offer->id,
             (string) $this->affiliate->getKey(),
             'I have a large audience',
         );
@@ -71,7 +71,7 @@ describe('ApplyToOffer', function (): void {
 
         Event::fake([ApplicationSubmitted::class, ApplicationApproved::class]);
 
-        $application = $this->action->execute($this->offer, (string) $this->affiliate->getKey());
+        $application = $this->action->execute($this->offer->id, (string) $this->affiliate->getKey());
 
         expect($application->id)->toBe($existing->id);
         Event::assertNothingDispatched();
@@ -89,7 +89,7 @@ describe('ApplyToOffer', function (): void {
                 'updated_at' => now()->subDays(10),
             ]);
 
-        $application = $this->action->execute($this->offer, (string) $this->affiliate->getKey());
+        $application = $this->action->execute($this->offer->id, (string) $this->affiliate->getKey());
 
         expect($application->id)->toBe($existing->id);
         expect($application->status)->toBe(ApplicationStatus::Pending);
@@ -108,7 +108,7 @@ describe('ApplyToOffer', function (): void {
                 'updated_at' => now(),
             ]);
 
-        $application = $this->action->execute($this->offer, (string) $this->affiliate->getKey());
+        $application = $this->action->execute($this->offer->id, (string) $this->affiliate->getKey());
 
         expect($application->id)->toBe($existing->id);
         expect($application->status)->toBe(ApplicationStatus::Pending);
@@ -126,7 +126,7 @@ describe('ApplyToOffer', function (): void {
                 'updated_at' => now()->subDays(3),
             ]);
 
-        $this->action->execute($this->offer, (string) $this->affiliate->getKey());
+        $this->action->execute($this->offer->id, (string) $this->affiliate->getKey());
     })->throws(RuntimeException::class);
 });
 
@@ -139,11 +139,11 @@ test('instant approval emits submitted then approved for either trigger', functi
     Event::listen([ApplicationSubmitted::class, ApplicationApproved::class], function (object $event) use (&$events): void {
         $events[] = $event;
     });
-    $application = app(ApplyToOffer::class)->execute($offer, $affiliate->id);
+    $application = app(ApplyToOffer::class)->execute($offer->id, $affiliate->id);
     expect(array_map(fn (object $event): string => $event::class, $events))->toBe([
         ApplicationSubmitted::class, ApplicationApproved::class,
-    ])->and($events[1]->application->id)->toBe($application->id)
-        ->and($events[1]->application->status)->toBe(ApplicationStatus::Approved);
+    ])->and($events[1]->applicationId)->toBe((string) $application->getKey())
+        ->and($events[1]->status)->toBe(ApplicationStatus::Approved->value);
 })->with([[false, false], [true, true]]);
 
 test('pending applications and cooldown reapplications never emit approval', function (): void {
@@ -152,12 +152,12 @@ test('pending applications and cooldown reapplications never emit approval', fun
     $affiliate = createTestAffiliate();
     config(['affiliate-network.applications.auto_approve' => false]);
     Event::fake([ApplicationSubmitted::class, ApplicationApproved::class]);
-    $application = app(ApplyToOffer::class)->execute($offer, $affiliate->id);
+    $application = app(ApplyToOffer::class)->execute($offer->id, $affiliate->id);
     Event::assertDispatchedTimes(ApplicationSubmitted::class, 1);
     Event::assertNotDispatched(ApplicationApproved::class);
     $application->update(['status' => ApplicationStatus::Rejected, 'rejected_at' => now()->subDays(10)]);
     config(['affiliate-network.applications.auto_approve' => true]);
-    $reapplied = app(ApplyToOffer::class)->execute($offer, $affiliate->id);
+    $reapplied = app(ApplyToOffer::class)->execute($offer->id, $affiliate->id);
     expect($reapplied->status)->toBe(ApplicationStatus::Pending);
     Event::assertDispatchedTimes(ApplicationSubmitted::class, 2);
     Event::assertNotDispatched(ApplicationApproved::class);
@@ -167,9 +167,9 @@ test('applying again to an approved application emits no events', function (): v
     $offer = AffiliateOffer::factory()->published()->forSite(AffiliateSite::factory()->verified()->create())->create(['requires_approval' => false]);
     $affiliate = createTestAffiliate();
     $action = app(ApplyToOffer::class);
-    $existing = $action->execute($offer, $affiliate->id);
+    $existing = $action->execute($offer->id, $affiliate->id);
     Event::fake([ApplicationSubmitted::class, ApplicationApproved::class]);
-    expect($action->execute($offer, $affiliate->id)->id)->toBe($existing->id);
+    expect($action->execute($offer->id, $affiliate->id)->id)->toBe($existing->id);
     Event::assertNothingDispatched();
 });
 
@@ -181,7 +181,7 @@ test('automatic approval waits for commit and is discarded on rollback', functio
     DB::beginTransaction();
 
     try {
-        $application = app(ApplyToOffer::class)->execute($offer, $affiliate->id);
+        $application = app(ApplyToOffer::class)->execute($offer->id, $affiliate->id);
         Event::assertDispatchedTimes(ApplicationSubmitted::class, 1);
         Event::assertNotDispatched(ApplicationApproved::class);
     } catch (Throwable $exception) {
@@ -209,7 +209,7 @@ test('submission listener failure rolls back automatic approval', function (): v
         throw new RuntimeException('Submission listener failed');
     });
 
-    expect(fn () => app(ApplyToOffer::class)->execute($offer, $affiliate->id))->toThrow(RuntimeException::class, 'Submission listener failed');
+    expect(fn () => app(ApplyToOffer::class)->execute($offer->id, $affiliate->id))->toThrow(RuntimeException::class, 'Submission listener failed');
     expect(AffiliateOfferApplication::query()->where('offer_id', $offer->id)->where('affiliate_id', $affiliate->id)->exists())->toBeFalse();
     Event::assertNotDispatched(ApplicationApproved::class);
 });

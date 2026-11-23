@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Pages;
 
-use AIArmada\AffiliateNetwork\Actions\UpdateOffer;
-use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
-use AIArmada\AffiliateNetwork\Models\AffiliateSite;
+use AIArmada\AffiliateNetwork\Features\Catalog\Actions\UpdateOffer;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Features\Sites\Api\SitesApi;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource;
 use Filament\Actions;
@@ -20,12 +20,10 @@ final class EditAffiliateOffer extends EditRecord
     protected function handleRecordUpdate(Model $record, array $data): Model
     {
         /** @var AffiliateOffer $record */
-        $site = OwnerContext::withOwner(null, fn (): AffiliateSite => AffiliateSite::query()
-            ->withoutOwnerScope()
-            ->whereKey($record->site_id)
-            ->firstOrFail());
-
-        $owner = OwnerContext::fromTypeAndId($site->owner_type, $site->owner_id);
+        $site = app(SitesApi::class)->findByIdUnscoped((string) $record->site_id);
+        $owner = $site === null
+            ? null
+            : OwnerContext::fromTypeAndId($site->ownerType, $site->ownerId);
 
         return $this->record = OwnerContext::withOwner($owner, fn (): Model => app(UpdateOffer::class)->execute($record, $data));
     }

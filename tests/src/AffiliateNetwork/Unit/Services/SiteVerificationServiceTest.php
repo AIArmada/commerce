@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-use AIArmada\AffiliateNetwork\Models\AffiliateSite;
-use AIArmada\AffiliateNetwork\Services\SiteVerificationService;
-use AIArmada\AffiliateNetwork\Support\SiteContentFetcher;
+use AIArmada\AffiliateNetwork\Contracts\DnsResolver;
+use AIArmada\AffiliateNetwork\Data\SiteStatus;
+use AIArmada\AffiliateNetwork\Features\Sites\Actions\GenerateVerificationToken;
+use AIArmada\AffiliateNetwork\Features\Sites\Actions\VerifySiteByStrategy;
+use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use AIArmada\CommerceSupport\Support\PublicHttpUrlGuard;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
-describe('SiteVerificationService', function (): void {
+describe('site verification actions', function (): void {
     test('generateToken creates unique token for site', function (): void {
         $site = AffiliateSite::factory()->pending()->create();
-        $service = app(SiteVerificationService::class);
-
-        $token = $service->generateToken($site);
+        $token = app(GenerateVerificationToken::class)->execute($site);
 
         expect($token)->toStartWith('affiliatenetwork-verify-');
         expect(mb_strlen($token))->toBeGreaterThan(30);
@@ -27,34 +27,37 @@ describe('SiteVerificationService', function (): void {
         $site = AffiliateSite::factory()->pending()->create([
             'verification_token' => 'old-token',
         ]);
-        $service = app(SiteVerificationService::class);
 
-        $newToken = $service->generateToken($site);
+        $newToken = app(GenerateVerificationToken::class)->execute($site);
 
         expect($newToken)->not->toBe('old-token');
         expect($site->fresh()->verification_token)->toBe($newToken);
     });
 
-    test('verify returns false when no token set', function (): void {
-        $site = AffiliateSite::factory()->create([
+    test('verification fails and does not verify when the DNS strategy finds no token', function (): void {
+        app()->instance(DnsResolver::class, new class implements DnsResolver
+        {
+            public function getTxtRecords(string $hostname): array
+            {
+                return [];
+            }
+        });
+
+        $site = AffiliateSite::factory()->pending()->create([
             'verification_token' => null,
         ]);
-        $service = app(SiteVerificationService::class);
 
-        $result = $service->verify($site, 'dns');
-
-        expect($result)->toBeFalse();
+        expect(fn () => app(VerifySiteByStrategy::class)->execute($site, 'dns'))
+            ->toThrow(RuntimeException::class);
     });
 
-    test('verify returns false for unknown method', function (): void {
+    test('verify throws for unknown method', function (): void {
         $site = AffiliateSite::factory()->pending()->create([
             'verification_token' => 'affiliatenetwork-verify-' . Str::random(32),
         ]);
-        $service = app(SiteVerificationService::class);
 
-        $result = $service->verify($site, 'unknown_method');
-
-        expect($result)->toBeFalse();
+        expect(fn () => app(VerifySiteByStrategy::class)->execute($site, 'unknown_method'))
+            ->toThrow(RuntimeException::class);
     });
 
     test('verify succeeds for meta tag when token is present in fetched page', function (): void {
@@ -72,15 +75,11 @@ describe('SiteVerificationService', function (): void {
         app()->instance(PublicHttpUrlGuard::class, new PublicHttpUrlGuard(
             static fn (string $host): array => $host === 'verified.example' ? ['93.184.216.34'] : [],
         ));
-        app()->forgetInstance(SiteContentFetcher::class);
-        app()->forgetInstance(SiteVerificationService::class);
 
-        $service = app(SiteVerificationService::class);
+        $verified = app(VerifySiteByStrategy::class)->execute($site, 'meta_tag');
 
-        $result = $service->verify($site, 'meta_tag');
-
-        expect($result)->toBeTrue();
-        expect($site->fresh()->status)->toBe(AffiliateSite::STATUS_VERIFIED);
+        expect($verified->status)->toBe(SiteStatus::Verified);
+        expect($verified->verified_at)->not->toBeNull();
     });
 
     test('verify refuses localhost-like domains and does not perform HTTP request', function (): void {
@@ -91,11 +90,9 @@ describe('SiteVerificationService', function (): void {
 
         Http::fake();
 
-        $service = app(SiteVerificationService::class);
+        expect(fn () => app(VerifySiteByStrategy::class)->execute($site, 'file'))
+            ->toThrow(RuntimeException::class);
 
-        $result = $service->verify($site, 'file');
-
-        expect($result)->toBeFalse();
         Http::assertNothingSent();
     });
 
@@ -103,9 +100,8 @@ describe('SiteVerificationService', function (): void {
         $site = AffiliateSite::factory()->pending()->create([
             'verification_token' => 'test-token-123',
         ]);
-        $service = app(SiteVerificationService::class);
 
-        $instructions = $service->getInstructions($site, 'dns');
+        $instructions = app(VerifySiteByStrategy::class)->getInstructions($site, 'dns');
 
         expect($instructions)->toHaveKey('title');
         expect($instructions)->toHaveKey('record_type', 'TXT');
@@ -117,9 +113,8 @@ describe('SiteVerificationService', function (): void {
         $site = AffiliateSite::factory()->pending()->create([
             'verification_token' => 'test-token-123',
         ]);
-        $service = app(SiteVerificationService::class);
 
-        $instructions = $service->getInstructions($site, 'meta_tag');
+        $instructions = app(VerifySiteByStrategy::class)->getInstructions($site, 'meta_tag');
 
         expect($instructions)->toHaveKey('title');
         expect($instructions)->toHaveKey('html');
@@ -131,9 +126,8 @@ describe('SiteVerificationService', function (): void {
         $site = AffiliateSite::factory()->pending()->create([
             'verification_token' => 'test-token-123',
         ]);
-        $service = app(SiteVerificationService::class);
 
-        $instructions = $service->getInstructions($site, 'file');
+        $instructions = app(VerifySiteByStrategy::class)->getInstructions($site, 'file');
 
         expect($instructions)->toHaveKey('title');
         expect($instructions)->toHaveKey('path', '/.well-known/affiliate-network-verify.txt');
@@ -141,12 +135,11 @@ describe('SiteVerificationService', function (): void {
     });
 
     test('getInstructions generates token if not set', function (): void {
-        $site = AffiliateSite::factory()->create([
+        $site = AffiliateSite::factory()->pending()->create([
             'verification_token' => null,
         ]);
-        $service = app(SiteVerificationService::class);
 
-        $instructions = $service->getInstructions($site, 'dns');
+        $instructions = app(VerifySiteByStrategy::class)->getInstructions($site, 'dns');
 
         expect($instructions['record_value'])->toStartWith('affiliatenetwork-verify-');
         expect($site->fresh()->verification_token)->not->toBeNull();
@@ -156,10 +149,8 @@ describe('SiteVerificationService', function (): void {
         $site = AffiliateSite::factory()->pending()->create([
             'verification_token' => 'test-token-123',
         ]);
-        $service = app(SiteVerificationService::class);
 
-        $instructions = $service->getInstructions($site, 'unknown');
-
-        expect($instructions)->toBeEmpty();
+        expect(fn () => app(VerifySiteByStrategy::class)->getInstructions($site, 'unknown'))
+            ->toThrow(RuntimeException::class);
     });
 });

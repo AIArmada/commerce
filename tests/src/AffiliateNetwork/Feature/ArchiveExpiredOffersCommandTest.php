@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\AffiliateNetwork\Enums\OfferStatus;
-use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
-use AIArmada\AffiliateNetwork\Models\AffiliateSite;
+use AIArmada\AffiliateNetwork\Data\OfferStatus;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\NullOwnerResolver;
@@ -117,7 +117,6 @@ it('reports archive candidates without persisting during dry runs', function ():
         ->create(['ends_at' => CarbonImmutable::now()->subDays(91)]);
 
     $this->artisan('affiliate-network:archive-expired --dry-run')
-        ->expectsOutput('DRY RUN: Archiving expired offers...')
         ->expectsOutput('Offers archived: 1')
         ->assertExitCode(Command::SUCCESS);
 

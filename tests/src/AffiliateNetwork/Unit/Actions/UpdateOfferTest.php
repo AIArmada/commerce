@@ -2,16 +2,15 @@
 
 declare(strict_types=1);
 
-use AIArmada\AffiliateNetwork\Actions\UpdateOffer;
 use AIArmada\AffiliateNetwork\Events\OfferUpdated;
-use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
-use AIArmada\AffiliateNetwork\Models\AffiliateSite;
+use AIArmada\AffiliateNetwork\Features\Catalog\Actions\UpdateOffer;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 describe('UpdateOffer', function (): void {
     beforeEach(function (): void {
@@ -73,7 +72,7 @@ describe('UpdateOffer', function (): void {
         $this->action->execute($this->offer, [
             'site_id' => (string) Str::uuid(),
         ]);
-    })->throws(ModelNotFoundException::class);
+    })->throws(ValidationException::class);
 
     test('rejects move to a site outside the owner scope', function (): void {
         config([
@@ -98,7 +97,7 @@ describe('UpdateOffer', function (): void {
         OwnerContext::withOwner($owner, fn () => $this->action->execute($offer, [
             'site_id' => $foreignSite->id,
         ]));
-    })->throws(AuthorizationException::class);
+    })->throws(RuntimeException::class);
 
     test('normalizes currency to upper case', function (): void {
         $updated = $this->action->execute($this->offer, [

@@ -3,14 +3,15 @@
 declare(strict_types=1);
 
 use AIArmada\AffiliateNetwork\AffiliateNetworkServiceProvider;
-use AIArmada\AffiliateNetwork\Enums\LegStatus;
+use AIArmada\AffiliateNetwork\Data\LegStatus;
 use AIArmada\AffiliateNetwork\Events\NetworkConversionRecorded;
-use AIArmada\AffiliateNetwork\Listeners\FinalizeNetworkAttribution;
-use AIArmada\AffiliateNetwork\Listeners\RecordProvisionalNetworkConversion;
-use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
-use AIArmada\AffiliateNetwork\Models\AffiliateSite;
-use AIArmada\AffiliateNetwork\Models\NetworkConversionLeg;
+use AIArmada\AffiliateNetwork\Features\Attribution\Models\AffiliateOfferLink;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Features\Ledger\EntryPoints\Listeners\FinalizeNetworkAttribution;
+use AIArmada\AffiliateNetwork\Features\Ledger\EntryPoints\Listeners\RecordProvisionalNetworkConversion;
+use AIArmada\AffiliateNetwork\Features\Ledger\Models\NetworkConversionLeg;
+use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
+use AIArmada\AffiliateNetwork\Platform\AttributionCookie;
 use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateToCart;
 use AIArmada\Affiliates\Actions\Conversions\RecordAffiliateConversion;
 use AIArmada\Affiliates\AffiliatesServiceProvider;
@@ -53,11 +54,15 @@ function decisionNetworkAttributionSnapshot(AffiliateOfferLink $link, string $cl
 
     return [
         ...$snapshot,
-        'signature' => hash_hmac(
-            'sha256',
-            implode('|', [$snapshot['link_code'], $snapshot['affiliate_id'], $snapshot['offer_id'], $snapshot['clicked_at']]),
-            (string) config('app.key'),
-        ),
+        'sub1' => null,
+        'sub2' => null,
+        'sub3' => null,
+        'signature' => AttributionCookie::signature([
+            'link_code' => $snapshot['link_code'],
+            'affiliate_id' => $snapshot['affiliate_id'],
+            'offer_id' => $snapshot['offer_id'],
+            'clicked_at' => $snapshot['clicked_at'],
+        ]),
     ];
 }
 
@@ -230,7 +235,7 @@ describe('attribution decision', function (): void {
         $fresh = $this->link->fresh();
 
         expect($fresh->conversions)->toBe(1)
-            ->and($fresh->revenue)->toBe(0);
+            ->and($fresh->revenue)->toBe(12345);
     });
 
     test('provisional rejects a future click when attribution expiry is disabled', function (): void {
@@ -334,7 +339,7 @@ describe('attribution decision', function (): void {
         config(['affiliate-network.notifications.enabled' => false]);
         $recordedLegId = null;
         Event::listen(NetworkConversionRecorded::class, function (NetworkConversionRecorded $event) use (&$recordedLegId): void {
-            $recordedLegId = $event->leg?->getKey();
+            $recordedLegId = $event->leg?->id;
         });
 
         app(FinalizeNetworkAttribution::class)->handle(new CommissionAttributionRequired($order->fresh()));
@@ -366,14 +371,14 @@ describe('attribution decision', function (): void {
         config(['affiliate-network.notifications.enabled' => false]);
         $recordedRevenue = [];
         Event::listen(NetworkConversionRecorded::class, function (NetworkConversionRecorded $event) use (&$recordedRevenue, $leg): void {
-            if ($event->leg?->getKey() === $leg->getKey()) {
-                $recordedRevenue[] = $event->revenueMinor;
+            if ($event->leg?->id === (string) $leg->getKey()) {
+                $recordedRevenue[] = $event->counterRevenueMinor;
             }
         });
 
         app(FinalizeNetworkAttribution::class)->handle(new CommissionAttributionRequired($order->fresh()));
 
-        expect($recordedRevenue)->toBe([0])
+        expect($recordedRevenue)->toBe([12345])
             ->and($leg->fresh()->revenue_minor)->toBe(12345);
     });
 

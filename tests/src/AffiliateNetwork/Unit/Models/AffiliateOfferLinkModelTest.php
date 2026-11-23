@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
-use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
-use AIArmada\AffiliateNetwork\Models\AffiliateSite;
+use AIArmada\AffiliateNetwork\Features\Attribution\Actions\IncrementLinkClicks;
+use AIArmada\AffiliateNetwork\Features\Attribution\Actions\RecordLinkCounters;
+use AIArmada\AffiliateNetwork\Features\Attribution\Models\AffiliateOfferLink;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Links\Models\Link;
 use Carbon\CarbonImmutable;
@@ -76,7 +78,7 @@ describe('AffiliateOfferLink Model', function (): void {
                 ->withStats(10, 0, 0)
                 ->create();
 
-            $link->incrementClicks();
+            app(IncrementLinkClicks::class)->execute((string) $link->getKey());
 
             expect($link->fresh()->clicks)->toBe(11);
         });
@@ -87,7 +89,7 @@ describe('AffiliateOfferLink Model', function (): void {
                 ->forAffiliateId((string) $this->affiliate->getKey())
                 ->create();
 
-            $link->incrementClicks();
+            app(IncrementLinkClicks::class)->execute((string) $link->getKey());
 
             expect($link->fresh()->clicks)->toBe(1);
         });
@@ -101,7 +103,7 @@ describe('AffiliateOfferLink Model', function (): void {
                 ->withStats(100, 5, 25000)
                 ->create();
 
-            $link->recordConversion(5000);
+            app(RecordLinkCounters::class)->execute((string) $link->getKey(), 5000, 1);
 
             $fresh = $link->fresh();
             expect($fresh->conversions)->toBe(6);

@@ -8,17 +8,18 @@ keywords:
   - filament
   - marketplace-admin
   - offers-ui
+  - merchant-statements
+  - creator-postbacks
 ---
 
 # Filament Affiliate Network Context
 
 ## Snapshot
 - Composer: `aiarmada/filament-affiliate-network`
-- Role: Filament marketplace/admin for affiliate-network: sites, offers, applications.
-- Triggers: filament, marketplace-admin, offers-ui
-- Search first: `src/Resources, src/Pages, src/Widgets, config, docs`
-- Related: `affiliate-network`, `filament-affiliates`
-- Paired: `affiliate-network` (core domain owner)
+- Role: Filament v5 admin/marketplace adapter for `aiarmada/affiliate-network`. UI only — no domain rules, models, or money math.
+- Search first: `src/Resources, src/Pages, src/Widgets, src/Support, config, docs`
+- Related: `affiliate-network` (core domain owner), `filament-affiliates`
+- Paired: `affiliate-network` (owns all Actions, Models, Data, and scoping)
 
 ## Read next
 1. `docs/01-overview.md`
@@ -26,24 +27,27 @@ keywords:
 3. `docs/04-usage.md`
 4. `docs/99-troubleshooting.md`
 5. `../affiliate-network/CONTEXT.md` when the change crosses UI/domain
-6. `docs/02-installation.md` when setup or publishing changes are involved
+6. `docs/02-installation.md` when setup or publishing changes
 
 ## Guardrails
-- Adapter only: no domain models/actions/calculations. Keep all business rules in `affiliate-network`.
-- Filament tenancy is not a security boundary; revalidate every submitted ID server-side (owner scope).
-- If behavior or calculations change, move them to `affiliate-network` and keep this package UI-only.
+- Adapter only: never add domain models, actions, calculations, or money math here. Call `aiarmada/affiliate-network` `Features\<Feature>\Actions\*` / `Queries\*` / `Api\*`.
+- Cross-package boundary: import from `AIArmada\AffiliateNetwork\Features\<Feature>\{Models,Api,Actions}` and `Data`/`Platform` only. Never reach into another package's `EntryPoints` or `Drivers`.
+- Owner scoping: resources return owner-safe queries; every action handler revalidates the submitted ID server-side. Admin surfaces (`MerchantStatementResource`, network widgets) intentionally use `withoutOwnerScope()` behind `NetworkAdminAccess::allows()`.
+- If behaviour or calculations change, move them into `affiliate-network` and keep this package presentational.
 - Update `docs/*.md` in the same pass when public behavior or config changes.
 
 ## Decide fast
-- Use when: Marketplace admin pages.
-- Skip when: Domain rules — see affiliate-network.
-- Owner/security: Filament adapter; defers to core scope.
+- Use when: Filament v5 admin/marketplace surfaces for sites, offers, enrollment, coupons, deals, legs, statements, and network reporting.
+- Skip when: Domain rules, persistence, money math — see `affiliate-network`.
+- Owner/security: Filament adapter; defers to core scope, but revalidates IDs in action handlers.
 
 ## Key surfaces
-- Resources: `AffiliateOfferApplicationResource`, `AffiliateOfferCategoryResource`, `AffiliateOfferResource`, `AffiliateSiteResource`
-- Relation managers: `AffiliateOfferResource/RelationManagers/LinksRelationManager`, `…/LegsRelationManager` (reverse action)
-- Page actions: `EditAffiliateSite` rotate-catalog-token header action
-- Actions/Services: `Support/NetworkAdminAccess`, `Support/NetworkStatsAggregator`
+- Resources: `AffiliateSiteResource`, `AffiliateOfferResource`, `AffiliateOfferCategoryResource`, `AffiliateOfferApplicationResource`, `MerchantStatementResource`
+- Relation managers (offer edit): `CreativesRelationManager`, `LinksRelationManager`, `LegsRelationManager` (Adjust, Lock Matured, Reverse), `InvitationsRelationManager`, `DealsRelationManager`, `CouponsRelationManager`
+- Pages: `MerchantDashboardPage`
+- Widgets: `NetworkStatsWidget`, `TopOffersWidget`
+- Support: `NetworkAdminAccess`, `NetworkStatsAggregator`, `Actions\SyncSiteCatalog`
+- Policies: `AffiliateSitePolicy`, `AffiliateOfferPolicy`, `AffiliateOfferCategoryPolicy`, `AffiliateOfferApplicationPolicy`, `MerchantStatementPolicy`
 - Config `filament-affiliate-network.php`: `navigation.group`, `navigation.sort`, `authorization.admin_ability`
 
 ## Docs map

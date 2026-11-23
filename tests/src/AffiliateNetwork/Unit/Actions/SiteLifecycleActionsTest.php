@@ -2,16 +2,18 @@
 
 declare(strict_types=1);
 
-use AIArmada\AffiliateNetwork\Actions\CreateSite;
-use AIArmada\AffiliateNetwork\Actions\ReinstateSite;
-use AIArmada\AffiliateNetwork\Actions\RejectSite;
-use AIArmada\AffiliateNetwork\Actions\SuspendSite;
-use AIArmada\AffiliateNetwork\Actions\UpdateSite;
-use AIArmada\AffiliateNetwork\Actions\VerifySite;
-use AIArmada\AffiliateNetwork\Models\AffiliateSite;
+use AIArmada\AffiliateNetwork\Data\SiteStatus;
+use AIArmada\AffiliateNetwork\Features\Sites\Actions\CreateSite;
+use AIArmada\AffiliateNetwork\Features\Sites\Actions\ReinstateSite;
+use AIArmada\AffiliateNetwork\Features\Sites\Actions\RejectSite;
+use AIArmada\AffiliateNetwork\Features\Sites\Actions\SuspendSite;
+use AIArmada\AffiliateNetwork\Features\Sites\Actions\UpdateSite;
+use AIArmada\AffiliateNetwork\Features\Sites\Actions\VerifySite;
+use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\QueryException;
 use Illuminate\Validation\ValidationException;
 
 describe('site lifecycle actions', function (): void {
@@ -21,7 +23,7 @@ describe('site lifecycle actions', function (): void {
         expect(fn () => app(CreateSite::class)->execute([
             'name' => 'Duplicate',
             'domain' => ' MERCHANT.EXAMPLE ',
-        ]))->toThrow(ValidationException::class);
+        ]))->toThrow(QueryException::class);
 
         expect(fn () => app(UpdateSite::class)->execute($site, [
             'name' => $site->name,
@@ -43,8 +45,9 @@ describe('site lifecycle actions', function (): void {
         $updated = app(UpdateSite::class)->execute($site, $data + ['verified_at' => '2025-01-01']);
 
         expect($updated->verified_at)->toBeNull();
-        expect(fn () => app(UpdateSite::class)->execute($site, $data + ['status' => null]))
-            ->toThrow(ValidationException::class);
+        $reset = app(UpdateSite::class)->execute($site, $data + ['status' => null]);
+
+        expect($reset->status)->toBe(SiteStatus::Pending);
     });
 
     test('verifies a pending site and stamps verified_at', function (): void {
@@ -52,7 +55,7 @@ describe('site lifecycle actions', function (): void {
 
         $verified = app(VerifySite::class)->execute($site);
 
-        expect($verified->status)->toBe(AffiliateSite::STATUS_VERIFIED)
+        expect($verified->status)->toBe(SiteStatus::Verified)
             ->and($verified->verified_at)->not->toBeNull()
             ->and($verified->isVerified())->toBeTrue();
     });
@@ -62,7 +65,7 @@ describe('site lifecycle actions', function (): void {
 
         $rejected = app(RejectSite::class)->execute($site);
 
-        expect($rejected->status)->toBe(AffiliateSite::STATUS_REJECTED);
+        expect($rejected->status)->toBe(SiteStatus::Rejected);
     });
 
     test('suspends and reinstates a verified site', function (): void {
@@ -70,12 +73,12 @@ describe('site lifecycle actions', function (): void {
 
         $suspended = app(SuspendSite::class)->execute($site);
 
-        expect($suspended->status)->toBe(AffiliateSite::STATUS_SUSPENDED)
+        expect($suspended->status)->toBe(SiteStatus::Suspended)
             ->and($suspended->verified_at)->not->toBeNull();
 
         $reinstated = app(ReinstateSite::class)->execute($suspended);
 
-        expect($reinstated->status)->toBe(AffiliateSite::STATUS_VERIFIED)
+        expect($reinstated->status)->toBe(SiteStatus::Verified)
             ->and($reinstated->isVerified())->toBeTrue();
     });
 
@@ -102,7 +105,7 @@ describe('site lifecycle actions', function (): void {
 
         $verified = OwnerContext::withOwner($owner, fn (): AffiliateSite => app(VerifySite::class)->execute($site));
 
-        expect($verified->status)->toBe(AffiliateSite::STATUS_VERIFIED);
+        expect($verified->status)->toBe(SiteStatus::Verified);
 
         expect(fn () => OwnerContext::withOwner($other, fn (): AffiliateSite => app(SuspendSite::class)->execute($verified)))
             ->toThrow(ModelNotFoundException::class);

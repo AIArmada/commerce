@@ -6,161 +6,122 @@ title: Overview
 
 ## Purpose
 
-The `aiarmada/filament-affiliate-network` package is the Filament admin and marketplace adapter for `aiarmada/affiliate-network`.
+`aiarmada/filament-affiliate-network` is the Filament v5 admin and marketplace
+adapter for `aiarmada/affiliate-network`. It renders and dispatches; all domain
+rules, calculations, and persistence live in the core package.
 
 ## What this package owns
 
-- Filament resources for sites, offers, categories, and applications
-- Merchant-facing dashboard page
+- Filament resources for sites, offers, categories, applications, and merchant statements
+- Six offer relation managers (creatives, links, legs, invitations, deals, coupons)
+- Merchant dashboard page
 - Network stats and top-offers widgets
-- Filament action workflows for verification, application review, and offer state changes
+- Filament action workflows for verification, catalog sync/token rotation, application review, offer state, leg adjust/lock/reverse, and statement lifecycle
 
 ## What this package does not own
 
-- Site verification logic, link tracking, or offer persistence rules; those stay in `aiarmada/affiliate-network`
-- Core affiliate attribution or payout logic; those stay in `aiarmada/affiliates`
+- Site verification logic, link tracking, offer persistence, money math, or statements — those stay in `aiarmada/affiliate-network`
+- Core affiliate attribution or payout logic — those stay in `aiarmada/affiliates`
 - Tenant resolution itself; it consumes the owner context supplied by the host app and `commerce-support`
 
 ## Related packages
 
-- [`aiarmada/affiliate-network`](../../affiliate-network/docs/01-overview.md) — core marketplace and tracking package
-- [`aiarmada/affiliates`](../../affiliates/docs/01-overview.md) — affiliate identities and commission domain layer
+- [`aiarmada/affiliate-network`](../../affiliate-network/docs/01-overview.md) — core marketplace, enrollment, ledger, statements, postbacks
+- [`aiarmada/affiliates`](../../affiliates/docs/01-overview.md) — affiliate identities and merchant commission domain
 - [`aiarmada/filament-affiliates`](../../filament-affiliates/docs/01-overview.md) — complementary affiliate admin and portal UI
 
-## Main models services or surfaces
-
-- **Resources** — sites, offers, offer categories, and offer applications
-- **Pages** — merchant dashboard
-- **Widgets** — network stats and top offers
-
-## Owner scoping and security notes
-
-- The plugin should mirror the owner and relationship-scoping rules defined by `aiarmada/affiliate-network`
-- Admin filters are not authorization; action handlers still need the backing domain package to validate application, offer, and site ownership before mutating records
-- Merchant dashboard aggregates are current-owner scoped. Network stats and top offers are deliberate network-wide admin widgets with owner-keyed 30-second caches
-
-The `aiarmada/filament-affiliate-network` plugin provides a complete Filament v5 admin interface for managing the affiliate network marketplace.
-
-## Features
-
-- **Site Management** - Register and verify merchant domains with status tracking
-- **Offer Management** - Create and manage affiliate offers with commission configuration
-- **Category Management** - Organize offers in hierarchical categories
-- **Application Review** - Approve/reject/revoke affiliate applications with workflow actions
-- **Merchant Dashboard** - Analytics with pending applications and top offers
-- **Network Stats Widget** - Overview statistics (sites, offers, clicks, conversions, revenue)
-- **Top Offers Widget** - Performance table of best-performing offers
-
-## Relationship to Core Affiliates
-
-This plugin sits on top of `aiarmada/affiliate-network`, which optionally integrates with the `Affiliate` model from `aiarmada/affiliates` when that package is installed.
-
-The UI surfaces here manage network-specific entities such as:
-
-- merchant sites
-- offers
-- offer applications
-- offer links and their aggregated metrics
-
-They do not directly write core commission or payout records; network discovery metrics remain separate from core commission execution.
-
-## Plugin Architecture
-
-```
-filament-affiliate-network/
-├── config/
-│   └── filament-affiliate-network.php
-├── resources/
-│   └── views/
-│       └── pages/
-│           └── merchant-dashboard.blade.php
-└── src/
-    ├── FilamentAffiliateNetworkPlugin.php
-    ├── FilamentAffiliateNetworkServiceProvider.php
-    ├── Pages/
-    │   └── MerchantDashboardPage.php
-    ├── Policies/
-    │   ├── AffiliateOfferApplicationPolicy.php
-    │   ├── AffiliateOfferCategoryPolicy.php
-    │   ├── AffiliateOfferPolicy.php
-    │   └── AffiliateSitePolicy.php
-    ├── Resources/
-    │   ├── AffiliateSiteResource.php
-    │   │   └── Pages/ (List, Create, Edit)
-    │   ├── AffiliateOfferResource.php
-    │   │   ├── Pages/ (List, Create, Edit)
-    │   │   └── RelationManagers/ (Links, Legs)
-    │   ├── AffiliateOfferCategoryResource.php
-    │   │   └── Pages/ (List, Create, Edit)
-    │   └── AffiliateOfferApplicationResource.php
-    │       └── Pages/ (List, View)
-    ├── Support/
-    │   ├── NetworkAdminAccess.php
-    │   └── NetworkStatsAggregator.php
-    └── Widgets/
-        ├── NetworkStatsWidget.php
-        └── TopOffersWidget.php
-```
-
-## Components Summary
+## Surfaces
 
 ### Resources
 
-| Resource | Model | Actions |
-|----------|-------|---------|
-| `AffiliateSiteResource` | `AffiliateSite` | List, Create, Edit, Delete, Verify |
-| `AffiliateOfferResource` | `AffiliateOffer` | List, Create, Edit, Delete, Activate, Pause |
-| `AffiliateOfferCategoryResource` | `AffiliateOfferCategory` | List, Create, Edit, Delete, Reorder |
-| `AffiliateOfferApplicationResource` | `AffiliateOfferApplication` | List, View, Approve, Reject, Revoke |
+| Resource | Model | Pages | Notes |
+|---|---|---|---|
+| `AffiliateSiteResource` | `Features\Sites\Models\AffiliateSite` | List, Create, Edit | Settlement/locking fields, sync + token rotation header actions |
+| `AffiliateOfferResource` | `Features\Catalog\Models\AffiliateOffer` | List, Create, Edit | Caps, fallback, event rates, promotions, six relation tabs |
+| `AffiliateOfferCategoryResource` | `Features\Catalog\Models\AffiliateOfferCategory` | List, Create, Edit | Hierarchical, cycle-safe |
+| `AffiliateOfferApplicationResource` | `Features\Enrollment\Models\AffiliateOfferApplication` | List, View | Approve/reject/revoke + bulk approve |
+| `MerchantStatementResource` | `Features\Ledger\Models\MerchantStatement` | List, View | **Admin-only**; Generate/Issue/Mark Paid/Void |
 
-### Pages
+### Offer relation managers
 
-| Page | URL | Description |
-|------|-----|-------------|
-| `MerchantDashboardPage` | `/affiliate-network/merchant-dashboard` | Merchant analytics dashboard |
+| Manager | Relationship | Actions |
+|---|---|---|
+| `CreativesRelationManager` | `creatives` | Create/update/delete manual creatives; imported read-only |
+| `LinksRelationManager` | `links` | Stats + reconcile |
+| `LegsRelationManager` | `legs` | Adjust, Lock matured, Reverse |
+| `InvitationsRelationManager` | `invitations` | Invite affiliate, Revoke |
+| `DealsRelationManager` | `deals` | Upsert deal, Revoke |
+| `CouponsRelationManager` | `coupons` | Assign coupon, Revoke |
 
-### Widgets
+### Pages / widgets
 
-| Widget | Type | Description |
-|--------|------|-------------|
-| `NetworkStatsWidget` | StatsOverview | 6 stat cards (sites, offers, applications, clicks, rate, revenue) |
-| `TopOffersWidget` | Table | Top 10 offers by clicks with performance metrics |
+| Surface | Description |
+|---|---|
+| `MerchantDashboardPage` | Owner-scoped merchant analytics at `/affiliate-network/merchant-dashboard` |
+| `NetworkStatsWidget` | Network-wide stats (6 cards), 30s `OwnerCache` |
+| `TopOffersWidget` | Network-wide top-10 offers by clicks, 30s `OwnerCache` |
 
-## Screenshots
+## Plugin architecture
 
-### Site Management
+```
+filament-affiliate-network/
+├── config/filament-affiliate-network.php
+├── resources/views/pages/merchant-dashboard.blade.php
+└── src/
+    ├── FilamentAffiliateNetworkPlugin.php
+    ├── FilamentAffiliateNetworkServiceProvider.php
+    ├── Actions/SyncSiteCatalog.php
+    ├── Pages/MerchantDashboardPage.php
+    ├── Policies/
+    │   ├── AffiliateSitePolicy.php
+    │   ├── AffiliateOfferPolicy.php
+    │   ├── AffiliateOfferCategoryPolicy.php
+    │   ├── AffiliateOfferApplicationPolicy.php
+    │   └── MerchantStatementPolicy.php
+    ├── Resources/
+    │   ├── AffiliateSiteResource/{Pages,Schemas,Tables}
+    │   ├── AffiliateOfferResource/{Pages,Schemas,Tables,RelationManagers}
+    │   ├── AffiliateOfferCategoryResource/{Pages,Schemas,Tables}
+    │   ├── AffiliateOfferApplicationResource/{Pages,Schemas,Tables}
+    │   └── MerchantStatementResource/{Pages,Schemas,Tables}
+    ├── Support/{NetworkAdminAccess,NetworkStatsAggregator}
+    └── Widgets/{NetworkStatsWidget,TopOffersWidget}
+```
 
-The site resource provides:
-- Domain registration with unique validation
-- Status badge colors (pending: yellow, verified: green, suspended/rejected: red)
-- Quick verify action for pending sites
-- Offers count display
+## Core domain imports
 
-### Offer Management
+All PHP snippets in this package use the Modular Dune namespaces:
 
-The offer resource provides:
-- Site and category selection
-- Commission configuration (percentage or fixed amount)
-- Featured toggle and visibility selection (public/private/unlisted)
-- Date range scheduling
-- Quick activate/pause actions
+```php
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
+use AIArmada\AffiliateNetwork\Features\Ledger\Models\{NetworkConversionLeg, MerchantStatement};
+use AIArmada\AffiliateNetwork\Data\{OfferStatus, SiteStatus, LegStatus, SettlementStatus};
+use AIArmada\AffiliateNetwork\Platform\ScopesByBelongsToOwner;
+```
 
-### Application Review
+> **warning**
+> The pre-Dune namespaces (`AIArmada\AffiliateNetwork\{Models,Actions,Services,Enums,Support}\*`)
+> are removed. Update any custom resource/policy to the `Features\*` namespaces.
 
-The application resource provides:
-- Pending applications queue
-- One-click approve/reject with reasons
-- Revoke action for approved applications
-- Bulk approve capability
+## Owner scoping and security
+
+- Resources mirror the core relationship scoping (`offer.site`, `affiliate`).
+- Filters are not authorization: action handlers revalidate the submitted ID
+  server-side (core actions re-assert owner access).
+- `MerchantStatementResource` and the two widgets are deliberate network-wide
+  admin surfaces: they bypass owner scope and gate on
+  `NetworkAdminAccess::allows()` (`authorization.admin_ability`).
+- The merchant dashboard is owner-scoped and never embeds the network-wide widgets.
 
 ## Requirements
 
 - PHP 8.5+
 - Laravel 13+
 - Filament v5
-- `aiarmada/affiliate-network` package
-- `aiarmada/affiliates` package (optional; enables the engine-backed network seams)
-- `aiarmada/filament-affiliates` package (optional complementary UI)
+- `aiarmada/affiliate-network`
+- `aiarmada/affiliates` (optional; engine-backed seams)
+- `aiarmada/filament-affiliates` (optional complementary UI)
 
 ## Read next
 

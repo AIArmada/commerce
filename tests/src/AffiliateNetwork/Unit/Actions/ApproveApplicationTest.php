@@ -2,10 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\AffiliateNetwork\Actions\ApproveApplication;
-use AIArmada\AffiliateNetwork\Enums\ApplicationStatus;
+use AIArmada\AffiliateNetwork\Data\ApplicationStatus;
 use AIArmada\AffiliateNetwork\Events\ApplicationApproved;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Features\Enrollment\Actions\ApproveApplication;
+use AIArmada\AffiliateNetwork\Features\Enrollment\Models\AffiliateOfferApplication;
+use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -91,14 +93,18 @@ test('cannot approve another owners application', function (): void {
     config(['affiliate-network.owner.enabled' => true, 'affiliates.owner.enabled' => true]);
     $owner = User::factory()->create();
     $otherOwner = User::factory()->create();
-    $application = OwnerContext::withOwner($owner, function (): AffiliateOfferApplication {
-        $affiliate = createTestAffiliate();
 
-        return AffiliateOfferApplication::factory()->forAffiliateId($affiliate->id)->pending()->create();
+    $application = OwnerContext::withOwner($owner, function (): AffiliateOfferApplication {
+        $site = AffiliateSite::factory()->verified()->forOwner(OwnerContext::resolve())->create();
+        $offer = AffiliateOffer::factory()->published()->forSite($site)->create();
+
+        return AffiliateOfferApplication::factory()->forOffer($offer)->pending()->create();
     });
+
     Event::fake([ApplicationApproved::class]);
 
-    expect(fn () => OwnerContext::withOwner($otherOwner, fn () => app(ApproveApplication::class)->execute($application)))->toThrow(ModelNotFoundException::class);
+    expect(fn () => OwnerContext::withOwner($otherOwner, fn () => app(ApproveApplication::class)->execute($application)))
+        ->toThrow(ModelNotFoundException::class);
     expect(OwnerContext::withOwner($owner, fn () => $application->fresh()->status))->toBe(ApplicationStatus::Pending);
     Event::assertNotDispatched(ApplicationApproved::class);
 });

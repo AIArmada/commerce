@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\RelationManagers;
 
-use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
-use AIArmada\AffiliateNetwork\Services\NetworkLedgerReconciliationService;
+use AIArmada\AffiliateNetwork\Features\Attribution\Models\AffiliateOfferLink;
+use AIArmada\AffiliateNetwork\Features\Ledger\Queries\LedgerReconciliationQuery;
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Filament\Actions\Action;
@@ -73,10 +72,7 @@ final class LinksRelationManager extends RelationManager
                     ->color('info')
                     ->modalHeading('Ledger reconciliation')
                     ->modalDescription(function (): string {
-                        $ownerRecord = $this->getOwnerRecord();
-                        $report = $ownerRecord instanceof AffiliateOffer
-                            ? app(NetworkLedgerReconciliationService::class)->reconcileOffer($ownerRecord)
-                            : ['match' => false, 'links' => 0, 'matched_links' => 0];
+                        $report = app(LedgerReconciliationQuery::class)->reconcileOffer((string) $this->getOwnerRecord()->getKey());
 
                         if ($report['match']) {
                             return sprintf(
@@ -101,7 +97,7 @@ final class LinksRelationManager extends RelationManager
                     ->color('gray')
                     ->modalHeading(fn (AffiliateOfferLink $record): string => 'Reconcile link ' . $record->link?->slug)
                     ->modalDescription(function (AffiliateOfferLink $record): string {
-                        $report = app(NetworkLedgerReconciliationService::class)->reconcileLink($record);
+                        $report = app(LedgerReconciliationQuery::class)->reconcileLink((string) $record->getKey());
 
                         if ($report['match']) {
                             return sprintf(

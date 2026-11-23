@@ -4,27 +4,32 @@ title: Customization
 
 # Customization
 
-Extend and customize the plugin to fit your application.
+Extend the plugin by writing your own resources/pages/widgets and reusing the
+shipped schema and table classes. Every shipped component is `final`.
 
-## Extending Resources
+## Resources are final
 
-> **warning:**
-> Every shipped resource is `final` — `AffiliateSiteResource`,
-> `AffiliateOfferResource`, `AffiliateOfferCategoryResource`, and
-> `AffiliateOfferApplicationResource` cannot be extended. To change behaviour,
-> register your own resource pointing at the same model, or configure
-> navigation at runtime through
-> `commerce-support.filament.navigation.items.{FQCN}`. The `extends BaseResource`
-> pattern below does not compile.
+`AffiliateSiteResource`, `AffiliateOfferResource`,
+`AffiliateOfferCategoryResource`, `AffiliateOfferApplicationResource`, and
+`MerchantStatementResource` are `final`. In Filament v5 (as used here),
+`form()`, `table()`, and `infolist()` are **static** methods;
+`getFormSchema()` and `getTableColumns()` no longer exist.
+
+Write your own resource and point it at the shipped classes:
 
 ```php
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Resources;
 
-use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
+use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\RelationManagers\CouponsRelationManager;
+use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Schemas\AffiliateOfferForm;
+use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Tables\AffiliateOffersTable;
 use Filament\Resources\Resource;
-use Filament\Tables;
+use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 
 class AffiliateCampaignResource extends Resource
@@ -32,49 +37,56 @@ class AffiliateCampaignResource extends Resource
     protected static ?string $model = AffiliateOffer::class;
 
     protected static ?string $navigationLabel = 'Campaigns';
+
     protected static ?string $modelLabel = 'Campaign';
+
     protected static ?string $pluralModelLabel = 'Campaigns';
 
-    public function table(Table $table): Table
+    public static function getNavigationGroup(): string | \UnitEnum | null
     {
-        return $table
-            ->columns([
-                Tables\Columns\TextColumn::make('name'),
-                // Add custom columns
-                Tables\Columns\TextColumn::make('rate_base_bp'),
-            ]);
+        return config('filament-affiliate-network.navigation.group');
     }
 
-    public function getRelations(): array
+    public static function form(Schema $schema): Schema
+    {
+        return AffiliateOfferForm::configure($schema);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return AffiliateOffersTable::configure($table);
+    }
+
+    public static function getRelations(): array
     {
         return [
-            // Add relation managers
-            RelationManagers\LinksRelationManager::class,
-            RelationManagers\LegsRelationManager::class,
+            \AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\RelationManagers\CreativesRelationManager::class,
+            \AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\RelationManagers\LinksRelationManager::class,
+            \AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\RelationManagers\LegsRelationManager::class,
+            \AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\RelationManagers\InvitationsRelationManager::class,
+            \AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\RelationManagers\DealsRelationManager::class,
+            \AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\RelationManagers\CouponsRelationManager::class,
+        ];
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => \App\Filament\Resources\AffiliateCampaignResource\Pages\ListCampaigns::route('/'),
+            'edit' => \App\Filament\Resources\AffiliateCampaignResource\Pages\EditCampaign::route('/{record}/edit'),
         ];
     }
 }
 ```
 
-> **tip:**
-> In Filament v5, `table()`/`form()`/`infolist()` are **instance** methods on
-> the resource, not `static` overrides. `getTableColumns()` and
-> `getFormSchema()` no longer exist — columns live in a
-> `Tables\XTable` class and schema in a `Schemas\XForm` class, returned by
-> `table(Table $table)` / `form(Schema $schema)`.
-
-### Register Custom Resource
-
-In your panel provider:
+Register on the panel:
 
 ```php
-use AIArmada\FilamentAffiliateNetwork\FilamentAffiliateNetworkPlugin;
-
 public function panel(Panel $panel): Panel
 {
     return $panel
         ->plugins([
-            FilamentAffiliateNetworkPlugin::make(),
+            \AIarmada\FilamentAffiliateNetwork\FilamentAffiliateNetworkPlugin::make(),
         ])
         ->resources([
             \App\Filament\Resources\AffiliateCampaignResource::class,
@@ -82,54 +94,50 @@ public function panel(Panel $panel): Panel
 }
 ```
 
----
+## Pages and widgets
 
-## Extending Pages
+`MerchantDashboardPage`, `NetworkStatsWidget`, and `TopOffersWidget` are `final`.
+Build standalone components instead.
 
-### Custom Merchant Dashboard
-
-`MerchantDashboardPage` is `final` and cannot be extended. Build a standalone
-page instead:
+### Custom merchant page
 
 ```php
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Pages;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\FilamentAffiliateNetwork\Support\NetworkAdminAccess;
 use Filament\Pages\Page;
-use Filament\Widgets\StatsOverviewWidget\Stat;
 
 class MerchantInsights extends Page
 {
     protected static ?string $navigationLabel = 'Merchant Insights';
 
+    public static function canAccess(): bool
+    {
+        return NetworkAdminAccess::allows();
+    }
+
     protected function getHeaderWidgets(): array
     {
-        return [
-            \App\Filament\Widgets\CustomNetworkStatsWidget::class,
-            \App\Filament\Widgets\RevenueChartWidget::class,
-        ];
+        return [\App\Filament\Widgets\RevenueChartWidget::class];
     }
 }
 ```
 
----
-
-## Extending Widgets
-
-### Custom Stats Widget
-
-`NetworkStatsWidget` is `final`. Write your own and reuse the shared aggregator:
+### Custom stats widget
 
 ```php
 <?php
+
+declare(strict_types=1);
 
 namespace App\Filament\Widgets;
 
 use AIArmada\FilamentAffiliateNetwork\Support\NetworkAdminAccess;
 use AIArmada\FilamentAffiliateNetwork\Support\NetworkStatsAggregator;
-use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -144,15 +152,14 @@ class NetworkStatsWidget extends StatsOverviewWidget
 
     protected function getStats(): array
     {
-        $aggregated = NetworkStatsAggregator::aggregate();
+        $stats = NetworkStatsAggregator::aggregate();
 
         return [
-            Stat::make('Active Sites', number_format($aggregated['activeSites']))
+            Stat::make('Active sites', number_format($stats['activeSites']))
                 ->description('Verified merchant sites')
                 ->icon('heroicon-o-globe-alt'),
 
-            // Add custom metric
-            Stat::make('Total Revenue', $aggregated['revenueFormatted'])
+            Stat::make('Total revenue', $stats['revenueFormatted'])
                 ->description('Tracked revenue')
                 ->icon('heroicon-o-banknotes'),
         ];
@@ -160,53 +167,51 @@ class NetworkStatsWidget extends StatsOverviewWidget
 }
 ```
 
-> **tip:**
-> Format money with `AIArmada\CommerceSupport\Support\MoneyFormatter::formatMinor($minor, $currency)`
-> rather than dividing by 100 yourself — the minor-unit scale is not always
-> 100 (MYR is 100, but JPY and KWD are not).
-
-### Add Chart Widget
+### Chart widget
 
 ```php
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Widgets;
 
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
+use AIArmada\AffiliateNetwork\Features\Attribution\Models\AffiliateOfferLink;
 use Filament\Widgets\ChartWidget;
 use Illuminate\Support\Carbon;
 
 class ConversionsChartWidget extends ChartWidget
 {
     protected static ?string $heading = 'Conversions (Last 30 Days)';
+
     protected static ?int $sort = 3;
-    protected int|string|array $columnSpan = 'full';
-    
+
+    protected int | string | array $columnSpan = 'full';
+
     protected function getData(): array
     {
-        $data = collect(range(29, 0))->map(function ($daysAgo) {
+        $data = collect(range(29, 0))->map(function (int $daysAgo): array {
             $date = Carbon::today()->subDays($daysAgo);
-            
+
             return [
                 'date' => $date->format('M d'),
-                'conversions' => AffiliateOfferLink::whereDate('updated_at', $date)
+                'conversions' => AffiliateOfferLink::query()
+                    ->whereDate('updated_at', $date)
                     ->sum('conversions'),
             ];
         });
-        
+
         return [
-            'datasets' => [
-                [
-                    'label' => 'Conversions',
-                    'data' => $data->pluck('conversions')->toArray(),
-                    'borderColor' => '#6366f1',
-                    'fill' => false,
-                ],
-            ],
-            'labels' => $data->pluck('date')->toArray(),
+            'datasets' => [[
+                'label' => 'Conversions',
+                'data' => $data->pluck('conversions')->all(),
+                'borderColor' => '#6366f1',
+                'fill' => false,
+            ]],
+            'labels' => $data->pluck('date')->all(),
         ];
     }
-    
+
     protected function getType(): string
     {
         return 'line';
@@ -214,106 +219,33 @@ class ConversionsChartWidget extends ChartWidget
 }
 ```
 
----
-
-## Custom Views
-
-### Publish Views
+## Views
 
 ```bash
 php artisan vendor:publish --tag=filament-affiliate-network-views
 ```
 
-The only shipped view is `pages/merchant-dashboard.blade.php`; it publishes to
-`resources/views/vendor/filament-affiliate-network/pages/merchant-dashboard.blade.php`.
-
-There is no marketplace view to override — the package has no marketplace page.
-
-### Customize Merchant Dashboard View
-
-Edit `resources/views/vendor/filament-affiliate-network/pages/merchant-dashboard.blade.php` to restyle the stats, top offers, and pending applications sections.
-
----
+The only shipped view is `pages/merchant-dashboard.blade.php`. There is no
+marketplace view to override.
 
 ## Authorization
 
-### Resource Authorization
-
-The package ships four policies, bound in
-`FilamentAffiliateNetworkServiceProvider::packageBooted()`:
-`AffiliateSitePolicy`, `AffiliateOfferPolicy`, `AffiliateOfferCategoryPolicy`,
-`AffiliateOfferApplicationPolicy`. Filament calls them automatically, so you
-do not re-declare `canViewAny()` on a resource.
+Five policies are auto-bound by the service provider:
+`AffiliateSitePolicy`, `AffiliateOfferPolicy`,
+`AffiliateOfferCategoryPolicy`, `AffiliateOfferApplicationPolicy`,
+`MerchantStatementPolicy`. Override with your own:
 
 ```php
-<?php
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
+use Illuminate\Support\Facades\Gate;
 
-namespace App\Policies;
-
-use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
-use App\Models\User;
-
-class AffiliateOfferPolicy
-{
-    public function viewAny(User $user): bool
-    {
-        return $user->can('view-offers');
-    }
-
-    public function create(User $user): bool
-    {
-        return $user->can('create-offers');
-    }
-
-    public function update(User $user, AffiliateOffer $offer): bool
-    {
-        return $user->can('edit-offers');
-    }
-
-    public function delete(User $user, AffiliateOffer $offer): bool
-    {
-        return $user->can('delete-offers');
-    }
-}
+Gate::policy(AffiliateOffer::class, \App\Policies\AffiliateOfferPolicy::class);
 ```
 
-Register your own with `Gate::policy(AffiliateOffer::class, YourPolicy::class)`.
+Network-wide surfaces still gate on `NetworkAdminAccess::allows()`; keep that
+check in any replacement page/widget.
 
-### Widget Authorization
-
-```php
-use AIArmada\FilamentAffiliateNetwork\Support\NetworkAdminAccess;
-use Filament\Widgets\Widget;
-
-class MyWidget extends Widget
-{
-    public static function canView(): bool
-    {
-        return NetworkAdminAccess::allows();
-    }
-}
-```
-
-### Page Authorization
-
-```php
-use AIArmada\FilamentAffiliateNetwork\Support\NetworkAdminAccess;
-use Filament\Pages\Page;
-
-class MerchantInsights extends Page
-{
-    public static function canAccess(): bool
-    {
-        return NetworkAdminAccess::allows();
-    }
-}
-```
-
----
-
-## Multi-Panel Setup
-
-### Separate Merchant and Affiliate Panels
+## Multi-panel setup
 
 ```php
 // MerchantPanelProvider.php
@@ -323,34 +255,23 @@ public function panel(Panel $panel): Panel
         ->id('merchant')
         ->path('merchant')
         ->plugins([
-            FilamentAffiliateNetworkPlugin::make(),
-        ])
-        ->pages([
-            MerchantDashboardPage::class,
-        ]);
-}
-
-// AffiliatePanelProvider.php
-public function panel(Panel $panel): Panel
-{
-    return $panel
-        ->id('affiliate')
-        ->path('affiliate')
-        ->pages([
-            MerchantDashboardPage::class,
-            // Affiliate-specific pages
+            \AIarmada\FilamentAffiliateNetwork\FilamentAffiliateNetworkPlugin::make(),
         ]);
 }
 ```
 
----
+A custom resource set requires your own plugin; the shipped plugin is `final`
+and registers a fixed set.
 
-## Conditional Resource Registration
-
-`FilamentAffiliateNetworkPlugin` is `final` — extend `Plugin` and implement
-`Plugin::getId()` yourself:
+## Conditional registration
 
 ```php
+<?php
+
+declare(strict_types=1);
+
+namespace App\Filament;
+
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferCategoryResource;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource;
 use Filament\Contracts\Plugin;
@@ -370,11 +291,8 @@ final class CustomAffiliateNetworkPlugin implements Plugin
 
     public function register(Panel $panel): void
     {
-        $resources = [
-            AffiliateSiteResource::class,
-        ];
+        $resources = [AffiliateSiteResource::class];
 
-        // Example: conditionally add category resource
         if (config('app.features.affiliate_network_categories', true)) {
             $resources[] = AffiliateOfferCategoryResource::class;
         }
@@ -389,27 +307,21 @@ final class CustomAffiliateNetworkPlugin implements Plugin
 }
 ```
 
-> **tip:**
-> The shipped plugin is already minimal — it registers 4 resources, 1 page,
-> and 2 widgets, all behind `NetworkAdminAccess::allows()`. Reach for a custom
-> plugin only when you genuinely need a different resource set.
+## Relation managers
 
----
-
-## Adding Relation Managers
-
-Both shipped relation managers are `final`. Write your own in the same shape
-(Filament v5 instance `table()`):
+All six shipped relation managers are `final`. Write your own in the same shape:
 
 ```php
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Resources\AffiliateOfferResource\RelationManagers;
 
-use AIArmada\AffiliateNetwork\Resources\AffiliateOfferResource;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferCreative;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOfferCreative;
 use Filament\Resources\RelationManagers\RelationManager;
-use Filament\Tables;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
 class CreativesRelationManager extends RelationManager
@@ -420,70 +332,33 @@ class CreativesRelationManager extends RelationManager
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('name'),
-                Tables\Columns\TextColumn::make('type')
-                    ->badge(),
-                Tables\Columns\TextColumn::make('width')
-                    ->suffix('px'),
-                Tables\Columns\TextColumn::make('height')
-                    ->suffix('px'),
-                Tables\Columns\IconColumn::make('is_active')
-                    ->boolean(),
+                TextColumn::make('name'),
+                TextColumn::make('type')->badge(),
+                TextColumn::make('width')->suffix('px'),
+                TextColumn::make('height')->suffix('px'),
+                IconColumn::make('is_active')->boolean(),
             ])
-            ->headerActions([
-                Tables\Actions\CreateAction::make(),
-            ])
-            ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
-            ]);
+            ->recordTitleAttribute('name');
     }
 }
 ```
 
-### Links Relation Manager
+> **warning**
+> Do not use `Tables\Columns\BadgeColumn` (removed in v4); use
+> `TextColumn::make('type')->badge()`. Do not hardcode `->money('USD', divideBy: 100)` —
+> use `MoneyFormatter::formatMinor($minor, $currency)`.
+
+### Money formatting in a relation manager
 
 ```php
-<?php
-
-namespace App\Filament\Resources\AffiliateOfferResource\RelationManagers;
-
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
-use Filament\Resources\RelationManagers\RelationManager;
-use Filament\Tables;
-use Filament\Tables\Table;
+use AIArmada\AffiliateNetwork\Features\Ledger\Models\NetworkConversionLeg;
+use Filament\Tables\Columns\TextColumn;
 
-class OfferLinksRelationManager extends RelationManager
-{
-    protected static string $relationship = 'links';
-
-    public function table(Table $table): Table
-    {
-        return $table
-            ->columns([
-                Tables\Columns\TextColumn::make('affiliate_id')
-                    ->label('Affiliate ID'),
-                Tables\Columns\TextColumn::make('link.slug')
-                    ->label('Slug')
-                    ->copyable(),
-                Tables\Columns\TextColumn::make('clicks')
-                    ->numeric(),
-                Tables\Columns\TextColumn::make('conversions')
-                    ->numeric(),
-                Tables\Columns\TextColumn::make('revenue')
-                    ->formatStateUsing(fn ($state, $record): string => MoneyFormatter::formatMinor(
-                        (int) ($state ?? 0),
-                        $record->currency ?? config('affiliate-network.currency.default'),
-                    )),
-                Tables\Columns\IconColumn::make('is_active')
-                    ->boolean(),
-            ]);
-    }
-}
+TextColumn::make('payout_minor')
+    ->label('Payout')
+    ->formatStateUsing(fn (NetworkConversionLeg $record): string => MoneyFormatter::formatMinor(
+        $record->payout_minor,
+        $record->commission_currency,
+    ));
 ```
-
-> **warning:**
-> `Tables\Columns\BadgeColumn` was removed in Filament v4. Use
-> `TextColumn::make('type')->badge()`. `IconColumn` still exists and is used by
-> the shipped tables. Do not hardcode `->money('USD', divideBy: 100)` — it
-> assumes a 2-decimal currency and breaks for JPY/KWD.

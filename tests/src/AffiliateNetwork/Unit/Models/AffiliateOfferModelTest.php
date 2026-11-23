@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferCategory;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferCreative;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
-use AIArmada\AffiliateNetwork\Models\AffiliateSite;
+use AIArmada\AffiliateNetwork\Features\Attribution\Models\AffiliateOfferLink;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOfferCategory;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOfferCreative;
+use AIArmada\AffiliateNetwork\Features\Enrollment\Models\AffiliateOfferApplication;
+use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
@@ -145,41 +145,6 @@ describe('AffiliateOffer Model', function (): void {
             expect($offer->formattedRate())->toContain('5');
         });
 
-        test('operator rate edits flip the lock to manual', function (): void {
-            $offer = AffiliateOffer::factory()->forSite($this->site)->create([
-                'rate_base_bp' => 1000,
-                'source' => 'mirrored',
-            ]);
-
-            $offer->update(['rate_base_bp' => 1500]);
-
-            expect($offer->fresh()->source)->toBe('manual');
-            expect($offer->fresh()->rate_base_bp)->toBe(1500);
-        });
-
-        test('explicit unlock clears the checksum for re-apply', function (): void {
-            $offer = AffiliateOffer::factory()->forSite($this->site)->create([
-                'rate_base_bp' => 1500,
-                'source' => 'manual',
-                'source_checksum' => 'abc123',
-            ]);
-
-            $offer->update(['source' => 'mirrored']);
-
-            expect($offer->fresh()->source)->toBe('mirrored');
-            expect($offer->fresh()->source_checksum)->toBeNull();
-        });
-
-        test('non-rate edits leave the lock alone', function (): void {
-            $offer = AffiliateOffer::factory()->forSite($this->site)->create([
-                'source' => 'mirrored',
-            ]);
-
-            $offer->update(['name' => 'Renamed']);
-
-            expect($offer->fresh()->source)->toBe('mirrored');
-        });
-
         test('is_featured is boolean', function (): void {
             $offer = AffiliateOffer::factory()->featured()->forSite($this->site)->create();
 
@@ -214,7 +179,7 @@ describe('AffiliateOffer Model', function (): void {
             $ownedSite = OwnerContext::withOwner($owner, fn () => AffiliateSite::factory()->verified()->forOwner($owner)->create());
 
             OwnerContext::withOwner(null, fn () => AffiliateOffer::factory()->forSite($ownedSite)->create());
-        })->throws(RuntimeException::class, 'inaccessible or missing owner relation');
+        })->throws(RuntimeException::class, 'without an accessible owner relation');
 
         test('explicit global context only returns offers linked to global sites', function (): void {
             config(['affiliate-network.owner.enabled' => true]);

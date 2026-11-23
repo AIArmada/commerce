@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\RelationManagers;
 
-use AIArmada\AffiliateNetwork\Actions\CreateCreative;
-use AIArmada\AffiliateNetwork\Actions\DeleteCreative;
-use AIArmada\AffiliateNetwork\Actions\UpdateCreative;
-use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferCreative;
-use AIArmada\AffiliateNetwork\Models\AffiliateSite;
-use AIArmada\AffiliateNetwork\Models\Concerns\ScopesByBelongsToOwner;
+use AIArmada\AffiliateNetwork\Data\CreativeType;
+use AIArmada\AffiliateNetwork\Features\Catalog\Actions\CreateCreative;
+use AIArmada\AffiliateNetwork\Features\Catalog\Actions\DeleteCreative;
+use AIArmada\AffiliateNetwork\Features\Catalog\Actions\UpdateCreative;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOfferCreative;
+use AIArmada\AffiliateNetwork\Features\Sites\Api\SitesApi;
+use AIArmada\AffiliateNetwork\Platform\ScopesByBelongsToOwner;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentAffiliateNetwork\Support\NetworkAdminAccess;
 use Filament\Actions\CreateAction;
@@ -44,10 +45,7 @@ final class CreativesRelationManager extends RelationManager
 
         return $schema->components([
             TextInput::make('name')->required()->maxLength(255)->disabled($imported),
-            Select::make('type')->options([
-                'banner' => 'Banner', 'text' => 'Text link', 'image' => 'Image',
-                'video' => 'Video', 'document' => 'Document', 'email' => 'Email', 'html' => 'HTML',
-            ])->required()->default('banner')->disabled($imported),
+            Select::make('type')->options(self::typeOptions())->required()->default(CreativeType::Banner->value)->disabled($imported),
             Textarea::make('description')->disabled($imported),
             SpatieMediaLibraryFileUpload::make('asset')->collection('creative_asset')
                 ->label('Upload file')->hidden($imported)
@@ -70,7 +68,9 @@ final class CreativesRelationManager extends RelationManager
             ->defaultSort('sort_order')->recordTitleAttribute('name')
             ->columns([
                 TextColumn::make('name')->searchable(),
-                TextColumn::make('type')->badge(),
+                TextColumn::make('type')
+                    ->badge()
+                    ->formatStateUsing(fn (CreativeType | string $state): string => $state instanceof CreativeType ? $state->label() : (CreativeType::tryFrom((string) $state)?->label() ?? (string) $state)),
                 TextColumn::make('source')->badge()
                     ->state(fn (AffiliateOfferCreative $record): string => $record->external_creative_id !== null ? 'Imported' : 'Manual'),
                 TextColumn::make('source_program')->label('Source program')
@@ -89,6 +89,20 @@ final class CreativesRelationManager extends RelationManager
                 DeleteAction::make()->visible(fn (AffiliateOfferCreative $record): bool => $record->external_creative_id === null)
                     ->using(fn (AffiliateOfferCreative $record): bool => $this->deleteCreative($record)),
             ]);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private static function typeOptions(): array
+    {
+        $options = [];
+
+        foreach (CreativeType::cases() as $type) {
+            $options[$type->value] = $type->label();
+        }
+
+        return $options;
     }
 
     /**
@@ -133,15 +147,16 @@ final class CreativesRelationManager extends RelationManager
     private function withOfferOwner(callable $callback): mixed
     {
         abort_unless(NetworkAdminAccess::allows(), 403);
-        $offerId = $this->getOwnerRecord()->getKey();
+        $offerId = (string) $this->getOwnerRecord()->getKey();
 
-        $site = OwnerContext::withOwner(null, function () use ($offerId): AffiliateSite {
-            $offer = AffiliateOffer::query()->withoutOwnerScope()->whereKey($offerId)->firstOrFail();
-
-            return AffiliateSite::query()->withoutOwnerScope()->whereKey($offer->site_id)->firstOrFail();
+        $site = OwnerContext::withOwner(null, function () use ($offerId): AffiliateOffer {
+            return AffiliateOffer::query()->withoutOwnerScope()->whereKey($offerId)->firstOrFail();
         });
 
-        $owner = OwnerContext::fromTypeAndId($site->owner_type, $site->owner_id);
+        $siteRecord = app(SitesApi::class)->findByIdUnscoped((string) $site->site_id);
+        $owner = $siteRecord === null
+            ? null
+            : OwnerContext::fromTypeAndId($siteRecord->ownerType, $siteRecord->ownerId);
 
         return OwnerContext::withOwner($owner, $callback);
     }

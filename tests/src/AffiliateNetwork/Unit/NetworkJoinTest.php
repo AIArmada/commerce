@@ -3,12 +3,14 @@
 declare(strict_types=1);
 
 use AIArmada\AffiliateNetwork\Contracts\NetworkLedger;
+use AIArmada\AffiliateNetwork\Data\ApplicationStatus;
 use AIArmada\AffiliateNetwork\Data\NetworkConversionDraft;
-use AIArmada\AffiliateNetwork\Enums\ApplicationStatus;
-use AIArmada\AffiliateNetwork\Enums\OfferVisibility;
-use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
-use AIArmada\AffiliateNetwork\Models\AffiliateSite;
-use AIArmada\AffiliateNetwork\Services\OfferManagementService;
+use AIArmada\AffiliateNetwork\Data\OfferVisibility;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Features\Enrollment\Actions\ApplyToOffer;
+use AIArmada\AffiliateNetwork\Features\Enrollment\Actions\ApproveApplication;
+use AIArmada\AffiliateNetwork\Features\Enrollment\Queries\ApplicationStatusQuery;
+use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateProgramMembership;
@@ -40,8 +42,8 @@ describe('network identity join', function (): void {
     test('network user without a merchant affiliate applies to a mirrored offer', function (): void {
         [$offer, $user] = networkJoinFixtures('join-apply.example');
 
-        $application = OwnerContext::withOwner($user, fn () => app(OfferManagementService::class)
-            ->applyForOffer($offer, (string) $user->getKey(), 'Let me promote.'));
+        $application = OwnerContext::withOwner($user, fn () => app(ApplyToOffer::class)
+            ->execute($offer->id, (string) $user->getKey(), 'Let me promote.'));
 
         expect($application->status)->toBe(ApplicationStatus::Pending)
             ->and($application->affiliate_id)->toBe((string) $user->getKey())
@@ -53,22 +55,22 @@ describe('network identity join', function (): void {
         [$offer, $user] = networkJoinFixtures('join-approve.example');
         $userKey = (string) $user->getKey();
 
-        $application = OwnerContext::withOwner($user, fn () => app(OfferManagementService::class)
-            ->applyForOffer($offer, $userKey));
+        $application = OwnerContext::withOwner($user, fn () => app(ApplyToOffer::class)
+            ->execute($offer->id, $userKey));
 
-        app(OfferManagementService::class)->approveApplication($application);
+        app(ApproveApplication::class)->execute($application);
 
-        $service = app(OfferManagementService::class);
+        $query = app(ApplicationStatusQuery::class);
 
-        expect($service->isApprovedForOffer($offer, $userKey))->toBeTrue()
-            ->and($service->hasAppliedForOffer($offer, $userKey))->toBeTrue()
-            ->and($service->applicationStatusForOffer($offer, $userKey))->toBe('approved');
+        expect($query->isApprovedForOffer($offer->id, $userKey))->toBeTrue()
+            ->and($query->hasAppliedForOffer($offer->id, $userKey))->toBeTrue()
+            ->and($query->applicationStatusForOffer($offer->id, $userKey))->toBe(ApplicationStatus::Approved);
     });
 
     test('unknown ids still cannot apply', function (): void {
         [$offer] = networkJoinFixtures('join-ghost.example');
 
-        expect(fn () => app(OfferManagementService::class)->applyForOffer($offer, (string) Str::uuid()))
+        expect(fn () => app(ApplyToOffer::class)->execute($offer->id, (string) Str::uuid()))
             ->toThrow(ModelNotFoundException::class);
     });
 
@@ -124,7 +126,7 @@ describe('network identity join', function (): void {
         [$offer] = networkJoinFixtures('join-affiliate.example');
         $affiliate = createTestAffiliate();
 
-        $application = app(OfferManagementService::class)->applyForOffer($offer, (string) $affiliate->getKey());
+        $application = app(ApplyToOffer::class)->execute($offer->id, (string) $affiliate->getKey());
 
         expect($application->affiliate_id)->toBe((string) $affiliate->getKey());
     });

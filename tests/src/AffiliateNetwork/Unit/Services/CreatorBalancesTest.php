@@ -2,52 +2,71 @@
 
 declare(strict_types=1);
 
-use AIArmada\AffiliateNetwork\Enums\LegStatus;
-use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
-use AIArmada\AffiliateNetwork\Models\AffiliateSite;
-use AIArmada\AffiliateNetwork\Services\CreatorBalances;
-use AIArmada\AffiliateNetwork\Services\NetworkBooks;
+use AIArmada\AffiliateNetwork\Data\LegStatus;
+use AIArmada\AffiliateNetwork\Features\Ledger\Models\NetworkConversionLeg;
+use AIArmada\AffiliateNetwork\Features\Ledger\Queries\CreatorBalancesQuery;
 
-function balanceLink(string $affiliateId): AffiliateOfferLink
-{
-    $site = AffiliateSite::factory()->verified()->create(['domain' => 'bal-' . uniqid() . '.example']);
-    $offer = AffiliateOffer::factory()->published()->forSite($site)->create([
-        'landing_url' => 'https://bal.example/landing',
-        'requires_approval' => false,
-        'rate_base_bp' => 1000,
-        'rate_fixed_minor' => null,
-        'currency' => 'MYR',
-    ]);
-
-    return AffiliateOfferLink::factory()->forOffer($offer)->forAffiliateId($affiliateId)->create();
-}
-
-describe('CreatorBalances', function (): void {
+describe('CreatorBalancesQuery', function (): void {
     test('balances sum posted payouts per currency', function (): void {
-        $books = app(NetworkBooks::class);
-        $link = balanceLink('bal-aff-1');
+        NetworkConversionLeg::factory()->create([
+            'affiliate_id' => 'bal-aff-1',
+            'status' => LegStatus::Posted,
+            'commission_currency' => 'MYR',
+            'payout_minor' => 1000,
+        ]);
+        NetworkConversionLeg::factory()->create([
+            'affiliate_id' => 'bal-aff-1',
+            'status' => LegStatus::Posted,
+            'commission_currency' => 'MYR',
+            'payout_minor' => 2000,
+        ]);
+        NetworkConversionLeg::factory()->create([
+            'affiliate_id' => 'bal-aff-1',
+            'status' => LegStatus::Posted,
+            'commission_currency' => 'USD',
+            'payout_minor' => 5000,
+        ]);
 
-        $books->post($link, 10000, 'MYR', 'BAL-1');
-        $books->post($link, 20000, 'MYR', 'BAL-2');
-        $books->post($link, 5000, 'USD', 'BAL-3');
+        $balances = app(CreatorBalancesQuery::class)->for('bal-aff-1');
 
-        expect(app(CreatorBalances::class)->for('bal-aff-1'))->toBe(['MYR' => 3000, 'USD' => 0])
-            ->and(app(CreatorBalances::class)->for('bal-nobody'))->toBe([]);
+        expect($balances)->toHaveKey('MYR')
+            ->and($balances['MYR']->payableMinor)->toBe(3000)
+            ->and($balances)->toHaveKey('USD')
+            ->and($balances['USD']->payableMinor)->toBe(5000)
+            ->and(app(CreatorBalancesQuery::class)->for('bal-nobody'))->toBe([]);
     });
 
-    test('non-posted legs never count', function (): void {
-        $books = app(NetworkBooks::class);
-        $link = balanceLink('bal-aff-2');
+    test('only pending and posted legs contribute to balances', function (): void {
+        NetworkConversionLeg::factory()->create([
+            'affiliate_id' => 'bal-aff-2',
+            'status' => LegStatus::Pending,
+            'commission_currency' => 'MYR',
+            'payout_minor' => 700,
+        ]);
+        NetworkConversionLeg::factory()->create([
+            'affiliate_id' => 'bal-aff-2',
+            'status' => LegStatus::Provisional,
+            'commission_currency' => 'MYR',
+            'payout_minor' => 900,
+        ]);
+        NetworkConversionLeg::factory()->create([
+            'affiliate_id' => 'bal-aff-2',
+            'status' => LegStatus::Superseded,
+            'commission_currency' => 'MYR',
+            'payout_minor' => 900,
+        ]);
+        NetworkConversionLeg::factory()->create([
+            'affiliate_id' => 'bal-aff-2',
+            'status' => LegStatus::Posted,
+            'commission_currency' => 'MYR',
+            'payout_minor' => 1000,
+        ]);
 
-        $posted = $books->post($link, 10000, 'MYR', 'BAL-P');
-        $books->post($link, 10000, 'MYR', 'BAL-PROV', LegStatus::Provisional);
-        $loser = $books->post($link, 10000, 'MYR', 'BAL-SUP', LegStatus::Provisional);
-        $books->supersede($loser, 'engine_won');
-        $books->reverse($posted, 'refund');
+        $balance = app(CreatorBalancesQuery::class)->for('bal-aff-2')['MYR'];
 
-        // Reversed original + companion both excluded; provisional and
-        // superseded never counted: no payable balance remains.
-        expect(app(CreatorBalances::class)->for('bal-aff-2'))->toBe([]);
+        expect($balance->pendingMinor)->toBe(700)
+            ->and($balance->payableMinor)->toBe(1000)
+            ->and($balance->paidMinor)->toBe(0)
+            ->and($balance->reversedMinor)->toBe(0);
     });
 });

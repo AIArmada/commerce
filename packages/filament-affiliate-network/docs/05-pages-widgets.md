@@ -7,43 +7,40 @@ title: Pages & Widgets
 ## Pages
 
 The plugin registers exactly one page: `MerchantDashboardPage`. There is no
-marketplace/discovery page in this package.
+marketplace/discovery page. Merchant statements are a **resource**, not a page
+(see [usage](04-usage.md)).
 
 ### MerchantDashboardPage
 
-Analytics dashboard for merchants.
+Owner-scoped analytics for the current merchant. It does not embed the
+network-wide widgets, so its counts cannot mix merchants.
 
-The dashboard is owner-scoped to the current merchant. It does not embed the
-network-wide widgets, so its counts and pending applications cannot mix
-merchants.
+**Features**
 
-**Features:**
-- Stats overview: Sites, Verified Sites, Active Offers, Pending Applications
+- Stats overview: sites, verified sites, active offers, pending applications
 - 5 most recent pending applications
 - Top 5 offers by application count
 
-**Methods:**
+**Public methods**
 
 ```php
-$this->getSitesCount();              // int
-$this->getVerifiedSitesCount();      // int
-$this->getActiveOffersCount();       // int
-$this->getPendingApplicationsCount();// int
-$this->getRecentApplications();      // Collection<AffiliateOfferApplication>
-$this->getTopOffers();               // Collection<AffiliateOffer>
-$this->getStats();                   // Stat[]
+$this->getStats(): array;              // ['sites'=>…, 'verifiedSites'=>…, …]
+$this->getRecentApplications();        // Collection<AffiliateOfferApplication>
+$this->getTopOffers();                 // Collection<AffiliateOffer>
+$this->getSitesCount(): int;
+$this->getVerifiedSitesCount(): int;
+$this->getActiveOffersCount(): int;
+$this->getPendingApplicationsCount(): int;
 ```
 
 **URL:** `/affiliate-network/merchant-dashboard`
 
-Access is gated by `NetworkAdminAccess::allows()` — it reads
+Access is gated by `NetworkAdminAccess::allows()`, which reads
 `filament-affiliate-network.authorization.admin_ability` (default
 `affiliate-network.admin`). `canAccess()` also enforces the panel's own
 authorization.
 
-**Customization:**
-
-Override the view:
+**Customize the view**
 
 ```bash
 php artisan vendor:publish --tag=filament-affiliate-network-views
@@ -55,34 +52,35 @@ Edit `resources/views/vendor/filament-affiliate-network/pages/merchant-dashboard
 
 ## Widgets
 
+Both widgets are network-wide admin reports, gated by
+`NetworkAdminAccess::allows()` and cached for 30 seconds with
+`OwnerCache::remember(null, ...)`. They are `final`.
+
 ### NetworkStatsWidget
 
-Overview statistics for the entire network.
+Six stat cards: Active Sites (verified), Active Offers (live), Pending
+Applications, Total Clicks, Conversion Rate, Total Revenue.
 
-**Metrics:**
-- Active Sites (verified)
-- Active Offers (live)
-- Pending Applications (awaiting review)
-- Total Clicks (network-wide)
-- Conversion Rate (clicks to conversions)
-- Total Revenue (tracked revenue)
+`NetworkStatsAggregator::aggregate()` returns:
 
-**Sort Order:** 1 (appears first on dashboard)
+```php
+[
+    'activeSites', 'activeOffers', 'pendingApplications',
+    'totalClicks', 'totalConversions', 'totalRevenue',
+    'conversionRate', 'revenueFormatted', 'revenueCurrency',
+    'revenueConverted', 'revenueByCurrency',
+]
+```
 
-This is a network-wide admin report gated by
-`NetworkAdminAccess::allows()`. It uses `OwnerCache::remember(null, ...)` for a
-30-second cache.
-
-Total Revenue groups link revenue by link currency. Single-currency networks
-show the raw sum; mixed networks convert to
-`affiliate-network.currency.default`, or show `—` with a "set exchange rates"
-hint when a rate is missing. Configure static rates under
-`commerce-support.currency.exchange_rates`, or bind a custom
+Total Revenue groups link revenue by currency. Single-currency networks show the
+raw sum; mixed networks convert to `affiliate-network.currency.default`, or show
+`—` with a "set exchange rates" hint when a rate is missing. Configure static
+rates under `commerce-support.currency.exchange_rates`, or bind a custom
 `ExchangeRateProvider`.
 
-**Usage:**
+**Sort order:** 1.
 
-Register on your dashboard:
+**Register**
 
 ```php
 namespace App\Filament\Pages;
@@ -94,24 +92,18 @@ class Dashboard extends BaseDashboard
 {
     public function getWidgets(): array
     {
-        return [
-            NetworkStatsWidget::class,
-            // Other widgets...
-        ];
+        return [NetworkStatsWidget::class];
     }
 }
 ```
 
-**Customization:**
-
-`NetworkStatsWidget` is `final` — it cannot be extended. Build your own widget
-instead and reuse the shared aggregator:
+**Custom widget**
 
 ```php
 namespace App\Filament\Widgets;
 
-use AIArmada\FilamentAffiliateNetwork\Support\NetworkStatsAggregator;
 use AIArmada\FilamentAffiliateNetwork\Support\NetworkAdminAccess;
+use AIArmada\FilamentAffiliateNetwork\Support\NetworkStatsAggregator;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -126,43 +118,57 @@ class NetworkStatsWidget extends StatsOverviewWidget
 
     protected function getStats(): array
     {
-        $aggregated = NetworkStatsAggregator::aggregate();
+        $stats = NetworkStatsAggregator::aggregate();
 
         return [
-            Stat::make('Custom', number_format($aggregated['activeSites']))
+            Stat::make('Active sites', number_format($stats['activeSites']))
                 ->icon('heroicon-o-star'),
         ];
     }
 }
 ```
 
----
-
 ### TopOffersWidget
 
-Display top performing offers.
+Top 10 offers by clicks with per-offer conversions and revenue, each formatted in
+the offer's own currency.
 
-This is a network-wide admin leaderboard gated by
-`NetworkAdminAccess::allows()`, with the same `OwnerCache::remember(null, ...)`
-30-second cache policy as `NetworkStatsWidget`. It is `final` — build your own
-widget rather than extending it.
+**Sort order:** 2.
 
-**Sort Order:** 2
+The leaderboard shows the cached top 10 by clicks in that order; metric columns
+are deliberately not sortable (sorting would only reorder the cached set and
+hide the true leaders outside it).
 
-**Features:**
-- Top 10 offers by clicks, with per-offer conversions and revenue
-- Revenue formatted in each offer's own currency
+**Custom**
 
-The leaderboard shows the cached top 10 by clicks in that order. The metric
-columns are deliberately not sortable: sorting would only reorder the cached
-set and hide the true leaders outside it.
+```php
+namespace App\Filament\Widgets;
+
+use AIArmada\FilamentAffiliateNetwork\Support\NetworkAdminAccess;
+use Filament\Widgets\TableWidget;
+use Filament\Tables\Table;
+
+class TopOffersWidget extends TableWidget
+{
+    public static function canView(): bool
+    {
+        return NetworkAdminAccess::allows();
+    }
+
+    public function table(Table $table): Table
+    {
+        return $table->query(
+            \AIarmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer::query()
+                ->where('status', \AIarmada\AffiliateNetwork\Data\OfferStatus::Published)
+                ->limit(10)
+        );
+    }
+}
+```
 
 ---
 
-## Widget Authorization
-
-Both shipped widgets delegate to `NetworkAdminAccess::allows()`. A custom
-widget should do the same so it matches:
+## Widget authorization
 
 ```php
 use AIArmada\FilamentAffiliateNetwork\Support\NetworkAdminAccess;
@@ -179,40 +185,37 @@ class MyWidget extends Widget
 
 ---
 
-## Adding Custom Widgets
-
-Create a new widget:
+## Adding a chart widget
 
 ```php
 namespace App\Filament\Widgets;
 
+use AIArmada\AffiliateNetwork\Features\Attribution\Models\AffiliateOfferLink;
 use Filament\Widgets\ChartWidget;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
 
 class ConversionsChartWidget extends ChartWidget
 {
     protected static ?string $heading = 'Conversions Over Time';
-    
+
     protected function getData(): array
     {
-        $data = AffiliateOfferLink::selectRaw('DATE(created_at) as date, SUM(conversions) as total')
+        $data = AffiliateOfferLink::query()
+            ->selectRaw('DATE(created_at) as date, SUM(conversions) as total')
             ->where('created_at', '>=', now()->subDays(30))
             ->groupBy('date')
             ->orderBy('date')
             ->get();
-            
+
         return [
-            'datasets' => [
-                [
-                    'label' => 'Conversions',
-                    'data' => $data->pluck('total'),
-                    'borderColor' => '#6366f1',
-                ],
-            ],
-            'labels' => $data->pluck('date')->map(fn ($d) => $d->format('M d')),
+            'datasets' => [[
+                'label' => 'Conversions',
+                'data' => $data->pluck('total')->all(),
+                'borderColor' => '#6366f1',
+            ]],
+            'labels' => $data->pluck('date')->map(fn ($date) => $date->format('M d'))->all(),
         ];
     }
-    
+
     protected function getType(): string
     {
         return 'line';
@@ -220,7 +223,7 @@ class ConversionsChartWidget extends ChartWidget
 }
 ```
 
-Register in plugin or panel:
+Register on the panel:
 
 ```php
 $panel->widgets([

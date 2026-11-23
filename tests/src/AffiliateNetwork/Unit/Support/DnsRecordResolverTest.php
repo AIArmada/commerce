@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\AffiliateNetwork\Support\DnsRecordResolver;
+use AIArmada\AffiliateNetwork\Drivers\NativeDnsDriver;
 
 it('handles dns warnings and returns an empty record list', function (): void {
     $warnings = [];
@@ -14,7 +14,7 @@ it('handles dns warnings and returns an empty record list', function (): void {
     });
 
     try {
-        $records = (new DnsRecordResolver)->getRecords('invalid host name', DNS_TXT);
+        $records = (new NativeDnsDriver)->getTxtRecords('invalid host name');
     } finally {
         restore_error_handler();
     }

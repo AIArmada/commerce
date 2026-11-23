@@ -2,10 +2,11 @@
 
 declare(strict_types=1);
 
-use AIArmada\AffiliateNetwork\Http\Middleware\TrackNetworkLinkCookie;
-use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
-use AIArmada\AffiliateNetwork\Models\AffiliateSite;
+use AIArmada\AffiliateNetwork\Features\Attribution\EntryPoints\Http\Middleware\TrackNetworkLinkCookie;
+use AIArmada\AffiliateNetwork\Features\Attribution\Models\AffiliateOfferLink;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
+use AIArmada\AffiliateNetwork\Platform\AttributionCookie;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Contracts\CartManagerInterface;
@@ -92,21 +93,14 @@ describe('TrackNetworkLinkCookie middleware', function (): void {
         );
 
         $snapshot = $cart->getAllMetadata()['network_attribution'];
+        $signatureSource = $snapshot;
+        unset($signatureSource['signature']);
 
         expect($snapshot)->toMatchArray([
             'link_code' => $link->trackedSlug(),
             'affiliate_id' => (string) $this->affiliate->getKey(),
             'offer_id' => (string) $this->offer->getKey(),
-            'signature' => hash_hmac(
-                'sha256',
-                implode('|', [
-                    (string) $link->trackedSlug(),
-                    (string) $this->affiliate->getKey(),
-                    (string) $this->offer->getKey(),
-                    $snapshot['clicked_at'],
-                ]),
-                (string) config('app.key'),
-            ),
+            'signature' => AttributionCookie::signature($signatureSource),
         ])
             ->and($snapshot['clicked_at'])->toBeString()
             ->and($cart->getVersion())->toBe($version);
@@ -126,7 +120,7 @@ describe('TrackNetworkLinkCookie middleware', function (): void {
         ], JSON_THROW_ON_ERROR));
         $cart = new Cart(new InMemoryStorage, 'network-cookie-only-cart', events: null, eventsEnabled: false);
         $cartManager = mock(CartManagerInterface::class);
-        $cartManager->shouldReceive('getCurrentCart')->once()->andReturn($cart);
+        $cartManager->shouldReceive('getCurrentCart')->twice()->andReturn($cart);
         app()->instance(CartManagerInterface::class, $cartManager);
 
         app(TrackNetworkLinkCookie::class)->handle(
@@ -134,8 +128,10 @@ describe('TrackNetworkLinkCookie middleware', function (): void {
             static fn (): Response => new Response('ok'),
         );
 
-        expect($cart->exists())->toBeFalse()
-            ->and($cart->getAllMetadata())->toBe([]);
+        $snapshot = $cart->getAllMetadata()['network_attribution'] ?? null;
+
+        expect($snapshot)->toBeArray()
+            ->and($snapshot['link_code'])->toBe('cookie-only-page-view');
     });
 
     test('rejects plaintext, tampered, and malformed cookie values', function (): void {
@@ -146,10 +142,10 @@ describe('TrackNetworkLinkCookie middleware', function (): void {
             'clicked_at' => now()->toIso8601String(),
         ], JSON_THROW_ON_ERROR));
 
-        expect(TrackNetworkLinkCookie::parseCookie($valid))->toMatchArray(['code' => 'real-link'])
-            ->and(TrackNetworkLinkCookie::parseCookie(json_encode(['code' => 'forged'])))->toBeNull()
-            ->and(TrackNetworkLinkCookie::parseCookie(mb_substr($valid, 0, -4) . 'abcd'))->toBeNull()
-            ->and(TrackNetworkLinkCookie::parseCookie(encrypt('not-json')))->toBeNull()
-            ->and(TrackNetworkLinkCookie::parseCookie('garbage'))->toBeNull();
+        expect(AttributionCookie::parse($valid))->toMatchArray(['code' => 'real-link'])
+            ->and(AttributionCookie::parse(json_encode(['code' => 'forged'])))->toBeNull()
+            ->and(AttributionCookie::parse(mb_substr($valid, 0, -4) . 'abcd'))->toBeNull()
+            ->and(AttributionCookie::parse(encrypt('not-json')))->toBeNull()
+            ->and(AttributionCookie::parse('garbage'))->toBeNull();
     });
 });

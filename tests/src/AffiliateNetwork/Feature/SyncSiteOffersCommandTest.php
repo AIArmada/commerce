@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
-use AIArmada\AffiliateNetwork\Models\AffiliateSite;
+use AIArmada\AffiliateNetwork\Data\SiteSyncStatus;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
@@ -58,7 +59,7 @@ it('syncs a program catalog for a site by domain', function (): void {
     expect($offer)->not->toBeNull()
         ->and($offer->external_program_id)->toBe((string) $program->getKey())
         ->and($offer->subject_key)->toBe('SYNC-A')
-        ->and($site->fresh()->sync_status)->toBe('ok');
+        ->and($site->fresh()->sync_status)->toBe(SiteSyncStatus::Ok);
 });
 
 it('syncs inside the site owner context when owner scoping is enabled', function (): void {
@@ -92,7 +93,7 @@ it('syncs inside the site owner context when owner scoping is enabled', function
 
     expect($offer)->not->toBeNull()
         ->and($offer->external_program_id)->toBe((string) $program->getKey())
-        ->and($siteRow->sync_status)->toBe('ok');
+        ->and($siteRow->sync_status)->toBe(SiteSyncStatus::Ok);
 });
 
 it('fails cleanly for unknown sites', function (): void {

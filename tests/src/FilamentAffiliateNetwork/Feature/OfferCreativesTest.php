@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferCreative;
-use AIArmada\AffiliateNetwork\Models\AffiliateSite;
+use AIArmada\AffiliateNetwork\Data\CreativeType;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOfferCreative;
+use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource;
@@ -48,7 +49,7 @@ test('manual creation uses uploads and imported edits only change operator field
     expect($manual->source_asset_url)->toBeNull()->and($manual->external_creative_id)->toBeNull();
     $imported = $this->offer->creatives()->create(['type' => 'image', 'name' => 'Merchant', 'external_creative_id' => 'hero']);
     $manager->saveCreative(['name' => 'Forged', 'type' => 'text', 'is_active' => false, 'sort_order' => 8], $imported);
-    expect($imported->fresh()->name)->toBe('Merchant')->and($imported->fresh()->type)->toBe('image')
+    expect($imported->fresh()->name)->toBe('Merchant')->and($imported->fresh()->type)->toBe(CreativeType::Image)
         ->and($imported->fresh()->is_active)->toBeFalse()->and($imported->fresh()->sort_order)->toBe(8);
 });
 

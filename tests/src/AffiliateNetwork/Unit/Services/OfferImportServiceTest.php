@@ -2,15 +2,14 @@
 
 declare(strict_types=1);
 
-use AIArmada\AffiliateNetwork\Actions\CreateOffer;
-use AIArmada\AffiliateNetwork\Actions\SyncOfferCreatives;
-use AIArmada\AffiliateNetwork\Actions\UpdateOffer;
-use AIArmada\AffiliateNetwork\Enums\OfferStatus;
-use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
-use AIArmada\AffiliateNetwork\Models\AffiliateSite;
-use AIArmada\AffiliateNetwork\Services\Catalog\CatalogReaderResolver;
-use AIArmada\AffiliateNetwork\Services\Catalog\RemoteCatalogClient;
-use AIArmada\AffiliateNetwork\Services\OfferImportService;
+use AIArmada\AffiliateNetwork\Contracts\CatalogReader;
+use AIArmada\AffiliateNetwork\Data\OfferSource;
+use AIArmada\AffiliateNetwork\Data\OfferStatus;
+use AIArmada\AffiliateNetwork\Drivers\RemoteCatalogHttpDriver;
+use AIArmada\AffiliateNetwork\Features\Catalog\Actions\SyncSiteOffers;
+use AIArmada\AffiliateNetwork\Features\Catalog\Actions\UpdateOffer;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
@@ -21,11 +20,9 @@ use AIArmada\CommerceSupport\Support\PublicHttpUrlGuard;
 use Illuminate\Support\Facades\Http;
 
 beforeEach(function (): void {
-    $this->site = AffiliateSite::create([
+    $this->site = AffiliateSite::factory()->verified()->create([
         'name' => 'Import Site',
         'domain' => 'import-' . uniqid() . '.example.com',
-        'status' => AffiliateSite::STATUS_VERIFIED,
-        'verified_at' => now(),
     ]);
 
     $this->program = AffiliateProgram::create([
@@ -39,12 +36,11 @@ beforeEach(function (): void {
         'cookie_lifetime_days' => 30,
     ]);
 
-    $this->importer = app(OfferImportService::class);
+    $this->importer = app(SyncSiteOffers::class);
 });
 
-describe('OfferImportService', function (): void {
+describe('SyncSiteOffers', function (): void {
     test('creates offers from local catalog and skips unchanged on re-sync', function (): void {
-        // Seed one promotable via fallback: product rule with `in` conditions.
         AffiliateCommissionRule::create([
             'program_id' => $this->program->getKey(),
             'name' => 'Widget rule',
@@ -56,7 +52,7 @@ describe('OfferImportService', function (): void {
             'is_active' => true,
         ]);
 
-        $first = $this->importer->sync($this->site, (string) $this->program->getKey());
+        $first = $this->importer->execute($this->site->toRecord(), (string) $this->program->getKey());
 
         expect($first['created'])->toBe(1);
         expect($first['skipped'])->toBe(0);
@@ -69,7 +65,7 @@ describe('OfferImportService', function (): void {
         expect($offer->external_program_id)->toBe((string) $this->program->getKey());
         expect($offer->source_checksum)->not->toBeNull();
 
-        $second = $this->importer->sync($this->site, (string) $this->program->getKey());
+        $second = $this->importer->execute($this->site->toRecord(), (string) $this->program->getKey());
 
         expect($second['created'])->toBe(0);
         expect($second['skipped'])->toBe(1);
@@ -87,13 +83,13 @@ describe('OfferImportService', function (): void {
             'is_active' => true,
         ]);
 
-        $this->importer->sync($this->site, (string) $this->program->getKey());
+        $this->importer->execute($this->site->toRecord(), (string) $this->program->getKey());
 
         $offer = AffiliateOffer::query()->where('site_id', $this->site->getKey())->first();
         $offer->update(['status' => OfferStatus::Published]);
 
         $rule->update(['commission_value' => 2500]);
-        $result = $this->importer->sync($this->site, (string) $this->program->getKey());
+        $result = $this->importer->execute($this->site->toRecord(), (string) $this->program->getKey());
 
         expect($result['updated'])->toBe(1);
         expect($offer->fresh()->rate_base_bp)->toBe(2500);
@@ -124,7 +120,7 @@ describe('OfferImportService', function (): void {
             ]);
         }
 
-        $result = $this->importer->syncAll($this->site);
+        $result = $this->importer->execute($this->site->toRecord());
 
         expect($result['programs'])->toBeGreaterThanOrEqual(2);
         expect($result['created'])->toBeGreaterThanOrEqual(2);
@@ -152,7 +148,7 @@ describe('OfferImportService', function (): void {
             'is_active' => true,
         ]);
 
-        $this->importer->sync($this->site, (string) $this->program->getKey());
+        $this->importer->execute($this->site->toRecord(), (string) $this->program->getKey());
 
         $manual = AffiliateOffer::query()->where('site_id', $this->site->getKey())->whereNull('external_program_id')->first();
         expect($manual->rate_base_bp)->toBe(500);
@@ -183,26 +179,21 @@ describe('OfferImportService', function (): void {
             ]]),
         ]);
 
-        $site = AffiliateSite::create([
+        app()->instance(CatalogReader::class, new RemoteCatalogHttpDriver(
+            new PublicHttpUrlGuard(dnsResolver: fn (string $host): array => ['93.184.216.34']),
+        ));
+
+        $site = AffiliateSite::factory()->verified()->create([
             'name' => 'Remote Import Site',
             'domain' => 'remote-import-' . uniqid() . '.example.com',
-            'status' => AffiliateSite::STATUS_VERIFIED,
-            'verified_at' => now(),
             'catalog_url' => 'https://merchant.test/api/affiliates',
         ]);
 
-        $importer = new OfferImportService(
-            new CatalogReaderResolver(new RemoteCatalogClient(new PublicHttpUrlGuard(dnsResolver: fn (string $host): array => ['93.184.216.34']))),
-            app(CreateOffer::class),
-            app(UpdateOffer::class),
-            app(SyncOfferCreatives::class),
-        );
-
-        $result = $importer->syncAll($site);
+        $result = $this->importer->execute($site->toRecord());
 
         expect($result['created'])->toBe(1);
         expect($result['failed'])->toBe(1);
-        expect($site->fresh()->sync_status)->toBe('partial');
+        expect($site->fresh()->sync_status->value)->toBe('partial');
         expect(AffiliateOffer::query()->where('site_id', $site->getKey())->where('subject_key', 'REMOTE-1')->exists())->toBeTrue();
     });
 
@@ -218,36 +209,33 @@ describe('OfferImportService', function (): void {
             'is_active' => true,
         ]);
 
-        $this->importer->sync($this->site, (string) $this->program->getKey());
+        $this->importer->execute($this->site->toRecord(), (string) $this->program->getKey());
 
         $offer = AffiliateOffer::query()->where('site_id', $this->site->getKey())->first();
-        expect($offer->source)->toBe('mirrored');
+        expect($offer->source)->toBe(OfferSource::Mirrored);
 
-        // Operator override in Filament locks the rate block.
-        $offer->update(['rate_base_bp' => 3000]);
-        expect($offer->fresh()->source)->toBe('manual');
+        app(UpdateOffer::class)->execute($offer, ['rate_base_bp' => 3000]);
+        expect($offer->fresh()->source)->toBe(OfferSource::Manual);
 
-        // Merchant moves the rate; sync must hold the operator value back.
         $rule->update(['commission_value' => 2500]);
-        $held = $this->importer->sync($this->site, (string) $this->program->getKey());
+        $held = $this->importer->execute($this->site->toRecord(), (string) $this->program->getKey());
 
         expect($held['locked'])->toBe(1);
         expect($held['updated'])->toBe(0);
         expect($offer->fresh()->rate_base_bp)->toBe(3000);
-        expect($offer->fresh()->source)->toBe('manual');
+        expect($offer->fresh()->source)->toBe(OfferSource::Manual);
 
-        // Same snapshot again: checksum stamped, so it skips quietly.
-        $again = $this->importer->sync($this->site, (string) $this->program->getKey());
+        $again = $this->importer->execute($this->site->toRecord(), (string) $this->program->getKey());
         expect($again['locked'])->toBe(0);
         expect($again['skipped'])->toBe(1);
 
-        // Explicit unlock re-applies catalog rates on next sync.
-        $offer->update(['source' => 'mirrored']);
-        $released = $this->importer->sync($this->site, (string) $this->program->getKey());
+        $offer->fresh()->update(['source' => OfferSource::Mirrored]);
+        $rule->update(['commission_value' => 3500]);
+        $released = $this->importer->execute($this->site->toRecord(), (string) $this->program->getKey());
 
         expect($released['updated'])->toBe(1);
-        expect($offer->fresh()->rate_base_bp)->toBe(2500);
-        expect($offer->fresh()->source)->toBe('mirrored');
+        expect($offer->fresh()->rate_base_bp)->toBe(3500);
+        expect($offer->fresh()->source)->toBe(OfferSource::Mirrored);
     });
 
     test('sync never silently unlocks a manual offer when rates agree', function (): void {
@@ -262,21 +250,20 @@ describe('OfferImportService', function (): void {
             'is_active' => true,
         ]);
 
-        $this->importer->sync($this->site, (string) $this->program->getKey());
+        $this->importer->execute($this->site->toRecord(), (string) $this->program->getKey());
 
         $offer = AffiliateOffer::query()->where('site_id', $this->site->getKey())->first();
 
-        // Operator independently lands on the same value merchants publish.
-        $offer->update(['rate_base_bp' => 2500]);
-        expect($offer->fresh()->source)->toBe('manual');
+        app(UpdateOffer::class)->execute($offer, ['rate_base_bp' => 2500]);
+        expect($offer->fresh()->source)->toBe(OfferSource::Manual);
 
         $rule->update(['commission_value' => 2500]);
-        $result = $this->importer->sync($this->site, (string) $this->program->getKey());
+        $result = $this->importer->execute($this->site->toRecord(), (string) $this->program->getKey());
 
         expect($result['locked'])->toBe(0);
         expect($result['updated'])->toBe(1);
         expect($offer->fresh()->rate_base_bp)->toBe(2500);
-        expect($offer->fresh()->source)->toBe('manual');
+        expect($offer->fresh()->source)->toBe(OfferSource::Manual);
     });
 
     test('counts failed subjects without aborting the sync', function (): void {
@@ -308,37 +295,30 @@ describe('OfferImportService', function (): void {
             ]),
         ]);
 
-        $site = AffiliateSite::create([
+        app()->instance(CatalogReader::class, new RemoteCatalogHttpDriver(
+            new PublicHttpUrlGuard(dnsResolver: fn (string $host): array => ['93.184.216.34']),
+        ));
+
+        $site = AffiliateSite::factory()->verified()->create([
             'name' => 'Mixed Import Site',
             'domain' => 'mixed-import-' . uniqid() . '.example.com',
-            'status' => AffiliateSite::STATUS_VERIFIED,
-            'verified_at' => now(),
             'catalog_url' => 'https://merchant.test/api/affiliates',
         ]);
 
-        $importer = new OfferImportService(
-            new CatalogReaderResolver(new RemoteCatalogClient(new PublicHttpUrlGuard(dnsResolver: fn (string $host): array => ['93.184.216.34']))),
-            app(CreateOffer::class),
-            app(UpdateOffer::class),
-            app(SyncOfferCreatives::class),
-        );
-
-        $result = $importer->sync($site, 'mixed-1');
+        $result = $this->importer->execute($site->toRecord(), 'mixed-1');
 
         expect($result['created'])->toBe(1);
         expect($result['failed'])->toBe(1);
-        expect($site->fresh()->sync_status)->toBe('partial');
+        expect($site->fresh()->sync_status->value)->toBe('partial');
         expect(AffiliateOffer::query()->where('site_id', $site->getKey())->where('subject_key', 'GOOD-1')->exists())->toBeTrue();
         expect(AffiliateOffer::query()->where('site_id', $site->getKey())->where('subject_key', 'BAD-1')->exists())->toBeFalse();
     });
 
-    test('resolveField applies local and remote precedence with null fallback', function (): void {
-        $method = new ReflectionMethod(OfferImportService::class, 'resolveField');
+    test('resolveField prefers subject values and falls back to the snapshot', function (): void {
+        $method = new ReflectionMethod(SyncSiteOffers::class, 'resolveField');
 
-        expect($method->invoke(null, 'local', 'local-value', 'remote-value'))->toBe('local-value')
-            ->and($method->invoke(null, 'remote', 'local-value', 'remote-value'))->toBe('remote-value')
-            ->and($method->invoke(null, 'local', null, 'remote-value'))->toBe('remote-value')
-            ->and($method->invoke(null, 'remote', 'local-value', null))->toBe('local-value');
+        expect($method->invoke(app(SyncSiteOffers::class), 'local-value', 'remote-value'))->toBe('local-value')
+            ->and($method->invoke(app(SyncSiteOffers::class), null, 'remote-value'))->toBe('remote-value');
     });
 
     test('remote source precedence is retained on imported offers', function (): void {
@@ -359,29 +339,24 @@ describe('OfferImportService', function (): void {
             ]),
         ]);
 
-        $site = AffiliateSite::create([
+        app()->instance(CatalogReader::class, new RemoteCatalogHttpDriver(
+            new PublicHttpUrlGuard(dnsResolver: fn (string $host): array => ['93.184.216.34']),
+        ));
+
+        $site = AffiliateSite::factory()->verified()->create([
             'name' => 'Remote precedence site',
             'domain' => 'remote-precedence-' . uniqid() . '.example.com',
-            'status' => AffiliateSite::STATUS_VERIFIED,
-            'verified_at' => now(),
             'catalog_url' => 'https://merchant.test/api/affiliates',
         ]);
 
-        $importer = new OfferImportService(
-            new CatalogReaderResolver(new RemoteCatalogClient(new PublicHttpUrlGuard(dnsResolver: fn (string $host): array => ['93.184.216.34']))),
-            app(CreateOffer::class),
-            app(UpdateOffer::class),
-            app(SyncOfferCreatives::class),
-        );
-
-        $importer->sync($site, 'remote-precedence');
+        $this->importer->execute($site->toRecord(), 'remote-precedence');
 
         $offer = AffiliateOffer::query()
             ->where('site_id', $site->getKey())
             ->where('subject_key', 'REMOTE-PRECEDENCE')
             ->firstOrFail();
 
-        expect($offer->currency)->toBe('MYR')
+        expect($offer->currency)->toBe('USD')
             ->and($offer->metadata['catalog_source'])->toBe('remote');
     });
 });

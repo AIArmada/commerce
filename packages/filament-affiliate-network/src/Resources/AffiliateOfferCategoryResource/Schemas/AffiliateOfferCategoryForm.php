@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferCategoryResource\Schemas;
 
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferCategory;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOfferCategory;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
 use Filament\Forms\Components\Select;
@@ -26,10 +26,6 @@ final class AffiliateOfferCategoryForm
             ->components([
                 Section::make('Category Details')
                     ->schema([
-                        // Admin form: cross-tenant — relationship select searches server-side
-                        // (no unbounded preload) with explicit global scope bypass. The
-                        // current record is excluded from its own parent options; deeper
-                        // cycle protection is enforced server-side on save.
                         Select::make('parent_id')
                             ->label('Parent Category')
                             ->relationship('parent', 'name', modifyQueryUsing: fn (Builder $query): Builder => $query

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferApplicationResource\Schemas;
 
-use AIArmada\AffiliateNetwork\Enums\ApplicationStatus;
+use AIArmada\AffiliateNetwork\Data\ApplicationStatus;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -27,7 +27,7 @@ final class AffiliateOfferApplicationInfolist
                         TextEntry::make('status')
                             ->label('Status')
                             ->badge()
-                            ->color(fn (ApplicationStatus $state): string => $state->color()),
+                            ->color(fn (ApplicationStatus | string $state): string => $state instanceof ApplicationStatus ? $state->color() : (ApplicationStatus::tryFrom((string) $state)?->color() ?? 'gray')),
 
                         TextEntry::make('reason')
                             ->label('Application Reason')

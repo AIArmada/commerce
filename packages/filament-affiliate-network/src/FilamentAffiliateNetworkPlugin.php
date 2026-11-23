@@ -9,6 +9,7 @@ use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferApplicationResourc
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferCategoryResource;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource;
+use AIArmada\FilamentAffiliateNetwork\Resources\MerchantStatementResource;
 use AIArmada\FilamentAffiliateNetwork\Widgets\NetworkStatsWidget;
 use AIArmada\FilamentAffiliateNetwork\Widgets\TopOffersWidget;
 use Filament\Contracts\Plugin;
@@ -42,6 +43,7 @@ final class FilamentAffiliateNetworkPlugin implements Plugin
                 AffiliateOfferResource::class,
                 AffiliateOfferCategoryResource::class,
                 AffiliateOfferApplicationResource::class,
+                MerchantStatementResource::class,
             ])
             ->pages([
                 MerchantDashboardPage::class,

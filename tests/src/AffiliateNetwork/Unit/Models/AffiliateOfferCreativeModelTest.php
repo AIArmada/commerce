@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferCreative;
-use AIArmada\AffiliateNetwork\Models\AffiliateSite;
+use AIArmada\AffiliateNetwork\Data\CreativeType;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOfferCreative;
+use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use Illuminate\Support\Facades\Schema;
 
 describe('AffiliateOfferCreative Model', function (): void {
@@ -36,7 +37,7 @@ describe('AffiliateOfferCreative Model', function (): void {
         test('creates banner creative', function (): void {
             $creative = AffiliateOfferCreative::factory()->banner(300, 250)->forOffer($this->offer)->create();
 
-            expect($creative->type)->toBe(AffiliateOfferCreative::TYPE_BANNER);
+            expect($creative->type)->toBe(CreativeType::Banner);
             expect($creative->width)->toBe(300);
             expect($creative->height)->toBe(250);
         });
@@ -44,7 +45,7 @@ describe('AffiliateOfferCreative Model', function (): void {
         test('creates text creative', function (): void {
             $creative = AffiliateOfferCreative::factory()->text()->forOffer($this->offer)->create();
 
-            expect($creative->type)->toBe(AffiliateOfferCreative::TYPE_TEXT);
+            expect($creative->type)->toBe(CreativeType::Text);
             expect($creative->width)->toBeNull();
             expect($creative->height)->toBeNull();
         });
@@ -52,21 +53,21 @@ describe('AffiliateOfferCreative Model', function (): void {
         test('creates email creative', function (): void {
             $creative = AffiliateOfferCreative::factory()->email()->forOffer($this->offer)->create();
 
-            expect($creative->type)->toBe(AffiliateOfferCreative::TYPE_EMAIL);
+            expect($creative->type)->toBe(CreativeType::Email);
             expect($creative->html_code)->not->toBeNull();
         });
 
         test('creates html creative', function (): void {
             $creative = AffiliateOfferCreative::factory()->html()->forOffer($this->offer)->create();
 
-            expect($creative->type)->toBe(AffiliateOfferCreative::TYPE_HTML);
+            expect($creative->type)->toBe(CreativeType::Html);
             expect($creative->html_code)->not->toBeNull();
         });
 
         test('creates video creative', function (): void {
             $creative = AffiliateOfferCreative::factory()->video()->forOffer($this->offer)->create();
 
-            expect($creative->type)->toBe(AffiliateOfferCreative::TYPE_VIDEO);
+            expect($creative->type)->toBe(CreativeType::Video);
             expect($creative->width)->toBe(1920);
             expect($creative->height)->toBe(1080);
         });
@@ -111,4 +112,12 @@ test('network creative files have no generic URL column or mass assignment path'
     expect(Schema::hasColumn($creative->getTable(), 'url'))->toBeFalse()
         ->and($creative->getFillable())->not->toContain('url')
         ->and(Schema::hasColumn($creative->getTable(), 'source_asset_url'))->toBeTrue();
+});
+
+test('svg creative assets are rejected by the media collection', function (): void {
+    $creative = new AffiliateOfferCreative;
+    $collection = $creative->getMediaCollection('creative_asset');
+
+    expect($collection)->not->toBeNull()
+        ->and($collection->acceptsMimeTypes)->not->toContain('image/svg+xml');
 });

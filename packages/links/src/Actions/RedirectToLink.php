@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Links\Actions;
 
+use AIArmada\Links\Contracts\FallbackRedirectGateInterface;
+use AIArmada\Links\Contracts\LinkGateInterface;
 use AIArmada\Links\Events\LinkBlocked;
 use AIArmada\Links\Events\LinkClickLimitReached;
 use AIArmada\Links\Events\LinkExpired;
@@ -41,6 +43,16 @@ final class RedirectToLink
 
         if ($reason !== null) {
             $this->fireBlockedEvent($link, $reason);
+
+            $gate = app(LinkGateInterface::class);
+
+            if ($gate instanceof FallbackRedirectGateInterface) {
+                $fallback = $gate->fallbackUrl($link, $reason);
+
+                if (is_string($fallback) && $fallback !== '') {
+                    return redirect()->to($fallback, (int) config('links.defaults.redirect_status', 302));
+                }
+            }
 
             abort(410, 'Link is no longer available.');
         }
@@ -103,6 +115,16 @@ final class RedirectToLink
             $incoming = $request->query($key);
 
             if (is_string($incoming) && $incoming !== '') {
+                $query[$key] = $incoming;
+            }
+        }
+
+        // Dynamic sub IDs let one link carry per-affiliate tracking through to
+        // the merchant; explicit link parameters below still win.
+        foreach (['sub1', 'sub2', 'sub3'] as $key) {
+            $incoming = $request->query($key);
+
+            if (is_string($incoming) && $incoming !== '' && mb_strlen($incoming) <= 255) {
                 $query[$key] = $incoming;
             }
         }

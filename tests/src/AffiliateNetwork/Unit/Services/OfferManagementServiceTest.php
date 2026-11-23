@@ -2,25 +2,40 @@
 
 declare(strict_types=1);
 
-use AIArmada\AffiliateNetwork\Enums\ApplicationStatus;
-use AIArmada\AffiliateNetwork\Enums\OfferStatus;
-use AIArmada\AffiliateNetwork\Enums\OfferVisibility;
-use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
-use AIArmada\AffiliateNetwork\Models\AffiliateSite;
-use AIArmada\AffiliateNetwork\Services\OfferManagementService;
+use AIArmada\AffiliateNetwork\Data\ApplicationStatus;
+use AIArmada\AffiliateNetwork\Data\OfferStatus;
+use AIArmada\AffiliateNetwork\Data\OfferVisibility;
+use AIArmada\AffiliateNetwork\Features\Catalog\Actions\CreateOffer;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Features\Catalog\Queries\ResolvePublicOfferQuery;
+use AIArmada\AffiliateNetwork\Features\Enrollment\Actions\ApplyToOffer;
+use AIArmada\AffiliateNetwork\Features\Enrollment\Actions\RejectApplication;
+use AIArmada\AffiliateNetwork\Features\Enrollment\Actions\RevokeApplication;
+use AIArmada\AffiliateNetwork\Features\Enrollment\Models\AffiliateOfferApplication;
+use AIArmada\AffiliateNetwork\Features\Enrollment\Queries\ApplicationStatusQuery;
+use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Str;
 
-describe('OfferManagementService', function (): void {
+function approvedOffersFor(string $affiliateId, int $limit = 500): Collection
+{
+    $ids = app(ApplicationStatusQuery::class)->approvedOfferIds($affiliateId, $limit);
+
+    return AffiliateOffer::query()
+        ->whereIn('id', $ids)
+        ->where('status', OfferStatus::Published)
+        ->get();
+}
+
+describe('offer management actions', function (): void {
     beforeEach(function (): void {
-        $this->service = app(OfferManagementService::class);
         $this->site = AffiliateSite::factory()->verified()->create();
     });
 
     describe('createOffer', function (): void {
         test('creates offer with required data', function (): void {
-            $offer = $this->service->createOffer($this->site, [
+            $offer = app(CreateOffer::class)->execute($this->site->toRecord(), [
                 'name' => 'Test Offer',
             ]);
 
@@ -31,7 +46,7 @@ describe('OfferManagementService', function (): void {
         });
 
         test('creates offer with custom slug', function (): void {
-            $offer = $this->service->createOffer($this->site, [
+            $offer = app(CreateOffer::class)->execute($this->site->toRecord(), [
                 'name' => 'Test Offer',
                 'slug' => 'custom-slug',
             ]);
@@ -40,7 +55,7 @@ describe('OfferManagementService', function (): void {
         });
 
         test('creates offer as draft by default', function (): void {
-            $offer = $this->service->createOffer($this->site, [
+            $offer = app(CreateOffer::class)->execute($this->site->toRecord(), [
                 'name' => 'Test Offer',
             ]);
 
@@ -48,7 +63,7 @@ describe('OfferManagementService', function (): void {
         });
 
         test('creates offer with explicit status', function (): void {
-            $offer = $this->service->createOffer($this->site, [
+            $offer = app(CreateOffer::class)->execute($this->site->toRecord(), [
                 'name' => 'Test Offer',
                 'status' => OfferStatus::Draft,
             ]);
@@ -57,7 +72,7 @@ describe('OfferManagementService', function (): void {
         });
 
         test('creates offer with all optional fields', function (): void {
-            $offer = $this->service->createOffer($this->site, [
+            $offer = app(CreateOffer::class)->execute($this->site->toRecord(), [
                 'name' => 'Full Offer',
                 'description' => 'A detailed description',
                 'terms' => 'Terms and conditions',
@@ -82,7 +97,7 @@ describe('OfferManagementService', function (): void {
         });
 
         test('stamps volume tiers with the offer currency by default', function (): void {
-            $offer = $this->service->createOffer($this->site, [
+            $offer = app(CreateOffer::class)->execute($this->site->toRecord(), [
                 'name' => 'Tiered Offer',
                 'currency' => 'myr',
                 'volume_tiers' => [
@@ -102,10 +117,10 @@ describe('OfferManagementService', function (): void {
         test('rejects application with reason', function (): void {
             $application = AffiliateOfferApplication::factory()->pending()->create();
 
-            $rejected = $this->service->rejectApplication(
+            $rejected = app(RejectApplication::class)->execute(
                 $application,
                 'Does not meet requirements',
-                'admin@example.com'
+                'admin@example.com',
             );
 
             expect($rejected->status)->toBe(ApplicationStatus::Rejected);
@@ -119,7 +134,7 @@ describe('OfferManagementService', function (): void {
 
             $application->delete();
 
-            $this->service->rejectApplication($application, 'Does not meet requirements', 'admin@example.com');
+            app(RejectApplication::class)->execute($application, 'Does not meet requirements', 'admin@example.com');
         })->throws(ModelNotFoundException::class);
     });
 
@@ -127,10 +142,10 @@ describe('OfferManagementService', function (): void {
         test('revokes approved application', function (): void {
             $application = AffiliateOfferApplication::factory()->approved()->create();
 
-            $revoked = $this->service->revokeApplication(
+            $revoked = app(RevokeApplication::class)->execute(
                 $application,
                 'Violated terms',
-                'admin@example.com'
+                'admin@example.com',
             );
 
             expect($revoked->status)->toBe(ApplicationStatus::Revoked);
@@ -142,11 +157,11 @@ describe('OfferManagementService', function (): void {
 
             $application->delete();
 
-            $this->service->revokeApplication($application, 'Violated terms', 'admin@example.com');
+            app(RevokeApplication::class)->execute($application, 'Violated terms', 'admin@example.com');
         })->throws(ModelNotFoundException::class);
     });
 
-    describe('isApprovedForOffer', function (): void {
+    describe('application status', function (): void {
         test('returns true when approved', function (): void {
             $offer = AffiliateOffer::factory()->published()->forSite($this->site)->create();
             $affiliate = createTestAffiliate();
@@ -157,7 +172,7 @@ describe('OfferManagementService', function (): void {
                 ->approved()
                 ->create();
 
-            $result = $this->service->isApprovedForOffer($offer, (string) $affiliate->getKey());
+            $result = app(ApplicationStatusQuery::class)->isApprovedForOffer($offer->id, (string) $affiliate->getKey());
 
             expect($result)->toBeTrue();
         });
@@ -172,7 +187,7 @@ describe('OfferManagementService', function (): void {
                 ->pending()
                 ->create();
 
-            $result = $this->service->isApprovedForOffer($offer, (string) $affiliate->getKey());
+            $result = app(ApplicationStatusQuery::class)->isApprovedForOffer($offer->id, (string) $affiliate->getKey());
 
             expect($result)->toBeFalse();
         });
@@ -181,7 +196,7 @@ describe('OfferManagementService', function (): void {
             $offer = AffiliateOffer::factory()->published()->forSite($this->site)->create();
             $affiliate = createTestAffiliate();
 
-            $result = $this->service->isApprovedForOffer($offer, (string) $affiliate->getKey());
+            $result = app(ApplicationStatusQuery::class)->isApprovedForOffer($offer->id, (string) $affiliate->getKey());
 
             expect($result)->toBeFalse();
         });
@@ -193,7 +208,7 @@ describe('OfferManagementService', function (): void {
 
             $activeOffer = AffiliateOffer::factory()->published()->forSite($this->site)->create();
             $pausedOffer = AffiliateOffer::factory()->archived()->forSite($this->site)->create();
-            $notApplied = AffiliateOffer::factory()->published()->forSite($this->site)->create();
+            AffiliateOffer::factory()->published()->forSite($this->site)->create();
 
             AffiliateOfferApplication::factory()
                 ->forOffer($activeOffer)
@@ -207,7 +222,7 @@ describe('OfferManagementService', function (): void {
                 ->approved()
                 ->create();
 
-            $offers = $this->service->getApprovedOffers((string) $affiliate->getKey());
+            $offers = approvedOffersFor((string) $affiliate->getKey());
 
             expect($offers)->toHaveCount(1);
             expect($offers->first()->id)->toBe($activeOffer->id);
@@ -226,8 +241,8 @@ describe('OfferManagementService', function (): void {
                     ->create();
             }
 
-            expect($this->service->getApprovedOffers((string) $affiliate->getKey(), 2))->toHaveCount(2)
-                ->and($this->service->getApprovedOffers((string) $affiliate->getKey()))->toHaveCount(3);
+            expect(approvedOffersFor((string) $affiliate->getKey(), 2))->toHaveCount(2)
+                ->and(approvedOffersFor((string) $affiliate->getKey()))->toHaveCount(3);
         });
 
         test('includes published mirrored offers with approved network applications', function (): void {
@@ -243,7 +258,7 @@ describe('OfferManagementService', function (): void {
                 ->approved()
                 ->create();
 
-            $offers = $this->service->getApprovedOffers((string) $affiliate->getKey());
+            $offers = approvedOffersFor((string) $affiliate->getKey());
 
             expect($offers->pluck('id')->all())->toContain((string) $linked->getKey());
         });
@@ -261,7 +276,7 @@ describe('OfferManagementService', function (): void {
                 ->pending()
                 ->create();
 
-            expect($this->service->getApprovedOffers((string) $affiliate->getKey()))->toHaveCount(0);
+            expect(approvedOffersFor((string) $affiliate->getKey()))->toHaveCount(0);
         });
 
         test('includes mirrored offers whose program vanished when the application is approved', function (): void {
@@ -277,7 +292,7 @@ describe('OfferManagementService', function (): void {
                 ->approved()
                 ->create();
 
-            $offers = $this->service->getApprovedOffers((string) $affiliate->getKey());
+            $offers = approvedOffersFor((string) $affiliate->getKey());
 
             expect($offers->pluck('id')->all())->toContain((string) $orphaned->getKey());
         });
@@ -290,7 +305,7 @@ describe('OfferManagementService', function (): void {
                 'metadata' => ['catalog_source' => 'remote'],
             ]);
 
-            expect($this->service->getApprovedOffers((string) $affiliate->getKey()))->toHaveCount(0);
+            expect(approvedOffersFor((string) $affiliate->getKey()))->toHaveCount(0);
         });
     });
 
@@ -300,9 +315,9 @@ describe('OfferManagementService', function (): void {
                 'visibility' => OfferVisibility::Public,
             ]);
 
-            $resolved = $this->service->resolvePublicOfferOrFail($offer->id);
+            $resolved = app(ResolvePublicOfferQuery::class)->find($offer->id);
 
-            expect($resolved->id)->toBe($offer->id);
+            expect($resolved?->id)->toBe($offer->id);
         });
 
         test('fails for non public offer', function (): void {
@@ -310,8 +325,8 @@ describe('OfferManagementService', function (): void {
                 'visibility' => OfferVisibility::Private,
             ]);
 
-            $this->service->resolvePublicOfferOrFail($offer->id);
-        })->throws(ModelNotFoundException::class);
+            expect(app(ResolvePublicOfferQuery::class)->find($offer->id))->toBeNull();
+        });
 
         test('fails for non active offer', function (): void {
             $offer = AffiliateOffer::factory()->forSite($this->site)->create([
@@ -319,29 +334,28 @@ describe('OfferManagementService', function (): void {
                 'visibility' => OfferVisibility::Public,
             ]);
 
-            $this->service->resolvePublicOfferOrFail($offer->id);
-        })->throws(ModelNotFoundException::class);
+            expect(app(ResolvePublicOfferQuery::class)->find($offer->id))->toBeNull();
+        });
     });
 
     describe('applicationStatusForOffer', function (): void {
-        test('returns the status string for an existing network application', function (): void {
+        test('returns the status enum for an existing network application', function (): void {
             $offer = AffiliateOffer::factory()->published()->forSite($this->site)->create();
             $offer->update(['requires_approval' => false]);
             $affiliate = createTestAffiliate();
 
-            $this->service->applyForOffer($offer, (string) $affiliate->getKey());
+            app(ApplyToOffer::class)->execute($offer->id, (string) $affiliate->getKey());
 
-            $status = $this->service->applicationStatusForOffer($offer, (string) $affiliate->getKey());
+            $status = app(ApplicationStatusQuery::class)->applicationStatusForOffer($offer->id, (string) $affiliate->getKey());
 
-            expect($status)->toBeString();
-            expect($status)->toBe(ApplicationStatus::Approved->value);
+            expect($status)->toBe(ApplicationStatus::Approved);
         });
 
         test('returns null when no application exists', function (): void {
             $offer = AffiliateOffer::factory()->published()->forSite($this->site)->create();
             $affiliate = createTestAffiliate();
 
-            expect($this->service->applicationStatusForOffer($offer, (string) $affiliate->getKey()))->toBeNull();
+            expect(app(ApplicationStatusQuery::class)->applicationStatusForOffer($offer->id, (string) $affiliate->getKey()))->toBeNull();
         });
     });
 });

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliateNetwork\Actions;
 
-use AIArmada\AffiliateNetwork\Actions\SyncSiteOffers;
-use AIArmada\AffiliateNetwork\Models\AffiliateSite;
+use AIArmada\AffiliateNetwork\Features\Catalog\Actions\SyncSiteOffers;
+use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 
@@ -19,7 +19,7 @@ final class SyncSiteCatalog
             ->color('info')
             ->requiresConfirmation()
             ->action(function (AffiliateSite $record): array {
-                $result = app(SyncSiteOffers::class)->execute($record);
+                $result = app(SyncSiteOffers::class)->execute($record->toRecord());
 
                 Notification::make()
                     ->title('Catalog sync complete')

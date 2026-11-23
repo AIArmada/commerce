@@ -4,10 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliateNetwork;
 
-use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferCategory;
-use AIArmada\AffiliateNetwork\Models\AffiliateSite;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOfferCategory;
+use AIArmada\AffiliateNetwork\Features\Enrollment\Models\AffiliateOfferApplication;
+use AIArmada\AffiliateNetwork\Features\Ledger\Models\MerchantStatement;
+use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
+use AIArmada\FilamentAffiliateNetwork\Policies\AffiliateOfferApplicationPolicy;
+use AIArmada\FilamentAffiliateNetwork\Policies\AffiliateOfferCategoryPolicy;
+use AIArmada\FilamentAffiliateNetwork\Policies\AffiliateOfferPolicy;
+use AIArmada\FilamentAffiliateNetwork\Policies\AffiliateSitePolicy;
+use AIArmada\FilamentAffiliateNetwork\Policies\MerchantStatementPolicy;
 use Illuminate\Support\Facades\Gate;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -29,9 +35,10 @@ final class FilamentAffiliateNetworkServiceProvider extends PackageServiceProvid
 
     public function packageBooted(): void
     {
-        Gate::policy(AffiliateSite::class, Policies\AffiliateSitePolicy::class);
-        Gate::policy(AffiliateOfferCategory::class, Policies\AffiliateOfferCategoryPolicy::class);
-        Gate::policy(AffiliateOffer::class, Policies\AffiliateOfferPolicy::class);
-        Gate::policy(AffiliateOfferApplication::class, Policies\AffiliateOfferApplicationPolicy::class);
+        Gate::policy(AffiliateSite::class, AffiliateSitePolicy::class);
+        Gate::policy(AffiliateOfferCategory::class, AffiliateOfferCategoryPolicy::class);
+        Gate::policy(AffiliateOffer::class, AffiliateOfferPolicy::class);
+        Gate::policy(AffiliateOfferApplication::class, AffiliateOfferApplicationPolicy::class);
+        Gate::policy(MerchantStatement::class, MerchantStatementPolicy::class);
     }
 }

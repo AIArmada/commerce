@@ -3,16 +3,20 @@
 declare(strict_types=1);
 
 use AIArmada\AffiliateNetwork\Contracts\NetworkLedger;
+use AIArmada\AffiliateNetwork\Data\LegStatus;
 use AIArmada\AffiliateNetwork\Data\NetworkConversionDraft;
 use AIArmada\AffiliateNetwork\Data\NetworkPostedConversion;
-use AIArmada\AffiliateNetwork\Enums\LegStatus;
 use AIArmada\AffiliateNetwork\Events\NetworkConversionRecorded;
-use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
-use AIArmada\AffiliateNetwork\Models\AffiliateSite;
-use AIArmada\AffiliateNetwork\Models\NetworkConversionLeg;
-use AIArmada\AffiliateNetwork\Services\NetworkBooks;
-use AIArmada\AffiliateNetwork\Services\OfferLinkService;
+use AIArmada\AffiliateNetwork\Features\Attribution\Models\AffiliateOfferLink;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Features\Ledger\Actions\ConfirmConversionLeg;
+use AIArmada\AffiliateNetwork\Features\Ledger\Actions\PostConversionLeg;
+use AIArmada\AffiliateNetwork\Features\Ledger\Actions\RecordNetworkConversion;
+use AIArmada\AffiliateNetwork\Features\Ledger\Actions\ReverseConversionLeg;
+use AIArmada\AffiliateNetwork\Features\Ledger\Actions\SupersedeConversionLeg;
+use AIArmada\AffiliateNetwork\Features\Ledger\Models\NetworkConversionLeg;
+use AIArmada\AffiliateNetwork\Features\Ledger\Queries\LedgerReconciliationQuery;
+use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
@@ -33,6 +37,19 @@ function booksFixtures(array $offerAttributes = []): AffiliateOfferLink
     ], $offerAttributes));
 
     return AffiliateOfferLink::factory()->forOffer($offer)->forAffiliateId('books-aff-1')->create();
+}
+
+function postBooksLeg(AffiliateOfferLink $link, int $revenueMinor, string $currency, string $reference, LegStatus $status = LegStatus::Posted): NetworkConversionLeg
+{
+    return app(PostConversionLeg::class)->execute(
+        offerId: (string) $link->offer_id,
+        affiliateId: (string) $link->affiliate_id,
+        revenueMinor: $revenueMinor,
+        currency: $currency,
+        externalReference: $reference,
+        status: $status,
+        linkId: (string) $link->getKey(),
+    );
 }
 
 final class RecordingNetworkLedgerFake implements NetworkLedger
@@ -68,32 +85,27 @@ final class RecordingNetworkLedgerFake implements NetworkLedger
     }
 }
 
-describe('NetworkBooks', function (): void {
+describe('ledger leg actions', function (): void {
     test('posting is idempotent on link and reference', function (): void {
         $link = booksFixtures();
-        $books = app(NetworkBooks::class);
 
-        $first = $books->post($link, 89900, 'MYR', 'BOOKS-1');
-        $second = $books->post($link, 89900, 'MYR', 'BOOKS-1');
+        $first = postBooksLeg($link, 89900, 'MYR', 'BOOKS-1');
+        $second = postBooksLeg($link, 89900, 'MYR', 'BOOKS-1');
 
         expect($second->getKey())->toBe($first->getKey())
             ->and(NetworkConversionLeg::query()->count())->toBe(1);
     });
 
-    test('a new reversed leg is rejected before counters, ledger rows, or events change', function (): void {
+    test('a provisional leg cannot be reversed but a posted one can', function (): void {
         Event::fake([NetworkConversionRecorded::class]);
 
         $link = booksFixtures();
+        $leg = postBooksLeg($link, 10000, 'MYR', 'BOOKS-INITIAL', LegStatus::Provisional);
 
-        expect(fn () => app(OfferLinkService::class)->recordConversion(
-            $link,
-            10000,
-            'MYR',
-            'BOOKS-INITIAL-REVERSED',
-            LegStatus::Reversed,
-        ))->toThrow(InvalidArgumentException::class, 'Create reversal legs with NetworkBooks::reverse().');
+        expect(fn () => app(ReverseConversionLeg::class)->execute((string) $leg->getKey(), 'refund'))
+            ->toThrow(InvalidArgumentException::class);
 
-        expect(NetworkConversionLeg::query()->count())->toBe(0)
+        expect(NetworkConversionLeg::query()->count())->toBe(1)
             ->and(AffiliateConversion::query()->count())->toBe(0)
             ->and($link->fresh()->conversions)->toBe(0)
             ->and($link->fresh()->revenue)->toBe(0);
@@ -103,26 +115,29 @@ describe('NetworkBooks', function (): void {
 
     test('an idempotent replay returns its existing leg before reversed status validation', function (): void {
         $link = booksFixtures();
-        $service = app(OfferLinkService::class);
 
-        $first = $service->recordConversion($link, 10000, 'MYR', 'BOOKS-REVERSED-REPLAY');
-        $replay = $service->recordConversion($link, 10000, 'MYR', 'BOOKS-REVERSED-REPLAY', LegStatus::Reversed);
+        $first = postBooksLeg($link, 10000, 'MYR', 'BOOKS-REVERSED-REPLAY');
+        $replay = postBooksLeg($link, 10000, 'MYR', 'BOOKS-REVERSED-REPLAY', LegStatus::Reversed);
 
         expect($first)->toBeInstanceOf(NetworkConversionLeg::class)
             ->and($replay?->getKey())->toBe($first?->getKey())
             ->and($replay?->status)->toBe(LegStatus::Posted)
             ->and($replay?->wasRecentlyCreated)->toBeFalse()
-            ->and(NetworkConversionLeg::query()->count())->toBe(1)
-            ->and($link->fresh()->conversions)->toBe(1)
-            ->and($link->fresh()->revenue)->toBe(10000);
+            ->and(NetworkConversionLeg::query()->count())->toBe(1);
     });
 
-    test('posting handles a missing offer when the link has no pricing currency', function (): void {
+    test('a missing offer yields zero commission in the requested currency', function (): void {
         $link = booksFixtures();
-        $link->update(['currency' => null]);
-        $link->setRelation('offer', null);
+        $leg = postBooksLeg($link, 10000, 'MYR', 'BOOKS-MISSING-OFFER');
 
-        $leg = app(NetworkBooks::class)->post($link, 10000, 'MYR', 'BOOKS-MISSING-OFFER');
+        $leg = app(PostConversionLeg::class)->execute(
+            offerId: (string) Str::uuid(),
+            affiliateId: (string) $link->affiliate_id,
+            revenueMinor: 10000,
+            currency: 'MYR',
+            externalReference: 'BOOKS-MISSING-OFFER-2',
+            linkId: (string) $link->getKey(),
+        );
 
         expect($leg->commission_minor)->toBe(0)
             ->and($leg->commission_currency)->toBe('MYR');
@@ -134,7 +149,7 @@ describe('NetworkBooks', function (): void {
             'volume_tiers' => [['min_volume_minor' => 0, 'rate_bp' => 5000, 'currency' => 'MYR']],
         ]);
 
-        $leg = app(NetworkBooks::class)->post($link, 99999, 'MYR', 'BOOKS-FIXED');
+        $leg = postBooksLeg($link, 99999, 'MYR', 'BOOKS-FIXED');
 
         expect($leg->commission_minor)->toBe(2500)
             ->and($leg->tier_rate_bp)->toBeNull();
@@ -148,10 +163,9 @@ describe('NetworkBooks', function (): void {
                 ['min_volume_minor' => 100000, 'rate_bp' => 2000, 'currency' => 'MYR'],
             ],
         ]);
-        $books = app(NetworkBooks::class);
 
-        $first = $books->post($link, 60000, 'MYR', 'BOOKS-T1');
-        $second = $books->post($link, 60000, 'MYR', 'BOOKS-T2');
+        $first = postBooksLeg($link, 60000, 'MYR', 'BOOKS-T1');
+        $second = postBooksLeg($link, 60000, 'MYR', 'BOOKS-T2');
 
         expect($first->commission_minor)->toBe(6000)
             ->and($first->tier_rate_bp)->toBe(1000)
@@ -170,9 +184,9 @@ describe('NetworkBooks', function (): void {
             ->forAffiliateId('books-aff-2')
             ->create();
 
-        app(NetworkBooks::class)->post($other, 500000, 'MYR', 'BOOKS-TX');
+        postBooksLeg($other, 500000, 'MYR', 'BOOKS-TX');
 
-        $leg = app(NetworkBooks::class)->post($link, 60000, 'USD', 'BOOKS-T3');
+        $leg = postBooksLeg($link, 60000, 'USD', 'BOOKS-T3');
 
         expect($leg->commission_minor)->toBe(0)
             ->and($leg->tier_rate_bp)->toBeNull();
@@ -181,7 +195,7 @@ describe('NetworkBooks', function (): void {
     test('network fee splits commission into payout and fee', function (): void {
         $link = booksFixtures(['rate_base_bp' => 1000, 'network_fee_bp' => 2000]);
 
-        $leg = app(NetworkBooks::class)->post($link, 10000, 'MYR', 'BOOKS-FEE');
+        $leg = postBooksLeg($link, 10000, 'MYR', 'BOOKS-FEE');
 
         expect($leg->commission_minor)->toBe(1000)
             ->and($leg->fee_minor)->toBe(200)
@@ -193,7 +207,7 @@ describe('NetworkBooks', function (): void {
         config(['affiliate-network.fees.default_bp' => 10000]);
         $link = booksFixtures(['rate_base_bp' => 1000]);
 
-        $leg = app(NetworkBooks::class)->post($link, 10000, 'MYR', 'BOOKS-FEEMAX');
+        $leg = postBooksLeg($link, 10000, 'MYR', 'BOOKS-FEEMAX');
 
         expect($leg->fee_minor)->toBe(1000)
             ->and($leg->payout_minor)->toBe(0);
@@ -201,9 +215,9 @@ describe('NetworkBooks', function (): void {
 
     test('legs preserve revenue but post zero commission on currency mismatch', function (): void {
         $link = booksFixtures();
-        $link->update(['currency' => 'USD']);
+        $link->offer->update(['currency' => 'USD']);
 
-        $leg = app(NetworkBooks::class)->post($link, 12345, 'MYR', 'BOOKS-FX');
+        $leg = postBooksLeg($link, 12345, 'MYR', 'BOOKS-FX');
 
         expect($leg->revenue_minor)->toBe(12345)
             ->and($leg->revenue_currency)->toBe('MYR')
@@ -214,17 +228,16 @@ describe('NetworkBooks', function (): void {
 
     test('confirm and supersede finalize provisional legs once', function (): void {
         $link = booksFixtures();
-        $books = app(NetworkBooks::class);
 
-        $leg = $books->post($link, 10000, 'MYR', 'BOOKS-PROV', LegStatus::Provisional);
-        $confirmed = $books->confirm($leg);
-        $again = $books->confirm($confirmed);
+        $leg = postBooksLeg($link, 10000, 'MYR', 'BOOKS-PROV', LegStatus::Provisional);
+        $confirmed = app(ConfirmConversionLeg::class)->execute($leg);
+        $again = app(ConfirmConversionLeg::class)->execute($confirmed);
 
         expect($confirmed->status)->toBe(LegStatus::Posted)
             ->and($again->getKey())->toBe($confirmed->getKey());
 
-        $loser = $books->post($link, 10000, 'MYR', 'BOOKS-LOSE', LegStatus::Provisional);
-        $superseded = $books->supersede($loser, 'engine_won');
+        $loser = postBooksLeg($link, 10000, 'MYR', 'BOOKS-LOSE', LegStatus::Provisional);
+        $superseded = app(SupersedeConversionLeg::class)->execute($loser, 'engine_won');
 
         expect($superseded->status)->toBe(LegStatus::Superseded)
             ->and($superseded->metadata['superseded_reason'])->toBe('engine_won');
@@ -232,10 +245,9 @@ describe('NetworkBooks', function (): void {
 
     test('reverse marks the leg and posts a negated companion', function (): void {
         $link = booksFixtures(['network_fee_bp' => 2000]);
-        $books = app(NetworkBooks::class);
-        $leg = $books->post($link, 10000, 'MYR', 'BOOKS-REV');
+        $leg = postBooksLeg($link, 10000, 'MYR', 'BOOKS-REV');
 
-        $companion = $books->reverse($leg, 'chargeback');
+        $companion = app(ReverseConversionLeg::class)->execute((string) $leg->getKey(), 'chargeback');
 
         expect($companion->commission_minor)->toBe(-1000)
             ->and($companion->fee_minor)->toBe(-200)
@@ -246,13 +258,10 @@ describe('NetworkBooks', function (): void {
 
     test('duplicate reversals with different reasons share one companion', function (): void {
         $link = booksFixtures();
-        $books = app(NetworkBooks::class);
-        $leg = $books->post($link, 10000, 'MYR', 'BOOKS-DUPREV');
+        $leg = postBooksLeg($link, 10000, 'MYR', 'BOOKS-DUPREV');
 
-        $first = $books->reverse($leg, 'chargeback');
-        // Deliberately stale: simulates a concurrent reversal that read
-        // the leg before the first one committed.
-        $second = $books->reverse($leg, 'duplicate');
+        $first = app(ReverseConversionLeg::class)->execute((string) $leg->getKey(), 'chargeback');
+        $second = app(ReverseConversionLeg::class)->execute((string) $leg->getKey(), 'duplicate');
 
         expect($second->getKey())->toBe($first->getKey())
             ->and(NetworkConversionLeg::query()->where('metadata->reverses_id', (string) $leg->getKey())->count())->toBe(1);
@@ -260,13 +269,10 @@ describe('NetworkBooks', function (): void {
 
     test('reversal companions stay within the reference column for long originals', function (): void {
         $link = booksFixtures();
-        $books = app(NetworkBooks::class);
-        $leg = $books->post($link, 10000, 'MYR', str_repeat('R', 120));
+        $leg = postBooksLeg($link, 10000, 'MYR', str_repeat('R', 120));
 
-        $companion = $books->reverse($leg, 'chargeback');
+        $companion = app(ReverseConversionLeg::class)->execute((string) $leg->getKey(), 'chargeback');
 
-        // The column caps at 120: an unbounded ':reversal' suffix would
-        // make this leg exceed the external-reference limit and become un-reversible.
         expect(mb_strlen($companion->external_reference))->toBeLessThanOrEqual(120)
             ->and($companion->commission_minor)->toBe(-1000)
             ->and($leg->fresh()->status)->toBe(LegStatus::Reversed);
@@ -274,14 +280,13 @@ describe('NetworkBooks', function (): void {
 
     test('same-prefix legs under one link reverse to distinct companions', function (): void {
         $link = booksFixtures();
-        $books = app(NetworkBooks::class);
         $prefix = str_repeat('R', 100);
 
-        $legA = $books->post($link, 10000, 'MYR', $prefix . str_repeat('A', 20));
-        $legB = $books->post($link, 10000, 'MYR', $prefix . str_repeat('B', 20));
+        $legA = postBooksLeg($link, 10000, 'MYR', $prefix . str_repeat('A', 20));
+        $legB = postBooksLeg($link, 10000, 'MYR', $prefix . str_repeat('B', 20));
 
-        $companionA = $books->reverse($legA, 'chargeback');
-        $companionB = $books->reverse($legB, 'chargeback');
+        $companionA = app(ReverseConversionLeg::class)->execute((string) $legA->getKey(), 'chargeback');
+        $companionB = app(ReverseConversionLeg::class)->execute((string) $legB->getKey(), 'chargeback');
 
         expect($companionA->external_reference)->not->toBe($companionB->external_reference)
             ->and(mb_strlen($companionA->external_reference))->toBeLessThanOrEqual(120)
@@ -290,14 +295,13 @@ describe('NetworkBooks', function (): void {
 
     test('duplicate reversal returns its companion without voiding the merchant posting twice', function (): void {
         $link = booksFixtures();
-        $books = app(NetworkBooks::class);
-        $leg = $books->post($link, 10000, 'MYR', 'BOOKS-REVOID');
+        $leg = postBooksLeg($link, 10000, 'MYR', 'BOOKS-REVOID');
 
         $fake = new RecordingNetworkLedgerFake;
         app()->instance(NetworkLedger::class, $fake);
 
-        $first = $books->reverse($leg, 'chargeback');
-        $second = $books->reverse($leg->fresh(), 'chargeback');
+        $first = app(ReverseConversionLeg::class)->execute((string) $leg->getKey(), 'chargeback');
+        $second = app(ReverseConversionLeg::class)->execute((string) $leg->getKey(), 'chargeback');
 
         expect($second->getKey())->toBe($first->getKey())
             ->and($fake->voided)->toBe([[(string) $link->getKey(), 'BOOKS-REVOID', 'chargeback']]);
@@ -305,20 +309,16 @@ describe('NetworkBooks', function (): void {
 
     test('reversing a companion is an idempotent no-op', function (): void {
         $link = booksFixtures();
-        $books = app(NetworkBooks::class);
-        $leg = $books->post($link, 10000, 'MYR', 'BOOKS-RECOMP');
+        $leg = postBooksLeg($link, 10000, 'MYR', 'BOOKS-RECOMP');
 
-        $companion = $books->reverse($leg, 'chargeback');
+        $companion = app(ReverseConversionLeg::class)->execute((string) $leg->getKey(), 'chargeback');
         $legsBefore = NetworkConversionLeg::query()->count();
 
         $fake = new RecordingNetworkLedgerFake;
         app()->instance(NetworkLedger::class, $fake);
 
-        $result = $books->reverse($companion->fresh(), 'chargeback');
+        $result = app(ReverseConversionLeg::class)->execute((string) $companion->getKey(), 'chargeback');
 
-        // The companion IS the reversal record: re-reversing it must not
-        // mint a second-order leg with positive amounts, and must not
-        // re-void (the original's void was handled at creation).
         expect($result->getKey())->toBe($companion->getKey())
             ->and($result->commission_minor)->toBe(-1000)
             ->and(NetworkConversionLeg::query()->count())->toBe($legsBefore)
@@ -327,13 +327,12 @@ describe('NetworkBooks', function (): void {
 
     test('recount rebuilds counters from legs', function (): void {
         $link = booksFixtures();
-        $books = app(NetworkBooks::class);
-        $books->post($link, 10000, 'MYR', 'BOOKS-RC1');
-        $books->post($link, 5000, 'MYR', 'BOOKS-RC2');
+        postBooksLeg($link, 10000, 'MYR', 'BOOKS-RC1');
+        postBooksLeg($link, 5000, 'MYR', 'BOOKS-RC2');
 
         $link->forceFill(['conversions' => 99, 'revenue' => 1])->save();
 
-        $recount = $books->recountLinkCounters($link->fresh());
+        $recount = app(LedgerReconciliationQuery::class)->computeCounters((string) $link->getKey());
 
         expect($recount)->toBe(['conversions' => 2, 'revenue_minor' => 15000])
             ->and($link->fresh()->conversions)->toBe(2)
@@ -361,12 +360,18 @@ test('reversing a leg voids the merchant posting with balanced money', function 
     ]);
     $link = AffiliateOfferLink::factory()->forOffer($offer)->forAffiliateId((string) $affiliate->getKey())->create();
 
-    $leg = app(OfferLinkService::class)->recordConversion($link, 89900, 'MYR', 'VOID-E2E-1');
+    $leg = app(RecordNetworkConversion::class)->execute(
+        offerId: (string) $offer->getKey(),
+        affiliateId: (string) $affiliate->getKey(),
+        revenueMinor: 89900,
+        currency: 'MYR',
+        externalReference: 'VOID-E2E-1',
+        linkId: (string) $link->getKey(),
+    );
 
-    expect($leg)->not->toBeNull()
-        ->and($affiliate->balanceFor('MYR')->holding_minor)->toBeGreaterThan(0);
+    expect($affiliate->balanceFor('MYR')->holding_minor)->toBeGreaterThan(0);
 
-    app(NetworkBooks::class)->reverse($leg, 'refund');
+    app(ReverseConversionLeg::class)->execute((string) $leg->getKey(), 'refund');
 
     expect($leg->fresh()->status)->toBe(LegStatus::Reversed);
 

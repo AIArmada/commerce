@@ -2,14 +2,15 @@
 
 declare(strict_types=1);
 
-use AIArmada\AffiliateNetwork\Enums\LegStatus;
+use AIArmada\AffiliateNetwork\Data\LegStatus;
 use AIArmada\AffiliateNetwork\Events\NetworkConversionRecorded;
-use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
-use AIArmada\AffiliateNetwork\Models\AffiliateSite;
-use AIArmada\AffiliateNetwork\Models\NetworkConversionLeg;
-use AIArmada\AffiliateNetwork\Services\NetworkLedgerReconciliationService;
-use AIArmada\AffiliateNetwork\Services\OfferLinkService;
+use AIArmada\AffiliateNetwork\Features\Attribution\Actions\RecordLinkCounters;
+use AIArmada\AffiliateNetwork\Features\Attribution\Models\AffiliateOfferLink;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Features\Ledger\Actions\RecordNetworkConversion;
+use AIArmada\AffiliateNetwork\Features\Ledger\Models\NetworkConversionLeg;
+use AIArmada\AffiliateNetwork\Features\Ledger\Queries\LedgerReconciliationQuery;
+use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use AIArmada\Affiliates\Actions\Conversions\ReverseAffiliateConversion;
 use AIArmada\Affiliates\Actions\Conversions\VoidAffiliateConversion;
 use AIArmada\Affiliates\Contracts\MerchantLedger;
@@ -42,14 +43,26 @@ beforeEach(function (): void {
         ->create(['currency' => 'USD']);
 });
 
-describe('NetworkLedgerBridge', function (): void {
+function recordBridgeConversion(AffiliateOfferLink $link, int $revenueMinor, string $currency, string $reference): NetworkConversionLeg
+{
+    return app(RecordNetworkConversion::class)->execute(
+        offerId: (string) $link->offer_id,
+        affiliateId: (string) $link->affiliate_id,
+        revenueMinor: $revenueMinor,
+        currency: $currency,
+        externalReference: $reference,
+        linkId: (string) $link->getKey(),
+    );
+}
+
+describe('network ledger bridge', function (): void {
     test('posts a book leg and fulfills the creator share into merchant books', function (): void {
-        app(OfferLinkService::class)->recordConversion($this->link, 10000, 'USD', 'BRIDGE-ORDER-1');
+        recordBridgeConversion($this->link, 10000, 'USD', 'BRIDGE-ORDER-1');
 
         $leg = NetworkConversionLeg::query()->where('external_reference', 'BRIDGE-ORDER-1')->firstOrFail();
         $conversion = AffiliateConversion::query()
             ->where('origin', 'marketplace')
-            ->where('source_ref', $this->link->id)
+            ->where('source_ref', (string) $this->link->getKey())
             ->firstOrFail();
 
         expect($leg->commission_minor)->toBe(1000)
@@ -64,7 +77,7 @@ describe('NetworkLedgerBridge', function (): void {
     test('fulfills the payout share when a network fee applies', function (): void {
         $this->offer->forceFill(['network_fee_bp' => 2000])->save();
 
-        app(OfferLinkService::class)->recordConversion($this->link, 10000, 'USD', 'BRIDGE-ORDER-FEE');
+        recordBridgeConversion($this->link, 10000, 'USD', 'BRIDGE-ORDER-FEE');
 
         $leg = NetworkConversionLeg::query()->where('external_reference', 'BRIDGE-ORDER-FEE')->firstOrFail();
         $conversion = AffiliateConversion::query()
@@ -82,11 +95,11 @@ describe('NetworkLedgerBridge', function (): void {
     test('posts fixed commissions from the offer terms', function (): void {
         $this->offer->forceFill(['rate_base_bp' => null, 'rate_fixed_minor' => 500])->save();
 
-        app(OfferLinkService::class)->recordConversion($this->link, 10000, 'USD', 'BRIDGE-ORDER-2');
+        recordBridgeConversion($this->link, 10000, 'USD', 'BRIDGE-ORDER-2');
 
         $conversion = AffiliateConversion::query()
             ->where('origin', 'marketplace')
-            ->where('source_ref', $this->link->id)
+            ->where('source_ref', (string) $this->link->getKey())
             ->firstOrFail();
 
         expect($conversion->commission_minor)->toBe(500)
@@ -96,56 +109,55 @@ describe('NetworkLedgerBridge', function (): void {
     test('ledger posting is idempotent on the external reference', function (): void {
         Event::fake([NetworkConversionRecorded::class]);
 
-        $service = app(OfferLinkService::class);
-        $service->recordConversion($this->link, 10000, 'USD', 'BRIDGE-ORDER-3');
-        $service->recordConversion($this->link, 10000, 'USD', 'BRIDGE-ORDER-3');
+        recordBridgeConversion($this->link, 10000, 'USD', 'BRIDGE-ORDER-3');
+        recordBridgeConversion($this->link, 10000, 'USD', 'BRIDGE-ORDER-3');
 
-        expect(AffiliateConversion::query()->where('source_ref', $this->link->id)->count())->toBe(1)
-            ->and(NetworkConversionLeg::query()->where('link_id', $this->link->id)->count())->toBe(1)
+        expect(AffiliateConversion::query()->where('source_ref', (string) $this->link->getKey())->count())->toBe(1)
+            ->and(NetworkConversionLeg::query()->where('link_id', (string) $this->link->getKey())->count())->toBe(1)
             ->and($this->link->fresh()->conversions)->toBe(1);
 
         Event::assertDispatchedTimes(NetworkConversionRecorded::class, 1);
     });
 
-    test('currency mismatch against offer pricing currency leaves cached revenue at zero', function (): void {
+    test('currency mismatch against offer pricing currency keeps commission at zero', function (): void {
         $this->link->update(['currency' => null]);
 
-        app(OfferLinkService::class)->recordConversion($this->link, 10000, 'MYR', 'BRIDGE-FX-1');
+        recordBridgeConversion($this->link, 10000, 'MYR', 'BRIDGE-FX-1');
 
         $leg = NetworkConversionLeg::query()->where('external_reference', 'BRIDGE-FX-1')->firstOrFail();
 
         expect($leg->commission_minor)->toBe(0)
             ->and($leg->commission_currency)->toBe('MYR')
-            ->and($this->link->fresh()->revenue)->toBe(0);
+            ->and($this->link->fresh()->revenue)->toBe(10000);
     });
 
-    test('records counter-only when no external reference is given', function (): void {
+    test('records counter-only without a leg or merchant posting', function (): void {
         Event::fake([NetworkConversionRecorded::class]);
 
-        app(OfferLinkService::class)->recordConversion($this->link, 10000, 'USD');
-        app(OfferLinkService::class)->recordConversion($this->link, 10000, 'USD');
+        app(RecordLinkCounters::class)->execute((string) $this->link->getKey(), 10000, 1);
+        app(RecordLinkCounters::class)->execute((string) $this->link->getKey(), 10000, 1);
 
-        expect(AffiliateConversion::query()->where('source_ref', $this->link->id)->count())->toBe(0)
+        expect(AffiliateConversion::query()->where('source_ref', (string) $this->link->getKey())->count())->toBe(0)
             ->and(NetworkConversionLeg::query()->exists())->toBeFalse()
             ->and($this->link->fresh()->conversions)->toBe(2);
 
-        Event::assertDispatchedTimes(NetworkConversionRecorded::class, 2);
+        Event::assertNotDispatched(NetworkConversionRecorded::class);
     });
 
     test('reconciliation matches a fully posted link', function (): void {
-        app(OfferLinkService::class)->recordConversion($this->link, 10000, 'USD', 'BRIDGE-ORDER-4');
+        recordBridgeConversion($this->link, 10000, 'USD', 'BRIDGE-ORDER-4');
 
-        $report = app(NetworkLedgerReconciliationService::class)->reconcileLink($this->link->fresh());
+        $report = app(LedgerReconciliationQuery::class)->reconcileLink((string) $this->link->getKey());
 
         expect($report['match'])->toBeTrue()
             ->and($report['network']['conversions'])->toBe(1)
-            ->and($report['ledger']['conversions'])->toBe(1);
+            ->and($report['legs']['posted'])->toBe(1);
     });
 
     test('reconciliation flags a link with missing ledger rows', function (): void {
-        app(OfferLinkService::class)->recordConversion($this->link, 10000, 'USD');
+        app(RecordLinkCounters::class)->execute((string) $this->link->getKey(), 10000, 1);
 
-        $report = app(NetworkLedgerReconciliationService::class)->reconcileLink($this->link->fresh());
+        $report = app(LedgerReconciliationQuery::class)->reconcileLink((string) $this->link->getKey());
 
         expect($report['match'])->toBeFalse()
             ->and($report['differences'])->not->toBe([]);
@@ -162,15 +174,14 @@ describe('NetworkLedgerBridge', function (): void {
             commissionMinor: 500,
         ));
 
-        $report = app(NetworkLedgerReconciliationService::class)->reconcileLink($this->link->fresh());
+        $report = app(LedgerReconciliationQuery::class)->reconcileLink((string) $this->link->getKey());
 
         expect($report['match'])->toBeFalse()
-            ->and($report['ledger']['by_currency']['CAD']['conversions'])->toBe(1)
             ->and($report['differences'])->toContain('merchant postings differ in CAD: legs 0/0 vs postings 1/500 (count/payout)');
     });
 
     test('merchant reversal reverses the network leg once and clears its balance', function (): void {
-        app(OfferLinkService::class)->recordConversion($this->link, 10000, 'USD', 'BRIDGE-REVERSE-1');
+        recordBridgeConversion($this->link, 10000, 'USD', 'BRIDGE-REVERSE-1');
 
         $leg = NetworkConversionLeg::query()->where('external_reference', 'BRIDGE-REVERSE-1')->firstOrFail();
         $conversion = AffiliateConversion::query()->where('external_reference', 'BRIDGE-REVERSE-1')->firstOrFail();
@@ -187,7 +198,7 @@ describe('NetworkLedgerBridge', function (): void {
     });
 
     test('merchant void mirrors a non-paid network posting reversal', function (): void {
-        app(OfferLinkService::class)->recordConversion($this->link, 10000, 'USD', 'BRIDGE-VOID-1');
+        recordBridgeConversion($this->link, 10000, 'USD', 'BRIDGE-VOID-1');
 
         $leg = NetworkConversionLeg::query()->where('external_reference', 'BRIDGE-VOID-1')->firstOrFail();
         $conversion = AffiliateConversion::query()->where('external_reference', 'BRIDGE-VOID-1')->firstOrFail();

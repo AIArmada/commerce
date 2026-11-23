@@ -2,24 +2,24 @@
 
 declare(strict_types=1);
 
-use AIArmada\AffiliateNetwork\Actions\ApplyToOffer;
-use AIArmada\AffiliateNetwork\Actions\ApproveApplication;
-use AIArmada\AffiliateNetwork\Actions\CreateOffer;
-use AIArmada\AffiliateNetwork\Actions\RegisterSite;
-use AIArmada\AffiliateNetwork\Actions\SubmitOffer;
-use AIArmada\AffiliateNetwork\Actions\UpdateOffer;
-use AIArmada\AffiliateNetwork\Enums\OfferStatus;
-use AIArmada\AffiliateNetwork\Http\Controllers\ReportNetworkConversionController;
-use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
-use AIArmada\AffiliateNetwork\Models\AffiliateSite;
-use AIArmada\AffiliateNetwork\Services\OfferLinkService;
-use AIArmada\AffiliateNetwork\Services\OfferManagementService;
+use AIArmada\AffiliateNetwork\Data\OfferStatus;
+use AIArmada\AffiliateNetwork\Data\SiteStatus;
+use AIArmada\AffiliateNetwork\Features\Attribution\Actions\CreateOfferLink;
+use AIArmada\AffiliateNetwork\Features\Attribution\Models\AffiliateOfferLink;
+use AIArmada\AffiliateNetwork\Features\Catalog\Actions\CreateOffer;
+use AIArmada\AffiliateNetwork\Features\Catalog\Actions\SubmitOffer;
+use AIArmada\AffiliateNetwork\Features\Catalog\Actions\UpdateOffer;
+use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Features\Catalog\Queries\ResolvePublicOfferQuery;
+use AIArmada\AffiliateNetwork\Features\Enrollment\Actions\ApplyToOffer;
+use AIArmada\AffiliateNetwork\Features\Enrollment\Actions\ApproveApplication;
+use AIArmada\AffiliateNetwork\Features\Enrollment\Models\AffiliateOfferApplication;
+use AIArmada\AffiliateNetwork\Features\Ledger\EntryPoints\Http\Controllers\ReportNetworkConversionController;
+use AIArmada\AffiliateNetwork\Features\Sites\Actions\RegisterSite;
+use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
@@ -50,7 +50,7 @@ describe('Merchant portal self-service', function (): void {
             'description' => 'A fine store.',
         ]);
 
-        expect($site->status)->toBe(AffiliateSite::STATUS_PENDING)
+        expect($site->status)->toBe(SiteStatus::Pending)
             ->and($site->domain)->toBe('merchant-example.com')
             ->and($site->owner_type)->toBe($owner->getMorphClass())
             ->and((string) $site->owner_id)->toBe((string) $owner->getKey())
@@ -75,7 +75,7 @@ describe('Merchant portal self-service', function (): void {
     test('verified sites submit offers as drafts', function (): void {
         $site = AffiliateSite::factory()->verified()->create();
 
-        $offer = app(SubmitOffer::class)->execute($site, [
+        $offer = app(SubmitOffer::class)->execute($site->toRecord(), [
             'name' => 'Merchant Deal',
             'rate_base_bp' => 1500,
         ]);
@@ -87,7 +87,7 @@ describe('Merchant portal self-service', function (): void {
     test('pending sites cannot submit offers', function (): void {
         $site = AffiliateSite::factory()->pending()->create();
 
-        expect(fn () => app(SubmitOffer::class)->execute($site, ['name' => 'Nope']))
+        expect(fn () => app(SubmitOffer::class)->execute($site->toRecord(), ['name' => 'Nope']))
             ->toThrow(AuthorizationException::class);
     });
 
@@ -95,12 +95,12 @@ describe('Merchant portal self-service', function (): void {
         $pending = AffiliateSite::factory()->pending()->create();
         $verified = AffiliateSite::factory()->verified()->create();
 
-        expect(fn () => app(CreateOffer::class)->execute($pending, [
+        expect(fn () => app(CreateOffer::class)->execute($pending->toRecord(), [
             'name' => 'Sneaky',
             'status' => OfferStatus::Published,
         ]))->toThrow(ValidationException::class);
 
-        $draft = app(SubmitOffer::class)->execute($verified, ['name' => 'Legit']);
+        $draft = app(SubmitOffer::class)->execute($verified->toRecord(), ['name' => 'Legit']);
 
         expect(fn () => app(UpdateOffer::class)->execute($draft, ['status' => OfferStatus::Published]))
             ->not->toThrow(ValidationException::class);
@@ -124,8 +124,8 @@ describe('Merchant portal self-service', function (): void {
             'visibility' => 'public',
         ]);
 
-        expect(fn () => app(ApplyToOffer::class)->execute($offer, (string) portalAffiliate('APPLY')->getKey()))
-            ->toThrow(ModelNotFoundException::class);
+        expect(fn () => app(ApplyToOffer::class)->execute($offer->id, (string) portalAffiliate('APPLY')->getKey()))
+            ->toThrow(RuntimeException::class);
     });
 
     test('applications cannot be approved for unverified sites', function (): void {
@@ -148,7 +148,7 @@ describe('Merchant portal self-service', function (): void {
             'name' => 'Resubmit Store',
             'domain' => 'resubmit.example',
         ]);
-        $site->update(['status' => AffiliateSite::STATUS_REJECTED]);
+        $site->update(['status' => SiteStatus::Rejected]);
 
         $resubmitted = app(RegisterSite::class)->execute($owner, [
             'name' => 'Resubmit Store v2',
@@ -156,7 +156,7 @@ describe('Merchant portal self-service', function (): void {
         ]);
 
         expect($resubmitted->getKey())->toBe($site->getKey())
-            ->and($resubmitted->status)->toBe(AffiliateSite::STATUS_PENDING)
+            ->and($resubmitted->status)->toBe(SiteStatus::Pending)
             ->and($resubmitted->name)->toBe('Resubmit Store v2');
 
         expect(fn () => app(RegisterSite::class)->execute(portalOwner(), [
@@ -172,7 +172,7 @@ describe('Merchant portal self-service', function (): void {
         AffiliateOffer::factory()->published()->forSite($verified)->create([
             'visibility' => 'public',
         ]);
-        AffiliateOffer::factory()->published()->forSite($suspended)->create([
+        $suspendedOffer = AffiliateOffer::factory()->published()->forSite($suspended)->create([
             'visibility' => 'public',
         ]);
 
@@ -182,18 +182,15 @@ describe('Merchant portal self-service', function (): void {
             ->whereSiteVerified()
             ->count();
 
-        expect($listed)->toBe(1);
-
-        expect(fn () => app(OfferManagementService::class)->resolvePublicOfferOrFail(
-            (string) AffiliateOffer::query()->where('site_id', $suspended->getKey())->firstOrFail()->getKey()
-        ))->toThrow(ModelNotFoundException::class);
+        expect($listed)->toBe(1)
+            ->and(app(ResolvePublicOfferQuery::class)->find((string) $suspendedOffer->getKey()))->toBeNull();
     });
 
     test('links cannot be created for unverified-site offers', function (): void {
         $site = AffiliateSite::factory()->suspended()->create();
         $offer = AffiliateOffer::factory()->published()->forSite($site)->create();
 
-        expect(fn () => app(OfferLinkService::class)->createLink($offer, (string) portalAffiliate('NOLINK')->getKey()))
+        expect(fn () => app(CreateOfferLink::class)->execute($offer->id, (string) portalAffiliate('NOLINK')->getKey()))
             ->toThrow(RuntimeException::class);
     });
 
@@ -220,7 +217,7 @@ describe('Merchant portal self-service', function (): void {
             'network_clicked_at' => now()->toIso8601String(),
         ], [], [], ['HTTP_AUTHORIZATION' => 'Bearer site-secret']);
 
-        $response = app(ReportNetworkConversionController::class)($request, app(OfferLinkService::class));
+        $response = app()->call(ReportNetworkConversionController::class, ['request' => $request]);
 
         expect($response->getStatusCode())->toBe(403);
     });
