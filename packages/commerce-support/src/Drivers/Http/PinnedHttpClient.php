@@ -6,6 +6,8 @@ namespace AIArmada\CommerceSupport\Drivers\Http;
 
 use AIArmada\CommerceSupport\Support\PublicHttpUrlGuard;
 use AIArmada\CommerceSupport\Support\ValidatedHttpTarget;
+use GuzzleHttp\Psr7\Uri;
+use GuzzleHttp\Psr7\UriResolver;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
@@ -62,6 +64,27 @@ final class PinnedHttpClient
         }
 
         $options['allow_redirects'] = false;
+        $options['proxy'] = '';
+        $options['verify'] = true;
+
+        // Prevent caller-supplied low-level options from bypassing URL and TLS validation.
+        $allowedCurl = array_filter([
+            defined('CURLOPT_MAXFILESIZE') ? constant('CURLOPT_MAXFILESIZE') : null,
+            defined('CURLOPT_LOW_SPEED_LIMIT') ? constant('CURLOPT_LOW_SPEED_LIMIT') : null,
+            defined('CURLOPT_LOW_SPEED_TIME') ? constant('CURLOPT_LOW_SPEED_TIME') : null,
+            defined('CURLOPT_RESOLVE') ? constant('CURLOPT_RESOLVE') : null,
+        ], static fn ($value): bool => $value !== null);
+        $configuredCurl = $pending->getOptions()['curl'] ?? [];
+        $effectiveCurl = $options['curl'] ?? [];
+        foreach ([$configuredCurl, $effectiveCurl] as $curl) {
+            if (! is_array($curl) || array_diff(array_keys($curl), $allowedCurl) !== []) {
+                throw new RuntimeException('Unsafe cURL options are not permitted for pinned HTTP requests.');
+            }
+        }
+        $options['curl'] = $effectiveCurl;
+        if ($resolveEntry === null && defined('CURLOPT_RESOLVE')) {
+            unset($options['curl'][constant('CURLOPT_RESOLVE')]);
+        }
 
         return $pending->send(mb_strtoupper($method), $target->url, $options);
     }
@@ -116,7 +139,13 @@ final class PinnedHttpClient
             }
 
             $nextUrl = self::resolveRelativeUrl($target->url, $location);
-            $target = $guard->validate($nextUrl);
+            $next = $guard->validate($nextUrl);
+            if ($next->host !== $target->host || $next->scheme !== $target->scheme || $next->port !== $target->port) {
+                if ($configure !== null || $headers !== [] || isset($options['auth']) || isset($options['cookies'])) {
+                    throw new InvalidArgumentException('Cross-origin redirects with request configuration or credentials are not allowed.');
+                }
+            }
+            $target = $next;
         }
 
         throw new InvalidArgumentException('Unable to resolve public redirect destination.');
@@ -208,34 +237,7 @@ final class PinnedHttpClient
             throw new InvalidArgumentException('Invalid redirect location.');
         }
 
-        $parsedLocation = parse_url($location);
-
-        if (is_array($parsedLocation) && isset($parsedLocation['scheme'])) {
-            return $location;
-        }
-
-        $base = parse_url($baseUrl);
-
-        if (! is_array($base) || ! isset($base['scheme'], $base['host'])) {
-            throw new InvalidArgumentException('Invalid base URL for redirect.');
-        }
-
-        $port = isset($base['port']) ? ':' . $base['port'] : '';
-
-        if (str_starts_with($location, '//')) {
-            return $base['scheme'] . ':' . $location;
-        }
-
-        $origin = $base['scheme'] . '://' . $base['host'] . $port;
-
-        if (str_starts_with($location, '/')) {
-            return $origin . $location;
-        }
-
-        $basePath = (string) ($base['path'] ?? '/');
-        $dir = mb_rtrim(dirname($basePath), '/');
-
-        return $origin . $dir . '/' . $location;
+        return (string) UriResolver::resolve(new Uri($baseUrl), new Uri($location));
     }
 
     /**

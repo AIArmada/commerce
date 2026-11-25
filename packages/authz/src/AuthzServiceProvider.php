@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Authz;
 
+use AIArmada\Authz\Contracts\AdminUserProvisioner;
+use AIArmada\Authz\Drivers\EloquentAdminUserProvisioner;
 use AIArmada\Authz\Features\Authorization\EntryPoints\Console\SuperAdminCommand;
 use AIArmada\Authz\Features\Authorization\EntryPoints\Console\SyncAuthzCommand;
 use AIArmada\Authz\Features\Impersonation\EntryPoints\Auth\SessionGuard;
@@ -58,6 +60,7 @@ final class AuthzServiceProvider extends PackageServiceProvider
     public function packageRegistered(): void
     {
         $this->configureSpatiePermissions();
+        $this->app->bind(AdminUserProvisioner::class, EloquentAdminUserProvisioner::class);
 
         $catalog = FeatureCatalog::load(dirname(__DIR__), __NAMESPACE__);
         $this->app->singleton(ExtensionRegistry::class, fn ($app): ExtensionRegistry => new ExtensionRegistry($app, $catalog['extensions']));

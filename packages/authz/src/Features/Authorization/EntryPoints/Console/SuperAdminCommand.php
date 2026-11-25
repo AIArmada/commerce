@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Authz\Features\Authorization\EntryPoints\Console;
 
 use AIArmada\Authz\Features\Authorization\Actions\AssignGlobalSuperAdmin;
-use AIArmada\Authz\Features\Authorization\Actions\CreateAdminUser;
+use AIArmada\Authz\Contracts\AdminUserProvisioner;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\Authz\EntryPoints\Console\Concerns\Prohibitable;
 use AIArmada\CommerceSupport\Support\LikeSearch;
 use Filament\Facades\Filament;
@@ -41,7 +42,7 @@ class SuperAdminCommand extends Command
 
     protected $description = 'Assign the super admin role to a user.';
 
-    public function handle(AssignGlobalSuperAdmin $assign, CreateAdminUser $create): int
+    public function handle(AssignGlobalSuperAdmin $assign, AdminUserProvisioner $create): int
     {
         if (! $this->initializeProhibitable()) {
             return self::FAILURE;
@@ -78,7 +79,7 @@ class SuperAdminCommand extends Command
     /**
      * @return (Authenticatable&Model)|null
      */
-    protected function getOrCreateUser(string $guard, CreateAdminUser $create): (Authenticatable & Model) | null
+    protected function getOrCreateUser(string $guard, AdminUserProvisioner $create): (Authenticatable & Model) | null
     {
         $userModel = $this->getUserModel($guard);
 
@@ -148,7 +149,7 @@ class SuperAdminCommand extends Command
      * @param  class-string<Model&Authenticatable>  $userModel
      * @return (Authenticatable&Model)|null
      */
-    protected function createUser(string $userModel, CreateAdminUser $create): (Authenticatable & Model) | null
+    protected function createUser(string $userModel, AdminUserProvisioner $create): (Authenticatable & Model) | null
     {
         $emailColumn = $this->getEmailColumn($userModel);
         $nameColumn = $this->getNameColumn($userModel);
@@ -184,7 +185,11 @@ class SuperAdminCommand extends Command
         );
 
         try {
-            $user = $create->execute($userModel, $nameColumn, $emailColumn, $name, $email, $password);
+            $reference = $create->execute($userModel, $nameColumn, $emailColumn, $name, $email, $password);
+            $user = EloquentRecordReference::resolve($reference);
+            if (! $user instanceof Model || ! $user instanceof Authenticatable) {
+                throw new InvalidArgumentException('The provisioned record is not an authenticatable user.');
+            }
         } catch (UniqueConstraintViolationException) {
             warning("User with email '{$email}' already exists. Use --user to select an existing account.");
 
