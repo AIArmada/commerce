@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Http\Controllers;
 
 use AIArmada\Affiliates\Actions\Affiliates\CreateTrackingLink;
-use AIArmada\Affiliates\Queries\AffiliateLookupQuery;
 use AIArmada\Affiliates\Features\Reporting\Api\ReportingApi;
+use AIArmada\Affiliates\Queries\AffiliateLookupQuery;
 use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Http\JsonResponse;

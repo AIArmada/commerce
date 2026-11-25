@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Identity\Actions;
 
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Features\Identity\Models\AffiliateCredential;
 use AIArmada\Affiliates\Exceptions\SealedIdentityException;
+use AIArmada\Affiliates\Features\Identity\Models\AffiliateCredential;
+use AIArmada\Affiliates\Models\Affiliate;
 use Carbon\CarbonImmutable;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -26,26 +26,26 @@ final class IssueActivityCredential
     public function handle(Affiliate $affiliate, array $options = []): array
     {
         return $affiliate->getConnection()->transaction(function () use ($affiliate, $options): array {
-        $affiliate = Affiliate::query()->whereKey($affiliate->getKey())->lockForUpdate()->firstOrFail();
-        if ($affiliate->identity_sealed_at !== null) {
-            throw SealedIdentityException::forAffiliate((string) $affiliate->getKey());
-        }
+            $affiliate = Affiliate::query()->whereKey($affiliate->getKey())->lockForUpdate()->firstOrFail();
+            if ($affiliate->identity_sealed_at !== null) {
+                throw SealedIdentityException::forAffiliate((string) $affiliate->getKey());
+            }
 
-        $secret = bin2hex(random_bytes(32));
-        $expiresAt = $options['expires_at'] ?? CarbonImmutable::now()->addDays((int) ($options['ttl_days'] ?? 30));
+            $secret = bin2hex(random_bytes(32));
+            $expiresAt = $options['expires_at'] ?? CarbonImmutable::now()->addDays((int) ($options['ttl_days'] ?? 30));
 
-        $credential = AffiliateCredential::query()->create([
-            'affiliate_id' => $affiliate->getKey(),
-            'owner_type' => $affiliate->owner_type,
-            'owner_id' => $affiliate->owner_id,
-            'verifier_hash' => hash('sha256', $secret),
-            'status' => 'active',
-            'label' => $options['label'] ?? null,
-            'issued_at' => CarbonImmutable::now(),
-            'expires_at' => $expiresAt,
-        ]);
+            $credential = AffiliateCredential::query()->create([
+                'affiliate_id' => $affiliate->getKey(),
+                'owner_type' => $affiliate->owner_type,
+                'owner_id' => $affiliate->owner_id,
+                'verifier_hash' => hash('sha256', $secret),
+                'status' => 'active',
+                'label' => $options['label'] ?? null,
+                'issued_at' => CarbonImmutable::now(),
+                'expires_at' => $expiresAt,
+            ]);
 
-        return ['credential' => $credential, 'plaintext_secret' => $secret];
+            return ['credential' => $credential, 'plaintext_secret' => $secret];
         });
     }
 }

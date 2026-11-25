@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Features\Fraud\Extensions;
 
 use AIArmada\FilamentAffiliates\Contracts\AdminPanelContribution as ContributionContract;
-use AIArmada\FilamentAffiliates\Features\Fraud\EntryPoints\Filament\Resources\AffiliateFraudSignalResource;
 use AIArmada\FilamentAffiliates\Features\Fraud\EntryPoints\Filament\Pages\FraudReviewPage;
+use AIArmada\FilamentAffiliates\Features\Fraud\EntryPoints\Filament\Resources\AffiliateFraudSignalResource;
 use AIArmada\FilamentAffiliates\Features\Fraud\EntryPoints\Filament\Widgets\FraudAlertWidget;
 
 final class AdminPanelContribution implements ContributionContract

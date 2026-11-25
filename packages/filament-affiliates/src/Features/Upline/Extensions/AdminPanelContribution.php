@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Features\Upline\Extensions;
 
 use AIArmada\FilamentAffiliates\Contracts\AdminPanelContribution as ContributionContract;
-use AIArmada\FilamentAffiliates\Features\Upline\EntryPoints\Filament\Resources\AffiliateRankResource;
 use AIArmada\FilamentAffiliates\Features\Upline\EntryPoints\Filament\Resources\AffiliateRankHistoryResource;
+use AIArmada\FilamentAffiliates\Features\Upline\EntryPoints\Filament\Resources\AffiliateRankResource;
 use AIArmada\FilamentAffiliates\Features\Upline\EntryPoints\Filament\Resources\AffiliateUplineResource;
 use AIArmada\FilamentAffiliates\Features\Upline\EntryPoints\Filament\Widgets\UplineVisualizationWidget;
 

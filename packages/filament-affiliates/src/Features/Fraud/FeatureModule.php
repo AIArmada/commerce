@@ -12,8 +12,7 @@ use Illuminate\Support\Facades\Gate;
 
 final class FeatureModule implements FeatureModuleContract
 {
-    public function register(Application $app): void
-    {}
+    public function register(Application $app): void {}
 
     public function boot(Application $app): void
     {

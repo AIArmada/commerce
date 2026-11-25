@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Identity\Actions;
 
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Features\Identity\Models\AffiliateOwnershipCapability;
 use AIArmada\Affiliates\Exceptions\SealedIdentityException;
+use AIArmada\Affiliates\Features\Identity\Models\AffiliateOwnershipCapability;
+use AIArmada\Affiliates\Models\Affiliate;
 use Carbon\CarbonImmutable;
 use InvalidArgumentException;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -27,40 +27,40 @@ final class IssueOwnershipCapability
     public function handle(Affiliate $affiliate, array $options = []): array
     {
         return $affiliate->getConnection()->transaction(function () use ($affiliate, $options): array {
-        $affiliate = Affiliate::query()->whereKey($affiliate->getKey())->lockForUpdate()->firstOrFail();
-        if ($affiliate->identity_sealed_at !== null) {
-            throw SealedIdentityException::forAffiliate((string) $affiliate->getKey());
-        }
+            $affiliate = Affiliate::query()->whereKey($affiliate->getKey())->lockForUpdate()->firstOrFail();
+            if ($affiliate->identity_sealed_at !== null) {
+                throw SealedIdentityException::forAffiliate((string) $affiliate->getKey());
+            }
 
-        $now = CarbonImmutable::now();
+            $now = CarbonImmutable::now();
 
-        $activeExists = AffiliateOwnershipCapability::query()
-            ->where('affiliate_id', $affiliate->getKey())
-            ->where('status', 'active')
-            ->whereNull('revoked_at')
-            ->whereNull('consumed_at')
-            ->where(static fn ($query): mixed => $query->whereNull('expires_at')->orWhere('expires_at', '>', $now))
-            ->exists();
+            $activeExists = AffiliateOwnershipCapability::query()
+                ->where('affiliate_id', $affiliate->getKey())
+                ->where('status', 'active')
+                ->whereNull('revoked_at')
+                ->whereNull('consumed_at')
+                ->where(static fn ($query): mixed => $query->whereNull('expires_at')->orWhere('expires_at', '>', $now))
+                ->exists();
 
-        if ($activeExists) {
-            throw new InvalidArgumentException('An active ownership capability already exists for this affiliate.');
-        }
+            if ($activeExists) {
+                throw new InvalidArgumentException('An active ownership capability already exists for this affiliate.');
+            }
 
-        $secret = bin2hex(random_bytes(32));
-        $expiresAt = $options['expires_at'] ?? $now->addDays((int) ($options['ttl_days'] ?? 30));
+            $secret = bin2hex(random_bytes(32));
+            $expiresAt = $options['expires_at'] ?? $now->addDays((int) ($options['ttl_days'] ?? 30));
 
-        $capability = AffiliateOwnershipCapability::query()->create([
-            'affiliate_id' => $affiliate->getKey(),
-            'owner_type' => $affiliate->owner_type,
-            'owner_id' => $affiliate->owner_id,
-            'verifier_hash' => hash('sha256', $secret),
-            'status' => 'active',
-            'label' => $options['label'] ?? null,
-            'issued_at' => $now,
-            'expires_at' => $expiresAt,
-        ]);
+            $capability = AffiliateOwnershipCapability::query()->create([
+                'affiliate_id' => $affiliate->getKey(),
+                'owner_type' => $affiliate->owner_type,
+                'owner_id' => $affiliate->owner_id,
+                'verifier_hash' => hash('sha256', $secret),
+                'status' => 'active',
+                'label' => $options['label'] ?? null,
+                'issued_at' => $now,
+                'expires_at' => $expiresAt,
+            ]);
 
-        return ['capability' => $capability, 'plaintext_secret' => $secret];
+            return ['capability' => $capability, 'plaintext_secret' => $secret];
         });
     }
 }

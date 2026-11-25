@@ -7,9 +7,9 @@ use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\CommerceSupport\Persistence\OwnerCache;
-use AIArmada\FilamentAffiliates\Features\Reporting\Queries\AffiliateStatsAggregator;
 use AIArmada\FilamentAffiliates\Features\Reporting\EntryPoints\Filament\Widgets\AffiliateStatsWidget;
 use AIArmada\FilamentAffiliates\Features\Reporting\EntryPoints\Filament\Widgets\PerformanceOverviewWidget;
+use AIArmada\FilamentAffiliates\Features\Reporting\Queries\AffiliateStatsAggregator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 

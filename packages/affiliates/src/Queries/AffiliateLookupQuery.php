@@ -17,7 +17,6 @@ use Throwable;
 
 final class AffiliateLookupQuery
 {
-
     /** @return Builder<Affiliate> */
     private function query(): Builder
     {

@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\CommissionType;
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Features\Reporting\Models\AffiliateDailyStat;
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;

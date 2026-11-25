@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Contracts\AffiliateWebhookTransport;
+use AIArmada\Affiliates\Drivers\Webhooks\PinnedAffiliateWebhookTransport;
+use AIArmada\Affiliates\Features\Webhooks\Actions\DeliverAffiliateWebhook;
 use AIArmada\Affiliates\Features\Webhooks\EntryPoints\Jobs\DispatchAffiliateWebhook;
 use AIArmada\Affiliates\Features\Webhooks\Models\AffiliateWebhookDelivery;
 use AIArmada\CommerceSupport\Drivers\Http\PinnedHttpClient;
-use AIArmada\Affiliates\Drivers\Webhooks\PinnedAffiliateWebhookTransport;
-use AIArmada\Affiliates\Contracts\AffiliateWebhookTransport;
-use AIArmada\Affiliates\Features\Webhooks\Actions\DeliverAffiliateWebhook;
 use AIArmada\CommerceSupport\Support\PublicHttpUrlGuard;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;

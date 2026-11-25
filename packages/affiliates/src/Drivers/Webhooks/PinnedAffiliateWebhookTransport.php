@@ -33,7 +33,10 @@ final readonly class PinnedAffiliateWebhookTransport implements AffiliateWebhook
 
         try {
             $response = $this->client->send(
-                method: 'POST', target: $target, options: ['body' => $request->body], headers: $headers,
+                method: 'POST',
+                target: $target,
+                options: ['body' => $request->body],
+                headers: $headers,
                 connectTimeout: max(1, (int) config('affiliates.webhooks.delivery.connect_timeout_seconds', 3)),
                 timeout: max(1, (int) config('affiliates.webhooks.delivery.timeout_seconds', 10)),
             );

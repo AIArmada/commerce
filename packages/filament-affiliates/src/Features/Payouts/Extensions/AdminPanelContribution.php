@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Features\Payouts\Extensions;
 
 use AIArmada\FilamentAffiliates\Contracts\AdminPanelContribution as ContributionContract;
-use AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Resources\AffiliatePayoutResource;
-use AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Pages\PayoutBatchPage;
 use AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Pages\ManageAffiliatePayoutSettings;
+use AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Pages\PayoutBatchPage;
+use AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Resources\AffiliatePayoutResource;
 use AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Widgets\PayoutQueueWidget;
 
 final class AdminPanelContribution implements ContributionContract

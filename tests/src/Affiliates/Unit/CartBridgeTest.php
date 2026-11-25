@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Queries\AffiliateLookupQuery;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateRecord;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Queries\AffiliateLookupQuery;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\Disabled;
 use AIArmada\Affiliates\Support\Integrations\CartBridge;
@@ -89,12 +91,11 @@ it('rejects forged and inactive cookie attributions', function (): void {
     expect($bridge->hydrateAffiliateFromCookie($cart))->toBeNull();
 });
 
-
 it('returns fresh immutable directory records after affiliate changes', function (): void {
     $affiliate = Affiliate::create(['name' => 'Initial directory name', 'code' => 'DIRECTORY-FRESH', 'status' => Active::class, 'commission_type' => 'percentage', 'commission_rate' => 500, 'currency' => 'MYR']);
-    $directory = app(\AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory::class);
+    $directory = app(AffiliateDirectory::class);
     $first = $directory->findById((string) $affiliate->getKey());
-    expect($first)->toBeInstanceOf(\AIArmada\Affiliates\Features\Identity\Api\AffiliateRecord::class);
+    expect($first)->toBeInstanceOf(AffiliateRecord::class);
     $affiliate->update(['name' => 'Updated directory name']);
     expect($directory->findById((string) $affiliate->getKey())?->name)->toBe('Updated directory name');
 });

@@ -9,8 +9,8 @@ use AIArmada\Affiliates\Support\Integrations\VoucherBridge;
 use AIArmada\FilamentAffiliates\Platform\ExtensionRegistry;
 use AIArmada\FilamentAffiliates\Platform\FeatureCatalog;
 use AIArmada\FilamentAffiliates\Platform\FeatureModule;
-use Illuminate\Contracts\Foundation\Application;
 use Filament\Facades\Filament;
+use Illuminate\Contracts\Foundation\Application;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -82,6 +82,7 @@ final class FilamentAffiliatesServiceProvider extends PackageServiceProvider
         });
 
     }
+
     /** @return array{features: array<string, string>, owners: array<string, string>, writes: array<string, list<string>>, extensions: array<string, list<string>>} */
     private function catalog(): array
     {

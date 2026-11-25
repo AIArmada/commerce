@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Exceptions\SealedIdentityException;
 use AIArmada\Affiliates\Features\Identity\Actions\ClaimAffiliateIdentity;
 use AIArmada\Affiliates\Features\Identity\Actions\IssueActivityCredential;
 use AIArmada\Affiliates\Features\Identity\Actions\IssueOwnershipCapability;
 use AIArmada\Affiliates\Features\Identity\Actions\RevalidateIdentitySeal;
-use AIArmada\Affiliates\Exceptions\SealedIdentityException;
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Features\Identity\Models\AffiliateClaim;
 use AIArmada\Affiliates\Features\Identity\Models\AffiliateCredential;
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;

@@ -7,6 +7,7 @@ namespace AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Res
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
+use AIArmada\FilamentAffiliates\Contracts\AffiliateRelationContribution;
 use AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources\AffiliateResource\Pages\CreateAffiliate;
 use AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources\AffiliateResource\Pages\EditAffiliate;
 use AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources\AffiliateResource\Pages\ListAffiliates;
@@ -14,7 +15,6 @@ use AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources
 use AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources\AffiliateResource\Schemas\AffiliateForm;
 use AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources\AffiliateResource\Schemas\AffiliateInfolist;
 use AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources\AffiliateResource\Tables\AffiliatesTable;
-use AIArmada\FilamentAffiliates\Contracts\AffiliateRelationContribution;
 use AIArmada\FilamentAffiliates\Platform\ExtensionRegistry;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -23,6 +23,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use LogicException;
 use UnitEnum;
 
 final class AffiliateResource extends Resource
@@ -100,7 +101,7 @@ final class AffiliateResource extends Resource
             if ($contribution instanceof AffiliateRelationContribution) {
                 foreach ($contribution->relations() as $priority => $relation) {
                     if (isset($relations[$priority])) {
-                        throw new \LogicException('Duplicate affiliate relation priority.');
+                        throw new LogicException('Duplicate affiliate relation priority.');
                     }
                     $relations[$priority] = $relation;
                 }

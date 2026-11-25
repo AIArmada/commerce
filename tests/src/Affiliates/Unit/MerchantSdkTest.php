@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Features\Merchant\EntryPoints\Middleware\CaptureNetworkReferral;
 use AIArmada\Affiliates\Contracts\NetworkPostbackGateway;
+use AIArmada\Affiliates\Features\Merchant\EntryPoints\Middleware\CaptureNetworkReferral;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;

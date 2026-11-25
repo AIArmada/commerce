@@ -15,6 +15,5 @@ final class FeatureModule implements FeatureModuleContract
         $app->singleton(AffiliateStatsAggregator::class);
     }
 
-    public function boot(Application $app): void
-    {}
+    public function boot(Application $app): void {}
 }

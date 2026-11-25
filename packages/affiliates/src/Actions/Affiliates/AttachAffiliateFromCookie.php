@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Actions\Affiliates;
 
-use AIArmada\Affiliates\Queries\AffiliateLookupQuery;
 use AIArmada\Affiliates\Data\AffiliateAttributionData;
+use AIArmada\Affiliates\Queries\AffiliateLookupQuery;
 use AIArmada\Cart\Cart;
 use Lorisleiva\Actions\Concerns\AsAction;
 

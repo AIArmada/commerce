@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages;
 
-use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
-use AIArmada\Affiliates\Features\Identity\Api\RegistrationApi;
 use AIArmada\Affiliates\Enums\RegistrationApprovalMode;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateRecord;
+use AIArmada\Affiliates\Features\Identity\Api\RegistrationApi;
 use AIArmada\Authz\Features\Authorization\Api\RoleAdministrationApi;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;

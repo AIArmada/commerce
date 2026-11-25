@@ -98,7 +98,6 @@ final class HttpNetworkPostbackGateway implements NetworkPostbackGateway
     /**
      * Correct a previously reported conversion (partial refund, price fix).
      * Idempotent on the adjustment reference.
-     *
      */
     public function adjustConversion(
         string $linkCode,
@@ -159,7 +158,6 @@ final class HttpNetworkPostbackGateway implements NetworkPostbackGateway
      * Retract a previously reported conversion (refund/void). Idempotent:
      * repeat calls return the already-reversed state. A 404 means the
      * network has no conversion for that link and reference.
-     *
      */
     public function voidConversion(
         string $linkCode,

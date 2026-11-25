@@ -9,6 +9,7 @@ use AIArmada\Affiliates\Enums\RegistrationApprovalMode;
 use AIArmada\Affiliates\Events\AffiliateActivated;
 use AIArmada\Affiliates\Events\AffiliateCreated;
 use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
+use AIArmada\Affiliates\Features\Reporting\Api\DailyStatsWriter;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\Affiliates\States\Pending;
@@ -503,7 +504,7 @@ class Affiliate extends Model implements Auditable
             });
             $affiliate->conversions()->delete();
             $affiliate->fraudSignals()->delete();
-            app(\AIArmada\Affiliates\Features\Reporting\Api\DailyStatsWriter::class)->deleteForAffiliate((string) $affiliate->getKey());
+            app(DailyStatsWriter::class)->deleteForAffiliate((string) $affiliate->getKey());
             $affiliate->links()->chunkById(100, function ($links): void {
                 foreach ($links as $link) {
                     $link->delete();

@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Upline\Queries;
 
+use AIArmada\Affiliates\Features\Upline\Api\UplineMember;
+use AIArmada\Affiliates\Features\Upline\Models\AffiliateUpline;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Features\Upline\Models\AffiliateUpline;
-use AIArmada\Affiliates\Features\Upline\Api\UplineMember;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\Affiliates\Support\RevenueVolume;
@@ -22,6 +22,7 @@ final class UplineQuery
         if (! config('affiliates.upline.enabled', false) || ! $affiliate->isCommercialPurpose()) {
             return [];
         }
+
         return AffiliateUpline::query()->where('descendant_id', $affiliateId)->where('depth', '>', 0)
             ->whereHas('ancestor', static fn ($q) => $q->whereCommercialPurpose())->with('ancestor')->orderBy('depth')->orderBy('ancestor_id')->get()
             ->map(static fn (AffiliateUpline $path): UplineMember => new UplineMember($path->ancestor_id, $path->ancestor->name, $path->ancestor->code, $path->depth))->values()->all();
@@ -34,6 +35,7 @@ final class UplineQuery
         if (! config('affiliates.upline.enabled', false) || ! $affiliate->isCommercialPurpose()) {
             return [];
         }
+
         return AffiliateUpline::query()->where('ancestor_id', $affiliateId)->where('depth', '>', 0)
             ->when($depth !== null, static fn ($q) => $q->where('depth', $depth))
             ->whereHas('descendant', static fn ($q) => $q->whereCommercialPurpose())->with('descendant')->orderBy('depth')->orderBy('descendant_id')->get()
@@ -47,6 +49,7 @@ final class UplineQuery
         if (! config('affiliates.upline.enabled', false) || ! $affiliate->isCommercialPurpose()) {
             return [];
         }
+
         return AffiliateUpline::query()->where('ancestor_id', $affiliateId)->where('depth', '>', 0)
             ->whereHas('descendant', static fn ($q) => $q->whereCommercialPurpose())->pluck('descendant_id')->all();
     }
@@ -57,6 +60,7 @@ final class UplineQuery
         if (! config('affiliates.upline.enabled', false) || ! $affiliate->isCommercialPurpose()) {
             return 0;
         }
+
         return AffiliateUpline::query()->where('ancestor_id', $affiliateId)->where('depth', '>', 0)
             ->whereHas('descendant', static fn ($q) => $q->whereCommercialPurpose())->count();
     }
@@ -200,5 +204,4 @@ final class UplineQuery
 
         return $maxDepth;
     }
-
 }

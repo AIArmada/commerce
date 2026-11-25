@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Features\Payouts\Extensions;
 
 use AIArmada\FilamentAffiliates\Contracts\AffiliateRelationContribution;
-use AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Relations\PayoutsRelationManager;
-use AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Relations\PayoutMethodsRelationManager;
 use AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Relations\PayoutHoldsRelationManager;
+use AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Relations\PayoutMethodsRelationManager;
+use AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Relations\PayoutsRelationManager;
 
 final class AffiliateRelations implements AffiliateRelationContribution
 {

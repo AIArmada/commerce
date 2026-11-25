@@ -80,6 +80,7 @@ final class FilamentAffiliatesPlugin implements Plugin
 
         return $result;
     }
+
     /** @return list<AdminPanelContribution> */
     private function contributions(): array
     {

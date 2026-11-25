@@ -46,41 +46,41 @@ final class EnqueueWebhook implements WebhookApi
         $seen = [];
 
         (new AffiliateWebhookDelivery)->getConnection()->transaction(function () use ($type, $eventId, $bodyJson, $signature, $headers, $owner, $seen): void {
-        foreach (Arr::wrap(config("affiliates.webhooks.endpoints.{$type}", [])) as $configuredEndpoint) {
-            $endpoint = mb_trim((string) $configuredEndpoint);
-            $parts = parse_url($endpoint);
+            foreach (Arr::wrap(config("affiliates.webhooks.endpoints.{$type}", [])) as $configuredEndpoint) {
+                $endpoint = mb_trim((string) $configuredEndpoint);
+                $parts = parse_url($endpoint);
 
-            if ($endpoint === '' || ! is_array($parts) || ! in_array(mb_strtolower((string) ($parts['scheme'] ?? '')), ['http', 'https'], true)) {
-                continue;
+                if ($endpoint === '' || ! is_array($parts) || ! in_array(mb_strtolower((string) ($parts['scheme'] ?? '')), ['http', 'https'], true)) {
+                    continue;
+                }
+
+                $destinationKey = hash('sha256', $endpoint);
+
+                if (isset($seen[$destinationKey])) {
+                    continue;
+                }
+
+                $seen[$destinationKey] = true;
+                $delivery = new AffiliateWebhookDelivery([
+                    'event_id' => $eventId,
+                    'event_type' => $type,
+                    'destination_key' => $destinationKey,
+                    'endpoint' => $endpoint,
+                    'headers' => $headers,
+                    'body_json' => $bodyJson,
+                    'signature' => $signature,
+                    'status' => 'pending',
+                    'max_attempts' => max(1, (int) config('affiliates.webhooks.delivery.max_attempts', 5)),
+                    'available_at' => CarbonImmutable::now(),
+                ]);
+                $delivery->forceFill([
+                    'owner_type' => $owner?->getMorphClass(),
+                    'owner_id' => $owner?->getKey(),
+                ]);
+                $delivery->save();
+
+                DispatchAffiliateWebhook::dispatch($delivery->id)->afterCommit();
             }
-
-            $destinationKey = hash('sha256', $endpoint);
-
-            if (isset($seen[$destinationKey])) {
-                continue;
-            }
-
-            $seen[$destinationKey] = true;
-            $delivery = new AffiliateWebhookDelivery([
-                'event_id' => $eventId,
-                'event_type' => $type,
-                'destination_key' => $destinationKey,
-                'endpoint' => $endpoint,
-                'headers' => $headers,
-                'body_json' => $bodyJson,
-                'signature' => $signature,
-                'status' => 'pending',
-                'max_attempts' => max(1, (int) config('affiliates.webhooks.delivery.max_attempts', 5)),
-                'available_at' => CarbonImmutable::now(),
-            ]);
-            $delivery->forceFill([
-                'owner_type' => $owner?->getMorphClass(),
-                'owner_id' => $owner?->getKey(),
-            ]);
-            $delivery->save();
-
-            DispatchAffiliateWebhook::dispatch($delivery->id)->afterCommit();
-        }
         });
     }
 

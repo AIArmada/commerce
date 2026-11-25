@@ -6,8 +6,8 @@ namespace AIArmada\Affiliates\Features\Upline\Actions;
 
 use AIArmada\Affiliates\Enums\RankQualificationReason;
 use AIArmada\Affiliates\Events\AffiliateRankChanged;
-use AIArmada\Affiliates\Features\Upline\Api\RankQualificationApi;
 use AIArmada\Affiliates\Features\Upline\Api\QualifiedRank;
+use AIArmada\Affiliates\Features\Upline\Api\RankQualificationApi;
 use AIArmada\Affiliates\Features\Upline\Queries\RankQualificationQuery;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateRank;

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Identity\Api;
 
-use Carbon\CarbonImmutable;
 use AIArmada\CommerceSupport\Data\RecordReference;
+use Carbon\CarbonImmutable;
 use SensitiveParameter;
 
 interface IdentityProofApi

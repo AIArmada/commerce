@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Exceptions\SealedIdentityException;
+use AIArmada\Affiliates\Features\Identity\Api\IdentityClaimRecord;
 use AIArmada\Affiliates\Features\Identity\Api\IdentityProofApi;
 use AIArmada\Affiliates\Features\Identity\Api\IssuedIdentityProof;
-use AIArmada\Affiliates\Features\Identity\Api\IdentityClaimRecord;
 use AIArmada\Affiliates\Features\Identity\Models\AffiliateCredential;
-use AIArmada\Affiliates\Exceptions\SealedIdentityException;
 use AIArmada\CommerceSupport\Data\RecordReference;
 
 it('exposes immutable proof records and refuses issuance after sealing', function (): void {

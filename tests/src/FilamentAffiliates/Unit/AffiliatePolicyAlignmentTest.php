@@ -15,12 +15,12 @@ use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\Authz\Features\Authorization\Models\Permission;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\FilamentAffiliates\Features\Attribution\EntryPoints\Filament\Policies\AffiliateLinkPolicy;
 use AIArmada\FilamentAffiliates\Features\Conversions\EntryPoints\Filament\Policies\AffiliateConversionPolicy;
 use AIArmada\FilamentAffiliates\Features\Fraud\EntryPoints\Filament\Policies\AffiliateFraudSignalPolicy;
-use AIArmada\FilamentAffiliates\Features\Attribution\EntryPoints\Filament\Policies\AffiliateLinkPolicy;
 use AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Policies\AffiliatePayoutPolicy;
-use AIArmada\FilamentAffiliates\Features\Programs\EntryPoints\Filament\Policies\AffiliateProgramPolicy;
 use AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Resources\AffiliatePayoutResource;
+use AIArmada\FilamentAffiliates\Features\Programs\EntryPoints\Filament\Policies\AffiliateProgramPolicy;
 use Illuminate\Support\Str;
 
 beforeEach(function (): void {

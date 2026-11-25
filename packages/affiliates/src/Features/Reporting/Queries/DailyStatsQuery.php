@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Reporting\Queries;
 
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Features\Reporting\Models\AffiliateDailyStat;
 use AIArmada\Affiliates\Features\Reporting\Api\DailyStatsReader;
+use AIArmada\Affiliates\Features\Reporting\Models\AffiliateDailyStat;
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\CommerceSupport\Support\CurrencyConverter;
 use Carbon\CarbonImmutable;
 

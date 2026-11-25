@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Support\Integrations\CartBridge;
 use AIArmada\Affiliates\Support\Integrations\VoucherBridge;
-use AIArmada\FilamentAffiliates\FilamentAffiliatesPlugin;
 use AIArmada\FilamentAffiliates\Features\Conversions\EntryPoints\Filament\Policies\AffiliateConversionPolicy;
 use AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Policies\AffiliatePayoutPolicy;
-use AIArmada\FilamentAffiliates\Features\Reporting\Queries\AffiliateStatsAggregator;
 use AIArmada\FilamentAffiliates\Features\Payouts\Queries\PayoutExportService;
+use AIArmada\FilamentAffiliates\Features\Reporting\Queries\AffiliateStatsAggregator;
+use AIArmada\FilamentAffiliates\FilamentAffiliatesPlugin;
 
 it('registers plugin as singleton', function (): void {
     $plugin1 = app(FilamentAffiliatesPlugin::class);

@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Features\Commissions\Extensions;
 
 use AIArmada\FilamentAffiliates\Contracts\AdminPanelContribution as ContributionContract;
+use AIArmada\FilamentAffiliates\Features\Commissions\EntryPoints\Filament\Pages\ManageAffiliateBonusSettings;
+use AIArmada\FilamentAffiliates\Features\Commissions\EntryPoints\Filament\Pages\ManageAffiliateCommissionSettings;
+use AIArmada\FilamentAffiliates\Features\Commissions\EntryPoints\Filament\Pages\PerformanceBonusesPage;
 use AIArmada\FilamentAffiliates\Features\Commissions\EntryPoints\Filament\Resources\AffiliateCommissionTemplateResource;
 use AIArmada\FilamentAffiliates\Features\Commissions\EntryPoints\Filament\Resources\AffiliateVolumeTierResource;
-use AIArmada\FilamentAffiliates\Features\Commissions\EntryPoints\Filament\Pages\ManageAffiliateCommissionSettings;
-use AIArmada\FilamentAffiliates\Features\Commissions\EntryPoints\Filament\Pages\ManageAffiliateBonusSettings;
-use AIArmada\FilamentAffiliates\Features\Commissions\EntryPoints\Filament\Pages\PerformanceBonusesPage;
 
 final class AdminPanelContribution implements ContributionContract
 {

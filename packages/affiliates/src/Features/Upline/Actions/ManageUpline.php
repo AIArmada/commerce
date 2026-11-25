@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Upline\Actions;
 
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Features\Upline\Models\AffiliateUpline;
+use AIArmada\Affiliates\Models\Affiliate;
 use InvalidArgumentException;
 
 final class ManageUpline

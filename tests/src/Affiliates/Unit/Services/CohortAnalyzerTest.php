@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Affiliates\Unit\Services;
 
+use AIArmada\Affiliates\Features\Reporting\Api\CohortApi;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Features\Reporting\Api\CohortApi;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;

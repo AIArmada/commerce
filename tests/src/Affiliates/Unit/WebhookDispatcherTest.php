@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Features\Webhooks\Api\WebhookApi;
 use AIArmada\Affiliates\Features\Webhooks\EntryPoints\Jobs\DispatchAffiliateWebhook;
 use AIArmada\Affiliates\Features\Webhooks\Models\AffiliateWebhookDelivery;
-use AIArmada\Affiliates\Features\Webhooks\Api\WebhookApi;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Queue;
 
