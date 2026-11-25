@@ -9,8 +9,8 @@ use AIArmada\Affiliates\Contracts\AffiliateLookup;
 use AIArmada\Affiliates\Enums\RegistrationApprovalMode;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Services\UplineService;
-use AIArmada\Authz\Features\Authorization\Models\Permission;
-use AIArmada\Authz\Features\Authorization\Models\Role;
+use AIArmada\Authz\Features\Authorization\Actions\AssignUserRole;
+use AIArmada\Authz\Features\Authorization\Api\RoleAdministrationApi;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\PublicHandle;
 use AIArmada\FilamentAffiliates\Concerns\InteractsWithAffiliate;
@@ -23,7 +23,6 @@ use Filament\Schemas\Components\Component;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
-use Spatie\Permission\PermissionRegistrar;
 use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
 use Ysfkaya\FilamentPhoneInput\PhoneInputNumberType;
 
@@ -100,14 +99,8 @@ class PortalRegistration extends FilamentRegister
 
         $guard = (string) config('authz.guards.0', 'web');
 
-        $permission = Permission::findOrCreate('panel.affiliate', $guard);
-        $role = Role::findOrCreate('Affiliate', $guard);
-        $role->givePermissionTo($permission);
-
-        // @phpstan-ignore-next-line — assignRole comes from Spatie's HasRoles trait on the user model
-        $user->assignRole($role);
-
-        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        $role = app(RoleAdministrationApi::class)->ensureRole('Affiliate', $guard, getPermissionsTeamId(), ['panel.affiliate']);
+        app(AssignUserRole::class)->execute($user, $role->id);
 
         return $user;
     }

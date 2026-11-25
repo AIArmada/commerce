@@ -4,22 +4,19 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Drivers;
 
-use AIArmada\Authz\Features\Authorization\Models\Role;
+use AIArmada\Authz\Features\Authorization\Api\RoleAdministrationApi;
+use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\Events\Contracts\EventAuthzDriver;
 use AIArmada\Events\Data\EventAssignmentData;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Spatie\Permission\PermissionRegistrar;
 
 final class AuthzDriver implements EventAuthzDriver
 {
-    private const string SCOPE_RESOLVER = 'AIArmada\\Authz\\Features\\Authorization\\Support\\AuthzScopeResolver';
-
     public function syncAssignment(EventAssignmentData $assignment): void
     {
-        if (! class_exists(self::SCOPE_RESOLVER) || ! config('authz.scopes.enabled', false)) {
+        if (! interface_exists(RoleAdministrationApi::class) || ! config('authz.scopes.enabled', false)) {
             return;
         }
 
@@ -29,7 +26,7 @@ final class AuthzDriver implements EventAuthzDriver
             return;
         }
 
-        $scopeId = self::SCOPE_RESOLVER::resolveId($manageable);
+        $scopeId = app(RoleAdministrationApi::class)->resolveRecordScope(new RecordReference($manageable->getMorphClass(), (string) $manageable->getKey()));
 
         if ($scopeId === null) {
             return;
@@ -46,20 +43,14 @@ final class AuthzDriver implements EventAuthzDriver
 
     private function assignManagerToScope(Model $manager, string | int $scopeId, string $roleName): void
     {
-        /** @var class-string<Role> $roleClass */
-        $roleClass = (string) config('permission.models.role', Role::class);
-        $pivotTable = config('permission.table_names.model_has_roles', 'model_has_roles');
-        $roleKey = config('permission.column_names.role_pivot_key', 'role_id');
-        $modelMorphKey = config('permission.column_names.model_morph_key', 'model_id');
-        $teamKey = app(PermissionRegistrar::class)->teamsKey;
+        $assigned = app(RoleAdministrationApi::class)->assignExistingRole(
+            new RecordReference($manager->getMorphClass(), (string) $manager->getKey()),
+            $roleName,
+            (string) config('authz.guards.0', 'web'),
+            $scopeId,
+        );
 
-        $role = $roleClass::query()
-            ->where('name', $roleName)
-            ->where('guard_name', (string) config('authz.guards.0', 'web'))
-            ->where($teamKey, $scopeId)
-            ->first();
-
-        if ($role === null) {
+        if (! $assigned) {
             Log::warning('Skipping management assignment authz sync because the role does not exist in the resolved scope.', [
                 'role' => $roleName,
                 'scope_id' => $scopeId,
@@ -69,16 +60,6 @@ final class AuthzDriver implements EventAuthzDriver
 
             return;
         }
-
-        DB::table($pivotTable)->updateOrInsert(
-            [
-                $roleKey => $role->getKey(),
-                $modelMorphKey => $manager->getKey(),
-                'model_type' => $manager->getMorphClass(),
-                $teamKey => $scopeId,
-            ],
-            [],
-        );
 
         Log::debug('Synced management assignment to authz role.', [
             'role' => $roleName,

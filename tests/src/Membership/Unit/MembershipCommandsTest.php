@@ -34,7 +34,8 @@ it('syncs all membership roles via service', function (): void {
 
 it('reconciles permissions additively unless pruning is requested', function (): void {
     $service = app(MembershipRoleSyncService::class);
-    $role = $service->ensureExists(MemberRole::Admin);
+    $record = $service->ensureExists(MemberRole::Admin);
+    $role = Role::query()->findOrFail($record->id);
     $externalPermission = Permission::findOrCreate('membership.external', 'web');
 
     $role->givePermissionTo($externalPermission);

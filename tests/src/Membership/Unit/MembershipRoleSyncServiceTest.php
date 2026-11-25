@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Authz\Features\Authorization\Models\Role;
+use AIArmada\Authz\Features\Authorization\Api\RoleRecord;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Membership\Enums\MemberRole;
@@ -30,7 +30,7 @@ beforeEach(function (): void {
 it('ensures a role exists', function (): void {
     $role = $this->service->ensureExists(MemberRole::Admin);
 
-    expect($role)->toBeInstanceOf(Role::class)
+    expect($role)->toBeInstanceOf(RoleRecord::class)
         ->name->toBe(MemberRole::Admin->spatieRoleName());
 });
 

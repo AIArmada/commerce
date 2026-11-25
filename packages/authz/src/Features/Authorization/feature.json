@@ -11,15 +11,21 @@
       "AIArmada\\Authz\\Features\\Authorization\\Actions\\PersistRole",
       "AIArmada\\Authz\\Features\\Authorization\\Actions\\DeleteScopeAssignments",
       "AIArmada\\Authz\\Features\\Authorization\\Actions\\AssignGlobalSuperAdmin",
-      "AIArmada\\Authz\\Features\\Authorization\\Actions\\SyncConfiguredAuthorization"
+      "AIArmada\\Authz\\Features\\Authorization\\Actions\\SyncConfiguredAuthorization",
+      "AIArmada\\Authz\\Features\\Authorization\\Actions\\EnsureRoleDefinition"
     ],
     "table:permissions": [
       "AIArmada\\Authz\\Features\\Authorization\\Actions\\PersistPermission",
-      "AIArmada\\Authz\\Features\\Authorization\\Actions\\SyncConfiguredAuthorization"
+      "AIArmada\\Authz\\Features\\Authorization\\Actions\\SyncConfiguredAuthorization",
+      "AIArmada\\Authz\\Features\\Authorization\\Actions\\EnsurePermissions",
+      "AIArmada\\Authz\\Features\\Authorization\\Actions\\EnsureRoleDefinition"
     ],
     "table:model_has_roles": [
       "AIArmada\\Authz\\Features\\Authorization\\Actions\\DeleteScopeAssignments",
-      "AIArmada\\Authz\\Features\\Authorization\\Actions\\AssignGlobalSuperAdmin"
+      "AIArmada\\Authz\\Features\\Authorization\\Actions\\AssignGlobalSuperAdmin",
+      "AIArmada\\Authz\\Features\\Authorization\\Actions\\AssignExistingRole",
+      "AIArmada\\Authz\\Features\\Authorization\\Actions\\AssignUserRole",
+      "AIArmada\\Authz\\Features\\Authorization\\Actions\\RevokeUserRole"
     ],
     "table:model_has_permissions": [
       "AIArmada\\Authz\\Features\\Authorization\\Actions\\DeleteScopeAssignments"
@@ -27,7 +33,8 @@
     "table:role_has_permissions": [
       "AIArmada\\Authz\\Features\\Authorization\\Actions\\DeleteScopeAssignments",
       "AIArmada\\Authz\\Features\\Authorization\\Actions\\SyncConfiguredAuthorization",
-      "AIArmada\\Authz\\Features\\Authorization\\Actions\\SyncRolePermissions"
+      "AIArmada\\Authz\\Features\\Authorization\\Actions\\SyncRolePermissions",
+      "AIArmada\\Authz\\Features\\Authorization\\Actions\\EnsureRoleDefinition"
     ]
   },
   "extensions": {}

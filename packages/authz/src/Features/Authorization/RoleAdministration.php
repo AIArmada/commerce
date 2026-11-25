@@ -1,0 +1,53 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Authz\Features\Authorization;
+
+use AIArmada\Authz\Features\Authorization\Actions\AssignExistingRole;
+use AIArmada\Authz\Features\Authorization\Actions\EnsurePermissions;
+use AIArmada\Authz\Features\Authorization\Actions\EnsureRoleDefinition;
+use AIArmada\Authz\Features\Authorization\Api\RoleAdministrationApi;
+use AIArmada\Authz\Features\Authorization\Api\RoleRecord;
+use AIArmada\Authz\Features\Authorization\Models\Permission;
+use AIArmada\Authz\Features\Authorization\Support\AuthzScopeResolver;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
+use Spatie\Permission\PermissionRegistrar;
+
+final readonly class RoleAdministration implements RoleAdministrationApi
+{
+    public function __construct(
+        private EnsureRoleDefinition $roles,
+        private EnsurePermissions $permissions,
+        private AssignExistingRole $assign,
+        private PermissionRegistrar $registrar,
+    ) {}
+
+    public function permissionNames(string $guard): array
+    {
+        return Permission::query()->where('guard_name', $guard)->pluck('name')->all();
+    }
+
+    public function ensurePermissions(string $guard, array $permissions): void
+    {
+        $this->permissions->execute($guard, $permissions);
+    }
+
+    public function ensureRole(string $name, string $guard, string | int | null $scope, array $permissions, bool $prune = false): RoleRecord
+    {
+        $role = $this->roles->execute($name, $guard, $scope, $permissions, $prune);
+
+        return new RoleRecord((string) $role->getKey(), $name, $guard, $this->registrar->teams ? $scope : null);
+    }
+
+    public function resolveRecordScope(RecordReference $record): string | int | null
+    {
+        return AuthzScopeResolver::resolveId(EloquentRecordReference::resolve($record));
+    }
+
+    public function assignExistingRole(RecordReference $record, string $name, string $guard, string | int | null $scope): bool
+    {
+        return $this->assign->execute($record, $name, $guard, $scope);
+    }
+}
