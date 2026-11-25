@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentDocs\Support;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerJobContext;
+use AIArmada\CommerceSupport\Data\OwnerJobContext;
+use AIArmada\CommerceSupport\Support\OwnerJobContextMapper;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\FilamentDocs\Jobs\GenerateDocPdfsJob;
 use AIArmada\FilamentDocs\Resources\DocResource\Tables\DocsTable;
@@ -40,7 +41,7 @@ final class DocBulkActions
 
         $owner = OwnerContext::resolve();
         $context = $owner instanceof Model
-            ? OwnerJobContext::fromOwnerModel($owner)
+            ? OwnerJobContextMapper::fromModel($owner)
             : OwnerJobContext::explicitGlobal();
 
         $dispatched = 0;

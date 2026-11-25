@@ -6,7 +6,7 @@ namespace AIArmada\Checkout\Jobs;
 
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\CommerceSupport\Contracts\OwnerScopedJob;
-use AIArmada\CommerceSupport\Support\OwnerJobContext;
+use AIArmada\CommerceSupport\Data\OwnerJobContext;
 use AIArmada\CommerceSupport\Traits\OwnerContextJob;
 use AIArmada\Orders\Actions\CreateOrderInvoiceDoc;
 use AIArmada\Orders\Actions\CreateOrderReceiptDoc;

@@ -7,7 +7,7 @@ namespace AIArmada\FilamentCart\Jobs;
 use AIArmada\Cart\Actions\RemoveStoredConditions;
 use AIArmada\Cart\Models\Condition;
 use AIArmada\CommerceSupport\Contracts\OwnerScopedJob;
-use AIArmada\CommerceSupport\Support\OwnerJobContext;
+use AIArmada\CommerceSupport\Data\OwnerJobContext;
 use AIArmada\CommerceSupport\Traits\OwnerContextJob;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;

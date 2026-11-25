@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Events\Features\Search\EntryPoints\Jobs;
 
 use AIArmada\CommerceSupport\Contracts\OwnerScopedJob;
-use AIArmada\CommerceSupport\Support\OwnerJobContext;
+use AIArmada\CommerceSupport\Data\OwnerJobContext;
 use AIArmada\CommerceSupport\Traits\OwnerContextJob;
 use AIArmada\Events\Features\Search\Actions\DeleteEventSearchDocumentAction;
 use AIArmada\Events\Features\Search\Actions\UpsertEventSearchDocumentAction;

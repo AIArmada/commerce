@@ -260,7 +260,7 @@ Prefer an explicit `OwnerScopedJob` contract that returns `OwnerJobContext`:
 
 ```php
 use AIArmada\CommerceSupport\Contracts\OwnerScopedJob;
-use AIArmada\CommerceSupport\Support\OwnerJobContext;
+use AIArmada\CommerceSupport\Data\OwnerJobContext;
 use AIArmada\CommerceSupport\Traits\OwnerContextJob;
 
 final class ExportOrdersJob implements OwnerScopedJob, ShouldQueue

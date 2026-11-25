@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Ticketing\Jobs;
 
 use AIArmada\CommerceSupport\Contracts\OwnerScopedJob;
-use AIArmada\CommerceSupport\Support\OwnerJobContext;
+use AIArmada\CommerceSupport\Data\OwnerJobContext;
 use AIArmada\CommerceSupport\Traits\OwnerContextJob;
 use AIArmada\Ticketing\Events\PassesBulkTransferred;
 use AIArmada\Ticketing\Notifications\PassTransferredToNewHolderNotification;

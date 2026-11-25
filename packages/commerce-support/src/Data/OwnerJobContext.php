@@ -2,9 +2,8 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\CommerceSupport\Support;
+namespace AIArmada\CommerceSupport\Data;
 
-use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 
 final readonly class OwnerJobContext
@@ -36,35 +35,9 @@ final readonly class OwnerJobContext
         return new self(ownerType: null, ownerId: null, ownerIsGlobal: true);
     }
 
-    public static function fromOwnerModel(Model $owner): self
-    {
-        return new self(
-            ownerType: $owner->getMorphClass(),
-            ownerId: $owner->getKey(),
-            ownerIsGlobal: false,
-        );
-    }
-
     public function isExplicitGlobal(): bool
     {
         return $this->ownerIsGlobal;
     }
 
-    public function toOwnerModel(): ?Model
-    {
-        if ($this->ownerType === null || $this->ownerId === null) {
-            return null;
-        }
-
-        return OwnerContext::fromTypeAndId($this->ownerType, $this->ownerId);
-    }
-
-    public function toOwnerModelOrFail(): ?Model
-    {
-        if ($this->ownerType === null || $this->ownerId === null) {
-            return null;
-        }
-
-        return OwnerContext::fromTypeAndIdOrFail($this->ownerType, $this->ownerId);
-    }
 }

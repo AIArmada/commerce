@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\CommerceSupport\Actions\ResolveOwnerJobContextAction;
 use AIArmada\CommerceSupport\Contracts\OwnerScopedJob;
 use AIArmada\CommerceSupport\Contracts\OwnerScopeIdentifiable;
-use AIArmada\CommerceSupport\Support\OwnerJobContext;
+use AIArmada\CommerceSupport\Data\OwnerJobContext;
 use Illuminate\Database\Eloquent\Model;
 
 it('uses explicit owner context from owner scoped job contract', function (): void {

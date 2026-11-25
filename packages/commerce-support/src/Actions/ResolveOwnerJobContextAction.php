@@ -6,7 +6,8 @@ namespace AIArmada\CommerceSupport\Actions;
 
 use AIArmada\CommerceSupport\Contracts\OwnerScopedJob;
 use AIArmada\CommerceSupport\Contracts\OwnerScopeIdentifiable;
-use AIArmada\CommerceSupport\Support\OwnerJobContext;
+use AIArmada\CommerceSupport\Data\OwnerJobContext;
+use AIArmada\CommerceSupport\Support\OwnerJobContextMapper;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
@@ -98,7 +99,7 @@ final class ResolveOwnerJobContextAction
             $owner = $model->getOwner();
 
             if ($owner instanceof Model) {
-                return OwnerJobContext::fromOwnerModel($owner);
+                return OwnerJobContextMapper::fromModel($owner);
             }
         }
 
