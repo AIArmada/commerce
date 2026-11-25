@@ -22,8 +22,10 @@ final readonly class AdministerConversion implements ConversionAdministration
         private VoidAffiliateConversion $voider,
     ) {}
 
-    public function transition(string $conversionId, Status $status): bool
+    public function transition(string $conversionId, string $status): bool
     {
+        $status = Status::from($status);
+
         return (new AffiliateConversion)->getConnection()->transaction(function () use ($conversionId, $status): bool {
             $conversion = $this->lockConversion($conversionId);
             $target = ConversionStatus::resolveStateClassFor($status->value, $conversion);

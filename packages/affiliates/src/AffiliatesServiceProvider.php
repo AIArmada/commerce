@@ -4,6 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates;
 
+use AIArmada\Affiliates\Contracts\NetworkPostbackGateway;
+use AIArmada\Affiliates\Drivers\Network\HttpNetworkPostbackGateway;
+use AIArmada\Affiliates\Contracts\TaxRecipientProvider;
+use AIArmada\Affiliates\Contracts\TaxWorksheetWriter;
+use AIArmada\Affiliates\Drivers\Tax\SpatieTaxWorksheetWriter;
+use AIArmada\Affiliates\Drivers\Tax\UnavailableTaxRecipientProvider;
+use AIArmada\Affiliates\Contracts\AffiliateWebhookTransport;
+use AIArmada\Affiliates\Drivers\Webhooks\PinnedAffiliateWebhookTransport;
 use AIArmada\Affiliates\Actions\Affiliates\ResolvePublicAffiliateReferralContext;
 use AIArmada\Affiliates\Cart\AffiliateDiscountConditionProvider;
 use AIArmada\Affiliates\Drivers\Payouts\PayoutProcessorFactory;
@@ -99,6 +107,11 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
     {
         $catalog = $this->catalog();
 
+        $this->app->bindIf(NetworkPostbackGateway::class, HttpNetworkPostbackGateway::class);
+        $this->app->bindIf(TaxRecipientProvider::class, UnavailableTaxRecipientProvider::class);
+        $this->app->bindIf(TaxWorksheetWriter::class, SpatieTaxWorksheetWriter::class);
+        $this->app->bindIf(AffiliateWebhookTransport::class, PinnedAffiliateWebhookTransport::class);
+
         $this->app->singleton(ExtensionRegistry::class, fn (Application $app): ExtensionRegistry => new ExtensionRegistry($app, $catalog['extensions']));
 
         foreach (array_keys($catalog['features']) as $name) {
@@ -154,6 +167,7 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
         }
 
         $this->registerMorphMap();
+        $this->loadRoutesFrom(__DIR__ . '/Features/Programs/Routes/api.php');
 
         Blade::anonymousComponentNamespace('affiliates::components', 'affiliates');
 

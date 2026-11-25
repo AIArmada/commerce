@@ -4,10 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Tax;
 
-use AIArmada\Affiliates\Contracts\TaxRecipientProvider;
-use AIArmada\Affiliates\Contracts\TaxWorksheetWriter;
-use AIArmada\Affiliates\Drivers\Tax\SpatieTaxWorksheetWriter;
-use AIArmada\Affiliates\Drivers\Tax\UnavailableTaxRecipientProvider;
 use AIArmada\Affiliates\Features\Tax\Api\TaxDocumentApi;
 use AIArmada\Affiliates\Features\Tax\Queries\TaxDocumentGateway;
 use AIArmada\Affiliates\Platform\FeatureModule as FeatureModuleContract;
@@ -17,8 +13,6 @@ final class FeatureModule implements FeatureModuleContract
 {
     public function register(Application $app): void
     {
-        $app->bindIf(TaxRecipientProvider::class, UnavailableTaxRecipientProvider::class);
-        $app->bindIf(TaxWorksheetWriter::class, SpatieTaxWorksheetWriter::class);
         $app->bind(TaxDocumentApi::class, TaxDocumentGateway::class);
     }
 

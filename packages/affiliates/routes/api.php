@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Features\Programs\EntryPoints\Http\ProgramCatalogController;
-use AIArmada\Affiliates\Features\Programs\EntryPoints\Http\ProgramMembershipController;
 use AIArmada\Affiliates\Http\Controllers\AffiliateApiController;
 use AIArmada\Affiliates\Support\Middleware\EnsureApiAuthorized;
 use AIArmada\CommerceSupport\Middleware\NeedsOwner;
@@ -23,12 +21,8 @@ Route::prefix(config('affiliates.api.prefix', 'api/affiliates'))
         }
 
         Route::middleware($middleware)->group(function (): void {
-            Route::get('programs', [ProgramCatalogController::class, 'index']);
-            Route::get('programs/{id}/catalog', [ProgramCatalogController::class, 'show']);
             Route::get('{code}/summary', [AffiliateApiController::class, 'summary']);
             Route::post('{code}/links', [AffiliateApiController::class, 'links']);
             Route::get('{code}/creatives', [AffiliateApiController::class, 'creatives']);
-            Route::post('{code}/programs/{id}/join', [ProgramMembershipController::class, 'join']);
-            Route::get('{code}/programs/{id}/membership', [ProgramMembershipController::class, 'membership']);
         });
     });

@@ -30,7 +30,6 @@ final class ProcessCommissionMaturityCommand extends Command
 
         if ($dryRun) {
             $this->warn('Running in dry-run mode - no changes will be made.');
-
         }
 
         $runner = new OwnerBatchRunner(

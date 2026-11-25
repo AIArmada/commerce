@@ -164,7 +164,7 @@ final class AffiliateConversionsTable
 
         return app(ConversionAdministration::class)->transition(
             (string) $record->getKey(),
-            ConversionStatus::fromString($status, $record)->toEnum(),
+            ConversionStatus::normalize($status),
         );
     }
 }

@@ -13,9 +13,10 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use BackedEnum;
-use Dompdf\Dompdf;
 use League\Csv\Writer;
-use Shuchkin\SimpleXLSXGen;
+use OpenSpout\Common\Entity\Row;
+use OpenSpout\Writer\XLSX\Writer as XlsxWriter;
+use RuntimeException;
 use Spatie\LaravelPdf\Facades\Pdf;
 use SplTempFileObject;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -99,7 +100,7 @@ final class PayoutExportService
     /**
      * Download payout data as Excel (XLSX).
      *
-     * Uses SimpleXLSXGen for Excel generation without the maatwebsite/excel dependency.
+     * Streams a genuine XLSX workbook using OpenSpout.
      */
     public function downloadExcel(AffiliatePayout $payout): StreamedResponse
     {
@@ -108,19 +109,28 @@ final class PayoutExportService
         $data = $this->buildExportData($payout);
         $filename = $this->sanitizeFilename($payout->reference, 'xlsx');
 
-        // Use Spatie SimpleXLSXGen or fallback to CSV-compatible Excel
-        if (class_exists(SimpleXLSXGen::class)) {
-            return $this->streamXlsxWithSimpleXlsx($data, $filename);
-        }
+        return response()->streamDownload(
+            function () use ($data): void {
+                $writer = new XlsxWriter;
+                $writer->openToFile('php://output');
 
-        // Fallback: Generate XML-based Excel file
-        return $this->streamXmlExcel($data, $filename);
+                try {
+                    foreach ($data as $row) {
+                        $writer->addRow(Row::fromValues(array_values($row)));
+                    }
+                } finally {
+                    $writer->close();
+                }
+            },
+            $filename,
+            ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
+        );
     }
 
     /**
      * Download payout data as PDF.
      *
-     * Uses Spatie Laravel PDF if available, otherwise generates basic HTML-PDF.
+     * Renders a genuine PDF using the configured Spatie Laravel PDF driver.
      */
     public function downloadPdf(AffiliatePayout $payout): StreamedResponse
     {
@@ -129,18 +139,18 @@ final class PayoutExportService
         $data = $this->buildExportData($payout);
         $filename = $this->sanitizeFilename($payout->reference, 'pdf');
 
-        // Use Spatie Laravel PDF if available
-        if (class_exists(Pdf::class)) {
-            return $this->streamWithSpatiePdf($payout, $data, $filename);
+        $html = $this->buildPdfHtml($payout, $data);
+        $bytes = base64_decode(Pdf::html($html)->format('a4')->base64(), true);
+
+        if ($bytes === false || ! str_starts_with($bytes, '%PDF-')) {
+            throw new RuntimeException('Payout PDF renderer returned invalid PDF data.');
         }
 
-        // Fallback: Use DomPDF directly if available
-        if (class_exists(Dompdf::class)) {
-            return $this->streamWithDompdf($payout, $data, $filename);
-        }
-
-        // Last resort: Return HTML download
-        return $this->streamHtml($payout, $data, $filename);
+        return response()->streamDownload(
+            static fn () => print $bytes,
+            $filename,
+            ['Content-Type' => 'application/pdf']
+        );
     }
 
     private function resolveOwnerScopedPayout(AffiliatePayout $payout): AffiliatePayout
@@ -319,120 +329,6 @@ final class PayoutExportService
         }
 
         return $data;
-    }
-
-    /**
-     * Stream XLSX using SimpleXLSXGen library.
-     *
-     * @param  array<int, array<string>>  $data
-     */
-    private function streamXlsxWithSimpleXlsx(array $data, string $filename): StreamedResponse
-    {
-        return response()->streamDownload(
-            function () use ($data): void {
-                /** @phpstan-ignore class.notFound */
-                $xlsx = SimpleXLSXGen::fromArray($data);
-                $xlsx->saveAs('php://output');
-            },
-            $filename,
-            [
-                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                'Content-Disposition' => sprintf('attachment; filename="%s"', $filename),
-            ]
-        );
-    }
-
-    /**
-     * Stream XML-based Excel file (fallback).
-     *
-     * @param  array<int, array<string>>  $data
-     */
-    private function streamXmlExcel(array $data, string $filename): StreamedResponse
-    {
-        return response()->streamDownload(
-            function () use ($data): void {
-                echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
-                echo '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">' . "\n";
-                echo '<Worksheet ss:Name="Payout"><Table>' . "\n";
-
-                foreach ($data as $row) {
-                    echo '<Row>';
-                    foreach ($row as $cell) {
-                        echo sprintf('<Cell><Data ss:Type="String">%s</Data></Cell>', htmlspecialchars((string) $cell));
-                    }
-                    echo '</Row>' . "\n";
-                }
-
-                echo '</Table></Worksheet></Workbook>';
-            },
-            $filename,
-            [
-                'Content-Type' => 'application/vnd.ms-excel',
-                'Content-Disposition' => sprintf('attachment; filename="%s"', $filename),
-            ]
-        );
-    }
-
-    /**
-     * Stream PDF using Spatie Laravel PDF.
-     *
-     * @param  array<int, array<string>>  $data
-     */
-    private function streamWithSpatiePdf(AffiliatePayout $payout, array $data, string $filename): StreamedResponse
-    {
-        $html = $this->buildPdfHtml($payout, $data);
-
-        return response()->streamDownload(
-            function () use ($html): void {
-                $pdf = Pdf::html($html)->base64();
-                echo base64_decode($pdf);
-            },
-            $filename,
-            ['Content-Type' => 'application/pdf']
-        );
-    }
-
-    /**
-     * Stream PDF using DomPDF directly.
-     *
-     * @param  array<int, array<string>>  $data
-     */
-    private function streamWithDompdf(AffiliatePayout $payout, array $data, string $filename): StreamedResponse
-    {
-        $html = $this->buildPdfHtml($payout, $data);
-
-        return response()->streamDownload(
-            function () use ($html): void {
-                /** @phpstan-ignore class.notFound */
-                $dompdf = new Dompdf;
-                /** @phpstan-ignore-next-line third-party Dompdf API */
-                $dompdf->loadHtml($html);
-                /** @phpstan-ignore-next-line third-party Dompdf API */
-                $dompdf->setPaper('A4', 'portrait');
-                /** @phpstan-ignore-next-line third-party Dompdf API */
-                $dompdf->render();
-                /** @phpstan-ignore-next-line third-party Dompdf API */
-                echo $dompdf->output();
-            },
-            $filename,
-            ['Content-Type' => 'application/pdf']
-        );
-    }
-
-    /**
-     * Stream HTML download (fallback when no PDF library available).
-     *
-     * @param  array<int, array<string>>  $data
-     */
-    private function streamHtml(AffiliatePayout $payout, array $data, string $filename): StreamedResponse
-    {
-        $html = $this->buildPdfHtml($payout, $data);
-
-        return response()->streamDownload(
-            static fn () => print $html,
-            str_replace('.pdf', '.html', $filename),
-            ['Content-Type' => 'text/html']
-        );
     }
 
     /**
