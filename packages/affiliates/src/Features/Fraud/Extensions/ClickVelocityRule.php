@@ -23,7 +23,10 @@ final class ClickVelocityRule implements FraudRule
             return null;
         }
 
-        return new FraudFinding($this->ruleCode(), 30, FraudSeverity::Medium,
+        return new FraudFinding(
+            $this->ruleCode(),
+            30,
+            FraudSeverity::Medium,
             "Click velocity exceeded: {$evidence->clickCount}/{$evidence->clickLimit} per hour",
             ['count' => $evidence->clickCount, 'limit' => $evidence->clickLimit, 'ip_address' => $evidence->ipAddress],
         );

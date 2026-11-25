@@ -2,9 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalReference;
-use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalReader;
-use AIArmada\Affiliates\Features\Fraud\Queries\FraudSignalQuery;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\FraudSeverity;
 use AIArmada\Affiliates\Enums\MembershipStatus;
@@ -13,8 +10,11 @@ use AIArmada\Affiliates\Enums\ProgramVisibility;
 use AIArmada\Affiliates\Events\AffiliateCreated;
 use AIArmada\Affiliates\Events\AffiliateProgramJoined;
 use AIArmada\Affiliates\Events\FraudSignalDetected;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalReader;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalReference;
 use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
+use AIArmada\Affiliates\Features\Fraud\Queries\FraudSignalQuery;
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Models\AffiliateProgramTier;

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Data;
 
-
 final readonly class ClickFraudEvidence
 {
     public function __construct(

@@ -7,6 +7,7 @@ namespace AIArmada\Affiliates\Features\Fraud\Actions;
 use AIArmada\Affiliates\Contracts\FraudRule;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudApi;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudAssessment;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalRecord;
 use AIArmada\Affiliates\Features\Fraud\Queries\FraudEvidenceQuery;
 use AIArmada\Affiliates\Features\Fraud\Queries\FraudRiskProfileQuery;
 use AIArmada\Affiliates\Models\Affiliate;
@@ -82,7 +83,7 @@ final readonly class AnalyzeFraud implements FraudApi
         return $this->profile->execute($affiliateId);
     }
 
-    /** @param list<\AIArmada\Affiliates\Features\Fraud\Api\FraudSignalRecord> $signals */
+    /** @param list<FraudSignalRecord> $signals */
     private function assessment(array $signals): FraudAssessment
     {
         $score = array_sum(array_map(static fn ($signal): int => $signal->riskPoints, $signals));

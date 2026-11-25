@@ -25,7 +25,10 @@ final class GeoAnomalyRule implements FraudRule
             return null;
         }
 
-        return new FraudFinding($this->ruleCode(), 40, FraudSeverity::High,
+        return new FraudFinding(
+            $this->ruleCode(),
+            40,
+            FraudSeverity::High,
             "Rapid IP change detected within {$minutes} minutes",
             ['previous_ip' => $evidence->previousIp, 'current_ip' => $evidence->ipAddress, 'time_diff_minutes' => $minutes],
         );

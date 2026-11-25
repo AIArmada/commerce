@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Signals\Services\Recorders;
 
-use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalReference;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalReader;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalReference;
 use AIArmada\Signals\Models\SignalEvent;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;

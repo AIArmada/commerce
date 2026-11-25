@@ -28,7 +28,10 @@ final class SelfReferralRule implements FraudRule
             return null;
         }
 
-        return new FraudFinding($this->ruleCode(), 100, FraudSeverity::Critical,
+        return new FraudFinding(
+            $this->ruleCode(),
+            100,
+            FraudSeverity::Critical,
             'Self-referral detected',
             ['affiliate_owner_id' => $evidence->ownerId, 'actor_user_id' => $evidence->actorId],
         );

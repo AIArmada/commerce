@@ -2,27 +2,27 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Contracts\FraudRule;
-use AIArmada\Affiliates\Data\ClickFraudEvidence;
-use AIArmada\Affiliates\Data\ConversionFraudEvidence;
-use AIArmada\Affiliates\Data\FraudFinding;
-use AIArmada\Affiliates\Enums\FraudSeverity;
 use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
 use AIArmada\Affiliates\Actions\Conversions\VoidAffiliateConversion;
+use AIArmada\Affiliates\Contracts\FraudRule;
 use AIArmada\Affiliates\Contracts\MerchantCatalog;
 use AIArmada\Affiliates\Contracts\MerchantIdentity;
 use AIArmada\Affiliates\Contracts\MerchantLedger;
+use AIArmada\Affiliates\Data\ClickFraudEvidence;
+use AIArmada\Affiliates\Data\ConversionFraudEvidence;
 use AIArmada\Affiliates\Data\ExternalConversion;
+use AIArmada\Affiliates\Data\FraudFinding;
 use AIArmada\Affiliates\Data\PostedConversion;
 use AIArmada\Affiliates\Enums\CommissionType;
+use AIArmada\Affiliates\Enums\FraudSeverity;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\ProgramVisibility;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
+use AIArmada\Affiliates\Features\Fraud\Actions\AnalyzeFraud;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Features\Fraud\Actions\AnalyzeFraud;
 use AIArmada\Affiliates\Services\MerchantLedgerService;
 use AIArmada\Affiliates\States\RejectedConversion;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;

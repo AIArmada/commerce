@@ -34,7 +34,10 @@ final class FastConversionRule implements FraudRule
             return null;
         }
 
-        return new FraudFinding($this->ruleCode(), 45, FraudSeverity::High,
+        return new FraudFinding(
+            $this->ruleCode(),
+            45,
+            FraudSeverity::High,
             "Conversion occurred {$seconds}s after click (min: {$evidence->minimumSeconds}s)",
             [
                 'click_time' => $evidence->clickedAt->toIso8601String(),

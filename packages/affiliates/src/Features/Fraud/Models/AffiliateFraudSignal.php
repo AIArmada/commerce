@@ -129,7 +129,6 @@ class AffiliateFraudSignal extends Model implements Auditable
         return $query->whereIn('severity', [FraudSeverity::High, FraudSeverity::Critical]);
     }
 
-
     protected function getActivityLogName(): string
     {
         return 'affiliates';

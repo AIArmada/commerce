@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Services;
 
-use AIArmada\Affiliates\Features\Fraud\Api\FraudApi;
 use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
 use AIArmada\Affiliates\Actions\Conversions\VoidAffiliateConversion;
 use AIArmada\Affiliates\Contracts\MerchantIdentity;
@@ -13,6 +12,7 @@ use AIArmada\Affiliates\Data\AffiliateConversionData;
 use AIArmada\Affiliates\Data\ExternalConversion;
 use AIArmada\Affiliates\Data\PostedConversion;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudApi;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Services\Commissions\CommissionCaps;

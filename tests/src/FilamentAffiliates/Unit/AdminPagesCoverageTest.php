@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\FraudSeverity;
 use AIArmada\Affiliates\Enums\FraudSignalStatus;
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Services\AffiliateReportService;
 use AIArmada\Affiliates\States\Active;

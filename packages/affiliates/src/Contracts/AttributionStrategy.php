@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Contracts;
 
-
 use AIArmada\Affiliates\Data\AttributionTouch;
 
 interface AttributionStrategy

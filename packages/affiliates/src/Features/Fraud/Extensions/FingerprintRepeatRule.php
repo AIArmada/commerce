@@ -23,7 +23,10 @@ final class FingerprintRepeatRule implements FraudRule
             return null;
         }
 
-        return new FraudFinding($this->ruleCode(), 25, FraudSeverity::Medium,
+        return new FraudFinding(
+            $this->ruleCode(),
+            25,
+            FraudSeverity::Medium,
             "Same fingerprint used {$evidence->fingerprintCount} times in 24 hours",
             [
                 'fingerprint' => mb_substr($evidence->fingerprint, 0, 16) . '...',

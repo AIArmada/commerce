@@ -9,6 +9,7 @@ use AIArmada\Affiliates\Data\AffiliateAwardDecision;
 use AIArmada\Affiliates\Data\AffiliateAwardProposal;
 use AIArmada\Affiliates\Data\AwardRecipient;
 use AIArmada\Affiliates\Models\Affiliate;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Explicitly labeled FIXTURE host boundary for cash-post tests.
@@ -60,7 +61,7 @@ final class FixtureAffiliateAwardPolicy implements AffiliateAwardPolicy
             $fresh = Affiliate::on($recipient->connectionName)->whereKey($recipient->id)->lockForUpdate()->first();
 
             self::$observedDecisions[] = [
-                'transaction_level' => \Illuminate\Support\Facades\DB::connection($recipient->connectionName)->transactionLevel(),
+                'transaction_level' => DB::connection($recipient->connectionName)->transactionLevel(),
                 'connection' => $recipient->connectionName,
                 'recipient' => $recipient->id,
                 'award_key' => $proposal->awardKey,

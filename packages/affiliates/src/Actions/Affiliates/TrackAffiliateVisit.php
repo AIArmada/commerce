@@ -6,9 +6,9 @@ namespace AIArmada\Affiliates\Actions\Affiliates;
 
 use AIArmada\Affiliates\Contracts\AffiliateLookup;
 use AIArmada\Affiliates\Data\AffiliateAttributionData;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudApi;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
-use AIArmada\Affiliates\Features\Fraud\Api\FraudApi;
 use AIArmada\Affiliates\Support\IpHasher;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
@@ -239,7 +239,6 @@ final class TrackAffiliateVisit
 
         return hash_equals($attribution->fingerprint, $fingerprint);
     }
-
 
     private function isSelfReferral(Affiliate $affiliate): bool
     {

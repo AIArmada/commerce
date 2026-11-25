@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Features\Fraud\Actions\ReviewFraudSignal;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\FraudSeverity;
 use AIArmada\Affiliates\Enums\FraudSignalStatus;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Fraud\Actions\ReviewFraudSignal;
 use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 

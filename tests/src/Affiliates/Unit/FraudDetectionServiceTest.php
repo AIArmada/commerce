@@ -6,11 +6,12 @@ use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\FraudSeverity;
 use AIArmada\Affiliates\Enums\FraudSignalStatus;
 use AIArmada\Affiliates\Events\FraudSignalDetected;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudApi;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudAssessment;
+use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
-use AIArmada\Affiliates\Features\Fraud\Api\FraudApi;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\PendingConversion;
@@ -45,7 +46,7 @@ describe('AnalyzeFraud', function (): void {
 
             $result = $this->service->analyzeClick((string) $this->affiliate->getKey(), $request->ip(), $request->userAgent());
 
-            expect($result)->toBeInstanceOf(\AIArmada\Affiliates\Features\Fraud\Api\FraudAssessment::class);
+            expect($result)->toBeInstanceOf(FraudAssessment::class);
             expect($result->allowed)->toBeTrue();
             expect($result->score)->toBe(0);
             expect($result->signals)->toBeEmpty();
@@ -128,7 +129,7 @@ describe('AnalyzeFraud', function (): void {
 
             $result = $this->service->analyzeConversion((string) $conversion->getKey());
 
-            expect($result)->toBeInstanceOf(\AIArmada\Affiliates\Features\Fraud\Api\FraudAssessment::class);
+            expect($result)->toBeInstanceOf(FraudAssessment::class);
             expect($result->allowed)->toBeTrue();
         });
 

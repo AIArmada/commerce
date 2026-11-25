@@ -28,7 +28,10 @@ final class ConversionVelocityRule implements FraudRule
             return null;
         }
 
-        return new FraudFinding($this->ruleCode(), 35, FraudSeverity::Medium,
+        return new FraudFinding(
+            $this->ruleCode(),
+            35,
+            FraudSeverity::Medium,
             "Daily conversion limit exceeded: {$evidence->dailyCount}/{$evidence->dailyLimit}",
             ['count' => $evidence->dailyCount, 'limit' => $evidence->dailyLimit, 'date' => $evidence->date],
         );

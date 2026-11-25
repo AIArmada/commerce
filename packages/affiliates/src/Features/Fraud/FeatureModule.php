@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Fraud;
 
-use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalReader;
-use AIArmada\Affiliates\Features\Fraud\Queries\FraudSignalQuery;
 use AIArmada\Affiliates\Features\Fraud\Actions\AnalyzeFraud;
 use AIArmada\Affiliates\Features\Fraud\Actions\ReviewFraudSignal;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudApi;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudReviewApi;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalReader;
+use AIArmada\Affiliates\Features\Fraud\Queries\FraudSignalQuery;
 use AIArmada\Affiliates\Platform\ExtensionRegistry;
 use AIArmada\Affiliates\Platform\FeatureModule as FeatureModuleContract;
 use Illuminate\Contracts\Foundation\Application;
