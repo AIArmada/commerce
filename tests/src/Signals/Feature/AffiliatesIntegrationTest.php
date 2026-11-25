@@ -414,6 +414,23 @@ it('ignores forged affiliate events that target another owner model id', functio
         ),
     ));
 
+    Event::dispatch(new AffiliateAttributed(
+        $affiliateA->toData(),
+        new AffiliateAttributionData(
+            id: $targetAttribution->id,
+            affiliateId: $affiliateA->id,
+            affiliateCode: $affiliateA->code,
+        ),
+    ));
+
+    Event::dispatch(new AffiliateConversionRecorded(
+        new AffiliateConversionData(
+            id: $mismatchedConversion->id,
+            affiliateId: $affiliateA->id,
+            affiliateCode: $affiliateA->code,
+        ),
+    ));
+
     expect(SignalEvent::query()->withoutOwnerScope()->count())->toBe(0);
 });
 

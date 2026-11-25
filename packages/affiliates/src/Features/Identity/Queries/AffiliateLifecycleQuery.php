@@ -9,15 +9,31 @@ use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycleRecord;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycleReference;
 use AIArmada\Affiliates\Models\Affiliate;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 
 final class AffiliateLifecycleQuery implements AffiliateLifecycleReader
 {
     public function find(AffiliateLifecycleReference $reference): ?AffiliateLifecycleRecord
     {
+        if (! Str::isUuid($reference->id)) {
+            return null;
+        }
+
         $affiliate = Affiliate::query()->withoutOwnerScope()->find($reference->id);
 
         return $affiliate === null ? null : $this->project($affiliate, $reference);
+    }
+
+    public function findById(string $id): ?AffiliateLifecycleRecord
+    {
+        if (! Str::isUuid($id)) {
+            return null;
+        }
+
+        $affiliate = Affiliate::query()->withoutOwnerScope()->find($id);
+
+        return $affiliate === null ? null : $this->project($affiliate, $affiliate->lifecycleReference());
     }
 
     public function project(Affiliate $affiliate, AffiliateLifecycleReference $reference): AffiliateLifecycleRecord
