@@ -188,7 +188,7 @@ test('creative media replaces its asset and is removed when the creative is dele
     Storage::disk('public')->assertExists($firstPath);
 
     $creative->refresh();
-    app(CreativeAdministration::class)->update(null, (string) $creative->getKey(), [], file_get_contents(UploadedFile::fake()->image('second.png')->getPathname()));
+    app(CreativeAdministration::class)->update(null, (string) $creative->getKey(), [], UploadedFile::fake()->image('second.png')->get());
     $second = $creative->fresh()->getFirstMedia('creative_asset');
     expect($creative->fresh()->getMedia('creative_asset'))->toHaveCount(1)
         ->and($creative->fresh()->getAssetUrl())->toBe($second->getFullUrl());
@@ -347,8 +347,8 @@ test('rolled back program deletion preserves creative media rows and files', fun
 
 test('creative replacement rolls back metadata and media without destroying the previous asset', function (): void {
     $api = app(CreativeAdministration::class);
-    $firstBytes = file_get_contents(UploadedFile::fake()->image('first.png')->getPathname());
-    $secondBytes = file_get_contents(UploadedFile::fake()->image('second.png', 32, 32)->getPathname());
+    $firstBytes = UploadedFile::fake()->image('first.png')->get();
+    $secondBytes = UploadedFile::fake()->image('second.png', 32, 32)->get();
     $id = $api->create(null, ['type' => 'image', 'name' => 'First', 'tracking_code' => 'REPLACE'], $firstBytes);
     $creative = AffiliateProgramCreative::query()->findOrFail($id);
     $first = $creative->getFirstMedia('creative_asset');
@@ -374,7 +374,7 @@ test('creative replacement rolls back metadata and media without destroying the 
 
 test('creative uploads reject active content and retain the current asset', function (): void {
     $api = app(CreativeAdministration::class);
-    $bytes = file_get_contents(UploadedFile::fake()->image('asset.png')->getPathname());
+    $bytes = UploadedFile::fake()->image('asset.png')->get();
     $id = $api->create(null, ['type' => 'image', 'name' => 'Asset', 'tracking_code' => 'SAFE'], $bytes);
     $creative = AffiliateProgramCreative::query()->findOrFail($id);
     $first = $creative->getFirstMedia('creative_asset');

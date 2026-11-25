@@ -24,6 +24,9 @@ use Illuminate\Support\Facades\Schema;
 uses(SignalsTestCase::class);
 
 beforeEach(function (): void {
+    (new \AIArmada\Affiliates\Features\Attribution\FeatureModule)->register(app());
+    (new \AIArmada\Affiliates\Features\Conversions\FeatureModule)->register(app());
+
     Schema::dropIfExists('affiliate_conversions');
     Schema::dropIfExists('affiliate_attributions');
     Schema::dropIfExists('affiliates');

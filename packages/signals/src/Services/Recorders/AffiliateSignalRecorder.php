@@ -22,7 +22,8 @@ final class AffiliateSignalRecorder
 
     public function recordAttributed(object $attribution): ?SignalEvent
     {
-        $record = app(AttributionSignalReader::class)->find($this->reference($attribution));
+        $reference = $this->reference($attribution);
+        $record = app(AttributionSignalReader::class)->find($reference);
 
         if ($record === null) {
             return null;
@@ -76,7 +77,8 @@ final class AffiliateSignalRecorder
 
     public function recordConversion(object $conversion): ?SignalEvent
     {
-        $record = app(ConversionSignalReader::class)->find($this->reference($conversion));
+        $reference = $this->reference($conversion);
+        $record = app(ConversionSignalReader::class)->find($reference);
 
         if ($record === null) {
             return null;

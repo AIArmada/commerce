@@ -61,7 +61,7 @@ final readonly class QualifyAffiliateRank implements RankQualificationApi
                 throw new InvalidArgumentException('A non-commercial affiliate cannot receive a rank.');
             }
 
-            $rank = $rankId === null ? null : AffiliateRank::query()->forOwner()->findOrFail($rankId);
+            $rank = $rankId === null ? null : AffiliateRank::query()->forOwner()->lockForUpdate()->findOrFail($rankId);
             $this->change($affiliate, $rank, RankQualificationReason::Manual);
         }, attempts: 3);
     }
@@ -97,6 +97,11 @@ final readonly class QualifyAffiliateRank implements RankQualificationApi
     {
         if ($affiliate->rank_id === $rank?->id) {
             return;
+        }
+
+        if ((new AffiliateRank)->getConnection() !== $affiliate->getConnection()
+            || (new AffiliateRankHistory)->getConnection() !== $affiliate->getConnection()) {
+            throw new \LogicException('Rank assignment requires a shared database connection.');
         }
 
         $oldRank = $affiliate->rank;

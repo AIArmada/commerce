@@ -26,7 +26,7 @@ use AIArmada\FilamentAffiliates\Features\Programs\EntryPoints\Filament\Resources
 use AIArmada\FilamentAffiliates\Features\Programs\EntryPoints\Filament\Resources\AffiliateProgramResource\Pages\ViewAffiliateProgram;
 use AIArmada\FilamentAffiliates\Features\Programs\EntryPoints\Filament\Resources\AffiliateProgramResource\RelationManagers\CreativesRelationManager;
 use AIArmada\FilamentAffiliates\Features\Programs\EntryPoints\Filament\Resources\AffiliateProgramResource\Schemas\AffiliateProgramInfolist;
-use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
+use Filament\Forms\Components\FileUpload;
 use Filament\Schemas\Concerns\InteractsWithSchemas;
 use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Schemas\Schema;
@@ -279,8 +279,8 @@ it('creative forms use media uploads and admin asset links resolve attached medi
         Schema::make(new AdapterOperationsHostComponent)->model($creative)->statePath('data')
     );
     $upload = $schema->getComponent('asset');
-    expect($upload)->toBeInstanceOf(SpatieMediaLibraryFileUpload::class)
-        ->and($upload->getCollection())->toBe('creative_asset')
+    expect($upload)->toBeInstanceOf(FileUpload::class)
+        ->and($upload->shouldStoreFiles())->toBeFalse()
         ->and($upload->getMaxSize())->toBe(9766)
         ->and($schema->getComponent('asset_url'))->toBeNull();
 
@@ -288,7 +288,8 @@ it('creative forms use media uploads and admin asset links resolve attached medi
     $programSchema = $manager->form(
         Schema::make(new AdapterOperationsHostComponent)->model($creative)->statePath('data')
     );
-    expect($programSchema->getComponent('asset'))->toBeInstanceOf(SpatieMediaLibraryFileUpload::class)
+    expect($programSchema->getComponent('asset'))->toBeInstanceOf(FileUpload::class)
+        ->and($programSchema->getComponent('asset')->shouldStoreFiles())->toBeFalse()
         ->and($programSchema->getComponent('asset_url'))->toBeNull();
 
     $host = new AdapterOperationsTableHost;

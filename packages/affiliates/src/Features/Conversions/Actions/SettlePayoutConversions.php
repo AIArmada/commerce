@@ -9,7 +9,7 @@ use AIArmada\Affiliates\Features\Conversions\Api\PayoutConversionSettlement;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\Models\AffiliatePayoutOperation;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutReservationReader;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\CancelledPayout;
 use AIArmada\Affiliates\States\CompletedPayout;
@@ -20,6 +20,8 @@ use LogicException;
 
 final readonly class SettlePayoutConversions implements PayoutConversionSettlement
 {
+    public function __construct(private PayoutReservationReader $reservations) {}
+
     public function complete(string $payoutId): void
     {
         $payout = $this->lockedPayout($payoutId);
@@ -54,13 +56,13 @@ final readonly class SettlePayoutConversions implements PayoutConversionSettleme
         }
 
         $query = AffiliateConversion::query()->forOwner()->where('affiliate_payout_id', $payoutId);
-        $operation = $payout->operation()->forOwner()->lockForUpdate()->first();
+        $operation = $payout->affiliate_payout_operation_id === null ? null : $this->reservations->locked($payout->affiliate_payout_operation_id);
 
-        if ($payout->affiliate_payout_operation_id !== null && ! $operation instanceof AffiliatePayoutOperation) {
+        if ($payout->affiliate_payout_operation_id !== null && $operation === null) {
             throw new PayoutCompletionBlockedException('Payout reservation operation is missing.');
         }
 
-        if ($operation?->funds_released_at !== null) {
+        if ($operation?->fundsReleased === true) {
             if ($query->exists()) {
                 throw new PayoutCompletionBlockedException('Released payout still has linked conversions.');
             }
@@ -75,29 +77,29 @@ final readonly class SettlePayoutConversions implements PayoutConversionSettleme
             throw new PayoutCompletionBlockedException('Payout release refused: a linked conversion is no longer approved.');
         }
 
-        $reserved = $operation?->payout_sequence !== null;
+        $reserved = $operation?->sequence !== null;
 
-        if ($operation instanceof AffiliatePayoutOperation && $operation->payout_sequence !== null) {
+        if ($operation !== null && $operation->sequence !== null) {
             $currency = mb_strtoupper($operation->currency);
-            $matching = (clone $approved)->where('affiliate_id', $operation->affiliate_id)
+            $matching = (clone $approved)->where('affiliate_id', $operation->affiliateId)
                 ->whereRaw('UPPER(commission_currency) = ?', [$currency]);
 
-            if ($operation->affiliate_payout_id !== $payoutId
-                || $operation->amount_minor <= 0
+            if ($operation->payoutId !== $payoutId
+                || $operation->amountMinor <= 0
                 || $expected !== $payout->conversion_count
                 || $matching->count() !== $expected
-                || (int) $matching->sum('commission_minor') !== $operation->amount_minor) {
+                || (int) $matching->sum('commission_minor') !== $operation->amountMinor) {
                 throw new PayoutCompletionBlockedException('Payout release refused: linked conversions no longer match the reservation.');
             }
 
-            $balance = AffiliateBalance::query()->where('affiliate_id', $operation->affiliate_id)
+            $balance = AffiliateBalance::query()->where('affiliate_id', $operation->affiliateId)
                 ->where('currency', $currency)->lockForUpdate()->first();
 
             if (! $balance instanceof AffiliateBalance) {
                 throw new PayoutCompletionBlockedException('Payout release refused: reserved balance is missing.');
             }
 
-            $balance->increment('available_minor', $operation->amount_minor);
+            $balance->increment('available_minor', $operation->amountMinor);
         }
 
         if ($approved->update(['affiliate_payout_id' => null]) !== $expected) {
@@ -113,10 +115,11 @@ final readonly class SettlePayoutConversions implements PayoutConversionSettleme
 
         if ($connection->transactionLevel() < 1
             || (new AffiliateConversion)->getConnection() !== $connection
-            || (new AffiliateBalance)->getConnection() !== $connection
-            || (new AffiliatePayoutOperation)->getConnection() !== $connection) {
+            || (new AffiliateBalance)->getConnection() !== $connection) {
             throw new LogicException('Payout settlement requires the shared payout transaction.');
         }
+
+        $this->reservations->assertSharedTransaction(spl_object_id($connection));
 
         return AffiliatePayout::query()->forOwner()->lockForUpdate()->findOrFail($payoutId);
     }
