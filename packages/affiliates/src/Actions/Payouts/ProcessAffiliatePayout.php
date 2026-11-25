@@ -10,6 +10,7 @@ use AIArmada\Affiliates\Exceptions\PayoutCompletionBlockedException;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliatePayoutOperation;
+use AIArmada\Affiliates\Queries\PayoutRequestQuery;
 use AIArmada\Affiliates\Services\PayoutReconciliationService;
 use AIArmada\Affiliates\States\CompletedPayout;
 use AIArmada\Affiliates\States\FailedPayout;
@@ -128,6 +129,7 @@ final class ProcessAffiliatePayout
                 return [
                     'payout' => $locked->fresh(['operation', 'payee']),
                     'processor_type' => $method->type->value,
+                    'request' => PayoutRequestQuery::fromPayout($locked, $method->details),
                     'reconcile' => $needsReconciliation,
                     'lease_expires_at' => $leaseExpiresAt,
                 ];
@@ -146,10 +148,11 @@ final class ProcessAffiliatePayout
             $processor = $this->factory->make($claim['processor_type']);
 
             if ($claim['reconcile']) {
-                $status = $processor->getStatus($claimedPayout);
+                $providerStatus = $processor->getStatus($claim['request']);
+                $status = $providerStatus->status;
 
                 if ($status === 'completed') {
-                    return $this->recordResult($claimedPayout, PayoutResult::success((string) ($claimedPayout->external_reference ?? $claimedPayout->operation?->provider_reference ?? $claimedPayout->id)), leaseExpiresAt: $claim['lease_expires_at']);
+                    return $this->recordResult($claimedPayout, PayoutResult::success((string) ($providerStatus->externalReference ?? $claimedPayout->external_reference ?? $claimedPayout->operation?->provider_reference ?? $claimedPayout->id)), leaseExpiresAt: $claim['lease_expires_at']);
                 }
 
                 if (in_array($status, ['failed', 'cancelled'], true)) {
@@ -168,7 +171,7 @@ final class ProcessAffiliatePayout
                 throw new PayoutCompletionBlockedException($exception->getMessage(), previous: $exception);
             }
 
-            return $this->recordResult($claimedPayout, $processor->process($claimedPayout), leaseExpiresAt: $claim['lease_expires_at']);
+            return $this->recordResult($claimedPayout, $processor->process($claim['request']), leaseExpiresAt: $claim['lease_expires_at']);
         } catch (Throwable $throwable) {
             report($throwable);
 

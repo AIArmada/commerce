@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Drivers\Payouts;
 
 use AIArmada\Affiliates\Contracts\PayoutProcessorInterface;
+use AIArmada\Affiliates\Data\PayoutRequest;
 use AIArmada\Affiliates\Data\PayoutResult;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliatePayout;
+use AIArmada\Affiliates\Data\PayoutStatusResult;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
@@ -37,27 +37,25 @@ final class PayPalProcessor implements PayoutProcessorInterface
             : 'https://api-m.paypal.com';
     }
 
-    public function process(AffiliatePayout $payout): PayoutResult
+    public function process(PayoutRequest $payout): PayoutResult
     {
         if ($this->clientId === '' || $this->clientSecret === '') {
             return PayoutResult::failure('PayPal is not configured.', 'PAYPAL_NOT_CONFIGURED');
         }
 
-        $operation = $payout->operation;
-        $affiliate = $payout->payee;
+        $operationId = $payout->operationId;
 
-        if ($operation === null || ! $affiliate instanceof Affiliate) {
+        if ($operationId === null || ! $payout->hasAffiliate) {
             return PayoutResult::failure('The payout operation is invalid.', 'INVALID_PAYOUT_OPERATION');
         }
 
-        $method = $affiliate->payoutMethods()->where('type', 'paypal')->where('is_default', true)->first();
-        $email = is_array($method?->details) ? ($method->details['email'] ?? null) : null;
+        $email = $payout->methodDetails['email'] ?? null;
 
         if (! is_string($email) || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
             return PayoutResult::failure('The PayPal payout destination is invalid.', 'INVALID_PAYPAL_ACCOUNT');
         }
 
-        $netAmount = $payout->total_minor - $this->getFees($payout->total_minor, $payout->currency);
+        $netAmount = $payout->totalMinor - $this->getFees($payout->totalMinor, $payout->currency);
 
         if ($netAmount <= 0) {
             return PayoutResult::failure('The payout amount does not cover provider fees.', 'NON_POSITIVE_NET_AMOUNT');
@@ -69,7 +67,7 @@ final class PayPalProcessor implements PayoutProcessorInterface
             return PayoutResult::unknown('PAYPAL_AUTH_OUTCOME_UNKNOWN');
         }
 
-        $providerOperationId = mb_substr(hash('sha256', $operation->id), 0, 30);
+        $providerOperationId = mb_substr(hash('sha256', $operationId), 0, 30);
 
         try {
             $response = $this->request()->withToken($token)->post("{$this->apiUrl}/v1/payments/payouts", [
@@ -107,52 +105,52 @@ final class PayPalProcessor implements PayoutProcessorInterface
         }
     }
 
-    public function getStatus(AffiliatePayout $payout): string
+    public function getStatus(PayoutRequest $payout): PayoutStatusResult
     {
-        if (! is_string($payout->external_reference) || $payout->external_reference === '') {
-            return 'unknown';
+        if (! is_string($payout->externalReference) || $payout->externalReference === '') {
+            return new PayoutStatusResult('unknown');
         }
 
         $token = $this->getAccessToken();
 
         if ($token === null) {
-            return 'unknown';
+            return new PayoutStatusResult('unknown');
         }
 
         try {
             $response = $this->request(attempts: 1)->withToken($token)
-                ->get("{$this->apiUrl}/v1/payments/payouts/{$payout->external_reference}");
+                ->get("{$this->apiUrl}/v1/payments/payouts/{$payout->externalReference}");
 
             if ($response->status() === 404) {
-                return 'not_found';
+                return new PayoutStatusResult('not_found');
             }
 
             if (! $response->successful()) {
-                return 'unknown';
+                return new PayoutStatusResult('unknown');
             }
 
-            return match ((string) $response->json('batch_header.batch_status')) {
+            return new PayoutStatusResult(match ((string) $response->json('batch_header.batch_status')) {
                 'SUCCESS' => 'completed',
                 'PENDING', 'PROCESSING', 'NEW' => 'processing',
                 'DENIED', 'CANCELED' => 'failed',
                 default => 'unknown',
-            };
+            }, $payout->externalReference);
         } catch (Throwable $throwable) {
             Log::warning('PayPal payout reconciliation request failed.', [
                 'payout_id' => $payout->id,
                 'exception' => $throwable::class,
             ]);
 
-            return 'unknown';
+            return new PayoutStatusResult('unknown');
         }
     }
 
-    public function cancel(AffiliatePayout $payout): bool
+    public function cancel(PayoutRequest $payout): bool
     {
         return false;
     }
 
-    public function getEstimatedArrival(AffiliatePayout $payout): ?DateTimeInterface
+    public function getEstimatedArrival(PayoutRequest $payout): ?DateTimeInterface
     {
         return CarbonImmutable::now()->addDays(1);
     }

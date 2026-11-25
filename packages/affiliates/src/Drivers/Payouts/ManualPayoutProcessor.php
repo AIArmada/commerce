@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Drivers\Payouts;
 
 use AIArmada\Affiliates\Contracts\PayoutProcessorInterface;
+use AIArmada\Affiliates\Data\PayoutRequest;
 use AIArmada\Affiliates\Data\PayoutResult;
-use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\States\PayoutStatus;
+use AIArmada\Affiliates\Data\PayoutStatusResult;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Support\Str;
@@ -17,7 +17,7 @@ use Illuminate\Support\Str;
  */
 final class ManualPayoutProcessor implements PayoutProcessorInterface
 {
-    public function process(AffiliatePayout $payout): PayoutResult
+    public function process(PayoutRequest $payout): PayoutResult
     {
         return PayoutResult::pending(
             externalReference: 'MANUAL-' . Str::upper(Str::random(12)),
@@ -28,17 +28,17 @@ final class ManualPayoutProcessor implements PayoutProcessorInterface
         );
     }
 
-    public function getStatus(AffiliatePayout $payout): string
+    public function getStatus(PayoutRequest $payout): PayoutStatusResult
     {
-        return PayoutStatus::normalize($payout->status);
+        return new PayoutStatusResult($payout->status, $payout->externalReference);
     }
 
-    public function cancel(AffiliatePayout $payout): bool
+    public function cancel(PayoutRequest $payout): bool
     {
         return true;
     }
 
-    public function getEstimatedArrival(AffiliatePayout $payout): ?DateTimeInterface
+    public function getEstimatedArrival(PayoutRequest $payout): ?DateTimeInterface
     {
         return CarbonImmutable::now()->addDays(5);
     }

@@ -4,27 +4,21 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Data;
 
-use Spatie\LaravelData\Attributes\MapInputName;
-use Spatie\LaravelData\Attributes\MapOutputName;
-use Spatie\LaravelData\Data;
-use Spatie\LaravelData\Mappers\SnakeCaseMapper;
 
 /**
  * Result of a payout provider operation.
  */
-#[MapInputName(SnakeCaseMapper::class)]
-#[MapOutputName(SnakeCaseMapper::class)]
-class PayoutResult extends Data
+final readonly class PayoutResult
 {
     /**
      * @param  array<string, scalar|null>  $metadata
      */
     public function __construct(
-        public readonly bool $success,
-        public readonly ?string $externalReference = null,
-        public readonly ?string $failureReason = null,
-        public readonly ?string $failureCode = null,
-        public readonly array $metadata = [],
+        public bool $success,
+        public ?string $externalReference = null,
+        public ?string $failureReason = null,
+        public ?string $failureCode = null,
+        public array $metadata = [],
     ) {}
 
     /** @param array<string, scalar|null> $metadata */

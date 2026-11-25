@@ -3,7 +3,9 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Contracts\PayoutProcessorInterface;
+use AIArmada\Affiliates\Data\PayoutRequest;
 use AIArmada\Affiliates\Data\PayoutResult;
+use AIArmada\Affiliates\Data\PayoutStatusResult;
 use AIArmada\Affiliates\Drivers\Payouts\PayoutProcessorFactory;
 use AIArmada\Affiliates\Enums\PayoutMethodType;
 use AIArmada\Affiliates\Models\Affiliate;
@@ -386,22 +388,22 @@ it('rejects cross-tenant payout selection without mutating any selected payouts'
 
 class TestSuccessPayoutProcessor implements PayoutProcessorInterface
 {
-    public function process(AffiliatePayout $payout): PayoutResult
+    public function process(PayoutRequest $payout): PayoutResult
     {
         return PayoutResult::success('EXT-123', ['processor' => 'test']);
     }
 
-    public function getStatus(AffiliatePayout $payout): string
+    public function getStatus(PayoutRequest $payout): PayoutStatusResult
     {
-        return 'completed';
+        return new PayoutStatusResult('completed');
     }
 
-    public function cancel(AffiliatePayout $payout): bool
+    public function cancel(PayoutRequest $payout): bool
     {
         return true;
     }
 
-    public function getEstimatedArrival(AffiliatePayout $payout): ?DateTimeInterface
+    public function getEstimatedArrival(PayoutRequest $payout): ?DateTimeInterface
     {
         return null;
     }
@@ -424,22 +426,22 @@ class TestSuccessPayoutProcessor implements PayoutProcessorInterface
 
 class TestFailingPayoutProcessor implements PayoutProcessorInterface
 {
-    public function process(AffiliatePayout $payout): PayoutResult
+    public function process(PayoutRequest $payout): PayoutResult
     {
         return PayoutResult::failure('Processor failed');
     }
 
-    public function getStatus(AffiliatePayout $payout): string
+    public function getStatus(PayoutRequest $payout): PayoutStatusResult
     {
-        return 'failed';
+        return new PayoutStatusResult('failed');
     }
 
-    public function cancel(AffiliatePayout $payout): bool
+    public function cancel(PayoutRequest $payout): bool
     {
         return true;
     }
 
-    public function getEstimatedArrival(AffiliatePayout $payout): ?DateTimeInterface
+    public function getEstimatedArrival(PayoutRequest $payout): ?DateTimeInterface
     {
         return null;
     }
@@ -462,22 +464,22 @@ class TestFailingPayoutProcessor implements PayoutProcessorInterface
 
 class TestThrowingPayoutProcessor implements PayoutProcessorInterface
 {
-    public function process(AffiliatePayout $payout): PayoutResult
+    public function process(PayoutRequest $payout): PayoutResult
     {
         throw new Exception('Processor exploded');
     }
 
-    public function getStatus(AffiliatePayout $payout): string
+    public function getStatus(PayoutRequest $payout): PayoutStatusResult
     {
-        return 'failed';
+        return new PayoutStatusResult('failed');
     }
 
-    public function cancel(AffiliatePayout $payout): bool
+    public function cancel(PayoutRequest $payout): bool
     {
         return true;
     }
 
-    public function getEstimatedArrival(AffiliatePayout $payout): ?DateTimeInterface
+    public function getEstimatedArrival(PayoutRequest $payout): ?DateTimeInterface
     {
         return null;
     }

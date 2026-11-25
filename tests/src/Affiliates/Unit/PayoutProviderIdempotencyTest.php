@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Actions\Payouts\ReverseStripePayout;
 use AIArmada\Affiliates\Drivers\Payouts\PayPalProcessor;
 use AIArmada\Affiliates\Drivers\Payouts\StripeConnectProcessor;
 use AIArmada\Affiliates\Enums\CommissionType;
@@ -10,6 +11,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliatePayoutMethod;
 use AIArmada\Affiliates\Models\AffiliatePayoutOperation;
+use AIArmada\Affiliates\Queries\PayoutRequestQuery;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ProcessingPayout;
 use Illuminate\Http\Client\Request;
@@ -64,7 +66,7 @@ test('stripe uses the operation id as the provider idempotency key', function ()
 
     Http::fake(['api.stripe.com/*' => Http::response(['id' => 'tr_123'], 200)]);
 
-    $result = (new StripeConnectProcessor)->process($payout);
+    $result = (new StripeConnectProcessor)->process(PayoutRequestQuery::fromPayout($payout));
 
     expect($result->getStatus())->toBe('completed')
         ->and($result->externalReference)->toBe('tr_123');
@@ -81,7 +83,7 @@ test('retryable stripe failures become unknown without exposing provider text', 
 
     Http::fake(['api.stripe.com/*' => Http::response(['error' => ['message' => 'secret upstream detail']], 500)]);
 
-    $result = (new StripeConnectProcessor)->process($payout);
+    $result = (new StripeConnectProcessor)->process(PayoutRequestQuery::fromPayout($payout));
 
     expect($result->isUnknown())->toBeTrue()
         ->and($result->failureReason)->not->toContain('secret upstream detail');
@@ -98,7 +100,7 @@ test('paypal derives one stable sender batch identity from the operation', funct
         'api-m.sandbox.paypal.com/v1/payments/payouts' => Http::response(['batch_header' => ['payout_batch_id' => 'BATCH-1']], 201),
     ]);
 
-    $result = (new PayPalProcessor)->process($payout);
+    $result = (new PayPalProcessor)->process(PayoutRequestQuery::fromPayout($payout));
 
     expect($result->isPending())->toBeTrue();
     Http::assertSent(function (Request $request) use ($expected): bool {
@@ -115,10 +117,10 @@ test('stripe reversals are locally and remotely idempotent', function (): void {
     $payout->save();
 
     Http::fake(['api.stripe.com/*' => Http::response(['id' => 'trr_123'], 200)]);
-    $processor = new StripeConnectProcessor;
+    $reverse = app(ReverseStripePayout::class);
 
-    expect($processor->cancel($payout->fresh(['operation'])))->toBeTrue()
-        ->and($processor->cancel($payout->fresh(['operation'])))->toBeTrue();
+    expect($reverse->execute($payout->id))->toBeTrue()
+        ->and($reverse->execute($payout->id))->toBeTrue();
 
     Http::assertSentCount(1);
 });

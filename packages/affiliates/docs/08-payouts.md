@@ -299,46 +299,18 @@ The current maturity flow uses `holding_minor` for pre-payout commission state. 
 ],
 ```
 
-### Processing with PayoutProcessorFactory
+### Processing payouts
 
 ```php
-use AIArmada\Affiliates\Actions\Payouts\AssertPayoutCompletable;
-use AIArmada\Affiliates\Actions\Payouts\UpdatePayoutStatus;
-use AIArmada\Affiliates\Enums\PayoutMethodType;
-use AIArmada\Affiliates\Drivers\Payouts\PayoutProcessorFactory;
+use AIArmada\Affiliates\Actions\Payouts\ProcessAffiliatePayout;
 
-$factory = app(PayoutProcessorFactory::class);
-
-// Get a processor by method type (or its string value)
-$processor = $factory->make($method->type);
-$processor = $factory->make('stripe_connect');
-
-// Process payout
-$payout->assertHomogeneousConversions();
-AssertPayoutCompletable::run($payout, false);
-$result = $processor->process($payout);
-
-if ($result->isSuccess()) {
-    $payout = UpdatePayoutStatus::run($payout, 'completed', 'Provider outcome: completed', [
-        'provider' => $result->metadata['provider'] ?? null,
-        'provider_status' => $result->getStatus(),
-    ]);
-
-    // The 4th argument lands ONLY on the payout event. Persist the
-    // provider reference on the payout itself, like the real
-    // ProcessAffiliatePayout path does.
-    $payout->forceFill([
-        'external_reference' => $result->externalReference,
-        'metadata' => array_merge($payout->metadata ?? [], [
-            'provider' => $result->metadata['provider'] ?? null,
-            'provider_status' => $result->getStatus(),
-        ]),
-    ])->save();
-}
+$result = app(ProcessAffiliatePayout::class)->handle($payout);
 ```
 
-Prefer `ProcessAffiliatePayout` for the full claim, validation, provider, and
-reconciliation flow.
+The action claims the payout, validates eligibility, constructs an immutable
+provider request, and persists the result only while its lease is current.
+Provider drivers accept `PayoutRequest` and return `PayoutResult` or
+`PayoutStatusResult`; they do not read or write Eloquent models.
 
 `AffiliatePayout` has no `method` column — resolve the method from the
 affiliate's `payoutMethods` relation. `PayoutResult` exposes

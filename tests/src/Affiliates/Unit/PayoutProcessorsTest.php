@@ -11,6 +11,7 @@ use AIArmada\Affiliates\Drivers\Payouts\StripeConnectProcessor;
 use AIArmada\Affiliates\Enums\PayoutMethodType;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
+use AIArmada\Affiliates\Queries\PayoutRequestQuery;
 use AIArmada\Affiliates\States\Active;
 
 // PayoutProcessorFactory Tests
@@ -107,7 +108,7 @@ test('ManualPayoutProcessor process returns pending result', function (): void {
         'status' => 'pending',
     ]);
 
-    $result = $processor->process($payout);
+    $result = $processor->process(PayoutRequestQuery::fromPayout($payout));
 
     expect($result)->toBeInstanceOf(PayoutResult::class);
     // PayoutResult::pending returns success=true (pending is a valid state)
@@ -134,7 +135,7 @@ test('ManualPayoutProcessor getStatus returns payout status', function (): void 
         'status' => 'processing',
     ]);
 
-    $status = $processor->getStatus($payout);
+    $status = $processor->getStatus(PayoutRequestQuery::fromPayout($payout))->status;
 
     expect($status)->toBe('processing');
 });
@@ -159,7 +160,7 @@ test('ManualPayoutProcessor cancel returns true', function (): void {
         'status' => 'pending',
     ]);
 
-    $result = $processor->cancel($payout);
+    $result = $processor->cancel(PayoutRequestQuery::fromPayout($payout));
 
     expect($result)->toBeTrue();
 });
@@ -184,7 +185,7 @@ test('ManualPayoutProcessor getEstimatedArrival returns future date', function (
         'status' => 'pending',
     ]);
 
-    $arrival = $processor->getEstimatedArrival($payout);
+    $arrival = $processor->getEstimatedArrival(PayoutRequestQuery::fromPayout($payout));
 
     expect($arrival)->toBeInstanceOf(DateTimeInterface::class);
     expect($arrival->getTimestamp())->toBeGreaterThan(now()->getTimestamp());
