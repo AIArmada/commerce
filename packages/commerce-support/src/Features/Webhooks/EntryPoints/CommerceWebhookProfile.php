@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\CommerceSupport\Webhooks;
+namespace AIArmada\CommerceSupport\Features\Webhooks\EntryPoints;
 
 use Illuminate\Http\Request;
 use Spatie\WebhookClient\WebhookProfile\WebhookProfile;

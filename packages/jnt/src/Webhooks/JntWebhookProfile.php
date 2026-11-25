@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Jnt\Webhooks;
 
-use AIArmada\CommerceSupport\Webhooks\CommerceWebhookProfile;
+use AIArmada\CommerceSupport\Features\Webhooks\EntryPoints\CommerceWebhookProfile;
 use AIArmada\Jnt\Exceptions\JntValidationException;
 use Illuminate\Http\Request;
 

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Chip\Webhooks;
 
 use AIArmada\Chip\Enums\WebhookEventType;
-use AIArmada\CommerceSupport\Webhooks\CommerceWebhookProfile;
+use AIArmada\CommerceSupport\Features\Webhooks\EntryPoints\CommerceWebhookProfile;
 use Illuminate\Http\Request;
 
 /**
