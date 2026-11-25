@@ -132,28 +132,20 @@ Confirmed as blocking.
 
 ## Recording Signals Manually
 
-There is no `FraudApi::recordSignal()`. Persist the row directly —
-the `FraudSignalDetected` event is dispatched by the detection service, not by
-the model, so fire it yourself if listeners must run.
+Use the feature's named record action for a trusted manual finding. It
+persists the signal and emits the normal after-commit event.
 
 ```php
-use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
+use AIArmada\Affiliates\Data\FraudFinding;
 use AIArmada\Affiliates\Enums\FraudSeverity;
-use AIArmada\Affiliates\Enums\FraudSignalStatus;
+use AIArmada\Affiliates\Features\Fraud\Actions\RecordFraudFinding;
 
-$signal = AffiliateFraudSignal::create([
-    'affiliate_id' => $affiliate->id,
-    'rule_code' => 'CUSTOM_PATTERN',
-    'description' => 'Unusual conversion pattern detected',
-    'severity' => FraudSeverity::High,
-    'status' => FraudSignalStatus::Detected,
-    'risk_points' => 50,
-    'detected_at' => now(),
-    'evidence' => [
-        'conversions_today' => 47,
-        'average_daily' => 5,
-    ],
-]);
+$signal = app(RecordFraudFinding::class)->execute(
+    (string) $affiliate->getKey(),
+    null,
+    new FraudFinding('CUSTOM_PATTERN', 50, FraudSeverity::High,
+        'Unusual conversion pattern detected', ['conversions_today' => 47, 'average_daily' => 5]),
+);
 ```
 
 ## Fingerprint Detection
@@ -212,7 +204,7 @@ protected $listen = [
 ];
 ```
 
-The event carries the `AffiliateFraudSignal` (reach the affiliate and severity through it). It fires from the model on every create — detection rules, manual analyst flags, and host integrations — and implements `ShouldDispatchAfterCommit`, so listeners run after the signal transaction commits.
+The event carries an immutable `FraudSignalReference`. Trusted integrations re-read canonical data through `FraudSignalReader`. It fires from the model on every create — detection rules, manual analyst flags, and host integrations — and implements `ShouldDispatchAfterCommit`, so listeners run after the signal transaction commits.
 
 ## Fraud Review in Filament
 
@@ -226,10 +218,10 @@ The `filament-affiliates` package includes:
 
 ```php
 // Mark as reviewed
-app(ReviewFraudSignal::class)->execute((string) $signal->getKey(), FraudSignalStatus::Reviewed, $reviewerId);
+app(\AIArmada\Affiliates\Features\Fraud\Api\FraudReviewApi::class)->execute($signal->id, FraudSignalStatus::Reviewed, $reviewerId);
 
 // Confirm fraud
-app(ReviewFraudSignal::class)->execute((string) $signal->getKey(), FraudSignalStatus::Confirmed, $reviewerId, rejectLinkedConversion: true);
+app(\AIArmada\Affiliates\Features\Fraud\Api\FraudReviewApi::class)->execute($signal->id, FraudSignalStatus::Confirmed, $reviewerId, rejectLinkedConversion: true);
 ```
 
 > **warning:**

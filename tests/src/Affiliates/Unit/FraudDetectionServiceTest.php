@@ -399,7 +399,7 @@ test('directly created fraud signals dispatch the detected event', function (): 
         'detected_at' => now(),
     ]);
 
-    Event::assertDispatched(FraudSignalDetected::class, fn (FraudSignalDetected $event): bool => $event->signal->is($signal));
+    Event::assertDispatched(FraudSignalDetected::class, fn (FraudSignalDetected $event): bool => $event->signal->id === (string) $signal->getKey());
 });
 
 test('service analysis dispatches exactly once per created signal', function (): void {

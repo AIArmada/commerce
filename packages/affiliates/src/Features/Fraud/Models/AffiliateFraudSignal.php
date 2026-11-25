@@ -6,7 +6,7 @@ namespace AIArmada\Affiliates\Features\Fraud\Models;
 
 use AIArmada\Affiliates\Enums\FraudSeverity;
 use AIArmada\Affiliates\Enums\FraudSignalStatus;
-use AIArmada\Affiliates\Events\FraudSignalDetected;
+use AIArmada\Affiliates\Features\Fraud\Actions\PublishFraudSignalDetected;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateTouchpoint;
@@ -50,16 +50,12 @@ class AffiliateFraudSignal extends Model implements Auditable
     use LogsCommerceActivity;
     use ScopesByAffiliateOwner;
 
-    /**
-     * Dispatch from the model so every creation path — detection rules,
-     * manual analyst flags, host integrations — triggers host-configured
-     * automatic suspension uniformly.
-     *
-     * @var array<string, class-string>
-     */
-    protected $dispatchesEvents = [
-        'created' => FraudSignalDetected::class,
-    ];
+    protected static function booted(): void
+    {
+        static::created(static function (self $signal): void {
+            app(PublishFraudSignalDetected::class)->execute($signal);
+        });
+    }
 
     protected $fillable = [
         'affiliate_id',

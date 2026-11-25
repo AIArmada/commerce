@@ -34,7 +34,7 @@ final class SignalEventMap
             ],
             'AIArmada\\Affiliates\\Events\\FraudSignalDetected' => [
                 'method' => 'recordAffiliateFraudSignalDetected',
-                'arguments' => [['property' => 'signal', 'type' => 'model']],
+                'arguments' => [['property' => 'signal', 'type' => 'object']],
             ],
             'AIArmada\\AffiliateNetwork\\Events\\OfferCreated' => [
                 'method' => 'recordOfferCreated',

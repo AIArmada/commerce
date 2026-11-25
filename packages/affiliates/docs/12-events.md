@@ -142,7 +142,7 @@ DailyStatsAggregated::class;    // (CarbonImmutable $date, int $affiliateCount)
 
 // Fraud signal recorded (model create from any path; dispatched after
 // commit; rolled-back signals never dispatch)
-FraudSignalDetected::class;     // (AffiliateFraudSignal $signal)
+FraudSignalDetected::class;     // (FraudSignalReference $signal)
 
 // Holding pool carried less than a conversion recorded (release/void clamped;
 // the affiliate was still made whole — signal only, no in-repo consumer)

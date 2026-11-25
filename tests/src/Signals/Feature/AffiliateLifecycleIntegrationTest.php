@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalReference;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalReader;
+use AIArmada\Affiliates\Features\Fraud\Queries\FraudSignalQuery;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\FraudSeverity;
 use AIArmada\Affiliates\Enums\MembershipStatus;
@@ -37,7 +40,13 @@ use Illuminate\Support\Str;
 
 uses(SignalsTestCase::class);
 
+function fraudSignalReference(AffiliateFraudSignal $signal): FraudSignalReference
+{
+    return new FraudSignalReference((string) $signal->getKey(), (string) $signal->affiliate_id, $signal->conversion_id, $signal->touchpoint_id);
+}
+
 beforeEach(function (): void {
+    app()->bind(FraudSignalReader::class, FraudSignalQuery::class);
     Schema::dropIfExists('affiliate_fraud_signals');
     Schema::dropIfExists('affiliate_program_memberships');
     Schema::dropIfExists('affiliate_program_tiers');
@@ -393,7 +402,7 @@ it('deduplicates repeated fraud detected dispatches', function (): void {
         'detected_at' => now(),
     ]);
 
-    Event::dispatch(new FraudSignalDetected($signal));
+    Event::dispatch(new FraudSignalDetected(fraudSignalReference($signal)));
 
     expect(SignalEvent::query()->withoutOwnerScope()->count())->toBe(1);
 });
@@ -487,7 +496,7 @@ it('rejects wrong-model sources on the strict recorder surface', function (): vo
     expect(fn (): ?SignalEvent => $recorder->recordAffiliateCreated($property))
         ->toThrow(InvalidArgumentException::class, 'must be an instance of')
         ->and(fn (): ?SignalEvent => $recorder->recordAffiliateFraudSignalDetected($affiliate))
-        ->toThrow(InvalidArgumentException::class, 'must be an instance of');
+        ->toThrow(TypeError::class);
 });
 
 it('leaves lifecycle listeners unwired by default', function (): void {
@@ -874,7 +883,7 @@ it('records nothing for joins and fraud without a matching property', function (
 
     expect(SignalEvent::query()->withoutOwnerScope()->count())->toBe(0)
         ->and(app(CommerceSignalsRecorder::class)->recordAffiliateProgramJoined($affiliate, $program, $membership))->toBeNull()
-        ->and(app(CommerceSignalsRecorder::class)->recordAffiliateFraudSignalDetected($signal))->toBeNull();
+        ->and(app(CommerceSignalsRecorder::class)->recordAffiliateFraudSignalDetected(fraudSignalReference($signal)))->toBeNull();
 });
 
 it('records nothing when the owner property is ambiguous', function (): void {
@@ -1017,19 +1026,19 @@ it('rejects program and ownership mismatches on the strict recorder surface', fu
     $movedSignal = clone $signal;
     $movedSignal->forceFill(['affiliate_id' => $otherAffiliate->getKey()]);
 
-    expect(fn (): ?SignalEvent => $recorder->recordAffiliateFraudSignalDetected($movedSignal))
+    expect(fn (): ?SignalEvent => $recorder->recordAffiliateFraudSignalDetected(fraudSignalReference($movedSignal)))
         ->toThrow(InvalidArgumentException::class, 'supplied fraud signal affiliate_id does not match');
 
     $retargetedSignal = clone $signal;
     $retargetedSignal->forceFill(['conversion_id' => (string) Str::uuid()]);
 
-    expect(fn (): ?SignalEvent => $recorder->recordAffiliateFraudSignalDetected($retargetedSignal))
+    expect(fn (): ?SignalEvent => $recorder->recordAffiliateFraudSignalDetected(fraudSignalReference($retargetedSignal)))
         ->toThrow(InvalidArgumentException::class, 'supplied fraud signal conversion_id does not match');
 
     $retouchedSignal = clone $signal;
     $retouchedSignal->forceFill(['touchpoint_id' => (string) Str::uuid()]);
 
-    expect(fn (): ?SignalEvent => $recorder->recordAffiliateFraudSignalDetected($retouchedSignal))
+    expect(fn (): ?SignalEvent => $recorder->recordAffiliateFraudSignalDetected(fraudSignalReference($retouchedSignal)))
         ->toThrow(InvalidArgumentException::class, 'supplied fraud signal touchpoint_id does not match');
 
     $retieredMembership = clone $membership;
@@ -1168,7 +1177,7 @@ it('records nothing for joins and fraud under ambiguous properties', function ()
 
     expect(SignalEvent::query()->withoutOwnerScope()->count())->toBe(0)
         ->and(app(CommerceSignalsRecorder::class)->recordAffiliateProgramJoined($affiliate, $program, $membership))->toBeNull()
-        ->and(app(CommerceSignalsRecorder::class)->recordAffiliateFraudSignalDetected($signal))->toBeNull();
+        ->and(app(CommerceSignalsRecorder::class)->recordAffiliateFraudSignalDetected(fraudSignalReference($signal)))->toBeNull();
 });
 
 it('routes joins under affiliates enforcement', function (): void {
@@ -1243,7 +1252,7 @@ it('rejects half-null owners for joins and fraud', function (): void {
 
     expect(fn (): ?SignalEvent => $recorder->recordAffiliateProgramJoined($affiliate, $program, $membership))
         ->toThrow(InvalidArgumentException::class, 'both be present')
-        ->and(fn (): ?SignalEvent => $recorder->recordAffiliateFraudSignalDetected($signal))
+        ->and(fn (): ?SignalEvent => $recorder->recordAffiliateFraudSignalDetected(fraudSignalReference($signal)))
         ->toThrow(InvalidArgumentException::class, 'both be present')
         ->and(SignalEvent::query()->withoutOwnerScope()->count())->toBe(0);
 });
@@ -1283,7 +1292,7 @@ it('rejects joins and fraud whose owner row no longer exists', function (): void
 
     expect(fn (): ?SignalEvent => $recorder->recordAffiliateProgramJoined($affiliate, $program, $membership))
         ->toThrow(ModelNotFoundException::class)
-        ->and(fn (): ?SignalEvent => $recorder->recordAffiliateFraudSignalDetected($signal))
+        ->and(fn (): ?SignalEvent => $recorder->recordAffiliateFraudSignalDetected(fraudSignalReference($signal)))
         ->toThrow(ModelNotFoundException::class)
         ->and(SignalEvent::query()->withoutOwnerScope()->count())->toBe(0);
 });
@@ -1318,11 +1327,11 @@ it('ignores joins and fraud for missing affiliate rows', function (): void {
     Event::listen(FraudSignalDetected::class, RecordCommerceSignal::class);
 
     Event::dispatch(new AffiliateProgramJoined($affiliate, $program, $membership));
-    Event::dispatch(new FraudSignalDetected($signal));
+    Event::dispatch(new FraudSignalDetected(fraudSignalReference($signal)));
 
     expect(SignalEvent::query()->withoutOwnerScope()->count())->toBe(0)
         ->and(app(CommerceSignalsRecorder::class)->recordAffiliateProgramJoined($affiliate, $program, $membership))->toBeNull()
-        ->and(app(CommerceSignalsRecorder::class)->recordAffiliateFraudSignalDetected($signal))->toBeNull();
+        ->and(app(CommerceSignalsRecorder::class)->recordAffiliateFraudSignalDetected(fraudSignalReference($signal)))->toBeNull();
 });
 
 it('routes joins and fraud across owners and global scope under enforcement', function (): void {
@@ -1449,20 +1458,20 @@ it('rejects reverse optional reference mismatches on the strict recorder surface
     $unlinkedSignal = clone $signal;
     $unlinkedSignal->forceFill(['conversion_id' => null, 'touchpoint_id' => null]);
 
-    expect(fn (): ?SignalEvent => $recorder->recordAffiliateFraudSignalDetected($unlinkedSignal))
+    expect(fn (): ?SignalEvent => $recorder->recordAffiliateFraudSignalDetected(fraudSignalReference($unlinkedSignal)))
         ->toThrow(InvalidArgumentException::class, 'supplied fraud signal conversion_id does not match');
 
     $touchpointOnlySignal = clone $signal;
     $touchpointOnlySignal->forceFill(['touchpoint_id' => null]);
 
-    expect(fn (): ?SignalEvent => $recorder->recordAffiliateFraudSignalDetected($touchpointOnlySignal))
+    expect(fn (): ?SignalEvent => $recorder->recordAffiliateFraudSignalDetected(fraudSignalReference($touchpointOnlySignal)))
         ->toThrow(InvalidArgumentException::class, 'supplied fraud signal touchpoint_id does not match');
 
     // Both present but different.
     $retargetedSignal = clone $signal;
     $retargetedSignal->forceFill(['conversion_id' => (string) Str::uuid()]);
 
-    expect(fn (): ?SignalEvent => $recorder->recordAffiliateFraudSignalDetected($retargetedSignal))
+    expect(fn (): ?SignalEvent => $recorder->recordAffiliateFraudSignalDetected(fraudSignalReference($retargetedSignal)))
         ->toThrow(InvalidArgumentException::class, 'supplied fraud signal conversion_id does not match')
         ->and(SignalEvent::query()->withoutOwnerScope()->count())->toBe(0);
 });

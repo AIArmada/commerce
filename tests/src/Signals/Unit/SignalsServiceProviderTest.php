@@ -120,6 +120,6 @@ it('maps affiliate lifecycle events to exact recorder methods and arguments', fu
         ],
     ])->and(SignalEventMap::for('AIArmada\\Affiliates\\Events\\FraudSignalDetected'))->toBe([
         'method' => 'recordAffiliateFraudSignalDetected',
-        'arguments' => [['property' => 'signal', 'type' => 'model']],
+        'arguments' => [['property' => 'signal', 'type' => 'object']],
     ]);
 });

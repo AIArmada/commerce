@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Signals\Services;
 
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalReference;
 use AIArmada\Signals\Actions\IngestSignalEvent;
 use AIArmada\Signals\Models\SignalEvent;
 use AIArmada\Signals\Services\Recorders\AffiliateNetworkSignalRecorder;
@@ -154,7 +155,7 @@ final class CommerceSignalsRecorder
         return $this->affiliates->recordProgramJoined($affiliate, $program, $membership);
     }
 
-    public function recordAffiliateFraudSignalDetected(Model $signal): ?SignalEvent
+    public function recordAffiliateFraudSignalDetected(FraudSignalReference $signal): ?SignalEvent
     {
         return $this->affiliates->recordFraudSignalDetected($signal);
     }

@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Signals\Services\Recorders;
 
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalReference;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalReader;
 use AIArmada\Signals\Models\SignalEvent;
-use BackedEnum;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 
@@ -287,38 +288,22 @@ final class AffiliateSignalRecorder
         ]);
     }
 
-    public function recordFraudSignalDetected(Model $signal): ?SignalEvent
+    public function recordFraudSignalDetected(FraudSignalReference $signal): ?SignalEvent
     {
-        $this->assertSourceModel($signal, 'AIArmada\\Affiliates\\Features\\Fraud\\Models\\AffiliateFraudSignal');
+        $canonical = app(FraudSignalReader::class)->findUnscoped($signal->id);
 
-        $canonical = $this->support->resolveSourceModel(
-            'AIArmada\\Affiliates\\Features\\Fraud\\Models\\AffiliateFraudSignal',
-            $this->support->stringValue($signal->getKey()),
-        );
-
-        if (! $canonical instanceof Model) {
+        if ($canonical === null) {
             return null;
         }
 
-        $this->assertCanonicalReference(
-            $this->support->stringValue($signal->getAttribute('affiliate_id')),
-            $this->support->stringValue($canonical->getAttribute('affiliate_id')),
-            'supplied fraud signal affiliate_id',
-        );
-        $this->assertCanonicalReference(
-            $this->support->stringValue($signal->getAttribute('conversion_id')),
-            $this->support->stringValue($canonical->getAttribute('conversion_id')),
-            'supplied fraud signal conversion_id',
-        );
-        $this->assertCanonicalReference(
-            $this->support->stringValue($signal->getAttribute('touchpoint_id')),
-            $this->support->stringValue($canonical->getAttribute('touchpoint_id')),
-            'supplied fraud signal touchpoint_id',
-        );
+        $reference = $canonical->reference;
+        $this->assertCanonicalReference($signal->affiliateId, $reference->affiliateId, 'supplied fraud signal affiliate_id');
+        $this->assertCanonicalReference($signal->conversionId, $reference->conversionId, 'supplied fraud signal conversion_id');
+        $this->assertCanonicalReference($signal->touchpointId, $reference->touchpointId, 'supplied fraud signal touchpoint_id');
 
         $affiliate = $this->support->resolveSourceModel(
             'AIArmada\\Affiliates\\Models\\Affiliate',
-            $this->support->stringValue($canonical->getAttribute('affiliate_id')),
+            $reference->affiliateId,
         );
 
         if (! $affiliate instanceof Model) {
@@ -331,24 +316,26 @@ final class AffiliateSignalRecorder
             return null;
         }
 
-        $severity = $canonical->getAttribute('severity');
+        if ($canonical->detectedAt === null) {
+            throw new InvalidArgumentException('Trusted signal source is missing timestamp attributes [detected_at].');
+        }
 
         return $this->support->ingest($trackedProperty, [
             'event_name' => (string) config('signals.integrations.affiliates.fraud_detected_event_name', 'affiliate.fraud.detected'),
             'event_category' => (string) config('signals.integrations.affiliates.fraud_event_category', 'affiliate_risk'),
-            'occurred_at' => $this->support->requiredModelTimestamp($canonical, ['detected_at']),
-            'idempotency_key' => 'affiliate-fraud-detected:' . $canonical->getKey(),
-            'source_event_id' => (string) $canonical->getKey(),
+            'occurred_at' => $canonical->detectedAt->toIso8601String(),
+            'idempotency_key' => 'affiliate-fraud-detected:' . $reference->id,
+            'source_event_id' => $reference->id,
             'revenue_minor' => 0,
             'currency' => $trackedProperty->currency,
             'properties' => array_filter([
-                'fraud_signal_id' => (string) $canonical->getKey(),
+                'fraud_signal_id' => $reference->id,
                 'affiliate_id' => (string) $affiliate->getKey(),
-                'conversion_id' => $this->support->stringValue($canonical->getAttribute('conversion_id')),
-                'touchpoint_id' => $this->support->stringValue($canonical->getAttribute('touchpoint_id')),
-                'rule_code' => $this->requiredStringAttribute($canonical, 'rule_code'),
-                'severity' => $severity instanceof BackedEnum ? $severity->value : $this->support->stringValue($severity),
-                'risk_points' => $this->support->requiredModelInt($canonical, 'risk_points'),
+                'conversion_id' => $reference->conversionId,
+                'touchpoint_id' => $reference->touchpointId,
+                'rule_code' => $canonical->ruleCode,
+                'severity' => $canonical->severity->value,
+                'risk_points' => $canonical->riskPoints,
             ], static fn (mixed $value): bool => $value !== null),
         ]);
     }

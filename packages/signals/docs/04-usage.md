@@ -304,7 +304,7 @@ $recorder->recordAffiliateAttributed($attribution);
 $recorder->recordAffiliateConversionRecorded($conversion);
 $recorder->recordAffiliateCreated($affiliate);
 $recorder->recordAffiliateProgramJoined($affiliate, $program, $membership);
-$recorder->recordAffiliateFraudSignalDetected($fraudSignal);
+$recorder->recordAffiliateFraudSignalDetected($fraudSignalReference);
 $recorder->recordLinkClicked($link, $click);
 ```
 
