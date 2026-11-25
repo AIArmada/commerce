@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Authz\EntryPoints\Console;
 
-use AIArmada\Authz\EntryPoints\Console\Concerns\Prohibitable;
 use AIArmada\Authz\Actions\SyncConfiguredAuthorization;
+use AIArmada\Authz\EntryPoints\Console\Concerns\Prohibitable;
 use Illuminate\Console\Command;
 use Spatie\Permission\PermissionRegistrar;
 

@@ -67,3 +67,15 @@ it('never lets request options enable automatic redirects', function (): void {
     expect($response->status())->toBe(302);
     Http::assertSentCount(1);
 });
+
+it('refuses pinned requests configured with a streaming handler', function (): void {
+    Http::fake(['*' => Http::response('ok', 200)]);
+
+    expect(fn () => (new PinnedHttpClient)->send(
+        'GET',
+        pinnedTarget(),
+        configure: static fn ($pending) => $pending->withOptions(['stream' => true]),
+    ))->toThrow(RuntimeException::class);
+
+    Http::assertNothingSent();
+});

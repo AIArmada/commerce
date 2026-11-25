@@ -17,6 +17,7 @@ class LeaveImpersonationController
         }
 
         $backTo = $manager->getBackTo();
+
         if (! $manager->leave()) {
             return redirect('/')->withErrors(['impersonation' => 'Unable to end impersonation.']);
         }

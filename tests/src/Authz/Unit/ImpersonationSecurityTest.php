@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Authz\Guard\SessionGuard;
+use AIArmada\Authz\Models\Role;
 use AIArmada\Authz\Services\ImpersonateManager;
 use AIArmada\Authz\Support\BackToUrlSanitizer;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
@@ -62,23 +63,24 @@ it('refuses impersonation when the target opts out', function (): void {
         ->and($manager->isImpersonating())->toBeFalse();
 });
 
-it('takes and leaves impersonation through the explicit escape hatch', function (): void {
+it('takes and leaves impersonation as an authorized current user', function (): void {
     $actor = User::query()->create([
-        'name' => 'Escape Hatch Actor',
-        'email' => 'escape-hatch-actor@example.com',
+        'name' => 'Authorized Actor',
+        'email' => 'authorized-actor@example.com',
         'password' => 'secret',
     ]);
     $target = User::query()->create([
-        'name' => 'Escape Hatch Target',
-        'email' => 'escape-hatch-target@example.com',
+        'name' => 'Authorized Actor Target',
+        'email' => 'authorized-actor-target@example.com',
         'password' => 'secret',
     ]);
 
+    $actor->assignRole(Role::findOrCreate((string) config('authz.super_admin_role'), 'web'));
     $this->be($actor);
 
     $manager = app(ImpersonateManager::class);
 
-    expect($manager->take($actor, $target, 'web', null, false))->toBeTrue()
+    expect($manager->take($actor, $target, 'web'))->toBeTrue()
         ->and($manager->isImpersonating())->toBeTrue()
         ->and(auth()->guard('web')->user()?->is($target))->toBeTrue();
 
@@ -125,4 +127,19 @@ it('rejects non-http and credential-bearing absolute return URLs', function (): 
     expect(BackToUrlSanitizer::sanitize('ftp://' . $host . '/admin'))->toBe('/')
         ->and(BackToUrlSanitizer::sanitize('https://user:secret@' . $host . '/admin'))->toBe('/')
         ->and(BackToUrlSanitizer::sanitize('//' . $host . '/admin'))->toBe('/');
+});
+
+it('refuses impersonation when the supplied privileged actor is not authenticated', function (): void {
+    $actor = User::factory()->create();
+    $current = User::factory()->create();
+    $target = User::factory()->create();
+
+    $actor->assignRole(Role::findOrCreate((string) config('authz.super_admin_role'), 'web'));
+    $this->be($current);
+
+    $manager = app(ImpersonateManager::class);
+
+    expect($manager->take($actor, $target, 'web'))->toBeFalse()
+        ->and($manager->isImpersonating())->toBeFalse()
+        ->and(auth()->guard('web')->user()?->is($current))->toBeTrue();
 });

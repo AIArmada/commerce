@@ -87,11 +87,10 @@ $manager = app(ImpersonateManager::class);
 $manager->take($administrator, $target, 'web', '/admin');
 ```
 
-`take()` enforces authorization by default: the impersonator must be allowed
-to impersonate (via `canImpersonate()` or the super-admin role), the target
-must allow it, self-impersonation is refused, and the tenant scope guard must
-pass. Pass `$authorize: false` only when the caller already performed
-equivalent checks.
+`take()` requires the impersonator to be the current authenticated identity and
+be allowed to impersonate (via `canImpersonate()` or the super-admin role).
+The target must allow impersonation, self-impersonation is refused, and the
+tenant scope guard must pass. Authorization cannot be bypassed.
 
 ## Console commands
 

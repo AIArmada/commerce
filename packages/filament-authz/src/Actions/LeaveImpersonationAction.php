@@ -8,6 +8,7 @@ use AIArmada\Authz\Services\ImpersonateManager;
 use AIArmada\Authz\Support\BackToUrlSanitizer;
 use Filament\Actions\Action;
 use Filament\Navigation\MenuItem;
+use Filament\Notifications\Notification;
 
 /**
  * Action to leave impersonation and return to the original user.
@@ -41,15 +42,17 @@ class LeaveImpersonationAction extends Action
                 $manager = app(ImpersonateManager::class);
                 $backTo = $manager->getBackTo();
 
-                $manager->leave();
+                if (! $manager->leave()) {
+                    Notification::make()
+                        ->danger()
+                        ->title(__('filament-authz::filament-authz.impersonate.failed_title'))
+                        ->send();
 
-                $this->redirect(self::sanitizeBackToUrl($backTo));
+                    return;
+                }
+
+                $this->redirect(BackToUrlSanitizer::sanitize($backTo), navigate: false);
             });
-    }
-
-    private static function sanitizeBackToUrl(?string $url): string
-    {
-        return BackToUrlSanitizer::sanitize($url);
     }
 
     public function asMenuItem(): MenuItem

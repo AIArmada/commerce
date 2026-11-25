@@ -93,23 +93,21 @@ class ImpersonateManager
     /**
      * Take impersonation of a user.
      *
-     * Authorization is enforced by default: the impersonator must be allowed
-     * to impersonate, the target must allow it, self-impersonation is refused,
-     * and the tenant scope guard must pass. Pass $authorize: false only when
-     * the caller has already performed equivalent checks.
+     * Authorization requires the current authenticated identity, an allowed
+     * impersonator and target, and an accessible tenant scope.
      *
      * @param  Authenticatable  $from  The current user (impersonator)
      * @param  Authenticatable  $to  The user to impersonate
      * @param  string|null  $guardName  The guard to use for impersonation
      * @param  string|null  $backTo  URL to redirect back to when leaving
      */
-    public function take(Authenticatable $from, Authenticatable $to, ?string $guardName = null, ?string $backTo = null, bool $authorize = true): bool
+    public function take(Authenticatable $from, Authenticatable $to, ?string $guardName = null, ?string $backTo = null): bool
     {
         if ($this->isImpersonating()) {
             return false;
         }
 
-        if ($authorize && ! $this->isAuthorized($from, $to)) {
+        if (! $this->isAuthorized($from, $to)) {
             return false;
         }
 
@@ -117,6 +115,13 @@ class ImpersonateManager
         $sourceGuardName = $this->getCurrentAuthGuardName();
 
         if ($sourceGuardName === null) {
+            return false;
+        }
+
+        $authenticated = $this->app['auth']->guard($sourceGuardName)->user();
+
+        if ($authenticated === null || $authenticated::class !== $from::class
+            || (string) $authenticated->getAuthIdentifier() !== (string) $from->getAuthIdentifier()) {
             return false;
         }
 
