@@ -17,8 +17,8 @@ use AIArmada\Affiliates\Features\Payouts\Api\PayoutRemoval;
 use AIArmada\Affiliates\Features\Reporting\Api\DailyStatsWriter;
 use AIArmada\Affiliates\Features\Upline\Api\UplineApi;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateProgramMembership;
-use AIArmada\Affiliates\Models\AffiliateRankHistory;
+use AIArmada\Affiliates\Features\Programs\Api\MembershipRemovalGuard;
+use AIArmada\Affiliates\Features\Upline\Api\RankHistoryRemovalGuard;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\VoucherServiceProvider;
 use Illuminate\Validation\ValidationException;
@@ -34,6 +34,8 @@ final readonly class DeleteAffiliate implements AffiliateRemoval
         private FraudSignalMaintenance $fraud,
         private DailyStatsWriter $statistics,
         private UplineApi $upline,
+        private RankHistoryRemovalGuard $rankHistory,
+        private MembershipRemovalGuard $memberships,
     ) {}
 
     public function delete(string $affiliateId): bool
@@ -56,9 +58,10 @@ final readonly class DeleteAffiliate implements AffiliateRemoval
                 throw ValidationException::withMessages(['affiliate' => 'A sealed or claimed affiliate cannot be deleted.']);
             }
 
-            if (AffiliateProgramMembership::query()->where('affiliate_id', $affiliateId)->exists()
-                || AffiliateRankHistory::query()->where('affiliate_id', $affiliateId)->exists()
-                || (class_exists(Voucher::class) && app()->providerIsLoaded(VoucherServiceProvider::class) && $affiliate->vouchers()->exists())) {
+            $this->rankHistory->assertCanRemove($affiliateId, spl_object_id($affiliate->getConnection()));
+            $this->memberships->assertCanRemove($affiliateId, spl_object_id($affiliate->getConnection()));
+
+            if (class_exists(Voucher::class) && app()->providerIsLoaded(VoucherServiceProvider::class) && $affiliate->vouchers()->exists()) {
                 throw ValidationException::withMessages(['affiliate' => 'An affiliate with linked business or historical records cannot be deleted.']);
             }
 

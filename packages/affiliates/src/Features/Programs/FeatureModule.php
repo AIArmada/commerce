@@ -24,6 +24,7 @@ final class FeatureModule implements FeatureModuleContract
         $app->bind(Api\ProgramPortalReader::class, Queries\ProgramPortalQuery::class);
         $app->bind(Api\PortalCreativeReader::class, Queries\PortalCreativeQuery::class);
         $app->bind(Api\CreativeAdministration::class, Actions\AdministerCreative::class);
+        $app->bind(Api\MembershipRemovalGuard::class, Queries\AssertNoProgramMembership::class);
     }
 
     public function boot(Application $app): void {}
