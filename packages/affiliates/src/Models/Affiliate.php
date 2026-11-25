@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Models;
 
+use AIArmada\Affiliates\Data\AffiliateData;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\RegistrationApprovalMode;
 use AIArmada\Affiliates\Events\AffiliateActivated;
@@ -171,6 +172,21 @@ class Affiliate extends Model implements Auditable
             'paused_at',
             'identity_sealed_at',
         ];
+    }
+
+    public function toData(): AffiliateData
+    {
+        return new AffiliateData(
+            id: (string) $this->getKey(),
+            code: (string) $this->code,
+            name: (string) $this->name,
+            status: $this->status->getValue(),
+            commissionType: ($this->commission_type ?? CommissionType::Percentage)->value,
+            commissionRate: (int) $this->commission_rate,
+            currency: (string) $this->currency,
+            defaultVoucherCode: $this->default_voucher_code,
+            metadata: $this->metadata,
+        );
     }
 
     public function getTable(): string

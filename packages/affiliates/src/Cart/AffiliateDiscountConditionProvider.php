@@ -53,7 +53,7 @@ final readonly class AffiliateDiscountConditionProvider implements ConditionProv
             return [];
         }
 
-        $affiliateData = AffiliateData::fromModel($affiliate);
+        $affiliateData = $affiliate->toData();
 
         $discount = $this->getAffiliateDiscountFromData($affiliateData);
 

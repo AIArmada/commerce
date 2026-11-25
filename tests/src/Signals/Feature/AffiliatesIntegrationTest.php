@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Data\AffiliateAttributionData;
 use AIArmada\Affiliates\Data\AffiliateConversionData;
-use AIArmada\Affiliates\Data\AffiliateData;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Events\AffiliateAttributed;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
@@ -162,7 +161,7 @@ it('records an affiliate attributed signal for the matching owner property', fun
     ])->save();
 
     Event::dispatch(new AffiliateAttributed(
-        AffiliateData::fromModel($affiliate),
+        $affiliate->toData(),
         AffiliateAttributionData::fromModel($attribution),
     ));
 
@@ -376,7 +375,7 @@ it('ignores forged affiliate events that target another owner model id', functio
     ])->save();
 
     Event::dispatch(new AffiliateAttributed(
-        AffiliateData::fromModel($affiliateB),
+        $affiliateB->toData(),
         new AffiliateAttributionData(
             id: $targetAttribution->id,
             affiliateId: $affiliateB->id,

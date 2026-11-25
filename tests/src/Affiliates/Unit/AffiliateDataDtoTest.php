@@ -7,9 +7,6 @@ use AIArmada\Affiliates\Data\AffiliateData;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\AffiliateStatus;
-use AIArmada\Affiliates\States\Draft;
-use AIArmada\Affiliates\States\Pending;
 use Carbon\Carbon;
 use Spatie\LaravelData\Data;
 
@@ -195,8 +192,8 @@ describe('AffiliateData', function (): void {
                 id: 'aff-123',
                 code: 'CODE456',
                 name: 'Test Affiliate',
-                status: AffiliateStatus::fromString(Active::class),
-                commissionType: CommissionType::Percentage,
+                status: 'active',
+                commissionType: 'percentage',
                 commissionRate: 1000,
                 currency: 'USD',
             );
@@ -204,8 +201,8 @@ describe('AffiliateData', function (): void {
             expect($data->id)->toBe('aff-123');
             expect($data->code)->toBe('CODE456');
             expect($data->name)->toBe('Test Affiliate');
-            expect($data->status->equals(Active::class))->toBeTrue();
-            expect($data->commissionType)->toBe(CommissionType::Percentage);
+            expect($data->status)->toBe('active');
+            expect($data->commissionType)->toBe('percentage');
             expect($data->commissionRate)->toBe(1000);
             expect($data->currency)->toBe('USD');
         });
@@ -217,8 +214,8 @@ describe('AffiliateData', function (): void {
                 id: 'aff-123',
                 code: 'CODE456',
                 name: 'Test Affiliate',
-                status: AffiliateStatus::fromString(Active::class),
-                commissionType: CommissionType::Percentage,
+                status: 'active',
+                commissionType: 'percentage',
                 commissionRate: 1000,
                 currency: 'USD',
                 defaultVoucherCode: 'VOUCHER10',
@@ -230,7 +227,7 @@ describe('AffiliateData', function (): void {
         });
     });
 
-    describe('fromModel', function (): void {
+    describe('model projection', function (): void {
         test('creates data from affiliate model', function (): void {
             $affiliate = Affiliate::create([
                 'code' => 'DATA-' . uniqid(),
@@ -244,14 +241,14 @@ describe('AffiliateData', function (): void {
                 'metadata' => ['key' => 'value'],
             ]);
 
-            $data = AffiliateData::fromModel($affiliate);
+            $data = $affiliate->toData();
 
             expect($data)->toBeInstanceOf(AffiliateData::class);
             expect($data->id)->toBe($affiliate->id);
             expect($data->code)->toBe($affiliate->code);
             expect($data->name)->toBe('Data Test Affiliate');
-            expect($data->status->equals(Active::class))->toBeTrue();
-            expect($data->commissionType)->toBe(CommissionType::Fixed);
+            expect($data->status)->toBe('active');
+            expect($data->commissionType)->toBe('fixed');
             expect($data->commissionRate)->toBe(500);
             expect($data->currency)->toBe('EUR');
             expect($data->defaultVoucherCode)->toBe('DISCOUNT20');
@@ -265,8 +262,8 @@ describe('AffiliateData', function (): void {
                 id: 'aff-123',
                 code: 'CODE456',
                 name: 'Test',
-                status: AffiliateStatus::fromString(Active::class),
-                commissionType: CommissionType::Percentage,
+                status: 'active',
+                commissionType: 'percentage',
                 commissionRate: 1000,
                 currency: 'USD',
             );
@@ -279,8 +276,8 @@ describe('AffiliateData', function (): void {
                 id: 'aff-123',
                 code: 'CODE456',
                 name: 'Test',
-                status: AffiliateStatus::fromString(Draft::class),
-                commissionType: CommissionType::Percentage,
+                status: 'draft',
+                commissionType: 'percentage',
                 commissionRate: 1000,
                 currency: 'USD',
             );
@@ -293,8 +290,8 @@ describe('AffiliateData', function (): void {
                 id: 'aff-123',
                 code: 'CODE456',
                 name: 'Test',
-                status: AffiliateStatus::fromString(Pending::class),
-                commissionType: CommissionType::Percentage,
+                status: 'pending',
+                commissionType: 'percentage',
                 commissionRate: 1000,
                 currency: 'USD',
             );
@@ -309,8 +306,8 @@ describe('AffiliateData', function (): void {
                 id: 'aff-123',
                 code: 'CODE456',
                 name: 'Test',
-                status: AffiliateStatus::fromString(Active::class),
-                commissionType: CommissionType::Percentage,
+                status: 'active',
+                commissionType: 'percentage',
                 commissionRate: 1000,
                 currency: 'USD',
             );
@@ -323,8 +320,8 @@ describe('AffiliateData', function (): void {
                 id: 'aff-123',
                 code: 'CODE456',
                 name: 'Test',
-                status: AffiliateStatus::fromString(Active::class),
-                commissionType: CommissionType::Fixed,
+                status: 'active',
+                commissionType: 'fixed',
                 commissionRate: 500,
                 currency: 'USD',
             );
@@ -339,8 +336,8 @@ describe('AffiliateData', function (): void {
                 id: 'aff-123',
                 code: 'CODE456',
                 name: 'Test',
-                status: AffiliateStatus::fromString(Active::class),
-                commissionType: CommissionType::Percentage,
+                status: 'active',
+                commissionType: 'percentage',
                 commissionRate: 1000, // 10.00%
                 currency: 'USD',
             );
@@ -353,8 +350,8 @@ describe('AffiliateData', function (): void {
                 id: 'aff-123',
                 code: 'CODE456',
                 name: 'Test',
-                status: AffiliateStatus::fromString(Active::class),
-                commissionType: CommissionType::Fixed,
+                status: 'active',
+                commissionType: 'fixed',
                 commissionRate: 500, // 5.00 USD
                 currency: 'USD',
             );
@@ -367,8 +364,8 @@ describe('AffiliateData', function (): void {
                 id: 'aff-123',
                 code: 'CODE456',
                 name: 'Test',
-                status: AffiliateStatus::fromString(Active::class),
-                commissionType: CommissionType::Fixed,
+                status: 'active',
+                commissionType: 'fixed',
                 commissionRate: 1234,
                 currency: 'EUR',
             );
@@ -383,8 +380,10 @@ describe('Data classes structure', function (): void {
         expect(is_subclass_of(AffiliateAttributionData::class, Data::class))->toBeTrue();
     });
 
-    test('AffiliateData extends Data', function (): void {
-        expect(is_subclass_of(AffiliateData::class, Data::class))->toBeTrue();
+    test('AffiliateData is a final readonly value object', function (): void {
+        $reflection = new ReflectionClass(AffiliateData::class);
+        expect($reflection->isFinal())->toBeTrue()
+            ->and($reflection->isReadOnly())->toBeTrue();
     });
 
     test('AffiliateAttributionData uses SnakeCaseMapper', function (): void {
@@ -395,11 +394,7 @@ describe('Data classes structure', function (): void {
         expect(count($mapperAttributes))->toBeGreaterThan(0);
     });
 
-    test('AffiliateData uses SnakeCaseMapper', function (): void {
-        $reflection = new ReflectionClass(AffiliateData::class);
-        $attributes = $reflection->getAttributes();
-
-        $mapperAttributes = array_filter($attributes, fn ($attr) => str_contains($attr->getName(), 'MapInputName'));
-        expect(count($mapperAttributes))->toBeGreaterThan(0);
+    test('AffiliateData does not depend on model states or Laravel Data', function (): void {
+        expect(is_subclass_of(AffiliateData::class, Data::class))->toBeFalse();
     });
 });

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Actions\Affiliates;
 
 use AIArmada\Affiliates\Data\AffiliateAttributionData;
-use AIArmada\Affiliates\Data\AffiliateData;
 use AIArmada\Affiliates\Events\AffiliateAttributed;
 use AIArmada\Affiliates\Exceptions\AffiliateNotFoundException;
 use AIArmada\Affiliates\Features\Webhooks\Api\WebhookApi;
@@ -88,7 +87,7 @@ final class AttachAffiliateToCart
         if ($this->shouldDispatch('dispatch_attributed')) {
             $this->events?->dispatch(
                 new AffiliateAttributed(
-                    AffiliateData::fromModel($affiliate),
+                    $affiliate->toData(),
                     AffiliateAttributionData::fromModel($attribution)
                 )
             );
