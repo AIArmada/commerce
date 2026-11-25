@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Features\Upline\EntryPoints\Filament\Resources;
 
+use AIArmada\Affiliates\Features\Upline\Api\RankAdministration;
 use AIArmada\Affiliates\Models\AffiliateRank;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
@@ -25,7 +26,10 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
+use Illuminate\Support\LazyCollection;
 use Illuminate\Validation\Rules\Unique;
+use Throwable;
 use UnitEnum;
 
 final class AffiliateRankResource extends Resource
@@ -199,7 +203,18 @@ final class AffiliateRankResource extends Resource
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()->using(static function (DeleteBulkAction $action, Collection | LazyCollection $records): void {
+                        foreach ($records as $record) {
+                            try {
+                                if (! self::canDelete($record) || ! app(RankAdministration::class)->delete((string) $record->getKey())) {
+                                    $action->reportBulkProcessingFailure();
+                                }
+                            } catch (Throwable $exception) {
+                                $action->reportBulkProcessingFailure();
+                                report($exception);
+                            }
+                        }
+                    }),
                 ]),
             ]);
     }

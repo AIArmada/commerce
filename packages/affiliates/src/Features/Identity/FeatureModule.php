@@ -21,6 +21,7 @@ final class FeatureModule implements FeatureModuleContract
         $app->bind(Api\IdentityProofApi::class, Actions\ManageIdentityProofs::class);
         $app->bind(Api\PortalProfileAdministration::class, Actions\UpdatePortalProfile::class);
         $app->bind(Api\AffiliateAdministration::class, Actions\AdministerAffiliate::class);
+        $app->bind(Api\AffiliateRankMaintenance::class, Actions\DetachAffiliateRank::class);
     }
 
     public function boot(Application $app): void {}

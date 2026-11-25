@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\CommissionType;
+use AIArmada\Affiliates\Features\Upline\Api\RankAdministration;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateRank;
 use AIArmada\Affiliates\States\Active;
@@ -299,6 +300,28 @@ describe('AffiliateRank Model', function (): void {
         expect($rank->override_rates)->toBeArray()
             ->and($rank->benefits)->toBeArray()
             ->and($rank->metadata)->toBeArray();
+    });
+
+    it('removes rank assignments through rank administration', function (): void {
+        $rank = AffiliateRank::create([
+            'name' => 'Gold',
+            'slug' => 'gold',
+            'level' => 2,
+            'commission_rate_basis_points' => 1500,
+        ]);
+        $affiliate = Affiliate::create([
+            'code' => 'RANK-DELETE-' . uniqid(),
+            'name' => 'Ranked Affiliate',
+            'status' => Active::class,
+            'commission_type' => CommissionType::Percentage,
+            'commission_rate' => 1000,
+            'currency' => 'USD',
+            'rank_id' => $rank->id,
+        ]);
+
+        expect(app(RankAdministration::class)->delete((string) $rank->getKey()))->toBeTrue()
+            ->and($rank->fresh())->toBeNull()
+            ->and($affiliate->fresh()->rank_id)->toBeNull();
     });
 
     it('uses correct table name from config', function (): void {

@@ -19,7 +19,8 @@
       "AIArmada\\Affiliates\\Features\\Identity\\Actions\\ClaimAffiliateIdentity",
       "AIArmada\\Affiliates\\Features\\Identity\\Actions\\UpdatePortalProfile",
       "AIArmada\\Affiliates\\Features\\Identity\\Actions\\AdministerAffiliate",
-      "AIArmada\\Affiliates\\Features\\Identity\\Actions\\CreateAffiliate"
+      "AIArmada\\Affiliates\\Features\\Identity\\Actions\\CreateAffiliate",
+      "AIArmada\\Affiliates\\Features\\Identity\\Actions\\DetachAffiliateRank"
     ]
   },
   "extensions": {}

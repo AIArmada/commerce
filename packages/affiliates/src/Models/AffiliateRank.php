@@ -174,10 +174,6 @@ class AffiliateRank extends Model implements Auditable
                 $rank->owner_id = $owner->getKey();
             }
         });
-
-        static::deleting(function (self $rank): void {
-            $rank->affiliates()->update(['rank_id' => null]);
-        });
     }
 
     protected function getActivityLogName(): string
