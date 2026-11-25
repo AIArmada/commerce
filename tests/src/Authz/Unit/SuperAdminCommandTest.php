@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Authz\Models\Role;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 
 it('assigns the configured super-admin role to the explicitly selected account', function (): void {

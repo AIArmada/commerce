@@ -10,6 +10,7 @@ use AIArmada\Inventory\Events\BatchRecalled;
 use AIArmada\Inventory\Models\InventoryBatch;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Services\Batch\BatchService;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Event;
 
@@ -28,8 +29,8 @@ describe('BatchService', function (): void {
             'BATCH-001',
             $this->location->id,
             100,
-            now()->addMonths(6),
-            now()->subMonth()
+            CarbonImmutable::now()->addMonths(6),
+            CarbonImmutable::now()->subMonth()
         );
 
         expect($batch)->toBeInstanceOf(InventoryBatch::class);
@@ -297,7 +298,7 @@ describe('BatchService', function (): void {
             'batch_number' => 'BATCH-EXPIRING',
             'location_id' => $this->location->id,
             'status' => BatchStatus::Active->value,
-            'expires_at' => now()->addDays(15),
+            'expires_at' => CarbonImmutable::now()->addDays(15),
         ]);
         InventoryBatch::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
@@ -305,7 +306,7 @@ describe('BatchService', function (): void {
             'batch_number' => 'BATCH-SAFE',
             'location_id' => $this->location->id,
             'status' => BatchStatus::Active->value,
-            'expires_at' => now()->addDays(60),
+            'expires_at' => CarbonImmutable::now()->addDays(60),
         ]);
 
         $expiring = $this->service->getExpiringBatches(30);
@@ -350,7 +351,7 @@ describe('BatchService', function (): void {
             'batch_number' => 'BATCH-EXPIRED',
             'location_id' => $this->location->id,
             'status' => BatchStatus::Active->value,
-            'expires_at' => now()->subDay(),
+            'expires_at' => CarbonImmutable::now()->subDay(),
         ]);
 
         $count = $this->service->processExpiredBatches();

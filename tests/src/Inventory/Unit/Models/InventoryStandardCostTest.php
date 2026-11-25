@@ -16,7 +16,7 @@ describe('InventoryStandardCost', function (): void {
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
             'standard_cost_minor' => 1000,
-            'effective_from' => now(),
+            'effective_from' => CarbonImmutable::now(),
         ]);
 
         expect($cost)->toBeInstanceOf(InventoryStandardCost::class);
@@ -49,14 +49,14 @@ describe('InventoryStandardCost', function (): void {
         InventoryStandardCost::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
-            'effective_from' => now()->subMonth(),
+            'effective_from' => CarbonImmutable::now()->subMonth(),
             'effective_to' => null,
         ]);
         InventoryStandardCost::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
-            'effective_from' => now()->subMonths(2),
-            'effective_to' => now()->subMonth(),
+            'effective_from' => CarbonImmutable::now()->subMonths(2),
+            'effective_to' => CarbonImmutable::now()->subMonth(),
         ]);
 
         $current = InventoryStandardCost::forModel($this->item)->current()->get();
@@ -69,18 +69,18 @@ describe('InventoryStandardCost', function (): void {
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
             'standard_cost_minor' => 500,
-            'effective_from' => now()->subMonths(3),
-            'effective_to' => now()->subMonth(),
+            'effective_from' => CarbonImmutable::now()->subMonths(3),
+            'effective_to' => CarbonImmutable::now()->subMonth(),
         ]);
         InventoryStandardCost::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
             'standard_cost_minor' => 600,
-            'effective_from' => now()->subMonth(),
+            'effective_from' => CarbonImmutable::now()->subMonth(),
         ]);
 
         $cost = InventoryStandardCost::forModel($this->item)
-            ->effectiveAt(now()->subMonths(2))
+            ->effectiveAt(CarbonImmutable::now()->subMonths(2))
             ->first();
 
         expect($cost->standard_cost_minor)->toBe(500);
@@ -90,12 +90,12 @@ describe('InventoryStandardCost', function (): void {
         InventoryStandardCost::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
-            'effective_from' => now()->addMonth(),
+            'effective_from' => CarbonImmutable::now()->addMonth(),
         ]);
         InventoryStandardCost::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
-            'effective_from' => now()->subMonth(),
+            'effective_from' => CarbonImmutable::now()->subMonth(),
         ]);
 
         $future = InventoryStandardCost::forModel($this->item)->future()->get();
@@ -107,13 +107,13 @@ describe('InventoryStandardCost', function (): void {
         InventoryStandardCost::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
-            'effective_from' => now()->subMonths(2),
-            'effective_to' => now()->subMonth(),
+            'effective_from' => CarbonImmutable::now()->subMonths(2),
+            'effective_to' => CarbonImmutable::now()->subMonth(),
         ]);
         InventoryStandardCost::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
-            'effective_from' => now()->subMonth(),
+            'effective_from' => CarbonImmutable::now()->subMonth(),
             'effective_to' => null,
         ]);
 
@@ -124,13 +124,13 @@ describe('InventoryStandardCost', function (): void {
 
     it('is current', function (): void {
         $current = InventoryStandardCost::factory()->create([
-            'effective_from' => now()->subMonth(),
+            'effective_from' => CarbonImmutable::now()->subMonth(),
             'effective_to' => null,
         ]);
 
         $expired = InventoryStandardCost::factory()->create([
-            'effective_from' => now()->subMonths(2),
-            'effective_to' => now()->subMonth(),
+            'effective_from' => CarbonImmutable::now()->subMonths(2),
+            'effective_to' => CarbonImmutable::now()->subMonth(),
         ]);
 
         expect($current->isCurrent())->toBeTrue();
@@ -139,11 +139,11 @@ describe('InventoryStandardCost', function (): void {
 
     it('is future', function (): void {
         $future = InventoryStandardCost::factory()->create([
-            'effective_from' => now()->addMonth(),
+            'effective_from' => CarbonImmutable::now()->addMonth(),
         ]);
 
         $current = InventoryStandardCost::factory()->create([
-            'effective_from' => now()->subMonth(),
+            'effective_from' => CarbonImmutable::now()->subMonth(),
         ]);
 
         expect($future->isFuture())->toBeTrue();
@@ -152,12 +152,12 @@ describe('InventoryStandardCost', function (): void {
 
     it('is expired', function (): void {
         $expired = InventoryStandardCost::factory()->create([
-            'effective_from' => now()->subMonths(2),
-            'effective_to' => now()->subMonth(),
+            'effective_from' => CarbonImmutable::now()->subMonths(2),
+            'effective_to' => CarbonImmutable::now()->subMonth(),
         ]);
 
         $current = InventoryStandardCost::factory()->create([
-            'effective_from' => now()->subMonth(),
+            'effective_from' => CarbonImmutable::now()->subMonth(),
             'effective_to' => null,
         ]);
 
@@ -167,7 +167,7 @@ describe('InventoryStandardCost', function (): void {
 
     it('expire', function (): void {
         $cost = InventoryStandardCost::factory()->create([
-            'effective_from' => now()->subMonth(),
+            'effective_from' => CarbonImmutable::now()->subMonth(),
             'effective_to' => null,
         ]);
 
@@ -183,7 +183,7 @@ describe('InventoryStandardCost', function (): void {
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
             'standard_cost_minor' => 1000,
-            'effective_from' => now(),
+            'effective_from' => CarbonImmutable::now(),
             'metadata' => ['key' => 'value'],
         ]);
 

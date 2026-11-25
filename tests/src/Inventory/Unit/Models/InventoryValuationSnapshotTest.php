@@ -17,7 +17,7 @@ describe('InventoryValuationSnapshot', function (): void {
             $snapshot = InventoryValuationSnapshot::create([
                 'location_id' => $this->location->id,
                 'costing_method' => CostingMethod::WeightedAverage,
-                'snapshot_date' => now(),
+                'snapshot_date' => CarbonImmutable::now(),
                 'total_quantity' => 100,
                 'total_value_minor' => 10000,
                 'average_unit_cost_minor' => 100,
@@ -35,7 +35,7 @@ describe('InventoryValuationSnapshot', function (): void {
             InventoryValuationSnapshot::create([
                 'location_id' => $this->location->id,
                 'costing_method' => CostingMethod::WeightedAverage,
-                'snapshot_date' => now(),
+                'snapshot_date' => CarbonImmutable::now(),
                 'total_quantity' => 100,
                 'total_value_minor' => 10000,
                 'average_unit_cost_minor' => 100,
@@ -46,7 +46,7 @@ describe('InventoryValuationSnapshot', function (): void {
             InventoryValuationSnapshot::create([
                 'location_id' => null,
                 'costing_method' => CostingMethod::Fifo,
-                'snapshot_date' => now()->subDays(5),
+                'snapshot_date' => CarbonImmutable::now()->subDays(5),
                 'total_quantity' => 200,
                 'total_value_minor' => 25000,
                 'average_unit_cost_minor' => 125,
@@ -76,15 +76,15 @@ describe('InventoryValuationSnapshot', function (): void {
         });
 
         it('filters by date', function (): void {
-            $today = InventoryValuationSnapshot::onDate(now())->get();
+            $today = InventoryValuationSnapshot::onDate(CarbonImmutable::now())->get();
 
             expect($today)->toHaveCount(1);
         });
 
         it('filters between dates', function (): void {
             $result = InventoryValuationSnapshot::betweenDates(
-                now()->subDays(7),
-                now()->addDay()
+                CarbonImmutable::now()->subDays(7),
+                CarbonImmutable::now()->addDay()
             )->get();
 
             expect($result)->toHaveCount(2);
@@ -101,7 +101,7 @@ describe('InventoryValuationSnapshot', function (): void {
         it('returns true when variance is non-zero', function (): void {
             $snapshot = InventoryValuationSnapshot::create([
                 'costing_method' => CostingMethod::WeightedAverage,
-                'snapshot_date' => now(),
+                'snapshot_date' => CarbonImmutable::now(),
                 'total_quantity' => 100,
                 'total_value_minor' => 10000,
                 'average_unit_cost_minor' => 100,
@@ -116,7 +116,7 @@ describe('InventoryValuationSnapshot', function (): void {
         it('returns false when variance is null', function (): void {
             $snapshot = InventoryValuationSnapshot::create([
                 'costing_method' => CostingMethod::WeightedAverage,
-                'snapshot_date' => now(),
+                'snapshot_date' => CarbonImmutable::now(),
                 'total_quantity' => 100,
                 'total_value_minor' => 10000,
                 'average_unit_cost_minor' => 100,
@@ -131,7 +131,7 @@ describe('InventoryValuationSnapshot', function (): void {
         it('returns false when variance is zero', function (): void {
             $snapshot = InventoryValuationSnapshot::create([
                 'costing_method' => CostingMethod::WeightedAverage,
-                'snapshot_date' => now(),
+                'snapshot_date' => CarbonImmutable::now(),
                 'total_quantity' => 100,
                 'total_value_minor' => 10000,
                 'average_unit_cost_minor' => 100,
@@ -148,7 +148,7 @@ describe('InventoryValuationSnapshot', function (): void {
         it('calculates variance percentage correctly', function (): void {
             $snapshot = InventoryValuationSnapshot::create([
                 'costing_method' => CostingMethod::WeightedAverage,
-                'snapshot_date' => now(),
+                'snapshot_date' => CarbonImmutable::now(),
                 'total_quantity' => 100,
                 'total_value_minor' => 11000, // Current value
                 'average_unit_cost_minor' => 110,
@@ -165,7 +165,7 @@ describe('InventoryValuationSnapshot', function (): void {
         it('returns null when variance is null', function (): void {
             $snapshot = InventoryValuationSnapshot::create([
                 'costing_method' => CostingMethod::WeightedAverage,
-                'snapshot_date' => now(),
+                'snapshot_date' => CarbonImmutable::now(),
                 'total_quantity' => 100,
                 'total_value_minor' => 10000,
                 'average_unit_cost_minor' => 100,
@@ -180,7 +180,7 @@ describe('InventoryValuationSnapshot', function (): void {
         it('returns null when previous value would be zero', function (): void {
             $snapshot = InventoryValuationSnapshot::create([
                 'costing_method' => CostingMethod::WeightedAverage,
-                'snapshot_date' => now(),
+                'snapshot_date' => CarbonImmutable::now(),
                 'total_quantity' => 100,
                 'total_value_minor' => 5000,
                 'average_unit_cost_minor' => 50,
@@ -197,7 +197,7 @@ describe('InventoryValuationSnapshot', function (): void {
         it('returns true for positive variance', function (): void {
             $snapshot = InventoryValuationSnapshot::create([
                 'costing_method' => CostingMethod::WeightedAverage,
-                'snapshot_date' => now(),
+                'snapshot_date' => CarbonImmutable::now(),
                 'total_quantity' => 100,
                 'total_value_minor' => 10000,
                 'average_unit_cost_minor' => 100,
@@ -212,7 +212,7 @@ describe('InventoryValuationSnapshot', function (): void {
         it('returns false for negative variance', function (): void {
             $snapshot = InventoryValuationSnapshot::create([
                 'costing_method' => CostingMethod::WeightedAverage,
-                'snapshot_date' => now(),
+                'snapshot_date' => CarbonImmutable::now(),
                 'total_quantity' => 100,
                 'total_value_minor' => 10000,
                 'average_unit_cost_minor' => 100,
@@ -227,7 +227,7 @@ describe('InventoryValuationSnapshot', function (): void {
         it('returns false for null variance', function (): void {
             $snapshot = InventoryValuationSnapshot::create([
                 'costing_method' => CostingMethod::WeightedAverage,
-                'snapshot_date' => now(),
+                'snapshot_date' => CarbonImmutable::now(),
                 'total_quantity' => 100,
                 'total_value_minor' => 10000,
                 'average_unit_cost_minor' => 100,
@@ -244,7 +244,7 @@ describe('InventoryValuationSnapshot', function (): void {
         it('returns true for negative variance', function (): void {
             $snapshot = InventoryValuationSnapshot::create([
                 'costing_method' => CostingMethod::WeightedAverage,
-                'snapshot_date' => now(),
+                'snapshot_date' => CarbonImmutable::now(),
                 'total_quantity' => 100,
                 'total_value_minor' => 10000,
                 'average_unit_cost_minor' => 100,
@@ -259,7 +259,7 @@ describe('InventoryValuationSnapshot', function (): void {
         it('returns false for positive variance', function (): void {
             $snapshot = InventoryValuationSnapshot::create([
                 'costing_method' => CostingMethod::WeightedAverage,
-                'snapshot_date' => now(),
+                'snapshot_date' => CarbonImmutable::now(),
                 'total_quantity' => 100,
                 'total_value_minor' => 10000,
                 'average_unit_cost_minor' => 100,
@@ -274,7 +274,7 @@ describe('InventoryValuationSnapshot', function (): void {
         it('returns false for null variance', function (): void {
             $snapshot = InventoryValuationSnapshot::create([
                 'costing_method' => CostingMethod::WeightedAverage,
-                'snapshot_date' => now(),
+                'snapshot_date' => CarbonImmutable::now(),
                 'total_quantity' => 100,
                 'total_value_minor' => 10000,
                 'average_unit_cost_minor' => 100,
@@ -291,7 +291,7 @@ describe('InventoryValuationSnapshot', function (): void {
         it('returns breakdown data for a specific type', function (): void {
             $snapshot = InventoryValuationSnapshot::create([
                 'costing_method' => CostingMethod::WeightedAverage,
-                'snapshot_date' => now(),
+                'snapshot_date' => CarbonImmutable::now(),
                 'total_quantity' => 100,
                 'total_value_minor' => 10000,
                 'average_unit_cost_minor' => 100,
@@ -313,7 +313,7 @@ describe('InventoryValuationSnapshot', function (): void {
         it('returns null for non-existent type', function (): void {
             $snapshot = InventoryValuationSnapshot::create([
                 'costing_method' => CostingMethod::WeightedAverage,
-                'snapshot_date' => now(),
+                'snapshot_date' => CarbonImmutable::now(),
                 'total_quantity' => 100,
                 'total_value_minor' => 10000,
                 'average_unit_cost_minor' => 100,
@@ -330,7 +330,7 @@ describe('InventoryValuationSnapshot', function (): void {
         it('returns null when breakdown is null', function (): void {
             $snapshot = InventoryValuationSnapshot::create([
                 'costing_method' => CostingMethod::WeightedAverage,
-                'snapshot_date' => now(),
+                'snapshot_date' => CarbonImmutable::now(),
                 'total_quantity' => 100,
                 'total_value_minor' => 10000,
                 'average_unit_cost_minor' => 100,
@@ -347,7 +347,7 @@ describe('InventoryValuationSnapshot', function (): void {
         it('casts costing_method to enum', function (): void {
             $snapshot = InventoryValuationSnapshot::create([
                 'costing_method' => CostingMethod::Fifo->value,
-                'snapshot_date' => now(),
+                'snapshot_date' => CarbonImmutable::now(),
                 'total_quantity' => 100,
                 'total_value_minor' => 10000,
                 'average_unit_cost_minor' => 100,
@@ -375,7 +375,7 @@ describe('InventoryValuationSnapshot', function (): void {
         it('casts integer fields correctly', function (): void {
             $snapshot = InventoryValuationSnapshot::create([
                 'costing_method' => CostingMethod::WeightedAverage,
-                'snapshot_date' => now(),
+                'snapshot_date' => CarbonImmutable::now(),
                 'total_quantity' => '100',
                 'total_value_minor' => '10000',
                 'average_unit_cost_minor' => '100',
@@ -394,7 +394,7 @@ describe('InventoryValuationSnapshot', function (): void {
         it('casts breakdown to array', function (): void {
             $snapshot = InventoryValuationSnapshot::create([
                 'costing_method' => CostingMethod::WeightedAverage,
-                'snapshot_date' => now(),
+                'snapshot_date' => CarbonImmutable::now(),
                 'total_quantity' => 100,
                 'total_value_minor' => 10000,
                 'average_unit_cost_minor' => 100,
@@ -409,7 +409,7 @@ describe('InventoryValuationSnapshot', function (): void {
         it('casts metadata to array', function (): void {
             $snapshot = InventoryValuationSnapshot::create([
                 'costing_method' => CostingMethod::WeightedAverage,
-                'snapshot_date' => now(),
+                'snapshot_date' => CarbonImmutable::now(),
                 'total_quantity' => 100,
                 'total_value_minor' => 10000,
                 'average_unit_cost_minor' => 100,

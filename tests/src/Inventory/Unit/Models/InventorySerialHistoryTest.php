@@ -29,7 +29,7 @@ describe('InventorySerialHistory', function (): void {
             $history = InventorySerialHistory::create([
                 'serial_id' => $this->serial->id,
                 'event_type' => SerialEventType::Received->value,
-                'occurred_at' => now(),
+                'occurred_at' => CarbonImmutable::now(),
             ]);
 
             expect($history->serial)->toBeInstanceOf(InventorySerial::class);
@@ -41,7 +41,7 @@ describe('InventorySerialHistory', function (): void {
                 'serial_id' => $this->serial->id,
                 'event_type' => SerialEventType::Transferred->value,
                 'from_location_id' => $this->location->id,
-                'occurred_at' => now(),
+                'occurred_at' => CarbonImmutable::now(),
             ]);
 
             expect($history->fromLocation)->toBeInstanceOf(InventoryLocation::class);
@@ -54,7 +54,7 @@ describe('InventorySerialHistory', function (): void {
                 'serial_id' => $this->serial->id,
                 'event_type' => SerialEventType::Transferred->value,
                 'to_location_id' => $toLocation->id,
-                'occurred_at' => now(),
+                'occurred_at' => CarbonImmutable::now(),
             ]);
 
             expect($history->toLocation)->toBeInstanceOf(InventoryLocation::class);
@@ -67,7 +67,7 @@ describe('InventorySerialHistory', function (): void {
                 'event_type' => SerialEventType::Sold->value,
                 'related_to_type' => $this->item->getMorphClass(),
                 'related_to_id' => $this->item->getKey(),
-                'occurred_at' => now(),
+                'occurred_at' => CarbonImmutable::now(),
             ]);
 
             expect($history->relatedTo)->not->toBeNull();
@@ -81,7 +81,7 @@ describe('InventorySerialHistory', function (): void {
                 $history = InventorySerialHistory::create([
                     'serial_id' => $this->serial->id,
                     'event_type' => $eventType->value,
-                    'occurred_at' => now(),
+                    'occurred_at' => CarbonImmutable::now(),
                 ]);
 
                 expect($history->getEventTypeEnum())->toBe($eventType);
@@ -94,13 +94,13 @@ describe('InventorySerialHistory', function (): void {
             InventorySerialHistory::create([
                 'serial_id' => $this->serial->id,
                 'event_type' => SerialEventType::Received->value,
-                'occurred_at' => now(),
+                'occurred_at' => CarbonImmutable::now(),
             ]);
 
             InventorySerialHistory::create([
                 'serial_id' => $this->serial->id,
                 'event_type' => SerialEventType::Sold->value,
-                'occurred_at' => now(),
+                'occurred_at' => CarbonImmutable::now(),
             ]);
 
             $received = InventorySerialHistory::ofType(SerialEventType::Received)->get();
@@ -117,24 +117,24 @@ describe('InventorySerialHistory', function (): void {
             InventorySerialHistory::create([
                 'serial_id' => $this->serial->id,
                 'event_type' => SerialEventType::Received->value,
-                'occurred_at' => now()->subDays(10),
+                'occurred_at' => CarbonImmutable::now()->subDays(10),
             ]);
 
             InventorySerialHistory::create([
                 'serial_id' => $this->serial->id,
                 'event_type' => SerialEventType::Transferred->value,
-                'occurred_at' => now()->subDays(5),
+                'occurred_at' => CarbonImmutable::now()->subDays(5),
             ]);
 
             InventorySerialHistory::create([
                 'serial_id' => $this->serial->id,
                 'event_type' => SerialEventType::Sold->value,
-                'occurred_at' => now(),
+                'occurred_at' => CarbonImmutable::now(),
             ]);
 
             $filtered = InventorySerialHistory::betweenDates(
-                now()->subDays(7),
-                now()->subDays(3)
+                CarbonImmutable::now()->subDays(7),
+                CarbonImmutable::now()->subDays(3)
             )->get();
 
             expect($filtered)->toHaveCount(1);
@@ -158,7 +158,7 @@ describe('InventorySerialHistory', function (): void {
                 'actor_name' => 'John Doe',
                 'notes' => 'Transferred for order fulfillment',
                 'metadata' => ['reason' => 'priority_shipment'],
-                'occurred_at' => now(),
+                'occurred_at' => CarbonImmutable::now(),
             ]);
 
             expect($history->serial_id)->toBe($this->serial->id);
@@ -190,7 +190,7 @@ describe('InventorySerialHistory', function (): void {
             $history = InventorySerialHistory::create([
                 'serial_id' => $this->serial->id,
                 'event_type' => SerialEventType::Received->value,
-                'occurred_at' => now(),
+                'occurred_at' => CarbonImmutable::now(),
                 'metadata' => ['key' => 'value', 'nested' => ['a' => 1]],
             ]);
 

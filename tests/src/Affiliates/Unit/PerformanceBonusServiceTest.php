@@ -14,6 +14,7 @@ use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\Paused;
 use AIArmada\Affiliates\States\PendingConversion;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Artisan;
 
 beforeEach(function (): void {
@@ -265,7 +266,7 @@ describe('PerformanceBonusService', function (): void {
                 'total_minor' => 5000,
                 'commission_minor' => 500,
                 'status' => ApprovedConversion::class,
-                'occurred_at' => now(),
+                'occurred_at' => CarbonImmutable::now(),
             ]);
 
             $result = $this->service->getLeaderboard();
@@ -284,7 +285,7 @@ describe('PerformanceBonusService', function (): void {
                 'total_minor' => 5000,
                 'commission_minor' => 500,
                 'status' => PendingConversion::class,
-                'occurred_at' => now(),
+                'occurred_at' => CarbonImmutable::now(),
             ]);
 
             $result = $this->service->getLeaderboard();
@@ -314,7 +315,7 @@ describe('PerformanceBonusService', function (): void {
                 'value_minor' => 7000,
                 'commission_minor' => 500,
                 'status' => ApprovedConversion::class,
-                'occurred_at' => now(),
+                'occurred_at' => CarbonImmutable::now(),
             ]);
 
             // Second affiliate - higher revenue
@@ -328,7 +329,7 @@ describe('PerformanceBonusService', function (): void {
                 'value_minor' => 11000,
                 'commission_minor' => 1000,
                 'status' => ApprovedConversion::class,
-                'occurred_at' => now(),
+                'occurred_at' => CarbonImmutable::now(),
             ]);
 
             $result = $this->service->getLeaderboard();
@@ -359,7 +360,7 @@ describe('PerformanceBonusService', function (): void {
                     'total_minor' => 1000 * ($i + 1),
                     'commission_minor' => 100 * ($i + 1),
                     'status' => ApprovedConversion::class,
-                    'occurred_at' => now(),
+                    'occurred_at' => CarbonImmutable::now(),
                 ]);
             }
 
@@ -379,7 +380,7 @@ describe('PerformanceBonusService', function (): void {
                 'value_minor' => 13000,
                 'commission_minor' => 1000,
                 'status' => ApprovedConversion::class,
-                'occurred_at' => now(),
+                'occurred_at' => CarbonImmutable::now(),
             ]);
 
             $result = $this->service->getLeaderboard();
@@ -413,7 +414,7 @@ describe('PerformanceBonusService', function (): void {
                 'value_minor' => 8000,
                 'commission_minor' => 500,
                 'status' => ApprovedConversion::class,
-                'occurred_at' => now(),
+                'occurred_at' => CarbonImmutable::now(),
             ]);
 
             // Conversion out of range
@@ -427,11 +428,11 @@ describe('PerformanceBonusService', function (): void {
                 'value_minor' => 12000,
                 'commission_minor' => 500,
                 'status' => ApprovedConversion::class,
-                'occurred_at' => now()->subMonths(2),
+                'occurred_at' => CarbonImmutable::now()->subMonths(2),
             ]);
 
-            $from = now()->startOfMonth();
-            $to = now()->endOfMonth();
+            $from = CarbonImmutable::now()->startOfMonth();
+            $to = CarbonImmutable::now()->endOfMonth();
 
             $result = $this->service->getLeaderboard($from, $to);
 
@@ -448,7 +449,7 @@ describe('PerformanceBonusService', function (): void {
                 'value_minor' => 7000,
                 'commission_minor' => 700,
                 'status' => ApprovedConversion::class,
-                'occurred_at' => now(),
+                'occurred_at' => CarbonImmutable::now(),
             ]);
 
             $result = $this->service->getLeaderboard();
@@ -476,7 +477,7 @@ describe('PerformanceBonusService', function (): void {
                 'value_minor' => 10000,
                 'commission_minor' => 1000,
                 'status' => ApprovedConversion::class,
-                'occurred_at' => now()->subMonth()->startOfMonth()->addDay(),
+                'occurred_at' => CarbonImmutable::now()->subMonth()->startOfMonth()->addDay(),
             ]);
 
             AffiliateConversion::create([
@@ -489,13 +490,13 @@ describe('PerformanceBonusService', function (): void {
                 'value_minor' => 15000,
                 'commission_minor' => 1500,
                 'status' => ApprovedConversion::class,
-                'occurred_at' => now()->startOfMonth()->addDay(),
+                'occurred_at' => CarbonImmutable::now()->startOfMonth()->addDay(),
             ]);
 
             $bonuses = app(CommissionRuleEngine::class)->calculatePerformanceBonuses(
                 CommissionRuleType::Growth,
-                now()->startOfMonth()->toImmutable(),
-                now()->endOfMonth()->toImmutable(),
+                CarbonImmutable::now()->startOfMonth()->toImmutable(),
+                CarbonImmutable::now()->endOfMonth()->toImmutable(),
             );
 
             expect($bonuses)->toBeArray()

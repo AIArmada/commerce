@@ -64,6 +64,8 @@ it('refuses impersonation when the target opts out', function (): void {
 });
 
 it('takes and leaves impersonation as an authorized current user', function (): void {
+    config()->set('authz.scopes.enforce', false);
+
     $actor = User::query()->create([
         'name' => 'Authorized Actor',
         'email' => 'authorized-actor@example.com',
@@ -147,8 +149,10 @@ it('refuses impersonation when the supplied privileged actor is not authenticate
 it('does not override the standard Laravel session driver', function (): void {
     config()->set('auth.guards.standard', ['driver' => 'session', 'provider' => 'users']);
 
-    expect(auth()->guard('standard'))->toBeInstanceOf(\Illuminate\Auth\SessionGuard::class)
-        ->not->toBeInstanceOf(SessionGuard::class);
+    $guard = auth()->guard('standard');
+
+    expect($guard)->toBeInstanceOf(\Illuminate\Auth\SessionGuard::class)
+        ->and($guard)->not->toBeInstanceOf(SessionGuard::class);
 });
 
 it('rejects a non-participating target guard without switching the actor', function (): void {

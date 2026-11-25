@@ -6,6 +6,7 @@ use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventoryStandardCost;
 use AIArmada\Inventory\Services\Costing\StandardCostService;
+use Carbon\CarbonImmutable;
 
 describe('StandardCostService', function (): void {
     beforeEach(function (): void {
@@ -18,7 +19,7 @@ describe('StandardCostService', function (): void {
         $cost = $this->service->setStandardCost(
             $this->item,
             1000,
-            now(),
+            CarbonImmutable::now(),
             null,
             'admin',
             'Initial cost'
@@ -30,15 +31,15 @@ describe('StandardCostService', function (): void {
     });
 
     it('set standard cost expires current', function (): void {
-        $oldCost = $this->service->setStandardCost($this->item, 500, now()->subMonth());
-        $newCost = $this->service->setStandardCost($this->item, 600, now());
+        $oldCost = $this->service->setStandardCost($this->item, 500, CarbonImmutable::now()->subMonth());
+        $newCost = $this->service->setStandardCost($this->item, 600, CarbonImmutable::now());
 
         expect($oldCost->fresh()->effective_to)->not->toBeNull();
         expect($newCost->effective_to)->toBeNull();
     });
 
     it('get current standard cost', function (): void {
-        $this->service->setStandardCost($this->item, 1000, now());
+        $this->service->setStandardCost($this->item, 1000, CarbonImmutable::now());
 
         $current = $this->service->getCurrentStandardCost($this->item);
 
@@ -47,16 +48,16 @@ describe('StandardCostService', function (): void {
     });
 
     it('get standard cost at', function (): void {
-        $this->service->setStandardCost($this->item, 500, now()->subMonths(2), now()->subMonth());
-        $this->service->setStandardCost($this->item, 600, now()->subMonth());
+        $this->service->setStandardCost($this->item, 500, CarbonImmutable::now()->subMonths(2), CarbonImmutable::now()->subMonth());
+        $this->service->setStandardCost($this->item, 600, CarbonImmutable::now()->subMonth());
 
-        $pastCost = $this->service->getStandardCostAt($this->item, now()->subMonths(1)->subDays(15));
+        $pastCost = $this->service->getStandardCostAt($this->item, CarbonImmutable::now()->subMonths(1)->subDays(15));
 
         expect($pastCost->standard_cost_minor)->toBe(500);
     });
 
     it('get current cost value', function (): void {
-        $this->service->setStandardCost($this->item, 1000, now());
+        $this->service->setStandardCost($this->item, 1000, CarbonImmutable::now());
 
         $value = $this->service->getCurrentCostValue($this->item);
 
@@ -70,7 +71,7 @@ describe('StandardCostService', function (): void {
     });
 
     it('calculate valuation', function (): void {
-        $this->service->setStandardCost($this->item, 500, now());
+        $this->service->setStandardCost($this->item, 500, CarbonImmutable::now());
 
         $valuation = $this->service->calculateValuation($this->item, 100);
 
@@ -80,7 +81,7 @@ describe('StandardCostService', function (): void {
     });
 
     it('calculate variance favorable', function (): void {
-        $this->service->setStandardCost($this->item, 1000, now());
+        $this->service->setStandardCost($this->item, 1000, CarbonImmutable::now());
 
         // Actual cost is lower than standard = favorable
         $variance = $this->service->calculateVariance($this->item, 800);
@@ -90,7 +91,7 @@ describe('StandardCostService', function (): void {
     });
 
     it('calculate variance unfavorable', function (): void {
-        $this->service->setStandardCost($this->item, 1000, now());
+        $this->service->setStandardCost($this->item, 1000, CarbonImmutable::now());
 
         // Actual cost is higher than standard = unfavorable
         $variance = $this->service->calculateVariance($this->item, 1200);
@@ -100,9 +101,9 @@ describe('StandardCostService', function (): void {
     });
 
     it('get cost history', function (): void {
-        $this->service->setStandardCost($this->item, 500, now()->subMonths(2), now()->subMonth());
-        $this->service->setStandardCost($this->item, 600, now()->subMonth(), now());
-        $this->service->setStandardCost($this->item, 700, now());
+        $this->service->setStandardCost($this->item, 500, CarbonImmutable::now()->subMonths(2), CarbonImmutable::now()->subMonth());
+        $this->service->setStandardCost($this->item, 600, CarbonImmutable::now()->subMonth(), CarbonImmutable::now());
+        $this->service->setStandardCost($this->item, 700, CarbonImmutable::now());
 
         $history = $this->service->getCostHistory($this->item);
 
@@ -110,12 +111,12 @@ describe('StandardCostService', function (): void {
     });
 
     it('get future costs', function (): void {
-        $this->service->setStandardCost($this->item, 500, now());
+        $this->service->setStandardCost($this->item, 500, CarbonImmutable::now());
         InventoryStandardCost::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
             'standard_cost_minor' => 600,
-            'effective_from' => now()->addMonth(),
+            'effective_from' => CarbonImmutable::now()->addMonth(),
         ]);
 
         $future = $this->service->getFutureCosts($this->item);
@@ -125,7 +126,7 @@ describe('StandardCostService', function (): void {
     });
 
     it('expire current cost', function (): void {
-        $this->service->setStandardCost($this->item, 500, now());
+        $this->service->setStandardCost($this->item, 500, CarbonImmutable::now());
 
         $result = $this->service->expireCurrentCost($this->item);
 
@@ -144,18 +145,18 @@ describe('StandardCostService', function (): void {
     it('has standard cost', function (): void {
         expect($this->service->hasStandardCost($this->item))->toBeFalse();
 
-        $this->service->setStandardCost($this->item, 500, now());
+        $this->service->setStandardCost($this->item, 500, CarbonImmutable::now());
 
         expect($this->service->hasStandardCost($this->item))->toBeTrue();
     });
 
     it('schedule cost change', function (): void {
-        $this->service->setStandardCost($this->item, 500, now());
+        $this->service->setStandardCost($this->item, 500, CarbonImmutable::now());
 
         $scheduled = $this->service->scheduleCostChange(
             $this->item,
             600,
-            now()->addMonth(),
+            CarbonImmutable::now()->addMonth(),
             'admin',
             'Annual review'
         );
@@ -165,14 +166,14 @@ describe('StandardCostService', function (): void {
     });
 
     it('schedule cost change throws for past date', function (): void {
-        $this->service->scheduleCostChange($this->item, 600, now()->subDay());
+        $this->service->scheduleCostChange($this->item, 600, CarbonImmutable::now()->subDay());
     })->throws(InvalidArgumentException::class);
 
     it('cancel scheduled cost', function (): void {
         $scheduled = InventoryStandardCost::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
-            'effective_from' => now()->addMonth(),
+            'effective_from' => CarbonImmutable::now()->addMonth(),
         ]);
 
         $result = $this->service->cancelScheduledCost($scheduled);
@@ -185,7 +186,7 @@ describe('StandardCostService', function (): void {
         $activeCost = InventoryStandardCost::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
-            'effective_from' => now()->subDay(),
+            'effective_from' => CarbonImmutable::now()->subDay(),
             'effective_to' => null,
         ]);
 

@@ -20,6 +20,7 @@ use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\Disabled;
 use AIArmada\Affiliates\States\Pending;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Event;
 
 // Affiliate registration action tests
@@ -81,7 +82,7 @@ test('DailyAggregationService aggregateForAffiliate creates or updates daily sta
     ]);
 
     // Test aggregation without touchpoints (simpler test)
-    $stats = $service->aggregateForAffiliate($affiliate, now());
+    $stats = $service->aggregateForAffiliate($affiliate, CarbonImmutable::now());
 
     expect($stats)->toHaveCount(1);
 
@@ -116,10 +117,10 @@ test('DailyAggregationService aggregateForAffiliate prefers neutral conversion v
         'commission_minor' => 420,
         'commission_currency' => 'USD',
         'status' => ApprovedConversion::class,
-        'occurred_at' => now(),
+        'occurred_at' => CarbonImmutable::now(),
     ]);
 
-    $stats = $service->aggregateForAffiliate($affiliate, now());
+    $stats = $service->aggregateForAffiliate($affiliate, CarbonImmutable::now());
 
     expect($stats)->toHaveCount(1);
 
@@ -159,11 +160,11 @@ test('DailyAggregationService aggregateForAffiliate writes one row per currency'
             'commission_minor' => $leg['commission'],
             'commission_currency' => $leg['currency'],
             'status' => ApprovedConversion::class,
-            'occurred_at' => now(),
+            'occurred_at' => CarbonImmutable::now(),
         ]);
     }
 
-    $stats = $service->aggregateForAffiliate($affiliate, now());
+    $stats = $service->aggregateForAffiliate($affiliate, CarbonImmutable::now());
     $byCurrency = $stats->mapWithKeys(fn (AffiliateDailyStat $stat): array => [$stat->currency => $stat]);
 
     expect($stats)->toHaveCount(2)
@@ -171,7 +172,7 @@ test('DailyAggregationService aggregateForAffiliate writes one row per currency'
         ->and($byCurrency['MYR']->revenue_cents)->toBe(47000)
         ->and($byCurrency['MYR']->commission_cents)->toBe(4700);
 
-    $period = $service->getAggregatedStats($affiliate, now()->subDay(), now()->addDay());
+    $period = $service->getAggregatedStats($affiliate, CarbonImmutable::now()->subDay(), CarbonImmutable::now()->addDay());
 
     expect($period['conversions'])->toBe(2)
         ->and($period['revenue_cents'])->toBeNull()
@@ -200,7 +201,7 @@ test('DailyAggregationService aggregate processes all affiliates', function (): 
         'currency' => 'USD',
     ]);
 
-    $count = $service->aggregate(now());
+    $count = $service->aggregate(CarbonImmutable::now());
 
     expect($count)->toBeGreaterThanOrEqual(2);
 });
@@ -219,7 +220,7 @@ test('DailyAggregationService getAggregatedStats returns aggregated data', funct
 
     AffiliateDailyStat::create([
         'affiliate_id' => $affiliate->id,
-        'date' => now()->subDays(2)->toDateString(),
+        'date' => CarbonImmutable::now()->subDays(2)->toDateString(),
         'currency' => 'USD',
         'clicks' => 100,
         'unique_clicks' => 80,
@@ -235,7 +236,7 @@ test('DailyAggregationService getAggregatedStats returns aggregated data', funct
 
     AffiliateDailyStat::create([
         'affiliate_id' => $affiliate->id,
-        'date' => now()->subDay()->toDateString(),
+        'date' => CarbonImmutable::now()->subDay()->toDateString(),
         'currency' => 'USD',
         'clicks' => 150,
         'unique_clicks' => 120,
@@ -249,7 +250,7 @@ test('DailyAggregationService getAggregatedStats returns aggregated data', funct
         'epc_cents' => 50.0,
     ]);
 
-    $stats = $service->getAggregatedStats($affiliate, now()->subDays(5), now());
+    $stats = $service->getAggregatedStats($affiliate, CarbonImmutable::now()->subDays(5), CarbonImmutable::now());
 
     expect($stats['clicks'])->toBe(250);
     expect($stats['conversions'])->toBe(25);
@@ -269,7 +270,7 @@ test('DailyAggregationService backfill processes date range', function (): void 
         'currency' => 'USD',
     ]);
 
-    $count = $service->backfill(now()->subDays(2), now());
+    $count = $service->backfill(CarbonImmutable::now()->subDays(2), CarbonImmutable::now());
 
     // Should process 3 days worth of stats for at least 1 affiliate = 3+ records
     expect($count)->toBeGreaterThanOrEqual(3);

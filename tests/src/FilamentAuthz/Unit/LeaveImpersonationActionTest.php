@@ -2,20 +2,16 @@
 
 declare(strict_types=1);
 
-use AIArmada\FilamentAuthz\Actions\LeaveImpersonationAction;
+use AIArmada\Authz\Support\BackToUrlSanitizer;
 
-describe('LeaveImpersonationAction', function (): void {
+describe('Impersonation return URL sanitizer', function (): void {
     it('falls back to root path for external back-to urls', function (): void {
-        $method = new ReflectionMethod(LeaveImpersonationAction::class, 'sanitizeBackToUrl');
-
-        expect($method->invoke(null, 'https://evil.example/owned'))->toBe('/')
-            ->and($method->invoke(null, '//evil.example/owned'))->toBe('/');
+        expect(BackToUrlSanitizer::sanitize('https://evil.example/owned'))->toBe('/')
+            ->and(BackToUrlSanitizer::sanitize('//evil.example/owned'))->toBe('/');
     });
 
     it('keeps safe relative back-to urls', function (): void {
-        $method = new ReflectionMethod(LeaveImpersonationAction::class, 'sanitizeBackToUrl');
-
-        expect($method->invoke(null, '/admin'))->toBe('/admin')
-            ->and($method->invoke(null, '/'))->toBe('/');
+        expect(BackToUrlSanitizer::sanitize('/admin'))->toBe('/admin')
+            ->and(BackToUrlSanitizer::sanitize('/'))->toBe('/');
     });
 });

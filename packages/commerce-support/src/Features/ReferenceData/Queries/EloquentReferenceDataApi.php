@@ -51,7 +51,7 @@ final readonly class EloquentReferenceDataApi implements ReferenceDataApi
         return Language::query()->orderBy('name')->pluck('name', 'code')->all();
     }
 
-    public function connectionName(): string
+    public function connectionName(): ?string
     {
         $connection = (new Currency)->getConnection()->getName();
 

@@ -24,5 +24,5 @@ interface ReferenceDataApi
     /** @return array<string, string> */
     public function languageOptions(): array;
 
-    public function connectionName(): string;
+    public function connectionName(): ?string;
 }
