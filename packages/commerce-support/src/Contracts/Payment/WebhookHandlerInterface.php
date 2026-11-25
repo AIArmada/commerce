@@ -18,7 +18,6 @@ interface WebhookHandlerInterface
     /**
      * Verify the webhook signature/authenticity.
      *
-     * @param  Request  $request  The incoming webhook request
      *
      * @throws WebhookVerificationException If verification fails
      */
@@ -27,7 +26,6 @@ interface WebhookHandlerInterface
     /**
      * Parse the webhook payload and return a standardized result.
      *
-     * @param  Request  $request  The incoming webhook request
      */
     public function parseWebhook(WebhookRequestData $request): WebhookPayload;
 

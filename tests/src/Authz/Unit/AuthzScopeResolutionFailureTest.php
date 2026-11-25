@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Authz\Exceptions\ScopeResolutionException;
+use AIArmada\Authz\Features\Authorization\Api\RoleAdministrationApi;
 use AIArmada\Authz\Features\Authorization\Authz;
 use AIArmada\Authz\Features\Authorization\Models\AuthzScope;
 use AIArmada\Authz\Features\Authorization\Models\Permission;
@@ -83,7 +84,7 @@ it('rejects an Authz scope record that no longer exists', function (): void {
         'label' => 'Deleted Authz Scope',
     ]);
 
-    $scope->delete();
+    app(RoleAdministrationApi::class)->deleteScope((string) $scope->getKey());
 
     expect(fn () => app(Authz::class)->withScope($scope, fn (): string => 'ran'))
         ->toThrow(ScopeResolutionException::class);

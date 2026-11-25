@@ -5,7 +5,7 @@
     "table:authz_scopes": [
       "AIArmada\\Authz\\Features\\Authorization\\Actions\\EnsureScopeForModel",
       "AIArmada\\Authz\\Features\\Authorization\\Actions\\UpdateScopeLabel",
-      "AIArmada\\Authz\\Features\\Authorization\\Actions\\DeleteScopeForModel"
+      "AIArmada\\Authz\\Features\\Authorization\\Actions\\DeleteAuthzScope"
     ],
     "table:roles": [
       "AIArmada\\Authz\\Features\\Authorization\\Actions\\PersistRole",

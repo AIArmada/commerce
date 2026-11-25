@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Authz\Support;
 
-use AIArmada\Authz\EntryPoints\Console\SuperAdminCommand;
-use AIArmada\Authz\EntryPoints\Console\SyncAuthzCommand;
+use AIArmada\Authz\Features\Authorization\EntryPoints\Console\SuperAdminCommand;
+use AIArmada\Authz\Features\Authorization\EntryPoints\Console\SyncAuthzCommand;
 
 final class CommandProhibitor
 {

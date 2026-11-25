@@ -27,7 +27,7 @@ final class AuthzScopeResolver
         }
 
         if ($scope instanceof AuthzScope) {
-            if ($scope->getKey() === null || ! $scope->exists) {
+            if ($scope->getKey() === null || ! $scope->exists || ! AuthzScope::query()->whereKey($scope->getKey())->exists()) {
                 throw ScopeResolutionException::forScope($scope, 'the Authz scope record does not exist');
             }
 

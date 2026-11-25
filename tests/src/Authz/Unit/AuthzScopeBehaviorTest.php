@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Authz\Features\Authorization\Api\RoleAdministrationApi;
 use AIArmada\Authz\Features\Authorization\Concerns\HasAuthzScope;
 use AIArmada\Authz\Features\Authorization\Models\AuthzScope;
 use AIArmada\Authz\Features\Authorization\Models\Permission;
@@ -60,7 +61,7 @@ it('removes scoped roles and assignments when an authz scope is deleted', functi
     ]);
     $globalAssignmentUser->assignRole($scopedRole);
 
-    $scope->delete();
+    app(RoleAdministrationApi::class)->deleteScope((string) $scope->getKey());
 
     expect(DB::table('roles')->where('id', $globalRole->getKey())->exists())->toBeTrue()
         ->and(DB::table('roles')->where('id', $scopedRole->getKey())->exists())->toBeFalse()

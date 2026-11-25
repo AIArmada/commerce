@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Authz\Features\Authorization;
 
 use AIArmada\Authz\Features\Authorization\Actions\AssignExistingRole;
+use AIArmada\Authz\Features\Authorization\Actions\DeleteAuthzScope;
 use AIArmada\Authz\Features\Authorization\Actions\DeletePermissionDefinition;
 use AIArmada\Authz\Features\Authorization\Actions\DeleteRoleDefinition;
 use AIArmada\Authz\Features\Authorization\Actions\EnsurePermissions;
@@ -34,6 +35,7 @@ final readonly class RoleAdministration implements RoleAdministrationApi
         private SavePermissionDefinition $savePermission,
         private DeleteRoleDefinition $deleteRole,
         private DeletePermissionDefinition $deletePermission,
+        private DeleteAuthzScope $deleteScope,
     ) {}
 
     public function permissionNames(string $guard): array
@@ -72,6 +74,7 @@ final readonly class RoleAdministration implements RoleAdministrationApi
     {
         $this->userPermissions->execute($record, $permissionIds, $guard);
     }
+
     public function saveRoleDefinition(?string $id, string $name, string $guard, string | int | null $scope, array $permissionNames): RoleRecord
     {
         $role = $this->saveRole->execute($id, $name, $guard, $scope, $permissionNames);
@@ -92,5 +95,10 @@ final readonly class RoleAdministration implements RoleAdministrationApi
     public function deletePermissionDefinition(string $id): bool
     {
         return $this->deletePermission->execute($id);
+    }
+
+    public function deleteScope(string $id): bool
+    {
+        return $this->deleteScope->execute($id);
     }
 }

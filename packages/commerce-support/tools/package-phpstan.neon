@@ -2,7 +2,6 @@ parameters:
     customRulesetUsed: true
     paths:
         - ../src
-        - ../config
     excludePaths:
         analyse:
             - ../database/migrations/*

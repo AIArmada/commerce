@@ -26,6 +26,7 @@ interface RoleAdministrationApi
 
     /** @param list<string> $permissionIds */
     public function syncUserPermissions(RecordReference $record, array $permissionIds, string $guard): void;
+
     /** @param list<string> $permissionNames */
     public function saveRoleDefinition(?string $id, string $name, string $guard, string | int | null $scope, array $permissionNames): RoleRecord;
 
@@ -34,4 +35,6 @@ interface RoleAdministrationApi
     public function deleteRoleDefinition(string $id): bool;
 
     public function deletePermissionDefinition(string $id): bool;
+
+    public function deleteScope(string $id): bool;
 }

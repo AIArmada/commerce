@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Authz\Features\Authorization\Models;
 
-use AIArmada\Authz\Features\Authorization\Actions\DeleteScopeAssignments;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
@@ -41,15 +40,4 @@ final class AuthzScope extends Model
         return $this->morphTo();
     }
 
-    protected static function booted(): void
-    {
-        static::deleted(static function (AuthzScope $scope): void {
-            app(DeleteScopeAssignments::class)->execute($scope);
-        });
-    }
-
-    public function delete(): ?bool
-    {
-        return $this->getConnection()->transaction(fn (): ?bool => parent::delete());
-    }
 }
