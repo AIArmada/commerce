@@ -78,6 +78,11 @@ final readonly class AnalyzeFraud implements FraudApi
         return $this->assessment($signals);
     }
 
+    public function hasUnresolvedSignals(string $affiliateId): bool
+    {
+        return $this->profile->hasUnresolvedSignals($affiliateId);
+    }
+
     public function getRiskProfile(string $affiliateId): array
     {
         return $this->profile->execute($affiliateId);

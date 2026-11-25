@@ -11,6 +11,14 @@ use Carbon\CarbonImmutable;
 
 final class FraudRiskProfileQuery
 {
+    public function hasUnresolvedSignals(string $affiliateId): bool
+    {
+        return AffiliateFraudSignal::query()
+            ->where('affiliate_id', $affiliateId)
+            ->whereIn('status', [FraudSignalStatus::Detected, FraudSignalStatus::Confirmed])
+            ->exists();
+    }
+
     public function execute(string $affiliateId): array
     {
         $rows = AffiliateFraudSignal::query()

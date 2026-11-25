@@ -5,17 +5,25 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Services;
 
 use AIArmada\Affiliates\Contracts\QualifiesForOpenApproval;
-use AIArmada\Affiliates\Enums\FraudSignalStatus;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudApi;
 use AIArmada\Affiliates\Enums\RegistrationApprovalMode;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Pending;
 use AIArmada\Affiliates\States\RejectedConversion;
 use AIArmada\Affiliates\States\ReversedConversion;
 
-final class OpenApprovalPolicy implements QualifiesForOpenApproval
+final readonly class OpenApprovalPolicy implements QualifiesForOpenApproval
 {
-    public function qualifies(AffiliateConversion $conversion): bool
+    public function __construct(private FraudApi $fraud) {}
+
+    public function qualifies(string $conversionId): bool
     {
+        $conversion = AffiliateConversion::query()->with(['affiliate', 'attribution'])->find($conversionId);
+
+        if (! $conversion instanceof AffiliateConversion) {
+            return false;
+        }
+
         $affiliate = $conversion->affiliate;
 
         if (! $affiliate) {
@@ -51,8 +59,6 @@ final class OpenApprovalPolicy implements QualifiesForOpenApproval
         // re-run analyzeConversion here; it persists new signals on every
         // call, while record-time screening already ran (its rejections
         // arrive as Rejected conversions, excluded above).
-        return ! $affiliate->fraudSignals()
-            ->whereIn('status', [FraudSignalStatus::Detected, FraudSignalStatus::Confirmed])
-            ->exists();
+        return ! $this->fraud->hasUnresolvedSignals((string) $affiliate->getKey());
     }
 }
