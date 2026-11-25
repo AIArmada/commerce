@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Features\Upline\EntryPoints\Filament\Resources;
 
-use AIArmada\Affiliates\Models\AffiliateRankHistory;
+use AIArmada\Affiliates\Features\Upline\Models\AffiliateRankHistory;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\FilamentAffiliates\Features\Upline\EntryPoints\Filament\Resources\AffiliateRankHistoryResource\Pages\ListAffiliateRankHistories;

@@ -45,7 +45,7 @@ use AIArmada\Affiliates\Models\AffiliateProgramCreative;
 use AIArmada\Affiliates\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Models\AffiliateProgramTier;
 use AIArmada\Affiliates\Models\AffiliateRank;
-use AIArmada\Affiliates\Models\AffiliateRankHistory;
+use AIArmada\Affiliates\Features\Upline\Models\AffiliateRankHistory;
 use AIArmada\Affiliates\Models\AffiliateTouchpoint;
 use AIArmada\Affiliates\Features\Commissions\Models\AffiliateVolumeTier;
 use AIArmada\Affiliates\Platform\ExtensionRegistry;
