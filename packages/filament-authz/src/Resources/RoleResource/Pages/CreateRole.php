@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentAuthz\Resources\${kind}Resource\Pages;
+namespace AIArmada\FilamentAuthz\Resources\RoleResource\Pages;
 
-use AIArmada\FilamentAuthz\Resources\${kind}Resource;
+use AIArmada\FilamentAuthz\Resources\RoleResource;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
 

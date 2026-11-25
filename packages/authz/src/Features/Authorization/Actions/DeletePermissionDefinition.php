@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Authz\Features\Authorization\Actions;
 
 use RuntimeException;
-use Spatie\Permission\Models\${kind};
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 
 final readonly class DeletePermissionDefinition

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentAuthz\Resources\${kind}Resource\Pages;
+namespace AIArmada\FilamentAuthz\Resources\PermissionResource\Pages;
 
-use AIArmada\FilamentAuthz\Resources\${kind}Resource;
+use AIArmada\FilamentAuthz\Resources\PermissionResource;
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
