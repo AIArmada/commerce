@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 use Spatie\Permission\Guard;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -26,9 +27,21 @@ final readonly class SyncUserPermissions
         $permissionIds = array_values(array_unique($permissionIds));
         $permissionClass = $this->registrar->getPermissionClass();
         $permissionModel = new $permissionClass;
+        if ($permissionModel instanceof \AIArmada\Authz\Features\Authorization\Models\Permission) {
+            foreach ($permissionIds as $id) {
+                if (! Str::isUuid($id)) {
+                    throw new AuthorizationException('Invalid authorization identifier.');
+                }
+            }
+        }
+
         $connection = $permissionModel->getConnection();
 
         $connection->transaction(function () use ($user, $permissionIds, $guard, $permissionModel, $connection): void {
+            if ($user->getConnection() === $connection) {
+                $user->newQuery()->whereKey($user->getKey())->lockForUpdate()->firstOrFail();
+            }
+
             $eligible = $permissionModel->newQuery()->where('guard_name', $guard);
             if ((clone $eligible)->whereKey($permissionIds)->count() !== count($permissionIds)) {
                 throw new AuthorizationException('One or more selected permissions are invalid for the current guard.');

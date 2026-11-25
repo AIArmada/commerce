@@ -81,9 +81,9 @@ When `authz.wildcard_permissions` is enabled, a granted permission containing
 ## Impersonation
 
 ```php
-use AIArmada\Authz\Features\Impersonation\Actions\ImpersonateManager;
+use AIArmada\Authz\Features\Impersonation\Api\ImpersonationApi;
 
-$manager = app(ImpersonateManager::class);
+$manager = app(ImpersonationApi::class);
 $manager->take($administrator, $target, 'web', '/admin');
 ```
 
@@ -91,6 +91,21 @@ $manager->take($administrator, $target, 'web', '/admin');
 be allowed to impersonate (via `canImpersonate()` or the super-admin role).
 The target must allow impersonation, self-impersonation is refused, and the
 tenant scope guard must pass. Authorization cannot be bypassed.
+
+## Role administration
+
+Use the feature API from authorized administrative entry points rather than writing permission tables or relationship pivots directly.
+
+```php
+use AIArmada\Authz\Features\Authorization\Api\RoleAdministrationApi;
+use AIArmada\CommerceSupport\Data\RecordReference;
+
+$roles = app(RoleAdministrationApi::class);
+$roles->ensureRole('manager', 'web', $scopeId, ['orders.view']);
+$roles->assignExistingRole(new RecordReference($user->getMorphClass(), (string) $user->getKey()), 'manager', 'web', $scopeId);
+```
+
+Role reconciliation validates the requested guard and permitted scope mode before mutation. Direct permission reconciliation is restricted to the active team and guard. The caller must authorize the administrative operation and supply the trusted scope restrictions.
 
 ## Console commands
 

@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 use Spatie\Permission\Guard;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -30,12 +31,24 @@ final readonly class SyncUserRoles
         $roleIds = array_values(array_unique($roleIds));
         $roleClass = $this->registrar->getRoleClass();
         $roleModel = new $roleClass;
+        if ($roleModel instanceof \AIArmada\Authz\Features\Authorization\Models\Role) {
+            foreach ($roleIds as $id) {
+                if (! Str::isUuid($id)) {
+                    throw new AuthorizationException('Invalid authorization identifier.');
+                }
+            }
+        }
+
         $connection = $roleModel->getConnection();
         $teams = $this->registrar->teams;
         $teamsKey = $this->registrar->teamsKey;
         $teamId = $this->registrar->getPermissionsTeamId();
 
         $connection->transaction(function () use ($user, $roleIds, $guard, $restrictToCurrentTeam, $scopeMode, $roleModel, $connection, $teams, $teamsKey, $teamId): void {
+            if ($user->getConnection() === $connection) {
+                $user->newQuery()->whereKey($user->getKey())->lockForUpdate()->firstOrFail();
+            }
+
             $eligible = $roleModel->newQuery()->where('guard_name', $guard);
 
             if ($teams) {

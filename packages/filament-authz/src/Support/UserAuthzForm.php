@@ -6,7 +6,7 @@ namespace AIArmada\FilamentAuthz\Support;
 
 use AIArmada\Authz\Features\Authorization\Api\RoleAdministrationApi;
 use AIArmada\Authz\Features\Authorization\Models\AuthzScope;
-use AIArmada\CommerceSupport\Support\EloquentRecordReference;
+use AIArmada\CommerceSupport\Data\RecordReference;
 use Filament\Forms\Components\Select;
 use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\Section;
@@ -82,7 +82,7 @@ final class UserAuthzForm
             return;
         }
 
-        $reference = EloquentRecordReference::fromModel($record);
+        $reference = new RecordReference($record->getMorphClass(), (string) $record->getKey());
         $guards = (array) config('authz.guards', ['web']);
         $ids = static::normalizeSelection($state);
 
@@ -177,7 +177,7 @@ final class UserAuthzForm
             return;
         }
 
-        $reference = EloquentRecordReference::fromModel($record);
+        $reference = new RecordReference($record->getMorphClass(), (string) $record->getKey());
         $guards = (array) config('authz.guards', ['web']);
 
         app(RoleAdministrationApi::class)->syncUserRoles(
@@ -225,25 +225,27 @@ final class UserAuthzForm
         $rolePivotKey = (string) $registrar->pivotRole;
         $teamsKey = (string) $registrar->teamsKey;
 
-        $query = DB::table($table)
-            ->where($modelMorphKey, $record->getKey())
-            ->where('model_type', $record->getMorphClass());
+        $roleClass = $registrar->getRoleClass();
+        $role = new $roleClass;
+        $roleTable = $role->getTable();
+        $guards = (array) config('authz.guards', ['web']);
 
-        // Scope to current team when restriction is active; reading cross-tenant
-        // pivot rows violates the owner-scoping contract even when the downstream
-        // intersection with scoped options would hide them from the UI.
+        $query = DB::table($table . ' as assignments')
+            ->join($roleTable . ' as definitions', 'definitions.' . $role->getKeyName(), '=', 'assignments.' . $rolePivotKey)
+            ->where('assignments.' . $modelMorphKey, $record->getKey())
+            ->where('assignments.model_type', $record->getMorphClass())
+            ->where('definitions.guard_name', (string) ($guards[0] ?? 'web'))
+            ->where(function ($query) use ($teamsKey): void {
+                $query->whereColumn('assignments.' . $teamsKey, 'definitions.' . $teamsKey)
+                    ->orWhere(fn ($query) => $query->whereNull('assignments.' . $teamsKey)->whereNull('definitions.' . $teamsKey));
+            });
+
         if (static::shouldRestrictToCurrentTeam((bool) $registrar->teams)) {
-            $teamId = getPermissionsTeamId();
-
-            if ($teamId === null) {
-                $query->whereNull($teamsKey);
-            } else {
-                $query->where($teamsKey, $teamId);
-            }
+            $query->where('assignments.' . $teamsKey, getPermissionsTeamId());
         }
 
         return $query
-            ->pluck($rolePivotKey)
+            ->pluck('assignments.' . $rolePivotKey)
             ->map(static fn (mixed $roleId): string => (string) $roleId)
             ->unique()
             ->values()
