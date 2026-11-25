@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "name": "Dashboard",
+  "owns": {},
+  "extensions": {
+    "panel.contributions": [
+      "AIArmada\\FilamentAffiliateNetwork\\Features\\Dashboard\\Extensions\\PanelContribution"
+    ]
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "name": "Sites",
+  "owns": {},
+  "extensions": {
+    "panel.contributions": [
+      "AIArmada\\FilamentAffiliateNetwork\\Features\\Sites\\Extensions\\PanelContribution"
+    ]
+  }
+}

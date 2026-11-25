@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "name": "Ledger",
+  "owns": {},
+  "extensions": {
+    "panel.contributions": [
+      "AIArmada\\FilamentAffiliateNetwork\\Features\\Ledger\\Extensions\\PanelContribution"
+    ]
+  }
+}

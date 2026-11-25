@@ -4,24 +4,18 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliateNetwork;
 
-use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
-use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOfferCategory;
-use AIArmada\AffiliateNetwork\Features\Enrollment\Models\AffiliateOfferApplication;
-use AIArmada\AffiliateNetwork\Features\Ledger\Models\MerchantStatement;
-use AIArmada\AffiliateNetwork\Features\Postbacks\Models\CreatorPostbackEndpoint;
-use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
-use AIArmada\FilamentAffiliateNetwork\Policies\AffiliateOfferApplicationPolicy;
-use AIArmada\FilamentAffiliateNetwork\Policies\AffiliateOfferCategoryPolicy;
-use AIArmada\FilamentAffiliateNetwork\Policies\AffiliateOfferPolicy;
-use AIArmada\FilamentAffiliateNetwork\Policies\AffiliateSitePolicy;
-use AIArmada\FilamentAffiliateNetwork\Policies\CreatorPostbackPolicy;
-use AIArmada\FilamentAffiliateNetwork\Policies\MerchantStatementPolicy;
-use Illuminate\Support\Facades\Gate;
+use AIArmada\FilamentAffiliateNetwork\Platform\ExtensionRegistry;
+use AIArmada\FilamentAffiliateNetwork\Platform\FeatureCatalog;
+use AIArmada\FilamentAffiliateNetwork\Platform\FeatureModule;
+use Illuminate\Contracts\Foundation\Application;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
 final class FilamentAffiliateNetworkServiceProvider extends PackageServiceProvider
 {
+    /** @var array{features: array<string, string>, owners: array<string, string>, writes: array<string, list<string>>, extensions: array<string, list<string>>}|null */
+    private ?array $catalog = null;
+
     public function configurePackage(Package $package): void
     {
         $package
@@ -32,16 +26,33 @@ final class FilamentAffiliateNetworkServiceProvider extends PackageServiceProvid
 
     public function packageRegistered(): void
     {
+        $catalog = $this->catalog();
+        $this->app->singleton(ExtensionRegistry::class, fn (Application $app): ExtensionRegistry => new ExtensionRegistry($app, $catalog['extensions']));
         $this->app->singleton(FilamentAffiliateNetworkPlugin::class);
+
+        foreach (array_keys($catalog['features']) as $name) {
+            $module = $this->app->make(__NAMESPACE__ . '\\Features\\' . $name . '\\FeatureModule');
+
+            if ($module instanceof FeatureModule) {
+                $module->register($this->app);
+            }
+        }
     }
 
     public function packageBooted(): void
     {
-        Gate::policy(AffiliateSite::class, AffiliateSitePolicy::class);
-        Gate::policy(AffiliateOfferCategory::class, AffiliateOfferCategoryPolicy::class);
-        Gate::policy(AffiliateOffer::class, AffiliateOfferPolicy::class);
-        Gate::policy(AffiliateOfferApplication::class, AffiliateOfferApplicationPolicy::class);
-        Gate::policy(MerchantStatement::class, MerchantStatementPolicy::class);
-        Gate::policy(CreatorPostbackEndpoint::class, CreatorPostbackPolicy::class);
+        foreach (array_keys($this->catalog()['features']) as $name) {
+            $module = $this->app->make(__NAMESPACE__ . '\\Features\\' . $name . '\\FeatureModule');
+
+            if ($module instanceof FeatureModule) {
+                $module->boot($this->app);
+            }
+        }
+    }
+
+    /** @return array{features: array<string, string>, owners: array<string, string>, writes: array<string, list<string>>, extensions: array<string, list<string>>} */
+    private function catalog(): array
+    {
+        return $this->catalog ??= FeatureCatalog::load(dirname(__DIR__), __NAMESPACE__);
     }
 }

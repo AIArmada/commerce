@@ -90,7 +90,7 @@ rates under `commerce-support.currency.exchange_rates`, or bind a custom
 namespace App\Filament\Pages;
 
 use Filament\Pages\Dashboard as BaseDashboard;
-use AIArmada\FilamentAffiliateNetwork\Widgets\NetworkStatsWidget;
+use AIArmada\FilamentAffiliateNetwork\Features\Dashboard\EntryPoints\Filament\Widgets\NetworkStatsWidget;
 
 class Dashboard extends BaseDashboard
 {
@@ -106,8 +106,8 @@ class Dashboard extends BaseDashboard
 ```php
 namespace App\Filament\Widgets;
 
-use AIArmada\FilamentAffiliateNetwork\Support\NetworkAdminAccess;
-use AIArmada\FilamentAffiliateNetwork\Support\NetworkStatsAggregator;
+use AIArmada\FilamentAffiliateNetwork\Platform\NetworkAdminAccess;
+use AIArmada\FilamentAffiliateNetwork\Features\Dashboard\Queries\NetworkStatsAggregator;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -149,7 +149,7 @@ hide the true leaders outside it).
 ```php
 namespace App\Filament\Widgets;
 
-use AIArmada\FilamentAffiliateNetwork\Support\NetworkAdminAccess;
+use AIArmada\FilamentAffiliateNetwork\Platform\NetworkAdminAccess;
 use Filament\Widgets\TableWidget;
 use Filament\Tables\Table;
 
@@ -176,7 +176,7 @@ class TopOffersWidget extends TableWidget
 ## Widget authorization
 
 ```php
-use AIArmada\FilamentAffiliateNetwork\Support\NetworkAdminAccess;
+use AIArmada\FilamentAffiliateNetwork\Platform\NetworkAdminAccess;
 use Filament\Widgets\Widget;
 
 class MyWidget extends Widget

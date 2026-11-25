@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferApplicationResource;
+use AIArmada\FilamentAffiliateNetwork\Features\Enrollment\EntryPoints\Filament\Resources\AffiliateOfferApplicationResource;
 
 describe('AffiliateOfferApplicationResource', function (): void {
     test('returns pages array', function (): void {
