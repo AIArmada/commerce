@@ -12,7 +12,6 @@ use AIArmada\Affiliates\Models\AffiliateProgramCreative;
 use AIArmada\Affiliates\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Models\AffiliateProgramTier;
 use AIArmada\Affiliates\Models\AffiliateVolumeTier;
-use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Illuminate\Support\Arr;
@@ -73,7 +72,6 @@ final readonly class AdministerProgram implements ProgramAdministration
                 });
 
             $program->delete();
-            app(CommissionRuleEngine::class)->clearCache();
         }, attempts: 3);
     }
 
