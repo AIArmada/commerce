@@ -34,6 +34,13 @@ The authentication guard is configured in the `authz` core package:
 ],
 ```
 
+Set the driver to `authz-session` in `config/auth.php` for both source and target
+guards. Authz does not override Laravel's built-in `session` driver.
+
+```php
+'web' => ['driver' => 'authz-session', 'provider' => 'users'],
+```
+
 ### 2. Add Trait to User Model
 
 ```php

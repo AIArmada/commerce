@@ -143,3 +143,54 @@ it('refuses impersonation when the supplied privileged actor is not authenticate
         ->and($manager->isImpersonating())->toBeFalse()
         ->and(auth()->guard('web')->user()?->is($current))->toBeTrue();
 });
+
+it('does not override the standard Laravel session driver', function (): void {
+    config()->set('auth.guards.standard', ['driver' => 'session', 'provider' => 'users']);
+
+    expect(auth()->guard('standard'))->toBeInstanceOf(\Illuminate\Auth\SessionGuard::class)
+        ->not->toBeInstanceOf(SessionGuard::class);
+});
+
+it('rejects a non-participating target guard without switching the actor', function (): void {
+    config()->set('auth.guards.standard', ['driver' => 'session', 'provider' => 'users']);
+    config()->set('authz.scopes.enforce', false);
+
+    $actor = User::factory()->create();
+    $target = User::factory()->create();
+    $actor->assignRole(Role::findOrCreate((string) config('authz.super_admin_role'), 'web'));
+    $this->be($actor);
+
+    expect(app(ImpersonateManager::class)->take($actor, $target, 'standard'))->toBeFalse()
+        ->and(auth()->guard('web')->user()?->is($actor))->toBeTrue()
+        ->and(session()->has(ImpersonateManager::SESSION_IMPERSONATOR_ID))->toBeFalse();
+});
+
+it('preserves the restored password hash for same-guard impersonation', function (): void {
+    config()->set('authz.scopes.enforce', false);
+    $actor = User::factory()->create();
+    $target = User::factory()->create();
+    $actor->assignRole(Role::findOrCreate((string) config('authz.super_admin_role'), 'web'));
+    $this->be($actor);
+
+    $manager = app(ImpersonateManager::class);
+    expect($manager->take($actor, $target, 'web'))->toBeTrue()
+        ->and($manager->leave())->toBeTrue()
+        ->and(session()->has('password_hash_web'))->toBeTrue()
+        ->and(auth()->guard('web')->user()?->is($actor))->toBeTrue();
+});
+
+it('logs out the impersonated account if the original account was removed', function (): void {
+    config()->set('authz.scopes.enforce', false);
+    $actor = User::factory()->create();
+    $target = User::factory()->create();
+    $actor->assignRole(Role::findOrCreate((string) config('authz.super_admin_role'), 'web'));
+    $this->be($actor);
+
+    $manager = app(ImpersonateManager::class);
+    expect($manager->take($actor, $target, 'web'))->toBeTrue();
+    $actor->delete();
+
+    expect($manager->leave())->toBeFalse()
+        ->and($manager->isImpersonating())->toBeFalse()
+        ->and(auth()->guard('web')->check())->toBeFalse();
+});

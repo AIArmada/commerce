@@ -107,10 +107,6 @@ class ImpersonateManager
             return false;
         }
 
-        if (! $this->isAuthorized($from, $to)) {
-            return false;
-        }
-
         $targetGuardName = $guardName ?? $this->getDefaultGuard();
         $sourceGuardName = $this->getCurrentAuthGuardName();
 
@@ -124,6 +120,26 @@ class ImpersonateManager
             || (string) $authenticated->getAuthIdentifier() !== (string) $from->getAuthIdentifier()) {
             return false;
         }
+
+        // Resolve the configured guard and its provider before modifying either session.
+        try {
+            $this->getSessionGuard($sourceGuardName);
+            $this->getSessionGuard($targetGuardName);
+            $target = $this->findUserById($to->getAuthIdentifier(), $targetGuardName);
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return false;
+        }
+
+        if ($target === null || $target::class !== $to::class
+            || (string) $target->getAuthIdentifier() !== (string) $to->getAuthIdentifier()
+            || ! $this->isAuthorized($authenticated, $target)) {
+            return false;
+        }
+
+        $from = $authenticated;
+        $to = $target;
 
         try {
             $this->writeImpersonationState($from, $sourceGuardName, $targetGuardName, $backTo);
@@ -169,7 +185,10 @@ class ImpersonateManager
         $impersonator = $this->findUserById($impersonatorId, $impersonatorGuardName);
 
         if ($impersonated === null || $impersonator === null) {
+            $this->clearGuardIdentity($impersonatedGuardName);
             $this->clear();
+            $this->rotateSessionId();
+            session()->save();
 
             return false;
         }
@@ -178,7 +197,9 @@ class ImpersonateManager
             $this->switchIdentity($impersonatedGuardName, $impersonatorGuardName, $impersonator);
             $this->app['events']->dispatch(new LeaveImpersonation($impersonator, $impersonated));
             $this->clear();
-            session()->forget('password_hash_' . $impersonatedGuardName);
+            if ($impersonatedGuardName !== $impersonatorGuardName) {
+                session()->forget('password_hash_' . $impersonatedGuardName);
+            }
             session()->save();
         } catch (Throwable $exception) {
             $this->clearGuardIdentity($impersonatorGuardName);
@@ -238,8 +259,14 @@ class ImpersonateManager
     public function getCurrentAuthGuardName(): ?string
     {
         $guards = array_keys($this->app['config']->get('auth.guards', []));
+        $defaultGuard = $this->app['auth']->getDefaultDriver();
+        $guards = array_values(array_unique([$defaultGuard, ...$guards]));
 
         foreach ($guards as $guard) {
+            if (! is_string($guard) || ! is_array(config("auth.guards.{$guard}"))) {
+                continue;
+            }
+
             if ($this->app['auth']->guard($guard)->check()) {
                 return $guard;
             }

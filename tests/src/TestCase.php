@@ -500,6 +500,7 @@ abstract class TestCase extends Orchestra
 
         // Configure auth to use our test User model
         $app['config']->set('auth.providers.users.model', User::class);
+        $app['config']->set('auth.guards.web.driver', 'authz-session');
     }
 
     protected function defineDatabaseMigrations(): void

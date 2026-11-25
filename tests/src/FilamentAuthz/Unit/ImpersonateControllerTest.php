@@ -215,7 +215,7 @@ describe('ImpersonateController', function (): void {
 
     it('stores password hash under impersonated and restored guard keys', function (): void {
         config()->set('auth.guards.admin', [
-            'driver' => 'session',
+            'driver' => 'authz-session',
             'provider' => 'users',
         ]);
         config()->set('auth.defaults.guard', 'admin');

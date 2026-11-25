@@ -269,7 +269,7 @@ final class AuthzServiceProvider extends PackageServiceProvider
         /** @var AuthManager $auth */
         $auth = $this->app['auth'];
 
-        $auth->extend('session', function (Application $app, string $name, array $config) use ($auth) {
+        $auth->extend('authz-session', function (Application $app, string $name, array $config) use ($auth) {
             $provider = $auth->createUserProvider($config['provider'] ?? null);
 
             $guard = new SessionGuard(

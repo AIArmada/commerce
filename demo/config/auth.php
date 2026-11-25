@@ -10,7 +10,7 @@ return [
     ],
     'guards' => [
         'web' => [
-            'driver' => 'session',
+            'driver' => 'authz-session',
             'provider' => 'users',
         ],
     ],

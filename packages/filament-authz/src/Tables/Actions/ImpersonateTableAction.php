@@ -132,8 +132,8 @@ class ImpersonateTableAction extends Action
     private function isActorAuthorizedToImpersonate(Authenticatable $actor): bool
     {
         return app(ImpersonationActorAuth::class)->isAuthorized($actor, function () use ($actor): bool {
-            if (method_exists($actor, 'canImpersonate') && $actor->canImpersonate()) {
-                return true;
+            if (method_exists($actor, 'canImpersonate')) {
+                return (bool) $actor->canImpersonate();
             }
 
             $superAdminRole = config('authz.super_admin_role');
