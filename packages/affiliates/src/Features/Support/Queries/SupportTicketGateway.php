@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Support\Queries;
 
-use AIArmada\Affiliates\Features\Support\Api\SupportTicketApi;
 use AIArmada\Affiliates\Features\Support\Actions\OpenSupportTicket;
 use AIArmada\Affiliates\Features\Support\Actions\ReplyToSupportTicket;
 use AIArmada\Affiliates\Features\Support\Actions\UpdateSupportTicket;
+use AIArmada\Affiliates\Features\Support\Api\SupportTicketApi;
 
 final readonly class SupportTicketGateway implements SupportTicketApi
 {

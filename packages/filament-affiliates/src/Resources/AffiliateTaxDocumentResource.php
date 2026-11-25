@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Resources;
 
-use AIArmada\Affiliates\Features\Tax\Models\AffiliateTaxDocument;
 use AIArmada\Affiliates\Features\Tax\Api\TaxDocumentApi;
+use AIArmada\Affiliates\Features\Tax\Models\AffiliateTaxDocument;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\FilamentAffiliates\Resources\AffiliateTaxDocumentResource\Pages\ListAffiliateTaxDocuments;

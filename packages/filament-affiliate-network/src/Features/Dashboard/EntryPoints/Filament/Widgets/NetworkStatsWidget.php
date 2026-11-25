@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliateNetwork\Features\Dashboard\EntryPoints\Filament\Widgets;
 
 use AIArmada\CommerceSupport\Persistence\OwnerCache;
-use AIArmada\FilamentAffiliateNetwork\Platform\NetworkAdminAccess;
 use AIArmada\FilamentAffiliateNetwork\Features\Dashboard\Queries\NetworkStatsAggregator;
+use AIArmada\FilamentAffiliateNetwork\Platform\NetworkAdminAccess;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 

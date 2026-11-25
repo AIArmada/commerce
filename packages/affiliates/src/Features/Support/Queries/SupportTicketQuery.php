@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Support\Queries;
 
-use AIArmada\Affiliates\Features\Support\Models\AffiliateSupportTicket;
 use AIArmada\Affiliates\Features\Support\Models\AffiliateSupportMessage;
+use AIArmada\Affiliates\Features\Support\Models\AffiliateSupportTicket;
 
 final class SupportTicketQuery
 {

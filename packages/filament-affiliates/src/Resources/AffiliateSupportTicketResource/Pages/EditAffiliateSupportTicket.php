@@ -5,14 +5,13 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Resources\AffiliateSupportTicketResource\Pages;
 
 use AIArmada\Affiliates\Features\Support\Api\SupportTicketApi;
-use AIArmada\Affiliates\Features\Support\Models\AffiliateSupportTicket;
-use Illuminate\Database\Eloquent\Model;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentAffiliates\Resources\AffiliateSupportTicketResource;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 use RuntimeException;

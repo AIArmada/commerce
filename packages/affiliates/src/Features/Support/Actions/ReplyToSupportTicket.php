@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Support\Actions;
 
-use AIArmada\Affiliates\Features\Support\Models\AffiliateSupportTicket;
 use AIArmada\Affiliates\Features\Support\Models\AffiliateSupportMessage;
+use AIArmada\Affiliates\Features\Support\Models\AffiliateSupportTicket;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\Gate;
 
 final readonly class ReplyToSupportTicket
 {
@@ -43,7 +44,7 @@ final readonly class ReplyToSupportTicket
 
         return (new AffiliateSupportTicket)->getConnection()->transaction(function () use ($ticketId, $staffId, $message): string {
             $ticket = AffiliateSupportTicket::query()->whereKey($ticketId)->lockForUpdate()->firstOrFail();
-            \Illuminate\Support\Facades\Gate::authorize('update', $ticket);
+            Gate::authorize('update', $ticket);
 
             return (string) AffiliateSupportMessage::create([
                 'ticket_id' => $ticketId,

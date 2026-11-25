@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliateNetwork\Features\Catalog;
 
-use AIArmada\FilamentAffiliateNetwork\Platform\FeatureModule as FeatureModuleContract;
-use Illuminate\Contracts\Foundation\Application;
 use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
-use AIArmada\FilamentAffiliateNetwork\Features\Catalog\EntryPoints\Filament\Policies\AffiliateOfferPolicy;
 use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOfferCategory;
 use AIArmada\FilamentAffiliateNetwork\Features\Catalog\EntryPoints\Filament\Policies\AffiliateOfferCategoryPolicy;
+use AIArmada\FilamentAffiliateNetwork\Features\Catalog\EntryPoints\Filament\Policies\AffiliateOfferPolicy;
+use AIArmada\FilamentAffiliateNetwork\Platform\FeatureModule as FeatureModuleContract;
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\Gate;
 
 final class FeatureModule implements FeatureModuleContract

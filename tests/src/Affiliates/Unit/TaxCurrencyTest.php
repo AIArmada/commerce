@@ -5,10 +5,10 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Contracts\TaxRecipientProvider;
 use AIArmada\Affiliates\Data\TaxRecipientDetails;
 use AIArmada\Affiliates\Data\TaxWorksheetRequest;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Drivers\Tax\PrivateTaxWorksheetWriter;
 use AIArmada\Affiliates\Features\Tax\Api\TaxDocumentApi;
+use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\CompletedPayout;
 use Carbon\Carbon;
@@ -111,7 +111,11 @@ test('generator formats Box 1 in the document currency', function (): void {
     $affiliate = taxCurrencyAffiliate('TAXCUR005');
 
     $path = app(PrivateTaxWorksheetWriter::class)->write(new TaxWorksheetRequest(
-        (string) $affiliate->getKey(), 2024, 70000, 'MYR', new TaxRecipientDetails('Tax Tester', '123-45-6789'),
+        (string) $affiliate->getKey(),
+        2024,
+        70000,
+        'MYR',
+        new TaxRecipientDetails('Tax Tester', '123-45-6789'),
     ));
 
     $content = Storage::disk('local')->get($path);

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Data\TaxRecipientDetails;
 use AIArmada\Affiliates\Data\TaxWorksheetRequest;
+use AIArmada\Affiliates\Drivers\Tax\PrivateTaxWorksheetWriter;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Drivers\Tax\PrivateTaxWorksheetWriter;
 use AIArmada\Affiliates\States\Active;
 use Illuminate\Support\Facades\Storage;
 

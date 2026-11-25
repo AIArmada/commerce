@@ -19,9 +19,16 @@ final class TaxDocumentQuery
     public static function record(AffiliateTaxDocument $document): TaxDocumentRecord
     {
         return new TaxDocumentRecord(
-            (string) $document->getKey(), $document->affiliate_id, $document->document_type, $document->tax_year,
-            $document->status, $document->total_amount_minor, $document->currency, $document->notes,
-            $document->generated_at?->toDateTimeString(), $document->sent_at?->toDateTimeString(),
+            (string) $document->getKey(),
+            $document->affiliate_id,
+            $document->document_type,
+            $document->tax_year,
+            $document->status,
+            $document->total_amount_minor,
+            $document->currency,
+            $document->notes,
+            $document->generated_at?->toDateTimeString(),
+            $document->sent_at?->toDateTimeString(),
         );
     }
 }

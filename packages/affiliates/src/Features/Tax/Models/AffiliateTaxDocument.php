@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Tax\Models;
 
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Enums\TaxDocumentStatus;
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\Concerns\ScopesByAffiliateOwner;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
-use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -101,7 +100,6 @@ class AffiliateTaxDocument extends Model implements Auditable
     {
         return $this->status === TaxDocumentStatus::Failed;
     }
-
 
     /**
      * @return array<int, string>

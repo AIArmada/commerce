@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Tax\Queries;
 
-use AIArmada\Affiliates\Features\Tax\Api\TaxDocumentApi;
-use AIArmada\Affiliates\Features\Tax\Api\TaxDocumentRecord;
 use AIArmada\Affiliates\Features\Tax\Actions\GenerateTaxDocument;
 use AIArmada\Affiliates\Features\Tax\Actions\MarkTaxDocumentSent;
+use AIArmada\Affiliates\Features\Tax\Api\TaxDocumentApi;
+use AIArmada\Affiliates\Features\Tax\Api\TaxDocumentRecord;
 use AIArmada\Affiliates\Features\Tax\Models\AffiliateTaxDocument;
+use LogicException;
 
 final readonly class TaxDocumentGateway implements TaxDocumentApi
 {
@@ -62,6 +63,6 @@ final readonly class TaxDocumentGateway implements TaxDocumentApi
         $document = AffiliateTaxDocument::query()->findOrFail($documentId);
 
         return $this->generate->execute($document->affiliate_id, $document->tax_year, $documentId)
-            ?? throw new \LogicException('Tax document disappeared during regeneration.');
+            ?? throw new LogicException('Tax document disappeared during regeneration.');
     }
 }

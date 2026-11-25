@@ -3,10 +3,10 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\TaxDocumentStatus;
+use AIArmada\Affiliates\Features\Tax\Api\TaxDocumentApi;
+use AIArmada\Affiliates\Features\Tax\Models\AffiliateTaxDocument;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\Features\Tax\Models\AffiliateTaxDocument;
-use AIArmada\Affiliates\Features\Tax\Api\TaxDocumentApi;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\CompletedPayout;
 use Carbon\Carbon;

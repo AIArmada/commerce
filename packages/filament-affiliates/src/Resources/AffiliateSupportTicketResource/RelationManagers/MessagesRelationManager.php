@@ -6,8 +6,6 @@ namespace AIArmada\FilamentAffiliates\Resources\AffiliateSupportTicketResource\R
 
 use AIArmada\Affiliates\Features\Support\Api\SupportTicketApi;
 use AIArmada\Affiliates\Features\Support\Models\AffiliateSupportMessage;
-use Illuminate\Support\Facades\Gate;
-use Illuminate\Auth\Access\AuthorizationException;
 use AIArmada\Affiliates\Features\Support\Models\AffiliateSupportTicket;
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use Filament\Actions\CreateAction;
@@ -16,6 +14,8 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\Gate;
 
 final class MessagesRelationManager extends RelationManager
 {

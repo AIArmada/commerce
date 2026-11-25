@@ -6,12 +6,12 @@ namespace AIArmada\FilamentAffiliates\Resources\AffiliateSupportTicketResource\P
 
 use AIArmada\Affiliates\Features\Support\Api\SupportTicketApi;
 use AIArmada\Affiliates\Features\Support\Models\AffiliateSupportTicket;
-use Illuminate\Database\Eloquent\Model;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentAffiliates\Resources\AffiliateSupportTicketResource;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 use RuntimeException;
@@ -42,7 +42,11 @@ final class CreateAffiliateSupportTicket extends CreateRecord
     protected function handleRecordCreation(array $data): Model
     {
         $id = app(SupportTicketApi::class)->open(
-            (string) $data['affiliate_id'], (string) $data['subject'], (string) $data['category'], (string) $data['priority'], status: (string) $data['status'],
+            (string) $data['affiliate_id'],
+            (string) $data['subject'],
+            (string) $data['category'],
+            (string) $data['priority'],
+            status: (string) $data['status'],
         );
 
         return AffiliateSupportTicket::query()->findOrFail($id);

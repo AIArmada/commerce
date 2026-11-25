@@ -3,10 +3,11 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Features\Support\Api\SupportTicketApi;
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Features\Support\Models\AffiliateSupportMessage;
 use AIArmada\Affiliates\Features\Support\Models\AffiliateSupportTicket;
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
+use Illuminate\Support\Facades\Event;
 
 describe('AffiliateSupportTicket Model', function (): void {
     beforeEach(function (): void {
@@ -85,16 +86,20 @@ describe('AffiliateSupportTicket Model', function (): void {
 
     test('support API rolls back the ticket if its first message cannot be saved', function (): void {
         $event = 'eloquent.creating: ' . AffiliateSupportMessage::class;
-        \Illuminate\Support\Facades\Event::listen($event, static function (): void {
+        Event::listen($event, static function (): void {
             throw new RuntimeException('message unavailable');
         });
 
         try {
             expect(fn () => app(SupportTicketApi::class)->open(
-                (string) $this->affiliate->getKey(), 'Atomic ticket', 'general', 'medium', 'Initial message',
+                (string) $this->affiliate->getKey(),
+                'Atomic ticket',
+                'general',
+                'medium',
+                'Initial message',
             ))->toThrow(RuntimeException::class, 'message unavailable');
         } finally {
-            \Illuminate\Support\Facades\Event::forget($event);
+            Event::forget($event);
         }
 
         expect(AffiliateSupportTicket::query()->where('subject', 'Atomic ticket')->exists())->toBeFalse();
