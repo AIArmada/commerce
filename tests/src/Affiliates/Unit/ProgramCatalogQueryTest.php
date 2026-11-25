@@ -12,7 +12,7 @@ use AIArmada\Affiliates\Models\AffiliateCommissionRule;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateVolumeTier;
 use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
-use AIArmada\Affiliates\Services\ProgramCatalogService;
+use AIArmada\Affiliates\Features\Programs\Queries\ProgramCatalogQuery;
 use AIArmada\Affiliates\Support\Catalog\CallbackPromotableProvider;
 use AIArmada\Affiliates\Support\Catalog\PromotableRegistry;
 use Carbon\CarbonImmutable;
@@ -35,7 +35,7 @@ beforeEach(function (): void {
         }
     });
 
-    $this->service = new ProgramCatalogService(app(CommissionRuleEngine::class), $this->registry);
+    $this->service = new ProgramCatalogQuery(app(CommissionRuleEngine::class), $this->registry);
 
     $this->program = AffiliateProgram::create([
         'name' => 'Catalog Program',
@@ -49,9 +49,9 @@ beforeEach(function (): void {
     ]);
 });
 
-describe('ProgramCatalogService', function (): void {
+describe('ProgramCatalogQuery', function (): void {
     test('falls back to program default when no rules match', function (): void {
-        $snapshot = $this->service->snapshot($this->program);
+        $snapshot = $this->service->previewById((string) $this->program->getKey())->payload;
 
         expect($snapshot['program_id'])->toBe((string) $this->program->getKey());
         expect($snapshot['subjects'])->toHaveCount(2);
@@ -71,7 +71,7 @@ describe('ProgramCatalogService', function (): void {
             'is_active' => true,
         ]);
 
-        $snapshot = $this->service->snapshot($this->program);
+        $snapshot = $this->service->previewById((string) $this->program->getKey())->payload;
         $byKey = collect($snapshot['subjects'])->keyBy('subject_key');
 
         expect($byKey['SKU-1001']['effective']['rate_bp'])->toBe(1500);
@@ -99,7 +99,7 @@ describe('ProgramCatalogService', function (): void {
             'ends_at' => CarbonImmutable::now()->addDay(),
         ]);
 
-        $snapshot = $this->service->snapshot($this->program);
+        $snapshot = $this->service->previewById((string) $this->program->getKey())->payload;
 
         // base rate untouched by variable extras
         expect($snapshot['subjects'][0]['effective']['rate_bp'])->toBe(1000);
@@ -118,4 +118,12 @@ test('callback promotable provider delegates type and listing', function (): voi
 
     expect($provider->type())->toBe('product')
         ->and($provider->list('prog-1'))->toBe([['subject_key' => 'SKU-1', 'program' => 'prog-1']]);
+});
+
+test('published snapshots exclude private programs while owner-scoped previews remain available', function (): void {
+    $this->program->update(['visibility' => ProgramVisibility::Private]);
+
+    expect($this->service->snapshotById((string) $this->program->getKey()))->toBeNull()
+        ->and($this->service->mirrorableProgramIds())->not->toContain((string) $this->program->getKey())
+        ->and($this->service->previewById((string) $this->program->getKey())->programId)->toBe((string) $this->program->getKey());
 });

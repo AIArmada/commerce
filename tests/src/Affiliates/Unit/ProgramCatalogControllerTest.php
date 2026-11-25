@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\ProgramVisibility;
-use AIArmada\Affiliates\Http\Controllers\ProgramCatalogController;
+use AIArmada\Affiliates\Features\Programs\EntryPoints\Http\ProgramCatalogController;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 
 beforeEach(function (): void {

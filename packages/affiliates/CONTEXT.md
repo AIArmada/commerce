@@ -45,7 +45,7 @@ keywords:
 ## Key surfaces
 - Models: `Affiliate`, `AffiliateAttribution`, `AffiliateBalance`, `AffiliateCommissionPromotion`, `AffiliateCommissionRule`, `AffiliateCommissionTemplate`, `AffiliateConversion`, `AffiliateDailyStat`, `AffiliateFraudSignal`, `AffiliateLink`
 - Actions/Services: `Actions/Affiliates/ApproveAffiliate`, `Actions/Affiliates/AttachAffiliateFromCookie`, `Actions/Affiliates/AttachAffiliateToCart`, `Actions/Affiliates/CapturePublicAffiliateReferral`, `Actions/Affiliates/CreateAffiliate`, `Actions/Affiliates/CreateTrackingLink`, `Actions/Affiliates/DetachAffiliateFromCart`, `Actions/Affiliates/DisableAffiliate`, `Actions/Conversions/RecordAffiliateConversion`, `Actions/Conversions/ReverseAffiliateConversion`
-- Seams: `Contracts/MerchantLedger`, `Contracts/MerchantIdentity`, `Contracts/MerchantCatalog` (network-facing; merchant vocabulary only)
+- Seams: `Contracts/MerchantLedger`, `Contracts/MerchantIdentity`, `Features/Programs/Api/MerchantCatalog` (network-facing; merchant vocabulary only)
 - Config `affiliates.php`: `database`, `currency`, `features`, `owner`, `cart`, `cookies`, `public_pages`, `commissions`, `payouts`, `tracking`, `events`, `webhooks`, `links`, `api`, `merchant`, `tax`, `bonuses`, `fraud`, `upline`, `registration`, `catalog`
 
 ## Docs map

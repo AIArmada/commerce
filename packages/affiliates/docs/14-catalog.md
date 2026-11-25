@@ -5,7 +5,7 @@ title: Program Catalog
 # Program Catalog (network sync source)
 
 Read-only snapshot consumed by `affiliate-network` over shared DB or HTTP.
-See `ProgramCatalogService::snapshot()` for the implementation.
+See `Features/Programs/Api/MerchantCatalog::snapshotById()` for the implementation.
 
 ## Enable
 

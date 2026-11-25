@@ -6,7 +6,6 @@ namespace AIArmada\Affiliates;
 
 use AIArmada\Affiliates\Actions\Affiliates\ResolvePublicAffiliateReferralContext;
 use AIArmada\Affiliates\Cart\AffiliateDiscountConditionProvider;
-use AIArmada\Affiliates\Contracts\MerchantCatalog;
 use AIArmada\Affiliates\Contracts\MerchantIdentity;
 use AIArmada\Affiliates\Contracts\MerchantLedger;
 use AIArmada\Affiliates\Contracts\QualifiesForOpenApproval;
@@ -49,12 +48,10 @@ use AIArmada\Affiliates\Platform\FeatureModule;
 use AIArmada\Affiliates\Services\AttributionModel;
 use AIArmada\Affiliates\Services\CommissionCalculator;
 use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
-use AIArmada\Affiliates\Services\MerchantCatalogService;
 use AIArmada\Affiliates\Services\MerchantIdentityService;
 use AIArmada\Affiliates\Services\MerchantLedgerService;
 use AIArmada\Affiliates\Services\OpenApprovalPolicy;
 use AIArmada\Affiliates\Services\PayoutReconciliationService;
-use AIArmada\Affiliates\Services\ProgramCatalogService;
 use AIArmada\Affiliates\Services\ProgramService;
 use AIArmada\Affiliates\Strategies\FirstTouchAttribution;
 use AIArmada\Affiliates\Strategies\LastTouchAttribution;
@@ -126,7 +123,6 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
         $this->app->scoped(CommissionRuleEngine::class);
         $this->app->singleton(ProgramService::class);
         $this->app->singleton(Support\Catalog\PromotableRegistry::class);
-        $this->app->singleton(ProgramCatalogService::class);
         $this->app->singleton(PayoutReconciliationService::class);
         $this->app->singleton(CartBridge::class);
 
@@ -137,7 +133,6 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
 
         $this->app->singleton(MerchantLedger::class, MerchantLedgerService::class);
         $this->app->singleton(MerchantIdentity::class, MerchantIdentityService::class);
-        $this->app->singleton(MerchantCatalog::class, MerchantCatalogService::class);
 
         $this->registerSettingsMigrationPath();
     }

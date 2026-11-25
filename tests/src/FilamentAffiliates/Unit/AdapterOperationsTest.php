@@ -12,7 +12,7 @@ use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramCreative;
-use AIArmada\Affiliates\Services\ProgramCatalogService;
+use AIArmada\Affiliates\Features\Programs\Api\MerchantCatalog;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\FilamentAffiliates\Features\Commissions\EntryPoints\Filament\Pages\ManageAffiliateBonusSettings;
@@ -102,7 +102,7 @@ it('program view page exposes a catalog preview action', function (): void {
 
 it('catalog preview renders the program snapshot subjects', function (): void {
     $program = adapterOperationsProgram();
-    $snapshot = app(ProgramCatalogService::class)->snapshot($program);
+    $snapshot = app(MerchantCatalog::class)->previewById((string) $program->getKey())->payload;
 
     $html = view('filament-affiliates::catalog-preview', ['snapshot' => $snapshot])->render();
 

@@ -2,10 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Services;
+namespace AIArmada\Affiliates\Features\Programs\Queries;
 
 use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Enums\CommissionType;
+use AIArmada\Affiliates\Features\Programs\Api\MerchantCatalog;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramSnapshot;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateCommissionPromotion;
 use AIArmada\Affiliates\Models\AffiliateCommissionRule;
@@ -16,31 +18,70 @@ use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
 use AIArmada\Affiliates\Support\Catalog\PromotableRegistry;
 use Illuminate\Support\Collection;
 
-/**
- * Read-only snapshot of a program's promotables with fully-resolved BASE rates.
- *
- * Deterministic rules (product > category > program) are folded into
- * `effective`. Per-affiliate variable extras (volume, promotions) are listed
- * separately — never folded — so the network can't misdisplay "up to" as flat.
- *
- * Never calls CommissionRuleEngine::calculate(): that path increments
- * promotion usage. Snapshot uses getApplicableRules() + base math only.
- */
-final class ProgramCatalogService
+final readonly class ProgramCatalogQuery implements MerchantCatalog
 {
     public function __construct(
-        private readonly CommissionRuleEngine $rules,
-        private readonly PromotableRegistry $promotables,
+        private CommissionRuleEngine $rules,
+        private PromotableRegistry $promotables,
     ) {}
 
-    /**
-     * @return array<string, mixed>
-     */
-    public function snapshot(AffiliateProgram $program): array
+    public function snapshotById(string $programId): ?ProgramSnapshot
     {
-        // The engine is a singleton with a request-lifetime rules cache.
-        // A snapshot must never serve rules cached before a merchant edit
-        // (long-lived workers, or two syncs in one process).
+        $program = AffiliateProgram::query()->whereKey($programId)->first();
+
+        return $program instanceof AffiliateProgram && $program->isOpen()
+            ? $this->buildSnapshot($program)
+            : null;
+    }
+
+    public function previewById(string $programId): ProgramSnapshot
+    {
+        return $this->buildSnapshot(AffiliateProgram::query()->findOrFail($programId));
+    }
+
+    public function mirrorableProgramIds(int $limit = 100): array
+    {
+        return AffiliateProgram::query()
+            ->active()
+            ->public()
+            ->orderBy('id')
+            ->limit(max(1, $limit))
+            ->pluck('id')
+            ->map(fn (mixed $id): string => (string) $id)
+            ->all();
+    }
+
+    public function availablePrograms(): array
+    {
+        return AffiliateProgram::query()
+            ->active()
+            ->public()
+            ->orderBy('id')
+            ->get()
+            ->map(fn (AffiliateProgram $program): array => [
+                'program_id' => (string) $program->getKey(),
+                'name' => $program->name,
+                'slug' => $program->slug,
+                'status' => $program->status->value,
+                'currency' => (string) ($program->getAttribute('currency') ?? config('affiliates.currency.default', 'MYR')),
+                'cookie_days' => $program->cookie_lifetime_days,
+            ])->all();
+    }
+
+    private function buildSnapshot(AffiliateProgram $program): ProgramSnapshot
+    {
+        $payload = $this->snapshot($program);
+
+        return new ProgramSnapshot(
+            programId: (string) $program->getKey(),
+            currency: (string) $payload['currency'],
+            payload: $payload,
+        );
+    }
+
+    /** @return array<string, mixed> */
+    private function snapshot(AffiliateProgram $program): array
+    {
         $this->rules->clearCache();
 
         $maxSubjects = max(1, (int) config('affiliates.catalog.max_subjects', 500));

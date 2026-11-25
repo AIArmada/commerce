@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Data;
+namespace AIArmada\Affiliates\Features\Programs\Api;
 
 /**
  * Read-only program snapshot for mirrors and storefronts.
