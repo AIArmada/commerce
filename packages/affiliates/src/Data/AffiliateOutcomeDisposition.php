@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Enums;
+namespace AIArmada\Affiliates\Data;
 
 enum AffiliateOutcomeDisposition: string
 {

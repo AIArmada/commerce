@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Data;
 
-use AIArmada\Affiliates\Enums\AffiliateOutcomeDisposition;
-
 final readonly class AffiliateOutcomeResult
 {
     public function __construct(

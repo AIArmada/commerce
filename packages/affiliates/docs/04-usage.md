@@ -275,7 +275,7 @@ yields exactly one winner. Replays return the stored row untouched.
 
 ```php
 use AIArmada\Affiliates\Actions\Conversions\RecordAffiliateOutcome;
-use AIArmada\Affiliates\Enums\AffiliateOutcomeDisposition;
+use AIArmada\Affiliates\Data\AffiliateOutcomeDisposition;
 
 $result = RecordAffiliateOutcome::run(
     $attribution,

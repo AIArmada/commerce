@@ -17,7 +17,7 @@ posts exactly the validated amount or refuses before any money effect.
 
 ```php
 use AIArmada\Affiliates\Actions\Conversions\RecordAffiliateAward;
-use AIArmada\Affiliates\Enums\AffiliateOutcomeDisposition;
+use AIArmada\Affiliates\Data\AffiliateOutcomeDisposition;
 
 $result = app(RecordAffiliateAward::class)->handle(
     $recipient,            // Affiliate model: the eligible recipient
