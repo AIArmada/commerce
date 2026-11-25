@@ -16,6 +16,7 @@ use AIArmada\Affiliates\Models\AffiliateLink;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
+use AIArmada\Affiliates\Support\Links\AffiliateLinkGate;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -216,6 +217,10 @@ test('it counts only human clicks associated with the public tracking link', fun
     $forged = clone $tracked;
     $forged->setAttribute($forged->getKeyName(), (string) Str::uuid());
     $listener->handle(new LinkClicked($forged, new LinkClick(['link_id' => $forged->getKey()])));
+    expect(app(AffiliateLinkGate::class)->blockedReason($tracked))->toBeNull()
+        ->and(app(AffiliateLinkGate::class)->blockedReason($forged))->toBe('link_unknown');
+    $forged->subject_id = 'malformed-subject';
+    expect(app(AffiliateLinkGate::class)->blockedReason($forged))->toBe('link_unknown');
 
     expect($link->refresh()->clicks)->toBe(0);
 

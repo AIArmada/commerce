@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Attribution\Actions;
 
 use AIArmada\Affiliates\Exceptions\AffiliateNotFoundException;
+use AIArmada\Affiliates\Features\Programs\Api\TrackingProgramGuard;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateLink;
-use AIArmada\Affiliates\Features\Programs\Api\TrackingProgramGuard;
 use AIArmada\Affiliates\Support\Links\AffiliateLinkDestination;
 use AIArmada\Links\Actions\CreatePublicLink;
 use AIArmada\Links\Actions\GenerateLinkUrl;
