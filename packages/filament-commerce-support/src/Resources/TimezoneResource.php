@@ -15,6 +15,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 class TimezoneResource extends Resource
 {
@@ -51,7 +52,27 @@ class TimezoneResource extends Resource
 
     public static function shouldRegisterNavigation(): bool
     {
-        return (bool) config('filament-commerce-support.navigation.enabled', true);
+        return (bool) config('filament-commerce-support.resources.timezones.enabled', true);
+    }
+
+    public static function canCreate(): bool
+    {
+        return static::isReadOnly() ? false : parent::canCreate();
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return static::isReadOnly() ? false : parent::canEdit($record);
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return static::isReadOnly() ? false : parent::canDelete($record);
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return static::isReadOnly() ? false : parent::canDeleteAny();
     }
 
     public static function getEloquentQuery(): Builder

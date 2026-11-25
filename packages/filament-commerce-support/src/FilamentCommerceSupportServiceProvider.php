@@ -6,6 +6,7 @@ namespace AIArmada\FilamentCommerceSupport;
 
 use AIArmada\FilamentCommerceSupport\Settings\CommerceNavigationSettings;
 use AIArmada\FilamentCommerceSupport\Support\NavigationConfigurator;
+use Laravel\Octane\Events\RequestReceived;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 use Spatie\LaravelSettings\Events\SettingsSaved;
@@ -31,6 +32,12 @@ class FilamentCommerceSupportServiceProvider extends PackageServiceProvider
                 NavigationConfigurator::apply();
             }
         });
+
+        if (class_exists(RequestReceived::class)) {
+            $this->app['events']->listen(RequestReceived::class, static function (): void {
+                NavigationConfigurator::refreshForRequest();
+            });
+        }
     }
 
     public function bootingPackage(): void

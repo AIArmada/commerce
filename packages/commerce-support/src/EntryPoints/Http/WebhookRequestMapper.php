@@ -11,6 +11,15 @@ final class WebhookRequestMapper
 {
     public static function fromRequest(Request $request): WebhookRequestData
     {
-        return new WebhookRequestData($request->getContent(), $request->headers->all());
+        $headers = [];
+
+        foreach ($request->headers->all() as $name => $values) {
+            $headers[$name] = array_values(array_filter(
+                $values,
+                static fn (mixed $value): bool => is_string($value),
+            ));
+        }
+
+        return new WebhookRequestData($request->getContent(), $headers);
     }
 }

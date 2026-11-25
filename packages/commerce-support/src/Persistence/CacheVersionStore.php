@@ -15,14 +15,12 @@ final class CacheVersionStore
 {
     public function version(string $key): string
     {
-        $version = Cache::get($key);
+        $candidate = (string) Str::ulid();
 
-        if (is_string($version) && $version !== '') {
-            return $version;
+        if (Cache::add($key, $candidate)) {
+            return $candidate;
         }
 
-        $candidate = (string) Str::ulid();
-        Cache::add($key, $candidate);
         $version = Cache::get($key);
 
         return is_string($version) && $version !== '' ? $version : $candidate;

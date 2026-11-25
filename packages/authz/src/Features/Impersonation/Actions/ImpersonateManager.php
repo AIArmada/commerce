@@ -198,9 +198,6 @@ final class ImpersonateManager implements ImpersonationApi
             $this->switchIdentity($impersonatedGuardName, $impersonatorGuardName, $impersonator);
             $this->app['events']->dispatch(new LeaveImpersonation($impersonator, $impersonated));
             $this->clear();
-            if ($impersonatedGuardName !== $impersonatorGuardName) {
-                session()->forget('password_hash_' . $impersonatedGuardName);
-            }
             session()->save();
         } catch (Throwable $exception) {
             $this->clearGuardIdentity($impersonatorGuardName);
@@ -313,7 +310,7 @@ final class ImpersonateManager implements ImpersonationApi
 
     private function isAuthorized(Authenticatable $from, Authenticatable $to): bool
     {
-        if ((string) $from->getAuthIdentifier() === (string) $to->getAuthIdentifier()) {
+        if ($from::class === $to::class && (string) $from->getAuthIdentifier() === (string) $to->getAuthIdentifier()) {
             return false;
         }
 
@@ -339,6 +336,11 @@ final class ImpersonateManager implements ImpersonationApi
     private function switchIdentity(string $sourceGuardName, string $targetGuardName, Authenticatable $target): void
     {
         $this->getSessionGuard($sourceGuardName)->quietLogout();
+
+        if ($sourceGuardName !== $targetGuardName) {
+            session()->forget('password_hash_' . $sourceGuardName);
+        }
+
         $this->getSessionGuard($targetGuardName)->quietLogin($target);
 
         $this->updatePasswordHashInSession($target, $targetGuardName);

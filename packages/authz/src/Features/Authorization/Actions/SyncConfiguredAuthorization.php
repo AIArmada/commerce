@@ -9,6 +9,8 @@ use AIArmada\Authz\Features\Authorization\Models\Role;
 
 final readonly class SyncConfiguredAuthorization
 {
+    public function __construct(private EnsurePermissions $ensurePermissions) {}
+
     /**
      * @param  list<string>  $permissions
      * @param  array<string, list<string>>  $roles
@@ -21,17 +23,26 @@ final readonly class SyncConfiguredAuthorization
             $permissionCount = 0;
             $roleCount = 0;
 
-            foreach ($permissions as $permission) {
-                foreach ($guards as $guard) {
-                    Permission::findOrCreate($permission, $guard);
-                    $permissionCount++;
-                }
-            }
+            foreach ($guards as $guard) {
+                $this->ensurePermissions->execute($guard, $permissions);
 
-            foreach ($roles as $roleName => $rolePermissions) {
-                foreach ($guards as $guard) {
+                $permissionCount += count($permissions);
+
+                $existing = Permission::query()
+                    ->where('guard_name', $guard)
+                    ->whereIn('name', $permissions)
+                    ->get()
+                    ->keyBy('name');
+
+                foreach ($roles as $roleName => $rolePermissions) {
                     $role = Role::findOrCreate($roleName, $guard);
-                    $role->syncPermissions($rolePermissions);
+
+                    $resolved = array_map(
+                        static fn (string $name): Permission | string => $existing->get($name) ?? $name,
+                        $rolePermissions,
+                    );
+
+                    $role->syncPermissions($resolved);
                     $roleCount++;
                 }
             }

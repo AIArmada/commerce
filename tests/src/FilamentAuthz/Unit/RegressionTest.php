@@ -6,6 +6,8 @@ use AIArmada\Authz\Features\Authorization\Models\AuthzScope;
 use AIArmada\Authz\Features\Authorization\Models\Permission;
 use AIArmada\Authz\Features\Authorization\Models\Role;
 use AIArmada\Authz\Features\Impersonation\Actions\ImpersonateManager;
+use AIArmada\Authz\Support\UserRoleChecker;
+use AIArmada\Authz\Support\UserWildcardPermissions;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAuthz\Actions\ImpersonateAction;
 use AIArmada\FilamentAuthz\Concerns\HasPanelAuthz;
@@ -31,6 +33,7 @@ use Filament\Schemas\Concerns\InteractsWithSchemas;
 use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Schemas\Schema;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Http\Request;
@@ -71,6 +74,49 @@ class RepairSchemaHost extends LivewireComponent implements HasSchemas
     public function render(): string
     {
         return '';
+    }
+}
+
+class RepairNonEloquentUser implements AuthenticatableContract
+{
+    public function __construct(
+        public ?string $id = null,
+        public ?string $rememberToken = null,
+    ) {}
+
+    public function getAuthIdentifierName(): string
+    {
+        return 'id';
+    }
+
+    public function getAuthIdentifier(): ?string
+    {
+        return $this->id;
+    }
+
+    public function getAuthPassword(): string
+    {
+        return '';
+    }
+
+    public function getAuthPasswordName(): string
+    {
+        return 'password';
+    }
+
+    public function getRememberToken(): ?string
+    {
+        return $this->rememberToken;
+    }
+
+    public function setRememberToken($value): void
+    {
+        $this->rememberToken = $value;
+    }
+
+    public function getRememberTokenName(): string
+    {
+        return 'remember_token';
     }
 }
 
@@ -214,6 +260,77 @@ describe('tenant sync middleware', function (): void {
     it('passes through without tenancy', function (): void {
         $panel = Panel::make()->id('plain-test');
         Filament::setCurrentPanel($panel);
+
+        $middleware = new SyncAuthzTenant;
+        $response = $middleware->handle(Request::create('/'), fn () => response('ok'));
+
+        expect($response->getContent())->toBe('ok');
+    });
+
+    it('preserves the shared spatie permission cache across tenant switches', function (): void {
+        $tenant = User::query()->create([
+            'name' => 'Tenant Cache Owner',
+            'email' => 'tenant-cache-owner-' . uniqid() . '@example.com',
+            'password' => 'secret',
+        ]);
+
+        $panel = Panel::make()->id('tenant-cache')->tenant(User::class);
+        Filament::setCurrentPanel($panel);
+        Filament::setTenant($tenant, true);
+
+        $registrar = app(PermissionRegistrar::class);
+        $registrar->getCacheRepository()->put($registrar->cacheKey, 'sentinel');
+
+        $middleware = new SyncAuthzTenant;
+        $response = $middleware->handle(Request::create('/'), fn () => response('ok'));
+
+        expect($response->getContent())->toBe('ok')
+            ->and($registrar->getCacheRepository()->get($registrar->cacheKey))->toBe('sentinel');
+    });
+
+    it('unsets the authenticated user authorization relations after the request', function (): void {
+        $tenant = User::query()->create([
+            'name' => 'Tenant Relations Owner',
+            'email' => 'tenant-relations-owner-' . uniqid() . '@example.com',
+            'password' => 'secret',
+        ]);
+
+        $panel = Panel::make()->id('tenant-relations')->tenant(User::class);
+        Filament::setCurrentPanel($panel);
+        Filament::setTenant($tenant, true);
+
+        $user = User::query()->create([
+            'name' => 'Relations User',
+            'email' => 'relations-user-' . uniqid() . '@example.com',
+            'password' => 'secret',
+        ]);
+        $this->actingAs($user);
+
+        $middleware = new SyncAuthzTenant;
+        $response = $middleware->handle(Request::create('/'), function () use ($user) {
+            $user->setRelation('roles', collect());
+            $user->setRelation('permissions', collect());
+
+            return response('ok');
+        });
+
+        expect($response->getContent())->toBe('ok')
+            ->and($user->relationLoaded('roles'))->toBeFalse()
+            ->and($user->relationLoaded('permissions'))->toBeFalse();
+    });
+
+    it('tolerates a non-Eloquent authenticated user', function (): void {
+        $tenant = User::query()->create([
+            'name' => 'Tenant Plain Owner',
+            'email' => 'tenant-plain-owner-' . uniqid() . '@example.com',
+            'password' => 'secret',
+        ]);
+
+        $panel = Panel::make()->id('tenant-plain-user')->tenant(User::class);
+        Filament::setCurrentPanel($panel);
+        Filament::setTenant($tenant, true);
+
+        $this->actingAs(new RepairNonEloquentUser('plain-actor'));
 
         $middleware = new SyncAuthzTenant;
         $response = $middleware->handle(Request::create('/'), fn () => response('ok'));
@@ -655,6 +772,14 @@ describe('visibleJs escaping', function (): void {
             ->and(PermissionTabFactory::escapeForVisibleJs('plain'))->toBe('plain');
     });
 
+    it('escapes control, line separator, and markup characters', function (): void {
+        expect(PermissionTabFactory::escapeForVisibleJs("a\rb"))->toBe('a\\rb')
+            ->and(PermissionTabFactory::escapeForVisibleJs("a\nb"))->toBe('a\\nb')
+            ->and(PermissionTabFactory::escapeForVisibleJs("a\u{2028}b"))->toBe('a\\u2028b')
+            ->and(PermissionTabFactory::escapeForVisibleJs("a\u{2029}b"))->toBe('a\\u2029b')
+            ->and(PermissionTabFactory::escapeForVisibleJs('<script>'))->toBe('\\u003Cscript\\u003E');
+    });
+
     it('keeps apostrophes out of raw search expressions', function (): void {
         $method = new ReflectionMethod(PermissionTabFactory::class, 'getGroupedResourceSections');
         $method->setAccessible(true);
@@ -805,5 +930,179 @@ describe('AUD#B2 config-only navigation', function (): void {
         config()->set('filament-authz.navigation.badge', null);
 
         expect(RoleResource::getNavigationBadge())->toBeNull();
+    });
+});
+
+describe('role resource scope checks', function (): void {
+    it('checks tenant scope without queries and rejects cross-tenant and padded super admin roles', function (): void {
+        $registrar = app(PermissionRegistrar::class);
+        $teamsKey = $registrar->teamsKey;
+        $previousTeams = $registrar->teams;
+
+        try {
+            $registrar->teams = true;
+            setPermissionsTeamId('tenant-a');
+            config()->set('authz.scopes.enforce', true);
+            config()->set('filament-authz.central_app', false);
+
+            $inScope = Role::create(['name' => 'tenant-in-scope', 'guard_name' => 'web', $teamsKey => 'tenant-a']);
+            $crossTenant = Role::create(['name' => 'tenant-cross', 'guard_name' => 'web', $teamsKey => 'tenant-b']);
+            $padded = Role::create(['name' => ' ' . (string) config('authz.super_admin_role') . ' ', 'guard_name' => 'web', $teamsKey => 'tenant-a']);
+
+            $user = User::query()->create([
+                'name' => 'Tenant Scope Actor',
+                'email' => 'tenant-scope-actor-' . uniqid() . '@example.com',
+                'password' => 'secret',
+            ]);
+            $this->actingAs($user);
+
+            UserRoleChecker::hasGlobalRole($user, (string) config('authz.super_admin_role'));
+            UserWildcardPermissions::for($user);
+            $registrar->getPermissions();
+
+            Gate::before(static fn (): bool => true);
+
+            DB::flushQueryLog();
+            DB::enableQueryLog();
+
+            expect(RoleResource::canEdit($inScope))->toBeTrue()
+                ->and(RoleResource::canEdit($crossTenant))->toBeFalse()
+                ->and(RoleResource::canDelete($crossTenant))->toBeFalse()
+                ->and(RoleResource::canEdit($padded))->toBeFalse()
+                ->and(RoleResource::canDelete($padded))->toBeFalse()
+                ->and(DB::getQueryLog())->toBeEmpty();
+        } finally {
+            DB::disableQueryLog();
+            $registrar->teams = $previousTeams;
+            setPermissionsTeamId(null);
+        }
+    });
+
+    it('checks configured scope limits without queries', function (): void {
+        $registrar = app(PermissionRegistrar::class);
+        $teamsKey = $registrar->teamsKey;
+
+        config()->set('authz.scopes.enabled', true);
+        config()->set('filament-authz.central_app', true);
+
+        $allowed = (string) Str::uuid();
+        config()->set('filament-authz.role_resource.scope_options', [$allowed => 'Allowed']);
+
+        $inScope = Role::create(['name' => 'central-in-scope', 'guard_name' => 'web', $teamsKey => $allowed]);
+        $outOfScope = Role::create(['name' => 'central-cross', 'guard_name' => 'web', $teamsKey => (string) Str::uuid()]);
+        $global = Role::create(['name' => 'central-global', 'guard_name' => 'web', $teamsKey => null]);
+
+        $user = User::query()->create([
+            'name' => 'Central Scope Actor',
+            'email' => 'central-scope-actor-' . uniqid() . '@example.com',
+            'password' => 'secret',
+        ]);
+        $this->actingAs($user);
+
+        UserRoleChecker::hasGlobalRole($user, (string) config('authz.super_admin_role'));
+        UserWildcardPermissions::for($user);
+        $registrar->getPermissions();
+
+        Gate::before(static fn (): bool => true);
+
+        try {
+            DB::flushQueryLog();
+            DB::enableQueryLog();
+
+            expect(RoleResource::canEdit($inScope))->toBeTrue()
+                ->and(RoleResource::canEdit($global))->toBeTrue()
+                ->and(RoleResource::canEdit($outOfScope))->toBeFalse()
+                ->and(RoleResource::canDelete($outOfScope))->toBeFalse()
+                ->and(DB::getQueryLog())->toBeEmpty();
+        } finally {
+            DB::disableQueryLog();
+        }
+    });
+});
+
+describe('role resource central query', function (): void {
+    it('eager-loads the authz scope relation when scopes and the central app are enabled', function (): void {
+        config()->set('authz.scopes.enabled', true);
+        config()->set('filament-authz.central_app', true);
+
+        expect(RoleResource::getEloquentQuery()->getEagerLoads())->toHaveKey('authzScope');
+    });
+
+    it('does not eager-load the authz scope relation when scopes are disabled', function (): void {
+        config()->set('authz.scopes.enabled', false);
+        config()->set('filament-authz.central_app', true);
+
+        expect(RoleResource::getEloquentQuery()->getEagerLoads())->not->toHaveKey('authzScope');
+    });
+});
+
+describe('user resource tenant scope', function (): void {
+    it('denies records outside the active tenant and avoids queries for eager-loaded scoped roles', function (): void {
+        $registrar = app(PermissionRegistrar::class);
+        $previousTeams = $registrar->teams;
+
+        try {
+            $registrar->teams = true;
+            config()->set('authz.scopes.enforce', true);
+            config()->set('filament-authz.central_app', false);
+
+            setPermissionsTeamId('tenant-a');
+            $inScopeRole = Role::create(['name' => 'user_scope_a', 'guard_name' => 'web']);
+
+            $inScopeUser = User::query()->create([
+                'name' => 'In Scope User',
+                'email' => 'in-scope-user-' . uniqid() . '@example.com',
+                'password' => 'secret',
+            ]);
+            $inScopeUser->syncRoles([$inScopeRole->getKey()]);
+
+            setPermissionsTeamId('tenant-b');
+            $outOfScopeRole = Role::create(['name' => 'user_scope_b', 'guard_name' => 'web']);
+
+            $outOfScopeUser = User::query()->create([
+                'name' => 'Out Of Scope User',
+                'email' => 'out-of-scope-user-' . uniqid() . '@example.com',
+                'password' => 'secret',
+            ]);
+            $outOfScopeUser->syncRoles([$outOfScopeRole->getKey()]);
+
+            setPermissionsTeamId('tenant-a');
+
+            $actor = User::query()->create([
+                'name' => 'Scope Actor',
+                'email' => 'scope-actor-' . uniqid() . '@example.com',
+                'password' => 'secret',
+            ]);
+            $this->actingAs($actor);
+
+            UserRoleChecker::hasGlobalRole($actor, (string) config('authz.super_admin_role'));
+            UserWildcardPermissions::for($actor);
+            $registrar->getPermissions();
+
+            Gate::before(static fn (): bool => true);
+
+            $loadedInScope = UserResource::getEloquentQuery()->whereKey($inScopeUser->getKey())->first();
+
+            expect($loadedInScope)->not->toBeNull()
+                ->and($loadedInScope->relationLoaded('roles'))->toBeTrue();
+
+            DB::flushQueryLog();
+            DB::enableQueryLog();
+
+            expect(UserResource::canView($loadedInScope))->toBeTrue()
+                ->and(UserResource::canEdit($loadedInScope))->toBeTrue()
+                ->and(UserResource::canDelete($loadedInScope))->toBeTrue()
+                ->and(DB::getQueryLog())->toBeEmpty();
+
+            DB::disableQueryLog();
+
+            expect(UserResource::canView($outOfScopeUser->fresh()))->toBeFalse()
+                ->and(UserResource::canEdit($outOfScopeUser->fresh()))->toBeFalse()
+                ->and(UserResource::canDelete($outOfScopeUser->fresh()))->toBeFalse();
+        } finally {
+            DB::disableQueryLog();
+            $registrar->teams = $previousTeams;
+            setPermissionsTeamId(null);
+        }
     });
 });

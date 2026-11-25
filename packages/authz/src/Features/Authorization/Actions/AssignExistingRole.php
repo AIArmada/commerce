@@ -7,6 +7,7 @@ namespace AIArmada\Authz\Features\Authorization\Actions;
 use AIArmada\Authz\Features\Authorization\Models\Role;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Spatie\Permission\Events\RoleAttachedEvent;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -16,18 +17,29 @@ final readonly class AssignExistingRole
 
     public function execute(RecordReference $record, string $name, string $guard, string | int | null $scope): bool
     {
-        $model = EloquentRecordReference::resolve($record);
+        if (! $this->registrar->teams && $scope !== null) {
+            return false;
+        }
+
         $query = Role::query()->where('name', $name)->where('guard_name', $guard);
 
         if ($this->registrar->teams) {
             $query->where($this->registrar->teamsKey, $scope);
-        } elseif ($scope !== null) {
-            return false;
         }
 
         $role = $query->first();
 
-        if ($role === null || $model === null) {
+        if ($role === null) {
+            return false;
+        }
+
+        try {
+            $model = EloquentRecordReference::resolve($record);
+        } catch (ModelNotFoundException) {
+            return false;
+        }
+
+        if ($model === null) {
             return false;
         }
 
@@ -52,11 +64,14 @@ final readonly class AssignExistingRole
 
             return $pivot->insert($attributes);
         });
-        $model->unsetRelation('roles')->unsetRelation('permissions');
-        $this->registrar->forgetCachedPermissions();
 
-        if ($inserted && config('permission.events_enabled', false)) {
-            event(new RoleAttachedEvent($model, [$role->getKey()]));
+        if ($inserted) {
+            $model->unsetRelation('roles')->unsetRelation('permissions');
+            $this->registrar->forgetCachedPermissions();
+
+            if (config('permission.events_enabled', false)) {
+                event(new RoleAttachedEvent($model, [$role->getKey()]));
+            }
         }
 
         return true;

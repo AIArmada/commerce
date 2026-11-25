@@ -37,6 +37,10 @@ final readonly class SignedDownloadService implements SignedDownloadApi
      */
     public function payloadFromToken(mixed $token, string $cachePrefix): ?array
     {
+        if ($cachePrefix === '' || preg_match('/[\s\x00-\x1F\x7F]/', $cachePrefix) === 1) {
+            return null;
+        }
+
         if (! is_string($token) || preg_match('/^[A-Za-z0-9]{64}$/D', $token) !== 1) {
             return null;
         }
@@ -107,7 +111,7 @@ final readonly class SignedDownloadService implements SignedDownloadApi
             return false;
         }
 
-        return $owner->type === $expectedOwnerType
-            && $owner->id === (string) $expectedOwnerId;
+        return hash_equals($expectedOwnerType, $owner->type)
+            && hash_equals((string) $expectedOwnerId, $owner->id);
     }
 }

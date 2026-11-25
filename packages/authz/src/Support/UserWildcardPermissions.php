@@ -55,6 +55,11 @@ final class UserWildcardPermissions
         self::$cache = [];
     }
 
+    public static function hasCachedEntries(): bool
+    {
+        return self::$cache !== [];
+    }
+
     /**
      * @return list<string>
      */

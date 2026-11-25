@@ -822,3 +822,79 @@ it('prunes stale variant settings when the selected experiment module changes', 
         'currency' => 'USD',
     ]);
 });
+
+it('gates experiment and variant mutations with no SQL on records hydrated from the resource queries', function (): void {
+    $owner = filamentGrowth_makeOwner('00000000-0000-0000-0000-000000000090');
+
+    app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new class($owner) implements OwnerResolverInterface
+    {
+        public function __construct(private readonly Model $owner) {}
+
+        public function resolve(): ?RecordReference
+        {
+            return EloquentRecordReference::fromModel($this->owner);
+        }
+    });
+
+    [$experiment, $variant] = filamentGrowth_createExperimentForOwner($owner, 'Zero Query Experiment', 'ZQ');
+
+    $ownedExperiment = ExperimentResource::getEloquentQuery()->whereKey($experiment->getKey())->first();
+    $ownedVariant = VariantResource::getEloquentQuery()->whereKey($variant->getKey())->first();
+
+    expect($ownedExperiment)->toBeInstanceOf(Experiment::class)
+        ->and($ownedVariant)->toBeInstanceOf(Variant::class)
+        ->and($ownedExperiment?->relationLoaded('trackedProperty'))->toBeTrue()
+        ->and($ownedVariant?->relationLoaded('experiment'))->toBeTrue()
+        ->and($ownedVariant?->getRelation('experiment')?->relationLoaded('trackedProperty'))->toBeTrue();
+
+    // Warm the owner lookup and gate verdict caches so the measured calls exercise only gate logic.
+    ExperimentResource::canEdit($ownedExperiment);
+    ExperimentResource::canDelete($ownedExperiment);
+    VariantResource::canEdit($ownedVariant);
+    VariantResource::canDelete($ownedVariant);
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    $verdicts = [
+        ExperimentResource::canEdit($ownedExperiment),
+        ExperimentResource::canDelete($ownedExperiment),
+        VariantResource::canEdit($ownedVariant),
+        VariantResource::canDelete($ownedVariant),
+    ];
+
+    $queryCount = count(DB::getQueryLog());
+    DB::disableQueryLog();
+
+    expect($queryCount)->toBe(0)
+        ->and($verdicts)->toBe([true, true, true, true]);
+});
+
+it('still denies mutate gates for foreign and global records', function (): void {
+    $ownerA = filamentGrowth_makeOwner('00000000-0000-0000-0000-000000000091');
+    $ownerB = filamentGrowth_makeOwner('00000000-0000-0000-0000-000000000092');
+
+    app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new class($ownerA) implements OwnerResolverInterface
+    {
+        public function __construct(private readonly Model $owner) {}
+
+        public function resolve(): ?RecordReference
+        {
+            return EloquentRecordReference::fromModel($this->owner);
+        }
+    });
+
+    [$foreignExperiment, $foreignVariant] = filamentGrowth_createExperimentForOwner($ownerB, 'Foreign Gate Experiment', 'FG');
+    [$globalExperiment, $globalVariant] = filamentGrowth_createGlobalExperiment('Global Gate Experiment', 'GG');
+
+    OwnerContext::withOwner($ownerA, function () use ($foreignExperiment, $foreignVariant, $globalExperiment, $globalVariant): void {
+        expect(ExperimentResource::canEdit($foreignExperiment))->toBeFalse()
+            ->and(ExperimentResource::canDelete($foreignExperiment))->toBeFalse()
+            ->and(ExperimentResource::canEdit($globalExperiment))->toBeFalse()
+            ->and(ExperimentResource::canDelete($globalExperiment))->toBeFalse()
+            ->and(VariantResource::canEdit($foreignVariant))->toBeFalse()
+            ->and(VariantResource::canDelete($foreignVariant))->toBeFalse()
+            ->and(VariantResource::canEdit($globalVariant))->toBeFalse()
+            ->and(VariantResource::canDelete($globalVariant))->toBeFalse();
+    });
+});

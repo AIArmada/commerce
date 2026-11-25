@@ -12,6 +12,8 @@ use Illuminate\Queue\Jobs\SyncJob;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\PermissionRegistrar;
 
+require_once dirname(__DIR__, 3) . '/Support/OctaneEventShims.php';
+
 it('invalidates authorization verdicts after schema-qualified revocations', function (bool $configureSchema): void {
     $user = User::query()->create([
         'name' => 'Schema Cache User',
@@ -250,4 +252,39 @@ it('isolates identical user identities on different database connections', funct
     } finally {
         DB::purge('authz_cache_isolation');
     }
+});
+
+it('clears worker-local caches but keeps the shared permission cache on request start', function (): void {
+    $registrar = app(PermissionRegistrar::class);
+    $cacheKey = $registrar->cacheKey;
+
+    $user = User::query()->create([
+        'name' => 'Request Boundary User',
+        'email' => 'request-boundary@example.com',
+        'password' => 'secret',
+    ]);
+    $role = Role::create(['name' => 'Request Boundary Role', 'guard_name' => 'web']);
+    $user->assignRole($role);
+    $user->givePermissionTo(Permission::findOrCreate('request-boundary.*', 'web'));
+
+    $registrar->getPermissions();
+    $cache = $registrar->getCacheRepository();
+
+    expect($cache->has($cacheKey))->toBeTrue()
+        ->and(UserWildcardPermissions::for($user))->toBe(['request-boundary.*'])
+        ->and(UserWildcardPermissions::hasCachedEntries())->toBeTrue();
+
+    $receivedEvent = 'Laravel\\Octane\\Events\\RequestReceived';
+    event(new $receivedEvent);
+
+    expect(UserWildcardPermissions::hasCachedEntries())->toBeFalse()
+        ->and($cache->has($cacheKey))->toBeTrue();
+
+    $queries = 0;
+    DB::listen(function () use (&$queries): void {
+        $queries++;
+    });
+
+    expect(UserRoleChecker::hasGlobalRole($user, 'Request Boundary Role'))->toBeTrue()
+        ->and($queries)->toBeGreaterThan(0);
 });

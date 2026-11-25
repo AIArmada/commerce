@@ -43,6 +43,12 @@ class RoleResource extends Resource
             $query = static::applyTenantScope($query);
         }
 
+        if (config('authz.scopes.enabled', false)
+            && config('filament-authz.central_app', false)
+            && method_exists(static::getModel(), 'authzScope')) {
+            $query->with('authzScope');
+        }
+
         return static::applyConfiguredScopeLimit($query);
     }
 
@@ -75,14 +81,49 @@ class RoleResource extends Resource
     {
         return static::checkAbility('role.update')
             && static::mayManageRoleName((string) $record->getAttribute('name'))
-            && static::getEloquentQuery()->whereKey($record->getKey())->exists();
+            && static::isRecordInScope($record);
     }
 
     public static function canDelete(Model $record): bool
     {
         return static::checkAbility('role.delete')
             && static::mayManageRoleName((string) $record->getAttribute('name'))
-            && static::getEloquentQuery()->whereKey($record->getKey())->exists();
+            && static::isRecordInScope($record);
+    }
+
+    protected static function isRecordInScope(Model $record): bool
+    {
+        if (static::class !== self::class) {
+            return static::getEloquentQuery()->whereKey($record->getKey())->exists();
+        }
+
+        if (! $record->exists || $record->getKey() === null || ! is_a($record, static::getModel())) {
+            return false;
+        }
+
+        if (! config('filament-authz.central_app', false) && static::shouldScopeToTenant()) {
+            $teamsKey = (string) app(PermissionRegistrar::class)->teamsKey;
+            $active = getPermissionsTeamId();
+            $recordScope = $record->getAttribute($teamsKey);
+
+            if ($active === null ? $recordScope !== null : (string) $recordScope !== (string) $active) {
+                return false;
+            }
+        }
+
+        if (config('authz.scopes.enabled', false) && config('filament-authz.central_app', false)) {
+            $allowed = static::allowedScopeIds();
+
+            if ($allowed !== null) {
+                $scopeValue = $record->getAttribute((string) app(PermissionRegistrar::class)->teamsKey);
+
+                if ($scopeValue !== null && ! in_array((string) $scopeValue, $allowed, true)) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 
     /** @param array<string, mixed> $data */
@@ -173,7 +214,7 @@ class RoleResource extends Resource
     {
         $reserved = (string) config('authz.super_admin_role', '');
 
-        return $reserved === '' || $name !== $reserved || static::mayManageSuperAdmin();
+        return $reserved === '' || mb_trim($name) !== $reserved || static::mayManageSuperAdmin();
     }
 
     public static function mayManageSuperAdmin(): bool

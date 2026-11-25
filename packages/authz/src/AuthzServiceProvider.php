@@ -6,7 +6,6 @@ namespace AIArmada\Authz;
 
 use AIArmada\Authz\Contracts\AdminUserProvisioner;
 use AIArmada\Authz\Drivers\EloquentAdminUserProvisioner;
-use AIArmada\Authz\Features\Authorization\Api\AuthorizationApi;
 use AIArmada\Authz\Features\Authorization\EntryPoints\Console\SuperAdminCommand;
 use AIArmada\Authz\Features\Authorization\EntryPoints\Console\SyncAuthzCommand;
 use AIArmada\Authz\Features\Authorization\Models\Permission as AuthzPermission;
@@ -44,6 +43,9 @@ use Spatie\Permission\PermissionRegistrar;
 
 final class AuthzServiceProvider extends PackageServiceProvider
 {
+    /** @var array<string, FeatureModule>|null */
+    private ?array $featureModules = null;
+
     public function configurePackage(Package $package): void
     {
         $package
@@ -100,6 +102,12 @@ final class AuthzServiceProvider extends PackageServiceProvider
 
     private function featureModule(string $feature): FeatureModule
     {
+        $this->featureModules ??= [];
+
+        if (isset($this->featureModules[$feature])) {
+            return $this->featureModules[$feature];
+        }
+
         $class = __NAMESPACE__ . '\\Features\\' . $feature . '\\FeatureModule';
         $module = $this->app->make($class);
 
@@ -107,7 +115,7 @@ final class AuthzServiceProvider extends PackageServiceProvider
             throw new InvalidArgumentException("Invalid Authz feature module [{$class}].");
         }
 
-        return $module;
+        return $this->featureModules[$feature] = $module;
     }
 
     private function assertConfiguration(): void
@@ -149,9 +157,15 @@ final class AuthzServiceProvider extends PackageServiceProvider
                     return null;
                 }
 
+                $wildcards = UserWildcardPermissions::for($user);
+
+                if ($wildcards === []) {
+                    return null;
+                }
+
                 $resolver = app(WildcardPermissionResolver::class);
 
-                foreach (UserWildcardPermissions::for($user) as $permission) {
+                foreach ($wildcards as $permission) {
                     if ($resolver->isWildcard($permission) && $resolver->matches($permission, $ability)) {
                         return true;
                     }
@@ -243,16 +257,11 @@ final class AuthzServiceProvider extends PackageServiceProvider
         $this->app['events']->listen(
             RequestReceived::class,
             static function (): void {
-                app(PermissionRegistrar::class)->forgetCachedPermissions();
+                app(PermissionRegistrar::class)->clearPermissionsCollection();
                 UserRoleChecker::flushGlobalRoleCache();
                 UserWildcardPermissions::flushCache();
-
-                if (app()->has(AuthorizationApi::class)) {
-                    app(AuthorizationApi::class)->clearCache();
-                }
             }
         );
-
     }
 
     private function registerCacheBoundaryListeners(): void

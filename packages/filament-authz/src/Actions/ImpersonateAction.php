@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Actions;
 
-use AIArmada\Authz\Features\Impersonation\Actions\ImpersonateManager;
-use AIArmada\Authz\Features\Impersonation\Queries\ImpersonationScopeGuard;
+use AIArmada\Authz\Features\Impersonation\Api\ImpersonationApi;
 use AIArmada\Authz\Features\Impersonation\Support\BackToUrlSanitizer;
 use AIArmada\Authz\Support\UserRoleChecker;
 use AIArmada\FilamentAuthz\Support\ImpersonationActorAuth;
@@ -85,13 +84,13 @@ class ImpersonateAction extends Action
 
         $currentUser = Filament::auth()->user();
         $targetUser = $this->getTargetUser();
-        $manager = app(ImpersonateManager::class);
+        $manager = app(ImpersonationApi::class);
 
         if ($currentUser === null || $targetUser === null) {
             return false;
         }
 
-        if ($currentUser->getAuthIdentifier() === $targetUser->getAuthIdentifier()) {
+        if ($currentUser::class === $targetUser::class && (string) $currentUser->getAuthIdentifier() === (string) $targetUser->getAuthIdentifier()) {
             return false;
         }
 
@@ -110,7 +109,7 @@ class ImpersonateAction extends Action
         }
 
         // Scope check is orthogonal to actor authorization — always run it.
-        return ImpersonationScopeGuard::canAccessTarget($targetUser);
+        return $manager->canAccessTarget($targetUser);
     }
 
     /**
@@ -145,7 +144,7 @@ class ImpersonateAction extends Action
         $currentUser = Filament::auth()->user();
         $targetUser = $this->getTargetUser();
         $guard = config('authz.impersonate.guard', 'web');
-        $manager = app(ImpersonateManager::class);
+        $manager = app(ImpersonationApi::class);
 
         if ($currentUser === null || $targetUser === null) {
             return false;
@@ -159,7 +158,7 @@ class ImpersonateAction extends Action
             return false;
         }
 
-        if (! ImpersonationScopeGuard::canAccessTarget($targetUser)) {
+        if (! $manager->canAccessTarget($targetUser)) {
             return false;
         }
 

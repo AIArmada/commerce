@@ -11,7 +11,6 @@ use DateInterval;
 use DateTimeInterface;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\URL;
-use Illuminate\Support\Str;
 use InvalidArgumentException;
 use RuntimeException;
 
@@ -30,6 +29,10 @@ final class IssueSignedDownload
         ?RecordReference $owner,
         string | int | null $userId,
     ): string {
+        if ($cachePrefix === '' || preg_match('/[\s\x00-\x1F\x7F]/', $cachePrefix) === 1) {
+            throw new InvalidArgumentException('Invalid signed download cache prefix.');
+        }
+
         $now = CarbonImmutable::now();
         $expiresAt = match (true) {
             $ttl instanceof DateTimeInterface => CarbonImmutable::instance($ttl),
@@ -41,7 +44,7 @@ final class IssueSignedDownload
             throw new InvalidArgumentException('A signed download requires a future expiry and an authenticated user.');
         }
 
-        $token = Str::random(64);
+        $token = bin2hex(random_bytes(32));
         $url = (string) URL::temporarySignedRoute(
             $routeName,
             $expiresAt,

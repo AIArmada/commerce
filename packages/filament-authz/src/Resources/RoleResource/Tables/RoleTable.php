@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Resources\RoleResource\Tables;
 
-use AIArmada\FilamentAuthz\FilamentAuthzPlugin;
+use AIArmada\FilamentAuthz\Resources\RoleResource\Schemas\RoleForm;
 use AIArmada\FilamentAuthz\Support\DeleteAuthzDefinitions;
 use Closure;
 use Filament\Actions;
@@ -131,25 +131,6 @@ final class RoleTable
      */
     private static function getScopeOptions(): array
     {
-        $override = FilamentAuthzPlugin::resolveForPanel()?->getRoleScopeOptions();
-
-        if ($override !== null) {
-            return $override;
-        }
-
-        $configured = config('filament-authz.role_resource.scope_options');
-
-        if ($configured instanceof Closure) {
-            /** @var mixed $configured */
-            $configured = app()->call($configured);
-        }
-
-        if (! is_array($configured)) {
-            return [];
-        }
-
-        return collect($configured)
-            ->mapWithKeys(static fn (mixed $label, mixed $id): array => [(string) $id => (string) $label])
-            ->all();
+        return RoleForm::getScopeOptions();
     }
 }

@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\Event;
 
 use function AIArmada\Authz\can_be_impersonated;
 
+class ImpersonationCrossGuardUser extends User {}
+
 it('refuses impersonation for actors without authorization', function (): void {
     $actor = User::query()->create([
         'name' => 'Unauthorized Actor',
@@ -197,4 +199,37 @@ it('logs out the impersonated account if the original account was removed', func
     expect($manager->leave())->toBeFalse()
         ->and($manager->isImpersonating())->toBeFalse()
         ->and(auth()->guard('web')->check())->toBeFalse();
+});
+
+it('rejects cross-port and downgraded back-to urls', function (): void {
+    $host = request()->getHost();
+
+    expect(BackToUrlSanitizer::sanitize('http://' . $host . ':8080/admin'))->toBe('/');
+
+    request()->server->set('HTTPS', 'on');
+
+    expect(BackToUrlSanitizer::sanitize('http://' . $host . '/admin'))->toBe('/');
+});
+
+it('allows a cross-guard take for distinct authenticatables sharing an identifier', function (): void {
+    config()->set('auth.guards.admin', ['driver' => 'authz-session', 'provider' => 'admin_users']);
+    config()->set('auth.providers.admin_users', ['driver' => 'eloquent', 'model' => ImpersonationCrossGuardUser::class]);
+    config()->set('auth.defaults.guard', 'admin');
+    config()->set('authz.scopes.enforce', false);
+
+    $actor = User::factory()->create();
+    $actor->assignRole(Role::findOrCreate((string) config('authz.super_admin_role'), 'web'));
+
+    $target = ImpersonationCrossGuardUser::query()->findOrFail($actor->getKey());
+
+    $this->actingAs($actor, 'web');
+    session()->put('password_hash_web', 'legacy-hash');
+
+    $manager = app(ImpersonateManager::class);
+
+    expect($manager->take($actor, $target, 'admin', '/admin'))->toBeTrue()
+        ->and($manager->isImpersonating())->toBeTrue()
+        ->and(session()->has('password_hash_web'))->toBeFalse()
+        ->and(session()->has('password_hash_admin'))->toBeTrue()
+        ->and(auth()->guard('admin')->user())->toBeInstanceOf(ImpersonationCrossGuardUser::class);
 });

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Actions;
 
-use AIArmada\Authz\Features\Impersonation\Actions\ImpersonateManager;
+use AIArmada\Authz\Features\Impersonation\Api\ImpersonationApi;
 use AIArmada\Authz\Features\Impersonation\Support\BackToUrlSanitizer;
 use Filament\Actions\Action;
 use Filament\Navigation\MenuItem;
@@ -37,9 +37,9 @@ class LeaveImpersonationAction extends Action
         $this->label(__('filament-authz::filament-authz.impersonate.leave'))
             ->icon('heroicon-o-arrow-left-on-rectangle')
             ->color('danger')
-            ->visible(fn (): bool => app(ImpersonateManager::class)->isImpersonating())
+            ->visible(fn (): bool => app(ImpersonationApi::class)->isImpersonating())
             ->action(function (): void {
-                $manager = app(ImpersonateManager::class);
+                $manager = app(ImpersonationApi::class);
                 $backTo = $manager->getBackTo();
 
                 if (! $manager->leave()) {
@@ -61,7 +61,7 @@ class LeaveImpersonationAction extends Action
             ->label(__('filament-authz::filament-authz.impersonate.leave'))
             ->icon('heroicon-o-arrow-left-on-rectangle')
             ->color('danger')
-            ->visible(fn (): bool => app(ImpersonateManager::class)->isImpersonating())
+            ->visible(fn (): bool => app(ImpersonationApi::class)->isImpersonating())
             ->postAction(route('filament-authz.impersonate.leave'));
     }
 }

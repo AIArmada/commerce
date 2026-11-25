@@ -5,6 +5,11 @@ declare(strict_types=1);
 use AIArmada\Authz\Services\PermissionKeyBuilder;
 use AIArmada\FilamentAuthz\Authz;
 use AIArmada\FilamentAuthz\Facades\FilamentAuthz;
+use Laravel\Octane\Events\RequestReceived;
+use Laravel\Octane\Events\RequestTerminated;
+use Spatie\Permission\PermissionRegistrar;
+
+require_once dirname(__DIR__, 3) . '/Support/OctaneEventShims.php';
 
 beforeEach(function (): void {
     $this->keyBuilder = new PermissionKeyBuilder;
@@ -177,4 +182,27 @@ describe('Permission Key Builder', function (): void {
 
         expect($key)->toBe('order_view');
     });
+});
+
+describe('request cache flushing', function (): void {
+    it('clears the authz discovery caches without wiping the shared spatie cache store', function (string $eventClass): void {
+        $authz = app(Authz::class);
+        $discoveryCache = new ReflectionProperty(Authz::class, 'discoveryCache');
+        $permissionCache = new ReflectionProperty(Authz::class, 'permissionCache');
+
+        $registrar = app(PermissionRegistrar::class);
+        $registrar->getCacheRepository()->put($registrar->cacheKey, 'sentinel');
+
+        $discoveryCache->setValue($authz, ['admin_resources' => collect()]);
+        $permissionCache->setValue($authz, ['page' => ['Stale_default' => 'page.stale']]);
+
+        event(new $eventClass(app(), request()));
+
+        expect($discoveryCache->getValue($authz))->toBe([])
+            ->and($permissionCache->getValue($authz))->toBe([])
+            ->and($registrar->getCacheRepository()->get($registrar->cacheKey))->toBe('sentinel');
+    })->with([
+        RequestReceived::class,
+        RequestTerminated::class,
+    ]);
 });

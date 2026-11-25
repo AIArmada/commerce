@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Resources;
 
+use AIArmada\Authz\Features\Impersonation\Api\ImpersonationApi;
 use AIArmada\Authz\Features\Impersonation\Queries\ImpersonationScopeGuard;
 use AIArmada\Authz\Support\UserRoleChecker;
 use AIArmada\FilamentAuthz\Facades\FilamentAuthz;
@@ -21,11 +22,14 @@ use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Contracts\Auth\Access\Authorizable;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
+use Spatie\Permission\PermissionRegistrar;
 
 class UserResource extends Resource
 {
@@ -43,8 +47,13 @@ class UserResource extends Resource
 
         $guard = config('authz.guards.0', 'web');
         $provider = config("auth.guards.{$guard}.provider");
+        $configured = config("auth.providers.{$provider}.model");
 
-        return (string) config("auth.providers.{$provider}.model", 'App\\Models\\User');
+        if (is_string($configured) && $configured !== '') {
+            return $configured;
+        }
+
+        return mb_rtrim(app()->getNamespace(), '\\') . '\\Models\\User';
     }
 
     public static function getEloquentQuery(): Builder
@@ -65,7 +74,9 @@ class UserResource extends Resource
 
     public static function canView(Model $record): bool
     {
-        return static::hasAuthzDirectoryAccess() && static::checkAbility('view');
+        return static::hasAuthzDirectoryAccess()
+            && static::checkAbility('view')
+            && static::isRecordInScope($record);
     }
 
     public static function canCreate(): bool
@@ -75,12 +86,58 @@ class UserResource extends Resource
 
     public static function canEdit(Model $record): bool
     {
-        return static::hasAuthzDirectoryAccess() && static::checkAbility('update');
+        return static::hasAuthzDirectoryAccess()
+            && static::checkAbility('update')
+            && static::isRecordInScope($record);
     }
 
     public static function canDelete(Model $record): bool
     {
-        return static::hasAuthzDirectoryAccess() && static::checkAbility('delete');
+        return static::hasAuthzDirectoryAccess()
+            && static::checkAbility('delete')
+            && static::isRecordInScope($record);
+    }
+
+    protected static function isRecordInScope(Model $record): bool
+    {
+        if (! $record->exists || $record->getKey() === null) {
+            return false;
+        }
+
+        $registrar = app(PermissionRegistrar::class);
+
+        if (! config('authz.scopes.enforce', true) || ! $registrar->teams) {
+            return true;
+        }
+
+        $teamId = getPermissionsTeamId();
+        $teamsKey = (string) $registrar->teamsKey;
+
+        if ($record->relationLoaded('roles')) {
+            $roles = $record->getRelationValue('roles');
+
+            if ($roles instanceof Collection) {
+                foreach ($roles as $role) {
+                    $pivot = $role->getRelationValue('pivot');
+
+                    if (! $pivot instanceof Model || ! array_key_exists($teamsKey, $pivot->getAttributes())) {
+                        continue;
+                    }
+
+                    $pivotTeam = $pivot->getAttribute($teamsKey);
+
+                    if ($teamId === null ? $pivotTeam === null : (string) $pivotTeam === (string) $teamId) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        if ($record instanceof Authenticatable) {
+            return app(ImpersonationApi::class)->canAccessTarget($record);
+        }
+
+        return static::getEloquentQuery()->whereKey($record->getKey())->exists();
     }
 
     protected static function hasAuthzDirectoryAccess(): bool

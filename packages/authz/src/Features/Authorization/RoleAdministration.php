@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace AIArmada\Authz\Features\Authorization;
 
 use AIArmada\Authz\Features\Authorization\Actions\AssignExistingRole;
+use AIArmada\Authz\Features\Authorization\Actions\AssignUserRole;
 use AIArmada\Authz\Features\Authorization\Actions\DeleteAuthzScope;
 use AIArmada\Authz\Features\Authorization\Actions\DeletePermissionDefinition;
 use AIArmada\Authz\Features\Authorization\Actions\DeleteRoleDefinition;
 use AIArmada\Authz\Features\Authorization\Actions\EnsurePermissions;
 use AIArmada\Authz\Features\Authorization\Actions\EnsureRoleDefinition;
+use AIArmada\Authz\Features\Authorization\Actions\RevokeUserRole;
 use AIArmada\Authz\Features\Authorization\Actions\SavePermissionDefinition;
 use AIArmada\Authz\Features\Authorization\Actions\SaveRoleDefinition;
 use AIArmada\Authz\Features\Authorization\Actions\SyncUserPermissions;
@@ -20,6 +22,9 @@ use AIArmada\Authz\Features\Authorization\Models\Permission;
 use AIArmada\Authz\Features\Authorization\Support\AuthzScopeResolver;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Spatie\Permission\PermissionRegistrar;
 
 final readonly class RoleAdministration implements RoleAdministrationApi
@@ -36,6 +41,8 @@ final readonly class RoleAdministration implements RoleAdministrationApi
         private DeleteRoleDefinition $deleteRole,
         private DeletePermissionDefinition $deletePermission,
         private DeleteAuthzScope $deleteScope,
+        private AssignUserRole $assignUserRole,
+        private RevokeUserRole $revokeUserRole,
     ) {}
 
     public function permissionNames(string $guard): array
@@ -65,6 +72,16 @@ final readonly class RoleAdministration implements RoleAdministrationApi
         return $this->assign->execute($record, $name, $guard, $scope);
     }
 
+    public function assignRole(RecordReference $record, string $roleId): void
+    {
+        $this->assignUserRole->execute($this->resolveUser($record), $roleId);
+    }
+
+    public function revokeRole(RecordReference $record, string $roleName): void
+    {
+        $this->revokeUserRole->execute($this->resolveUser($record), $roleName);
+    }
+
     public function syncUserRoles(RecordReference $record, array $roleIds, string $guard, bool $restrictToCurrentTeam, string $scopeMode, ?array $allowedScopeIds, bool $includeSuperAdmin): void
     {
         $this->userRoles->execute($record, $roleIds, $guard, $restrictToCurrentTeam, $scopeMode, $allowedScopeIds, $includeSuperAdmin);
@@ -78,8 +95,14 @@ final readonly class RoleAdministration implements RoleAdministrationApi
     public function saveRoleDefinition(?string $id, string $name, string $guard, string | int | null $scope, array $permissionNames): RoleRecord
     {
         $role = $this->saveRole->execute($id, $name, $guard, $scope, $permissionNames);
+        $scopeValue = $role->getAttribute($this->registrar->teamsKey);
 
-        return new RoleRecord((string) $role->getKey(), $name, $guard, $scope);
+        return new RoleRecord(
+            (string) $role->getKey(),
+            (string) $role->name,
+            (string) $role->guard_name,
+            $this->registrar->teams && (is_string($scopeValue) || is_int($scopeValue)) ? $scopeValue : null,
+        );
     }
 
     public function savePermissionDefinition(?string $id, string $name, string $guard): string
@@ -100,5 +123,20 @@ final readonly class RoleAdministration implements RoleAdministrationApi
     public function deleteScope(string $id): bool
     {
         return $this->deleteScope->execute($id);
+    }
+
+    private function resolveUser(RecordReference $record): Model
+    {
+        try {
+            $user = EloquentRecordReference::resolve($record);
+        } catch (ModelNotFoundException) {
+            throw new AuthorizationException('The selected user does not exist.');
+        }
+
+        if (! $user instanceof Model) {
+            throw new AuthorizationException('The selected user does not exist.');
+        }
+
+        return $user;
     }
 }

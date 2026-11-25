@@ -34,7 +34,8 @@ final readonly class DeleteScopeAssignments
         $connection->transaction(function () use ($connection, $scope, $teamsKey, $roleTable, $roleKey, $rolePivotKey, $roleAssignments, $permissionAssignments, $rolePermissions): void {
             $roleIds = $connection->table($roleTable)
                 ->where($teamsKey, $scope->getKey())
-                ->select($roleKey);
+                ->pluck($roleKey)
+                ->all();
 
             $connection->table($roleAssignments)
                 ->where($teamsKey, $scope->getKey())
@@ -42,12 +43,16 @@ final readonly class DeleteScopeAssignments
             $connection->table($permissionAssignments)
                 ->where($teamsKey, $scope->getKey())
                 ->delete();
-            $connection->table($roleAssignments)
-                ->whereIn($rolePivotKey, clone $roleIds)
-                ->delete();
-            $connection->table($rolePermissions)
-                ->whereIn($rolePivotKey, clone $roleIds)
-                ->delete();
+
+            if ($roleIds !== []) {
+                $connection->table($roleAssignments)
+                    ->whereIn($rolePivotKey, $roleIds)
+                    ->delete();
+                $connection->table($rolePermissions)
+                    ->whereIn($rolePivotKey, $roleIds)
+                    ->delete();
+            }
+
             $connection->table($roleTable)
                 ->where($teamsKey, $scope->getKey())
                 ->delete();

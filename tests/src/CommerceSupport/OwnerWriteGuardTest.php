@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Data\OwnerScopeConfig;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\CommerceSupport\Traits\HasOwner;
@@ -99,5 +100,60 @@ final class OwnerWriteGuardDisabledFixture extends Model
     public static function ownerScopeConfig(): OwnerScopeConfig
     {
         return new OwnerScopeConfig(enabled: false);
+    }
+}
+
+it('resolves and rejects records through a pinned owner config without relying on ambient context', function (): void {
+    $ownerA = User::query()->create([
+        'name' => 'Pinned Owner A',
+        'email' => 'write-guard-pinned-a@example.com',
+        'password' => 'secret',
+    ]);
+
+    $ownerB = User::query()->create([
+        'name' => 'Pinned Owner B',
+        'email' => 'write-guard-pinned-b@example.com',
+        'password' => 'secret',
+    ]);
+
+    $ownedRecord = OwnerContext::withOwner($ownerA, fn () => OwnerWriteGuardPinnedFixture::query()->create([
+        'label' => 'pinned-owned',
+    ]));
+
+    $foreignRecord = OwnerContext::withOwner($ownerB, fn () => OwnerWriteGuardPinnedFixture::query()->create([
+        'label' => 'pinned-foreign',
+    ]));
+
+    OwnerWriteGuardPinnedFixture::$owner = $ownerA;
+
+    try {
+        OwnerContext::withOwner($ownerB, function () use ($foreignRecord, $ownedRecord): void {
+            expect(OwnerWriteGuard::findOrFailForOwner(OwnerWriteGuardPinnedFixture::class, (string) $ownedRecord->getKey())->getKey())
+                ->toBe($ownedRecord->getKey());
+
+            expect(fn () => OwnerWriteGuard::findOrFailForOwner(OwnerWriteGuardPinnedFixture::class, (string) $foreignRecord->getKey()))
+                ->toThrow(AuthorizationException::class);
+        });
+    } finally {
+        OwnerWriteGuardPinnedFixture::$owner = null;
+    }
+});
+
+final class OwnerWriteGuardPinnedFixture extends Model
+{
+    use HasOwner;
+
+    public static ?Model $owner = null;
+
+    protected $guarded = [];
+
+    public function getTable(): string
+    {
+        return 'owner_write_guard_fixtures';
+    }
+
+    public static function ownerScopeConfig(): OwnerScopeConfig
+    {
+        return new OwnerScopeConfig(enabled: true, owner: EloquentRecordReference::fromModel(self::$owner));
     }
 }

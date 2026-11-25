@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Authz\Features\Authorization\Actions;
 
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 use RuntimeException;
 use Spatie\Permission\Exceptions\RoleAlreadyExists;
@@ -18,7 +19,9 @@ final readonly class SaveRoleDefinition
     /** @param list<string> $permissionNames */
     public function execute(?string $id, string $name, string $guard, string | int | null $scope, array $permissionNames): Role
     {
-        if (mb_trim($name) === '' || mb_strlen($name) > 255 || ! in_array($guard, (array) config('authz.guards', ['web']), true)) {
+        $name = mb_trim($name);
+
+        if ($name === '' || mb_strlen($name) > 255 || ! in_array($guard, (array) config('authz.guards', ['web']), true)) {
             throw new InvalidArgumentException('A valid role name and configured guard are required.');
         }
 
@@ -26,12 +29,16 @@ final readonly class SaveRoleDefinition
             throw new AuthorizationException('Roles cannot be scoped when permission teams are disabled.');
         }
 
+        if ($this->registrar->teams && $scope !== null && config('authz.scopes.enabled', false) && (! is_string($scope) || ! Str::isUuid($scope))) {
+            throw new AuthorizationException('Invalid role scope identifier.');
+        }
+
         /** @var class-string<Role> $roleClass */
         $roleClass = $this->registrar->getRoleClass();
         $model = new $roleClass;
         $connection = $model->getConnection();
 
-        return $connection->transaction(function () use ($id, $name, $guard, $scope, $permissionNames, $model, $connection): Role {
+        $role = $connection->transaction(function () use ($id, $name, $guard, $scope, $permissionNames, $model, $connection): Role {
             $role = $id === null ? $model : $model->newQuery()->whereKey($id)->lockForUpdate()->firstOrFail();
             $attributes = ['name' => $name, 'guard_name' => $guard];
             $teamsKey = $this->registrar->teamsKey;
@@ -69,5 +76,9 @@ final readonly class SaveRoleDefinition
 
             return $role;
         });
+
+        $this->registrar->forgetCachedPermissions();
+
+        return $role;
     }
 }

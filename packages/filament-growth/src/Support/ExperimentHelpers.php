@@ -95,8 +95,24 @@ final class ExperimentHelpers
             return false;
         }
 
-        if (! Experiment::ownerScopeConfig()->enabled && ! TrackedProperty::ownerScopeConfig()->enabled) {
+        $experimentScopingEnabled = Experiment::ownerScopeConfig()->enabled;
+        $propertyScopingEnabled = TrackedProperty::ownerScopeConfig()->enabled;
+
+        if (! $experimentScopingEnabled && ! $propertyScopingEnabled) {
             return true;
+        }
+
+        if ($experiment->relationLoaded('trackedProperty')) {
+            $property = $experiment->getRelation('trackedProperty');
+
+            if ($property instanceof TrackedProperty
+                && (string) $property->getKey() === (string) $experiment->tracked_property_id) {
+                if (! $experimentScopingEnabled) {
+                    return OwnerUiScope::canMutateRecord($property);
+                }
+
+                return self::sameOwnerTuple($experiment, $property);
+            }
         }
 
         return self::scopeExperiments(Experiment::query(), writable: true)
@@ -114,8 +130,40 @@ final class ExperimentHelpers
             return true;
         }
 
+        if ($variant->relationLoaded('experiment')) {
+            $experiment = $variant->getRelation('experiment');
+
+            if ($experiment instanceof Experiment
+                && (string) $experiment->getKey() === (string) $variant->experiment_id
+                && $experiment->relationLoaded('trackedProperty')) {
+                return self::canMutateExperiment($experiment);
+            }
+        }
+
         return self::scopeExperiments(Experiment::query(), writable: true)
             ->whereKey($variant->experiment_id)
             ->exists();
+    }
+
+    private static function sameOwnerTuple(Experiment $experiment, TrackedProperty $property): bool
+    {
+        $experimentColumns = OwnerTupleColumns::forModelClass(Experiment::class);
+        $propertyColumns = OwnerTupleColumns::forModelClass(TrackedProperty::class);
+
+        $experimentType = $experiment->getAttribute($experimentColumns->ownerTypeColumn);
+        $experimentId = $experiment->getAttribute($experimentColumns->ownerIdColumn);
+        $propertyType = $property->getAttribute($propertyColumns->ownerTypeColumn);
+        $propertyId = $property->getAttribute($propertyColumns->ownerIdColumn);
+
+        if ($experimentType === null && $experimentId === null) {
+            return $propertyType === null && $propertyId === null;
+        }
+
+        if ($experimentType === null || $experimentId === null || $propertyType === null || $propertyId === null) {
+            return false;
+        }
+
+        return (string) $experimentType === (string) $propertyType
+            && (string) $experimentId === (string) $propertyId;
     }
 }

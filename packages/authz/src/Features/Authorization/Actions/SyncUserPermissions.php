@@ -9,6 +9,7 @@ use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Str;
 use Spatie\Permission\Events\PermissionAttachedEvent;
 use Spatie\Permission\Events\PermissionDetachedEvent;
@@ -22,7 +23,12 @@ final readonly class SyncUserPermissions
     /** @param list<string> $permissionIds */
     public function execute(RecordReference $record, array $permissionIds, string $guard): void
     {
-        $user = EloquentRecordReference::resolve($record);
+        try {
+            $user = EloquentRecordReference::resolve($record);
+        } catch (ModelNotFoundException) {
+            throw new AuthorizationException('The selected user does not exist.');
+        }
+
         if (! $user instanceof Model || ! method_exists($user, 'permissions') || ! Guard::getNames($user)->contains($guard)) {
             throw new AuthorizationException('The selected user does not support this permission guard.');
         }
@@ -46,7 +52,7 @@ final readonly class SyncUserPermissions
             }
 
             $eligible = $permissionModel->newQuery()->where('guard_name', $guard);
-            if ((clone $eligible)->whereKey($permissionIds)->orderBy($permissionModel->getKeyName())->lockForUpdate()->get([$permissionModel->getKeyName()])->count() !== count($permissionIds)) {
+            if ($permissionIds !== [] && (clone $eligible)->whereKey($permissionIds)->orderBy($permissionModel->getKeyName())->lockForUpdate()->get([$permissionModel->getKeyName()])->count() !== count($permissionIds)) {
                 throw new AuthorizationException('One or more selected permissions are invalid for the current guard.');
             }
 
@@ -61,11 +67,16 @@ final readonly class SyncUserPermissions
             }
 
             $table = (string) config('permission.table_names.model_has_permissions', 'model_has_permissions');
-            $pivot = $connection->table($table)->where($identity)->whereIn($pivotKey, $eligible->select($permissionModel->getKeyName()));
-            $current = (clone $pivot)->pluck($pivotKey)->map(static fn (mixed $id): string => (string) $id)->all();
+            $current = $connection->table($table)
+                ->where($identity)
+                ->whereIn($pivotKey, (clone $eligible)->select($permissionModel->getKeyName()))
+                ->pluck($pivotKey)
+                ->map(static fn (mixed $id): string => (string) $id)
+                ->all();
+
             $removed = array_values(array_diff($current, $permissionIds));
             if ($removed !== []) {
-                (clone $pivot)->whereIn($pivotKey, $removed)->delete();
+                $connection->table($table)->where($identity)->whereIn($pivotKey, $removed)->delete();
             }
 
             $added = array_values(array_diff($permissionIds, $current));
@@ -76,15 +87,17 @@ final readonly class SyncUserPermissions
             return [$added, $removed];
         });
 
-        $user->unsetRelation('permissions');
-        $this->registrar->forgetCachedPermissions();
+        if ($added !== [] || $removed !== []) {
+            $user->unsetRelation('permissions');
+            $this->registrar->forgetCachedPermissions();
 
-        if (config('permission.events_enabled', false)) {
-            if ($removed !== []) {
-                event(new PermissionDetachedEvent($user, $removed));
-            }
-            if ($added !== []) {
-                event(new PermissionAttachedEvent($user, $added));
+            if (config('permission.events_enabled', false)) {
+                if ($removed !== []) {
+                    event(new PermissionDetachedEvent($user, $removed));
+                }
+                if ($added !== []) {
+                    event(new PermissionAttachedEvent($user, $added));
+                }
             }
         }
     }

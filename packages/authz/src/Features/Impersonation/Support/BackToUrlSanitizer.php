@@ -35,9 +35,25 @@ final class BackToUrlSanitizer
             return '/';
         }
 
+        $scheme = mb_strtolower($parsed['scheme']);
         $requestHost = request()->getHost();
 
         if (mb_strtolower((string) $parsed['host']) !== mb_strtolower($requestHost)) {
+            return '/';
+        }
+
+        if (request()->isSecure() && $scheme !== 'https') {
+            return '/';
+        }
+
+        $parsedPort = isset($parsed['port']) ? (int) $parsed['port'] : ($scheme === 'https' ? 443 : 80);
+        $requestPort = (int) request()->getPort();
+
+        if ($requestPort === 0) {
+            $requestPort = request()->isSecure() ? 443 : 80;
+        }
+
+        if ($parsedPort !== $requestPort) {
             return '/';
         }
 

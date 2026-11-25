@@ -11,6 +11,7 @@ use Carbon\CarbonImmutable;
 use DateInterval;
 use DateTimeInterface;
 use Illuminate\Cache\Repository;
+use Illuminate\Cache\TaggableStore;
 use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Database\Eloquent\Model;
@@ -60,17 +61,7 @@ final class OwnerCache
      */
     public static function key(Model | OwnerScopeIdentifiable | null $owner, string $logicalKey): string
     {
-        if ($logicalKey === '') {
-            throw new InvalidArgumentException('Logical cache key cannot be empty.');
-        }
-
-        if (str_contains($logicalKey, ':')) {
-            throw new InvalidArgumentException('Logical cache key cannot contain colons. Use dots or dashes instead.');
-        }
-
-        $ownerKey = OwnerScopeKey::forOwner($owner);
-
-        return 'owner:' . $ownerKey . ':v' . self::version($owner) . ':' . $logicalKey;
+        return self::keyForOwnerKey(OwnerScopeKey::forOwner($owner), $logicalKey);
     }
 
     /**
@@ -78,7 +69,7 @@ final class OwnerCache
      */
     public static function version(Model | OwnerScopeIdentifiable | null $owner): string
     {
-        return (new CacheVersionStore)->version(self::versionKey(OwnerScopeKey::forOwner($owner)));
+        return self::versionForOwnerKey(OwnerScopeKey::forOwner($owner));
     }
 
     /**
@@ -91,9 +82,11 @@ final class OwnerCache
      */
     public static function get(Model | OwnerScopeIdentifiable | null $owner, string $logicalKey, mixed $default = null): mixed
     {
+        $ownerKey = OwnerScopeKey::forOwner($owner);
+
         return self::unwrap(
-            self::repository($owner)->get(
-                self::key($owner, $logicalKey),
+            self::repositoryForOwnerKey($ownerKey)->get(
+                self::keyForOwnerKey($ownerKey, $logicalKey),
                 $default
             )
         );
@@ -104,8 +97,10 @@ final class OwnerCache
      */
     public static function put(Model | OwnerScopeIdentifiable | null $owner, string $logicalKey, mixed $value, DateTimeInterface | DateInterval | int | null $ttl = null): void
     {
-        self::repository($owner)->put(
-            self::key($owner, $logicalKey),
+        $ownerKey = OwnerScopeKey::forOwner($owner);
+
+        self::repositoryForOwnerKey($ownerKey)->put(
+            self::keyForOwnerKey($ownerKey, $logicalKey),
             self::wrap($value),
             $ttl
         );
@@ -126,8 +121,9 @@ final class OwnerCache
      */
     public static function remember(Model | OwnerScopeIdentifiable | null $owner, string $logicalKey, DateTimeInterface | DateInterval | int | null $ttl, callable $callback): mixed
     {
-        $repository = self::repository($owner);
-        $key = self::key($owner, $logicalKey);
+        $ownerKey = OwnerScopeKey::forOwner($owner);
+        $repository = self::repositoryForOwnerKey($ownerKey);
+        $key = self::keyForOwnerKey($ownerKey, $logicalKey);
 
         $missed = self::missedSentinel();
 
@@ -173,7 +169,9 @@ final class OwnerCache
      */
     public static function forget(Model | OwnerScopeIdentifiable | null $owner, string $logicalKey): bool
     {
-        return self::repository($owner)->forget(self::key($owner, $logicalKey));
+        $ownerKey = OwnerScopeKey::forOwner($owner);
+
+        return self::repositoryForOwnerKey($ownerKey)->forget(self::keyForOwnerKey($ownerKey, $logicalKey));
     }
 
     /**
@@ -187,23 +185,54 @@ final class OwnerCache
     {
         $ownerKey = OwnerScopeKey::forOwner($owner);
 
-        try {
-            Cache::tags([self::tag($ownerKey)])->flush();
-        } catch (Throwable) {
-            // Driver doesn't support tagging; the version bump below still invalidates.
+        if (self::supportsTagging()) {
+            try {
+                Cache::tags([self::tag($ownerKey)])->flush();
+            } catch (Throwable) {
+                // Driver doesn't support tagging; the version bump below still invalidates.
+            }
         }
 
         (new CacheVersionStore)->bump(self::versionKey($ownerKey));
     }
 
-    private static function repository(Model | OwnerScopeIdentifiable | null $owner): mixed
+    private static function keyForOwnerKey(string $ownerKey, string $logicalKey): string
     {
-        $ownerKey = OwnerScopeKey::forOwner($owner);
+        if ($logicalKey === '') {
+            throw new InvalidArgumentException('Logical cache key cannot be empty.');
+        }
+
+        if (str_contains($logicalKey, ':')) {
+            throw new InvalidArgumentException('Logical cache key cannot contain colons. Use dots or dashes instead.');
+        }
+
+        return 'owner:' . $ownerKey . ':v' . self::versionForOwnerKey($ownerKey) . ':' . $logicalKey;
+    }
+
+    private static function versionForOwnerKey(string $ownerKey): string
+    {
+        return (new CacheVersionStore)->version(self::versionKey($ownerKey));
+    }
+
+    private static function repositoryForOwnerKey(string $ownerKey): mixed
+    {
+        if (! self::supportsTagging()) {
+            return Cache::store();
+        }
 
         try {
             return Cache::tags([self::tag($ownerKey)]);
         } catch (Throwable) {
             return Cache::store();
+        }
+    }
+
+    private static function supportsTagging(): bool
+    {
+        try {
+            return Cache::store()->getStore() instanceof TaggableStore;
+        } catch (Throwable) {
+            return false;
         }
     }
 

@@ -144,7 +144,7 @@ if (config('app.debug')) {
 ## Cache Keys
 
 `AIArmada\FilamentOrders\Support\FilamentOrdersCache` writes owner-scoped keys
-through `AIArmada\CommerceSupport\Support\OwnerCache`:
+through `AIArmada\CommerceSupport\Persistence\OwnerCache`:
 
 | Logical key | TTL | Description |
 |-------------|-----|-------------|
@@ -156,7 +156,7 @@ stats cache. Full cache keys are prefixed with `owner:{ownerScopeKey}:v{N}:`,
 so forget them by logical key rather than by string:
 
 ```php
-use AIArmada\CommerceSupport\Support\OwnerCache;
+use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 
 OwnerCache::forget(OwnerContext::resolve(), 'filament-orders.stats.owner-only');

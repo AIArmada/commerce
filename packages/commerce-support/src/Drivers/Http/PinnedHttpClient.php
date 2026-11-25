@@ -45,6 +45,28 @@ final class PinnedHttpClient
             $configure($pending, $target);
         }
 
+        // Prevent caller-supplied low-level options from bypassing URL and TLS
+        // validation. CURLOPT_RESOLVE is deliberately excluded so neither the
+        // configure callback nor request options can spoof DNS resolution on
+        // hostname or IP targets.
+        $allowedCurl = array_filter([
+            defined('CURLOPT_MAXFILESIZE') ? constant('CURLOPT_MAXFILESIZE') : null,
+            defined('CURLOPT_LOW_SPEED_LIMIT') ? constant('CURLOPT_LOW_SPEED_LIMIT') : null,
+            defined('CURLOPT_LOW_SPEED_TIME') ? constant('CURLOPT_LOW_SPEED_TIME') : null,
+        ], static fn ($value): bool => $value !== null);
+        $configuredCurl = $pending->getOptions()['curl'] ?? [];
+        $optionsCurl = $options['curl'] ?? [];
+
+        foreach ([$configuredCurl, $optionsCurl] as $curl) {
+            if (! is_array($curl) || array_diff(array_keys($curl), $allowedCurl) !== []) {
+                throw new RuntimeException('Unsafe cURL options are not permitted for pinned HTTP requests.');
+            }
+        }
+
+        // Array union preserves the integer cURL constant keys; array_merge
+        // would reindex them and silently drop the caller options.
+        $mergedCurl = $optionsCurl + $configuredCurl;
+
         if ($resolveEntry !== null) {
             if (! extension_loaded('curl') || ! defined('CURLOPT_RESOLVE')) {
                 throw new RuntimeException('The cURL extension with CURLOPT_RESOLVE is required for pinned HTTP transport.');
@@ -58,33 +80,18 @@ final class PinnedHttpClient
 
             self::assertCurlTransport($pending);
 
-            $curlOptions = is_array($options['curl'] ?? null) ? $options['curl'] : [];
-            $curlOptions[constant('CURLOPT_RESOLVE')] = [$resolveEntry];
-            $options['curl'] = $curlOptions;
+            $mergedCurl[constant('CURLOPT_RESOLVE')] = [$resolveEntry];
+        }
+
+        if ($mergedCurl !== []) {
+            $options['curl'] = $mergedCurl;
+        } else {
+            unset($options['curl']);
         }
 
         $options['allow_redirects'] = false;
         $options['proxy'] = '';
         $options['verify'] = true;
-
-        // Prevent caller-supplied low-level options from bypassing URL and TLS validation.
-        $allowedCurl = array_filter([
-            defined('CURLOPT_MAXFILESIZE') ? constant('CURLOPT_MAXFILESIZE') : null,
-            defined('CURLOPT_LOW_SPEED_LIMIT') ? constant('CURLOPT_LOW_SPEED_LIMIT') : null,
-            defined('CURLOPT_LOW_SPEED_TIME') ? constant('CURLOPT_LOW_SPEED_TIME') : null,
-            defined('CURLOPT_RESOLVE') ? constant('CURLOPT_RESOLVE') : null,
-        ], static fn ($value): bool => $value !== null);
-        $configuredCurl = $pending->getOptions()['curl'] ?? [];
-        $effectiveCurl = $options['curl'] ?? [];
-        foreach ([$configuredCurl, $effectiveCurl] as $curl) {
-            if (! is_array($curl) || array_diff(array_keys($curl), $allowedCurl) !== []) {
-                throw new RuntimeException('Unsafe cURL options are not permitted for pinned HTTP requests.');
-            }
-        }
-        $options['curl'] = $effectiveCurl;
-        if ($resolveEntry === null && defined('CURLOPT_RESOLVE')) {
-            unset($options['curl'][constant('CURLOPT_RESOLVE')]);
-        }
 
         return $pending->send(mb_strtoupper($method), $target->url, $options);
     }
@@ -132,6 +139,11 @@ final class PinnedHttpClient
                 return $response;
             }
 
+            if ($response->status() === 303) {
+                $method = 'GET';
+                unset($options['body'], $options['json'], $options['form_params'], $options['multipart']);
+            }
+
             $location = mb_trim((string) $response->header('Location'));
 
             if ($location === '' || $hop === $maxRedirects) {
@@ -141,7 +153,7 @@ final class PinnedHttpClient
             $nextUrl = self::resolveRelativeUrl($target->url, $location);
             $next = $guard->validate($nextUrl);
             if ($next->host !== $target->host || $next->scheme !== $target->scheme || $next->port !== $target->port) {
-                if ($configure !== null || $headers !== [] || isset($options['auth']) || isset($options['cookies'])) {
+                if ($configure !== null || $headers !== [] || isset($options['headers']) || isset($options['auth']) || isset($options['cookies'])) {
                     throw new InvalidArgumentException('Cross-origin redirects with request configuration or credentials are not allowed.');
                 }
             }

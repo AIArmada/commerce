@@ -9,8 +9,8 @@ use AIArmada\Affiliates\Contracts\AffiliateLookup;
 use AIArmada\Affiliates\Enums\RegistrationApprovalMode;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Services\UplineService;
-use AIArmada\Authz\Features\Authorization\Actions\AssignUserRole;
 use AIArmada\Authz\Features\Authorization\Api\RoleAdministrationApi;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\PublicHandle;
 use AIArmada\FilamentAffiliates\Concerns\InteractsWithAffiliate;
@@ -100,7 +100,13 @@ class PortalRegistration extends FilamentRegister
         $guard = (string) config('authz.guards.0', 'web');
 
         $role = app(RoleAdministrationApi::class)->ensureRole('Affiliate', $guard, getPermissionsTeamId(), ['panel.affiliate']);
-        app(AssignUserRole::class)->execute($user, $role->id);
+        $reference = EloquentRecordReference::fromModel($user);
+
+        if ($reference === null) {
+            throw new InvalidArgumentException('A persisted user is required.');
+        }
+
+        app(RoleAdministrationApi::class)->assignRole($reference, $role->id);
 
         return $user;
     }

@@ -57,6 +57,9 @@ use Spatie\WebhookClient\WebhookClientServiceProvider;
  */
 final class SupportServiceProvider extends PackageServiceProvider
 {
+    /** @var array<string, FeatureModule>|null */
+    private ?array $featureModules = null;
+
     public function configurePackage(Package $package): void
     {
         $package
@@ -96,8 +99,13 @@ final class SupportServiceProvider extends PackageServiceProvider
         $catalog = FeatureCatalog::load(dirname(__DIR__), __NAMESPACE__);
         $this->app->singleton(ExtensionRegistry::class, fn ($app): ExtensionRegistry => new ExtensionRegistry($app, $catalog['extensions']));
 
+        $this->featureModules = [];
+
         foreach (array_keys($catalog['features']) as $feature) {
-            $this->featureModule($feature)->register($this->app);
+            $module = $this->featureModule($feature);
+            $module->register($this->app);
+
+            $this->featureModules[$feature] = $module;
         }
     }
 
@@ -463,8 +471,8 @@ final class SupportServiceProvider extends PackageServiceProvider
 
     public function packageBooted(): void
     {
-        foreach (array_keys(FeatureCatalog::load(dirname(__DIR__), __NAMESPACE__)['features']) as $feature) {
-            $this->featureModule($feature)->boot($this->app);
+        foreach ($this->featureModules ?? [] as $module) {
+            $module->boot($this->app);
         }
     }
 

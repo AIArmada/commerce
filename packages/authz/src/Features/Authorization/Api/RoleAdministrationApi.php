@@ -21,6 +21,10 @@ interface RoleAdministrationApi
 
     public function assignExistingRole(RecordReference $record, string $name, string $guard, string | int | null $scope): bool;
 
+    public function assignRole(RecordReference $record, string $roleId): void;
+
+    public function revokeRole(RecordReference $record, string $roleName): void;
+
     /**
      * @param  list<string>  $roleIds
      * @param  list<string>|null  $allowedScopeIds

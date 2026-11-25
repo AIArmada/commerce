@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCommerceSupport\Pages;
 
 use AIArmada\CommerceSupport\Support\Filament\CommerceNavigation;
+use AIArmada\FilamentCommerceSupport\Actions\SaveNavigationSettings;
 use AIArmada\FilamentCommerceSupport\Settings\CommerceNavigationSettings;
 use AIArmada\FilamentCommerceSupport\Support\NavigationConfigurator;
 use BackedEnum;
@@ -43,6 +44,9 @@ class ManageCommerceNavigation extends Page
 
     /** @var array<string, string>|null */
     private ?array $componentOptions = null;
+
+    /** @var array<string, true>|null */
+    private ?array $registeredComponentSet = null;
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-bars-3';
 
@@ -85,7 +89,7 @@ class ManageCommerceNavigation extends Page
         $defaultGroups = $this->getDefaultGroups();
         $mergedGroups = array_replace_recursive($defaultGroups, $settings->groups);
 
-        $defaultOverrides = $this->getDefaultOverrides($mergedGroups);
+        $defaultOverrides = $this->getDefaultOverrides($mergedGroups, $settings);
         $mergedOverrides = array_replace_recursive($defaultOverrides, $settings->overrides);
 
         $this->data = [
@@ -108,8 +112,27 @@ class ManageCommerceNavigation extends Page
     {
         $sections = [];
 
-        // Build a set of used component classes to track what's assigned
-        $unassigned = array_fill_keys(array_keys($mergedOverrides), true);
+        // Bucket overrides by their stored group value so each group resolves
+        // its items with a single lookup instead of scanning every override.
+        // The order index keeps key/label matches in the original global order.
+        $buckets = [];
+        $order = [];
+        $position = 0;
+
+        foreach ($mergedOverrides as $class => $override) {
+            if (! is_string($class)) {
+                continue;
+            }
+            if (! is_array($override)) {
+                $override = [];
+            }
+            $itemGroup = $override['group'] ?? '';
+            $itemGroup = is_string($itemGroup) ? $itemGroup : '';
+            $buckets[$itemGroup][$class] = $override;
+            $order[$class] = $position++;
+        }
+
+        $unassigned = array_fill_keys(array_keys($order), true);
 
         foreach ($mergedGroups as $key => $config) {
             $key = (string) $key;
@@ -117,27 +140,15 @@ class ManageCommerceNavigation extends Page
                 $config = [];
             }
 
-            $groupItems = [];
-            $groupOverrides = [];
-
-            // Collect items that belong to this group. Saved items carry the
-            // group *label* after a rename, so match by key or label —
-            // otherwise renamed groups mis-bucket into Ungrouped and a resave
-            // silently detaches them.
             $groupLabel = $config['label'] ?? $key;
-            foreach ($mergedOverrides as $class => $override) {
-                if (! is_string($class)) {
-                    continue;
-                }
-                if (! is_array($override)) {
-                    $override = [];
-                }
-                $itemGroup = $override['group'] ?? '';
-                if ($itemGroup === $key || ($groupLabel !== '' && $itemGroup === $groupLabel)) {
-                    $groupOverrides[$class] = $override;
-                }
-            }
+            $groupLabel = is_string($groupLabel) ? $groupLabel : $key;
 
+            // Saved items carry the group *label* after a rename, so match by
+            // key or label — otherwise renamed groups mis-bucket into Ungrouped
+            // and a resave silently detaches them.
+            $groupOverrides = $this->groupOverridesFor($buckets, $order, $key, $groupLabel);
+
+            $groupItems = [];
             $sortIndex = 0;
             foreach ($groupOverrides as $class => $override) {
                 $groupItems[] = $this->normalizeOverrideForSidebar($class, $override, $sortIndex++);
@@ -186,6 +197,33 @@ class ManageCommerceNavigation extends Page
     }
 
     /**
+     * Resolve a group's overrides by matching its key or current label,
+     * restoring the original global override order after merging buckets.
+     *
+     * @param  array<string, array<string, array<string, mixed>>>  $buckets
+     * @param  array<string, int>  $order
+     * @return array<string, array<string, mixed>>
+     */
+    private function groupOverridesFor(array $buckets, array $order, string $key, string $label): array
+    {
+        $matches = $buckets[$key] ?? [];
+
+        if ($label !== '' && $label !== $key) {
+            foreach ($buckets[$label] ?? [] as $class => $override) {
+                $matches[$class] = $override;
+            }
+        }
+
+        if ($matches === []) {
+            return [];
+        }
+
+        uksort($matches, static fn (string $left, string $right): int => ($order[$left] ?? 0) <=> ($order[$right] ?? 0));
+
+        return $matches;
+    }
+
+    /**
      * @return array<string, mixed>
      */
     private function normalizeOverrideForSidebar(string $class, array $override, int $sortIndex): array
@@ -221,7 +259,7 @@ class ManageCommerceNavigation extends Page
     private function safeNavigationLabel(string $class): string
     {
         if (
-            in_array($class, CommerceNavigation::registeredNavigationComponents(), true)
+            isset($this->registeredComponentSet()[$class])
             && class_exists($class)
             && method_exists($class, 'getNavigationLabel')
         ) {
@@ -233,6 +271,18 @@ class ManageCommerceNavigation extends Page
         }
 
         return class_basename($class);
+    }
+
+    /**
+     * @return array<string, true>
+     */
+    private function registeredComponentSet(): array
+    {
+        if ($this->registeredComponentSet !== null) {
+            return $this->registeredComponentSet;
+        }
+
+        return $this->registeredComponentSet = array_fill_keys(CommerceNavigation::registeredNavigationComponents(), true);
     }
 
     public function form(Schema $schema): Schema
@@ -508,11 +558,8 @@ class ManageCommerceNavigation extends Page
             }
         }
 
-        $settings->groups = $groupsToSave;
-        $settings->overrides = $overridesToSave;
-
         try {
-            $settings->save();
+            app(SaveNavigationSettings::class)->execute($settings, $groupsToSave, $overridesToSave);
         } catch (QueryException | MissingSettings) {
             Notification::make()
                 ->title(__('Navigation settings could not be saved. The settings storage is unavailable.'))
@@ -521,8 +568,6 @@ class ManageCommerceNavigation extends Page
 
             return;
         }
-
-        NavigationConfigurator::apply();
 
         Notification::make()
             ->title(__('Navigation configuration saved.'))
@@ -583,7 +628,7 @@ class ManageCommerceNavigation extends Page
     {
         try {
             $mergedGroups = array_replace_recursive($this->getDefaultGroups(), $settings->groups);
-            $mergedOverrides = array_replace_recursive($this->getDefaultOverrides($mergedGroups), $settings->overrides);
+            $mergedOverrides = array_replace_recursive($this->getDefaultOverrides($mergedGroups, $settings), $settings->overrides);
             $mounted = $this->buildSidebarForForm($mergedGroups, $mergedOverrides);
         } catch (Throwable) {
             return [[], []];
@@ -873,6 +918,17 @@ class ManageCommerceNavigation extends Page
             return [];
         }
 
+        $labelToKey = [];
+        foreach ($configGroups as $configKey => $definition) {
+            $configKey = (string) $configKey;
+            $configuredLabel = is_array($definition)
+                ? ($definition['label'] ?? $configKey)
+                : (is_string($definition) ? $definition : $configKey);
+
+            $labelToKey[$configKey] ??= $configKey;
+            $labelToKey[(string) $configuredLabel] ??= $configKey;
+        }
+
         $groups = [];
 
         foreach (CommerceNavigation::groups($configGroups) as $resolvedGroup) {
@@ -882,7 +938,7 @@ class ManageCommerceNavigation extends Page
                 continue;
             }
 
-            $key = $this->groupKeyForLabel($configGroups, $label);
+            $key = $this->groupKeyForLabel($configGroups, $label, $labelToKey);
             $config = $configGroups[$key] ?? [];
 
             $groups[$key] = [
@@ -900,9 +956,14 @@ class ManageCommerceNavigation extends Page
 
     /**
      * @param  array<string | int, mixed>  $configuredGroups
+     * @param  array<string, string>|null  $labelToKey
      */
-    private function groupKeyForLabel(array $configuredGroups, string $label): string
+    private function groupKeyForLabel(array $configuredGroups, string $label, ?array $labelToKey = null): string
     {
+        if ($labelToKey !== null) {
+            return $labelToKey[$label] ?? $label;
+        }
+
         foreach ($configuredGroups as $key => $definition) {
             $configuredLabel = is_array($definition)
                 ? ($definition['label'] ?? $key)
@@ -919,7 +980,7 @@ class ManageCommerceNavigation extends Page
     /**
      * @return array<string, array<string, mixed>>
      */
-    private function getDefaultOverrides(array $mergedGroups = []): array
+    private function getDefaultOverrides(array $mergedGroups = [], ?CommerceNavigationSettings $settings = null): array
     {
         $panel = Filament::getCurrentOrDefaultPanel();
         $defaults = [];
@@ -957,7 +1018,7 @@ class ManageCommerceNavigation extends Page
             }
         }
 
-        $settings = $this->resolveSettings();
+        $settings ??= $this->resolveSettings();
         $userGroups = $settings->groups;
 
         $itemIndex = 0;

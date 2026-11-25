@@ -83,7 +83,11 @@ class FilamentAuthzServiceProvider extends PackageServiceProvider
             }
 
             if (app()->has(Authz::class)) {
-                app(Authz::class)->clearCache();
+                app(Authz::class)->clearRequestCaches();
+            }
+
+            if (app()->bound(ImpersonationActorAuth::class)) {
+                app(ImpersonationActorAuth::class)->clear();
             }
         };
 

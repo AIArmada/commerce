@@ -9,6 +9,7 @@ use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Str;
 use Spatie\Permission\Events\RoleAttachedEvent;
 use Spatie\Permission\Events\RoleDetachedEvent;
@@ -25,7 +26,12 @@ final readonly class SyncUserRoles
      */
     public function execute(RecordReference $record, array $roleIds, string $guard, bool $restrictToCurrentTeam, string $scopeMode, ?array $allowedScopeIds, bool $includeSuperAdmin): void
     {
-        $user = EloquentRecordReference::resolve($record);
+        try {
+            $user = EloquentRecordReference::resolve($record);
+        } catch (ModelNotFoundException) {
+            throw new AuthorizationException('The selected user does not exist.');
+        }
+
         if (! $user instanceof Model || ! method_exists($user, 'syncRoles') || ! Guard::getNames($user)->contains($guard)) {
             throw new AuthorizationException('The selected user does not support this role guard.');
         }
@@ -83,9 +89,13 @@ final readonly class SyncUserRoles
                 $columns[] = $teamsKey;
             }
 
-            $selected = (clone $eligible)->whereKey($roleIds)->orderBy($roleModel->getKeyName())->lockForUpdate()->get($columns);
-            if ($selected->count() !== count($roleIds)) {
-                throw new AuthorizationException('One or more selected roles are invalid for the current guard or scope.');
+            if ($roleIds === []) {
+                $selected = $roleModel->newCollection();
+            } else {
+                $selected = (clone $eligible)->whereKey($roleIds)->orderBy($roleModel->getKeyName())->lockForUpdate()->get($columns);
+                if ($selected->count() !== count($roleIds)) {
+                    throw new AuthorizationException('One or more selected roles are invalid for the current guard or scope.');
+                }
             }
 
             $pivotKey = $this->registrar->pivotRole;
@@ -100,21 +110,28 @@ final readonly class SyncUserRoles
             }
 
             $current = (clone $pivot)->whereIn($pivotKey, (clone $eligible)->select($roleModel->getKeyName()))->get();
-            $existingRoles = (clone $eligible)->whereKey($current->pluck($pivotKey)->unique()->all())->get($columns)->keyBy($roleModel->getKeyName());
+            $existingRoles = (! $teams || $current->isEmpty())
+                ? $roleModel->newCollection()
+                : (clone $eligible)->whereKey($current->pluck($pivotKey)->unique()->all())->get($columns)->keyBy($roleModel->getKeyName());
+
             $selectedById = $selected->keyBy($roleModel->getKeyName());
             $retained = [];
             $removed = [];
             $added = [];
+            $removeGroups = [];
 
             foreach ($current as $assignment) {
                 $id = (string) $assignment->{$pivotKey};
                 $scope = $teams ? $assignment->{$teamsKey} : null;
-                $role = $existingRoles->get($id);
 
                 // A global role may be assigned in a tenant. This form edits
                 // canonical role-scope assignments, not those separate grants.
-                if ($role === null || ($teams && (string) $role->getAttribute($teamsKey) !== (string) $scope)) {
-                    continue;
+                if ($teams) {
+                    $role = $existingRoles->get($id);
+
+                    if ($role === null || (string) $role->getAttribute($teamsKey) !== (string) $scope) {
+                        continue;
+                    }
                 }
 
                 if ($selectedById->has($id)) {
@@ -123,13 +140,25 @@ final readonly class SyncUserRoles
                     continue;
                 }
 
-                $delete = (clone $pivot)->where($pivotKey, $id);
+                $groupKey = $teams ? ($scope === null ? '' : (string) $scope) : 'all';
+
+                $removeGroups[$groupKey] ??= ['scope' => $scope, 'ids' => []];
+                $removeGroups[$groupKey]['ids'][] = $id;
+                $removed[] = $id;
+            }
+
+            foreach ($removeGroups as $group) {
+                $delete = (clone $pivot)->whereIn($pivotKey, $group['ids']);
+
                 if ($teams) {
-                    $delete->where($teamsKey, $scope);
+                    if ($group['scope'] === null) {
+                        $delete->whereNull($teamsKey);
+                    } else {
+                        $delete->where($teamsKey, $group['scope']);
+                    }
                 }
 
                 $delete->delete();
-                $removed[] = $id;
             }
 
             $insert = [];
@@ -155,15 +184,17 @@ final readonly class SyncUserRoles
             return [$added, array_values(array_unique($removed))];
         });
 
-        $user->unsetRelation('roles')->unsetRelation('permissions');
-        $this->registrar->forgetCachedPermissions();
+        if ($added !== [] || $removed !== []) {
+            $user->unsetRelation('roles')->unsetRelation('permissions');
+            $this->registrar->forgetCachedPermissions();
 
-        if (config('permission.events_enabled', false)) {
-            if ($removed !== []) {
-                event(new RoleDetachedEvent($user, $removed));
-            }
-            if ($added !== []) {
-                event(new RoleAttachedEvent($user, $added));
+            if (config('permission.events_enabled', false)) {
+                if ($removed !== []) {
+                    event(new RoleDetachedEvent($user, $removed));
+                }
+                if ($added !== []) {
+                    event(new RoleAttachedEvent($user, $added));
+                }
             }
         }
     }

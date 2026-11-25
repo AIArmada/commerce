@@ -135,6 +135,16 @@ final class UserAuthzForm
             $rolesQuery = static::applyCurrentTeamScopeToRoleQuery($rolesQuery, $teamsKey);
         }
 
+        if ($registrar->teams) {
+            $scopeMode = static::getRoleScopeMode();
+
+            if ($scopeMode === 'global_only') {
+                $rolesQuery->whereNull($teamsKey);
+            } elseif ($scopeMode === 'scoped_only') {
+                $rolesQuery->whereNotNull($teamsKey);
+            }
+        }
+
         $allowedScopes = RoleResource::allowedScopeIds();
         if ($registrar->teams && $allowedScopes !== null) {
             $rolesQuery->where(fn (Builder $query): Builder => $query->whereNull($teamsKey)->orWhereIn($teamsKey, $allowedScopes));
@@ -147,8 +157,6 @@ final class UserAuthzForm
 
         /** @var Collection<int, Model> $roles */
         $roles = $rolesQuery->get($columns);
-
-        $roles = static::filterRolesByScopeMode($roles, $teamsKey, $registrar->teams);
 
         $scopeLabels = static::resolveScopeLabels($roles, $teamsKey, $registrar->teams);
         $options = [];
@@ -269,32 +277,6 @@ final class UserAuthzForm
             ->unique()
             ->values()
             ->all();
-    }
-
-    /**
-     * @param  Collection<int, Model>  $roles
-     * @return Collection<int, Model>
-     */
-    protected static function filterRolesByScopeMode(Collection $roles, string $teamsKey, bool $teamsEnabled): Collection
-    {
-        $mode = static::getRoleScopeMode();
-
-        if (! $teamsEnabled || $mode === 'all') {
-            return $roles;
-        }
-
-        return $roles
-            ->filter(function (Model $role) use ($mode, $teamsKey): bool {
-                $scopeId = $role->getAttribute($teamsKey);
-                $isGlobal = ! is_scalar($scopeId) || (string) $scopeId === '';
-
-                return match ($mode) {
-                    'global_only' => $isGlobal,
-                    'scoped_only' => ! $isGlobal,
-                    default => true,
-                };
-            })
-            ->values();
     }
 
     /**

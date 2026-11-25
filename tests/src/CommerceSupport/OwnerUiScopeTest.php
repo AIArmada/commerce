@@ -5,9 +5,11 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\OwnerScopeConfig;
+use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerModelLookup;
 use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use Illuminate\Database\Eloquent\Model;
@@ -189,5 +191,44 @@ final class OwnerUiScopePinnedFixture extends Model
     public static function ownerScopeConfig(): OwnerScopeConfig
     {
         return new OwnerScopeConfig(enabled: true, owner: EloquentRecordReference::fromModel(self::$owner));
+    }
+}
+
+it('denies create when the pinned owner reference targets a deleted model', function (): void {
+    $owner = User::query()->create([
+        'name' => 'Deleted Pinned Owner',
+        'email' => 'owner-ui-scope-deleted@example.com',
+        'password' => 'secret',
+    ]);
+
+    OwnerUiScopeDeletedOwnerFixture::$owner = EloquentRecordReference::fromModel($owner);
+
+    app(OwnerModelLookup::class)->clear();
+
+    $owner->delete();
+
+    try {
+        expect(OwnerUiScope::canCreate(OwnerUiScopeDeletedOwnerFixture::class))->toBeFalse();
+    } finally {
+        OwnerUiScopeDeletedOwnerFixture::$owner = null;
+    }
+});
+
+final class OwnerUiScopeDeletedOwnerFixture extends Model
+{
+    use HasOwner;
+
+    public static ?RecordReference $owner = null;
+
+    protected $guarded = [];
+
+    public function getTable(): string
+    {
+        return 'owner_ui_scope_fixtures';
+    }
+
+    public static function ownerScopeConfig(): OwnerScopeConfig
+    {
+        return new OwnerScopeConfig(enabled: true, owner: self::$owner);
     }
 }

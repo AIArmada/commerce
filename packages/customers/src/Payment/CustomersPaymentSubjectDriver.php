@@ -12,6 +12,7 @@ use AIArmada\CommerceSupport\Contracts\Payment\ResolvedPaymentSubject;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerModelLookup;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Services\CustomerResolver;
 
@@ -41,7 +42,7 @@ final class CustomersPaymentSubjectDriver implements PaymentSubjectDriverInterfa
 
     public function resolve(PaymentSubjectContext $context): ?ResolvedPaymentSubject
     {
-        $owner = EloquentRecordReference::resolve($context->owner);
+        $owner = $context->owner !== null ? app(OwnerModelLookup::class)->resolve($context->owner) : null;
 
         $customer = OwnerContext::withOwner($owner, function () use ($context, $owner): ?Customer {
             $reference = $this->isCustomerReference($context->subject)

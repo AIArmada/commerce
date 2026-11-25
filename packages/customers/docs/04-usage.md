@@ -163,7 +163,7 @@ use AIArmada\Customers\Services\CustomerResolver;
 
 $customer = app(CustomerResolver::class)->resolve(
     user: auth()->user(),
-    sessionCustomer: EloquentRecordReference::fromModel($checkoutSession->customer),
+    sessionCustomer: $checkoutSession->customer,
     billingData: $checkoutSession->billing_data ?? [],
     shippingData: $checkoutSession->shipping_data ?? [],
 );
@@ -211,7 +211,7 @@ use AIArmada\CommerceSupport\Contracts\Payment\PaymentSubjectResolverInterface;
 $resolved = app(PaymentSubjectResolverInterface::class)->resolve(
     new PaymentSubjectContext(
         gateway: 'cashier-chip',
-        actor: auth()->user(),
+        actor: EloquentRecordReference::actor(auth()->user()),
         sessionCustomer: EloquentRecordReference::fromModel($checkoutSession->customer),
         sessionBillable: EloquentRecordReference::fromModel($checkoutSession->billable),
         billingData: $checkoutSession->billing_data ?? [],

@@ -11,6 +11,7 @@ use AIArmada\Membership\Events\MembershipInvitationAccepted;
 use AIArmada\Membership\Models\MembershipInvitation;
 use AIArmada\Membership\Tests\Fixtures\TestSubject;
 use AIArmada\Membership\Tests\MembershipTestCase;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Event;
 
@@ -162,5 +163,7 @@ it('rolls back acceptance when role assignment fails', function (): void {
 
 class MembershipUserWithoutRoles extends Model
 {
+    use HasUuids;
+
     protected $table = 'users';
 }

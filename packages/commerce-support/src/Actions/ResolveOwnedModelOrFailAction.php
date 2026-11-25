@@ -52,7 +52,7 @@ final class ResolveOwnedModelOrFailAction
         }
 
         if ($owner === OwnerContext::CURRENT) {
-            $owner = $config?->owner ?? OwnerContext::resolve();
+            $owner = $config !== null ? OwnerContext::resolveConfigured($config) : OwnerContext::resolve();
 
             OwnerContext::assertResolvedOrExplicitGlobal(
                 $owner,

@@ -19,7 +19,7 @@ final class OwnerModelLookup
 
     public function resolve(RecordReference $reference): Model
     {
-        $key = hash('sha256', serialize([$reference->type, $reference->id]));
+        $key = mb_strlen($reference->type, '8bit') . ':' . $reference->type . ':' . $reference->id;
 
         if (isset($this->owners[$key])) {
             return $this->owners[$key];

@@ -23,6 +23,12 @@ final readonly class WebhookRequestData
                 throw new InvalidArgumentException('Invalid webhook header.');
             }
 
+            foreach ($values as $value) {
+                if (! is_string($value)) {
+                    throw new InvalidArgumentException('Invalid webhook header.');
+                }
+            }
+
             $normalized[$key] = [...($normalized[$key] ?? []), ...$values];
         }
 

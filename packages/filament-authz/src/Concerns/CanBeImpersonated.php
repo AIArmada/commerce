@@ -65,7 +65,9 @@ trait CanBeImpersonated
 
         $currentUser = Filament::auth()->user();
 
-        if ($currentUser !== null && $currentUser->getAuthIdentifier() === $this->getAuthIdentifier()) {
+        if ($currentUser !== null
+            && $currentUser::class === static::class
+            && (string) $currentUser->getAuthIdentifier() === (string) $this->getAuthIdentifier()) {
             return false;
         }
 

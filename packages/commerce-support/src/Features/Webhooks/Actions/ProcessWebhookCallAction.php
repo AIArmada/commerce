@@ -52,13 +52,32 @@ final class ProcessWebhookCallAction
     }
 
     /**
+     * Prefer the loaded row's own columns over a live schema probe so a
+     * per-test migration swap cannot poison a statically cached answer.
+     */
+    public static function modelSupportsOwnerDedup(WebhookCall $webhookCall): bool
+    {
+        if ($webhookCall->exists) {
+            $attributes = $webhookCall->getAttributes();
+
+            return array_key_exists('owner_type', $attributes)
+                && array_key_exists('owner_id', $attributes)
+                && array_key_exists('owner_hash', $attributes);
+        }
+
+        return self::supportsOwnerDedup();
+    }
+
+    /**
      * Stable identity for deliveries without a provider event id.
      *
      * @param  array<string, mixed>  $payload
      */
     private static function payloadHash(array $payload): string
     {
-        return hash('sha256', (string) json_encode($payload));
+        $encoded = json_encode($payload, JSON_INVALID_UTF8_SUBSTITUTE);
+
+        return hash('sha256', $encoded === false ? serialize($payload) : $encoded);
     }
 
     /**
@@ -82,17 +101,12 @@ final class ProcessWebhookCallAction
             return;
         }
 
-        [$id, $eventType, $payload] = $claim;
+        [$fresh, $eventType, $payload, $supportsOwnerDedup] = $claim;
+        $id = $fresh->getKey();
 
         try {
-            $fresh = WebhookCall::query()->whereKey($id)->first();
-
-            if (! $fresh instanceof WebhookCall) {
-                return;
-            }
-
             if ($isDuplicateProcessedEvent($fresh, $payload, $eventType)) {
-                $this->markProcessedAsDuplicate($id);
+                $this->markProcessedAsDuplicate($id, $supportsOwnerDedup);
 
                 return;
             }
@@ -136,7 +150,7 @@ final class ProcessWebhookCallAction
      * @param  callable(array<string, mixed>): string  $extractEventType
      * @param  callable(array<string, mixed>): (string|null)  $extractEventId
      * @param  (callable(array<string, mixed>): array{0: string|null, 1: string|null})|null  $extractOwner
-     * @return array{int|string, string, array<string, mixed>}|null
+     * @return array{WebhookCall, string, array<string, mixed>, bool}|null
      */
     private function claim(WebhookCall $webhookCall, callable $extractEventType, callable $extractEventId, ?callable $extractOwner = null): ?array
     {
@@ -165,13 +179,15 @@ final class ProcessWebhookCallAction
                 $eventType = $extractEventType($payload);
                 $eventId = $extractEventId($payload) ?? self::payloadHash($payload);
 
+                $supportsOwnerDedup = self::modelSupportsOwnerDedup($locked);
+
                 $attributes = [
                     'status' => 'processing',
                     'event_type' => $eventType,
                     'event_id' => $eventId,
                 ];
 
-                if (self::supportsOwnerDedup()) {
+                if ($supportsOwnerDedup) {
                     [$ownerType, $ownerId] = $extractOwner !== null
                         ? $extractOwner($payload)
                         : [null, null];
@@ -183,11 +199,11 @@ final class ProcessWebhookCallAction
 
                 $locked->update($attributes);
 
-                return [$locked->getKey(), $eventType, $payload];
+                return [$locked, $eventType, $payload, $supportsOwnerDedup];
             });
         } catch (QueryException $e) {
             if ($this->isUniqueViolation($e)) {
-                $this->markProcessed($webhookCall->getKey());
+                $this->markProcessedAsDuplicate($webhookCall->getKey(), self::modelSupportsOwnerDedup($webhookCall));
 
                 return null;
             }
@@ -234,7 +250,7 @@ final class ProcessWebhookCallAction
      * non-null event_type rows), and a stamped duplicate would masquerade
      * as a real delivery.
      */
-    private function markProcessedAsDuplicate(int | string $id): void
+    private function markProcessedAsDuplicate(int | string $id, ?bool $supportsOwnerDedup = null): void
     {
         $attributes = [
             'status' => 'processed',
@@ -243,7 +259,7 @@ final class ProcessWebhookCallAction
             'event_type' => null,
         ];
 
-        if (self::supportsOwnerDedup()) {
+        if ($supportsOwnerDedup ?? self::supportsOwnerDedup()) {
             $attributes['owner_type'] = null;
             $attributes['owner_id'] = null;
             $attributes['owner_hash'] = null;

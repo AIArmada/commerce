@@ -12,6 +12,7 @@ use AIArmada\CommerceSupport\Support\OwnerScopeConfigFactory;
 use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use InvalidArgumentException;
 
 final class OwnerUiScope
@@ -42,7 +43,15 @@ final class OwnerUiScope
             return true;
         }
 
-        return $config->owner !== null || OwnerContext::resolve() !== null || OwnerContext::isExplicitGlobal();
+        if ($config->owner !== null) {
+            try {
+                return OwnerContext::resolveConfigured($config) !== null;
+            } catch (ModelNotFoundException) {
+                return false;
+            }
+        }
+
+        return OwnerContext::resolve() !== null || OwnerContext::isExplicitGlobal();
     }
 
     public static function apply(Builder $query, ?string $configKey = null, ?bool $includeGlobal = null, ?string $message = null): Builder

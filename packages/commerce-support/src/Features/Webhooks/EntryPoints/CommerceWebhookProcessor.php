@@ -138,7 +138,7 @@ abstract class CommerceWebhookProcessor extends ProcessWebhookJob
             ->where('event_id', $eventId)
             ->where('event_type', $eventType);
 
-        if (ProcessWebhookCallAction::supportsOwnerDedup()) {
+        if (ProcessWebhookCallAction::modelSupportsOwnerDedup($current)) {
             $ownerHash = $current->getAttribute('owner_hash');
 
             if (is_string($ownerHash) && $ownerHash !== '') {

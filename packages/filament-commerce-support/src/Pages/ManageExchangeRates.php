@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCommerceSupport\Pages;
 
 use AIArmada\CommerceSupport\Settings\ExchangeRateSettings;
+use AIArmada\FilamentCommerceSupport\Actions\SaveExchangeRates;
+use AIArmada\FilamentCommerceSupport\Actions\SnapshotExchangeRates;
 use BackedEnum;
-use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\KeyValue;
@@ -119,11 +120,9 @@ class ManageExchangeRates extends Page
         }
 
         $settings = $this->resolveSettings();
-        $settings->base = $base;
-        $settings->rates = $rates;
 
         try {
-            $settings->save();
+            app(SaveExchangeRates::class)->execute($settings, $base, $rates);
         } catch (Throwable) {
             Notification::make()
                 ->title(__('Exchange rates could not be saved. The settings storage is unavailable.'))
@@ -132,6 +131,8 @@ class ManageExchangeRates extends Page
 
             return;
         }
+
+        $this->data = ['base' => $base, 'rates' => $rates];
 
         if ($dropped !== []) {
             Notification::make()
@@ -153,14 +154,8 @@ class ManageExchangeRates extends Page
 
         $settings = $this->resolveSettings();
 
-        $history = $settings->history;
-        $history[CarbonImmutable::now()->format('Y-m-d')] = $settings->rates;
-        ksort($history);
-
-        $settings->history = $history;
-
         try {
-            $settings->save();
+            $history = app(SnapshotExchangeRates::class)->execute($settings);
         } catch (Throwable) {
             Notification::make()
                 ->title(__('Exchange rate snapshot could not be saved. The settings storage is unavailable.'))
@@ -253,7 +248,12 @@ class ManageExchangeRates extends Page
         foreach (is_array($rates) ? $rates : [] as $code => $value) {
             $code = mb_strtoupper(mb_trim((string) $code));
 
-            if (preg_match('/^[A-Z]{3}$/', $code) !== 1 || ! is_numeric($value) || (float) $value <= 0) {
+            if (
+                preg_match('/^[A-Z]{3}$/', $code) !== 1
+                || ! is_numeric($value)
+                || ! is_finite((float) $value)
+                || (float) $value <= 0
+            ) {
                 $dropped[] = (string) $code !== '' ? (string) $code : '(blank)';
 
                 continue;

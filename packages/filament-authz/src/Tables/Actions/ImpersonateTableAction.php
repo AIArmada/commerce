@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Tables\Actions;
 
-use AIArmada\Authz\Features\Impersonation\Actions\ImpersonateManager;
-use AIArmada\Authz\Features\Impersonation\Queries\ImpersonationScopeGuard;
+use AIArmada\Authz\Features\Impersonation\Api\ImpersonationApi;
 use AIArmada\Authz\Support\UserRoleChecker;
 use AIArmada\FilamentAuthz\Support\ImpersonationActorAuth;
 use Filament\Actions\Action;
@@ -93,13 +92,13 @@ class ImpersonateTableAction extends Action
         }
 
         $currentUser = Filament::auth()->user();
-        $manager = app(ImpersonateManager::class);
+        $manager = app(ImpersonationApi::class);
 
-        if ($currentUser === null) {
+        if ($currentUser === null || ! $record instanceof Authenticatable) {
             return false;
         }
 
-        if ($currentUser->getAuthIdentifier() === $record->getKey()) {
+        if ($currentUser::class === $record::class && (string) $currentUser->getAuthIdentifier() === (string) $record->getAuthIdentifier()) {
             return false;
         }
 
@@ -111,10 +110,6 @@ class ImpersonateTableAction extends Action
             return false;
         }
 
-        if (! $record instanceof Authenticatable) {
-            return false;
-        }
-
         // Actor authorization is memoized per request; run it before the
         // per-target scope query so unauthorized actors skip that query.
         if (! $this->isActorAuthorizedToImpersonate($currentUser)) {
@@ -122,7 +117,7 @@ class ImpersonateTableAction extends Action
         }
 
         // Scope check must run regardless of canImpersonate() — they are orthogonal.
-        return ImpersonationScopeGuard::canAccessTarget($record);
+        return $manager->canAccessTarget($record);
     }
 
     /**
@@ -158,17 +153,18 @@ class ImpersonateTableAction extends Action
             return false;
         }
 
+        $manager = app(ImpersonationApi::class);
+
         if (method_exists($record, 'canBeImpersonated') && ! $record->canBeImpersonated()) {
             return false;
         }
 
-        if (! ImpersonationScopeGuard::canAccessTarget($record)) {
+        if (! $manager->canAccessTarget($record)) {
             return false;
         }
 
         $currentUser = Filament::auth()->user();
         $guard = config('authz.impersonate.guard', 'web');
-        $manager = app(ImpersonateManager::class);
 
         if ($currentUser === null) {
             return false;

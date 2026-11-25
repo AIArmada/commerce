@@ -293,7 +293,7 @@ $query = OwnerUiScope::apply(Customer::query(), includeGlobal: false);
 For expensive queries, use caching:
 
 ```php
-use AIArmada\CommerceSupport\Support\OwnerCache;
+use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 
 protected function getStats(): array

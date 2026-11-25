@@ -17,7 +17,9 @@ final readonly class SavePermissionDefinition
 
     public function execute(?string $id, string $name, string $guard): Permission
     {
-        if (mb_trim($name) === '' || mb_strlen($name) > 255 || ! in_array($guard, (array) config('authz.guards', ['web']), true)) {
+        $name = mb_trim($name);
+
+        if ($name === '' || mb_strlen($name) > 255 || ! in_array($guard, (array) config('authz.guards', ['web']), true)) {
             throw new InvalidArgumentException('A valid permission name and configured guard are required.');
         }
 
@@ -26,7 +28,7 @@ final readonly class SavePermissionDefinition
         $model = new $permissionClass;
         $connection = $model->getConnection();
 
-        return $connection->transaction(function () use ($id, $name, $guard, $model, $connection): Permission {
+        $permission = $connection->transaction(function () use ($id, $name, $guard, $model, $connection): Permission {
             $permission = $id === null ? $model : $model->newQuery()->whereKey($id)->lockForUpdate()->firstOrFail();
             $attributes = ['name' => $name, 'guard_name' => $guard];
             $duplicate = $model->newQuery()->where($attributes);
@@ -55,5 +57,9 @@ final readonly class SavePermissionDefinition
 
             return $permission;
         });
+
+        $this->registrar->forgetCachedPermissions();
+
+        return $permission;
     }
 }

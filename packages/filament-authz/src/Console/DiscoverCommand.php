@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Console;
 
-use AIArmada\Authz\Features\Authorization\Models\Permission;
+use AIArmada\Authz\Features\Authorization\Api\RoleAdministrationApi;
 use AIArmada\FilamentAuthz\Services\EntityDiscoveryService;
 use Filament\Facades\Filament;
 use Illuminate\Console\Command;
-use Spatie\Permission\PermissionRegistrar;
 
 use function Laravel\Prompts\confirm;
 use function Laravel\Prompts\info;
@@ -109,16 +108,14 @@ class DiscoverCommand extends Command
             return;
         }
 
+        $api = app(RoleAdministrationApi::class);
+        $permissionNames = array_values($permissions);
         $created = 0;
 
-        foreach ($permissions as $permission) {
-            foreach ($guards as $guard) {
-                Permission::findOrCreate($permission, $guard);
-                $created++;
-            }
+        foreach ($guards as $guard) {
+            $api->ensurePermissions($guard, $permissionNames);
+            $created += count($permissionNames);
         }
-
-        app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         info("Created {$created} permissions across " . count($guards) . ' guard(s).');
     }

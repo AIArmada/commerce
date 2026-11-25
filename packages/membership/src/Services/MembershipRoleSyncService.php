@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Membership\Services;
 
-use AIArmada\Authz\Features\Authorization\Actions\AssignUserRole;
-use AIArmada\Authz\Features\Authorization\Actions\RevokeUserRole;
 use AIArmada\Authz\Features\Authorization\Api\RoleAdministrationApi;
 use AIArmada\Authz\Features\Authorization\Api\RoleRecord;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\Membership\Enums\MemberRole;
 use Closure;
 use Illuminate\Database\Eloquent\Model;
@@ -86,15 +86,26 @@ final class MembershipRoleSyncService
                 guardName: Guard::getDefaultName($user),
             );
 
-            app(AssignUserRole::class)->execute($user, $spatieRole->id);
+            app(RoleAdministrationApi::class)->assignRole($this->reference($user), $spatieRole->id);
         });
     }
 
     public function revokeFromUser(Model $subject, Model $user, MemberRole $role): void
     {
         $this->inSubjectTeam($subject, function () use ($role, $user): void {
-            app(RevokeUserRole::class)->execute($user, $role->spatieRoleName());
+            app(RoleAdministrationApi::class)->revokeRole($this->reference($user), $role->spatieRoleName());
         });
+    }
+
+    private function reference(Model $user): RecordReference
+    {
+        $reference = EloquentRecordReference::fromModel($user);
+
+        if ($reference === null) {
+            throw new LogicException('A persisted user is required.');
+        }
+
+        return $reference;
     }
 
     /**

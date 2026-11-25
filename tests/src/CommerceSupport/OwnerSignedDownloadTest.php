@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Str;
 
 beforeEach(function (): void {
     if (! Route::has('support.download.test')) {
@@ -221,4 +222,59 @@ it('rejects malformed owner metadata instead of treating it as global', function
             null,
             '7',
         ))->toBeFalse();
+});
+
+it('rejects empty or whitespace cache prefixes when issuing and looking up tokens', function (): void {
+    $owner = User::query()->create([
+        'name' => 'Prefix Owner',
+        'email' => 'support-prefix-owner@example.com',
+        'password' => 'secret',
+    ]);
+
+    $api = app(SignedDownloadApi::class);
+
+    foreach (['', ' ', 'has space', "has\ttab"] as $prefix) {
+        expect(fn () => $api->issueUrl(
+            cachePrefix: $prefix,
+            routeName: 'support.download.test',
+            routeParameters: ['resource' => 'resource-prefix'],
+            payload: ['resource_id' => 'resource-prefix'],
+            ttl: 600,
+            owner: EloquentRecordReference::fromModel($owner),
+            userId: '1',
+        ))->toThrow(InvalidArgumentException::class, 'Invalid signed download cache prefix.');
+
+        expect($api->payloadFromToken(str_repeat('a', 64), $prefix))->toBeNull();
+    }
+});
+
+it('issues an unpredictable 64-character hex token even when random string generation is overridden', function (): void {
+    $owner = User::query()->create([
+        'name' => 'Entropy Owner',
+        'email' => 'support-entropy-owner@example.com',
+        'password' => 'secret',
+    ]);
+
+    Str::createRandomStringsUsing(static fn (int $length = 0): string => str_repeat('Z', max(1, $length)));
+
+    try {
+        $url = app(SignedDownloadApi::class)->issueUrl(
+            cachePrefix: 'support_download_entropy',
+            routeName: 'support.download.test',
+            routeParameters: ['resource' => 'resource-entropy'],
+            payload: ['resource_id' => 'resource-entropy'],
+            ttl: 600,
+            owner: EloquentRecordReference::fromModel($owner),
+            userId: '1',
+        );
+    } finally {
+        Str::createRandomStringsNormally();
+    }
+
+    $token = Request::create($url, 'GET')->query(SignedDownloadApi::TOKEN_QUERY_PARAM);
+
+    expect($token)->toBeString()
+        ->and($token)->toMatch('/^[0-9a-f]{64}$/');
+
+    expect(app(SignedDownloadApi::class)->payloadFromToken($token, 'support_download_entropy'))->toBeArray();
 });
