@@ -21,7 +21,8 @@
     "table:affiliate_balances": [
       "AIArmada\\Affiliates\\Features\\Conversions\\Actions\\ReservePayoutFunds",
       "AIArmada\\Affiliates\\Features\\Conversions\\Actions\\SettlePayoutConversions",
-      "AIArmada\\Affiliates\\Features\\Conversions\\Actions\\ApplyConversionAccounting"
+      "AIArmada\\Affiliates\\Features\\Conversions\\Actions\\ApplyConversionAccounting",
+      "AIArmada\\Affiliates\\Features\\Conversions\\Actions\\RemoveUnusedAffiliateBalances"
     ]
   },
   "extensions": {}

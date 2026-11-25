@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Models;
 
 use AIArmada\Affiliates\States\PayoutStatus;
+use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -242,8 +243,16 @@ class AffiliatePayout extends Model implements Auditable
         });
 
         static::deleting(function (self $payout): void {
-            $payout->events()->delete();
-            $payout->conversions()->update(['affiliate_payout_id' => null]);
+            if (! $payout->status->equals(PendingPayout::class)
+                || (int) $payout->total_minor !== 0
+                || (int) $payout->conversion_count !== 0
+                || $payout->external_reference !== null
+                || $payout->affiliate_payout_operation_id !== null
+                || AffiliatePayoutOperation::query()->where('affiliate_payout_id', $payout->getKey())->exists()
+                || $payout->conversions()->exists()
+                || $payout->events()->exists()) {
+                throw new InvalidArgumentException('A payout with financial, processing or event history cannot be deleted directly.');
+            }
         });
 
         static::saving(function (self $payout): void {

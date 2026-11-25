@@ -8,7 +8,8 @@
       "AIArmada\\Affiliates\\Features\\Payouts\\Actions\\UpdatePayoutStatus",
       "AIArmada\\Affiliates\\Features\\Payouts\\Actions\\ProcessAffiliatePayout",
       "AIArmada\\Affiliates\\Features\\Payouts\\Actions\\AssertPayoutCompletable",
-      "AIArmada\\Affiliates\\Features\\Payouts\\Actions\\ReconcilePayout"
+      "AIArmada\\Affiliates\\Features\\Payouts\\Actions\\ReconcilePayout",
+      "AIArmada\\Affiliates\\Features\\Payouts\\Actions\\DeleteUnusedPayout"
     ],
     "table:affiliate_payout_operations": [
       "AIArmada\\Affiliates\\Features\\Payouts\\Actions\\ClaimScheduledPayout",
@@ -23,13 +24,16 @@
       "AIArmada\\Affiliates\\Features\\Payouts\\Actions\\ClaimScheduledPayout",
       "AIArmada\\Affiliates\\Features\\Payouts\\Actions\\UpdatePayoutStatus",
       "AIArmada\\Affiliates\\Features\\Payouts\\Actions\\ProcessAffiliatePayout",
-      "AIArmada\\Affiliates\\Features\\Payouts\\Actions\\ReconcilePayout"
+      "AIArmada\\Affiliates\\Features\\Payouts\\Actions\\ReconcilePayout",
+      "AIArmada\\Affiliates\\Features\\Payouts\\Actions\\DeleteUnusedPayout"
     ],
     "table:affiliate_payout_methods": [
-      "AIArmada\\Affiliates\\Features\\Payouts\\Actions\\AdministerPayoutMethod"
+      "AIArmada\\Affiliates\\Features\\Payouts\\Actions\\AdministerPayoutMethod",
+      "AIArmada\\Affiliates\\Features\\Payouts\\Actions\\DeleteUnusedPayout"
     ],
     "table:affiliate_payout_holds": [
-      "AIArmada\\Affiliates\\Features\\Payouts\\Actions\\AdministerPayoutHold"
+      "AIArmada\\Affiliates\\Features\\Payouts\\Actions\\AdministerPayoutHold",
+      "AIArmada\\Affiliates\\Features\\Payouts\\Actions\\DeleteUnusedPayout"
     ]
   },
   "extensions": {}
