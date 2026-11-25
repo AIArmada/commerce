@@ -6,7 +6,8 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRecordOwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerScopeConfig;
+use AIArmada\CommerceSupport\Data\OwnerScopeConfig;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\CommerceSupport\Traits\HasOwner;
@@ -860,7 +861,7 @@ final class OwnerGuardPinnedFixture extends Model
 
     public static function ownerScopeConfig(): OwnerScopeConfig
     {
-        return new OwnerScopeConfig(enabled: true, includeGlobal: false, owner: self::$pinnedOwner);
+        return new OwnerScopeConfig(enabled: true, includeGlobal: false, owner: EloquentRecordReference::fromModel(self::$pinnedOwner));
     }
 }
 

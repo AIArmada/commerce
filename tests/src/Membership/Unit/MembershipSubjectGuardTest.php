@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\CommerceSupport\Support\OwnerScopeConfig;
+use AIArmada\CommerceSupport\Data\OwnerScopeConfig;
 use AIArmada\Membership\Support\MembershipSubjectGuard;
 use AIArmada\Membership\Tests\MembershipTestCase;
 use Illuminate\Database\Eloquent\Model;

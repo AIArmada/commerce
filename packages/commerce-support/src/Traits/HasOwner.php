@@ -7,7 +7,7 @@ namespace AIArmada\CommerceSupport\Traits;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\CommerceSupport\Support\OwnerScope;
-use AIArmada\CommerceSupport\Support\OwnerScopeConfig;
+use AIArmada\CommerceSupport\Data\OwnerScopeConfig;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -97,7 +97,7 @@ trait HasOwner // @phpstan-ignore trait.unused
             return;
         }
 
-        $owner = $config->owner ?? OwnerContext::resolve();
+        $owner = OwnerContext::resolveConfigured($config);
 
         if ($owner === null) {
             OwnerContext::assertResolvedOrExplicitGlobal(
@@ -160,7 +160,7 @@ trait HasOwner // @phpstan-ignore trait.unused
 
     protected static function assertOwnerMatchesCurrentContext(Model $model, OwnerScopeConfig $config, string $operation): void
     {
-        $owner = $config->owner ?? OwnerContext::resolve();
+        $owner = OwnerContext::resolveConfigured($config);
 
         if ($owner === null) {
             throw new AuthorizationException(sprintf('A matching owner context is required to %s owned %s records.', $operation, $model::class));
@@ -224,7 +224,7 @@ trait HasOwner // @phpstan-ignore trait.unused
         $ownerIdColumn = $config->ownerIdColumn;
 
         if ($owner === OwnerContext::CURRENT) {
-            $owner = $config->owner ?? OwnerContext::resolve();
+            $owner = OwnerContext::resolveConfigured($config);
 
             OwnerContext::assertResolvedOrExplicitGlobal(
                 $owner,

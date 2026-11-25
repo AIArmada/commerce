@@ -10,7 +10,7 @@ use AIArmada\Cart\Events\CartAbandoned;
 use AIArmada\Cart\Events\CartCheckoutStarted;
 use AIArmada\Cart\Support\CartMoney;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerScopeConfig;
+use AIArmada\CommerceSupport\Data\OwnerScopeConfig;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeKey;

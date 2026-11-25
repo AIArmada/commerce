@@ -4,29 +4,21 @@ declare(strict_types=1);
 
 namespace AIArmada\CommerceSupport\Support;
 
-use Illuminate\Database\Eloquent\Model;
+use AIArmada\CommerceSupport\Data\OwnerScopeConfig;
+use AIArmada\CommerceSupport\Data\RecordReference;
 
-final class OwnerScopeConfig
+final class OwnerScopeConfigFactory
 {
-    public function __construct(
-        public readonly bool $enabled,
-        public readonly bool $includeGlobal = false,
-        public readonly ?Model $owner = null,
-        public readonly string $ownerTypeColumn = 'owner_type',
-        public readonly string $ownerIdColumn = 'owner_id',
-        public readonly bool $autoAssignOnCreate = true,
-    ) {}
-
     public static function fromConfig(
         string $configKey,
         bool $enabledDefault = false,
         bool $includeGlobalDefault = false,
-        ?Model $owner = null,
+        ?RecordReference $owner = null,
         string $ownerTypeColumn = 'owner_type',
         string $ownerIdColumn = 'owner_id',
         bool $autoAssignOnCreateDefault = true,
-    ): self {
-        return new self(
+    ): OwnerScopeConfig {
+        return new OwnerScopeConfig(
             enabled: (bool) config($configKey . '.enabled', $enabledDefault),
             includeGlobal: (bool) config($configKey . '.include_global', $includeGlobalDefault),
             owner: $owner,

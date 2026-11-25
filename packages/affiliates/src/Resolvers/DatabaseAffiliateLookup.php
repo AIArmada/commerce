@@ -148,7 +148,7 @@ final class DatabaseAffiliateLookup implements AffiliateLookup
         $scope = 'unscoped';
 
         if ($config->enabled) {
-            $owner = $config->owner ?? OwnerContext::resolve();
+            $owner = OwnerContext::resolveConfigured($config);
 
             if ($owner === null && ! OwnerContext::isExplicitGlobal()) {
                 return $resolver();

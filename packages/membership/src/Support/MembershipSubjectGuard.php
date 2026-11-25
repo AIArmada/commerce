@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Membership\Support;
 
-use AIArmada\CommerceSupport\Support\OwnerScopeConfig;
+use AIArmada\CommerceSupport\Data\OwnerScopeConfig;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Illuminate\Database\Eloquent\Model;
 

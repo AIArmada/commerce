@@ -6,7 +6,8 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerScopeConfig;
+use AIArmada\CommerceSupport\Data\OwnerScopeConfig;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use Illuminate\Database\Eloquent\Model;
@@ -187,6 +188,6 @@ final class OwnerUiScopePinnedFixture extends Model
 
     public static function ownerScopeConfig(): OwnerScopeConfig
     {
-        return new OwnerScopeConfig(enabled: true, owner: self::$owner);
+        return new OwnerScopeConfig(enabled: true, owner: EloquentRecordReference::fromModel(self::$owner));
     }
 }

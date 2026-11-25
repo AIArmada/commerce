@@ -10,7 +10,7 @@ use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\CommerceSupport\Contracts\Buyable;
 use AIArmada\CommerceSupport\Support\CompositeComponents;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerScopeConfig;
+use AIArmada\CommerceSupport\Data\OwnerScopeConfig;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Support\CartLineSnapshot;

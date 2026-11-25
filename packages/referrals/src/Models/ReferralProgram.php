@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Referrals\Models;
 
-use AIArmada\CommerceSupport\Support\OwnerScopeConfig;
+use AIArmada\CommerceSupport\Support\OwnerScopeConfigFactory;
+
+use AIArmada\CommerceSupport\Data\OwnerScopeConfig;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Referrals\Database\Factories\ReferralProgramFactory;
@@ -49,7 +51,7 @@ class ReferralProgram extends Model
 
     public static function ownerScopeConfig(): OwnerScopeConfig
     {
-        return OwnerScopeConfig::fromConfig(
+        return OwnerScopeConfigFactory::fromConfig(
             'referrals.owner',
             enabledDefault: true,
             includeGlobalDefault: false,

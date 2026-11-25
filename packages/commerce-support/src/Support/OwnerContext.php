@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\CommerceSupport\Support;
 
+use AIArmada\CommerceSupport\Data\OwnerScopeConfig;
+
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Events\ForgettingCurrentOwnerEvent;
 use AIArmada\CommerceSupport\Events\ForgotCurrentOwnerEvent;
@@ -32,6 +34,13 @@ final class OwnerContext
      * @var array{hasOverride: bool, override: ?Model}
      */
     private static array $fallback = ['hasOverride' => false, 'override' => null];
+
+    public static function resolveConfigured(OwnerScopeConfig $config): ?Model
+    {
+        return $config->owner === null
+            ? self::resolve()
+            : self::fromTypeAndIdOrFail($config->owner->type, $config->owner->id);
+    }
 
     public static function resolve(): ?Model
     {

@@ -17,7 +17,7 @@ use AIArmada\Cashier\Contracts\SubscriptionContract;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\CommerceSupport\Support\OwnerScope;
-use AIArmada\CommerceSupport\Support\OwnerScopeConfig;
+use AIArmada\CommerceSupport\Data\OwnerScopeConfig;
 use Akaunting\Money\Currency;
 use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Builder;

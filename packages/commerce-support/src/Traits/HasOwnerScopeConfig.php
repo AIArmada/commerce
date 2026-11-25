@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\CommerceSupport\Traits;
 
-use AIArmada\CommerceSupport\Support\OwnerScopeConfig;
+use AIArmada\CommerceSupport\Support\OwnerScopeConfigFactory;
+
+use AIArmada\CommerceSupport\Data\OwnerScopeConfig;
 use ReflectionClass;
 
 trait HasOwnerScopeConfig // @phpstan-ignore trait.unused
@@ -50,7 +52,7 @@ trait HasOwnerScopeConfig // @phpstan-ignore trait.unused
             );
         }
 
-        return OwnerScopeConfig::fromConfig(
+        return OwnerScopeConfigFactory::fromConfig(
             $key,
             $enabledByDefault,
             $includeGlobalByDefault,

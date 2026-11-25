@@ -6,7 +6,8 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerScopeConfig;
+use AIArmada\CommerceSupport\Data\OwnerScopeConfig;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
 use AIArmada\CommerceSupport\Traits\HasOwner;
@@ -164,7 +165,7 @@ final class OwnerUniqueRuleFixture extends Model
 
     public static function ownerScopeConfig(): OwnerScopeConfig
     {
-        return new OwnerScopeConfig(enabled: true, includeGlobal: false, owner: self::$pinnedOwner);
+        return new OwnerScopeConfig(enabled: true, includeGlobal: false, owner: EloquentRecordReference::fromModel(self::$pinnedOwner));
     }
 }
 
@@ -185,7 +186,7 @@ final class OwnerUniqueRuleIncludeGlobalFixture extends Model
 
     public static function ownerScopeConfig(): OwnerScopeConfig
     {
-        return new OwnerScopeConfig(enabled: true, includeGlobal: self::$includeGlobal, owner: self::$owner);
+        return new OwnerScopeConfig(enabled: true, includeGlobal: self::$includeGlobal, owner: EloquentRecordReference::fromModel(self::$owner));
     }
 }
 
