@@ -5,6 +5,8 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Events\AffiliateActivated;
 use AIArmada\Affiliates\Events\AffiliateCreated;
+use AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkReader;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink;
 use AIArmada\Affiliates\Features\Conversions\Api\BalanceReader;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
@@ -215,9 +217,9 @@ describe('Affiliate Model - Relationships', function (): void {
             'commission_rate' => 1000,
             'currency' => 'USD',
         ]);
-        $reader = app(\AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkReader::class);
+        $reader = app(TrackingLinkReader::class);
         expect($reader->hasRecords((string) $affiliate->getKey()))->toBeFalse();
-        $link = \AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink::query()->create([
+        $link = AffiliateLink::query()->create([
             'affiliate_id' => $affiliate->getKey(),
             'destination_url' => 'https://example.com',
             'tracking_url' => 'https://example.com/go/test',

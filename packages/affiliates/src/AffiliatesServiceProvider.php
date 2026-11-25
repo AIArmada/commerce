@@ -28,6 +28,7 @@ use AIArmada\Affiliates\Features\Attribution\EntryPoints\Listeners\VoucherIntegr
 use AIArmada\Affiliates\Features\Attribution\EntryPoints\Middleware\CaptureAffiliateReferralFromPath;
 use AIArmada\Affiliates\Features\Attribution\EntryPoints\Middleware\HydratePublicAffiliateReferralContext;
 use AIArmada\Affiliates\Features\Attribution\EntryPoints\Middleware\TrackAffiliateCookie;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink;
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateTouchpoint;
 use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionPromotion;
 use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionRule;
@@ -55,7 +56,6 @@ use AIArmada\Affiliates\Features\Upline\Models\AffiliateUpline;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Platform\ExtensionRegistry;

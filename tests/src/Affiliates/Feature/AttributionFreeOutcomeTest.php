@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Data\AffiliateOutcomeDisposition;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink;
 use AIArmada\Affiliates\Features\Conversions\Actions\RecordAffiliateOutcome;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;

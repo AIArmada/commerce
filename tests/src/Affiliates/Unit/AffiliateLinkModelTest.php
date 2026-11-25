@@ -5,11 +5,13 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkAdministration;
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink;
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\States\Active;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Str;
 
 describe('AffiliateLink Model', function (): void {
     beforeEach(function (): void {
@@ -69,13 +71,13 @@ describe('AffiliateLink Model', function (): void {
     it('rejects malformed and missing program references even without tenancy', function (): void {
         config(['affiliates.owner.enabled' => false]);
 
-        foreach (['malformed', (string) \Illuminate\Support\Str::uuid()] as $programId) {
+        foreach (['malformed', (string) Str::uuid()] as $programId) {
             expect(fn () => AffiliateLink::create([
                 'affiliate_id' => $this->affiliate->id,
                 'program_id' => $programId,
                 'destination_url' => 'https://example.com/product',
                 'tracking_url' => 'https://track.example.com/go/test',
-            ]))->toThrow(\Illuminate\Auth\Access\AuthorizationException::class);
+            ]))->toThrow(AuthorizationException::class);
         }
     });
 

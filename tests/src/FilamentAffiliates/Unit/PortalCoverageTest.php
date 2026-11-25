@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\MembershipStatus;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutMethod;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramCreative;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramMembership;
@@ -421,7 +422,7 @@ it('PortalLinks generates links when affiliate exists', function (): void {
     $page->generateLink();
 
     expect($page->generatedLink)->toContain('/go/')
-        ->and(\AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink::query()->where('affiliate_id', $affiliate->getKey())->count())->toBe(1);
+        ->and(AffiliateLink::query()->where('affiliate_id', $affiliate->getKey())->count())->toBe(1);
 
     $reflection = new ReflectionClass($page);
     $method = $reflection->getMethod('getHeaderActions');
