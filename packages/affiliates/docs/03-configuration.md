@@ -370,7 +370,7 @@ disabled affiliates require the creation-time audited override described in
 ```
 
 Only needed on merchant stores that sell through an `aiarmada/affiliate-network` marketplace.
-`network_url` + `site` + `token` let `NetworkPostbackClient` report paid orders; `referral_param`
+`network_url` + `site` + `token` let `NetworkPostbackGateway` report paid orders; `referral_param`
 and `session_key` drive `CaptureNetworkReferral` middleware. The client uses
 separate connect and total request timeouts.
 

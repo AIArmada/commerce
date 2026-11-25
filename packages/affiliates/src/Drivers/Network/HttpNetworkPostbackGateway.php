@@ -2,8 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Merchant;
+namespace AIArmada\Affiliates\Drivers\Network;
 
+use AIArmada\Affiliates\Contracts\NetworkPostbackGateway;
+use AIArmada\Affiliates\Data\NetworkPostbackResult;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Http;
 use Throwable;
@@ -16,11 +18,10 @@ use Throwable;
  * {@see voidConversion()} when it is refunded or voided. Connection
  * details come from `affiliates.merchant` config.
  */
-final class NetworkPostbackClient
+final class HttpNetworkPostbackGateway implements NetworkPostbackGateway
 {
     /**
-     * @param  array<string, mixed>  $subIds
-     * @return array{ok: bool, status: int|null, body: mixed, decision: array{winner: string, reason: string}|null, error: string|null}
+     * @param  array<string, string>  $subIds
      */
     public function report(
         string $linkCode,
@@ -32,17 +33,17 @@ final class NetworkPostbackClient
         ?string $couponCode = null,
         string $eventType = 'purchase',
         array $subIds = [],
-    ): array {
+    ): NetworkPostbackResult {
         if (! $this->hasAttribution($linkCode, $couponCode)) {
-            return ['ok' => false, 'status' => null, 'body' => null, 'decision' => null, 'error' => 'no network attribution'];
+            return new NetworkPostbackResult(false, error: 'no network attribution');
         }
 
         $base = mb_rtrim((string) config('affiliates.merchant.network_url'), '/');
         $site = (string) config('affiliates.merchant.site');
         $token = (string) config('affiliates.merchant.token');
 
-        if ($base === '' || $site === '' || $token === '') {
-            return ['ok' => false, 'status' => null, 'body' => null, 'decision' => null, 'error' => 'network merchant not configured'];
+        if (! $this->validBase($base) || $site === '' || $token === '') {
+            return new NetworkPostbackResult(false, error: 'network merchant not configured');
         }
 
         $prefix = mb_trim((string) config('affiliates.merchant.prefix', 'api/affiliate-network'), '/');
@@ -74,6 +75,7 @@ final class NetworkPostbackClient
         try {
             $response = Http::connectTimeout(max(1, (int) config('affiliates.merchant.connect_timeout_seconds', 3)))
                 ->timeout(max(1, (int) config('affiliates.merchant.timeout_seconds', 8)))
+                ->withOptions(['allow_redirects' => false])
                 ->withToken($token)
                 ->acceptJson()
                 ->post($base . '/' . $prefix . '/conversions', $payload);
@@ -85,15 +87,11 @@ final class NetworkPostbackClient
                 ? ['winner' => $body['decision']['winner'], 'reason' => $body['decision']['reason']]
                 : null;
 
-            return [
-                'ok' => $response->successful(),
-                'status' => $response->status(),
-                'body' => $body,
-                'decision' => $decision,
-                'error' => $response->successful() ? null : 'network responded ' . $response->status(),
-            ];
-        } catch (Throwable $exception) {
-            return ['ok' => false, 'status' => null, 'body' => null, 'decision' => null, 'error' => $exception->getMessage()];
+            $ok = $response->successful() && is_array($body) && ($body['ok'] ?? false) === true;
+
+            return new NetworkPostbackResult($ok, $response->status(), decision: $ok ? $decision : null, error: $ok ? null : 'network responded ' . $response->status());
+        } catch (Throwable) {
+            return new NetworkPostbackResult(false, error: 'network transport failed');
         }
     }
 
@@ -101,7 +99,6 @@ final class NetworkPostbackClient
      * Correct a previously reported conversion (partial refund, price fix).
      * Idempotent on the adjustment reference.
      *
-     * @return array{ok: bool, status: int|null, body: mixed, leg_status: string|null, error: string|null}
      */
     public function adjustConversion(
         string $linkCode,
@@ -112,17 +109,17 @@ final class NetworkPostbackClient
         ?string $reason = null,
         ?string $couponCode = null,
         string $eventType = 'purchase',
-    ): array {
+    ): NetworkPostbackResult {
         if (! $this->hasAttribution($linkCode, $couponCode)) {
-            return ['ok' => false, 'status' => null, 'body' => null, 'leg_status' => null, 'error' => 'no network attribution'];
+            return new NetworkPostbackResult(false, error: 'no network attribution');
         }
 
         $base = mb_rtrim((string) config('affiliates.merchant.network_url'), '/');
         $site = (string) config('affiliates.merchant.site');
         $token = (string) config('affiliates.merchant.token');
 
-        if ($base === '' || $site === '' || $token === '') {
-            return ['ok' => false, 'status' => null, 'body' => null, 'leg_status' => null, 'error' => 'network merchant not configured'];
+        if (! $this->validBase($base) || $site === '' || $token === '') {
+            return new NetworkPostbackResult(false, error: 'network merchant not configured');
         }
 
         $prefix = mb_trim((string) config('affiliates.merchant.prefix', 'api/affiliate-network'), '/');
@@ -130,6 +127,7 @@ final class NetworkPostbackClient
         try {
             $response = Http::connectTimeout(max(1, (int) config('affiliates.merchant.connect_timeout_seconds', 3)))
                 ->timeout(max(1, (int) config('affiliates.merchant.timeout_seconds', 8)))
+                ->withOptions(['allow_redirects' => false])
                 ->withToken($token)
                 ->acceptJson()
                 ->post($base . '/' . $prefix . '/conversions/adjust', array_filter([
@@ -149,15 +147,11 @@ final class NetworkPostbackClient
                 ? $body['leg_status']
                 : null;
 
-            return [
-                'ok' => $response->successful(),
-                'status' => $response->status(),
-                'body' => $body,
-                'leg_status' => $legStatus,
-                'error' => $response->successful() ? null : 'network responded ' . $response->status(),
-            ];
-        } catch (Throwable $exception) {
-            return ['ok' => false, 'status' => null, 'body' => null, 'leg_status' => null, 'error' => $exception->getMessage()];
+            $ok = $response->successful() && is_array($body) && ($body['ok'] ?? false) === true;
+
+            return new NetworkPostbackResult($ok, $response->status(), legStatus: $ok ? $legStatus : null, error: $ok ? null : 'network responded ' . $response->status());
+        } catch (Throwable) {
+            return new NetworkPostbackResult(false, error: 'network transport failed');
         }
     }
 
@@ -166,7 +160,6 @@ final class NetworkPostbackClient
      * repeat calls return the already-reversed state. A 404 means the
      * network has no conversion for that link and reference.
      *
-     * @return array{ok: bool, status: int|null, body: mixed, leg_status: string|null, error: string|null}
      */
     public function voidConversion(
         string $linkCode,
@@ -174,17 +167,17 @@ final class NetworkPostbackClient
         ?string $reason = null,
         ?string $couponCode = null,
         string $eventType = 'purchase',
-    ): array {
+    ): NetworkPostbackResult {
         if (! $this->hasAttribution($linkCode, $couponCode)) {
-            return ['ok' => false, 'status' => null, 'body' => null, 'leg_status' => null, 'error' => 'no network attribution'];
+            return new NetworkPostbackResult(false, error: 'no network attribution');
         }
 
         $base = mb_rtrim((string) config('affiliates.merchant.network_url'), '/');
         $site = (string) config('affiliates.merchant.site');
         $token = (string) config('affiliates.merchant.token');
 
-        if ($base === '' || $site === '' || $token === '') {
-            return ['ok' => false, 'status' => null, 'body' => null, 'leg_status' => null, 'error' => 'network merchant not configured'];
+        if (! $this->validBase($base) || $site === '' || $token === '') {
+            return new NetworkPostbackResult(false, error: 'network merchant not configured');
         }
 
         $prefix = mb_trim((string) config('affiliates.merchant.prefix', 'api/affiliate-network'), '/');
@@ -192,6 +185,7 @@ final class NetworkPostbackClient
         try {
             $response = Http::connectTimeout(max(1, (int) config('affiliates.merchant.connect_timeout_seconds', 3)))
                 ->timeout(max(1, (int) config('affiliates.merchant.timeout_seconds', 8)))
+                ->withOptions(['allow_redirects' => false])
                 ->withToken($token)
                 ->acceptJson()
                 ->post($base . '/' . $prefix . '/conversions/void', array_filter([
@@ -208,20 +202,25 @@ final class NetworkPostbackClient
                 ? $body['leg_status']
                 : null;
 
-            return [
-                'ok' => $response->successful(),
-                'status' => $response->status(),
-                'body' => $body,
-                'leg_status' => $legStatus,
-                'error' => $response->successful() ? null : 'network responded ' . $response->status(),
-            ];
-        } catch (Throwable $exception) {
-            return ['ok' => false, 'status' => null, 'body' => null, 'leg_status' => null, 'error' => $exception->getMessage()];
+            $ok = $response->successful() && is_array($body) && ($body['ok'] ?? false) === true;
+
+            return new NetworkPostbackResult($ok, $response->status(), legStatus: $ok ? $legStatus : null, error: $ok ? null : 'network responded ' . $response->status());
+        } catch (Throwable) {
+            return new NetworkPostbackResult(false, error: 'network transport failed');
         }
+    }
+
+    private function validBase(string $base): bool
+    {
+        $parts = parse_url($base);
+
+        return is_array($parts) && mb_strtolower((string) ($parts['scheme'] ?? '')) === 'https'
+            && isset($parts['host']) && ! isset($parts['user']) && ! isset($parts['pass'])
+            && ! isset($parts['query']) && ! isset($parts['fragment']);
     }
 
     private function hasAttribution(string $linkCode, ?string $couponCode): bool
     {
-        return $linkCode !== '' || ($couponCode !== null && $couponCode !== '');
+        return mb_trim($linkCode) !== '' || ($couponCode !== null && mb_trim($couponCode) !== '');
     }
 }

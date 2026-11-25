@@ -238,12 +238,12 @@ redirects, applies the configured timeouts/retries, and caps the response body
 ## Merchant SDK (`aiarmada/affiliates`)
 
 Merchant apps use `CaptureNetworkReferral` (middleware) plus
-`NetworkPostbackClient` instead of hand-rolled HTTP:
+`NetworkPostbackGateway` instead of hand-rolled HTTP:
 
 ```php
-use AIArmada\Affiliates\Merchant\NetworkPostbackClient;
+use AIArmada\Affiliates\Contracts\NetworkPostbackGateway;
 
-$client = app(NetworkPostbackClient::class);
+$client = app(NetworkPostbackGateway::class);
 
 $result = $client->report(
     linkCode: $linkCode,
@@ -257,8 +257,8 @@ $result = $client->report(
     subIds: ['sub1' => 'blog', 'sub2' => 'sidebar'],
 );
 
-$result['ok'];        // bool
-$result['decision'];  // parsed decision array or null
+$result->ok;        // bool
+$result->decision;  // parsed decision array or null
 
 $client->adjustConversion(
     linkCode: $linkCode,

@@ -8,8 +8,8 @@ Merchant stores that sell through an affiliate-network marketplace use two
 small pieces instead of hand-rolled HTTP:
 
 ```php
-use AIArmada\Affiliates\Merchant\CaptureNetworkReferral;
-use AIArmada\Affiliates\Merchant\NetworkPostbackClient;
+use AIArmada\Affiliates\Features\Merchant\EntryPoints\Middleware\CaptureNetworkReferral;
+use AIArmada\Affiliates\Contracts\NetworkPostbackGateway;
 use AIArmada\Affiliates\Actions\Conversions\RecordAffiliateConversion;
 use AIArmada\Affiliates\Actions\Conversions\VoidAffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateConversion;
@@ -27,7 +27,7 @@ if (is_string($linkCode) && is_string($networkClickedAt)) {
     $engineAttribution = app(RecordAffiliateConversion::class)->resolveAttributionFor($cart);
     $engineTouchAt = $engineAttribution?->last_referred_at;
 
-    $result = app(NetworkPostbackClient::class)->report(
+    $result = app(NetworkPostbackGateway::class)->report(
         $linkCode,
         (string) $order->number,
         (int) $order->total_minor,
@@ -36,9 +36,9 @@ if (is_string($linkCode) && is_string($networkClickedAt)) {
         (string) $order->currency,
     );
 
-    $decision = $result['decision'];
+    $decision = $result->decision;
 
-    if ($result['ok'] && ($decision['winner'] ?? null) === 'network') {
+    if ($result->ok && ($decision['winner'] ?? null) === 'network') {
         $engineConversion = AffiliateConversion::query()
             ->where('external_reference', (string) $order->number)
             ->first();

@@ -37,7 +37,7 @@ reference. Recording a standalone conversion never claims it has been paid.
    retries resume without cookies. The merchant records its conversion
    (`RecordAffiliateConversion`, stamped with `origin`/`source_ref`) and — for
    network-referred orders — reports the paid order via
-   `NetworkPostbackClient` (idempotent on link/coupon + order reference +
+   `NetworkPostbackGateway` (idempotent on link/coupon + order reference +
    event type).
 4. **Shared checkout.** When engine and network observe the same order, the
    engine posts its conversion and the network posts a *provisional* leg; the
@@ -55,7 +55,7 @@ an existing conversion through `VoidAffiliateConversion::run($conversion, 'netwo
 Merchant reversals and voids emit a merchant-vocabulary event. When both packages
 are installed, the network mirrors the first reversal into its ledger; retries
 converge on one negated companion leg. Remote merchants get the same symmetry
-over HTTP: after voiding locally, `NetworkPostbackClient::voidConversion()`
+over HTTP: after voiding locally, `NetworkPostbackGateway::voidConversion()`
 retracts the network leg through the idempotent void endpoint. Partial refunds
 use `adjustConversion()` → `AdjustConversionLeg`, posting a proportional
 companion leg.

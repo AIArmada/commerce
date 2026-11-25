@@ -324,7 +324,7 @@ return [
     |--------------------------------------------------------------------------
     |
     | Connection details for reporting sales to an affiliate network via
-    | NetworkPostbackClient, plus the referral-capture settings used by the
+    | NetworkPostbackGateway, plus the referral-capture settings used by the
     | CaptureNetworkReferral middleware. Only needed on merchant stores
     | that sell through a network marketplace.
     |

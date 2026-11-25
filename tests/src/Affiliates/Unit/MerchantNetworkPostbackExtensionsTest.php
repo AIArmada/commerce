@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Merchant\CaptureNetworkReferral;
-use AIArmada\Affiliates\Merchant\NetworkPostbackClient;
+use AIArmada\Affiliates\Features\Merchant\EntryPoints\Middleware\CaptureNetworkReferral;
+use AIArmada\Affiliates\Contracts\NetworkPostbackGateway;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -24,12 +24,12 @@ function configureMerchant(): void
     config()->set('affiliates.merchant.prefix', 'api/affiliate-network');
 }
 
-describe('NetworkPostbackClient extended payloads', function (): void {
+describe('NetworkPostbackGateway extended payloads', function (): void {
     test('reports coupon-only conversions with sub ids and an event type', function (): void {
         configureMerchant();
         Http::fake(['*' => Http::response(['ok' => true, 'duplicate' => false], 200)]);
 
-        $result = app(NetworkPostbackClient::class)->report(
+        $result = app(NetworkPostbackGateway::class)->report(
             linkCode: '',
             externalReference: 'COUPON-ORDER-1',
             revenueMinor: 12500,
@@ -40,7 +40,7 @@ describe('NetworkPostbackClient extended payloads', function (): void {
             subIds: ['sub1' => 'creator-a', 'sub2' => 'stories'],
         );
 
-        expect($result['ok'])->toBeTrue();
+        expect($result->ok)->toBeTrue();
 
         Http::assertSent(static function ($request): bool {
             $data = $request->data();
@@ -58,7 +58,7 @@ describe('NetworkPostbackClient extended payloads', function (): void {
         configureMerchant();
         Http::fake(['*' => Http::response(['ok' => true, 'leg_status' => 'posted'], 200)]);
 
-        $result = app(NetworkPostbackClient::class)->adjustConversion(
+        $result = app(NetworkPostbackGateway::class)->adjustConversion(
             linkCode: 'link123',
             externalReference: 'ORDER-9',
             adjustmentReference: 'ADJ-1',
@@ -66,8 +66,8 @@ describe('NetworkPostbackClient extended payloads', function (): void {
             reason: 'partial refund',
         );
 
-        expect($result['ok'])->toBeTrue()
-            ->and($result['leg_status'])->toBe('posted');
+        expect($result->ok)->toBeTrue()
+            ->and($result->legStatus)->toBe('posted');
 
         Http::assertSent(static function ($request): bool {
             return $request->url() === 'https://network.example/api/affiliate-network/conversions/adjust'
@@ -82,7 +82,7 @@ describe('NetworkPostbackClient extended payloads', function (): void {
         configureMerchant();
         Http::fake(['*' => Http::response(['ok' => true, 'duplicate' => false, 'leg_status' => 'reversed'], 200)]);
 
-        $result = app(NetworkPostbackClient::class)->voidConversion(
+        $result = app(NetworkPostbackGateway::class)->voidConversion(
             linkCode: '',
             externalReference: 'COUPON-VOID-1',
             reason: 'refund',
@@ -90,7 +90,7 @@ describe('NetworkPostbackClient extended payloads', function (): void {
             eventType: 'subscription',
         );
 
-        expect($result['ok'])->toBeTrue();
+        expect($result->ok)->toBeTrue();
 
         Http::assertSent(static function ($request): bool {
             $data = $request->data();
@@ -105,15 +105,15 @@ describe('NetworkPostbackClient extended payloads', function (): void {
     test('refuses to report when neither a link nor a coupon is supplied', function (): void {
         configureMerchant();
 
-        $result = app(NetworkPostbackClient::class)->report(
+        $result = app(NetworkPostbackGateway::class)->report(
             linkCode: '',
             externalReference: 'NO-ATTRIBUTION',
             revenueMinor: 1000,
             networkClickedAt: CarbonImmutable::now(),
         );
 
-        expect($result['ok'])->toBeFalse()
-            ->and($result['error'])->toBe('no network attribution');
+        expect($result->ok)->toBeFalse()
+            ->and($result->error)->toBe('no network attribution');
     });
 });
 
@@ -136,5 +136,18 @@ describe('CaptureNetworkReferral sub id capture', function (): void {
         app(CaptureNetworkReferral::class)->handle($request, static fn ($req) => response('ok'));
 
         expect($request->session()->get('affiliate_network.link_code_sub_ids'))->toBe(['sub2' => 'ok']);
+    });
+    test('new referrals replace old sub ids and unrelated query parameters cannot overwrite attribution', function (): void {
+        $request = merchantRequest(['anl' => 'link123', 'sub1' => 'old']);
+        app(CaptureNetworkReferral::class)->handle($request, static fn ($req) => response('ok'));
+
+        $next = merchantRequest(['sub1' => 'forged']);
+        app(CaptureNetworkReferral::class)->handle($next, static fn ($req) => response('ok'));
+        expect($next->session()->get('affiliate_network.link_code_sub_ids'))->toBe(['sub1' => 'old']);
+
+        $fresh = merchantRequest(['anl' => 'link456']);
+        app(CaptureNetworkReferral::class)->handle($fresh, static fn ($req) => response('ok'));
+        expect($fresh->session()->get('affiliate_network.link_code'))->toBe('link456')
+            ->and($fresh->session()->get('affiliate_network.link_code_sub_ids'))->toBe([]);
     });
 });
