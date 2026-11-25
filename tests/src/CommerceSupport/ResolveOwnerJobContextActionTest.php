@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Actions\ResolveOwnerJobContextAction;
 use AIArmada\CommerceSupport\Contracts\OwnerScopedJob;
 use AIArmada\CommerceSupport\Contracts\OwnerScopeIdentifiable;
@@ -61,8 +62,7 @@ it('resolves owner context from a model owner tuple', function (): void {
 });
 
 it('resolves owner context from a model getOwner relationship', function (): void {
-    $owner = new ResolveOwnerJobContextActionOwnerModel;
-    $owner->setAttribute($owner->getKeyName(), 'related-owner');
+    $owner = User::factory()->create();
 
     $payload = new ResolveOwnerJobContextActionOwnerByRelationFixture;
     $payload->owner = $owner;
@@ -75,7 +75,7 @@ it('resolves owner context from a model getOwner relationship', function (): voi
     $resolved = ResolveOwnerJobContextAction::run(job: $job);
 
     expect($resolved->ownerType)->toBe($owner->getMorphClass())
-        ->and((string) $resolved->ownerId)->toBe('related-owner')
+        ->and((string) $resolved->ownerId)->toBe((string) $owner->getKey())
         ->and($resolved->ownerIsGlobal)->toBeFalse();
 });
 
@@ -188,15 +188,6 @@ it('throws runtime exception when only half of an owner tuple is present', funct
     expect(fn () => ResolveOwnerJobContextAction::run(job: $job))
         ->toThrow(RuntimeException::class, 'received invalid owner job context payload');
 });
-
-final class ResolveOwnerJobContextActionOwnerModel extends Model
-{
-    public $timestamps = false;
-
-    public $incrementing = false;
-
-    protected $keyType = 'string';
-}
 
 final class ResolveOwnerJobContextActionOwnerReference implements OwnerScopeIdentifiable
 {

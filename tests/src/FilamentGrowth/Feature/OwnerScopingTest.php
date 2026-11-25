@@ -25,24 +25,7 @@ use Illuminate\Support\Str;
 if (! function_exists('filamentGrowth_makeOwner')) {
     function filamentGrowth_makeOwner(string $id): Model
     {
-        return new class($id) extends Model
-        {
-            public $incrementing = false;
-
-            protected $keyType = 'string';
-
-            public function __construct(private readonly string $uuid) {}
-
-            public function getKey(): mixed
-            {
-                return $this->uuid;
-            }
-
-            public function getMorphClass(): string
-            {
-                return 'tests:growth-owner';
-            }
-        };
+        return User::factory()->create(['id' => $id]);
     }
 }
 
