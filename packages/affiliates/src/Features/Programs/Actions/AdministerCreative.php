@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Programs\Actions;
 
+use AIArmada\Affiliates\Contracts\CreativeAssetRemoval;
 use AIArmada\Affiliates\Features\Programs\Api\CreativeAdministration;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramCreative;
@@ -15,6 +16,8 @@ use RuntimeException;
 
 final readonly class AdministerCreative implements CreativeAdministration
 {
+    public function __construct(private CreativeAssetRemoval $assets) {}
+
     public function create(?string $programId, array $data): string
     {
         return (new AffiliateProgramCreative)->getConnection()->transaction(function () use ($programId, $data): string {
@@ -39,9 +42,16 @@ final readonly class AdministerCreative implements CreativeAdministration
 
     public function delete(?string $programId, string $creativeId): bool
     {
-        return (new AffiliateProgramCreative)->getConnection()->transaction(
-            fn (): bool => (bool) $this->lockCreative($programId, $creativeId)->delete(),
-        );
+        return (new AffiliateProgramCreative)->getConnection()->transaction(function () use ($programId, $creativeId): bool {
+            $creative = $this->lockCreative($programId, $creativeId);
+            $this->assets->remove($creativeId, $creative->getMorphClass(), spl_object_id($creative->getConnection()));
+
+            if (! $creative->deletePreservingMedia()) {
+                throw new RuntimeException('Creative deletion failed.');
+            }
+
+            return true;
+        });
     }
 
     private function lockCreative(?string $programId, string $creativeId): AffiliateProgramCreative

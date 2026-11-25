@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Programs\Actions;
 
+use AIArmada\Affiliates\Contracts\CreativeAssetRemoval;
 use AIArmada\Affiliates\Features\Commissions\Api\ProgramCommissionCleanup;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramAdministration;
 use AIArmada\Affiliates\Models\AffiliateProgram;
@@ -17,7 +18,10 @@ use RuntimeException;
 
 final readonly class AdministerProgram implements ProgramAdministration
 {
-    public function __construct(private ProgramCommissionCleanup $commissions) {}
+    public function __construct(
+        private ProgramCommissionCleanup $commissions,
+        private CreativeAssetRemoval $assets,
+    ) {}
 
     public function create(array $data): string
     {
@@ -66,7 +70,11 @@ final readonly class AdministerProgram implements ProgramAdministration
                 ->withoutGlobalScope('program_owner')
                 ->where('program_id', $programId)
                 ->eachById(function (AffiliateProgramCreative $creative): void {
-                    $creative->delete();
+                    $this->assets->remove((string) $creative->getKey(), $creative->getMorphClass(), spl_object_id($creative->getConnection()));
+
+                    if (! $creative->deletePreservingMedia()) {
+                        throw new RuntimeException('Program creative deletion failed.');
+                    }
                 });
 
             $program->delete();

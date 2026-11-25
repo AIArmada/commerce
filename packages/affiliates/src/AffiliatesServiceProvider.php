@@ -7,10 +7,12 @@ namespace AIArmada\Affiliates;
 use AIArmada\Affiliates\Actions\Affiliates\ResolvePublicAffiliateReferralContext;
 use AIArmada\Affiliates\Cart\AffiliateDiscountConditionProvider;
 use AIArmada\Affiliates\Contracts\AffiliateWebhookTransport;
+use AIArmada\Affiliates\Contracts\CreativeAssetRemoval;
 use AIArmada\Affiliates\Contracts\NetworkPostbackGateway;
 use AIArmada\Affiliates\Contracts\PayoutProcessorRegistry;
 use AIArmada\Affiliates\Contracts\TaxRecipientProvider;
 use AIArmada\Affiliates\Contracts\TaxWorksheetWriter;
+use AIArmada\Affiliates\Drivers\Media\SpatieCreativeAssetRemoval;
 use AIArmada\Affiliates\Drivers\Network\HttpNetworkPostbackGateway;
 use AIArmada\Affiliates\Drivers\Payouts\PayoutProcessorFactory;
 use AIArmada\Affiliates\Drivers\Tax\SpatieTaxWorksheetWriter;
@@ -101,6 +103,7 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
     {
         $catalog = $this->catalog();
 
+        $this->app->bindIf(CreativeAssetRemoval::class, SpatieCreativeAssetRemoval::class);
         $this->app->bindIf(NetworkPostbackGateway::class, HttpNetworkPostbackGateway::class);
         $this->app->bindIf(TaxRecipientProvider::class, UnavailableTaxRecipientProvider::class);
         $this->app->bindIf(TaxWorksheetWriter::class, SpatieTaxWorksheetWriter::class);

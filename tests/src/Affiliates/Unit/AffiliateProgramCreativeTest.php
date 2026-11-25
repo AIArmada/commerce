@@ -194,7 +194,7 @@ test('creative media replaces its asset and is removed when the creative is dele
     Storage::disk('public')->assertMissing($firstPath);
 
     $secondPath = $second->getPathRelativeToRoot();
-    $creative->delete();
+    app(CreativeAdministration::class)->delete(null, (string) $creative->getKey());
     expect($second->fresh())->toBeNull();
     Storage::disk('public')->assertMissing($secondPath);
 });
@@ -314,4 +314,31 @@ test('tenant-owned contexts cannot administer general creatives', function (): v
             'name' => 'Global', 'type' => 'text_link', 'tracking_code' => 'GLOBAL',
         ]))->toThrow(AuthorizationException::class);
     });
+});
+
+test('rolled back program deletion preserves creative media rows and files', function (): void {
+    $program = AffiliateProgram::create([
+        'name' => 'Rollback Media Program', 'slug' => 'rollback-media-program', 'status' => ProgramStatus::Active,
+        'commission_type' => 'percentage', 'default_commission_rate_basis_points' => 1000,
+        'cookie_lifetime_days' => 30,
+    ]);
+    $creative = AffiliateProgramCreative::query()->create([
+        'program_id' => $program->id,
+        'type' => 'image', 'name' => 'Rollback Asset', 'tracking_code' => 'ROLLBACK-MEDIA',
+    ]);
+    $media = $creative->addMedia(UploadedFile::fake()->image('rollback.png'))->toMediaCollection('creative_asset');
+    $path = $media->getPathRelativeToRoot();
+
+    expect(fn () => $program->getConnection()->transaction(function () use ($program, $media, $path): void {
+        app(ProgramAdministration::class)->delete($program->id);
+        expect($media->fresh())->toBeNull();
+        Storage::disk('public')->assertExists($path);
+
+        throw new RuntimeException('force rollback');
+    }))->toThrow(RuntimeException::class, 'force rollback');
+
+    expect($program->fresh())->not->toBeNull()
+        ->and($creative->fresh())->not->toBeNull()
+        ->and($media->fresh())->not->toBeNull();
+    Storage::disk('public')->assertExists($path);
 });
