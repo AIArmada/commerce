@@ -139,11 +139,9 @@ class AffiliateProgramMembership extends Pivot
 
     private static function guardProgramReferences(self $membership): void
     {
-        if (! (bool) config('affiliates.owner.enabled', false)) {
-            return;
-        }
-
-        if ($membership->program_id !== null && ! self::programExistsInCurrentOrGlobalScope($membership->program_id)) {
+        if ((bool) config('affiliates.owner.enabled', false)
+            && $membership->program_id !== null
+            && ! self::programExistsInCurrentOrGlobalScope($membership->program_id)) {
             throw new AuthorizationException('Cross-tenant program reference is not allowed.');
         }
 

@@ -13,6 +13,7 @@ use AIArmada\Affiliates\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Models\AffiliateProgramTier;
 use AIArmada\Affiliates\States\Active;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Access\AuthorizationException;
 
 describe('AffiliateProgramMembership Model', function (): void {
     beforeEach(function (): void {
@@ -94,6 +95,40 @@ describe('AffiliateProgramMembership Model', function (): void {
 
         expect($membership->tier)->toBeInstanceOf(AffiliateProgramTier::class);
         expect($membership->tier->id)->toBe($this->tier->id);
+    });
+
+    test('rejects a tier from another program even when owner scoping is disabled', function (): void {
+        config(['affiliates.owner.enabled' => false]);
+
+        $otherProgram = $this->program->replicate();
+        $otherProgram->slug = 'other-program-' . uniqid();
+        $otherProgram->save();
+
+        $otherTier = $this->tier->replicate();
+        $otherTier->program_id = $otherProgram->id;
+        $otherTier->save();
+
+        $attributes = [
+            'affiliate_id' => $this->affiliate->id,
+            'program_id' => $this->program->id,
+            'status' => MembershipStatus::Pending,
+            'applied_at' => now(),
+        ];
+
+        expect(fn () => AffiliateProgramMembership::create([
+            ...$attributes,
+            'tier_id' => $otherTier->id,
+        ]))->toThrow(AuthorizationException::class);
+
+        $membership = AffiliateProgramMembership::create([
+            ...$attributes,
+            'tier_id' => $this->tier->id,
+        ]);
+
+        expect(fn () => $membership->update(['tier_id' => $otherTier->id]))
+            ->toThrow(AuthorizationException::class);
+
+        expect($membership->refresh()->tier_id)->toBe($this->tier->id);
     });
 
     test('isActive returns true when approved and not expired', function (): void {
