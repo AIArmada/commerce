@@ -221,7 +221,7 @@ it('prevents deleting affiliates after conversion or payout history exists', fun
         ->and(AffiliateResource::canDelete($payoutAffiliate))->toBeFalse();
 });
 
-it('strips identity and ownership edits from a Dawah affiliate edit payload', function (): void {
+it('rejects forged identity and ownership mutations when saving a Dawah affiliate', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'AFF-DAWAH-EDIT-' . Str::uuid(),
         'name' => 'Dawah Member',
@@ -232,11 +232,11 @@ it('strips identity and ownership edits from a Dawah affiliate edit payload', fu
         'currency' => 'USD',
     ]);
     $page = new EditAffiliate;
-    $page->record = $affiliate;
-    $method = new ReflectionMethod(EditAffiliate::class, 'mutateFormDataBeforeSave');
+    $method = new ReflectionMethod(EditAffiliate::class, 'handleRecordUpdate');
     $method->setAccessible(true);
 
-    $mutated = $method->invoke($page, [
+    $original = $affiliate->getAttributes();
+    $method->invoke($page, $affiliate, [
         'name' => 'Updated member name',
         'handle' => 'forged-handle',
         'apply_template' => (string) Str::uuid(),
@@ -255,33 +255,18 @@ it('strips identity and ownership edits from a Dawah affiliate edit payload', fu
         'owner_type' => User::class,
         'owner_id' => (string) Str::uuid(),
         'linked_user' => (string) Str::uuid(),
-        'status' => 'suspended',
+        'status' => 'paused',
     ]);
 
-    expect($mutated['status'])->toBe('suspended')
-        ->and($mutated)->not->toHaveKeys([
-            'name',
-            'handle',
-            'apply_template',
-            'commission_type',
-            'commission_rate',
-            'currency',
-            'network_depth',
-            'rank_id',
-            'parent_affiliate_id',
-            'default_voucher_code',
-            'tracking_domain',
-            'payout_terms',
-            'code',
-            'purpose',
-            'metadata',
-            'owner_type',
-            'owner_id',
-            'linked_user',
-        ]);
+    $affiliate->refresh();
+    expect($affiliate->status->getValue())->toBe('paused');
+
+    foreach (['name', 'handle', 'commission_type', 'commission_rate', 'currency', 'network_depth', 'rank_id', 'parent_affiliate_id', 'default_voucher_code', 'tracking_domain', 'payout_terms', 'code', 'purpose', 'metadata', 'owner_type', 'owner_id'] as $attribute) {
+        expect($affiliate->getAttributes()[$attribute] ?? null)->toBe($original[$attribute] ?? null);
+    }
 });
 
-it('keeps commercial affiliate edit fields available to the normal save pipeline', function (): void {
+it('persists allowed commercial affiliate changes through the edit page', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'AFF-COMMERCIAL-EDIT-' . Str::uuid(),
         'name' => 'Commercial Affiliate',
@@ -299,8 +284,7 @@ it('keeps commercial affiliate edit fields available to the normal save pipeline
         'currency' => 'USD',
     ]);
     $page = new EditAffiliate;
-    $page->record = $affiliate;
-    $method = new ReflectionMethod(EditAffiliate::class, 'mutateFormDataBeforeSave');
+    $method = new ReflectionMethod(EditAffiliate::class, 'handleRecordUpdate');
     $method->setAccessible(true);
 
     $data = [
@@ -309,7 +293,6 @@ it('keeps commercial affiliate edit fields available to the normal save pipeline
         'commission_type' => 'fixed',
         'commission_rate' => 1000,
         'currency' => 'MYR',
-        'rank_id' => (string) Str::uuid(),
         'parent_affiliate_id' => (string) $parent->getKey(),
         'default_voucher_code' => 'COMMERCIAL-VOUCHER',
         'tracking_domain' => 'track.example.test',
@@ -317,7 +300,19 @@ it('keeps commercial affiliate edit fields available to the normal save pipeline
         'status' => 'active',
     ];
 
-    expect($method->invoke($page, $data))->toMatchArray($data);
+    $method->invoke($page, $affiliate, $data);
+
+    $affiliate->refresh();
+    expect($affiliate->name)->toBe($data['name'])
+        ->and($affiliate->handle)->toBe($data['handle'])
+        ->and($affiliate->commission_type->value)->toBe($data['commission_type'])
+        ->and($affiliate->commission_rate)->toBe($data['commission_rate'])
+        ->and($affiliate->currency)->toBe($data['currency'])
+        ->and($affiliate->parent_affiliate_id)->toBe($data['parent_affiliate_id'])
+        ->and($affiliate->default_voucher_code)->toBe($data['default_voucher_code'])
+        ->and($affiliate->tracking_domain)->toBe($data['tracking_domain'])
+        ->and($affiliate->payout_terms)->toBe($data['payout_terms'])
+        ->and($affiliate->status->getValue())->toBe($data['status']);
 });
 
 it('strips destination edits from a Dawah affiliate link edit payload', function (): void {
