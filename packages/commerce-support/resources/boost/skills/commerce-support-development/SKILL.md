@@ -9,6 +9,7 @@ description: Integrate AIArmada Commerce Support tenant ownership, queued owner 
 
 - ReferenceData owns language, currency and timezone reference data. Inject `AIArmada\CommerceSupport\Features\ReferenceData\Api\ReferenceDataApi` for scalar lookups and seed operations.
 - Reporting owns report creation and state changes. UserPreferences owns saved searches and notification preferences.
+- Webhooks owns the `webhook_calls` writes; extend `Features\Webhooks\EntryPoints\CommerceWebhookProcessor` for provider jobs. Use `Features\SignedDownloads\Api\SignedDownloadApi` for owner-bound temporary download issuance and authorization.
 - Keep durable writes in owning Actions or Persistence classes, declared in the feature manifest where applicable.
 - Keep Contracts and Data pure, and map HTTP, Eloquent and external SDK types at framework/driver boundaries.
 - Never import host application classes or mutate Laravel host-global settings.

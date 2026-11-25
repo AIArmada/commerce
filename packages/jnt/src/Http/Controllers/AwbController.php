@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Jnt\Http\Controllers;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerSignedDownload;
+use AIArmada\CommerceSupport\Features\SignedDownloads\Api\SignedDownloadApi;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
@@ -19,17 +20,17 @@ final class AwbController
         }
 
         /** @var array<string, mixed>|null $data */
-        $data = OwnerSignedDownload::payloadFromRequestToken($request, 'jnt_awb');
+        $data = app(SignedDownloadApi::class)->payloadFromToken($request->query(SignedDownloadApi::TOKEN_QUERY_PARAM), 'jnt_awb');
 
         if ($data === null || ! isset($data['content']) || $data['content'] === false) {
             abort(404, 'AWB not found or expired.');
         }
 
-        if (! OwnerSignedDownload::isAuthorizedPayload(
+        if (! app(SignedDownloadApi::class)->isAuthorizedPayload(
             payload: $data,
             resourceIdKey: 'order_id',
             expectedResourceId: $orderId,
-            owner: OwnerContext::resolve(),
+            owner: EloquentRecordReference::fromModel(OwnerContext::resolve()),
             userId: $request->user()?->getAuthIdentifier(),
         )) {
             abort(403, 'Unauthorized AWB access.');
