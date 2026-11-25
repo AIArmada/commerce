@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Drivers\Payouts\PayPalProcessor;
+use AIArmada\Affiliates\Drivers\Payouts\StripeConnectProcessor;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\PayoutMethodType;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliatePayoutMethod;
 use AIArmada\Affiliates\Models\AffiliatePayoutOperation;
-use AIArmada\Affiliates\Services\Payouts\PayPalProcessor;
-use AIArmada\Affiliates\Services\Payouts\StripeConnectProcessor;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ProcessingPayout;
 use Illuminate\Http\Client\Request;

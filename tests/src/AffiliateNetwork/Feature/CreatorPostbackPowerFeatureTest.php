@@ -177,6 +177,35 @@ describe('power feature: creator S2S postbacks', function (): void {
             ->toBe(hash_hmac('sha256', (string) $delivery->resolved_url, 'top-secret'));
     });
 
+    test('delivery does not contact a disabled endpoint', function (): void {
+        $endpoint = CreatorPostbackEndpoint::factory()->create(['is_active' => false]);
+        $delivery = CreatorPostbackDelivery::factory()->forEndpoint($endpoint)->create();
+        $transport = new RecordingPostbackTransport;
+        app()->instance(CreatorPostbackTransport::class, $transport);
+
+        $result = app(DeliverCreatorPostback::class)->execute((string) $delivery->getKey());
+
+        expect($result->status)->toBe(PostbackDeliveryStatus::Failed)
+            ->and($result->last_error)->toBe('endpoint_disabled')
+            ->and($transport->sent)->toBe([]);
+    });
+
+    test('delivery fails closed when its configured signing secret cannot be decrypted', function (): void {
+        $endpoint = CreatorPostbackEndpoint::factory()->create([
+            'is_active' => true,
+            'signing_secret_encrypted' => 'invalid-ciphertext',
+        ]);
+        $delivery = CreatorPostbackDelivery::factory()->forEndpoint($endpoint)->create();
+        $transport = new RecordingPostbackTransport;
+        app()->instance(CreatorPostbackTransport::class, $transport);
+
+        $result = app(DeliverCreatorPostback::class)->execute((string) $delivery->getKey());
+
+        expect($result->status)->toBe(PostbackDeliveryStatus::Failed)
+            ->and($result->last_error)->toBe('signing_secret_invalid')
+            ->and($transport->sent)->toBe([]);
+    });
+
     test('failed deliveries record the error and retry status', function (): void {
         $affiliate = postbackAffiliate();
         app(ConfigureCreatorPostback::class)->execute((string) $affiliate->getKey(), [

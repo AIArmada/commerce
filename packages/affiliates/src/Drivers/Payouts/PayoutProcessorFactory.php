@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Services\Payouts;
+namespace AIArmada\Affiliates\Drivers\Payouts;
 
 use AIArmada\Affiliates\Contracts\PayoutProcessorInterface;
 use AIArmada\Affiliates\Enums\PayoutMethodType;

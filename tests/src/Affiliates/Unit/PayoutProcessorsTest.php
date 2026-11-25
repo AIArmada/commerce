@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Contracts\PayoutProcessorInterface;
 use AIArmada\Affiliates\Data\PayoutResult;
+use AIArmada\Affiliates\Drivers\Payouts\ManualPayoutProcessor;
+use AIArmada\Affiliates\Drivers\Payouts\PayoutProcessorFactory;
+use AIArmada\Affiliates\Drivers\Payouts\PayPalProcessor;
+use AIArmada\Affiliates\Drivers\Payouts\StripeConnectProcessor;
 use AIArmada\Affiliates\Enums\PayoutMethodType;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\Services\Payouts\ManualPayoutProcessor;
-use AIArmada\Affiliates\Services\Payouts\PayoutProcessorFactory;
-use AIArmada\Affiliates\Services\Payouts\PayPalProcessor;
-use AIArmada\Affiliates\Services\Payouts\StripeConnectProcessor;
 use AIArmada\Affiliates\States\Active;
 
 // PayoutProcessorFactory Tests

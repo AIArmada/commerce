@@ -12,10 +12,10 @@ use Carbon\CarbonImmutable;
 use RuntimeException;
 use Throwable;
 
-final class DeliverCreatorPostback
+final readonly class DeliverCreatorPostback
 {
     public function __construct(
-        private readonly CreatorPostbackTransport $transport,
+        private CreatorPostbackTransport $transport,
     ) {}
 
     public function execute(string $deliveryId): CreatorPostbackDelivery
@@ -37,8 +37,26 @@ final class DeliverCreatorPostback
             return $delivery;
         }
 
+        if (! $endpoint->is_active || ! config('affiliate-network.creator_postbacks.enabled', true)) {
+            $delivery->forceFill([
+                'status' => PostbackDeliveryStatus::Failed,
+                'last_error' => 'endpoint_disabled',
+            ])->save();
+
+            return $delivery;
+        }
+
         $headers = [];
         $secret = $this->signingSecret($endpoint);
+
+        if ($secret === null && $endpoint->signing_secret_encrypted !== null && $endpoint->signing_secret_encrypted !== '') {
+            $delivery->forceFill([
+                'status' => PostbackDeliveryStatus::Failed,
+                'last_error' => 'signing_secret_invalid',
+            ])->save();
+
+            return $delivery;
+        }
 
         if ($secret !== null) {
             $headers['X-Affiliate-Network-Signature'] = hash_hmac('sha256', $delivery->resolved_url, $secret);

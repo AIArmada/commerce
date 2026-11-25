@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Actions\Payouts;
 
 use AIArmada\Affiliates\Data\PayoutResult;
+use AIArmada\Affiliates\Drivers\Payouts\PayoutProcessorFactory;
 use AIArmada\Affiliates\Exceptions\PayoutCompletionBlockedException;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliatePayoutOperation;
 use AIArmada\Affiliates\Services\PayoutReconciliationService;
-use AIArmada\Affiliates\Services\Payouts\PayoutProcessorFactory;
 use AIArmada\Affiliates\States\CompletedPayout;
 use AIArmada\Affiliates\States\FailedPayout;
 use AIArmada\Affiliates\States\PendingPayout;

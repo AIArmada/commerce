@@ -77,7 +77,7 @@ final class PayoutExportService
             $query->where('created_at', '<=', $endDate);
         }
 
-        $payouts = $query->get();
+        $payouts = $query->with('payee')->get();
         $report = app(PayoutReconciliationService::class)->summarizePayouts($payouts, $startDate, $endDate);
         $rows = $this->buildSettlementData($payouts, $report);
 

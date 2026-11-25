@@ -35,9 +35,14 @@ final class NetworkStatsAggregator
     public static function aggregate(): array
     {
         return OwnerContext::withOwner(null, function (): array {
-            $totalClicks = (int) AffiliateOfferLink::withoutGlobalScope(ScopesByBelongsToOwner::class)->sum('clicks');
-            $totalConversions = (int) AffiliateOfferLink::withoutGlobalScope(ScopesByBelongsToOwner::class)->sum('conversions');
-            $revenue = self::aggregateRevenue();
+            $rows = AffiliateOfferLink::withoutGlobalScope(ScopesByBelongsToOwner::class)
+                ->toBase()
+                ->selectRaw('currency, COALESCE(SUM(revenue), 0) as revenue, COALESCE(SUM(clicks), 0) as clicks, COALESCE(SUM(conversions), 0) as conversions')
+                ->groupBy('currency')
+                ->get();
+            $totalClicks = (int) $rows->sum('clicks');
+            $totalConversions = (int) $rows->sum('conversions');
+            $revenue = self::aggregateRevenue($rows);
             $activeSites = AffiliateSite::query()->withoutOwnerScope()->where('status', SiteStatus::Verified)->count();
             $activeOffers = AffiliateOffer::withoutGlobalScope(ScopesByBelongsToOwner::class)->where('status', OfferStatus::Published)->count();
             $pendingApplications = AffiliateOfferApplication::withoutGlobalScope(ScopesByBelongsToOwner::class)->where('status', ApplicationStatus::Pending)->count();
@@ -69,16 +74,11 @@ final class NetworkStatsAggregator
     }
 
     /**
+     * @param  iterable<int, object{currency: string|null, revenue: int|string}>  $rows
      * @return array{total: int|null, currency: string, converted: bool, by_currency: array<string, int>}
      */
-    private static function aggregateRevenue(): array
+    private static function aggregateRevenue(iterable $rows): array
     {
-        $rows = AffiliateOfferLink::withoutGlobalScope(ScopesByBelongsToOwner::class)
-            ->toBase()
-            ->selectRaw('currency, COALESCE(SUM(revenue), 0) as revenue')
-            ->groupBy('currency')
-            ->get();
-
         $byCurrency = [];
 
         foreach ($rows as $row) {

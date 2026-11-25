@@ -305,7 +305,7 @@ The current maturity flow uses `holding_minor` for pre-payout commission state. 
 use AIArmada\Affiliates\Actions\Payouts\AssertPayoutCompletable;
 use AIArmada\Affiliates\Actions\Payouts\UpdatePayoutStatus;
 use AIArmada\Affiliates\Enums\PayoutMethodType;
-use AIArmada\Affiliates\Services\Payouts\PayoutProcessorFactory;
+use AIArmada\Affiliates\Drivers\Payouts\PayoutProcessorFactory;
 
 $factory = app(PayoutProcessorFactory::class);
 

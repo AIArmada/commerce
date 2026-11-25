@@ -70,11 +70,17 @@ final class DeliveriesRelationManager extends RelationManager
                         try {
                             $delivery = app(DeliverCreatorPostback::class)->execute((string) $record->getKey());
 
-                            Notification::make()
+                            $notification = Notification::make()
                                 ->title('Delivery retried')
-                                ->body($delivery->status->label())
-                                ->success()
-                                ->send();
+                                ->body($delivery->status->label());
+
+                            if ($delivery->status === PostbackDeliveryStatus::Delivered) {
+                                $notification->success();
+                            } else {
+                                $notification->danger();
+                            }
+
+                            $notification->send();
                         } catch (Throwable $exception) {
                             Notification::make()
                                 ->title('Delivery failed')
