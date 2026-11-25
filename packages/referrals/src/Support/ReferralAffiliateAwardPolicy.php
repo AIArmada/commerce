@@ -8,7 +8,6 @@ use AIArmada\Affiliates\Contracts\AffiliateAwardPolicy;
 use AIArmada\Affiliates\Data\AffiliateAwardDecision;
 use AIArmada\Affiliates\Data\AffiliateAwardProposal;
 use AIArmada\Affiliates\Data\AwardRecipient;
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Referrals\Contracts\ReferralAffiliateResolver;
 use AIArmada\Referrals\Enums\ReferralRewardSide;
 use AIArmada\Referrals\Enums\ReferralRewardStatus;
@@ -59,9 +58,12 @@ final class ReferralAffiliateAwardPolicy implements AffiliateAwardPolicy
 
             $expectedAffiliate = $this->affiliateResolver->resolve($reward);
 
-            if (! $expectedAffiliate instanceof Affiliate
-                || $expectedAffiliate->getMorphClass() !== $recipient->morphType
-                || (string) $expectedAffiliate->getKey() !== $recipient->id) {
+            if ($expectedAffiliate === null
+                || $expectedAffiliate->id !== $recipient->id
+                || $expectedAffiliate->morphType !== $recipient->morphType
+                || $expectedAffiliate->connectionName !== $recipient->connectionName
+                || $expectedAffiliate->ownerType !== $recipient->ownerType
+                || $expectedAffiliate->ownerId !== $recipient->ownerId) {
                 return AffiliateAwardDecision::deny('Affiliate recipient does not match the referral beneficiary.');
             }
 

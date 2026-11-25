@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Referrals\Fulfillment;
 
+use AIArmada\Affiliates\Data\AwardRecipient;
+use AIArmada\Affiliates\Features\Conversions\Api\AwardPosting;
 use AIArmada\Referrals\Contracts\ReferralAffiliateResolver;
 use AIArmada\Referrals\Contracts\ReferralRewardFulfillment;
 use AIArmada\Referrals\Data\ReferralFulfillmentResult;
@@ -17,10 +19,7 @@ final class AffiliatesCashFulfillment implements ReferralRewardFulfillment
 
     public function fulfill(ReferralReward $reward): ReferralFulfillmentResult
     {
-        $affiliateClass = 'AIArmada\\Affiliates\\Models\\Affiliate';
-        $actionClass = 'AIArmada\\Affiliates\\Features\\Conversions\\Api\\AwardPosting';
-
-        if (! class_exists($affiliateClass) || ! interface_exists($actionClass)) {
+        if (! class_exists(AwardRecipient::class) || ! interface_exists(AwardPosting::class)) {
             return ReferralFulfillmentResult::failed('The affiliates award API is unavailable.');
         }
 
@@ -30,7 +29,7 @@ final class AffiliatesCashFulfillment implements ReferralRewardFulfillment
 
         $affiliate = $this->affiliateResolver->resolve($reward);
 
-        if (! is_object($affiliate) || ! is_a($affiliate, $affiliateClass)) {
+        if ($affiliate === null || $affiliate->id === '') {
             return ReferralFulfillmentResult::failed('No affiliate recipient is configured for this referral beneficiary.');
         }
 
@@ -39,9 +38,9 @@ final class AffiliatesCashFulfillment implements ReferralRewardFulfillment
         $awardKey = 'referrals:award:' . $inviteId . ':' . $side;
 
         try {
-            $action = app($actionClass);
+            $action = app(AwardPosting::class);
             $result = $action->post(
-                (string) $affiliate->getKey(),
+                $affiliate->id,
                 $awardKey,
                 $reward->amount_minor,
                 $reward->currency,
@@ -51,8 +50,8 @@ final class AffiliatesCashFulfillment implements ReferralRewardFulfillment
                     'external_reference' => (string) $reward->invite->qualification_business_key,
                 ],
             );
-        } catch (Throwable $exception) {
-            return ReferralFulfillmentResult::failed('Affiliate award failed: ' . $exception->getMessage());
+        } catch (Throwable) {
+            return ReferralFulfillmentResult::failed('Affiliate award failed.');
         }
 
         if (! $result->isCreated() && ! $result->isReplayed()) {
@@ -71,10 +70,9 @@ final class AffiliatesCashFulfillment implements ReferralRewardFulfillment
 
     public function reverse(ReferralReward $reward, string $reason): ReferralFulfillmentResult
     {
-        $actionClass = 'AIArmada\\Affiliates\\Features\\Conversions\\Api\\AwardPosting';
         $conversionId = $reward->external_reference;
 
-        if (! is_string($conversionId) || $conversionId === '' || ! interface_exists($actionClass)) {
+        if (! is_string($conversionId) || $conversionId === '' || ! interface_exists(AwardPosting::class)) {
             return ReferralFulfillmentResult::failed('Affiliate reversal requires the stored conversion id and affiliates package.');
         }
 
@@ -83,10 +81,10 @@ final class AffiliatesCashFulfillment implements ReferralRewardFulfillment
         $awardKey = 'referrals:award:' . $inviteId . ':' . $side;
 
         try {
-            $action = app($actionClass);
+            $action = app(AwardPosting::class);
             $action->reverse($conversionId, $awardKey, $reason);
-        } catch (Throwable $exception) {
-            return ReferralFulfillmentResult::failed('Affiliate reversal failed: ' . $exception->getMessage());
+        } catch (Throwable) {
+            return ReferralFulfillmentResult::failed('Affiliate reversal failed.');
         }
 
         return ReferralFulfillmentResult::fulfilled($conversionId);

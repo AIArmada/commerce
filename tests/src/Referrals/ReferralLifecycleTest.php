@@ -6,6 +6,7 @@ namespace Tests\src\Referrals;
 
 use AIArmada\Affiliates\Data\AffiliateAwardDecision;
 use AIArmada\Affiliates\Data\AffiliateAwardProposal;
+use AIArmada\Affiliates\Data\AwardRecipient;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Queries\AwardRecipientQuery;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
@@ -954,11 +955,11 @@ it('authorizes affiliates policies only for the exact pending referral reward', 
     $reward = $qualified->rewards[0];
     $recipient = new Affiliate;
     $recipient->setAttribute('id', 'fixture-affiliate');
-    $resolver = new class($recipient) implements ReferralAffiliateResolver
+    $resolver = new class(AwardRecipientQuery::fromAffiliate($recipient)) implements ReferralAffiliateResolver
     {
-        public function __construct(private readonly Affiliate $affiliate) {}
+        public function __construct(private readonly AwardRecipient $affiliate) {}
 
-        public function resolve(ReferralReward $reward): ?object
+        public function resolve(ReferralReward $reward): ?AwardRecipient
         {
             return $this->affiliate;
         }
@@ -973,7 +974,18 @@ it('authorizes affiliates policies only for the exact pending referral reward', 
         new AffiliateAwardProposal($key, 1300, 'MYR', ReferralRewardStatus::class, 'registration:affiliate-policy', (string) $reward->invite_id),
     ));
 
-    expect($decision->authorized)->toBeTrue()
+    $canonicalRecipient = AwardRecipientQuery::fromAffiliate($recipient);
+    $forgedRecipient = new AwardRecipient(
+        $canonicalRecipient->id,
+        $canonicalRecipient->morphType,
+        $canonicalRecipient->connectionName,
+        $owner->getMorphClass(),
+        (string) $owner->getKey(),
+    );
+    $wrongOwner = OwnerContext::withOwner($owner, fn (): AffiliateAwardDecision => $policy->decide($forgedRecipient, $proposal));
+
+    expect($wrongOwner->authorized)->toBeFalse()
+        ->and($decision->authorized)->toBeTrue()
         ->and($decision->policyMinMinor)->toBe(1250)
         ->and($decision->policyMaxMinor)->toBe(1250)
         ->and($wrongAmount->authorized)->toBeFalse();

@@ -54,7 +54,7 @@ final class ReferralsServiceProvider extends PackageServiceProvider
         if (is_array($configuredDrivers['affiliate_cash'] ?? null)
             && ($configuredDrivers['affiliate_cash']['enabled'] ?? false)
             && $this->symbolsExist([
-                'AIArmada\\Affiliates\\Models\\Affiliate',
+                'AIArmada\\Affiliates\\Data\\AwardRecipient',
                 'AIArmada\\Affiliates\\Features\\Conversions\\Api\\AwardPosting',
                 'AIArmada\\Affiliates\\Contracts\\AffiliateAwardPolicy',
             ])) {
