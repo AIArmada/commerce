@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutEvent;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Exceptions\PayoutCompletionBlockedException;
 use AIArmada\Affiliates\Features\Conversions\Actions\ApplyConversionAccounting;
@@ -14,6 +13,7 @@ use AIArmada\Affiliates\Features\Payouts\Actions\CreatePayout;
 use AIArmada\Affiliates\Features\Payouts\Actions\UpdatePayoutStatus;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutHoldAdministration;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutReconciliation;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutEvent;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
@@ -598,7 +598,6 @@ test('manual payout reservation accepts a normalized conversion currency', funct
         ->and($conversion->fresh()->affiliate_payout_id)->toBe($payout->id)
         ->and($affiliate->balanceFor('USD')->available_minor)->toBe(0);
 });
-
 
 test('manual payout creation cannot reserve funds while an active hold exists', function (): void {
     $affiliate = createCompletionGuardAffiliate();

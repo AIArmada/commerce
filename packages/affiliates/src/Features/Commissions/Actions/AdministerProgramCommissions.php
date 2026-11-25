@@ -7,9 +7,9 @@ namespace AIArmada\Affiliates\Features\Commissions\Actions;
 use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Features\Commissions\Api\ProgramCommissionAdministration;
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionPromotion;
 use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionRule;
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Illuminate\Support\Facades\Validator;
@@ -104,7 +104,7 @@ final readonly class AdministerProgramCommissions implements ProgramCommissionAd
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
     private function ruleAttributes(array $data): array
@@ -135,7 +135,7 @@ final readonly class AdministerProgramCommissions implements ProgramCommissionAd
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
     private function promotionAttributes(array $data): array

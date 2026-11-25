@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Features\Programs\EntryPoints\Filament\Resources\AffiliateCreativeResource\Pages;
 
 use AIArmada\Affiliates\Features\Programs\Api\CreativeAdministration;
-use AIArmada\FilamentAffiliates\Features\Programs\EntryPoints\Filament\Support\CreativeAssetInput;
 use AIArmada\FilamentAffiliates\Features\Programs\EntryPoints\Filament\Resources\AffiliateCreativeResource;
+use AIArmada\FilamentAffiliates\Features\Programs\EntryPoints\Filament\Support\CreativeAssetInput;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
 

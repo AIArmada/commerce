@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Identity\EntryPoints\Http;
 
 use AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkAdministration;
-use AIArmada\Affiliates\Features\Reporting\Api\ReportingApi;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
 use AIArmada\Affiliates\Features\Identity\Queries\ReadAffiliateCreatives;
+use AIArmada\Affiliates\Features\Reporting\Api\ReportingApi;
 use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Http\JsonResponse;

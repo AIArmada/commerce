@@ -478,5 +478,4 @@ final class CalculatePerformanceBonuses implements PerformanceBonusCalculation
             ])
             ->all();
     }
-
 }

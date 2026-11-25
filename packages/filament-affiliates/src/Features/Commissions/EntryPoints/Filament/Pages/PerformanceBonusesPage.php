@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Features\Commissions\EntryPoints\Filament\Pages;
 
 use AIArmada\Affiliates\Enums\CommissionRuleType;
+use AIArmada\Affiliates\Features\Commissions\Api\PerformanceBonusCalculation;
 use AIArmada\Affiliates\Features\Conversions\Api\PerformanceBonusPosting;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Features\Commissions\Api\PerformanceBonusCalculation;
 use AIArmada\Affiliates\Support\BonusMonth;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;

@@ -8,6 +8,9 @@ use AIArmada\Affiliates\Data\AffiliateConversionData;
 use AIArmada\Affiliates\Data\AttributionTouch;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
+use AIArmada\Affiliates\Features\Attribution\Api\AttributionDistribution;
+use AIArmada\Affiliates\Features\Commissions\Api\CommissionPricing;
+use AIArmada\Affiliates\Features\Commissions\Api\CommissionRuleCalculation;
 use AIArmada\Affiliates\Features\Conversions\Api\CartConversionRecording;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudApi;
 use AIArmada\Affiliates\Features\Webhooks\Api\WebhookApi;
@@ -15,9 +18,6 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateTouchpoint;
-use AIArmada\Affiliates\Features\Attribution\Api\AttributionDistribution;
-use AIArmada\Affiliates\Features\Commissions\Api\CommissionPricing;
-use AIArmada\Affiliates\Features\Commissions\Api\CommissionRuleCalculation;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\ConversionStatus;
 use AIArmada\Affiliates\States\PendingConversion;
@@ -182,7 +182,6 @@ final readonly class RecordAffiliateConversion implements CartConversionRecordin
                 || mb_strlen($explicitIdempotencyKey) > 64)) {
             throw new InvalidArgumentException('Explicit conversion idempotency keys must be non-empty strings up to 64 characters.');
         }
-
 
         foreach ($weights as $affiliateId => $weight) {
             $weight = max(0, (float) $weight);

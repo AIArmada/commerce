@@ -5,17 +5,19 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Features\Programs\Api\CreativeAdministration;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramAdministration;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramCreative;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramCreative;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Spatie\MediaLibrary\MediaLibraryServiceProvider;
 
 beforeEach(function (): void {
@@ -250,7 +252,7 @@ test('deleting a program removes its creative media and files', function (): voi
         'cookie_lifetime_days' => 30,
     ]);
     $creative = AffiliateProgramCreative::query()->create([
-            'program_id' => $program->id,
+        'program_id' => $program->id,
         'type' => 'image', 'name' => 'Program Asset', 'tracking_code' => 'PROGRAM-MEDIA',
     ]);
     $media = $creative->addMedia(UploadedFile::fake()->image('program.png'))->toMediaCollection('creative_asset');
@@ -293,7 +295,7 @@ test('creative administration validates destinations and fixes the program ident
     $api = app(CreativeAdministration::class);
     $data = ['name' => 'Text', 'type' => 'text_link', 'tracking_code' => 'ADMIN', 'destination_url' => 'https://example.com'];
     expect(fn () => $api->create($program->id, [...$data, 'destination_url' => 'javascript:alert(1)']))
-        ->toThrow(\Illuminate\Validation\ValidationException::class);
+        ->toThrow(ValidationException::class);
 
     $id = $api->create($program->id, [...$data, 'program_id' => null]);
     $api->update($program->id, $id, ['program_id' => null, 'name' => 'Updated']);
@@ -301,7 +303,7 @@ test('creative administration validates destinations and fixes the program ident
     expect($creative->program_id)->toBe($program->id)
         ->and($creative->name)->toBe('Updated');
 
-    expect(fn () => $api->delete(null, $id))->toThrow(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
+    expect(fn () => $api->delete(null, $id))->toThrow(ModelNotFoundException::class);
     expect($api->delete($program->id, $id))->toBeTrue()
         ->and($creative->fresh())->toBeNull();
 });
@@ -344,7 +346,6 @@ test('rolled back program deletion preserves creative media rows and files', fun
     Storage::disk('public')->assertExists($path);
 });
 
-
 test('creative replacement rolls back metadata and media without destroying the previous asset', function (): void {
     $api = app(CreativeAdministration::class);
     $firstBytes = UploadedFile::fake()->image('first.png')->get();
@@ -380,7 +381,7 @@ test('creative uploads reject active content and retain the current asset', func
     $first = $creative->getFirstMedia('creative_asset');
 
     expect(fn () => $api->update(null, $id, ['name' => 'Unsafe'], '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>'))
-        ->toThrow(\Illuminate\Validation\ValidationException::class);
+        ->toThrow(ValidationException::class);
 
     expect($creative->fresh()->name)->toBe('Asset')
         ->and($creative->fresh()->getFirstMedia('creative_asset')->getKey())->toBe($first->getKey());

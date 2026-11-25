@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Commissions\Actions;
 
 use AIArmada\Affiliates\Features\Commissions\Api\ProgramCommissionCleanup;
-use AIArmada\Affiliates\Features\Commissions\Models\AffiliateVolumeTier;
 use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionPromotion;
 use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionRule;
+use AIArmada\Affiliates\Features\Commissions\Models\AffiliateVolumeTier;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use RuntimeException;

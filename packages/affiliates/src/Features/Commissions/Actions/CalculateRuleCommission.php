@@ -7,12 +7,12 @@ namespace AIArmada\Affiliates\Features\Commissions\Actions;
 use AIArmada\Affiliates\Features\Commissions\Api\CommissionCalculationResult;
 use AIArmada\Affiliates\Features\Commissions\Api\CommissionPricing;
 use AIArmada\Affiliates\Features\Commissions\Api\CommissionRuleCalculation;
-use AIArmada\Affiliates\Features\Commissions\Queries\FindCommissionRules;
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionPromotion;
 use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionRule;
-use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Features\Commissions\Models\AffiliateVolumeTier;
+use AIArmada\Affiliates\Features\Commissions\Queries\FindCommissionRules;
+use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Support\RevenueVolume;
 use AIArmada\CommerceSupport\Support\CurrencyConverter;
 use Carbon\CarbonImmutable;
@@ -227,5 +227,4 @@ final readonly class CalculateRuleCommission implements CommissionRuleCalculatio
 
         return $totalBonus;
     }
-
 }

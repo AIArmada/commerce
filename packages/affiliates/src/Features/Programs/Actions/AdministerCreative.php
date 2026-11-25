@@ -7,12 +7,13 @@ namespace AIArmada\Affiliates\Features\Programs\Actions;
 use AIArmada\Affiliates\Contracts\CreativeAssetRemoval;
 use AIArmada\Affiliates\Contracts\CreativeAssetReplacement;
 use AIArmada\Affiliates\Features\Programs\Api\CreativeAdministration;
-use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramCreative;
+use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 use RuntimeException;
 
 final readonly class AdministerCreative implements CreativeAdministration
@@ -46,7 +47,7 @@ final readonly class AdministerCreative implements CreativeAdministration
             ]), $data)));
 
             if ($assetBytes !== null && $removeAsset) {
-                throw \Illuminate\Validation\ValidationException::withMessages(['asset' => 'Choose either a replacement or removal.']);
+                throw ValidationException::withMessages(['asset' => 'Choose either a replacement or removal.']);
             }
 
             if ($assetBytes !== null) {
@@ -111,7 +112,7 @@ final readonly class AdministerCreative implements CreativeAdministration
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
     private function validated(array $data): array

@@ -7,6 +7,7 @@ use AIArmada\Affiliates\Data\AffiliateConversionData;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Events\AffiliateAttributed;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
+use AIArmada\Affiliates\Features\Attribution\FeatureModule;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
@@ -24,8 +25,8 @@ use Illuminate\Support\Facades\Schema;
 uses(SignalsTestCase::class);
 
 beforeEach(function (): void {
-    (new \AIArmada\Affiliates\Features\Attribution\FeatureModule)->register(app());
-    (new \AIArmada\Affiliates\Features\Conversions\FeatureModule)->register(app());
+    (new FeatureModule)->register(app());
+    (new AIArmada\Affiliates\Features\Conversions\FeatureModule)->register(app());
 
     Schema::dropIfExists('affiliate_conversions');
     Schema::dropIfExists('affiliate_attributions');

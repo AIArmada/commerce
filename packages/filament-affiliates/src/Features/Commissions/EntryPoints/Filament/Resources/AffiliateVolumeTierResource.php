@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Features\Commissions\EntryPoints\Filament\Resources;
 
-use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Features\Commissions\Api\VolumeTierAdministration;
 use AIArmada\Affiliates\Features\Commissions\Models\AffiliateVolumeTier;
+use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;

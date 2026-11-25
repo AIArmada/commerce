@@ -8,13 +8,14 @@ use AIArmada\Affiliates\Enums\RankQualificationReason;
 use AIArmada\Affiliates\Events\AffiliateRankChanged;
 use AIArmada\Affiliates\Features\Upline\Api\QualifiedRank;
 use AIArmada\Affiliates\Features\Upline\Api\RankQualificationApi;
+use AIArmada\Affiliates\Features\Upline\Models\AffiliateRankHistory;
 use AIArmada\Affiliates\Features\Upline\Queries\RankQualificationQuery;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateRank;
-use AIArmada\Affiliates\Features\Upline\Models\AffiliateRankHistory;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
 use InvalidArgumentException;
+use LogicException;
 
 final readonly class QualifyAffiliateRank implements RankQualificationApi
 {
@@ -101,7 +102,7 @@ final readonly class QualifyAffiliateRank implements RankQualificationApi
 
         if ((new AffiliateRank)->getConnection() !== $affiliate->getConnection()
             || (new AffiliateRankHistory)->getConnection() !== $affiliate->getConnection()) {
-            throw new \LogicException('Rank assignment requires a shared database connection.');
+            throw new LogicException('Rank assignment requires a shared database connection.');
         }
 
         $oldRank = $affiliate->rank;

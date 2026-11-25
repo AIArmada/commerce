@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionRule;
-use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Features\Commissions\Models\AffiliateVolumeTier;
 use AIArmada\Affiliates\Features\Commissions\Api\CommissionCalculationResult;
 use AIArmada\Affiliates\Features\Commissions\Api\CommissionRuleCalculation;
+use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionRule;
+use AIArmada\Affiliates\Features\Commissions\Models\AffiliateVolumeTier;
+use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\QualifiedConversion;
 

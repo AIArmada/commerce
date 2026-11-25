@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources\AffiliateResource\Schemas;
 
 use AIArmada\Affiliates\Enums\CommissionType;
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Features\Commissions\Api\CommissionTemplateReader;
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\Affiliates\States\Draft;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;

@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Conversions\EntryPoints\Listeners;
 
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Features\Conversions\Notifications\ConversionRecordedNotification;
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Communications\Actions\DispatchManagedNotificationAction;
 use AIArmada\Communications\Data\CommunicationContextData;
 

@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages;
 
 use AIArmada\Affiliates\Contracts\PayoutProcessorRegistry;
-use AIArmada\Affiliates\Features\Payouts\Api\PayoutMethodReader;
 use AIArmada\Affiliates\Enums\PayoutMethodType;
 use AIArmada\Affiliates\Features\Identity\Api\PortalProfileAdministration;
 use AIArmada\Affiliates\Features\Identity\Api\PortalProfileInput;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutMethodReader;
 use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Concerns\PortalPage;
 use BackedEnum;
 use Filament\Notifications\Notification;

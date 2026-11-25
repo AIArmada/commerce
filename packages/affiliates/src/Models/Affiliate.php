@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Models;
 
-use AIArmada\Affiliates\Features\Payouts\Api\PayoutMethodReader;
-use AIArmada\Affiliates\Features\Payouts\Api\PayoutHoldReader;
 use AIArmada\Affiliates\Data\AffiliateData;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\RegistrationApprovalMode;
 use AIArmada\Affiliates\Events\AffiliateActivated;
 use AIArmada\Affiliates\Events\AffiliateCreated;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycleReference;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutHoldReader;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutMethodReader;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\Affiliates\States\Pending;

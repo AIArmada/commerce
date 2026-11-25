@@ -13,7 +13,7 @@ interface PayoutReconciliationQueries
     public function generateReport(?string $startDate = null, ?string $endDate = null): array;
 
     /**
-     * @param list<string> $payoutIds
+     * @param  list<string>  $payoutIds
      * @return array<string, mixed>
      */
     public function summarizePayoutIds(array $payoutIds, ?string $startDate = null, ?string $endDate = null, bool $includeGlobal = false): array;

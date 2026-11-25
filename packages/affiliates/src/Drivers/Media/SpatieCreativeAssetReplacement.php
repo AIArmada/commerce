@@ -6,6 +6,7 @@ namespace AIArmada\Affiliates\Drivers\Media;
 
 use AIArmada\Affiliates\Contracts\CreativeAssetRemoval;
 use AIArmada\Affiliates\Contracts\CreativeAssetReplacement;
+use finfo;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Str;
@@ -70,13 +71,13 @@ final readonly class SpatieCreativeAssetReplacement implements CreativeAssetRepl
 
     private function extension(string $bytes): string
     {
-        if ($bytes === '' || strlen($bytes) > (int) config('media-library.max_file_size', 10485760)) {
+        if ($bytes === '' || mb_strlen($bytes) > (int) config('media-library.max_file_size', 10485760)) {
             throw ValidationException::withMessages(['asset' => 'The asset is empty or exceeds the configured upload limit.']);
         }
 
         // Derive both MIME and extension from content, never from the client name.
         // SVG is excluded because these files are served from a public disk.
-        return match ((new \finfo(FILEINFO_MIME_TYPE))->buffer($bytes)) {
+        return match ((new finfo(FILEINFO_MIME_TYPE))->buffer($bytes)) {
             'image/jpeg' => 'jpg',
             'image/png' => 'png',
             'image/gif' => 'gif',

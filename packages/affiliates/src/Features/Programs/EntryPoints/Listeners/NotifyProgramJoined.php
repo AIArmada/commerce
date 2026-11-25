@@ -6,11 +6,11 @@ namespace AIArmada\Affiliates\Features\Programs\EntryPoints\Listeners;
 
 use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Events\AffiliateProgramJoined;
-use AIArmada\Affiliates\Features\Programs\Queries\ProgramJoinQuery;
 use AIArmada\Affiliates\Features\Programs\Notifications\ProgramJoinedNotification;
+use AIArmada\Affiliates\Features\Programs\Queries\ProgramJoinQuery;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Communications\Actions\DispatchManagedNotificationAction;
 use AIArmada\Communications\Data\CommunicationContextData;
-use AIArmada\CommerceSupport\Support\OwnerContext;
 
 /**
  * Notifies the affiliate on program approval.

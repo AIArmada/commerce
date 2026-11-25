@@ -8,8 +8,8 @@ use AIArmada\Affiliates\Contracts\PayoutProcessorRegistry;
 use AIArmada\Affiliates\Enums\PayoutMethodType;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutMethodAdministration;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutMethod;
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutOperation;
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -152,7 +152,8 @@ final readonly class AdministerPayoutMethod implements PayoutMethodAdministratio
 
     /**
      * @template T
-     * @param callable(Affiliate): T $work
+     *
+     * @param  callable(Affiliate): T  $work
      * @return T
      */
     private function withLockedAffiliate(string $affiliateId, callable $work): mixed
@@ -185,7 +186,7 @@ final readonly class AdministerPayoutMethod implements PayoutMethodAdministratio
     }
 
     /**
-     * @param array<string, mixed> $details
+     * @param  array<string, mixed>  $details
      * @return array<string, mixed>
      */
     private function validateDetails(PayoutMethodType $type, array $details): array

@@ -21,7 +21,7 @@ final class CreativeAssetInput
 
         $bytes = $state->get();
 
-        if (! is_string($bytes) || $bytes === '' || strlen($bytes) > (int) config('media-library.max_file_size', 10485760)) {
+        if (! is_string($bytes) || $bytes === '' || mb_strlen($bytes) > (int) config('media-library.max_file_size', 10485760)) {
             throw ValidationException::withMessages(['asset' => 'The asset could not be read or exceeds the configured size limit.']);
         }
 

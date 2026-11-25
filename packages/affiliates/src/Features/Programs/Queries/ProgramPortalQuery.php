@@ -6,9 +6,9 @@ namespace AIArmada\Affiliates\Features\Programs\Queries;
 
 use AIArmada\Affiliates\Features\Programs\Api\PortalProgramRecord;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramPortalReader;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramCreative;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramCreative;
 use AIArmada\Affiliates\Models\AffiliateProgramMembership;
 
 final readonly class ProgramPortalQuery implements ProgramPortalReader

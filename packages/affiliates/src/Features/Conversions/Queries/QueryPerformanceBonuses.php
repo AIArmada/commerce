@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Conversions\Queries;
 
 use AIArmada\Affiliates\Enums\CommissionRuleType;
+use AIArmada\Affiliates\Features\Commissions\Api\PerformanceBonusCalculation;
 use AIArmada\Affiliates\Features\Conversions\Api\PerformanceBonusQueries;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Features\Commissions\Api\PerformanceBonusCalculation;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\Affiliates\States\ApprovedConversion;

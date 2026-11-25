@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Features\Attribution\EntryPoints\Http\ResolvePublicAffiliateReferralContext;
 use AIArmada\Affiliates\Features\Attribution\Api\AttributionActivity;
 use AIArmada\Affiliates\Features\Attribution\Api\AttributionTracking;
+use AIArmada\Affiliates\Features\Attribution\EntryPoints\Http\ResolvePublicAffiliateReferralContext;
+use AIArmada\Affiliates\Features\Attribution\EntryPoints\Middleware\CaptureAffiliateReferralFromPath;
+use AIArmada\Affiliates\Features\Attribution\EntryPoints\Middleware\TrackAffiliateCookie;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\States\Active;
@@ -237,7 +239,7 @@ test('disabled path referral capture does not intercept the request', function (
     config()->set('affiliates.public_pages.route.enabled', false);
 
     $request = Request::create('/r/' . $this->affiliate->code, 'GET');
-    $response = app(\AIArmada\Affiliates\Features\Attribution\EntryPoints\Middleware\CaptureAffiliateReferralFromPath::class)
+    $response = app(CaptureAffiliateReferralFromPath::class)
         ->handle($request, fn () => response('next'));
 
     expect($response->getContent())->toBe('next')
@@ -246,7 +248,7 @@ test('disabled path referral capture does not intercept the request', function (
 
 test('malformed tracking link IDs do not reach UUID database queries', function (): void {
     $request = Request::create('/?aff_link=not-a-uuid', 'GET');
-    $response = app(\AIArmada\Affiliates\Features\Attribution\EntryPoints\Middleware\TrackAffiliateCookie::class)
+    $response = app(TrackAffiliateCookie::class)
         ->handle($request, fn () => response('next'));
 
     expect($response->getContent())->toBe('next')

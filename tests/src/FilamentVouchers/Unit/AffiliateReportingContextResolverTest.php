@@ -362,12 +362,12 @@ it('keeps affiliate reporting owner scoped', function (): void {
     expect($otherContext['affiliate_code'])->toBe('AFF-OWNER-B')
         ->and($resolver->resolve($usage))->toBe($context)
         ->and($context)->toBe([
-        'affiliate_code' => null,
-        'affiliate_name' => null,
-        'source' => null,
-        'medium' => null,
-        'campaign' => null,
-    ]);
+            'affiliate_code' => null,
+            'affiliate_name' => null,
+            'source' => null,
+            'medium' => null,
+            'campaign' => null,
+        ]);
 });
 
 it('filters voucher usages by affiliate reporting context', function (): void {

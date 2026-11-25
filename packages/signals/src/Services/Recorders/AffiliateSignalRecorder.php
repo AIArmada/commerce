@@ -279,5 +279,4 @@ final class AffiliateSignalRecorder
             throw new InvalidArgumentException(sprintf('Trusted affiliate %s does not match the canonical source.', $what));
         }
     }
-
 }

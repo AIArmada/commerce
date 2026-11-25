@@ -50,7 +50,7 @@ final readonly class AdministerRank implements RankAdministration
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
     private function attributes(array $data, bool $creating = false): array

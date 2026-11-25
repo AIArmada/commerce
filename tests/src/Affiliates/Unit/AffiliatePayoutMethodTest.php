@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-use Illuminate\Validation\ValidationException;
-use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutOperation;
 use AIArmada\Affiliates\Enums\PayoutMethodType;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutMethodAdministration;
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutMethod;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutOperation;
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Validation\ValidationException;
 
 // AffiliatePayoutMethod Tests
 test('AffiliatePayoutMethod can be created with required fields', function (): void {
@@ -182,7 +182,6 @@ test('AffiliatePayoutMethod hydrates the manual type', function (): void {
 
     expect($method->fresh()->type)->toBe(PayoutMethodType::Manual);
 });
-
 
 test('payout method changes cannot redirect an unresolved provider operation', function (): void {
     $affiliate = Affiliate::create([

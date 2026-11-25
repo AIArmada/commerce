@@ -9,7 +9,7 @@ use AIArmada\Affiliates\Data\AttributionTouch;
 interface AttributionDistribution
 {
     /**
-     * @param list<AttributionTouch> $touches
+     * @param  list<AttributionTouch>  $touches
      * @return array<string, float>
      */
     public function distribute(array $touches, ?string $strategy = null): array;

@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\CommissionType;
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Features\Commissions\Api\CommissionPricing;
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use Illuminate\Support\Str;
 

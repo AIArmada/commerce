@@ -7,12 +7,14 @@ use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\ProgramVisibility;
-use AIArmada\Affiliates\Features\Programs\Queries\ProgramCatalogQuery;
+use AIArmada\Affiliates\Features\Commissions\Api\CommissionCatalogReader;
+use AIArmada\Affiliates\Features\Commissions\Api\CommissionRulePreview;
+use AIArmada\Affiliates\Features\Commissions\Api\VolumeTierReader;
 use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionPromotion;
 use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionRule;
-use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Features\Commissions\Models\AffiliateVolumeTier;
-use AIArmada\Affiliates\Features\Commissions\Api\CommissionRulePreview;
+use AIArmada\Affiliates\Features\Programs\Queries\ProgramCatalogQuery;
+use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Support\Catalog\CallbackPromotableProvider;
 use AIArmada\Affiliates\Support\Catalog\PromotableRegistry;
 use Carbon\CarbonImmutable;
@@ -35,7 +37,7 @@ beforeEach(function (): void {
         }
     });
 
-    $this->service = new ProgramCatalogQuery(app(CommissionRulePreview::class), $this->registry, app(\AIArmada\Affiliates\Features\Commissions\Api\VolumeTierReader::class), app(\AIArmada\Affiliates\Features\Commissions\Api\CommissionCatalogReader::class));
+    $this->service = new ProgramCatalogQuery(app(CommissionRulePreview::class), $this->registry, app(VolumeTierReader::class), app(CommissionCatalogReader::class));
 
     $this->program = AffiliateProgram::create([
         'name' => 'Catalog Program',
