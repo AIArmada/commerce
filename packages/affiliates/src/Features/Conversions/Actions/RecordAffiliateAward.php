@@ -35,7 +35,7 @@ use LogicException;
  *
  * Fixed awards are entitlements, not earned commissions: the action posts
  * exactly the validated positive minor-unit amount or rejects before any
- * money effect. It never applies commercial `CommissionCaps`, never derives
+ * money effect. It never applies commercial `CommissionPricing::clamp()`, never derives
  * an amount from a percentage of zero, and never mutates an existing
  * zero-value row — every award is a separate new `reward_award` conversion
  * with a null attribution.

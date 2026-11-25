@@ -51,7 +51,6 @@ use AIArmada\Affiliates\Models\AffiliateVolumeTier;
 use AIArmada\Affiliates\Platform\ExtensionRegistry;
 use AIArmada\Affiliates\Platform\FeatureCatalog;
 use AIArmada\Affiliates\Platform\FeatureModule;
-use AIArmada\Affiliates\Services\CommissionCalculator;
 use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
 use AIArmada\Affiliates\Support\Integrations\CartBridge;
 use AIArmada\Affiliates\Support\Integrations\VoucherIntegrationRegistrar;
@@ -118,7 +117,6 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
             }
         }
 
-        $this->app->singleton(CommissionCalculator::class);
         $this->app->singleton(PayoutProcessorRegistry::class, PayoutProcessorFactory::class);
         $this->app->scoped(CommissionRuleEngine::class);
         $this->app->singleton(Support\Catalog\PromotableRegistry::class);

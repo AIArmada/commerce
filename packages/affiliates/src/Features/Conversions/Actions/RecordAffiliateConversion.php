@@ -16,8 +16,7 @@ use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateTouchpoint;
 use AIArmada\Affiliates\Features\Attribution\Api\AttributionDistribution;
-use AIArmada\Affiliates\Services\CommissionCalculator;
-use AIArmada\Affiliates\Services\Commissions\CommissionCaps;
+use AIArmada\Affiliates\Features\Commissions\Api\CommissionPricing;
 use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\ConversionStatus;
@@ -34,7 +33,7 @@ use InvalidArgumentException;
 final readonly class RecordAffiliateConversion implements CartConversionRecording
 {
     public function __construct(
-        private CommissionCalculator $commissionCalculator,
+        private CommissionPricing $commissionPricing,
         private CommissionRuleEngine $ruleEngine,
         private Dispatcher $events,
         private WebhookApi $webhooks,
@@ -358,13 +357,13 @@ final readonly class RecordAffiliateConversion implements CartConversionRecordin
         }
 
         if (isset($payload['commission'])) {
-            return CommissionCaps::clamp($this->resolveMinorAmount($payload['commission'], fn () => 0) ?? 0);
+            return $this->commissionPricing->clamp($this->resolveMinorAmount($payload['commission'], fn () => 0) ?? 0);
         }
 
         $voucherOverride = $payload['commission_override'] ?? $attribution?->commission_override;
 
         if (is_array($voucherOverride) && isset($voucherOverride['type'], $voucherOverride['value'])) {
-            return CommissionCaps::clamp($this->calculateVoucherCommission($voucherOverride, $baseAmount));
+            return $this->commissionPricing->clamp($this->calculateVoucherCommission($voucherOverride, $baseAmount));
         }
 
         $programId = $payload['affiliate_program_id'] ?? $attribution?->affiliate_program_id;
@@ -377,7 +376,7 @@ final readonly class RecordAffiliateConversion implements CartConversionRecordin
             return $result->finalCommissionMinor;
         }
 
-        return $this->commissionCalculator->calculate($affiliate, $baseAmount);
+        return $this->commissionPricing->calculateBase($affiliate->commission_type, $affiliate->commission_rate, $baseAmount);
     }
 
     private function calculateVoucherCommission(array $override, int $baseAmount): int

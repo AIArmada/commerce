@@ -13,7 +13,7 @@ use AIArmada\Affiliates\Features\Fraud\Api\FraudApi;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Services\Commissions\CommissionCaps;
+use AIArmada\Affiliates\Features\Commissions\Api\CommissionPricing;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\RejectedConversion;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -80,7 +80,7 @@ final readonly class ExternalConversionLedger implements MerchantLedger
             'conversion_type' => 'external',
             'subtotal_minor' => $draft->revenueMinor,
             'value_minor' => $draft->revenueMinor,
-            'commission_minor' => CommissionCaps::clamp($draft->commissionMinor),
+            'commission_minor' => app(CommissionPricing::class)->clamp($draft->commissionMinor),
             'commission_currency' => $draft->currency,
             'status' => $autoApprove ? ApprovedConversion::class : config('affiliates.commissions.default_status', 'pending'),
             'origin' => $draft->source,

@@ -13,8 +13,7 @@ use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\Services\CommissionCalculator;
-use AIArmada\Affiliates\Services\Commissions\CommissionCaps;
+use AIArmada\Affiliates\Features\Commissions\Api\CommissionPricing;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\CancelledPayout;
@@ -66,11 +65,11 @@ test('commission caps clamp negative and out-of-range commissions', function ():
     config()->set('affiliates.commissions.minimum_minor', 100);
     config()->set('affiliates.commissions.maximum_minor', 500);
 
-    expect(CommissionCaps::clamp(-50))->toBe(100)
-        ->and(CommissionCaps::clamp(50))->toBe(100)
-        ->and(CommissionCaps::clamp(200))->toBe(200)
-        ->and(CommissionCaps::clamp(600))->toBe(500)
-        ->and(CommissionCaps::clamp(0))->toBe(0, 'The minimum floors earned commissions; it must not conjure one from zero.');
+    expect(app(CommissionPricing::class)->clamp(-50))->toBe(100)
+        ->and(app(CommissionPricing::class)->clamp(50))->toBe(100)
+        ->and(app(CommissionPricing::class)->clamp(200))->toBe(200)
+        ->and(app(CommissionPricing::class)->clamp(600))->toBe(500)
+        ->and(app(CommissionPricing::class)->clamp(0))->toBe(0, 'The minimum floors earned commissions; it must not conjure one from zero.');
 });
 
 test('commission calculator honors caps on fixed and percentage paths', function (): void {
@@ -86,8 +85,8 @@ test('commission calculator honors caps on fixed and percentage paths', function
         'currency' => 'USD',
     ]);
 
-    expect(app(CommissionCalculator::class)->calculate($fixed, 10000))->toBe(500)
-        ->and(app(CommissionCalculator::class)->calculate($this->affiliate, 100000))->toBe(500);
+    expect(app(CommissionPricing::class)->calculateBase($fixed->commission_type, $fixed->commission_rate, 10000))->toBe(500)
+        ->and(app(CommissionPricing::class)->calculateBase($this->affiliate->commission_type, $this->affiliate->commission_rate, 100000))->toBe(500);
 });
 
 test('create payout rejects non-approved conversions', function (): void {

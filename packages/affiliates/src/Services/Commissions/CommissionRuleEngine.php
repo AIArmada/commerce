@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Services\Commissions;
 
 use AIArmada\Affiliates\Enums\CommissionRuleType;
+use AIArmada\Affiliates\Features\Commissions\Api\CommissionPricing;
 use AIArmada\Affiliates\Features\Commissions\Api\PromotionUsage;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateCommissionPromotion;
@@ -727,6 +728,6 @@ final class CommissionRuleEngine
 
     private function applyCaps(int $commission, Affiliate $affiliate, array $context): int
     {
-        return CommissionCaps::clamp($commission);
+        return app(CommissionPricing::class)->clamp($commission);
     }
 }

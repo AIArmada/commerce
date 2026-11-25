@@ -205,7 +205,7 @@ Entry capture is handled by the `CaptureAffiliateReferralFromPath` middleware (a
 | `minimum_minor` | Minimum commission amount (minor units) |
 | `maximum_minor` | Maximum commission amount (minor units) |
 
-Every commission path funnels through `CommissionCaps::clamp()`, so these bounds cannot be bypassed. Zero stays zero: an unearned commission (unmatched rule, zero rate, zero portion) is never lifted to the minimum — the minimum floors earned commissions only.
+Every commission path funnels through `CommissionPricing::clamp()`, so these bounds cannot be bypassed. Zero stays zero: an unearned commission (unmatched rule, zero rate, zero portion) is never lifted to the minimum — the minimum floors earned commissions only.
 
 ## Payout Settings
 

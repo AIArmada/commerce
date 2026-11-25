@@ -88,18 +88,17 @@ eligibility gate applies, but no balance is debited because no funds
 were reserved — see the reconciliation caveat in
 [Troubleshooting](99-troubleshooting.md).
 
-## CommissionCalculator
+## CommissionPricing
 
-Calculates a commission from a single affiliate and a subtotal. It has exactly
-one method.
+Calculates a commission from a single affiliate and a subtotal. It also exposes the shared commission clamp.
 
 ```php
-use AIArmada\Affiliates\Services\CommissionCalculator;
+use AIArmada\Affiliates\Features\Commissions\Api\CommissionPricing;
 
-$calculator = app(CommissionCalculator::class);
+$calculator = app(CommissionPricing::class);
 
-// calculate(Affiliate $affiliate, int $subtotalMinor): int
-$commissionMinor = $calculator->calculate($affiliate, 14000);
+// calculateBase(CommissionType $type, int $rate, int $subtotalMinor): int
+$commissionMinor = $calculator->calculateBase($affiliate->commission_type, $affiliate->commission_rate, 14000);
 ```
 
 A fixed-rate affiliate returns `commission_rate` verbatim; a percentage
@@ -361,12 +360,8 @@ use AIArmada\Affiliates\Features\Attribution\Api\AttributionDistribution;
 
 $model = app(AttributionDistribution::class);
 
-// Registered strategies (last_touch, first_touch, linear)
-$model->strategies();
-
-// Resolve a strategy, or the configured default
-$strategy = $model->resolve();          // e.g. resolve('first_touch')
-$strategy = $model->resolve('linear');
+// Select first_touch, last_touch, linear, or the configured default.
+$linear = $model->distribute($touches, 'linear');
 
 // Distribute credit across immutable AttributionTouch records
 $distribution = $model->distribute($touches);

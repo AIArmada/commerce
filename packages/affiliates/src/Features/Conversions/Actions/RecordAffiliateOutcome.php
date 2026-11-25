@@ -16,7 +16,7 @@ use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Services\Commissions\CommissionCaps;
+use AIArmada\Affiliates\Features\Commissions\Api\CommissionPricing;
 use AIArmada\Affiliates\States\RejectedConversion;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Carbon\CarbonImmutable;
@@ -227,7 +227,7 @@ final readonly class RecordAffiliateOutcome implements OutcomePosting
                 'subtotal_minor' => (int) Arr::get($payload, 'subtotal_minor', 0),
                 'value_minor' => (int) Arr::get($payload, 'value_minor', 0),
                 'commission_minor' => $affiliate->isCommercialPurpose()
-                    ? CommissionCaps::clamp((int) Arr::get($payload, 'commission_minor', 0))
+                    ? app(CommissionPricing::class)->clamp((int) Arr::get($payload, 'commission_minor', 0))
                     : 0,
                 'commission_currency' => (string) Arr::get($payload, 'commission_currency', config('affiliates.currency.default', 'MYR')),
                 'status' => Arr::get($payload, 'status', config('affiliates.commissions.default_status', 'pending')),

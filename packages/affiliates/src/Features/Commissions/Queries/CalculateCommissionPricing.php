@@ -2,17 +2,25 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Services\Commissions;
+namespace AIArmada\Affiliates\Features\Commissions\Queries;
 
-/**
- * Central commission clamp applied to every commission path.
- *
- * Engine, calculator, voucher-override, and explicit payload commissions all
- * funnel through here so minimum/maximum configuration cannot be bypassed.
- */
-final class CommissionCaps
+use AIArmada\Affiliates\Enums\CommissionType;
+use AIArmada\Affiliates\Features\Commissions\Api\CommissionPricing;
+
+final class CalculateCommissionPricing implements CommissionPricing
 {
-    public static function clamp(int $amountMinor): int
+    public function calculateBase(CommissionType $type, int $rate, int $subtotalMinor): int
+    {
+        if ($type === CommissionType::Fixed) {
+            return $this->clamp($rate);
+        }
+
+        $scale = max(1, (int) config('affiliates.currency.percentage_scale', 100));
+
+        return $this->clamp((int) round(($subtotalMinor * $rate) / ($scale * 100)));
+    }
+
+    public function clamp(int $amountMinor): int
     {
         // Zero means no commission was earned (unmatched rule, zero rate,
         // zero portion). The minimum floors earned commissions; it must not

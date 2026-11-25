@@ -49,7 +49,7 @@ hashes the exact validated identity with `sha256` for the unique
 ## Amount exactness
 
 The posted `commission_minor` always equals the validated `$amountMinor`.
-The action never applies commercial `CommissionCaps`, never derives an
+The action never applies commercial `CommissionPricing::clamp()`, never derives an
 amount from a percentage, and never mutates an existing zero-value row:
 every award is a separate new conversion with
 `conversion_type = 'reward_award'` and a null attribution.

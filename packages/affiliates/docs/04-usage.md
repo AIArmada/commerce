@@ -353,24 +353,24 @@ the fresh attempt observes the seal and throws `SealedIdentityException`.
 
 ## Commission Calculation
 
-The `CommissionCalculator` service handles all commission logic. It takes the subtotal in minor
+The `CommissionPricing` API calculates base commissions. It takes the subtotal in minor
 units and returns the commission in minor units:
 
 ```php
 use AIArmada\Affiliates\Enums\CommissionType;
-use AIArmada\Affiliates\Services\CommissionCalculator;
+use AIArmada\Affiliates\Features\Commissions\Api\CommissionPricing;
 
-$calculator = app(CommissionCalculator::class);
+$calculator = app(CommissionPricing::class);
 
 $affiliate->commission_type = CommissionType::Percentage;
 $affiliate->commission_rate = 1000; // 10% (basis points)
 
-$commission = $calculator->calculate($affiliate, 14000); // 1400 = 14.00
+$commission = $calculator->calculateBase($affiliate->commission_type, $affiliate->commission_rate, 14000); // 1400 = 14.00
 ```
 
 Percentage math uses `affiliates.currency.percentage_scale` (default `100`, so 1000 basis points
 = 10%). Fixed commissions ignore the amount entirely and return `commission_rate` as minor units.
-Both paths run through `CommissionCaps::clamp()`.
+Both paths run through `CommissionPricing::clamp()`.
 
 ### Commission Types
 

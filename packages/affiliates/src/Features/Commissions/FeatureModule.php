@@ -12,6 +12,7 @@ final class FeatureModule implements FeatureModuleContract
     public function register(Application $app): void
     {
         $app->bind(Api\CommissionTemplateAdministration::class, Actions\AdministerCommissionTemplates::class);
+        $app->bind(Api\CommissionPricing::class, Queries\CalculateCommissionPricing::class);
         $app->bind(Api\PromotionUsage::class, Actions\ConsumePromotionUsage::class);
     }
 

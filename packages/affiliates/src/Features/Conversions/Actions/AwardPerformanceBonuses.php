@@ -7,7 +7,7 @@ namespace AIArmada\Affiliates\Features\Conversions\Actions;
 use AIArmada\Affiliates\Features\Conversions\Api\PerformanceBonusPosting;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Services\Commissions\CommissionCaps;
+use AIArmada\Affiliates\Features\Commissions\Api\CommissionPricing;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use Carbon\CarbonImmutable;
@@ -53,7 +53,7 @@ final readonly class AwardPerformanceBonuses implements PerformanceBonusPosting
                         'external_reference' => 'BONUS-' . $period . '-' . mb_strtoupper(mb_substr(md5($performanceBonusKey), 0, 8)),
                         'performance_bonus_key' => $performanceBonusKey,
                         'subtotal_minor' => 0,
-                        'commission_minor' => CommissionCaps::clamp((int) $bonus['amount_minor']),
+                        'commission_minor' => app(CommissionPricing::class)->clamp((int) $bonus['amount_minor']),
                         'commission_currency' => $currency,
                         'status' => ApprovedConversion::class,
                         'occurred_at' => CarbonImmutable::now(),

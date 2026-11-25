@@ -8,7 +8,7 @@ use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
 use AIArmada\Affiliates\Features\Webhooks\Api\WebhookApi;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Services\Commissions\CommissionCaps;
+use AIArmada\Affiliates\Features\Commissions\Api\CommissionPricing;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\ConversionStatus;
 use Carbon\CarbonImmutable;
@@ -71,7 +71,7 @@ final readonly class AllocateUplineCommissions
                     continue;
                 }
 
-                $portion = CommissionCaps::clamp(self::resolvePortion($conversionData->commissionMinor, $levelConfig));
+                $portion = app(CommissionPricing::class)->clamp(self::resolvePortion($conversionData->commissionMinor, $levelConfig));
 
                 if ($portion > 0) {
                     $model = new AffiliateConversion([
