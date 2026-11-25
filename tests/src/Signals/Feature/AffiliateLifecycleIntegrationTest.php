@@ -276,7 +276,7 @@ it('records an affiliate program joined signal keyed by membership', function ()
 
     $membership = affiliateLifecycleMembership($affiliate, $program);
 
-    Event::dispatch(new AffiliateProgramJoined($affiliate, $program, $membership));
+    Event::dispatch(new AffiliateProgramJoined($membership->joinReference($affiliate, $program)));
 
     $event = SignalEvent::query()->withoutOwnerScope()->sole();
 
@@ -319,8 +319,8 @@ it('counts one join per membership on repeated approval dispatches', function ()
 
     $membership = affiliateLifecycleMembership($affiliate, $program);
 
-    Event::dispatch(new AffiliateProgramJoined($affiliate, $program, $membership));
-    Event::dispatch(new AffiliateProgramJoined($affiliate, $program, $membership));
+    Event::dispatch(new AffiliateProgramJoined($membership->joinReference($affiliate, $program)));
+    Event::dispatch(new AffiliateProgramJoined($membership->joinReference($affiliate, $program)));
 
     expect(SignalEvent::query()->withoutOwnerScope()->count())->toBe(1);
 });
@@ -338,7 +338,7 @@ it('rejects program joined calls with mismatched references', function (): void 
 
     $membership = affiliateLifecycleMembership($affiliate, $program);
 
-    expect(fn (): ?SignalEvent => app(CommerceSignalsRecorder::class)->recordAffiliateProgramJoined($otherAffiliate, $program, $membership))
+    expect(fn (): ?SignalEvent => app(CommerceSignalsRecorder::class)->recordAffiliateProgramJoined($membership->joinReference($otherAffiliate, $program)))
         ->toThrow(InvalidArgumentException::class, 'does not match the canonical source');
 });
 
@@ -469,7 +469,7 @@ it('honours custom event names and categories for lifecycle outputs', function (
     $membership = affiliateLifecycleMembership($affiliate, $program);
 
     Event::dispatch(new AffiliateCreated($affiliate->lifecycleReference()));
-    Event::dispatch(new AffiliateProgramJoined($affiliate, $program, $membership));
+    Event::dispatch(new AffiliateProgramJoined($membership->joinReference($affiliate, $program)));
 
     AffiliateFraudSignal::query()->create([
         'affiliate_id' => $affiliate->getKey(),
@@ -520,7 +520,7 @@ it('leaves lifecycle listeners unwired by default', function (): void {
     $membership = affiliateLifecycleMembership($affiliate, $program);
 
     Event::dispatch(new AffiliateCreated($affiliate->lifecycleReference()));
-    Event::dispatch(new AffiliateProgramJoined($affiliate, $program, $membership));
+    Event::dispatch(new AffiliateProgramJoined($membership->joinReference($affiliate, $program)));
 
     AffiliateFraudSignal::query()->create([
         'affiliate_id' => $affiliate->getKey(),
@@ -553,7 +553,7 @@ it('wires lifecycle listeners when explicitly enabled', function (): void {
     $membership = affiliateLifecycleMembership($affiliate, $program);
 
     Event::dispatch(new AffiliateCreated($affiliate->lifecycleReference()));
-    Event::dispatch(new AffiliateProgramJoined($affiliate, $program, $membership));
+    Event::dispatch(new AffiliateProgramJoined($membership->joinReference($affiliate, $program)));
 
     AffiliateFraudSignal::query()->create([
         'affiliate_id' => $affiliate->getKey(),
@@ -673,7 +673,7 @@ it('records tier assignments on program joins', function (): void {
         'approved_at' => now(),
     ]);
 
-    Event::dispatch(new AffiliateProgramJoined($affiliate, $program, $membership));
+    Event::dispatch(new AffiliateProgramJoined($membership->joinReference($affiliate, $program)));
 
     expect(SignalEvent::query()->withoutOwnerScope()->sole()->properties)->toMatchArray([
         'tier_id' => (string) $tier->getKey(),
@@ -879,7 +879,7 @@ it('records nothing for joins and fraud without a matching property', function (
 
     $membership = affiliateLifecycleMembership($affiliate, $program);
 
-    Event::dispatch(new AffiliateProgramJoined($affiliate, $program, $membership));
+    Event::dispatch(new AffiliateProgramJoined($membership->joinReference($affiliate, $program)));
 
     $signal = AffiliateFraudSignal::query()->create([
         'affiliate_id' => $affiliate->getKey(),
@@ -891,7 +891,7 @@ it('records nothing for joins and fraud without a matching property', function (
     ]);
 
     expect(SignalEvent::query()->withoutOwnerScope()->count())->toBe(0)
-        ->and(app(CommerceSignalsRecorder::class)->recordAffiliateProgramJoined($affiliate, $program, $membership))->toBeNull()
+        ->and(app(CommerceSignalsRecorder::class)->recordAffiliateProgramJoined($membership->joinReference($affiliate, $program)))->toBeNull()
         ->and(app(CommerceSignalsRecorder::class)->recordAffiliateFraudSignalDetected(fraudSignalReference($signal)))->toBeNull();
 });
 
@@ -935,7 +935,7 @@ it('uses the tracked property currency for lifecycle outputs', function (): void
     $membership = affiliateLifecycleMembership($affiliate, $program);
 
     Event::dispatch(new AffiliateCreated($affiliate->lifecycleReference()));
-    Event::dispatch(new AffiliateProgramJoined($affiliate, $program, $membership));
+    Event::dispatch(new AffiliateProgramJoined($membership->joinReference($affiliate, $program)));
 
     AffiliateFraudSignal::query()->create([
         'affiliate_id' => $affiliate->getKey(),
@@ -1005,13 +1005,13 @@ it('rejects program and ownership mismatches on the strict recorder surface', fu
     $membership = affiliateLifecycleMembership($affiliate, $program);
     $recorder = app(CommerceSignalsRecorder::class);
 
-    expect(fn (): ?SignalEvent => $recorder->recordAffiliateProgramJoined($affiliate, $otherProgram, $membership))
+    expect(fn (): ?SignalEvent => $recorder->recordAffiliateProgramJoined($membership->joinReference($affiliate, $otherProgram)))
         ->toThrow(InvalidArgumentException::class, 'membership program_id does not match');
 
     $staleMembership = clone $membership;
     $staleMembership->forceFill(['affiliate_id' => $otherAffiliate->getKey()]);
 
-    expect(fn (): ?SignalEvent => $recorder->recordAffiliateProgramJoined($affiliate, $program, $staleMembership))
+    expect(fn (): ?SignalEvent => $recorder->recordAffiliateProgramJoined($staleMembership->joinReference($affiliate, $program)))
         ->toThrow(InvalidArgumentException::class, 'supplied membership affiliate_id does not match');
 
     $movedAffiliate = clone $affiliate;
@@ -1053,7 +1053,7 @@ it('rejects program and ownership mismatches on the strict recorder surface', fu
     $retieredMembership = clone $membership;
     $retieredMembership->forceFill(['tier_id' => (string) Str::uuid()]);
 
-    expect(fn (): ?SignalEvent => $recorder->recordAffiliateProgramJoined($affiliate, $program, $retieredMembership))
+    expect(fn (): ?SignalEvent => $recorder->recordAffiliateProgramJoined($retieredMembership->joinReference($affiliate, $program)))
         ->toThrow(InvalidArgumentException::class, 'supplied membership tier_id does not match');
 
     $movedProgram = clone $program;
@@ -1062,7 +1062,7 @@ it('rejects program and ownership mismatches on the strict recorder surface', fu
         'owner_id' => $owner->getKey(),
     ]);
 
-    expect(fn (): ?SignalEvent => $recorder->recordAffiliateProgramJoined($affiliate, $movedProgram, $membership))
+    expect(fn (): ?SignalEvent => $recorder->recordAffiliateProgramJoined($membership->joinReference($affiliate, $movedProgram)))
         ->toThrow(InvalidArgumentException::class, 'program owner does not match');
 });
 
@@ -1151,10 +1151,10 @@ it('ignores joins for missing program rows', function (): void {
     // Query-builder delete: removes the row without firing model cascades.
     AffiliateProgram::query()->whereKey($program->getKey())->delete();
 
-    Event::dispatch(new AffiliateProgramJoined($affiliate, $program, $membership));
+    Event::dispatch(new AffiliateProgramJoined($membership->joinReference($affiliate, $program)));
 
     expect(SignalEvent::query()->withoutOwnerScope()->count())->toBe(0)
-        ->and(app(CommerceSignalsRecorder::class)->recordAffiliateProgramJoined($affiliate, $program, $membership))->toBeNull();
+        ->and(app(CommerceSignalsRecorder::class)->recordAffiliateProgramJoined($membership->joinReference($affiliate, $program)))->toBeNull();
 });
 
 it('records nothing for joins and fraud under ambiguous properties', function (): void {
@@ -1173,7 +1173,7 @@ it('records nothing for joins and fraud under ambiguous properties', function ()
 
     $membership = affiliateLifecycleMembership($affiliate, $program);
 
-    Event::dispatch(new AffiliateProgramJoined($affiliate, $program, $membership));
+    Event::dispatch(new AffiliateProgramJoined($membership->joinReference($affiliate, $program)));
 
     $signal = AffiliateFraudSignal::query()->create([
         'affiliate_id' => $affiliate->getKey(),
@@ -1185,7 +1185,7 @@ it('records nothing for joins and fraud under ambiguous properties', function ()
     ]);
 
     expect(SignalEvent::query()->withoutOwnerScope()->count())->toBe(0)
-        ->and(app(CommerceSignalsRecorder::class)->recordAffiliateProgramJoined($affiliate, $program, $membership))->toBeNull()
+        ->and(app(CommerceSignalsRecorder::class)->recordAffiliateProgramJoined($membership->joinReference($affiliate, $program)))->toBeNull()
         ->and(app(CommerceSignalsRecorder::class)->recordAffiliateFraudSignalDetected(fraudSignalReference($signal)))->toBeNull();
 });
 
@@ -1228,7 +1228,7 @@ it('routes joins under affiliates enforcement', function (): void {
         return [$affiliate->fresh() ?? $affiliate, $program, $membership];
     });
 
-    Event::dispatch(new AffiliateProgramJoined($affiliate, $program, $membership));
+    Event::dispatch(new AffiliateProgramJoined($membership->joinReference($affiliate, $program)));
 
     expect(SignalEvent::query()->withoutOwnerScope()->sole()->tracked_property_id)->toBe($propertyB->id);
 });
@@ -1259,7 +1259,7 @@ it('rejects half-null owners for joins and fraud', function (): void {
 
     $recorder = app(CommerceSignalsRecorder::class);
 
-    expect(fn (): ?SignalEvent => $recorder->recordAffiliateProgramJoined($affiliate, $program, $membership))
+    expect(fn (): ?SignalEvent => $recorder->recordAffiliateProgramJoined($membership->joinReference($affiliate, $program)))
         ->toThrow(InvalidArgumentException::class, 'both be present')
         ->and(fn (): ?SignalEvent => $recorder->recordAffiliateFraudSignalDetected(fraudSignalReference($signal)))
         ->toThrow(InvalidArgumentException::class, 'both be present')
@@ -1299,7 +1299,7 @@ it('rejects joins and fraud whose owner row no longer exists', function (): void
 
     $recorder = app(CommerceSignalsRecorder::class);
 
-    expect(fn (): ?SignalEvent => $recorder->recordAffiliateProgramJoined($affiliate, $program, $membership))
+    expect(fn (): ?SignalEvent => $recorder->recordAffiliateProgramJoined($membership->joinReference($affiliate, $program)))
         ->toThrow(ModelNotFoundException::class)
         ->and(fn (): ?SignalEvent => $recorder->recordAffiliateFraudSignalDetected(fraudSignalReference($signal)))
         ->toThrow(ModelNotFoundException::class)
@@ -1335,11 +1335,11 @@ it('ignores joins and fraud for missing affiliate rows', function (): void {
     Event::listen(AffiliateProgramJoined::class, RecordCommerceSignal::class);
     Event::listen(FraudSignalDetected::class, RecordCommerceSignal::class);
 
-    Event::dispatch(new AffiliateProgramJoined($affiliate, $program, $membership));
+    Event::dispatch(new AffiliateProgramJoined($membership->joinReference($affiliate, $program)));
     Event::dispatch(new FraudSignalDetected(fraudSignalReference($signal)));
 
     expect(SignalEvent::query()->withoutOwnerScope()->count())->toBe(0)
-        ->and(app(CommerceSignalsRecorder::class)->recordAffiliateProgramJoined($affiliate, $program, $membership))->toBeNull()
+        ->and(app(CommerceSignalsRecorder::class)->recordAffiliateProgramJoined($membership->joinReference($affiliate, $program)))->toBeNull()
         ->and(app(CommerceSignalsRecorder::class)->recordAffiliateFraudSignalDetected(fraudSignalReference($signal)))->toBeNull();
 });
 
@@ -1391,9 +1391,9 @@ it('routes joins and fraud across owners and global scope under enforcement', fu
     $membershipB = OwnerContext::withOwner($ownerB, static fn () => affiliateLifecycleMembership($affiliateB, $programB));
     $membershipGlobal = OwnerContext::withOwner(null, static fn () => affiliateLifecycleMembership($affiliateGlobal, $programGlobal));
 
-    Event::dispatch(new AffiliateProgramJoined($affiliateA, $programA, $membershipA));
-    Event::dispatch(new AffiliateProgramJoined($affiliateB, $programB, $membershipB));
-    Event::dispatch(new AffiliateProgramJoined($affiliateGlobal, $programGlobal, $membershipGlobal));
+    Event::dispatch(new AffiliateProgramJoined($membershipA->joinReference($affiliateA, $programA)));
+    Event::dispatch(new AffiliateProgramJoined($membershipB->joinReference($affiliateB, $programB)));
+    Event::dispatch(new AffiliateProgramJoined($membershipGlobal->joinReference($affiliateGlobal, $programGlobal)));
 
     OwnerContext::withOwner(null, static function () use ($affiliateGlobal): void {
         AffiliateFraudSignal::query()->create([
@@ -1461,7 +1461,7 @@ it('rejects reverse optional reference mismatches on the strict recorder surface
     $untieredMembership = clone $membership;
     $untieredMembership->forceFill(['tier_id' => null]);
 
-    expect(fn (): ?SignalEvent => $recorder->recordAffiliateProgramJoined($affiliate, $program, $untieredMembership))
+    expect(fn (): ?SignalEvent => $recorder->recordAffiliateProgramJoined($untieredMembership->joinReference($affiliate, $program)))
         ->toThrow(InvalidArgumentException::class, 'supplied membership tier_id does not match');
 
     $unlinkedSignal = clone $signal;

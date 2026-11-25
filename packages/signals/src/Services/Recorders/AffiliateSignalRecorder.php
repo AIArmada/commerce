@@ -8,6 +8,8 @@ use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalReader;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalReference;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycleReader;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycleReference;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramJoinReader;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramJoinReference;
 use AIArmada\Signals\Models\SignalEvent;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
@@ -203,87 +205,39 @@ final class AffiliateSignalRecorder
         ]);
     }
 
-    public function recordProgramJoined(Model $affiliate, Model $program, Model $membership): ?SignalEvent
+    public function recordProgramJoined(ProgramJoinReference $reference): ?SignalEvent
     {
-        $this->assertSourceModel($affiliate, 'AIArmada\\Affiliates\\Models\\Affiliate');
-        $this->assertSourceModel($program, 'AIArmada\\Affiliates\\Models\\AffiliateProgram');
-        $this->assertSourceModel($membership, 'AIArmada\\Affiliates\\Models\\AffiliateProgramMembership');
+        $canonical = app(ProgramJoinReader::class)->find($reference);
 
-        $canonicalMembership = $this->support->resolveSourceModel(
-            'AIArmada\\Affiliates\\Models\\AffiliateProgramMembership',
-            $this->support->stringValue($membership->getKey()),
-        );
-
-        if (! $canonicalMembership instanceof Model) {
+        if ($canonical === null) {
             return null;
         }
 
-        $canonicalAffiliate = $this->support->resolveSourceModel(
-            'AIArmada\\Affiliates\\Models\\Affiliate',
-            $this->support->stringValue($affiliate->getKey()),
-        );
-
-        if (! $canonicalAffiliate instanceof Model) {
-            return null;
-        }
-
-        $canonicalProgram = $this->support->resolveSourceModel(
-            'AIArmada\\Affiliates\\Models\\AffiliateProgram',
-            $this->support->stringValue($program->getKey()),
-        );
-
-        if (! $canonicalProgram instanceof Model) {
-            return null;
-        }
-
-        $this->assertCanonicalReference(
-            $this->support->stringValue($canonicalMembership->getAttribute('affiliate_id')),
-            $this->support->stringValue($canonicalAffiliate->getKey()),
-            'membership affiliate_id',
-        );
-        $this->assertCanonicalReference(
-            $this->support->stringValue($canonicalMembership->getAttribute('program_id')),
-            $this->support->stringValue($canonicalProgram->getKey()),
-            'membership program_id',
-        );
-        $this->assertCanonicalReference(
-            $this->support->stringValue($membership->getAttribute('affiliate_id')),
-            $this->support->stringValue($canonicalMembership->getAttribute('affiliate_id')),
-            'supplied membership affiliate_id',
-        );
-        $this->assertCanonicalReference(
-            $this->support->stringValue($membership->getAttribute('program_id')),
-            $this->support->stringValue($canonicalMembership->getAttribute('program_id')),
-            'supplied membership program_id',
-        );
-        $this->assertCanonicalReference(
-            $this->support->stringValue($membership->getAttribute('tier_id')),
-            $this->support->stringValue($canonicalMembership->getAttribute('tier_id')),
-            'supplied membership tier_id',
-        );
-        $this->assertCanonicalOwner($affiliate, $canonicalAffiliate, 'affiliate');
-        $this->assertCanonicalOwner($program, $canonicalProgram, 'program');
-
-        $trackedProperty = $this->support->resolveTrackedPropertyForAffiliateModel($canonicalAffiliate);
+        $reference = $canonical->reference;
+        $trackedProperty = $this->support->resolveTrackedPropertyForAffiliateOwner($reference->affiliate->ownerType, $reference->affiliate->ownerId);
 
         if ($trackedProperty === null) {
             return null;
         }
 
+        if ($canonical->approvedAt === null) {
+            throw new InvalidArgumentException('Trusted signal source is missing timestamp attributes [approved_at].');
+        }
+
         return $this->support->ingest($trackedProperty, [
             'event_name' => (string) config('signals.integrations.affiliates.program_joined_event_name', 'affiliate.program.joined'),
             'event_category' => (string) config('signals.integrations.affiliates.lifecycle_event_category', 'affiliate_lifecycle'),
-            'occurred_at' => $this->support->requiredModelTimestamp($canonicalMembership, ['approved_at']),
-            'idempotency_key' => 'affiliate-program-joined:' . $canonicalMembership->getKey(),
-            'source_event_id' => (string) $canonicalMembership->getKey(),
+            'occurred_at' => $canonical->approvedAt,
+            'idempotency_key' => 'affiliate-program-joined:' . $reference->membershipId,
+            'source_event_id' => $reference->membershipId,
             'revenue_minor' => 0,
             'currency' => $trackedProperty->currency,
             'properties' => array_filter([
-                'membership_id' => (string) $canonicalMembership->getKey(),
-                'affiliate_id' => (string) $canonicalAffiliate->getKey(),
-                'affiliate_code' => $this->requiredStringAttribute($canonicalAffiliate, 'code'),
-                'program_id' => $this->support->stringValue($canonicalMembership->getAttribute('program_id')),
-                'tier_id' => $this->support->stringValue($canonicalMembership->getAttribute('tier_id')),
+                'membership_id' => $reference->membershipId,
+                'affiliate_id' => $reference->affiliate->id,
+                'affiliate_code' => $canonical->affiliateCode,
+                'program_id' => $reference->programId,
+                'tier_id' => $reference->tierId,
             ], static fn (mixed $value): bool => $value !== null),
         ]);
     }
@@ -373,28 +327,6 @@ final class AffiliateSignalRecorder
         return (int) $totalMinor;
     }
 
-    private function assertSourceModel(Model $model, string $expectedClass): void
-    {
-        if (! $model instanceof $expectedClass) {
-            throw new InvalidArgumentException(sprintf(
-                'Trusted signal source must be an instance of [%s], [%s] given.',
-                $expectedClass,
-                $model::class,
-            ));
-        }
-    }
-
-    private function requiredStringAttribute(Model $model, string $attribute): string
-    {
-        $value = $this->support->stringValue($this->support->modelAttribute($model, $attribute));
-
-        if ($value === null || $value === '') {
-            throw new InvalidArgumentException(sprintf('Trusted signal source is missing string attribute [%s].', $attribute));
-        }
-
-        return $value;
-    }
-
     private function assertCanonicalReference(?string $supplied, ?string $canonical, string $what): void
     {
         if ($supplied !== $canonical) {
@@ -402,15 +334,4 @@ final class AffiliateSignalRecorder
         }
     }
 
-    private function assertCanonicalOwner(Model $supplied, Model $canonical, string $what): void
-    {
-        $suppliedType = $this->support->stringValue($supplied->getAttribute('owner_type'));
-        $suppliedId = $this->support->stringValue($supplied->getAttribute('owner_id'));
-        $canonicalType = $this->support->stringValue($canonical->getAttribute('owner_type'));
-        $canonicalId = $this->support->stringValue($canonical->getAttribute('owner_id'));
-
-        if ($suppliedType !== $canonicalType || $suppliedId !== $canonicalId) {
-            throw new InvalidArgumentException(sprintf('Trusted affiliate %s owner does not match the canonical source.', $what));
-        }
-    }
 }

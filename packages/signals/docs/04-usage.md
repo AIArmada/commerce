@@ -303,7 +303,7 @@ $recorder->recordCheckoutCompleted($checkout);
 $recorder->recordAffiliateAttributed($attribution);
 $recorder->recordAffiliateConversionRecorded($conversion);
 $recorder->recordAffiliateCreated($affiliateLifecycleReference);
-$recorder->recordAffiliateProgramJoined($affiliate, $program, $membership);
+$recorder->recordAffiliateProgramJoined($programJoinReference);
 $recorder->recordAffiliateFraudSignalDetected($fraudSignalReference);
 $recorder->recordLinkClicked($link, $click);
 ```

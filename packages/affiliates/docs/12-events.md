@@ -130,7 +130,7 @@ AffiliateActivated::class;      // (AffiliateLifecycleReference $affiliate)
 AffiliateConversionReversed::class; // (?string $origin, ?string $sourceRef, ?string $externalReference, string $reason)
 
 // Program membership changes
-AffiliateProgramJoined::class;  // (AffiliateProgramMembership $membership)
+AffiliateProgramJoined::class;  // (ProgramJoinReference $reference)
 AffiliateProgramLeft::class;    // (string $affiliateId, string $programId, string $membershipId)
 
 // Rank and tier upgrades (higher numeric level = higher rank)

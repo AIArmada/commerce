@@ -327,7 +327,9 @@ test('ProgramService joinProgram creates membership', function (): void {
     expect($membership)->toBeInstanceOf(MembershipRecord::class);
     expect($membership->status)->toBe(MembershipStatus::Approved->value);
 
-    Event::assertDispatched(AffiliateProgramJoined::class);
+    Event::assertDispatched(AffiliateProgramJoined::class, fn (AffiliateProgramJoined $event): bool => $event->reference->membershipId === $membership->id
+        && $event->reference->affiliate->id === $affiliate->id
+        && $event->reference->programId === $program->id);
 });
 
 test('ProgramService joinProgram with approval required sets pending status', function (): void {

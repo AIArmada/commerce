@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Programs\EntryPoints\Listeners;
 
 use AIArmada\Affiliates\Events\AffiliateProgramJoined;
+use AIArmada\Affiliates\Features\Programs\Queries\ProgramJoinQuery;
 use AIArmada\Affiliates\Notifications\ProgramJoinedNotification;
 use AIArmada\Communications\Actions\DispatchManagedNotificationAction;
 use AIArmada\Communications\Data\CommunicationContextData;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 
 /**
  * Notifies the affiliate on program join (approved or pending).
@@ -18,6 +20,8 @@ use AIArmada\Communications\Data\CommunicationContextData;
  */
 final class NotifyProgramJoined
 {
+    public function __construct(private readonly ProgramJoinQuery $joins) {}
+
     public function handle(AffiliateProgramJoined $event): void
     {
         $dispatcher = self::dispatcher();
@@ -26,16 +30,25 @@ final class NotifyProgramJoined
             return;
         }
 
-        $dispatcher->handle(
-            $event->affiliate,
-            new ProgramJoinedNotification($event->program, $event->membership),
+        $resolved = $this->joins->resolve($event->reference);
+
+        if ($resolved === null) {
+            return;
+        }
+
+        [$affiliate, $program, $membership] = $resolved;
+        $owner = OwnerContext::fromTypeAndIdOrFail($event->reference->affiliate->ownerType, $event->reference->affiliate->ownerId);
+
+        OwnerContext::withOwner($owner, static fn () => $dispatcher->handle(
+            $affiliate,
+            new ProgramJoinedNotification($program, $membership),
             new CommunicationContextData(
                 purpose: 'affiliates.program_joined',
-                subjectType: $event->program->getMorphClass(),
-                subjectId: (string) $event->program->getKey(),
-                idempotencyKey: 'program-joined:' . $event->membership->getKey(),
+                subjectType: $program->getMorphClass(),
+                subjectId: (string) $program->getKey(),
+                idempotencyKey: 'program-joined:' . $membership->getKey(),
             ),
-        );
+        ));
     }
 
     private static function dispatcher(): ?DispatchManagedNotificationAction

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Models;
 
 use AIArmada\Affiliates\Enums\MembershipStatus;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramJoinReference;
 use AIArmada\Affiliates\Models\Concerns\ScopesByAffiliateOwner;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use Carbon\CarbonImmutable;
@@ -93,6 +94,20 @@ class AffiliateProgramMembership extends Pivot
     public function tier(): BelongsTo
     {
         return $this->belongsTo(AffiliateProgramTier::class, 'tier_id');
+    }
+
+    public function joinReference(Affiliate $affiliate, AffiliateProgram $program): ProgramJoinReference
+    {
+        return new ProgramJoinReference(
+            affiliate: $affiliate->lifecycleReference(),
+            programId: (string) $program->getKey(),
+            programOwnerType: $program->owner_type,
+            programOwnerId: $program->owner_id === null ? null : (string) $program->owner_id,
+            membershipId: (string) $this->getKey(),
+            membershipAffiliateId: $this->affiliate_id,
+            membershipProgramId: $this->program_id,
+            tierId: $this->tier_id,
+        );
     }
 
     public function isActive(): bool

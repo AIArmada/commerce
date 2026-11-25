@@ -134,7 +134,7 @@ final readonly class AdministerProgramMembership implements MembershipAdministra
         $membership->fill($attributes)->save();
 
         if ($status === MembershipStatus::Approved && $previous !== MembershipStatus::Approved) {
-            $this->events->dispatch(new AffiliateProgramJoined($affiliate, $program, $membership));
+            $this->events->dispatch(new AffiliateProgramJoined($membership->joinReference($affiliate, $program)));
         }
     }
 

@@ -59,7 +59,7 @@ final readonly class ReviewProgramMembership implements MembershipReviewApi
                 'suspended_at' => null,
             ]);
 
-            $this->events->dispatch(new AffiliateProgramJoined($affiliate, $program, $membership));
+            $this->events->dispatch(new AffiliateProgramJoined($membership->joinReference($affiliate, $program)));
 
             return true;
         }, attempts: 3);

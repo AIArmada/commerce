@@ -65,7 +65,7 @@ final readonly class ManageProgramEnrollment implements ProgramEnrollment
             ]);
 
             if ($membership->wasRecentlyCreated && $status === MembershipStatus::Approved) {
-                $this->events->dispatch(new AffiliateProgramJoined($affiliate, $program, $membership));
+                $this->events->dispatch(new AffiliateProgramJoined($membership->joinReference($affiliate, $program)));
             }
 
             return $this->memberships->project($membership, $membership->wasRecentlyCreated);
