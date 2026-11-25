@@ -1,0 +1,14 @@
+parameters:
+    customRulesetUsed: true
+    paths:
+        - ../src
+        - ../config
+    tmpDir: ../../../build/phpstan-arch-affiliates
+
+services:
+    -
+        class: PackageArchitecture\StaticAnalysis\PackageOwnedWriteRule
+        arguments:
+            projectRoot: null
+        tags:
+            - phpstan.rules.rule
