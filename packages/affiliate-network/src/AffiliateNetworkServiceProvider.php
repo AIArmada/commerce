@@ -16,6 +16,8 @@ use AIArmada\AffiliateNetwork\Drivers\Affiliates\AffiliatesCatalogDriver;
 use AIArmada\AffiliateNetwork\Drivers\Affiliates\AffiliatesIdentityDriver;
 use AIArmada\AffiliateNetwork\Drivers\Affiliates\AffiliatesLedgerDriver;
 use AIArmada\AffiliateNetwork\Drivers\Affiliates\EnginePayoutFulfillmentDriver;
+use AIArmada\AffiliateNetwork\Drivers\Affiliates\NetworkAffiliateRemovalGuard;
+use AIArmada\Affiliates\Contracts\AffiliateRemovalGuard;
 use AIArmada\AffiliateNetwork\Drivers\CommunicationsNotificationDriver;
 use AIArmada\AffiliateNetwork\Drivers\HostManualFulfillmentDriver;
 use AIArmada\AffiliateNetwork\Drivers\HttpCreatorPostbackDriver;
@@ -151,6 +153,7 @@ final class AffiliateNetworkServiceProvider extends PackageServiceProvider
         $this->app->bind(NetworkLedger::class, AffiliatesLedgerDriver::class);
         $this->app->bind(Fulfillment::class, EnginePayoutFulfillmentDriver::class);
         $this->app->bind(self::LOCAL_READER_KEY, AffiliatesCatalogDriver::class);
+        $this->app->tag([NetworkAffiliateRemovalGuard::class], AffiliateRemovalGuard::class);
 
         config(['affiliate-network.models.affiliate' => 'AIArmada\Affiliates\Models\Affiliate']);
     }

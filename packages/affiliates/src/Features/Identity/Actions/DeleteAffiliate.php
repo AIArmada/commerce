@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Identity\Actions;
 
+use AIArmada\Affiliates\Contracts\AffiliateRemovalGuard;
 use AIArmada\Affiliates\Features\Attribution\Api\AttributionRemoval;
 use AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkAdministration;
 use AIArmada\Affiliates\Features\Conversions\Api\UnusedAffiliateBalanceRemoval;
@@ -65,6 +66,10 @@ final readonly class DeleteAffiliate implements AffiliateRemoval
                 || $this->tax->documentsFor($affiliateId, 1) !== []
                 || (class_exists(Voucher::class) && app()->providerIsLoaded(VouchersServiceProvider::class) && $affiliate->vouchers()->exists())) {
                 throw ValidationException::withMessages(['affiliate' => 'An affiliate with linked business or historical records cannot be deleted.']);
+            }
+
+            foreach (app()->tagged(AffiliateRemovalGuard::class) as $guard) {
+                $guard->assertCanRemove($affiliateId, spl_object_id($affiliate->getConnection()));
             }
 
             $this->balances->remove($affiliateId);
