@@ -9,6 +9,23 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Queue\SerializesModels;
 
+function ownerContextJobOwner(string $name): User
+{
+    return User::query()->create([
+        'name' => $name,
+        'email' => $name . '@example.com',
+        'password' => 'secret',
+    ]);
+}
+
+function ownerContextJobPayload(Model $owner): OwnerContextJobPayloadFixture
+{
+    $payload = new OwnerContextJobPayloadFixture;
+    $payload->owner = $owner;
+
+    return $payload;
+}
+
 describe('OwnerContextJob', function (): void {
     it('executes performJob hook', function (): void {
         $executed = false;
@@ -36,16 +53,12 @@ describe('OwnerContextJob', function (): void {
         expect($executed)->toBeTrue();
     });
 
-    it('enters owner context from public model property', function (): void {
-        $owner = User::query()->create([
-            'name' => 'Job Owner',
-            'email' => 'job-owner@example.com',
-            'password' => 'secret',
-        ]);
+    it('enters owner context from a model property exposing getOwner', function (): void {
+        $owner = ownerContextJobOwner('job-owner');
 
         $contextInJob = null;
 
-        $job = new class($owner, $contextInJob)
+        $job = new class(ownerContextJobPayload($owner), $contextInJob)
         {
             use OwnerContextJob;
             use SerializesModels;
@@ -66,13 +79,9 @@ describe('OwnerContextJob', function (): void {
     });
 
     it('restores previous context after job', function (): void {
-        $owner = User::query()->create([
-            'name' => 'Job Restore Owner',
-            'email' => 'job-restore-owner@example.com',
-            'password' => 'secret',
-        ]);
+        $owner = ownerContextJobOwner('job-restore-owner');
 
-        $job = new class($owner)
+        $job = new class(ownerContextJobPayload($owner))
         {
             use OwnerContextJob;
             use SerializesModels;
@@ -87,6 +96,60 @@ describe('OwnerContextJob', function (): void {
         $after = OwnerContext::resolve();
 
         expect($before)->toBe($after);
+    });
+
+    it('ignores plain model properties that are not owner references', function (): void {
+        config(['commerce-support.owner.enabled' => false]);
+
+        $executed = false;
+
+        $job = new class($executed)
+        {
+            use OwnerContextJob;
+            use SerializesModels;
+
+            private $executed;
+
+            public function __construct(&$exec)
+            {
+                $this->executed = &$exec;
+
+                $this->payloadModel = new OwnerContextJobPayloadFixture;
+            }
+
+            public $payloadModel;
+
+            public function performJob(): void
+            {
+                $this->executed = true;
+            }
+        };
+
+        $job->handle();
+
+        expect($executed)->toBeTrue();
+    });
+
+    it('fails closed when the job has no resolvable owner and owner mode is enabled', function (): void {
+        config(['commerce-support.owner.enabled' => true]);
+
+        $job = new class
+        {
+            use OwnerContextJob;
+            use SerializesModels;
+
+            public $payloadModel;
+
+            public function __construct()
+            {
+                $this->payloadModel = new OwnerContextJobPayloadFixture;
+            }
+
+            public function performJob(): void {}
+        };
+
+        expect(fn () => $job->handle())
+            ->toThrow(RuntimeException::class, 'requires an owner context');
     });
 
     it('resolves owner from explicit ownerType and ownerId payload fields', function (): void {
@@ -157,32 +220,27 @@ describe('OwnerContextJob', function (): void {
             ->toThrow(RuntimeException::class, 'requires an owner context');
     });
 
-    it('succeeds with null owner when mode disabled', function (): void {
+    it('succeeds with null owner when mode disabled without activating explicit global', function (): void {
         config(['commerce-support.owner.enabled' => false]);
 
-        $executed = false;
+        $explicitGlobalInJob = 'uninitialized';
 
-        $job = new class($executed)
+        $job = new class($explicitGlobalInJob)
         {
             use OwnerContextJob;
             use SerializesModels;
 
-            private $executed;
-
-            public function __construct(&$exec)
-            {
-                $this->executed = &$exec;
-            }
+            public function __construct(private &$explicitGlobal) {}
 
             public function performJob(): void
             {
-                $this->executed = true;
+                $this->explicitGlobal = OwnerContext::isExplicitGlobal();
             }
         };
 
         $job->handle();
 
-        expect($executed)->toBeTrue();
+        expect($explicitGlobalInJob)->toBeFalse();
     });
 
     it('allows explicit global execution when owner mode is enabled', function (): void {
@@ -245,3 +303,15 @@ describe('OwnerContextJob', function (): void {
             ->toThrow(RuntimeException::class, 'ownerIsGlobal=true cannot be combined');
     });
 });
+
+final class OwnerContextJobPayloadFixture extends Model
+{
+    public $timestamps = false;
+
+    public ?Model $owner = null;
+
+    public function getOwner(): ?Model
+    {
+        return $this->owner;
+    }
+}

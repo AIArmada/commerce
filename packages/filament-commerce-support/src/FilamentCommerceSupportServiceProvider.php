@@ -28,6 +28,7 @@ class FilamentCommerceSupportServiceProvider extends PackageServiceProvider
         $this->app['events']->listen(SettingsSaved::class, static function (SettingsSaved $event): void {
             if ($event->settings instanceof CommerceNavigationSettings) {
                 NavigationConfigurator::restoreGenuineDefaults();
+                NavigationConfigurator::apply();
             }
         });
     }

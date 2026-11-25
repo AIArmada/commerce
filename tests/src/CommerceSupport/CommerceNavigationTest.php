@@ -107,6 +107,20 @@ it('configures panels with commerce navigation groups and builder', function ():
     expect($panel->builder)->toBeInstanceOf(Closure::class);
 });
 
+it('configures each panel instance exactly once', function (): void {
+    $panelA = new CommerceNavigationPanelFixture;
+    $panelB = new CommerceNavigationPanelFixture;
+
+    CommerceNavigation::configurePanel($panelA);
+    CommerceNavigation::configurePanel($panelA);
+    CommerceNavigation::configurePanel($panelB);
+
+    expect($panelA->builder)->toBeInstanceOf(Closure::class)
+        ->and($panelA->navigationCalls)->toBe(1)
+        ->and($panelB->builder)->toBeInstanceOf(Closure::class)
+        ->and($panelB->navigationCalls)->toBe(1);
+});
+
 it('registers the canonical navigation builder through its plugin', function (): void {
     $panel = Mockery::mock(Panel::class);
     $panel->shouldReceive('navigation')
@@ -149,6 +163,8 @@ final class CommerceNavigationPanelFixture
 
     public ?Closure $builder = null;
 
+    public int $navigationCalls = 0;
+
     /**
      * @param  array<int, mixed>  $groups
      */
@@ -162,6 +178,7 @@ final class CommerceNavigationPanelFixture
     public function navigation(Closure $builder): static
     {
         $this->builder = $builder;
+        $this->navigationCalls++;
 
         return $this;
     }

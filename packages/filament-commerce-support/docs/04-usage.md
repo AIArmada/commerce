@@ -7,13 +7,16 @@ title: Usage
 Navigate to **Settings → Navigation** in your Filament panel.
 
 The authenticated panel user must be authorized for the configured
-`filament-commerce-support.navigation.permission` Gate ability.
+`filament-commerce-support.navigation.permission` Gate ability. Saving
+re-checks the same ability server-side and aborts with `403` when it is
+missing, so a revoked session cannot persist changes.
 
 ## Managing Exchange Rates
 
 Navigate to **Settings → Exchange Rates** in your Filament panel
 (gated by `filament-commerce-support.exchange_rates.enabled` and the
-`exchange_rates.permission` Gate ability).
+`exchange_rates.permission` Gate ability). Saving and snapshotting
+re-check the ability server-side and abort with `403` when it is missing.
 
 Edit the base currency and the current rates table (units per one base
 unit, reporting only — never money movement). Use **Snapshot current
@@ -71,10 +74,10 @@ Override navigation settings for any registered resource or page by its fully qu
 ```
 
 The settings page is removed from the panel and overrides are not applied.
-Because the plugin registers the `currencies`, `languages`, and `timezones`
-reference-data resources in the same branch, those resources are also removed.
-Use `exchange_rates.enabled` separately if you only want to drop the exchange
-rates page.
+The `currencies`, `languages`, and `timezones` reference-data resources stay
+registered because they are independent of the navigation manager; disable
+them individually with `resources.<name>.enabled`, and use
+`exchange_rates.enabled` if you only want to drop the exchange rates page.
 
 ## Auditing related state changes
 

@@ -291,3 +291,92 @@ it('does not expose an HTTP owner override to another request without owner stat
         app()->instance('request', $originalRequest);
     }
 });
+
+it('restores scope state onto the request captured at entry when the request is swapped mid-callback', function (): void {
+    $owner = User::query()->create([
+        'name' => 'Owner Swap Restore',
+        'email' => 'owner-swap-restore@example.com',
+        'password' => 'secret',
+    ]);
+
+    $originalRequest = app('request');
+    $requestA = Request::create('/owner-a');
+    $requestB = Request::create('/owner-b');
+
+    app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
+    {
+        public function resolve(): ?Model
+        {
+            return null;
+        }
+    });
+
+    try {
+        app()->instance('request', $requestA);
+
+        OwnerContext::withOwner($owner, function () use ($requestB): void {
+            app()->instance('request', $requestB);
+        });
+
+        // The callback left the swapped-in request active; the finally must
+        // still have restored state onto the captured request only.
+        expect($requestB->attributes->has(OwnerContext::REQUEST_KEY))->toBeFalse()
+            ->and($requestA->attributes->get(OwnerContext::REQUEST_KEY))->toBe([
+                'hasOverride' => false,
+                'override' => null,
+            ])
+            ->and(OwnerContext::hasOverride())->toBeFalse();
+    } finally {
+        app()->instance('request', $originalRequest);
+    }
+});
+
+it('applies non-HTTP team id changes to the active scoped override only', function (): void {
+    config()->set('commerce-support.owner.team_type', User::class);
+
+    $ownerA = User::query()->create([
+        'name' => 'Owner Team A',
+        'email' => 'owner-team-a@example.com',
+        'password' => 'secret',
+    ]);
+
+    $ownerB = User::query()->create([
+        'name' => 'Owner Team B',
+        'email' => 'owner-team-b@example.com',
+        'password' => 'secret',
+    ]);
+
+    app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
+    {
+        public function resolve(): ?Model
+        {
+            return null;
+        }
+    });
+
+    $originalRequest = app('request');
+
+    app()->offsetUnset('request');
+
+    try {
+        $resolver = new OwnerContextTeamResolver;
+
+        // No active scope: the call is ignored instead of crashing or
+        // persisting process-wide owner state.
+        $resolver->setPermissionsTeamId($ownerA->getKey());
+
+        expect($resolver->getPermissionsTeamId())->toBeNull()
+            ->and(OwnerContext::hasOverride())->toBeFalse();
+
+        OwnerContext::withOwner($ownerA, function () use ($resolver, $ownerB): void {
+            $resolver->setPermissionsTeamId($ownerB->getKey());
+
+            expect($resolver->getPermissionsTeamId())->toBe($ownerB->getKey());
+        });
+
+        expect($resolver->getPermissionsTeamId())->toBeNull();
+    } finally {
+        app()->instance('request', $originalRequest);
+        OwnerContext::flushState();
+    }
+});

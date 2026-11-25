@@ -39,6 +39,9 @@ it('registers the canonical commerce navigation engine', function (): void {
         ->once()
         ->with(Mockery::type(Closure::class))
         ->andReturnSelf();
+    $panel->shouldReceive('resources')
+        ->once()
+        ->andReturnSelf();
 
     (new FilamentCommerceSupportPlugin(app()))->register($panel);
 

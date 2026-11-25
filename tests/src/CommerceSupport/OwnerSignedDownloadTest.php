@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerSignedDownload;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -132,4 +133,72 @@ it('rejects payload when owner or user do not match', function (): void {
             owner: $ownerA,
             userId: '78',
         ))->toBeFalse();
+});
+
+it('rejects malformed resource identifiers and user ids', function (): void {
+    $payload = [
+        'resource_id' => ['not-a-scalar'],
+        'owner_type' => null,
+        'owner_id' => null,
+        'user_id' => '7',
+    ];
+
+    expect(OwnerSignedDownload::isAuthorizedPayload($payload, 'resource_id', 'resource-x', null, '7'))->toBeFalse()
+        ->and(OwnerSignedDownload::isAuthorizedPayload(
+            ['resource_id' => 'resource-x', 'user_id' => ['array'], 'owner_type' => null, 'owner_id' => null],
+            'resource_id',
+            'resource-x',
+            null,
+            '7',
+        ))->toBeFalse()
+        ->and(OwnerSignedDownload::isAuthorizedPayload(
+            ['resource_id' => 'resource-x', 'user_id' => '', 'owner_type' => null, 'owner_id' => null],
+            'resource_id',
+            'resource-x',
+            null,
+            '7',
+        ))->toBeFalse()
+        ->and(OwnerSignedDownload::isAuthorizedPayload(
+            ['resource_id' => 'resource-x', 'user_id' => '7', 'owner_type' => null, 'owner_id' => null],
+            'resource_id',
+            '',
+            null,
+            '7',
+        ))->toBeFalse();
+});
+
+it('allows global payloads with a null owner when owner mode is disabled', function (): void {
+    config()->set('commerce-support.owner.enabled', false);
+
+    $payload = [
+        'resource_id' => 'resource-global',
+        'owner_type' => null,
+        'owner_id' => null,
+        'user_id' => '7',
+    ];
+
+    expect(OwnerSignedDownload::isAuthorizedPayload($payload, 'resource_id', 'resource-global', null, '7'))->toBeTrue();
+});
+
+it('requires explicit global context for global payloads when owner mode is enabled', function (): void {
+    config()->set('commerce-support.owner.enabled', true);
+
+    $payload = [
+        'resource_id' => 'resource-global-mode',
+        'owner_type' => null,
+        'owner_id' => null,
+        'user_id' => '7',
+    ];
+
+    expect(OwnerSignedDownload::isAuthorizedPayload($payload, 'resource_id', 'resource-global-mode', null, '7'))->toBeFalse();
+
+    $inExplicitGlobal = OwnerContext::withOwner(null, fn (): bool => OwnerSignedDownload::isAuthorizedPayload(
+        $payload,
+        'resource_id',
+        'resource-global-mode',
+        null,
+        '7',
+    ));
+
+    expect($inExplicitGlobal)->toBeTrue();
 });

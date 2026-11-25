@@ -274,4 +274,120 @@ describe('Owner lifecycle events', function (): void {
         Event::assertDispatchedTimes(ForgettingCurrentOwnerEvent::class, 2);
         Event::assertDispatchedTimes(ForgotCurrentOwnerEvent::class, 2);
     });
+
+    it('announces displaced and restored owners across nested different-owner scopes', function (): void {
+        $ownerA = new class extends Model
+        {
+            public $timestamps = false;
+
+            public function getMorphClass(): string
+            {
+                return 'store';
+            }
+
+            public function getKey(): mixed
+            {
+                return 'store-evt-swap-a';
+            }
+        };
+
+        $ownerB = new class extends Model
+        {
+            public $timestamps = false;
+
+            public function getMorphClass(): string
+            {
+                return 'store';
+            }
+
+            public function getKey(): mixed
+            {
+                return 'store-evt-swap-b';
+            }
+        };
+
+        /** @var list<string> $sequence */
+        $sequence = [];
+
+        $listeners = [
+            MakingOwnerCurrentEvent::class => 'making',
+            MadeOwnerCurrentEvent::class => 'made',
+            ForgettingCurrentOwnerEvent::class => 'forgetting',
+            ForgotCurrentOwnerEvent::class => 'forgot',
+        ];
+
+        foreach ($listeners as $eventClass => $label) {
+            Event::listen($eventClass, function ($event) use (&$sequence, $label): void {
+                $sequence[] = $label . ':' . (string) $event->owner->getKey();
+            });
+        }
+
+        OwnerContext::withOwner($ownerA, function () use ($ownerB): void {
+            expect((string) OwnerContext::resolve()?->getKey())->toBe('store-evt-swap-a');
+
+            OwnerContext::withOwner($ownerB, function (): void {
+                expect((string) OwnerContext::resolve()?->getKey())->toBe('store-evt-swap-b');
+            });
+
+            expect((string) OwnerContext::resolve()?->getKey())->toBe('store-evt-swap-a');
+        });
+
+        expect($sequence)->toBe([
+            'making:store-evt-swap-a',
+            'made:store-evt-swap-a',
+            'making:store-evt-swap-b',
+            'forgetting:store-evt-swap-a',
+            'made:store-evt-swap-b',
+            'forgot:store-evt-swap-a',
+            'forgetting:store-evt-swap-b',
+            'forgot:store-evt-swap-b',
+            'making:store-evt-swap-a',
+            'made:store-evt-swap-a',
+            'forgetting:store-evt-swap-a',
+            'forgot:store-evt-swap-a',
+        ]);
+    });
+
+    it('announces forgetting when entering explicit global from an owner scope and remaking on restore', function (): void {
+        $owner = new class extends Model
+        {
+            public $timestamps = false;
+
+            public function getMorphClass(): string
+            {
+                return 'store';
+            }
+
+            public function getKey(): mixed
+            {
+                return 'store-evt-global-swap';
+            }
+        };
+
+        /** @var list<string> $sequence */
+        $sequence = [];
+
+        Event::listen(ForgettingCurrentOwnerEvent::class, function (ForgettingCurrentOwnerEvent $event) use (&$sequence): void {
+            $sequence[] = 'forgetting:' . (string) $event->owner->getKey();
+        });
+
+        Event::listen(MakingOwnerCurrentEvent::class, function (MakingOwnerCurrentEvent $event) use (&$sequence): void {
+            $sequence[] = 'making:' . (string) $event->owner->getKey();
+        });
+
+        OwnerContext::withOwner($owner, function (): void {
+            OwnerContext::withOwner(null, function (): void {
+                expect(OwnerContext::isExplicitGlobal())->toBeTrue();
+            });
+
+            expect((string) OwnerContext::resolve()?->getKey())->toBe('store-evt-global-swap');
+        });
+
+        expect($sequence)->toBe([
+            'making:store-evt-global-swap',
+            'forgetting:store-evt-global-swap',
+            'making:store-evt-global-swap',
+            'forgetting:store-evt-global-swap',
+        ]);
+    });
 });

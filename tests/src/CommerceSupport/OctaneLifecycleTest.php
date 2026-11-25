@@ -172,3 +172,51 @@ it('keeps support and filament authz lifecycle flushes idempotent', function ():
         OwnerContext::flushState();
     }
 });
+
+it('flushes owner state at task and tick lifecycle boundaries', function (): void {
+    $originalEvents = app('events');
+    app()->instance('events', new Dispatcher(app()));
+
+    $provider = new SupportServiceProvider(app());
+    $provider->packageRegistered();
+
+    $owner = new class extends Model {};
+    $originalRequest = app('request');
+
+    app()->offsetUnset('request');
+
+    try {
+        $fallback = new ReflectionProperty(OwnerContext::class, 'fallback');
+
+        foreach (['TaskReceived', 'TaskTerminated', 'TickReceived', 'TickTerminated'] as $eventName) {
+            $fallback->setValue(null, ['hasOverride' => true, 'override' => $owner]);
+
+            expect(OwnerContext::resolve())->toBe($owner);
+
+            $eventClass = 'Laravel\\Octane\\Events\\' . $eventName;
+            event(new $eventClass);
+
+            expect(OwnerContext::hasOverride())->toBeFalse()
+                ->and($fallback->getValue())->toBe(['hasOverride' => false, 'override' => null]);
+        }
+    } finally {
+        app()->instance('request', $originalRequest);
+        app()->instance('events', $originalEvents);
+        OwnerContext::flushState();
+    }
+});
+
+it('does not flush owner state on queue job processed events', function (): void {
+    $originalEvents = app('events');
+    $dispatcher = new Dispatcher(app());
+    app()->instance('events', $dispatcher);
+
+    $provider = new SupportServiceProvider(app());
+    $provider->packageRegistered();
+
+    try {
+        expect($dispatcher->hasListeners('Illuminate\\Queue\\Events\\JobProcessed'))->toBeFalse();
+    } finally {
+        app()->instance('events', $originalEvents);
+    }
+});

@@ -6,6 +6,7 @@ namespace AIArmada\FilamentCommerceSupport\Pages;
 
 use AIArmada\CommerceSupport\Settings\ExchangeRateSettings;
 use BackedEnum;
+use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\KeyValue;
@@ -99,6 +100,8 @@ class ManageExchangeRates extends Page
 
     public function save(): void
     {
+        abort_unless(static::canAccess(), 403);
+
         /** @var array<string, mixed> $state */
         $state = $this->getSchema('form')?->getState() ?? $this->data ?? [];
 
@@ -118,7 +121,17 @@ class ManageExchangeRates extends Page
         $settings = $this->resolveSettings();
         $settings->base = $base;
         $settings->rates = $rates;
-        $settings->save();
+
+        try {
+            $settings->save();
+        } catch (Throwable) {
+            Notification::make()
+                ->title(__('Exchange rates could not be saved. The settings storage is unavailable.'))
+                ->danger()
+                ->send();
+
+            return;
+        }
 
         if ($dropped !== []) {
             Notification::make()
@@ -136,14 +149,26 @@ class ManageExchangeRates extends Page
 
     public function snapshotRates(): void
     {
+        abort_unless(static::canAccess(), 403);
+
         $settings = $this->resolveSettings();
 
         $history = $settings->history;
-        $history[now()->format('Y-m-d')] = $settings->rates;
+        $history[CarbonImmutable::now()->format('Y-m-d')] = $settings->rates;
         ksort($history);
 
         $settings->history = $history;
-        $settings->save();
+
+        try {
+            $settings->save();
+        } catch (Throwable) {
+            Notification::make()
+                ->title(__('Exchange rate snapshot could not be saved. The settings storage is unavailable.'))
+                ->danger()
+                ->send();
+
+            return;
+        }
 
         $this->history = $history;
 

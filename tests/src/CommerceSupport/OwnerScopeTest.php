@@ -404,3 +404,97 @@ final class CustomColFixture extends Model
         );
     }
 }
+
+// ---------------------------------------------------------------------------
+// Dynamic config resolution
+// ---------------------------------------------------------------------------
+
+it('resolves the owner scope config dynamically instead of freezing it at boot', function (): void {
+    $ownerA = User::query()->create([
+        'name' => 'Dynamic Owner A',
+        'email' => 'dynamic-owner-a@example.com',
+        'password' => 'secret',
+    ]);
+
+    DB::table('owner_scope_fixtures')->insert([
+        ['label' => 'dynamic-owned', 'owner_type' => $ownerA->getMorphClass(), 'owner_id' => $ownerA->getKey()],
+        ['label' => 'dynamic-global', 'owner_type' => null, 'owner_id' => null],
+    ]);
+
+    // Boot the model with scoping disabled...
+    config()->set('dynamic_owner_scope_test.enabled', false);
+
+    expect(OwnerScopedDynamicFixture::query()->count())->toBe(2);
+
+    // ...then enable it at runtime: the scope must honour the live config.
+    config()->set('dynamic_owner_scope_test.enabled', true);
+
+    expect(OwnerContext::withOwner($ownerA, fn (): int => OwnerScopedDynamicFixture::query()->count()))->toBe(1);
+});
+
+it('qualifies global-only owner columns on joined queries', function (): void {
+    DB::table('owner_scope_fixtures')->insert([
+        ['label' => 'joined-global', 'owner_type' => null, 'owner_id' => null],
+        ['label' => 'joined-owned', 'owner_type' => 'user', 'owner_id' => 'joined-owner'],
+    ]);
+
+    $labels = OwnerContext::withOwner(null, fn (): array => OwnerScopedFixture::query()
+        ->join('owner_scope_fixtures as related', 'related.id', '=', 'owner_scope_fixtures.id')
+        ->globalOnly()
+        ->orderBy('owner_scope_fixtures.label')
+        ->pluck('owner_scope_fixtures.label')
+        ->all());
+
+    expect($labels)->toBe(['joined-global']);
+});
+
+final class OwnerScopedDynamicFixture extends Model implements OwnerScopeConfigurable
+{
+    use HasOwner;
+
+    protected $guarded = [];
+
+    public function getTable(): string
+    {
+        return 'owner_scope_fixtures';
+    }
+
+    public static function ownerScopeConfig(): OwnerScopeConfig
+    {
+        return OwnerScopeConfig::fromConfig('dynamic_owner_scope_test');
+    }
+}
+
+it('does not stamp an ambient owner scope key when auto assignment is disabled', function (): void {
+    $ownerA = User::query()->create([
+        'name' => 'Manual Owner A',
+        'email' => 'manual-owner-a@example.com',
+        'password' => 'secret',
+    ]);
+
+    $record = OwnerContext::withOwner($ownerA, fn (): NonAutoAssignOwnerKeyFixture => NonAutoAssignOwnerKeyFixture::query()->create([
+        'label' => 'manual',
+    ]));
+
+    expect($record->getAttribute('owner_type'))->toBeNull()
+        ->and($record->getAttribute('owner_id'))->toBeNull()
+        ->and($record->getAttribute('owner_scope'))->toBe('global');
+});
+
+final class NonAutoAssignOwnerKeyFixture extends Model implements OwnerScopeConfigurable
+{
+    use HasOwner;
+    use HasOwnerScopeKey;
+
+    protected $guarded = [];
+
+    public function getTable(): string
+    {
+        return 'owner_scope_fixtures';
+    }
+
+    public static function ownerScopeConfig(): OwnerScopeConfig
+    {
+        return new OwnerScopeConfig(enabled: true, includeGlobal: false, autoAssignOnCreate: false);
+    }
+}

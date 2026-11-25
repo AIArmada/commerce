@@ -9,5 +9,13 @@ namespace Laravel\Octane\Events;
 final class RequestReceived {}
 
 final class RequestTerminated {}
+
+final class TaskReceived {}
+
+final class TaskTerminated {}
+
+final class TickReceived {}
+
+final class TickTerminated {}
 PHP);
 }

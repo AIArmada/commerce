@@ -37,10 +37,8 @@ return [
 
 Set to `false` to disable the navigation override system and omit the settings page from the panel.
 
-> **warning**
-The plugin registers the `currencies`, `languages`, and `timezones` reference-data
-resources inside the same `navigation.enabled` branch. Turning it off removes
-those resources from the panel too, not just the settings page.
+> **info**
+The reference-data resources (`currencies`, `languages`, `timezones`) are registered independently of `navigation.enabled`, so disabling navigation management never removes them from the panel. Use `resources.<name>.enabled` to control them.
 :::
 
 ### `exchange_rates.*`

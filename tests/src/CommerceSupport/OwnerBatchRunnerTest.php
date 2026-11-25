@@ -453,3 +453,153 @@ it('fails fast on malformed owner tuples before running callbacks', function ():
 
     expect($callCount)->toBe(0);
 });
+
+// ---------------------------------------------------------------------------
+// Model scope config fallback (no explicit ownerConfig keys)
+// ---------------------------------------------------------------------------
+
+it('falls back to the model scope config for include-global suppression', function (): void {
+    $owner = User::query()->create([
+        'name' => 'Fallback Include',
+        'email' => 'fallback-include@example.com',
+        'password' => 'secret',
+    ]);
+
+    DB::table('batch_runner_fixtures')->insert([
+        ['owner_type' => null, 'owner_id' => null, 'label' => 'global'],
+        ['owner_type' => $owner->getMorphClass(), 'owner_id' => $owner->getKey(), 'label' => 'owner'],
+    ]);
+
+    OwnerContext::setForRequest(null);
+
+    $runner = new OwnerBatchRunner(BatchRunnerIncludeFixture::class);
+
+    $seenCounts = collect();
+
+    $runner->forEach(function () use ($seenCounts): int {
+        $seenCounts->push(BatchRunnerIncludeFixture::query()->count());
+
+        return 0;
+    });
+
+    expect($seenCounts->every(fn ($value): bool => $value === 1))->toBeTrue();
+
+    OwnerContext::withOwner($owner, function (): void {
+        expect(BatchRunnerIncludeFixture::query()->count())->toBe(2);
+    });
+});
+
+it('falls back to the model scope config for the disabled state', function (): void {
+    $owner = User::query()->create([
+        'name' => 'Fallback Disabled',
+        'email' => 'fallback-disabled@example.com',
+        'password' => 'secret',
+    ]);
+
+    DB::table('batch_runner_fixtures')->insert([
+        ['owner_type' => $owner->getMorphClass(), 'owner_id' => $owner->getKey(), 'label' => 'owner'],
+    ]);
+
+    OwnerContext::setForRequest(null);
+
+    $runner = new OwnerBatchRunner(BatchRunnerDisabledFixture::class);
+
+    $callCount = 0;
+
+    $runner->run(function () use (&$callCount): void {
+        $callCount++;
+    });
+
+    expect($callCount)->toBe(1);
+});
+
+it('sums only numeric array values without throwing on non-numeric values', function (): void {
+    $ownerA = User::query()->create([
+        'name' => 'Numeric A',
+        'email' => 'numeric-a@example.com',
+        'password' => 'secret',
+    ]);
+
+    $ownerB = User::query()->create([
+        'name' => 'Numeric B',
+        'email' => 'numeric-b@example.com',
+        'password' => 'secret',
+    ]);
+
+    DB::table('batch_runner_fixtures')->insert([
+        ['owner_type' => $ownerA->getMorphClass(), 'owner_id' => $ownerA->getKey(), 'label' => 'a'],
+        ['owner_type' => $ownerB->getMorphClass(), 'owner_id' => $ownerB->getKey(), 'label' => 'b'],
+    ]);
+
+    OwnerContext::setForRequest(null);
+
+    $runner = new OwnerBatchRunner(BatchRunnerFixture::class, [
+        'enabled' => 'batch_runner_test.enabled',
+    ]);
+
+    config()->set('batch_runner_test.enabled', true);
+
+    $result = $runner->run(fn (): array => [
+        'processed' => 5,
+        'labels' => 'kept',
+    ]);
+
+    expect($result)->toBe([
+        'processed' => 10,
+        'labels' => 'kept',
+    ]);
+});
+
+it('replaces non-numeric carry values with numeric results instead of throwing', function (): void {
+    $ownerA = User::query()->create([
+        'name' => 'Carry A',
+        'email' => 'carry-a@example.com',
+        'password' => 'secret',
+    ]);
+
+    $ownerB = User::query()->create([
+        'name' => 'Carry B',
+        'email' => 'carry-b@example.com',
+        'password' => 'secret',
+    ]);
+
+    DB::table('batch_runner_fixtures')->insert([
+        ['owner_type' => $ownerA->getMorphClass(), 'owner_id' => $ownerA->getKey(), 'label' => 'a'],
+        ['owner_type' => $ownerB->getMorphClass(), 'owner_id' => $ownerB->getKey(), 'label' => 'b'],
+    ]);
+
+    OwnerContext::setForRequest(null);
+
+    $runner = new OwnerBatchRunner(BatchRunnerFixture::class, [
+        'enabled' => 'batch_runner_test.enabled',
+    ]);
+
+    config()->set('batch_runner_test.enabled', true);
+
+    $call = 0;
+
+    $result = $runner->run(function () use (&$call): array {
+        $call++;
+
+        return $call === 1 ? ['value' => 'text'] : ['value' => 7];
+    });
+
+    expect($result)->toBe(['value' => 7]);
+});
+
+final class BatchRunnerDisabledFixture extends Model
+{
+    use HasOwner;
+
+    protected $guarded = [];
+
+    public function getTable(): string
+    {
+        return 'batch_runner_fixtures';
+    }
+
+    public static function ownerScopeConfig(): OwnerScopeConfig
+    {
+        return new OwnerScopeConfig(enabled: false);
+    }
+}

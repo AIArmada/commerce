@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Filament\Widgets\CommerceHealthWidget;
+use Filament\Facades\Filament;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
 use Spatie\Health\Facades\Health;
@@ -44,6 +45,36 @@ it('requires explicit ability to view commerce health widget', function (): void
 
     auth()->logout();
     expect(CommerceHealthWidget::canView())->toBeFalse();
+});
+
+it('resolves the viewer through the filament panel guard when the default guard is empty', function (): void {
+    if (! class_exists(Health::class)) {
+        $this->markTestSkipped('Spatie Health is not installed.');
+    }
+
+    app()->instance('health', new stdClass);
+
+    $user = User::query()->create([
+        'name' => 'Panel Health Viewer',
+        'email' => 'panel-health-viewer@example.com',
+        'password' => 'secret',
+    ]);
+
+    config()->set('commerce-support.health.view_ability', 'viewCommerceHealth');
+
+    Gate::define('viewCommerceHealth', fn (): bool => true);
+
+    config()->set('auth.guards.admin', [
+        'driver' => 'session',
+        'provider' => 'users',
+    ]);
+
+    Filament::getCurrentOrDefaultPanel()->authGuard('admin');
+
+    Filament::auth()->login($user);
+
+    expect(auth()->user())->toBeNull()
+        ->and(CommerceHealthWidget::canView())->toBeTrue();
 });
 
 it('reads stored health results once per widget instance', function (): void {

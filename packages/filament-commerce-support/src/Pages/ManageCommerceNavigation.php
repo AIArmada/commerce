@@ -353,6 +353,8 @@ class ManageCommerceNavigation extends Page
 
     public function save(): void
     {
+        abort_unless(static::canAccess(), 403);
+
         $settings = $this->resolveSettings();
 
         // Denormalize the nested sidebar structure back into flat groups + overrides.

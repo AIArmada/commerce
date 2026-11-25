@@ -6,6 +6,8 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScopeConfig;
+use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
@@ -113,5 +115,78 @@ final class OwnerUiScopeFixture extends Model
     public function getTable(): string
     {
         return 'owner_ui_scope_fixtures';
+    }
+}
+
+it('respects a pinned owner config without ambient context', function (): void {
+    $owner = User::query()->create([
+        'name' => 'Pinned Owner',
+        'email' => 'owner-ui-scope-pinned@example.com',
+        'password' => 'secret',
+    ]);
+
+    OwnerContext::withOwner($owner, fn (): Model => OwnerUiScopeFixture::query()->create([
+        'label' => 'pinned-owned',
+    ]));
+
+    OwnerContext::withOwner(null, fn (): Model => OwnerUiScopeFixture::query()->create([
+        'label' => 'global',
+    ]));
+
+    OwnerUiScopePinnedFixture::$owner = $owner;
+
+    try {
+        expect(OwnerUiScope::resolveOwner(OwnerUiScopePinnedFixture::class)?->is($owner))->toBeTrue()
+            ->and(OwnerUiScope::canCreate(OwnerUiScopePinnedFixture::class))->toBeTrue()
+            ->and(OwnerUiScope::apply(OwnerUiScopePinnedFixture::query())->count())->toBe(1)
+            ->and(OwnerUiScope::apply(OwnerUiScopePinnedFixture::query())->pluck('label')->all())->toBe(['pinned-owned']);
+    } finally {
+        OwnerUiScopePinnedFixture::$owner = null;
+    }
+});
+
+it('suppresses include-global matching through the scope override', function (): void {
+    $owner = User::query()->create([
+        'name' => 'Override Owner',
+        'email' => 'owner-ui-scope-override@example.com',
+        'password' => 'secret',
+    ]);
+
+    OwnerContext::withOwner($owner, fn (): Model => OwnerUiScopeFixture::query()->create([
+        'label' => 'override-owned',
+    ]));
+
+    OwnerContext::withOwner(null, fn (): Model => OwnerUiScopeFixture::query()->create([
+        'label' => 'override-global',
+    ]));
+
+    OwnerContext::withOwner($owner, function (): void {
+        $withGlobal = OwnerUiScope::apply(OwnerUiScopeFixture::query(), includeGlobal: true)->count();
+
+        $suppressed = OwnerScopeOverride::withoutIncludeGlobal(
+            fn (): int => OwnerUiScope::apply(OwnerUiScopeFixture::query(), includeGlobal: true)->count(),
+        );
+
+        expect($withGlobal)->toBe(2)
+            ->and($suppressed)->toBe(1);
+    });
+});
+
+final class OwnerUiScopePinnedFixture extends Model
+{
+    use HasOwner;
+
+    public static ?Model $owner = null;
+
+    protected $guarded = [];
+
+    public function getTable(): string
+    {
+        return 'owner_ui_scope_fixtures';
+    }
+
+    public static function ownerScopeConfig(): OwnerScopeConfig
+    {
+        return new OwnerScopeConfig(enabled: true, owner: self::$owner);
     }
 }

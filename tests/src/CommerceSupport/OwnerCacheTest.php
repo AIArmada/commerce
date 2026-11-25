@@ -5,6 +5,9 @@ declare(strict_types=1);
 use AIArmada\CommerceSupport\Contracts\OwnerScopeIdentifiable;
 use AIArmada\CommerceSupport\Support\OwnerCache;
 use AIArmada\CommerceSupport\Support\OwnerScopeKey;
+use Illuminate\Cache\ArrayStore;
+use Illuminate\Contracts\Cache\Repository;
+use Illuminate\Contracts\Cache\Store;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Cache;
 
@@ -124,6 +127,79 @@ describe('OwnerCache', function (): void {
         expect($value1)->toBe('expensive-result')
             ->and($value2)->toBe('expensive-result')
             ->and($callCount)->toBe(1); // Callback only ran once
+    });
+
+    it('returns a legitimately cached null without re-running the callback', function (): void {
+        $owner = new class implements OwnerScopeIdentifiable
+        {
+            public function getMorphClass(): string
+            {
+                return 'store';
+            }
+
+            public function getKey(): mixed
+            {
+                return 'store-null-value';
+            }
+        };
+
+        $callCount = 0;
+
+        $value1 = OwnerCache::remember($owner, 'nullable', now()->addHour(), function () use (&$callCount) {
+            $callCount++;
+
+            return null;
+        });
+
+        $value2 = OwnerCache::remember($owner, 'nullable', now()->addHour(), function () use (&$callCount) {
+            $callCount++;
+
+            return 'should-not-run';
+        });
+
+        expect($value1)->toBeNull()
+            ->and($value2)->toBeNull()
+            ->and($callCount)->toBe(1);
+    });
+
+    it('degrades to an unguarded rebuild when the driver cannot lock', function (): void {
+        $repository = Cache::repository(new OwnerCacheLocklessStore(new ArrayStore));
+
+        Cache::extend('owner-cache-lockless', fn (): Repository => $repository);
+
+        config()->set('cache.stores.owner-cache-lockless', ['driver' => 'owner-cache-lockless']);
+        config()->set('cache.default', 'owner-cache-lockless');
+
+        $owner = new class implements OwnerScopeIdentifiable
+        {
+            public function getMorphClass(): string
+            {
+                return 'store';
+            }
+
+            public function getKey(): mixed
+            {
+                return 'store-lockless';
+            }
+        };
+
+        $callCount = 0;
+
+        $value = OwnerCache::remember($owner, 'expensive', now()->addHour(), function () use (&$callCount) {
+            $callCount++;
+
+            return 'built-without-lock';
+        });
+
+        $again = OwnerCache::remember($owner, 'expensive', now()->addHour(), function () use (&$callCount) {
+            $callCount++;
+
+            return 'should-not-run';
+        });
+
+        expect($value)->toBe('built-without-lock')
+            ->and($again)->toBe('built-without-lock')
+            ->and($callCount)->toBe(1);
     });
 
     it('forgets owner-scoped cache keys', function (): void {
@@ -293,3 +369,63 @@ describe('OwnerCache', function (): void {
         }
     });
 });
+
+final class OwnerCacheLocklessStore implements Store
+{
+    public function __construct(private readonly Store $store) {}
+
+    public function get($key)
+    {
+        return $this->store->get($key);
+    }
+
+    public function many(array $keys)
+    {
+        return $this->store->many($keys);
+    }
+
+    public function put($key, $value, $seconds)
+    {
+        return $this->store->put($key, $value, $seconds);
+    }
+
+    public function putMany(array $values, $seconds)
+    {
+        return $this->store->putMany($values, $seconds);
+    }
+
+    public function increment($key, $value = 1)
+    {
+        return $this->store->increment($key, $value);
+    }
+
+    public function decrement($key, $value = 1)
+    {
+        return $this->store->decrement($key, $value);
+    }
+
+    public function forever($key, $value)
+    {
+        return $this->store->forever($key, $value);
+    }
+
+    public function touch($key, $seconds)
+    {
+        return $this->store->touch($key, $seconds);
+    }
+
+    public function forget($key)
+    {
+        return $this->store->forget($key);
+    }
+
+    public function flush()
+    {
+        return $this->store->flush();
+    }
+
+    public function getPrefix()
+    {
+        return $this->store->getPrefix();
+    }
+}

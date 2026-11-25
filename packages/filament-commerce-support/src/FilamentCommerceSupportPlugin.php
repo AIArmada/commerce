@@ -48,11 +48,16 @@ class FilamentCommerceSupportPlugin implements Plugin
 
         if ((bool) config('filament-commerce-support.navigation.enabled', true)) {
             $pages[] = ManageCommerceNavigation::class;
-            $panel->resources($this->referenceResources());
         }
 
         if ((bool) config('filament-commerce-support.exchange_rates.enabled', true)) {
             $pages[] = ManageExchangeRates::class;
+        }
+
+        $resources = $this->referenceResources();
+
+        if ($resources !== []) {
+            $panel->resources($resources);
         }
 
         if ($pages !== []) {

@@ -683,13 +683,16 @@ it('treats a configured fixed owner as sufficient context', function (): void {
 it('fails closed for records outside the configured fixed owner', function (): void {
     $ownerA = guardOwner('Pin Exclude A');
     $ownerB = guardOwner('Pin Exclude B');
-    OwnerGuardPinnedFixture::$pinnedOwner = $ownerA;
-    app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($ownerB));
 
+    // Created before the pin is set: pinned models assign new records to the
+    // pin, so an off-pin record must predate it.
     $record = OwnerContext::withOwner(
         $ownerB,
         fn () => OwnerGuardPinnedFixture::query()->create(['label' => 'off-pin']),
     );
+
+    OwnerGuardPinnedFixture::$pinnedOwner = $ownerA;
+    app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($ownerB));
 
     $component = app(OwnerGuardStubComponent::class);
     $component->record = $record;

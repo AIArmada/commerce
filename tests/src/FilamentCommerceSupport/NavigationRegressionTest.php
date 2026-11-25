@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentCommerceSupport\FilamentCommerceSupportPlugin;
 use AIArmada\FilamentCommerceSupport\Pages\ManageCommerceNavigation;
 use AIArmada\FilamentCommerceSupport\Pages\ManageExchangeRates;
@@ -14,19 +15,31 @@ use Filament\Facades\Filament;
 use Filament\Pages\Page;
 use Filament\Panel;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 use Spatie\LaravelSettings\SettingsRepositories\DatabaseSettingsRepository;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 beforeEach(function (): void {
     NavigationConfigurator::reset();
     config()->set('filament-commerce-support.navigation.enabled', true);
+    config()->set('filament-commerce-support.navigation.permission', 'manage-commerce-navigation');
     config()->set('commerce-support.filament.navigation', [
         'enabled' => true,
         'groups' => [],
         'packages' => [],
         'items' => [],
     ]);
+
+    $user = User::query()->create([
+        'name' => 'Navigation Manager',
+        'email' => 'navigation-manager@example.com',
+        'password' => 'secret',
+    ]);
+
+    Gate::define('manage-commerce-navigation', fn (): bool => true);
+    Filament::auth()->login($user);
 });
 
 function navmgrSection(string $key, array $items = [], array $overrides = []): array
@@ -389,14 +402,19 @@ it('registers reference-data resources when navigation is enabled', function ():
     expect($panel)->toBeInstanceOf(Panel::class);
 });
 
-it('registers no pages or resources when navigation is disabled', function (): void {
+it('registers reference-data resources even when navigation and exchange rates are disabled', function (): void {
     config()->set('filament-commerce-support.navigation.enabled', false);
     config()->set('filament-commerce-support.exchange_rates.enabled', false);
     navmgrMockSettings([], [], false);
 
     $panel = Mockery::mock(Panel::class);
     $panel->shouldReceive('navigation')->once()->with(Mockery::type(Closure::class))->andReturnSelf();
-    $panel->shouldNotReceive('pages', 'resources');
+    $panel->shouldNotReceive('pages');
+    $panel->shouldReceive('resources')->once()->with([
+        CurrencyResource::class,
+        LanguageResource::class,
+        TimezoneResource::class,
+    ])->andReturnSelf();
 
     (new FilamentCommerceSupportPlugin(app()))->register($panel);
 
@@ -424,7 +442,7 @@ it('registers only the rates page when navigation is disabled', function (): voi
     $panel = Mockery::mock(Panel::class);
     $panel->shouldReceive('navigation')->once()->with(Mockery::type(Closure::class))->andReturnSelf();
     $panel->shouldReceive('pages')->once()->with([ManageExchangeRates::class])->andReturnSelf();
-    $panel->shouldNotReceive('resources');
+    $panel->shouldReceive('resources')->once()->andReturnSelf();
 
     (new FilamentCommerceSupportPlugin(app()))->register($panel);
 
@@ -511,6 +529,14 @@ it('reports storage failures on save instead of throwing', function (): void {
     expect(config('commerce-support.filament.navigation.items'))->toBe([
         'Navmgr\\Kept' => ['group' => 'Catalog'],
     ]);
+});
+
+it('denies save when the manager lacks the configured permission', function (): void {
+    navmgrMockSettings([], [], false);
+
+    Filament::auth()->logout();
+
+    expect(fn () => navmgrPage([])->save())->toThrow(HttpException::class);
 });
 
 // Static methods must never be invoked on unregistered persisted

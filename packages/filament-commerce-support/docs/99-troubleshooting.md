@@ -15,12 +15,19 @@ title: Troubleshooting
 2. Verify `filament-commerce-support.navigation.enabled` is `true`
 3. Check the panel user is authorized for the configured `navigation.permission` Gate ability
 
+Disabling `navigation.enabled` only removes the navigation manager page; the
+reference-data resources stay registered and are controlled by
+`resources.<name>.enabled`.
+
 ## "Settings storage is unavailable" warning
 
 The manager shows file-config defaults when the `settings` table (or its
 `commerce-navigation` rows) cannot be read. Run the settings migrations;
 saving recreates missing rows automatically, but cannot work while the
-table itself is missing.
+table itself is missing. Exchange-rate save/snapshot actions report storage
+failures with a danger notification instead of throwing; the same applies
+when the `navigation.permission` / `exchange_rates.permission` ability is
+missing — those actions abort with `403` without writing anything.
 
 ## Contributor interface
 
