@@ -12,7 +12,7 @@
       "AIArmada\\Affiliates\\Features\\Payouts\\Actions\\ClaimScheduledPayout"
     ],
     "table:affiliate_payout_methods": [
-      "AIArmada\\Affiliates\\Features\\Payouts\\Actions\\SetDefaultPayoutMethod"
+      "AIArmada\\Affiliates\\Features\\Payouts\\Actions\\AdministerPayoutMethod"
     ]
   },
   "extensions": {}

@@ -9,10 +9,52 @@ use AIArmada\Affiliates\Features\Payouts\Api\PayoutMethodAdministration;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayoutMethod;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use Carbon\CarbonImmutable;
 use LogicException;
 
-final readonly class SetDefaultPayoutMethod implements PayoutMethodAdministration
+final readonly class AdministerPayoutMethod implements PayoutMethodAdministration
 {
+    public function verify(string $affiliateId, string $methodId): void
+    {
+        $this->withLockedMethod($affiliateId, $methodId, static function (AffiliatePayoutMethod $method, Affiliate $affiliate): void {
+            if (! $method->isVerified()) {
+                $method->update(['verified_at' => CarbonImmutable::now()]);
+            }
+        });
+    }
+
+    public function selectDefault(string $affiliateId, string $methodId): void
+    {
+        $this->withLockedMethod($affiliateId, $methodId, static function (AffiliatePayoutMethod $method, Affiliate $affiliate): void {
+            $affiliate->payoutMethods()->where('is_default', true)->whereKeyNot($method->getKey())->update(['is_default' => false]);
+
+            if (! $method->is_default) {
+                $method->update(['is_default' => true]);
+            }
+        });
+    }
+
+    /** @param callable(AffiliatePayoutMethod, Affiliate): void $write */
+    private function withLockedMethod(string $affiliateId, string $methodId, callable $write): void
+    {
+        $connection = (new Affiliate)->getConnection();
+
+        if ((new AffiliatePayoutMethod)->getConnection() !== $connection) {
+            throw new LogicException('Payout method updates require a shared database connection.');
+        }
+
+        $connection->transaction(function () use ($affiliateId, $methodId, $write): void {
+            if ((bool) config('affiliates.owner.enabled', false)) {
+                OwnerWriteGuard::findOrFailForOwner(Affiliate::class, $affiliateId);
+            }
+
+            $affiliate = Affiliate::query()->lockForUpdate()->findOrFail($affiliateId);
+            $method = $affiliate->payoutMethods()->lockForUpdate()->findOrFail($methodId);
+
+            $write($method, $affiliate);
+        }, attempts: 3);
+    }
+
     public function setDefault(string $affiliateId, string $type, string $label, string $accountRef): void
     {
         $type = PayoutMethodType::from($type);

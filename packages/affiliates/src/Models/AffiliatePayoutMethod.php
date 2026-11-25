@@ -8,7 +8,6 @@ use AIArmada\Affiliates\Enums\PayoutMethodType;
 use AIArmada\Affiliates\Models\Concerns\ScopesByAffiliateOwner;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
-use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -80,23 +79,6 @@ class AffiliatePayoutMethod extends Model implements Auditable
     public function isVerified(): bool
     {
         return $this->verified_at !== null;
-    }
-
-    public function verify(): void
-    {
-        $this->update([
-            'verified_at' => CarbonImmutable::now(),
-        ]);
-    }
-
-    public function setAsDefault(): void
-    {
-        // Remove default from other methods
-        static::where('affiliate_id', $this->affiliate_id)
-            ->where('id', '!=', $this->id)
-            ->update(['is_default' => false]);
-
-        $this->update(['is_default' => true]);
     }
 
     public function getMaskedDetails(): array

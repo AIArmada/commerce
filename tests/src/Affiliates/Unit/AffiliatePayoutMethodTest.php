@@ -3,9 +3,11 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\PayoutMethodType;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutMethodAdministration;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayoutMethod;
 use AIArmada\Affiliates\States\Active;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 // AffiliatePayoutMethod Tests
@@ -37,7 +39,7 @@ test('AffiliatePayoutMethod has affiliate relationship', function (): void {
     expect($method->affiliate())->toBeInstanceOf(BelongsTo::class);
 });
 
-test('AffiliatePayoutMethod verify sets verified_at', function (): void {
+test('Payout method administration verifies a method', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'PAY002',
         'name' => 'Verify Test',
@@ -55,13 +57,13 @@ test('AffiliatePayoutMethod verify sets verified_at', function (): void {
         'is_default' => false,
     ]);
 
-    $method->verify();
+    app(PayoutMethodAdministration::class)->verify((string) $affiliate->getKey(), (string) $method->getKey());
 
     expect($method->fresh()->isVerified())->toBeTrue();
     expect($method->fresh()->verified_at)->not->toBeNull();
 });
 
-test('AffiliatePayoutMethod setAsDefault updates default flag', function (): void {
+test('Payout method administration selects a single default', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'PAY003',
         'name' => 'Default Test',
@@ -87,9 +89,23 @@ test('AffiliatePayoutMethod setAsDefault updates default flag', function (): voi
         'is_default' => false,
     ]);
 
-    $method2->setAsDefault();
+    app(PayoutMethodAdministration::class)->selectDefault((string) $affiliate->getKey(), (string) $method2->getKey());
 
     expect($method1->fresh()->is_default)->toBeFalse();
+    expect($method2->fresh()->is_default)->toBeTrue();
+
+    $other = Affiliate::create([
+        'code' => 'PAY005',
+        'name' => 'Other affiliate',
+        'status' => Active::class,
+        'commission_type' => 'percentage',
+        'commission_rate' => 1000,
+        'currency' => 'USD',
+    ]);
+
+    $administration = app(PayoutMethodAdministration::class);
+    expect(fn () => $administration->selectDefault((string) $other->getKey(), (string) $method2->getKey()))->toThrow(ModelNotFoundException::class);
+    expect(fn () => $administration->verify((string) $other->getKey(), (string) $method2->getKey()))->toThrow(ModelNotFoundException::class);
     expect($method2->fresh()->is_default)->toBeTrue();
 });
 

@@ -13,7 +13,7 @@ final class FeatureModule implements FeatureModuleContract
     {
         $app->bind(Api\PayoutAdministration::class, Actions\AdministerPayout::class);
         $app->bind(Api\ScheduledPayoutSweep::class, Actions\RunScheduledPayoutSweep::class);
-        $app->bind(Api\PayoutMethodAdministration::class, Actions\SetDefaultPayoutMethod::class);
+        $app->bind(Api\PayoutMethodAdministration::class, Actions\AdministerPayoutMethod::class);
     }
 
     public function boot(Application $app): void {}

@@ -451,3 +451,15 @@ the operation's affiliate and currency even when the payout has another payee.
 Directly marked paid conversions are already removed from the approved total; a later direct
 paid reversal remains a negative available-balance clawback. This audit does
 not infer reservations for record-only payout rows.
+
+### Verify or select an existing payout method
+
+Call the owning feature API from authorized administrative code. Both operations require the affiliate ID and the payout method ID.
+
+```php
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutMethodAdministration;
+
+$methods = app(PayoutMethodAdministration::class);
+$methods->verify($affiliateId, $methodId);
+$methods->selectDefault($affiliateId, $methodId);
+```
