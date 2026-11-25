@@ -155,7 +155,6 @@ class DiscoverWebsiteSocialProfilesAction
             guard: $guard,
             url: $url,
             maxBytes: self::MAX_HTML_BYTES,
-            headers: ['Accept' => 'text/html'],
             maxRedirects: 3,
             connectTimeout: 2,
             timeout: 5,
