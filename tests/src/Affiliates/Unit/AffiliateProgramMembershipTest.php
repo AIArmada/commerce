@@ -262,7 +262,7 @@ describe('AffiliateProgramMembership Model', function (): void {
             'status' => MembershipStatus::Approved,
         ]);
 
-        expect($created->status)->toBe(MembershipStatus::Approved)
+        expect($created->status)->toBe(MembershipStatus::Approved->value)
             ->and($created->approvedAt)->not->toBeNull();
 
         $updated = $api->update($created->id, [
@@ -273,7 +273,7 @@ describe('AffiliateProgramMembership Model', function (): void {
 
         expect($updated->affiliateId)->toBe($this->affiliate->id)
             ->and($updated->programId)->toBe($this->program->id)
-            ->and($updated->status)->toBe(MembershipStatus::Suspended);
+            ->and($updated->status)->toBe(MembershipStatus::Suspended->value);
 
         $api->delete($created->id);
 

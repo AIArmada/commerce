@@ -47,7 +47,7 @@ final class ProgramMembershipController extends Controller
 
         return response()->json([
             'member' => true,
-            'status' => $membership->status->value,
+            'status' => $membership->status,
             'tier_id' => $membership->tierId,
         ], $membership->created ? 201 : 200);
     }
@@ -78,7 +78,7 @@ final class ProgramMembershipController extends Controller
 
         return response()->json([
             'member' => true,
-            'status' => $membership->status->value,
+            'status' => $membership->status,
             'tier_id' => $membership->tierId,
         ]);
     }

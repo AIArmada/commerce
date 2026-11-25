@@ -40,9 +40,11 @@ final readonly class ProgramPortalQuery implements ProgramPortalReader
                 id: $program->id,
                 name: $program->name,
                 description: $program->description,
-                status: $program->status,
+                status: $program->status->value,
+                statusLabel: $program->status->label(),
                 requiresApproval: $program->requires_approval,
-                membershipStatus: $membership?->status,
+                membershipStatus: $membership?->status->value,
+                membershipStatusLabel: $membership?->status->label(),
                 activeMembership: $active,
                 canJoin: $membership === null && $program->canJoin($affiliate),
                 creatives: $active

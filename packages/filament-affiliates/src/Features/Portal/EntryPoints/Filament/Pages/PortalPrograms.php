@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages;
 
-use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Exceptions\ProgramEnrollmentDenied;
 use AIArmada\Affiliates\Features\Programs\Api\PortalProgramRecord;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramEnrollment;
@@ -67,7 +66,7 @@ class PortalPrograms extends PortalPage
             return;
         }
 
-        if (! $membership->active && $membership->status !== MembershipStatus::Pending) {
+        if (! $membership->active && ! $membership->isPending()) {
             Notification::make()
                 ->title(__('Membership is not active'))
                 ->warning()
@@ -76,13 +75,13 @@ class PortalPrograms extends PortalPage
             return;
         }
 
-        $title = $membership->status === MembershipStatus::Pending
+        $title = $membership->isPending()
             ? __('Program request submitted')
             : __('Joined program');
 
         Notification::make()
             ->title($title)
-            ->body($membership->status === MembershipStatus::Pending
+            ->body($membership->isPending()
                 ? __('Your request will be reviewed before access is granted.')
                 : __('You now have access to the program assets.'))
             ->success()
@@ -142,11 +141,11 @@ class PortalPrograms extends PortalPage
             'id' => $program->id,
             'name' => $program->name,
             'description' => $program->description,
-            'status' => $program->status->label(),
+            'status' => $program->statusLabel,
             'requires_approval' => $program->requiresApproval,
-            'membership_status' => $program->membershipStatus?->label(),
+            'membership_status' => $program->membershipStatusLabel,
             'is_joined' => $program->activeMembership,
-            'is_pending' => $program->membershipStatus === MembershipStatus::Pending,
+            'is_pending' => $program->isPending(),
             'can_join' => $program->canJoin,
             'join_label' => $program->requiresApproval ? __('Request Access') : __('Join Program'),
             'leave_label' => __('Leave Program'),
