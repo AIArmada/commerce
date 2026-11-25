@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Actions\Affiliates\ResolvePublicAffiliateReferralContext;
 use AIArmada\Affiliates\Features\Attribution\Api\AttributionActivity;
-use AIArmada\Affiliates\Actions\Affiliates\TrackAffiliateVisit;
+use AIArmada\Affiliates\Features\Attribution\Api\AttributionTracking;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\States\Active;
@@ -60,7 +60,7 @@ test('package resolves public referral context from query parameters', function 
 });
 
 test('package resolves public referral context from encrypted cookies', function (): void {
-    app(TrackAffiliateVisit::class)->handle($this->affiliate->code, [], 'public-cookie-value');
+    app(AttributionTracking::class)->track($this->affiliate->code, [], 'public-cookie-value');
 
     $request = Request::create('/', 'GET');
     $request->cookies->set(
@@ -140,7 +140,7 @@ test('path referral redirect preserves its emitted cookie instead of the tracker
         'default_voucher_code' => 'REFPREV' . uniqid(),
     ]);
 
-    app(TrackAffiliateVisit::class)->handle(
+    app(AttributionTracking::class)->track(
         $previous->code,
         ['user_agent' => 'previous-agent', 'ip_address' => '203.0.113.5'],
         'previous-cookie',
@@ -167,7 +167,7 @@ test('touching attribution preserves the stored hash unless a new raw IP arrives
     $firstIp = '198.51.100.11';
     $secondIp = '198.51.100.22';
 
-    app(TrackAffiliateVisit::class)->handle($this->affiliate->code, ['ip_address' => $firstIp], 'touch-cookie-f03');
+    app(AttributionTracking::class)->track($this->affiliate->code, ['ip_address' => $firstIp], 'touch-cookie-f03');
 
     $stored = AffiliateAttribution::query()->where('cookie_value', 'touch-cookie-f03')->sole();
 
@@ -186,11 +186,23 @@ test('touching attribution preserves the stored hash unless a new raw IP arrives
 });
 
 test('attribution activity does not revive expired cookies', function (): void {
-    app(TrackAffiliateVisit::class)->handle($this->affiliate->code, [], 'expired-touch-cookie');
+    app(AttributionTracking::class)->track($this->affiliate->code, [], 'expired-touch-cookie');
     $attribution = AffiliateAttribution::query()->where('cookie_value', 'expired-touch-cookie')->sole();
     $attribution->update(['expires_at' => now()->subDay()]);
     $expiresAt = $attribution->fresh()->expires_at;
 
     expect(app(AttributionActivity::class)->touch('expired-touch-cookie'))->toBeNull()
         ->and($attribution->fresh()->expires_at->equalTo($expiresAt))->toBeTrue();
+});
+
+test('visit tracking rotates an expired cookie instead of reusing its identifier', function (): void {
+    $tracking = app(AttributionTracking::class);
+    $first = $tracking->track($this->affiliate->code, [], 'expired-visit-cookie');
+    AffiliateAttribution::query()->whereKey($first->id)->update(['expires_at' => now()->subDay()]);
+
+    $second = $tracking->track($this->affiliate->code, [], 'expired-visit-cookie');
+
+    expect($second)->not->toBeNull()
+        ->and($second->cookieValue)->not->toBe('expired-visit-cookie')
+        ->and($second->id)->not->toBe($first->id);
 });

@@ -3,7 +3,11 @@
   "name": "Attribution",
   "owns": {
     "table:affiliate_attributions": [
-      "AIArmada\\Affiliates\\Features\\Attribution\\Actions\\TouchAffiliateAttribution"
+      "AIArmada\\Affiliates\\Features\\Attribution\\Actions\\TouchAffiliateAttribution",
+      "AIArmada\\Affiliates\\Features\\Attribution\\Actions\\TrackAffiliateVisit"
+    ],
+    "store:affiliate-tracking-rate-limit": [
+      "AIArmada\\Affiliates\\Features\\Attribution\\Actions\\TrackAffiliateVisit"
     ]
   },
   "extensions": {}

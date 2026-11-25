@@ -12,6 +12,7 @@ final class FeatureModule implements FeatureModuleContract
     public function register(Application $app): void
     {
         $app->bind(Api\AttributionActivity::class, Actions\TouchAffiliateAttribution::class);
+        $app->bind(Api\AttributionTracking::class, Actions\TrackAffiliateVisit::class);
     }
 
     public function boot(Application $app): void {}

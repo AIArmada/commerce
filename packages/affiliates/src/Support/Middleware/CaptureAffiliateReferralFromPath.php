@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Support\Middleware;
 
-use AIArmada\Affiliates\Actions\Affiliates\TrackAffiliateVisit;
+use AIArmada\Affiliates\Features\Attribution\Api\AttributionTracking;
 use AIArmada\Affiliates\Queries\AffiliateLookupQuery;
 use Closure;
 use Illuminate\Http\Request;
@@ -15,7 +15,7 @@ final class CaptureAffiliateReferralFromPath
 {
     public function __construct(
         private readonly AffiliateLookupQuery $affiliateLookup,
-        private readonly TrackAffiliateVisit $trackAffiliateVisit,
+        private readonly AttributionTracking $attributionTracking,
     ) {}
 
     public function handle(Request $request, Closure $next): Response
@@ -37,7 +37,7 @@ final class CaptureAffiliateReferralFromPath
         $cookieName = (string) config('affiliates.cookies.name', 'affiliate_session');
         $cookieValue = $request->cookie($cookieName);
         $context = $this->buildContext($request);
-        $attribution = $this->trackAffiliateVisit->handle($code, $context, $cookieValue);
+        $attribution = $this->attributionTracking->track($code, $context, $cookieValue);
 
         if ($attribution === null || ! is_string($attribution->cookieValue) || $attribution->cookieValue === '') {
             return $next($request);

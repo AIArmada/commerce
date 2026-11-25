@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Actions\Affiliates;
+namespace AIArmada\Affiliates\Features\Attribution\Actions;
 
 use AIArmada\Affiliates\Data\AffiliateAttributionData;
+use AIArmada\Affiliates\Features\Attribution\Api\AttributionTracking;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudApi;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
@@ -18,18 +19,16 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
-use Lorisleiva\Actions\Concerns\AsAction;
+use LogicException;
 
-final class TrackAffiliateVisit
+final readonly class TrackAffiliateVisit implements AttributionTracking
 {
-    use AsAction;
-
     public function __construct(
-        private readonly AffiliateLookupQuery $affiliateLookup,
-        private readonly FraudApi $fraud,
+        private AffiliateLookupQuery $affiliateLookup,
+        private FraudApi $fraud,
     ) {}
 
-    public function handle(string $code, array $context = [], ?string $cookieValue = null): ?AffiliateAttributionData
+    public function track(string $code, array $context = [], ?string $cookieValue = null): ?AffiliateAttributionData
     {
         $affiliate = $this->affiliateLookup->findByCode($code);
 
@@ -53,9 +52,21 @@ final class TrackAffiliateVisit
             return null;
         }
 
-        $attribution = $this->storeCookieAttribution($affiliate, $context, $cookieValue);
+        $connection = $affiliate->getConnection();
 
-        return $attribution->toData();
+        if ($connection !== (new AffiliateAttribution)->getConnection()) {
+            throw new LogicException('Attribution tracking requires a shared database connection.');
+        }
+
+        return $connection->transaction(function () use ($affiliate, $context, $cookieValue): ?AffiliateAttributionData {
+            $locked = Affiliate::query()->forOwner()->lockForUpdate()->find($affiliate->getKey());
+
+            if (! $locked instanceof Affiliate || ! $locked->canBeAttributed() || $this->isFingerprintBlocked($locked, $context)) {
+                return null;
+            }
+
+            return $this->storeCookieAttribution($locked, $context, $cookieValue)->toData();
+        }, attempts: 3);
     }
 
     private function storeCookieAttribution(Affiliate $affiliate, array $context, ?string $cookieValue): AffiliateAttribution
@@ -68,12 +79,25 @@ final class TrackAffiliateVisit
 
         $payload['cookie_value'] = $cookieValue;
 
-        $attribution = $this->affiliateLookup->findActiveAttributionByCookie($cookieValue);
+        $candidate = $this->affiliateLookup->findActiveAttributionByCookie($cookieValue);
+        $attribution = $candidate === null ? null : AffiliateAttribution::query()
+            ->forOwner()
+            ->where('cookie_value', $candidate->cookie_value)
+            ->active()
+            ->lockForUpdate()
+            ->find($candidate->getKey());
 
-        if ($attribution && ! $this->fingerprintMatches($attribution, $payload['fingerprint'] ?? null)) {
+        if ($candidate !== null && ($attribution === null
+            || $attribution->owner_type !== $affiliate->owner_type
+            || (string) $attribution->owner_id !== (string) $affiliate->owner_id
+            || ! $this->fingerprintMatches($attribution, $payload['fingerprint'] ?? null))) {
             $cookieValue = (string) Str::uuid();
             $payload['cookie_value'] = $cookieValue;
             $attribution = null;
+        } elseif ($attribution !== null) {
+            $payload['cookie_value'] = $attribution->cookie_value;
+        } elseif (AffiliateAttribution::query()->forOwner()->where('cookie_value', $cookieValue)->exists()) {
+            $payload['cookie_value'] = (string) Str::uuid();
         }
 
         $referredAt = CarbonImmutable::now();
@@ -92,6 +116,7 @@ final class TrackAffiliateVisit
 
         $attribution->last_referred_at = $referredAt;
         $attribution->last_cookie_seen_at = $referredAt;
+        $attribution->last_seen_at = $referredAt;
         $attribution->expires_at = $payload['expires_at'];
         $attribution->save();
 
@@ -211,7 +236,7 @@ final class TrackAffiliateVisit
 
         $ip = $context['ip_address'] ?? (app()->bound('request') ? request()->ip() : null);
 
-        if (! $ip) {
+        if (! is_string($ip) || $ip === '') {
             return false;
         }
 
@@ -222,7 +247,7 @@ final class TrackAffiliateVisit
             return false;
         }
 
-        $key = sprintf('affiliates:ip-rate:%s:%s', $affiliate->code, $ip);
+        $key = sprintf('affiliates:ip-rate:%s:%s', $affiliate->getKey(), IpHasher::hash($ip));
 
         if (Cache::store()->add($key, 1, CarbonImmutable::now()->addMinutes($decay))) {
             return false;
@@ -253,7 +278,7 @@ final class TrackAffiliateVisit
         }
 
         return $owner->getMorphClass() === $affiliate->owner_type
-            && $owner->getKey() === $affiliate->owner_id;
+            && (string) $owner->getKey() === (string) $affiliate->owner_id;
     }
 
     private function isFingerprintBlocked(Affiliate $affiliate, array $context): bool

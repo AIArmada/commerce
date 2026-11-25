@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateToCart;
-use AIArmada\Affiliates\Actions\Affiliates\TrackAffiliateVisit;
+use AIArmada\Affiliates\Features\Attribution\Api\AttributionTracking;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
@@ -70,7 +70,7 @@ describe('cross-system winner protocol (engine side)', function (): void {
         $firstClick = CarbonImmutable::parse('2026-02-01T10:00:00+00:00');
         CarbonImmutable::setTestNow($firstClick);
 
-        app(TrackAffiliateVisit::class)->handle($affiliate->code, [
+        app(AttributionTracking::class)->track($affiliate->code, [
             'cart_identifier' => $cart->getIdentifier(),
             'cart_instance' => $cart->instance(),
         ], 'winner-repeat-cookie');
@@ -82,7 +82,7 @@ describe('cross-system winner protocol (engine side)', function (): void {
         $secondClick = $firstClick->addHour();
         CarbonImmutable::setTestNow($secondClick);
 
-        app(TrackAffiliateVisit::class)->handle($affiliate->code, [
+        app(AttributionTracking::class)->track($affiliate->code, [
             'cart_identifier' => $cart->getIdentifier(),
             'cart_instance' => $cart->instance(),
         ], 'winner-repeat-cookie');

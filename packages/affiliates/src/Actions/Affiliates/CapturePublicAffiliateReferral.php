@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Actions\Affiliates;
 
+use AIArmada\Affiliates\Features\Attribution\Api\AttributionTracking;
 use AIArmada\Affiliates\Queries\AffiliateLookupQuery;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,7 +19,7 @@ final class CapturePublicAffiliateReferral
 
     public function __construct(
         private readonly AffiliateLookupQuery $affiliateLookup,
-        private readonly TrackAffiliateVisit $trackAffiliateVisit,
+        private readonly AttributionTracking $attributionTracking,
     ) {}
 
     public function handle(Request $request, string $affiliateCode): RedirectResponse
@@ -35,7 +36,7 @@ final class CapturePublicAffiliateReferral
 
         $cookieName = (string) config('affiliates.cookies.name', 'affiliate_session');
         $cookieValue = $request->cookie($cookieName);
-        $attribution = $this->trackAffiliateVisit->handle($affiliate->code, $this->buildContext($request), $cookieValue);
+        $attribution = $this->attributionTracking->track($affiliate->code, $this->buildContext($request), $cookieValue);
 
         if ($attribution === null || ! is_string($attribution->cookieValue) || $attribution->cookieValue === '') {
             throw new NotFoundHttpException;

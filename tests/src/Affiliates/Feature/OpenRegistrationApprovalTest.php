@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Actions\Affiliates\CreateAffiliate;
-use AIArmada\Affiliates\Actions\Affiliates\TrackAffiliateVisit;
+use AIArmada\Affiliates\Features\Attribution\Api\AttributionTracking;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalStatus;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
@@ -268,8 +268,8 @@ test('visit tracking admits open-pending and blocks admin-pending', function ():
     $open = createOpenTestAffiliate('OPEN015A', 'open');
     $admin = createOpenTestAffiliate('OPEN015B', 'admin');
 
-    $tracker = app(TrackAffiliateVisit::class);
+    $tracker = app(AttributionTracking::class);
 
-    expect($tracker->handle($open->code, [], 'cookie-open-015a'))->not->toBeNull()
-        ->and($tracker->handle($admin->code, [], 'cookie-open-015b'))->toBeNull();
+    expect($tracker->track($open->code, [], 'cookie-open-015a'))->not->toBeNull()
+        ->and($tracker->track($admin->code, [], 'cookie-open-015b'))->toBeNull();
 });

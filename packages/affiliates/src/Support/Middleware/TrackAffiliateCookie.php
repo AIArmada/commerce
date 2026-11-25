@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Support\Middleware;
 
 use AIArmada\Affiliates\Features\Attribution\Api\AttributionActivity;
-use AIArmada\Affiliates\Actions\Affiliates\TrackAffiliateVisit;
+use AIArmada\Affiliates\Features\Attribution\Api\AttributionTracking;
 use AIArmada\Affiliates\Models\AffiliateLink;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScope;
@@ -17,7 +17,7 @@ use Symfony\Component\HttpFoundation\Response;
 final class TrackAffiliateCookie
 {
     public function __construct(
-        private readonly TrackAffiliateVisit $trackAffiliateVisit,
+        private readonly AttributionTracking $attributionTracking,
         private readonly AttributionActivity $attributionActivity,
     ) {}
 
@@ -60,9 +60,9 @@ final class TrackAffiliateCookie
                     'origin' => $link->origin,
                 ]);
                 $owner = OwnerContext::fromTypeAndId($link->affiliate->owner_type, $link->affiliate->owner_id);
-                $attribution = OwnerContext::withOwner($owner, fn () => $this->trackAffiliateVisit->handle($affiliateCode, $context, $cookieValue));
+                $attribution = OwnerContext::withOwner($owner, fn () => $this->attributionTracking->track($affiliateCode, $context, $cookieValue));
             } else {
-                $attribution = $this->trackAffiliateVisit->handle($affiliateCode, $context, $cookieValue);
+                $attribution = $this->attributionTracking->track($affiliateCode, $context, $cookieValue);
             }
             $cookieValue = $attribution?->cookieValue;
         } elseif ($cookieValue) {

@@ -102,7 +102,7 @@ https://shop.test/r/PARTNER42
 https://shop.test/offers/spring/r/PARTNER42?sort=new
 ```
 
-The middleware resolves the affiliate (active only), records the visit via `TrackAffiliateVisit`, persists the affiliate cookie, and redirects back to the prefix path with the incoming query string preserved. The `home` and `checkout` destinations under `affiliates.public_pages.route.destinations` feed the `entry_url`/`checkout_url` links in the public-page referral payload below.
+The middleware resolves the affiliate (active only), records the visit via `AttributionTracking::track()`, persists the affiliate cookie, and redirects back to the prefix path with the incoming query string preserved. The `home` and `checkout` destinations under `affiliates.public_pages.route.destinations` feed the `entry_url`/`checkout_url` links in the public-page referral payload below.
 
 ## Public Page Referral Context
 
