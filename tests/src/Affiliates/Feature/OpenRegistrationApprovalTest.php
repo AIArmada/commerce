@@ -16,7 +16,7 @@ use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\Pending;
 use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\Affiliates\States\RejectedConversion;
-use AIArmada\FilamentAffiliates\Resources\AffiliateResource\Tables\AffiliatesTable;
+use AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources\AffiliateResource\Tables\AffiliatesTable;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 
