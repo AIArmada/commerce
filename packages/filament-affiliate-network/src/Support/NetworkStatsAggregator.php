@@ -4,18 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliateNetwork\Support;
 
-use AIArmada\AffiliateNetwork\Data\ApplicationStatus;
-use AIArmada\AffiliateNetwork\Data\LegStatus;
-use AIArmada\AffiliateNetwork\Data\OfferStatus;
-use AIArmada\AffiliateNetwork\Data\SettlementStatus;
-use AIArmada\AffiliateNetwork\Data\SiteStatus;
-use AIArmada\AffiliateNetwork\Features\Attribution\Models\AffiliateOfferLink;
-use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
-use AIArmada\AffiliateNetwork\Features\Enrollment\Models\AffiliateOfferApplication;
-use AIArmada\AffiliateNetwork\Features\Ledger\Models\MerchantStatement;
-use AIArmada\AffiliateNetwork\Features\Ledger\Models\NetworkConversionLeg;
-use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
-use AIArmada\AffiliateNetwork\Platform\ScopesByBelongsToOwner;
+use AIArmada\AffiliateNetwork\Features\Attribution\Api\AttributionApi;
+use AIArmada\AffiliateNetwork\Features\Catalog\Api\CatalogApi;
+use AIArmada\AffiliateNetwork\Features\Enrollment\Api\EnrollmentApi;
+use AIArmada\AffiliateNetwork\Features\Ledger\Api\LedgerApi;
+use AIArmada\AffiliateNetwork\Features\Sites\Api\SitesApi;
 use AIArmada\CommerceSupport\Support\CurrencyConverter;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -35,19 +28,16 @@ final class NetworkStatsAggregator
     public static function aggregate(): array
     {
         return OwnerContext::withOwner(null, function (): array {
-            $rows = AffiliateOfferLink::withoutGlobalScope(ScopesByBelongsToOwner::class)
-                ->toBase()
-                ->selectRaw('currency, COALESCE(SUM(revenue), 0) as revenue, COALESCE(SUM(clicks), 0) as clicks, COALESCE(SUM(conversions), 0) as conversions')
-                ->groupBy('currency')
-                ->get();
-            $totalClicks = (int) $rows->sum('clicks');
-            $totalConversions = (int) $rows->sum('conversions');
+            $rows = app(AttributionApi::class)->networkLinkTotalsUnscoped();
+            $totalClicks = array_sum(array_column($rows, 'clicks'));
+            $totalConversions = array_sum(array_column($rows, 'conversions'));
             $revenue = self::aggregateRevenue($rows);
-            $activeSites = AffiliateSite::query()->withoutOwnerScope()->where('status', SiteStatus::Verified)->count();
-            $activeOffers = AffiliateOffer::withoutGlobalScope(ScopesByBelongsToOwner::class)->where('status', OfferStatus::Published)->count();
-            $pendingApplications = AffiliateOfferApplication::withoutGlobalScope(ScopesByBelongsToOwner::class)->where('status', ApplicationStatus::Pending)->count();
-            $pendingLegsCount = NetworkConversionLeg::withoutOwnerScope()->where('status', LegStatus::Pending)->count();
-            $openStatementsCount = MerchantStatement::withoutOwnerScope()->where('status', SettlementStatus::Issued)->count();
+            $activeSites = app(SitesApi::class)->countVerifiedSitesUnscoped();
+            $activeOffers = app(CatalogApi::class)->countPublishedOffersUnscoped();
+            $pendingApplications = app(EnrollmentApi::class)->countPendingApplicationsUnscoped();
+            $ledger = app(LedgerApi::class);
+            $pendingLegsCount = $ledger->countPendingLegsUnscoped();
+            $openStatementsCount = $ledger->countIssuedStatementsUnscoped();
 
             $conversionRate = $totalClicks > 0
                 ? round(($totalConversions / $totalClicks) * 100, 2)
@@ -74,19 +64,19 @@ final class NetworkStatsAggregator
     }
 
     /**
-     * @param  iterable<int, object{currency: string|null, revenue: int|string}>  $rows
+     * @param  list<array{currency: string|null, revenue: int, clicks: int, conversions: int}>  $rows
      * @return array{total: int|null, currency: string, converted: bool, by_currency: array<string, int>}
      */
-    private static function aggregateRevenue(iterable $rows): array
+    private static function aggregateRevenue(array $rows): array
     {
         $byCurrency = [];
 
         foreach ($rows as $row) {
-            $currency = is_string($row->currency) && mb_trim($row->currency) !== ''
-                ? mb_strtoupper(mb_trim($row->currency))
+            $currency = is_string($row['currency']) && mb_trim($row['currency']) !== ''
+                ? mb_strtoupper(mb_trim($row['currency']))
                 : self::defaultCurrency();
 
-            $byCurrency[$currency] = ($byCurrency[$currency] ?? 0) + (int) $row->revenue;
+            $byCurrency[$currency] = ($byCurrency[$currency] ?? 0) + (int) $row['revenue'];
         }
 
         if (count($byCurrency) === 1) {

@@ -8,6 +8,8 @@ use AIArmada\AffiliateNetwork\Data\ApplicationStatus;
 use AIArmada\AffiliateNetwork\Features\Enrollment\Actions\DeleteOfferEnrollments;
 use AIArmada\AffiliateNetwork\Features\Enrollment\Api\DealRateOverride;
 use AIArmada\AffiliateNetwork\Features\Enrollment\Api\EnrollmentApi;
+use AIArmada\AffiliateNetwork\Features\Enrollment\Models\AffiliateOfferApplication;
+use AIArmada\AffiliateNetwork\Platform\ScopesByBelongsToOwner;
 use Carbon\CarbonImmutable;
 
 final class EloquentEnrollmentApi implements EnrollmentApi
@@ -60,5 +62,10 @@ final class EloquentEnrollmentApi implements EnrollmentApi
     public function averageApprovalHoursForOffer(string $offerId, CarbonImmutable $since): ?float
     {
         return $this->query->averageApprovalHoursForOffer($offerId, $since);
+    }
+
+    public function countPendingApplicationsUnscoped(): int
+    {
+        return AffiliateOfferApplication::withoutGlobalScope(ScopesByBelongsToOwner::class)->where('status', ApplicationStatus::Pending)->count();
     }
 }
