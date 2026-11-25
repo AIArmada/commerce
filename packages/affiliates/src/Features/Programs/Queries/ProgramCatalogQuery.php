@@ -4,20 +4,17 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Programs\Queries;
 
-use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Features\Programs\Api\MerchantCatalog;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramSnapshot;
-use AIArmada\Affiliates\Models\AffiliateCommissionPromotion;
-use AIArmada\Affiliates\Models\AffiliateCommissionRule;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramCreative;
+use AIArmada\Affiliates\Features\Commissions\Api\CommissionCatalogReader;
 use AIArmada\Affiliates\Features\Commissions\Api\CommissionRulePreview;
 use AIArmada\Affiliates\Features\Commissions\Api\CommissionRuleQuote;
 use AIArmada\Affiliates\Features\Commissions\Api\VolumeTierReader;
 use AIArmada\Affiliates\Features\Commissions\Api\VolumeTierSnapshot;
 use AIArmada\Affiliates\Support\Catalog\PromotableRegistry;
-use Illuminate\Support\Collection;
 
 final readonly class ProgramCatalogQuery implements MerchantCatalog
 {
@@ -25,6 +22,7 @@ final readonly class ProgramCatalogQuery implements MerchantCatalog
         private CommissionRulePreview $rules,
         private PromotableRegistry $promotables,
         private VolumeTierReader $tiers,
+        private CommissionCatalogReader $commissionCatalog,
     ) {}
 
     public function snapshotById(string $programId): ?ProgramSnapshot
@@ -89,7 +87,7 @@ final readonly class ProgramCatalogQuery implements MerchantCatalog
         $subjects = $this->promotables->all($program->getKey(), $maxSubjects);
 
         if ($subjects->isEmpty()) {
-            $subjects = $this->fallbackSubjectsFromRules($program, $maxSubjects);
+            $subjects = collect($this->commissionCatalog->fallbackSubjects((string) $program->getKey(), $maxSubjects));
         }
 
         $defaultType = $program->commission_type instanceof CommissionType
@@ -121,7 +119,7 @@ final readonly class ProgramCatalogQuery implements MerchantCatalog
                     'name' => $creative->name,
                     'description' => $creative->description,
                     'asset_url' => $creative->getAssetUrl(),
-                    'destination_url' => $creative->destination_url,
+                    'destination_url' => $creative->safeDestinationUrl(),
                     'width' => $creative->width,
                     'height' => $creative->height,
                     'tracking_code' => $creative->tracking_code,
@@ -129,7 +127,7 @@ final readonly class ProgramCatalogQuery implements MerchantCatalog
                 ])->all(),
             'variable_extras' => [
                 'volume_tiers' => $this->volumeTiers($program),
-                'promotions' => $this->activePromotions($program),
+                'promotions' => $this->commissionCatalog->activePromotions((string) $program->getKey()),
             ],
         ];
     }
@@ -162,44 +160,6 @@ final readonly class ProgramCatalogQuery implements MerchantCatalog
     }
 
     /**
-     * @return Collection<int, array{subject_type: string, subject_key: string, title: string, url: string, amount_minor: null, currency: null, context: array<string, mixed>}>
-     */
-    private function fallbackSubjectsFromRules(AffiliateProgram $program, int $max): Collection
-    {
-        $rules = AffiliateCommissionRule::query()
-            ->active()->ordered()
-            ->where(function ($q) use ($program): void {
-                $q->whereNull('program_id')->orWhere('program_id', $program->getKey());
-            })
-            ->whereIn('rule_type', [CommissionRuleType::Product, CommissionRuleType::Category])
-            ->limit(50)->get();
-
-        $out = collect();
-
-        foreach ($rules as $rule) {
-            foreach ($rule->conditions ?? [] as $field => $req) {
-                $keys = is_array($req) && isset($req['in']) && is_array($req['in']) ? $req['in'] : [];
-                foreach ($keys as $key) {
-                    $out->push([
-                        'subject_type' => $rule->rule_type === CommissionRuleType::Category ? 'category' : 'product',
-                        'subject_key' => (string) $key,
-                        'title' => (string) $key,
-                        'url' => '/',
-                        'amount_minor' => null,
-                        'currency' => null,
-                        'context' => [$field => $key],
-                    ]);
-                    if ($out->count() >= $max) {
-                        return $out;
-                    }
-                }
-            }
-        }
-
-        return $out;
-    }
-
-    /**
      * @return array<int, array<string, mixed>>
      */
     private function volumeTiers(AffiliateProgram $program): array
@@ -209,23 +169,5 @@ final readonly class ProgramCatalogQuery implements MerchantCatalog
             'currency' => $tier->currency,
             'rate_bp' => $tier->rateBasisPoints,
         ], $this->tiers->forProgram((string) $program->getKey()));
-    }
-
-    /**
-     * @return array<int, array<string, mixed>>
-     */
-    private function activePromotions(AffiliateProgram $program): array
-    {
-        return AffiliateCommissionPromotion::query()
-            ->active()
-            ->where(function ($q) use ($program): void {
-                $q->whereNull('program_id')->orWhere('program_id', $program->getKey());
-            })
-            ->get()
-            ->map(fn (AffiliateCommissionPromotion $p): array => [
-                'id' => (string) $p->getKey(),
-                'name' => $p->name,
-                'ends_at' => $p->ends_at?->toIso8601String(),
-            ])->all();
     }
 }
