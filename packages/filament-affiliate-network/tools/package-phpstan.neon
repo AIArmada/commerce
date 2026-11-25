@@ -4,8 +4,6 @@ parameters:
         - ../src
         - ../config
     tmpDir: ../../../build/phpstan-arch-filament-affiliate-network
-    ignoreErrors:
-        - identifier: 'larastan.noEnvCallsOutsideOfConfig'
 
 services:
     -
