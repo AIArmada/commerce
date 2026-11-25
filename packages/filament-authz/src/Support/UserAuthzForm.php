@@ -7,6 +7,7 @@ namespace AIArmada\FilamentAuthz\Support;
 use AIArmada\Authz\Features\Authorization\Api\RoleAdministrationApi;
 use AIArmada\Authz\Features\Authorization\Models\AuthzScope;
 use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\FilamentAuthz\Resources\RoleResource;
 use Filament\Forms\Components\Select;
 use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\Section;
@@ -134,6 +135,16 @@ final class UserAuthzForm
             $rolesQuery = static::applyCurrentTeamScopeToRoleQuery($rolesQuery, $teamsKey);
         }
 
+        $allowedScopes = RoleResource::allowedScopeIds();
+        if ($registrar->teams && $allowedScopes !== null) {
+            $rolesQuery->where(fn (Builder $query): Builder => $query->whereNull($teamsKey)->orWhereIn($teamsKey, $allowedScopes));
+        }
+
+        $reserved = (string) config('authz.super_admin_role', '');
+        if ($reserved !== '' && ! RoleResource::mayManageSuperAdmin()) {
+            $rolesQuery->where('name', '!=', $reserved);
+        }
+
         /** @var Collection<int, Model> $roles */
         $roles = $rolesQuery->get($columns);
 
@@ -187,6 +198,8 @@ final class UserAuthzForm
             (string) ($guards[0] ?? 'web'),
             static::shouldRestrictToCurrentTeam((bool) app(PermissionRegistrar::class)->teams),
             static::getRoleScopeMode(),
+            RoleResource::allowedScopeIds(),
+            RoleResource::mayManageSuperAdmin(),
         );
         $record->unsetRelation('roles')->unsetRelation('permissions');
     }

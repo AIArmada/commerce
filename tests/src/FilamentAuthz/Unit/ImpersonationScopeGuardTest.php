@@ -7,7 +7,6 @@ use AIArmada\Authz\Features\Authorization\Models\Permission;
 use AIArmada\Authz\Features\Authorization\Models\Role;
 use AIArmada\Authz\Features\Impersonation\Queries\ImpersonationScopeGuard;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use Spatie\Permission\PermissionRegistrar;
 
 use function AIArmada\Authz\can_be_impersonated;
@@ -178,9 +177,7 @@ it('recognizes a global super admin while a tenant scope is active', function ()
     ]);
     $role = Role::findOrCreate((string) config('authz.super_admin_role'), 'web');
     $actor->assignRole($role);
-    $owner = OwnerContext::resolve();
-
-    expect($owner)->not->toBeNull();
+    $owner = User::factory()->create();
 
     setPermissionsTeamId($owner->getKey());
     $this->actingAs($actor);

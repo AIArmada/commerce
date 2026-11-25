@@ -74,12 +74,14 @@ class RoleResource extends Resource
     public static function canEdit(Model $record): bool
     {
         return static::checkAbility('role.update')
+            && static::mayManageRoleName((string) $record->getAttribute('name'))
             && static::getEloquentQuery()->whereKey($record->getKey())->exists();
     }
 
     public static function canDelete(Model $record): bool
     {
         return static::checkAbility('role.delete')
+            && static::mayManageRoleName((string) $record->getAttribute('name'))
             && static::getEloquentQuery()->whereKey($record->getKey())->exists();
     }
 
@@ -88,6 +90,10 @@ class RoleResource extends Resource
     {
         if ($record === null ? ! static::canCreate() : ! static::canEdit($record)) {
             throw new AuthorizationException;
+        }
+
+        if (! static::mayManageRoleName((string) $data['name'])) {
+            throw new AuthorizationException('Only a super admin may manage the reserved super-admin role.');
         }
 
         $permissionNames = [];
@@ -154,13 +160,42 @@ class RoleResource extends Resource
         }
 
         if (config('authz.scopes.enabled', false) && config('filament-authz.central_app', false)) {
-            $configured = static::getConfiguredScopeOptions();
-            if ($scope !== null && $configured !== null && ! array_key_exists((string) $scope, $configured)) {
+            $configured = static::allowedScopeIds();
+            if ($scope !== null && $configured !== null && ! in_array((string) $scope, $configured, true)) {
                 throw new AuthorizationException('The role scope is outside this panel.');
             }
         }
 
         return $scope;
+    }
+
+    public static function mayManageRoleName(string $name): bool
+    {
+        $reserved = (string) config('authz.super_admin_role', '');
+
+        return $reserved === '' || $name !== $reserved || static::mayManageSuperAdmin();
+    }
+
+    public static function mayManageSuperAdmin(): bool
+    {
+        $reserved = (string) config('authz.super_admin_role', '');
+
+        return $reserved === '' || UserRoleChecker::hasGlobalRole(Auth::user(), $reserved);
+    }
+
+    /** @return list<string>|null */
+    public static function allowedScopeIds(): ?array
+    {
+        if (! config('authz.scopes.enabled', false) || ! config('filament-authz.central_app', false)) {
+            return null;
+        }
+
+        $configured = static::getConfiguredScopeOptions();
+
+        return $configured === null ? null : array_values(array_filter(
+            array_map('strval', array_keys($configured)),
+            static fn (string $id): bool => Str::isUuid($id),
+        ));
     }
 
     protected static function checkAbility(string $ability): bool
@@ -277,16 +312,13 @@ class RoleResource extends Resource
             return $query;
         }
 
-        $configured = static::getConfiguredScopeOptions();
+        $validUuids = static::allowedScopeIds();
 
-        if ($configured === null) {
+        if ($validUuids === null) {
             return $query;
         }
 
         $teamsKey = app(PermissionRegistrar::class)->teamsKey;
-        $scopeIds = array_keys($configured);
-
-        $validUuids = array_filter($scopeIds, static fn (string $id): bool => Str::isUuid($id));
 
         if ($validUuids === []) {
             return $query->whereNull($teamsKey);

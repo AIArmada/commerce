@@ -9,6 +9,8 @@ use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use Spatie\Permission\Events\PermissionAttachedEvent;
+use Spatie\Permission\Events\PermissionDetachedEvent;
 use Spatie\Permission\Guard;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -37,13 +39,13 @@ final readonly class SyncUserPermissions
 
         $connection = $permissionModel->getConnection();
 
-        $connection->transaction(function () use ($user, $permissionIds, $guard, $permissionModel, $connection): void {
+        [$added, $removed] = $connection->transaction(function () use ($user, $permissionIds, $guard, $permissionModel, $connection): array {
             if ($user->getConnection() === $connection) {
                 $user->newQuery()->whereKey($user->getKey())->lockForUpdate()->firstOrFail();
             }
 
             $eligible = $permissionModel->newQuery()->where('guard_name', $guard);
-            if ((clone $eligible)->whereKey($permissionIds)->count() !== count($permissionIds)) {
+            if ((clone $eligible)->whereKey($permissionIds)->orderBy($permissionModel->getKeyName())->lockForUpdate()->get([$permissionModel->getKeyName()])->count() !== count($permissionIds)) {
                 throw new AuthorizationException('One or more selected permissions are invalid for the current guard.');
             }
 
@@ -69,8 +71,20 @@ final readonly class SyncUserPermissions
             if ($added !== []) {
                 $connection->table($table)->insert(array_map(static fn (string $id): array => [...$identity, $pivotKey => $id], $added));
             }
+
+            return [$added, $removed];
         });
 
+        $user->unsetRelation('permissions');
         $this->registrar->forgetCachedPermissions();
+
+        if (config('permission.events_enabled', false)) {
+            if ($removed !== []) {
+                event(new PermissionDetachedEvent($user, $removed));
+            }
+            if ($added !== []) {
+                event(new PermissionAttachedEvent($user, $added));
+            }
+        }
     }
 }

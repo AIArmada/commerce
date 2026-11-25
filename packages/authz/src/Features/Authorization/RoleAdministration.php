@@ -65,9 +65,9 @@ final readonly class RoleAdministration implements RoleAdministrationApi
         return $this->assign->execute($record, $name, $guard, $scope);
     }
 
-    public function syncUserRoles(RecordReference $record, array $roleIds, string $guard, bool $restrictToCurrentTeam, string $scopeMode): void
+    public function syncUserRoles(RecordReference $record, array $roleIds, string $guard, bool $restrictToCurrentTeam, string $scopeMode, ?array $allowedScopeIds, bool $includeSuperAdmin): void
     {
-        $this->userRoles->execute($record, $roleIds, $guard, $restrictToCurrentTeam, $scopeMode);
+        $this->userRoles->execute($record, $roleIds, $guard, $restrictToCurrentTeam, $scopeMode, $allowedScopeIds, $includeSuperAdmin);
     }
 
     public function syncUserPermissions(RecordReference $record, array $permissionIds, string $guard): void

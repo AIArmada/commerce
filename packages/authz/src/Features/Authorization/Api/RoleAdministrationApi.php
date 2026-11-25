@@ -21,8 +21,11 @@ interface RoleAdministrationApi
 
     public function assignExistingRole(RecordReference $record, string $name, string $guard, string | int | null $scope): bool;
 
-    /** @param list<string> $roleIds */
-    public function syncUserRoles(RecordReference $record, array $roleIds, string $guard, bool $restrictToCurrentTeam, string $scopeMode): void;
+    /**
+     * @param list<string> $roleIds
+     * @param list<string>|null $allowedScopeIds
+     */
+    public function syncUserRoles(RecordReference $record, array $roleIds, string $guard, bool $restrictToCurrentTeam, string $scopeMode, ?array $allowedScopeIds, bool $includeSuperAdmin): void;
 
     /** @param list<string> $permissionIds */
     public function syncUserPermissions(RecordReference $record, array $permissionIds, string $guard): void;

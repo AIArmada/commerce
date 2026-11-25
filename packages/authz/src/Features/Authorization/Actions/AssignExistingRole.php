@@ -7,6 +7,7 @@ namespace AIArmada\Authz\Features\Authorization\Actions;
 use AIArmada\Authz\Features\Authorization\Models\Role;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
+use Spatie\Permission\Events\RoleAttachedEvent;
 use Spatie\Permission\PermissionRegistrar;
 
 final readonly class AssignExistingRole
@@ -40,8 +41,23 @@ final readonly class AssignExistingRole
             $attributes[$this->registrar->teamsKey] = $scope;
         }
 
-        $role->getConnection()->table((string) config('permission.table_names.model_has_roles', 'model_has_roles'))->insertOrIgnore($attributes);
+        $connection = $role->getConnection();
+        $inserted = $connection->transaction(function () use ($connection, $role, $attributes): bool {
+            Role::query()->whereKey($role->getKey())->lockForUpdate()->firstOrFail();
+            $pivot = $connection->table((string) config('permission.table_names.model_has_roles', 'model_has_roles'));
+
+            if ((clone $pivot)->where($attributes)->exists()) {
+                return false;
+            }
+
+            return $pivot->insert($attributes);
+        });
+        $model->unsetRelation('roles')->unsetRelation('permissions');
         $this->registrar->forgetCachedPermissions();
+
+        if ($inserted && config('permission.events_enabled', false)) {
+            event(new RoleAttachedEvent($model, [$role->getKey()]));
+        }
 
         return true;
     }

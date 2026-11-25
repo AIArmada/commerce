@@ -9,6 +9,8 @@ use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use Spatie\Permission\Events\RoleAttachedEvent;
+use Spatie\Permission\Events\RoleDetachedEvent;
 use Spatie\Permission\Guard;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -16,8 +18,11 @@ final readonly class SyncUserRoles
 {
     public function __construct(private PermissionRegistrar $registrar) {}
 
-    /** @param list<string> $roleIds */
-    public function execute(RecordReference $record, array $roleIds, string $guard, bool $restrictToCurrentTeam, string $scopeMode): void
+    /**
+     * @param list<string> $roleIds
+     * @param list<string>|null $allowedScopeIds
+     */
+    public function execute(RecordReference $record, array $roleIds, string $guard, bool $restrictToCurrentTeam, string $scopeMode, ?array $allowedScopeIds, bool $includeSuperAdmin): void
     {
         $user = EloquentRecordReference::resolve($record);
         if (! $user instanceof Model || ! method_exists($user, 'syncRoles') || ! Guard::getNames($user)->contains($guard)) {
@@ -44,12 +49,21 @@ final readonly class SyncUserRoles
         $teamsKey = $this->registrar->teamsKey;
         $teamId = $this->registrar->getPermissionsTeamId();
 
-        $connection->transaction(function () use ($user, $roleIds, $guard, $restrictToCurrentTeam, $scopeMode, $roleModel, $connection, $teams, $teamsKey, $teamId): void {
+        [$added, $removed] = $connection->transaction(function () use ($user, $roleIds, $guard, $restrictToCurrentTeam, $scopeMode, $roleModel, $connection, $teams, $teamsKey, $teamId, $allowedScopeIds, $includeSuperAdmin): array {
             if ($user->getConnection() === $connection) {
                 $user->newQuery()->whereKey($user->getKey())->lockForUpdate()->firstOrFail();
             }
 
             $eligible = $roleModel->newQuery()->where('guard_name', $guard);
+
+            $superAdmin = (string) config('authz.super_admin_role', '');
+            if (! $includeSuperAdmin && $superAdmin !== '') {
+                $eligible->where('name', '!=', $superAdmin);
+            }
+
+            if ($teams && $allowedScopeIds !== null) {
+                $eligible->where(fn ($query) => $query->whereNull($teamsKey)->orWhereIn($teamsKey, $allowedScopeIds));
+            }
 
             if ($teams) {
                 if ($restrictToCurrentTeam) {
@@ -68,7 +82,7 @@ final readonly class SyncUserRoles
                 $columns[] = $teamsKey;
             }
 
-            $selected = (clone $eligible)->whereKey($roleIds)->get($columns);
+            $selected = (clone $eligible)->whereKey($roleIds)->orderBy($roleModel->getKeyName())->lockForUpdate()->get($columns);
             if ($selected->count() !== count($roleIds)) {
                 throw new AuthorizationException('One or more selected roles are invalid for the current guard or scope.');
             }
@@ -88,6 +102,8 @@ final readonly class SyncUserRoles
             $existingRoles = (clone $eligible)->whereKey($current->pluck($pivotKey)->unique()->all())->get($columns)->keyBy($roleModel->getKeyName());
             $selectedById = $selected->keyBy($roleModel->getKeyName());
             $retained = [];
+            $removed = [];
+            $added = [];
 
             foreach ($current as $assignment) {
                 $id = (string) $assignment->{$pivotKey};
@@ -111,6 +127,7 @@ final readonly class SyncUserRoles
                 }
 
                 $delete->delete();
+                $removed[] = $id;
             }
 
             $insert = [];
@@ -126,13 +143,26 @@ final readonly class SyncUserRoles
                 }
 
                 $insert[] = $attributes;
+                $added[] = $id;
             }
 
             if ($insert !== []) {
                 $connection->table((string) config('permission.table_names.model_has_roles', 'model_has_roles'))->insert($insert);
             }
+
+            return [$added, array_values(array_unique($removed))];
         });
 
+        $user->unsetRelation('roles')->unsetRelation('permissions');
         $this->registrar->forgetCachedPermissions();
+
+        if (config('permission.events_enabled', false)) {
+            if ($removed !== []) {
+                event(new RoleDetachedEvent($user, $removed));
+            }
+            if ($added !== []) {
+                event(new RoleAttachedEvent($user, $added));
+            }
+        }
     }
 }
