@@ -127,13 +127,14 @@ it('rejects payouts through the domain action and returns conversions to approve
     $this->actingAs($user);
 
     $affiliate = createRepairAffiliate();
-    $payout = createRepairPayout($affiliate);
+    $payout = createRepairPayout($affiliate, ['total_minor' => 1000, 'conversion_count' => 1]);
 
     $balance = AffiliateBalance::create([
         'affiliate_id' => $affiliate->getKey(),
         'currency' => 'USD',
         'available_minor' => 0,
         'minimum_payout_minor' => 0,
+        'payout_sequence' => 7,
     ]);
 
     $payout->operation->forceFill(['payout_sequence' => 7])->save();

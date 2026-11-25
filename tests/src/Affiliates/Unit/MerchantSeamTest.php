@@ -13,7 +13,7 @@ use AIArmada\Affiliates\Data\ExternalConversion;
 use AIArmada\Affiliates\Data\FraudFinding;
 use AIArmada\Affiliates\Data\PostedConversion;
 use AIArmada\Affiliates\Enums\CommissionType;
-use AIArmada\Affiliates\Enums\FraudSeverity;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\ProgramVisibility;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;

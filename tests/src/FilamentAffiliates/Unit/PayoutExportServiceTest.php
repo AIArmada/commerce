@@ -13,6 +13,7 @@ use AIArmada\FilamentAffiliates\Features\Payouts\Queries\PayoutExportService;
 use Illuminate\Support\Str;
 use OpenSpout\Reader\XLSX\Reader;
 use Spatie\LaravelPdf\Facades\Pdf;
+use Spatie\LaravelPdf\PdfBuilder;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 beforeEach(function (): void {
@@ -170,7 +171,7 @@ it('formats payout status safely for both enum and string statuses', function ()
 it('streams bytes returned by the Spatie PDF renderer', function (): void {
     $payout = createPayoutWithConversions();
     $bytes = "%PDF-1.7\n% renderer test payload\n%%EOF";
-    $builder = Mockery::mock();
+    $builder = Mockery::mock(PdfBuilder::class);
     $builder->shouldReceive('format')->once()->with('a4')->andReturnSelf();
     $builder->shouldReceive('base64')->once()->andReturn(base64_encode($bytes));
     Pdf::shouldReceive('html')->once()->withArgs(static fn (string $html): bool => str_contains($html, 'Affiliate Payout Report') && str_contains($html, 'REF-001'))->andReturn($builder);
@@ -185,7 +186,7 @@ it('streams bytes returned by the Spatie PDF renderer', function (): void {
 
 it('refuses non-PDF renderer output rather than serving HTML as a PDF', function (): void {
     $payout = createPayoutWithConversions();
-    $builder = Mockery::mock();
+    $builder = Mockery::mock(PdfBuilder::class);
     $builder->shouldReceive('format')->once()->with('a4')->andReturnSelf();
     $builder->shouldReceive('base64')->once()->andReturn(base64_encode('<html>invalid PDF</html>'));
     Pdf::shouldReceive('html')->once()->andReturn($builder);

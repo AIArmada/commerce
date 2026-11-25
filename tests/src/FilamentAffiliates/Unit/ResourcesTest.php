@@ -235,6 +235,7 @@ it('rejects forged identity and ownership mutations when saving a Dawah affiliat
     $method = new ReflectionMethod(EditAffiliate::class, 'handleRecordUpdate');
     $method->setAccessible(true);
 
+    $affiliate->refresh();
     $original = $affiliate->getAttributes();
     $method->invoke($page, $affiliate, [
         'name' => 'Updated member name',

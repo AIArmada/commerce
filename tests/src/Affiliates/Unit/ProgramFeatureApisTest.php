@@ -85,7 +85,7 @@ describe('Program feature APIs', function (): void {
             $membership = app(ProgramEnrollment::class)->join($this->affiliate->id, $this->program->id);
 
             expect($membership)->toBeInstanceOf(MembershipRecord::class);
-            expect($membership->status)->toBe(MembershipStatus::Approved);
+            expect($membership->status)->toBe(MembershipStatus::Approved->value);
             expect($membership->approvedAt)->not->toBeNull();
         });
 
@@ -94,7 +94,7 @@ describe('Program feature APIs', function (): void {
 
             $membership = app(ProgramEnrollment::class)->join($this->affiliate->id, $this->program->id);
 
-            expect($membership->status)->toBe(MembershipStatus::Pending);
+            expect($membership->status)->toBe(MembershipStatus::Pending->value);
             expect($membership->approvedAt)->toBeNull();
         });
 
@@ -190,12 +190,12 @@ describe('Program feature APIs', function (): void {
             $this->program->update(['requires_approval' => true]);
 
             $membership = app(ProgramEnrollment::class)->join($this->affiliate->id, $this->program->id);
-            expect($membership->status)->toBe(MembershipStatus::Pending);
+            expect($membership->status)->toBe(MembershipStatus::Pending->value);
 
             expect(app(MembershipReviewApi::class)->approve($membership->id, 'admin@example.com'))->toBeTrue();
 
             $membership = app(ProgramMembershipReader::class)->find($this->affiliate->id, $this->program->id);
-            expect($membership->status)->toBe(MembershipStatus::Approved);
+            expect($membership->status)->toBe(MembershipStatus::Approved->value);
             expect($membership->approvedAt)->not->toBeNull();
         });
     });
@@ -390,7 +390,7 @@ test('membership review cannot overwrite a completed decision', function (): voi
 
     expect($review->reject($membership->id))->toBeTrue()
         ->and($review->approve($membership->id, 'admin'))->toBeFalse()
-        ->and(app(ProgramMembershipReader::class)->find($this->affiliate->id, $this->program->id)->status)->toBe(MembershipStatus::Rejected);
+        ->and(app(ProgramMembershipReader::class)->find($this->affiliate->id, $this->program->id)->status)->toBe(MembershipStatus::Rejected->value);
 });
 
 test('automatic tier processing promotes to the highest eligible level without downgrading', function (): void {
