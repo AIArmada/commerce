@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
+use AIArmada\Affiliates\Features\Conversions\Actions\ApplyConversionAccounting;
 use AIArmada\Affiliates\Features\Payouts\Actions\UpdatePayoutStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
@@ -84,7 +84,7 @@ function payoutPageAffiliateAndConversion(
             'occurred_at' => now(),
         ]);
 
-        ApplyConversionAccounting::run($conversion);
+        app(ApplyConversionAccounting::class)->handle($conversion);
 
         return [$affiliate, $conversion];
     });

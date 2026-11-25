@@ -112,7 +112,7 @@ commission, and status columns, plus two provenance columns:
 - **Source Ref** — the upstream pointer (network link code, etc.).
 
 Row actions approve, reject, mark paid, and **reverse**. Reverse asks for
-a reason and routes through `ReverseAffiliateConversion`: the original is
+a reason and routes through `ConversionAdministration::reverse()`: the original is
 marked reversed and a negated companion conversion posts, so readers that
 sum posted rows stay correct. All mutations authorize through the
 conversion policy (`affiliate_conversion.update` / `affiliate.approve`)

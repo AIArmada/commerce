@@ -7,7 +7,7 @@ namespace AIArmada\Affiliates\Console\Commands;
 use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
-use AIArmada\Affiliates\Services\PerformanceBonusService;
+use AIArmada\Affiliates\Features\Conversions\Api\PerformanceBonusPosting;
 use AIArmada\Affiliates\Support\BonusMonth;
 use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
 use Carbon\CarbonImmutable;
@@ -25,7 +25,7 @@ final class AwardPerformanceBonusesCommand extends Command
 
     public function __construct(
         private readonly CommissionRuleEngine $engine,
-        private readonly PerformanceBonusService $bonuses,
+        private readonly PerformanceBonusPosting $bonuses,
     ) {
         parent::__construct();
     }
@@ -115,7 +115,7 @@ final class AwardPerformanceBonusesCommand extends Command
             }
 
             try {
-                $summary['awarded'] += $this->bonuses->awardBonuses($bonuses);
+                $summary['awarded'] += $this->bonuses->award($bonuses);
             } catch (Throwable) {
                 $summary['errors']++;
             }

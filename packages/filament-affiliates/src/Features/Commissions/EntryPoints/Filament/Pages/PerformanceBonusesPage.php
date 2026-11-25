@@ -8,7 +8,7 @@ use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
-use AIArmada\Affiliates\Services\PerformanceBonusService;
+use AIArmada\Affiliates\Features\Conversions\Api\PerformanceBonusPosting;
 use AIArmada\Affiliates\Support\BonusMonth;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
@@ -125,7 +125,7 @@ final class PerformanceBonusesPage extends Page implements HasForms, HasTable
 
                     [$from, $to] = $range;
 
-                    $awarded = app(PerformanceBonusService::class)->awardBonuses(
+                    $awarded = app(PerformanceBonusPosting::class)->award(
                         $this->calculate($from, $to)
                     );
 

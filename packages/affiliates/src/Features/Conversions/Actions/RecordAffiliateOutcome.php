@@ -2,10 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Actions\Conversions;
+namespace AIArmada\Affiliates\Features\Conversions\Actions;
 
 use AIArmada\Affiliates\Data\AffiliateConversionData;
 use AIArmada\Affiliates\Data\AffiliateOutcomeResult;
+use AIArmada\Affiliates\Features\Conversions\Api\OutcomePosting;
 use AIArmada\Affiliates\Data\AffiliateOutcomeDisposition;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudApi;
@@ -24,7 +25,6 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Arr;
 use InvalidArgumentException;
 use LogicException;
-use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
  * Record an attributed non-cart conversion.
@@ -47,15 +47,21 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * `dispatch_event` flag. Caller-level retry is safe: re-entry returns
  * `Replayed` via the idempotency preflight.
  */
-final class RecordAffiliateOutcome
+final readonly class RecordAffiliateOutcome implements OutcomePosting
 {
-    use AsAction;
-
     public function __construct(
-        private readonly Dispatcher $events,
-        private readonly ApplyConversionAccounting $accounting,
-        private readonly FraudApi $fraud,
+        private Dispatcher $events,
+        private ApplyConversionAccounting $accounting,
+        private FraudApi $fraud,
     ) {}
+
+    public function post(?string $attributionId, string $conversionType, string $businessKey, array $payload = [], ?string $affiliateId = null, array $provenance = []): AffiliateOutcomeResult
+    {
+        $attribution = $attributionId === null ? null : AffiliateAttribution::query()->forOwner()->findOrFail($attributionId);
+        $affiliate = $affiliateId === null ? null : Affiliate::query()->forOwner()->findOrFail($affiliateId);
+
+        return $this->handle($attribution, $conversionType, $businessKey, $payload, $affiliate, $provenance);
+    }
 
     /**
      * @param  array<string, mixed>  $payload

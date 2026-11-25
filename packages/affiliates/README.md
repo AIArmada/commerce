@@ -46,14 +46,14 @@ When `aiarmada/cart` is present, attach affiliates and record conversions throug
 
 ```php
 use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateToCart;
-use AIArmada\Affiliates\Actions\Conversions\RecordAffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Api\CartConversionRecording;
 
 AttachAffiliateToCart::run($affiliate, $cart, [
     'utm_source' => 'newsletter',
     'landing_url' => url()->current(),
 ]);
 
-RecordAffiliateConversion::run($cart, [
+app(CartConversionRecording::class)->record($cart, [
     'external_reference' => 'SO-100234',
     'subtotal' => $order->subtotal_minor, // optional
     'total' => $order->total_minor,

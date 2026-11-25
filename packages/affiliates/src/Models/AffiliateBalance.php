@@ -67,52 +67,6 @@ class AffiliateBalance extends Model implements Auditable
         return $this->available_minor >= $this->minimum_payout_minor;
     }
 
-    public function addToHolding(int $amountMinor): void
-    {
-        $this->increment('holding_minor', $amountMinor);
-        $this->increment('lifetime_earnings_minor', $amountMinor);
-    }
-
-    public function releaseFromHolding(int $amountMinor): void
-    {
-        $releaseAmount = min($amountMinor, $this->holding_minor);
-        $this->decrement('holding_minor', $releaseAmount);
-        $this->increment('available_minor', $releaseAmount);
-    }
-
-    public function deductFromAvailable(int $amountMinor): void
-    {
-        $deductAmount = min($amountMinor, $this->available_minor);
-        $this->decrement('available_minor', $deductAmount);
-    }
-
-    public function voidFromHolding(int $amountMinor): void
-    {
-        $voidAmount = min(max(0, $amountMinor), $this->holding_minor);
-        $this->decrement('holding_minor', $voidAmount);
-        $this->decrement('lifetime_earnings_minor', min(max(0, $amountMinor), $this->lifetime_earnings_minor));
-    }
-
-    public function voidFromAvailable(int $amountMinor): void
-    {
-        $voidAmount = min(max(0, $amountMinor), $this->available_minor);
-        $this->decrement('available_minor', $voidAmount);
-        $this->decrement('lifetime_earnings_minor', min(max(0, $amountMinor), $this->lifetime_earnings_minor));
-    }
-
-    public function clawbackFromAvailable(int $amountMinor): void
-    {
-        $amountMinor = max(0, $amountMinor);
-
-        // Unlike deductFromAvailable, a clawback is an exact debit: the
-        // money already left via payout, so recovery drives available
-        // negative against future earnings instead of flooring at zero.
-        // Lifetime floors at zero — recognition cannot un-count more
-        // than was counted; the floor signals pre-existing inconsistency.
-        $this->decrement('available_minor', $amountMinor);
-        $this->decrement('lifetime_earnings_minor', min($amountMinor, $this->lifetime_earnings_minor));
-    }
-
     public function formatHolding(): string
     {
         return $this->formatAmount($this->holding_minor);

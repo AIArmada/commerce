@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateToCart;
-use AIArmada\Affiliates\Actions\Conversions\RecordAffiliateConversion;
-use AIArmada\Affiliates\Actions\Conversions\RecordAffiliateOutcome;
+use AIArmada\Affiliates\Features\Conversions\Actions\RecordAffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Actions\RecordAffiliateOutcome;
 use AIArmada\Affiliates\Features\Payouts\Actions\CreatePayout;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Models\Affiliate;
@@ -37,7 +37,7 @@ test('explicit commission payload on opaque-purpose affiliate records zero', fun
     $cart->add('nccb-item', 'Order item', 10.00, 1);
 
     $reference = 'NCCB-EXPLICIT-' . Str::uuid();
-    app(RecordAffiliateConversion::class)->handle($cart, [
+    app(RecordAffiliateConversion::class)->record($cart, [
         'affiliate_id' => $tagged->getKey(),
         'external_reference' => $reference,
         'commission' => 2000,
@@ -56,7 +56,7 @@ test('voucher commission override on opaque-purpose affiliate records zero', fun
     $cart->add('nccb-item', 'Order item', 10.00, 1);
 
     $reference = 'NCCB-VOUCHER-' . Str::uuid();
-    app(RecordAffiliateConversion::class)->handle($cart, [
+    app(RecordAffiliateConversion::class)->record($cart, [
         'affiliate_id' => $tagged->getKey(),
         'external_reference' => $reference,
         'commission_override' => ['type' => 'fixed', 'value' => 1500],
@@ -84,7 +84,7 @@ test('program rule commission on opaque-purpose affiliate records zero', functio
     $cart->add('nccb-item', 'Order item', 10.00, 1);
 
     $reference = 'NCCB-PROGRAM-' . Str::uuid();
-    app(RecordAffiliateConversion::class)->handle($cart, [
+    app(RecordAffiliateConversion::class)->record($cart, [
         'affiliate_id' => $tagged->getKey(),
         'affiliate_program_id' => $program->getKey(),
         'external_reference' => $reference,
@@ -103,7 +103,7 @@ test('calculator commission on opaque-purpose affiliate records zero', function 
     $cart->add('nccb-item', 'Order item', 10.00, 1);
 
     $reference = 'NCCB-CALC-' . Str::uuid();
-    app(RecordAffiliateConversion::class)->handle($cart, [
+    app(RecordAffiliateConversion::class)->record($cart, [
         'affiliate_id' => $tagged->getKey(),
         'external_reference' => $reference,
     ]);
@@ -139,7 +139,7 @@ test('weighted opaque recipient mints nothing while commercial primary still ear
     ]);
 
     $reference = 'NCCB-MIXED-' . Str::uuid();
-    app(RecordAffiliateConversion::class)->handle($cart, [
+    app(RecordAffiliateConversion::class)->record($cart, [
         'affiliate_id' => $commercial->getKey(),
         'external_reference' => $reference,
         'commission' => 2000,

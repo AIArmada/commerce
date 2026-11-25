@@ -11,8 +11,8 @@ use AIArmada\AffiliateNetwork\Features\Ledger\Actions\RecordNetworkConversion;
 use AIArmada\AffiliateNetwork\Features\Ledger\Models\NetworkConversionLeg;
 use AIArmada\AffiliateNetwork\Features\Ledger\Queries\LedgerReconciliationQuery;
 use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
-use AIArmada\Affiliates\Actions\Conversions\ReverseAffiliateConversion;
-use AIArmada\Affiliates\Actions\Conversions\VoidAffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Actions\ReverseAffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Actions\VoidAffiliateConversion;
 use AIArmada\Affiliates\Contracts\MerchantLedger;
 use AIArmada\Affiliates\Data\ExternalConversion;
 use AIArmada\Affiliates\Models\Affiliate;
@@ -185,8 +185,8 @@ describe('network ledger bridge', function (): void {
 
         $leg = NetworkConversionLeg::query()->where('external_reference', 'BRIDGE-REVERSE-1')->firstOrFail();
         $conversion = AffiliateConversion::query()->where('external_reference', 'BRIDGE-REVERSE-1')->firstOrFail();
-        $firstCompanion = ReverseAffiliateConversion::run($conversion, 'merchant refund');
-        $secondCompanion = ReverseAffiliateConversion::run($conversion->fresh(), 'merchant refund');
+        $firstCompanion = app(ReverseAffiliateConversion::class)->handle($conversion, 'merchant refund');
+        $secondCompanion = app(ReverseAffiliateConversion::class)->handle($conversion->fresh(), 'merchant refund');
         $balance = $this->affiliate->balanceFor('USD')->fresh();
 
         expect($firstCompanion->getKey())->toBe($secondCompanion->getKey())
@@ -203,7 +203,7 @@ describe('network ledger bridge', function (): void {
         $leg = NetworkConversionLeg::query()->where('external_reference', 'BRIDGE-VOID-1')->firstOrFail();
         $conversion = AffiliateConversion::query()->where('external_reference', 'BRIDGE-VOID-1')->firstOrFail();
 
-        VoidAffiliateConversion::run($conversion, 'merchant cancellation');
+        app(VoidAffiliateConversion::class)->handle($conversion, 'merchant cancellation');
 
         expect($leg->fresh()->status)->toBe(LegStatus::Reversed)
             ->and(NetworkConversionLeg::query()->where('metadata->reverses_id', (string) $leg->getKey())->count())->toBe(1);

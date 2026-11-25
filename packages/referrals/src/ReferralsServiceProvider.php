@@ -55,8 +55,7 @@ final class ReferralsServiceProvider extends PackageServiceProvider
             && ($configuredDrivers['affiliate_cash']['enabled'] ?? false)
             && $this->symbolsExist([
                 'AIArmada\\Affiliates\\Models\\Affiliate',
-                'AIArmada\\Affiliates\\Actions\\Conversions\\RecordAffiliateAward',
-                'AIArmada\\Affiliates\\Actions\\Conversions\\ReverseAffiliateConversion',
+                'AIArmada\\Affiliates\\Features\\Conversions\\Api\\AwardPosting',
                 'AIArmada\\Affiliates\\Contracts\\AffiliateAwardPolicy',
             ])) {
             $this->app->singleton(AffiliatesCashFulfillment::class);

@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
-use AIArmada\Affiliates\Actions\Conversions\ReverseAffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Actions\ApplyConversionAccounting;
+use AIArmada\Affiliates\Features\Conversions\Actions\ReverseAffiliateConversion;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
@@ -171,7 +171,7 @@ test('reversing an off-record pending conversion does not void a neighboring hol
     $affiliate = $held->affiliate;
     $offRecord = createOffRecordPendingHeld($affiliate, 3000);
 
-    ReverseAffiliateConversion::run($offRecord, 'duplicate');
+    app(ReverseAffiliateConversion::class)->handle($offRecord, 'duplicate');
 
     $balance = $affiliate->balanceFor('USD')->fresh();
 

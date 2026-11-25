@@ -34,12 +34,11 @@ arguments and returns a `RedirectResponse`.
 
 | Action | Purpose |
 |--------|---------|
-| `AllocateUplineCommissions::run($baseConversions, $autoApprove, $statusEnum, $attributionId)` | Distribute upline commissions |
 | `app(ConversionMaturity::class)->mature($conversionId)` | Mature a single conversion |
 | `app(ConversionMaturity::class)->process()` | Process batch maturity |
-| `RecordAffiliateConversion::run($cart, $payload)` | Record a conversion |
-| `ReverseAffiliateConversion::run($conversion, $reason)` | Reverse a conversion (negated companion) |
-| `VoidAffiliateConversion::run($conversion, $reason)` | Settle a conversion as not payable |
+| `app(CartConversionRecording::class)->record($cart, $payload)` | Record a conversion |
+| `app(ConversionAdministration::class)->reverse($conversionId, $reason)` | Reverse a conversion (negated companion) |
+| `app(ConversionAdministration::class)->voidConversion($conversionId, $reason)` | Settle a conversion as not payable |
 
 `RecordAffiliateConversion` accepts `origin` and `source_ref` in the
 payload to stamp provenance (e.g. `origin: network` with the network
@@ -346,7 +345,7 @@ $service = app(PerformanceBonusService::class);
 $bonuses = $service->calculateBonuses($from, $to);
 
 // Award the calculated bonuses as approved conversions
-$awarded = $service->awardBonuses($bonuses);
+$awarded = app(\AIArmada\Affiliates\Features\Conversions\Api\PerformanceBonusPosting::class)->award($bonuses);
 
 // Get the owner-scoped approved-revenue leaderboard
 $leaderboard = $service->getLeaderboard($from, $to, 10);

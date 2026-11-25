@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Actions\Conversions;
+namespace AIArmada\Affiliates\Features\Conversions\Actions;
 
 use AIArmada\Affiliates\Events\HoldingShortfallDetected;
 use AIArmada\Affiliates\Models\Affiliate;
@@ -18,12 +18,10 @@ use AIArmada\Affiliates\States\ReversedConversion;
 use AIArmada\Affiliates\Support\PayoutMinimums;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Log;
-use Lorisleiva\Actions\Concerns\AsAction;
+use LogicException;
 
-final class ApplyConversionAccounting
+final readonly class ApplyConversionAccounting
 {
-    use AsAction;
-
     public function handle(AffiliateConversion $conversion, ?ConversionStatus $previousStatus = null): void
     {
         $affiliate = $conversion->affiliate()->first();
@@ -33,6 +31,10 @@ final class ApplyConversionAccounting
         }
 
         $connection = $conversion->getConnection();
+
+        if ($connection !== $affiliate->getConnection() || $connection !== (new AffiliateBalance)->getConnection()) {
+            throw new LogicException('Conversion accounting requires a shared database connection.');
+        }
 
         $connection->transaction(function () use ($affiliate, $conversion, $previousStatus): void {
             // Self-sufficient lock: callers hold this row already, but the
@@ -60,6 +62,52 @@ final class ApplyConversionAccounting
         });
     }
 
+    private function addToHolding(AffiliateBalance $balance, int $amountMinor): void
+    {
+        $balance->increment('holding_minor', $amountMinor);
+        $balance->increment('lifetime_earnings_minor', $amountMinor);
+    }
+
+    private function releaseFromHolding(AffiliateBalance $balance, int $amountMinor): void
+    {
+        $releaseAmount = min(max(0, $amountMinor), max(0, $balance->holding_minor));
+        $balance->decrement('holding_minor', $releaseAmount);
+        $balance->increment('available_minor', $releaseAmount);
+    }
+
+    private function deductFromAvailable(AffiliateBalance $balance, int $amountMinor): void
+    {
+        $deductAmount = min(max(0, $amountMinor), max(0, $balance->available_minor));
+        $balance->decrement('available_minor', $deductAmount);
+    }
+
+    private function voidFromHolding(AffiliateBalance $balance, int $amountMinor): void
+    {
+        $voidAmount = min(max(0, $amountMinor), max(0, $balance->holding_minor));
+        $balance->decrement('holding_minor', $voidAmount);
+        $balance->decrement('lifetime_earnings_minor', min(max(0, $amountMinor), max(0, $balance->lifetime_earnings_minor)));
+    }
+
+    private function voidFromAvailable(AffiliateBalance $balance, int $amountMinor): void
+    {
+        $voidAmount = min(max(0, $amountMinor), max(0, $balance->available_minor));
+        $balance->decrement('available_minor', $voidAmount);
+        $balance->decrement('lifetime_earnings_minor', min(max(0, $amountMinor), max(0, $balance->lifetime_earnings_minor)));
+    }
+
+    private function clawbackFromAvailable(AffiliateBalance $balance, int $amountMinor): void
+    {
+        $amountMinor = max(0, $amountMinor);
+
+        // Unlike deductFromAvailable, a clawback is an exact debit: the
+        // money already left via payout, so recovery drives available
+        // negative against future earnings instead of flooring at zero.
+        // Lifetime floors at zero — recognition cannot un-count more
+        // than was counted; the floor signals pre-existing inconsistency.
+        $balance->decrement('available_minor', $amountMinor);
+        $balance->decrement('lifetime_earnings_minor', min($amountMinor, max(0, $balance->lifetime_earnings_minor)));
+    }
+
     private function applyCreationAccounting(AffiliateConversion $conversion, AffiliateBalance $balance): void
     {
         $status = $this->resolveStatus($conversion);
@@ -72,7 +120,7 @@ final class ApplyConversionAccounting
         }
 
         if ($status->equals(PendingConversion::class) || $status->equals(QualifiedConversion::class)) {
-            $balance->addToHolding($conversion->commission_minor);
+            $this->addToHolding($balance, $conversion->commission_minor);
             $conversion->forceFill(['held_minor' => (int) $conversion->commission_minor])->save();
 
             return;
@@ -102,7 +150,7 @@ final class ApplyConversionAccounting
                 $releaseMinor = min($heldMinor, $commissionMinor);
 
                 $holdingBeforeRelease = (int) $balance->holding_minor;
-                $balance->releaseFromHolding($releaseMinor);
+                $this->releaseFromHolding($balance, $releaseMinor);
                 $releasedActual = $holdingBeforeRelease - (int) $balance->holding_minor;
 
                 if ($releasedActual < $releaseMinor) {
@@ -113,7 +161,7 @@ final class ApplyConversionAccounting
 
                 if ($excessMinor > 0) {
                     $holdingBeforeVoid = (int) $balance->holding_minor;
-                    $balance->voidFromHolding($excessMinor);
+                    $this->voidFromHolding($balance, $excessMinor);
                     $voidedActual = $holdingBeforeVoid - (int) $balance->holding_minor;
 
                     if ($voidedActual < $excessMinor) {
@@ -149,19 +197,19 @@ final class ApplyConversionAccounting
         }
 
         if ($previousStatus->equals(ApprovedConversion::class) && $newStatus->equals(RejectedConversion::class)) {
-            $balance->voidFromAvailable($conversion->commission_minor);
+            $this->voidFromAvailable($balance, $conversion->commission_minor);
         }
 
         if ($previousStatus->equals(ApprovedConversion::class) && $newStatus->equals(ReversedConversion::class)) {
-            $balance->voidFromAvailable($conversion->commission_minor);
+            $this->voidFromAvailable($balance, $conversion->commission_minor);
         }
 
         if ($previousStatus->equals(PaidConversion::class) && $newStatus->equals(ReversedConversion::class)) {
-            $balance->clawbackFromAvailable($conversion->commission_minor);
+            $this->clawbackFromAvailable($balance, $conversion->commission_minor);
         }
 
         if ($newStatus->equals(PaidConversion::class) && $conversion->affiliate_payout_id === null) {
-            $balance->deductFromAvailable($conversion->commission_minor);
+            $this->deductFromAvailable($balance, $conversion->commission_minor);
         }
     }
 
@@ -171,7 +219,7 @@ final class ApplyConversionAccounting
         // depend on the pool state; only the holding move can clamp.
         $heldMinor = (int) $conversion->held_minor;
         $holdingBefore = (int) $balance->holding_minor;
-        $balance->voidFromHolding($heldMinor);
+        $this->voidFromHolding($balance, $heldMinor);
         $voidedActual = $holdingBefore - (int) $balance->holding_minor;
 
         if ($voidedActual < $heldMinor) {

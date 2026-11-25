@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
-use AIArmada\Affiliates\Actions\Conversions\ReverseAffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Actions\ApplyConversionAccounting;
+use AIArmada\Affiliates\Features\Conversions\Actions\ReverseAffiliateConversion;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
@@ -57,7 +57,7 @@ function markConversionPaid(AffiliateConversion $conversion): AffiliateConversio
 test('reversing a held conversion voids holding and lifetime', function (): void {
     $conversion = createReversibleConversion('REV001');
 
-    $reversal = ReverseAffiliateConversion::run($conversion, 'chargeback');
+    $reversal = app(ReverseAffiliateConversion::class)->handle($conversion, 'chargeback');
 
     expect($conversion->fresh()->status->equals(ReversedConversion::class))->toBeTrue()
         ->and($reversal->commission_minor)->toBe(-5000)
@@ -75,7 +75,7 @@ test('reversing an approved conversion voids available and lifetime', function (
 
     expect(AffiliateConversionsTable::updateStatus($conversion, ApprovedConversion::class))->toBeTrue();
 
-    ReverseAffiliateConversion::run($conversion->fresh(), 'refund');
+    app(ReverseAffiliateConversion::class)->handle($conversion->fresh(), 'refund');
 
     $balance = $conversion->affiliate->balanceFor('USD')->fresh();
 
@@ -94,7 +94,7 @@ test('reversing a paid conversion claws back below zero and cuts lifetime', func
 
     expect($conversion->affiliate->balanceFor('USD')->fresh()->available_minor)->toBe(0);
 
-    ReverseAffiliateConversion::run($conversion, 'chargeback');
+    app(ReverseAffiliateConversion::class)->handle($conversion, 'chargeback');
 
     $balance = $conversion->affiliate->balanceFor('USD')->fresh();
 
@@ -123,7 +123,7 @@ test('reversal is idempotent and moves money once', function (): void {
 test('reversing a zero-commission conversion only flips status', function (): void {
     $conversion = createReversibleConversion('REV005', 0);
 
-    ReverseAffiliateConversion::run($conversion, 'void');
+    app(ReverseAffiliateConversion::class)->handle($conversion, 'void');
 
     $balance = $conversion->affiliate->balanceFor('USD');
 

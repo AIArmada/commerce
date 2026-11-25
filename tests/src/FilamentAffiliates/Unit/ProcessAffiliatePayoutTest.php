@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
+use AIArmada\Affiliates\Features\Conversions\Actions\ApplyConversionAccounting;
 use AIArmada\Affiliates\Features\Payouts\Actions\CreatePayout;
 use AIArmada\Affiliates\Features\Payouts\Actions\ProcessAffiliatePayout;
 use AIArmada\Affiliates\Contracts\PayoutProcessorInterface;
@@ -100,7 +100,7 @@ function createProcessPayout(Affiliate $affiliate, array $attributes = []): Affi
         'occurred_at' => now(),
     ]);
 
-    ApplyConversionAccounting::run($conversion);
+    app(ApplyConversionAccounting::class)->handle($conversion);
 
     return app(CreatePayout::class)->handle([$conversion->id], $attributes);
 }
@@ -203,7 +203,7 @@ test('corrupt conversion links never reach a provider submission', function (boo
         'status' => ApprovedConversion::class,
         'occurred_at' => now(),
     ]);
-    ApplyConversionAccounting::run($conversion);
+    app(ApplyConversionAccounting::class)->handle($conversion);
     DB::table($conversion->getTable())->where('id', $conversion->id)
         ->update(['affiliate_payout_id' => $payout->id]);
 

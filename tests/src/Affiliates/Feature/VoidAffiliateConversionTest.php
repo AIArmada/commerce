@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
-use AIArmada\Affiliates\Actions\Conversions\VoidAffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Actions\ApplyConversionAccounting;
+use AIArmada\Affiliates\Features\Conversions\Actions\VoidAffiliateConversion;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
@@ -49,7 +49,7 @@ function createVoidableConversion(string $code, int $commissionMinor = 5000): Af
 test('voiding a held conversion rejects it and voids holding', function (): void {
     $conversion = createVoidableConversion('VOID001');
 
-    $result = VoidAffiliateConversion::run($conversion, 'fraud confirmed');
+    $result = app(VoidAffiliateConversion::class)->handle($conversion, 'fraud confirmed');
 
     expect($result->status->equals(RejectedConversion::class))->toBeTrue();
 
@@ -65,7 +65,7 @@ test('voiding an approved conversion rejects it and voids available', function (
 
     expect(AffiliateConversionsTable::updateStatus($conversion, ApprovedConversion::class))->toBeTrue();
 
-    VoidAffiliateConversion::run($conversion->fresh(), 'fraud confirmed');
+    app(VoidAffiliateConversion::class)->handle($conversion->fresh(), 'fraud confirmed');
 
     $balance = $conversion->affiliate->balanceFor('USD')->fresh();
 
@@ -85,7 +85,7 @@ test('voiding a paid conversion reverses it with a clawback leg', function (): v
     $conversion->update(['status' => PaidConversion::class]);
     app(ApplyConversionAccounting::class)->handle($conversion->fresh(), $previousStatus);
 
-    $result = VoidAffiliateConversion::run($conversion->fresh(), 'fraud confirmed');
+    $result = app(VoidAffiliateConversion::class)->handle($conversion->fresh(), 'fraud confirmed');
 
     expect($result->status->equals(ReversedConversion::class))->toBeTrue()
         ->and($result->conversion_type)->toBe('reversal')
@@ -101,10 +101,10 @@ test('voiding a paid conversion reverses it with a clawback leg', function (): v
 test('voiding a terminal conversion is a no-op', function (): void {
     $conversion = createVoidableConversion('VOID004');
 
-    VoidAffiliateConversion::run($conversion, 'first');
+    app(VoidAffiliateConversion::class)->handle($conversion, 'first');
     $afterFirst = $conversion->affiliate->balanceFor('USD')->fresh()->toArray();
 
-    $result = VoidAffiliateConversion::run($conversion->fresh(), 'second');
+    $result = app(VoidAffiliateConversion::class)->handle($conversion->fresh(), 'second');
 
     expect($result->status->equals(RejectedConversion::class))->toBeTrue();
 

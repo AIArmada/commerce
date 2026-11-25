@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Listeners;
 
-use AIArmada\Affiliates\Actions\Conversions\RecordAffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Features\Conversions\Api\CartConversionRecording;
 use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
@@ -40,7 +39,7 @@ use Throwable;
 final readonly class RecordCommissionForOrder
 {
     public function __construct(
-        private RecordAffiliateConversion $recordAffiliateConversion,
+        private CartConversionRecording $recordAffiliateConversion,
         private CartManagerInterface $cartManager,
     ) {}
 
@@ -97,8 +96,7 @@ final readonly class RecordCommissionForOrder
                 return;
             }
 
-            $attribution = $this->recordAffiliateConversion->resolveAttributionFor($cart);
-            $engineTouch = self::touchOf($attribution);
+            $engineTouch = $this->recordAffiliateConversion->attributionTouchFor($cart);
 
             if ($engineTouch === null) {
                 $this->writeDecision($order, $metadata, null, $networkPresent ? 'network' : null, 'engine_unattributed');
@@ -128,7 +126,7 @@ final readonly class RecordCommissionForOrder
 
     private function record(Order $order, mixed $cart, mixed $reference): void
     {
-        $this->recordAffiliateConversion->handle($cart, [
+        $this->recordAffiliateConversion->record($cart, [
             'external_reference' => $reference,
             'conversion_type' => 'purchase',
             'subtotal' => $order->subtotal,
@@ -140,29 +138,6 @@ final readonly class RecordCommissionForOrder
             ],
             'occurred_at' => $order->paid_at ?? CarbonImmutable::now(),
         ]);
-    }
-
-    private static function touchOf(?AffiliateAttribution $attribution): ?CarbonImmutable
-    {
-        if (! $attribution instanceof AffiliateAttribution) {
-            return null;
-        }
-
-        $seen = $attribution->last_referred_at;
-
-        if ($seen === null) {
-            return null;
-        }
-
-        if ($seen instanceof CarbonImmutable) {
-            return $seen;
-        }
-
-        try {
-            return CarbonImmutable::parse((string) $seen);
-        } catch (Throwable) {
-            return null;
-        }
     }
 
     private static function parseTouch(mixed $value): ?CarbonImmutable

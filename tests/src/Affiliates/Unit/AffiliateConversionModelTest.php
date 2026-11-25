@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
+use AIArmada\Affiliates\Features\Conversions\Actions\ApplyConversionAccounting;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
@@ -22,7 +22,7 @@ use Carbon\CarbonImmutable;
 function createConversionWithAccounting(array $data): AffiliateConversion
 {
     $conversion = AffiliateConversion::create($data);
-    ApplyConversionAccounting::run($conversion);
+    app(ApplyConversionAccounting::class)->handle($conversion);
 
     return $conversion;
 }
@@ -123,7 +123,7 @@ describe('AffiliateConversion Model', function (): void {
 
         $previousStatus = $conversion->status;
         $conversion->update(['status' => ApprovedConversion::class]);
-        ApplyConversionAccounting::run($conversion, $previousStatus);
+        app(ApplyConversionAccounting::class)->handle($conversion, $previousStatus);
 
         $conversion = $conversion->fresh();
         $balance = $this->affiliate->fresh()->balanceFor('USD');
@@ -135,7 +135,7 @@ describe('AffiliateConversion Model', function (): void {
 
         $previousStatus = $conversion->status;
         $conversion?->update(['status' => PaidConversion::class]);
-        ApplyConversionAccounting::run($conversion, $previousStatus);
+        app(ApplyConversionAccounting::class)->handle($conversion, $previousStatus);
 
         $balance = $this->affiliate->fresh()->balanceFor('USD');
 

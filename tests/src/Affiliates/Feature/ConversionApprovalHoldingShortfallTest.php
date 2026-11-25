@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
-use AIArmada\Affiliates\Actions\Conversions\ReverseAffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Actions\ApplyConversionAccounting;
+use AIArmada\Affiliates\Features\Conversions\Actions\ReverseAffiliateConversion;
 use AIArmada\Affiliates\Events\HoldingShortfallDetected;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
@@ -166,7 +166,7 @@ test('reversing a held conversion zeroed after recording releases its hold', fun
     // Downward adjustment to zero after the hold was recorded.
     $conversion->forceFill(['commission_minor' => 0])->save();
 
-    ReverseAffiliateConversion::run($conversion->fresh(), 'chargeback');
+    app(ReverseAffiliateConversion::class)->handle($conversion->fresh(), 'chargeback');
 
     $balance = $affiliate->balanceFor('USD')->fresh();
 

@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Services\PerformanceBonusService;
+use AIArmada\Affiliates\Features\Conversions\Api\PerformanceBonusPosting;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
@@ -18,7 +18,7 @@ uses(LazilyRefreshDatabase::class);
 beforeEach(function (): void {
     config(['affiliates.owner.enabled' => false]);
 
-    $this->service = app(PerformanceBonusService::class);
+    $this->service = app(PerformanceBonusPosting::class);
 
     $this->affiliate = Affiliate::create([
         'code' => 'BONUS-CONCUR-' . bin2hex(random_bytes(4)),
@@ -54,8 +54,8 @@ test('concurrent bonus awards do not create duplicate conversions', function ():
 
     $results = DB::transaction(function () use ($bonuses): array {
         return [
-            $this->service->awardBonuses($bonuses),
-            $this->service->awardBonuses($bonuses),
+            $this->service->award($bonuses),
+            $this->service->award($bonuses),
         ];
     });
 
@@ -75,7 +75,7 @@ test('bonus awards are atomic under concurrent load', function (): void {
         ],
     ];
 
-    $this->service->awardBonuses($bonuses);
+    $this->service->award($bonuses);
 
     $balance = AffiliateBalance::where('affiliate_id', $this->affiliate->id)->first();
     expect($balance->available_minor)->toBe(5000);

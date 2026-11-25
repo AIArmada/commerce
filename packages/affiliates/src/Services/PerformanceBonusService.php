@@ -4,17 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Services;
 
-use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
 use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Services\Commissions\CommissionCaps;
 use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\Affiliates\States\ApprovedConversion;
-use AIArmada\Affiliates\Support\PayoutMinimums;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use Carbon\CarbonImmutable;
@@ -45,73 +41,6 @@ final class PerformanceBonusService
         }
 
         return $bonuses;
-    }
-
-    public function awardBonuses(array $bonuses): int
-    {
-        return (int) DB::transaction(function () use ($bonuses): int {
-            $awarded = 0;
-
-            foreach ($bonuses as $bonus) {
-                $affiliate = Affiliate::query()->forOwner()->find($bonus['affiliate_id']);
-
-                if (! $affiliate || ! $affiliate->status->equals(Active::class) || ! $affiliate->isCommercialPurpose()) {
-                    continue;
-                }
-
-                $period = (string) ($bonus['metrics']['period'] ?? CarbonImmutable::now()->format('Y-m'));
-                $performanceBonusKey = implode(':', [
-                    'performance-bonus',
-                    $affiliate->id,
-                    $bonus['bonus_type'],
-                    $period,
-                ]);
-
-                $currency = mb_strtoupper((string) ($affiliate->currency ?? config('affiliates.currency.default', 'MYR')));
-
-                AffiliateBalance::firstOrCreate(
-                    [
-                        'affiliate_id' => $affiliate->id,
-                        'currency' => $currency,
-                    ],
-                    [
-                        'holding_minor' => 0,
-                        'available_minor' => 0,
-                        'lifetime_earnings_minor' => 0,
-                        'minimum_payout_minor' => PayoutMinimums::forCurrency($currency),
-                    ]
-                );
-
-                $conversion = AffiliateConversion::firstOrCreate(
-                    ['performance_bonus_key' => $performanceBonusKey],
-                    [
-                        'affiliate_id' => $affiliate->id,
-                        'affiliate_code' => $affiliate->code,
-                        'external_reference' => 'BONUS-' . $period . '-' . mb_strtoupper(mb_substr(md5($performanceBonusKey), 0, 8)),
-                        'performance_bonus_key' => $performanceBonusKey,
-                        'subtotal_minor' => 0,
-                        'commission_minor' => CommissionCaps::clamp((int) $bonus['amount_minor']),
-                        'commission_currency' => $currency,
-                        'status' => ApprovedConversion::class,
-                        'occurred_at' => CarbonImmutable::now(),
-                        'metadata' => [
-                            'type' => 'performance_bonus',
-                            'bonus_type' => $bonus['bonus_type'],
-                            'reason' => $bonus['reason'],
-                            'metrics' => $bonus['metrics'],
-                        ],
-                    ],
-                );
-
-                if ($conversion->wasRecentlyCreated) {
-                    app(ApplyConversionAccounting::class)->handle($conversion);
-                }
-
-                $awarded += (int) $conversion->wasRecentlyCreated;
-            }
-
-            return $awarded;
-        });
     }
 
     public function getLeaderboard(

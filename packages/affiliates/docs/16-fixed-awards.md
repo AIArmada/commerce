@@ -16,11 +16,11 @@ posts exactly the validated amount or refuses before any money effect.
 ## The action
 
 ```php
-use AIArmada\Affiliates\Actions\Conversions\RecordAffiliateAward;
+use AIArmada\Affiliates\Features\Conversions\Api\AwardPosting;
 use AIArmada\Affiliates\Data\AffiliateOutcomeDisposition;
 
-$result = app(RecordAffiliateAward::class)->handle(
-    $recipient,            // Affiliate model: the eligible recipient
+$result = app(AwardPosting::class)->post(
+    $recipientId,          // Identifier of the eligible affiliate
     'acme:award:2026-10-07:9f2c', // caller-owned bounded stable award key
     1500,                 // positive integer minor-unit amount, posted exactly
     'MYR',                // explicit 3-letter currency
@@ -31,8 +31,6 @@ if ($result->disposition === AffiliateOutcomeDisposition::Created) {
     // $result->conversion is AffiliateConversionData for the new backing row.
 }
 ```
-
-Or via the action shortcut: `RecordAffiliateAward::run($recipient, $key, $amount, $currency, $attributes)`.
 
 ## Award identity
 

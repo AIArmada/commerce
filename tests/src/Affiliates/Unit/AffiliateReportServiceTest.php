@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateToCart;
-use AIArmada\Affiliates\Actions\Conversions\RecordAffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Actions\RecordAffiliateConversion;
 use AIArmada\Affiliates\Features\Reporting\Api\ReportingApi;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
@@ -40,12 +40,12 @@ test('affiliate report service summarizes totals and utm', function (): void {
         'campaign' => 'spring',
     ]);
 
-    $recordAffiliateConversion->handle($cart, [
+    $recordAffiliateConversion->record($cart, [
         'order_reference' => 'RPT-1',
         'subtotal' => 1000,
     ]);
 
-    $recordAffiliateConversion->handle($cart, [
+    $recordAffiliateConversion->record($cart, [
         'order_reference' => 'RPT-2',
         'subtotal' => 2000,
     ]);

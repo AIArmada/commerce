@@ -97,7 +97,7 @@ $affiliate->commission_type; // CommissionType::Percentage or CommissionType::Fi
 ```php
 // The payload key is `total` (minor units). `value_minor` is the persisted
 // column name and is NOT read from the payload.
-RecordAffiliateConversion::run($cart, [
+app(CartConversionRecording::class)->record($cart, [
     'external_reference' => 'ORD-123',
     'total' => 15000,     // Required for percentage commissions
     'subtotal' => 14000,

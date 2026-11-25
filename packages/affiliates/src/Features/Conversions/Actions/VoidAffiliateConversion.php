@@ -2,14 +2,13 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Actions\Conversions;
+namespace AIArmada\Affiliates\Features\Conversions\Actions;
 
 use AIArmada\Affiliates\Events\AffiliateConversionReversed;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\States\RejectedConversion;
 use AIArmada\Affiliates\States\ReversedConversion;
-use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
  * Settle a conversion as not payable, with correct money movement.
@@ -19,13 +18,11 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * payout, so only a clawback leg recovers it. Terminal states are
  * idempotent no-ops.
  */
-final class VoidAffiliateConversion
+final readonly class VoidAffiliateConversion
 {
-    use AsAction;
-
     public function __construct(
-        private readonly ApplyConversionAccounting $accounting,
-        private readonly ReverseAffiliateConversion $reverser,
+        private ApplyConversionAccounting $accounting,
+        private ReverseAffiliateConversion $reverser,
     ) {}
 
     /**

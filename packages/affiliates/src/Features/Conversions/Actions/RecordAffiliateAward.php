@@ -2,13 +2,14 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Actions\Conversions;
+namespace AIArmada\Affiliates\Features\Conversions\Actions;
 
 use AIArmada\Affiliates\Contracts\AffiliateAwardPolicy;
 use AIArmada\Affiliates\Data\AffiliateAwardDecision;
 use AIArmada\Affiliates\Data\AffiliateAwardProposal;
 use AIArmada\Affiliates\Data\AffiliateConversionData;
 use AIArmada\Affiliates\Data\AffiliateOutcomeResult;
+use AIArmada\Affiliates\Features\Conversions\Api\AwardPosting;
 use AIArmada\Affiliates\Data\AffiliateOutcomeDisposition;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
 use AIArmada\Affiliates\Exceptions\AffiliateAwardPolicyLimitException;
@@ -28,7 +29,6 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Arr;
 use InvalidArgumentException;
 use LogicException;
-use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
  * Post a generic fixed-amount monetary award as its own backing conversion.
@@ -85,10 +85,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * After-commit dispatch is registered only after the transaction
  * commits, so deadlock retries never double-announce.
  */
-final class RecordAffiliateAward
+final readonly class RecordAffiliateAward implements AwardPosting
 {
-    use AsAction;
-
     public const CONVERSION_TYPE = 'reward_award';
 
     /**
@@ -112,9 +110,30 @@ final class RecordAffiliateAward
     private const MAX_METADATA_STRING_LENGTH = 500;
 
     public function __construct(
-        private readonly Dispatcher $events,
-        private readonly ApplyConversionAccounting $accounting,
+        private Dispatcher $events,
+        private ApplyConversionAccounting $accounting,
+        private ReverseAffiliateConversion $reverser,
     ) {}
+
+    public function post(string $affiliateId, string $awardKey, int $amountMinor, string $currency, array $attributes = []): AffiliateOutcomeResult
+    {
+        return $this->handle(Affiliate::query()->forOwner()->findOrFail($affiliateId), $awardKey, $amountMinor, $currency, $attributes);
+    }
+
+    public function reverse(string $conversionId, string $awardKey, string $reason): void
+    {
+        $key = AffiliateAwardKey::parse($awardKey);
+
+        (new AffiliateConversion)->getConnection()->transaction(function () use ($conversionId, $key, $reason): void {
+            $conversion = AffiliateConversion::query()->forOwner()->lockForUpdate()->findOrFail($conversionId);
+
+            if ($conversion->conversion_type !== self::CONVERSION_TYPE || $conversion->idempotency_key !== $key->idempotencyKey()) {
+                throw new InvalidArgumentException('The conversion does not match the requested award identity.');
+            }
+
+            $this->reverser->handle($conversion, $reason);
+        }, attempts: 3);
+    }
 
     /**
      * @param  array<string, mixed>  $attributes

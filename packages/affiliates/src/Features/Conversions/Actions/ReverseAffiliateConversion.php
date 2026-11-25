@@ -2,13 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Actions\Conversions;
+namespace AIArmada\Affiliates\Features\Conversions\Actions;
 
 use AIArmada\Affiliates\Events\AffiliateConversionReversed;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\ReversedConversion;
 use Carbon\CarbonImmutable;
-use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
  * Reverse a conversion: refunds, chargebacks, clawbacks.
@@ -21,12 +20,10 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * One reversal per conversion: re-entry returns the existing
  * companion leg without moving money again.
  */
-final class ReverseAffiliateConversion
+final readonly class ReverseAffiliateConversion
 {
-    use AsAction;
-
     public function __construct(
-        private readonly ApplyConversionAccounting $accounting,
+        private ApplyConversionAccounting $accounting,
     ) {}
 
     public function handle(AffiliateConversion $conversion, string $reason): AffiliateConversion

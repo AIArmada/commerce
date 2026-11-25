@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Actions\Conversions;
+namespace AIArmada\Affiliates\Features\Conversions\Actions;
 
 use AIArmada\Affiliates\Data\AffiliateConversionData;
+use AIArmada\Affiliates\Features\Conversions\Api\CartConversionRecording;
 use AIArmada\Affiliates\Data\AttributionTouch;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
@@ -27,29 +28,39 @@ use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Stringable;
 use InvalidArgumentException;
-use Lorisleiva\Actions\Concerns\AsAction;
 
-final class RecordAffiliateConversion
+final readonly class RecordAffiliateConversion implements CartConversionRecording
 {
-    use AsAction;
-
     public function __construct(
-        private readonly CommissionCalculator $commissionCalculator,
-        private readonly CommissionRuleEngine $ruleEngine,
-        private readonly Dispatcher $events,
-        private readonly WebhookApi $webhooks,
-        private readonly AttributionModel $attributionModel,
-        private readonly AllocateUplineCommissions $allocateUpline,
-        private readonly ApplyConversionAccounting $accounting,
-        private readonly FraudApi $fraud,
+        private CommissionCalculator $commissionCalculator,
+        private CommissionRuleEngine $ruleEngine,
+        private Dispatcher $events,
+        private WebhookApi $webhooks,
+        private AttributionModel $attributionModel,
+        private AllocateUplineCommissions $allocateUpline,
+        private ApplyConversionAccounting $accounting,
+        private FraudApi $fraud,
     ) {}
 
-    public function handle(Cart $cart, array $payload = []): ?AffiliateConversionData
+    public function record(Cart $cart, array $payload = []): ?AffiliateConversionData
     {
-        return DB::transaction(fn (): ?AffiliateConversionData => $this->record($cart, $payload));
+        return (new AffiliateConversion)->getConnection()->transaction(fn (): ?AffiliateConversionData => $this->recordConversion($cart, $payload));
+    }
+
+    public function recordFrozen(Cart $cart, string $attributionId, array $payload = []): ?AffiliateConversionData
+    {
+        $attribution = AffiliateAttribution::query()->forOwner()->findOrFail($attributionId);
+
+        return $this->recordCommercialForFrozenAttribution($cart, $attribution, $payload);
+    }
+
+    public function attributionTouchFor(Cart $cart): ?CarbonImmutable
+    {
+        $seen = $this->resolveAttributionFor($cart)?->last_referred_at;
+
+        return $seen === null ? null : CarbonImmutable::instance($seen);
     }
 
     /**
@@ -90,7 +101,7 @@ final class RecordAffiliateConversion
 
         $payload['affiliate_attribution_id'] = (string) $attribution->getKey();
 
-        return DB::transaction(fn (): ?AffiliateConversionData => $this->record($cart, $payload, $attribution));
+        return (new AffiliateConversion)->getConnection()->transaction(fn (): ?AffiliateConversionData => $this->recordConversion($cart, $payload, $attribution));
     }
 
     /**
@@ -104,7 +115,7 @@ final class RecordAffiliateConversion
         return $this->resolveAttribution($cart, []);
     }
 
-    private function record(Cart $cart, array $payload = [], ?AffiliateAttribution $frozenAttribution = null): ?AffiliateConversionData
+    private function recordConversion(Cart $cart, array $payload = [], ?AffiliateAttribution $frozenAttribution = null): ?AffiliateConversionData
     {
         $attribution = $frozenAttribution ?? $this->resolveAttribution($cart, $payload);
         $affiliate = $this->resolveAffiliate($payload, $attribution);
@@ -306,7 +317,7 @@ final class RecordAffiliateConversion
         }
 
         try {
-            $conversion = DB::transaction(function () use ($attributes): AffiliateConversion {
+            $conversion = (new AffiliateConversion)->getConnection()->transaction(function () use ($attributes): AffiliateConversion {
                 $model = new AffiliateConversion(Arr::except($attributes, ['owner_type', 'owner_id']));
                 $model->forceFill(Arr::only($attributes, ['owner_type', 'owner_id']));
                 $model->save();

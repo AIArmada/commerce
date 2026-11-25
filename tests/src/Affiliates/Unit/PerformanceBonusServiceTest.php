@@ -8,6 +8,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
+use AIArmada\Affiliates\Features\Conversions\Api\PerformanceBonusPosting;
 use AIArmada\Affiliates\Services\PerformanceBonusService;
 use AIArmada\Affiliates\Settings\AffiliateBonusSettings;
 use AIArmada\Affiliates\States\Active;
@@ -72,7 +73,7 @@ describe('PerformanceBonusService', function (): void {
                 ],
             ];
 
-            $result = $this->service->awardBonuses($bonuses);
+            $result = app(PerformanceBonusPosting::class)->award($bonuses);
 
             expect($result)->toBe(1);
         });
@@ -89,8 +90,8 @@ describe('PerformanceBonusService', function (): void {
                 ],
             ];
 
-            expect($this->service->awardBonuses($bonuses))->toBe(1)
-                ->and($this->service->awardBonuses($bonuses))->toBe(0)
+            expect(app(PerformanceBonusPosting::class)->award($bonuses))->toBe(1)
+                ->and(app(PerformanceBonusPosting::class)->award($bonuses))->toBe(0)
                 ->and(AffiliateConversion::where('affiliate_id', $this->affiliate->id)->count())->toBe(1);
         });
 
@@ -115,7 +116,7 @@ describe('PerformanceBonusService', function (): void {
                 ],
             ];
 
-            $this->service->awardBonuses($bonuses);
+            app(PerformanceBonusPosting::class)->award($bonuses);
 
             $balance = AffiliateBalance::where('affiliate_id', $this->affiliate->id)->first();
             expect($balance->available_minor)->toBe(3500); // 1000 + 2500
@@ -142,7 +143,7 @@ describe('PerformanceBonusService', function (): void {
                 ],
             ];
 
-            $this->service->awardBonuses($bonuses);
+            app(PerformanceBonusPosting::class)->award($bonuses);
 
             $balance = AffiliateBalance::where('affiliate_id', $this->affiliate->id)->first();
             expect($balance->lifetime_earnings_minor)->toBe(6000);
@@ -169,7 +170,7 @@ describe('PerformanceBonusService', function (): void {
                 ],
             ];
 
-            $this->service->awardBonuses($bonuses);
+            app(PerformanceBonusPosting::class)->award($bonuses);
 
             $conversion = AffiliateConversion::where('affiliate_id', $this->affiliate->id)
                 ->where('commission_minor', 5000)
@@ -195,7 +196,7 @@ describe('PerformanceBonusService', function (): void {
                 ],
             ];
 
-            $result = $this->service->awardBonuses($bonuses);
+            $result = app(PerformanceBonusPosting::class)->award($bonuses);
 
             expect($result)->toBe(0);
         });
@@ -212,7 +213,7 @@ describe('PerformanceBonusService', function (): void {
                 ],
             ];
 
-            $result = $this->service->awardBonuses($bonuses);
+            $result = app(PerformanceBonusPosting::class)->award($bonuses);
 
             expect($result)->toBe(0);
         });
@@ -231,13 +232,13 @@ describe('PerformanceBonusService', function (): void {
 
             expect(AffiliateBalance::where('affiliate_id', $this->affiliate->id)->exists())->toBeFalse();
 
-            $this->service->awardBonuses($bonuses);
+            app(PerformanceBonusPosting::class)->award($bonuses);
 
             expect(AffiliateBalance::where('affiliate_id', $this->affiliate->id)->exists())->toBeTrue();
         });
 
         test('returns zero for empty bonus array', function (): void {
-            $result = $this->service->awardBonuses([]);
+            $result = app(PerformanceBonusPosting::class)->award([]);
 
             expect($result)->toBe(0);
         });

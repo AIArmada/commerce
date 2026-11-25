@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Actions\Conversions;
+namespace AIArmada\Affiliates\Features\Conversions\Actions;
 
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
 use AIArmada\Affiliates\Features\Webhooks\Api\WebhookApi;
@@ -13,16 +13,13 @@ use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\ConversionStatus;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
-use Lorisleiva\Actions\Concerns\AsAction;
 
-final class AllocateUplineCommissions
+final readonly class AllocateUplineCommissions
 {
-    use AsAction;
-
     public function __construct(
-        private readonly Dispatcher $events,
-        private readonly WebhookApi $webhooks,
-        private readonly ApplyConversionAccounting $accounting,
+        private Dispatcher $events,
+        private WebhookApi $webhooks,
+        private ApplyConversionAccounting $accounting,
     ) {}
 
     public function handle(array $baseConversions, bool $autoApprove, ConversionStatus $statusEnum, ?string $attributionId): void
@@ -57,13 +54,16 @@ final class AllocateUplineCommissions
 
             $current = $affiliate->parent;
             $depth = 0;
+            $visited = [(string) $affiliate->getKey() => true];
 
             foreach ($resolvedLevels as $levelConfig) {
                 $depth++;
 
-                if (! $current) {
+                if (! $current || isset($visited[(string) $current->getKey()])) {
                     break;
                 }
+
+                $visited[(string) $current->getKey()] = true;
 
                 if (! $current->isCommercialPurpose()) {
                     $current = $current->parent;

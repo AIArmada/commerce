@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateToCart;
-use AIArmada\Affiliates\Actions\Conversions\RecordAffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Actions\RecordAffiliateConversion;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\ProgramVisibility;
@@ -54,7 +54,7 @@ describe('engine notifications', function (): void {
         app(AttachAffiliateToCart::class)->handle($affiliate, $cart);
         $cart->add('notify-item', 'Order item', 10.00, 1);
 
-        app(RecordAffiliateConversion::class)->handle($cart, [
+        app(RecordAffiliateConversion::class)->record($cart, [
             'external_reference' => 'NOTIFY-1',
         ]);
 

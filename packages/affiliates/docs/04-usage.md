@@ -133,10 +133,10 @@ The package ships a ready-made banner view at `affiliates::components.public-ref
 ### From Cart
 
 ```php
-use AIArmada\Affiliates\Actions\Conversions\RecordAffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Api\CartConversionRecording;
 
 // Record conversion when order is placed
-RecordAffiliateConversion::run($cart, [
+app(CartConversionRecording::class)->record($cart, [
     'external_reference' => $order->reference,
     'subtotal' => $order->subtotal_minor,
     'total' => $order->total_minor,
@@ -172,7 +172,7 @@ example, one event registration per paid ticket line) should mark the frozen
 order `payment_data.affiliate_commission.strategy` as `registration_lines`.
 The generic order listener skips that marked order so it cannot create a
 second order-level commission. After payment, the integration can call
-`RecordAffiliateConversion::recordCommercialForFrozenAttribution($cart, $attribution, $payload)` for each eligible child record. This method requires
+`app(CartConversionRecording::class)->recordFrozen($cart, $attributionId, $payload)` for each eligible child record. This method requires
 a commercial-purpose affiliate and preserves the frozen attribution as the
 sole commission source. Use a stable per-child `idempotency_key` and
 `external_reference`; the normal conversion status and maturity rules still
@@ -182,9 +182,9 @@ for paid commissions.
 ### Direct Recording
 
 ```php
-use AIArmada\Affiliates\Actions\Conversions\RecordAffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Api\CartConversionRecording;
 
-$conversion = RecordAffiliateConversion::run(
+$conversion = app(CartConversionRecording::class)->record(
     cart: $cart,
     payload: [
         'external_reference' => 'ORD-12345',
@@ -268,17 +268,17 @@ When the maturity workflow is enabled, conversions typically move from `Pending`
 
 ### Attributed Outcomes Without a Cart
 
-Referral, signup, and engagement flows use `RecordAffiliateOutcome` with a
+Referral, signup, and engagement flows use `OutcomePosting::post()` with a
 caller-owned namespaced business key. The key is hashed for the unique
 `idempotency_key`, independent of affiliate/link, so one source transition
 yields exactly one winner. Replays return the stored row untouched.
 
 ```php
-use AIArmada\Affiliates\Actions\Conversions\RecordAffiliateOutcome;
+use AIArmada\Affiliates\Features\Conversions\Api\OutcomePosting;
 use AIArmada\Affiliates\Data\AffiliateOutcomeDisposition;
 
-$result = RecordAffiliateOutcome::run(
-    $attribution,
+$result = app(OutcomePosting::class)->post(
+    $attributionId,
     'referral',
     'my-app:referral:'.$sourceTransitionId,
     ['dispatch_event' => false],
@@ -307,12 +307,12 @@ when the caller holds a stale instance. Attributed outcomes apply the same
 provenance precedence before validating link and program references.
 
 ```php
-$result = RecordAffiliateOutcome::run(
+$result = app(OutcomePosting::class)->post(
     null,
     'host_signal',
     'my-app:signal:'.$sourceId,
     ['dispatch_event' => false],
-    $affiliate,
+    $affiliateId,
     ['subject_key' => 'subject:abc', 'origin' => 'host_signal'],
 );
 ```

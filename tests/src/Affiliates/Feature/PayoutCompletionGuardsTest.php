@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
-use AIArmada\Affiliates\Actions\Conversions\ReverseAffiliateConversion;
-use AIArmada\Affiliates\Actions\Conversions\VoidAffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Actions\ApplyConversionAccounting;
+use AIArmada\Affiliates\Features\Conversions\Actions\ReverseAffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Actions\VoidAffiliateConversion;
 use AIArmada\Affiliates\Features\Payouts\Actions\AssertPayoutCompletable;
 use AIArmada\Affiliates\Features\Payouts\Actions\CreatePayout;
 use AIArmada\Affiliates\Features\Payouts\Actions\UpdatePayoutStatus;
@@ -53,7 +53,7 @@ function recordCompletionGuardConversion(Affiliate $affiliate, int $commissionMi
         'occurred_at' => now(),
     ]);
 
-    ApplyConversionAccounting::run($conversion);
+    app(ApplyConversionAccounting::class)->handle($conversion);
 
     return $conversion;
 }
@@ -65,7 +65,7 @@ test('reversing a conversion reserved by an open payout throws and moves no mone
     $conversion = recordCompletionGuardConversion($affiliate);
     $payout = app(CreatePayout::class)->handle([$conversion->id]);
 
-    expect(fn (): object => ReverseAffiliateConversion::run($conversion, 'duplicate'))
+    expect(fn (): object => app(ReverseAffiliateConversion::class)->handle($conversion, 'duplicate'))
         ->toThrow(InvalidArgumentException::class, 'reserved by open payout');
 
     $balance = $affiliate->balanceFor('USD')->fresh();
@@ -81,7 +81,7 @@ test('voiding a conversion reserved by an open payout throws', function (): void
     $conversion = recordCompletionGuardConversion($affiliate);
     app(CreatePayout::class)->handle([$conversion->id]);
 
-    expect(fn (): object => VoidAffiliateConversion::run($conversion, 'fraud'))
+    expect(fn (): object => app(VoidAffiliateConversion::class)->handle($conversion, 'fraud'))
         ->toThrow(InvalidArgumentException::class, 'reserved by open payout');
 
     expect($conversion->fresh()->status->equals(ApprovedConversion::class))->toBeTrue();
@@ -133,7 +133,7 @@ test('a reserved conversion becomes reversible after the payout is cancelled', f
 
     app(UpdatePayoutStatus::class)->handle($payout, 'cancelled');
 
-    ReverseAffiliateConversion::run($conversion->fresh(), 'duplicate');
+    app(ReverseAffiliateConversion::class)->handle($conversion->fresh(), 'duplicate');
 
     $balance = $affiliate->balanceFor('USD')->fresh();
 
@@ -149,7 +149,7 @@ test('reversing a paid conversion linked to a completed payout still claws back'
 
     app(UpdatePayoutStatus::class)->handle($payout, 'completed');
 
-    ReverseAffiliateConversion::run($conversion->fresh(), 'chargeback');
+    app(ReverseAffiliateConversion::class)->handle($conversion->fresh(), 'chargeback');
 
     $balance = $affiliate->balanceFor('USD')->fresh();
 
@@ -514,7 +514,7 @@ test('manual completion refuses mixed-currency linked conversions', function ():
         'occurred_at' => now(),
     ]);
 
-    ApplyConversionAccounting::run($eur);
+    app(ApplyConversionAccounting::class)->handle($eur);
 
     // Raw linking bypasses CreatePayout's single-currency guard and
     // the conversion model's saving link guard, the way corrupt data
