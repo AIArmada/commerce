@@ -68,7 +68,7 @@ final readonly class AdministerProgramMembership implements MembershipAdministra
             $this->assertSharedConnection($affiliate, $program);
 
             $membership->delete();
-            $this->events->dispatch(new AffiliateProgramLeft($affiliate, $program));
+            $this->events->dispatch(new AffiliateProgramLeft((string) $affiliate->getKey(), (string) $program->getKey(), (string) $membership->getKey()));
         }, attempts: 3);
     }
 

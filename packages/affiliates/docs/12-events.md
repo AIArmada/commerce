@@ -131,11 +131,11 @@ AffiliateConversionReversed::class; // (?string $origin, ?string $sourceRef, ?st
 
 // Program membership changes
 AffiliateProgramJoined::class;  // (AffiliateProgramMembership $membership)
-AffiliateProgramLeft::class;    // (AffiliateProgramMembership $membership)
+AffiliateProgramLeft::class;    // (string $affiliateId, string $programId, string $membershipId)
 
 // Rank and tier upgrades
 AffiliateRankChanged::class;    // (Affiliate $affiliate, AffiliateRank $newRank, ?AffiliateRank $previousRank)
-AffiliateTierUpgraded::class;   // (AffiliateProgramMembership $membership, AffiliateProgramTier $newTier, ?AffiliateProgramTier $previousTier, Affiliate $affiliate)
+AffiliateTierUpgraded::class;   // (string $affiliateId, string $programId, ?string $fromTierId, string $toTierId)
 
 // Daily aggregation finished
 DailyStatsAggregated::class;    // (CarbonImmutable $date, int $affiliateCount)
@@ -146,7 +146,7 @@ FraudSignalDetected::class;     // (FraudSignalReference $signal)
 
 // Holding pool carried less than a conversion recorded (release/void clamped;
 // the affiliate was still made whole — signal only, no in-repo consumer)
-HoldingShortfallDetected::class; // (AffiliateConversion $conversion, string $operation, int $requestedMinor, int $appliedMinor)
+HoldingShortfallDetected::class; // (string $conversionId, string $affiliateId, string $currency, string $operation, int $requestedMinor, int $appliedMinor)
 ```
 
 > [!NOTE]

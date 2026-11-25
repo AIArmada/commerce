@@ -49,10 +49,12 @@ test('AffiliateTierUpgraded event allows null fromTier for initial tier assignme
         'commission_rate_basis_points' => 500,
     ]);
 
-    $event = new AffiliateTierUpgraded($affiliate, $program, null, $toTier);
+    $event = new AffiliateTierUpgraded($affiliate->id, $program->id, null, $toTier->id);
 
-    expect($event->fromTier)->toBeNull();
-    expect($event->toTier)->toBe($toTier);
+    expect($event->fromTierId)->toBeNull()
+        ->and($event->toTierId)->toBe($toTier->id)
+        ->and($event->affiliateId)->toBe($affiliate->id)
+        ->and($event->programId)->toBe($program->id);
 });
 
 test('DailyStatsAggregated event uses Dispatchable and SerializesModels traits', function (): void {

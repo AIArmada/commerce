@@ -81,7 +81,9 @@ test('approving a conversion with a divergent hold credits the full commission a
 
     Log::shouldHaveReceived('warning')->once();
 
-    Event::assertDispatched(HoldingShortfallDetected::class, fn (HoldingShortfallDetected $event): bool => $event->conversion->is($conversion)
+    Event::assertDispatched(HoldingShortfallDetected::class, fn (HoldingShortfallDetected $event): bool => $event->conversionId === (string) $conversion->getKey()
+        && $event->affiliateId === (string) $conversion->affiliate_id
+        && $event->currency === $conversion->commission_currency
         && $event->operation === 'release'
         && $event->requestedMinor === 5000
         && $event->appliedMinor === 0);
@@ -153,7 +155,9 @@ test('rejecting a conversion with a divergent hold voids without throwing and re
 
     Log::shouldHaveReceived('warning')->once();
 
-    Event::assertDispatched(HoldingShortfallDetected::class, fn (HoldingShortfallDetected $event): bool => $event->conversion->is($conversion)
+    Event::assertDispatched(HoldingShortfallDetected::class, fn (HoldingShortfallDetected $event): bool => $event->conversionId === (string) $conversion->getKey()
+        && $event->affiliateId === (string) $conversion->affiliate_id
+        && $event->currency === $conversion->commission_currency
         && $event->operation === 'void'
         && $event->requestedMinor === 5000
         && $event->appliedMinor === 0);

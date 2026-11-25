@@ -105,10 +105,10 @@ final readonly class UpgradeProgramTier implements ProgramTierManagement
             return false;
         }
 
-        $oldTier = $membership->tier;
+        $oldTierId = $membership->tier_id;
         $membership->update(['tier_id' => $tier->id]);
 
-        $this->events->dispatch(new AffiliateTierUpgraded($affiliate, $program, $oldTier, $tier));
+        $this->events->dispatch(new AffiliateTierUpgraded((string) $affiliate->getKey(), (string) $program->getKey(), $oldTierId, (string) $tier->getKey()));
 
         return true;
     }

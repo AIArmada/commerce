@@ -243,7 +243,7 @@ final readonly class ApplyConversionAccounting
             'applied_minor' => $appliedMinor,
         ]);
 
-        HoldingShortfallDetected::dispatch($conversion, $operation, $requestedMinor, $appliedMinor);
+        HoldingShortfallDetected::dispatch((string) $conversion->getKey(), (string) $conversion->affiliate_id, $conversion->commission_currency, $operation, $requestedMinor, $appliedMinor);
     }
 
     private function resolveStatus(AffiliateConversion $conversion): ConversionStatus

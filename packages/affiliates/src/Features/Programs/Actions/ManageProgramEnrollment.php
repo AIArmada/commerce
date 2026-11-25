@@ -90,7 +90,7 @@ final readonly class ManageProgramEnrollment implements ProgramEnrollment
             }
 
             $membership->delete();
-            $this->events->dispatch(new AffiliateProgramLeft($affiliate, $program));
+            $this->events->dispatch(new AffiliateProgramLeft((string) $affiliate->getKey(), (string) $program->getKey(), (string) $membership->getKey()));
 
             return true;
         }, attempts: 3);
