@@ -19,7 +19,7 @@ it('exposes immutable proof records and refuses issuance after sealing', functio
     expect($credential)->toBeInstanceOf(IssuedIdentityProof::class)
         ->and(AffiliateCredential::query()->findOrFail($credential->id)->verifier_hash)->toBe(hash('sha256', $credential->plaintextSecret));
 
-    $claim = $api->claim($capability->plaintextSecret, new RecordReference('user', 'proof-test'), true);
+    $claim = $api->claim($capability->plaintextSecret, new RecordReference('user', 'd523f31d-88a4-422d-8a45-10034b46aa2f'), true);
     expect($claim)->toBeInstanceOf(IdentityClaimRecord::class)
         ->and($claim->affiliateId)->toBe($id);
 

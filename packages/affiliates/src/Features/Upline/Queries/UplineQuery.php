@@ -24,7 +24,7 @@ final class UplineQuery
         }
         return AffiliateUpline::query()->where('descendant_id', $affiliateId)->where('depth', '>', 0)
             ->whereHas('ancestor', static fn ($q) => $q->whereCommercialPurpose())->with('ancestor')->orderBy('depth')->orderBy('ancestor_id')->get()
-            ->map(static fn (AffiliateUpline $path): UplineMember => new UplineMember($path->ancestor_id, $path->ancestor->name, $path->ancestor->code, $path->depth))->all();
+            ->map(static fn (AffiliateUpline $path): UplineMember => new UplineMember($path->ancestor_id, $path->ancestor->name, $path->ancestor->code, $path->depth))->values()->all();
     }
 
     /** @return list<UplineMember> */
@@ -37,7 +37,7 @@ final class UplineQuery
         return AffiliateUpline::query()->where('ancestor_id', $affiliateId)->where('depth', '>', 0)
             ->when($depth !== null, static fn ($q) => $q->where('depth', $depth))
             ->whereHas('descendant', static fn ($q) => $q->whereCommercialPurpose())->with('descendant')->orderBy('depth')->orderBy('descendant_id')->get()
-            ->map(static fn (AffiliateUpline $path): UplineMember => new UplineMember($path->descendant_id, $path->descendant->name, $path->descendant->code, $path->depth))->all();
+            ->map(static fn (AffiliateUpline $path): UplineMember => new UplineMember($path->descendant_id, $path->descendant->name, $path->descendant->code, $path->depth))->values()->all();
     }
 
     /** @return list<string> */
@@ -146,46 +146,43 @@ final class UplineQuery
         }
 
         $maxDepth = $this->capMaxDepth($maxDepth);
+        $members = Affiliate::query()->whereCommercialPurpose()->with('rank')
+            ->whereIn('id', AffiliateUpline::query()->where('ancestor_id', $affiliateId)
+                ->where('depth', '>', 0)->where('depth', '<=', $maxDepth)->select('descendant_id'))
+            ->orderBy('id')->get()->keyBy('id');
 
-        return [
-            'id' => $root->id,
-            'name' => $root->name,
-            'code' => $root->code,
-            'rank' => $root->rank?->name,
-            'status' => AffiliateStatus::normalize($root->status),
-            'stats' => [
-                'direct_recruits' => $root->direct_downline_count,
-                'total_downline' => $root->total_downline_count,
-            ],
-            'children' => $this->buildChildren($root, 1, $maxDepth),
-        ];
-    }
+        $memberIds = $members->keys()->all();
+        $edges = AffiliateUpline::query()->where('depth', 1)
+            ->whereIn('ancestor_id', [$affiliateId, ...$memberIds])
+            ->whereIn('descendant_id', $memberIds)->orderBy('descendant_id')->get()
+            ->groupBy('ancestor_id');
 
-    /**
-     * @return array<int, array<string, mixed>>
-     */
-    private function buildChildren(Affiliate $parent, int $currentDepth, int $maxDepth): array
-    {
-        if ($currentDepth > $maxDepth) {
-            return [];
-        }
+        $build = function (Affiliate $member, int $depth) use (&$build, $maxDepth, $edges, $members): array {
+            $children = [];
+            if ($depth < $maxDepth) {
+                foreach ($edges->get($member->id, []) as $edge) {
+                    $child = $members->get($edge->descendant_id);
+                    if ($child instanceof Affiliate) {
+                        $children[] = $build($child, $depth + 1);
+                    }
+                }
+            }
 
-        $children = Affiliate::query()->whereIn('id', AffiliateUpline::query()->where('ancestor_id', $parent->getKey())->where('depth', 1)->select('descendant_id'))->whereCommercialPurpose()->with('rank')->orderBy('id')->get();
-
-        return $children->map(function (Affiliate $child) use ($currentDepth, $maxDepth) {
             return [
-                'id' => $child->id,
-                'name' => $child->name,
-                'code' => $child->code,
-                'rank' => $child->rank?->name,
-                'status' => AffiliateStatus::normalize($child->status),
+                'id' => $member->id,
+                'name' => $member->name,
+                'code' => $member->code,
+                'rank' => $member->rank?->name,
+                'status' => AffiliateStatus::normalize($member->status),
                 'stats' => [
-                    'direct_recruits' => $child->direct_downline_count,
-                    'total_downline' => $child->total_downline_count,
+                    'direct_recruits' => $member->direct_downline_count,
+                    'total_downline' => $member->total_downline_count,
                 ],
-                'children' => $this->buildChildren($child, $currentDepth + 1, $maxDepth),
+                'children' => $children,
             ];
-        })->all();
+        };
+
+        return $build($root, 0);
     }
 
     private function isEnabled(): bool

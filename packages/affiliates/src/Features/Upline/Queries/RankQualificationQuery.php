@@ -45,10 +45,8 @@ final readonly class RankQualificationQuery
             ->selectRaw('commission_currency as currency, COALESCE(SUM(COALESCE(value_minor, 0)), 0) as total, COALESCE(SUM(CASE WHEN occurred_at >= ? THEN COALESCE(value_minor, 0) ELSE 0 END), 0) as personal', [$from])
             ->groupBy('commission_currency')->get();
 
-        $personalRows = $rows->map(static fn ($row): object => (object) ['currency' => $row->currency, 'total' => $row->personal]);
-
         return [
-            'personal_sales' => RevenueVolume::measurableIn(RevenueVolume::foldRows($personalRows, $reference), $currency),
+            'personal_sales' => RevenueVolume::measurableIn(RevenueVolume::foldRows($rows, $reference, amountKey: 'personal'), $currency),
             'team_sales' => $this->upline->teamSales((string) $affiliate->getKey(), $from, null, $currency),
             'active_downlines' => $this->upline->activeDownlineCount((string) $affiliate->getKey()),
             'lifetime_value' => RevenueVolume::measurableIn(RevenueVolume::foldRows($rows, $reference), $currency),
