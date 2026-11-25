@@ -85,8 +85,8 @@ test('commission calculator honors caps on fixed and percentage paths', function
         'currency' => 'USD',
     ]);
 
-    expect(app(CommissionPricing::class)->calculateBase($fixed->commission_type, $fixed->commission_rate, 10000))->toBe(500)
-        ->and(app(CommissionPricing::class)->calculateBase($this->affiliate->commission_type, $this->affiliate->commission_rate, 100000))->toBe(500);
+    expect(app(CommissionPricing::class)->calculateBase($fixed->commission_type->value, $fixed->commission_rate, 10000))->toBe(500)
+        ->and(app(CommissionPricing::class)->calculateBase($this->affiliate->commission_type->value, $this->affiliate->commission_rate, 100000))->toBe(500);
 });
 
 test('create payout rejects non-approved conversions', function (): void {
