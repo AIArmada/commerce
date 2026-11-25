@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAuthz\Resources\RoleResource\Tables;
 
 use AIArmada\FilamentAuthz\FilamentAuthzPlugin;
-use AIArmada\FilamentAuthz\Resources\RoleResource;
 use AIArmada\FilamentAuthz\Support\DeleteAuthzDefinitions;
 use Closure;
 use Filament\Actions;
@@ -21,8 +20,9 @@ final class RoleTable
 {
     /**
      * @param  class-string  $modelClass
+     * @param  Closure(Model): bool  $deleteDefinition
      */
-    public static function configure(Table $table, string $modelClass): Table
+    public static function configure(Table $table, string $modelClass, Closure $deleteDefinition): Table
     {
         $guards = config('authz.guards', ['web']);
         $filters = [
@@ -109,10 +109,10 @@ final class RoleTable
             ->filters($filters)
             ->actions([
                 Actions\EditAction::make(),
-                Actions\DeleteAction::make()->using(fn (Model $record): bool => RoleResource::deleteDefinition($record)),
+                Actions\DeleteAction::make()->using(fn (Model $record): bool => $deleteDefinition($record)),
             ])
             ->bulkActions([
-                DeleteAuthzDefinitions::bulk(RoleResource::deleteDefinition(...)),
+                DeleteAuthzDefinitions::bulk($deleteDefinition),
             ])
             ->defaultSort('name')
             ->striped()

@@ -10,6 +10,7 @@ use AIArmada\CommerceSupport\Data\RecordReference;
 use Filament\Forms\Components\Select;
 use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\Section;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
@@ -193,12 +194,17 @@ final class UserAuthzForm
     /** @return list<string> */
     private static function normalizeSelection(array $state): array
     {
-        return Collection::make($state)
-            ->filter(static fn (mixed $id): bool => filled($id))
-            ->map(static fn (mixed $id): string => (string) $id)
-            ->unique()
-            ->values()
-            ->all();
+        $ids = [];
+
+        foreach ($state as $id) {
+            if ((! is_string($id) && ! is_int($id)) || (string) $id === '') {
+                throw new AuthorizationException('Invalid authorization selection.');
+            }
+
+            $ids[] = (string) $id;
+        }
+
+        return array_values(array_unique($ids));
     }
 
     /**

@@ -6,6 +6,7 @@ namespace AIArmada\Authz\Features\Authorization\Actions;
 
 use Illuminate\Auth\Access\AuthorizationException;
 use InvalidArgumentException;
+use RuntimeException;
 use Spatie\Permission\Exceptions\RoleAlreadyExists;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
@@ -61,7 +62,9 @@ final readonly class SaveRoleDefinition
             }
 
             $role->fill($attributes);
-            $role->saveOrFail();
+            if (! $role->saveOrFail()) {
+                throw new RuntimeException('Authorization definition save was rejected.');
+            }
             $this->permissions->execute($role, $permissionNames);
 
             return $role;

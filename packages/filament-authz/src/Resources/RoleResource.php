@@ -187,7 +187,7 @@ class RoleResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return RoleTable::configure($table, static::getModel());
+        return RoleTable::configure($table, static::getModel(), static::deleteDefinition(...));
     }
 
     public static function getPages(): array
