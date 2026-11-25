@@ -88,8 +88,7 @@ final class AffiliateFraudSignalResource extends Resource
                     ]),
 
                 Tables\Columns\TextColumn::make('risk_points')
-                    ->label('Risk')
-                    ->formatStateUsing(fn (int $state): string => $state . '%')
+                    ->label('Risk points')
                     ->sortable(),
 
                 Tables\Columns\BadgeColumn::make('status')
@@ -113,11 +112,12 @@ final class AffiliateFraudSignalResource extends Resource
 
                 Tables\Filters\SelectFilter::make('rule_code')
                     ->options([
-                        'velocity' => 'Velocity',
-                        'pattern' => 'Pattern',
-                        'geo_anomaly' => 'Geo Anomaly',
-                        'self_referral' => 'Self Referral',
-                        'suspicious_conversion' => 'Suspicious Conversion',
+                        'CLICK_VELOCITY' => 'Click velocity',
+                        'CONVERSION_VELOCITY' => 'Conversion velocity',
+                        'GEO_ANOMALY' => 'Rapid IP change',
+                        'FAST_CONVERSION' => 'Fast conversion',
+                        'FINGERPRINT_REPEAT' => 'Repeated fingerprint',
+                        'SELF_REFERRAL' => 'Self referral',
                     ]),
             ])
             ->actions([

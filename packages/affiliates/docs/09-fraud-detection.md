@@ -230,21 +230,10 @@ The `filament-affiliates` package includes:
 
 ```php
 // Mark as reviewed
-$signal->update([
-    'status' => FraudSignalStatus::Reviewed,
-    'reviewed_at' => now(),
-    'reviewed_by' => auth()->id(),
-    'description' => 'Investigated - appears legitimate',
-]);
+app(ReviewFraudSignal::class)->execute((string) $signal->getKey(), FraudSignalStatus::Reviewed, $reviewerId);
 
 // Confirm fraud
-$signal->update([
-    'status' => FraudSignalStatus::Confirmed,
-    'confirmed_at' => now(),
-]);
-
-// Optionally reject the linked conversion
-$signal->conversion?->update(['status' => RejectedConversion::class]);
+app(ReviewFraudSignal::class)->execute((string) $signal->getKey(), FraudSignalStatus::Confirmed, $reviewerId, rejectLinkedConversion: true);
 ```
 
 > **warning:**

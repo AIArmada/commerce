@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Features\Fraud\Actions\ReviewFraudSignal;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\FraudSeverity;
 use AIArmada\Affiliates\Enums\FraudSignalStatus;
@@ -158,7 +159,7 @@ describe('AffiliateFraudSignal Model', function (): void {
             'detected_at' => now(),
         ]);
 
-        $signal->markAsReviewed('admin@example.com');
+        app(ReviewFraudSignal::class)->execute((string) $signal->getKey(), FraudSignalStatus::Reviewed, 'admin@example.com');
 
         $signal->refresh();
         expect($signal->status)->toBe(FraudSignalStatus::Reviewed)
@@ -186,7 +187,7 @@ describe('AffiliateFraudSignal Model', function (): void {
             'detected_at' => now(),
         ]);
 
-        $signal->dismiss('reviewer@example.com');
+        app(ReviewFraudSignal::class)->execute((string) $signal->getKey(), FraudSignalStatus::Dismissed, 'reviewer@example.com');
 
         $signal->refresh();
         expect($signal->status)->toBe(FraudSignalStatus::Dismissed)
@@ -214,7 +215,7 @@ describe('AffiliateFraudSignal Model', function (): void {
             'detected_at' => now(),
         ]);
 
-        $signal->confirm('security@example.com');
+        app(ReviewFraudSignal::class)->execute((string) $signal->getKey(), FraudSignalStatus::Confirmed, 'security@example.com');
 
         $signal->refresh();
         expect($signal->status)->toBe(FraudSignalStatus::Confirmed)

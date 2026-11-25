@@ -133,34 +133,6 @@ class AffiliateFraudSignal extends Model implements Auditable
         return $query->whereIn('severity', [FraudSeverity::High, FraudSeverity::Critical]);
     }
 
-    public function markAsReviewed(?string $reviewedBy = null): void
-    {
-        $this->update([
-            'status' => FraudSignalStatus::Reviewed,
-            'reviewed_at' => CarbonImmutable::now(),
-            'reviewed_by' => $reviewedBy,
-        ]);
-    }
-
-    public function dismiss(?string $reviewedBy = null): void
-    {
-        $this->update([
-            'status' => FraudSignalStatus::Dismissed,
-            'reviewed_at' => CarbonImmutable::now(),
-            'reviewed_by' => $reviewedBy,
-            'dismissed_at' => CarbonImmutable::now(),
-        ]);
-    }
-
-    public function confirm(?string $reviewedBy = null): void
-    {
-        $this->update([
-            'status' => FraudSignalStatus::Confirmed,
-            'reviewed_at' => CarbonImmutable::now(),
-            'reviewed_by' => $reviewedBy,
-            'confirmed_at' => CarbonImmutable::now(),
-        ]);
-    }
 
     protected function getActivityLogName(): string
     {
