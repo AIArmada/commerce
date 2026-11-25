@@ -2,7 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Models;
+namespace AIArmada\Affiliates\Features\Payouts\Models;
+
+use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Models\AffiliatePayout;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
@@ -40,6 +43,8 @@ final class AffiliatePayoutOperation extends Model
     use HasUuids;
 
     protected static string $ownerScopeConfigKey = 'affiliates.owner';
+
+    protected $table = 'affiliate_payout_operations';
 
     protected $fillable = [
         'affiliate_id',
