@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Listeners;
+namespace AIArmada\Affiliates\Features\Conversions\EntryPoints\Listeners;
 
 use AIArmada\Affiliates\Features\Conversions\Api\CartConversionRecording;
 use AIArmada\Cart\Contracts\CartManagerInterface;

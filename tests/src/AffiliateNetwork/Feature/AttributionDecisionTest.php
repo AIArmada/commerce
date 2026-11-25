@@ -489,7 +489,7 @@ describe('attribution decision', function (): void {
 
         expect(Event::getRawListeners()[CommissionAttributionRequired::class])->toBe([
             RecordProvisionalNetworkConversion::class,
-            'AIArmada\Affiliates\Listeners\RecordCommissionForOrder',
+            'AIArmada\Affiliates\Features\Conversions\EntryPoints\Listeners\RecordCommissionForOrder',
             FinalizeNetworkAttribution::class,
         ]);
     });

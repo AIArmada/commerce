@@ -16,6 +16,7 @@ final class FeatureModule implements FeatureModuleContract
         $app->bind(Api\UnusedAffiliateBalanceRemoval::class, Actions\RemoveUnusedAffiliateBalances::class);
         $app->bind(Api\ConversionAttributionMaintenance::class, Actions\DetachConversionAttribution::class);
         $app->bind(Api\CartConversionRecording::class, Actions\RecordAffiliateConversion::class);
+        $app->bind(Api\OrderCommissionRegistration::class, EntryPoints\Listeners\RegisterOrderCommissionListener::class);
         $app->bind(Api\AwardPosting::class, Actions\RecordAffiliateAward::class);
         $app->bind(Api\OutcomePosting::class, Actions\RecordAffiliateOutcome::class);
         $app->bind(Api\PerformanceBonusPosting::class, Actions\AwardPerformanceBonuses::class);

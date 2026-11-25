@@ -25,9 +25,9 @@ use AIArmada\Affiliates\Features\Support\Models\AffiliateSupportMessage;
 use AIArmada\Affiliates\Features\Support\Models\AffiliateSupportTicket;
 use AIArmada\Affiliates\Features\Tax\Models\AffiliateTaxDocument;
 use AIArmada\Affiliates\Features\Upline\Models\AffiliateUpline;
-use AIArmada\Affiliates\Listeners\NotifyConversionRecorded;
-use AIArmada\Affiliates\Listeners\NotifyProgramJoined;
-use AIArmada\Affiliates\Listeners\RecordCommissionForOrder;
+use AIArmada\Affiliates\Features\Conversions\EntryPoints\Listeners\NotifyConversionRecorded;
+use AIArmada\Affiliates\Features\Programs\EntryPoints\Listeners\NotifyProgramJoined;
+use AIArmada\Affiliates\Features\Conversions\Api\OrderCommissionRegistration;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateBalance;
@@ -177,7 +177,7 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
             && class_exists(CartManager::class)
             && ! $this->networkCoordinatesAttribution()
         ) {
-            Event::listen(CommissionAttributionRequired::class, RecordCommissionForOrder::class);
+            $this->app->make(OrderCommissionRegistration::class)->register();
         }
 
         Event::listen(AffiliateProgramJoined::class, NotifyProgramJoined::class);
