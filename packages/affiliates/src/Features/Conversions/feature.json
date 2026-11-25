@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "name": "Conversions",
+  "owns": {
+    "table:affiliate_conversions": [
+      "AIArmada\\Affiliates\\Features\\Conversions\\Actions\\ExternalConversionLedger"
+    ]
+  },
+  "extensions": {}
+}

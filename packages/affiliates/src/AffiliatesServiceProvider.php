@@ -6,7 +6,6 @@ namespace AIArmada\Affiliates;
 
 use AIArmada\Affiliates\Actions\Affiliates\ResolvePublicAffiliateReferralContext;
 use AIArmada\Affiliates\Cart\AffiliateDiscountConditionProvider;
-use AIArmada\Affiliates\Contracts\MerchantLedger;
 use AIArmada\Affiliates\Drivers\Payouts\PayoutProcessorFactory;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
 use AIArmada\Affiliates\Events\AffiliateProgramJoined;
@@ -46,7 +45,6 @@ use AIArmada\Affiliates\Platform\FeatureModule;
 use AIArmada\Affiliates\Services\AttributionModel;
 use AIArmada\Affiliates\Services\CommissionCalculator;
 use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
-use AIArmada\Affiliates\Services\MerchantLedgerService;
 use AIArmada\Affiliates\Services\PayoutReconciliationService;
 use AIArmada\Affiliates\Strategies\FirstTouchAttribution;
 use AIArmada\Affiliates\Strategies\LastTouchAttribution;
@@ -124,7 +122,6 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
         $this->app->singleton(VoucherIntegrationRegistrar::class);
         $this->app->singleton(AffiliateDiscountConditionProvider::class);
 
-        $this->app->singleton(MerchantLedger::class, MerchantLedgerService::class);
 
         $this->registerSettingsMigrationPath();
     }

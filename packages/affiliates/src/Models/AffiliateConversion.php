@@ -268,54 +268,27 @@ class AffiliateConversion extends Model
             }
         });
 
-        static::created(function (self $conversion): void {
-            if (config('affiliates.commissions.auto_approve', false) && $conversion->status->equals(PendingConversion::class)) {
-                $approvedAt = CarbonImmutable::now();
-
-                $conversion->updateQuietly([
-                    'status' => ApprovedConversion::class,
-                    'approved_at' => $approvedAt,
-                ]);
-
-                $conversion->approved_at = $approvedAt;
+        static::saving(function (self $conversion): void {
+            if (! $conversion->exists && config('affiliates.commissions.auto_approve', false)
+                && $conversion->status->equals(PendingConversion::class)) {
+                $conversion->status = ApprovedConversion::class;
             }
-        });
 
-        static::updated(function (self $conversion): void {
-            if (! $conversion->wasChanged('status')) {
+            if ($conversion->exists && ! $conversion->isDirty('status')) {
                 return;
             }
 
-            $newStatus = self::resolveStatus($conversion);
+            $status = self::resolveStatus($conversion);
 
-            if ($newStatus->equals(ApprovedConversion::class)) {
-                if ($conversion->approved_at === null) {
-                    $approvedAt = CarbonImmutable::now();
-
-                    $conversion->updateQuietly(['approved_at' => $approvedAt]);
-                    $conversion->approved_at = $approvedAt;
-                }
-
+            if ($status->equals(ApprovedConversion::class)) {
+                $conversion->approved_at ??= CarbonImmutable::now();
                 $conversion->rejected_at = null;
-
-                return;
-            }
-
-            if ($newStatus->equals(RejectedConversion::class) && $conversion->rejected_at === null) {
-                $conversion->updateQuietly(['rejected_at' => CarbonImmutable::now()]);
-                $conversion->rejected_at = CarbonImmutable::now();
-
-                return;
-            }
-
-            if ($newStatus->equals(PaidConversion::class) && $conversion->paid_at === null) {
-                $conversion->updateQuietly(['paid_at' => CarbonImmutable::now()]);
-                $conversion->paid_at = CarbonImmutable::now();
-            }
-
-            if ($newStatus->equals(ReversedConversion::class) && $conversion->reversed_at === null) {
-                $conversion->updateQuietly(['reversed_at' => CarbonImmutable::now()]);
-                $conversion->reversed_at = CarbonImmutable::now();
+            } elseif ($status->equals(RejectedConversion::class)) {
+                $conversion->rejected_at ??= CarbonImmutable::now();
+            } elseif ($status->equals(PaidConversion::class)) {
+                $conversion->paid_at ??= CarbonImmutable::now();
+            } elseif ($status->equals(ReversedConversion::class)) {
+                $conversion->reversed_at ??= CarbonImmutable::now();
             }
         });
     }

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Services;
+namespace AIArmada\Affiliates\Features\Conversions\Actions;
 
 use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
 use AIArmada\Affiliates\Actions\Conversions\VoidAffiliateConversion;
@@ -23,7 +23,8 @@ use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\QueryException;
-use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
+use RuntimeException;
 
 /**
  * Merchant books for externally-attributed conversions.
@@ -32,17 +33,17 @@ use Illuminate\Support\Facades\DB;
  * the row, runs fraud and accounting, and emits the conversion event.
  * Posting is idempotent on (source, source ref, external reference).
  */
-final class MerchantLedgerService implements MerchantLedger
+final readonly class ExternalConversionLedger implements MerchantLedger
 {
     /** @var list<string> */
     private const ACTIVE_POSTING_STATUSES = ['pending', 'approved', 'qualified', 'paid'];
 
     public function __construct(
-        private readonly MerchantIdentity $identities,
-        private readonly ApplyConversionAccounting $accounting,
-        private readonly FraudApi $fraud,
-        private readonly Dispatcher $events,
-        private readonly VoidAffiliateConversion $void,
+        private MerchantIdentity $identities,
+        private ApplyConversionAccounting $accounting,
+        private FraudApi $fraud,
+        private Dispatcher $events,
+        private VoidAffiliateConversion $void,
     ) {}
 
     public function postExternalConversion(ExternalConversion $draft): ?PostedConversion
@@ -51,6 +52,17 @@ final class MerchantLedgerService implements MerchantLedger
 
         if (! $affiliate instanceof Affiliate) {
             return null;
+        }
+
+        $connection = (new AffiliateConversion)->getConnection();
+
+        if ($affiliate->getConnection() !== $connection || (new \AIArmada\Affiliates\Models\AffiliateBalance)->getConnection() !== $connection) {
+            throw new RuntimeException('External conversion accounting requires a shared database connection.');
+        }
+
+        $owner = $affiliate->owner;
+        if ($affiliate->owner_id !== null && $owner === null) {
+            throw new RuntimeException('External conversion affiliate owner no longer exists.');
         }
 
         $autoApprove = (bool) config('affiliates.commissions.auto_approve', false);
@@ -81,8 +93,9 @@ final class MerchantLedgerService implements MerchantLedger
             'owner_id' => $affiliate->owner_id,
         ];
 
-        $conversion = DB::transaction(function () use ($attributes): AffiliateConversion {
+        $conversion = OwnerContext::withOwner($owner, fn (): AffiliateConversion => $connection->transaction(function () use ($attributes, $connection): AffiliateConversion {
             $conversion = $this->createIdempotent($attributes);
+            $this->assertPostingIdentity($conversion, $attributes);
 
             if (! $conversion->wasRecentlyCreated) {
                 return $conversion;
@@ -96,11 +109,11 @@ final class MerchantLedgerService implements MerchantLedger
 
             if (! $conversion->status->equals(RejectedConversion::class)) {
                 $conversionData = AffiliateConversionData::fromModel($conversion);
-                DB::connection()->afterCommit(fn () => $this->events->dispatch(new AffiliateConversionRecorded($conversionData)));
+                $connection->afterCommit(fn () => $this->events->dispatch(new AffiliateConversionRecorded($conversionData)));
             }
 
             return $conversion;
-        });
+        }, attempts: 3));
 
         return self::toPostedConversion($conversion->fresh() ?? $conversion);
     }
@@ -111,6 +124,8 @@ final class MerchantLedgerService implements MerchantLedger
             ->withoutOwnerScope()
             ->where('origin', $source)
             ->where('source_ref', $sourceRef)
+            ->where('conversion_type', 'external')
+            ->orderBy('id')
             ->first();
 
         return $conversion instanceof AffiliateConversion ? self::toPostedConversion($conversion) : null;
@@ -134,7 +149,12 @@ final class MerchantLedgerService implements MerchantLedger
         // The lookup above is deliberately cross-tenant, but the void
         // action re-reads owner-scoped: restore the row's own owner so
         // the void resolves on ownerless (network) call paths too.
-        OwnerContext::withOwner($conversion->owner ?? null, fn (): AffiliateConversion => $this->void->handle($conversion, $reason));
+        $owner = $conversion->owner;
+        if ($conversion->owner_id !== null && $owner === null) {
+            throw new RuntimeException('External conversion owner no longer exists.');
+        }
+
+        OwnerContext::withOwner($owner, fn (): AffiliateConversion => $this->void->handle($conversion, $reason));
 
         $settled = AffiliateConversion::query()->withoutOwnerScope()->whereKey($conversion->getKey())->firstOrFail();
 
@@ -214,7 +234,7 @@ final class MerchantLedgerService implements MerchantLedger
         }
 
         try {
-            $conversion = DB::transaction(function () use ($attributes): AffiliateConversion {
+            $conversion = (new AffiliateConversion)->getConnection()->transaction(function () use ($attributes): AffiliateConversion {
                 $conversion = new AffiliateConversion;
                 $conversion->forceFill($attributes)->save();
 
@@ -228,7 +248,12 @@ final class MerchantLedgerService implements MerchantLedger
             $existing = AffiliateConversion::query()
                 ->withoutOwnerScope()
                 ->where('idempotency_key', $attributes['idempotency_key'])
-                ->firstOrFail();
+                ->first();
+
+            if ($existing === null) {
+                throw $exception;
+            }
+
             $existing->wasRecentlyCreated = false;
 
             return $existing;
@@ -237,6 +262,16 @@ final class MerchantLedgerService implements MerchantLedger
         $conversion->wasRecentlyCreated = true;
 
         return $conversion;
+    }
+
+    /** @param array<string, mixed> $attributes */
+    private function assertPostingIdentity(AffiliateConversion $conversion, array $attributes): void
+    {
+        foreach (['origin', 'source_ref', 'external_reference', 'affiliate_id', 'conversion_type'] as $field) {
+            if ((string) $conversion->getAttribute($field) !== (string) $attributes[$field]) {
+                throw new InvalidArgumentException('External conversion idempotency key conflicts with an existing posting.');
+            }
+        }
     }
 
     private static function isUniqueViolation(QueryException $exception): bool
@@ -253,7 +288,8 @@ final class MerchantLedgerService implements MerchantLedger
             ->withoutOwnerScope()
             ->where('origin', $source)
             ->where('source_ref', $sourceRef)
-            ->where('external_reference', $externalReference);
+            ->where('external_reference', $externalReference)
+            ->where('conversion_type', 'external');
     }
 
     private static function toPostedConversion(AffiliateConversion $conversion): PostedConversion

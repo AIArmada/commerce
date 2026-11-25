@@ -23,7 +23,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Services\MerchantLedgerService;
+use AIArmada\Affiliates\Features\Conversions\Actions\ExternalConversionLedger;
 use AIArmada\Affiliates\States\RejectedConversion;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -88,6 +88,21 @@ describe('merchant seam', function (): void {
             ->and(AffiliateConversion::query()->where('origin', 'marketplace')->count())->toBe(1);
     });
 
+    test('ledger rejects an idempotency collision rather than returning a different posting', function (): void {
+        $affiliate = createTestAffiliate();
+        $ledger = app(MerchantLedger::class);
+        $first = merchantSeamDraft((string) $affiliate->getKey(), [
+            'source' => 'a|b', 'sourceRef' => 'c', 'externalReference' => 'd',
+        ]);
+        $collision = merchantSeamDraft((string) $affiliate->getKey(), [
+            'source' => 'a', 'sourceRef' => 'b|c', 'externalReference' => 'd',
+        ]);
+
+        expect($ledger->postExternalConversion($first))->not->toBeNull();
+        expect(fn () => $ledger->postExternalConversion($collision))->toThrow(InvalidArgumentException::class);
+        expect(AffiliateConversion::query()->count())->toBe(1);
+    });
+
     test('ledger rolls back the conversion when accounting fails', function (): void {
         $affiliate = createTestAffiliate();
         $draft = merchantSeamDraft((string) $affiliate->getKey());
@@ -128,7 +143,7 @@ describe('merchant seam', function (): void {
                 return new FraudFinding($this->ruleCode(), 100, FraudSeverity::Critical, 'Test fraud rejection', []);
             }
         }]);
-        $ledger = new MerchantLedgerService(
+        $ledger = new ExternalConversionLedger(
             app(MerchantIdentity::class),
             app(ApplyConversionAccounting::class),
             $fraud,
@@ -290,7 +305,7 @@ describe('merchant seam', function (): void {
         $affiliate = OwnerContext::withOwner($owner, fn (): Affiliate => createTestAffiliate());
         $draft = merchantSeamDraft((string) $affiliate->getKey());
         $ledger = app(MerchantLedger::class);
-        $posted = OwnerContext::withOwner($owner, fn (): ?PostedConversion => $ledger->postExternalConversion($draft));
+        $posted = OwnerContext::withOwner(null, fn (): ?PostedConversion => $ledger->postExternalConversion($draft));
 
         expect($posted)->not->toBeNull();
 
