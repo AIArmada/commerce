@@ -15,6 +15,9 @@ final class FeatureModule implements FeatureModuleContract
         $app->bind(Api\MembershipReviewApi::class, Actions\ReviewProgramMembership::class);
         $app->bind(Api\ProgramEnrollment::class, Actions\ManageProgramEnrollment::class);
         $app->bind(Api\ProgramMembershipReader::class, Queries\ProgramMembershipQuery::class);
+        $app->bind(Api\ProgramTierManagement::class, Actions\UpgradeProgramTier::class);
+        $app->bind(Api\TierQualificationReader::class, Queries\ProgramTierQualificationQuery::class);
+        $app->bind(Api\ProgramPortalReader::class, Queries\ProgramPortalQuery::class);
     }
 
     public function boot(Application $app): void {}

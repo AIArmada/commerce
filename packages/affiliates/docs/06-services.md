@@ -217,16 +217,15 @@ $upgraded = $service->processAllRankUpgrades();
 $service->assignRank((string) $affiliate->getKey(), (string) $rank->getKey());
 ```
 
-## ProgramService
+## Program feature APIs
 
 Manages affiliate programs and memberships.
 
 ```php
 use AIArmada\Affiliates\Features\Programs\Api\ProgramEnrollment;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramMembershipReader;
-use AIArmada\Affiliates\Services\ProgramService;
-
-$service = app(ProgramService::class);
+use AIArmada\Affiliates\Features\Programs\Api\ProgramTierManagement;
+use AIArmada\Affiliates\Features\Programs\Api\MerchantCatalog;
 
 // Join (enroll) an affiliate in a program
 $membership = app(ProgramEnrollment::class)->join($affiliate->id, $program->id);
@@ -239,14 +238,14 @@ if ($membership !== null) {
 app(\AIArmada\Affiliates\Features\Programs\Api\MembershipReviewApi::class)->approve($membership->id, approvedBy: 'admin-1');
 
 // Upgrade tier — takes the affiliate + program, not the membership
-$service->upgradeTier($affiliate, $program, $goldTier);
+app(ProgramTierManagement::class)->upgrade($affiliate->id, $program->id, $goldTier->id);
 
 // Membership lookups
 app(ProgramMembershipReader::class)->find($affiliate->id, $program->id)?->active ?? false;            // bool
 app(ProgramMembershipReader::class)->find($affiliate->id, $program->id);       // ?MembershipRecord
-$service->getAffiliatePrograms($affiliate);          // Collection
-$service->getAvailablePrograms();                    // Collection — no affiliate argument
-$service->processTierUpgrades($program);             // int
+app(ProgramMembershipReader::class)->programIds($affiliate->id);          // list of program IDs
+app(MerchantCatalog::class)->availablePrograms();                    // list of program IDs — no affiliate argument
+app(ProgramTierManagement::class)->processUpgrades($program->id);             // int
 ```
 
 ## DailyStatsWriter

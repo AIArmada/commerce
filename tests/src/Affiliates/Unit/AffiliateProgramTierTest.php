@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Enums\ProgramStatus;
+use AIArmada\Affiliates\Features\Programs\Api\TierQualificationReader;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateLink;
@@ -81,7 +82,7 @@ describe('AffiliateProgramTier Model', function (): void {
         ]);
 
         // Affiliate has no conversions
-        expect($tier->meetsUpgradeRequirements($affiliate, $this->program))->toBeFalse();
+        expect(app(TierQualificationReader::class)->qualifies($affiliate->id, $this->program->id, $tier->id))->toBeFalse();
     });
 
     test('meetsUpgradeRequirements returns false when revenue below minimum', function (): void {
@@ -126,7 +127,7 @@ describe('AffiliateProgramTier Model', function (): void {
         ]);
 
         // Revenue is below minimum
-        expect($tier->meetsUpgradeRequirements($affiliate, $this->program))->toBeFalse();
+        expect(app(TierQualificationReader::class)->qualifies($affiliate->id, $this->program->id, $tier->id))->toBeFalse();
     });
 
     test('meetsUpgradeRequirements prefers neutral revenue value', function (): void {
@@ -168,7 +169,7 @@ describe('AffiliateProgramTier Model', function (): void {
             'occurred_at' => now(),
         ]);
 
-        expect($tier->meetsUpgradeRequirements($affiliate, $this->program))->toBeTrue();
+        expect(app(TierQualificationReader::class)->qualifies($affiliate->id, $this->program->id, $tier->id))->toBeTrue();
     });
 
     test('meetsUpgradeRequirements returns true when all requirements met', function (): void {
@@ -192,7 +193,7 @@ describe('AffiliateProgramTier Model', function (): void {
         ]);
 
         // Tier with 0 min requirements should pass
-        expect($tier->meetsUpgradeRequirements($affiliate, $this->program))->toBeTrue();
+        expect(app(TierQualificationReader::class)->qualifies($affiliate->id, $this->program->id, $tier->id))->toBeTrue();
     });
 
     test('can store benefits array', function (): void {

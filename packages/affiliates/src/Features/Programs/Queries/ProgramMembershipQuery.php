@@ -27,6 +27,17 @@ final readonly class ProgramMembershipQuery implements ProgramMembershipReader
         return $membership === null ? null : $this->project($membership);
     }
 
+    public function programIds(string $affiliateId): array
+    {
+        return AffiliateProgramMembership::query()
+            ->where('affiliate_id', $affiliateId)
+            ->whereIn('program_id', AffiliateProgram::query()->select('id'))
+            ->orderBy('program_id')
+            ->pluck('program_id')
+            ->map(fn (mixed $id): string => (string) $id)
+            ->all();
+    }
+
     public function project(AffiliateProgramMembership $membership, bool $created = false): MembershipRecord
     {
         return new MembershipRecord(
@@ -35,7 +46,7 @@ final readonly class ProgramMembershipQuery implements ProgramMembershipReader
             programId: $membership->program_id,
             tierId: $membership->tier_id,
             status: $membership->status,
-            appliedAt: $membership->applied_at?->toIso8601String(),
+            appliedAt: $membership->applied_at->toIso8601String(),
             approvedAt: $membership->approved_at?->toIso8601String(),
             active: $membership->isActive(),
             created: $created,

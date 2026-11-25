@@ -5,10 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Models;
 
 use AIArmada\Affiliates\Models\Concerns\ScopesByProgramOwner;
-use AIArmada\Affiliates\Support\RevenueVolume;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -79,40 +77,11 @@ class AffiliateProgramTier extends Model implements Auditable
         return $this->hasMany(AffiliateProgramMembership::class, 'tier_id');
     }
 
-    public function meetsUpgradeRequirements(Affiliate $affiliate, AffiliateProgram $program): bool
-    {
-        $conversions = $this->programConversions($affiliate, $program)
-            ->count();
-
-        if ($conversions < $this->min_conversions) {
-            return false;
-        }
-
-        $rows = $this->programConversions($affiliate, $program)
-            ->toBase()
-            ->selectRaw('commission_currency as currency, COALESCE(SUM(COALESCE(value_minor, 0)), 0) as total')
-            ->groupBy('commission_currency')
-            ->get();
-
-        $reference = RevenueVolume::referenceFor($affiliate);
-        $currency = $this->revenueCurrency();
-        $revenue = RevenueVolume::measurableIn(RevenueVolume::foldRows($rows, $reference), $currency);
-
-        if ($revenue < $this->min_revenue) {
-            return false;
-        }
-
-        return true;
-    }
-
     public function getCommissionRatePercentage(): float
     {
         return $this->commission_rate_basis_points / 100;
     }
 
-    /**
-     * @return HasMany<AffiliateConversion, Affiliate>
-     */
     /**
      * Currency the min_revenue floor is denominated in.
      */
@@ -123,15 +92,6 @@ class AffiliateProgramTier extends Model implements Auditable
         }
 
         return mb_strtoupper((string) config('affiliates.currency.default', 'MYR'));
-    }
-
-    private function programConversions(Affiliate $affiliate, AffiliateProgram $program): HasMany
-    {
-        return $affiliate->conversions()
-            ->where(function ($query) use ($program): void {
-                $query->whereHas('affiliateLink', fn (Builder $linkQuery) => $linkQuery->where('program_id', $program->id))
-                    ->orWhereHas('attribution.affiliateLink', fn (Builder $linkQuery) => $linkQuery->where('program_id', $program->id));
-            });
     }
 
     protected static function booted(): void

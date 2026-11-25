@@ -9,13 +9,14 @@ use AIArmada\Affiliates\Enums\ProgramVisibility;
 use AIArmada\Affiliates\Events\AffiliateProgramJoined;
 use AIArmada\Affiliates\Features\Programs\Api\MembershipRecord;
 use AIArmada\Affiliates\Features\Programs\Api\MembershipReviewApi;
+use AIArmada\Affiliates\Features\Programs\Api\MerchantCatalog;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramEnrollment;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramMembershipReader;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramTierManagement;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Models\AffiliateProgramTier;
-use AIArmada\Affiliates\Services\ProgramService;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -23,8 +24,6 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Event;
 
 beforeEach(function (): void {
-    $this->service = app(ProgramService::class);
-
     $this->affiliate = Affiliate::create([
         'code' => 'PROG-' . uniqid(),
         'name' => 'Program Test Affiliate',
@@ -45,13 +44,13 @@ beforeEach(function (): void {
     ]);
 });
 
-describe('ProgramService', function (): void {
+describe('Program feature APIs', function (): void {
     describe('getAvailablePrograms', function (): void {
         test('returns active public programs', function (): void {
-            $result = $this->service->getAvailablePrograms();
+            $result = app(MerchantCatalog::class)->availablePrograms();
 
-            expect($result)->toBeCollection();
-            expect($result->pluck('id'))->toContain($this->program->id);
+            expect($result)->toBeArray();
+            expect(array_column($result, 'program_id'))->toContain($this->program->id);
         });
 
         test('excludes inactive programs', function (): void {
@@ -62,9 +61,9 @@ describe('ProgramService', function (): void {
                 'visibility' => ProgramVisibility::Public,
             ]);
 
-            $result = $this->service->getAvailablePrograms();
+            $result = app(MerchantCatalog::class)->availablePrograms();
 
-            expect($result->pluck('id'))->not->toContain($inactiveProgram->id);
+            expect(array_column($result, 'program_id'))->not->toContain($inactiveProgram->id);
         });
 
         test('excludes private programs', function (): void {
@@ -75,9 +74,9 @@ describe('ProgramService', function (): void {
                 'visibility' => ProgramVisibility::Private,
             ]);
 
-            $result = $this->service->getAvailablePrograms();
+            $result = app(MerchantCatalog::class)->availablePrograms();
 
-            expect($result->pluck('id'))->not->toContain($privateProgram->id);
+            expect(array_column($result, 'program_id'))->not->toContain($privateProgram->id);
         });
     });
 
@@ -210,7 +209,7 @@ describe('ProgramService', function (): void {
                 'commission_rate_basis_points' => 2000,
             ]);
 
-            $this->service->upgradeTier($this->affiliate, $this->program, $tier);
+            app(ProgramTierManagement::class)->upgrade($this->affiliate->id, $this->program->id, $tier->id);
         })->throws(RuntimeException::class, 'Affiliate is not a member of this program');
 
         test('upgrades affiliate to new tier', function (): void {
@@ -231,9 +230,9 @@ describe('ProgramService', function (): void {
             $membership = app(ProgramEnrollment::class)->join($this->affiliate->id, $this->program->id);
             AffiliateProgramMembership::query()->findOrFail($membership->id)->update(['tier_id' => $tier1->id]);
 
-            $result = $this->service->upgradeTier($this->affiliate, $this->program, $tier2);
+            $result = app(ProgramTierManagement::class)->upgrade($this->affiliate->id, $this->program->id, $tier2->id);
 
-            expect($result->tier_id)->toBe($tier2->id);
+            expect($result->tierId)->toBe($tier2->id);
         });
 
         test('rejects cross-tenant tier upgrades when owner scoping is enabled', function (): void {
@@ -293,7 +292,7 @@ describe('ProgramService', function (): void {
 
             expect(fn () => OwnerContext::withOwner(
                 $ownerA,
-                fn (): AffiliateProgramMembership => $this->service->upgradeTier($affiliate, $program, $foreignTier),
+                fn (): MembershipRecord => app(ProgramTierManagement::class)->upgrade($affiliate->id, $program->id, $foreignTier->id),
             ))->toThrow(RuntimeException::class, 'Selected tier does not belong to the specified program.');
         });
     });
@@ -359,7 +358,7 @@ describe('ProgramService', function (): void {
         test('returns count of upgraded memberships', function (): void {
             app(ProgramEnrollment::class)->join($this->affiliate->id, $this->program->id);
 
-            $result = $this->service->processTierUpgrades($this->program);
+            $result = app(ProgramTierManagement::class)->processUpgrades($this->program->id);
 
             expect($result)->toBeInt();
             expect($result)->toBeGreaterThanOrEqual(0);
@@ -369,7 +368,7 @@ describe('ProgramService', function (): void {
             $this->program->update(['requires_approval' => true]);
             app(ProgramEnrollment::class)->join($this->affiliate->id, $this->program->id);
 
-            $result = $this->service->processTierUpgrades($this->program);
+            $result = app(ProgramTierManagement::class)->processUpgrades($this->program->id);
 
             expect($result)->toBe(0);
         });
@@ -377,9 +376,9 @@ describe('ProgramService', function (): void {
 
     describe('getAffiliatePrograms', function (): void {
         test('returns collection', function (): void {
-            $result = $this->service->getAffiliatePrograms($this->affiliate);
+            $result = app(ProgramMembershipReader::class)->programIds($this->affiliate->id);
 
-            expect($result)->toBeCollection();
+            expect($result)->toBeArray();
         });
     });
 });
@@ -392,4 +391,31 @@ test('membership review cannot overwrite a completed decision', function (): voi
     expect($review->reject($membership->id))->toBeTrue()
         ->and($review->approve($membership->id, 'admin'))->toBeFalse()
         ->and(app(ProgramMembershipReader::class)->find($this->affiliate->id, $this->program->id)->status)->toBe(MembershipStatus::Rejected);
+});
+
+test('automatic tier processing promotes to the highest eligible level without downgrading', function (): void {
+    $bronze = AffiliateProgramTier::create([
+        'program_id' => $this->program->id,
+        'name' => 'Bronze',
+        'level' => 1,
+        'commission_rate_basis_points' => 1000,
+        'min_conversions' => 0,
+        'min_revenue' => 0,
+    ]);
+    $silver = AffiliateProgramTier::create([
+        'program_id' => $this->program->id,
+        'name' => 'Silver',
+        'level' => 2,
+        'commission_rate_basis_points' => 1500,
+        'min_conversions' => 0,
+        'min_revenue' => 0,
+    ]);
+
+    $membership = app(ProgramEnrollment::class)->join($this->affiliate->id, $this->program->id);
+    expect($membership->tierId)->toBe($bronze->id);
+    $tiers = app(ProgramTierManagement::class);
+
+    expect($tiers->processUpgrades($this->program->id))->toBe(1)
+        ->and($tiers->processUpgrades($this->program->id))->toBe(0)
+        ->and(app(ProgramMembershipReader::class)->find($this->affiliate->id, $this->program->id)->tierId)->toBe($silver->id);
 });

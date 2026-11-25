@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
+use AIArmada\Affiliates\Features\Programs\Api\TierQualificationReader;
 use AIArmada\Affiliates\Features\Upline\Api\RankQualificationApi;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
@@ -242,6 +243,6 @@ describe('multicurrency threshold comparisons', function (): void {
         recordThresholdConversion($affiliate, 470000, 'MYR', 'TUP-MYR', $now, $link->id);
 
         // Converted revenue is 160000 across 2 conversions: qualifies.
-        expect($tier->meetsUpgradeRequirements($affiliate, $program))->toBeTrue();
+        expect(app(TierQualificationReader::class)->qualifies($affiliate->id, $program->id, $tier->id))->toBeTrue();
     });
 });

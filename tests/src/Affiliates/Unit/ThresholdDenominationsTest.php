@@ -6,6 +6,7 @@ use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
 use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\ProgramVisibility;
+use AIArmada\Affiliates\Features\Programs\Api\TierQualificationReader;
 use AIArmada\Affiliates\Features\Upline\Api\RankQualificationApi;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
@@ -141,7 +142,7 @@ test('program tier upgrades measure revenue in the tier currency', function (): 
 
     denominationsConversion($affiliate, 40000, 'ORD-DENOM-003', ['affiliate_link_id' => $link->id]);
 
-    expect($tier->meetsUpgradeRequirements($affiliate, $program))->toBeTrue();
+    expect(app(TierQualificationReader::class)->qualifies($affiliate->id, $program->id, $tier->id))->toBeTrue();
 });
 
 test('program eligibility honors a denominated revenue rule', function (): void {

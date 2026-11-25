@@ -13,7 +13,6 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 use Illuminate\Support\Carbon;
-use RuntimeException;
 
 /**
  * @property string $id
@@ -125,17 +124,6 @@ class AffiliateProgramMembership extends Pivot
     public function isSuspended(): bool
     {
         return $this->suspended_at !== null;
-    }
-
-    public function upgradeTier(AffiliateProgramTier $tier): void
-    {
-        if ($tier->program_id !== $this->program_id) {
-            throw new RuntimeException('Selected tier does not belong to this membership program.');
-        }
-
-        $this->update([
-            'tier_id' => $tier->id,
-        ]);
     }
 
     protected static function booted(): void

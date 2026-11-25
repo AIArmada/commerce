@@ -5,18 +5,15 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages;
 
 use AIArmada\Affiliates\Enums\MembershipStatus;
+use AIArmada\Affiliates\Exceptions\ProgramEnrollmentDenied;
+use AIArmada\Affiliates\Features\Programs\Api\PortalProgramRecord;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramEnrollment;
-use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Models\AffiliateProgramCreative;
-use AIArmada\Affiliates\Models\AffiliateProgramMembership;
-use AIArmada\Affiliates\Services\ProgramService;
-use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramPortalReader;
 use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Concerns\PortalPage;
 use BackedEnum;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Contracts\Support\Htmlable;
-use RuntimeException;
 
 class PortalPrograms extends PortalPage
 {
@@ -49,11 +46,7 @@ class PortalPrograms extends PortalPage
             return;
         }
 
-        $program = OwnerUiScope::apply(AffiliateProgram::query(), includeGlobal: false)
-            ->whereKey($programId)
-            ->first();
-
-        if (! $program) {
+        if (! app(ProgramPortalReader::class)->programExists($programId)) {
             Notification::make()
                 ->title(__('Program not found'))
                 ->danger()
@@ -63,12 +56,21 @@ class PortalPrograms extends PortalPage
         }
 
         try {
-            $membership = app(ProgramEnrollment::class)->join((string) $affiliate->getKey(), (string) $program->getKey());
-        } catch (RuntimeException) {
+            $membership = app(ProgramEnrollment::class)->join((string) $affiliate->getKey(), $programId);
+        } catch (ProgramEnrollmentDenied) {
             Notification::make()
                 ->title(__('Unable to join program'))
                 ->body(__('You are not eligible to join this program at the moment.'))
                 ->danger()
+                ->send();
+
+            return;
+        }
+
+        if (! $membership->active && $membership->status !== MembershipStatus::Pending) {
+            Notification::make()
+                ->title(__('Membership is not active'))
+                ->warning()
                 ->send();
 
             return;
@@ -101,11 +103,7 @@ class PortalPrograms extends PortalPage
             return;
         }
 
-        $program = OwnerUiScope::apply(AffiliateProgram::query(), includeGlobal: false)
-            ->whereKey($programId)
-            ->first();
-
-        if (! $program) {
+        if (! app(ProgramPortalReader::class)->programExists($programId)) {
             Notification::make()
                 ->title(__('Program not found'))
                 ->danger()
@@ -114,7 +112,7 @@ class PortalPrograms extends PortalPage
             return;
         }
 
-        app(ProgramEnrollment::class)->leave((string) $affiliate->getKey(), (string) $program->getKey());
+        app(ProgramEnrollment::class)->leave((string) $affiliate->getKey(), $programId);
 
         Notification::make()
             ->title(__('Left program'))
@@ -138,55 +136,25 @@ class PortalPrograms extends PortalPage
             ];
         }
 
-        $programService = app(ProgramService::class);
+        $records = app(ProgramPortalReader::class)->programs((string) $affiliate->getKey());
 
-        $availablePrograms = $programService->getAvailablePrograms();
+        $programs = array_map(static fn (PortalProgramRecord $program): array => [
+            'id' => $program->id,
+            'name' => $program->name,
+            'description' => $program->description,
+            'status' => $program->status->label(),
+            'requires_approval' => $program->requiresApproval,
+            'membership_status' => $program->membershipStatus?->label(),
+            'is_joined' => $program->activeMembership,
+            'is_pending' => $program->membershipStatus === MembershipStatus::Pending,
+            'can_join' => $program->canJoin,
+            'join_label' => $program->requiresApproval ? __('Request Access') : __('Join Program'),
+            'leave_label' => __('Leave Program'),
+            'creative_count' => count($program->creatives),
+            'creatives' => $program->creatives,
+        ], $records);
 
-        $memberships = AffiliateProgramMembership::query()
-            ->where('affiliate_id', $affiliate->getKey())
-            ->whereIn('program_id', $availablePrograms->map(fn (AffiliateProgram $program): string => (string) $program->getKey())->all())
-            ->with(['tier'])
-            ->get()
-            ->keyBy(fn (AffiliateProgramMembership $membership): string => (string) $membership->program_id);
-
-        $programs = $availablePrograms
-            ->map(function (AffiliateProgram $program) use ($affiliate, $memberships): array {
-                $membership = $memberships->get((string) $program->getKey());
-                $isJoined = $membership?->isActive() ?? false;
-                $isPending = $membership?->status === MembershipStatus::Pending;
-
-                if ($isJoined) {
-                    $program->loadMissing('creatives.media');
-                }
-
-                return [
-                    'id' => (string) $program->getKey(),
-                    'name' => (string) $program->name,
-                    'description' => $program->description,
-                    'status' => $program->status->label(),
-                    'requires_approval' => (bool) $program->requires_approval,
-                    'membership_status' => $membership?->status->label(),
-                    'is_joined' => $isJoined,
-                    'is_pending' => $isPending,
-                    'can_join' => $membership === null && $program->canJoin($affiliate),
-                    'join_label' => $program->requires_approval ? __('Request Access') : __('Join Program'),
-                    'leave_label' => __('Leave Program'),
-                    'creative_count' => $isJoined ? $program->creatives->count() : 0,
-                    'creatives' => $isJoined
-                        ? $program->creatives->map(fn (AffiliateProgramCreative $creative): array => [
-                            'id' => (string) $creative->getKey(),
-                            'name' => (string) $creative->name,
-                            'type' => (string) $creative->type,
-                            'download_url' => $creative->getAssetUrl(),
-                            'destination_url' => (string) $creative->destination_url,
-                        ])->all()
-                        : [],
-                ];
-            })
-            ->values()
-            ->all();
-
-        $creativeCount = collect($programs)->sum(fn (array $program): int => (int) $program['creative_count']);
+        $creativeCount = array_sum(array_column($programs, 'creative_count'));
 
         return [
             'hasAffiliate' => true,

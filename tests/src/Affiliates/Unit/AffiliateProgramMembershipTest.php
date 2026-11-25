@@ -6,6 +6,7 @@ use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Features\Programs\Api\MembershipReviewApi;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramTierManagement;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramMembership;
@@ -234,7 +235,7 @@ describe('AffiliateProgramMembership Model', function (): void {
             'approved_at' => now(),
         ]);
 
-        $membership->upgradeTier($silverTier);
+        app(ProgramTierManagement::class)->upgrade($membership->affiliate_id, $membership->program_id, $silverTier->id);
 
         $membership->refresh();
         expect($membership->tier_id)->toBe($silverTier->id);

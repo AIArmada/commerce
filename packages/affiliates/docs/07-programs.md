@@ -93,9 +93,8 @@ AffiliateProgramTier::create([
 ```php
 use AIArmada\Affiliates\Features\Programs\Api\ProgramEnrollment;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramMembershipReader;
-use AIArmada\Affiliates\Services\ProgramService;
-
-$service = app(ProgramService::class);
+use AIArmada\Affiliates\Features\Programs\Api\ProgramTierManagement;
+use AIArmada\Affiliates\Features\Programs\Api\MerchantCatalog;
 
 // Join (enroll). Throws ProgramEnrollmentDenied when ineligible or closed.
 $membership = app(ProgramEnrollment::class)->join($affiliate->id, $program->id);
@@ -105,8 +104,8 @@ if ($membership !== null) {
 }
 
 // Program listings
-$service->getAvailablePrograms();              // Collection — no arguments
-$service->getAffiliatePrograms($affiliate);    // Collection
+app(MerchantCatalog::class)->availablePrograms();              // list of program summaries
+app(ProgramMembershipReader::class)->programIds($affiliate->id);    // list of program IDs
 app(ProgramMembershipReader::class)->find($affiliate->id, $program->id)?->active ?? false;      // bool
 app(ProgramMembershipReader::class)->find($affiliate->id, $program->id); // ?MembershipRecord
 ```
@@ -156,18 +155,17 @@ Replacing the file removes the previous media and deleting the creative removes 
 
 > **warning**: Breaking change: the creative URL column and URL form inputs have been removed. Create creatives with an attached file using Media Library. The existing creative migration defines the new schema; there is no compatibility path or data backfill.
 
-## Using the ProgramService
+## Using the Program feature APIs
 
 ```php
 use AIArmada\Affiliates\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramEnrollment;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramMembershipReader;
-use AIArmada\Affiliates\Services\ProgramService;
-
-$service = app(ProgramService::class);
+use AIArmada\Affiliates\Features\Programs\Api\ProgramTierManagement;
+use AIArmada\Affiliates\Features\Programs\Api\MerchantCatalog;
 
 // Get available programs (no affiliate argument)
-$programs = $service->getAvailablePrograms();
+$programs = app(MerchantCatalog::class)->availablePrograms();
 
 // Enroll affiliate
 $membership = app(ProgramEnrollment::class)->join($affiliate->id, $program->id);
@@ -176,7 +174,7 @@ $membership = app(ProgramEnrollment::class)->join($affiliate->id, $program->id);
 app(ProgramEnrollment::class)->leave($affiliate->id, $program->id);
 
 // Upgrade tier — takes affiliate + program + tier, not the membership
-$service->upgradeTier($affiliate, $program, $goldTier);
+app(ProgramTierManagement::class)->upgrade($affiliate->id, $program->id, $goldTier->id);
 
 // Get affiliate's memberships
 $memberships = AffiliateProgramMembership::query()
