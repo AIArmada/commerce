@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Console\Commands\ExportAffiliatePayoutCommand;
 use AIArmada\Affiliates\Events\DailyStatsAggregated;
 use AIArmada\Affiliates\Features\Conversions\EntryPoints\Console\ProcessCommissionMaturityCommand;
 use AIArmada\Affiliates\Features\Reporting\EntryPoints\Commands\AggregateDailyStatsCommand;
@@ -130,7 +129,22 @@ test('ExportAffiliatePayoutCommand exports payout to CSV', function (): void {
         ->toContain('REF_001')
         ->not->toContain('order_reference');
 
-    // Clean up
+    $this->artisan('affiliates:payout:export', [
+        'payout' => $payout->id,
+        '--path' => $path,
+    ])->assertSuccessful();
+
+    expect(File::get($path))->toBe($content);
+
+    $this->artisan('affiliates:payout:export', [
+        'payout' => $payout->id,
+        '--path' => dirname($path),
+    ])
+        ->expectsOutputToContain('Payout CSV could not be written')
+        ->assertFailed();
+
+    expect(File::get($path))->toBe($content);
+
     File::delete($path);
 });
 

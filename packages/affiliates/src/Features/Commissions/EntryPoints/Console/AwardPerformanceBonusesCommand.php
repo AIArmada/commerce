@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Console\Commands;
+namespace AIArmada\Affiliates\Features\Commissions\EntryPoints\Console;
 
 use AIArmada\Affiliates\Enums\CommissionRuleType;
+use AIArmada\Affiliates\Features\Commissions\Api\PerformanceBonusCalculation;
 use AIArmada\Affiliates\Features\Conversions\Api\PerformanceBonusPosting;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Features\Commissions\Api\PerformanceBonusCalculation;
 use AIArmada\Affiliates\Support\BonusMonth;
 use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
 use Carbon\CarbonImmutable;

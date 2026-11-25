@@ -9,9 +9,11 @@ use AIArmada\Affiliates\Cart\AffiliateDiscountConditionProvider;
 use AIArmada\Affiliates\Contracts\AffiliateWebhookTransport;
 use AIArmada\Affiliates\Contracts\CreativeAssetRemoval;
 use AIArmada\Affiliates\Contracts\NetworkPostbackGateway;
+use AIArmada\Affiliates\Contracts\PayoutCsvWriter;
 use AIArmada\Affiliates\Contracts\PayoutProcessorRegistry;
 use AIArmada\Affiliates\Contracts\TaxRecipientProvider;
 use AIArmada\Affiliates\Contracts\TaxWorksheetWriter;
+use AIArmada\Affiliates\Drivers\Exports\LocalPayoutCsvWriter;
 use AIArmada\Affiliates\Drivers\Media\SpatieCreativeAssetRemoval;
 use AIArmada\Affiliates\Drivers\Network\HttpNetworkPostbackGateway;
 use AIArmada\Affiliates\Drivers\Payouts\PayoutProcessorFactory;
@@ -90,8 +92,8 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
             ->discoversMigrations()
             ->hasRoutes(['api', 'web'])
             ->hasCommands([
-                Console\Commands\AwardPerformanceBonusesCommand::class,
-                Console\Commands\ExportAffiliatePayoutCommand::class,
+                Features\Commissions\EntryPoints\Console\AwardPerformanceBonusesCommand::class,
+                Features\Payouts\EntryPoints\Console\ExportAffiliatePayoutCommand::class,
                 Features\Reporting\EntryPoints\Commands\AggregateDailyStatsCommand::class,
                 Features\Upline\EntryPoints\Console\ProcessRankUpgradesCommand::class,
                 Features\Payouts\EntryPoints\Console\ProcessScheduledPayoutsCommand::class,
@@ -104,6 +106,7 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
         $catalog = $this->catalog();
 
         $this->app->bindIf(CreativeAssetRemoval::class, SpatieCreativeAssetRemoval::class);
+        $this->app->bindIf(PayoutCsvWriter::class, LocalPayoutCsvWriter::class);
         $this->app->bindIf(NetworkPostbackGateway::class, HttpNetworkPostbackGateway::class);
         $this->app->bindIf(TaxRecipientProvider::class, UnavailableTaxRecipientProvider::class);
         $this->app->bindIf(TaxWorksheetWriter::class, SpatieTaxWorksheetWriter::class);
