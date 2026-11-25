@@ -15,7 +15,7 @@ use AIArmada\Affiliates\States\CompletedPayout;
 use AIArmada\Affiliates\States\FailedPayout;
 use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\States\PayoutStatus;
-use AIArmada\Affiliates\Support\Webhooks\WebhookDispatcher;
+use AIArmada\Affiliates\Features\Webhooks\Api\WebhookApi;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -29,7 +29,7 @@ final class UpdatePayoutStatus
     use AsAction;
 
     public function __construct(
-        private readonly WebhookDispatcher $webhooks,
+        private readonly WebhookApi $webhooks,
         private readonly PayoutReconciliationService $reconciliation,
     ) {}
 

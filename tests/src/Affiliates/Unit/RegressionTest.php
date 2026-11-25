@@ -10,7 +10,7 @@ use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\Models\AffiliateWebhookDelivery;
+use AIArmada\Affiliates\Features\Webhooks\Models\AffiliateWebhookDelivery;
 use AIArmada\Affiliates\Services\CommissionCalculator;
 use AIArmada\Affiliates\Services\Commissions\CommissionCaps;
 use AIArmada\Affiliates\Services\PayoutReconciliationService;
@@ -21,7 +21,7 @@ use AIArmada\Affiliates\States\CompletedPayout;
 use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\Affiliates\States\PendingPayout;
-use AIArmada\Affiliates\Support\Webhooks\WebhookDispatcher;
+use AIArmada\Affiliates\Features\Webhooks\Api\WebhookApi;
 use Spatie\ModelStates\Exceptions\TransitionNotFound;
 
 beforeEach(function (): void {
@@ -267,7 +267,7 @@ test('webhook dispatcher sends nothing without a signing secret', function (): v
     config()->set('affiliates.webhooks.signature_secret', '');
     config()->set('affiliates.webhooks.endpoints.conversion', ['https://example.com/hook']);
 
-    app(WebhookDispatcher::class)->dispatch('conversion', ['id' => '1']);
+    app(WebhookApi::class)->dispatch('conversion', ['id' => '1']);
 
     expect(AffiliateWebhookDelivery::query()->count())->toBe(0);
 });

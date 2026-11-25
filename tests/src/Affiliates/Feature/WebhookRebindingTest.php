@@ -2,15 +2,19 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Jobs\DispatchAffiliateWebhook;
-use AIArmada\Affiliates\Models\AffiliateWebhookDelivery;
+use AIArmada\Affiliates\Features\Webhooks\EntryPoints\Jobs\DispatchAffiliateWebhook;
+use AIArmada\Affiliates\Features\Webhooks\Models\AffiliateWebhookDelivery;
 use AIArmada\CommerceSupport\Drivers\Http\PinnedHttpClient;
+use AIArmada\Affiliates\Drivers\Webhooks\PinnedAffiliateWebhookTransport;
+use AIArmada\Affiliates\Contracts\AffiliateWebhookTransport;
+use AIArmada\Affiliates\Features\Webhooks\Actions\DeliverAffiliateWebhook;
 use AIArmada\CommerceSupport\Support\PublicHttpUrlGuard;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
 it('rejects mixed public and private DNS answers before affiliate webhook transport', function (): void {
     Http::fake();
+    config(['affiliates.events.dispatch_webhooks' => true]);
     $delivery = AffiliateWebhookDelivery::query()->create([
         'event_id' => (string) Str::uuid(),
         'event_type' => 'conversion',
@@ -24,10 +28,12 @@ it('rejects mixed public and private DNS answers before affiliate webhook transp
     ]);
     $job = new DispatchAffiliateWebhook($delivery->id);
 
-    expect(fn () => $job->handle(
+    app()->instance(AffiliateWebhookTransport::class, new PinnedAffiliateWebhookTransport(
         new PublicHttpUrlGuard(static fn (string $host): array => ['93.184.216.34', '10.0.0.7']),
         new PinnedHttpClient,
-    ))->toThrow(RuntimeException::class, 'Affiliate webhook delivery failed.');
+    ));
+
+    expect(fn () => $job->handle(app(DeliverAffiliateWebhook::class)))->toThrow(RuntimeException::class, 'Affiliate webhook delivery failed.');
 
     expect($delivery->fresh()->status)->toBe('failed')
         ->and($delivery->fresh()->last_error_code)->toBe('unsafe_destination')

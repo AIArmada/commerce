@@ -225,17 +225,17 @@ Every webhook shares one envelope; only `type` and `data` vary:
 
 `type` selects the endpoint list from `affiliates.webhooks.endpoints.{type}` (e.g. `attribution`, `conversion`, `payout`).
 
-### Using WebhookDispatcher
+### Using WebhookApi
 
-`WebhookDispatcher` has a single public method. Endpoints come from
+`WebhookApi` has a single public method. Endpoints come from
 `affiliates.webhooks.endpoints.{type}`; there is no per-call endpoint argument
 and no `dispatchAttribution` / `dispatchConversion` / `dispatchPayout`
 shorthand.
 
 ```php
-use AIArmada\Affiliates\Support\Webhooks\WebhookDispatcher;
+use AIArmada\Affiliates\Features\Webhooks\Api\WebhookApi;
 
-$dispatcher = app(WebhookDispatcher::class);
+$dispatcher = app(WebhookApi::class);
 
 // type must match a key under affiliates.webhooks.endpoints
 $dispatcher->dispatch('attribution', $payload);

@@ -69,7 +69,6 @@ use AIArmada\Affiliates\Support\Integrations\VoucherIntegrationRegistrar;
 use AIArmada\Affiliates\Support\Middleware\CaptureAffiliateReferralFromPath;
 use AIArmada\Affiliates\Support\Middleware\HydratePublicAffiliateReferralContext;
 use AIArmada\Affiliates\Support\Middleware\TrackAffiliateCookie;
-use AIArmada\Affiliates\Support\Webhooks\WebhookDispatcher;
 use AIArmada\Cart\CartManager;
 use AIArmada\Cart\Conditions\ConditionProviderRegistry;
 use AIArmada\Links\Contracts\LinkGateInterface;
@@ -128,7 +127,6 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
         $this->app->singleton(CommissionCalculator::class);
         $this->app->singleton(AffiliateLookup::class, DatabaseAffiliateLookup::class);
         $this->app->singleton(QualifiesForOpenApproval::class, OpenApprovalPolicy::class);
-        $this->app->singleton(WebhookDispatcher::class);
         $this->app->singleton(AttributionModel::class);
         $this->app->singleton(UplineService::class);
         $this->app->scoped(RankQualificationService::class);

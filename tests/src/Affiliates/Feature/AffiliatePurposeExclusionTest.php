@@ -20,7 +20,7 @@ use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\ConversionStatus;
 use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\Affiliates\States\QualifiedConversion;
-use AIArmada\Affiliates\Support\Webhooks\WebhookDispatcher;
+use AIArmada\Affiliates\Features\Webhooks\Api\WebhookApi;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Str;
@@ -276,7 +276,7 @@ test('upline allocation skips purpose-tagged earners and ancestors', function ()
 
     $action = new AllocateUplineCommissions(
         app(Dispatcher::class),
-        app(WebhookDispatcher::class),
+        app(WebhookApi::class),
         app(ApplyConversionAccounting::class),
     );
 

@@ -2,17 +2,18 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Support\Webhooks;
+namespace AIArmada\Affiliates\Features\Webhooks\Actions;
 
-use AIArmada\Affiliates\Jobs\DispatchAffiliateWebhook;
-use AIArmada\Affiliates\Models\AffiliateWebhookDelivery;
+use AIArmada\Affiliates\Features\Webhooks\Api\WebhookApi;
+use AIArmada\Affiliates\Features\Webhooks\EntryPoints\Jobs\DispatchAffiliateWebhook;
+use AIArmada\Affiliates\Features\Webhooks\Models\AffiliateWebhookDelivery;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use JsonException;
 
-class WebhookDispatcher
+final class EnqueueWebhook implements WebhookApi
 {
     /** @param array<string, mixed> $payload */
     public function dispatch(string $type, array $payload): void
@@ -38,12 +39,13 @@ class WebhookDispatcher
         $signature = hash_hmac('sha256', $bodyJson, $secret);
         $headers = array_filter(
             (array) config('affiliates.webhooks.headers', []),
-            static fn (mixed $value, string | int $key): bool => is_string($key) && is_scalar($value),
+            static fn (mixed $value, string | int $key): bool => is_string($key) && is_scalar($value) && ! in_array(mb_strtolower($key), ['host', 'content-length', 'transfer-encoding', 'accept', 'content-type', 'x-affiliates-webhook-signature'], true),
             ARRAY_FILTER_USE_BOTH,
         );
         $owner = OwnerContext::resolve();
         $seen = [];
 
+        (new AffiliateWebhookDelivery)->getConnection()->transaction(function () use ($type, $eventId, $bodyJson, $signature, $headers, $owner, $seen): void {
         foreach (Arr::wrap(config("affiliates.webhooks.endpoints.{$type}", [])) as $configuredEndpoint) {
             $endpoint = mb_trim((string) $configuredEndpoint);
             $parts = parse_url($endpoint);
@@ -52,7 +54,7 @@ class WebhookDispatcher
                 continue;
             }
 
-            $destinationKey = hash('sha256', mb_strtolower($endpoint));
+            $destinationKey = hash('sha256', $endpoint);
 
             if (isset($seen[$destinationKey])) {
                 continue;
@@ -79,6 +81,7 @@ class WebhookDispatcher
 
             DispatchAffiliateWebhook::dispatch($delivery->id)->afterCommit();
         }
+        });
     }
 
     /** @param array<string, mixed> $body */

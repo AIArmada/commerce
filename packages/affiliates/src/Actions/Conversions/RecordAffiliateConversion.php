@@ -21,7 +21,7 @@ use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\ConversionStatus;
 use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\Affiliates\States\RejectedConversion;
-use AIArmada\Affiliates\Support\Webhooks\WebhookDispatcher;
+use AIArmada\Affiliates\Features\Webhooks\Api\WebhookApi;
 use AIArmada\Cart\Cart;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
@@ -40,7 +40,7 @@ final class RecordAffiliateConversion
         private readonly CommissionCalculator $commissionCalculator,
         private readonly CommissionRuleEngine $ruleEngine,
         private readonly Dispatcher $events,
-        private readonly WebhookDispatcher $webhooks,
+        private readonly WebhookApi $webhooks,
         private readonly AttributionModel $attributionModel,
         private readonly AllocateUplineCommissions $allocateUpline,
         private readonly ApplyConversionAccounting $accounting,

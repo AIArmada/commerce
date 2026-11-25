@@ -8,7 +8,7 @@ use AIArmada\Affiliates\Data\AffiliateConversionData;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\ConversionStatus;
 use AIArmada\Affiliates\States\PendingConversion;
-use AIArmada\Affiliates\Support\Webhooks\WebhookDispatcher;
+use AIArmada\Affiliates\Features\Webhooks\Api\WebhookApi;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Str;
 
@@ -28,7 +28,7 @@ test('allocates upline commissions from voucher share overrides', function (): v
 
     $action = new AllocateUplineCommissions(
         app(Dispatcher::class),
-        app(WebhookDispatcher::class),
+        app(WebhookApi::class),
         app(ApplyConversionAccounting::class),
     );
 
