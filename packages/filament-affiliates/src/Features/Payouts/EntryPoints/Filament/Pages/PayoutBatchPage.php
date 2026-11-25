@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Pages;
 
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutMethodReader;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutAdministration;
 use AIArmada\Affiliates\Features\Payouts\Api\ScheduledPayoutSweep;
 use AIArmada\Affiliates\Models\Affiliate;
@@ -136,7 +137,7 @@ final class PayoutBatchPage extends Page implements HasForms, HasTable
                     ->whereHas('payee', static function ($query): void {
                         $query->whereCommercialPurpose();
                     })
-                    ->with(['payee', 'payee.payoutMethods' => fn ($query) => $query->where('is_default', true)])
+                    ->with('payee')
                     ->latest()
             )
             ->columns([
@@ -164,11 +165,7 @@ final class PayoutBatchPage extends Page implements HasForms, HasTable
                             return '—';
                         }
 
-                        $method = $payee->relationLoaded('payoutMethods')
-                            ? $payee->payoutMethods->firstWhere('is_default', true)
-                            : $payee->payoutMethods()->where('is_default', true)->first();
-
-                        return $method?->type?->value ?? '—';
+                        return app(PayoutMethodReader::class)->defaultType((string) $payee->getKey()) ?? '—';
                     }),
 
                 Tables\Columns\TextColumn::make('created_at')

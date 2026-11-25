@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutMethodReader;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutHoldReader;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Events\AffiliateActivated;
@@ -282,7 +283,7 @@ describe('Affiliate Model - Relationships', function (): void {
             'commission_rate' => 1000,
             'currency' => 'USD',
         ]);
-        expect($affiliate->payoutMethods())->toBeInstanceOf(HasMany::class);
+        expect(app(PayoutMethodReader::class)->hasRecords($affiliate->id))->toBeFalse();
     });
 
     test('has many payout holds', function (): void {

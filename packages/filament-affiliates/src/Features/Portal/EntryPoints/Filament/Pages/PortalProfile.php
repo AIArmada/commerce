@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages;
 
+use AIArmada\Affiliates\Contracts\PayoutProcessorRegistry;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutMethodReader;
 use AIArmada\Affiliates\Enums\PayoutMethodType;
 use AIArmada\Affiliates\Features\Identity\Api\PortalProfileAdministration;
 use AIArmada\Affiliates\Features\Identity\Api\PortalProfileInput;
@@ -48,17 +50,15 @@ class PortalProfile extends PortalPage
         $this->contactEmail = (string) ($affiliate->contact_email ?? '');
         $this->websiteUrl = (string) ($affiliate->website_url ?? '');
 
-        $defaultMethod = $affiliate->payoutMethods()->where('is_default', true)->first();
+        $defaultMethod = app(PayoutMethodReader::class)->defaultProfile((string) $affiliate->getKey());
 
         if (! $defaultMethod) {
             return;
         }
 
-        $details = is_array($defaultMethod->details) ? $defaultMethod->details : [];
-
-        $this->payoutMethodType = (string) $defaultMethod->type->value;
-        $this->payoutMethodLabel = (string) ($details['label'] ?? '');
-        $this->payoutMethodAccountRef = (string) ($details['account_ref'] ?? '');
+        $this->payoutMethodType = $defaultMethod->type;
+        $this->payoutMethodLabel = $defaultMethod->label;
+        $this->payoutMethodAccountRef = $defaultMethod->accountRef;
     }
 
     public static function getNavigationLabel(): string
@@ -122,6 +122,7 @@ class PortalProfile extends PortalPage
         return [
             'hasAffiliate' => $this->hasAffiliate(),
             'payoutMethodOptions' => collect(PayoutMethodType::cases())
+                ->filter(fn (PayoutMethodType $type): bool => app(PayoutProcessorRegistry::class)->hasProcessor($type->value))
                 ->mapWithKeys(fn (PayoutMethodType $type): array => [$type->value => $type->label()])
                 ->all(),
         ];

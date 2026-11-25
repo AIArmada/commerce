@@ -21,6 +21,7 @@ final class FeatureModule implements FeatureModuleContract
         $app->bind(Api\ScheduledPayoutSweep::class, Actions\RunScheduledPayoutSweep::class);
         $app->bind(Api\PayoutHoldReader::class, Queries\ReadPayoutHolds::class);
         $app->bind(Api\PayoutHoldAdministration::class, Actions\AdministerPayoutHold::class);
+        $app->bind(Api\PayoutMethodReader::class, Queries\ReadPayoutMethods::class);
         $app->bind(Api\PayoutMethodAdministration::class, Actions\AdministerPayoutMethod::class);
     }
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Queries;
 
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutMethod;
 use AIArmada\Affiliates\Data\PayoutRequest;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
@@ -19,7 +20,7 @@ final class PayoutRequestQuery
         $hasAffiliate = $affiliate instanceof Affiliate;
 
         if ($methodDetails === null && $affiliate instanceof Affiliate) {
-            $methodDetails = $affiliate->payoutMethods()->where('is_default', true)->first()?->details;
+            $methodDetails = AffiliatePayoutMethod::query()->where('affiliate_id', $affiliate->getKey())->where('is_default', true)->orderBy('id')->first()?->details;
         }
 
         return new PayoutRequest(

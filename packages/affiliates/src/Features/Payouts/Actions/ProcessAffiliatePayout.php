@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Payouts\Actions;
 
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutMethod;
 use AIArmada\Affiliates\Contracts\PayoutProcessorRegistry;
 use AIArmada\Affiliates\Data\PayoutResult;
 use AIArmada\Affiliates\Exceptions\PayoutCompletionBlockedException;
@@ -33,7 +34,10 @@ final readonly class ProcessAffiliatePayout
 
     public function handle(AffiliatePayout $payout): PayoutResult
     {
-        if ((new AffiliatePayoutEvent)->getConnection() !== $payout->getConnection()) {
+        if ((new AffiliatePayoutEvent)->getConnection() !== $payout->getConnection()
+            || (new AffiliatePayoutMethod)->getConnection() !== $payout->getConnection()
+            || (new Affiliate)->getConnection() !== $payout->getConnection()
+            || (new AffiliatePayoutOperation)->getConnection() !== $payout->getConnection()) {
             throw new LogicException('Payout processing requires a shared database connection.');
         }
 
@@ -81,7 +85,10 @@ final readonly class ProcessAffiliatePayout
                     return ['error' => PayoutResult::unknown('PAYOUT_LEASE_ACTIVE')];
                 }
 
-                $method = $affiliate->payoutMethods()->where('is_default', true)->first();
+                // Destination updates and provider claims serialize on the affiliate row.
+                Affiliate::query()->whereKey($affiliate->getKey())->lockForUpdate()->firstOrFail();
+                $method = AffiliatePayoutMethod::query()->where('affiliate_id', $affiliate->getKey())
+                    ->where('is_default', true)->orderBy('id')->lockForUpdate()->first();
 
                 if ($method === null) {
                     if ($needsReconciliation) {
@@ -128,7 +135,7 @@ final readonly class ProcessAffiliatePayout
                 );
                 $locked->load('operation');
                 $locked->operation->forceFill([
-                    'status' => $needsReconciliation ? $locked->operation->status : 'submitting',
+                    'status' => in_array($locked->operation->status, ['submitting', 'unknown', 'submitted'], true) ? $locked->operation->status : 'submitting',
                     'lease_expires_at' => CarbonImmutable::now()->addMinutes(5),
                 ])->save();
                 $leaseExpiresAt = $locked->operation->fresh()?->lease_expires_at?->toISOString();

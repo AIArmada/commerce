@@ -18,7 +18,7 @@ use AIArmada\Affiliates\Features\Payouts\Actions\ProcessAffiliatePayout;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\Models\AffiliatePayoutMethod;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutMethod;
 use AIArmada\Affiliates\Models\AffiliatePayoutOperation;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
@@ -364,7 +364,7 @@ test('missing payout method does not release funds after provider submission', f
     $payout = createProcessPayout($affiliate);
     $operation = $payout->operation()->firstOrFail();
 
-    $affiliate->payoutMethods()->delete();
+    AffiliatePayoutMethod::query()->where('affiliate_id', $affiliate->getKey())->delete();
     $payout->forceFill(['status' => ProcessingPayout::class])->save();
     $operation->forceFill([
         'status' => 'submitted',

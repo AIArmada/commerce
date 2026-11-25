@@ -10,7 +10,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\Models\AffiliatePayoutMethod;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutMethod;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramCreative;
 use AIArmada\Affiliates\Models\AffiliateProgramMembership;
@@ -500,17 +500,17 @@ it('PortalProfile updates affiliate profile and default payout method', function
         ->and($payoutMethod)->not->toBeNull()
         ->and($payoutMethod?->type->value)->toBe($method)
         ->and($payoutMethod?->details['label'] ?? null)->toBe($label)
-        ->and($payoutMethod?->details['account_ref'] ?? null)->toBe($accountRef)
+        ->and($payoutMethod?->details[$method === 'paypal' ? 'email' : 'account_ref'] ?? null)->toBe($accountRef)
         ->and($page->getViewData()['payoutMethodOptions']['manual'])->toBe('Manual');
 
     $payoutMethod->update(['verified_at' => now()]);
     $page->saveProfile();
     expect($payoutMethod->fresh()->verified_at)->not->toBeNull();
 
-    $page->payoutMethodAccountRef = 'changed-account-reference';
+    $page->payoutMethodAccountRef = $method === 'paypal' ? 'changed@example.com' : 'changed-account-reference';
     $page->saveProfile();
     expect($payoutMethod->fresh()->verified_at)->toBeNull()
-        ->and($affiliate->payoutMethods()->where('is_default', true)->count())->toBe(1);
+        ->and(AffiliatePayoutMethod::query()->where('affiliate_id', $affiliate->id)->where('is_default', true)->count())->toBe(1);
 })->with([
     'paypal' => ['paypal', 'Primary PayPal', 'payouts@example.com'],
     'manual' => ['manual', 'Manual transfer', 'operator-account'],

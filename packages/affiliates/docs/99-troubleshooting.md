@@ -203,9 +203,7 @@ $affiliate->balanceFor('USD')?->available_minor >= 5000;
 
 1. **Payout method is configured:**
 ```php
-$affiliate->payoutMethods()
-    ->whereNotNull('verified_at')
-    ->exists();
+app(\AIArmada\Affiliates\Features\Payouts\Api\PayoutMethodReader::class)->hasVerified((string) $affiliate->getKey());
 ```
 
 2. **Provider credentials are set:**

@@ -123,40 +123,23 @@ CancelledPayout::class;   // Cancelled by admin
 ### Configuring Methods
 
 ```php
-use AIArmada\Affiliates\Models\AffiliatePayoutMethod;
-use AIArmada\Affiliates\Enums\PayoutMethodType;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutMethodAdministration;
 
-// PayPal
-AffiliatePayoutMethod::create([
-    'affiliate_id' => $affiliate->id,
-    'type' => PayoutMethodType::PayPal,
-    'is_default' => true,
-    'verified_at' => now(),
-    'details' => [
-        'email' => 'affiliate@paypal.com',
-    ],
+$methods = app(PayoutMethodAdministration::class);
+
+$paypalId = $methods->create($affiliate->id, 'paypal', [
+    'email' => 'affiliate@paypal.com',
+], default: true);
+$methods->verify($affiliate->id, $paypalId);
+
+$methods->create($affiliate->id, 'bank_transfer', [
+    'account_name' => 'John Partner',
+    'account_number' => '123456789',
+    'bank_name' => 'First National Bank',
 ]);
 
-// Bank Transfer
-AffiliatePayoutMethod::create([
-    'affiliate_id' => $affiliate->id,
-    'type' => PayoutMethodType::BankTransfer,
-    'is_default' => false,
-    'details' => [
-        'account_name' => 'John Partner',
-        'account_number' => '****1234',
-        'routing_number' => '****5678',
-        'bank_name' => 'First National Bank',
-    ],
-]);
-
-// Stripe Connect
-AffiliatePayoutMethod::create([
-    'affiliate_id' => $affiliate->id,
-    'type' => PayoutMethodType::StripeConnect,
-    'details' => [
-        'account_id' => 'acct_1234567890',
-    ],
+$methods->create($affiliate->id, 'stripe_connect', [
+    'stripe_account_id' => 'acct_1234567890',
 ]);
 ```
 
@@ -183,6 +166,8 @@ PayoutMethodType::Crypto;        // 'crypto'
 There is no `Stripe` case; use `StripeConnect`. Both
 `PayoutMethodType::Manual` and the string `manual` resolve through
 `PayoutProcessorFactory` to `ManualPayoutProcessor`.
+
+Default method changes are blocked while a provider operation is submitting, unknown or submitted. Resolve that operation first. Provider details are validated and encrypted; changing the destination clears verification.
 
 ## Payout Holds
 
@@ -306,7 +291,7 @@ Provider drivers accept `PayoutRequest` and return `PayoutResult` or
 `PayoutStatusResult`; they do not read or write Eloquent models.
 
 `AffiliatePayout` has no `method` column — resolve the method from the
-affiliate's `payoutMethods` relation. `PayoutResult` exposes
+affiliate's default payout method through `PayoutMethodReader`. `PayoutResult` exposes
 `isSuccess()` / `isPending()` / `isUnknown()` and `getStatus()`; there is no
 `isSuccessful()` or `getTransactionId()`.
 

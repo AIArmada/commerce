@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Models;
 
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutMethodReader;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutHoldReader;
 use AIArmada\Affiliates\Data\AffiliateData;
 use AIArmada\Affiliates\Enums\CommissionType;
@@ -80,7 +81,6 @@ use Spatie\ModelStates\HasStates;
  * @property-read Collection<int, AffiliateAttribution> $attributions
  * @property-read Collection<int, AffiliateConversion> $conversions
  * @property-read Collection<int, AffiliateBalance> $balances
- * @property-read Collection<int, AffiliatePayoutMethod> $payoutMethods
  * @property-read Collection<int, AffiliatePayout> $payouts
  * @property-read Collection<int, AffiliateLink> $links
  * @property-read Collection<int, AffiliateProgram> $programs
@@ -310,14 +310,6 @@ class Affiliate extends Model implements Auditable
     }
 
     /**
-     * @return HasMany<AffiliatePayoutMethod, $this>
-     */
-    public function payoutMethods(): HasMany
-    {
-        return $this->hasMany(AffiliatePayoutMethod::class);
-    }
-
-    /**
      * Get all vouchers linked to this affiliate (when aiarmada/vouchers is installed).
      *
      * @return HasMany<Voucher, $this>|HasMany<Model, $this>
@@ -499,7 +491,7 @@ class Affiliate extends Model implements Auditable
                 || $affiliate->attributions()->exists()
                 || $affiliate->links()->exists()
                 || $affiliate->balances()->exists()
-                || $affiliate->payoutMethods()->exists()
+                || app(PayoutMethodReader::class)->hasRecords((string) $affiliate->getKey())
                 || app(PayoutHoldReader::class)->hasRecords((string) $affiliate->getKey())
                 || $affiliate->children()->exists()) {
                 throw new LogicException('Affiliate removal must preserve history and clean up owned records through the affiliate removal action.');

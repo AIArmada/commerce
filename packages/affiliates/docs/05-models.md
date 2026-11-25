@@ -50,7 +50,6 @@ $affiliate->children;         // HasMany<Affiliate>
 $affiliate->programs;         // BelongsToMany<AffiliateProgram>
 $affiliate->dailyStats;       // HasMany<AffiliateDailyStat>
 $affiliate->rank;             // BelongsTo<AffiliateRank>
-$affiliate->payoutMethods;    // HasMany<AffiliatePayoutMethod>
 $affiliate->vouchers;         // HasMany<Voucher>
 $affiliate->balances;         // HasMany<AffiliateBalance>, one row per currency
 ```
@@ -284,7 +283,7 @@ $balance->formatLifetimeEarnings(); // Decimal string for display
 Stored payout methods.
 
 ```php
-use AIArmada\Affiliates\Models\AffiliatePayoutMethod;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutMethod;
 ```
 
 | Attribute | Type | Description |

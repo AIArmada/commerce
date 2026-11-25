@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Models;
+namespace AIArmada\Affiliates\Features\Payouts\Models;
 
 use AIArmada\Affiliates\Enums\PayoutMethodType;
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\Concerns\ScopesByAffiliateOwner;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
@@ -33,6 +34,8 @@ class AffiliatePayoutMethod extends Model implements Auditable
     use HasUuids;
     use LogsCommerceActivity;
     use ScopesByAffiliateOwner;
+
+    protected $table = 'affiliate_payout_methods';
 
     protected $fillable = [
         'affiliate_id',
