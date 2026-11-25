@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Features\Reporting\EntryPoints\Commands\AggregateDailyStatsCommand;
 use AIArmada\Affiliates\Console\Commands\ExportAffiliatePayoutCommand;
 use AIArmada\Affiliates\Console\Commands\ProcessCommissionMaturityCommand;
-use AIArmada\Affiliates\Console\Commands\ProcessRankUpgradesCommand;
+use AIArmada\Affiliates\Features\Upline\EntryPoints\Console\ProcessRankUpgradesCommand;
 use AIArmada\Affiliates\Events\DailyStatsAggregated;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;

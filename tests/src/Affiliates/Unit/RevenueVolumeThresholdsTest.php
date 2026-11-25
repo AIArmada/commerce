@@ -12,7 +12,7 @@ use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramTier;
 use AIArmada\Affiliates\Models\AffiliateVolumeTier;
 use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
-use AIArmada\Affiliates\Services\RankQualificationService;
+use AIArmada\Affiliates\Features\Upline\Api\RankQualificationApi;
 use AIArmada\Affiliates\Settings\AffiliateBonusSettings;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
@@ -199,7 +199,7 @@ describe('multicurrency threshold comparisons', function (): void {
         recordThresholdConversion($affiliate, 7000, 'USD', 'RNK-USD', CarbonImmutable::now()->subDays(5));
         recordThresholdConversion($affiliate, 47000, 'MYR', 'RNK-MYR', CarbonImmutable::now()->subDays(5));
 
-        $metrics = app(RankQualificationService::class)->calculateMetrics($affiliate);
+        $metrics = app(RankQualificationApi::class)->calculateMetrics((string) $affiliate->getKey());
 
         expect($metrics['personal_sales'])->toBe(17000)
             ->and($metrics['lifetime_value'])->toBe(17000);

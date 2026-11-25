@@ -6,7 +6,6 @@ namespace AIArmada\Affiliates\Features\Upline\Actions;
 
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Features\Upline\Models\AffiliateUpline;
-use Illuminate\Support\Str;
 use InvalidArgumentException;
 
 final class ManageUpline

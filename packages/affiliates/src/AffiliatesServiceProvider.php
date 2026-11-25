@@ -56,7 +56,6 @@ use AIArmada\Affiliates\Services\OpenApprovalPolicy;
 use AIArmada\Affiliates\Services\PayoutReconciliationService;
 use AIArmada\Affiliates\Services\ProgramCatalogService;
 use AIArmada\Affiliates\Services\ProgramService;
-use AIArmada\Affiliates\Services\RankQualificationService;
 use AIArmada\Affiliates\Strategies\FirstTouchAttribution;
 use AIArmada\Affiliates\Strategies\LastTouchAttribution;
 use AIArmada\Affiliates\Strategies\LinearAttribution;
@@ -100,7 +99,7 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
                 Console\Commands\AwardPerformanceBonusesCommand::class,
                 Console\Commands\ExportAffiliatePayoutCommand::class,
                 Features\Reporting\EntryPoints\Commands\AggregateDailyStatsCommand::class,
-                Console\Commands\ProcessRankUpgradesCommand::class,
+                Features\Upline\EntryPoints\Console\ProcessRankUpgradesCommand::class,
                 Console\Commands\ProcessScheduledPayoutsCommand::class,
                 Console\Commands\ProcessCommissionMaturityCommand::class,
             ]);
@@ -123,7 +122,6 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
         $this->app->singleton(CommissionCalculator::class);
         $this->app->singleton(QualifiesForOpenApproval::class, OpenApprovalPolicy::class);
         $this->app->singleton(AttributionModel::class);
-        $this->app->scoped(RankQualificationService::class);
         $this->app->singleton(PayoutProcessorFactory::class);
         $this->app->scoped(CommissionRuleEngine::class);
         $this->app->singleton(ProgramService::class);

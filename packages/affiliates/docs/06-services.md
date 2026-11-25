@@ -190,31 +190,31 @@ $teamSales = $service->teamSales((string) $affiliate->getKey(), $from, $to);
 
 Revenue thresholds (team sales, rank metrics, volume tiers, program eligibility) measure volume in the affiliate's currency via `RevenueVolume`: legs convert when exchange rates exist, otherwise only the affiliate-currency leg counts. The top-performer leaderboard ranks raw sums when every affiliate earns one currency, and converts to `affiliates.currency.default` when currencies mix — entries without a rate sink below ranked ones and never earn the bonus.
 
-## RankQualificationService
+## RankQualificationApi
 
 Manages affiliate rank progression.
 
 ```php
-use AIArmada\Affiliates\Services\RankQualificationService;
+use AIArmada\Affiliates\Features\Upline\Api\RankQualificationApi;
 
-$service = app(RankQualificationService::class);
+$service = app(RankQualificationApi::class);
 ```
 
 ### Methods
 
 ```php
 // Highest rank the affiliate currently qualifies for (or null)
-$rank = $service->evaluate($affiliate);
+$rank = $service->evaluate((string) $affiliate->getKey());
 
 // Qualification metrics, measured in the affiliate currency
-$metrics = $service->calculateMetrics($affiliate);
+$metrics = $service->calculateMetrics((string) $affiliate->getKey());
 // ['personal_sales', 'team_sales', 'active_downlines', 'lifetime_value']
 
 // Re-evaluate every affiliate (returns upgrade count)
 $upgraded = $service->processAllRankUpgrades();
 
 // Manually pin or clear an affiliate's rank
-$service->assignRank($affiliate, $rank);
+$service->assignRank((string) $affiliate->getKey(), (string) $rank->getKey());
 ```
 
 ## ProgramService

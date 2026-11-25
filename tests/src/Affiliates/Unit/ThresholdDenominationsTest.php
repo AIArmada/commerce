@@ -14,7 +14,7 @@ use AIArmada\Affiliates\Models\AffiliateProgramTier;
 use AIArmada\Affiliates\Models\AffiliateRank;
 use AIArmada\Affiliates\Models\AffiliateVolumeTier;
 use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
-use AIArmada\Affiliates\Services\RankQualificationService;
+use AIArmada\Affiliates\Features\Upline\Api\RankQualificationApi;
 use AIArmada\Affiliates\Settings\AffiliateBonusSettings;
 use AIArmada\Affiliates\Settings\AffiliatePayoutSettings;
 use AIArmada\Affiliates\States\Active;
@@ -231,5 +231,5 @@ test('rank qualification measures sales in the rank currency', function (): void
 
     denominationsConversion($affiliate, 40000, 'ORD-DENOM-007');
 
-    expect(app(RankQualificationService::class)->evaluate($affiliate)?->id)->toBe($rank->id);
+    expect(app(RankQualificationApi::class)->evaluate((string) $affiliate->getKey())?->id)->toBe($rank->id);
 });

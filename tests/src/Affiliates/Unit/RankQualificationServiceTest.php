@@ -8,14 +8,14 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateRank;
 use AIArmada\Affiliates\Models\AffiliateRankHistory;
-use AIArmada\Affiliates\Services\RankQualificationService;
+use AIArmada\Affiliates\Features\Upline\Api\RankQualificationApi;
 use AIArmada\Affiliates\Features\Upline\Api\UplineApi;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use Carbon\CarbonImmutable;
 
 beforeEach(function (): void {
-    $this->service = app(RankQualificationService::class);
+    $this->service = app(RankQualificationApi::class);
     $this->uplineService = app(UplineApi::class);
 
     $this->affiliate = Affiliate::create([
@@ -29,10 +29,10 @@ beforeEach(function (): void {
     ]);
 });
 
-describe('RankQualificationService', function (): void {
+describe('RankQualificationApi', function (): void {
     describe('evaluate', function (): void {
         test('returns null when no ranks exist', function (): void {
-            $result = $this->service->evaluate($this->affiliate);
+            $result = $this->service->evaluate((string) $this->affiliate->getKey());
 
             expect($result)->toBeNull();
         });
@@ -50,7 +50,7 @@ describe('RankQualificationService', function (): void {
                 'currency' => 'USD',
             ]);
 
-            $result = $this->service->evaluate($this->affiliate);
+            $result = $this->service->evaluate((string) $this->affiliate->getKey());
 
             expect($result)->toBeNull();
         });
@@ -82,7 +82,7 @@ describe('RankQualificationService', function (): void {
                 'currency' => 'USD',
             ]);
 
-            $result = $this->service->evaluate($this->affiliate);
+            $result = $this->service->evaluate((string) $this->affiliate->getKey());
 
             expect($result)->not->toBeNull();
             expect($result->id)->toBe($bronzeRank->id);
@@ -116,7 +116,7 @@ describe('RankQualificationService', function (): void {
                 'occurred_at' => now()->subDays(5),
             ]);
 
-            $result = $this->service->evaluate($this->affiliate);
+            $result = $this->service->evaluate((string) $this->affiliate->getKey());
 
             expect($result)->not->toBeNull();
             expect($result->id)->toBe($rank->id);
@@ -136,7 +136,7 @@ describe('RankQualificationService', function (): void {
                 'currency' => 'USD',
             ]);
 
-            $this->service->processRankChange($this->affiliate);
+            $this->service->processRankChange((string) $this->affiliate->getKey());
 
             $this->affiliate->refresh();
             expect($this->affiliate->rank_id)->toBe($rank->id);
@@ -163,7 +163,7 @@ describe('RankQualificationService', function (): void {
 
             $historyCountBefore = AffiliateRankHistory::where('affiliate_id', $this->affiliate->id)->count();
 
-            $this->service->processRankChange($this->affiliate);
+            $this->service->processRankChange((string) $this->affiliate->getKey());
 
             // No new history record should be created when rank stays the same
             $historyCountAfter = AffiliateRankHistory::where('affiliate_id', $this->affiliate->id)->count();
@@ -182,7 +182,7 @@ describe('RankQualificationService', function (): void {
                 'currency' => 'USD',
             ]);
 
-            $this->service->processRankChange($this->affiliate);
+            $this->service->processRankChange((string) $this->affiliate->getKey());
 
             $history = AffiliateRankHistory::where('affiliate_id', $this->affiliate->id)->first();
 
@@ -255,6 +255,18 @@ describe('RankQualificationService', function (): void {
         });
     });
 
+    test('dry run counts changes without writing rank or history', function (): void {
+        AffiliateRank::create([
+            'name' => 'Dry run', 'slug' => 'dry-run', 'level' => 1,
+            'min_personal_sales' => 0, 'min_team_sales' => 0, 'min_active_downlines' => 0,
+            'commission_rate_basis_points' => 0, 'currency' => 'USD',
+        ]);
+
+        expect($this->service->processAllRankUpgrades(true))->toBe(1)
+            ->and($this->affiliate->fresh()->rank_id)->toBeNull()
+            ->and(AffiliateRankHistory::where('affiliate_id', $this->affiliate->id)->count())->toBe(0);
+    });
+
     describe('processBatch', function (): void {
         test('processes multiple affiliates', function (): void {
             $rank = AffiliateRank::create([
@@ -278,7 +290,7 @@ describe('RankQualificationService', function (): void {
                 'currency' => 'USD',
             ]);
 
-            $this->service->processBatch([$this->affiliate, $affiliate2]);
+            $this->service->processBatch([(string) $this->affiliate->getKey(), (string) $affiliate2->getKey()]);
 
             // Verify both affiliates were assigned the rank
             $this->affiliate->refresh();
@@ -309,7 +321,7 @@ describe('RankQualificationService', function (): void {
                 'currency' => 'USD',
             ]);
 
-            $this->service->assignRank($this->affiliate, $rank);
+            $this->service->assignRank((string) $this->affiliate->getKey(), (string) $rank->getKey());
 
             $this->affiliate->refresh();
             expect($this->affiliate->rank_id)->toBe($rank->id);
@@ -332,7 +344,7 @@ describe('RankQualificationService', function (): void {
                 'currency' => 'USD',
             ]);
 
-            $this->service->assignRank($this->affiliate, $rank);
+            $this->service->assignRank((string) $this->affiliate->getKey(), (string) $rank->getKey());
 
             $history = AffiliateRankHistory::where('affiliate_id', $this->affiliate->id)->first();
 
@@ -353,7 +365,7 @@ describe('RankQualificationService', function (): void {
 
             $this->affiliate->update(['rank_id' => $rank->id]);
 
-            $this->service->assignRank($this->affiliate, null);
+            $this->service->assignRank((string) $this->affiliate->getKey(), null);
 
             $this->affiliate->refresh();
             expect($this->affiliate->rank_id)->toBeNull();
@@ -362,7 +374,7 @@ describe('RankQualificationService', function (): void {
 
     describe('calculateMetrics', function (): void {
         test('returns metrics array', function (): void {
-            $metrics = $this->service->calculateMetrics($this->affiliate);
+            $metrics = $this->service->calculateMetrics((string) $this->affiliate->getKey());
 
             expect($metrics)->toHaveKeys([
                 'personal_sales',
@@ -399,7 +411,7 @@ describe('RankQualificationService', function (): void {
                 'occurred_at' => now()->subDays(10),
             ]);
 
-            $metrics = $this->service->calculateMetrics($this->affiliate);
+            $metrics = $this->service->calculateMetrics((string) $this->affiliate->getKey());
 
             expect($metrics['personal_sales'])->toBe(11000)
                 ->and($metrics['lifetime_value'])->toBe(11000);
@@ -434,15 +446,15 @@ describe('RankQualificationService', function (): void {
                 'occurred_at' => now()->subDays(45),
             ]);
 
-            $metrics = $this->service->calculateMetrics($this->affiliate);
+            $metrics = $this->service->calculateMetrics((string) $this->affiliate->getKey());
 
             expect($metrics['personal_sales'])->toBe(7000);
             expect($metrics['lifetime_value'])->toBe(20000); // All time
         });
 
-        test('caches metrics for same affiliate and date', function (): void {
+        test('recomputes metrics after a conversion is written', function (): void {
             // First call
-            $metrics1 = $this->service->calculateMetrics($this->affiliate);
+            $metrics1 = $this->service->calculateMetrics((string) $this->affiliate->getKey());
 
             // Add a conversion
             AffiliateConversion::create([
@@ -450,6 +462,7 @@ describe('RankQualificationService', function (): void {
                 'affiliate_id' => $this->affiliate->id,
                 'affiliate_code' => $this->affiliate->code,
                 'order_reference' => 'CACHED',
+                'value_minor' => 5000,
                 'subtotal_minor' => 5000,
                 'total_minor' => 5000,
                 'commission_minor' => 500,
@@ -457,10 +470,10 @@ describe('RankQualificationService', function (): void {
                 'occurred_at' => now()->subDays(5),
             ]);
 
-            // Second call should return cached result
-            $metrics2 = $this->service->calculateMetrics($this->affiliate);
+            // Second call sees the newly recorded conversion
+            $metrics2 = $this->service->calculateMetrics((string) $this->affiliate->getKey());
 
-            expect($metrics1)->toBe($metrics2);
+            expect($metrics1['personal_sales'])->toBe(0)->and($metrics2['personal_sales'])->toBe(5000);
         });
 
         test('uses custom date range', function (): void {
@@ -478,19 +491,16 @@ describe('RankQualificationService', function (): void {
             ]);
 
             // With 90 day lookback
-            $metrics = $this->service->calculateMetrics($this->affiliate, CarbonImmutable::now()->subDays(90));
+            $metrics = $this->service->calculateMetrics((string) $this->affiliate->getKey(), CarbonImmutable::now()->subDays(90));
 
             expect($metrics['personal_sales'])->toBe(8500);
         });
     });
 
-    describe('clearCache', function (): void {
-        test('clears cached metrics', function (): void {
+    describe('fresh metrics', function (): void {
+        test('recalculates without manual cache invalidation', function (): void {
             // First call
-            $metrics1 = $this->service->calculateMetrics($this->affiliate);
-
-            // Clear cache
-            $this->service->clearCache();
+            $metrics1 = $this->service->calculateMetrics((string) $this->affiliate->getKey());
 
             // Add a conversion
             AffiliateConversion::create([
@@ -507,7 +517,7 @@ describe('RankQualificationService', function (): void {
             ]);
 
             // Second call should recalculate
-            $metrics2 = $this->service->calculateMetrics($this->affiliate);
+            $metrics2 = $this->service->calculateMetrics((string) $this->affiliate->getKey());
 
             expect($metrics1['personal_sales'])->toBe(0)
                 ->and($metrics2['personal_sales'])->toBe(7000);

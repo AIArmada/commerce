@@ -418,6 +418,37 @@ describe('UplineApi', function (): void {
         });
     });
 
+    test('rejects cycles and keeps ancestor counts and parent pointers consistent when moving a subtree', function (): void {
+        $make = static fn (string $name): Affiliate => Affiliate::create([
+            'code' => $name . '-' . uniqid(), 'name' => $name,
+            'status' => Active::class, 'commission_type' => CommissionType::Percentage,
+            'commission_rate' => 1000, 'currency' => 'USD',
+        ]);
+        $root = $this->rootAffiliate;
+        $child = $make('CHILD');
+        $grandchild = $make('GRANDCHILD');
+        $other = $make('OTHER');
+        $this->service->add((string) $root->getKey());
+        $this->service->add((string) $child->getKey(), (string) $root->getKey());
+        $this->service->add((string) $grandchild->getKey(), (string) $child->getKey());
+        $this->service->add((string) $other->getKey());
+
+        expect(fn () => $this->service->move((string) $root->getKey(), (string) $grandchild->getKey()))
+            ->toThrow(InvalidArgumentException::class);
+        expect($root->fresh()->total_downline_count)->toBe(2);
+
+        $this->service->move((string) $child->getKey(), (string) $other->getKey());
+        expect($root->fresh()->total_downline_count)->toBe(0)
+            ->and($other->fresh()->total_downline_count)->toBe(2)
+            ->and($child->fresh()->parent_affiliate_id)->toBe($other->getKey())
+            ->and(array_column($this->service->ancestors((string) $grandchild->getKey()), 'id'))->toBe([$child->getKey(), $other->getKey()]);
+
+        $this->service->remove((string) $child->getKey());
+        expect($other->fresh()->total_downline_count)->toBe(0)
+            ->and($child->fresh()->parent_affiliate_id)->toBeNull()
+            ->and($grandchild->fresh()->parent_affiliate_id)->toBeNull();
+    });
+
     describe('buildTree', function (): void {
         test('returns array with correct structure', function (): void {
             $this->service->add((string) $this->rootAffiliate->getKey());

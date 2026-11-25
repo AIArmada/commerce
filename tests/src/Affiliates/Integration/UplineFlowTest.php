@@ -7,7 +7,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateRank;
 use AIArmada\Affiliates\Features\Upline\Models\AffiliateUpline;
-use AIArmada\Affiliates\Services\RankQualificationService;
+use AIArmada\Affiliates\Features\Upline\Api\RankQualificationApi;
 use AIArmada\Affiliates\Features\Upline\Api\UplineApi;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\Paused;
@@ -262,7 +262,7 @@ test('rank qualification evaluates correctly', function (): void {
     Event::fake([AffiliateRankChanged::class]);
 
     $uplineService = app(UplineApi::class);
-    $rankService = app(RankQualificationService::class);
+    $rankService = app(RankQualificationApi::class);
 
     $affiliate = Affiliate::create([
         'code' => 'QUALIFY-TEST',
@@ -315,7 +315,7 @@ test('rank qualification evaluates correctly', function (): void {
     ]);
 
     // Test calculateMetrics returns proper values
-    $metrics = $rankService->calculateMetrics($affiliate);
+    $metrics = $rankService->calculateMetrics((string) $affiliate->getKey());
 
     expect($metrics['active_downlines'])->toBe(3);
     expect($metrics['personal_sales'])->toBe(15000);
@@ -326,7 +326,7 @@ test('rank upgrades are processed correctly', function (): void {
     Event::fake([AffiliateRankChanged::class]);
 
     $uplineService = app(UplineApi::class);
-    $rankService = app(RankQualificationService::class);
+    $rankService = app(RankQualificationApi::class);
 
     $affiliate = Affiliate::create([
         'code' => 'UPGRADE-TEST',

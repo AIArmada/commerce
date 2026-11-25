@@ -14,7 +14,7 @@ use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateRank;
 use AIArmada\Affiliates\Features\Upline\Models\AffiliateUpline;
 use AIArmada\Affiliates\Services\PerformanceBonusService;
-use AIArmada\Affiliates\Services\RankQualificationService;
+use AIArmada\Affiliates\Features\Upline\Api\RankQualificationApi;
 use AIArmada\Affiliates\Features\Upline\Api\UplineApi;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\ConversionStatus;
@@ -56,19 +56,19 @@ test('direct rank operations cannot assign ranks to purpose-tagged affiliates', 
         'min_active_downlines' => 0,
         'currency' => 'USD',
     ]);
-    $service = app(RankQualificationService::class);
+    $service = app(RankQualificationApi::class);
 
-    expect($service->evaluate($tagged))->toBeNull();
-    $service->processRankChange($tagged);
+    expect($service->evaluate((string) $tagged->getKey()))->toBeNull();
+    $service->processRankChange((string) $tagged->getKey());
 
-    expect(fn () => $service->assignRank($tagged, $rank))
+    expect(fn () => $service->assignRank((string) $tagged->getKey(), (string) $rank->getKey()))
         ->toThrow(InvalidArgumentException::class);
     expect($tagged->fresh()->rank_id)->toBeNull();
 
     $alreadyRanked = createTestAffiliate(['code' => 'PURP-RANK-KEEP']);
-    $service->assignRank($alreadyRanked, $rank);
+    $service->assignRank((string) $alreadyRanked->getKey(), (string) $rank->getKey());
     $alreadyRanked->forceFill(['purpose' => 'host_attribution_only'])->save();
-    $service->processRankChange($alreadyRanked->refresh());
+    $service->processRankChange((string) $alreadyRanked->refresh()->getKey());
 
     expect($alreadyRanked->fresh()->rank_id)->toBe($rank->getKey());
 });

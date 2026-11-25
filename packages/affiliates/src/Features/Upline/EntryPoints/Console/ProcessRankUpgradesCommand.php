@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Console\Commands;
+namespace AIArmada\Affiliates\Features\Upline\EntryPoints\Console;
 
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Services\RankQualificationService;
+use AIArmada\Affiliates\Features\Upline\Api\RankQualificationApi;
 use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
 use Illuminate\Console\Command;
 
@@ -16,7 +16,7 @@ final class ProcessRankUpgradesCommand extends Command
 
     protected $description = 'Process rank qualifications and upgrades for all affiliates';
 
-    public function handle(RankQualificationService $service): int
+    public function handle(RankQualificationApi $service): int
     {
         if ($this->option('dry-run')) {
             $this->info('Dry run mode - no changes will be made.');
@@ -29,9 +29,9 @@ final class ProcessRankUpgradesCommand extends Command
             ['enabled' => 'affiliates.owner.enabled', 'include_global' => 'affiliates.owner.include_global'],
         );
 
-        $upgraded = $runner->run(fn (): int => $service->processAllRankUpgrades()) ?? 0;
+        $upgraded = $runner->run(fn (): int => $service->processAllRankUpgrades((bool) $this->option('dry-run'))) ?? 0;
 
-        $this->info("Processed rank changes for {$upgraded} affiliates.");
+        $this->info($this->option('dry-run') ? "Would change ranks for {$upgraded} affiliates." : "Processed rank changes for {$upgraded} affiliates.");
 
         return self::SUCCESS;
     }

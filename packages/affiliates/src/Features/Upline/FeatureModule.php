@@ -12,6 +12,7 @@ final class FeatureModule implements FeatureModuleContract
     public function register(Application $app): void
     {
         $app->bind(Api\UplineApi::class, Actions\UplineGateway::class);
+        $app->bind(Api\RankQualificationApi::class, Actions\QualifyAffiliateRank::class);
     }
 
     public function boot(Application $app): void {}
