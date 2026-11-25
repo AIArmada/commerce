@@ -437,7 +437,7 @@ $uplines = $uplineService->ancestors((string) $conversion->affiliate_id);
 
 ## Atomic scheduled claims
 
-`affiliates:process-payouts` scans active affiliates in chunks. For each eligible affiliate, `ClaimScheduledPayout` locks the affiliate and balance, rechecks active holds and active payouts, locks approved unlinked conversions, creates one unique operation, reserves the balance, and links the conversions in a single transaction. Repeated or concurrent workers therefore observe the existing pending payout and cannot reserve the same funds twice. External Stripe, PayPal, or manual processing occurs after the claim transaction.
+`affiliates:process-payouts` scans active affiliates in chunks. Both the Filament and console sweeps invoke the Payouts feature. For each eligible affiliate, `ClaimScheduledPayout` locks the affiliate and balance, rechecks active holds and active payouts, locks approved unlinked conversions, creates one unique operation, reserves the balance, and links the conversions through the Conversions reservation API in a single transaction, checking the linked count and amount before committing. Repeated or concurrent workers therefore observe the existing pending payout and cannot reserve the same funds twice. External Stripe, PayPal, or manual processing occurs after the claim transaction.
 
 ## Provider idempotency and reconciliation
 

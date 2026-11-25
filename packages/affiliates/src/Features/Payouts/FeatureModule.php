@@ -12,6 +12,7 @@ final class FeatureModule implements FeatureModuleContract
     public function register(Application $app): void
     {
         $app->bind(Api\PayoutAdministration::class, Actions\AdministerPayout::class);
+        $app->bind(Api\ScheduledPayoutSweep::class, Actions\RunScheduledPayoutSweep::class);
     }
 
     public function boot(Application $app): void {}

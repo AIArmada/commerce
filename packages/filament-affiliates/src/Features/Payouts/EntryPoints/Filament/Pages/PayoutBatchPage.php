@@ -12,7 +12,7 @@ use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Actions\RunScheduledPayoutSweep;
+use AIArmada\Affiliates\Features\Payouts\Api\ScheduledPayoutSweep;
 use AIArmada\FilamentAffiliates\Features\Payouts\Queries\PayoutExportService;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -113,7 +113,7 @@ final class PayoutBatchPage extends Page implements HasForms, HasTable
                         ? max(0, (int) $data['min_amount'])
                         : 0;
 
-                    $summary = app(RunScheduledPayoutSweep::class)->handle(
+                    $summary = app(ScheduledPayoutSweep::class)->sweep(
                         $dryRun,
                         is_string($data['affiliate_id'] ?? null) ? $data['affiliate_id'] : null,
                         $minimum,

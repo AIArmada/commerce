@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Console\Commands\ProcessScheduledPayoutsCommand;
+use AIArmada\Affiliates\Features\Payouts\EntryPoints\Console\ProcessScheduledPayoutsCommand;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;

@@ -18,7 +18,7 @@ use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\FilamentAffiliates\Features\Commissions\EntryPoints\Filament\Pages\ManageAffiliateBonusSettings;
 use AIArmada\FilamentAffiliates\Features\Commissions\EntryPoints\Filament\Pages\PerformanceBonusesPage;
 use AIArmada\FilamentAffiliates\Features\Compliance\EntryPoints\Filament\Resources\AffiliateTaxDocumentResource;
-use AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Actions\RunScheduledPayoutSweep;
+use AIArmada\Affiliates\Features\Payouts\Api\ScheduledPayoutSweep;
 use AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Pages\ManageAffiliatePayoutSettings;
 use AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Pages\PayoutBatchPage;
 use AIArmada\FilamentAffiliates\Features\Programs\EntryPoints\Filament\Resources\AffiliateCreativeResource;
@@ -194,7 +194,7 @@ function adapterSweepAffiliate(): Affiliate
 it('sweep dry run counts eligible balances without writing', function (): void {
     adapterSweepAffiliate();
 
-    $summary = app(RunScheduledPayoutSweep::class)->handle(dryRun: true);
+    $summary = app(ScheduledPayoutSweep::class)->sweep(dryRun: true);
 
     expect($summary['processed'])->toBe(1)
         ->and($summary['errors'])->toBe(0)
@@ -204,7 +204,7 @@ it('sweep dry run counts eligible balances without writing', function (): void {
 it('sweep run claims payouts for eligible balances', function (): void {
     $affiliate = adapterSweepAffiliate();
 
-    $summary = app(RunScheduledPayoutSweep::class)->handle(dryRun: false);
+    $summary = app(ScheduledPayoutSweep::class)->sweep(dryRun: false);
 
     expect($summary['processed'])->toBe(1)
         ->and($summary['errors'])->toBe(0)
@@ -215,8 +215,8 @@ it('sweep run claims payouts for eligible balances', function (): void {
 it('sweep respects the affiliate filter and minimum floor', function (): void {
     $affiliate = adapterSweepAffiliate();
 
-    $filtered = app(RunScheduledPayoutSweep::class)->handle(dryRun: true, affiliateId: (string) $affiliate->id);
-    $floored = app(RunScheduledPayoutSweep::class)->handle(dryRun: true, minimum: 20000);
+    $filtered = app(ScheduledPayoutSweep::class)->sweep(dryRun: true, affiliateId: (string) $affiliate->id);
+    $floored = app(ScheduledPayoutSweep::class)->sweep(dryRun: true, minimum: 20000);
 
     expect($filtered['processed'])->toBe(1)
         ->and($floored['processed'])->toBe(0)
