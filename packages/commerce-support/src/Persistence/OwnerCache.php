@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\CommerceSupport\Support;
+namespace AIArmada\CommerceSupport\Persistence;
 
 use AIArmada\CommerceSupport\Contracts\OwnerScopeIdentifiable;
+use AIArmada\CommerceSupport\Support\OwnerScopeKey;
 use BadMethodCallException;
 use Carbon\CarbonImmutable;
 use DateInterval;
@@ -14,6 +15,7 @@ use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 use stdClass;
 use Throwable;
@@ -28,7 +30,7 @@ use Throwable;
  * ```php
  * // Build an owner-scoped cache key
  * $key = OwnerCache::key($owner, 'user.preferences');
- * // Result: "owner:sha256hash:v1:user.preferences"
+ * // Result: "owner:sha256hash:v<version>:user.preferences"
  *
  * // Get/put with owner scoping
  * $prefs = OwnerCache::get($owner, 'user.preferences');
@@ -53,7 +55,7 @@ final class OwnerCache
      *
      * @param  Model|OwnerScopeIdentifiable|null  $owner  The owner model or scope-identifiable object (null = global context)
      * @param  string  $logicalKey  The application logical key (e.g., 'cart.summary')
-     * @return string The full scoped cache key (e.g., 'owner:sha256hash:v1:cart.summary')
+     * @return string The full scoped cache key (e.g., 'owner:sha256hash:v<version>:cart.summary')
      *
      * @throws InvalidArgumentException if logicalKey is empty or contains invalid characters
      */
@@ -75,12 +77,9 @@ final class OwnerCache
     /**
      * Current cache version for the owner. Bumped by forgetOwner().
      */
-    public static function version(Model | OwnerScopeIdentifiable | null $owner): int
+    public static function version(Model | OwnerScopeIdentifiable | null $owner): string
     {
-        return (int) Cache::store()->get(
-            self::versionKey(OwnerScopeKey::forOwner($owner)),
-            1,
-        );
+        return (new CacheVersionStore)->version(self::versionKey(OwnerScopeKey::forOwner($owner)));
     }
 
     /**
@@ -195,20 +194,7 @@ final class OwnerCache
             // Driver doesn't support tagging; the version bump below still invalidates.
         }
 
-        $store = Cache::store();
-        $versionKey = self::versionKey($ownerKey);
-
-        $store->add($versionKey, 1);
-
-        try {
-            $incremented = $store->increment($versionKey);
-        } catch (Throwable) {
-            $incremented = false;
-        }
-
-        if ($incremented === false) {
-            $store->forever($versionKey, (int) $store->get($versionKey, 1) + 1);
-        }
+        (new CacheVersionStore)->bump(self::versionKey($ownerKey));
     }
 
     private static function repository(Model | OwnerScopeIdentifiable | null $owner): mixed

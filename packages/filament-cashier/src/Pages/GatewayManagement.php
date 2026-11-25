@@ -6,7 +6,7 @@ namespace AIArmada\FilamentCashier\Pages;
 
 use AIArmada\Cashier\Support\GatewayDetector;
 use AIArmada\Chip\Services\ChipCollectService;
-use AIArmada\CommerceSupport\Support\OwnerCache;
+use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use BackedEnum;
 use Carbon\CarbonImmutable;

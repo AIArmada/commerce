@@ -60,7 +60,7 @@ Prevent cache bleed across tenants by building owner-scoped cache keys in the fo
 ### Basic Usage
 
 ```php
-use AIArmada\CommerceSupport\Support\OwnerCache;
+use AIArmada\CommerceSupport\Persistence\OwnerCache;
 
 // Get the current tenant/owner (resolved via OwnerContext)
 $owner = auth()->user(); // or \Auth::user()
@@ -86,7 +86,7 @@ OwnerCache::forgetOwner($owner);
 ### Key Features
 
 - **Automatic scope key generation**: Uses `OwnerScopeKey::forOwner($owner)` to create a hash unique to each owner
-- **Global context support**: Pass `null` as owner for global/unauthenticated caches (key: `owner:global:v1:logicalKey`)
+- **Global context support**: Pass `null` as owner for global/unauthenticated caches (key: `owner:global:v<version>:logicalKey`)
 - **Portable invalidation**: `forgetOwner()` bumps the owner's cache version, so every versioned key stops resolving on any driver — including file/array/database drivers without tag support. Tag flush is kept as a best-effort memory release where supported
 - **Stampede protection**: `remember()` rebuilds run under an atomic lock; concurrent misses wait for the in-flight rebuild instead of recomputing, fall back to an uncached computation if the lock cannot be acquired, and degrade to an unguarded rebuild on drivers without lock support
 - **Null-safe reuse**: a legitimately cached `null` is returned by `remember()` without re-running the callback or taking a lock
@@ -120,7 +120,7 @@ Prevent file access across tenants by building owner-scoped storage paths in the
 ### Basic Usage
 
 ```php
-use AIArmada\CommerceSupport\Support\OwnerFilesystem;
+use AIArmada\CommerceSupport\Persistence\OwnerFilesystem;
 
 $owner = auth()->user();
 

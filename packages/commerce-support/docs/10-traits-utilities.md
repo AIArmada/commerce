@@ -641,7 +641,7 @@ Guests hash to `sha256(ip|user-agent)`: repeat submitters stay recognizable with
 
 ```php
 use AIArmada\CommerceSupport\Contracts\SlugRedirectRecorder;
-use AIArmada\CommerceSupport\Support\CanonicalSlug;
+use AIArmada\CommerceSupport\Persistence\CanonicalSlug;
 
 $changed = CanonicalSlug::persist($venue, $slug, app(SlugRedirectRecorder::class));
 ```

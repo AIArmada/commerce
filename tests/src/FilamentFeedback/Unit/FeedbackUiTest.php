@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\FilamentFeedback\FilamentFeedbackTestCase;
-use AIArmada\CommerceSupport\Support\OwnerCache;
+use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentFeedback\Exports\FeedbackResponsesExport;
 use AIArmada\FilamentFeedback\Resources\FeedbackFormResource;

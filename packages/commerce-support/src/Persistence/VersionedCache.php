@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\CommerceSupport\Support;
+namespace AIArmada\CommerceSupport\Persistence;
 
 use Closure;
 use DateInterval;

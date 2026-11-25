@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentPromotions\Support;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
-use AIArmada\CommerceSupport\Support\OwnerCache;
+use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\Promotions\Models\Promotion;
 use AIArmada\Promotions\Support\PromotionPerformanceInsights;
 use Carbon\CarbonImmutable;

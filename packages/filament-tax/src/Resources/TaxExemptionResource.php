@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentTax\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
-use AIArmada\CommerceSupport\Support\OwnerCache;
+use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\FilamentTax\Resources\TaxExemptionResource\Pages;
 use AIArmada\FilamentTax\Resources\TaxExemptionResource\Schemas\TaxExemptionForm;
 use AIArmada\FilamentTax\Resources\TaxExemptionResource\Tables\TaxExemptionsTable;

@@ -3,12 +3,12 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Drivers\Http\PinnedHttpClient;
-use AIArmada\CommerceSupport\Support\CacheVersionStore;
+use AIArmada\CommerceSupport\Persistence\CacheVersionStore;
 use AIArmada\CommerceSupport\Support\PublicHttpUrlGuard;
 use AIArmada\CommerceSupport\Support\UrlSanitizer;
 use AIArmada\CommerceSupport\Support\UserDateTimeFormatter;
 use AIArmada\CommerceSupport\Support\UserTimezoneResolver;
-use AIArmada\CommerceSupport\Support\VersionedCache;
+use AIArmada\CommerceSupport\Persistence\VersionedCache;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Http\Request;

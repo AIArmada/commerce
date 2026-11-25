@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\CommerceSupport\Support;
+namespace AIArmada\CommerceSupport\Persistence;
 
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
@@ -15,10 +15,17 @@ final class CacheVersionStore
 {
     public function version(string $key): string
     {
-        /** @var string $version */
-        $version = Cache::rememberForever($key, static fn (): string => (string) Str::ulid());
+        $version = Cache::get($key);
 
-        return $version;
+        if (is_string($version) && $version !== '') {
+            return $version;
+        }
+
+        $candidate = (string) Str::ulid();
+        Cache::add($key, $candidate);
+        $version = Cache::get($key);
+
+        return is_string($version) && $version !== '' ? $version : $candidate;
     }
 
     public function bump(string $key): void

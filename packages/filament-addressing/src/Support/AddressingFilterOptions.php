@@ -9,7 +9,7 @@ use AIArmada\Addressing\Models\AddressAreaRole;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\ResolutionGap;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
-use AIArmada\CommerceSupport\Support\OwnerCache;
+use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use Illuminate\Support\Facades\Cache;
 
 /**

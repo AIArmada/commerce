@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\CommerceSupport\Support;
+namespace AIArmada\CommerceSupport\Persistence;
 
 use AIArmada\CommerceSupport\Contracts\OwnerScopeIdentifiable;
+use AIArmada\CommerceSupport\Support\OwnerScopeKey;
 use DateInterval;
 use DateTimeInterface;
 use Illuminate\Contracts\Filesystem\Filesystem;

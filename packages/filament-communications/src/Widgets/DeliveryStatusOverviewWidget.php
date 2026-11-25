@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Filament\Communications\Widgets;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
-use AIArmada\CommerceSupport\Support\OwnerCache;
+use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\Communications\Enums\DeliveryStatus;
 use AIArmada\Communications\Models\CommunicationDelivery;
 use Filament\Widgets\StatsOverviewWidget;

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Docs\Support;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerFilesystem;
+use AIArmada\CommerceSupport\Persistence\OwnerFilesystem;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 

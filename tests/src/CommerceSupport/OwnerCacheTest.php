@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Contracts\OwnerScopeIdentifiable;
-use AIArmada\CommerceSupport\Support\OwnerCache;
+use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\CommerceSupport\Support\OwnerScopeKey;
 use Illuminate\Cache\ArrayStore;
 use Illuminate\Contracts\Cache\Repository;
@@ -34,13 +34,13 @@ describe('OwnerCache', function (): void {
 
         expect($key)->toStartWith('owner:')
             ->and($key)->toContain(':cart.summary')
-            ->and($key)->toMatch('/^owner:[a-f0-9]{64}:v1:cart\.summary$/');
+            ->and($key)->toMatch('/^owner:[a-f0-9]{64}:v[0-9A-HJKMNP-TV-Z]{26}:cart\.summary$/');
     });
 
     it('builds global cache keys for null owner', function (): void {
         $key = OwnerCache::key(null, 'config.defaults');
 
-        expect($key)->toBe('owner:' . OwnerScopeKey::GLOBAL . ':v1:config.defaults');
+        expect($key)->toBe('owner:' . OwnerScopeKey::GLOBAL . ':v' . OwnerCache::version(null) . ':config.defaults');
     });
 
     it('rejects empty logical keys', function (): void {
@@ -327,9 +327,10 @@ describe('OwnerCache', function (): void {
 
         expect(OwnerCache::get($owner, 'one'))->toBe('value-one');
 
+        $previous = OwnerCache::version($owner);
         OwnerCache::forgetOwner($owner);
 
-        expect(OwnerCache::version($owner))->toBe(2)
+        expect(OwnerCache::version($owner))->not->toBe($previous)
             ->and(OwnerCache::get($owner, 'one'))->toBeNull()
             ->and(OwnerCache::get($owner, 'two'))->toBeNull();
     });
