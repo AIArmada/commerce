@@ -53,7 +53,7 @@ final readonly class ProgramPortalQuery implements ProgramPortalReader
                         'name' => (string) $creative->name,
                         'type' => (string) $creative->type,
                         'download_url' => $creative->getAssetUrl(),
-                        'destination_url' => (string) $creative->destination_url,
+                        'destination_url' => (string) $creative->safeDestinationUrl(),
                     ])->values()->all()
                     : [],
             );

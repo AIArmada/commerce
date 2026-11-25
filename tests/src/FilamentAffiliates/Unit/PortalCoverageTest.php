@@ -581,8 +581,15 @@ it('PortalPrograms returns joined programs and creative assets for the current a
         ->and($assets[0]['thumbnail'])->toBe($media->getUrl())
         ->and($assets[0]['format'])->toBe('PNG');
 
-    AffiliateProgramMembership::query()->where('affiliate_id', $affiliate->getKey())
-        ->where('program_id', $program->getKey())->firstOrFail()->update(['status' => MembershipStatus::Pending]);
+    $membership = AffiliateProgramMembership::query()->where('affiliate_id', $affiliate->getKey())
+        ->where('program_id', $program->getKey())->firstOrFail();
+    $membership->update(['expires_at' => now()->subDay()]);
+    expect((new PortalCreatives)->getViewData()['assets'])->toBeEmpty();
+
+    $membership->update(['expires_at' => now()->addDay()]);
+    expect((new PortalCreatives)->getViewData()['assets'])->toHaveCount(1);
+
+    $membership->update(['status' => MembershipStatus::Pending]);
     expect((new PortalCreatives)->getViewData()['assets'])->toBeEmpty();
 });
 

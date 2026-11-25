@@ -258,3 +258,24 @@ test('deleting a program removes its creative media and files', function (): voi
         ->and($media->fresh())->toBeNull();
     Storage::disk('public')->assertMissing($path);
 });
+
+test('creative tracking replaces conflicting referral parameters before the fragment and encodes the affiliate code', function (): void {
+    config(['affiliates.links.parameter' => 'ref']);
+
+    $creative = new AffiliateProgramCreative([
+        'destination_url' => 'https://example.com/landing?source=email&ref=OLD&%72ef=OTHER#details',
+    ]);
+
+    expect($creative->getTrackingUrl(new Affiliate(['code' => 'A+B&test'])))
+        ->toBe('https://example.com/landing?source=email&ref=A%2BB%26test#details');
+});
+
+test('creative links reject non-http destinations', function (string $destination): void {
+    $creative = new AffiliateProgramCreative([
+        'type' => 'text_link',
+        'destination_url' => $destination,
+    ]);
+
+    expect($creative->getTrackingUrl(new Affiliate(['code' => 'REF'])))->toBeNull()
+        ->and($creative->getEmbedCode(new Affiliate(['code' => 'REF'])))->toBeNull();
+})->with(['javascript:alert(1)', 'data:text/html,hello', 'ftp://example.com/file']);

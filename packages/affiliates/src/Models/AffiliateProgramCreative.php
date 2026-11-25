@@ -119,14 +119,39 @@ class AffiliateProgramCreative extends Model implements Auditable, HasMedia
 
     public function getTrackingUrl(Affiliate $affiliate): ?string
     {
-        if ($this->destination_url === null) {
+        $destination = $this->safeDestinationUrl();
+
+        if ($destination === null) {
             return null;
         }
 
-        $separator = str_contains($this->destination_url, '?') ? '&' : '?';
-        $param = config('affiliates.links.parameter', 'aff');
+        $param = (string) config('affiliates.links.parameter', 'aff');
+        [$url, $fragment] = array_pad(explode('#', $destination, 2), 2, null);
+        [$base, $query] = array_pad(explode('?', $url, 2), 2, null);
 
-        return $this->destination_url . $separator . $param . '=' . $affiliate->code;
+        $parameters = array_filter(explode('&', $query ?? ''), static function (string $pair) use ($param): bool {
+            return $pair !== '' && urldecode(explode('=', $pair, 2)[0]) !== $param;
+        });
+        $parameters[] = rawurlencode($param) . '=' . rawurlencode($affiliate->code);
+
+        return $base . '?' . implode('&', $parameters) . ($fragment === null ? '' : '#' . $fragment);
+    }
+
+    public function safeDestinationUrl(): ?string
+    {
+        $url = $this->destination_url;
+
+        if ($url === null || filter_var($url, FILTER_VALIDATE_URL) === false) {
+            return null;
+        }
+
+        $scheme = parse_url($url, PHP_URL_SCHEME);
+
+        if (! is_string($scheme) || ! in_array(mb_strtolower($scheme), ['http', 'https'], true)) {
+            return null;
+        }
+
+        return $url;
     }
 
     public function getEmbedCode(Affiliate $affiliate): ?string
@@ -145,7 +170,7 @@ class AffiliateProgramCreative extends Model implements Auditable, HasMedia
 
         return match ($this->type) {
             'banner' => sprintf(
-                '<a href="%s" target="_blank"><img src="%s" width="%d" height="%d" alt="%s" /></a>',
+                '<a href="%s" target="_blank" rel="noopener noreferrer"><img src="%s" width="%d" height="%d" alt="%s" /></a>',
                 htmlspecialchars($trackingUrl),
                 htmlspecialchars($assetUrl ?? ''),
                 $this->width ?? 0,
@@ -153,7 +178,7 @@ class AffiliateProgramCreative extends Model implements Auditable, HasMedia
                 htmlspecialchars($this->name)
             ),
             'text_link' => sprintf(
-                '<a href="%s" target="_blank">%s</a>',
+                '<a href="%s" target="_blank" rel="noopener noreferrer">%s</a>',
                 htmlspecialchars($trackingUrl),
                 htmlspecialchars($this->name)
             ),

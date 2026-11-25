@@ -4,15 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages;
 
-use AIArmada\Affiliates\Enums\MembershipStatus;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Models\AffiliateProgramCreative;
+use AIArmada\Affiliates\Features\Programs\Api\PortalCreativeReader;
 use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Concerns\PortalPage;
 use BackedEnum;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Contracts\Support\Htmlable;
-use Illuminate\Support\Collection;
 
 class PortalCreatives extends PortalPage
 {
@@ -56,19 +52,7 @@ class PortalCreatives extends PortalPage
             ];
         }
 
-        $generalCreatives = AffiliateProgramCreative::query()
-            ->general()
-            ->with('media')
-            ->orderByDesc('created_at')
-            ->limit(200)
-            ->get();
-
-        $programCreatives = $this->getProgramCreatives($affiliate);
-
-        $allCreatives = collect($generalCreatives)
-            ->concat($programCreatives);
-
-        $assets = $this->mapAssets($allCreatives, $affiliate);
+        $assets = collect(app(PortalCreativeReader::class)->assets((string) $affiliate->getKey()));
 
         $campaigns = $assets->pluck('campaign')->filter()->unique()->values();
         $categories = $assets->pluck('category')->filter()->unique()->values();
@@ -85,85 +69,6 @@ class PortalCreatives extends PortalPage
             'platforms' => $platforms,
             'programs' => $programs,
             'affiliateCode' => $affiliate->code,
-        ];
-    }
-
-    /**
-     * @return Collection<int, AffiliateProgramCreative>
-     */
-    private function getProgramCreatives(Affiliate $affiliate): Collection
-    {
-        $programs = $affiliate->programs()
-            ->withPivot('status')
-            ->get()
-            ->filter(fn (AffiliateProgram $program): bool => $program->getAttribute('pivot')->status === MembershipStatus::Approved);
-
-        if ($programs->isEmpty()) {
-            return new Collection;
-        }
-
-        $programsById = $programs->keyBy(fn (AffiliateProgram $program): string => (string) $program->getKey());
-
-        return AffiliateProgramCreative::query()
-            ->whereIn('program_id', $programsById->keys()->all())
-            ->with('media')
-            ->orderByDesc('created_at')
-            ->limit(200)
-            ->get()
-            ->each(function (AffiliateProgramCreative $creative) use ($programsById): void {
-                $program = $programsById->get((string) $creative->program_id);
-
-                if ($program instanceof AffiliateProgram) {
-                    $creative->setRelation('program', $program);
-                }
-            });
-    }
-
-    /**
-     * @param  Collection<int, AffiliateProgramCreative>  $creatives
-     * @return Collection<int, array<string, mixed>>
-     */
-    private function mapAssets(Collection $creatives, Affiliate $affiliate): Collection
-    {
-        return $creatives
-            ->map(fn (AffiliateProgramCreative $creative) => $this->mapAsset($creative, $affiliate))
-            ->values();
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function mapAsset(AffiliateProgramCreative $creative, Affiliate $affiliate): array
-    {
-        $metadata = $creative->metadata ?? [];
-        $media = $creative->getFirstMedia('creative_asset');
-        $campaign = $creative->program?->name ?? $metadata['campaign'] ?? 'General';
-        $defaultCategory = match ($creative->type) {
-            'banner' => 'Banners',
-            'image' => 'Images',
-            'video' => 'Videos',
-            'pdf', 'document' => 'Documents',
-            default => 'Other',
-        };
-
-        return [
-            'id' => $creative->getKey(),
-            'title' => $creative->name,
-            'description' => $creative->description ?? '',
-            'type' => $creative->type,
-            'program' => $creative->program?->name ?? 'General',
-            'format' => $metadata['format'] ?? mb_strtoupper(pathinfo($media?->file_name ?? '', PATHINFO_EXTENSION) ?: $creative->type),
-            'category' => $metadata['category'] ?? $defaultCategory,
-            'campaign' => $campaign,
-            'platforms' => $metadata['platforms'] ?? [],
-            'dimensions' => $creative->getDimensions() ?? '—',
-            'status' => $metadata['status'] ?? 'Approved',
-            'status_color' => $metadata['status_color'] ?? 'success',
-            'thumbnail' => $media !== null && str_starts_with($media->mime_type ?? '', 'image/') ? $media->getUrl() : null,
-            'download_url' => $creative->getAssetUrl(),
-            'affiliate_url' => $creative->getTrackingUrl($affiliate),
-            'caption' => $metadata['caption'] ?? $creative->description ?? '',
-            'downloads' => $metadata['downloads'] ?? 0,
         ];
     }
 }
