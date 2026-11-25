@@ -12,6 +12,11 @@
     ],
     "table:affiliate_touchpoints": [
       "AIArmada\\Affiliates\\Features\\Attribution\\Actions\\AttachAffiliateToCart"
+    ],
+    "table:affiliate_links": [
+      "AIArmada\\Affiliates\\Features\\Attribution\\Actions\\CreateTrackingLink",
+      "AIArmada\\Affiliates\\Features\\Attribution\\Actions\\UpdateTrackingLink",
+      "AIArmada\\Affiliates\\Features\\Attribution\\Actions\\ManageTrackingLinks"
     ]
   },
   "extensions": {}

@@ -6,6 +6,7 @@ use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateLink;
+use AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkAdministration;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\States\Active;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -73,12 +74,12 @@ describe('AffiliateLink Model', function (): void {
             'clicks' => 0,
         ]);
 
-        $link->incrementClicks();
+        app(TrackingLinkAdministration::class)->recordClick((string) $link->getKey());
         $link->refresh();
 
         expect($link->clicks)->toBe(1);
 
-        $link->incrementClicks();
+        app(TrackingLinkAdministration::class)->recordClick((string) $link->getKey());
         $link->refresh();
 
         expect($link->clicks)->toBe(2);
@@ -92,12 +93,12 @@ describe('AffiliateLink Model', function (): void {
             'conversions' => 0,
         ]);
 
-        $link->incrementConversions();
+        app(TrackingLinkAdministration::class)->recordConversion((string) $link->getKey());
         $link->refresh();
 
         expect($link->conversions)->toBe(1);
 
-        $link->incrementConversions();
+        app(TrackingLinkAdministration::class)->recordConversion((string) $link->getKey());
         $link->refresh();
 
         expect($link->conversions)->toBe(2);

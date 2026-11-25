@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Actions\Affiliates;
+namespace AIArmada\Affiliates\Features\Attribution\Actions;
 
 use AIArmada\Affiliates\Exceptions\AffiliateNotFoundException;
 use AIArmada\Affiliates\Models\Affiliate;
@@ -14,19 +14,15 @@ use AIArmada\Links\Actions\CreatePublicLink;
 use AIArmada\Links\Actions\GenerateLinkUrl;
 use AIArmada\Links\LinksServiceProvider;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use LogicException;
-use Lorisleiva\Actions\Concerns\AsAction;
 
-final class CreateTrackingLink
+final readonly class CreateTrackingLink
 {
-    use AsAction;
-
-    public function handle(Affiliate $affiliate, string $destinationUrl, array $attributes = []): AffiliateLink
+    public function handle(string $affiliateId, string $destinationUrl, array $attributes = []): AffiliateLink
     {
-        $affiliate = Affiliate::query()->whereKey($affiliate->getKey())->firstOrFail();
+        $affiliate = Affiliate::query()->forOwner()->findOrFail($affiliateId);
 
         if (! $affiliate->canBeAttributed()) {
             throw new AffiliateNotFoundException("Affiliate {$affiliate->code} cannot receive attribution.");
@@ -78,7 +74,18 @@ final class CreateTrackingLink
             'link_label' => ['nullable', 'string', 'max:60'],
         ])->validate();
 
-        return DB::transaction(function () use ($affiliate, $destinationUrl, $attributes, $programId, $params, $subjectMetadata, $allowedHosts): AffiliateLink {
+        $connection = $affiliate->getConnection();
+        if ($connection !== (new AffiliateLink)->getConnection()
+            || $connection !== (new \AIArmada\Links\Models\Link)->getConnection()) {
+            throw new LogicException('Tracking link creation requires a shared database connection.');
+        }
+
+        return $connection->transaction(function () use ($affiliate, $destinationUrl, $attributes, $programId, $params, $subjectMetadata, $allowedHosts): AffiliateLink {
+            $affiliate = Affiliate::query()->forOwner()->lockForUpdate()->findOrFail($affiliate->getKey());
+            if (! $affiliate->canBeAttributed()) {
+                throw new AffiliateNotFoundException("Affiliate {$affiliate->code} cannot receive attribution.");
+            }
+
             $affiliateLink = AffiliateLink::query()->create([
                 'affiliate_id' => $affiliate->getKey(),
                 'program_id' => $programId,

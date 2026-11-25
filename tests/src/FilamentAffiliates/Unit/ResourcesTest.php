@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Actions\Affiliates\CreateTrackingLink;
+use AIArmada\Affiliates\Features\Attribution\Actions\CreateTrackingLink;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalStatus;
 use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
@@ -327,7 +327,7 @@ it('strips destination edits from a Dawah affiliate link edit payload', function
         'currency' => 'USD',
     ]);
     $destinationUrl = mb_rtrim((string) config('app.url'), '/') . '/kongsi';
-    $link = CreateTrackingLink::run($affiliate, $destinationUrl, [
+    $link = app(CreateTrackingLink::class)->handle((string) $affiliate->getKey(), $destinationUrl, [
         'custom_slug' => 'frozenlink',
     ]);
     $frozenTrackingUrl = $link->tracking_url;

@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Features\Attribution\EntryPoints\Filament\Resources\AffiliateLinkResource\Pages;
 
-use AIArmada\Affiliates\Actions\Affiliates\CreateTrackingLink;
+use AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkAdministration;
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Models\AffiliateLink;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentAffiliates\Features\Attribution\EntryPoints\Filament\Resources\AffiliateLinkResource;
@@ -65,9 +66,9 @@ final class CreateAffiliateLink extends CreateRecord
 
     protected function handleRecordCreation(array $data): Model
     {
-        $affiliate = Affiliate::query()->whereKey($data['affiliate_id'])->firstOrFail();
+        $created = app(TrackingLinkAdministration::class)->create((string) $data['affiliate_id'], $data['destination_url'], $data);
 
-        return CreateTrackingLink::run($affiliate, $data['destination_url'], $data);
+        return AffiliateLink::query()->findOrFail($created->id);
     }
 
     /**

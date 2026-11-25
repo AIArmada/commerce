@@ -223,9 +223,9 @@ Mixed-currency summaries return per-currency legs plus one converted total carry
 ## Creating Subject-Aware Tracking Links
 
 ```php
-use AIArmada\Affiliates\Actions\Affiliates\CreateTrackingLink;
+use AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkAdministration;
 
-$link = CreateTrackingLink::run($affiliate, 'https://example.com/products/sku-1001', [
+$link = app(TrackingLinkAdministration::class)->create((string) $affiliate->getKey(), 'https://example.com/products/sku-1001', [
     'params' => ['utm_source' => 'affiliate-campaign'],
     'link_style' => 'branded',
     'link_label' => 'summer',

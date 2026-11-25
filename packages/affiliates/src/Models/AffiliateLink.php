@@ -161,29 +161,9 @@ class AffiliateLink extends Model implements Auditable
         return $this->morphOne(Link::class, 'subject');
     }
 
-    public function incrementClicks(): void
-    {
-        $this->increment('clicks');
-    }
-
-    public function incrementConversions(): void
-    {
-        $this->increment('conversions');
-    }
-
     public function isEnabled(): bool
     {
         return $this->deactivated_at === null;
-    }
-
-    public function deactivate(): void
-    {
-        $this->update(['deactivated_at' => CarbonImmutable::now()]);
-    }
-
-    public function activate(): void
-    {
-        $this->update(['deactivated_at' => null]);
     }
 
     public function getConversionRate(): float

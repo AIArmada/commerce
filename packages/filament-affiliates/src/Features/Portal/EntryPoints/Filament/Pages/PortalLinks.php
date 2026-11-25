@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages;
 
-use AIArmada\Affiliates\Actions\Affiliates\CreateTrackingLink;
+use AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkAdministration;
 use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Concerns\PortalPage;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -112,11 +112,11 @@ class PortalLinks extends PortalPage
             return;
         }
 
-        $link = CreateTrackingLink::run($affiliate, $targetUrl, [
+        $link = app(TrackingLinkAdministration::class)->create((string) $affiliate->getKey(), $targetUrl, [
             'link_style' => $this->linkStyle,
             'link_label' => $this->linkLabel,
         ]);
-        $this->generatedLink = $link->tracking_url;
+        $this->generatedLink = $link->trackingUrl;
 
         Notification::make()
             ->title(__('Link generated successfully'))

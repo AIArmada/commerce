@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Http\Controllers;
 
-use AIArmada\Affiliates\Actions\Affiliates\CreateTrackingLink;
+use AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkAdministration;
 use AIArmada\Affiliates\Features\Reporting\Api\ReportingApi;
 use AIArmada\Affiliates\Queries\AffiliateLookupQuery;
 use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
@@ -20,7 +20,7 @@ final class AffiliateApiController extends Controller
 {
     public function __construct(
         private readonly AffiliateLookupQuery $affiliateLookup,
-        private readonly CreateTrackingLink $createTrackingLink,
+        private readonly TrackingLinkAdministration $trackingLinks,
         private readonly ReportingApi $reports,
     ) {}
 
@@ -81,7 +81,7 @@ final class AffiliateApiController extends Controller
         $subjectMetadata = $validated['subject_metadata'] ?? [];
 
         try {
-            $link = $this->createTrackingLink->handle($affiliate, $url, [
+            $link = $this->trackingLinks->create((string) $affiliate->getKey(), $url, [
                 'params' => $params,
                 'link_style' => $validated['link_style'] ?? config('affiliates.links.default_style', 'short'),
                 'link_label' => $validated['link_label'] ?? null,
@@ -100,10 +100,10 @@ final class AffiliateApiController extends Controller
         }
 
         return response()->json([
-            'id' => (string) $link->getKey(),
-            'link' => $link->tracking_url,
-            'subject_type' => $link->subject_type,
-            'subject_key' => $link->subject_key,
+            'id' => $link->id,
+            'link' => $link->trackingUrl,
+            'subject_type' => $link->subjectType,
+            'subject_key' => $link->subjectKey,
         ]);
     }
 

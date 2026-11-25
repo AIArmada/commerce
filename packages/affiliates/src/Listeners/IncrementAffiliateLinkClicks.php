@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Listeners;
 
 use AIArmada\Affiliates\Models\AffiliateLink;
+use AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkAdministration;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\Links\Events\LinkClicked;
@@ -23,7 +24,7 @@ final class IncrementAffiliateLinkClicks
 
         if ($link !== null) {
             $owner = OwnerContext::fromTypeAndId($link->affiliate->owner_type, $link->affiliate->owner_id);
-            OwnerContext::withOwner($owner, fn () => $link->incrementClicks());
+            OwnerContext::withOwner($owner, fn () => app(TrackingLinkAdministration::class)->recordClick((string) $link->getKey()));
         }
     }
 }

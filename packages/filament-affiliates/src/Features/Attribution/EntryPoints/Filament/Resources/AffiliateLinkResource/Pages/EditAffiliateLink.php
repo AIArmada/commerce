@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Features\Attribution\EntryPoints\Filament\Resources\AffiliateLinkResource\Pages;
 
-use AIArmada\Affiliates\Actions\Affiliates\UpdateTrackingLink;
+use AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkAdministration;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateLink;
 use AIArmada\Affiliates\Models\AffiliateProgram;
@@ -73,7 +73,9 @@ final class EditAffiliateLink extends EditRecord
             unset($data['destination_url'], $data['tracking_url'], $data['custom_slug']);
         }
 
-        return UpdateTrackingLink::run($link, $data);
+        app(TrackingLinkAdministration::class)->update((string) $link->getKey(), $data);
+
+        return $link->refresh();
     }
 
     protected function getHeaderActions(): array

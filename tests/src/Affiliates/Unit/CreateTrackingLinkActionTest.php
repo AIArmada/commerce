@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Actions\Affiliates\CreateTrackingLink;
+use AIArmada\Affiliates\Features\Attribution\Actions\CreateTrackingLink;
 use AIArmada\Affiliates\Features\Conversions\Actions\RecordAffiliateOutcome;
 use AIArmada\Affiliates\Data\AffiliateOutcomeDisposition;
 use AIArmada\Affiliates\Enums\CommissionType;
@@ -36,7 +36,7 @@ beforeEach(function (): void {
 
 test('it creates a permanent tracked link and preserves subject provenance', function (): void {
     config(['affiliates.links.allowed_hosts' => ['ilmu360.test']]);
-    $link = CreateTrackingLink::run($this->affiliate, 'https://ilmu360.test/majlis/ramadan', [
+    $link = app(CreateTrackingLink::class)->handle((string) $this->affiliate->getKey(), 'https://ilmu360.test/majlis/ramadan', [
         'subject_type' => 'event', 'subject_key' => 'event:ramadan',
     ]);
     expect($link->tracking_url)->toContain('/go/')
@@ -46,7 +46,7 @@ test('it creates a permanent tracked link and preserves subject provenance', fun
 
 test('it stores a caller-supplied opaque public token atomically', function (): void {
     config(['affiliates.links.allowed_hosts' => ['ilmu360.test']]);
-    $link = CreateTrackingLink::run($this->affiliate, 'https://ilmu360.test/majlis/ramadan', [
+    $link = app(CreateTrackingLink::class)->handle((string) $this->affiliate->getKey(), 'https://ilmu360.test/majlis/ramadan', [
         'custom_slug' => 'abc123xyz7890001',
     ]);
     expect($link->custom_slug)->toBe('abc123xyz7890001')
@@ -57,7 +57,7 @@ test('it stores a caller-supplied opaque public token atomically', function (): 
 
 test('it rejects a malformed caller-supplied public token', function (): void {
     config(['affiliates.links.allowed_hosts' => ['ilmu360.test']]);
-    expect(fn () => CreateTrackingLink::run($this->affiliate, 'https://ilmu360.test/majlis/ramadan', [
+    expect(fn () => app(CreateTrackingLink::class)->handle((string) $this->affiliate->getKey(), 'https://ilmu360.test/majlis/ramadan', [
         'custom_slug' => 'NOT-A-TOKEN!',
     ]))->toThrow(ValidationException::class);
 });
@@ -108,7 +108,7 @@ test('it creates a program tracking link when owner scoping is disabled without 
             'cookie_lifetime_days' => 30,
         ]);
 
-        $link = CreateTrackingLink::run($this->affiliate, 'https://ilmu360.test/majlis/ramadan', [
+        $link = app(CreateTrackingLink::class)->handle((string) $this->affiliate->getKey(), 'https://ilmu360.test/majlis/ramadan', [
             'program_id' => $program->getKey(),
         ]);
 
@@ -132,7 +132,7 @@ test('it rejects an unknown program when owner scoping is disabled without an ow
     app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver(null));
 
     try {
-        expect(fn () => CreateTrackingLink::run($this->affiliate, 'https://ilmu360.test/majlis/ramadan', [
+        expect(fn () => app(CreateTrackingLink::class)->handle((string) $this->affiliate->getKey(), 'https://ilmu360.test/majlis/ramadan', [
             'program_id' => (string) Str::uuid(),
         ]))->toThrow(ModelNotFoundException::class);
     } finally {
@@ -187,7 +187,7 @@ test('it rejects a cross-tenant program when owner scoping is enabled', function
         ]));
 
         OwnerContext::withOwner($ownerA, function () use ($affiliateA, $programB): void {
-            expect(fn () => CreateTrackingLink::run($affiliateA, 'https://merchant.example/summer', [
+            expect(fn () => app(CreateTrackingLink::class)->handle((string) $affiliateA->getKey(), 'https://merchant.example/summer', [
                 'program_id' => $programB->getKey(),
             ]))->toThrow(AuthorizationException::class, 'Selected program is not accessible in the current owner scope.');
         });

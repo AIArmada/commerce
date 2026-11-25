@@ -17,7 +17,7 @@ The canonical orchestration surface for affiliates is the `Actions` tree. Prefer
 | `app(CartAttribution::class)->attachFromCookie($cart, $cookieValue, $context)` | Attach from cookie tracking |
 | `CapturePublicAffiliateReferral::run($request, $affiliateCode)` | Capture public referral |
 | `app(AffiliateAdministration::class)->create($data)` | Create a new affiliate |
-| `CreateTrackingLink::run($affiliate, $destinationUrl, $attributes)` | Create a tracking link |
+| `app(TrackingLinkAdministration::class)->create((string) $affiliate->getKey(), $destinationUrl, $attributes)` | Create a tracking link |
 | `app(AffiliateLifecycle::class)->reject($affiliateId)` | Reject an affiliate |
 | `app(AffiliateLifecycle::class)->disable($affiliateId)` | Disable an affiliate |
 | `app(AffiliateLifecycle::class)->pause($affiliateId)` | Pause an affiliate |
