@@ -5,7 +5,6 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Features\Identity\Actions\ClaimAffiliateIdentity;
 use AIArmada\Affiliates\Features\Identity\Actions\IssueOwnershipCapability;
 use Carbon\CarbonImmutable;
-use LogicException;
 
 test('the persisted identity seal cannot be rewritten once set', function (): void {
     $affiliate = createTestAffiliate(['code' => 'SEAL-ONCE', 'purpose' => 'host_internal_only']);

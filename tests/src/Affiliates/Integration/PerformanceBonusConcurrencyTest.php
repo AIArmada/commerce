@@ -6,6 +6,7 @@ use AIArmada\Affiliates\Features\Conversions\Api\PerformanceBonusPosting;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Services\PerformanceBonusService;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
@@ -223,18 +224,14 @@ test('leaderboard respects owner scope', function (): void {
     });
 
     OwnerContext::withOwner($ownerA, function (): void {
-        $leaderboard = $this->service->getLeaderboard();
+        $leaderboard = app(PerformanceBonusService::class)->getLeaderboard();
         expect($leaderboard)->toHaveCount(1);
-        if ($leaderboard->isNotEmpty()) {
-            expect($leaderboard->first()['total_revenue'])->toBe(50000);
-        }
+        expect($leaderboard->first()['total_revenue'])->toBe(50000);
     });
 
     OwnerContext::withOwner($ownerB, function (): void {
-        $leaderboard = $this->service->getLeaderboard();
+        $leaderboard = app(PerformanceBonusService::class)->getLeaderboard();
         expect($leaderboard)->toHaveCount(1);
-        if ($leaderboard->isNotEmpty()) {
-            expect($leaderboard->first()['total_revenue'])->toBe(100000);
-        }
+        expect($leaderboard->first()['total_revenue'])->toBe(100000);
     });
 });
