@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages;
 
 use AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkAdministration;
+use AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkReader;
 use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Concerns\PortalPage;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -68,8 +69,7 @@ class PortalLinks extends PortalPage
             return null;
         }
 
-        return $affiliate->links()->where('destination_url', $this->resolvePublicUrl())
-            ->whereNull('deactivated_at')->latest()->value('tracking_url');
+        return app(TrackingLinkReader::class)->latestForDestination((string) $affiliate->getKey(), $this->resolvePublicUrl());
     }
 
     public function generateLink(): void

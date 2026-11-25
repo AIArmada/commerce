@@ -421,7 +421,7 @@ it('PortalLinks generates links when affiliate exists', function (): void {
     $page->generateLink();
 
     expect($page->generatedLink)->toContain('/go/')
-        ->and($affiliate->links()->count())->toBe(1);
+        ->and(\AIArmada\Affiliates\Models\AffiliateLink::query()->where('affiliate_id', $affiliate->getKey())->count())->toBe(1);
 
     $reflection = new ReflectionClass($page);
     $method = $reflection->getMethod('getHeaderActions');

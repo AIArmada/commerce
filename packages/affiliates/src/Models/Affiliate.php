@@ -9,6 +9,7 @@ use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\RegistrationApprovalMode;
 use AIArmada\Affiliates\Events\AffiliateActivated;
 use AIArmada\Affiliates\Events\AffiliateCreated;
+use AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkReader;
 use AIArmada\Affiliates\Features\Conversions\Api\BalanceReader;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycleReference;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutHoldReader;
@@ -79,7 +80,6 @@ use Spatie\ModelStates\HasStates;
  * @property-read Collection<int, AffiliateAttribution> $attributions
  * @property-read Collection<int, AffiliateConversion> $conversions
  * @property-read Collection<int, AffiliatePayout> $payouts
- * @property-read Collection<int, AffiliateLink> $links
  * @property-read Collection<int, Voucher> $vouchers
  * @property-read Model|null $owner
  */
@@ -211,14 +211,6 @@ class Affiliate extends Model implements Auditable
     public function payouts(): MorphMany
     {
         return $this->morphMany(AffiliatePayout::class, 'payee');
-    }
-
-    /**
-     * @return HasMany<AffiliateLink, $this>
-     */
-    public function links(): HasMany
-    {
-        return $this->hasMany(AffiliateLink::class);
     }
 
     /**
@@ -423,7 +415,7 @@ class Affiliate extends Model implements Auditable
                 || $affiliate->conversions()->exists()
                 || $affiliate->payouts()->exists()
                 || $affiliate->attributions()->exists()
-                || $affiliate->links()->exists()
+                || app(TrackingLinkReader::class)->hasRecords((string) $affiliate->getKey())
                 || app(BalanceReader::class)->hasRecords((string) $affiliate->getKey())
                 || app(PayoutMethodReader::class)->hasRecords((string) $affiliate->getKey())
                 || app(PayoutHoldReader::class)->hasRecords((string) $affiliate->getKey())

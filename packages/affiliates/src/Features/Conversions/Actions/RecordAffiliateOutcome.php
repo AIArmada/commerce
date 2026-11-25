@@ -8,6 +8,7 @@ use AIArmada\Affiliates\Data\AffiliateConversionData;
 use AIArmada\Affiliates\Data\AffiliateOutcomeDisposition;
 use AIArmada\Affiliates\Data\AffiliateOutcomeResult;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
+use AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkReader;
 use AIArmada\Affiliates\Features\Commissions\Api\CommissionPricing;
 use AIArmada\Affiliates\Features\Conversions\Api\OutcomePosting;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
@@ -376,7 +377,7 @@ final readonly class RecordAffiliateOutcome implements OutcomePosting
         }
 
         if ($attribution->affiliate_link_id !== null
-            && ! $affiliate->links()->whereKey($attribution->affiliate_link_id)->exists()) {
+            && ! app(TrackingLinkReader::class)->belongsTo($attribution->affiliate_link_id, (string) $affiliate->getKey())) {
             throw new InvalidArgumentException('The attribution link does not belong to its affiliate.');
         }
 
@@ -403,7 +404,7 @@ final readonly class RecordAffiliateOutcome implements OutcomePosting
         $linkId = $this->mergedValue($provenance, $payload, null, 'affiliate_link_id');
         $programId = $this->mergedValue($provenance, $payload, null, 'affiliate_program_id');
 
-        if ($linkId !== null && ! $affiliate->links()->whereKey($linkId)->exists()) {
+        if ($linkId !== null && (! is_string($linkId) || ! app(TrackingLinkReader::class)->belongsTo($linkId, (string) $affiliate->getKey()))) {
             throw new InvalidArgumentException('The outcome link does not belong to its affiliate.');
         }
 

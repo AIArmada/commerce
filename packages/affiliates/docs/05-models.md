@@ -43,7 +43,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 $affiliate->conversions;      // HasMany<AffiliateConversion>
 $affiliate->attributions;     // HasMany<AffiliateAttribution>
 $affiliate->payouts;          // MorphMany<AffiliatePayout>
-$affiliate->links;            // HasMany<AffiliateLink>
+app(\AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkReader::class)->hasRecords((string) $affiliate->getKey());
 $affiliate->parent;           // BelongsTo<Affiliate>
 $affiliate->children;         // HasMany<Affiliate>
 app(\AIArmada\Affiliates\Features\Programs\Api\ProgramMembershipReader::class)->programIds((string) $affiliate->getKey());

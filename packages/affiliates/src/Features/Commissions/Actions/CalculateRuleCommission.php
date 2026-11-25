@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Commissions\Actions;
 
+use AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkReader;
 use AIArmada\Affiliates\Features\Commissions\Api\CommissionCalculationResult;
 use AIArmada\Affiliates\Features\Commissions\Api\CommissionPricing;
 use AIArmada\Affiliates\Features\Commissions\Api\CommissionRuleCalculation;
@@ -146,26 +147,25 @@ final readonly class CalculateRuleCommission implements CommissionRuleCalculatio
     {
         $programId = $context['program_id'] ?? null;
 
-        // Get affiliate's volume for the period
-        $volumeQuery = $affiliate->conversions();
+        $reference = RevenueVolume::referenceFor($affiliate);
+        $since = CarbonImmutable::now()->startOfMonth();
 
-        if ($programId) {
-            $volumeQuery->where(function (Builder $query) use ($programId): void {
-                $query
-                    ->whereHas('affiliateLink', fn (Builder $linkQuery) => $linkQuery->where('program_id', $programId))
-                    ->orWhereHas('attribution.affiliateLink', fn (Builder $linkQuery) => $linkQuery->where('program_id', $programId));
-            });
+        if ($programId !== null && $programId !== '') {
+            if (! is_string($programId)) {
+                throw new LogicException('A program ID must be a UUID string.');
+            }
+
+            $folded = app(TrackingLinkReader::class)->programVolume((string) $affiliate->getKey(), $programId, $reference, $since)->byCurrency;
+        } else {
+            $volumeRows = $affiliate->conversions()
+                ->where('occurred_at', '>=', $since)
+                ->toBase()
+                ->selectRaw('commission_currency as currency, COALESCE(SUM(COALESCE(value_minor, 0)), 0) as total')
+                ->groupBy('commission_currency')
+                ->get();
+            $folded = RevenueVolume::foldRows($volumeRows, $reference);
         }
 
-        $volumeRows = $volumeQuery
-            ->where('occurred_at', '>=', CarbonImmutable::now()->startOfMonth())
-            ->toBase()
-            ->selectRaw('commission_currency as currency, COALESCE(SUM(COALESCE(value_minor, 0)), 0) as total')
-            ->groupBy('commission_currency')
-            ->get();
-
-        $reference = RevenueVolume::referenceFor($affiliate);
-        $folded = RevenueVolume::foldRows($volumeRows, $reference);
         $volumeIn = [];
 
         $volumeFor = function (string $currency) use ($folded, &$volumeIn): int {

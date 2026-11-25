@@ -4,14 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Programs\Queries;
 
+use AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkReader;
 use AIArmada\Affiliates\Features\Programs\Api\TierQualificationReader;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramTier;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\States\ApprovedConversion;
-use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\Support\RevenueVolume;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
 final readonly class ProgramTierQualificationQuery implements TierQualificationReader
@@ -32,19 +30,15 @@ final readonly class ProgramTierQualificationQuery implements TierQualificationR
             return null;
         }
 
-        $rows = $affiliate->conversions()
-            ->whereIn('status', [ApprovedConversion::value(), PaidConversion::value()])
-            ->where(function (Builder $query) use ($program): void {
-                $query->whereHas('affiliateLink', fn (Builder $linkQuery) => $linkQuery->where('program_id', $program->id))
-                    ->orWhereHas('attribution.affiliateLink', fn (Builder $linkQuery) => $linkQuery->where('program_id', $program->id));
-            })
-            ->toBase()
-            ->selectRaw('commission_currency as currency, COUNT(*) as conversion_count, COALESCE(SUM(COALESCE(value_minor, 0)), 0) as total')
-            ->groupBy('commission_currency')
-            ->get();
+        $totals = app(TrackingLinkReader::class)->programVolume(
+            (string) $affiliate->getKey(),
+            (string) $program->getKey(),
+            RevenueVolume::referenceFor($affiliate),
+            approvedOnly: true,
+        );
 
-        $count = (int) $rows->sum('conversion_count');
-        $volume = RevenueVolume::foldRows($rows, RevenueVolume::referenceFor($affiliate));
+        $count = $totals->count;
+        $volume = $totals->byCurrency;
         $revenue = [];
 
         foreach ($tiers->sortByDesc('level') as $tier) {

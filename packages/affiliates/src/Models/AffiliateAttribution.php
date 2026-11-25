@@ -61,7 +61,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property CarbonInterface|null $created_at
  * @property CarbonInterface|null $updated_at
  * @property-read Affiliate $affiliate
- * @property-read AffiliateLink|null $affiliateLink
  * @property-read Collection<int, AffiliateConversion> $conversions
  */
 class AffiliateAttribution extends Model
@@ -163,12 +162,6 @@ class AffiliateAttribution extends Model
     public function affiliate(): BelongsTo
     {
         return $this->belongsTo(Affiliate::class);
-    }
-
-    /** @return BelongsTo<AffiliateLink, $this> */
-    public function affiliateLink(): BelongsTo
-    {
-        return $this->belongsTo(AffiliateLink::class, 'affiliate_link_id');
     }
 
     /**

@@ -206,7 +206,7 @@ describe('Affiliate Model - Relationships', function (): void {
         expect($affiliate->children())->toBeInstanceOf(HasMany::class);
     });
 
-    test('has many links', function (): void {
+    test('checks tracking link records through Attribution', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'LINK-001',
             'name' => 'Link Test',
@@ -215,7 +215,16 @@ describe('Affiliate Model - Relationships', function (): void {
             'commission_rate' => 1000,
             'currency' => 'USD',
         ]);
-        expect($affiliate->links())->toBeInstanceOf(HasMany::class);
+        $reader = app(\AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkReader::class);
+        expect($reader->hasRecords((string) $affiliate->getKey()))->toBeFalse();
+        $link = \AIArmada\Affiliates\Models\AffiliateLink::query()->create([
+            'affiliate_id' => $affiliate->getKey(),
+            'destination_url' => 'https://example.com',
+            'tracking_url' => 'https://example.com/go/test',
+        ]);
+        expect($reader->hasRecords((string) $affiliate->getKey()))->toBeTrue()
+            ->and($reader->belongsTo((string) $link->getKey(), (string) $affiliate->getKey()))->toBeTrue()
+            ->and($reader->belongsTo('invalid-id', (string) $affiliate->getKey()))->toBeFalse();
     });
 
     test('has many payouts', function (): void {

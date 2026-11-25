@@ -28,6 +28,7 @@ final class FeatureModule implements FeatureModuleContract
         $app->bind(Api\AttributionTracking::class, Actions\TrackAffiliateVisit::class);
         $app->bind(Api\CartAttribution::class, Actions\AttachAffiliateToCart::class);
         $app->bind(Api\TrackingLinkAdministration::class, Actions\ManageTrackingLinks::class);
+        $app->bind(Api\TrackingLinkReader::class, Queries\ReadTrackingLinks::class);
     }
 
     public function boot(Application $app): void
