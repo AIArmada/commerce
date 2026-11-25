@@ -64,9 +64,9 @@ final readonly class AdministerRank implements RankAdministration
 
         $validated = Validator::make($attributes, [
             'name' => [...$presence, 'required', 'string', 'max:255'],
-            'slug' => [$required, 'string', 'max:255'],
+            'slug' => [...$presence, 'required', 'string', 'max:255'],
             'level' => [...$presence, 'required', 'integer', 'min:1', 'max:2147483647'],
-            'commission_rate_basis_points' => [$required, 'integer', 'between:0,10000'],
+            'commission_rate_basis_points' => [...$presence, 'required', 'integer', 'between:0,10000'],
             'min_personal_sales' => ['sometimes', 'required', 'integer', 'between:0,2147483647'],
             'min_team_sales' => ['sometimes', 'required', 'integer', 'between:0,2147483647'],
             'min_active_downlines' => ['sometimes', 'required', 'integer', 'between:0,2147483647'],
