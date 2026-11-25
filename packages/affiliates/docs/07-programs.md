@@ -188,17 +188,19 @@ $memberships = AffiliateProgramMembership::query()
 Pre-defined commission structures for quick affiliate setup:
 
 ```php
-use AIArmada\Affiliates\Models\AffiliateCommissionTemplate;
+use AIArmada\Affiliates\Features\Commissions\Api\CommissionTemplateAdministration;
+
+$templates = app(CommissionTemplateAdministration::class);
 
 // Create standard percentage template
-$template = AffiliateCommissionTemplate::createStandardPercentage(
+$templateId = $templates->createStandardPercentage(
     name: 'Standard 10%',
     rateBasisPoints: 1000,
     isDefault: true,
 );
 
 // Create tiered volume template
-$template = AffiliateCommissionTemplate::createTieredVolume(
+$templateId = $templates->createTieredVolume(
     name: 'Volume Tiers',
     baseRateBasisPoints: 500,
     volumeTiers: [
@@ -209,14 +211,14 @@ $template = AffiliateCommissionTemplate::createTieredVolume(
 );
 
 // Create MLM template
-$template = AffiliateCommissionTemplate::createMlm(
+$templateId = $templates->createMlm(
     name: '3-Level MLM',
     baseRateBasisPoints: 1000,
     overridePercentages: [50, 25, 10], // 50%, 25%, 10% of commission to uplines
 );
 
 // Apply template to affiliate
-$template->applyToAffiliate($affiliate);
+$templates->applyToAffiliate($templateId, (string) $affiliate->getKey());
 
 // Apply template to program
 $template->applyToProgram(\AIArmada\Affiliates\Models\AffiliateProgram::query()->findOrFail($programId));

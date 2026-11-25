@@ -6,6 +6,7 @@ use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateCommissionPromotion;
+use AIArmada\Affiliates\Features\Commissions\Api\PromotionUsage;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\States\Active;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -169,7 +170,7 @@ describe('AffiliateCommissionPromotion Model', function (): void {
             'current_uses' => 5,
         ]);
 
-        $promo->incrementUsage();
+        expect(app(PromotionUsage::class)->consume((string) $promo->getKey()))->toBeTrue();
 
         $promo->refresh();
         expect($promo->current_uses)->toBe(6);

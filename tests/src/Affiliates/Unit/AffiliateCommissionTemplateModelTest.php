@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Enums\CommissionType;
+use AIArmada\Affiliates\Features\Commissions\Api\CommissionTemplateAdministration;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateCommissionTemplate;
 use AIArmada\Affiliates\States\Active;
@@ -54,11 +55,11 @@ describe('AffiliateCommissionTemplate Model', function (): void {
     });
 
     it('creates standard percentage template', function (): void {
-        $template = AffiliateCommissionTemplate::createStandardPercentage(
+        $template = AffiliateCommissionTemplate::query()->findOrFail(app(CommissionTemplateAdministration::class)->createStandardPercentage(
             'Standard 10%',
             1000,
             true
-        );
+        ));
 
         expect($template->name)->toBe('Standard 10%')
             ->and($template->is_default)->toBeTrue()
@@ -68,10 +69,10 @@ describe('AffiliateCommissionTemplate Model', function (): void {
     });
 
     it('creates tiered volume template with default tiers', function (): void {
-        $template = AffiliateCommissionTemplate::createTieredVolume(
+        $template = AffiliateCommissionTemplate::query()->findOrFail(app(CommissionTemplateAdministration::class)->createTieredVolume(
             'Volume Based',
             500
-        );
+        ));
 
         expect($template->name)->toBe('Volume Based')
             ->and($template->rules['commission_rules'][0]['rate'])->toBe(500)
@@ -84,21 +85,21 @@ describe('AffiliateCommissionTemplate Model', function (): void {
             ['min_volume' => 50001, 'max_volume' => null, 'bonus_rate' => 500],
         ];
 
-        $template = AffiliateCommissionTemplate::createTieredVolume(
+        $template = AffiliateCommissionTemplate::query()->findOrFail(app(CommissionTemplateAdministration::class)->createTieredVolume(
             'Custom Volume',
             750,
             $customTiers
-        );
+        ));
 
         expect($template->rules['volume_tiers'])->toBe($customTiers);
     });
 
     it('creates MLM template with override percentages', function (): void {
-        $template = AffiliateCommissionTemplate::createMlm(
+        $template = AffiliateCommissionTemplate::query()->findOrFail(app(CommissionTemplateAdministration::class)->createMlm(
             'MLM 3 Levels',
             1000,
             [50, 25, 10]
-        );
+        ));
 
         expect($template->name)->toBe('MLM 3 Levels')
             ->and($template->rules['mlm_overrides'])->toBe([1 => 50, 2 => 25, 3 => 10]);
@@ -279,7 +280,7 @@ describe('AffiliateCommissionTemplate Model', function (): void {
             'currency' => 'USD',
         ]);
 
-        $template->applyToAffiliate($affiliate);
+        app(CommissionTemplateAdministration::class)->applyToAffiliate((string) $template->getKey(), (string) $affiliate->getKey());
 
         $affiliate->refresh();
 
@@ -289,21 +290,21 @@ describe('AffiliateCommissionTemplate Model', function (): void {
     });
 
     it('unsets other defaults when setting new default', function (): void {
-        $template1 = AffiliateCommissionTemplate::create([
+        $template1 = AffiliateCommissionTemplate::query()->findOrFail(app(CommissionTemplateAdministration::class)->create([
             'name' => 'First Default',
             'slug' => 'first-default',
             'is_default' => true,
             'is_active' => true,
             'rules' => [],
-        ]);
+        ]));
 
-        $template2 = AffiliateCommissionTemplate::create([
+        $template2 = AffiliateCommissionTemplate::query()->findOrFail(app(CommissionTemplateAdministration::class)->create([
             'name' => 'Second Default',
             'slug' => 'second-default',
             'is_default' => true,
             'is_active' => true,
             'rules' => [],
-        ]);
+        ]));
 
         $template1->refresh();
 

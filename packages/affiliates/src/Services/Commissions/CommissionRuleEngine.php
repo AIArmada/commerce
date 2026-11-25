@@ -7,6 +7,7 @@ namespace AIArmada\Affiliates\Services\Commissions;
 use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateCommissionPromotion;
+use AIArmada\Affiliates\Features\Commissions\Api\PromotionUsage;
 use AIArmada\Affiliates\Models\AffiliateCommissionRule;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateVolumeTier;
@@ -307,9 +308,9 @@ final class CommissionRuleEngine
         $totalBonus = 0;
 
         foreach ($promotions as $promotion) {
-            $bonus = $promotion->calculateBonus($baseCommission);
-            $totalBonus += $bonus;
-            $promotion->incrementUsage();
+            if (app(PromotionUsage::class)->consume((string) $promotion->getKey())) {
+                $totalBonus += $promotion->calculateBonus($baseCommission);
+            }
         }
 
         return $totalBonus;

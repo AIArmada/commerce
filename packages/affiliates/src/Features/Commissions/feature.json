@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "name": "Commissions",
+  "owns": {
+    "table:affiliate_commission_templates": [
+      "AIArmada\\Affiliates\\Features\\Commissions\\Actions\\AdministerCommissionTemplates"
+    ],
+    "table:affiliate_commission_promotions": [
+      "AIArmada\\Affiliates\\Features\\Commissions\\Actions\\ConsumePromotionUsage"
+    ]
+  },
+  "extensions": {}
+}

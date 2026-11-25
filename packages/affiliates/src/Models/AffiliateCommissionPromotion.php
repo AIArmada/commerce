@@ -109,11 +109,6 @@ class AffiliateCommissionPromotion extends Model implements Auditable
         return in_array($affiliate->id, $this->affiliate_ids, true);
     }
 
-    public function incrementUsage(): void
-    {
-        $this->increment('current_uses');
-    }
-
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('starts_at', '<=', CarbonImmutable::now())
