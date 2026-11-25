@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Authz\Models;
 
+use AIArmada\Authz\Actions\DeleteScopeAssignments;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Support\Facades\DB;
-use Spatie\Permission\PermissionRegistrar;
 
 /**
  * @property string $id
@@ -44,56 +43,13 @@ final class AuthzScope extends Model
 
     protected static function booted(): void
     {
-        static::deleted(function (AuthzScope $authzScope): void {
-            $registrar = app(PermissionRegistrar::class);
-
-            if (! $registrar->teams) {
-                return;
-            }
-
-            $teamsKey = (string) $registrar->teamsKey;
-            $roleClass = config('permission.models.role', Role::class);
-            $tableNames = (array) config('permission.table_names', []);
-            $columnNames = (array) config('permission.column_names', []);
-
-            /** @var class-string<Model> $roleClass */
-            $role = new $roleClass;
-            $roleTable = $role->getTable();
-            $roleKey = $role->getKeyName();
-            $rolePivotKey = (string) ($columnNames['role_pivot_key'] ?? 'role_id');
-
-            DB::transaction(function () use ($authzScope, $teamsKey, $tableNames, $roleTable, $roleKey, $rolePivotKey): void {
-                $roleIds = DB::table($roleTable)
-                    ->where($teamsKey, $authzScope->getKey())
-                    ->pluck($roleKey)
-                    ->all();
-
-                DB::table((string) ($tableNames['model_has_roles'] ?? 'model_has_roles'))
-                    ->where($teamsKey, $authzScope->getKey())
-                    ->delete();
-
-                DB::table((string) ($tableNames['model_has_permissions'] ?? 'model_has_permissions'))
-                    ->where($teamsKey, $authzScope->getKey())
-                    ->delete();
-
-                if ($roleIds === []) {
-                    return;
-                }
-
-                DB::table((string) ($tableNames['model_has_roles'] ?? 'model_has_roles'))
-                    ->whereIn($rolePivotKey, $roleIds)
-                    ->delete();
-
-                DB::table((string) ($tableNames['role_has_permissions'] ?? 'role_has_permissions'))
-                    ->whereIn($rolePivotKey, $roleIds)
-                    ->delete();
-
-                DB::table($roleTable)
-                    ->whereIn($roleKey, $roleIds)
-                    ->delete();
-            });
-
-            $registrar->forgetCachedPermissions();
+        static::deleted(static function (AuthzScope $scope): void {
+            app(DeleteScopeAssignments::class)->execute($scope);
         });
+    }
+
+    public function delete(): ?bool
+    {
+        return $this->getConnection()->transaction(fn (): ?bool => parent::delete());
     }
 }

@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Authz\Concerns;
 
-use AIArmada\Authz\Models\Permission;
+use AIArmada\Authz\Actions\SyncRolePermissions;
 use AIArmada\Authz\Models\Role;
-use Spatie\Permission\Exceptions\PermissionDoesNotExist;
-use Spatie\Permission\PermissionRegistrar;
 
 /**
  * Shared permission sync logic for Role create/edit pages.
@@ -59,35 +57,6 @@ trait SyncsRolePermissions
      */
     protected function syncPermissionsToRole(): void
     {
-        /** @var Role $role */
-        $role = $this->record;
-
-        if ($this->permissionNames === []) {
-            $role->syncPermissions([]);
-            app(PermissionRegistrar::class)->forgetCachedPermissions();
-
-            return;
-        }
-
-        $guardName = $role->guard_name;
-
-        $permissions = Permission::query()
-            ->where('guard_name', $guardName)
-            ->whereIn('name', $this->permissionNames)
-            ->get();
-
-        $existingPermissionNames = $permissions
-            ->pluck('name')
-            ->map(static fn (mixed $name): string => (string) $name)
-            ->all();
-
-        $missingPermissionNames = array_values(array_diff($this->permissionNames, $existingPermissionNames));
-
-        if ($missingPermissionNames !== []) {
-            throw PermissionDoesNotExist::create($missingPermissionNames[0], $guardName);
-        }
-
-        $role->syncPermissions($permissions);
-        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        app(SyncRolePermissions::class)->execute($this->record, $this->permissionNames);
     }
 }

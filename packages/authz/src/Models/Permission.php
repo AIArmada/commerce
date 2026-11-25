@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Authz\Models;
 
+use AIArmada\Authz\Actions\PersistPermission;
 use BackedEnum;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -43,7 +44,7 @@ final class Permission extends SpatiePermission
             throw PermissionAlreadyExists::create($attributes['name'], $attributes['guard_name']);
         }
 
-        return static::query()->create($attributes);
+        return app(PersistPermission::class)->execute($attributes);
     }
 
     public static function findOrCreate(BackedEnum | string $name, ?string $guardName = null): PermissionContract
@@ -55,7 +56,7 @@ final class Permission extends SpatiePermission
         if (! $permission) {
             $attributes = ['name' => $name, 'guard_name' => $guardName];
 
-            return static::query()->create($attributes);
+            return app(PersistPermission::class)->execute($attributes);
         }
 
         return $permission;

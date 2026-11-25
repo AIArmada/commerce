@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Authz\Concerns;
 
+use AIArmada\Authz\Actions\DeleteScopeForModel;
+use AIArmada\Authz\Actions\EnsureScopeForModel;
+use AIArmada\Authz\Actions\UpdateScopeLabel;
 use AIArmada\Authz\Models\AuthzScope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
@@ -32,7 +35,7 @@ trait HasAuthzScope
         });
 
         static::deleted(function (self $model): void {
-            $model->authzScope()->first()?->delete();
+            app(DeleteScopeForModel::class)->execute($model);
         });
     }
 
@@ -46,24 +49,12 @@ trait HasAuthzScope
 
     public function ensureAuthzScope(): AuthzScope
     {
-        /** @var AuthzScope $authzScope */
-        $authzScope = $this->authzScope()->firstOrCreate([], [
-            'label' => $this->getAuthzScopeLabel(),
-        ]);
-
-        return $authzScope;
+        return app(EnsureScopeForModel::class)->execute($this, $this->getAuthzScopeLabel());
     }
 
     public function syncAuthzScopeLabel(): void
     {
-        $scope = $this->authzScope;
-        $label = $this->getAuthzScopeLabel();
-
-        if (! $scope instanceof AuthzScope || $label === $scope->label) {
-            return;
-        }
-
-        $scope->forceFill(['label' => $label])->save();
+        app(UpdateScopeLabel::class)->execute($this, $this->getAuthzScopeLabel());
     }
 
     /**

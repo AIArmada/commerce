@@ -164,3 +164,13 @@ it('restores the previous scope after nested calls and throwing callbacks', func
 
     expect(AuthzScopeContext::hasOverride())->toBeFalse();
 });
+
+it('refuses an unsaved model with a manually assigned identifier', function (): void {
+    $target = new User;
+    $target->setAttribute('id', '11111111-1111-4111-8111-111111111111');
+
+    expect(fn () => app(Authz::class)->resolveScopeId($target))
+        ->toThrow(ScopeResolutionException::class);
+
+    expect(AuthzScope::query()->where('scopeable_id', $target->getKey())->exists())->toBeFalse();
+});

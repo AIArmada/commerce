@@ -62,3 +62,15 @@ final class SyncsRolePermissionsFixture
         $this->syncPermissionsToRole();
     }
 }
+
+it('does not detach existing permissions when the requested set is invalid', function (): void {
+    $role = Role::create(['name' => 'atomic-sync-role', 'guard_name' => 'web']);
+    $permission = Permission::findOrCreate('atomic-sync.view', 'web');
+    $role->givePermissionTo($permission);
+
+    $sync = new SyncsRolePermissionsFixture($role);
+    $sync->extract(['permissions_direct' => ['missing.permission']]);
+
+    expect(fn () => $sync->sync())->toThrow(PermissionDoesNotExist::class)
+        ->and($role->permissions()->pluck('name')->all())->toBe(['atomic-sync.view']);
+});

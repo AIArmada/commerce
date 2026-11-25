@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Authz\Models;
 
+use AIArmada\Authz\Actions\PersistRole;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -102,7 +103,7 @@ final class Role extends SpatieRole
             throw RoleAlreadyExists::create($attributes['name'], $attributes['guard_name']);
         }
 
-        return static::query()->create($attributes);
+        return app(PersistRole::class)->execute($attributes);
     }
 
     /**
@@ -116,7 +117,7 @@ final class Role extends SpatieRole
 
         if ($registrar->teams) {
             $teamsKey = $registrar->teamsKey;
-            $teamId = $params[$teamsKey] ?? getPermissionsTeamId();
+            $teamId = array_key_exists($teamsKey, $params) ? $params[$teamsKey] : getPermissionsTeamId();
 
             if (config('authz.scopes.enforce', true)) {
                 if ($teamId === null) {

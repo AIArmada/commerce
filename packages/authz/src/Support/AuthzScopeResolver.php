@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Authz\Support;
 
+use AIArmada\Authz\Actions\EnsureScopeForModel;
 use AIArmada\Authz\Exceptions\ScopeResolutionException;
 use AIArmada\Authz\Models\AuthzScope;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\QueryException;
 
 final class AuthzScopeResolver
 {
@@ -57,7 +57,7 @@ final class AuthzScopeResolver
         $scopeableType = $scope->getMorphClass();
         $scopeableId = $scope->getKey();
 
-        if ($scopeableType === '' || $scopeableId === null || $scopeableId === '') {
+        if (! $scope->exists || $scopeableType === '' || $scopeableId === null || $scopeableId === '') {
             throw ScopeResolutionException::forScope($scope, 'the model scope is not persisted');
         }
 
@@ -85,26 +85,6 @@ final class AuthzScopeResolver
             $label = $scope->getAuthzScopeLabel();
         }
 
-        try {
-            $authzScope = AuthzScope::query()->firstOrCreate($attributes, ['label' => $label]);
-        } catch (QueryException $exception) {
-            if ((string) $exception->getCode() !== '23000') {
-                throw $exception;
-            }
-
-            $existingId = AuthzScope::query()->where($attributes)->value('id');
-
-            if ($existingId === null) {
-                throw ScopeResolutionException::forScope($scope, 'the Authz scope could not be created', $exception);
-            }
-
-            return $existingId;
-        }
-
-        if ($label !== null && $authzScope->label !== $label) {
-            $authzScope->forceFill(['label' => $label])->save();
-        }
-
-        return $authzScope->getKey();
+        return app(EnsureScopeForModel::class)->execute($scope, $label)->getKey();
     }
 }
