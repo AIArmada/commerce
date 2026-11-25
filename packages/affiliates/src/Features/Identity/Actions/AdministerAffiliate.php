@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Identity\Actions;
 
+use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateAdministration;
 use AIArmada\Affiliates\Features\Identity\Queries\ResolveAffiliateLinkedOwner;
 use AIArmada\Affiliates\Features\Identity\Queries\ValidateAffiliateParentAssignment;
-use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateRank;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;

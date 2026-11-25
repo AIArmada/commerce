@@ -29,7 +29,7 @@ final readonly class RunScheduledPayoutSweep implements ScheduledPayoutSweep
     }
 
     /**
-     * @param (Closure(string, string, string): void)|null $onOutcome
+     * @param  (Closure(string, string, string): void)|null  $onOutcome
      * @return array{processed: int, skipped: int, errors: int}
      */
     public function run(bool $dryRun, ?string $affiliateId, int $minimum, ?Closure $onOutcome = null): array

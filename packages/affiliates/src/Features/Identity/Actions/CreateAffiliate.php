@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Identity\Actions;
 
 use AIArmada\Affiliates\Enums\CommissionType;
-use AIArmada\Affiliates\Features\Identity\Queries\GenerateAffiliateCode;
 use AIArmada\Affiliates\Enums\RegistrationApprovalMode;
+use AIArmada\Affiliates\Features\Identity\Queries\GenerateAffiliateCode;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\CommerceSupport\Support\OwnerContext;

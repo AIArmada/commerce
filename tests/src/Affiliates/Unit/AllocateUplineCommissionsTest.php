@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Data\AffiliateConversionData;
 use AIArmada\Affiliates\Features\Conversions\Actions\AllocateUplineCommissions;
 use AIArmada\Affiliates\Features\Conversions\Actions\ApplyConversionAccounting;
-use AIArmada\Affiliates\Data\AffiliateConversionData;
 use AIArmada\Affiliates\Features\Webhooks\Api\WebhookApi;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\ConversionStatus;

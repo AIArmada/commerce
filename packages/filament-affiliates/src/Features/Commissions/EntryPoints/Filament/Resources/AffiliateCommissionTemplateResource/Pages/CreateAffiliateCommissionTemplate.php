@@ -6,9 +6,9 @@ namespace AIArmada\FilamentAffiliates\Features\Commissions\EntryPoints\Filament\
 
 use AIArmada\Affiliates\Features\Commissions\Api\CommissionTemplateAdministration;
 use AIArmada\Affiliates\Models\AffiliateCommissionTemplate;
-use Illuminate\Database\Eloquent\Model;
 use AIArmada\FilamentAffiliates\Features\Commissions\EntryPoints\Filament\Resources\AffiliateCommissionTemplateResource;
 use Filament\Resources\Pages\CreateRecord;
+use Illuminate\Database\Eloquent\Model;
 
 final class CreateAffiliateCommissionTemplate extends CreateRecord
 {

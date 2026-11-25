@@ -3,10 +3,10 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Contracts\PayoutProcessorInterface;
+use AIArmada\Affiliates\Contracts\PayoutProcessorRegistry;
 use AIArmada\Affiliates\Data\PayoutRequest;
 use AIArmada\Affiliates\Data\PayoutResult;
 use AIArmada\Affiliates\Data\PayoutStatusResult;
-use AIArmada\Affiliates\Contracts\PayoutProcessorRegistry;
 use AIArmada\Affiliates\Drivers\Payouts\PayoutProcessorFactory;
 use AIArmada\Affiliates\Enums\PayoutMethodType;
 use AIArmada\Affiliates\Models\Affiliate;

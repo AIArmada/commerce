@@ -13,6 +13,7 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Links\Actions\CreatePublicLink;
 use AIArmada\Links\Actions\GenerateLinkUrl;
 use AIArmada\Links\LinksServiceProvider;
+use AIArmada\Links\Models\Link;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -76,7 +77,7 @@ final readonly class CreateTrackingLink
 
         $connection = $affiliate->getConnection();
         if ($connection !== (new AffiliateLink)->getConnection()
-            || $connection !== (new \AIArmada\Links\Models\Link)->getConnection()) {
+            || $connection !== (new Link)->getConnection()) {
             throw new LogicException('Tracking link creation requires a shared database connection.');
         }
 

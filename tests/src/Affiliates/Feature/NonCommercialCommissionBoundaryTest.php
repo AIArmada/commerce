@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Features\Attribution\Api\CartAttribution;
 use AIArmada\Affiliates\Features\Conversions\Actions\RecordAffiliateConversion;
 use AIArmada\Affiliates\Features\Conversions\Actions\RecordAffiliateOutcome;
 use AIArmada\Affiliates\Features\Payouts\Actions\CreatePayout;
-use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateBalance;

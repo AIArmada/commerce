@@ -11,6 +11,7 @@ use AIArmada\Affiliates\Models\AffiliatePayoutOperation;
 use AIArmada\Affiliates\Queries\PayoutRequestQuery;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Carbon\CarbonImmutable;
+use LogicException;
 
 final readonly class ReverseStripePayout implements PayoutReversal
 {
@@ -25,7 +26,7 @@ final readonly class ReverseStripePayout implements PayoutReversal
         $connection = (new AffiliatePayout)->getConnection();
 
         if ($connection !== (new AffiliatePayoutOperation)->getConnection()) {
-            throw new \LogicException('Payout reversal requires a shared database connection.');
+            throw new LogicException('Payout reversal requires a shared database connection.');
         }
 
         return $connection->transaction(function () use ($payoutId): bool {

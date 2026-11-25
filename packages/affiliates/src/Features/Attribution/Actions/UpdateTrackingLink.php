@@ -5,14 +5,15 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Attribution\Actions;
 
 use AIArmada\Affiliates\Models\AffiliateLink;
-use AIArmada\Affiliates\Support\Links\AffiliateLinkDestination;
-use AIArmada\Links\Actions\UpdateLink;
-use Illuminate\Support\Arr;
 use AIArmada\Affiliates\Models\AffiliateProgram;
+use AIArmada\Affiliates\Support\Links\AffiliateLinkDestination;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use LogicException;
+use AIArmada\Links\Actions\UpdateLink;
+use AIArmada\Links\Models\Link;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
+use LogicException;
 
 final readonly class UpdateTrackingLink
 {
@@ -20,7 +21,7 @@ final readonly class UpdateTrackingLink
     public function handle(string $linkId, array $attributes): AffiliateLink
     {
         $connection = (new AffiliateLink)->getConnection();
-        if ($connection !== (new \AIArmada\Links\Models\Link)->getConnection()) {
+        if ($connection !== (new Link)->getConnection()) {
             throw new LogicException('Tracking link update requires a shared database connection.');
         }
 

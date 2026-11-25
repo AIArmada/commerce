@@ -17,8 +17,8 @@ use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Affiliates\States\ProcessingPayout;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
-use InvalidArgumentException;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 use LogicException;
 
 /**

@@ -9,7 +9,7 @@ use AIArmada\Affiliates\Data\PayoutResult;
 interface PayoutAdministration
 {
     /** @param array<int, string> $conversionIds
-     * @param array<string, mixed> $attributes
+     * @param  array<string, mixed>  $attributes
      */
     public function create(string $affiliateId, array $conversionIds, array $attributes = []): string;
 

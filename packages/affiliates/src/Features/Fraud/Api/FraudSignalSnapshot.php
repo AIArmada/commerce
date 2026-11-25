@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Fraud\Api;
 
-use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
 use Carbon\CarbonImmutable;
 
 final readonly class FraudSignalSnapshot

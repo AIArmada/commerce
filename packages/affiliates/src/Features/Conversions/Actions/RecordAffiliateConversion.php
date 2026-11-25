@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Conversions\Actions;
 
 use AIArmada\Affiliates\Data\AffiliateConversionData;
-use AIArmada\Affiliates\Features\Conversions\Api\CartConversionRecording;
 use AIArmada\Affiliates\Data\AttributionTouch;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
+use AIArmada\Affiliates\Features\Conversions\Api\CartConversionRecording;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudApi;
 use AIArmada\Affiliates\Features\Webhooks\Api\WebhookApi;
 use AIArmada\Affiliates\Models\Affiliate;

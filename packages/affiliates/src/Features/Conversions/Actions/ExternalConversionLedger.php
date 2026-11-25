@@ -11,6 +11,7 @@ use AIArmada\Affiliates\Data\PostedConversion;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudApi;
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Services\Commissions\CommissionCaps;
 use AIArmada\Affiliates\States\ApprovedConversion;
@@ -53,7 +54,7 @@ final readonly class ExternalConversionLedger implements MerchantLedger
 
         $connection = (new AffiliateConversion)->getConnection();
 
-        if ($affiliate->getConnection() !== $connection || (new \AIArmada\Affiliates\Models\AffiliateBalance)->getConnection() !== $connection) {
+        if ($affiliate->getConnection() !== $connection || (new AffiliateBalance)->getConnection() !== $connection) {
             throw new RuntimeException('External conversion accounting requires a shared database connection.');
         }
 

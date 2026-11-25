@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Console\Commands\ExportAffiliatePayoutCommand;
-use AIArmada\Affiliates\Features\Conversions\EntryPoints\Console\ProcessCommissionMaturityCommand;
 use AIArmada\Affiliates\Events\DailyStatsAggregated;
+use AIArmada\Affiliates\Features\Conversions\EntryPoints\Console\ProcessCommissionMaturityCommand;
 use AIArmada\Affiliates\Features\Reporting\EntryPoints\Commands\AggregateDailyStatsCommand;
 use AIArmada\Affiliates\Features\Upline\EntryPoints\Console\ProcessRankUpgradesCommand;
 use AIArmada\Affiliates\Models\Affiliate;

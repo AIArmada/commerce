@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Cashier\Support;
 
-use AIArmada\Affiliates\Features\Conversions\Api\CartConversionRecording;
 use AIArmada\Affiliates\AffiliatesServiceProvider;
+use AIArmada\Affiliates\Features\Conversions\Api\CartConversionRecording;
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\CartManager;
 use AIArmada\Cart\Contracts\CartManagerInterface;

@@ -2,12 +2,13 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Data\AffiliateConversionData;
 use AIArmada\Affiliates\Features\Conversions\Actions\AllocateUplineCommissions;
 use AIArmada\Affiliates\Features\Conversions\Actions\ApplyConversionAccounting;
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionMaturity;
+use AIArmada\Affiliates\Features\Conversions\Api\PerformanceBonusPosting;
 use AIArmada\Affiliates\Features\Payouts\Actions\ClaimScheduledPayout;
 use AIArmada\Affiliates\Features\Payouts\Actions\CreatePayout;
-use AIArmada\Affiliates\Data\AffiliateConversionData;
 use AIArmada\Affiliates\Features\Upline\Api\RankQualificationApi;
 use AIArmada\Affiliates\Features\Upline\Api\UplineApi;
 use AIArmada\Affiliates\Features\Upline\Models\AffiliateUpline;
@@ -16,7 +17,6 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateRank;
-use AIArmada\Affiliates\Features\Conversions\Api\PerformanceBonusPosting;
 use AIArmada\Affiliates\Services\PerformanceBonusService;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\ConversionStatus;

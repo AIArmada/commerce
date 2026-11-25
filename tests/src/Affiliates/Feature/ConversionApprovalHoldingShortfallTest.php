@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Events\HoldingShortfallDetected;
 use AIArmada\Affiliates\Features\Conversions\Actions\ApplyConversionAccounting;
 use AIArmada\Affiliates\Features\Conversions\Actions\ReverseAffiliateConversion;
-use AIArmada\Affiliates\Events\HoldingShortfallDetected;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;

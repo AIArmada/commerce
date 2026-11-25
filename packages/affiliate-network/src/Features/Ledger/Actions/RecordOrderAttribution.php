@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\AffiliateNetwork\Features\Ledger\Actions;
 
-use AIArmada\Orders\Models\Order;
-use AIArmada\Orders\Actions\MergeOrderMetadata;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
+use AIArmada\Orders\Actions\MergeOrderMetadata;
+use AIArmada\Orders\Models\Order;
 use Carbon\CarbonImmutable;
 
 final readonly class RecordOrderAttribution
@@ -47,6 +47,7 @@ final readonly class RecordOrderAttribution
     {
         $this->merge($order, ['attribution_winner' => $winner, 'attribution_decision_reason' => $reason]);
     }
+
     /** @param array<string, mixed> $patch */
     private function merge(Order $order, array $patch): void
     {

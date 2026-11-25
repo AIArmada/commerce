@@ -11,8 +11,8 @@ use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Concerns\Po
 use BackedEnum;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
-use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Contracts\Support\Htmlable;
 
 class PortalProfile extends PortalPage
 {

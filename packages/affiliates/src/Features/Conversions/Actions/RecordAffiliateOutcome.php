@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Conversions\Actions;
 
 use AIArmada\Affiliates\Data\AffiliateConversionData;
-use AIArmada\Affiliates\Data\AffiliateOutcomeResult;
-use AIArmada\Affiliates\Features\Conversions\Api\OutcomePosting;
 use AIArmada\Affiliates\Data\AffiliateOutcomeDisposition;
+use AIArmada\Affiliates\Data\AffiliateOutcomeResult;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
+use AIArmada\Affiliates\Features\Conversions\Api\OutcomePosting;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudApi;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalMaintenance;
 use AIArmada\Affiliates\Models\Affiliate;

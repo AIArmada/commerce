@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\ProgramStatus;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramAdministration;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramCreative;
@@ -251,7 +252,7 @@ test('deleting a program removes its creative media and files', function (): voi
     $media = $creative->addMedia(UploadedFile::fake()->image('program.png'))->toMediaCollection('creative_asset');
     $path = $media->getPathRelativeToRoot();
 
-    app(\AIArmada\Affiliates\Features\Programs\Api\ProgramAdministration::class)->delete($program->id);
+    app(ProgramAdministration::class)->delete($program->id);
 
     expect($creative->fresh())->toBeNull()
         ->and($media->fresh())->toBeNull();

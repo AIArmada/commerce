@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Features\Payouts\Api\PayoutReversal;
 use AIArmada\Affiliates\Drivers\Payouts\PayPalProcessor;
 use AIArmada\Affiliates\Drivers\Payouts\StripeConnectProcessor;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\PayoutMethodType;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutReversal;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliatePayoutMethod;

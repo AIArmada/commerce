@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Listeners;
 
-use AIArmada\Affiliates\Models\AffiliateLink;
 use AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkAdministration;
+use AIArmada\Affiliates\Models\AffiliateLink;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\Links\Events\LinkClicked;

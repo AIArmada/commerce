@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Resources\AffiliatePayoutResource\Tables;
 
-use AIArmada\Affiliates\Features\Payouts\Api\PayoutAdministration;
 use AIArmada\Affiliates\Exceptions\PayoutCompletionBlockedException;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutAdministration;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\CompletedPayout;
 use AIArmada\Affiliates\States\FailedPayout;

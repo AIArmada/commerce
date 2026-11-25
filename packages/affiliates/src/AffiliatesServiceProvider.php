@@ -4,27 +4,27 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates;
 
-use AIArmada\Affiliates\Contracts\NetworkPostbackGateway;
-use AIArmada\Affiliates\Drivers\Network\HttpNetworkPostbackGateway;
-use AIArmada\Affiliates\Contracts\TaxRecipientProvider;
-use AIArmada\Affiliates\Contracts\TaxWorksheetWriter;
-use AIArmada\Affiliates\Drivers\Tax\SpatieTaxWorksheetWriter;
-use AIArmada\Affiliates\Drivers\Tax\UnavailableTaxRecipientProvider;
-use AIArmada\Affiliates\Contracts\AffiliateWebhookTransport;
-use AIArmada\Affiliates\Drivers\Webhooks\PinnedAffiliateWebhookTransport;
 use AIArmada\Affiliates\Actions\Affiliates\ResolvePublicAffiliateReferralContext;
 use AIArmada\Affiliates\Cart\AffiliateDiscountConditionProvider;
+use AIArmada\Affiliates\Contracts\AffiliateWebhookTransport;
+use AIArmada\Affiliates\Contracts\NetworkPostbackGateway;
 use AIArmada\Affiliates\Contracts\PayoutProcessorRegistry;
+use AIArmada\Affiliates\Contracts\TaxRecipientProvider;
+use AIArmada\Affiliates\Contracts\TaxWorksheetWriter;
+use AIArmada\Affiliates\Drivers\Network\HttpNetworkPostbackGateway;
 use AIArmada\Affiliates\Drivers\Payouts\PayoutProcessorFactory;
+use AIArmada\Affiliates\Drivers\Tax\SpatieTaxWorksheetWriter;
+use AIArmada\Affiliates\Drivers\Tax\UnavailableTaxRecipientProvider;
+use AIArmada\Affiliates\Drivers\Webhooks\PinnedAffiliateWebhookTransport;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
 use AIArmada\Affiliates\Events\AffiliateProgramJoined;
 use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
+use AIArmada\Affiliates\Features\Identity\EntryPoints\Listeners\AutoApproveOpenAffiliate;
 use AIArmada\Affiliates\Features\Reporting\Models\AffiliateDailyStat;
 use AIArmada\Affiliates\Features\Support\Models\AffiliateSupportMessage;
 use AIArmada\Affiliates\Features\Support\Models\AffiliateSupportTicket;
 use AIArmada\Affiliates\Features\Tax\Models\AffiliateTaxDocument;
 use AIArmada\Affiliates\Features\Upline\Models\AffiliateUpline;
-use AIArmada\Affiliates\Features\Identity\EntryPoints\Listeners\AutoApproveOpenAffiliate;
 use AIArmada\Affiliates\Listeners\NotifyConversionRecorded;
 use AIArmada\Affiliates\Listeners\NotifyProgramJoined;
 use AIArmada\Affiliates\Listeners\RecordCommissionForOrder;
@@ -135,7 +135,6 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
 
         $this->app->singleton(VoucherIntegrationRegistrar::class);
         $this->app->singleton(AffiliateDiscountConditionProvider::class);
-
 
         $this->registerSettingsMigrationPath();
     }

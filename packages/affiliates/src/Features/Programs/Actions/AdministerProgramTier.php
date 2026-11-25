@@ -77,7 +77,7 @@ final readonly class AdministerProgramTier implements ProgramTierAdministration
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
     private function attributes(array $data): array

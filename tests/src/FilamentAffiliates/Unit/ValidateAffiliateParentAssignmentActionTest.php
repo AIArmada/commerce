@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Features\Identity\Queries\ValidateAffiliateParentAssignment;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Affiliates\Features\Identity\Queries\ValidateAffiliateParentAssignment;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 

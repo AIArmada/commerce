@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Fraud\Actions;
 
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionAdministration;
-use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalStatus;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudReviewApi;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudReviewResult;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalStatus;
 use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
 use Carbon\CarbonImmutable;
 use InvalidArgumentException;

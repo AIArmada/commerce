@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Fraud\Actions;
 
 use AIArmada\Affiliates\Data\FraudFinding;
-use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalStatus;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalRecord;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalStatus;
 use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
 use Carbon\CarbonImmutable;
 

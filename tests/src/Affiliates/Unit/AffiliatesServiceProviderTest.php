@@ -3,10 +3,10 @@
 declare(strict_types=1);
 
 use AIArmada\AffiliateNetwork\AffiliateNetworkServiceProvider;
-use AIArmada\Affiliates\Features\Attribution\Api\CartAttribution;
 use AIArmada\Affiliates\AffiliatesServiceProvider;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
 use AIArmada\Affiliates\Events\AffiliateProgramJoined;
+use AIArmada\Affiliates\Features\Attribution\Api\CartAttribution;
 use AIArmada\Affiliates\Features\Identity\EntryPoints\Listeners\AutoApproveOpenAffiliate;
 use AIArmada\Affiliates\Listeners\IncrementAffiliateLinkClicks;
 use AIArmada\Affiliates\Listeners\NotifyConversionRecorded;

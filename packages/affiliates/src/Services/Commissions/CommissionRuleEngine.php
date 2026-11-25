@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Services\Commissions;
 
 use AIArmada\Affiliates\Enums\CommissionRuleType;
+use AIArmada\Affiliates\Features\Commissions\Api\PromotionUsage;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateCommissionPromotion;
-use AIArmada\Affiliates\Features\Commissions\Api\PromotionUsage;
 use AIArmada\Affiliates\Models\AffiliateCommissionRule;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateVolumeTier;

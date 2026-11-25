@@ -3,13 +3,13 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\CommissionRuleType;
-use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
-use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalStatus;
 use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Enums\PayoutMethodType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\RankQualificationReason;
 use AIArmada\Affiliates\Enums\RegistrationApprovalMode;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalStatus;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\Pending;
 

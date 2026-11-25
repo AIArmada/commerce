@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Features\Conversions\Actions\RecordAffiliateAward;
 use AIArmada\Affiliates\Contracts\AffiliateAwardPolicy;
 use AIArmada\Affiliates\Data\AffiliateAwardDecision;
 use AIArmada\Affiliates\Data\AffiliateAwardProposal;
@@ -11,6 +10,7 @@ use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
 use AIArmada\Affiliates\Events\FraudSignalDetected;
 use AIArmada\Affiliates\Events\HoldingShortfallDetected;
 use AIArmada\Affiliates\Exceptions\AffiliateAwardPolicyLimitException;
+use AIArmada\Affiliates\Features\Conversions\Actions\RecordAffiliateAward;
 use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
 use AIArmada\Affiliates\Features\Upline\Models\AffiliateUpline;
 use AIArmada\Affiliates\Models\Affiliate;
