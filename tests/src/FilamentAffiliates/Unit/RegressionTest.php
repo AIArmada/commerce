@@ -13,7 +13,7 @@ use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateLink;
 use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\Models\AffiliatePayoutEvent;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutEvent;
 use AIArmada\Affiliates\Models\AffiliatePayoutMethod;
 use AIArmada\Affiliates\Models\AffiliatePayoutOperation;
 use AIArmada\Affiliates\States\Active;
@@ -162,7 +162,7 @@ it('rejects payouts through the domain action and returns conversions to approve
     expect($payout->status)->toBeInstanceOf(FailedPayout::class)
         ->and($payout->failed_at)->not->toBeNull()
         ->and($payout->metadata['notes'] ?? null)->toBe('Failed verification')
-        ->and($payout->events()->count())->toBeGreaterThanOrEqual(1)
+        ->and(AffiliatePayoutEvent::query()->where('affiliate_payout_id', $payout->getKey())->count())->toBeGreaterThanOrEqual(1)
         ->and($balance->available_minor)->toBe($payout->total_minor)
         ->and($conversion->affiliate_payout_id)->toBeNull();
 });

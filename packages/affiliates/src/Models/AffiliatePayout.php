@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Models;
 
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutEventHistory;
 use AIArmada\Affiliates\States\PayoutStatus;
 use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
@@ -47,7 +48,6 @@ use Spatie\ModelStates\HasStates;
  * @property-read Model|null $payee
  * @property-read Model|null $owner
  * @property-read Collection<int, AffiliateConversion> $conversions
- * @property-read Collection<int, AffiliatePayoutEvent> $events
  */
 class AffiliatePayout extends Model implements Auditable
 {
@@ -114,14 +114,6 @@ class AffiliatePayout extends Model implements Auditable
     public function conversions(): HasMany
     {
         return $this->hasMany(AffiliateConversion::class, 'affiliate_payout_id');
-    }
-
-    /**
-     * @return HasMany<AffiliatePayoutEvent, $this>
-     */
-    public function events(): HasMany
-    {
-        return $this->hasMany(AffiliatePayoutEvent::class, 'affiliate_payout_id')->latest();
     }
 
     /** @return BelongsTo<AffiliatePayoutOperation, $this> */
@@ -250,7 +242,7 @@ class AffiliatePayout extends Model implements Auditable
                 || $payout->affiliate_payout_operation_id !== null
                 || AffiliatePayoutOperation::query()->where('affiliate_payout_id', $payout->getKey())->exists()
                 || $payout->conversions()->exists()
-                || $payout->events()->exists()) {
+                || app(PayoutEventHistory::class)->hasEvents((string) $payout->getKey())) {
                 throw new InvalidArgumentException('A payout with financial, processing or event history cannot be deleted directly.');
             }
         });

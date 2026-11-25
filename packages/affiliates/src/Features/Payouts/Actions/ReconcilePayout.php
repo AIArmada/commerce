@@ -7,6 +7,7 @@ namespace AIArmada\Affiliates\Features\Payouts\Actions;
 use AIArmada\Affiliates\Features\Conversions\Api\PayoutConversionSettlement;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutReconciliation;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutRelease;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutEvent;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliatePayoutOperation;
 use AIArmada\Affiliates\States\CancelledPayout;
@@ -38,7 +39,7 @@ final readonly class ReconcilePayout implements PayoutReconciliation
 
         $connection = (new AffiliatePayout)->getConnection();
 
-        if ((new AffiliatePayoutOperation)->getConnection() !== $connection) {
+        if ((new AffiliatePayoutOperation)->getConnection() !== $connection || (new AffiliatePayoutEvent)->getConnection() !== $connection) {
             throw new LogicException('Payout reconciliation requires a shared database connection.');
         }
 
@@ -105,7 +106,8 @@ final readonly class ReconcilePayout implements PayoutReconciliation
 
             $this->syncConversions($locked, $newStatus);
 
-            $locked->events()->create([
+            AffiliatePayoutEvent::query()->create([
+                'affiliate_payout_id' => $locked->getKey(),
                 'from_status' => $fromStatus,
                 'to_status' => $newStatus->getValue(),
                 'notes' => 'Provider status reconciled to ' . $newStatus->getValue() . ($overrideReason !== null ? ' under payout override: ' . $overrideReason : ''),

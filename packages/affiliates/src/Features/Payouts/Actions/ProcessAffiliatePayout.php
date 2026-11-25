@@ -9,6 +9,7 @@ use AIArmada\Affiliates\Data\PayoutResult;
 use AIArmada\Affiliates\Exceptions\PayoutCompletionBlockedException;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutReconciliation;
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutEvent;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliatePayoutOperation;
 use AIArmada\Affiliates\Queries\PayoutRequestQuery;
@@ -19,6 +20,7 @@ use AIArmada\Affiliates\States\ProcessingPayout;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Carbon\CarbonImmutable;
 use InvalidArgumentException;
+use LogicException;
 use Throwable;
 
 final readonly class ProcessAffiliatePayout
@@ -31,6 +33,10 @@ final readonly class ProcessAffiliatePayout
 
     public function handle(AffiliatePayout $payout): PayoutResult
     {
+        if ((new AffiliatePayoutEvent)->getConnection() !== $payout->getConnection()) {
+            throw new LogicException('Payout processing requires a shared database connection.');
+        }
+
         if ((bool) config('affiliates.owner.enabled', false)) {
             OwnerWriteGuard::findOrFailForOwner(AffiliatePayout::class, $payout->getKey());
         }
@@ -89,7 +95,8 @@ final readonly class ProcessAffiliatePayout
                         ])->save();
 
                         if (! $wasUnknown) {
-                            $locked->events()->create([
+                            AffiliatePayoutEvent::query()->create([
+                                'affiliate_payout_id' => $locked->getKey(),
                                 'from_status' => $locked->status->getValue(),
                                 'to_status' => $locked->status->getValue(),
                                 'notes' => 'Provider reconciliation required, but no default payout method is configured.',
@@ -289,7 +296,8 @@ final readonly class ProcessAffiliatePayout
 
             if (! $eventRecorded) {
                 $toStatus = $locked->fresh()->status->getValue();
-                $locked->events()->create([
+                AffiliatePayoutEvent::query()->create([
+                    'affiliate_payout_id' => $locked->getKey(),
                     'from_status' => $fromStatus,
                     'to_status' => $toStatus,
                     'notes' => $notes ?? 'Provider outcome: ' . $result->getStatus() . ($result->failureCode !== null ? ' (' . $result->failureCode . ')' : ''),

@@ -313,25 +313,12 @@ affiliate's `payoutMethods` relation. `PayoutResult` exposes
 
 ## Payout Events
 
-Track payout history with events:
+Payout actions record events in the payout transaction. Read the latest owner-scoped history as immutable records:
 
 ```php
-use AIArmada\Affiliates\Models\AffiliatePayoutEvent;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutEventHistory;
 
-// Events are automatically recorded
-$events = $payout->events()->orderBy('created_at')->get();
-
-// Manual event recording
-AffiliatePayoutEvent::create([
-    'affiliate_payout_id' => $payout->id,
-    'from_status' => PayoutStatus::Pending,
-    'to_status' => PayoutStatus::Processing,
-    'notes' => 'Sent to provider',
-    'metadata' => [
-        'processor' => 'paypal',
-        'batch_id' => 'BATCH-123',
-    ],
-]);
+$events = app(PayoutEventHistory::class)->forPayout($payoutId, limit: 100);
 ```
 
 > **warning:**

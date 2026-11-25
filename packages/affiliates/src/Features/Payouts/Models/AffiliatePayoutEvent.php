@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Models;
+namespace AIArmada\Affiliates\Features\Payouts\Models;
+
+use AIArmada\Affiliates\Models\AffiliatePayout;
 
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
@@ -29,6 +31,8 @@ class AffiliatePayoutEvent extends Model implements Auditable
     use HasUuids;
     use LogsCommerceActivity;
 
+    protected $table = 'affiliate_payout_events';
+
     protected $fillable = [
         'affiliate_payout_id',
         'from_status',
@@ -46,6 +50,7 @@ class AffiliatePayoutEvent extends Model implements Auditable
         return config('affiliates.database.tables.payout_events', parent::getTable());
     }
 
+    /** @return BelongsTo<AffiliatePayout, $this> */
     public function payout(): BelongsTo
     {
         return $this->belongsTo(AffiliatePayout::class, 'affiliate_payout_id');

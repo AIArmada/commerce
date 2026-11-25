@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutEvent;
 use AIArmada\Affiliates\Enums\PayoutMethodType;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
@@ -105,7 +106,7 @@ it('processes a payout via the record action', function (): void {
         ->and($payout->paid_at)->toBeNull()
         ->and($payout->external_reference)->not->toBeNull();
 
-    expect($payout->events()->count())->toBeGreaterThanOrEqual(1);
+    expect(AffiliatePayoutEvent::query()->where('affiliate_payout_id', $payout->getKey())->count())->toBeGreaterThanOrEqual(1);
 });
 
 it('processes a payout when user only has affiliate.payout permission', function (): void {
@@ -200,7 +201,7 @@ it('marks payout as failed when no default method exists', function (): void {
     $payout->refresh();
 
     expect($payout->status)->toBeInstanceOf(FailedPayout::class);
-    expect($payout->events()->count())->toBeGreaterThanOrEqual(1);
+    expect(AffiliatePayoutEvent::query()->where('affiliate_payout_id', $payout->getKey())->count())->toBeGreaterThanOrEqual(1);
 });
 
 it('rejects a payout and stores notes in metadata', function (): void {
@@ -250,7 +251,7 @@ it('rejects a payout and stores notes in metadata', function (): void {
         ->and($payout->metadata)->toBeArray()
         ->and($payout->metadata['notes'])->toBe('Insufficient verification');
 
-    expect($payout->events()->count())->toBeGreaterThanOrEqual(1);
+    expect(AffiliatePayoutEvent::query()->where('affiliate_payout_id', $payout->getKey())->count())->toBeGreaterThanOrEqual(1);
 });
 
 it('executes batch processing bulk action', function (): void {

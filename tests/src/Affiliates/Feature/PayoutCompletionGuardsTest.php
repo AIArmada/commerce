@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutEvent;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Exceptions\PayoutCompletionBlockedException;
 use AIArmada\Affiliates\Features\Conversions\Actions\ApplyConversionAccounting;
@@ -214,7 +215,7 @@ test('an override payout completes through the manual path and stamps the overri
 
     expect($completed->status->equals(CompletedPayout::class))->toBeTrue()
         ->and($completed->metadata['payout_override']['override_completed_at'])->not->toBeNull()
-        ->and($completed->events()->where('notes', 'like', '%payout override%')->count())->toBe(1)
+        ->and(AffiliatePayoutEvent::query()->where('affiliate_payout_id', $completed->getKey())->where('notes', 'like', '%payout override%')->count())->toBe(1)
         ->and($conversion->fresh()->status->equals(PaidConversion::class))->toBeTrue();
 });
 

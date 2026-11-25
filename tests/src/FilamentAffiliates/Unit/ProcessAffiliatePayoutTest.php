@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutEvent;
 use AIArmada\Affiliates\Contracts\PayoutProcessorInterface;
 use AIArmada\Affiliates\Contracts\PayoutProcessorRegistry;
 use AIArmada\Affiliates\Data\PayoutRequest;
@@ -167,7 +168,7 @@ test('a gate-blocked completion parks as unknown with the gate reason', function
     $operation = $payout->operation()->first()->fresh();
     // Same-second events tie on created_at: select the blocked outcome
     // by its notes prefix instead of relying on latest() order.
-    $blockedEvent = $payout->events()->where('notes', 'like', 'Completion blocked:%')->first();
+    $blockedEvent = AffiliatePayoutEvent::query()->where('affiliate_payout_id', $payout->getKey())->where('notes', 'like', 'Completion blocked:%')->first();
 
     expect($payout->fresh()->status->equals(ProcessingPayout::class))->toBeTrue()
         ->and($operation->status)->toBe('unknown')
@@ -238,7 +239,7 @@ test('provider processing cannot complete a payout after its affiliate becomes D
     app()->instance(ProcessAffiliatePayoutFakeSuccessProcessor::class, $processor);
 
     $result = app(ProcessAffiliatePayout::class)->handle($payout);
-    $blockedEvent = $payout->events()->where('notes', 'like', 'Completion blocked:%')->first();
+    $blockedEvent = AffiliatePayoutEvent::query()->where('affiliate_payout_id', $payout->getKey())->where('notes', 'like', 'Completion blocked:%')->first();
 
     expect($result->isUnknown())->toBeTrue()
         ->and($payout->fresh()->status->equals(ProcessingPayout::class))->toBeTrue()
@@ -301,7 +302,7 @@ test('a non-gate processor exception keeps the generic processing code', functio
 
     expect($result->isUnknown())->toBeTrue()
         ->and($payout->operation()->first()->fresh()->last_error_code)->toBe('PAYOUT_PROCESSING_EXCEPTION')
-        ->and($payout->events()->where('notes', 'like', 'Completion blocked:%')->exists())->toBeFalse();
+        ->and(AffiliatePayoutEvent::query()->where('affiliate_payout_id', $payout->getKey())->where('notes', 'like', 'Completion blocked:%')->exists())->toBeFalse();
 });
 
 test('a late provider response cannot overwrite a newer payout lease', function (): void {

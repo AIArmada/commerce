@@ -8,7 +8,7 @@ use AIArmada\Affiliates\Features\Payouts\Api\PayoutRemoval;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\Models\AffiliatePayoutEvent;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutEvent;
 use AIArmada\Affiliates\Models\AffiliatePayoutHold;
 use AIArmada\Affiliates\Models\AffiliatePayoutMethod;
 use AIArmada\Affiliates\Models\AffiliatePayoutOperation;
@@ -41,7 +41,7 @@ final readonly class DeleteUnusedPayout implements PayoutRemoval
                 throw ValidationException::withMessages(['payout' => 'A payout with financial or processing history cannot be deleted.']);
             }
 
-            $payout->events()->delete();
+            AffiliatePayoutEvent::query()->where('affiliate_payout_id', $payoutId)->delete();
 
             if (! $payout->delete()) {
                 throw new LogicException('The unused payout could not be deleted.');

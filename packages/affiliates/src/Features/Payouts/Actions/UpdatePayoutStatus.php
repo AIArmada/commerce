@@ -8,7 +8,7 @@ use AIArmada\Affiliates\Features\Conversions\Api\PayoutConversionSettlement;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutRelease;
 use AIArmada\Affiliates\Features\Webhooks\Api\WebhookApi;
 use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\Models\AffiliatePayoutEvent;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutEvent;
 use AIArmada\Affiliates\Models\AffiliatePayoutOperation;
 use AIArmada\Affiliates\States\CancelledPayout;
 use AIArmada\Affiliates\States\CompletedPayout;
@@ -16,6 +16,7 @@ use AIArmada\Affiliates\States\FailedPayout;
 use AIArmada\Affiliates\States\PayoutStatus;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
+use LogicException;
 
 /**
  * Update the status of an affiliate payout.
@@ -46,6 +47,10 @@ final readonly class UpdatePayoutStatus
         array $metadata = [],
         bool $retainNote = false,
     ): AffiliatePayout {
+        if ((new AffiliatePayoutEvent)->getConnection() !== $payout->getConnection()) {
+            throw new LogicException('Payout status updates require a shared database connection.');
+        }
+
         return $payout->getConnection()->transaction(function () use ($payout, $status, $notes, $metadata, $retainNote): AffiliatePayout {
             $locked = AffiliatePayout::query()->with('operation')->lockForUpdate()->findOrFail($payout->getKey());
 

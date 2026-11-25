@@ -202,9 +202,10 @@ use AIArmada\Affiliates\Models\AffiliatePayout;
 
 ```php
 $payout->conversions;  // HasMany<AffiliateConversion>
-$payout->events;       // HasMany<AffiliatePayoutEvent>
 $payout->payee;        // MorphTo (Affiliate or custom)
 ```
+
+Read payout event history through `PayoutEventHistory::forPayout()`; see [Payouts](08-payouts.md).
 
 ## Program Models
 

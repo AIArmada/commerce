@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutEvent;
 use AIArmada\Affiliates\Enums\PayoutMethodType;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
@@ -103,7 +104,7 @@ it('processes a payout via the queue widget action', function (): void {
         ->and($payout->paid_at)->toBeNull()
         ->and($payout->external_reference)->not->toBeNull();
 
-    expect($payout->events()->count())->toBeGreaterThanOrEqual(1);
+    expect(AffiliatePayoutEvent::query()->where('affiliate_payout_id', $payout->getKey())->count())->toBeGreaterThanOrEqual(1);
 });
 
 it('blocks queue widget payout action when user lacks payout update permission', function (): void {

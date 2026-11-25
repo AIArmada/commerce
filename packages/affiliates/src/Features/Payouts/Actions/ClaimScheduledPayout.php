@@ -9,7 +9,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\Models\AffiliatePayoutEvent;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutEvent;
 use AIArmada\Affiliates\Models\AffiliatePayoutOperation;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\PendingPayout;
@@ -183,7 +183,8 @@ final class ClaimScheduledPayout
                 $conversionIds,
             );
 
-            $payout->events()->create([
+            AffiliatePayoutEvent::query()->create([
+                'affiliate_payout_id' => $payout->getKey(),
                 'to_status' => PendingPayout::value(),
                 'notes' => 'Payout reserved by atomic scheduled operation ' . $operation->id,
             ]);

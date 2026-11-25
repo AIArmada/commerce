@@ -11,7 +11,7 @@ use AIArmada\Affiliates\Drivers\Payouts\PayoutProcessorFactory;
 use AIArmada\Affiliates\Enums\PayoutMethodType;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\Models\AffiliatePayoutEvent;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutEvent;
 use AIArmada\Affiliates\Models\AffiliatePayoutMethod;
 use AIArmada\Affiliates\Models\AffiliatePayoutOperation;
 use AIArmada\Affiliates\States\Active;
@@ -121,7 +121,7 @@ it('processes a pending payout successfully', function (): void {
         ->and($payout->paid_at)->not->toBeNull()
         ->and($payout->external_reference)->toBe('EXT-123');
 
-    $event = $payout->events()->where('notes', 'Provider outcome: completed')->first();
+    $event = AffiliatePayoutEvent::query()->where('affiliate_payout_id', $payout->getKey())->where('notes', 'Provider outcome: completed')->first();
     expect($event)->not->toBeNull()
         ->and($event->from_status)->toBe(ProcessingPayout::value())
         ->and($event->to_status)->toBe(CompletedPayout::value())
@@ -168,7 +168,7 @@ it('marks a pending payout as failed when no default payout method exists', func
 
     expect($payout->status)->toBeInstanceOf(FailedPayout::class);
 
-    $event = $payout->events()->where('notes', 'No default payout method is configured.')->first();
+    $event = AffiliatePayoutEvent::query()->where('affiliate_payout_id', $payout->getKey())->where('notes', 'No default payout method is configured.')->first();
     expect($event)->not->toBeNull()
         ->and($event->to_status)->toBe(FailedPayout::value())
         ->and($event->notes)->toBe('No default payout method is configured.');
@@ -226,7 +226,7 @@ it('marks a pending payout as failed when the processor fails', function (): voi
 
     expect($payout->status)->toBeInstanceOf(FailedPayout::class);
 
-    $event = $payout->events()->where('notes', 'Provider outcome: failed')->first();
+    $event = AffiliatePayoutEvent::query()->where('affiliate_payout_id', $payout->getKey())->where('notes', 'Provider outcome: failed')->first();
     expect($event)->not->toBeNull()
         ->and($event->to_status)->toBe(FailedPayout::value())
         ->and($event->notes)->toBe('Provider outcome: failed');
@@ -287,7 +287,7 @@ it('leaves a payout processing when the processor throws', function (): void {
         ->and($payout->operation?->status)->toBe('unknown')
         ->and($payout->operation?->last_error_code)->toBe('PAYOUT_PROCESSING_EXCEPTION');
 
-    $event = $payout->events()->where('notes', 'Provider outcome: unknown (PAYOUT_PROCESSING_EXCEPTION)')->first();
+    $event = AffiliatePayoutEvent::query()->where('affiliate_payout_id', $payout->getKey())->where('notes', 'Provider outcome: unknown (PAYOUT_PROCESSING_EXCEPTION)')->first();
     expect($event)->not->toBeNull()
         ->and($event->from_status)->toBe(ProcessingPayout::value())
         ->and($event->to_status)->toBe(ProcessingPayout::value())
@@ -383,8 +383,8 @@ it('rejects cross-tenant payout selection without mutating any selected payouts'
 
     expect($payoutA->status)->toBeInstanceOf(PendingPayout::class)
         ->and($payoutB->status)->toBeInstanceOf(PendingPayout::class)
-        ->and($payoutA->events()->count())->toBe(0)
-        ->and($payoutB->events()->count())->toBe(0);
+        ->and(AffiliatePayoutEvent::query()->where('affiliate_payout_id', $payoutA->getKey())->count())->toBe(0)
+        ->and(AffiliatePayoutEvent::query()->where('affiliate_payout_id', $payoutB->getKey())->count())->toBe(0);
 });
 
 class TestSuccessPayoutProcessor implements PayoutProcessorInterface

@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutRemoval;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutEventHistory;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\Models\AffiliatePayoutEvent;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutEvent;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\States\PendingPayout;
@@ -75,7 +76,7 @@ describe('AffiliatePayout Model', function (): void {
         expect($payout->conversions())->toBeInstanceOf(HasMany::class);
     });
 
-    it('has many events', function (): void {
+    it('reads payout events through the owning feature', function (): void {
         $payout = AffiliatePayout::create([
             'reference' => 'PAY-' . uniqid(),
             'payee_type' => Affiliate::class,
@@ -86,7 +87,17 @@ describe('AffiliatePayout Model', function (): void {
             'currency' => 'USD',
         ]);
 
-        expect($payout->events())->toBeInstanceOf(HasMany::class);
+        $history = app(PayoutEventHistory::class);
+
+        expect($history->hasEvents($payout->id))->toBeFalse();
+
+        AffiliatePayoutEvent::create([
+            'affiliate_payout_id' => $payout->id,
+            'to_status' => 'pending',
+        ]);
+
+        expect($history->hasEvents($payout->id))->toBeTrue()
+            ->and($history->forPayout($payout->id))->toHaveCount(1);
     });
 
     it('returns affiliate accessor when payee is affiliate', function (): void {
@@ -179,6 +190,8 @@ describe('AffiliatePayout Model', function (): void {
             'from_status' => null,
             'to_status' => 'pending',
         ]);
+
+        expect(fn () => $payout->delete())->toThrow(InvalidArgumentException::class);
 
         expect(app(PayoutRemoval::class)->deleteUnused((string) $payout->getKey()))->toBeTrue();
 
