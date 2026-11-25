@@ -7,7 +7,7 @@ namespace AIArmada\Affiliates\Features\Attribution\Actions;
 use AIArmada\Affiliates\Features\Programs\Api\TrackingProgramGuard;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateLink;
-use AIArmada\Affiliates\Support\Links\AffiliateLinkDestination;
+use AIArmada\Affiliates\Features\Attribution\Support\AffiliateLinkDestination;
 use AIArmada\Links\Actions\UpdateLink;
 use AIArmada\Links\Models\Link;
 use Illuminate\Support\Arr;

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Support\Links;
+namespace AIArmada\Affiliates\Features\Attribution\Support;
 
 final class AffiliateLinkDestination
 {

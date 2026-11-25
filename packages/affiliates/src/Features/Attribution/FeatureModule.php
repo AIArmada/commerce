@@ -5,7 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Attribution;
 
 use AIArmada\Affiliates\Platform\FeatureModule as FeatureModuleContract;
+use AIArmada\Links\Contracts\LinkGateInterface;
+use AIArmada\Links\Events\LinkClicked;
+use AIArmada\Links\LinksServiceProvider;
 use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Support\Facades\Event;
 
 final class FeatureModule implements FeatureModuleContract
 {
@@ -26,5 +30,11 @@ final class FeatureModule implements FeatureModuleContract
         $app->bind(Api\TrackingLinkAdministration::class, Actions\ManageTrackingLinks::class);
     }
 
-    public function boot(Application $app): void {}
+    public function boot(Application $app): void
+    {
+        if (class_exists(LinksServiceProvider::class)) {
+            $app->tag([Extensions\AffiliateLinkGate::class], LinkGateInterface::class);
+            Event::listen(LinkClicked::class, EntryPoints\Listeners\IncrementAffiliateLinkClicks::class);
+        }
+    }
 }

@@ -64,9 +64,6 @@ use AIArmada\Affiliates\Platform\FeatureModule;
 use AIArmada\Affiliates\Support\Integrations\CartBridge;
 use AIArmada\Cart\CartManager;
 use AIArmada\Cart\Conditions\ConditionProviderRegistry;
-use AIArmada\Links\Contracts\LinkGateInterface;
-use AIArmada\Links\Events\LinkClicked;
-use AIArmada\Links\LinksServiceProvider;
 use AIArmada\Orders\Events\CommissionAttributionRequired;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\Http\Kernel;
@@ -198,10 +195,6 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
             $this->registerCookieTrackingMiddleware();
         }
 
-        if (class_exists(LinksServiceProvider::class)) {
-            $this->app->tag([Support\Links\AffiliateLinkGate::class], LinkGateInterface::class);
-            Event::listen(LinkClicked::class, Features\Attribution\EntryPoints\Listeners\IncrementAffiliateLinkClicks::class);
-        }
     }
 
     private function registerMorphMap(): void

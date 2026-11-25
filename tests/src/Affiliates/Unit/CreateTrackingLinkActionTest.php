@@ -16,7 +16,7 @@ use AIArmada\Affiliates\Models\AffiliateLink;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
-use AIArmada\Affiliates\Support\Links\AffiliateLinkGate;
+use AIArmada\Affiliates\Features\Attribution\Extensions\AffiliateLinkGate;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
