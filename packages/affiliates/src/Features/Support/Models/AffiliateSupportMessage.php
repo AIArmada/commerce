@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Models;
+namespace AIArmada\Affiliates\Features\Support\Models;
 
-use AIArmada\Affiliates\Models\Concerns\ScopesByTicketAffiliateOwner;
+use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Support\Models\Concerns\ScopesByTicketAffiliateOwner;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;

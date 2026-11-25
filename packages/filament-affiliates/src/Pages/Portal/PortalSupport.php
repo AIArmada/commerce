@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Pages\Portal;
 
-use AIArmada\Affiliates\Models\AffiliateSupportMessage;
-use AIArmada\Affiliates\Models\AffiliateSupportTicket;
+use AIArmada\Affiliates\Features\Support\Api\SupportTicketApi;
 use AIArmada\Affiliates\Models\AffiliateTaxDocument;
 use AIArmada\FilamentAffiliates\Concerns\PortalPage;
 use BackedEnum;
@@ -69,20 +68,13 @@ class PortalSupport extends PortalPage
             'message' => ['required', 'string', 'max:5000'],
         ])->validate();
 
-        $ticket = AffiliateSupportTicket::create([
-            'affiliate_id' => $affiliate->getKey(),
-            'subject' => $validated['subject'],
-            'category' => $validated['category'],
-            'priority' => $validated['priority'],
-            'status' => 'open',
-        ]);
-
-        AffiliateSupportMessage::create([
-            'ticket_id' => $ticket->getKey(),
-            'affiliate_id' => $affiliate->getKey(),
-            'message' => $validated['message'],
-            'is_staff_reply' => false,
-        ]);
+        app(SupportTicketApi::class)->open(
+            (string) $affiliate->getKey(),
+            $validated['subject'],
+            $validated['category'],
+            $validated['priority'],
+            $validated['message'],
+        );
 
         $this->subject = '';
         $this->category = 'general';
@@ -110,20 +102,6 @@ class PortalSupport extends PortalPage
             return;
         }
 
-        $ticket = AffiliateSupportTicket::query()
-            ->where('affiliate_id', $affiliate->getKey())
-            ->whereKey($ticketId)
-            ->first();
-
-        if (! $ticket) {
-            Notification::make()
-                ->title(__('Ticket not found'))
-                ->danger()
-                ->send();
-
-            return;
-        }
-
         $validated = validator([
             'message' => (string) ($this->replyMessages[$ticketId] ?? ''),
         ], [
@@ -141,16 +119,11 @@ class PortalSupport extends PortalPage
             return;
         }
 
-        AffiliateSupportMessage::create([
-            'ticket_id' => $ticket->getKey(),
-            'affiliate_id' => $affiliate->getKey(),
-            'message' => $message,
-            'is_staff_reply' => false,
-        ]);
+        if (! app(SupportTicketApi::class)->replyAsAffiliate((string) $affiliate->getKey(), $ticketId, $message)) {
+            Notification::make()->title(__('Ticket not found'))->danger()->send();
 
-        $ticket->update([
-            'status' => 'open',
-        ]);
+            return;
+        }
 
         $this->replyMessages[$ticketId] = '';
 
@@ -175,30 +148,12 @@ class PortalSupport extends PortalPage
             ];
         }
 
-        $tickets = AffiliateSupportTicket::query()
-            ->where('affiliate_id', $affiliate->getKey())
-            ->with(['messages'])
-            ->orderByDesc('created_at')
-            ->limit(100)
-            ->get()
-            ->map(function (AffiliateSupportTicket $ticket): array {
-                return [
-                    'id' => (string) $ticket->getKey(),
-                    'subject' => (string) $ticket->subject,
-                    'category' => (string) $ticket->category,
-                    'priority' => (string) $ticket->priority,
-                    'status' => (string) $ticket->status,
-                    'messages' => $ticket->messages->map(fn (AffiliateSupportMessage $message): array => [
-                        'id' => (string) $message->getKey(),
-                        'message' => (string) $message->message,
-                        'is_staff_reply' => (bool) $message->is_staff_reply,
-                        'created_at' => $message->created_at?->toDateTimeString(),
-                    ])->all(),
-                    'reply_message' => (string) ($this->replyMessages[$ticket->getKey()] ?? ''),
-                ];
-            })
-            ->values()
-            ->all();
+        $tickets = app(SupportTicketApi::class)->ticketsFor((string) $affiliate->getKey());
+
+        foreach ($tickets as &$ticket) {
+            $ticket['reply_message'] = (string) ($this->replyMessages[$ticket['id']] ?? '');
+        }
+        unset($ticket);
 
         $taxDocuments = AffiliateTaxDocument::query()
             ->where('affiliate_id', $affiliate->getKey())

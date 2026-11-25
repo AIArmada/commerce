@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Resources;
 
-use AIArmada\Affiliates\Models\AffiliateSupportTicket;
+use AIArmada\Affiliates\Features\Support\Models\AffiliateSupportTicket;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\FilamentAffiliates\Resources\AffiliateSupportTicketResource\Pages\CreateAffiliateSupportTicket;

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Models\Concerns;
+namespace AIArmada\Affiliates\Features\Support\Models\Concerns;
 
-use AIArmada\Affiliates\Models\AffiliateSupportTicket;
+use AIArmada\Affiliates\Features\Support\Models\AffiliateSupportTicket;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 

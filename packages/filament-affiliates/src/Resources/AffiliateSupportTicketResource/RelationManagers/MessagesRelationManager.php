@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Resources\AffiliateSupportTicketResource\RelationManagers;
 
-use AIArmada\Affiliates\Models\AffiliateSupportTicket;
+use AIArmada\Affiliates\Features\Support\Api\SupportTicketApi;
+use AIArmada\Affiliates\Features\Support\Models\AffiliateSupportMessage;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Auth\Access\AuthorizationException;
+use AIArmada\Affiliates\Features\Support\Models\AffiliateSupportTicket;
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use Filament\Actions\CreateAction;
 use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\Toggle;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
@@ -26,10 +29,8 @@ final class MessagesRelationManager extends RelationManager
             Textarea::make('message')
                 ->required()
                 ->rows(4)
+                ->maxLength(5000)
                 ->columnSpanFull(),
-
-            Toggle::make('is_staff_reply')
-                ->default(true),
         ]);
     }
 
@@ -52,26 +53,18 @@ final class MessagesRelationManager extends RelationManager
             ])
             ->headerActions([
                 CreateAction::make()
-                    ->mutateDataUsing(function (array $data): array {
-                        $ownerRecord = $this->getOwnerRecord();
-
-                        if (! $ownerRecord instanceof AffiliateSupportTicket) {
-                            return $data;
-                        }
-
-                        $isStaffReply = (bool) ($data['is_staff_reply'] ?? true);
-
+                    ->using(function (array $data): AffiliateSupportMessage {
+                        $ticket = $this->getOwnerRecord();
                         $staffId = auth()->id();
 
-                        $data['affiliate_id'] = $isStaffReply
-                            ? null
-                            : (string) $ownerRecord->affiliate_id;
+                        if (! $ticket instanceof AffiliateSupportTicket || $staffId === null) {
+                            throw new AuthorizationException;
+                        }
 
-                        $data['staff_id'] = $isStaffReply && $staffId !== null
-                            ? (string) $staffId
-                            : null;
+                        Gate::authorize('update', $ticket);
+                        $messageId = app(SupportTicketApi::class)->replyAsStaff((string) $ticket->getKey(), (string) $staffId, (string) $data['message']);
 
-                        return $data;
+                        return AffiliateSupportMessage::query()->findOrFail($messageId);
                     }),
             ])
             ->actions([])

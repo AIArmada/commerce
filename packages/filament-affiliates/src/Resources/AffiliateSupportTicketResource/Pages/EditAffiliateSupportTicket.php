@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Resources\AffiliateSupportTicketResource\Pages;
 
+use AIArmada\Affiliates\Features\Support\Api\SupportTicketApi;
+use AIArmada\Affiliates\Features\Support\Models\AffiliateSupportTicket;
+use Illuminate\Database\Eloquent\Model;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentAffiliates\Resources\AffiliateSupportTicketResource;
@@ -43,6 +46,13 @@ final class EditAffiliateSupportTicket extends EditRecord
             Actions\ViewAction::make(),
             Actions\DeleteAction::make(),
         ];
+    }
+
+    protected function handleRecordUpdate(Model $record, array $data): Model
+    {
+        app(SupportTicketApi::class)->update((string) $record->getKey(), (string) $data['affiliate_id'], (string) $data['subject'], (string) $data['category'], (string) $data['priority'], (string) $data['status']);
+
+        return $record->refresh();
     }
 
     private function resolveOwnedAffiliateId(string $affiliateId): string

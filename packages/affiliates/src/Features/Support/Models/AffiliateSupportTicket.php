@@ -2,8 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Models;
+namespace AIArmada\Affiliates\Features\Support\Models;
 
+use AIArmada\Affiliates\Features\Support\Actions\DeleteTicketMessages;
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\Concerns\ScopesByAffiliateOwner;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
@@ -67,7 +69,7 @@ class AffiliateSupportTicket extends Model implements Auditable
     protected static function booted(): void
     {
         self::deleting(function (self $ticket): void {
-            $ticket->messages()->delete();
+            app(DeleteTicketMessages::class)->execute((string) $ticket->getKey());
         });
     }
 

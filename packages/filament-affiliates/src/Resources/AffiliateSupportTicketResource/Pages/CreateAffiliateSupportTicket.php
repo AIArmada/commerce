@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Resources\AffiliateSupportTicketResource\Pages;
 
+use AIArmada\Affiliates\Features\Support\Api\SupportTicketApi;
+use AIArmada\Affiliates\Features\Support\Models\AffiliateSupportTicket;
+use Illuminate\Database\Eloquent\Model;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentAffiliates\Resources\AffiliateSupportTicketResource;
@@ -34,6 +37,15 @@ final class CreateAffiliateSupportTicket extends CreateRecord
         $data['affiliate_id'] = $this->resolveOwnedAffiliateId((string) $affiliateId);
 
         return $data;
+    }
+
+    protected function handleRecordCreation(array $data): Model
+    {
+        $id = app(SupportTicketApi::class)->open(
+            (string) $data['affiliate_id'], (string) $data['subject'], (string) $data['category'], (string) $data['priority'], status: (string) $data['status'],
+        );
+
+        return AffiliateSupportTicket::query()->findOrFail($id);
     }
 
     private function resolveOwnedAffiliateId(string $affiliateId): string
