@@ -325,10 +325,12 @@ Jobs must explicitly handle owner context. The `OwnerContextJob` trait from
 `OwnerContext::withOwner()` for you — implement `performJob()`, not `handle()`:
 
 ```php
+use AIArmada\CommerceSupport\Contracts\OwnerScopedJob;
+use AIArmada\CommerceSupport\Data\OwnerJobContext;
 use AIArmada\CommerceSupport\Traits\OwnerContextJob;
 use AIArmada\Jnt\Services\JntTrackingService;
 
-class SyncJntTracking implements ShouldQueue
+class SyncJntTracking implements OwnerScopedJob, ShouldQueue
 {
     use OwnerContextJob;
 
@@ -336,6 +338,11 @@ class SyncJntTracking implements ShouldQueue
         public readonly string $ownerType,
         public readonly string $ownerId
     ) {}
+
+    public function ownerContext(): OwnerJobContext
+    {
+        return new OwnerJobContext($this->ownerType, $this->ownerId);
+    }
 
     public function performJob(): void
     {

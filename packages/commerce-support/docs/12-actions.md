@@ -19,7 +19,6 @@ Actions are ideal for:
 | Action | Purpose | Entry Point |
 |--------|---------|------------|
 | [ResolveOwnedModelOrFailAction](#resolveownedmodelorfailaction) | Owner-scoped model lookup with authorization | `::run(modelClass, id, owner, includeGlobal, message)` |
-| [ResolveOwnerJobContextAction](#resolveownerjobcontextaction) | Extract owner context from queued jobs | `::run(job)` |
 | [ProcessWebhookCallAction](#processwebhookcallaction) | Webhook transaction, deduplication, event extraction | `::run(webhookCall, extractEventType, extractEventId, isDuplicateProcessedEvent, processEvent, extractOwner)` |
 | [UpsertEnvVariablesAction](#upsertenvvariablesaction) | Parse and upsert .env file key-value pairs | `::run(updates, force, warn, info)` |
 | [DiscoverCommercePublishTagsAction](#discovercommercepublishtagsaction) | Discover publish tags for configs + migrations | `::run(includeConfig)` |
@@ -53,35 +52,6 @@ $product = ResolveOwnedModelOrFailAction::run(
 **Integration:** Already used by `OwnerWriteGuard::findOrFailForOwner()`.
 
 **Recommendation:** For package/app write handlers, prefer `OwnerWriteGuard::findOrFailForOwner()` directly. Use `ResolveOwnedModelOrFailAction` when you need custom orchestration or dependency-injected composition.
-
----
-
-## ResolveOwnerJobContextAction
-
-**Purpose:** Extract owner context from queued job payloads for [OwnerScopedJob](./14-multi-tenancy.md) contract compliance.
-
-**Use case:** Job processing, ensuring jobs restore the correct owner context before execution.
-
-```php
-use AIArmada\CommerceSupport\Actions\ResolveOwnerJobContextAction;
-
-// Detection order (explicit payload always wins):
-// - Implements OwnerScopedJob contract path
-// - Explicit ownerType/ownerId/ownerIsGlobal public properties
-// - A model property exposing getOwner()
-// - A model property with a non-null owner tuple
-// - An OwnerScopeIdentifiable property
-$context = ResolveOwnerJobContextAction::run($job);
-
-// Result:
-// OwnerJobContext {
-//   ownerType: string|null,
-//   ownerId: string|int|null,
-//   ownerIsGlobal: bool,
-// }
-```
-
-**Integration:** Used by `OwnerContextJob` trait to resolve owner before job handling.
 
 ---
 

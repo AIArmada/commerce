@@ -177,69 +177,38 @@ Automatically enter owner context for queued jobs, preventing queries from runni
 ### Basic Usage
 
 ```php
+use AIArmada\CommerceSupport\Contracts\OwnerScopedJob;
+use AIArmada\CommerceSupport\Data\OwnerJobContext;
 use AIArmada\CommerceSupport\Traits\OwnerContextJob;
-use Illuminate\Queue\SerializesModels;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 
-class ProcessOrderJob implements ShouldQueue
+class ProcessOrderJob implements OwnerScopedJob, ShouldQueue
 {
     use Queueable;
     use OwnerContextJob;
-    use SerializesModels;
 
-    public function __construct(public Order $order) {}
+    public function __construct(
+        public readonly string $orderId,
+        public readonly OwnerJobContext $context,
+    ) {}
 
-    /**
-     * Implement performJob() instead of handle().
-     */
-    public function performJob(): void
+    public function ownerContext(): OwnerJobContext
     {
-        // Owner context is automatically set
-        // All queries are scoped to $this->order->owner
-        
-        $this->order->markAsProcessed();
-        
-        // Email the store owner
-        Mail::to($this->order->store->email)->send(new OrderNotification($this->order));
+        return $this->context;
+    }
+
+    protected function performJob(): void
+    {
+        $order = Order::query()->findOrFail($this->orderId);
+        app(ProcessOrder::class)->execute($order);
     }
 }
 ```
 
 ### How It Works
 
-1. The trait overrides `handle()` (final, do not override)
-2. It reflects on public properties to find an owner model
-3. It calls `OwnerContext::withOwner($owner, ...)` before `performJob()`
-4. Queries run within owner scope; context is restored after the job
-
-### Owner Resolution
-
-The trait inspects the job's public properties:
-
-```php
-public function __construct(
-    public Order $order,        // ← Trait checks this
-    public Store $store,        // ← And this
-    private $config,            // ← Ignores private properties
-) {}
-```
-
-Resolution order (explicit payload always wins):
-
-1. explicit `ownerType` / `ownerId` / `ownerIsGlobal` public properties,
-2. a public model property whose `getOwner()` returns a model,
-3. a public model property with a non-null owner tuple (`owner_type` / `owner_id`),
-4. a public `OwnerScopeIdentifiable` property.
-
-Arbitrary models are never treated as the tenant owner on their own: a model with a global owner tuple contributes no owner context. Jobs that must run without an owner declare it explicitly (`ownerIsGlobal = true` or `OwnerScopedJob`); when owner mode is enabled a job with no resolvable owner fails closed, and when owner mode is disabled the job body runs directly without entering explicit global context.
-
-Best-practice job shape is explicit and typed:
-
-- Implement `OwnerScopedJob`
-- Return `OwnerJobContext`
-- Use camelCase PHP fields (`ownerType`, `ownerId`, `ownerIsGlobal`)
-
-The trait accepts the typed camelCase fields shown above for explicit job payloads.
+The final `handle()` reads `ownerContext()`, resolves the persisted owner, enters that context before `performJob()`, and restores the previous context afterwards. An unspecified owner fails closed in owner mode; deliberately global jobs use `OwnerJobContext::explicitGlobal()`. No owner is inferred from arbitrary model payloads.
 
 ## OwnerTuple utilities
 
@@ -463,11 +432,16 @@ class OrderController {
 }
 
 // Job automatically enters owner context
-class ExportOrdersJob implements ShouldQueue
+class ExportOrdersJob implements \AIArmada\CommerceSupport\Contracts\OwnerScopedJob, ShouldQueue
 {
     use OwnerContextJob, Queueable, SerializesModels;
 
     public function __construct(public User $owner) {}
+
+    public function ownerContext(): \AIArmada\CommerceSupport\Data\OwnerJobContext
+    {
+        return new \AIArmada\CommerceSupport\Data\OwnerJobContext($this->owner->getMorphClass(), $this->owner->getKey());
+    }
 
     public function performJob(): void
     {

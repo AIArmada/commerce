@@ -44,7 +44,7 @@ keywords:
 
 ## Key surfaces
 - Models: `Features/ReferenceData/Models/{Currency,Language,Timezone}`, `Features/UserPreferences/Models/{NotificationPreference,SavedSearch}`, `Features/Reporting/Models/Report`, `Tag`
-- Actions/Services: `Actions/DiscoverCommerceMigrationPublishTagsAction`, `Actions/DiscoverCommercePublishTagsAction`, `Actions/EnsureCustomGuidelinesSymlinkAction`, `Actions/ProcessWebhookCallAction`, `Actions/ResolveOwnedModelOrFailAction`, `Actions/ResolveOwnerJobContextAction`, `Actions/ResolveProjectRootAction`, `Features/ReferenceData/Actions/SeedCurrenciesAction`
+- Actions/Services: `Actions/DiscoverCommerceMigrationPublishTagsAction`, `Actions/DiscoverCommercePublishTagsAction`, `Actions/EnsureCustomGuidelinesSymlinkAction`, `Actions/ProcessWebhookCallAction`, `Actions/ResolveOwnedModelOrFailAction`, `Actions/ResolveProjectRootAction`, `Features/ReferenceData/Actions/SeedCurrenciesAction`
 - Config `commerce-support.php`: `database`, `morph_key_type`, `json_column_type`, `tables`, `saved_searches`, `reports`, `notification_preferences`, `languages`, `currencies`, `timezones`
 
 ## Docs map
