@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\CommerceSupport\Features\UserPreferences\Models\NotificationPreference;
 use AIArmada\CommerceSupport\Features\Reporting\Models\Report;
+use AIArmada\CommerceSupport\Features\UserPreferences\Models\NotificationPreference;
 use AIArmada\CommerceSupport\Features\UserPreferences\Models\SavedSearch;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 

@@ -7,6 +7,7 @@ namespace AIArmada\CommerceSupport\Features\UserPreferences\Actions;
 use AIArmada\CommerceSupport\Features\UserPreferences\Models\NotificationPreference;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
+use InvalidArgumentException;
 
 final readonly class SaveNotificationPreference
 {
@@ -14,7 +15,7 @@ final readonly class SaveNotificationPreference
     public function execute(Model & Authenticatable $user, array $content, ?string $id = null): NotificationPreference
     {
         if (! $user->exists) {
-            throw new \InvalidArgumentException('The user must be persisted.');
+            throw new InvalidArgumentException('The user must be persisted.');
         }
 
         $preference = $id === null

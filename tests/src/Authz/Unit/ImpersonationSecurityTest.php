@@ -151,7 +151,7 @@ it('does not override the standard Laravel session driver', function (): void {
 
     $guard = auth()->guard('standard');
 
-    expect($guard)->toBeInstanceOf(\Illuminate\Auth\SessionGuard::class)
+    expect($guard)->toBeInstanceOf(Illuminate\Auth\SessionGuard::class)
         ->and($guard)->not->toBeInstanceOf(SessionGuard::class);
 });
 

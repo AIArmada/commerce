@@ -7,6 +7,7 @@ namespace AIArmada\CommerceSupport\Features\Reporting\Actions;
 use AIArmada\CommerceSupport\Features\Reporting\Models\Report;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
+use InvalidArgumentException;
 
 final readonly class CreateReport
 {
@@ -14,7 +15,7 @@ final readonly class CreateReport
     public function execute(Model $reportable, (Model & Authenticatable) | null $reporter, array $content): Report
     {
         if (! $reportable->exists || ($reporter !== null && ! $reporter->exists)) {
-            throw new \InvalidArgumentException('Report identities must be persisted.');
+            throw new InvalidArgumentException('Report identities must be persisted.');
         }
 
         $report = new Report($content);

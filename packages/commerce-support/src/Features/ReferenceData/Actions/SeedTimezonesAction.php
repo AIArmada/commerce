@@ -69,7 +69,6 @@ final readonly class SeedTimezonesAction
                 $result['created'] += DB::table($table)->insertOrIgnore($chunk);
             }
 
-
             return $result;
         });
     }

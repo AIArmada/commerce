@@ -11,6 +11,7 @@ use DomainException;
 use Illuminate\Contracts\Auth\Access\Gate;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
+use InvalidArgumentException;
 
 final readonly class TransitionReport
 {
@@ -19,7 +20,7 @@ final readonly class TransitionReport
     public function execute(string $id, ReportStatus $status, Model & Authenticatable $reviewer, ?string $resolution = null): bool
     {
         if (! $reviewer->exists) {
-            throw new \InvalidArgumentException('The reviewer must be persisted.');
+            throw new InvalidArgumentException('The reviewer must be persisted.');
         }
 
         return (new Report)->getConnection()->transaction(function () use ($id, $status, $reviewer, $resolution): bool {

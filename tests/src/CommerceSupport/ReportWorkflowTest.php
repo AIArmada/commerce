@@ -6,9 +6,10 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Features\Reporting\Actions\TransitionReport;
 use AIArmada\CommerceSupport\Features\Reporting\Api\ReportSeverity;
 use AIArmada\CommerceSupport\Features\Reporting\Api\ReportStatus;
-use AIArmada\CommerceSupport\Features\UserPreferences\Models\NotificationPreference;
 use AIArmada\CommerceSupport\Features\Reporting\Models\Report;
+use AIArmada\CommerceSupport\Features\UserPreferences\Models\NotificationPreference;
 use AIArmada\CommerceSupport\Features\UserPreferences\Models\SavedSearch;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
@@ -136,7 +137,7 @@ it('rejects unauthorized review and preserves the first terminal transition', fu
     $action = app(TransitionReport::class);
     $id = (string) $report->getKey();
 
-    expect(fn () => $action->execute($id, ReportStatus::Resolved, $unauthorized))->toThrow(\Illuminate\Auth\Access\AuthorizationException::class)
+    expect(fn () => $action->execute($id, ReportStatus::Resolved, $unauthorized))->toThrow(AuthorizationException::class)
         ->and($report->fresh()->status)->toBe(ReportStatus::Open);
 
     $action->execute($id, ReportStatus::Resolved, $reviewer, 'confirmed');
@@ -145,5 +146,5 @@ it('rejects unauthorized review and preserves the first terminal transition', fu
         ->and($report->fresh()->resolution)->toBe('confirmed')
         ->and($report->fresh()->resolved_at->equalTo($resolvedAt))->toBeTrue();
 
-    expect(fn () => $action->execute($id, ReportStatus::Rejected, $reviewer))->toThrow(\DomainException::class);
+    expect(fn () => $action->execute($id, ReportStatus::Rejected, $reviewer))->toThrow(DomainException::class);
 });
