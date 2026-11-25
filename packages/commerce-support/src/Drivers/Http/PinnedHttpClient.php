@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\CommerceSupport\Http;
+namespace AIArmada\CommerceSupport\Drivers\Http;
 
 use AIArmada\CommerceSupport\Support\PublicHttpUrlGuard;
 use AIArmada\CommerceSupport\Support\ValidatedHttpTarget;
@@ -60,6 +60,8 @@ final class PinnedHttpClient
             $curlOptions[constant('CURLOPT_RESOLVE')] = [$resolveEntry];
             $options['curl'] = $curlOptions;
         }
+
+        $options['allow_redirects'] = false;
 
         return $pending->send(mb_strtoupper($method), $target->url, $options);
     }
@@ -244,7 +246,7 @@ final class PinnedHttpClient
      */
     private static function assertCurlTransport(PendingRequest $pending): void
     {
-        if (array_key_exists('handler', $pending->getOptions())) {
+        if (array_key_exists('handler', $pending->getOptions()) || ! empty($pending->getOptions()['stream'])) {
             throw new RuntimeException('Pinned HTTP transport requires the default cURL-backed client; a custom Guzzle handler is configured, so DNS-pin enforcement cannot be guaranteed. Refusing to send.');
         }
     }

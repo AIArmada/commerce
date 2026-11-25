@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\CommerceSupport\Http\PinnedHttpClient;
+use AIArmada\CommerceSupport\Drivers\Http\PinnedHttpClient;
 use AIArmada\CommerceSupport\Support\ValidatedHttpTarget;
 use GuzzleHttp\HandlerStack;
 use Illuminate\Support\Facades\Http;
@@ -57,4 +57,13 @@ it('refuses pinned sends when a custom handler stack is configured', function ()
 it('refuses pinned sends with handler-swapping request options', function (): void {
     expect(fn () => (new PinnedHttpClient)->send('GET', pinnedTarget(), ['stream' => true]))
         ->toThrow(RuntimeException::class, 'custom handler options');
+});
+
+it('never lets request options enable automatic redirects', function (): void {
+    Http::fake(['*' => Http::response('', 302, ['Location' => 'http://127.0.0.1/'])]);
+
+    $response = (new PinnedHttpClient)->send('GET', pinnedTarget(), ['allow_redirects' => true]);
+
+    expect($response->status())->toBe(302);
+    Http::assertSentCount(1);
 });

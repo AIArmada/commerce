@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\FilamentSignals\FilamentSignalsTestCase;
-use AIArmada\CommerceSupport\Http\PinnedHttpClient;
+use AIArmada\CommerceSupport\Drivers\Http\PinnedHttpClient;
 use AIArmada\CommerceSupport\Support\PublicHttpUrlGuard;
 use AIArmada\FilamentSignals\Support\InteractionRuleScanner;
 use Illuminate\Filesystem\Filesystem;

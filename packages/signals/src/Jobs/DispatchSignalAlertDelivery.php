@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Signals\Jobs;
 
 use AIArmada\CommerceSupport\Contracts\OwnerScopedJob;
-use AIArmada\CommerceSupport\Http\PinnedHttpClient;
+use AIArmada\CommerceSupport\Drivers\Http\PinnedHttpClient;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerJobContext;
 use AIArmada\CommerceSupport\Support\PublicHttpUrlGuard;

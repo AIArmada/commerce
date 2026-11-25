@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\AffiliateNetwork\Drivers\HttpSiteContentDriver;
-use AIArmada\CommerceSupport\Http\PinnedHttpClient;
+use AIArmada\CommerceSupport\Drivers\Http\PinnedHttpClient;
 use AIArmada\CommerceSupport\Support\PublicHttpUrlGuard;
 use Illuminate\Support\Facades\Http;
 
