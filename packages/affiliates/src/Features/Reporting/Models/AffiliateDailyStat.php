@@ -7,7 +7,9 @@ namespace AIArmada\Affiliates\Features\Reporting\Models;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -73,6 +75,11 @@ class AffiliateDailyStat extends Model
         'epc_cents' => 'float',
         'breakdown' => 'array',
     ];
+
+    public function setDateAttribute(DateTimeInterface | string $value): void
+    {
+        $this->attributes['date'] = CarbonImmutable::parse($value)->toDateString();
+    }
 
     public function getTable(): string
     {

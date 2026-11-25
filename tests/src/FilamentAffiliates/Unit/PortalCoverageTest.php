@@ -384,7 +384,7 @@ it('portal dashboard state objects expose label and color helpers for badges', f
 
 it('PortalConversions uses neutral reference and total columns', function (): void {
     $repositoryRoot = dirname(__DIR__, 4);
-    $source = file_get_contents($repositoryRoot . '/packages/filament-affiliates/src/Pages/Portal/PortalConversions.php');
+    $source = file_get_contents($repositoryRoot . '/packages/filament-affiliates/src/Features/Portal/EntryPoints/Filament/Pages/PortalConversions.php');
 
     expect($source)
         ->toContain("TextColumn::make('external_reference')")
