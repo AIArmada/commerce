@@ -175,6 +175,9 @@ it('persists an owner-context uniqueness scope for ownerless experiments when gr
         'owner_id' => null,
     ]));
 
+    OwnerContext::withOwner($owner, fn () => $experiment->update(['name' => 'Renamed Ownerless Experiment']));
+    $experiment->refresh();
+
     expect($experiment->getRawOriginal('owner_scope'))->toBe(OwnerScopeKey::forOwner($owner))
         ->and($experiment->owner_type)->toBeNull()
         ->and($experiment->owner_id)->toBeNull();

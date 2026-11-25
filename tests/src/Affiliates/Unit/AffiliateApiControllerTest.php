@@ -77,12 +77,12 @@ describe('AffiliateApiController', function (): void {
                 'owner_type' => $ownerA->getMorphClass(),
                 'owner_id' => $ownerA->getKey(),
             ]);
-            $affiliateA->save();
+            OwnerContext::withOwner($ownerA, fn () => $affiliateA->save());
 
-            OwnerContext::setForRequest($ownerB);
+            $ownResponse = OwnerContext::withOwner($ownerA, fn () => $this->controller->summary($affiliateA->code));
+            $response = OwnerContext::withOwner($ownerB, fn () => $this->controller->summary($affiliateA->code));
 
-            $response = $this->controller->summary($affiliateA->code);
-
+            expect($ownResponse->getStatusCode())->toBe(200);
             expect($response->getStatusCode())->toBe(404);
         });
 

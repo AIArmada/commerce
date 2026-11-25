@@ -12,6 +12,7 @@ use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
+use AIArmada\CommerceSupport\Support\OwnerScopeKey;
 use Closure;
 use Illuminate\Database\Connection;
 use Illuminate\Database\Eloquent\Builder;
@@ -137,17 +138,26 @@ final class DatabaseAffiliateLookup implements AffiliateLookup
         );
     }
 
-    /**
-     * Affiliate resolution is commonly requested by several checkout and
-     * attribution collaborators during one request. Keep the optimization
-     * request-local so it cannot leak owner context or stale data between requests.
-     */
     private function remembered(string $key, Closure $resolver): ?Affiliate
     {
         if (! app()->bound('request')) {
             return $resolver();
         }
 
+        $config = Affiliate::ownerScopeConfig();
+        $scope = 'unscoped';
+
+        if ($config->enabled) {
+            $owner = $config->owner ?? OwnerContext::resolve();
+
+            if ($owner === null && ! OwnerContext::isExplicitGlobal()) {
+                return $resolver();
+            }
+
+            $scope = OwnerScopeKey::forOwner($owner);
+        }
+
+        $key = $scope . ':' . $key;
         $request = request();
         $cache = $request->attributes->get(self::REQUEST_CACHE_KEY, []);
 
