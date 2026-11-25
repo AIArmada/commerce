@@ -25,7 +25,7 @@ final readonly class DeleteScopeAssignments
         $role = new $roleClass;
         $roleTable = $role->getTable();
         $roleKey = $role->getKeyName();
-        $rolePivotKey = (string) config('permission.column_names.role_pivot_key', 'role_id');
+        $rolePivotKey = $this->registrar->pivotRole;
         $roleAssignments = (string) config('permission.table_names.model_has_roles', 'model_has_roles');
         $permissionAssignments = (string) config('permission.table_names.model_has_permissions', 'model_has_permissions');
         $rolePermissions = (string) config('permission.table_names.role_has_permissions', 'role_has_permissions');

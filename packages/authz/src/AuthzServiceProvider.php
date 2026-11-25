@@ -49,7 +49,6 @@ final class AuthzServiceProvider extends PackageServiceProvider
             ->hasConfigFile()
             ->runsMigrations()
             ->discoversMigrations()
-            ->hasRoutes(['web'])
             ->hasCommands([
                 SuperAdminCommand::class,
                 SyncAuthzCommand::class,

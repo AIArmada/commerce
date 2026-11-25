@@ -11,7 +11,13 @@ final class OwnerJobContextMapper
 {
     public static function fromModel(Model $owner): OwnerJobContext
     {
-        return new OwnerJobContext($owner->getMorphClass(), $owner->getKey());
+        $reference = EloquentRecordReference::fromModel($owner);
+
+        if ($reference === null) {
+            throw new \InvalidArgumentException('A persisted owner is required.');
+        }
+
+        return new OwnerJobContext($reference->type, $reference->id);
     }
 
     public static function resolve(?OwnerJobContext $context): ?Model

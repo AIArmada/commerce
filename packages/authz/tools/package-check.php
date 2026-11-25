@@ -39,12 +39,16 @@ if ($unknownOptions !== []) {
 
 $options = getopt('', ['root:', 'json', 'diff-base:']);
 $root = realpath($options['root'] ?? dirname(__DIR__));
-if ($root === false || ! is_file($root.'/vendor/autoload.php')) {
+$autoload = $root === false ? null : $root.'/vendor/autoload.php';
+if ($root !== false && ! is_file($autoload)) {
+    $autoload = dirname($root, 2).'/vendor/autoload.php';
+}
+if ($autoload === null || ! is_file($autoload)) {
     fwrite(STDERR, "Run composer install (including dev dependencies) first.\n");
     exit(2);
 }
 
-require $root.'/vendor/autoload.php';
+require $autoload;
 
 if (! class_exists(ParserFactory::class)) {
     fwrite(STDERR, "Install PHP-Parser: composer require --dev 'nikic/php-parser:^5'\n");

@@ -37,6 +37,9 @@ jobs:
               - 'pint.json'
               - 'rector.php'
               - 'phpstan.neon'
+              - 'packages/authz/**'
+              - 'packages/commerce-support/**'
+              - '.github/workflows/ci.yml'
             tests:
               - '**/*.php'
               - 'composer.json'
@@ -116,6 +119,44 @@ jobs:
 
       - name: Check Pint (test)
         run: vendor/bin/pint --test
+
+  dune-architecture:
+    name: Dune package architecture
+    needs: changes
+    if: needs.changes.outputs.php == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: intl, curl, json, mbstring, dom, pdo, pgsql, zip
+          coverage: none
+          tools: composer:v2
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v5
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-dune-architecture-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-dune-architecture-
+
+      - name: Install dependencies
+        env:
+          COMPOSER_AUTH: '{"http-basic":{"packages.filamentphp.com":{"username":"${{ secrets.COMPOSER_AUTH_USERNAME }}","password":"${{ secrets.COMPOSER_AUTH_PASSWORD }}"}}}'
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Verify Authz and Commerce Support boundaries and write ownership
+        run: |
+          composer --working-dir=packages/authz arch:check
+          composer --working-dir=packages/commerce-support arch:check
 
   phpstan:
     name: PHPStan
@@ -234,7 +275,7 @@ jobs:
 
   ci:
     name: CI
-    needs: [changes, rector, pint, phpstan, tests]
+    needs: [changes, rector, pint, phpstan, tests, dune-architecture]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -244,10 +285,11 @@ jobs:
           echo "pint:    ${{ needs.pint.result }}"
           echo "phpstan: ${{ needs.phpstan.result }}"
           echo "tests:   ${{ needs.tests.result }}"
+          echo "dune:    ${{ needs.dune-architecture.result }}"
 
       - name: Enforce required checks
         run: |
-          results=("${{ needs.rector.result }}" "${{ needs.pint.result }}" "${{ needs.phpstan.result }}" "${{ needs.tests.result }}")
+          results=("${{ needs.rector.result }}" "${{ needs.pint.result }}" "${{ needs.phpstan.result }}" "${{ needs.tests.result }}" "${{ needs.dune-architecture.result }}")
           for r in "${results[@]}"; do
             if [[ "$r" == "failure" || "$r" == "cancelled" ]]; then
               exit 1
