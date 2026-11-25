@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Attribution\Extensions;
 
-use AIArmada\Affiliates\Models\AffiliateLink;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\Links\Contracts\LinkGateInterface;
 use AIArmada\Links\Models\Link;

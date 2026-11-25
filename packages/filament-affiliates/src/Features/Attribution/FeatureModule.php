@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Features\Attribution;
 
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateTouchpoint;
-use AIArmada\Affiliates\Models\AffiliateLink;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink;
 use AIArmada\FilamentAffiliates\Features\Attribution\EntryPoints\Filament\Policies\AffiliateLinkPolicy;
 use AIArmada\FilamentAffiliates\Features\Attribution\EntryPoints\Filament\Policies\AffiliateTouchpointPolicy;
 use AIArmada\FilamentAffiliates\Platform\FeatureModule as FeatureModuleContract;

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Features\Attribution\EntryPoints\Filament\Resources\AffiliateLinkResource\Pages;
 
 use AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkAdministration;
-use AIArmada\Affiliates\Models\AffiliateLink;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink;
 use AIArmada\FilamentAffiliates\Features\Attribution\EntryPoints\Filament\Resources\AffiliateLinkResource;
 use AIArmada\FilamentAffiliates\Features\Attribution\Support\TrackingLinkFormReferences;
 use Filament\Resources\Pages\CreateRecord;

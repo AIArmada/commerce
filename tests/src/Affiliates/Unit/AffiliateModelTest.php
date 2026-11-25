@@ -217,7 +217,7 @@ describe('Affiliate Model - Relationships', function (): void {
         ]);
         $reader = app(\AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkReader::class);
         expect($reader->hasRecords((string) $affiliate->getKey()))->toBeFalse();
-        $link = \AIArmada\Affiliates\Models\AffiliateLink::query()->create([
+        $link = \AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink::query()->create([
             'affiliate_id' => $affiliate->getKey(),
             'destination_url' => 'https://example.com',
             'tracking_url' => 'https://example.com/go/test',
