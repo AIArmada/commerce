@@ -7,7 +7,7 @@ namespace AIArmada\Affiliates\Features\Tax\Actions;
 use AIArmada\Affiliates\Contracts\TaxRecipientProvider;
 use AIArmada\Affiliates\Contracts\TaxWorksheetWriter;
 use AIArmada\Affiliates\Data\TaxWorksheetRequest;
-use AIArmada\Affiliates\Enums\TaxDocumentStatus;
+use AIArmada\Affiliates\Features\Tax\Api\TaxDocumentStatus;
 use AIArmada\Affiliates\Features\Tax\Api\TaxDocumentRecord;
 use AIArmada\Affiliates\Features\Tax\Models\AffiliateTaxDocument;
 use AIArmada\Affiliates\Features\Tax\Queries\TaxDocumentQuery;

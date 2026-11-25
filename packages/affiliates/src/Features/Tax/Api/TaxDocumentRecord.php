@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Tax\Api;
 
-use AIArmada\Affiliates\Enums\TaxDocumentStatus;
-
 final readonly class TaxDocumentRecord
 {
     public function __construct(

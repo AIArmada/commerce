@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Tax\Models;
 
-use AIArmada\Affiliates\Enums\TaxDocumentStatus;
+use AIArmada\Affiliates\Features\Tax\Api\TaxDocumentStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\Concerns\ScopesByAffiliateOwner;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;

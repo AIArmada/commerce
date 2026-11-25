@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Enums;
+namespace AIArmada\Affiliates\Features\Tax\Api;
 
 enum TaxDocumentStatus: string
 {

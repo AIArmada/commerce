@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\TaxDocumentStatus;
+use AIArmada\Affiliates\Features\Tax\Api\TaxDocumentStatus;
 use AIArmada\Affiliates\Features\Tax\Api\TaxDocumentApi;
 use AIArmada\Affiliates\Features\Tax\Models\AffiliateTaxDocument;
 use AIArmada\Affiliates\Models\Affiliate;
