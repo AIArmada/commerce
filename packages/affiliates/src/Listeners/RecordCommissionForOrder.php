@@ -9,6 +9,7 @@ use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
 use AIArmada\Orders\Events\CommissionAttributionRequired;
+use AIArmada\Orders\Actions\MergeOrderMetadata;
 use AIArmada\Orders\Models\Order;
 use Carbon\CarbonImmutable;
 use InvalidArgumentException;
@@ -41,6 +42,7 @@ final readonly class RecordCommissionForOrder
     public function __construct(
         private CartConversionRecording $recordAffiliateConversion,
         private CartManagerInterface $cartManager,
+        private MergeOrderMetadata $orderMetadata,
     ) {}
 
     public function handle(CommissionAttributionRequired $event): void
@@ -66,12 +68,6 @@ final readonly class RecordCommissionForOrder
 
         $cartId = $metadata['cart_id'] ?? null;
 
-        if (! is_string($cartId) || $cartId === '') {
-            $this->writeAbstention($order, $networkPresent);
-
-            return;
-        }
-
         try {
             $owner = OwnerTupleParser::fromTypeAndId($order->owner_type, $order->owner_id)
                 ->toOwnerModel();
@@ -88,6 +84,12 @@ final readonly class RecordCommissionForOrder
         }
 
         OwnerContext::withOwner($owner, function () use ($cartId, $order, $reference, $metadata, $networkPresent): void {
+            if (! is_string($cartId) || $cartId === '') {
+                $this->writeAbstention($order, $networkPresent);
+
+                return;
+            }
+
             $cart = $this->cartManager->getById($cartId);
 
             if ($cart === null || ! $cart->exists()) {
@@ -99,7 +101,7 @@ final readonly class RecordCommissionForOrder
             $engineTouch = $this->recordAffiliateConversion->attributionTouchFor($cart);
 
             if ($engineTouch === null) {
-                $this->writeDecision($order, $metadata, null, $networkPresent ? 'network' : null, 'engine_unattributed');
+                $this->writeDecision($order, null, $networkPresent ? 'network' : null, 'engine_unattributed');
 
                 return;
             }
@@ -107,20 +109,20 @@ final readonly class RecordCommissionForOrder
             $networkTouch = self::parseTouch($metadata['network_touch_at'] ?? null);
 
             if ($networkTouch === null) {
-                $this->writeDecision($order, $metadata, $engineTouch, 'engine', $networkPresent ? 'network_abstained' : 'engine_alone');
+                $this->writeDecision($order, $engineTouch, 'engine', $networkPresent ? 'network_abstained' : 'engine_alone');
                 $this->record($order, $cart, $reference);
 
                 return;
             }
 
             if ($engineTouch->greaterThanOrEqualTo($networkTouch)) {
-                $this->writeDecision($order, $metadata, $engineTouch, 'engine', 'last_touch');
+                $this->writeDecision($order, $engineTouch, 'engine', 'last_touch');
                 $this->record($order, $cart, $reference);
 
                 return;
             }
 
-            $this->writeDecision($order, $metadata, $engineTouch, 'network', 'last_touch');
+            $this->writeDecision($order, $engineTouch, 'network', 'last_touch');
         });
     }
 
@@ -159,18 +161,16 @@ final readonly class RecordCommissionForOrder
             return;
         }
 
-        $this->writeDecision($order, (array) ($order->metadata ?? []), null, 'network', 'engine_unattributed');
+        $this->writeDecision($order, null, 'network', 'engine_unattributed');
     }
 
-    /**
-     * @param  array<string, mixed>  $metadata
-     */
-    private function writeDecision(Order $order, array $metadata, ?CarbonImmutable $engineTouch, ?string $winner, string $reason): void
+    private function writeDecision(Order $order, ?CarbonImmutable $engineTouch, ?string $winner, string $reason): void
     {
-        $metadata['engine_touch_at'] = $engineTouch?->toIso8601String();
-        $metadata['attribution_winner'] = $winner;
-        $metadata['attribution_decision_reason'] = $reason;
-
-        $order->update(['metadata' => $metadata]);
+        $this->orderMetadata->handle((string) $order->getKey(), [
+            'engine_touch_at' => $engineTouch?->toIso8601String(),
+            'attribution_winner' => $winner,
+            'attribution_decision_reason' => $reason,
+        ]);
+        $order->refresh();
     }
 }
