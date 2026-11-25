@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Payouts\Actions;
 
 use AIArmada\Affiliates\Exceptions\PayoutCompletionBlockedException;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutHold;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
@@ -13,6 +14,7 @@ use AIArmada\Affiliates\States\Disabled;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use InvalidArgumentException;
+use LogicException;
 
 /**
  * Eligibility gate for provider submission and both payout completion
@@ -64,6 +66,19 @@ final readonly class AssertPayoutCompletable
                 (string) $payout->getKey(),
                 (string) $affiliateId,
             ));
+        }
+
+        if ((new AffiliatePayoutHold)->getConnection() !== $payout->getConnection()) {
+            throw new LogicException('Payout hold verification requires a shared database connection.');
+        }
+
+        // The affiliate has already been resolved and locked in the payout's owner scope.
+        if (AffiliatePayoutHold::query()
+            ->withoutGlobalScope('affiliate_owner')
+            ->where('affiliate_id', $affiliate->getKey())
+            ->active()
+            ->exists()) {
+            throw new PayoutCompletionBlockedException('An active payout hold blocks payout completion.');
         }
 
         $conversions = $payout->conversions()->forOwner($owner)->get();

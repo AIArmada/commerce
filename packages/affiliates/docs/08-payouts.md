@@ -206,6 +206,8 @@ $hasHolds = app(\AIArmada\Affiliates\Features\Payouts\Api\PayoutHoldReader::clas
 ```
 
 > **warning:**
+> An active hold blocks scheduled and manual reservations, provider submission, and completion until released or expired. A disabled-affiliate override does not bypass a hold.
+>
 > A hold is a gate, not an amount. `amount_minor` and `held_at` are not
 > columns and would be silently dropped. Use `expires_at` for the hold
 > deadline and `notes` for the release note.

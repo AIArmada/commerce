@@ -8,6 +8,8 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\Concerns\ScopesByAffiliateOwner;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -62,13 +64,14 @@ class AffiliatePayoutHold extends Model implements Auditable
         return $this->belongsTo(Affiliate::class);
     }
 
-    /** @param \Illuminate\Database\Eloquent\Builder<self> $query
-     * @return \Illuminate\Database\Eloquent\Builder<self>
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
      */
-    public function scopeActive(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    public function scopeActive(Builder $query): Builder
     {
         return $query->whereNull('released_at')->where(function ($builder): void {
-            $builder->whereNull('expires_at')->orWhere('expires_at', '>', now());
+            $builder->whereNull('expires_at')->orWhere('expires_at', '>', CarbonImmutable::now());
         });
     }
 
@@ -78,7 +81,7 @@ class AffiliatePayoutHold extends Model implements Auditable
             return false;
         }
 
-        if ($this->expires_at !== null && $this->expires_at->isPast()) {
+        if ($this->expires_at !== null && $this->expires_at->lessThanOrEqualTo(CarbonImmutable::now())) {
             return false;
         }
 

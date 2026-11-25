@@ -12,6 +12,7 @@ use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycle;
 use AIArmada\Affiliates\Features\Payouts\Actions\AssertPayoutCompletable;
 use AIArmada\Affiliates\Features\Payouts\Actions\CreatePayout;
 use AIArmada\Affiliates\Features\Payouts\Actions\UpdatePayoutStatus;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutHoldAdministration;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutReconciliation;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
@@ -596,4 +597,42 @@ test('manual payout reservation accepts a normalized conversion currency', funct
     expect($payout->currency)->toBe('USD')
         ->and($conversion->fresh()->affiliate_payout_id)->toBe($payout->id)
         ->and($affiliate->balanceFor('USD')->available_minor)->toBe(0);
+});
+
+
+test('manual payout creation cannot reserve funds while an active hold exists', function (): void {
+    $affiliate = createCompletionGuardAffiliate();
+    $conversion = recordCompletionGuardConversion($affiliate);
+    $holds = app(PayoutHoldAdministration::class);
+    $holdId = $holds->place($affiliate->id, 'Manual review');
+
+    expect(fn (): object => app(CreatePayout::class)->handle([$conversion->id]))
+        ->toThrow(InvalidArgumentException::class, 'active payout hold')
+        ->and($affiliate->balanceFor('USD')->fresh()->available_minor)->toBe(5000)
+        ->and($conversion->fresh()->affiliate_payout_id)->toBeNull();
+
+    $holds->release($affiliate->id, $holdId);
+
+    expect(app(CreatePayout::class)->handle([$conversion->id])->total_minor)->toBe(5000);
+});
+
+test('a hold placed after reservation blocks submission and completion until released', function (): void {
+    $affiliate = createCompletionGuardAffiliate();
+    $conversion = recordCompletionGuardConversion($affiliate);
+    $payout = app(CreatePayout::class)->handle([$conversion->id]);
+    $holds = app(PayoutHoldAdministration::class);
+    $holdId = $holds->place($affiliate->id, 'Review after reservation');
+
+    expect(fn (): ?string => app(AssertPayoutCompletable::class)->handle($payout, false))
+        ->toThrow(PayoutCompletionBlockedException::class, 'active payout hold')
+        ->and(fn (): object => app(UpdatePayoutStatus::class)->handle($payout, 'completed'))
+        ->toThrow(PayoutCompletionBlockedException::class, 'active payout hold')
+        ->and(fn (): bool => app(PayoutReconciliation::class)->reconcile($payout->id, 'completed'))
+        ->toThrow(PayoutCompletionBlockedException::class, 'active payout hold')
+        ->and($payout->fresh()->status->equals(PendingPayout::class))->toBeTrue()
+        ->and($conversion->fresh()->status->equals(ApprovedConversion::class))->toBeTrue();
+
+    $holds->release($affiliate->id, $holdId);
+
+    expect(app(UpdatePayoutStatus::class)->handle($payout, 'completed')->status->equals(CompletedPayout::class))->toBeTrue();
 });

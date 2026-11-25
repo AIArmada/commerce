@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Payouts\Actions;
 
 use AIArmada\Affiliates\Features\Conversions\Api\PayoutReservation;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutHold;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
@@ -52,7 +53,7 @@ final readonly class CreatePayout
 
         $connection = (new Affiliate)->getConnection();
 
-        foreach ([new AffiliateBalance, new AffiliateConversion, new AffiliatePayout, new AffiliatePayoutOperation] as $model) {
+        foreach ([new AffiliateBalance, new AffiliateConversion, new AffiliatePayout, new AffiliatePayoutOperation, new AffiliatePayoutHold] as $model) {
             if ($model->getConnection() !== $connection) {
                 throw new LogicException('Payout reservation requires a shared database connection.');
             }
@@ -92,6 +93,10 @@ final readonly class CreatePayout
             if (! $affiliate->isCommercialPurpose()
                 && (! $onlyFixedRewardAwards || ! (bool) config('affiliates.payouts.reward_award_settlement.enabled', true))) {
                 throw new InvalidArgumentException('Only commercial-purpose conversions may be paid unless reward-award settlement is explicitly enabled.');
+            }
+
+            if (AffiliatePayoutHold::query()->where('affiliate_id', $affiliate->getKey())->active()->exists()) {
+                throw new InvalidArgumentException('An active payout hold blocks payout reservation.');
             }
 
             $payoutOverride = $this->resolvePayoutOverride($affiliate, $attributes);

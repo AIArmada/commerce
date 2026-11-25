@@ -22,6 +22,6 @@ final readonly class ReadPayoutHolds implements PayoutHoldReader
 
     public function hasRecords(string $affiliateId): bool
     {
-        return Str::isUuid($affiliateId) && AffiliatePayoutHold::query()->withoutGlobalScope('affiliate_owner')->where('affiliate_id', $affiliateId)->exists();
+        return Str::isUuid($affiliateId) && AffiliatePayoutHold::query()->where('affiliate_id', $affiliateId)->exists();
     }
 }
