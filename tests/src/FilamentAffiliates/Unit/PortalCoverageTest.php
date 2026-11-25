@@ -502,6 +502,15 @@ it('PortalProfile updates affiliate profile and default payout method', function
         ->and($payoutMethod?->details['label'] ?? null)->toBe($label)
         ->and($payoutMethod?->details['account_ref'] ?? null)->toBe($accountRef)
         ->and($page->getViewData()['payoutMethodOptions']['manual'])->toBe('Manual');
+
+    $payoutMethod->update(['verified_at' => now()]);
+    $page->saveProfile();
+    expect($payoutMethod->fresh()->verified_at)->not->toBeNull();
+
+    $page->payoutMethodAccountRef = 'changed-account-reference';
+    $page->saveProfile();
+    expect($payoutMethod->fresh()->verified_at)->toBeNull()
+        ->and($affiliate->payoutMethods()->where('is_default', true)->count())->toBe(1);
 })->with([
     'paypal' => ['paypal', 'Primary PayPal', 'payouts@example.com'],
     'manual' => ['manual', 'Manual transfer', 'operator-account'],

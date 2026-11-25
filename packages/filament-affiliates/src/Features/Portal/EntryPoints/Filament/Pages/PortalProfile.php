@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages;
 
 use AIArmada\Affiliates\Enums\PayoutMethodType;
-use AIArmada\Affiliates\Models\AffiliatePayoutMethod;
+use AIArmada\Affiliates\Features\Identity\Api\PortalProfileAdministration;
+use AIArmada\Affiliates\Features\Identity\Api\PortalProfileInput;
 use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Concerns\PortalPage;
 use BackedEnum;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Contracts\Support\Htmlable;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
+use Illuminate\Auth\Access\AuthorizationException;
 
 class PortalProfile extends PortalPage
 {
@@ -85,64 +85,27 @@ class PortalProfile extends PortalPage
             return;
         }
 
-        $validated = validator([
-            'name' => $this->name,
-            'contact_email' => $this->contactEmail,
-            'website_url' => $this->websiteUrl,
-            'payout_method_type' => $this->payoutMethodType,
-            'payout_method_label' => $this->payoutMethodLabel,
-            'payout_method_account_ref' => $this->payoutMethodAccountRef,
-        ], [
-            'name' => ['required', 'string', 'max:255'],
-            'contact_email' => ['nullable', 'email', 'max:255'],
-            'website_url' => ['nullable', 'url', 'max:255'],
-            'payout_method_type' => [
-                'required',
-                'string',
-                Rule::in(array_map(
-                    static fn (PayoutMethodType $type): string => $type->value,
-                    PayoutMethodType::cases(),
-                )),
-            ],
-            'payout_method_label' => ['required', 'string', 'max:255'],
-            'payout_method_account_ref' => ['required', 'string', 'max:255'],
-        ])->validate();
+        $user = auth()->user();
 
-        DB::transaction(function () use ($affiliate, $validated): void {
-            $affiliate->update([
-                'handle' => config('affiliates.handles.allow_custom', true) ? $this->handle : $affiliate->handle,
-                'name' => $validated['name'],
-                'contact_email' => $validated['contact_email'] !== '' ? $validated['contact_email'] : null,
-                'website_url' => $validated['website_url'] !== '' ? $validated['website_url'] : null,
-            ]);
+        if ($user === null) {
+            throw new AuthorizationException('An authenticated affiliate account is required.');
+        }
 
-            $defaultMethod = $affiliate->payoutMethods()->where('is_default', true)->first();
-
-            if ($defaultMethod === null) {
-                AffiliatePayoutMethod::query()->where('affiliate_id', $affiliate->getKey())->update(['is_default' => false]);
-
-                AffiliatePayoutMethod::create([
-                    'affiliate_id' => $affiliate->getKey(),
-                    'type' => $validated['payout_method_type'],
-                    'details' => [
-                        'label' => $validated['payout_method_label'],
-                        'account_ref' => $validated['payout_method_account_ref'],
-                    ],
-                    'is_default' => true,
-                ]);
-
-                return;
-            }
-
-            $defaultMethod->update([
-                'type' => $validated['payout_method_type'],
-                'details' => [
-                    'label' => $validated['payout_method_label'],
-                    'account_ref' => $validated['payout_method_account_ref'],
-                ],
-                'is_default' => true,
-            ]);
-        });
+        app(PortalProfileAdministration::class)->save(
+            (string) $affiliate->getKey(),
+            $user->getMorphClass(),
+            (string) $user->getKey(),
+            is_string($user->email ?? null) ? $user->email : null,
+            new PortalProfileInput(
+                $this->name,
+                $this->handle,
+                $this->contactEmail,
+                $this->websiteUrl,
+                $this->payoutMethodType,
+                $this->payoutMethodLabel,
+                $this->payoutMethodAccountRef,
+            ),
+        );
 
         Notification::make()
             ->title(__('Profile updated'))
