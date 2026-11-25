@@ -13,6 +13,9 @@ final class FeatureModule implements FeatureModuleContract
     {
         $app->bind(Api\CommissionTemplateAdministration::class, Actions\AdministerCommissionTemplates::class);
         $app->bind(Api\CommissionPricing::class, Queries\CalculateCommissionPricing::class);
+        $app->bind(Api\CommissionRuleCalculation::class, Actions\CalculateRuleCommission::class);
+        $app->bind(Api\CommissionRulePreview::class, Queries\FindCommissionRules::class);
+        $app->bind(Api\PerformanceBonusCalculation::class, Queries\CalculatePerformanceBonuses::class);
         $app->bind(Api\PromotionUsage::class, Actions\ConsumePromotionUsage::class);
     }
 

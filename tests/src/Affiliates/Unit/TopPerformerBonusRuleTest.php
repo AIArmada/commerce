@@ -6,7 +6,7 @@ use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
+use AIArmada\Affiliates\Features\Commissions\Api\PerformanceBonusCalculation;
 use AIArmada\Affiliates\Settings\AffiliateBonusSettings;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
@@ -79,7 +79,7 @@ it('keeps top performer bonuses inside the current owner scope', function (): vo
         });
     }
 
-    $bonuses = OwnerContext::withOwner($ownerA, fn (): array => app(CommissionRuleEngine::class)->calculatePerformanceBonuses(
+    $bonuses = OwnerContext::withOwner($ownerA, fn (): array => app(PerformanceBonusCalculation::class)->calculatePerformanceBonuses(
         CommissionRuleType::TopPerformer,
         CarbonImmutable::now()->startOfMonth(),
         CarbonImmutable::now()->endOfMonth(),
@@ -144,7 +144,7 @@ it('honors the caller include global flag instead of overriding it from config',
         'occurred_at' => now(),
     ]));
 
-    $engine = app(CommissionRuleEngine::class);
+    $engine = app(PerformanceBonusCalculation::class);
     $from = CarbonImmutable::now()->startOfMonth();
     $to = CarbonImmutable::now()->endOfMonth();
 
@@ -178,7 +178,7 @@ it('fails closed without an owner context when owner mode is enabled', function 
         }
     });
 
-    expect(fn () => app(CommissionRuleEngine::class)->calculatePerformanceBonuses(
+    expect(fn () => app(PerformanceBonusCalculation::class)->calculatePerformanceBonuses(
         CommissionRuleType::TopPerformer,
         CarbonImmutable::now()->startOfMonth(),
         CarbonImmutable::now()->endOfMonth(),

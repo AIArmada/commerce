@@ -13,7 +13,8 @@ use AIArmada\Affiliates\Models\AffiliateLink;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramTier;
 use AIArmada\Affiliates\Models\AffiliateVolumeTier;
-use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
+use AIArmada\Affiliates\Features\Commissions\Api\CommissionRuleCalculation;
+use AIArmada\Affiliates\Features\Commissions\Api\PerformanceBonusCalculation;
 use AIArmada\Affiliates\Settings\AffiliateBonusSettings;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
@@ -107,7 +108,7 @@ describe('multicurrency threshold comparisons', function (): void {
         recordThresholdConversion($affiliate, 60000, 'USD', 'VOL-USD', $now);
         recordThresholdConversion($affiliate, 470000, 'MYR', 'VOL-MYR', $now);
 
-        $result = app(CommissionRuleEngine::class)->calculate($affiliate, 10000, []);
+        $result = app(CommissionRuleCalculation::class)->calculate((string) $affiliate->getKey(), 10000, []);
 
         // Converted volume is 160000, clearing the 150000 tier: 20% - 10% default of 10000.
         expect($result->volumeBonusMinor)->toBe(1000);
@@ -131,7 +132,7 @@ describe('multicurrency threshold comparisons', function (): void {
         recordThresholdConversion($affiliate, 60000, 'USD', 'VOL-USD', $now);
         recordThresholdConversion($affiliate, 470000, 'MYR', 'VOL-MYR', $now);
 
-        $result = app(CommissionRuleEngine::class)->calculate($affiliate, 10000, []);
+        $result = app(CommissionRuleCalculation::class)->calculate((string) $affiliate->getKey(), 10000, []);
 
         // Only the USD 60000 leg is measurable: tier not reached.
         expect($result->volumeBonusMinor)->toBe(0);
@@ -153,7 +154,7 @@ describe('multicurrency threshold comparisons', function (): void {
         recordThresholdConversion($affiliate, 60000, 'USD', 'GRO-CUR-USD', $from->addDays(5));
         recordThresholdConversion($affiliate, 235000, 'MYR', 'GRO-CUR-MYR', $from->addDays(6));
 
-        $bonuses = app(CommissionRuleEngine::class)->calculatePerformanceBonuses(
+        $bonuses = app(PerformanceBonusCalculation::class)->calculatePerformanceBonuses(
             CommissionRuleType::Growth,
             $from,
             $to
@@ -181,7 +182,7 @@ describe('multicurrency threshold comparisons', function (): void {
         recordThresholdConversion($usdAffiliate, 50000, 'USD', 'TOP-USD-1', $from->addDays(5));
         recordThresholdConversion($myrAffiliate, 470000, 'MYR', 'TOP-MYR-1', $from->addDays(5));
 
-        $bonuses = app(CommissionRuleEngine::class)->calculatePerformanceBonuses(
+        $bonuses = app(PerformanceBonusCalculation::class)->calculatePerformanceBonuses(
             CommissionRuleType::TopPerformer,
             $from,
             $to

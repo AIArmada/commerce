@@ -17,7 +17,7 @@ use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateTouchpoint;
 use AIArmada\Affiliates\Features\Attribution\Api\AttributionDistribution;
 use AIArmada\Affiliates\Features\Commissions\Api\CommissionPricing;
-use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
+use AIArmada\Affiliates\Features\Commissions\Api\CommissionRuleCalculation;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\ConversionStatus;
 use AIArmada\Affiliates\States\PendingConversion;
@@ -34,7 +34,7 @@ final readonly class RecordAffiliateConversion implements CartConversionRecordin
 {
     public function __construct(
         private CommissionPricing $commissionPricing,
-        private CommissionRuleEngine $ruleEngine,
+        private CommissionRuleCalculation $ruleEngine,
         private Dispatcher $events,
         private WebhookApi $webhooks,
         private AttributionDistribution $attributionModel,
@@ -369,7 +369,7 @@ final readonly class RecordAffiliateConversion implements CartConversionRecordin
         $programId = $payload['affiliate_program_id'] ?? $attribution?->affiliate_program_id;
 
         if ($programId) {
-            $result = $this->ruleEngine->calculate($affiliate, $baseAmount, [
+            $result = $this->ruleEngine->calculate((string) $affiliate->getKey(), $baseAmount, [
                 'program_id' => $programId,
             ]);
 

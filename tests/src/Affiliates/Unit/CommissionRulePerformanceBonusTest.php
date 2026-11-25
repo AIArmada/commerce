@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
+use AIArmada\Affiliates\Features\Commissions\Api\PerformanceBonusCalculation;
 use AIArmada\Affiliates\Settings\AffiliateBonusSettings;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
@@ -16,7 +16,7 @@ beforeEach(function (): void {
     config()->set('affiliates.owner.enabled', false);
     // Settings cache outlives RefreshDatabase rollbacks within a process.
     Artisan::call('settings:clear-cache');
-    $this->engine = app(CommissionRuleEngine::class);
+    $this->engine = app(PerformanceBonusCalculation::class);
     $this->from = CarbonImmutable::now()->startOfMonth();
     $this->to = CarbonImmutable::now()->endOfMonth();
 });

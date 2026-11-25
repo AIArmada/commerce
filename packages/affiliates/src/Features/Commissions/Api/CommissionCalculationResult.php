@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Services\Commissions;
+namespace AIArmada\Affiliates\Features\Commissions\Api;
 
-final class CommissionCalculationResult
+final readonly class CommissionCalculationResult
 {
     public function __construct(
-        public readonly int $baseCommissionMinor,
-        public readonly int $volumeBonusMinor,
-        public readonly int $promotionBonusMinor,
-        public readonly int $finalCommissionMinor,
-        public readonly array $appliedRules = [],
-        public readonly array $metadata = []
+        public int $baseCommissionMinor,
+        public int $volumeBonusMinor,
+        public int $promotionBonusMinor,
+        public int $finalCommissionMinor,
+        public array $appliedRules = [],
+        public array $metadata = []
     ) {}
 
     public function getTotalBonusMinor(): int

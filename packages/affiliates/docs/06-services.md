@@ -104,11 +104,11 @@ $commissionMinor = $calculator->calculateBase($affiliate->commission_type, $affi
 A fixed-rate affiliate returns `commission_rate` verbatim; a percentage
 affiliate multiplies by `commission_rate / (affiliates.currency.percentage_scale * 100)`
 (default `100`, so `1000` = 10%). Multi-level/upline allocation, volume tiers,
-promotions, and rule context live in `Services\Commissions\CommissionRuleEngine`
+promotions, and rule context live in `Features\Commissions\Api\CommissionRuleCalculation`
 and `AllocateUplineCommissions`, not here.
 
 Per-program rules, volume tiers, and promotions are evaluated by
-`CommissionRuleEngine::calculate()` with the affiliate's program rules;
+`CommissionRuleCalculation::calculate()` with the affiliate's program rules;
 see [Programs](07-programs.md).
 
 ## PayoutReconciliationQueries

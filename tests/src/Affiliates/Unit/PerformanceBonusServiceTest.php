@@ -9,7 +9,7 @@ use AIArmada\Affiliates\Features\Conversions\Api\PerformanceBonusQueries;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
+use AIArmada\Affiliates\Features\Commissions\Api\PerformanceBonusCalculation;
 use AIArmada\Affiliates\Settings\AffiliateBonusSettings;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
@@ -494,7 +494,7 @@ describe('PerformanceBonusQueries', function (): void {
                 'occurred_at' => CarbonImmutable::now()->startOfMonth()->addDay(),
             ]);
 
-            $bonuses = app(CommissionRuleEngine::class)->calculatePerformanceBonuses(
+            $bonuses = app(PerformanceBonusCalculation::class)->calculatePerformanceBonuses(
                 CommissionRuleType::Growth,
                 CarbonImmutable::now()->startOfMonth()->toImmutable(),
                 CarbonImmutable::now()->endOfMonth()->toImmutable(),

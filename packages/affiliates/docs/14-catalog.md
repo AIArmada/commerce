@@ -69,7 +69,7 @@ app(PromotableRegistry::class)->register(new ProductPromotables);
 
 > **warning**
 > Snapshot uses `getApplicableRules()` + base math only. It never calls
-> `CommissionRuleEngine::calculate()`, which would increment promotion usage.
+> `CommissionRuleCalculation::calculate()`, which would increment promotion usage.
 
 ## Creative snapshot contract
 

@@ -8,20 +8,20 @@ use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Features\Programs\Api\MerchantCatalog;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramSnapshot;
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateCommissionPromotion;
 use AIArmada\Affiliates\Models\AffiliateCommissionRule;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramCreative;
 use AIArmada\Affiliates\Models\AffiliateVolumeTier;
-use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
+use AIArmada\Affiliates\Features\Commissions\Api\CommissionRulePreview;
+use AIArmada\Affiliates\Features\Commissions\Api\CommissionRuleQuote;
 use AIArmada\Affiliates\Support\Catalog\PromotableRegistry;
 use Illuminate\Support\Collection;
 
 final readonly class ProgramCatalogQuery implements MerchantCatalog
 {
     public function __construct(
-        private CommissionRuleEngine $rules,
+        private CommissionRulePreview $rules,
         private PromotableRegistry $promotables,
     ) {}
 
@@ -82,8 +82,6 @@ final readonly class ProgramCatalogQuery implements MerchantCatalog
     /** @return array<string, mixed> */
     private function snapshot(AffiliateProgram $program): array
     {
-        $this->rules->clearCache();
-
         $maxSubjects = max(1, (int) config('affiliates.catalog.max_subjects', 500));
 
         $subjects = $this->promotables->all($program->getKey(), $maxSubjects);
@@ -92,14 +90,17 @@ final readonly class ProgramCatalogQuery implements MerchantCatalog
             $subjects = $this->fallbackSubjectsFromRules($program, $maxSubjects);
         }
 
-        $probe = new Affiliate;
-        $probe->id = 'catalog-snapshot';
-
         $defaultType = $program->commission_type instanceof CommissionType
             ? $program->commission_type->value
             : (string) ($program->commission_type ?? CommissionType::Percentage->value);
 
-        $resolved = $subjects->map(fn (array $s): array => $this->resolveSubject($program, $probe, $s, $defaultType));
+        $subjects = $subjects->values();
+        $contexts = $subjects->map(static fn (array $subject): array => array_merge($subject['context'], [
+            'subject_type' => $subject['subject_type'],
+            'subject_key' => $subject['subject_key'],
+        ]))->all();
+        $quotes = $this->rules->previewCatalogRules((string) $program->getKey(), $contexts);
+        $resolved = $subjects->map(fn (array $subject, int $index): array => $this->resolveSubject($program, $subject, $defaultType, $quotes[$index]));
 
         return [
             'version' => 'v2',
@@ -135,32 +136,18 @@ final readonly class ProgramCatalogQuery implements MerchantCatalog
      * @param  array{subject_type: string, subject_key: string, title: string, url: string, amount_minor: int|null, currency: string|null, context: array<string, mixed>}  $subject
      * @return array<string, mixed>
      */
-    private function resolveSubject(AffiliateProgram $program, Affiliate $probe, array $subject, string $defaultType): array
+    private function resolveSubject(AffiliateProgram $program, array $subject, string $defaultType, ?CommissionRuleQuote $winner): array
     {
-        $context = array_merge($subject['context'], [
-            'program_id' => $program->getKey(),
-            'subject_type' => $subject['subject_type'],
-            'subject_key' => $subject['subject_key'],
-        ]);
-
-        $applicable = $this->rules->getApplicableRules($probe, $context)
-            ->filter(fn (AffiliateCommissionRule $r): bool => in_array($r->rule_type, [
-                CommissionRuleType::Product,
-                CommissionRuleType::Category,
-                CommissionRuleType::Program,
-            ], true));
-
-        $winner = $applicable->first();
-        $appliedIds = $winner ? [(string) $winner->getKey()] : [];
+        $appliedIds = $winner === null ? [] : [$winner->id];
 
         if ($winner === null) {
             $effective = $defaultType === CommissionType::Fixed->value
                 ? ['commission_type' => 'fixed', 'rate_bp' => null, 'fixed_minor' => (int) $program->default_commission_rate_basis_points]
                 : ['commission_type' => 'percentage', 'rate_bp' => (int) $program->default_commission_rate_basis_points, 'fixed_minor' => null];
         } else {
-            $effective = $winner->commission_type === CommissionType::Fixed
-                ? ['commission_type' => 'fixed', 'rate_bp' => null, 'fixed_minor' => (int) $winner->commission_value]
-                : ['commission_type' => 'percentage', 'rate_bp' => (int) $winner->commission_value, 'fixed_minor' => null];
+            $effective = $winner->commissionType === CommissionType::Fixed
+                ? ['commission_type' => 'fixed', 'rate_bp' => null, 'fixed_minor' => (int) $winner->value]
+                : ['commission_type' => 'percentage', 'rate_bp' => (int) $winner->value, 'fixed_minor' => null];
         }
 
         return array_merge($subject, [

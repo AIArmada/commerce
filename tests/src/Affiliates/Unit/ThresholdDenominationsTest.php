@@ -15,7 +15,8 @@ use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramTier;
 use AIArmada\Affiliates\Models\AffiliateRank;
 use AIArmada\Affiliates\Models\AffiliateVolumeTier;
-use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
+use AIArmada\Affiliates\Features\Commissions\Api\CommissionRuleCalculation;
+use AIArmada\Affiliates\Features\Commissions\Api\PerformanceBonusCalculation;
 use AIArmada\Affiliates\Settings\AffiliateBonusSettings;
 use AIArmada\Affiliates\Settings\AffiliatePayoutSettings;
 use AIArmada\Affiliates\States\Active;
@@ -104,7 +105,7 @@ test('volume tiers measure the boundary in the tier currency', function (): void
     // 40,000 MYR clears a 40,000 MYR floor but converts to ~8,511 USD.
     denominationsConversion($affiliate, 40000, 'ORD-DENOM-002');
 
-    $result = app(CommissionRuleEngine::class)->calculate($affiliate, 10000);
+    $result = app(CommissionRuleCalculation::class)->calculate((string) $affiliate->getKey(), 10000);
 
     expect($result->volumeBonusMinor)->toBe(500)
         ->and($result->finalCommissionMinor)->toBe(1500);
@@ -177,7 +178,7 @@ test('top performer threshold compares in its declared currency', function (): v
     $affiliate = denominationsAffiliate('DENOM005');
     denominationsConversion($affiliate, 40000, 'ORD-DENOM-005');
 
-    $bonuses = app(CommissionRuleEngine::class)->calculatePerformanceBonuses(
+    $bonuses = app(PerformanceBonusCalculation::class)->calculatePerformanceBonuses(
         CommissionRuleType::TopPerformer,
         CarbonImmutable::now()->startOfMonth(),
         CarbonImmutable::now()->endOfMonth(),
@@ -204,7 +205,7 @@ test('growth previous-revenue floor compares in its declared currency', function
     ]);
     denominationsConversion($affiliate, 80000, 'ORD-DENOM-006B');
 
-    $bonuses = app(CommissionRuleEngine::class)->calculatePerformanceBonuses(
+    $bonuses = app(PerformanceBonusCalculation::class)->calculatePerformanceBonuses(
         CommissionRuleType::Growth,
         CarbonImmutable::now()->startOfMonth(),
         CarbonImmutable::now()->endOfMonth(),

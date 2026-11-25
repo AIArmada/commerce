@@ -2,16 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Services\Commissions;
+namespace AIArmada\Affiliates\Features\Commissions\Queries;
 
 use AIArmada\Affiliates\Enums\CommissionRuleType;
-use AIArmada\Affiliates\Features\Commissions\Api\CommissionPricing;
-use AIArmada\Affiliates\Features\Commissions\Api\PromotionUsage;
+use AIArmada\Affiliates\Features\Commissions\Api\PerformanceBonusCalculation;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateCommissionPromotion;
-use AIArmada\Affiliates\Models\AffiliateCommissionRule;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliateVolumeTier;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\Affiliates\States\ApprovedConversion;
@@ -23,121 +19,12 @@ use AIArmada\CommerceSupport\Support\OwnerQuery;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use LogicException;
 use stdClass;
 
-final class CommissionRuleEngine
+final class CalculatePerformanceBonuses implements PerformanceBonusCalculation
 {
-    /**
-     * Parameter-keyed cache for applicable rules.
-     *
-     * @var array<string, Collection<int, AffiliateCommissionRule>>
-     */
-    private array $rulesCache = [];
-
-    /**
-     * Program-keyed cache for volume tiers.
-     *
-     * @var array<string, Collection<int, AffiliateVolumeTier>>
-     */
-    private array $volumeTiersCache = [];
-
-    /**
-     * Program-keyed cache for active promotions.
-     *
-     * @var array<string, Collection<int, AffiliateCommissionPromotion>>
-     */
-    private array $promotionsCache = [];
-
-    /**
-     * Calculate the commission for a conversion.
-     *
-     * @param  array<string, mixed>  $context
-     */
-    public function calculate(
-        Affiliate $affiliate,
-        int $orderAmountMinor,
-        array $context = []
-    ): CommissionCalculationResult {
-        $context = array_merge($context, [
-            'affiliate_id' => $affiliate->id,
-            'order_amount_minor' => $orderAmountMinor,
-        ]);
-
-        // Get applicable rules ordered by priority
-        $rules = $this->getApplicableRules($affiliate, $context);
-
-        // Calculate base commission from highest priority matching rule
-        $baseCommission = $this->calculateBaseCommission($rules, $orderAmountMinor, $context);
-
-        // Apply volume tier if applicable
-        $volumeBonus = $this->calculateVolumeBonus($affiliate, $orderAmountMinor, $context);
-
-        // Apply promotions
-        $promotionBonus = $this->calculatePromotionBonus($affiliate, $baseCommission, $context);
-
-        // Apply caps
-        $finalCommission = $this->applyCaps(
-            $baseCommission + $volumeBonus + $promotionBonus,
-            $affiliate,
-            $context
-        );
-
-        return new CommissionCalculationResult(
-            baseCommissionMinor: $baseCommission,
-            volumeBonusMinor: $volumeBonus,
-            promotionBonusMinor: $promotionBonus,
-            finalCommissionMinor: $finalCommission,
-            appliedRules: $rules->pluck('id')->all(),
-            metadata: [
-                'order_amount_minor' => $orderAmountMinor,
-                'context' => $context,
-            ]
-        );
-    }
-
-    /**
-     * Get all applicable rules for the context.
-     *
-     * Results are cached for the request lifetime, keyed by affiliate + context.
-     *
-     * @return Collection<int, AffiliateCommissionRule>
-     */
-    public function getApplicableRules(Affiliate $affiliate, array $context): Collection
-    {
-        $cacheKey = $this->buildRulesCacheKey($affiliate, $context);
-
-        if (isset($this->rulesCache[$cacheKey])) {
-            return $this->rulesCache[$cacheKey];
-        }
-
-        $programId = $context['program_id'] ?? null;
-
-        return $this->rulesCache[$cacheKey] = AffiliateCommissionRule::query()
-            ->active()
-            ->ordered()
-            ->when(
-                $programId,
-                fn (Builder $query) => $query->where(function (Builder $inner) use ($programId): void {
-                    $inner->whereNull('program_id')->orWhere('program_id', $programId);
-                }),
-                fn (Builder $query) => $query->whereNull('program_id')
-            )
-            ->get()
-            ->filter(fn (AffiliateCommissionRule $rule): bool => ! $rule->rule_type->isPerformanceBonus() && $rule->matches($context));
-    }
-
-    /**
-     * Clear the rules cache.
-     */
-    public function clearCache(): void
-    {
-        $this->rulesCache = [];
-        $this->volumeTiersCache = [];
-        $this->promotionsCache = [];
-    }
-
     /**
      * Calculate one configured performance bonus commission rule type.
      *
@@ -149,6 +36,10 @@ final class CommissionRuleEngine
         CarbonImmutable $to,
         bool $includeGlobal = false,
     ): array {
+        if ($from->greaterThan($to)) {
+            throw new InvalidArgumentException('Performance bonus start must not exceed the end.');
+        }
+
         if (! $type->isPerformanceBonus()) {
             throw new InvalidArgumentException(sprintf(
                 'Commission rule type [%s] is not a performance bonus.',
@@ -163,158 +54,6 @@ final class CommissionRuleEngine
             CommissionRuleType::Growth => $this->calculateGrowthBonuses($from, $to, $includeGlobal),
             default => [],
         };
-    }
-
-    /**
-     * Build cache key for rules lookup.
-     *
-     * @param  array<string, mixed>  $context
-     */
-    private function buildRulesCacheKey(Affiliate $affiliate, array $context): string
-    {
-        return md5($affiliate->id . ':' . serialize($context));
-    }
-
-    /**
-     * @return Collection<int, AffiliateVolumeTier>
-     */
-    private function volumeTiersForProgram(mixed $programId): Collection
-    {
-        $cacheKey = is_scalar($programId) ? (string) $programId : 'global';
-
-        return $this->volumeTiersCache[$cacheKey] ??= AffiliateVolumeTier::query()
-            ->when(
-                $programId,
-                fn (Builder $query) => $query->where(function (Builder $inner) use ($programId): void {
-                    $inner->whereNull('program_id')->orWhere('program_id', $programId);
-                }),
-                fn (Builder $query) => $query->whereNull('program_id')
-            )
-            ->orderBy('min_volume_minor')
-            ->get();
-    }
-
-    /**
-     * @return Collection<int, AffiliateCommissionPromotion>
-     */
-    private function promotionsForProgram(mixed $programId): Collection
-    {
-        $cacheKey = is_scalar($programId) ? (string) $programId : 'global';
-
-        return $this->promotionsCache[$cacheKey] ??= AffiliateCommissionPromotion::query()
-            ->active()
-            ->when(
-                $programId,
-                fn (Builder $query) => $query->where(function (Builder $inner) use ($programId): void {
-                    $inner->whereNull('program_id')->orWhere('program_id', $programId);
-                }),
-                fn (Builder $query) => $query->whereNull('program_id')
-            )
-            ->get();
-    }
-
-    /**
-     * @param  Collection<int, AffiliateCommissionRule>  $rules
-     */
-    private function calculateBaseCommission(Collection $rules, int $orderAmountMinor, array $context): int
-    {
-        // Use the highest priority matching rule
-        $rule = $rules->first();
-
-        if (! $rule) {
-            // Fall back to default config rate
-            $defaultRateBasisPoints = (int) config('affiliates.commissions.default_rate', 1000);
-
-            return (int) round($orderAmountMinor * $defaultRateBasisPoints / 10000);
-        }
-
-        return $rule->calculateCommission($orderAmountMinor);
-    }
-
-    private function calculateVolumeBonus(Affiliate $affiliate, int $orderAmountMinor, array $context): int
-    {
-        $programId = $context['program_id'] ?? null;
-
-        // Get affiliate's volume for the period
-        $volumeQuery = $affiliate->conversions();
-
-        if ($programId) {
-            $volumeQuery->where(function (Builder $query) use ($programId): void {
-                $query
-                    ->whereHas('affiliateLink', fn (Builder $linkQuery) => $linkQuery->where('program_id', $programId))
-                    ->orWhereHas('attribution.affiliateLink', fn (Builder $linkQuery) => $linkQuery->where('program_id', $programId));
-            });
-        }
-
-        $volumeRows = $volumeQuery
-            ->where('occurred_at', '>=', CarbonImmutable::now()->startOfMonth())
-            ->toBase()
-            ->selectRaw('commission_currency as currency, COALESCE(SUM(COALESCE(value_minor, 0)), 0) as total')
-            ->groupBy('commission_currency')
-            ->get();
-
-        $reference = RevenueVolume::referenceFor($affiliate);
-        $folded = RevenueVolume::foldRows($volumeRows, $reference);
-        $volumeIn = [];
-
-        $volumeFor = function (string $currency) use ($folded, &$volumeIn): int {
-            return $volumeIn[$currency] ??= RevenueVolume::measurableIn($folded, $currency);
-        };
-
-        // Tiers qualify in their own currency; mixed-currency tiers order by
-        // converted floor with unconvertible tiers sinking last.
-        $tier = $this->volumeTiersForProgram($programId)
-            ->filter(fn (AffiliateVolumeTier $candidate): bool => $candidate->containsVolume($volumeFor($candidate->currencyCode())))
-            ->sort(function (AffiliateVolumeTier $left, AffiliateVolumeTier $right) use ($reference): int {
-                $converter = app(CurrencyConverter::class);
-                $leftMin = $converter->convertMinor($left->min_volume_minor, $left->currencyCode(), $reference);
-                $rightMin = $converter->convertMinor($right->min_volume_minor, $right->currencyCode(), $reference);
-
-                if ($leftMin === null && $rightMin === null) {
-                    return 0;
-                }
-
-                if ($leftMin === null) {
-                    return 1;
-                }
-
-                if ($rightMin === null) {
-                    return -1;
-                }
-
-                return $rightMin <=> $leftMin;
-            })
-            ->first();
-
-        if (! $tier) {
-            return 0;
-        }
-
-        // Calculate bonus based on volume tier rate
-        $tierCommission = (int) round($orderAmountMinor * $tier->commission_rate_basis_points / 10000);
-        $defaultRateBasisPoints = (int) config('affiliates.commissions.default_rate', 1000);
-        $defaultCommission = (int) round($orderAmountMinor * $defaultRateBasisPoints / 10000);
-
-        // Return the difference as bonus
-        return max(0, $tierCommission - $defaultCommission);
-    }
-
-    private function calculatePromotionBonus(Affiliate $affiliate, int $baseCommission, array $context): int
-    {
-        $programId = $context['program_id'] ?? null;
-
-        $promotions = $this->promotionsForProgram($programId)
-            ->filter(fn (AffiliateCommissionPromotion $promo) => $promo->appliesToAffiliate($affiliate));
-
-        $totalBonus = 0;
-
-        foreach ($promotions as $promotion) {
-            if (app(PromotionUsage::class)->consume((string) $promotion->getKey())) {
-                $totalBonus += $promotion->calculateBonus($baseCommission);
-            }
-        }
-
-        return $totalBonus;
     }
 
     /**
@@ -403,7 +142,8 @@ final class CommissionRuleEngine
                     /** @var Builder<Affiliate> $query */
                     $query->forOwner(OwnerContext::CURRENT, $includeGlobal)
                         ->whereBetween('created_at', [$from, $to])
-                        ->where('status', AffiliateStatus::normalize(Active::class));
+                        ->where('status', AffiliateStatus::normalize(Active::class))
+                        ->whereCommercialPurpose();
                 },
                 '>=',
                 $minimumRecruits,
@@ -469,7 +209,7 @@ final class CommissionRuleEngine
 
                 $conversionsThisWeek = $affiliate->conversions()
                     ->forOwner(OwnerContext::CURRENT, $includeGlobal)
-                    ->whereBetween('occurred_at', [$currentWeek, $weekEnd])
+                    ->whereBetween('occurred_at', [max($currentWeek, $from), min($weekEnd, $to)])
                     ->where('status', ApprovedConversion::value())
                     ->count();
 
@@ -543,7 +283,7 @@ final class CommissionRuleEngine
                 $prevTo,
             );
 
-            if ($previousRevenue < ($config['min_previous_revenue'] ?? 50000)) {
+            if ($previousRevenue <= 0 || $previousRevenue < ($config['min_previous_revenue'] ?? 50000)) {
                 continue;
             }
 
@@ -598,19 +338,30 @@ final class CommissionRuleEngine
         int $limit,
         bool $includeGlobal,
     ): array {
-        $conversionsTable = (new AffiliateConversion)->getTable();
-        $affiliatesTable = (new Affiliate)->getTable();
-        $purposeColumn = DB::connection()->getQueryGrammar()->wrap("{$affiliatesTable}.purpose");
-        $revenueExpression = "COALESCE({$conversionsTable}.value_minor, 0)";
+        $conversion = new AffiliateConversion;
+        $affiliate = new Affiliate;
+        $connection = $conversion->getConnection();
 
-        $query = DB::table($conversionsTable)
+        if ($connection !== $affiliate->getConnection()) {
+            throw new LogicException('Performance bonus queries require a shared database connection.');
+        }
+
+        $conversionsTable = $conversion->getTable();
+        $affiliatesTable = $affiliate->getTable();
+        $grammar = $connection->getQueryGrammar();
+        $purposeColumn = $grammar->wrap("{$affiliatesTable}.purpose");
+        $valueColumn = $grammar->wrap("{$conversionsTable}.value_minor");
+        $idColumn = $grammar->wrap("{$conversionsTable}.id");
+        $revenueExpression = "COALESCE({$valueColumn}, 0)";
+
+        $query = $connection->table($conversionsTable)
             ->join($affiliatesTable, "{$conversionsTable}.affiliate_id", '=', "{$affiliatesTable}.id")
             ->select([
                 "{$affiliatesTable}.id as affiliate_id",
                 "{$affiliatesTable}.name as affiliate_name",
                 "{$conversionsTable}.commission_currency as currency",
-                DB::raw("SUM({$revenueExpression}) as total_revenue"),
-                DB::raw("COUNT({$conversionsTable}.id) as total_conversions"),
+                $connection->raw("SUM({$revenueExpression}) as total_revenue"),
+                $connection->raw("COUNT({$idColumn}) as total_conversions"),
             ])
             ->whereBetween("{$conversionsTable}.occurred_at", [$from, $to])
             ->where("{$conversionsTable}.status", ApprovedConversion::value())
@@ -726,8 +477,4 @@ final class CommissionRuleEngine
             ->all();
     }
 
-    private function applyCaps(int $commission, Affiliate $affiliate, array $context): int
-    {
-        return app(CommissionPricing::class)->clamp($commission);
-    }
 }

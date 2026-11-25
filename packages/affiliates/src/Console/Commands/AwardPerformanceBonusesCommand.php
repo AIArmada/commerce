@@ -7,7 +7,7 @@ namespace AIArmada\Affiliates\Console\Commands;
 use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Features\Conversions\Api\PerformanceBonusPosting;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
+use AIArmada\Affiliates\Features\Commissions\Api\PerformanceBonusCalculation;
 use AIArmada\Affiliates\Support\BonusMonth;
 use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
 use Carbon\CarbonImmutable;
@@ -24,7 +24,7 @@ final class AwardPerformanceBonusesCommand extends Command
     protected $description = 'Calculate and award monthly affiliate performance bonuses';
 
     public function __construct(
-        private readonly CommissionRuleEngine $engine,
+        private readonly PerformanceBonusCalculation $engine,
         private readonly PerformanceBonusPosting $bonuses,
     ) {
         parent::__construct();

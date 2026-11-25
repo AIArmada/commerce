@@ -8,7 +8,7 @@ use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Features\Conversions\Api\PerformanceBonusQueries;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
+use AIArmada\Affiliates\Features\Commissions\Api\PerformanceBonusCalculation;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\Affiliates\States\ApprovedConversion;
@@ -20,7 +20,7 @@ use LogicException;
 final readonly class QueryPerformanceBonuses implements PerformanceBonusQueries
 {
     public function __construct(
-        private CommissionRuleEngine $commissionRules,
+        private PerformanceBonusCalculation $commissionRules,
     ) {}
 
     public function calculateBonuses(

@@ -7,7 +7,7 @@ use AIArmada\Affiliates\Features\Reporting\Api\ReportingApi;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
+use AIArmada\Affiliates\Features\Commissions\Api\PerformanceBonusCalculation;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutReconciliationQueries;
 use AIArmada\Affiliates\Settings\AffiliateBonusSettings;
 use AIArmada\Affiliates\States\Active;
@@ -160,7 +160,7 @@ test('performance leaderboard breaks revenue ties by affiliate id', function ():
         ]);
     }
 
-    $bonuses = app(CommissionRuleEngine::class)->calculatePerformanceBonuses(
+    $bonuses = app(PerformanceBonusCalculation::class)->calculatePerformanceBonuses(
         CommissionRuleType::TopPerformer,
         CarbonImmutable::now()->startOfMonth(),
         CarbonImmutable::now()->endOfMonth(),

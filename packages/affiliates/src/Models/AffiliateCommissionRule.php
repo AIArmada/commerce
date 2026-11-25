@@ -7,7 +7,6 @@ namespace AIArmada\Affiliates\Models;
 use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Models\Concerns\ScopesByProgramOwner;
-use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use Carbon\CarbonImmutable;
@@ -112,20 +111,6 @@ class AffiliateCommissionRule extends Model implements Auditable
     public function scopeOrdered(Builder $query): Builder
     {
         return $query->orderBy('priority', 'desc');
-    }
-
-    protected static function booted(): void
-    {
-        // The rule engine keeps a request-scoped in-memory rules cache.
-        // Bust it on writes so long-lived workers never price off stale rules.
-        $bust = static function (): void {
-            if (app()->bound(CommissionRuleEngine::class)) {
-                app(CommissionRuleEngine::class)->clearCache();
-            }
-        };
-
-        static::saved($bust);
-        static::deleted($bust);
     }
 
     /**

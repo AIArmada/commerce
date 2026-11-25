@@ -8,7 +8,7 @@ use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Features\Conversions\Api\PerformanceBonusPosting;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
+use AIArmada\Affiliates\Features\Commissions\Api\PerformanceBonusCalculation;
 use AIArmada\Affiliates\Support\BonusMonth;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
@@ -234,7 +234,7 @@ final class PerformanceBonusesPage extends Page implements HasForms, HasTable
      */
     private function calculate(CarbonImmutable $from, CarbonImmutable $to): array
     {
-        $engine = app(CommissionRuleEngine::class);
+        $engine = app(PerformanceBonusCalculation::class);
         $bonuses = [];
 
         foreach (CommissionRuleType::performanceBonusCases() as $type) {
