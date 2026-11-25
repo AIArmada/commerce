@@ -12,9 +12,10 @@ use AIArmada\Affiliates\Models\AffiliateCommissionPromotion;
 use AIArmada\Affiliates\Models\AffiliateCommissionRule;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramCreative;
-use AIArmada\Affiliates\Models\AffiliateVolumeTier;
 use AIArmada\Affiliates\Features\Commissions\Api\CommissionRulePreview;
 use AIArmada\Affiliates\Features\Commissions\Api\CommissionRuleQuote;
+use AIArmada\Affiliates\Features\Commissions\Api\VolumeTierReader;
+use AIArmada\Affiliates\Features\Commissions\Api\VolumeTierSnapshot;
 use AIArmada\Affiliates\Support\Catalog\PromotableRegistry;
 use Illuminate\Support\Collection;
 
@@ -23,6 +24,7 @@ final readonly class ProgramCatalogQuery implements MerchantCatalog
     public function __construct(
         private CommissionRulePreview $rules,
         private PromotableRegistry $promotables,
+        private VolumeTierReader $tiers,
     ) {}
 
     public function snapshotById(string $programId): ?ProgramSnapshot
@@ -202,17 +204,11 @@ final readonly class ProgramCatalogQuery implements MerchantCatalog
      */
     private function volumeTiers(AffiliateProgram $program): array
     {
-        return AffiliateVolumeTier::query()
-            ->where(function ($q) use ($program): void {
-                $q->whereNull('program_id')->orWhere('program_id', $program->getKey());
-            })
-            ->orderBy('min_volume_minor')
-            ->get()
-            ->map(fn (AffiliateVolumeTier $t): array => [
-                'min_volume_minor' => $t->min_volume_minor,
-                'currency' => $t->currencyCode(),
-                'rate_bp' => $t->commission_rate_basis_points,
-            ])->all();
+        return array_map(static fn (VolumeTierSnapshot $tier): array => [
+            'min_volume_minor' => $tier->minVolumeMinor,
+            'currency' => $tier->currency,
+            'rate_bp' => $tier->rateBasisPoints,
+        ], $this->tiers->forProgram((string) $program->getKey()));
     }
 
     /**

@@ -11,7 +11,7 @@ use AIArmada\Affiliates\Features\Programs\Queries\ProgramCatalogQuery;
 use AIArmada\Affiliates\Models\AffiliateCommissionPromotion;
 use AIArmada\Affiliates\Models\AffiliateCommissionRule;
 use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Models\AffiliateVolumeTier;
+use AIArmada\Affiliates\Features\Commissions\Models\AffiliateVolumeTier;
 use AIArmada\Affiliates\Features\Commissions\Api\CommissionRulePreview;
 use AIArmada\Affiliates\Support\Catalog\CallbackPromotableProvider;
 use AIArmada\Affiliates\Support\Catalog\PromotableRegistry;
@@ -35,7 +35,7 @@ beforeEach(function (): void {
         }
     });
 
-    $this->service = new ProgramCatalogQuery(app(CommissionRulePreview::class), $this->registry);
+    $this->service = new ProgramCatalogQuery(app(CommissionRulePreview::class), $this->registry, app(\AIArmada\Affiliates\Features\Commissions\Api\VolumeTierReader::class));
 
     $this->program = AffiliateProgram::create([
         'name' => 'Catalog Program',

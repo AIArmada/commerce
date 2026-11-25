@@ -4,14 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Programs\Actions;
 
+use AIArmada\Affiliates\Features\Commissions\Api\ProgramCommissionCleanup;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramAdministration;
-use AIArmada\Affiliates\Models\AffiliateCommissionPromotion;
-use AIArmada\Affiliates\Models\AffiliateCommissionRule;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramCreative;
 use AIArmada\Affiliates\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Models\AffiliateProgramTier;
-use AIArmada\Affiliates\Models\AffiliateVolumeTier;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Illuminate\Support\Arr;
@@ -19,6 +17,8 @@ use RuntimeException;
 
 final readonly class AdministerProgram implements ProgramAdministration
 {
+    public function __construct(private ProgramCommissionCleanup $commissions) {}
+
     public function create(array $data): string
     {
         return (new AffiliateProgram)->getConnection()->transaction(function () use ($data): string {
@@ -52,7 +52,7 @@ final readonly class AdministerProgram implements ProgramAdministration
             $program = $this->lockProgram($programId);
             $connection = $program->getConnection();
 
-            foreach ([new AffiliateProgramMembership, new AffiliateProgramTier, new AffiliateProgramCreative, new AffiliateCommissionRule, new AffiliateCommissionPromotion, new AffiliateVolumeTier] as $model) {
+            foreach ([new AffiliateProgramMembership, new AffiliateProgramTier, new AffiliateProgramCreative] as $model) {
                 if ($model->getConnection() !== $connection) {
                     throw new RuntimeException('Program deletion requires a shared database connection.');
                 }
@@ -60,9 +60,7 @@ final readonly class AdministerProgram implements ProgramAdministration
 
             AffiliateProgramMembership::query()->withoutGlobalScope('affiliate_owner')->where('program_id', $programId)->delete();
             AffiliateProgramTier::query()->withoutGlobalScope('program_owner')->where('program_id', $programId)->delete();
-            AffiliateCommissionRule::query()->withoutGlobalScope('program_owner')->where('program_id', $programId)->delete();
-            AffiliateCommissionPromotion::query()->withoutGlobalScope('program_owner')->where('program_id', $programId)->delete();
-            AffiliateVolumeTier::query()->withoutGlobalScope('program_owner')->where('program_id', $programId)->delete();
+            $this->commissions->deleteForProgram($programId);
 
             AffiliateProgramCreative::query()
                 ->withoutGlobalScope('program_owner')

@@ -6,7 +6,15 @@
       "AIArmada\\Affiliates\\Features\\Commissions\\Actions\\AdministerCommissionTemplates"
     ],
     "table:affiliate_commission_promotions": [
-      "AIArmada\\Affiliates\\Features\\Commissions\\Actions\\ConsumePromotionUsage"
+      "AIArmada\\Affiliates\\Features\\Commissions\\Actions\\ConsumePromotionUsage",
+      "AIArmada\\Affiliates\\Features\\Commissions\\Actions\\DeleteProgramCommissionConfiguration"
+    ],
+    "table:affiliate_commission_rules": [
+      "AIArmada\\Affiliates\\Features\\Commissions\\Actions\\DeleteProgramCommissionConfiguration"
+    ],
+    "table:affiliate_volume_tiers": [
+      "AIArmada\\Affiliates\\Features\\Commissions\\Actions\\AdministerVolumeTier",
+      "AIArmada\\Affiliates\\Features\\Commissions\\Actions\\DeleteProgramCommissionConfiguration"
     ]
   },
   "extensions": {}

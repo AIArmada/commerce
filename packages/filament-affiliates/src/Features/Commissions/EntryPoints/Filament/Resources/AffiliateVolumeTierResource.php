@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Features\Commissions\EntryPoints\Filament\Resources;
 
 use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Models\AffiliateVolumeTier;
+use AIArmada\Affiliates\Features\Commissions\Api\VolumeTierAdministration;
+use AIArmada\Affiliates\Features\Commissions\Models\AffiliateVolumeTier;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentAffiliates\Features\Commissions\EntryPoints\Filament\Resources\AffiliateVolumeTierResource\Pages\CreateAffiliateVolumeTier;
 use AIArmada\FilamentAffiliates\Features\Commissions\EntryPoints\Filament\Resources\AffiliateVolumeTierResource\Pages\EditAffiliateVolumeTier;
 use AIArmada\FilamentAffiliates\Features\Commissions\EntryPoints\Filament\Resources\AffiliateVolumeTierResource\Pages\ListAffiliateVolumeTiers;
@@ -24,7 +26,11 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
+use Illuminate\Support\LazyCollection;
+use Throwable;
 use UnitEnum;
 
 final class AffiliateVolumeTierResource extends Resource
@@ -67,6 +73,19 @@ final class AffiliateVolumeTierResource extends Resource
     public static function shouldRegisterNavigation(): bool
     {
         return static::canViewAny();
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+
+        if ((bool) config('affiliates.owner.enabled', false) && OwnerContext::isExplicitGlobal()) {
+            $query->withoutGlobalScope('program_owner')->where(static function (Builder $query): void {
+                $query->whereNull('program_id')->orWhereIn('program_id', AffiliateProgram::query()->select('id'));
+            });
+        }
+
+        return $query;
     }
 
     public static function form(Schema $schema): Schema
@@ -168,7 +187,18 @@ final class AffiliateVolumeTierResource extends Resource
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()->using(static function (DeleteBulkAction $action, Collection | LazyCollection $records): void {
+                        foreach ($records as $record) {
+                            try {
+                                if (! self::canDelete($record) || ! app(VolumeTierAdministration::class)->delete((string) $record->getKey())) {
+                                    $action->reportBulkProcessingFailure();
+                                }
+                            } catch (Throwable $exception) {
+                                $action->reportBulkProcessingFailure();
+                                report($exception);
+                            }
+                        }
+                    }),
                 ]),
             ]);
     }

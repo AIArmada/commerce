@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Models\AffiliateVolumeTier;
+use AIArmada\Affiliates\Features\Commissions\Api\VolumeTierAdministration;
+use AIArmada\Affiliates\Features\Commissions\Models\AffiliateVolumeTier;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 describe('AffiliateVolumeTier Model', function (): void {
@@ -128,4 +129,27 @@ describe('AffiliateVolumeTier Model', function (): void {
         $tier = new AffiliateVolumeTier;
         expect($tier->getTable())->toBe('affiliate_volume_tiers');
     });
+});
+
+it('creates updates and deletes volume tiers through the owning action', function (): void {
+    config(['affiliates.owner.enabled' => false]);
+
+    $administration = app(VolumeTierAdministration::class);
+    $id = $administration->create([
+        'name' => 'Global volume tier',
+        'program_id' => null,
+        'min_volume_minor' => 1000,
+        'max_volume_minor' => 2000,
+        'commission_rate_basis_points' => 200,
+        'currency' => 'myr',
+        'period' => 'monthly',
+    ]);
+
+    expect(AffiliateVolumeTier::query()->findOrFail($id)->currency)->toBe('MYR');
+
+    $administration->update($id, ['commission_rate_basis_points' => 300]);
+
+    expect(AffiliateVolumeTier::query()->findOrFail($id)->commission_rate_basis_points)->toBe(300)
+        ->and($administration->delete($id))->toBeTrue()
+        ->and(AffiliateVolumeTier::query()->find($id))->toBeNull();
 });
