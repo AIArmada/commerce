@@ -167,6 +167,19 @@ describe('CreateVoucher Action', function (): void {
             ]);
     });
 
+    it('rejects invalid affiliate references even without affiliate owner scoping', function (): void {
+        config()->set('affiliates.owner.enabled', false);
+
+        foreach (['affiliate_id', 'affiliate_program_id'] as $field) {
+            expect(fn (): Voucher => CreateVoucher::run([
+                'code' => 'ACTION-INVALID-REFERENCE-' . $field,
+                'type' => VoucherType::Fixed,
+                'value' => 100,
+                $field => 'not-a-uuid',
+            ]))->toThrow(ValidationException::class);
+        }
+    });
+
     it('rejects affiliate program ids outside the current owner scope', function (): void {
         config()->set('affiliates.owner.enabled', true);
         config()->set('affiliates.owner.include_global', false);

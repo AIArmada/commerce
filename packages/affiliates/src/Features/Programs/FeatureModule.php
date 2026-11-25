@@ -13,6 +13,7 @@ final class FeatureModule implements FeatureModuleContract
     {
         $app->scoped(Api\MerchantCatalog::class, Queries\ProgramCatalogQuery::class);
         $app->bind(Api\ProgramAdministration::class, Actions\AdministerProgram::class);
+        $app->bind(Api\ProgramReferenceReader::class, Queries\ProgramReferenceQuery::class);
         $app->bind(Api\ProgramTierAdministration::class, Actions\AdministerProgramTier::class);
         $app->bind(Api\MembershipAdministration::class, Actions\AdministerProgramMembership::class);
         $app->bind(Api\MembershipReviewApi::class, Actions\ReviewProgramMembership::class);
