@@ -1,6 +1,13 @@
 {
   "schema": 1,
   "name": "Programs",
-  "owns": {},
+  "owns": {
+    "table:affiliate_program_memberships": [
+      "AIArmada\\Affiliates\\Features\\Programs\\Actions\\AdministerProgramMembership",
+      "AIArmada\\Affiliates\\Features\\Programs\\Actions\\ManageProgramEnrollment",
+      "AIArmada\\Affiliates\\Features\\Programs\\Actions\\ReviewProgramMembership",
+      "AIArmada\\Affiliates\\Features\\Programs\\Actions\\UpgradeProgramTier"
+    ]
+  },
   "extensions": {}
 }

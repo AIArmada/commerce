@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Features\Programs\EntryPoints\Filament\Resources\AffiliateProgramResource\RelationManagers;
 
 use AIArmada\Affiliates\Enums\MembershipStatus;
+use AIArmada\Affiliates\Features\Programs\Api\MembershipAdministration;
 use AIArmada\Affiliates\Features\Programs\Api\MembershipReviewApi;
 use AIArmada\Affiliates\Models\AffiliateProgramMembership;
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\CommerceSupport\Support\FilamentPermission;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -36,11 +38,12 @@ final class MembershipsRelationManager extends RelationManager
         return $schema->schema([
             Select::make('affiliate_id')
                 ->relationship('affiliate', 'name', modifyQueryUsing: fn (Builder $query): Builder => OwnerUiScope::apply($query, includeGlobal: false))
+                ->disabledOn('edit')
                 ->searchable()
                 ->required(),
 
             Select::make('tier_id')
-                ->relationship('tier', 'name')
+                ->relationship('tier', 'name', modifyQueryUsing: fn (Builder $query): Builder => $query->where('program_id', $this->getOwnerRecord()->getKey()))
                 ->searchable()
                 ->placeholder('No tiers configured'),
 
@@ -91,13 +94,20 @@ final class MembershipsRelationManager extends RelationManager
             ])
             ->modifyQueryUsing(fn ($query) => $query->with(['affiliate', 'tier']))
             ->headerActions([
-                CreateAction::make(),
+                CreateAction::make()
+                    ->authorize(fn (): bool => FilamentPermission::hasAbility('affiliate.update'))
+                    ->using(function (array $data): AffiliateProgramMembership {
+                        $membership = app(MembershipAdministration::class)->create((string) $data['affiliate_id'], (string) $this->getOwnerRecord()->getKey(), $data);
+
+                        return AffiliateProgramMembership::query()->findOrFail($membership->id);
+                    }),
             ])
             ->actions([
                 Action::make('approve')
                     ->label('Approve')
                     ->color('success')
                     ->icon('heroicon-o-check-circle')
+                    ->authorize(fn (): bool => FilamentPermission::hasAbility('affiliate.update'))
                     ->visible(fn (AffiliateProgramMembership $record): bool => $record->status === MembershipStatus::Pending)
                     ->action(function (AffiliateProgramMembership $record): void {
                         $membershipId = $record->getKey();
@@ -116,6 +126,7 @@ final class MembershipsRelationManager extends RelationManager
                     ->label('Reject')
                     ->color('danger')
                     ->icon('heroicon-o-x-circle')
+                    ->authorize(fn (): bool => FilamentPermission::hasAbility('affiliate.update'))
                     ->visible(fn (AffiliateProgramMembership $record): bool => $record->status === MembershipStatus::Pending)
                     ->action(function (AffiliateProgramMembership $record): void {
                         $membershipId = $record->getKey();
@@ -130,12 +141,26 @@ final class MembershipsRelationManager extends RelationManager
                             ->send();
                     }),
 
-                EditAction::make(),
-                DeleteAction::make(),
+                EditAction::make()
+                    ->authorize(fn (): bool => FilamentPermission::hasAbility('affiliate.update'))
+                    ->using(function (AffiliateProgramMembership $record, array $data): AffiliateProgramMembership {
+                        app(MembershipAdministration::class)->update((string) $record->getKey(), $data);
+
+                        return $record->refresh();
+                    }),
+                DeleteAction::make()
+                    ->authorize(fn (): bool => FilamentPermission::hasAbility('affiliate.update'))
+                    ->action(fn (AffiliateProgramMembership $record) => app(MembershipAdministration::class)->delete((string) $record->getKey())),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->authorize(fn (): bool => FilamentPermission::hasAbility('affiliate.update'))
+                        ->action(function ($records): void {
+                            foreach ($records as $record) {
+                                app(MembershipAdministration::class)->delete((string) $record->getKey());
+                            }
+                        }),
                 ]),
             ]);
     }

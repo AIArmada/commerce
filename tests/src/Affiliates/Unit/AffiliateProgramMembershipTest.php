@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Enums\ProgramStatus;
+use AIArmada\Affiliates\Features\Programs\Api\MembershipAdministration;
 use AIArmada\Affiliates\Features\Programs\Api\MembershipReviewApi;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramTierManagement;
 use AIArmada\Affiliates\Models\Affiliate;
@@ -245,10 +246,36 @@ describe('AffiliateProgramMembership Model', function (): void {
             'approved_at' => now(),
         ]);
 
-        $membership->suspend();
+        expect(app(MembershipAdministration::class)->suspend($membership->id))->toBeTrue();
+        expect(app(MembershipAdministration::class)->suspend($membership->id))->toBeFalse();
 
         $membership->refresh();
         expect($membership->status)->toBe(MembershipStatus::Suspended);
+    });
+
+    test('administers memberships without changing their affiliate or program identity', function (): void {
+        $api = app(MembershipAdministration::class);
+        $created = $api->create($this->affiliate->id, $this->program->id, [
+            'tier_id' => $this->tier->id,
+            'status' => MembershipStatus::Approved,
+        ]);
+
+        expect($created->status)->toBe(MembershipStatus::Approved)
+            ->and($created->approvedAt)->not->toBeNull();
+
+        $updated = $api->update($created->id, [
+            'affiliate_id' => 'untrusted-affiliate',
+            'program_id' => 'untrusted-program',
+            'status' => MembershipStatus::Suspended,
+        ]);
+
+        expect($updated->affiliateId)->toBe($this->affiliate->id)
+            ->and($updated->programId)->toBe($this->program->id)
+            ->and($updated->status)->toBe(MembershipStatus::Suspended);
+
+        $api->delete($created->id);
+
+        expect(AffiliateProgramMembership::query()->whereKey($created->id)->exists())->toBeFalse();
     });
 
     test('upgradeTier method updates tier', function (): void {

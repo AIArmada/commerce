@@ -108,14 +108,6 @@ class AffiliateProgramMembership extends Pivot
         return true;
     }
 
-    public function suspend(): void
-    {
-        $this->update([
-            'status' => MembershipStatus::Suspended,
-            'suspended_at' => CarbonImmutable::now(),
-        ]);
-    }
-
     public function isRejected(): bool
     {
         return $this->rejected_at !== null;
