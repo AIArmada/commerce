@@ -2,30 +2,23 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Http\Controllers;
+namespace AIArmada\Affiliates\Features\Programs\EntryPoints\Http;
 
-use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Queries\AffiliateLookupQuery;
-use AIArmada\Affiliates\Services\ProgramService;
+use AIArmada\Affiliates\Exceptions\ProgramEnrollmentDenied;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramEnrollment;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramMembershipReader;
 use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use BackedEnum;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
-use RuntimeException;
 
-/**
- * Headless program enrollment: join a program and read membership state.
- *
- * The Filament portal covers human affiliates; these endpoints cover
- * storefronts and integrations. Joins are idempotent — rejoining returns
- * the existing membership.
- */
 final class ProgramMembershipController extends Controller
 {
     public function __construct(
-        private readonly AffiliateLookupQuery $affiliateLookup,
-        private readonly ProgramService $programs,
+        private readonly AffiliateDirectory $affiliates,
+        private readonly ProgramEnrollment $enrollment,
+        private readonly ProgramMembershipReader $memberships,
     ) {}
 
     public function join(string $code, string $id): JsonResponse
@@ -36,31 +29,27 @@ final class ProgramMembershipController extends Controller
             return $guard;
         }
 
-        $affiliate = $this->affiliateLookup->findByCode($code);
+        $affiliate = $this->affiliates->findByCode($code);
 
-        if (! $affiliate) {
+        if ($affiliate === null) {
             return response()->json(['message' => 'Affiliate not found'], 404);
         }
 
-        $program = AffiliateProgram::query()->whereKey($id)->first();
-
-        if (! $program instanceof AffiliateProgram) {
+        if (! $this->memberships->programExists($id)) {
             return response()->json(['message' => 'Program not found'], 404);
         }
 
         try {
-            $membership = $this->programs->joinProgram($affiliate, $program);
-        } catch (RuntimeException $exception) {
+            $membership = $this->enrollment->join($affiliate->id, $id);
+        } catch (ProgramEnrollmentDenied $exception) {
             return response()->json(['message' => $exception->getMessage()], 422);
         }
 
-        $status = $membership->status;
-
         return response()->json([
             'member' => true,
-            'status' => $status instanceof BackedEnum ? $status->value : (string) $status,
-            'tier_id' => $membership->tier_id !== null ? (string) $membership->tier_id : null,
-        ], $membership->wasRecentlyCreated ? 201 : 200);
+            'status' => $membership->status->value,
+            'tier_id' => $membership->tierId,
+        ], $membership->created ? 201 : 200);
     }
 
     public function membership(string $code, string $id): JsonResponse
@@ -71,30 +60,26 @@ final class ProgramMembershipController extends Controller
             return $guard;
         }
 
-        $affiliate = $this->affiliateLookup->findByCode($code);
+        $affiliate = $this->affiliates->findByCode($code);
 
-        if (! $affiliate) {
+        if ($affiliate === null) {
             return response()->json(['message' => 'Affiliate not found'], 404);
         }
 
-        $program = AffiliateProgram::query()->whereKey($id)->first();
-
-        if (! $program instanceof AffiliateProgram) {
+        if (! $this->memberships->programExists($id)) {
             return response()->json(['message' => 'Program not found'], 404);
         }
 
-        $membership = $this->programs->getMembership($affiliate, $program);
+        $membership = $this->memberships->find($affiliate->id, $id);
 
         if ($membership === null) {
             return response()->json(['member' => false, 'status' => null]);
         }
 
-        $status = $membership->status;
-
         return response()->json([
             'member' => true,
-            'status' => $status instanceof BackedEnum ? $status->value : (string) $status,
-            'tier_id' => $membership->tier_id !== null ? (string) $membership->tier_id : null,
+            'status' => $membership->status->value,
+            'tier_id' => $membership->tierId,
         ]);
     }
 

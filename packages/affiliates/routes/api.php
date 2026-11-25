@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Http\Controllers\AffiliateApiController;
 use AIArmada\Affiliates\Features\Programs\EntryPoints\Http\ProgramCatalogController;
-use AIArmada\Affiliates\Http\Controllers\ProgramMembershipController;
+use AIArmada\Affiliates\Features\Programs\EntryPoints\Http\ProgramMembershipController;
+use AIArmada\Affiliates\Http\Controllers\AffiliateApiController;
 use AIArmada\Affiliates\Support\Middleware\EnsureApiAuthorized;
 use AIArmada\CommerceSupport\Middleware\NeedsOwner;
 use Illuminate\Support\Facades\Route;

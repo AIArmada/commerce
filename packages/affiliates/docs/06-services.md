@@ -222,26 +222,28 @@ $service->assignRank((string) $affiliate->getKey(), (string) $rank->getKey());
 Manages affiliate programs and memberships.
 
 ```php
+use AIArmada\Affiliates\Features\Programs\Api\ProgramEnrollment;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramMembershipReader;
 use AIArmada\Affiliates\Services\ProgramService;
 
 $service = app(ProgramService::class);
 
 // Join (enroll) an affiliate in a program
-$membership = $service->joinProgram($affiliate, $program);
+$membership = app(ProgramEnrollment::class)->join($affiliate->id, $program->id);
 
 if ($membership !== null) {
-    $service->leaveProgram($affiliate, $program);
+    app(ProgramEnrollment::class)->leave($affiliate->id, $program->id);
 }
 
 // Approve a pending membership
-app(\AIArmada\Affiliates\Features\Programs\Api\MembershipReviewApi::class)->approve((string) $membership->getKey(), approvedBy: 'admin-1');
+app(\AIArmada\Affiliates\Features\Programs\Api\MembershipReviewApi::class)->approve($membership->id, approvedBy: 'admin-1');
 
 // Upgrade tier — takes the affiliate + program, not the membership
 $service->upgradeTier($affiliate, $program, $goldTier);
 
 // Membership lookups
-$service->isMember($affiliate, $program);            // bool
-$service->getMembership($affiliate, $program);       // ?AffiliateProgramMembership
+app(ProgramMembershipReader::class)->find($affiliate->id, $program->id)?->active ?? false;            // bool
+app(ProgramMembershipReader::class)->find($affiliate->id, $program->id);       // ?MembershipRecord
 $service->getAffiliatePrograms($affiliate);          // Collection
 $service->getAvailablePrograms();                    // Collection — no affiliate argument
 $service->processTierUpgrades($program);             // int

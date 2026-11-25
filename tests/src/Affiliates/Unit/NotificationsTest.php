@@ -7,8 +7,8 @@ use AIArmada\Affiliates\Actions\Conversions\RecordAffiliateConversion;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\ProgramVisibility;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramEnrollment;
 use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Services\ProgramService;
 use AIArmada\Communications\CommunicationsServiceProvider;
 use AIArmada\Communications\Models\Communication;
 use Illuminate\Support\Facades\Queue;
@@ -40,7 +40,7 @@ describe('engine notifications', function (): void {
         $affiliate = createTestAffiliate(['contact_email' => 'join-notify-' . uniqid() . '@example.com']);
         $program = notificationProgram();
 
-        app(ProgramService::class)->joinProgram($affiliate, $program);
+        app(ProgramEnrollment::class)->join($affiliate->id, $program->id);
 
         $communication = Communication::query()->where('purpose', 'affiliates.program_joined')->firstOrFail();
 
@@ -65,7 +65,7 @@ describe('engine notifications', function (): void {
         config(['affiliates.notifications.enabled' => false]);
 
         $affiliate = createTestAffiliate();
-        app(ProgramService::class)->joinProgram($affiliate, notificationProgram());
+        app(ProgramEnrollment::class)->join($affiliate->id, notificationProgram()->id);
 
         expect(Communication::query()->exists())->toBeFalse();
     });

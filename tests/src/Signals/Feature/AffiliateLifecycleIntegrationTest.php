@@ -15,11 +15,11 @@ use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalReference;
 use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
 use AIArmada\Affiliates\Features\Fraud\Queries\FraudSignalQuery;
 use AIArmada\Affiliates\Features\Programs\Api\MembershipReviewApi;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramEnrollment;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Models\AffiliateProgramTier;
-use AIArmada\Affiliates\Services\ProgramService;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
@@ -575,9 +575,9 @@ it('records joins through the real program service paths', function (): void {
         'requires_approval' => false,
     ]);
 
-    $membership = app(ProgramService::class)->joinProgram($affiliate, $openProgram);
+    $membership = app(ProgramEnrollment::class)->join($affiliate->id, $openProgram->id);
 
-    expect(SignalEvent::query()->withoutOwnerScope()->sole()->source_event_id)->toBe((string) $membership->getKey());
+    expect(SignalEvent::query()->withoutOwnerScope()->sole()->source_event_id)->toBe($membership->id);
 });
 
 it('records pending approvals only when approved', function (): void {
@@ -595,17 +595,17 @@ it('records pending approvals only when approved', function (): void {
         'requires_approval' => true,
     ]);
 
-    $service = app(ProgramService::class);
-    $membership = $service->joinProgram($affiliate, $program);
+    $enrollment = app(ProgramEnrollment::class);
+    $membership = $enrollment->join($affiliate->id, $program->id);
 
     expect(SignalEvent::query()->withoutOwnerScope()->count())->toBe(0);
 
     $review = app(MembershipReviewApi::class);
-    expect($review->approve((string) $membership->getKey()))->toBeTrue()
-        ->and($review->approve((string) $membership->getKey()))->toBeFalse();
+    expect($review->approve($membership->id))->toBeTrue()
+        ->and($review->approve($membership->id))->toBeFalse();
 
     expect(SignalEvent::query()->withoutOwnerScope()->count())->toBe(1)
-        ->and(SignalEvent::query()->withoutOwnerScope()->sole()->source_event_id)->toBe((string) $membership->getKey());
+        ->and(SignalEvent::query()->withoutOwnerScope()->sole()->source_event_id)->toBe($membership->id);
 });
 
 it('records a new join with a new identity after leave and rejoin', function (): void {
@@ -623,18 +623,18 @@ it('records a new join with a new identity after leave and rejoin', function ():
         'requires_approval' => false,
     ]);
 
-    $service = app(ProgramService::class);
-    $first = $service->joinProgram($affiliate, $program);
-    $service->leaveProgram($affiliate, $program);
-    $second = $service->joinProgram($affiliate, $program);
+    $enrollment = app(ProgramEnrollment::class);
+    $first = $enrollment->join($affiliate->id, $program->id);
+    $enrollment->leave($affiliate->id, $program->id);
+    $second = $enrollment->join($affiliate->id, $program->id);
 
     $sourceIds = SignalEvent::query()->withoutOwnerScope()->pluck('source_event_id')->all();
     sort($sourceIds);
 
-    $expected = [(string) $first->getKey(), (string) $second->getKey()];
+    $expected = [$first->id, $second->id];
     sort($expected);
 
-    expect($second->getKey())->not->toBe($first->getKey())
+    expect($second->id)->not->toBe($first->id)
         ->and($sourceIds)->toBe($expected);
 });
 

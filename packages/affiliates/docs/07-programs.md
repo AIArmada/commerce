@@ -91,23 +91,24 @@ AffiliateProgramTier::create([
 ## Enrolling Affiliates
 
 ```php
+use AIArmada\Affiliates\Features\Programs\Api\ProgramEnrollment;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramMembershipReader;
 use AIArmada\Affiliates\Services\ProgramService;
 
-$programService = app(ProgramService::class);
+$service = app(ProgramService::class);
 
-// Join (enroll). Returns null when the affiliate is not eligible or the
-// program is not open; membership status is Pending when approval is required.
-$membership = $programService->joinProgram($affiliate, $program);
+// Join (enroll). Throws ProgramEnrollmentDenied when ineligible or closed.
+$membership = app(ProgramEnrollment::class)->join($affiliate->id, $program->id);
 
 if ($membership !== null) {
-    app(\AIArmada\Affiliates\Features\Programs\Api\MembershipReviewApi::class)->approve((string) $membership->getKey(), 'admin-1');
+    app(\AIArmada\Affiliates\Features\Programs\Api\MembershipReviewApi::class)->approve($membership->id, 'admin-1');
 }
 
 // Program listings
 $service->getAvailablePrograms();              // Collection — no arguments
 $service->getAffiliatePrograms($affiliate);    // Collection
-$service->isMember($affiliate, $program);      // bool
-$service->getMembership($affiliate, $program); // ?AffiliateProgramMembership
+app(ProgramMembershipReader::class)->find($affiliate->id, $program->id)?->active ?? false;      // bool
+app(ProgramMembershipReader::class)->find($affiliate->id, $program->id); // ?MembershipRecord
 ```
 
 ## Membership Statuses
@@ -159,6 +160,8 @@ Replacing the file removes the previous media and deleting the creative removes 
 
 ```php
 use AIArmada\Affiliates\Models\AffiliateProgramMembership;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramEnrollment;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramMembershipReader;
 use AIArmada\Affiliates\Services\ProgramService;
 
 $service = app(ProgramService::class);
@@ -167,10 +170,10 @@ $service = app(ProgramService::class);
 $programs = $service->getAvailablePrograms();
 
 // Enroll affiliate
-$membership = $service->joinProgram($affiliate, $program);
+$membership = app(ProgramEnrollment::class)->join($affiliate->id, $program->id);
 
 // Leave
-$service->leaveProgram($affiliate, $program);
+app(ProgramEnrollment::class)->leave($affiliate->id, $program->id);
 
 // Upgrade tier — takes affiliate + program + tier, not the membership
 $service->upgradeTier($affiliate, $program, $goldTier);

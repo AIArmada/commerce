@@ -6,7 +6,11 @@ use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\ProgramVisibility;
+use AIArmada\Affiliates\Events\AffiliateProgramJoined;
+use AIArmada\Affiliates\Features\Programs\Api\MembershipRecord;
 use AIArmada\Affiliates\Features\Programs\Api\MembershipReviewApi;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramEnrollment;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramMembershipReader;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramMembership;
@@ -16,8 +20,7 @@ use AIArmada\Affiliates\States\Active;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Event;
 
 beforeEach(function (): void {
     $this->service = app(ProgramService::class);
@@ -80,70 +83,47 @@ describe('ProgramService', function (): void {
 
     describe('joinProgram', function (): void {
         test('creates membership with approved status when no approval required', function (): void {
-            $membership = $this->service->joinProgram($this->affiliate, $this->program);
+            $membership = app(ProgramEnrollment::class)->join($this->affiliate->id, $this->program->id);
 
-            expect($membership)->toBeInstanceOf(AffiliateProgramMembership::class);
+            expect($membership)->toBeInstanceOf(MembershipRecord::class);
             expect($membership->status)->toBe(MembershipStatus::Approved);
-            expect($membership->approved_at)->not->toBeNull();
+            expect($membership->approvedAt)->not->toBeNull();
         });
 
         test('creates membership with pending status when approval required', function (): void {
             $this->program->update(['requires_approval' => true]);
 
-            $membership = $this->service->joinProgram($this->affiliate, $this->program);
+            $membership = app(ProgramEnrollment::class)->join($this->affiliate->id, $this->program->id);
 
             expect($membership->status)->toBe(MembershipStatus::Pending);
-            expect($membership->approved_at)->toBeNull();
+            expect($membership->approvedAt)->toBeNull();
         });
 
         test('returns existing membership if already joined', function (): void {
-            $first = $this->service->joinProgram($this->affiliate, $this->program);
-            $second = $this->service->joinProgram($this->affiliate, $this->program);
+            $first = app(ProgramEnrollment::class)->join($this->affiliate->id, $this->program->id);
+            $second = app(ProgramEnrollment::class)->join($this->affiliate->id, $this->program->id);
 
             expect($first->id)->toBe($second->id);
         });
 
-        test('returns the existing membership when a concurrent join wins the race', function (): void {
-            // Simulate a concurrent request winning the race: when the
-            // service attempts its insert, the unique row already exists.
-            AffiliateProgramMembership::creating(function (AffiliateProgramMembership $membership): void {
-                static $inserted = false;
+        test('retries return the original enrollment without dispatching another join event', function (): void {
+            Event::fake([AffiliateProgramJoined::class]);
 
-                if ($inserted) {
-                    return;
-                }
+            $enrollment = app(ProgramEnrollment::class);
+            $first = $enrollment->join($this->affiliate->id, $this->program->id);
+            $second = $enrollment->join($this->affiliate->id, $this->program->id);
 
-                $inserted = true;
+            expect($first->created)->toBeTrue()
+                ->and($second->created)->toBeFalse()
+                ->and($second->id)->toBe($first->id);
 
-                $status = $membership->status;
-
-                DB::table($membership->getTable())->insert([
-                    'id' => (string) Str::uuid(),
-                    'affiliate_id' => $membership->affiliate_id,
-                    'program_id' => $membership->program_id,
-                    'tier_id' => $membership->tier_id,
-                    'status' => $status instanceof BackedEnum ? $status->value : (string) $status,
-                    'applied_at' => $membership->applied_at,
-                    'approved_at' => $membership->approved_at,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-            });
-
-            $membership = $this->service->joinProgram($this->affiliate, $this->program);
-
-            expect($membership->affiliate_id)->toBe($this->affiliate->id)
-                ->and($membership->program_id)->toBe($this->program->id)
-                ->and(AffiliateProgramMembership::query()
-                    ->where('affiliate_id', $this->affiliate->id)
-                    ->where('program_id', $this->program->id)
-                    ->count())->toBe(1);
+            Event::assertDispatchedTimes(AffiliateProgramJoined::class, 1);
         });
 
         test('sets applied_at timestamp', function (): void {
-            $membership = $this->service->joinProgram($this->affiliate, $this->program);
+            $membership = app(ProgramEnrollment::class)->join($this->affiliate->id, $this->program->id);
 
-            expect($membership->applied_at)->not->toBeNull();
+            expect($membership->appliedAt)->not->toBeNull();
         });
 
         test('rejects cross-tenant program joins when owner scoping is enabled', function (): void {
@@ -183,15 +163,15 @@ describe('ProgramService', function (): void {
 
             expect(fn () => OwnerContext::withOwner(
                 $ownerA,
-                fn (): AffiliateProgramMembership => $this->service->joinProgram($affiliate, $foreignProgram),
+                fn (): MembershipRecord => app(ProgramEnrollment::class)->join($affiliate->id, $foreignProgram->id),
             ))->toThrow(AuthorizationException::class);
         });
     });
 
     describe('leaveProgram', function (): void {
         test('removes membership when exists', function (): void {
-            $this->service->joinProgram($this->affiliate, $this->program);
-            $this->service->leaveProgram($this->affiliate, $this->program);
+            app(ProgramEnrollment::class)->join($this->affiliate->id, $this->program->id);
+            app(ProgramEnrollment::class)->leave($this->affiliate->id, $this->program->id);
 
             expect(AffiliateProgramMembership::where([
                 'affiliate_id' => $this->affiliate->id,
@@ -200,9 +180,9 @@ describe('ProgramService', function (): void {
         });
 
         test('does not throw if not a member', function (): void {
-            $this->service->leaveProgram($this->affiliate, $this->program);
+            app(ProgramEnrollment::class)->leave($this->affiliate->id, $this->program->id);
 
-            expect($this->service->isMember($this->affiliate, $this->program))->toBeFalse();
+            expect((app(ProgramMembershipReader::class)->find($this->affiliate->id, $this->program->id)?->active ?? false))->toBeFalse();
         });
     });
 
@@ -210,14 +190,14 @@ describe('ProgramService', function (): void {
         test('approves pending membership', function (): void {
             $this->program->update(['requires_approval' => true]);
 
-            $membership = $this->service->joinProgram($this->affiliate, $this->program);
+            $membership = app(ProgramEnrollment::class)->join($this->affiliate->id, $this->program->id);
             expect($membership->status)->toBe(MembershipStatus::Pending);
 
-            expect(app(MembershipReviewApi::class)->approve((string) $membership->getKey(), 'admin@example.com'))->toBeTrue();
+            expect(app(MembershipReviewApi::class)->approve($membership->id, 'admin@example.com'))->toBeTrue();
 
-            $membership->refresh();
+            $membership = app(ProgramMembershipReader::class)->find($this->affiliate->id, $this->program->id);
             expect($membership->status)->toBe(MembershipStatus::Approved);
-            expect($membership->approved_at)->not->toBeNull();
+            expect($membership->approvedAt)->not->toBeNull();
         });
     });
 
@@ -248,8 +228,8 @@ describe('ProgramService', function (): void {
                 'commission_rate_basis_points' => 1500,
             ]);
 
-            $membership = $this->service->joinProgram($this->affiliate, $this->program);
-            $membership->update(['tier_id' => $tier1->id]);
+            $membership = app(ProgramEnrollment::class)->join($this->affiliate->id, $this->program->id);
+            AffiliateProgramMembership::query()->findOrFail($membership->id)->update(['tier_id' => $tier1->id]);
 
             $result = $this->service->upgradeTier($this->affiliate, $this->program, $tier2);
 
@@ -309,7 +289,7 @@ describe('ProgramService', function (): void {
                 'commission_rate_basis_points' => 1500,
             ]));
 
-            OwnerContext::withOwner($ownerA, fn (): AffiliateProgramMembership => $this->service->joinProgram($affiliate, $program));
+            OwnerContext::withOwner($ownerA, fn (): MembershipRecord => app(ProgramEnrollment::class)->join($affiliate->id, $program->id));
 
             expect(fn () => OwnerContext::withOwner(
                 $ownerA,
@@ -320,24 +300,24 @@ describe('ProgramService', function (): void {
 
     describe('isMember', function (): void {
         test('returns true when approved member', function (): void {
-            $this->service->joinProgram($this->affiliate, $this->program);
+            app(ProgramEnrollment::class)->join($this->affiliate->id, $this->program->id);
 
-            $result = $this->service->isMember($this->affiliate, $this->program);
+            $result = (app(ProgramMembershipReader::class)->find($this->affiliate->id, $this->program->id)?->active ?? false);
 
             expect($result)->toBeTrue();
         });
 
         test('returns false when not a member', function (): void {
-            $result = $this->service->isMember($this->affiliate, $this->program);
+            $result = (app(ProgramMembershipReader::class)->find($this->affiliate->id, $this->program->id)?->active ?? false);
 
             expect($result)->toBeFalse();
         });
 
         test('returns false when pending member', function (): void {
             $this->program->update(['requires_approval' => true]);
-            $this->service->joinProgram($this->affiliate, $this->program);
+            app(ProgramEnrollment::class)->join($this->affiliate->id, $this->program->id);
 
-            $result = $this->service->isMember($this->affiliate, $this->program);
+            $result = (app(ProgramMembershipReader::class)->find($this->affiliate->id, $this->program->id)?->active ?? false);
 
             expect($result)->toBeFalse();
         });
@@ -345,20 +325,20 @@ describe('ProgramService', function (): void {
 
     describe('getMembership', function (): void {
         test('returns membership when exists', function (): void {
-            $this->service->joinProgram($this->affiliate, $this->program);
+            app(ProgramEnrollment::class)->join($this->affiliate->id, $this->program->id);
 
-            $result = $this->service->getMembership($this->affiliate, $this->program);
+            $result = app(ProgramMembershipReader::class)->find($this->affiliate->id, $this->program->id);
 
-            expect($result)->toBeInstanceOf(AffiliateProgramMembership::class);
+            expect($result)->toBeInstanceOf(MembershipRecord::class);
         });
 
         test('returns null when not a member', function (): void {
-            $result = $this->service->getMembership($this->affiliate, $this->program);
+            $result = app(ProgramMembershipReader::class)->find($this->affiliate->id, $this->program->id);
 
             expect($result)->toBeNull();
         });
 
-        test('loads tier relationship', function (): void {
+        test('returns the persisted tier identifier', function (): void {
             $tier = AffiliateProgramTier::create([
                 'program_id' => $this->program->id,
                 'name' => 'Bronze',
@@ -366,18 +346,18 @@ describe('ProgramService', function (): void {
                 'commission_rate_basis_points' => 1000,
             ]);
 
-            $membership = $this->service->joinProgram($this->affiliate, $this->program);
-            $membership->update(['tier_id' => $tier->id]);
+            $membership = app(ProgramEnrollment::class)->join($this->affiliate->id, $this->program->id);
+            AffiliateProgramMembership::query()->findOrFail($membership->id)->update(['tier_id' => $tier->id]);
 
-            $result = $this->service->getMembership($this->affiliate, $this->program);
+            $result = app(ProgramMembershipReader::class)->find($this->affiliate->id, $this->program->id);
 
-            expect($result->relationLoaded('tier'))->toBeTrue();
+            expect($result->tierId)->toBe($tier->id);
         });
     });
 
     describe('processTierUpgrades', function (): void {
         test('returns count of upgraded memberships', function (): void {
-            $this->service->joinProgram($this->affiliate, $this->program);
+            app(ProgramEnrollment::class)->join($this->affiliate->id, $this->program->id);
 
             $result = $this->service->processTierUpgrades($this->program);
 
@@ -387,7 +367,7 @@ describe('ProgramService', function (): void {
 
         test('only processes approved memberships', function (): void {
             $this->program->update(['requires_approval' => true]);
-            $this->service->joinProgram($this->affiliate, $this->program);
+            app(ProgramEnrollment::class)->join($this->affiliate->id, $this->program->id);
 
             $result = $this->service->processTierUpgrades($this->program);
 
@@ -406,10 +386,10 @@ describe('ProgramService', function (): void {
 
 test('membership review cannot overwrite a completed decision', function (): void {
     $this->program->update(['requires_approval' => true]);
-    $membership = $this->service->joinProgram($this->affiliate, $this->program);
+    $membership = app(ProgramEnrollment::class)->join($this->affiliate->id, $this->program->id);
     $review = app(MembershipReviewApi::class);
 
-    expect($review->reject((string) $membership->getKey()))->toBeTrue()
-        ->and($review->approve((string) $membership->getKey(), 'admin'))->toBeFalse()
-        ->and($membership->fresh()->status)->toBe(MembershipStatus::Rejected);
+    expect($review->reject($membership->id))->toBeTrue()
+        ->and($review->approve($membership->id, 'admin'))->toBeFalse()
+        ->and(app(ProgramMembershipReader::class)->find($this->affiliate->id, $this->program->id)->status)->toBe(MembershipStatus::Rejected);
 });

@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\ProgramVisibility;
-use AIArmada\Affiliates\Http\Controllers\ProgramMembershipController;
+use AIArmada\Affiliates\Features\Programs\EntryPoints\Http\ProgramMembershipController;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 
 function joinableProgram(array $attributes = []): AffiliateProgram

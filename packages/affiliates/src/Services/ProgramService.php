@@ -5,17 +5,13 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Services;
 
 use AIArmada\Affiliates\Enums\MembershipStatus;
-use AIArmada\Affiliates\Events\AffiliateProgramJoined;
-use AIArmada\Affiliates\Events\AffiliateProgramLeft;
 use AIArmada\Affiliates\Events\AffiliateTierUpgraded;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Models\AffiliateProgramTier;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
-use Illuminate\Database\QueryException;
 use Illuminate\Support\Collection;
 use RuntimeException;
 
@@ -37,84 +33,6 @@ final class ProgramService
             ->public()
             ->with(['tiers', 'creatives'])
             ->get();
-    }
-
-    /**
-     * Join an affiliate to a program.
-     */
-    public function joinProgram(Affiliate $affiliate, AffiliateProgram $program): AffiliateProgramMembership
-    {
-        $program = $this->resolveAccessibleProgram($program);
-
-        // Check if already a member
-        $existing = AffiliateProgramMembership::query()
-            ->where('affiliate_id', $affiliate->id)
-            ->where('program_id', $program->id)
-            ->first();
-
-        if ($existing) {
-            return $existing;
-        }
-
-        if (! $program->canJoin($affiliate)) {
-            throw new RuntimeException('Affiliate cannot join this program.');
-        }
-
-        $defaultTier = $this->resolveDefaultTier($program);
-
-        $status = $program->requires_approval
-            ? MembershipStatus::Pending
-            : MembershipStatus::Approved;
-
-        try {
-            $membership = AffiliateProgramMembership::create([
-                'affiliate_id' => $affiliate->id,
-                'program_id' => $program->id,
-                'tier_id' => $defaultTier?->id,
-                'status' => $status,
-                'applied_at' => CarbonImmutable::now(),
-                'approved_at' => $status === MembershipStatus::Approved ? CarbonImmutable::now() : null,
-            ]);
-        } catch (QueryException $exception) {
-            // Concurrent double-join: the unique(affiliate_id, program_id)
-            // row already exists, so return it instead of 500ing.
-            if (! self::isUniqueConstraintViolation($exception)) {
-                throw $exception;
-            }
-
-            $raced = AffiliateProgramMembership::query()
-                ->where('affiliate_id', $affiliate->id)
-                ->where('program_id', $program->id)
-                ->first();
-
-            if ($raced === null) {
-                throw $exception;
-            }
-
-            return $raced;
-        }
-
-        if ($status === MembershipStatus::Approved) {
-            $this->events->dispatch(new AffiliateProgramJoined($affiliate, $program, $membership));
-        }
-
-        return $membership;
-    }
-
-    /**
-     * Leave a program.
-     */
-    public function leaveProgram(Affiliate $affiliate, AffiliateProgram $program): void
-    {
-        $membership = AffiliateProgramMembership::query()
-            ->where('affiliate_id', $affiliate->id)
-            ->where('program_id', $program->id)
-            ->first();
-
-        if ($membership) {
-            $membership->delete();
-            $this->events->dispatch(new AffiliateProgramLeft($affiliate, $program));
-        }
     }
 
     /**
@@ -190,30 +108,6 @@ final class ProgramService
     }
 
     /**
-     * Check if an affiliate is a member of a program.
-     */
-    public function isMember(Affiliate $affiliate, AffiliateProgram $program): bool
-    {
-        return AffiliateProgramMembership::query()
-            ->where('affiliate_id', $affiliate->id)
-            ->where('program_id', $program->id)
-            ->where('status', MembershipStatus::Approved)
-            ->exists();
-    }
-
-    /**
-     * Get membership details for an affiliate in a program.
-     */
-    public function getMembership(Affiliate $affiliate, AffiliateProgram $program): ?AffiliateProgramMembership
-    {
-        return AffiliateProgramMembership::query()
-            ->where('affiliate_id', $affiliate->id)
-            ->where('program_id', $program->id)
-            ->with(['tier'])
-            ->first();
-    }
-
-    /**
      * @param  Collection<int, AffiliateProgramTier>  $tiers
      */
     private function findBestTier(
@@ -224,11 +118,6 @@ final class ProgramService
         return $tiers
             ->filter(fn (AffiliateProgramTier $tier) => $tier->meetsUpgradeRequirements($affiliate, $program))
             ->first();
-    }
-
-    private static function isUniqueConstraintViolation(QueryException $exception): bool
-    {
-        return in_array((string) ($exception->errorInfo[0] ?? $exception->getCode()), ['23000', '23505'], true);
     }
 
     private function resolveAccessibleProgram(AffiliateProgram $program): AffiliateProgram
@@ -260,11 +149,6 @@ final class ProgramService
         }
 
         return $validatedTier;
-    }
-
-    private function resolveDefaultTier(AffiliateProgram $program): ?AffiliateProgramTier
-    {
-        return $this->resolveProgramTiers($program)->first();
     }
 
     /**

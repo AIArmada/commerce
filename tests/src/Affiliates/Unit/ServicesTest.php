@@ -9,6 +9,9 @@ use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\ProgramVisibility;
 use AIArmada\Affiliates\Events\AffiliateProgramJoined;
+use AIArmada\Affiliates\Features\Programs\Api\MembershipRecord;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramEnrollment;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramMembershipReader;
 use AIArmada\Affiliates\Features\Reporting\Api\DailyStatRecord;
 use AIArmada\Affiliates\Features\Reporting\Api\DailyStatsReader;
 use AIArmada\Affiliates\Features\Reporting\Api\DailyStatsWriter;
@@ -16,8 +19,6 @@ use AIArmada\Affiliates\Features\Reporting\Models\AffiliateDailyStat;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Models\AffiliateProgramMembership;
-use AIArmada\Affiliates\Services\ProgramService;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\Disabled;
@@ -302,8 +303,6 @@ test('DailyStatsWriter backfill processes date range', function (): void {
 test('ProgramService joinProgram creates membership', function (): void {
     Event::fake([AffiliateProgramJoined::class]);
 
-    $service = app(ProgramService::class);
-
     $affiliate = Affiliate::create([
         'code' => 'JOIN001',
         'name' => 'Join Test',
@@ -324,9 +323,9 @@ test('ProgramService joinProgram creates membership', function (): void {
         'cookie_lifetime_days' => 30,
     ]);
 
-    $membership = $service->joinProgram($affiliate, $program);
+    $membership = app(ProgramEnrollment::class)->join($affiliate->id, $program->id);
 
-    expect($membership)->toBeInstanceOf(AffiliateProgramMembership::class);
+    expect($membership)->toBeInstanceOf(MembershipRecord::class);
     expect($membership->status)->toBe(MembershipStatus::Approved);
 
     Event::assertDispatched(AffiliateProgramJoined::class);
@@ -334,8 +333,6 @@ test('ProgramService joinProgram creates membership', function (): void {
 
 test('ProgramService joinProgram with approval required sets pending status', function (): void {
     Event::fake([AffiliateProgramJoined::class]);
-
-    $service = app(ProgramService::class);
 
     $affiliate = Affiliate::create([
         'code' => 'JOIN002',
@@ -357,15 +354,13 @@ test('ProgramService joinProgram with approval required sets pending status', fu
         'cookie_lifetime_days' => 30,
     ]);
 
-    $membership = $service->joinProgram($affiliate, $program);
+    $membership = app(ProgramEnrollment::class)->join($affiliate->id, $program->id);
 
     expect($membership->status)->toBe(MembershipStatus::Pending);
     Event::assertNotDispatched(AffiliateProgramJoined::class);
 });
 
 test('ProgramService leaveProgram removes membership', function (): void {
-    $service = app(ProgramService::class);
-
     $affiliate = Affiliate::create([
         'code' => 'LEAVE001',
         'name' => 'Leave Test',
@@ -386,18 +381,16 @@ test('ProgramService leaveProgram removes membership', function (): void {
         'cookie_lifetime_days' => 30,
     ]);
 
-    $service->joinProgram($affiliate, $program);
+    app(ProgramEnrollment::class)->join($affiliate->id, $program->id);
 
-    expect($service->isMember($affiliate, $program))->toBeTrue();
+    expect((app(ProgramMembershipReader::class)->find($affiliate->id, $program->id)?->active ?? false))->toBeTrue();
 
-    $service->leaveProgram($affiliate, $program);
+    app(ProgramEnrollment::class)->leave($affiliate->id, $program->id);
 
-    expect($service->isMember($affiliate, $program))->toBeFalse();
+    expect((app(ProgramMembershipReader::class)->find($affiliate->id, $program->id)?->active ?? false))->toBeFalse();
 });
 
 test('ProgramService getMembership returns membership details', function (): void {
-    $service = app(ProgramService::class);
-
     $affiliate = Affiliate::create([
         'code' => 'MEMBD001',
         'name' => 'Membership Details Test',
@@ -418,11 +411,11 @@ test('ProgramService getMembership returns membership details', function (): voi
         'cookie_lifetime_days' => 30,
     ]);
 
-    $service->joinProgram($affiliate, $program);
+    app(ProgramEnrollment::class)->join($affiliate->id, $program->id);
 
-    $membership = $service->getMembership($affiliate, $program);
+    $membership = app(ProgramMembershipReader::class)->find($affiliate->id, $program->id);
 
-    expect($membership)->toBeInstanceOf(AffiliateProgramMembership::class);
-    expect($membership->affiliate_id)->toBe($affiliate->id);
-    expect($membership->program_id)->toBe($program->id);
+    expect($membership)->toBeInstanceOf(MembershipRecord::class);
+    expect($membership->affiliateId)->toBe($affiliate->id);
+    expect($membership->programId)->toBe($program->id);
 });

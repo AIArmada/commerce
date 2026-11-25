@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages;
 
 use AIArmada\Affiliates\Enums\MembershipStatus;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramEnrollment;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramCreative;
 use AIArmada\Affiliates\Models\AffiliateProgramMembership;
@@ -62,7 +63,7 @@ class PortalPrograms extends PortalPage
         }
 
         try {
-            $membership = app(ProgramService::class)->joinProgram($affiliate, $program);
+            $membership = app(ProgramEnrollment::class)->join((string) $affiliate->getKey(), (string) $program->getKey());
         } catch (RuntimeException) {
             Notification::make()
                 ->title(__('Unable to join program'))
@@ -113,7 +114,7 @@ class PortalPrograms extends PortalPage
             return;
         }
 
-        app(ProgramService::class)->leaveProgram($affiliate, $program);
+        app(ProgramEnrollment::class)->leave((string) $affiliate->getKey(), (string) $program->getKey());
 
         Notification::make()
             ->title(__('Left program'))
@@ -151,7 +152,7 @@ class PortalPrograms extends PortalPage
         $programs = $availablePrograms
             ->map(function (AffiliateProgram $program) use ($affiliate, $memberships): array {
                 $membership = $memberships->get((string) $program->getKey());
-                $isJoined = $membership?->status === MembershipStatus::Approved;
+                $isJoined = $membership?->isActive() ?? false;
                 $isPending = $membership?->status === MembershipStatus::Pending;
 
                 if ($isJoined) {
