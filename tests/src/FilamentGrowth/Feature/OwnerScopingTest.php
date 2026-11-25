@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScopeKey;
@@ -23,24 +25,7 @@ use Illuminate\Support\Str;
 if (! function_exists('filamentGrowth_makeOwner')) {
     function filamentGrowth_makeOwner(string $id): Model
     {
-        return new class($id) extends Model
-        {
-            public $incrementing = false;
-
-            protected $keyType = 'string';
-
-            public function __construct(private readonly string $uuid) {}
-
-            public function getKey(): mixed
-            {
-                return $this->uuid;
-            }
-
-            public function getMorphClass(): string
-            {
-                return 'tests:growth-owner';
-            }
-        };
+        return User::factory()->create(['id' => $id]);
     }
 }
 
@@ -130,9 +115,9 @@ it('scopes ExperimentResource query to the resolved owner', function (): void {
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -155,9 +140,9 @@ it('scopes ExperimentResource queries and mutation gates by accessible tracked p
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -167,7 +152,10 @@ it('scopes ExperimentResource queries and mutation gates by accessible tracked p
     $names = ExperimentResource::getEloquentQuery()->pluck('name')->all();
 
     expect($names)->toContain($experimentB->name)
-        ->and(ExperimentResource::canEdit($experimentB))->toBeTrue();
+        ->not->toContain($experimentA->name)
+        ->and(ExperimentResource::canEdit($experimentB))->toBeTrue()
+        ->and(ExperimentResource::canEdit($experimentA))->toBeFalse()
+        ->and(ExperimentResource::canDelete($experimentA))->toBeFalse();
 });
 
 it('scopes VariantResource query to the resolved owner', function (): void {
@@ -178,9 +166,9 @@ it('scopes VariantResource query to the resolved owner', function (): void {
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -204,9 +192,9 @@ it('scopes VariantResource queries and experiment helpers by accessible tracked 
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -217,8 +205,10 @@ it('scopes VariantResource queries and experiment helpers by accessible tracked 
     // selectedExperimentModuleType is now public on VariantForm
 
     expect($codes)->toContain($variantB->code)
-        ->and(VariantResource::canEdit($variantA))->toBeTrue()
-        ->and(VariantResource::canDelete($variantA))->toBeTrue()
+        ->not->toContain($variantA->code)
+        ->and(VariantResource::canEdit($variantA))->toBeFalse()
+        ->and(VariantResource::canDelete($variantA))->toBeFalse()
+        ->and(VariantResource::canEdit($variantB))->toBeTrue()
         ->and((string) VariantForm::selectedExperimentModuleType((string) $experimentA->getKey()))->toBe('')
         ->and((string) VariantForm::selectedExperimentModuleType((string) $experimentB->getKey()))->toBe((string) $experimentB->module_type);
 });
@@ -234,9 +224,9 @@ it('includes global experiments when growth owner include_global is enabled', fu
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -262,9 +252,9 @@ it('includes global variants when growth owner include_global is enabled', funct
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -289,9 +279,9 @@ it('does not expose global tracked properties or experiments as writable create 
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -337,9 +327,9 @@ it('fails closed for experiment mutations when the tracked property drifts out o
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -375,9 +365,9 @@ it('removes experiments and variants from readable queries when the tracked prop
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -397,8 +387,10 @@ it('removes experiments and variants from readable queries when the tracked prop
         ->where('id', $experiment->getKey())
         ->update(['tracked_property_id' => $foreignTrackedProperty->getKey()]);
 
-    expect(ExperimentResource::getEloquentQuery()->whereKey($experiment->getKey())->exists())->toBeTrue()
-        ->and(VariantResource::getEloquentQuery()->whereKey($variant->getKey())->exists())->toBeTrue();
+    expect(ExperimentResource::getEloquentQuery()->whereKey($experiment->getKey())->exists())->toBeFalse()
+        ->and(VariantResource::getEloquentQuery()->whereKey($variant->getKey())->exists())->toBeFalse()
+        ->and(VariantResource::canEdit($variant))->toBeFalse()
+        ->and(VariantResource::canDelete($variant))->toBeFalse();
 });
 
 it('scopes variant code uniqueness to writable experiments only', function (): void {
@@ -411,9 +403,9 @@ it('scopes variant code uniqueness to writable experiments only', function (): v
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -447,9 +439,9 @@ it('rejects mixed experiment bulk deletes before deleting any selected records',
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -474,9 +466,9 @@ it('rejects mixed variant bulk deletes before deleting any selected records', fu
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -502,9 +494,9 @@ it('fails closed when helper lookups receive a foreign experiment record object'
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -524,9 +516,9 @@ it('scopes tracked property helper queries to the resolved owner when signals ow
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -569,9 +561,9 @@ it('uses the resolved owner scope key for experiment slug validation when growth
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -591,9 +583,9 @@ it('does not resolve foreign tracked properties for experiment resources when gr
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -609,9 +601,9 @@ it('memoizes the selected experiment module type for repeated variant form visib
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -655,7 +647,7 @@ it('does not reuse cached experiment module types across owner scope changes in 
 it('uses distinct selected experiment module type cache keys for unresolved and explicit global contexts', function (): void {
     app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new class implements OwnerResolverInterface
     {
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
             return null;
         }
@@ -685,9 +677,9 @@ it('counts only owner-matched child rows for readable global experiments in the 
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -768,9 +760,9 @@ it('finds readable global experiments when filtering by visible tracked property
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -796,9 +788,9 @@ it('prunes stale variant settings when the selected experiment module changes', 
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -829,4 +821,80 @@ it('prunes stale variant settings when the selected experiment module changes', 
         'price_minor' => 12345,
         'currency' => 'USD',
     ]);
+});
+
+it('gates experiment and variant mutations with no SQL on records hydrated from the resource queries', function (): void {
+    $owner = filamentGrowth_makeOwner('00000000-0000-0000-0000-000000000090');
+
+    app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new class($owner) implements OwnerResolverInterface
+    {
+        public function __construct(private readonly Model $owner) {}
+
+        public function resolve(): ?RecordReference
+        {
+            return EloquentRecordReference::fromModel($this->owner);
+        }
+    });
+
+    [$experiment, $variant] = filamentGrowth_createExperimentForOwner($owner, 'Zero Query Experiment', 'ZQ');
+
+    $ownedExperiment = ExperimentResource::getEloquentQuery()->whereKey($experiment->getKey())->first();
+    $ownedVariant = VariantResource::getEloquentQuery()->whereKey($variant->getKey())->first();
+
+    expect($ownedExperiment)->toBeInstanceOf(Experiment::class)
+        ->and($ownedVariant)->toBeInstanceOf(Variant::class)
+        ->and($ownedExperiment?->relationLoaded('trackedProperty'))->toBeTrue()
+        ->and($ownedVariant?->relationLoaded('experiment'))->toBeTrue()
+        ->and($ownedVariant?->getRelation('experiment')?->relationLoaded('trackedProperty'))->toBeTrue();
+
+    // Warm the owner lookup and gate verdict caches so the measured calls exercise only gate logic.
+    ExperimentResource::canEdit($ownedExperiment);
+    ExperimentResource::canDelete($ownedExperiment);
+    VariantResource::canEdit($ownedVariant);
+    VariantResource::canDelete($ownedVariant);
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    $verdicts = [
+        ExperimentResource::canEdit($ownedExperiment),
+        ExperimentResource::canDelete($ownedExperiment),
+        VariantResource::canEdit($ownedVariant),
+        VariantResource::canDelete($ownedVariant),
+    ];
+
+    $queryCount = count(DB::getQueryLog());
+    DB::disableQueryLog();
+
+    expect($queryCount)->toBe(0)
+        ->and($verdicts)->toBe([true, true, true, true]);
+});
+
+it('still denies mutate gates for foreign and global records', function (): void {
+    $ownerA = filamentGrowth_makeOwner('00000000-0000-0000-0000-000000000091');
+    $ownerB = filamentGrowth_makeOwner('00000000-0000-0000-0000-000000000092');
+
+    app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new class($ownerA) implements OwnerResolverInterface
+    {
+        public function __construct(private readonly Model $owner) {}
+
+        public function resolve(): ?RecordReference
+        {
+            return EloquentRecordReference::fromModel($this->owner);
+        }
+    });
+
+    [$foreignExperiment, $foreignVariant] = filamentGrowth_createExperimentForOwner($ownerB, 'Foreign Gate Experiment', 'FG');
+    [$globalExperiment, $globalVariant] = filamentGrowth_createGlobalExperiment('Global Gate Experiment', 'GG');
+
+    OwnerContext::withOwner($ownerA, function () use ($foreignExperiment, $foreignVariant, $globalExperiment, $globalVariant): void {
+        expect(ExperimentResource::canEdit($foreignExperiment))->toBeFalse()
+            ->and(ExperimentResource::canDelete($foreignExperiment))->toBeFalse()
+            ->and(ExperimentResource::canEdit($globalExperiment))->toBeFalse()
+            ->and(ExperimentResource::canDelete($globalExperiment))->toBeFalse()
+            ->and(VariantResource::canEdit($foreignVariant))->toBeFalse()
+            ->and(VariantResource::canDelete($foreignVariant))->toBeFalse()
+            ->and(VariantResource::canEdit($globalVariant))->toBeFalse()
+            ->and(VariantResource::canDelete($globalVariant))->toBeFalse();
+    });
 });

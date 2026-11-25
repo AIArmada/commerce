@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Authz\Support\AuthzScopeContext;
+use AIArmada\Authz\Features\Authorization\Support\AuthzScopeContext;
 
 describe('AuthzScopeContext', function (): void {
     beforeEach(function (): void {

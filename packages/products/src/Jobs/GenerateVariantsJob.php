@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Products\Jobs;
 
+use AIArmada\CommerceSupport\Contracts\OwnerScopedJob;
+use AIArmada\CommerceSupport\Data\OwnerJobContext;
 use AIArmada\CommerceSupport\Traits\OwnerContextJob;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Strategies\MatrixVariantGenerator;
@@ -12,7 +14,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 
-final class GenerateVariantsJob implements ShouldQueue
+final class GenerateVariantsJob implements OwnerScopedJob, ShouldQueue
 {
     use Dispatchable;
     use InteractsWithQueue;
@@ -25,6 +27,11 @@ final class GenerateVariantsJob implements ShouldQueue
         public string | int | null $ownerId = null,
         public bool $ownerIsGlobal = false,
     ) {}
+
+    public function ownerContext(): OwnerJobContext
+    {
+        return new OwnerJobContext($this->ownerType, $this->ownerId, $this->ownerIsGlobal);
+    }
 
     protected function performJob(): void
     {

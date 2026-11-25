@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Http\Middleware;
 
-use AIArmada\Authz\Services\ImpersonateManager;
+use AIArmada\Authz\Features\Impersonation\Api\ImpersonationApi;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -14,7 +14,7 @@ use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 class ImpersonationBannerMiddleware
 {
     public function __construct(
-        protected ImpersonateManager $manager
+        protected ImpersonationApi $manager
     ) {}
 
     public function handle(Request $request, Closure $next): SymfonyResponse

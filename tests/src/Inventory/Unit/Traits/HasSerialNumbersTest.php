@@ -9,6 +9,7 @@ use AIArmada\Inventory\Models\InventorySerial;
 use AIArmada\Inventory\States\Available;
 use AIArmada\Inventory\States\SerialStatus;
 use AIArmada\Inventory\States\Sold;
+use Carbon\CarbonImmutable;
 
 beforeEach(function (): void {
     $this->item = SerializedInventoryItem::create(['name' => 'Serialized Product']);
@@ -135,7 +136,7 @@ describe('HasSerialNumbers trait', function (): void {
         });
 
         it('creates serial with all parameters', function (): void {
-            $warrantyDate = now()->addYear();
+            $warrantyDate = CarbonImmutable::now()->addYear();
 
             $serial = $this->item->registerSerial(
                 'SN-67890',
@@ -289,7 +290,7 @@ describe('HasSerialNumbers trait', function (): void {
                 'inventoryable_id' => $this->item->getKey(),
                 'location_id' => $this->location->id,
                 'status' => SerialStatus::normalize(Available::class),
-                'received_at' => now()->subDays(10),
+                'received_at' => CarbonImmutable::now()->subDays(10),
             ]);
 
             InventorySerial::factory()->create([
@@ -297,7 +298,7 @@ describe('HasSerialNumbers trait', function (): void {
                 'inventoryable_id' => $this->item->getKey(),
                 'location_id' => $this->location->id,
                 'status' => SerialStatus::normalize(Available::class),
-                'received_at' => now()->subDay(),
+                'received_at' => CarbonImmutable::now()->subDay(),
             ]);
 
             expect($this->item->getNextAvailableSerial()->id)->toBe($oldSerial->id);
@@ -410,14 +411,14 @@ describe('HasSerialNumbers trait', function (): void {
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
                 'location_id' => $this->location->id,
-                'warranty_expires_at' => now()->addDays(15),
+                'warranty_expires_at' => CarbonImmutable::now()->addDays(15),
             ]);
 
             InventorySerial::factory()->create([
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
                 'location_id' => $this->location->id,
-                'warranty_expires_at' => now()->addDays(60),
+                'warranty_expires_at' => CarbonImmutable::now()->addDays(60),
             ]);
 
             $expiring = $this->item->serialsWithExpiringWarranty(30);
@@ -431,7 +432,7 @@ describe('HasSerialNumbers trait', function (): void {
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
                 'location_id' => $this->location->id,
-                'warranty_expires_at' => now()->subDay(),
+                'warranty_expires_at' => CarbonImmutable::now()->subDay(),
             ]);
 
             expect($this->item->serialsWithExpiringWarranty())->toHaveCount(0);
@@ -444,14 +445,14 @@ describe('HasSerialNumbers trait', function (): void {
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
                 'location_id' => $this->location->id,
-                'warranty_expires_at' => now()->addYear(),
+                'warranty_expires_at' => CarbonImmutable::now()->addYear(),
             ]);
 
             InventorySerial::factory()->create([
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
                 'location_id' => $this->location->id,
-                'warranty_expires_at' => now()->subDay(),
+                'warranty_expires_at' => CarbonImmutable::now()->subDay(),
             ]);
 
             InventorySerial::factory()->create([

@@ -6,7 +6,7 @@ namespace AIArmada\FilamentDocs\Pages;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
-use AIArmada\CommerceSupport\Support\OwnerCache;
+use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\States\DocStatus;
 use AIArmada\Docs\States\Overdue;

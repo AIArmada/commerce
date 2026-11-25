@@ -19,7 +19,7 @@ describe('InventoryDemandHistory', function (): void {
             $history = InventoryDemandHistory::create([
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
-                'period_date' => now(),
+                'period_date' => CarbonImmutable::now(),
                 'period_type' => DemandPeriodType::Daily,
                 'quantity_demanded' => 100,
                 'quantity_fulfilled' => 80,
@@ -36,7 +36,7 @@ describe('InventoryDemandHistory', function (): void {
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
                 'location_id' => $this->location->id,
-                'period_date' => now(),
+                'period_date' => CarbonImmutable::now(),
                 'period_type' => DemandPeriodType::Daily,
                 'quantity_demanded' => 50,
                 'quantity_fulfilled' => 50,
@@ -54,7 +54,7 @@ describe('InventoryDemandHistory', function (): void {
             InventoryDemandHistory::create([
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
-                'period_date' => now(),
+                'period_date' => CarbonImmutable::now(),
                 'period_type' => DemandPeriodType::Daily,
                 'quantity_demanded' => 10,
                 'quantity_fulfilled' => 10,
@@ -65,7 +65,7 @@ describe('InventoryDemandHistory', function (): void {
             InventoryDemandHistory::create([
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
-                'period_date' => now()->startOfWeek(),
+                'period_date' => CarbonImmutable::now()->startOfWeek(),
                 'period_type' => DemandPeriodType::Weekly,
                 'quantity_demanded' => 70,
                 'quantity_fulfilled' => 65,
@@ -76,7 +76,7 @@ describe('InventoryDemandHistory', function (): void {
             InventoryDemandHistory::create([
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
-                'period_date' => now()->startOfMonth(),
+                'period_date' => CarbonImmutable::now()->startOfMonth(),
                 'period_type' => DemandPeriodType::Monthly,
                 'quantity_demanded' => 300,
                 'quantity_fulfilled' => 280,
@@ -90,7 +90,7 @@ describe('InventoryDemandHistory', function (): void {
             InventoryDemandHistory::create([
                 'inventoryable_type' => $otherItem->getMorphClass(),
                 'inventoryable_id' => $otherItem->getKey(),
-                'period_date' => now(),
+                'period_date' => CarbonImmutable::now(),
                 'period_type' => DemandPeriodType::Daily,
                 'quantity_demanded' => 5,
                 'quantity_fulfilled' => 5,
@@ -126,8 +126,8 @@ describe('InventoryDemandHistory', function (): void {
 
         it('filters between dates', function (): void {
             $result = InventoryDemandHistory::betweenDates(
-                now()->subDays(3),
-                now()->addDays(1)
+                CarbonImmutable::now()->subDays(3),
+                CarbonImmutable::now()->addDays(1)
             )->get();
 
             expect($result->count())->toBeGreaterThan(0);
@@ -145,7 +145,7 @@ describe('InventoryDemandHistory', function (): void {
             $history = InventoryDemandHistory::create([
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
-                'period_date' => now(),
+                'period_date' => CarbonImmutable::now(),
                 'period_type' => DemandPeriodType::Daily,
                 'quantity_demanded' => 100,
                 'quantity_fulfilled' => 80,
@@ -160,7 +160,7 @@ describe('InventoryDemandHistory', function (): void {
             $history = InventoryDemandHistory::create([
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
-                'period_date' => now(),
+                'period_date' => CarbonImmutable::now(),
                 'period_type' => DemandPeriodType::Daily,
                 'quantity_demanded' => 0,
                 'quantity_fulfilled' => 0,
@@ -177,7 +177,7 @@ describe('InventoryDemandHistory', function (): void {
             $history = InventoryDemandHistory::create([
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
-                'period_date' => now(),
+                'period_date' => CarbonImmutable::now(),
                 'period_type' => DemandPeriodType::Daily,
                 'quantity_demanded' => 100,
                 'quantity_fulfilled' => 75,
@@ -192,7 +192,7 @@ describe('InventoryDemandHistory', function (): void {
             $history = InventoryDemandHistory::create([
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
-                'period_date' => now(),
+                'period_date' => CarbonImmutable::now(),
                 'period_type' => DemandPeriodType::Daily,
                 'quantity_demanded' => 0,
                 'quantity_fulfilled' => 0,
@@ -209,7 +209,7 @@ describe('InventoryDemandHistory', function (): void {
             $history = InventoryDemandHistory::create([
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
-                'period_date' => now(),
+                'period_date' => CarbonImmutable::now(),
                 'period_type' => DemandPeriodType::Daily,
                 'quantity_demanded' => 100,
                 'quantity_fulfilled' => 100,
@@ -224,7 +224,7 @@ describe('InventoryDemandHistory', function (): void {
             $history = InventoryDemandHistory::create([
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
-                'period_date' => now(),
+                'period_date' => CarbonImmutable::now(),
                 'period_type' => DemandPeriodType::Daily,
                 'quantity_demanded' => 0,
                 'quantity_fulfilled' => 0,
@@ -241,7 +241,7 @@ describe('InventoryDemandHistory', function (): void {
             $history = InventoryDemandHistory::create([
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
-                'period_date' => now(),
+                'period_date' => CarbonImmutable::now(),
                 'period_type' => DemandPeriodType::Weekly->value,
                 'quantity_demanded' => 50,
                 'quantity_fulfilled' => 50,
@@ -271,7 +271,7 @@ describe('InventoryDemandHistory', function (): void {
             $history = InventoryDemandHistory::create([
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
-                'period_date' => now(),
+                'period_date' => CarbonImmutable::now(),
                 'period_type' => DemandPeriodType::Daily,
                 'quantity_demanded' => 10,
                 'quantity_fulfilled' => 10,

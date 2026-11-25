@@ -11,6 +11,7 @@ use AIArmada\Affiliates\Settings\AffiliateBonusSettings;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -171,7 +172,7 @@ it('fails closed without an owner context when owner mode is enabled', function 
     topPerformerRuleSettings(['topPerformerEnabled' => true]);
     app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
     {
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
             return null;
         }

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Events\Platform;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerScopeConfig;
+use AIArmada\CommerceSupport\Support\OwnerScopeConfigFactory;
 use AIArmada\Events\Contracts\CanManageEventsFor;
 use Illuminate\Database\Eloquent\Model;
 
@@ -72,7 +72,7 @@ trait ResolvesEventManager
 
     private function eventOwnerScopeEnabled(): bool
     {
-        return OwnerScopeConfig::fromConfig('events.features.owner', true)->enabled;
+        return OwnerScopeConfigFactory::fromConfig('events.features.owner', true)->enabled;
     }
 
     private function sameModel(Model $left, Model $right): bool

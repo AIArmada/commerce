@@ -9,6 +9,7 @@ use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventoryValuationSnapshot;
 use AIArmada\Inventory\Services\Costing\ValuationService;
+use Carbon\CarbonImmutable;
 
 beforeEach(function (): void {
     $this->location = InventoryLocation::factory()->create(['is_active' => true]);
@@ -203,7 +204,7 @@ describe('createSnapshot', function (): void {
             'costing_method' => CostingMethod::Fifo,
             'location_id' => null,
             'total_value_minor' => 80000,
-            'snapshot_date' => now()->subDay(),
+            'snapshot_date' => CarbonImmutable::now()->subDay(),
         ]);
 
         InventoryCostLayer::factory()->create([
@@ -245,14 +246,14 @@ describe('getLatestSnapshot', function (): void {
         InventoryValuationSnapshot::factory()->create([
             'costing_method' => CostingMethod::Fifo,
             'location_id' => null,
-            'snapshot_date' => now()->subDay(),
+            'snapshot_date' => CarbonImmutable::now()->subDay(),
             'total_value_minor' => 100000,
         ]);
 
         $locationSnapshot = InventoryValuationSnapshot::factory()->create([
             'costing_method' => CostingMethod::Fifo,
             'location_id' => $this->location->id,
-            'snapshot_date' => now(),
+            'snapshot_date' => CarbonImmutable::now(),
             'total_value_minor' => 50000,
         ]);
 
@@ -273,25 +274,25 @@ describe('getSnapshotsForRange', function (): void {
         InventoryValuationSnapshot::factory()->create([
             'costing_method' => CostingMethod::Fifo,
             'location_id' => null,
-            'snapshot_date' => now()->subDays(10),
+            'snapshot_date' => CarbonImmutable::now()->subDays(10),
         ]);
 
         InventoryValuationSnapshot::factory()->create([
             'costing_method' => CostingMethod::Fifo,
             'location_id' => null,
-            'snapshot_date' => now()->subDays(5),
+            'snapshot_date' => CarbonImmutable::now()->subDays(5),
         ]);
 
         InventoryValuationSnapshot::factory()->create([
             'costing_method' => CostingMethod::Fifo,
             'location_id' => null,
-            'snapshot_date' => now()->subDay(),
+            'snapshot_date' => CarbonImmutable::now()->subDay(),
         ]);
 
         $result = $this->service->getSnapshotsForRange(
             CostingMethod::Fifo,
-            now()->subDays(7),
-            now()
+            CarbonImmutable::now()->subDays(7),
+            CarbonImmutable::now()
         );
 
         expect($result)->toHaveCount(2);

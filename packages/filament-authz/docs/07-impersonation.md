@@ -34,6 +34,13 @@ The authentication guard is configured in the `authz` core package:
 ],
 ```
 
+Set the driver to `authz-session` in `config/auth.php` for both source and target
+guards. Authz does not override Laravel's built-in `session` driver.
+
+```php
+'web' => ['driver' => 'authz-session', 'provider' => 'users'],
+```
+
 ### 2. Add Trait to User Model
 
 ```php
@@ -246,7 +253,7 @@ Listen to impersonation events for logging/auditing:
 Fired when impersonation starts:
 
 ```php
-use AIArmada\Authz\Events\TakeImpersonation;
+use AIArmada\Authz\Features\Impersonation\Events\TakeImpersonation;
 
 class LogImpersonationStart
 {
@@ -265,7 +272,7 @@ class LogImpersonationStart
 Fired when impersonation ends:
 
 ```php
-use AIArmada\Authz\Events\LeaveImpersonation;
+use AIArmada\Authz\Features\Impersonation\Events\LeaveImpersonation;
 
 class LogImpersonationEnd
 {

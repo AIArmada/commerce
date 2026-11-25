@@ -2,7 +2,10 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\Shipping\Models\ReturnAuthorization;
 use AIArmada\Shipping\Models\Shipment;
 use AIArmada\Shipping\Models\ShippingZone;
@@ -189,22 +192,20 @@ describe('ShipmentPolicy', function (): void {
 
         $user = createUserWithPermissions([]);
 
-        $owner = Mockery::mock(Model::class);
-        $owner->shouldReceive('getMorphClass')->andReturn('TestOwner');
-        $owner->shouldReceive('getKey')->andReturn('owner-123');
+        $owner = User::factory()->create();
 
         app()->instance(OwnerResolverInterface::class, new class($owner) implements OwnerResolverInterface
         {
             public function __construct(private readonly ?Model $owner) {}
 
-            public function resolve(): ?Model
+            public function resolve(): ?RecordReference
             {
-                return $this->owner;
+                return EloquentRecordReference::fromModel($this->owner);
             }
         });
 
         $shipment = Mockery::mock(Shipment::class)->makePartial();
-        $shipment->shouldReceive('belongsToOwner')->with($owner)->andReturnTrue();
+        $shipment->shouldReceive('belongsToOwner')->with(Mockery::on(fn (Model $resolved): bool => $resolved->is($owner)))->andReturnTrue();
 
         try {
             expect($this->policy->view($user, $shipment))->toBeTrue();
@@ -479,22 +480,20 @@ describe('ReturnAuthorizationPolicy', function (): void {
 
         $user = createUserWithPermissions([]);
 
-        $owner = Mockery::mock(Model::class);
-        $owner->shouldReceive('getMorphClass')->andReturn('TestOwner');
-        $owner->shouldReceive('getKey')->andReturn('owner-123');
+        $owner = User::factory()->create();
 
         app()->instance(OwnerResolverInterface::class, new class($owner) implements OwnerResolverInterface
         {
             public function __construct(private readonly ?Model $owner) {}
 
-            public function resolve(): ?Model
+            public function resolve(): ?RecordReference
             {
-                return $this->owner;
+                return EloquentRecordReference::fromModel($this->owner);
             }
         });
 
         $rma = Mockery::mock(ReturnAuthorization::class)->makePartial();
-        $rma->shouldReceive('belongsToOwner')->with($owner)->andReturnTrue();
+        $rma->shouldReceive('belongsToOwner')->with(Mockery::on(fn (Model $resolved): bool => $resolved->is($owner)))->andReturnTrue();
 
         try {
             expect($this->policy->view($user, $rma))->toBeTrue();

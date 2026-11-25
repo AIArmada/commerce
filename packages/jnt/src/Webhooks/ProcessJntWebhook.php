@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Jnt\Webhooks;
 
+use AIArmada\CommerceSupport\Features\Webhooks\EntryPoints\CommerceWebhookProcessor;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Webhooks\CommerceWebhookProcessor;
 use AIArmada\Jnt\Data\TrackingData;
 use AIArmada\Jnt\Enums\ScanTypeCode;
 use AIArmada\Jnt\Enums\TrackingStatus;

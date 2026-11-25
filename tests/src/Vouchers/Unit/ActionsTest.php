@@ -10,6 +10,8 @@ use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\States\Active as AffiliateActive;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Vouchers\Actions\AddVoucherToWallet;
 use AIArmada\Vouchers\Actions\CreateVoucher;
@@ -207,30 +209,15 @@ describe('CreateVoucher Action', function (): void {
         config()->set('vouchers.owner.enabled', true);
         config()->set('vouchers.owner.auto_assign_on_create', true);
 
-        $resolvedOwner = new class extends Model
-        {
-            public $exists = true;
-
-            protected $table = 'users';
-
-            public function getKey(): string
-            {
-                return 'owner-resolved-1';
-            }
-
-            public function getMorphClass(): string
-            {
-                return 'user';
-            }
-        };
+        $resolvedOwner = User::factory()->create();
 
         app()->singleton(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new class($resolvedOwner) implements OwnerResolverInterface
         {
             public function __construct(private readonly Model $owner) {}
 
-            public function resolve(): ?Model
+            public function resolve(): ?RecordReference
             {
-                return $this->owner;
+                return EloquentRecordReference::fromModel($this->owner);
             }
         });
 
@@ -242,8 +229,8 @@ describe('CreateVoucher Action', function (): void {
             'owner_id' => 'forged-owner-id',
         ]);
 
-        expect($voucher->owner_type)->toBe('user')
-            ->and((string) $voucher->owner_id)->toBe('owner-resolved-1');
+        expect($voucher->owner_type)->toBe($resolvedOwner->getMorphClass())
+            ->and((string) $voucher->owner_id)->toBe((string) $resolvedOwner->getKey());
     });
 });
 

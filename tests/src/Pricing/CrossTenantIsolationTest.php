@@ -5,6 +5,8 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Contracts\Priceable;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Pricing\Actions\ApplyPromotionalAdjustment;
 use AIArmada\Pricing\Models\Price;
@@ -30,9 +32,9 @@ function bindPricingOwner(?Model $owner): void
     {
         public function __construct(private ?Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 }

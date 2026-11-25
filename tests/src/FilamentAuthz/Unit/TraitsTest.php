@@ -54,5 +54,3 @@ describe('HasWidgetAuthz Trait', function (): void {
         expect(CustomAuthzWidget::getAuthzPermission())->toBe('widget.custom-access');
     });
 });
-
-/* HasPanelAuthz/SyncsRolePermissions existence checks removed; both traits are exercised by RegressionTest + Authz tests. */

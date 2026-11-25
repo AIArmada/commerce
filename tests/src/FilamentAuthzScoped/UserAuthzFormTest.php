@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\Authz\Models\AuthzScope;
-use AIArmada\Authz\Models\Permission;
-use AIArmada\Authz\Models\Role;
+use AIArmada\Authz\Features\Authorization\Models\AuthzScope;
+use AIArmada\Authz\Features\Authorization\Models\Permission;
+use AIArmada\Authz\Features\Authorization\Models\Role;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAuthz\Resources\PermissionResource;
 use AIArmada\FilamentAuthz\Resources\RoleResource;
@@ -182,6 +182,34 @@ it('preserves global assignments in scoped-only mode when teams are enabled with
     invokeProtectedStatic(UserAuthzForm::class, 'syncRolesAcrossScopes', [$user, []]);
 
     expect(roleNamesFor($user, null))->toBe(['super_admin_two'])
+        ->and(roleNamesFor($user, (string) $scope->getKey()))->toBe([]);
+});
+
+it('rejects forged scoped roles in a global-only user form before changing assignments', function (): void {
+    config()->set('filament-authz.scoped_to_tenant', false);
+    config()->set('filament-authz.user_resource.form.role_scope_mode', 'global_only');
+
+    $user = User::query()->create([
+        'name' => 'Scope Mode User',
+        'email' => 'scope-mode@example.com',
+        'password' => 'secret',
+    ]);
+
+    $global = Role::create(['name' => 'global_existing', 'guard_name' => 'web']);
+    $user->assignRole($global);
+    $scope = AuthzScope::query()->create([
+        'scopeable_type' => 'member-role-scope',
+        'scopeable_id' => '12121212-1212-4121-8121-121212121212',
+        'label' => 'Restricted Scope',
+    ]);
+    setPermissionsTeamId($scope->getKey());
+    $scoped = Role::create(['name' => 'forged_scope', 'guard_name' => 'web']);
+    setPermissionsTeamId(null);
+
+    expect(fn () => invokeProtectedStatic(UserAuthzForm::class, 'syncRolesAcrossScopes', [$user, [(string) $scoped->getKey()]]))
+        ->toThrow(AuthorizationException::class);
+
+    expect(roleNamesFor($user, null))->toBe(['global_existing'])
         ->and(roleNamesFor($user, (string) $scope->getKey()))->toBe([]);
 });
 

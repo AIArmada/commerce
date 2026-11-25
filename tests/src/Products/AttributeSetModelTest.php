@@ -3,10 +3,10 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Tests\Fixtures\TestOwner;
 use AIArmada\Products\Models\AttributeSet;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
@@ -26,7 +26,7 @@ describe('AttributeSet Model', function (): void {
 
         app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
         {
-            public function resolve(): ?Model
+            public function resolve(): ?RecordReference
             {
                 return null;
             }

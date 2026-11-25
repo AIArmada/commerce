@@ -7,6 +7,8 @@ use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentVouchers\Integrations\FilamentCartBridge;
 use AIArmada\Vouchers\Exceptions\VoucherException;
@@ -18,9 +20,9 @@ final class TestOwnerResolverForFilamentCartBridge implements OwnerResolverInter
 {
     public function __construct(private readonly ?Model $owner) {}
 
-    public function resolve(): ?Model
+    public function resolve(): ?RecordReference
     {
-        return $this->owner;
+        return EloquentRecordReference::fromModel($this->owner);
     }
 }
 

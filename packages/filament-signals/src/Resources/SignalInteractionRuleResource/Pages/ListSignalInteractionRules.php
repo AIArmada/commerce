@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Resources\SignalInteractionRuleResource\Pages;
 
+use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\LikeSearch;
-use AIArmada\CommerceSupport\Support\OwnerCache;
 use AIArmada\FilamentSignals\Resources\SignalInteractionRuleResource;
 use AIArmada\FilamentSignals\Support\InteractionRuleScanner;
 use AIArmada\FilamentSignals\Support\SignalsModelReferenceGuard;

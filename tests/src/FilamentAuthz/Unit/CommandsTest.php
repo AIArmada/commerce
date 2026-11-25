@@ -2,11 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\Authz\Console\Commands\SuperAdminCommand;
-use AIArmada\Authz\Console\Commands\SyncAuthzCommand;
-use AIArmada\Authz\Console\Concerns\Prohibitable;
-use AIArmada\Authz\Models\Permission;
-use AIArmada\Authz\Models\Role;
+use AIArmada\Authz\EntryPoints\Console\Concerns\Prohibitable;
+use AIArmada\Authz\Features\Authorization\Api\RoleAdministrationApi;
+use AIArmada\Authz\Features\Authorization\EntryPoints\Console\SuperAdminCommand;
+use AIArmada\Authz\Features\Authorization\EntryPoints\Console\SyncAuthzCommand;
+use AIArmada\Authz\Features\Authorization\Models\Permission;
+use AIArmada\Authz\Features\Authorization\Models\Role;
 use AIArmada\FilamentAuthz\Console\DiscoverCommand;
 use AIArmada\FilamentAuthz\Console\GeneratePoliciesCommand;
 use AIArmada\FilamentAuthz\Console\SeederCommand;
@@ -104,8 +105,8 @@ describe('SeederCommand', function (): void {
         $content = $method->invoke($command, collect(), collect(), 'all');
 
         expect($content)
-            ->toContain('use AIArmada\\Authz\\Models\\Permission;')
-            ->toContain('use AIArmada\\Authz\\Models\\Role;')
+            ->toContain('use AIArmada\\Authz\\Features\\Authorization\\Models\\Permission;')
+            ->toContain('use AIArmada\\Authz\\Features\\Authorization\\Models\\Role;')
             ->not->toContain('use Spatie\\Permission\\Models\\Permission;')
             ->not->toContain('use Spatie\\Permission\\Models\\Role;');
     });
@@ -153,5 +154,44 @@ describe('DiscoverCommand', function (): void {
         $property = $reflection->getProperty('signature');
 
         expect($property->getValue($command))->toContain('authz:discover');
+    });
+
+    it('persists discovered permissions through the role administration api', function (): void {
+        $calls = [];
+
+        $api = Mockery::mock(RoleAdministrationApi::class);
+        $api->shouldReceive('ensurePermissions')
+            ->andReturnUsing(function (string $guard, array $permissions) use (&$calls): void {
+                $calls[] = [$guard, $permissions];
+            });
+
+        app()->instance(RoleAdministrationApi::class, $api);
+
+        $command = app(DiscoverCommand::class);
+        $method = new ReflectionMethod($command, 'createPermissions');
+        $method->setAccessible(true);
+        $method->invoke($command, ['orders.view', 'orders.create']);
+
+        $configuredGuards = array_keys((array) config('auth.guards', []));
+        $expectedGuards = array_values(array_filter(
+            (array) config('authz.guards', ['web']),
+            fn (string $guard): bool => in_array($guard, $configuredGuards, true),
+        ));
+
+        expect($calls)->not->toBeEmpty()
+            ->and(array_values(array_unique(array_column($calls, 0))))->toBe($expectedGuards)
+            ->and(collect($calls)->every(fn (array $call): bool => $call[1] === ['orders.view', 'orders.create']))->toBeTrue();
+    });
+});
+
+describe('SeederCommand guard validation', function (): void {
+    it('drops guards that are not configured in the auth config', function (): void {
+        config()->set('authz.guards', ['web', 'unknown-guard']);
+
+        $command = app(SeederCommand::class);
+        $method = new ReflectionMethod($command, 'validGuards');
+        $method->setAccessible(true);
+
+        expect($method->invoke($command))->toBe(['web']);
     });
 });

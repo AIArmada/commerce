@@ -18,11 +18,12 @@ Filament resources and UI behavior belong to `aiarmada/filament-authz`.
 
 - `Services\PermissionKeyBuilder` — canonical `resource.action[.scope]` key construction
 - `Services\WildcardPermissionResolver` — wildcard (`*`) matching for Gate checks
-- `Services\ImpersonateManager` — session-based impersonation lifecycle
-- `Support\AuthzScopeContext`, `AuthzScopeResolver`, `AuthzScopeTeamResolver` — scope → team resolution
-- `Support\ImpersonationScopeGuard`, `Support\CommandProhibitor`, `Support\UserRoleChecker` — guard rails
-- `Models\Role`, `Models\Permission`, `Models\AuthzScope` — UUID-backed authz domain models
-- `Concerns` — `HasAuthzScope`, `ScopesAuthzTenancy`, `SyncsRolePermissions` traits for hosts
+- `Features\Impersonation\Api\ImpersonationApi` — session-based impersonation lifecycle
+- `Features\Authorization\Support\AuthzScopeContext`, `AuthzScopeResolver`, `AuthzScopeTeamResolver` — scope → team resolution
+- `Features\Impersonation\Queries\ImpersonationScopeGuard`, `Support\CommandProhibitor`, `Support\UserRoleChecker` — guard rails
+- `Features\Authorization\Models\Role`, `Permission`, `AuthzScope` — UUID-backed authz domain models
+- `Features\Authorization\Concerns` — `HasAuthzScope` and `ScopesAuthzTenancy` framework integration
+- `Features\Authorization\Api\RoleAdministrationApi` — role and permission definition and assignment writes
 - Config `authz.php`: `database`, `super_admin_role`, `guards`, `users`, `wildcard_permissions`, `permissions`, `custom_permissions`, `sync`, `scopes`, `impersonate`
 
 ## What this package does not own

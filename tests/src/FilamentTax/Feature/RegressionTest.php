@@ -5,7 +5,9 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
-use AIArmada\CommerceSupport\Support\OwnerCache;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Persistence\OwnerCache;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Models\CustomerGroup;
@@ -99,9 +101,9 @@ function roundTwoBindOwner(?Model $owner): void
     {
         public function __construct(private ?Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 }

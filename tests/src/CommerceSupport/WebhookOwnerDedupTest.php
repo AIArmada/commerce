@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\CommerceSupport\Actions\ProcessWebhookCallAction;
-use AIArmada\CommerceSupport\Webhooks\CommerceWebhookProcessor;
+use AIArmada\CommerceSupport\Features\Webhooks\Actions\ProcessWebhookCallAction;
+use AIArmada\CommerceSupport\Features\Webhooks\EntryPoints\CommerceWebhookProcessor;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Spatie\WebhookClient\Models\WebhookCall;
 
@@ -192,3 +193,96 @@ final class OwnerDedupWebhookProcessor extends CommerceWebhookProcessor
         self::$processed[] = [$eventType, $payload];
     }
 }
+
+it('yields distinct payload hashes for distinct invalid utf-8 payloads', function (): void {
+    $method = new ReflectionMethod(ProcessWebhookCallAction::class, 'payloadHash');
+    $method->setAccessible(true);
+
+    $first = $method->invoke(null, ['event_type' => 'payment.completed', 'raw' => "\xB1\x31"]);
+    $second = $method->invoke(null, ['event_type' => 'payment.completed', 'raw' => "\xB1\x32"]);
+
+    expect($first)->toBeString()
+        ->and($second)->toBeString()
+        ->and($first)->not->toBe($second);
+});
+
+it('clears dedup stamps on the unique-violation loser', function (): void {
+    $sharedEventId = 'evt_collision';
+
+    $winner = WebhookCall::query()->create([
+        'name' => 'owner-dedup',
+        'url' => 'https://example.test/webhooks/owner-dedup',
+        'headers' => [],
+        'payload' => ['event_type' => 'payment.completed', 'id' => $sharedEventId],
+        'exception' => null,
+    ]);
+
+    $loser = WebhookCall::query()->create([
+        'name' => 'owner-dedup',
+        'url' => 'https://example.test/webhooks/owner-dedup',
+        'headers' => [],
+        'payload' => ['event_type' => 'payment.completed', 'id' => 'evt_original'],
+        'exception' => null,
+    ]);
+
+    (new OwnerDedupWebhookProcessor($loser))->handle();
+
+    DB::table((new WebhookCall)->getTable())
+        ->where('id', $loser->getKey())
+        ->update([
+            'processed_at' => null,
+            'status' => 'pending',
+            'payload' => json_encode(['event_type' => 'payment.completed', 'id' => $sharedEventId]),
+        ]);
+
+    (new OwnerDedupWebhookProcessor($winner))->handle();
+
+    $hydratedLoser = WebhookCall::query()->findOrFail($loser->getKey());
+
+    expect($hydratedLoser->getAttribute('event_id'))->toBe('evt_original');
+
+    (new OwnerDedupWebhookProcessor($hydratedLoser))->handle();
+
+    $settled = WebhookCall::query()->findOrFail($loser->getKey());
+
+    expect($settled->getAttribute('processed_at'))->not->toBeNull()
+        ->and($settled->getAttribute('status'))->toBe('processed')
+        ->and($settled->getAttribute('event_id'))->toBeNull()
+        ->and($settled->getAttribute('event_type'))->toBeNull()
+        ->and($settled->getAttribute('owner_type'))->toBeNull()
+        ->and($settled->getAttribute('owner_id'))->toBeNull()
+        ->and($settled->getAttribute('owner_hash'))->toBeNull();
+});
+
+it('avoids schema probes and redundant by-key selects while handling a webhook', function (): void {
+    $call = WebhookCall::query()->create([
+        'name' => 'owner-dedup',
+        'url' => 'https://example.test/webhooks/owner-dedup',
+        'headers' => [],
+        'payload' => ['event_type' => 'payment.completed', 'id' => 'evt_no_probe'],
+        'exception' => null,
+    ]);
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    (new OwnerDedupWebhookProcessor($call))->handle();
+
+    $log = DB::getQueryLog();
+    DB::disableQueryLog();
+
+    $schemaProbes = array_filter($log, static fn (array $entry): bool => str_contains((string) $entry['query'], 'information_schema')
+        || str_contains((string) $entry['query'], 'pragma_table_info'));
+
+    $byKeySelects = array_filter($log, static function (array $entry): bool {
+        $sql = mb_strtolower(mb_ltrim((string) $entry['query']));
+
+        return str_starts_with($sql, 'select')
+            && str_contains($sql, 'webhook_calls')
+            && str_contains($sql, '"id" = ');
+    });
+
+    expect($schemaProbes)->toBe([])
+        ->and($byKeySelects)->toHaveCount(1)
+        ->and(OwnerDedupWebhookProcessor::$processed)->toHaveCount(1);
+});

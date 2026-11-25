@@ -5,6 +5,8 @@ declare(strict_types=1);
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Tests\Fixtures\TestOwner;
 use AIArmada\Orders\Enums\PaymentStatus;
@@ -52,9 +54,9 @@ describe('OrderService', function (): void {
                     private readonly ?Model $owner,
                 ) {}
 
-                public function resolve(): ?Model
+                public function resolve(): ?RecordReference
                 {
-                    return $this->owner;
+                    return EloquentRecordReference::fromModel($this->owner);
                 }
             });
 
@@ -326,7 +328,7 @@ describe('OrderService', function (): void {
 
             app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
             {
-                public function resolve(): ?Model
+                public function resolve(): ?RecordReference
                 {
                     return null;
                 }
@@ -380,7 +382,7 @@ describe('OrderService', function (): void {
 
             app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
             {
-                public function resolve(): ?Model
+                public function resolve(): ?RecordReference
                 {
                     return null;
                 }
@@ -423,9 +425,9 @@ describe('OrderService', function (): void {
                     private readonly ?Model $owner,
                 ) {}
 
-                public function resolve(): ?Model
+                public function resolve(): ?RecordReference
                 {
-                    return $this->owner;
+                    return EloquentRecordReference::fromModel($this->owner);
                 }
             });
 

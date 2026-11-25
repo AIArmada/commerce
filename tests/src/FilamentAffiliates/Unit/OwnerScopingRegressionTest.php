@@ -9,7 +9,7 @@ use AIArmada\Affiliates\Models\AffiliateFraudSignal;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\PendingPayout;
-use AIArmada\Authz\Models\Permission;
+use AIArmada\Authz\Features\Authorization\Models\Permission;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentAffiliates\Pages\FraudReviewPage;

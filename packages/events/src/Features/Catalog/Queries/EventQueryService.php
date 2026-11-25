@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Events\Features\Catalog\Queries;
 
 use AIArmada\CommerceSupport\Support\OwnerQuery;
-use AIArmada\CommerceSupport\Support\OwnerScopeConfig;
+use AIArmada\CommerceSupport\Support\OwnerScopeConfigFactory;
 use AIArmada\Events\Platform\ModelResolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -70,7 +70,7 @@ final class EventQueryService
     public function findByOwner(Model $owner, int $limit = self::DEFAULT_LIMIT): Collection
     {
         $eventClass = ModelResolver::eventClass();
-        $config = OwnerScopeConfig::fromConfig('events.features.owner', true);
+        $config = OwnerScopeConfigFactory::fromConfig('events.features.owner', true);
 
         $query = OwnerQuery::applyToEloquentBuilder(
             $eventClass::query(),

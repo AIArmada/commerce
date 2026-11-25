@@ -22,7 +22,7 @@ use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\FailedPayout;
 use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\Affiliates\States\PendingPayout;
-use AIArmada\Authz\Models\Permission;
+use AIArmada\Authz\Features\Authorization\Models\Permission;
 use AIArmada\Cart\Cart;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAffiliates\Actions\BulkPayoutAction;
@@ -54,7 +54,7 @@ beforeEach(function (): void {
     AffiliatePayout::query()->delete();
     AffiliateConversion::query()->delete();
     Affiliate::query()->delete();
-    User::query()->delete();
+    User::query()->where('email', '!=', 'default-owner@example.com')->delete();
     Permission::query()->delete();
 });
 

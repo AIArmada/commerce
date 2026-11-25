@@ -9,6 +9,8 @@ use AIArmada\Chip\Models\ChipCustomerLink;
 use AIArmada\Commerce\Tests\FilamentCashierChip\Fixtures\User;
 use AIArmada\Commerce\Tests\FilamentCashierChip\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
@@ -61,9 +63,9 @@ function bindCustomerScopeOwner(?Model $owner): void
     {
         public function __construct(private ?Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 }

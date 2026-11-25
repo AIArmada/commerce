@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\FilamentInventory\Actions\AdjustStockAction;
 use AIArmada\FilamentInventory\Actions\ApproveReorderSuggestionAction;
 use AIArmada\FilamentInventory\Actions\CycleCountAction;
@@ -32,9 +34,9 @@ function setFilamentInventoryOwnerResolver(?Model $owner): void
     {
         public function __construct(private readonly ?Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 }

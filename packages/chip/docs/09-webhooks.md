@@ -131,15 +131,17 @@ If you need the universal payment-gateway adapter instead of the built-in queued
 
 ```php
 use AIArmada\Chip\Gateways\ChipGateway;
+use AIArmada\CommerceSupport\EntryPoints\Http\WebhookRequestMapper;
 use Illuminate\Http\Request;
 
 Route::post('/webhooks/chip/manual-gateway', function (Request $request) {
     $gateway = app(ChipGateway::class);
     $handler = $gateway->getWebhookHandler();
 
-    abort_unless($handler->verifyWebhook($request), 400, 'Invalid signature');
+    $envelope = WebhookRequestMapper::fromRequest($request);
+    abort_unless($handler->verifyWebhook($envelope), 400, 'Invalid signature');
 
-    $payload = $handler->parseWebhook($request);
+    $payload = $handler->parseWebhook($envelope);
 
     match ($payload->eventType) {
         'purchase.paid' => handlePurchasePaid($payload),

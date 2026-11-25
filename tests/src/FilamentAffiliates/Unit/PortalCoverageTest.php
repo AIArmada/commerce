@@ -20,6 +20,8 @@ use AIArmada\Affiliates\States\CompletedPayout;
 use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalConversions;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalCreatives;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalDashboard;
@@ -49,7 +51,7 @@ beforeEach(function (): void {
     AffiliateConversion::query()->delete();
     AffiliateAttribution::query()->delete();
     Affiliate::query()->delete();
-    User::query()->delete();
+    User::query()->where('email', '!=', 'default-owner@example.com')->delete();
 });
 
 afterEach(function (): void {
@@ -77,9 +79,9 @@ it('portal pages do not leak cross-tenant data when owner mode enabled', functio
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -160,9 +162,9 @@ it('portal pages only return current owner affiliate stats when multiple owners 
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 

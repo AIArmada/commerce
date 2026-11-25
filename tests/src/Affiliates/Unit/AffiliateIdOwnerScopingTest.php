@@ -10,6 +10,8 @@ use AIArmada\Affiliates\Models\AffiliateSupportTicket;
 use AIArmada\Affiliates\Models\AffiliateTaxDocument;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 
@@ -28,9 +30,9 @@ it('scopes affiliate-derived rows by affiliate_id through the affiliate owner sc
                 private readonly ?Model $owner,
             ) {}
 
-            public function resolve(): ?Model
+            public function resolve(): ?RecordReference
             {
-                return $this->owner;
+                return EloquentRecordReference::fromModel($this->owner);
             }
         });
     };

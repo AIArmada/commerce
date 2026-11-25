@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Support;
 
-use AIArmada\Authz\Models\AuthzScope;
+use AIArmada\Authz\Features\Authorization\Api\RoleAdministrationApi;
+use AIArmada\Authz\Features\Authorization\Models\AuthzScope;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\FilamentAuthz\Resources\RoleResource;
 use Filament\Forms\Components\Select;
 use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\Section;
@@ -81,43 +84,12 @@ final class UserAuthzForm
             return;
         }
 
-        $permissionIds = Collection::make($state)
-            ->filter(fn (mixed $permissionId): bool => filled($permissionId))
-            ->map(static fn (mixed $permissionId): string => (string) $permissionId)
-            ->unique()
-            ->values()
-            ->all();
+        $reference = new RecordReference($record->getMorphClass(), (string) $record->getKey());
+        $guards = (array) config('authz.guards', ['web']);
+        $ids = static::normalizeSelection($state);
 
-        // Mirror the roles path: reject forged IDs instead of syncing them.
-        // Permission records are global, so existence + guard is the check.
-        if ($permissionIds !== []) {
-            $guards = (array) config('authz.guards', ['web']);
-            $guard = (string) ($guards[0] ?? 'web');
-
-            /** @var class-string<Model> $permissionClass */
-            $permissionClass = app(PermissionRegistrar::class)->getPermissionClass();
-
-            $validCount = $permissionClass::query()
-                ->whereIn('id', $permissionIds)
-                ->where('guard_name', $guard)
-                ->count();
-
-            if ($validCount !== count($permissionIds)) {
-                throw new AuthorizationException('One or more selected permissions are invalid for the current guard.');
-            }
-        }
-
-        $relation = $record->permissions();
-        $teamPayload = static::getTeamPivotPayload();
-
-        if ($teamPayload !== []) {
-            $relation->syncWithPivotValues($permissionIds, $teamPayload);
-        } else {
-            $relation->sync($permissionIds);
-        }
-
-        // Clear permission cache so changes take effect immediately
-        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        app(RoleAdministrationApi::class)->syncUserPermissions($reference, $ids, (string) ($guards[0] ?? 'web'));
+        $record->unsetRelation('permissions');
     }
 
     protected static function applyPermissionScope(Builder $query): Builder
@@ -133,20 +105,6 @@ final class UserAuthzForm
         // For standard setup, we return query as is.
 
         return $query;
-    }
-
-    /**
-     * @return array<string, int|string|null>
-     */
-    protected static function getTeamPivotPayload(): array
-    {
-        $registrar = app(PermissionRegistrar::class);
-
-        if (! $registrar->teams || ! config('filament-authz.scoped_to_tenant', true)) {
-            return [];
-        }
-
-        return [$registrar->teamsKey => getPermissionsTeamId()];
     }
 
     /**
@@ -177,10 +135,28 @@ final class UserAuthzForm
             $rolesQuery = static::applyCurrentTeamScopeToRoleQuery($rolesQuery, $teamsKey);
         }
 
+        if ($registrar->teams) {
+            $scopeMode = static::getRoleScopeMode();
+
+            if ($scopeMode === 'global_only') {
+                $rolesQuery->whereNull($teamsKey);
+            } elseif ($scopeMode === 'scoped_only') {
+                $rolesQuery->whereNotNull($teamsKey);
+            }
+        }
+
+        $allowedScopes = RoleResource::allowedScopeIds();
+        if ($registrar->teams && $allowedScopes !== null) {
+            $rolesQuery->where(fn (Builder $query): Builder => $query->whereNull($teamsKey)->orWhereIn($teamsKey, $allowedScopes));
+        }
+
+        $reserved = (string) config('authz.super_admin_role', '');
+        if ($reserved !== '' && ! RoleResource::mayManageSuperAdmin()) {
+            $rolesQuery->where('name', '!=', $reserved);
+        }
+
         /** @var Collection<int, Model> $roles */
         $roles = $rolesQuery->get($columns);
-
-        $roles = static::filterRolesByScopeMode($roles, $teamsKey, $registrar->teams);
 
         $scopeLabels = static::resolveScopeLabels($roles, $teamsKey, $registrar->teams);
         $options = [];
@@ -221,68 +197,35 @@ final class UserAuthzForm
             return;
         }
 
-        $registrar = app(PermissionRegistrar::class);
+        $reference = new RecordReference($record->getMorphClass(), (string) $record->getKey());
+        $guards = (array) config('authz.guards', ['web']);
 
-        $selectedRoleIds = Collection::make($state)
-            ->filter(fn (mixed $roleId): bool => filled($roleId))
-            ->map(static fn (mixed $roleId): string => (string) $roleId)
-            ->unique()
-            ->values()
-            ->all();
+        app(RoleAdministrationApi::class)->syncUserRoles(
+            $reference,
+            static::normalizeSelection($state),
+            (string) ($guards[0] ?? 'web'),
+            static::shouldRestrictToCurrentTeam((bool) app(PermissionRegistrar::class)->teams),
+            static::getRoleScopeMode(),
+            RoleResource::allowedScopeIds(),
+            RoleResource::mayManageSuperAdmin(),
+        );
+        $record->unsetRelation('roles')->unsetRelation('permissions');
+    }
 
-        if (! $registrar->teams) {
-            $record->syncRoles(static::normalizeRoleIdsForSync($selectedRoleIds));
-            $registrar->forgetCachedPermissions();
+    /** @return list<string> */
+    private static function normalizeSelection(array $state): array
+    {
+        $ids = [];
 
-            return;
-        }
-
-        $teamsKey = $registrar->teamsKey;
-        $restrictToCurrentTeam = static::shouldRestrictToCurrentTeam((bool) $registrar->teams);
-
-        /** @var class-string<Model> $roleClass */
-        $roleClass = $registrar->getRoleClass();
-
-        $selectedRolesQuery = $roleClass::query()->whereIn('id', $selectedRoleIds);
-
-        if ($restrictToCurrentTeam) {
-            $selectedRolesQuery = static::applyCurrentTeamScopeToRoleQuery($selectedRolesQuery, $teamsKey);
-        }
-
-        /** @var Collection<int, Model> $selectedRoles */
-        $selectedRoles = $selectedRolesQuery
-            ->get(['id', $teamsKey]);
-
-        if ($restrictToCurrentTeam && count($selectedRoleIds) !== $selectedRoles->count()) {
-            throw new AuthorizationException('One or more selected roles are outside the current tenant scope.');
-        }
-
-        $existingRolesQuery = $roleClass::query()->whereIn('id', static::getAssignedRoleIds($record));
-
-        if ($restrictToCurrentTeam) {
-            $existingRolesQuery = static::applyCurrentTeamScopeToRoleQuery($existingRolesQuery, $teamsKey);
-        }
-
-        /** @var Collection<int, Model> $existingRoles */
-        $existingRoles = $existingRolesQuery
-            ->get(['id', $teamsKey]);
-
-        $selectedByScope = static::groupRoleIdsByScope($selectedRoles, $teamsKey);
-        $existingByScope = static::groupRoleIdsByScope($existingRoles, $teamsKey);
-        $scopeKeys = static::determineEditableScopeKeys($selectedByScope, $existingByScope);
-
-        $previousScope = getPermissionsTeamId();
-
-        try {
-            foreach ($scopeKeys as $scopeKey) {
-                setPermissionsTeamId($scopeKey === '__global__' ? null : $scopeKey);
-                $record->syncRoles(static::normalizeRoleIdsForSync($selectedByScope[$scopeKey] ?? []));
+        foreach ($state as $id) {
+            if ((! is_string($id) && ! is_int($id)) || (string) $id === '') {
+                throw new AuthorizationException('Invalid authorization selection.');
             }
-        } finally {
-            setPermissionsTeamId($previousScope);
+
+            $ids[] = (string) $id;
         }
 
-        $registrar->forgetCachedPermissions();
+        return array_values(array_unique($ids));
     }
 
     /**
@@ -309,104 +252,31 @@ final class UserAuthzForm
         $rolePivotKey = (string) $registrar->pivotRole;
         $teamsKey = (string) $registrar->teamsKey;
 
-        $query = DB::table($table)
-            ->where($modelMorphKey, $record->getKey())
-            ->where('model_type', $record->getMorphClass());
+        $roleClass = $registrar->getRoleClass();
+        $role = new $roleClass;
+        $roleTable = $role->getTable();
+        $guards = (array) config('authz.guards', ['web']);
 
-        // Scope to current team when restriction is active; reading cross-tenant
-        // pivot rows violates the owner-scoping contract even when the downstream
-        // intersection with scoped options would hide them from the UI.
+        $query = DB::table($table . ' as assignments')
+            ->join($roleTable . ' as definitions', 'definitions.' . $role->getKeyName(), '=', 'assignments.' . $rolePivotKey)
+            ->where('assignments.' . $modelMorphKey, $record->getKey())
+            ->where('assignments.model_type', $record->getMorphClass())
+            ->where('definitions.guard_name', (string) ($guards[0] ?? 'web'))
+            ->where(function ($query) use ($teamsKey): void {
+                $query->whereColumn('assignments.' . $teamsKey, 'definitions.' . $teamsKey)
+                    ->orWhere(fn ($query) => $query->whereNull('assignments.' . $teamsKey)->whereNull('definitions.' . $teamsKey));
+            });
+
         if (static::shouldRestrictToCurrentTeam((bool) $registrar->teams)) {
-            $teamId = getPermissionsTeamId();
-
-            if ($teamId === null) {
-                $query->whereNull($teamsKey);
-            } else {
-                $query->where($teamsKey, $teamId);
-            }
+            $query->where('assignments.' . $teamsKey, getPermissionsTeamId());
         }
 
         return $query
-            ->pluck($rolePivotKey)
+            ->pluck('assignments.' . $rolePivotKey)
             ->map(static fn (mixed $roleId): string => (string) $roleId)
             ->unique()
             ->values()
             ->all();
-    }
-
-    /**
-     * @param  list<string>  $roleIds
-     * @return list<int|string>
-     */
-    protected static function normalizeRoleIdsForSync(array $roleIds): array
-    {
-        return array_map(
-            static fn (string $roleId): int | string => ctype_digit($roleId) ? (int) $roleId : $roleId,
-            $roleIds,
-        );
-    }
-
-    /**
-     * @param  Collection<int, Model>  $roles
-     * @return array<string, list<string>>
-     */
-    protected static function groupRoleIdsByScope(Collection $roles, string $teamsKey): array
-    {
-        $grouped = [];
-
-        foreach ($roles as $role) {
-            $scopeId = $role->getAttribute($teamsKey);
-            $scopeKey = is_scalar($scopeId) && (string) $scopeId !== '' ? (string) $scopeId : '__global__';
-            $grouped[$scopeKey] ??= [];
-            $grouped[$scopeKey][] = (string) $role->getKey();
-        }
-
-        return $grouped;
-    }
-
-    /**
-     * @param  Collection<int, Model>  $roles
-     * @return Collection<int, Model>
-     */
-    protected static function filterRolesByScopeMode(Collection $roles, string $teamsKey, bool $teamsEnabled): Collection
-    {
-        $mode = static::getRoleScopeMode();
-
-        if (! $teamsEnabled || $mode === 'all') {
-            return $roles;
-        }
-
-        return $roles
-            ->filter(function (Model $role) use ($mode, $teamsKey): bool {
-                $scopeId = $role->getAttribute($teamsKey);
-                $isGlobal = ! is_scalar($scopeId) || (string) $scopeId === '';
-
-                return match ($mode) {
-                    'global_only' => $isGlobal,
-                    'scoped_only' => ! $isGlobal,
-                    default => true,
-                };
-            })
-            ->values();
-    }
-
-    /**
-     * @param  array<string, list<string>>  $selectedByScope
-     * @param  array<string, list<string>>  $existingByScope
-     * @return list<string>
-     */
-    protected static function determineEditableScopeKeys(array $selectedByScope, array $existingByScope): array
-    {
-        $mode = static::getRoleScopeMode();
-
-        return match ($mode) {
-            'global_only' => ['__global__'],
-            'scoped_only' => array_values(array_filter(
-                array_unique([...array_keys($selectedByScope), ...array_keys($existingByScope)]),
-                static fn (string $scopeKey): bool => $scopeKey !== '__global__',
-            )),
-            default => array_values(array_unique([...array_keys($selectedByScope), ...array_keys($existingByScope)])),
-        };
     }
 
     /**

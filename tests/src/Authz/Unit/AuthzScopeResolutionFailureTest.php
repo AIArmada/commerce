@@ -2,12 +2,13 @@
 
 declare(strict_types=1);
 
-use AIArmada\Authz\Authz;
 use AIArmada\Authz\Exceptions\ScopeResolutionException;
-use AIArmada\Authz\Models\AuthzScope;
-use AIArmada\Authz\Models\Permission;
-use AIArmada\Authz\Support\AuthzScopeContext;
-use AIArmada\Authz\Support\AuthzScopeTeamResolver;
+use AIArmada\Authz\Features\Authorization\Api\RoleAdministrationApi;
+use AIArmada\Authz\Features\Authorization\Authz;
+use AIArmada\Authz\Features\Authorization\Models\AuthzScope;
+use AIArmada\Authz\Features\Authorization\Models\Permission;
+use AIArmada\Authz\Features\Authorization\Support\AuthzScopeContext;
+use AIArmada\Authz\Features\Authorization\Support\AuthzScopeTeamResolver;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -83,7 +84,7 @@ it('rejects an Authz scope record that no longer exists', function (): void {
         'label' => 'Deleted Authz Scope',
     ]);
 
-    $scope->delete();
+    app(RoleAdministrationApi::class)->deleteScope((string) $scope->getKey());
 
     expect(fn () => app(Authz::class)->withScope($scope, fn (): string => 'ran'))
         ->toThrow(ScopeResolutionException::class);
@@ -163,4 +164,14 @@ it('restores the previous scope after nested calls and throwing callbacks', func
     }))->toThrow(RuntimeException::class, 'callback-boom');
 
     expect(AuthzScopeContext::hasOverride())->toBeFalse();
+});
+
+it('refuses an unsaved model with a manually assigned identifier', function (): void {
+    $target = new User;
+    $target->setAttribute('id', '11111111-1111-4111-8111-111111111111');
+
+    expect(fn () => app(Authz::class)->resolveScopeId($target))
+        ->toThrow(ScopeResolutionException::class);
+
+    expect(AuthzScope::query()->where('scopeable_id', $target->getKey())->exists())->toBeFalse();
 });

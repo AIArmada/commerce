@@ -2,11 +2,13 @@
 
 declare(strict_types=1);
 
-use AIArmada\Authz\Models\Permission;
+use AIArmada\Authz\Features\Authorization\Models\Permission;
 use AIArmada\Commerce\Tests\FilamentOrders\Fixtures\TestOwner;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\FilamentOrders\Resources\OrderResource\Pages\ViewOrder;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\OrdersServiceProvider;
@@ -36,7 +38,7 @@ beforeEach(function (): void {
 
     app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
     {
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
             return null;
         }
@@ -50,9 +52,9 @@ beforeEach(function (): void {
     {
         public function __construct(private readonly ?Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 

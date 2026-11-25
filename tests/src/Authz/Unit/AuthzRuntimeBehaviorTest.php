@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-use AIArmada\Authz\Authz;
-use AIArmada\Authz\Console\Commands\SuperAdminCommand;
-use AIArmada\Authz\Models\Role;
+use AIArmada\Authz\Features\Authorization\Authz;
+use AIArmada\Authz\Features\Authorization\EntryPoints\Console\SuperAdminCommand;
+use AIArmada\Authz\Features\Authorization\Models\Role;
 use AIArmada\Authz\Support\UserRoleChecker;
 use AIArmada\Authz\Support\UserWildcardPermissions;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Support\Collection;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -22,6 +22,8 @@ it('flushes the permission cache through the public clear cache api', function (
 });
 
 it('checks global roles without leaking the active team scope', function (): void {
+    $owner = OwnerContext::resolve();
+    expect($owner)->not->toBeNull();
     setPermissionsTeamId(null);
 
     $user = User::query()->create([
@@ -35,10 +37,10 @@ it('checks global roles without leaking the active team scope', function (): voi
     ]);
 
     $user->assignRole($role);
-    $owner = app(OwnerResolverInterface::class)->resolve();
-    expect($owner)->not->toBeNull();
 
     setPermissionsTeamId($owner->getKey());
+
+    $user->unsetRelation('roles');
 
     expect(UserRoleChecker::hasRole($user, 'global-super-admin'))->toBeFalse()
         ->and(UserRoleChecker::hasGlobalRole($user, 'global-super-admin'))->toBeTrue()
@@ -46,7 +48,7 @@ it('checks global roles without leaking the active team scope', function (): voi
 });
 
 it('treats team-scoped assignments as global for the super-admin check', function (): void {
-    $owner = app(OwnerResolverInterface::class)->resolve();
+    $owner = OwnerContext::resolve();
     expect($owner)->not->toBeNull();
 
     // Single-tenant seeders scope every assignment to the owner; the

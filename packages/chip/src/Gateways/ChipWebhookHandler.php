@@ -12,6 +12,7 @@ use AIArmada\Chip\Support\ChipPaymentStatusMapper;
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentIntentInterface;
 use AIArmada\CommerceSupport\Contracts\Payment\WebhookHandlerInterface;
 use AIArmada\CommerceSupport\Contracts\Payment\WebhookPayload;
+use AIArmada\CommerceSupport\Data\WebhookRequestData;
 use AIArmada\CommerceSupport\Exceptions\WebhookVerificationException;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
@@ -28,10 +29,19 @@ final class ChipWebhookHandler implements WebhookHandlerInterface
         private ChipCollectService $collectService,
     ) {}
 
-    public function verifyWebhook(Request $request): bool
+    public function verifyWebhook(WebhookRequestData $request): bool
     {
         try {
-            return $this->webhookService->verifySignature($request);
+            $transportRequest = Request::create('/webhook', 'POST', [], [], [], [], $request->body);
+            $transportRequest->headers->replace($request->headers);
+            $transportRequest->headers->remove('X-Signature');
+            $signature = $request->header('X-Signature');
+
+            if ($signature !== null) {
+                $transportRequest->headers->set('X-Signature', $signature);
+            }
+
+            return $this->webhookService->verifySignature($transportRequest);
         } catch (\AIArmada\Chip\Exceptions\WebhookVerificationException $e) {
             throw new WebhookVerificationException(
                 message: $e->getMessage(),
@@ -40,9 +50,9 @@ final class ChipWebhookHandler implements WebhookHandlerInterface
         }
     }
 
-    public function parseWebhook(Request $request): WebhookPayload
+    public function parseWebhook(WebhookRequestData $request): WebhookPayload
     {
-        $payload = $this->webhookService->parsePayload($request->getContent());
+        $payload = $this->webhookService->parsePayload($request->body);
         $data = (array) $payload;
         $eventType = $this->getEventType($request);
 
@@ -69,9 +79,9 @@ final class ChipWebhookHandler implements WebhookHandlerInterface
         );
     }
 
-    public function getEventType(Request $request): string
+    public function getEventType(WebhookRequestData $request): string
     {
-        $payload = json_decode($request->getContent(), true);
+        $payload = json_decode($request->body, true);
 
         if (! is_array($payload)) {
             return 'unknown';
@@ -86,16 +96,16 @@ final class ChipWebhookHandler implements WebhookHandlerInterface
         return 'unknown';
     }
 
-    public function isPaymentEvent(Request $request): bool
+    public function isPaymentEvent(WebhookRequestData $request): bool
     {
         $eventType = WebhookEventType::tryFrom($this->getEventType($request));
 
         return $eventType?->isPurchaseEvent() === true || $eventType?->isPaymentEvent() === true;
     }
 
-    public function getPaymentFromWebhook(Request $request): ?PaymentIntentInterface
+    public function getPaymentFromWebhook(WebhookRequestData $request): ?PaymentIntentInterface
     {
-        $payload = json_decode($request->getContent(), true);
+        $payload = json_decode($request->body, true);
 
         if (! is_array($payload) || ! isset($payload['id'])) {
             return null;

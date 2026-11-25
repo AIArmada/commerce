@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerJobContext;
+use AIArmada\CommerceSupport\Support\OwnerJobContextMapper;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\FilamentDocs\Jobs\GenerateDocPdfsJob;
 use AIArmada\FilamentDocs\Support\DocBulkActions;
@@ -96,7 +96,7 @@ it('generates pdfs only for docs inside the job owner scope (M4)', function (): 
 
     $job = new GenerateDocPdfsJob(
         [(string) $docA->getKey(), (string) $docB->getKey(), 'missing-id'],
-        OwnerJobContext::fromOwnerModel($ownerA),
+        OwnerJobContextMapper::fromModel($ownerA),
     );
 
     $job->handle();

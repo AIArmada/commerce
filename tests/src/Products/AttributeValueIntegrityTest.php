@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Actions\ApplyAttributeChanges;
@@ -13,7 +14,6 @@ use AIArmada\Products\Models\AttributeValue;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
 use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
 it('rejects attribute values whose definition belongs to another owner', function (): void {
@@ -291,7 +291,7 @@ it('blocks cross-owner, global, and missing-context writes', function (): void {
     // Without a resolvable owner context, owner-protected creates fail fast.
     app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
     {
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
             return null;
         }

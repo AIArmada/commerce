@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCustomers\Resources;
 
+use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
-use AIArmada\CommerceSupport\Support\OwnerCache;
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\FilamentContacting\RelationManagers\ContactMethodsRelationManager;

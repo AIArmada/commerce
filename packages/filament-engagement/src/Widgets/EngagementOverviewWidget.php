@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEngagement\Widgets;
 
+use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
-use AIArmada\CommerceSupport\Support\OwnerCache;
 use AIArmada\Engagement\Models\Bookmark;
 use AIArmada\Engagement\Models\Follow;
 use AIArmada\Engagement\Models\Reminder;

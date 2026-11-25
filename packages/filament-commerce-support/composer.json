@@ -11,6 +11,7 @@
         "aiarmada/commerce-support": "self.version",
         "filament/filament": "^5.11.1",
         "owen-it/laravel-auditing": "^14.0.7",
+        "spatie/laravel-package-tools": "^1.93.3",
         "spatie/laravel-settings": "^3.10.1",
         "php": "^8.5"
     },
@@ -30,5 +31,17 @@
         "sort-packages": true
     },
     "minimum-stability": "dev",
-    "prefer-stable": true
+    "prefer-stable": true,
+    "require-dev": {
+        "nikic/php-parser": "^5"
+    },
+    "scripts": {
+        "arch:boundaries": "@php tools/package-check.php",
+        "arch:boundaries:diff": "@php tools/package-check.php --diff-base=main",
+        "arch:writes": "@php ../../vendor/bin/phpstan analyse -c tools/package-phpstan.neon --autoload-file=tools/Architecture/PackageOwnedWriteRule.php --no-progress",
+        "arch:check": [
+            "@arch:boundaries",
+            "@arch:writes"
+        ]
+    }
 }

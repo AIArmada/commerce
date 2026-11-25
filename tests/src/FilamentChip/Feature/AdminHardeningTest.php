@@ -11,6 +11,8 @@ use AIArmada\Chip\Models\Payment;
 use AIArmada\Chip\Models\Purchase;
 use AIArmada\Chip\Services\LocalAnalyticsService;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentChip\Actions\PurchaseExporter;
 use AIArmada\FilamentChip\Pages\AnalyticsDashboardPage;
@@ -29,7 +31,7 @@ use Illuminate\Support\Facades\Schema;
 beforeEach(function (): void {
     app()->bind(OwnerResolverInterface::class, fn () => new class implements OwnerResolverInterface
     {
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
             return null;
         }
@@ -176,9 +178,9 @@ it('scopes export queries to the current owner', function (): void {
     {
         public function __construct(private Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -237,9 +239,9 @@ it('rejects cross-owner statement resolution', function (): void {
     {
         public function __construct(private Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 

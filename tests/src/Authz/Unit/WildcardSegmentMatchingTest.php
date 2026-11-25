@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Authz\Models\Permission;
+use AIArmada\Authz\Features\Authorization\Models\Permission;
 use AIArmada\Authz\Services\WildcardPermissionResolver;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 

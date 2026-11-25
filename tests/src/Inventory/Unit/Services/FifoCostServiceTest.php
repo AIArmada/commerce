@@ -7,6 +7,7 @@ use AIArmada\Inventory\Enums\CostingMethod;
 use AIArmada\Inventory\Models\InventoryCostLayer;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Services\Costing\FifoCostService;
+use Carbon\CarbonImmutable;
 
 describe('FifoCostService', function (): void {
     beforeEach(function (): void {
@@ -23,7 +24,7 @@ describe('FifoCostService', function (): void {
             $this->location->id,
             null,
             'PO-001',
-            now()
+            CarbonImmutable::now()
         );
 
         expect($layer)->toBeInstanceOf(InventoryCostLayer::class);
@@ -46,9 +47,9 @@ describe('FifoCostService', function (): void {
 
     it('consume across multiple layers fifo', function (): void {
         // First layer - older, lower cost
-        $this->service->addLayer($this->item, 50, 400, $this->location->id, null, null, now()->subDays(2));
+        $this->service->addLayer($this->item, 50, 400, $this->location->id, null, null, CarbonImmutable::now()->subDays(2));
         // Second layer - newer, higher cost
-        $this->service->addLayer($this->item, 50, 600, $this->location->id, null, null, now()->subDay());
+        $this->service->addLayer($this->item, 50, 600, $this->location->id, null, null, CarbonImmutable::now()->subDay());
 
         $result = $this->service->consume($this->item, 70, $this->location->id);
 
@@ -79,8 +80,8 @@ describe('FifoCostService', function (): void {
     });
 
     it('estimate cogs', function (): void {
-        $this->service->addLayer($this->item, 50, 400, $this->location->id, null, null, now()->subDays(2));
-        $this->service->addLayer($this->item, 50, 600, $this->location->id, null, null, now()->subDay());
+        $this->service->addLayer($this->item, 50, 400, $this->location->id, null, null, CarbonImmutable::now()->subDays(2));
+        $this->service->addLayer($this->item, 50, 600, $this->location->id, null, null, CarbonImmutable::now()->subDay());
 
         // Estimate COGS for 70 units using FIFO
         $cogs = $this->service->estimateCogs($this->item, 70, $this->location->id);
@@ -99,8 +100,8 @@ describe('FifoCostService', function (): void {
     });
 
     it('get oldest layer', function (): void {
-        $this->service->addLayer($this->item, 100, 500, $this->location->id, null, null, now()->subDays(2));
-        $this->service->addLayer($this->item, 50, 600, $this->location->id, null, null, now());
+        $this->service->addLayer($this->item, 100, 500, $this->location->id, null, null, CarbonImmutable::now()->subDays(2));
+        $this->service->addLayer($this->item, 50, 600, $this->location->id, null, null, CarbonImmutable::now());
 
         $oldest = $this->service->getOldestLayer($this->item, $this->location->id);
 

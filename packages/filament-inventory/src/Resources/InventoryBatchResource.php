@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Resources;
 
+use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
-use AIArmada\CommerceSupport\Support\OwnerCache;
 use AIArmada\FilamentInventory\Resources\InventoryBatchResource\Pages\CreateInventoryBatch;
 use AIArmada\FilamentInventory\Resources\InventoryBatchResource\Pages\EditInventoryBatch;
 use AIArmada\FilamentInventory\Resources\InventoryBatchResource\Pages\ListInventoryBatches;

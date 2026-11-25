@@ -81,17 +81,31 @@ When `authz.wildcard_permissions` is enabled, a granted permission containing
 ## Impersonation
 
 ```php
-use AIArmada\Authz\Services\ImpersonateManager;
+use AIArmada\Authz\Features\Impersonation\Api\ImpersonationApi;
 
-$manager = app(ImpersonateManager::class);
+$manager = app(ImpersonationApi::class);
 $manager->take($administrator, $target, 'web', '/admin');
 ```
 
-`take()` enforces authorization by default: the impersonator must be allowed
-to impersonate (via `canImpersonate()` or the super-admin role), the target
-must allow it, self-impersonation is refused, and the tenant scope guard must
-pass. Pass `$authorize: false` only when the caller already performed
-equivalent checks.
+`take()` requires the impersonator to be the current authenticated identity and
+be allowed to impersonate (via `canImpersonate()` or the super-admin role).
+The target must allow impersonation, self-impersonation is refused, and the
+tenant scope guard must pass. Authorization cannot be bypassed.
+
+## Role administration
+
+Use the feature API from authorized administrative entry points rather than writing permission tables or relationship pivots directly.
+
+```php
+use AIArmada\Authz\Features\Authorization\Api\RoleAdministrationApi;
+use AIArmada\CommerceSupport\Data\RecordReference;
+
+$roles = app(RoleAdministrationApi::class);
+$roles->ensureRole('manager', 'web', $scopeId, ['orders.view']);
+$roles->assignExistingRole(new RecordReference($user->getMorphClass(), (string) $user->getKey()), 'manager', 'web', $scopeId);
+```
+
+Role reconciliation validates the requested guard and permitted scope mode before mutation. Direct permission reconciliation is restricted to the active team and guard. The caller must authorize the administrative operation and supply the trusted scope restrictions.
 
 ## Console commands
 
@@ -107,6 +121,9 @@ php artisan authz:super-admin --panel=<filament-panel-id>
 ```
 
 `--user` takes a primary key. Omit it for an interactive email search, or pass
-`--create` to create the user interactively. Both commands refuse to run when
+`--create` to create a new user interactively. Existing email addresses are
+rejected by `--create`; select an existing account explicitly with `--user`.
+An explicit invalid panel or guard is rejected rather than falling back to a
+different guard. Both commands refuse to run when
 `CommandProhibitor::prohibitDestructiveCommands()` has prohibited them (for
 example in production).

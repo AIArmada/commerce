@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Resources;
 
+use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
-use AIArmada\CommerceSupport\Support\OwnerCache;
 use AIArmada\FilamentInventory\Resources\InventoryAllocationResource\Pages\ListInventoryAllocations;
 use AIArmada\FilamentInventory\Resources\InventoryAllocationResource\Pages\ViewInventoryAllocation;
 use AIArmada\FilamentInventory\Resources\InventoryAllocationResource\Schemas\InventoryAllocationInfolist;

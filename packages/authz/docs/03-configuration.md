@@ -127,10 +127,20 @@ including when a callback throws or a switch setup fails after changing state.
 
 ## Session Guard
 
-Authz extends the `session` auth driver for every guard so impersonation can
-switch identities quietly. Host applications with a custom `session` driver
-must register their driver after the Authz service provider, or the Authz
-guard will replace it.
+Authz registers a separate `authz-session` driver; it never replaces Laravel's
+standard `session` driver. Explicitly configure each guard that participates in
+impersonation (both source and destination) in the host application's
+`config/auth.php`:
+
+```php
+'guards' => [
+    'web' => ['driver' => 'authz-session', 'provider' => 'users'],
+],
+```
+
+Other guards can continue using Laravel's normal session driver. An
+impersonation attempt involving a non-participating guard is rejected before
+either identity is changed.
 
 ## Leave-Impersonation Route
 

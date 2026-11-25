@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Console;
 
-use AIArmada\Authz\Console\Concerns\Prohibitable;
+use AIArmada\Authz\EntryPoints\Console\Concerns\Prohibitable;
 use AIArmada\FilamentAuthz\Facades\FilamentAuthz;
 use Filament\Facades\Filament;
 use Filament\Panel;
@@ -175,7 +175,7 @@ class GeneratePoliciesCommand extends Command
 
         $content = str_replace(
             ['{{ namespace }}', '{{ class }}', '{{ userModel }}', '{{ userClass }}', '{{ model }}', '{{ modelVariable }}', '{{ methods }}'],
-            ['App\\Policies', $modelBasename . 'Policy', $userModel, $userBasename, $modelClass, Str::camel($modelBasename), $methods],
+            [mb_rtrim(app()->getNamespace(), '\\') . '\\Policies', $modelBasename . 'Policy', $userModel, $userBasename, $modelClass, Str::camel($modelBasename), $methods],
             $stub
         );
 
@@ -284,7 +284,12 @@ STUB;
     {
         $guard = config('authz.guards.0', 'web');
         $provider = config("auth.guards.{$guard}.provider");
+        $configured = config("auth.providers.{$provider}.model");
 
-        return config("auth.providers.{$provider}.model", 'App\\Models\\User');
+        if (is_string($configured) && $configured !== '') {
+            return $configured;
+        }
+
+        return mb_rtrim(app()->getNamespace(), '\\') . '\\Models\\User';
     }
 }

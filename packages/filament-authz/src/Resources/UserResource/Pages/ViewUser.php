@@ -6,6 +6,7 @@ namespace AIArmada\FilamentAuthz\Resources\UserResource\Pages;
 
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\FilamentAffiliates\Resources\AffiliateResource;
 use AIArmada\FilamentAuthz\Resources\UserResource;
@@ -80,7 +81,9 @@ class ViewUser extends ViewRecord
                         ->label('Affiliate')
                         ->state('View Affiliate Profile')
                         ->url(
-                            AffiliateResource::getUrl('view', ['record' => $affiliate]),
+                            class_exists(AffiliateResource::class)
+                                ? AffiliateResource::getUrl('view', ['record' => $affiliate])
+                                : null,
                             shouldOpenInNewTab: true,
                         )
                         ->html(),
@@ -141,9 +144,13 @@ class ViewUser extends ViewRecord
             return null;
         }
 
-        return Affiliate::query()
-            ->where('owner_type', $user->getMorphClass())
-            ->where('owner_id', $user->getKey())
-            ->first();
+        try {
+            return Affiliate::query()
+                ->where('owner_type', $user->getMorphClass())
+                ->where('owner_id', $user->getKey())
+                ->first();
+        } catch (NoCurrentOwnerException) {
+            return null;
+        }
     }
 }

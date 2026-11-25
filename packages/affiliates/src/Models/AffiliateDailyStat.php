@@ -59,7 +59,7 @@ class AffiliateDailyStat extends Model
     ];
 
     protected $casts = [
-        'date' => 'date',
+        'date' => 'immutable_date',
         'clicks' => 'integer',
         'unique_clicks' => 'integer',
         'attributions' => 'integer',

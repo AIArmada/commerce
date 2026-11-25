@@ -11,6 +11,8 @@ use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\FilamentAffiliates\Concerns\InteractsWithAffiliate;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -21,7 +23,7 @@ beforeEach(function (): void {
     AffiliatePayout::query()->delete();
     AffiliateConversion::query()->delete();
     Affiliate::query()->delete();
-    User::query()->delete();
+    User::query()->where('email', '!=', 'default-owner@example.com')->delete();
 });
 
 // Helper class to test the trait
@@ -207,9 +209,9 @@ it('resolves affiliate by contact email when owner scope uses a tenant owner', f
             private readonly ?Model $owner,
         ) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 

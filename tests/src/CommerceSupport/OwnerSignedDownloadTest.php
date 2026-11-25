@@ -3,10 +3,12 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Features\SignedDownloads\Api\SignedDownloadApi;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerSignedDownload;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Str;
 
 beforeEach(function (): void {
     if (! Route::has('support.download.test')) {
@@ -22,7 +24,7 @@ it('issues a temporary signed download url and stores scoped payload metadata', 
         'password' => 'secret',
     ]);
 
-    $url = OwnerSignedDownload::issueUrl(
+    $url = app(SignedDownloadApi::class)->issueUrl(
         cachePrefix: 'support_download',
         routeName: 'support.download.test',
         routeParameters: ['resource' => 'resource-1'],
@@ -32,12 +34,12 @@ it('issues a temporary signed download url and stores scoped payload metadata', 
             'format' => 'pdf',
         ],
         ttl: 600,
-        owner: $owner,
+        owner: EloquentRecordReference::fromModel($owner),
         userId: '42',
     );
 
     $request = Request::create($url, 'GET');
-    $payload = OwnerSignedDownload::payloadFromRequestToken($request, 'support_download');
+    $payload = app(SignedDownloadApi::class)->payloadFromToken($request->query(SignedDownloadApi::TOKEN_QUERY_PARAM), 'support_download');
 
     expect($payload)
         ->toBeArray()
@@ -55,7 +57,7 @@ it('authorizes payload when resource owner and user match', function (): void {
         'password' => 'secret',
     ]);
 
-    $url = OwnerSignedDownload::issueUrl(
+    $url = app(SignedDownloadApi::class)->issueUrl(
         cachePrefix: 'support_download_auth',
         routeName: 'support.download.test',
         routeParameters: ['resource' => 'resource-auth'],
@@ -65,22 +67,22 @@ it('authorizes payload when resource owner and user match', function (): void {
             'format' => 'pdf',
         ],
         ttl: 600,
-        owner: $owner,
+        owner: EloquentRecordReference::fromModel($owner),
         userId: '7',
     );
 
-    $payload = OwnerSignedDownload::payloadFromRequestToken(
-        Request::create($url, 'GET'),
+    $payload = app(SignedDownloadApi::class)->payloadFromToken(
+        Request::create($url, 'GET')->query(SignedDownloadApi::TOKEN_QUERY_PARAM),
         'support_download_auth',
     );
 
     expect($payload)->toBeArray();
 
-    expect(OwnerSignedDownload::isAuthorizedPayload(
+    expect(app(SignedDownloadApi::class)->isAuthorizedPayload(
         payload: $payload,
         resourceIdKey: 'resource_id',
         expectedResourceId: 'resource-auth',
-        owner: $owner,
+        owner: EloquentRecordReference::fromModel($owner),
         userId: '7',
     ))->toBeTrue();
 });
@@ -98,7 +100,7 @@ it('rejects payload when owner or user do not match', function (): void {
         'password' => 'secret',
     ]);
 
-    $url = OwnerSignedDownload::issueUrl(
+    $url = app(SignedDownloadApi::class)->issueUrl(
         cachePrefix: 'support_download_auth_fail',
         routeName: 'support.download.test',
         routeParameters: ['resource' => 'resource-fail'],
@@ -108,29 +110,29 @@ it('rejects payload when owner or user do not match', function (): void {
             'format' => 'pdf',
         ],
         ttl: 600,
-        owner: $ownerA,
+        owner: EloquentRecordReference::fromModel($ownerA),
         userId: '77',
     );
 
-    $payload = OwnerSignedDownload::payloadFromRequestToken(
-        Request::create($url, 'GET'),
+    $payload = app(SignedDownloadApi::class)->payloadFromToken(
+        Request::create($url, 'GET')->query(SignedDownloadApi::TOKEN_QUERY_PARAM),
         'support_download_auth_fail',
     );
 
     expect($payload)->toBeArray();
 
-    expect(OwnerSignedDownload::isAuthorizedPayload(
+    expect(app(SignedDownloadApi::class)->isAuthorizedPayload(
         payload: $payload,
         resourceIdKey: 'resource_id',
         expectedResourceId: 'resource-fail',
-        owner: $ownerB,
+        owner: EloquentRecordReference::fromModel($ownerB),
         userId: '77',
     ))->toBeFalse()
-        ->and(OwnerSignedDownload::isAuthorizedPayload(
+        ->and(app(SignedDownloadApi::class)->isAuthorizedPayload(
             payload: $payload,
             resourceIdKey: 'resource_id',
             expectedResourceId: 'resource-fail',
-            owner: $ownerA,
+            owner: EloquentRecordReference::fromModel($ownerA),
             userId: '78',
         ))->toBeFalse();
 });
@@ -143,22 +145,22 @@ it('rejects malformed resource identifiers and user ids', function (): void {
         'user_id' => '7',
     ];
 
-    expect(OwnerSignedDownload::isAuthorizedPayload($payload, 'resource_id', 'resource-x', null, '7'))->toBeFalse()
-        ->and(OwnerSignedDownload::isAuthorizedPayload(
+    expect(app(SignedDownloadApi::class)->isAuthorizedPayload($payload, 'resource_id', 'resource-x', null, '7'))->toBeFalse()
+        ->and(app(SignedDownloadApi::class)->isAuthorizedPayload(
             ['resource_id' => 'resource-x', 'user_id' => ['array'], 'owner_type' => null, 'owner_id' => null],
             'resource_id',
             'resource-x',
             null,
             '7',
         ))->toBeFalse()
-        ->and(OwnerSignedDownload::isAuthorizedPayload(
+        ->and(app(SignedDownloadApi::class)->isAuthorizedPayload(
             ['resource_id' => 'resource-x', 'user_id' => '', 'owner_type' => null, 'owner_id' => null],
             'resource_id',
             'resource-x',
             null,
             '7',
         ))->toBeFalse()
-        ->and(OwnerSignedDownload::isAuthorizedPayload(
+        ->and(app(SignedDownloadApi::class)->isAuthorizedPayload(
             ['resource_id' => 'resource-x', 'user_id' => '7', 'owner_type' => null, 'owner_id' => null],
             'resource_id',
             '',
@@ -177,7 +179,7 @@ it('allows global payloads with a null owner when owner mode is disabled', funct
         'user_id' => '7',
     ];
 
-    expect(OwnerSignedDownload::isAuthorizedPayload($payload, 'resource_id', 'resource-global', null, '7'))->toBeTrue();
+    expect(app(SignedDownloadApi::class)->isAuthorizedPayload($payload, 'resource_id', 'resource-global', null, '7'))->toBeTrue();
 });
 
 it('requires explicit global context for global payloads when owner mode is enabled', function (): void {
@@ -190,9 +192,9 @@ it('requires explicit global context for global payloads when owner mode is enab
         'user_id' => '7',
     ];
 
-    expect(OwnerSignedDownload::isAuthorizedPayload($payload, 'resource_id', 'resource-global-mode', null, '7'))->toBeFalse();
+    expect(app(SignedDownloadApi::class)->isAuthorizedPayload($payload, 'resource_id', 'resource-global-mode', null, '7'))->toBeFalse();
 
-    $inExplicitGlobal = OwnerContext::withOwner(null, fn (): bool => OwnerSignedDownload::isAuthorizedPayload(
+    $inExplicitGlobal = OwnerContext::withOwner(null, fn (): bool => app(SignedDownloadApi::class)->isAuthorizedPayload(
         $payload,
         'resource_id',
         'resource-global-mode',
@@ -201,4 +203,78 @@ it('requires explicit global context for global payloads when owner mode is enab
     ));
 
     expect($inExplicitGlobal)->toBeTrue();
+});
+
+it('rejects malformed owner metadata instead of treating it as global', function (): void {
+    config()->set('commerce-support.owner.enabled', false);
+
+    expect(app(SignedDownloadApi::class)->isAuthorizedPayload(
+        ['resource_id' => 'resource-x', 'user_id' => '7', 'owner_type' => ['invalid'], 'owner_id' => null],
+        'resource_id',
+        'resource-x',
+        null,
+        '7',
+    ))->toBeFalse()
+        ->and(app(SignedDownloadApi::class)->isAuthorizedPayload(
+            ['resource_id' => 'resource-x', 'user_id' => '7', 'owner_type' => 'user', 'owner_id' => ['invalid']],
+            'resource_id',
+            'resource-x',
+            null,
+            '7',
+        ))->toBeFalse();
+});
+
+it('rejects empty or whitespace cache prefixes when issuing and looking up tokens', function (): void {
+    $owner = User::query()->create([
+        'name' => 'Prefix Owner',
+        'email' => 'support-prefix-owner@example.com',
+        'password' => 'secret',
+    ]);
+
+    $api = app(SignedDownloadApi::class);
+
+    foreach (['', ' ', 'has space', "has\ttab"] as $prefix) {
+        expect(fn () => $api->issueUrl(
+            cachePrefix: $prefix,
+            routeName: 'support.download.test',
+            routeParameters: ['resource' => 'resource-prefix'],
+            payload: ['resource_id' => 'resource-prefix'],
+            ttl: 600,
+            owner: EloquentRecordReference::fromModel($owner),
+            userId: '1',
+        ))->toThrow(InvalidArgumentException::class, 'Invalid signed download cache prefix.');
+
+        expect($api->payloadFromToken(str_repeat('a', 64), $prefix))->toBeNull();
+    }
+});
+
+it('issues an unpredictable 64-character hex token even when random string generation is overridden', function (): void {
+    $owner = User::query()->create([
+        'name' => 'Entropy Owner',
+        'email' => 'support-entropy-owner@example.com',
+        'password' => 'secret',
+    ]);
+
+    Str::createRandomStringsUsing(static fn (int $length = 0): string => str_repeat('Z', max(1, $length)));
+
+    try {
+        $url = app(SignedDownloadApi::class)->issueUrl(
+            cachePrefix: 'support_download_entropy',
+            routeName: 'support.download.test',
+            routeParameters: ['resource' => 'resource-entropy'],
+            payload: ['resource_id' => 'resource-entropy'],
+            ttl: 600,
+            owner: EloquentRecordReference::fromModel($owner),
+            userId: '1',
+        );
+    } finally {
+        Str::createRandomStringsNormally();
+    }
+
+    $token = Request::create($url, 'GET')->query(SignedDownloadApi::TOKEN_QUERY_PARAM);
+
+    expect($token)->toBeString()
+        ->and($token)->toMatch('/^[0-9a-f]{64}$/');
+
+    expect(app(SignedDownloadApi::class)->payloadFromToken($token, 'support_download_entropy'))->toBeArray();
 });

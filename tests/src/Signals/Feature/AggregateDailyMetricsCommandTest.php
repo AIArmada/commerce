@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\Signals\Models\SignalDailyMetric;
 use AIArmada\Signals\Models\SignalEvent;
@@ -12,7 +13,6 @@ use AIArmada\Signals\Models\SignalIdentity;
 use AIArmada\Signals\Models\SignalSession;
 use AIArmada\Signals\Models\TrackedProperty;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\Model;
 
 uses(SignalsTestCase::class);
 
@@ -160,7 +160,7 @@ it('aggregates daily metrics for each owner when no ambient owner is resolved', 
 
     app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
     {
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
             return null;
         }

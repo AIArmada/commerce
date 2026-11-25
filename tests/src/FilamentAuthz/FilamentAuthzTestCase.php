@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Commerce\Tests\FilamentAuthz;
 
-use AIArmada\Authz\Models\Permission;
-use AIArmada\Authz\Models\Role;
-use AIArmada\Authz\Support\AuthzScopeTeamResolver;
+use AIArmada\Authz\Features\Authorization\Models\Permission;
+use AIArmada\Authz\Features\Authorization\Models\Role;
+use AIArmada\Authz\Features\Authorization\Support\AuthzScopeTeamResolver;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\TestCase as BaseTestCase;
 use DateInterval;

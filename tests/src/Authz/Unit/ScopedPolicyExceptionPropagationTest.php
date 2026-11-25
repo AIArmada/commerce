@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\Authz\Authz;
 use AIArmada\Authz\Exceptions\ScopeResolutionException;
-use AIArmada\Authz\Support\AuthzScopeContext;
-use AIArmada\Authz\Support\AuthzScopeTeamResolver;
+use AIArmada\Authz\Features\Authorization\Authz;
+use AIArmada\Authz\Features\Authorization\Support\AuthzScopeContext;
+use AIArmada\Authz\Features\Authorization\Support\AuthzScopeTeamResolver;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerContextTeamResolver;

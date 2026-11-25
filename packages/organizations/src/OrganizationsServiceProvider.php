@@ -16,6 +16,7 @@ use AIArmada\Organizations\Resolvers\DefaultOrganizationPresentation;
 use AIArmada\Organizations\Resolvers\DefaultOrganizationVisibilityTransitionAuthorizer;
 use AIArmada\Organizations\Resolvers\NullCurrentOrganizationResolver;
 use AIArmada\Organizations\Resolvers\NullOrganizationLifecycleHook;
+use AIArmada\Organizations\Resolvers\OrganizationOwnerResolver;
 use Illuminate\Foundation\Application;
 use Illuminate\Routing\Router;
 use LogicException;
@@ -43,7 +44,7 @@ final class OrganizationsServiceProvider extends PackageServiceProvider
 
     public function packageBooted(): void
     {
-        $this->app->singleton(CurrentOrganizationResolver::class, function (Application $app): CurrentOrganizationResolver {
+        $this->app->scoped(CurrentOrganizationResolver::class, function (Application $app): CurrentOrganizationResolver {
             $resolver = config('organizations.resolver', NullCurrentOrganizationResolver::class);
 
             if (! is_string($resolver) || ! class_exists($resolver) || ! is_a($resolver, CurrentOrganizationResolver::class, true)) {
@@ -73,10 +74,7 @@ final class OrganizationsServiceProvider extends PackageServiceProvider
             return $instance;
         });
 
-        $this->app->singleton(
-            OwnerResolverInterface::class,
-            fn (Application $app): CurrentOrganizationResolver => $app->make(CurrentOrganizationResolver::class),
-        );
+        $this->app->scoped(OwnerResolverInterface::class, OrganizationOwnerResolver::class);
 
         /** @var Router $router */
         $router = $this->app['router'];

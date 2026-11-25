@@ -15,24 +15,7 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 if (! function_exists('filamentCustomers_makeOwner')) {
     function filamentCustomers_makeOwner(string $id): Model
     {
-        return new class($id) extends Model
-        {
-            public $incrementing = false;
-
-            protected $keyType = 'string';
-
-            public function __construct(private readonly string $uuid) {}
-
-            public function getKey(): mixed
-            {
-                return $this->uuid;
-            }
-
-            public function getMorphClass(): string
-            {
-                return 'tests:owner';
-            }
-        };
+        return User::factory()->create(['id' => $id]);
     }
 }
 

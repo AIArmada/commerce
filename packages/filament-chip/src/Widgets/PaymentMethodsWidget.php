@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentChip\Widgets;
 
 use AIArmada\Chip\Models\Purchase;
+use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
-use AIArmada\CommerceSupport\Support\OwnerCache;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentChip\Support\PurchaseRevenueExpressions;
 use Filament\Support\Icons\Heroicon;

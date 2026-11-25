@@ -9,7 +9,9 @@ use AIArmada\CashierChip\Subscription\SubscriptionItem;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\Commerce\Tests\CashierChip\Fixtures\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
@@ -24,9 +26,9 @@ function bindCashierChipOwner(?Model $owner): void
     {
         public function __construct(private ?Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 }

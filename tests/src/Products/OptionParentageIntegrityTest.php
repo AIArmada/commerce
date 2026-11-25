@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Models\Option;
@@ -11,7 +12,6 @@ use AIArmada\Products\Models\OptionValue;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
 use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -332,7 +332,7 @@ it('rejects owner-protected creates without a resolvable owner context', functio
     // Without a resolvable owner context, owner-protected creates fail fast.
     app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
     {
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
             return null;
         }

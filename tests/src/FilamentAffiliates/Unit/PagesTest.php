@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-use AIArmada\Authz\Models\Permission;
+use AIArmada\Authz\Features\Authorization\Models\Permission;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAffiliates\Pages\FraudReviewPage;
 use AIArmada\FilamentAffiliates\Pages\PayoutBatchPage;
 use AIArmada\FilamentAffiliates\Pages\ReportsPage;
 
 beforeEach(function (): void {
-    User::query()->delete();
+    User::query()->where('email', '!=', 'default-owner@example.com')->delete();
     Permission::query()->delete();
 });
 

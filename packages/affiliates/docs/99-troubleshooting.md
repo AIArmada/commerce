@@ -273,7 +273,7 @@ on the operation, reason on the payout timeline):
 
 2. **Owner resolver is bound:**
 ```php
-app(OwnerResolverInterface::class)->resolve(); // Should return Model
+app(OwnerResolverInterface::class)->resolve(); // Should return ?RecordReference
 ```
 
 3. **Queries are using owner scope:**

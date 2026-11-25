@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentPersons\Resources\PersonResource\RelationManagers;
 
+use AIArmada\CommerceSupport\Features\ReferenceData\Api\ReferenceDataApi;
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
-use AIArmada\CommerceSupport\Models\Language;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
@@ -36,7 +36,7 @@ final class NamesRelationManager extends RelationManager
         /** @var array<string, string> $options */
         $options = Cache::remember('filament-persons.languages', 3600, static function (): array {
             /** @var array<string, string> $languages */
-            $languages = Language::query()->orderBy('name')->pluck('name', 'code')->all();
+            $languages = app(ReferenceDataApi::class)->languageOptions();
 
             return $languages;
         });

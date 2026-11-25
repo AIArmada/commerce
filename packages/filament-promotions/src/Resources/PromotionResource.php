@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentPromotions\Resources;
 
+use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
-use AIArmada\CommerceSupport\Support\OwnerCache;
 use AIArmada\FilamentPromotions\Resources\PromotionResource\Pages\CreatePromotion;
 use AIArmada\FilamentPromotions\Resources\PromotionResource\Pages\EditPromotion;
 use AIArmada\FilamentPromotions\Resources\PromotionResource\Pages\ListPromotions;

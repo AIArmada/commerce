@@ -53,3 +53,36 @@ it('restores genuine navigation defaults when settings are saved mid-worker', fu
         ->and($originalGroups->isPrivate())->toBeTrue()
         ->and($originalItems->isPrivate())->toBeTrue();
 });
+
+it('refreshes captured navigation for a new long-lived worker request', function (): void {
+    NavigationConfigurator::reset();
+
+    $baseGroups = ['Catalog' => ['label' => 'Catalog', 'sort' => 10]];
+    $baseItems = ['catalog.products' => ['group' => 'Catalog', 'sort' => 10]];
+    config()->set('commerce-support.filament.navigation.groups', $baseGroups);
+    config()->set('commerce-support.filament.navigation.items', $baseItems);
+    config()->set('filament-commerce-support.navigation.enabled', true);
+
+    $settings = mock(CommerceNavigationSettings::class, function ($mock): void {
+        $mock->groups = [];
+        $mock->overrides = ['catalog.products' => ['hidden' => true]];
+    });
+    app()->instance(CommerceNavigationSettings::class, $settings);
+
+    NavigationConfigurator::apply();
+
+    expect(NavigationConfigurator::isCaptured())->toBeTrue();
+
+    // A later request on the same worker sees drifted runtime config and
+    // freshly saved settings; refreshForRequest() rebuilds from genuine
+    // defaults before re-applying the saved settings.
+    config()->set('commerce-support.filament.navigation.items', ['stale' => ['group' => 'Stale']]);
+    $settings->groups = ['Operations' => ['label' => 'Operations', 'sort' => 20]];
+    $settings->overrides = [];
+
+    NavigationConfigurator::refreshForRequest();
+
+    expect(config('commerce-support.filament.navigation.groups'))->toHaveKey('Operations')
+        ->and(config('commerce-support.filament.navigation.groups'))->toHaveKey('Catalog')
+        ->and(config('commerce-support.filament.navigation.items'))->toBe($baseItems);
+});

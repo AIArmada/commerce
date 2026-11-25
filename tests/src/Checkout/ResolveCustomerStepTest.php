@@ -11,6 +11,7 @@ use AIArmada\CommerceSupport\Contracts\Payment\PaymentSubjectContext;
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentSubjectDriverInterface;
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentSubjectResolverInterface;
 use AIArmada\CommerceSupport\Contracts\Payment\ResolvedPaymentSubject;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Contacting\Models\ContactMethod;
@@ -233,7 +234,7 @@ describe('ResolveCustomerStep', function (): void {
             public function resolve(PaymentSubjectContext $context): ?ResolvedPaymentSubject
             {
                 return new ResolvedPaymentSubject(
-                    subject: $this->user,
+                    subject: EloquentRecordReference::fromModel($this->user),
                     paymentCustomer: new PaymentCustomerData(
                         email: $this->user->email,
                         name: $this->user->name,
@@ -300,7 +301,7 @@ describe('ResolveCustomerStep', function (): void {
 
         $resolved = $driver->resolve(new PaymentSubjectContext(
             gateway: 'chip',
-            subject: $customer,
+            subject: EloquentRecordReference::fromModel($customer),
             source: 'checkout.resolve_customer',
         ));
 
@@ -331,7 +332,7 @@ describe('ResolveCustomerStep', function (): void {
 
         $resolved = $driver->resolve(new PaymentSubjectContext(
             gateway: 'chip',
-            subject: $customer,
+            subject: EloquentRecordReference::fromModel($customer),
             source: 'checkout.resolve_customer',
         ));
 

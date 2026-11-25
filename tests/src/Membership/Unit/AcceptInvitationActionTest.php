@@ -11,6 +11,7 @@ use AIArmada\Membership\Events\MembershipInvitationAccepted;
 use AIArmada\Membership\Models\MembershipInvitation;
 use AIArmada\Membership\Tests\Fixtures\TestSubject;
 use AIArmada\Membership\Tests\MembershipTestCase;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Event;
 
@@ -154,7 +155,7 @@ it('rolls back acceptance when role assignment fails', function (): void {
     expect(fn () => AcceptInvitationAction::make()->handle(
         invitation: $this->invitation,
         user: $userWithoutRoles,
-    ))->toThrow(BadMethodCallException::class);
+    ))->toThrow(InvalidArgumentException::class);
 
     expect($this->invitation->fresh()->accepted_at)->toBeNull()
         ->and($this->subject->members()->count())->toBe(0);
@@ -162,5 +163,7 @@ it('rolls back acceptance when role assignment fails', function (): void {
 
 class MembershipUserWithoutRoles extends Model
 {
+    use HasUuids;
+
     protected $table = 'users';
 }

@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Authz\Support;
 
-use AIArmada\Authz\Console\Commands\SuperAdminCommand;
-use AIArmada\Authz\Console\Commands\SyncAuthzCommand;
-
 final class CommandProhibitor
 {
     /**
@@ -35,10 +32,7 @@ final class CommandProhibitor
     public static function prohibitDestructiveCommands(bool $prohibit = true): void
     {
         self::$prohibited = $prohibit;
-        self::register([
-            SuperAdminCommand::class,
-            SyncAuthzCommand::class,
-        ]);
+        self::register(array_keys(self::$commands));
     }
 
     /**

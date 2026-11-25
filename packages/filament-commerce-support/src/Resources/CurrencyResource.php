@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCommerceSupport\Resources;
 
-use AIArmada\CommerceSupport\Models\Currency;
+use AIArmada\CommerceSupport\Features\ReferenceData\Models\Currency;
 use AIArmada\FilamentCommerceSupport\Resources\CurrencyResource\Pages\ListCurrencies;
 use AIArmada\FilamentCommerceSupport\Resources\CurrencyResource\Pages\ViewCurrency;
 use BackedEnum;
@@ -16,6 +16,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 
 class CurrencyResource extends Resource
 {
@@ -52,12 +53,32 @@ class CurrencyResource extends Resource
 
     public static function shouldRegisterNavigation(): bool
     {
-        return (bool) config('filament-commerce-support.navigation.enabled', true);
+        return (bool) config('filament-commerce-support.resources.currencies.enabled', true);
     }
 
     public static function getNavigationSort(): ?int
     {
         return config('filament-commerce-support.navigation.sort', 100);
+    }
+
+    public static function canCreate(): bool
+    {
+        return static::isReadOnly() ? false : parent::canCreate();
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return static::isReadOnly() ? false : parent::canEdit($record);
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return static::isReadOnly() ? false : parent::canDelete($record);
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return static::isReadOnly() ? false : parent::canDeleteAny();
     }
 
     public static function table(Table $table): Table

@@ -5,8 +5,8 @@ declare(strict_types=1);
 use AIArmada\Cart\CartServiceProvider;
 use AIArmada\Cart\Storage\DatabaseStorage;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Config;
 
 beforeEach(function (): void {
@@ -18,7 +18,7 @@ it('integration: fails fast when cart storage is resolved without an owner in ow
 
     app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new class implements OwnerResolverInterface
     {
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
             return null;
         }
@@ -36,7 +36,7 @@ it('integration: allows explicit global cart storage resolution in owner mode', 
 
     app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new class implements OwnerResolverInterface
     {
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
             return null;
         }

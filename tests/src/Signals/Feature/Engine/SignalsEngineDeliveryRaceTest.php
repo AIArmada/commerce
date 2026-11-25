@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Signals\SignalsEngineTestCase;
-use AIArmada\CommerceSupport\Http\PinnedHttpClient;
+use AIArmada\CommerceSupport\Drivers\Http\PinnedHttpClient;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\PublicHttpUrlGuard;
 use AIArmada\CommerceSupport\Support\ValidatedHttpTarget;

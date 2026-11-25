@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
@@ -30,7 +32,7 @@ beforeEach(function (): void {
     // Default to no ambient owner context so seeding explicit-owner rows is deterministic.
     app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
     {
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
             return null;
         }
@@ -61,9 +63,9 @@ it('prevents creating child rows for orders outside the current owner scope', fu
             private readonly ?Model $owner,
         ) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -91,9 +93,9 @@ it('auto-assigns child row owner from the parent order', function (): void {
             private readonly ?Model $owner,
         ) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 

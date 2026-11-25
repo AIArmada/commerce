@@ -5,6 +5,8 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalRegistration;
 use Filament\Forms\Components\TextInput;
 use Illuminate\Database\Eloquent\Model;
@@ -92,9 +94,9 @@ it('uses resolved owner context for registration owner when owner mode is enable
             private readonly ?Model $owner,
         ) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 

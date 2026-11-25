@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Resources;
 
-use AIArmada\Authz\Concerns\ScopesAuthzTenancy;
-use AIArmada\Authz\Models\Role;
+use AIArmada\Authz\Features\Authorization\Api\RoleAdministrationApi;
+use AIArmada\Authz\Features\Authorization\Concerns\ScopesAuthzTenancy;
+use AIArmada\Authz\Features\Authorization\Models\Role;
 use AIArmada\Authz\Support\UserRoleChecker;
 use AIArmada\FilamentAuthz\FilamentAuthzPlugin;
 use AIArmada\FilamentAuthz\Resources\RoleResource\Concerns\HasAuthzFormComponents;
@@ -17,6 +18,7 @@ use Filament\Panel;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Auth\Access\Authorizable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -39,6 +41,12 @@ class RoleResource extends Resource
 
         if (! config('filament-authz.central_app', false)) {
             $query = static::applyTenantScope($query);
+        }
+
+        if (config('authz.scopes.enabled', false)
+            && config('filament-authz.central_app', false)
+            && method_exists(static::getModel(), 'authzScope')) {
+            $query->with('authzScope');
         }
 
         return static::applyConfiguredScopeLimit($query);
@@ -71,12 +79,164 @@ class RoleResource extends Resource
 
     public static function canEdit(Model $record): bool
     {
-        return static::checkAbility('role.update');
+        return static::checkAbility('role.update')
+            && static::mayManageRoleName((string) $record->getAttribute('name'))
+            && static::isRecordInScope($record);
     }
 
     public static function canDelete(Model $record): bool
     {
-        return static::checkAbility('role.delete');
+        return static::checkAbility('role.delete')
+            && static::mayManageRoleName((string) $record->getAttribute('name'))
+            && static::isRecordInScope($record);
+    }
+
+    protected static function isRecordInScope(Model $record): bool
+    {
+        if (static::class !== self::class) {
+            return static::getEloquentQuery()->whereKey($record->getKey())->exists();
+        }
+
+        if (! $record->exists || $record->getKey() === null || ! is_a($record, static::getModel())) {
+            return false;
+        }
+
+        if (! config('filament-authz.central_app', false) && static::shouldScopeToTenant()) {
+            $teamsKey = (string) app(PermissionRegistrar::class)->teamsKey;
+            $active = getPermissionsTeamId();
+            $recordScope = $record->getAttribute($teamsKey);
+
+            if ($active === null ? $recordScope !== null : (string) $recordScope !== (string) $active) {
+                return false;
+            }
+        }
+
+        if (config('authz.scopes.enabled', false) && config('filament-authz.central_app', false)) {
+            $allowed = static::allowedScopeIds();
+
+            if ($allowed !== null) {
+                $scopeValue = $record->getAttribute((string) app(PermissionRegistrar::class)->teamsKey);
+
+                if ($scopeValue !== null && ! in_array((string) $scopeValue, $allowed, true)) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /** @param array<string, mixed> $data */
+    public static function saveDefinition(array $data, ?Model $record = null): Model
+    {
+        if ($record === null ? ! static::canCreate() : ! static::canEdit($record)) {
+            throw new AuthorizationException;
+        }
+
+        if (! static::mayManageRoleName((string) $data['name'])) {
+            throw new AuthorizationException('Only a super admin may manage the reserved super-admin role.');
+        }
+
+        $permissionNames = [];
+        foreach ($data as $key => $value) {
+            if (str_starts_with($key, 'permissions_') && is_array($value)) {
+                foreach ($value as $permission) {
+                    if (is_string($permission) && $permission !== '') {
+                        $permissionNames[] = $permission;
+                    }
+                }
+            }
+        }
+
+        $saved = app(RoleAdministrationApi::class)->saveRoleDefinition(
+            $record === null ? null : (string) $record->getKey(),
+            (string) $data['name'],
+            (string) $data['guard_name'],
+            static::scopeForWrite($data, $record),
+            array_values(array_unique($permissionNames)),
+        );
+
+        return $record === null ? static::getEloquentQuery()->whereKey($saved->id)->firstOrFail() : $record->refresh();
+    }
+
+    public static function deleteDefinition(Model $record): bool
+    {
+        if (! static::canDelete($record)) {
+            throw new AuthorizationException;
+        }
+
+        return app(RoleAdministrationApi::class)->deleteRoleDefinition((string) $record->getKey());
+    }
+
+    /** @param array<string, mixed> $data */
+    protected static function scopeForWrite(array $data, ?Model $record): string | int | null
+    {
+        $registrar = app(PermissionRegistrar::class);
+        if (! $registrar->teams) {
+            return null;
+        }
+
+        $key = $registrar->teamsKey;
+        if (! config('filament-authz.central_app', false) && static::shouldScopeToTenant()) {
+            $active = $registrar->getPermissionsTeamId();
+            if (array_key_exists($key, $data) && (string) $data[$key] !== (string) $active) {
+                throw new AuthorizationException('The role scope must match the active tenant.');
+            }
+
+            return $active;
+        }
+
+        $scope = array_key_exists($key, $data)
+            ? $data[$key]
+            : ($record === null
+                ? (config('filament-authz.scoped_to_tenant', true) ? $registrar->getPermissionsTeamId() : null)
+                : $record->getAttribute($key));
+
+        if ($scope === '') {
+            $scope = null;
+        }
+
+        if ($scope !== null && ! is_string($scope) && ! is_int($scope)) {
+            throw new AuthorizationException('Invalid role scope.');
+        }
+
+        if (config('authz.scopes.enabled', false) && config('filament-authz.central_app', false)) {
+            $configured = static::allowedScopeIds();
+            if ($scope !== null && $configured !== null && ! in_array((string) $scope, $configured, true)) {
+                throw new AuthorizationException('The role scope is outside this panel.');
+            }
+        }
+
+        return $scope;
+    }
+
+    public static function mayManageRoleName(string $name): bool
+    {
+        $reserved = (string) config('authz.super_admin_role', '');
+
+        return $reserved === '' || mb_trim($name) !== $reserved || static::mayManageSuperAdmin();
+    }
+
+    public static function mayManageSuperAdmin(): bool
+    {
+        $reserved = (string) config('authz.super_admin_role', '');
+
+        return $reserved === '' || UserRoleChecker::hasGlobalRole(Auth::user(), $reserved);
+    }
+
+    /** @return list<string>|null */
+    public static function allowedScopeIds(): ?array
+    {
+        if (! config('authz.scopes.enabled', false) || ! config('filament-authz.central_app', false)) {
+            return null;
+        }
+
+        $configured = static::getConfiguredScopeOptions();
+
+        return $configured === null ? null : array_values(array_filter(
+            array_map('strval', array_keys($configured)),
+            static fn (string $id): bool => Str::isUuid($id),
+        ));
     }
 
     protected static function checkAbility(string $ability): bool
@@ -103,7 +263,7 @@ class RoleResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return RoleTable::configure($table, static::getModel());
+        return RoleTable::configure($table, static::getModel(), static::deleteDefinition(...));
     }
 
     public static function getPages(): array
@@ -193,16 +353,13 @@ class RoleResource extends Resource
             return $query;
         }
 
-        $configured = static::getConfiguredScopeOptions();
+        $validUuids = static::allowedScopeIds();
 
-        if ($configured === null) {
+        if ($validUuids === null) {
             return $query;
         }
 
         $teamsKey = app(PermissionRegistrar::class)->teamsKey;
-        $scopeIds = array_keys($configured);
-
-        $validUuids = array_filter($scopeIds, static fn (string $id): bool => Str::isUuid($id));
 
         if ($validUuids === []) {
             return $query->whereNull($teamsKey);

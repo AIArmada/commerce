@@ -4,30 +4,29 @@ declare(strict_types=1);
 
 namespace AIArmada\Authz;
 
-use AIArmada\Authz\Services\ImpersonateManager;
-use AIArmada\Authz\Support\ImpersonationScopeGuard;
+use AIArmada\Authz\Features\Impersonation\Api\ImpersonationApi;
 use AIArmada\Authz\Support\UserRoleChecker;
 use Illuminate\Contracts\Auth\Authenticatable;
 
 if (! function_exists('AIArmada\Authz\is_impersonating')) {
     function is_impersonating(): bool
     {
-        if (! app()->bound(ImpersonateManager::class)) {
+        if (! app()->bound(ImpersonationApi::class)) {
             return false;
         }
 
-        return app(ImpersonateManager::class)->isImpersonating();
+        return app(ImpersonationApi::class)->isImpersonating();
     }
 }
 
 if (! function_exists('AIArmada\Authz\can_impersonate')) {
     function can_impersonate(?string $guard = null): bool
     {
-        if (! app()->bound(ImpersonateManager::class)) {
+        if (! app()->bound(ImpersonationApi::class)) {
             return false;
         }
 
-        $guard ??= app(ImpersonateManager::class)->getCurrentAuthGuardName();
+        $guard ??= app(ImpersonationApi::class)->getCurrentAuthGuardName();
 
         if ($guard === null) {
             return false;
@@ -53,11 +52,11 @@ if (! function_exists('AIArmada\Authz\can_impersonate')) {
 if (! function_exists('AIArmada\Authz\can_be_impersonated')) {
     function can_be_impersonated(Authenticatable $user, ?string $guard = null): bool
     {
-        if (! app()->bound(ImpersonateManager::class)) {
+        if (! app()->bound(ImpersonationApi::class)) {
             return false;
         }
 
-        $guard ??= app(ImpersonateManager::class)->getCurrentAuthGuardName();
+        $guard ??= app(ImpersonationApi::class)->getCurrentAuthGuardName();
 
         if ($guard === null) {
             return false;
@@ -77,18 +76,18 @@ if (! function_exists('AIArmada\Authz\can_be_impersonated')) {
             return false;
         }
 
-        return ImpersonationScopeGuard::canAccessTarget($user);
+        return app(ImpersonationApi::class)->canAccessTarget($user);
     }
 }
 
 if (! function_exists('AIArmada\Authz\get_impersonator')) {
     function get_impersonator(): ?Authenticatable
     {
-        if (! app()->bound(ImpersonateManager::class)) {
+        if (! app()->bound(ImpersonationApi::class)) {
             return null;
         }
 
-        return app(ImpersonateManager::class)->getImpersonator();
+        return app(ImpersonationApi::class)->getImpersonator();
     }
 }
 

@@ -8,6 +8,7 @@ use AIArmada\Checkout\Data\StepResult;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentSubjectContext;
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentSubjectResolverInterface;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Models\Customer;
 use Illuminate\Database\Eloquent\Model;
@@ -66,34 +67,36 @@ final class ResolveCustomerStep extends AbstractCheckoutStep
 
             $resolved = $this->paymentSubjectResolver->resolve(new PaymentSubjectContext(
                 gateway: $session->selected_payment_gateway ?? (string) config('checkout.payment.default_gateway', 'chip'),
-                actor: $user instanceof Model ? $user : null,
-                sessionCustomer: $customer,
-                sessionBillable: $billable,
+                actor: EloquentRecordReference::actor($user instanceof Model ? $user : null),
+                sessionCustomer: EloquentRecordReference::fromModel($customer),
+                sessionBillable: EloquentRecordReference::fromModel($billable),
                 billingData: $billingData,
                 shippingData: $shippingData,
                 metadata: [
                     'checkout_session_id' => $session->id,
                     'prefer_actor' => (bool) config('checkout.payment.prefer_actor', false),
                 ],
-                owner: $owner,
+                owner: EloquentRecordReference::fromModel($owner),
                 source: 'checkout.resolve_customer',
             ));
 
-            if ($resolved !== null && $resolved->subject instanceof Model) {
+            $subject = EloquentRecordReference::resolve($resolved?->subject);
+
+            if ($subject instanceof Model) {
                 $updates = [
-                    'billable_type' => $resolved->subject->getMorphClass(),
-                    'billable_id' => (string) $resolved->subject->getKey(),
+                    'billable_type' => $subject->getMorphClass(),
+                    'billable_id' => (string) $subject->getKey(),
                 ];
 
-                if ($resolved->subject instanceof Customer) {
-                    $updates['customer_id'] = $resolved->subject->id;
+                if ($subject instanceof Customer) {
+                    $updates['customer_id'] = $subject->id;
                 }
 
                 $session->persistState($updates);
                 $session->unsetRelation('customer');
                 $session->unsetRelation('billable');
 
-                if ($resolved->subject instanceof Customer) {
+                if ($subject instanceof Customer) {
                     $this->loadCustomerDefaults($session);
                 }
 

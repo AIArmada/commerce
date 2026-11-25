@@ -7,6 +7,8 @@ use AIArmada\Commerce\Tests\FilamentCashier\Fixtures\TenantBillableUser;
 use AIArmada\Commerce\Tests\FilamentCashier\Fixtures\TenantRecord;
 use AIArmada\Commerce\Tests\Fixtures\Models\User as FixtureUser;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource\Pages\CreateSubscription;
 use AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource\Schemas\SubscriptionForm;
@@ -93,9 +95,9 @@ it('scopes user_id queries to current owner billables', function (): void {
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -194,7 +196,7 @@ it('fails closed without throwing for owner-scoped models when no owner context 
 
     app()->bind(OwnerResolverInterface::class, fn () => new class implements OwnerResolverInterface
     {
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
             return null;
         }
@@ -238,7 +240,7 @@ it('fails closed for owner-scoped target models even when billable model is not 
 
     app()->bind(OwnerResolverInterface::class, fn () => new class implements OwnerResolverInterface
     {
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
             return null;
         }
@@ -299,9 +301,9 @@ it('blocks selecting a cross-tenant customer when an owner context exists', func
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 

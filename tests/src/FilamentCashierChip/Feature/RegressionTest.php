@@ -9,6 +9,8 @@ use AIArmada\CashierChip\Subscription\SubscriptionItem;
 use AIArmada\Commerce\Tests\FilamentCashierChip\Fixtures\User;
 use AIArmada\Commerce\Tests\FilamentCashierChip\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentCashierChip\CustomerPortal\Pages\Invoices;
 use AIArmada\FilamentCashierChip\CustomerPortal\Pages\PaymentMethods;
@@ -76,9 +78,9 @@ function regression_bindOwner(?Model $owner): void
     {
         public function __construct(private ?Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 }

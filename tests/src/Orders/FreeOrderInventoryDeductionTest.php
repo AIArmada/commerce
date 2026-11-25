@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Tests\Fixtures\TestOwner;
 use AIArmada\Inventory\Contracts\CheckoutReservationServiceInterface;
 use AIArmada\Inventory\Data\ReservationLine;
@@ -229,9 +231,9 @@ it('blocks cross-owner free order confirmation', function (): void {
             private readonly ?Model $owner,
         ) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 

@@ -6,7 +6,7 @@ namespace AIArmada\FilamentCart\Widgets;
 
 use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
 use AIArmada\Cart\Support\CartMoney;
-use AIArmada\CommerceSupport\Support\OwnerCache;
+use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use Carbon\CarbonImmutable;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;

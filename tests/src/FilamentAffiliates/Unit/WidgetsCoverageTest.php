@@ -6,7 +6,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
-use AIArmada\CommerceSupport\Support\OwnerCache;
+use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\FilamentAffiliates\Services\AffiliateStatsAggregator;
 use AIArmada\FilamentAffiliates\Widgets\AffiliateStatsWidget;
 use AIArmada\FilamentAffiliates\Widgets\PerformanceOverviewWidget;

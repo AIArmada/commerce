@@ -11,6 +11,8 @@ use AIArmada\Affiliates\Models\AffiliateSupportMessage;
 use AIArmada\Affiliates\Models\AffiliateSupportTicket;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -29,9 +31,9 @@ it('rejects cross-tenant affiliate_id writes when owner mode is enabled', functi
             private readonly ?Model $owner,
         ) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -55,9 +57,9 @@ it('rejects cross-tenant affiliate_id writes when owner mode is enabled', functi
             private readonly ?Model $owner,
         ) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -81,9 +83,9 @@ it('rejects cross-tenant affiliate_id writes when owner mode is enabled', functi
             private readonly ?Model $owner,
         ) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -145,9 +147,9 @@ it('rejects cross-tenant ticket_id writes when owner mode is enabled', function 
             private readonly ?Model $owner,
         ) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -179,9 +181,9 @@ it('rejects cross-tenant ticket_id writes when owner mode is enabled', function 
             private readonly ?Model $owner,
         ) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 

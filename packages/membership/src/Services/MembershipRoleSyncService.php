@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 namespace AIArmada\Membership\Services;
 
-use AIArmada\Authz\Models\Permission;
-use AIArmada\Authz\Models\Role;
+use AIArmada\Authz\Features\Authorization\Api\RoleAdministrationApi;
+use AIArmada\Authz\Features\Authorization\Api\RoleRecord;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\Membership\Enums\MemberRole;
 use Closure;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 use LogicException;
-use Spatie\Permission\Exceptions\RoleDoesNotExist;
 use Spatie\Permission\Guard;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -42,28 +43,14 @@ final class MembershipRoleSyncService
         ?string $subjectClass = null,
         ?string $guardName = null,
         bool $prune = false,
-    ): Role {
+    ): RoleRecord {
         $name = $role->spatieRoleName();
         $guard = $guardName ?? (string) config('auth.defaults.guard', 'web');
-        $registrar = app(PermissionRegistrar::class);
-        $attributes = [
-            'name' => $name,
-            'guard_name' => $guard,
-        ];
-
-        if ($registrar->teams) {
-            $attributes[$registrar->teamsKey] = $teamId;
-        }
-
-        $spatieRole = Role::query()->firstOrCreate($attributes);
-
+        $administration = app(RoleAdministrationApi::class);
         $permissionNames = $role->permissions();
 
         if ($permissionNames === ['*']) {
-            $permissionNames = Permission::query()
-                ->where('guard_name', $guard)
-                ->pluck('name')
-                ->all();
+            $permissionNames = $administration->permissionNames($guard);
         } else {
             $prefix = $this->resolvePermissionPrefix($subjectClass);
 
@@ -72,19 +59,7 @@ final class MembershipRoleSyncService
             }
         }
 
-        if ($permissionNames !== []) {
-            foreach ($permissionNames as $name) {
-                Permission::findOrCreate($name, $guard);
-            }
-        }
-
-        if ($prune) {
-            $spatieRole->syncPermissions($permissionNames);
-        } elseif ($permissionNames !== []) {
-            $spatieRole->givePermissionTo($permissionNames);
-        }
-
-        return $spatieRole;
+        return $administration->ensureRole($name, $guard, $teamId, $permissionNames, $prune);
     }
 
     public function syncAll(bool $prune = false): int
@@ -111,22 +86,26 @@ final class MembershipRoleSyncService
                 guardName: Guard::getDefaultName($user),
             );
 
-            /** @phpstan-ignore method.notFound */
-            $user->assignRole($spatieRole);
+            app(RoleAdministrationApi::class)->assignRole($this->reference($user), $spatieRole->id);
         });
     }
 
     public function revokeFromUser(Model $subject, Model $user, MemberRole $role): void
     {
         $this->inSubjectTeam($subject, function () use ($role, $user): void {
-            try {
-                /** @phpstan-ignore method.notFound */
-                $user->removeRole($role->spatieRoleName());
-            } catch (RoleDoesNotExist) {
-                // The mapped role row is missing in this team (legacy member,
-                // pruned role, or team-scope toggle). Detaching is a no-op.
-            }
+            app(RoleAdministrationApi::class)->revokeRole($this->reference($user), $role->spatieRoleName());
         });
+    }
+
+    private function reference(Model $user): RecordReference
+    {
+        $reference = EloquentRecordReference::fromModel($user);
+
+        if ($reference === null) {
+            throw new LogicException('A persisted user is required.');
+        }
+
+        return $reference;
     }
 
     /**
@@ -147,7 +126,7 @@ final class MembershipRoleSyncService
         try {
             setPermissionsTeamId($teamId);
 
-            if ($teamId !== null && (string) getPermissionsTeamId() !== (string) $teamId) {
+            if (getPermissionsTeamId() !== $teamId && (string) getPermissionsTeamId() !== (string) $teamId) {
                 throw new LogicException('The authz team context does not match the membership subject.');
             }
 

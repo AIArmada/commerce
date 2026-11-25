@@ -70,7 +70,7 @@ For PHP APIs (jobs/services/listeners), use Laravel-style camelCase fields/argum
 
 ## Jobs and listeners
 
-Queued synchronization jobs should use `OwnerContextJob` (preferably via `OwnerScopedJob` + `OwnerJobContext`). Listeners and synchronizers should parse owner tuples through shared `commerce-support` tuple utilities rather than manually rebuilding owner context from arbitrary row data.
+Queued synchronization jobs should use `OwnerContextJob` with the `OwnerScopedJob` contract and `OwnerJobContext`. Listeners and synchronizers should parse owner tuples through shared `commerce-support` tuple utilities rather than manually rebuilding owner context from arbitrary row data.
 
 ## Commands
 

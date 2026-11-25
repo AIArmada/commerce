@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Resources;
 
-use AIArmada\CommerceSupport\Support\OwnerCache;
+use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Filament\Resources\Resource;
 use Illuminate\Database\Eloquent\Builder;

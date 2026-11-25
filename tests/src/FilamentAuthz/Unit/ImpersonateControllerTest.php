@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Authz\Models\Role;
-use AIArmada\Authz\Services\ImpersonateManager;
+use AIArmada\Authz\Features\Authorization\Models\Role;
+use AIArmada\Authz\Features\Impersonation\Actions\ImpersonateManager;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAuthz\Http\Controllers\ImpersonateController;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -215,7 +215,7 @@ describe('ImpersonateController', function (): void {
 
     it('stores password hash under impersonated and restored guard keys', function (): void {
         config()->set('auth.guards.admin', [
-            'driver' => 'session',
+            'driver' => 'authz-session',
             'provider' => 'users',
         ]);
         config()->set('auth.defaults.guard', 'admin');

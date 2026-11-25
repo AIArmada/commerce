@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Resources;
 
+use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
-use AIArmada\CommerceSupport\Support\OwnerCache;
 use AIArmada\FilamentInventory\Resources\InventoryLocationResource\Pages\CreateInventoryLocation;
 use AIArmada\FilamentInventory\Resources\InventoryLocationResource\Pages\EditInventoryLocation;
 use AIArmada\FilamentInventory\Resources\InventoryLocationResource\Pages\ListInventoryLocations;

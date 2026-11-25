@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz;
 
-use AIArmada\Authz\Authz as BaseAuthz;
+use AIArmada\Authz\Features\Authorization\Authz as BaseAuthz;
+use AIArmada\Authz\Support\UserRoleChecker;
+use AIArmada\Authz\Support\UserWildcardPermissions;
 use AIArmada\FilamentAuthz\Support\PanelExclusions;
 use Filament\Facades\Filament;
 use Filament\Pages\Page;
@@ -14,13 +16,14 @@ use Filament\Widgets\Widget;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
+use Spatie\Permission\PermissionRegistrar;
 
 class Authz extends BaseAuthz
 {
     /** @var array<string, Collection<int, mixed>> */
     protected array $discoveryCache = [];
 
-    /** @var array<string, array<string, string>> */
+    /** @var array<string, array<string, string|null>> */
     protected array $permissionCache = [];
 
     public function getResources(?Panel $panel = null): Collection
@@ -106,7 +109,7 @@ class Authz extends BaseAuthz
     {
         $cacheKey = $pageClass . '_' . ($panel?->getId() ?? 'default');
 
-        if (isset($this->permissionCache['page'][$cacheKey])) {
+        if (array_key_exists($cacheKey, $this->permissionCache['page'] ?? [])) {
             return $this->permissionCache['page'][$cacheKey];
         }
 
@@ -122,7 +125,7 @@ class Authz extends BaseAuthz
     {
         $cacheKey = $widgetClass . '_' . ($panel?->getId() ?? 'default');
 
-        if (isset($this->permissionCache['widget'][$cacheKey])) {
+        if (array_key_exists($cacheKey, $this->permissionCache['widget'] ?? [])) {
             return $this->permissionCache['widget'][$cacheKey];
         }
 
@@ -146,6 +149,15 @@ class Authz extends BaseAuthz
         parent::clearCache();
         $this->discoveryCache = [];
         $this->permissionCache = [];
+    }
+
+    public function clearRequestCaches(): void
+    {
+        $this->discoveryCache = [];
+        $this->permissionCache = [];
+        app(PermissionRegistrar::class)->clearPermissionsCollection();
+        UserRoleChecker::flushGlobalRoleCache();
+        UserWildcardPermissions::flushCache();
     }
 
     protected function transformPanels(): Collection

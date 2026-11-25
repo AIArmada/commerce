@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentOrders\Support;
 
 use AIArmada\CommerceSupport\Contracts\OwnerScopeIdentifiable;
-use AIArmada\CommerceSupport\Support\OwnerCache;
+use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Canceled;

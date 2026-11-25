@@ -2,12 +2,16 @@
 
 declare(strict_types=1);
 
-use AIArmada\CommerceSupport\Enums\ReportSeverity;
-use AIArmada\CommerceSupport\Enums\ReportStatus;
-use AIArmada\CommerceSupport\Models\NotificationPreference;
-use AIArmada\CommerceSupport\Models\Report;
-use AIArmada\CommerceSupport\Models\SavedSearch;
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Features\Reporting\Actions\TransitionReport;
+use AIArmada\CommerceSupport\Features\Reporting\Api\ReportSeverity;
+use AIArmada\CommerceSupport\Features\Reporting\Api\ReportStatus;
+use AIArmada\CommerceSupport\Features\Reporting\Models\Report;
+use AIArmada\CommerceSupport\Features\UserPreferences\Models\NotificationPreference;
+use AIArmada\CommerceSupport\Features\UserPreferences\Models\SavedSearch;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
 
 beforeEach(function (): void {
@@ -93,13 +97,9 @@ it('ignores the owning user passed to notification preference mass assignment', 
         ->and($preference->getAttribute('user_id'))->toBeNull();
 });
 
-it('transitions reports through explicit review methods', function (): void {
-    $reviewer = new Report(['report_type' => 'seed']);
-    $reviewer->forceFill([
-        'reportable_type' => Report::class,
-        'reportable_id' => '00000000-0000-0000-0000-000000000000',
-    ]);
-    $reviewer->saveQuietly();
+it('transitions reports through an authorized action', function (): void {
+    $reviewer = User::factory()->create();
+    Gate::define('commerce-support.review-report', static fn (User $user, Report $report): bool => $user->is($reviewer));
 
     $report = new Report(['report_type' => 'spam', 'title' => 't']);
     $report->reportable()->associate($reviewer);
@@ -109,19 +109,42 @@ it('transitions reports through explicit review methods', function (): void {
     expect($report->status)->toBe(ReportStatus::Open)
         ->and($report->reported_at)->not->toBeNull();
 
-    expect($report->startReview($reviewer))->toBeTrue();
+    expect(app(TransitionReport::class)->execute((string) $report->getKey(), ReportStatus::UnderReview, $reviewer))->toBeTrue();
 
     $report->refresh();
 
     expect($report->status)->toBe(ReportStatus::UnderReview)
-        ->and($report->reviewed_by_type)->toBe(Report::class)
+        ->and($report->reviewed_by_type)->toBe($reviewer->getMorphClass())
         ->and($report->reviewed_at)->not->toBeNull();
 
-    expect($report->resolve($reviewer, 'confirmed spam'))->toBeTrue();
+    expect(app(TransitionReport::class)->execute((string) $report->getKey(), ReportStatus::Resolved, $reviewer, 'confirmed spam'))->toBeTrue();
 
     $report->refresh();
 
     expect($report->status)->toBe(ReportStatus::Resolved)
         ->and($report->resolution)->toBe('confirmed spam')
         ->and($report->resolved_at)->not->toBeNull();
+});
+
+it('rejects unauthorized review and preserves the first terminal transition', function (): void {
+    $reviewer = User::factory()->create();
+    $unauthorized = User::factory()->create();
+    Gate::define('commerce-support.review-report', static fn (User $user, Report $report): bool => $user->is($reviewer));
+
+    $report = new Report(['report_type' => 'spam']);
+    $report->reportable()->associate($reviewer);
+    $report->saveOrFail();
+    $action = app(TransitionReport::class);
+    $id = (string) $report->getKey();
+
+    expect(fn () => $action->execute($id, ReportStatus::Resolved, $unauthorized))->toThrow(AuthorizationException::class)
+        ->and($report->fresh()->status)->toBe(ReportStatus::Open);
+
+    $action->execute($id, ReportStatus::Resolved, $reviewer, 'confirmed');
+    $resolvedAt = $report->fresh()->resolved_at;
+    expect($action->execute($id, ReportStatus::Resolved, $reviewer, 'changed'))->toBeTrue()
+        ->and($report->fresh()->resolution)->toBe('confirmed')
+        ->and($report->fresh()->resolved_at->equalTo($resolvedAt))->toBeTrue();
+
+    expect(fn () => $action->execute($id, ReportStatus::Rejected, $reviewer))->toThrow(DomainException::class);
 });

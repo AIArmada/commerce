@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentChip\Resources;
 
 use AIArmada\Chip\Models\Payment;
-use AIArmada\CommerceSupport\Support\OwnerCache;
+use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentChip\Resources\PaymentResource\Pages\ListPayments;
 use AIArmada\FilamentChip\Resources\PaymentResource\Pages\ViewPayment;

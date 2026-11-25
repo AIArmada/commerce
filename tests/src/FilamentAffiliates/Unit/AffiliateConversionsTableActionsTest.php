@@ -8,7 +8,7 @@ use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\States\PendingConversion;
-use AIArmada\Authz\Models\Permission;
+use AIArmada\Authz\Features\Authorization\Models\Permission;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource\Tables\AffiliateConversionsTable;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -18,7 +18,7 @@ use Spatie\ModelStates\Exceptions\TransitionNotFound;
 beforeEach(function (): void {
     AffiliateConversion::query()->delete();
     Affiliate::query()->delete();
-    User::query()->delete();
+    User::query()->where('email', '!=', 'default-owner@example.com')->delete();
     Permission::query()->delete();
 });
 

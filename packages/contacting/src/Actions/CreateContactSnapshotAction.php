@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Contacting\Actions;
 
+use AIArmada\CommerceSupport\Data\OwnerScopeConfig;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerScopeConfig;
 use AIArmada\Contacting\Exceptions\ContactSnapshotsDisabledException;
 use AIArmada\Contacting\Models\ContactMethod;
 use AIArmada\Contacting\Models\ContactSnapshot;

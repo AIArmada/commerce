@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentDocs\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
-use AIArmada\CommerceSupport\Support\OwnerCache;
+use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\Docs\Models\DocTemplate;
 use AIArmada\FilamentDocs\Resources\DocTemplateResource\Pages\CreateDocTemplate;
 use AIArmada\FilamentDocs\Resources\DocTemplateResource\Pages\EditDocTemplate;

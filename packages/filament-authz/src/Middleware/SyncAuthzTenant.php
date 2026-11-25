@@ -6,6 +6,7 @@ namespace AIArmada\FilamentAuthz\Middleware;
 
 use Closure;
 use Filament\Facades\Filament;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Spatie\Permission\PermissionRegistrar;
 use Symfony\Component\HttpFoundation\Response;
@@ -38,23 +39,34 @@ class SyncAuthzTenant
 
             setPermissionsTeamId($tenant->getKey());
 
-            if (auth()->hasUser()) {
-                auth()
-                    ->user()
-                    ->unsetRelation('roles')
-                    ->unsetRelation('permissions');
-            }
+            $this->clearUserAuthorizationRelations();
 
-            app(PermissionRegistrar::class)->forgetCachedPermissions();
+            app(PermissionRegistrar::class)->clearPermissionsCollection();
 
             try {
                 return $next($request);
             } finally {
                 setPermissionsTeamId($previousTeamId);
-                app(PermissionRegistrar::class)->forgetCachedPermissions();
+                app(PermissionRegistrar::class)->clearPermissionsCollection();
+                $this->clearUserAuthorizationRelations();
             }
         }
 
         return $next($request);
+    }
+
+    private function clearUserAuthorizationRelations(): void
+    {
+        if (! auth()->hasUser()) {
+            return;
+        }
+
+        $user = auth()->user();
+
+        if (! $user instanceof Model) {
+            return;
+        }
+
+        $user->unsetRelation('roles')->unsetRelation('permissions');
     }
 }

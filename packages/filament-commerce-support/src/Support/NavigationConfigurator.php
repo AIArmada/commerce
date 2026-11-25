@@ -159,6 +159,27 @@ class NavigationConfigurator
         self::$captured = false;
     }
 
+    public static function isCaptured(): bool
+    {
+        return self::$captured;
+    }
+
+    /**
+     * Rebuild the applied navigation from genuine file defaults for a fresh
+     * request on a long-lived worker: restore the untampered defaults, then
+     * re-apply the currently persisted settings so no stale overrides leak
+     * across requests.
+     */
+    public static function refreshForRequest(): void
+    {
+        if (! self::isCaptured()) {
+            return;
+        }
+
+        self::restoreGenuineDefaults();
+        self::apply();
+    }
+
     public static function resolveSettings(): ?CommerceNavigationSettings
     {
         try {

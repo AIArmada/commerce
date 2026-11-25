@@ -5,6 +5,8 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\FilamentOrders\Fixtures\TestOwner;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentOrders\Widgets\OrderStatsWidget;
@@ -33,7 +35,7 @@ beforeEach(function (): void {
 
     app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
     {
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
             return null;
         }
@@ -121,9 +123,9 @@ it('calculates stats using an owner-scoped query', function (): void {
     {
         public function __construct(private readonly ?Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 

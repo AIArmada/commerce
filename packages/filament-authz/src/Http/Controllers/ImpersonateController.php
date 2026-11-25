@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Http\Controllers;
 
-use AIArmada\Authz\Services\ImpersonateManager;
-use AIArmada\Authz\Support\BackToUrlSanitizer;
-use AIArmada\Authz\Support\ImpersonationScopeGuard;
+use AIArmada\Authz\Features\Impersonation\Api\ImpersonationApi;
+use AIArmada\Authz\Features\Impersonation\Queries\ImpersonationScopeGuard;
+use AIArmada\Authz\Features\Impersonation\Support\BackToUrlSanitizer;
 use AIArmada\Authz\Support\UserRoleChecker;
 use Filament\Facades\Filament;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -26,7 +26,7 @@ class ImpersonateController
             abort(403, 'Not authenticated');
         }
 
-        if (app(ImpersonateManager::class)->isImpersonating()) {
+        if (app(ImpersonationApi::class)->isImpersonating()) {
             abort(403, 'Already impersonating');
         }
 
@@ -49,12 +49,8 @@ class ImpersonateController
             abort(404, 'User not found');
         }
 
-        if (! ImpersonationScopeGuard::canAccessTarget($targetUser)) {
-            abort(404, 'User not found');
-        }
-
         // Verify permissions
-        if ($currentUser->getAuthIdentifier() === $targetUser->getKey()) {
+        if ($currentUser::class === $targetUser::class && (string) $currentUser->getAuthIdentifier() === (string) $targetUser->getAuthIdentifier()) {
             abort(403, 'Cannot impersonate yourself');
         }
 
@@ -63,7 +59,7 @@ class ImpersonateController
         }
 
         $backTo = BackToUrlSanitizer::sanitize(request()->header('referer') ?? Filament::getUrl());
-        $impersonateManager = app(ImpersonateManager::class);
+        $impersonateManager = app(ImpersonationApi::class);
 
         if (! $impersonateManager->take($currentUser, $targetUser, $guard, $backTo)) {
             abort(500, 'Unable to start impersonation');

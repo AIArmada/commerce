@@ -5,8 +5,8 @@ declare(strict_types=1);
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use Illuminate\Database\Eloquent\Model;
 
 uses(CashierChipTestCase::class);
 
@@ -38,7 +38,7 @@ it('refuses to resolve a foreign billable without an owner context', function ()
     OwnerContext::flushState();
     app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
     {
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
             return null;
         }

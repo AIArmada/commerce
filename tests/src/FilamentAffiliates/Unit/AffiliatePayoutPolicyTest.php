@@ -6,7 +6,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\PendingPayout;
-use AIArmada\Authz\Models\Permission;
+use AIArmada\Authz\Features\Authorization\Models\Permission;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAffiliates\Policies\AffiliatePayoutPolicy;
 use Illuminate\Support\Str;
@@ -15,7 +15,7 @@ beforeEach(function (): void {
     // Clean up any previous data
     AffiliatePayout::query()->delete();
     Affiliate::query()->delete();
-    User::query()->delete();
+    User::query()->where('email', '!=', 'default-owner@example.com')->delete();
     Permission::query()->delete();
 });
 

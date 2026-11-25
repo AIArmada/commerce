@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCashierChip\Resources\CustomerResource\Pages;
 
 use AIArmada\CashierChip\Billing\Cashier;
+use AIArmada\CommerceSupport\Data\OwnerJobContext;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerJobContext;
+use AIArmada\CommerceSupport\Support\OwnerJobContextMapper;
 use AIArmada\FilamentCashierChip\Jobs\SyncCustomersToChipJob;
 use AIArmada\FilamentCashierChip\Resources\CustomerResource;
 use Filament\Actions\Action;
@@ -70,7 +71,7 @@ final class ListCustomers extends ListRecords
         $owner = OwnerContext::resolve();
 
         if ($owner !== null) {
-            return OwnerJobContext::fromOwnerModel($owner);
+            return OwnerJobContextMapper::fromModel($owner);
         }
 
         if (OwnerContext::isExplicitGlobal()) {

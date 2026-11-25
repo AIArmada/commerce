@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Console;
 
-use AIArmada\Authz\Console\Concerns\Prohibitable;
-use AIArmada\Authz\Models\Permission;
-use AIArmada\Authz\Models\Role;
+use AIArmada\Authz\EntryPoints\Console\Concerns\Prohibitable;
+use AIArmada\Authz\Features\Authorization\Api\RoleAdministrationApi;
+use AIArmada\Authz\Features\Authorization\Models\Permission;
+use AIArmada\Authz\Features\Authorization\Models\Role;
 use AIArmada\FilamentAuthz\Facades\FilamentAuthz;
 use Filament\Facades\Filament;
 use Illuminate\Console\Command;
@@ -119,17 +120,29 @@ class SeederCommand extends Command
 
             Filament::setCurrentPanel($panel);
 
-            $guards = (array) config('authz.guards', ['web']);
-            $permissions = FilamentAuthz::getAllPermissions($panel);
+            $guards = $this->validGuards();
+            $permissions = array_values(FilamentAuthz::getAllPermissions($panel));
+            $api = app(RoleAdministrationApi::class);
 
-            foreach ($permissions as $permission) {
-                foreach ($guards as $guard) {
-                    Permission::findOrCreate($permission, $guard);
-                }
+            foreach ($guards as $guard) {
+                $api->ensurePermissions($guard, $permissions);
             }
 
             info('Generated ' . count($permissions) . " permissions from panel '{$panelId}'.");
         }
+    }
+
+    /**
+     * @return list<string>
+     */
+    protected function validGuards(): array
+    {
+        $configuredGuards = array_keys((array) config('auth.guards', []));
+
+        return array_values(array_filter(
+            (array) config('authz.guards', ['web']),
+            fn (string $guard): bool => in_array($guard, $configuredGuards, true)
+        ));
     }
 
     /**
@@ -171,8 +184,8 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use AIArmada\Authz\Models\Permission;
-use AIArmada\Authz\Models\Role;
+use AIArmada\Authz\Features\Authorization\Models\Permission;
+use AIArmada\Authz\Features\Authorization\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
 /**

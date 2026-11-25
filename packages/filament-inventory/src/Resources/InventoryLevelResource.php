@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Resources;
 
+use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
-use AIArmada\CommerceSupport\Support\OwnerCache;
 use AIArmada\FilamentInventory\Resources\InventoryLevelResource\Pages\EditInventoryLevel;
 use AIArmada\FilamentInventory\Resources\InventoryLevelResource\Pages\ListInventoryLevels;
 use AIArmada\FilamentInventory\Resources\InventoryLevelResource\Pages\ViewInventoryLevel;

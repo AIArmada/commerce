@@ -8,6 +8,8 @@ use AIArmada\Affiliates\Models\AffiliateTouchpoint;
 use AIArmada\Affiliates\Models\AffiliateUpline;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
@@ -27,9 +29,9 @@ it('scopes touchpoints, daily stats, and network to current owner', function ():
                 private readonly ?Model $owner,
             ) {}
 
-            public function resolve(): ?Model
+            public function resolve(): ?RecordReference
             {
-                return $this->owner;
+                return EloquentRecordReference::fromModel($this->owner);
             }
         });
     };

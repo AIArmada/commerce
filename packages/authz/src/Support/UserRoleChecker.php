@@ -108,7 +108,17 @@ final class UserRoleChecker
     public static function registerMutationListener(): void
     {
         DB::listen(static function (QueryExecuted $query): void {
+            if (self::$globalRoleCache === [] && self::$objectRoleCache === null && ! UserWildcardPermissions::hasCachedEntries()) {
+                return;
+            }
+
             $sql = mb_ltrim($query->sql);
+            $first = $sql[0] ?? '';
+
+            if (! in_array($first, ['i', 'I', 'u', 'U', 'd', 'D'], true)) {
+                return;
+            }
+
             $identifier = '(?:"[^"]+"|`[^`]+`|\[[^\]]+\]|[a-zA-Z0-9_$]+)';
 
             if (! preg_match('/^(?:insert(?:\s+or\s+ignore|\s+ignore)?\s+into|update|delete\s+from)\s+(' . $identifier . '(?:\s*\.\s*' . $identifier . ')*)/i', $sql, $matches)) {

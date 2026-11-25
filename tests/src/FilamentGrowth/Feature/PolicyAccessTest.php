@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentGrowth\Pages\ExperimentResultsPage;
 use AIArmada\FilamentGrowth\Pages\GrowthDashboard;
@@ -16,7 +18,6 @@ use AIArmada\FilamentGrowth\Widgets\GrowthStatsWidget;
 use AIArmada\Growth\Models\Experiment;
 use AIArmada\Growth\Models\Variant;
 use AIArmada\Signals\Models\TrackedProperty;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 
@@ -43,9 +44,9 @@ function filamentGrowthBindOwner(User $owner): void
     {
         public function __construct(private readonly User $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 }
@@ -54,7 +55,7 @@ function filamentGrowthBindNoOwner(): void
 {
     app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new class implements OwnerResolverInterface
     {
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
             return null;
         }

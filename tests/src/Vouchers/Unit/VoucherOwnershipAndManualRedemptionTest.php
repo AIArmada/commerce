@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Tests\Fixtures\TestOwner;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Exceptions\ManualRedemptionNotAllowedException;
@@ -12,7 +14,6 @@ use AIArmada\Vouchers\Services\VoucherService;
 use AIArmada\Vouchers\Services\VoucherValidator;
 use AIArmada\Vouchers\States\Active;
 use Akaunting\Money\Money;
-use Illuminate\Database\Eloquent\Model as EloquentModel;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
@@ -103,9 +104,9 @@ it('scopes vouchers to the resolved owner', function (): void {
         {
             public function __construct(private TestOwner $owner) {}
 
-            public function resolve(): ?EloquentModel
+            public function resolve(): ?RecordReference
             {
-                return $this->owner;
+                return EloquentRecordReference::fromModel($this->owner);
             }
         };
     });
@@ -132,9 +133,9 @@ it('scopes vouchers to the resolved owner', function (): void {
         {
             public function __construct(private TestOwner $owner) {}
 
-            public function resolve(): ?EloquentModel
+            public function resolve(): ?RecordReference
             {
-                return $this->owner;
+                return EloquentRecordReference::fromModel($this->owner);
             }
         };
     });
@@ -155,9 +156,9 @@ it('scopes vouchers to the resolved owner', function (): void {
         {
             public function __construct(private TestOwner $owner) {}
 
-            public function resolve(): ?EloquentModel
+            public function resolve(): ?RecordReference
             {
-                return $this->owner;
+                return EloquentRecordReference::fromModel($this->owner);
             }
         };
     });
@@ -194,9 +195,9 @@ it('overrides provided owner columns when resolver owner is available', function
         {
             public function __construct(private TestOwner $owner) {}
 
-            public function resolve(): ?EloquentModel
+            public function resolve(): ?RecordReference
             {
-                return $this->owner;
+                return EloquentRecordReference::fromModel($this->owner);
             }
         };
     });

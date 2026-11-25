@@ -10,7 +10,7 @@ use AIArmada\Affiliates\Models\AffiliatePayoutOperation;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Affiliates\States\ProcessingPayout;
-use AIArmada\Authz\Models\Permission;
+use AIArmada\Authz\Features\Authorization\Models\Permission;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAffiliates\Widgets\PayoutQueueWidget;
 use Filament\Tables\Table;

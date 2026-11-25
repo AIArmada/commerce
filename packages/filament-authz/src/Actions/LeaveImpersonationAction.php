@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Actions;
 
-use AIArmada\Authz\Services\ImpersonateManager;
-use AIArmada\Authz\Support\BackToUrlSanitizer;
+use AIArmada\Authz\Features\Impersonation\Api\ImpersonationApi;
+use AIArmada\Authz\Features\Impersonation\Support\BackToUrlSanitizer;
 use Filament\Actions\Action;
 use Filament\Navigation\MenuItem;
+use Filament\Notifications\Notification;
 
 /**
  * Action to leave impersonation and return to the original user.
@@ -36,20 +37,22 @@ class LeaveImpersonationAction extends Action
         $this->label(__('filament-authz::filament-authz.impersonate.leave'))
             ->icon('heroicon-o-arrow-left-on-rectangle')
             ->color('danger')
-            ->visible(fn (): bool => app(ImpersonateManager::class)->isImpersonating())
+            ->visible(fn (): bool => app(ImpersonationApi::class)->isImpersonating())
             ->action(function (): void {
-                $manager = app(ImpersonateManager::class);
+                $manager = app(ImpersonationApi::class);
                 $backTo = $manager->getBackTo();
 
-                $manager->leave();
+                if (! $manager->leave()) {
+                    Notification::make()
+                        ->danger()
+                        ->title(__('filament-authz::filament-authz.impersonate.failed_title'))
+                        ->send();
 
-                $this->redirect(self::sanitizeBackToUrl($backTo));
+                    return;
+                }
+
+                $this->redirect(BackToUrlSanitizer::sanitize($backTo), navigate: false);
             });
-    }
-
-    private static function sanitizeBackToUrl(?string $url): string
-    {
-        return BackToUrlSanitizer::sanitize($url);
     }
 
     public function asMenuItem(): MenuItem
@@ -58,7 +61,7 @@ class LeaveImpersonationAction extends Action
             ->label(__('filament-authz::filament-authz.impersonate.leave'))
             ->icon('heroicon-o-arrow-left-on-rectangle')
             ->color('danger')
-            ->visible(fn (): bool => app(ImpersonateManager::class)->isImpersonating())
+            ->visible(fn (): bool => app(ImpersonationApi::class)->isImpersonating())
             ->postAction(route('filament-authz.impersonate.leave'));
     }
 }

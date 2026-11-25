@@ -6,7 +6,9 @@ use AIArmada\Chip\Models\BankAccount;
 use AIArmada\Chip\Models\SendInstruction;
 use AIArmada\Chip\Services\ChipSendService;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Filament\Pages\ReadOnlyListRecords;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentChip\Actions\PurchaseExporter;
 use AIArmada\FilamentChip\Actions\SendInstructionExporter;
@@ -69,7 +71,7 @@ it('covers resource pages and read-only list base class', function (): void {
 
     app()->bind(OwnerResolverInterface::class, fn () => new class implements OwnerResolverInterface
     {
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
             return null;
         }
@@ -323,9 +325,9 @@ it('enforces owner scoping in mutation action record resolution', function (): v
     {
         public function __construct(private Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 

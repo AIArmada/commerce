@@ -5,6 +5,8 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\FilamentProducts\Fixtures\TestOwner;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentProducts\Resources\CategoryResource;
 use AIArmada\FilamentProducts\Resources\ProductResource;
@@ -31,7 +33,7 @@ beforeEach(function (): void {
 
     app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
     {
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
             return null;
         }
@@ -75,9 +77,9 @@ it('scopes ProductResource query to current owner plus global', function (): voi
     {
         public function __construct(private readonly ?Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -120,9 +122,9 @@ it('scopes CategoryResource query to current owner plus global', function (): vo
     {
         public function __construct(private readonly ?Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 

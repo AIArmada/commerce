@@ -19,7 +19,7 @@ Authz sets `permission.team_resolver` to its scope resolver automatically,
 replacing an unset value or Spatie's default resolver. If you set a custom
 `permission.team_resolver` that bypasses scope resolution, scoped role lookups
 silently miss — remove the override or point it at
-`AIArmada\Authz\Support\AuthzScopeTeamResolver`.
+`AIArmada\Authz\Features\Authorization\Support\AuthzScopeTeamResolver`.
 
 ## Team-Scoped Role Lookups Miss
 

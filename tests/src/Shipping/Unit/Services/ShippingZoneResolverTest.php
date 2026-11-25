@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Models\ShippingRate;
@@ -544,9 +546,9 @@ describe('ShippingZoneResolver', function (): void {
         {
             public function __construct(private readonly ?Model $owner) {}
 
-            public function resolve(): ?Model
+            public function resolve(): ?RecordReference
             {
-                return $this->owner;
+                return EloquentRecordReference::fromModel($this->owner);
             }
         });
 

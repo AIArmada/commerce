@@ -6,7 +6,7 @@ namespace AIArmada\FilamentCart\Resources;
 
 use AIArmada\Cart\Snapshots\CartSnapshot as Cart;
 use AIArmada\Cart\Snapshots\CartSnapshotItem as CartItem;
-use AIArmada\CommerceSupport\Support\OwnerCache;
+use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\FilamentCart\Resources\CartItemResource\Pages\ListCartItems;
 use AIArmada\FilamentCart\Resources\CartItemResource\Pages\ViewCartItem;
 use AIArmada\FilamentCart\Resources\CartItemResource\Schemas\CartItemForm;

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Resources;
 
+use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
-use AIArmada\CommerceSupport\Support\OwnerCache;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentProducts\Resources\CategoryResource\Pages;
 use AIArmada\FilamentProducts\Resources\CategoryResource\Schemas\CategoryForm;

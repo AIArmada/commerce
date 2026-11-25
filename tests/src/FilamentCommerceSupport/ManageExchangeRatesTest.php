@@ -146,3 +146,32 @@ it('snapshots rates under an immutable dated key', function (): void {
         ->and($settings->history[CarbonImmutable::now()->format('Y-m-d')])->toBe(['MYR' => 4.7])
         ->and($page->history)->toBe($settings->history);
 });
+
+it('drops non-finite rates and refreshes page state on save', function (): void {
+    authorizeExchangeRates();
+
+    $settings = mock(ExchangeRateSettings::class, function ($mock): void {
+        $mock->base = 'USD';
+        $mock->rates = [];
+        $mock->history = [];
+        $mock->shouldReceive('save')->once()->andReturnSelf();
+    });
+    app()->instance(ExchangeRateSettings::class, $settings);
+
+    $page = new ManageExchangeRates('exchange-rates-non-finite-test');
+    $page->data = [
+        'base' => 'usd',
+        'rates' => ['MYR' => '4.7', 'BIG' => '1e999', 'INF' => 'INF', 'NAN' => 'NAN'],
+    ];
+
+    $page->save();
+
+    expect($settings->base)->toBe('USD')
+        ->and($settings->rates)->toBe(['MYR' => 4.7])
+        ->and($page->data)->toBe(['base' => 'USD', 'rates' => ['MYR' => 4.7]]);
+
+    $notifications = collect(sent_filament_notifications());
+
+    expect($notifications->pluck('title')->all())
+        ->toContain((string) __('Some rates were skipped (need a 3-letter code and a positive number).'));
+});

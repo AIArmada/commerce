@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Checkout\Webhooks;
 
 use AIArmada\Checkout\Actions\ProcessCheckoutPaymentNotification;
-use AIArmada\CommerceSupport\Webhooks\CommerceWebhookProcessor;
+use AIArmada\CommerceSupport\Features\Webhooks\EntryPoints\CommerceWebhookProcessor;
 use Illuminate\Support\Facades\Log;
 
 final class ProcessCheckoutWebhook extends CommerceWebhookProcessor

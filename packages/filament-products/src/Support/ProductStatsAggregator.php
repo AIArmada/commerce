@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Support;
 
-use AIArmada\CommerceSupport\Support\OwnerCache;
+use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Models\Category;

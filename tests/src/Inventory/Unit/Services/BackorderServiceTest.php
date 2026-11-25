@@ -11,6 +11,7 @@ use AIArmada\Inventory\Services\Stock\BackorderService;
 use AIArmada\Inventory\States\Fulfilled;
 use AIArmada\Inventory\States\PartiallyFulfilled;
 use AIArmada\Inventory\States\Pending;
+use Carbon\CarbonImmutable;
 
 describe('BackorderService', function (): void {
     beforeEach(function (): void {
@@ -27,7 +28,7 @@ describe('BackorderService', function (): void {
             'order-123',
             'customer-456',
             BackorderPriority::High,
-            now()->addDays(7),
+            CarbonImmutable::now()->addDays(7),
             'Urgent order'
         );
 
@@ -108,11 +109,11 @@ describe('BackorderService', function (): void {
     it('get overdue backorders', function (): void {
         InventoryBackorder::factory()->create([
             'status' => Pending::class,
-            'promised_at' => now()->subDay(),
+            'promised_at' => CarbonImmutable::now()->subDay(),
         ]);
         InventoryBackorder::factory()->create([
             'status' => Pending::class,
-            'promised_at' => now()->addDays(7),
+            'promised_at' => CarbonImmutable::now()->addDays(7),
         ]);
 
         $overdue = $this->service->getOverdueBackorders();
@@ -123,11 +124,11 @@ describe('BackorderService', function (): void {
     it('get backorders due within', function (): void {
         InventoryBackorder::factory()->create([
             'status' => Pending::class,
-            'promised_at' => now()->addDays(3),
+            'promised_at' => CarbonImmutable::now()->addDays(3),
         ]);
         InventoryBackorder::factory()->create([
             'status' => Pending::class,
-            'promised_at' => now()->addDays(10),
+            'promised_at' => CarbonImmutable::now()->addDays(10),
         ]);
 
         $dueWithin7Days = $this->service->getBackordersDueWithin(7);
@@ -165,12 +166,12 @@ describe('BackorderService', function (): void {
         InventoryBackorder::factory()->create([
             'status' => Pending::class,
             'priority' => BackorderPriority::Normal,
-            'promised_at' => now()->subDay(),
+            'promised_at' => CarbonImmutable::now()->subDay(),
         ]);
         InventoryBackorder::factory()->create([
             'status' => Pending::class,
             'priority' => BackorderPriority::Urgent,
-            'promised_at' => now()->subDay(),
+            'promised_at' => CarbonImmutable::now()->subDay(),
         ]);
 
         $escalated = $this->service->escalateOverdue();
@@ -181,11 +182,11 @@ describe('BackorderService', function (): void {
     it('expire old', function (): void {
         InventoryBackorder::factory()->create([
             'status' => Pending::class,
-            'requested_at' => now()->subDays(100),
+            'requested_at' => CarbonImmutable::now()->subDays(100),
         ]);
         InventoryBackorder::factory()->create([
             'status' => Pending::class,
-            'requested_at' => now()->subDays(10),
+            'requested_at' => CarbonImmutable::now()->subDays(10),
         ]);
 
         $expired = $this->service->expireOld(90);
@@ -238,10 +239,10 @@ describe('BackorderService', function (): void {
 
     it('update promised date', function (): void {
         $backorder = InventoryBackorder::factory()->create([
-            'promised_at' => now()->addDays(7),
+            'promised_at' => CarbonImmutable::now()->addDays(7),
         ]);
 
-        $newDate = now()->addDays(14);
+        $newDate = CarbonImmutable::now()->addDays(14);
         $result = $this->service->updatePromisedDate($backorder, $newDate);
 
         expect($result)->toBeTrue();

@@ -8,8 +8,8 @@ use AIArmada\Addressing\AddressingServiceProvider;
 use AIArmada\AffiliateNetwork\AffiliateNetworkServiceProvider;
 use AIArmada\Affiliates\AffiliatesServiceProvider;
 use AIArmada\Authz\AuthzServiceProvider;
-use AIArmada\Authz\Models\Permission;
-use AIArmada\Authz\Models\Role;
+use AIArmada\Authz\Features\Authorization\Models\Permission;
+use AIArmada\Authz\Features\Authorization\Models\Role;
 use AIArmada\Cart\CartServiceProvider;
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Checkout\CheckoutServiceProvider;
@@ -500,6 +500,7 @@ abstract class TestCase extends Orchestra
 
         // Configure auth to use our test User model
         $app['config']->set('auth.providers.users.model', User::class);
+        $app['config']->set('auth.guards.web.driver', 'authz-session');
     }
 
     protected function defineDatabaseMigrations(): void

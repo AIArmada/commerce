@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Resources;
 
-use AIArmada\Authz\Concerns\ScopesAuthzTenancy;
-use AIArmada\Authz\Models\AuthzScope;
-use AIArmada\Authz\Models\Permission;
+use AIArmada\Authz\Features\Authorization\Api\RoleAdministrationApi;
+use AIArmada\Authz\Features\Authorization\Concerns\ScopesAuthzTenancy;
+use AIArmada\Authz\Features\Authorization\Models\AuthzScope;
+use AIArmada\Authz\Features\Authorization\Models\Permission;
 use AIArmada\Authz\Support\UserRoleChecker;
 use AIArmada\FilamentAuthz\Resources\PermissionResource\Pages;
+use AIArmada\FilamentAuthz\Support\DeleteAuthzDefinitions;
 use Filament\Actions;
 use Filament\Forms;
 use Filament\Forms\Components\Placeholder;
@@ -19,6 +21,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Auth\Access\Authorizable;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Builder;
@@ -28,6 +31,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema as SchemaFacade;
 use Illuminate\Support\HtmlString;
+use Spatie\Permission\Models\Permission as SpatiePermission;
 use Spatie\Permission\PermissionRegistrar;
 
 class PermissionResource extends Resource
@@ -67,6 +71,31 @@ class PermissionResource extends Resource
     public static function canDelete(Model $record): bool
     {
         return static::checkAbility('permission.delete');
+    }
+
+    /** @param array<string, mixed> $data */
+    public static function saveDefinition(array $data, ?Model $record = null): Model
+    {
+        if ($record === null ? ! static::canCreate() : ! static::canEdit($record)) {
+            throw new AuthorizationException;
+        }
+
+        $id = app(RoleAdministrationApi::class)->savePermissionDefinition(
+            $record === null ? null : (string) $record->getKey(),
+            (string) $data['name'],
+            (string) $data['guard_name'],
+        );
+
+        return $record === null ? static::getEloquentQuery()->whereKey($id)->firstOrFail() : $record->refresh();
+    }
+
+    public static function deleteDefinition(Model $record): bool
+    {
+        if (! static::canDelete($record)) {
+            throw new AuthorizationException;
+        }
+
+        return app(RoleAdministrationApi::class)->deletePermissionDefinition((string) $record->getKey());
     }
 
     protected static function checkAbility(string $ability): bool
@@ -168,9 +197,9 @@ class PermissionResource extends Resource
                 ->indicator('Assigned'),
         ])->actions([
             Actions\EditAction::make(),
-            Actions\DeleteAction::make(),
+            Actions\DeleteAction::make()->using(fn (Model $record): bool => static::deleteDefinition($record)),
         ])->bulkActions([
-            Actions\DeleteBulkAction::make(),
+            DeleteAuthzDefinitions::bulk(static::deleteDefinition(...)),
         ])->defaultSort('name')
             ->striped()
             ->persistSearchInSession()
@@ -194,24 +223,19 @@ class PermissionResource extends Resource
 
     protected static function getAssignmentSummaryText(?Model $record): string
     {
-        if ($record === null) {
+        if (! $record instanceof SpatiePermission) {
             return '-';
         }
 
-        $roleCount = method_exists($record, 'roles')
-            ? static::scopedRolesQuery($record)->count()
-            : 0;
-
-        $directUserCount = method_exists($record, 'users')
-            ? static::scopedDirectUsersQuery($record)->count()
-            : 0;
+        $roleCount = static::scopedRolesQuery($record)->count();
+        $directUserCount = static::scopedDirectUsersQuery($record)->count();
 
         return "Assigned to {$roleCount} role(s), and {$directUserCount} user(s) directly.";
     }
 
     protected static function renderAssignedRoles(?Model $record): Htmlable | string
     {
-        if ($record === null || ! method_exists($record, 'roles')) {
+        if (! $record instanceof SpatiePermission) {
             return '-';
         }
 
@@ -228,10 +252,16 @@ class PermissionResource extends Resource
         /** @var Collection<int, Model> $roles */
         $roles = static::scopedRolesQuery($record)
             ->orderBy('name')
-            ->limit(20)
+            ->limit(21)
             ->get($columns);
 
-        $total = static::scopedRolesQuery($record)->count();
+        if ($roles->count() <= 20) {
+            $total = $roles->count();
+        } else {
+            $roles = $roles->take(20);
+            $total = static::scopedRolesQuery($record)->count();
+        }
+
         $scopeLabels = static::resolveScopeLabels($roles, $teamsKey, $teamsEnabled);
 
         $items = $roles
@@ -248,16 +278,21 @@ class PermissionResource extends Resource
 
     protected static function renderDirectUsers(?Model $record): Htmlable | string
     {
-        if ($record === null || ! method_exists($record, 'users')) {
+        if (! $record instanceof SpatiePermission) {
             return '-';
         }
 
-        $usersQuery = static::scopedDirectUsersQuery($record)->limit(20);
+        $usersQuery = static::scopedDirectUsersQuery($record)->limit(21);
 
         /** @var Collection<int, Model> $users */
         $users = $usersQuery->get(static::directUserColumns($usersQuery->getRelated()));
 
-        $total = static::scopedDirectUsersQuery($record)->count();
+        if ($users->count() <= 20) {
+            $total = $users->count();
+        } else {
+            $users = $users->take(20);
+            $total = static::scopedDirectUsersQuery($record)->count();
+        }
 
         $items = $users
             ->map(static function (Model $user): string {
@@ -294,9 +329,10 @@ class PermissionResource extends Resource
     {
         $table = $related->getTable();
         $columns = ["{$table}.{$related->getKeyName()}"];
+        $listing = SchemaFacade::getColumnListing($table);
 
         foreach (['name', 'email'] as $attribute) {
-            if (SchemaFacade::hasColumn($table, $attribute)) {
+            if (in_array($attribute, $listing, true)) {
                 $columns[] = "{$table}.{$attribute}";
             }
         }
@@ -380,10 +416,8 @@ class PermissionResource extends Resource
             && ! config('filament-authz.central_app', false);
     }
 
-    protected static function scopedRolesQuery(Model $record): BelongsToMany
+    protected static function scopedRolesQuery(SpatiePermission $record): BelongsToMany
     {
-        /** @var BelongsToMany $query */
-        // @phpstan-ignore-next-line method.notFound
         $query = $record->roles();
 
         if (! static::shouldRestrictToCurrentTeam()) {
@@ -406,10 +440,8 @@ class PermissionResource extends Resource
         return $query->where("{$roleTable}.{$teamsKey}", $teamId);
     }
 
-    protected static function scopedDirectUsersQuery(Model $record): BelongsToMany
+    protected static function scopedDirectUsersQuery(SpatiePermission $record): BelongsToMany
     {
-        /** @var BelongsToMany $query */
-        // @phpstan-ignore-next-line method.notFound
         $query = $record->users();
 
         if (! static::shouldRestrictToCurrentTeam()) {

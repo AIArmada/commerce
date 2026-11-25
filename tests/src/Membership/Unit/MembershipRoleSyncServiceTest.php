@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-use AIArmada\Authz\Models\Role;
+use AIArmada\Authz\Features\Authorization\Api\RoleAdministrationApi;
+use AIArmada\Authz\Features\Authorization\Api\RoleRecord;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Membership\Enums\MemberRole;
 use AIArmada\Membership\Services\MembershipRoleSyncService;
 use AIArmada\Membership\Tests\Fixtures\TestSubject;
 use AIArmada\Membership\Tests\MembershipTestCase;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Spatie\Permission\PermissionRegistrar;
@@ -30,7 +30,7 @@ beforeEach(function (): void {
 it('ensures a role exists', function (): void {
     $role = $this->service->ensureExists(MemberRole::Admin);
 
-    expect($role)->toBeInstanceOf(Role::class)
+    expect($role)->toBeInstanceOf(RoleRecord::class)
         ->name->toBe(MemberRole::Admin->spatieRoleName());
 });
 
@@ -61,9 +61,25 @@ it('revokes role scoped to subject', function (): void {
 it('restores the previous team after assignment fails', function (): void {
     setPermissionsTeamId('original-team');
 
+    $api = Mockery::mock(RoleAdministrationApi::class);
+    $api->shouldReceive('permissionNames')->zeroOrMoreTimes()->andReturn([]);
+    $api->shouldReceive('ensureRole')->once()->andReturn(new RoleRecord(
+        'role-id',
+        MemberRole::Admin->spatieRoleName(),
+        'web',
+        (string) $this->subject->getKey(),
+    ));
+    $api->shouldReceive('assignRole')->once()->andReturnUsing(function (): never {
+        expect(getPermissionsTeamId())->toBe($this->subject->getKey());
+
+        throw new RuntimeException('Assignment failed');
+    });
+
+    $this->app->instance(RoleAdministrationApi::class, $api);
+
     expect(fn () => $this->service->assignToUser(
         $this->subject,
-        new ThrowingMembershipRoleUser,
+        $this->user,
         MemberRole::Admin,
     ))->toThrow(RuntimeException::class, 'Assignment failed');
 
@@ -73,9 +89,18 @@ it('restores the previous team after assignment fails', function (): void {
 it('restores the previous team after revocation fails', function (): void {
     setPermissionsTeamId('original-team');
 
+    $api = Mockery::mock(RoleAdministrationApi::class);
+    $api->shouldReceive('revokeRole')->once()->andReturnUsing(function (): never {
+        expect(getPermissionsTeamId())->toBe($this->subject->getKey());
+
+        throw new RuntimeException('Revocation failed');
+    });
+
+    $this->app->instance(RoleAdministrationApi::class, $api);
+
     expect(fn () => $this->service->revokeFromUser(
         $this->subject,
-        new ThrowingMembershipRoleUser,
+        $this->user,
         MemberRole::Admin,
     ))->toThrow(RuntimeException::class, 'Revocation failed');
 
@@ -120,16 +145,3 @@ it('clears and restores ambient team context for global role assignment', functi
     setPermissionsTeamId(null);
     expect($this->user->hasRole(MemberRole::Admin->spatieRoleName()))->toBeTrue();
 });
-
-class ThrowingMembershipRoleUser extends Model
-{
-    public function assignRole(mixed ...$roles): never
-    {
-        throw new RuntimeException('Assignment failed');
-    }
-
-    public function removeRole(mixed $role): never
-    {
-        throw new RuntimeException('Revocation failed');
-    }
-}

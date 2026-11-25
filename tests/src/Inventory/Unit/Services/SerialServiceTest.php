@@ -15,6 +15,7 @@ use AIArmada\Inventory\States\Returned;
 use AIArmada\Inventory\States\SerialStatus;
 use AIArmada\Inventory\States\Shipped;
 use AIArmada\Inventory\States\Sold;
+use Carbon\CarbonImmutable;
 
 describe('SerialService', function (): void {
     beforeEach(function (): void {
@@ -31,7 +32,7 @@ describe('SerialService', function (): void {
             null,
             SerialCondition::New,
             1000,
-            now()->addYear(),
+            CarbonImmutable::now()->addYear(),
             'user-123'
         );
 
@@ -232,10 +233,10 @@ describe('SerialService', function (): void {
         $serial = InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
-            'warranty_expires_at' => now()->addYear(),
+            'warranty_expires_at' => CarbonImmutable::now()->addYear(),
         ]);
 
-        $newExpiry = now()->addYears(2);
+        $newExpiry = CarbonImmutable::now()->addYears(2);
         $updated = $this->service->updateWarranty($serial, $newExpiry, 'Extended warranty', 'user-123');
 
         expect($updated->warranty_expires_at->toDateString())->toBe($newExpiry->toDateString());

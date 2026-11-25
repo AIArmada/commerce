@@ -8,7 +8,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateLink;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Authz\Models\Permission;
+use AIArmada\Authz\Features\Authorization\Models\Permission;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentAffiliates\Resources\AffiliateLinkResource;
@@ -23,7 +23,7 @@ beforeEach(function (): void {
     AffiliateLink::query()->delete();
     AffiliateProgram::query()->delete();
     Affiliate::query()->delete();
-    User::query()->delete();
+    User::query()->where('email', '!=', 'default-owner@example.com')->delete();
     Permission::query()->delete();
 });
 

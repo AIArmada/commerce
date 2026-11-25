@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\TestCase;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScopeKey;
 use AIArmada\FilamentOrders\Support\FilamentOrdersCache;
 use AIArmada\Orders\Models\Order;
@@ -50,6 +51,9 @@ it('rejects empty-string owner payloads', function (): void {
 
 it('computes dashboard statistics with one cached aggregate query', function (): void {
     config()->set('orders.owner.enabled', false);
+
+    // Exclude initial tenant hydration from the aggregate query budget.
+    OwnerContext::resolve();
 
     DB::enableQueryLog();
     DB::flushQueryLog();

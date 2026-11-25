@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Jobs;
 
 use AIArmada\Affiliates\Models\AffiliateWebhookDelivery;
-use AIArmada\CommerceSupport\Http\PinnedHttpClient;
+use AIArmada\CommerceSupport\Drivers\Http\PinnedHttpClient;
 use AIArmada\CommerceSupport\Support\PublicHttpUrlGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Bus\Queueable;

@@ -15,7 +15,7 @@ Use this package when you need authorization management inside Filament panels, 
 - The `FilamentAuthzPlugin` fluent API and per-panel overrides
 - Filament resources for roles, permissions, and the optional user resource
 - Permission discovery for Filament resources, pages, and widgets
-- Permission key formatting, wildcard resolution, and sync helpers
+- Filament adapters for permission key formatting, wildcard resolution, and authorization administration
 - Authz scope resolution for model-backed permission teams
 - Impersonation routes, middleware, banner UI, and manager services
 - Adapter console commands such as `authz:discover`, `authz:policies`, and `authz:seeder`
@@ -48,7 +48,7 @@ Use this package when you need authorization management inside Filament panels, 
 - Tenant scoping relies on Spatie teams. When `authz.scopes.enabled` is true, `AuthzScopeTeamResolver` becomes the team resolver.
 - When Authz scopes are disabled but `commerce-support` owner context and Spatie teams are both enabled, the package falls back to `OwnerContextTeamResolver`.
 - `central_app` widens management scope intentionally; when it is `false`, user-role assignment remains constrained to the current team context.
-- The user role form revalidates submitted role IDs on save and throws an `AuthorizationException` for cross-scope submissions.
+- Role and permission CRUD and user assignment writes delegate to `RoleAdministrationApi` in `authz`; invalid guard/scope selections are rejected before mutation.
 - Impersonation routes are registered under `web` + `auth` middleware and the banner middleware is appended to the `web` group when impersonation is enabled.
 - A global super-admin role bypasses the active team filter for authorization and actor checks; target scope assignment is still required for impersonation when enforcement is enabled.
 
@@ -208,7 +208,6 @@ class SettingsPage extends Page
 | `HasPanelAuthz` | Adds panel access control with auto-role assignment |
 | `HasAuthzScope` | Creates and maintains Authz Scopes for models |
 | `CanBeImpersonated` | Adds impersonation capability to User models |
-| `SyncsRolePermissions` | Shared permission sync logic for Role pages |
 | `ScopesAuthzTenancy` | Applies tenant scoping to queries |
 
 ## Read next

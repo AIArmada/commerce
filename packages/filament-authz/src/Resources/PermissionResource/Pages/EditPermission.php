@@ -7,7 +7,7 @@ namespace AIArmada\FilamentAuthz\Resources\PermissionResource\Pages;
 use AIArmada\FilamentAuthz\Resources\PermissionResource;
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
-use Spatie\Permission\PermissionRegistrar;
+use Illuminate\Database\Eloquent\Model;
 
 class EditPermission extends EditRecord
 {
@@ -16,12 +16,13 @@ class EditPermission extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            DeleteAction::make(),
+            DeleteAction::make()->using(fn (Model $record): bool => static::getResource()::deleteDefinition($record)),
         ];
     }
 
-    protected function afterSave(): void
+    /** @param array<string, mixed> $data */
+    protected function handleRecordUpdate(Model $record, array $data): Model
     {
-        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        return static::getResource()::saveDefinition($data, $record);
     }
 }

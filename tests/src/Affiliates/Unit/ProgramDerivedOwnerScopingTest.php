@@ -8,6 +8,8 @@ use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramCreative;
 use AIArmada\Affiliates\Models\AffiliateProgramTier;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -29,9 +31,9 @@ it('scopes program tiers and creatives by current owner', function (): void {
                 private readonly ?Model $owner,
             ) {}
 
-            public function resolve(): ?Model
+            public function resolve(): ?RecordReference
             {
-                return $this->owner;
+                return EloquentRecordReference::fromModel($this->owner);
             }
         });
     };

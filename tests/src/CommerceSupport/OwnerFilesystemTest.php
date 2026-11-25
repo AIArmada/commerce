@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Contracts\OwnerScopeIdentifiable;
-use AIArmada\CommerceSupport\Support\OwnerFilesystem;
+use AIArmada\CommerceSupport\Persistence\OwnerFilesystem;
 use AIArmada\CommerceSupport\Support\OwnerScopeKey;
 use Illuminate\Support\Facades\Storage;
 

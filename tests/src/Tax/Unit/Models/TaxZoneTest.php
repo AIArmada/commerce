@@ -2,7 +2,10 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Tax\Enums\ZoneType;
 use AIArmada\Tax\Models\TaxRate;
@@ -18,9 +21,9 @@ $bindTaxOwnerForScoping = function (?Model $owner): void {
     {
         public function __construct(private ?Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 };
@@ -245,22 +248,7 @@ describe('TaxZone', function () use ($bindTaxOwnerForScoping): void {
     it('for owner scope with null owner', function () use ($bindTaxOwnerForScoping): void {
         config(['tax.features.owner.enabled' => true]);
 
-        $owner = new class extends Model
-        {
-            protected $table = 'users';
-
-            public $id = 1;
-
-            public function getMorphClass(): string
-            {
-                return 'App\\Models\\Store';
-            }
-
-            public function getKey(): mixed
-            {
-                return '123';
-            }
-        };
+        $owner = User::factory()->create();
 
         $bindTaxOwnerForScoping(null);
 
@@ -311,22 +299,7 @@ describe('TaxZone', function () use ($bindTaxOwnerForScoping): void {
         config(['tax.features.owner.enabled' => true]);
         config(['tax.features.owner.include_global' => true]);
 
-        $owner = new class extends Model
-        {
-            protected $table = 'users';
-
-            public $id = 1;
-
-            public function getMorphClass(): string
-            {
-                return 'App\\Models\\Store';
-            }
-
-            public function getKey(): mixed
-            {
-                return '123';
-            }
-        };
+        $owner = User::factory()->create();
 
         $bindTaxOwnerForScoping(null);
 
@@ -349,7 +322,7 @@ describe('TaxZone', function () use ($bindTaxOwnerForScoping): void {
         DB::table((new TaxZone)->getTable())->insert([
             'id' => (string) Str::uuid(),
             'owner_type' => $owner->getMorphClass(),
-            'owner_id' => '456',
+            'owner_id' => User::factory()->create()->getKey(),
             'name' => 'Other Owner Zone',
             'code' => 'OTHER',
             'description' => null,
@@ -375,22 +348,7 @@ describe('TaxZone', function () use ($bindTaxOwnerForScoping): void {
     it('for owner scope with owner exclude global', function () use ($bindTaxOwnerForScoping): void {
         config(['tax.features.owner.enabled' => true]);
 
-        $owner = new class extends Model
-        {
-            protected $table = 'users';
-
-            public $id = 1;
-
-            public function getMorphClass(): string
-            {
-                return 'App\\Models\\Store';
-            }
-
-            public function getKey(): mixed
-            {
-                return '123';
-            }
-        };
+        $owner = User::factory()->create();
 
         $bindTaxOwnerForScoping(null);
 

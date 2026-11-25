@@ -3,7 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Contracts\SlugRedirectRecorder;
-use AIArmada\CommerceSupport\Support\CanonicalSlug;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Persistence\CanonicalSlug;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
@@ -32,9 +33,9 @@ beforeEach(function (): void {
 
         public bool $result = true;
 
-        public function record(Model $model, ?string $previousSlug): bool
+        public function record(RecordReference $record, ?string $previousSlug, string $currentSlug): bool
         {
-            $this->calls[] = [$model->getKey(), $previousSlug];
+            $this->calls[] = [$record->id, $previousSlug];
 
             return $this->result;
         }
@@ -49,7 +50,7 @@ it('persists a changed slug and records the previous one', function (): void {
 
     expect($changed)->toBeTrue()
         ->and($record->fresh()->getAttribute('slug'))->toBe('new-slug')
-        ->and($this->recorder->calls)->toBe([[$record->getKey(), 'old-slug']]);
+        ->and($this->recorder->calls)->toBe([[(string) $record->getKey(), 'old-slug']]);
 });
 
 it('does nothing when the slug is unchanged', function (): void {
@@ -82,7 +83,7 @@ it('persists slugs on new records', function (): void {
     expect($changed)->toBeTrue()
         ->and($record->exists)->toBeTrue()
         ->and($record->getAttribute('slug'))->toBe('first-slug')
-        ->and($this->recorder->calls)->toBe([[$record->getKey(), null]]);
+        ->and($this->recorder->calls)->toBe([[(string) $record->getKey(), null]]);
 });
 
 it('preserves timestamps when persisting', function (): void {

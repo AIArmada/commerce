@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Resources\RoleResource\Schemas;
 
-use AIArmada\Authz\Models\AuthzScope;
+use AIArmada\Authz\Features\Authorization\Models\AuthzScope;
 use AIArmada\FilamentAuthz\FilamentAuthzPlugin;
 use Closure;
 use Filament\Forms;

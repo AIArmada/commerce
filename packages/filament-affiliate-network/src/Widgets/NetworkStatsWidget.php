@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliateNetwork\Widgets;
 
-use AIArmada\CommerceSupport\Support\OwnerCache;
+use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\FilamentAffiliateNetwork\Support\NetworkAdminAccess;
 use AIArmada\FilamentAffiliateNetwork\Support\NetworkStatsAggregator;
 use Filament\Widgets\StatsOverviewWidget;

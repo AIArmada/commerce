@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Chip\Enums\WebhookEventType;
 use AIArmada\Chip\Webhooks\ProcessChipWebhook;
-use AIArmada\CommerceSupport\Webhooks\CommerceWebhookProcessor;
+use AIArmada\CommerceSupport\Features\Webhooks\EntryPoints\CommerceWebhookProcessor;
 
 describe('ProcessChipWebhook class structure', function (): void {
     it('extends CommerceWebhookProcessor', function (): void {

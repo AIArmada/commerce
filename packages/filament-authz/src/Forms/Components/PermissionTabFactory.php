@@ -19,9 +19,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Spatie\Permission\PermissionRegistrar;
+use WeakMap;
 
 final class PermissionTabFactory
 {
+    /** @var WeakMap<Collection<int, Model>, array<string, true>>|null */
+    private static ?WeakMap $recordPermissionSets = null;
+
     public static function getAuthzFormComponents(): Tabs
     {
         return Tabs::make('Permissions')
@@ -502,10 +506,41 @@ final class PermissionTabFactory
         }
 
         $permissions = $record->getRelationValue('permissions');
-        $permissionNames = $permissions instanceof Collection ? $permissions->pluck('name')->all() : [];
-        $validOptions = array_keys($component->getOptions());
-        $filteredPermissions = array_values(array_intersect($permissionNames, $validOptions));
+
+        if (! $permissions instanceof Collection) {
+            return;
+        }
+
+        $permissionSet = static::recordPermissionSet($permissions);
+        $filteredPermissions = [];
+
+        foreach (array_keys($component->getOptions()) as $option) {
+            if (isset($permissionSet[(string) $option])) {
+                $filteredPermissions[] = (string) $option;
+            }
+        }
+
         $component->state($filteredPermissions);
+    }
+
+    /**
+     * @param  Collection<int, Model>  $permissions
+     * @return array<string, true>
+     */
+    private static function recordPermissionSet(Collection $permissions): array
+    {
+        $sets = self::$recordPermissionSets ??= new WeakMap;
+
+        if (! isset($sets[$permissions])) {
+            $names = $permissions->pluck('name')
+                ->filter(static fn (mixed $name): bool => is_string($name))
+                ->values()
+                ->all();
+
+            $sets[$permissions] = array_fill_keys($names, true);
+        }
+
+        return $sets[$permissions];
     }
 
     /**
@@ -547,7 +582,11 @@ final class PermissionTabFactory
      */
     public static function escapeForVisibleJs(string $value): string
     {
-        return str_replace(['\\', "'"], ['\\\\', "\\'"], $value);
+        return str_replace(
+            ['\\', "'", "\r", "\n", "\u{2028}", "\u{2029}", '<', '>'],
+            ['\\\\', "\\'", '\\r', '\\n', '\\u2028', '\\u2029', '\\u003C', '\\u003E'],
+            $value
+        );
     }
 
     /**

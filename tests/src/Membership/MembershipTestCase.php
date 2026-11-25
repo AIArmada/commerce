@@ -6,7 +6,6 @@ namespace AIArmada\Membership\Tests;
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\TestCase as BaseTestCase;
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Membership\Actions\AddMemberAction;
 use AIArmada\Membership\Models\MembershipApplication;
@@ -66,7 +65,7 @@ abstract class MembershipTestCase extends BaseTestCase
         $owner = User::query()
             ->where('email', 'default-owner@example.com')
             ->first()
-            ?? app(OwnerResolverInterface::class)->resolve();
+            ?? OwnerContext::resolve();
 
         return OwnerContext::withOwner(
             $owner,

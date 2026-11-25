@@ -2,7 +2,10 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Models\Segment;
@@ -13,24 +16,7 @@ use Illuminate\Database\Eloquent\Model;
 if (! function_exists('filamentCustomers_makeOwner')) {
     function filamentCustomers_makeOwner(string $id): Model
     {
-        return new class($id) extends Model
-        {
-            public $incrementing = false;
-
-            protected $keyType = 'string';
-
-            public function __construct(private readonly string $uuid) {}
-
-            public function getKey(): mixed
-            {
-                return $this->uuid;
-            }
-
-            public function getMorphClass(): string
-            {
-                return 'tests:owner';
-            }
-        };
+        return User::factory()->create(['id' => $id]);
     }
 }
 
@@ -47,9 +33,9 @@ it('scopes CustomerResource query to the resolved owner', function (): void {
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -85,9 +71,9 @@ it('scopes SegmentResource query to the resolved owner', function (): void {
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 

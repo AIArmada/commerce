@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Jnt\Webhooks;
 
-use AIArmada\CommerceSupport\Webhooks\CommerceSignatureValidator;
+use AIArmada\CommerceSupport\Features\Webhooks\EntryPoints\CommerceSignatureValidator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 

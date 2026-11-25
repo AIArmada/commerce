@@ -11,6 +11,8 @@ use AIArmada\Affiliates\Support\Integrations\VoucherBridge;
 use AIArmada\Cart\Snapshots\CartSnapshot as SnapshotCart;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
@@ -122,9 +124,9 @@ test('cart bridge does not resolve urls when cart is not referenced in current o
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -139,9 +141,9 @@ test('cart bridge does not resolve urls when cart is not referenced in current o
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -175,9 +177,9 @@ test('cart bridge does not resolve urls when cart is not referenced in current o
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -262,9 +264,9 @@ test('voucher bridge does not resolve urls outside current owner scope', functio
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -272,9 +274,9 @@ test('voucher bridge does not resolve urls outside current owner scope', functio
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -293,9 +295,9 @@ test('voucher bridge does not resolve urls outside current owner scope', functio
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 

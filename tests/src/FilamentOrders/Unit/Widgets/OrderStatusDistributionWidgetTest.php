@@ -5,6 +5,8 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\FilamentOrders\Fixtures\TestOwner;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentOrders\Widgets\OrderStatusDistributionWidget;
 use AIArmada\Orders\Models\Order;
@@ -31,7 +33,7 @@ beforeEach(function (): void {
 
     app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
     {
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
             return null;
         }
@@ -86,9 +88,9 @@ it('builds a status distribution chart scoped to the current owner plus global',
     {
         public function __construct(private readonly ?Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 

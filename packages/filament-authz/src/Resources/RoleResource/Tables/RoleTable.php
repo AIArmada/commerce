@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Resources\RoleResource\Tables;
 
-use AIArmada\FilamentAuthz\FilamentAuthzPlugin;
+use AIArmada\FilamentAuthz\Resources\RoleResource\Schemas\RoleForm;
+use AIArmada\FilamentAuthz\Support\DeleteAuthzDefinitions;
 use Closure;
 use Filament\Actions;
 use Filament\Tables\Columns\TextColumn;
@@ -12,14 +13,16 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Spatie\Permission\PermissionRegistrar;
 
 final class RoleTable
 {
     /**
      * @param  class-string  $modelClass
+     * @param  Closure(Model): bool  $deleteDefinition
      */
-    public static function configure(Table $table, string $modelClass): Table
+    public static function configure(Table $table, string $modelClass, Closure $deleteDefinition): Table
     {
         $guards = config('authz.guards', ['web']);
         $filters = [
@@ -106,10 +109,10 @@ final class RoleTable
             ->filters($filters)
             ->actions([
                 Actions\EditAction::make(),
-                Actions\DeleteAction::make(),
+                Actions\DeleteAction::make()->using(fn (Model $record): bool => $deleteDefinition($record)),
             ])
             ->bulkActions([
-                Actions\DeleteBulkAction::make(),
+                DeleteAuthzDefinitions::bulk($deleteDefinition),
             ])
             ->defaultSort('name')
             ->striped()
@@ -128,25 +131,6 @@ final class RoleTable
      */
     private static function getScopeOptions(): array
     {
-        $override = FilamentAuthzPlugin::resolveForPanel()?->getRoleScopeOptions();
-
-        if ($override !== null) {
-            return $override;
-        }
-
-        $configured = config('filament-authz.role_resource.scope_options');
-
-        if ($configured instanceof Closure) {
-            /** @var mixed $configured */
-            $configured = app()->call($configured);
-        }
-
-        if (! is_array($configured)) {
-            return [];
-        }
-
-        return collect($configured)
-            ->mapWithKeys(static fn (mixed $label, mixed $id): array => [(string) $id => (string) $label])
-            ->all();
+        return RoleForm::getScopeOptions();
     }
 }

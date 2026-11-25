@@ -5,6 +5,8 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\FilamentProducts\Fixtures\TestOwner;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentProducts\Resources\AttributeGroupResource;
 use AIArmada\FilamentProducts\Resources\AttributeResource;
@@ -66,9 +68,9 @@ it('rejects forged cross-owner ids before every catalog relationship sync', func
     {
         public function __construct(private readonly ?Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -120,9 +122,9 @@ it('still accepts same-owner ids at the relationship write boundary', function (
     {
         public function __construct(private readonly ?Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 

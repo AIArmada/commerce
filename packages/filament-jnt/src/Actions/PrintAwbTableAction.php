@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentJnt\Actions;
 
+use AIArmada\CommerceSupport\Features\SignedDownloads\Api\SignedDownloadApi;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
-use AIArmada\CommerceSupport\Support\OwnerSignedDownload;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Jnt\Data\PrintWaybillData;
 use AIArmada\Jnt\Models\JntOrder;
@@ -93,7 +94,7 @@ final class PrintAwbTableAction extends Action
                             return;
                         }
 
-                        $url = OwnerSignedDownload::issueUrl(
+                        $url = app(SignedDownloadApi::class)->issueUrl(
                             cachePrefix: 'jnt_awb',
                             routeName: 'jnt.awb.show',
                             routeParameters: ['orderId' => $record->order_id],
@@ -104,7 +105,7 @@ final class PrintAwbTableAction extends Action
                                 'tracking_number' => $record->tracking_number,
                             ],
                             ttl: 1800,
-                            owner: OwnerUiScope::resolveOwner($record),
+                            owner: EloquentRecordReference::fromModel(OwnerUiScope::resolveOwner($record)),
                             userId: Filament::auth()?->id(),
                         );
 

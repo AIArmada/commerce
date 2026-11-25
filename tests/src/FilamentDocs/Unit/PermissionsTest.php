@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Authz\Models\Permission;
+use AIArmada\Authz\Features\Authorization\Models\Permission;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\Docs\Enums\DocApprovalStatus;
@@ -19,7 +19,7 @@ use AIArmada\FilamentDocs\Resources\DocTemplateResource;
 uses(TestCase::class);
 
 beforeEach(function (): void {
-    User::query()->delete();
+    User::query()->where('email', '!=', 'default-owner@example.com')->delete();
     Permission::query()->delete();
 });
 

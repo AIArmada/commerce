@@ -22,7 +22,7 @@ use AIArmada\AffiliateNetwork\Features\Postbacks\Models\CreatorPostbackDelivery;
 use AIArmada\AffiliateNetwork\Features\Postbacks\Models\CreatorPostbackEndpoint;
 use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use AIArmada\CommerceSupport\Support\OwnerCache;
+use AIArmada\CommerceSupport\Persistence\OwnerCache;
 use AIArmada\FilamentAffiliateNetwork\Pages\MerchantDashboardPage;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Pages\CreateAffiliateOffer;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Pages\EditAffiliateOffer;

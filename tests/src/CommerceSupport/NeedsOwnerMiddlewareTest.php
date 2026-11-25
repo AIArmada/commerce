@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Events\OwnerNotResolvedForRequestEvent;
 use AIArmada\CommerceSupport\Exceptions\CommerceException;
 use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
@@ -52,7 +53,7 @@ describe('NeedsOwner middleware', function (): void {
 
         app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
         {
-            public function resolve(): ?Model
+            public function resolve(): ?RecordReference
             {
                 return null;
             }

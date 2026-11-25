@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerContextTeamResolver;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 
@@ -27,9 +28,9 @@ it('resolves the current owner from the resolver and supports overrides', functi
     {
         public function __construct(private readonly User $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
-            return $this->owner;
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -65,9 +66,9 @@ it('builds owner instances from type and id', function (): void {
 });
 
 it('returns null for null owner payloads', function (): void {
-    expect(OwnerContext::fromTypeAndId(null, null))->toBeNull()
-        ->and(OwnerContext::fromTypeAndId(User::class, null))->toBeNull()
-        ->and(OwnerContext::fromTypeAndId(null, '123'))->toBeNull();
+    expect(OwnerContext::fromTypeAndId(null, null))->toBeNull();
+    expect(fn () => OwnerContext::fromTypeAndId(User::class, null))->toThrow(InvalidArgumentException::class);
+    expect(fn () => OwnerContext::fromTypeAndId(null, '123'))->toThrow(InvalidArgumentException::class);
 });
 
 it('throws for empty-string owner payloads', function (): void {
@@ -183,7 +184,7 @@ it('restores fallback owner overrides outside http requests when callbacks throw
 
     app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
     {
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
             return null;
         }
@@ -228,7 +229,7 @@ it('keeps request owner state isolated per http request instance', function (): 
 
     app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
     {
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
             return null;
         }
@@ -270,7 +271,7 @@ it('does not expose an HTTP owner override to another request without owner stat
 
     app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
     {
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
             return null;
         }
@@ -305,7 +306,7 @@ it('restores scope state onto the request captured at entry when the request is 
 
     app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
     {
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
             return null;
         }
@@ -348,7 +349,7 @@ it('applies non-HTTP team id changes to the active scoped override only', functi
 
     app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
     {
-        public function resolve(): ?Model
+        public function resolve(): ?RecordReference
         {
             return null;
         }
