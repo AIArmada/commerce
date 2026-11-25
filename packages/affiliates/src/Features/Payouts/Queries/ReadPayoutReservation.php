@@ -20,6 +20,34 @@ final readonly class ReadPayoutReservation implements PayoutReservationReader
         }
     }
 
+    public function affiliateIdForOperation(string $operationId, ?string $ownerType, ?string $ownerId, int $connectionId): ?string
+    {
+        $this->assertConnection($connectionId);
+
+        $query = AffiliatePayoutOperation::query()->withoutOwnerScope()->whereKey($operationId);
+        if ((bool) config('affiliates.owner.enabled', false)) {
+            $query->where('owner_type', $ownerType)->where('owner_id', $ownerId);
+        }
+
+        $id = $query->value('affiliate_id');
+
+        return is_string($id) ? $id : null;
+    }
+
+    public function hasOperations(string $payoutId, int $connectionId): bool
+    {
+        $this->assertConnection($connectionId);
+
+        return AffiliatePayoutOperation::query()->withoutOwnerScope()->where('affiliate_payout_id', $payoutId)->exists();
+    }
+
+    private function assertConnection(int $connectionId): void
+    {
+        if (spl_object_id((new AffiliatePayoutOperation)->getConnection()) !== $connectionId) {
+            throw new LogicException('Payout reservation requires a shared database connection.');
+        }
+    }
+
     public function locked(string $operationId): ?PayoutReservationRecord
     {
         $connection = (new AffiliatePayoutOperation)->getConnection();

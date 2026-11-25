@@ -11,6 +11,7 @@ use AIArmada\Affiliates\Features\Payouts\Api\PayoutReconciliation;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutEvent;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutMethod;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutOperation;
+use AIArmada\Affiliates\Features\Payouts\Queries\PayoutOperationQuery;
 use AIArmada\Affiliates\Features\Payouts\Queries\PayoutRequestQuery;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
@@ -48,7 +49,7 @@ final readonly class ProcessAffiliatePayout
         try {
             $connection = $payout->getConnection();
             $claim = $connection->transaction(function () use ($payout): array {
-                $lockedQuery = AffiliatePayout::query()->with('operation');
+                $lockedQuery = AffiliatePayout::query();
 
                 if ((bool) config('affiliates.owner.enabled', false)) {
                     $lockedQuery->forOwner();
@@ -60,12 +61,14 @@ final readonly class ProcessAffiliatePayout
                     return ['error' => PayoutResult::failure('The payout operation is missing.', 'MISSING_PAYOUT_OPERATION')];
                 }
 
-                if (! $locked->operation instanceof AffiliatePayoutOperation) {
+                $operation = PayoutOperationQuery::forPayout($locked)->lockForUpdate()->first();
+
+                if (! $operation instanceof AffiliatePayoutOperation) {
                     return ['error' => PayoutResult::failure('The payout operation is missing.', 'MISSING_PAYOUT_OPERATION')];
                 }
 
                 if ($locked->status->equals(CompletedPayout::class)) {
-                    return ['error' => PayoutResult::success((string) ($locked->external_reference ?? $locked->operation->provider_reference ?? $locked->id))];
+                    return ['error' => PayoutResult::success((string) ($locked->external_reference ?? $operation->provider_reference ?? $locked->id))];
                 }
 
                 if ($locked->status->equals(FailedPayout::class)) {
@@ -79,9 +82,9 @@ final readonly class ProcessAffiliatePayout
                 }
 
                 $needsReconciliation = $locked->status->equals(ProcessingPayout::class)
-                    || in_array($locked->operation->status, ['submitting', 'unknown', 'submitted'], true);
+                    || in_array($operation->status, ['submitting', 'unknown', 'submitted'], true);
 
-                if ($needsReconciliation && $locked->operation->lease_expires_at?->isFuture()) {
+                if ($needsReconciliation && $operation->lease_expires_at?->isFuture()) {
                     return ['error' => PayoutResult::unknown('PAYOUT_LEASE_ACTIVE')];
                 }
 
@@ -92,10 +95,10 @@ final readonly class ProcessAffiliatePayout
 
                 if ($method === null) {
                     if ($needsReconciliation) {
-                        $locked->load('operation');
-                        $wasUnknown = $locked->operation->status === 'unknown'
-                            && $locked->operation->last_error_code === 'NO_DEFAULT_PAYOUT_METHOD';
-                        $locked->operation->forceFill([
+                        $operation->refresh();
+                        $wasUnknown = $operation->status === 'unknown'
+                            && $operation->last_error_code === 'NO_DEFAULT_PAYOUT_METHOD';
+                        $operation->forceFill([
                             'status' => 'unknown',
                             'last_error_code' => 'NO_DEFAULT_PAYOUT_METHOD',
                             'lease_expires_at' => null,
@@ -118,8 +121,8 @@ final readonly class ProcessAffiliatePayout
                         FailedPayout::value(),
                         'No default payout method is configured.',
                     );
-                    $locked->load('operation');
-                    $locked->operation->forceFill(['status' => 'failed', 'last_error_code' => 'NO_DEFAULT_PAYOUT_METHOD'])->save();
+                    $operation->refresh();
+                    $operation->forceFill(['status' => 'failed', 'last_error_code' => 'NO_DEFAULT_PAYOUT_METHOD'])->save();
 
                     return ['error' => PayoutResult::failure('No default payout method is configured.', 'NO_DEFAULT_PAYOUT_METHOD')];
                 }
@@ -133,15 +136,15 @@ final readonly class ProcessAffiliatePayout
                     ProcessingPayout::value(),
                     'Payout claimed for processing.',
                 );
-                $locked->load('operation');
-                $locked->operation->forceFill([
-                    'status' => in_array($locked->operation->status, ['submitting', 'unknown', 'submitted'], true) ? $locked->operation->status : 'submitting',
+                $operation->refresh();
+                $operation->forceFill([
+                    'status' => in_array($operation->status, ['submitting', 'unknown', 'submitted'], true) ? $operation->status : 'submitting',
                     'lease_expires_at' => CarbonImmutable::now()->addMinutes(5),
                 ])->save();
-                $leaseExpiresAt = $locked->operation->fresh()?->lease_expires_at?->toISOString();
+                $leaseExpiresAt = $operation->fresh()?->lease_expires_at?->toISOString();
 
                 return [
-                    'payout' => $locked->fresh(['operation', 'payee']),
+                    'payout' => $locked->fresh(['payee']),
                     'processor_type' => $method->type->value,
                     'request' => PayoutRequestQuery::fromPayout($locked, $method->details),
                     'reconcile' => $needsReconciliation,
@@ -162,7 +165,7 @@ final readonly class ProcessAffiliatePayout
                 $status = $providerStatus->status;
 
                 if ($status === 'completed') {
-                    return $this->recordResult($claimedPayout, PayoutResult::success((string) ($providerStatus->externalReference ?? $claimedPayout->external_reference ?? $claimedPayout->operation?->provider_reference ?? $claimedPayout->id)), leaseExpiresAt: $claim['lease_expires_at']);
+                    return $this->recordResult($claimedPayout, PayoutResult::success((string) ($providerStatus->externalReference ?? $claimedPayout->external_reference ?? $claim['request']->externalReference ?? $claimedPayout->id)), leaseExpiresAt: $claim['lease_expires_at']);
                 }
 
                 if (in_array($status, ['failed', 'cancelled'], true)) {
@@ -211,7 +214,7 @@ final readonly class ProcessAffiliatePayout
     {
         $connection = $payout->getConnection();
         $connection->transaction(function () use ($payout, $result, $notes, $leaseExpiresAt): bool {
-            $lockedQuery = AffiliatePayout::query()->with('operation');
+            $lockedQuery = AffiliatePayout::query();
 
             if ((bool) config('affiliates.owner.enabled', false)) {
                 $lockedQuery->forOwner();
@@ -219,7 +222,13 @@ final readonly class ProcessAffiliatePayout
 
             $locked = $lockedQuery->lockForUpdate()->find($payout->getKey());
 
-            if (! $locked instanceof AffiliatePayout || ! $locked->operation instanceof AffiliatePayoutOperation) {
+            if (! $locked instanceof AffiliatePayout) {
+                return false;
+            }
+
+            $operation = PayoutOperationQuery::forPayout($locked)->lockForUpdate()->first();
+
+            if (! $operation instanceof AffiliatePayoutOperation) {
                 return false;
             }
 
@@ -227,7 +236,7 @@ final readonly class ProcessAffiliatePayout
                 return false;
             }
 
-            if ($leaseExpiresAt === null || $locked->operation->lease_expires_at?->toISOString() !== $leaseExpiresAt) {
+            if ($leaseExpiresAt === null || $operation->lease_expires_at?->toISOString() !== $leaseExpiresAt) {
                 return false;
             }
 
@@ -247,12 +256,12 @@ final readonly class ProcessAffiliatePayout
                     'Provider outcome: completed',
                     $metadata,
                 );
-                $locked->load('operation');
+                $operation->refresh();
                 $locked->forceFill([
                     'external_reference' => $reference,
                     'metadata' => array_merge($locked->metadata ?? [], $metadata),
                 ])->save();
-                $locked->operation->forceFill([
+                $operation->forceFill([
                     'status' => 'completed',
                     'provider_reference' => $reference,
                     'last_error_code' => null,
@@ -266,7 +275,7 @@ final readonly class ProcessAffiliatePayout
                     'external_reference' => $reference,
                     'metadata' => array_merge($locked->metadata ?? [], $metadata),
                 ])->save();
-                $locked->operation->forceFill([
+                $operation->forceFill([
                     'status' => 'submitted',
                     'provider_reference' => $reference,
                     'last_error_code' => null,
@@ -278,9 +287,9 @@ final readonly class ProcessAffiliatePayout
                     'external_reference' => $reference ?? $locked->external_reference,
                     'metadata' => array_merge($locked->metadata ?? [], ['provider_status' => 'unknown']),
                 ])->save();
-                $locked->operation->forceFill([
+                $operation->forceFill([
                     'status' => 'unknown',
-                    'provider_reference' => $reference ?? $locked->operation->provider_reference,
+                    'provider_reference' => $reference ?? $operation->provider_reference,
                     'last_error_code' => $result->failureCode,
                     'lease_expires_at' => null,
                 ])->save();
@@ -291,8 +300,8 @@ final readonly class ProcessAffiliatePayout
                     'Provider outcome: failed' . ($result->failureCode !== null ? ' (' . $result->failureCode . ')' : ''),
                     $metadata,
                 );
-                $locked->load('operation');
-                $locked->operation->forceFill([
+                $operation->refresh();
+                $operation->forceFill([
                     'status' => 'failed',
                     'last_error_code' => $result->failureCode,
                     'lease_expires_at' => null,

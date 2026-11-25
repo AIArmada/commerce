@@ -9,6 +9,7 @@ use AIArmada\Affiliates\Features\Payouts\Api\PayoutReconciliation;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutRelease;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutEvent;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutOperation;
+use AIArmada\Affiliates\Features\Payouts\Queries\PayoutOperationQuery;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\CancelledPayout;
 use AIArmada\Affiliates\States\CompletedPayout;
@@ -44,7 +45,7 @@ final readonly class ReconcilePayout implements PayoutReconciliation
         }
 
         $changed = $connection->transaction(function () use ($payoutId, $statusClass, $externalData, $externalStatus): bool {
-            $locked = AffiliatePayout::query()->forOwner()->with('operation')->lockForUpdate()->find($payoutId);
+            $locked = AffiliatePayout::query()->forOwner()->lockForUpdate()->find($payoutId);
 
             if (! $locked instanceof AffiliatePayout || $locked->status->equals($statusClass)) {
                 return false;
@@ -89,15 +90,16 @@ final readonly class ReconcilePayout implements PayoutReconciliation
                 'metadata' => $metadata,
             ])->save();
 
-            if ($locked->operation instanceof AffiliatePayoutOperation) {
-                $locked->operation->forceFill([
+            $operation = PayoutOperationQuery::forPayout($locked)->lockForUpdate()->first();
+            if ($operation instanceof AffiliatePayoutOperation) {
+                $operation->forceFill([
                     'status' => match (true) {
                         $newStatus->equals(CompletedPayout::class) => 'completed',
                         $newStatus->equals(FailedPayout::class) => 'failed',
                         $newStatus->equals(CancelledPayout::class) => 'cancelled',
                         default => 'submitted',
                     },
-                    'provider_reference' => $reference ?: $locked->operation->provider_reference,
+                    'provider_reference' => $reference ?: $operation->provider_reference,
                     'last_error_code' => $newStatus->equals(FailedPayout::class) ? 'PROVIDER_RECONCILED_FAILURE' : null,
                     'completed_at' => $newStatus->equals(CompletedPayout::class) || $newStatus->equals(FailedPayout::class) || $newStatus->equals(CancelledPayout::class) ? CarbonImmutable::now() : null,
                     'lease_expires_at' => null,

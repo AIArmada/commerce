@@ -57,7 +57,7 @@ function createProviderPayout(PayoutMethodType $type, array $details, int $amoun
 
     $operation->forceFill(['affiliate_payout_id' => $payout->id])->save();
 
-    return $payout->fresh(['operation', 'payee']);
+    return $payout->fresh(['payee']);
 }
 
 test('stripe uses the operation id as the provider idempotency key', function (): void {
@@ -73,7 +73,7 @@ test('stripe uses the operation id as the provider idempotency key', function ()
 
     Http::assertSent(function (Request $request) use ($payout): bool {
         return $request->url() === 'https://api.stripe.com/v1/transfers'
-            && $request->hasHeader('Idempotency-Key', (string) $payout->operation?->id);
+            && $request->hasHeader('Idempotency-Key', (string) $payout->affiliate_payout_operation_id);
     });
 });
 
@@ -93,7 +93,7 @@ test('paypal derives one stable sender batch identity from the operation', funct
     config()->set('affiliates.payouts.paypal.client_id', 'client');
     config()->set('affiliates.payouts.paypal.client_secret', 'secret');
     $payout = createProviderPayout(PayoutMethodType::PayPal, ['email' => 'affiliate@example.test']);
-    $expected = mb_substr(hash('sha256', (string) $payout->operation?->id), 0, 30);
+    $expected = mb_substr(hash('sha256', (string) $payout->affiliate_payout_operation_id), 0, 30);
 
     Http::fake([
         'api-m.sandbox.paypal.com/v1/oauth2/token' => Http::response(['access_token' => 'token'], 200),

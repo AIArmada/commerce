@@ -6,6 +6,7 @@ namespace AIArmada\Affiliates\Features\Payouts\Actions;
 
 use AIArmada\Affiliates\Features\Conversions\Api\PayoutConversionSettlement;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutRelease;
+use AIArmada\Affiliates\Features\Payouts\Queries\PayoutOperationQuery;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use Carbon\CarbonImmutable;
 
@@ -19,7 +20,7 @@ final readonly class ReleasePayoutFunds implements PayoutRelease
             $payout = AffiliatePayout::query()->forOwner()->lockForUpdate()->findOrFail($payoutId);
 
             if ($this->settlement->release($payoutId)) {
-                $operation = $payout->operation()->forOwner()->lockForUpdate()->firstOrFail();
+                $operation = PayoutOperationQuery::forPayout($payout)->lockForUpdate()->firstOrFail();
                 $operation->forceFill(['funds_released_at' => CarbonImmutable::now()])->save();
             }
         }, attempts: 3);

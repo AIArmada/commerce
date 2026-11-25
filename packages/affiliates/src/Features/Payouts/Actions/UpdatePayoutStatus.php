@@ -52,7 +52,7 @@ final readonly class UpdatePayoutStatus
         }
 
         return $payout->getConnection()->transaction(function () use ($payout, $status, $notes, $metadata, $retainNote): AffiliatePayout {
-            $locked = AffiliatePayout::query()->with('operation')->lockForUpdate()->findOrFail($payout->getKey());
+            $locked = AffiliatePayout::query()->lockForUpdate()->findOrFail($payout->getKey());
 
             $from = $locked->status;
             $newStatus = PayoutStatus::fromString($status, $locked);

@@ -15,7 +15,7 @@ final class PayoutRequestQuery
     /** @param array<string, mixed>|null $methodDetails */
     public static function fromPayout(AffiliatePayout $payout, ?array $methodDetails = null): PayoutRequest
     {
-        $operation = $payout->operation;
+        $operation = PayoutOperationQuery::forPayout($payout)->first();
         $affiliate = $payout->payee;
         $hasAffiliate = $affiliate instanceof Affiliate;
 

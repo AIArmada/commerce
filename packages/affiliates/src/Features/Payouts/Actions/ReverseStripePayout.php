@@ -7,6 +7,7 @@ namespace AIArmada\Affiliates\Features\Payouts\Actions;
 use AIArmada\Affiliates\Contracts\PayoutProcessorRegistry;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutReversal;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutOperation;
+use AIArmada\Affiliates\Features\Payouts\Queries\PayoutOperationQuery;
 use AIArmada\Affiliates\Features\Payouts\Queries\PayoutRequestQuery;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
@@ -31,13 +32,11 @@ final readonly class ReverseStripePayout implements PayoutReversal
 
         return $connection->transaction(function () use ($payoutId): bool {
             $payout = AffiliatePayout::query()->forOwner()->with('payee')->lockForUpdate()->findOrFail($payoutId);
-            $operation = $payout->operation()->forOwner()->lockForUpdate()->first();
+            $operation = PayoutOperationQuery::forPayout($payout)->lockForUpdate()->first();
 
             if (! $operation instanceof AffiliatePayoutOperation) {
                 return false;
             }
-
-            $payout->setRelation('operation', $operation);
 
             if ($operation->status === 'reversed') {
                 return true;

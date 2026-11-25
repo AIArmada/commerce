@@ -34,12 +34,11 @@ final readonly class PayoutReconciliationQuery implements PayoutReconciliationQu
         return AffiliatePayout::query()
             ->whereIn('status', [ProcessingPayout::value(), PendingPayout::value()])
             ->where(static function ($query): void {
-                $query->whereHas('operation', static function ($operationQuery): void {
-                    $operationQuery->whereIn('status', ['submitting', 'submitted', 'unknown']);
-                })->orWhereNotNull('external_reference');
+                $query->whereIn('affiliate_payout_operation_id', AffiliatePayoutOperation::query()->whereIn('status', ['submitting', 'submitted', 'unknown'])->select('id'))
+                    ->orWhereNotNull('external_reference');
             })
             ->where('updated_at', '<=', CarbonImmutable::now()->subMinutes(5))
-            ->whereDoesntHave('operation', static fn ($query) => $query->where('last_error_code', PayoutReconciliation::COMPLETION_BLOCKED_CODE))
+            ->where(static fn ($query) => $query->whereNull('affiliate_payout_operation_id')->orWhereNotIn('affiliate_payout_operation_id', AffiliatePayoutOperation::query()->where('last_error_code', PayoutReconciliation::COMPLETION_BLOCKED_CODE)->select('id')))
             ->orderBy('id')
             ->pluck('id')
             ->map(static fn (mixed $id): string => (string) $id)

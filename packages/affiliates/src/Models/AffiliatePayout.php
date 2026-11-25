@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Models;
 
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutEventHistory;
-use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutOperation;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutReservationReader;
 use AIArmada\Affiliates\States\PayoutStatus;
 use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
@@ -18,7 +18,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -117,12 +116,6 @@ class AffiliatePayout extends Model implements Auditable
         return $this->hasMany(AffiliateConversion::class, 'affiliate_payout_id');
     }
 
-    /** @return BelongsTo<AffiliatePayoutOperation, $this> */
-    public function operation(): BelongsTo
-    {
-        return $this->belongsTo(AffiliatePayoutOperation::class, 'affiliate_payout_operation_id');
-    }
-
     /**
      * Fail loud when linked conversions span currencies.
      *
@@ -173,10 +166,13 @@ class AffiliatePayout extends Model implements Auditable
         $expectedAffiliateId = null;
 
         if ($this->affiliate_payout_operation_id !== null) {
-            $expectedAffiliateId = AffiliatePayoutOperation::query()
-                ->forOwner($owner)
-                ->whereKey($this->affiliate_payout_operation_id)
-                ->value('affiliate_id');
+            $scope = $owner === OwnerContext::CURRENT ? OwnerContext::resolveConfigured(static::ownerScopeConfig()) : $owner;
+            $expectedAffiliateId = app(PayoutReservationReader::class)->affiliateIdForOperation(
+                $this->affiliate_payout_operation_id,
+                $scope instanceof Model ? $scope->getMorphClass() : null,
+                $scope instanceof Model ? (string) $scope->getKey() : null,
+                spl_object_id($this->getConnection()),
+            );
 
             if ($expectedAffiliateId === null) {
                 throw new InvalidArgumentException(sprintf(
@@ -241,7 +237,7 @@ class AffiliatePayout extends Model implements Auditable
                 || (int) $payout->conversion_count !== 0
                 || $payout->external_reference !== null
                 || $payout->affiliate_payout_operation_id !== null
-                || AffiliatePayoutOperation::query()->where('affiliate_payout_id', $payout->getKey())->exists()
+                || app(PayoutReservationReader::class)->hasOperations((string) $payout->getKey(), spl_object_id($payout->getConnection()))
                 || $payout->conversions()->exists()
                 || app(PayoutEventHistory::class)->hasEvents((string) $payout->getKey())) {
                 throw new InvalidArgumentException('A payout with financial, processing or event history cannot be deleted directly.');

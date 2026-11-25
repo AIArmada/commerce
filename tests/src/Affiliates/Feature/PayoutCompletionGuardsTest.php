@@ -16,6 +16,7 @@ use AIArmada\Affiliates\Features\Payouts\Api\PayoutReconciliation;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutEvent;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutOperation;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
@@ -497,7 +498,7 @@ test('completion sync reads conversions in the payout owner scope', function ():
     });
 
     expect($conversion->fresh()->status->equals(PaidConversion::class))->toBeTrue()
-        ->and($payout->operation()->withoutGlobalScopes()->first()->status)->toBe('completed');
+        ->and(AffiliatePayoutOperation::query()->withoutGlobalScopes()->findOrFail($payout->affiliate_payout_operation_id)->status)->toBe('completed');
 });
 
 test('manual completion refuses mixed-currency linked conversions', function (): void {
@@ -556,7 +557,7 @@ test('a missing reserved balance rolls back payout failure without unlinking con
 
     expect($conversion->fresh()->affiliate_payout_id)->toBe($payout->id)
         ->and($payout->fresh()->status->getValue())->toBe('pending')
-        ->and($payout->fresh()->operation->funds_released_at)->toBeNull();
+        ->and(AffiliatePayoutOperation::query()->findOrFail($payout->affiliate_payout_operation_id)->funds_released_at)->toBeNull();
 })->with([false, true]);
 
 test('payout failure refuses to resurrect a conversion changed outside settlement', function (bool $reconcile): void {

@@ -6,6 +6,7 @@ namespace AIArmada\Affiliates\Features\Payouts\Actions;
 
 use AIArmada\Affiliates\Exceptions\PayoutCompletionBlockedException;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutHold;
+use AIArmada\Affiliates\Features\Payouts\Queries\PayoutOperationQuery;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
@@ -87,7 +88,7 @@ final readonly class AssertPayoutCompletable
             throw new PayoutCompletionBlockedException('A linked payout conversion has left Approved; reconcile its status before settlement.');
         }
 
-        $operation = $payout->operation()->forOwner($owner)->first();
+        $operation = PayoutOperationQuery::forPayout($payout, $owner)->first();
 
         if ($operation?->payout_sequence !== null
             && ($operation->funds_released_at !== null
