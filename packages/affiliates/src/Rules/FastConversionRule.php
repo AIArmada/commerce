@@ -5,13 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Rules;
 
 use AIArmada\Affiliates\Contracts\FraudRule;
+use AIArmada\Affiliates\Data\ClickFraudEvidence;
+use AIArmada\Affiliates\Data\ConversionFraudEvidence;
+use AIArmada\Affiliates\Data\FraudFinding;
 use AIArmada\Affiliates\Enums\FraudSeverity;
-use AIArmada\Affiliates\Enums\FraudSignalStatus;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliateFraudSignal;
-use Carbon\CarbonImmutable;
-use Illuminate\Http\Request;
 
 final class FastConversionRule implements FraudRule
 {
@@ -20,43 +17,31 @@ final class FastConversionRule implements FraudRule
         return 'FAST_CONVERSION';
     }
 
-    public function analyzeClick(Affiliate $affiliate, Request $request, array $context): ?AffiliateFraudSignal
+    public function analyzeClick(ClickFraudEvidence $evidence): ?FraudFinding
     {
         return null;
     }
 
-    public function analyzeConversion(AffiliateConversion $conversion, array $context): ?AffiliateFraudSignal
+    public function analyzeConversion(ConversionFraudEvidence $evidence): ?FraudFinding
     {
-        $config = config('affiliates.fraud.anomaly.conversion_time', []);
-        $minSeconds = $config['min_seconds'] ?? 5;
-
-        $attribution = $conversion->attribution;
-
-        if (! $attribution || $attribution->first_seen_at === null || $conversion->occurred_at === null) {
+        if ($evidence->clickedAt === null || $evidence->occurredAt === null) {
             return null;
         }
 
-        $secondsSinceClick = $attribution->first_seen_at->diffInSeconds($conversion->occurred_at);
+        $seconds = $evidence->clickedAt->diffInSeconds($evidence->occurredAt);
 
-        if ($secondsSinceClick < $minSeconds) {
-            return AffiliateFraudSignal::create([
-                'affiliate_id' => $conversion->affiliate_id,
-                'conversion_id' => $conversion->id,
-                'rule_code' => $this->ruleCode(),
-                'risk_points' => 45,
-                'severity' => FraudSeverity::High,
-                'description' => "Conversion occurred {$secondsSinceClick}s after click (min: {$minSeconds}s)",
-                'evidence' => [
-                    'click_time' => $attribution->first_seen_at->toIso8601String(),
-                    'conversion_time' => $conversion->occurred_at->toIso8601String(),
-                    'seconds' => $secondsSinceClick,
-                    'min_seconds' => $minSeconds,
-                ],
-                'status' => FraudSignalStatus::Detected,
-                'detected_at' => CarbonImmutable::now(),
-            ]);
+        if ($seconds >= $evidence->minimumSeconds) {
+            return null;
         }
 
-        return null;
+        return new FraudFinding($this->ruleCode(), 45, FraudSeverity::High,
+            "Conversion occurred {$seconds}s after click (min: {$evidence->minimumSeconds}s)",
+            [
+                'click_time' => $evidence->clickedAt->toIso8601String(),
+                'conversion_time' => $evidence->occurredAt->toIso8601String(),
+                'seconds' => $seconds,
+                'min_seconds' => $evidence->minimumSeconds,
+            ],
+        );
     }
 }

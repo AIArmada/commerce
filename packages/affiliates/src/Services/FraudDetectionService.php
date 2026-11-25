@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Services;
 
+use AIArmada\Affiliates\Actions\Affiliates\CountFraudClick;
+use AIArmada\Affiliates\Actions\Affiliates\RecordFraudFinding;
+use AIArmada\Affiliates\Contracts\FraudRule;
 use AIArmada\Affiliates\Enums\FraudSeverity;
 use AIArmada\Affiliates\Enums\FraudSignalStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateFraudSignal;
+use AIArmada\Affiliates\Queries\FraudEvidenceQuery;
 use AIArmada\Affiliates\Support\IpHasher;
 use Carbon\CarbonImmutable;
 use Illuminate\Container\Attributes\Tag;
@@ -16,13 +20,18 @@ use Illuminate\Http\Request;
 
 final class FraudDetectionService
 {
+    /** @var list<FraudRule> */
     private array $clickRules;
 
+    /** @var list<FraudRule> */
     private array $conversionRules;
 
     public function __construct(
         #[Tag('affiliates.fraud_rule')]
         iterable $rules = [],
+        private readonly FraudEvidenceQuery $evidence = new FraudEvidenceQuery,
+        private readonly CountFraudClick $counter = new CountFraudClick,
+        private readonly RecordFraudFinding $record = new RecordFraudFinding,
     ) {
         $this->clickRules = [];
         $this->conversionRules = [];
@@ -44,13 +53,16 @@ final class FraudDetectionService
         }
 
         $signals = [];
-        $context = $this->buildContext($affiliate, $request);
+        $ip = IpHasher::hash($request->ip());
+        $fingerprint = hash('sha256', $request->userAgent() . '|' . $request->ip());
+        $count = config('affiliates.fraud.velocity.enabled', true) ? $this->counter->execute((string) $affiliate->id, $ip) : null;
+        $evidence = $this->evidence->click((string) $affiliate->id, $ip, $fingerprint, $count);
 
         foreach ($this->clickRules as $rule) {
-            $signal = $rule->analyzeClick($affiliate, $request, $context);
+            $finding = $rule->analyzeClick($evidence);
 
-            if ($signal !== null) {
-                $signals[] = $signal;
+            if ($finding !== null) {
+                $signals[] = $this->record->execute((string) $affiliate->id, null, $finding);
             }
         }
 
@@ -75,16 +87,13 @@ final class FraudDetectionService
         }
 
         $signals = [];
-        $context = [
-            'conversion' => $conversion,
-            'timestamp' => CarbonImmutable::now(),
-        ];
+        $evidence = $this->evidence->conversion($conversion);
 
         foreach ($this->conversionRules as $rule) {
-            $signal = $rule->analyzeConversion($conversion, $context);
+            $finding = $rule->analyzeConversion($evidence);
 
-            if ($signal !== null) {
-                $signals[] = $signal;
+            if ($finding !== null) {
+                $signals[] = $this->record->execute((string) $conversion->affiliate_id, (string) $conversion->id, $finding);
             }
         }
 
@@ -124,19 +133,4 @@ final class FraudDetectionService
         ];
     }
 
-    private function buildContext(Affiliate $affiliate, Request $request): array
-    {
-        return [
-            'ip_address' => IpHasher::hash($request->ip()),
-            'user_agent' => $request->userAgent(),
-            'fingerprint' => $this->generateFingerprint($request),
-            'referrer' => $request->header('Referer'),
-            'timestamp' => CarbonImmutable::now(),
-        ];
-    }
-
-    private function generateFingerprint(Request $request): string
-    {
-        return hash('sha256', $request->userAgent() . '|' . $request->ip());
-    }
 }

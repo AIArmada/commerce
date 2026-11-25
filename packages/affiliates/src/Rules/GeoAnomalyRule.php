@@ -5,14 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Rules;
 
 use AIArmada\Affiliates\Contracts\FraudRule;
+use AIArmada\Affiliates\Data\ClickFraudEvidence;
+use AIArmada\Affiliates\Data\ConversionFraudEvidence;
+use AIArmada\Affiliates\Data\FraudFinding;
 use AIArmada\Affiliates\Enums\FraudSeverity;
-use AIArmada\Affiliates\Enums\FraudSignalStatus;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliateFraudSignal;
-use AIArmada\Affiliates\Models\AffiliateTouchpoint;
-use Carbon\CarbonImmutable;
-use Illuminate\Http\Request;
 
 final class GeoAnomalyRule implements FraudRule
 {
@@ -21,47 +17,21 @@ final class GeoAnomalyRule implements FraudRule
         return 'GEO_ANOMALY';
     }
 
-    public function analyzeClick(Affiliate $affiliate, Request $request, array $context): ?AffiliateFraudSignal
+    public function analyzeClick(ClickFraudEvidence $evidence): ?FraudFinding
     {
-        $config = config('affiliates.fraud.anomaly.geo', []);
+        $minutes = $evidence->minutesSincePreviousIp;
 
-        if (! ($config['enabled'] ?? false)) {
+        if ($minutes === null || $minutes < 0 || $minutes >= 5 || $evidence->previousIp === $evidence->ipAddress) {
             return null;
         }
 
-        $lastTouchpoint = AffiliateTouchpoint::query()
-            ->where('affiliate_id', $affiliate->id)
-            ->where('ip_address', '!=', $context['ip_address'])
-            ->latest('touched_at')
-            ->first();
-
-        if (! $lastTouchpoint) {
-            return null;
-        }
-
-        $timeDiff = CarbonImmutable::now()->diffInMinutes($lastTouchpoint->touched_at);
-
-        if ($timeDiff < 5 && $lastTouchpoint->ip_address !== $context['ip_address']) {
-            return AffiliateFraudSignal::create([
-                'affiliate_id' => $affiliate->id,
-                'rule_code' => $this->ruleCode(),
-                'risk_points' => 40,
-                'severity' => FraudSeverity::High,
-                'description' => "Rapid IP change detected within {$timeDiff} minutes",
-                'evidence' => [
-                    'previous_ip' => $lastTouchpoint->ip_address,
-                    'current_ip' => $context['ip_address'],
-                    'time_diff_minutes' => $timeDiff,
-                ],
-                'status' => FraudSignalStatus::Detected,
-                'detected_at' => CarbonImmutable::now(),
-            ]);
-        }
-
-        return null;
+        return new FraudFinding($this->ruleCode(), 40, FraudSeverity::High,
+            "Rapid IP change detected within {$minutes} minutes",
+            ['previous_ip' => $evidence->previousIp, 'current_ip' => $evidence->ipAddress, 'time_diff_minutes' => $minutes],
+        );
     }
 
-    public function analyzeConversion(AffiliateConversion $conversion, array $context): ?AffiliateFraudSignal
+    public function analyzeConversion(ConversionFraudEvidence $evidence): ?FraudFinding
     {
         return null;
     }
