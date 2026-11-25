@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentAffiliates\Pages\Portal;
+namespace AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages;
 
 use AIArmada\Affiliates\Actions\Affiliates\CreateTrackingLink;
-use AIArmada\FilamentAffiliates\Concerns\PortalPage;
+use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Concerns\PortalPage;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;

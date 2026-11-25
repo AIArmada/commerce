@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentAffiliates\Pages\Portal;
+namespace AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages;
 
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
 use AIArmada\Affiliates\Features\Identity\Api\RegistrationApi;
@@ -12,7 +12,7 @@ use AIArmada\Authz\Features\Authorization\Api\RoleAdministrationApi;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\PublicHandle;
-use AIArmada\FilamentAffiliates\Concerns\InteractsWithAffiliate;
+use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Concerns\InteractsWithAffiliate;
 use Filament\Actions\Action;
 use Filament\Auth\Http\Responses\Contracts\RegistrationResponse;
 use Filament\Auth\Pages\Register as FilamentRegister;

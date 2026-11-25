@@ -3,16 +3,16 @@
 declare(strict_types=1);
 
 use AIArmada\FilamentAffiliates\AffiliatePanelProvider;
-use AIArmada\FilamentAffiliates\Pages\Portal\PortalConversions;
-use AIArmada\FilamentAffiliates\Pages\Portal\PortalCreatives;
-use AIArmada\FilamentAffiliates\Pages\Portal\PortalDashboard;
-use AIArmada\FilamentAffiliates\Pages\Portal\PortalDownlines;
-use AIArmada\FilamentAffiliates\Pages\Portal\PortalLinks;
-use AIArmada\FilamentAffiliates\Pages\Portal\PortalPayouts;
-use AIArmada\FilamentAffiliates\Pages\Portal\PortalProfile;
-use AIArmada\FilamentAffiliates\Pages\Portal\PortalPrograms;
-use AIArmada\FilamentAffiliates\Pages\Portal\PortalSupport;
-use AIArmada\FilamentAffiliates\Pages\Portal\PortalVouchers;
+use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages\PortalConversions;
+use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages\PortalCreatives;
+use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages\PortalDashboard;
+use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages\PortalDownlines;
+use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages\PortalLinks;
+use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages\PortalPayouts;
+use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages\PortalProfile;
+use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages\PortalPrograms;
+use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages\PortalSupport;
+use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages\PortalVouchers;
 use Filament\Panel;
 use Filament\Support\Assets\Css;
 use Filament\Support\Facades\FilamentAsset;

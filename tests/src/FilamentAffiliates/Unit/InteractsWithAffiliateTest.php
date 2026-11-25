@@ -13,7 +13,7 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
-use AIArmada\FilamentAffiliates\Concerns\InteractsWithAffiliate;
+use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Concerns\InteractsWithAffiliate;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;

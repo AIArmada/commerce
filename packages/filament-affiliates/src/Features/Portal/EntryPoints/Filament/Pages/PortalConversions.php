@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentAffiliates\Pages\Portal;
+namespace AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages;
 
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateUpline;
 use AIArmada\Affiliates\States\ConversionStatus;
-use AIArmada\FilamentAffiliates\Concerns\PortalPage;
+use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Concerns\PortalPage;
 use BackedEnum;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;

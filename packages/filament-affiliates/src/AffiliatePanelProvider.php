@@ -4,17 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates;
 
-use AIArmada\FilamentAffiliates\Pages\Portal\PortalConversions;
-use AIArmada\FilamentAffiliates\Pages\Portal\PortalCreatives;
-use AIArmada\FilamentAffiliates\Pages\Portal\PortalDashboard;
-use AIArmada\FilamentAffiliates\Pages\Portal\PortalDownlines;
-use AIArmada\FilamentAffiliates\Pages\Portal\PortalLinks;
-use AIArmada\FilamentAffiliates\Pages\Portal\PortalPayouts;
-use AIArmada\FilamentAffiliates\Pages\Portal\PortalProfile;
-use AIArmada\FilamentAffiliates\Pages\Portal\PortalPrograms;
-use AIArmada\FilamentAffiliates\Pages\Portal\PortalRegistration;
-use AIArmada\FilamentAffiliates\Pages\Portal\PortalSupport;
-use AIArmada\FilamentAffiliates\Pages\Portal\PortalVouchers;
+use AIArmada\FilamentAffiliates\Features\Portal\Api\PortalContribution;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
@@ -80,7 +70,7 @@ class AffiliatePanelProvider extends PanelProvider
         }
 
         if ($config['registration_enabled']) {
-            $panel->registration(PortalRegistration::class);
+            $panel->registration(app(PortalContribution::class)->registration());
         }
 
         if ($config['auth_guard']) {
@@ -166,48 +156,7 @@ class AffiliatePanelProvider extends PanelProvider
      */
     protected function getPages(): array
     {
-        $pages = [];
-        $features = $this->getPortalConfig()['features'];
-
-        if ($features['dashboard'] ?? true) {
-            $pages[] = PortalDashboard::class;
-        }
-
-        if ($features['profile'] ?? true) {
-            $pages[] = PortalProfile::class;
-        }
-
-        if ($features['links'] ?? true) {
-            $pages[] = PortalLinks::class;
-            if ($features['creatives'] ?? true) {
-                $pages[] = PortalCreatives::class;
-            }
-            if ($features['vouchers'] ?? true) {
-                $pages[] = PortalVouchers::class;
-            }
-        }
-
-        if ($features['programs'] ?? true) {
-            $pages[] = PortalPrograms::class;
-        }
-
-        if ($features['downlines'] ?? true) {
-            $pages[] = PortalDownlines::class;
-        }
-
-        if ($features['conversions'] ?? true) {
-            $pages[] = PortalConversions::class;
-        }
-
-        if ($features['payouts'] ?? true) {
-            $pages[] = PortalPayouts::class;
-        }
-
-        if ($features['support_compliance'] ?? true) {
-            $pages[] = PortalSupport::class;
-        }
-
-        return $pages;
+        return app(PortalContribution::class)->pages($this->getPortalConfig()['features']);
     }
 
     /**

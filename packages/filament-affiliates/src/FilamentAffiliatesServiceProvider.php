@@ -34,6 +34,10 @@ use AIArmada\FilamentAffiliates\Policies\AffiliateTouchpointPolicy;
 use AIArmada\FilamentAffiliates\Policies\AffiliateUplinePolicy;
 use AIArmada\FilamentAffiliates\Services\AffiliateStatsAggregator;
 use AIArmada\FilamentAffiliates\Services\PayoutExportService;
+use AIArmada\FilamentAffiliates\Platform\ExtensionRegistry;
+use AIArmada\FilamentAffiliates\Platform\FeatureCatalog;
+use AIArmada\FilamentAffiliates\Platform\FeatureModule;
+use Illuminate\Contracts\Foundation\Application;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Gate;
 use Spatie\LaravelPackageTools\Package;
@@ -41,6 +45,9 @@ use Spatie\LaravelPackageTools\PackageServiceProvider;
 
 final class FilamentAffiliatesServiceProvider extends PackageServiceProvider
 {
+    /** @var array{features: array<string, string>, owners: array<string, string>, writes: array<string, list<string>>, extensions: array<string, list<string>>}|null */
+    private ?array $catalog = null;
+
     public function configurePackage(Package $package): void
     {
         $package
@@ -51,6 +58,16 @@ final class FilamentAffiliatesServiceProvider extends PackageServiceProvider
 
     public function packageRegistered(): void
     {
+        $catalog = $this->catalog();
+        $this->app->singleton(ExtensionRegistry::class, fn (Application $app): ExtensionRegistry => new ExtensionRegistry($app, $catalog['extensions']));
+
+        foreach (array_keys($catalog['features']) as $name) {
+            $module = $this->app->make(__NAMESPACE__ . '\\Features\\' . $name . '\\FeatureModule');
+            if ($module instanceof FeatureModule) {
+                $module->register($this->app);
+            }
+        }
+
         $this->app->singleton(FilamentAffiliatesPlugin::class);
         $this->app->singleton(AffiliateStatsAggregator::class);
         $this->app->singleton(VoucherBridge::class);
@@ -78,6 +95,13 @@ final class FilamentAffiliatesServiceProvider extends PackageServiceProvider
 
     public function packageBooted(): void
     {
+        foreach (array_keys($this->catalog()['features']) as $name) {
+            $module = $this->app->make(__NAMESPACE__ . '\\Features\\' . $name . '\\FeatureModule');
+            if ($module instanceof FeatureModule) {
+                $module->boot($this->app);
+            }
+        }
+
         Filament::serving(function (): void {
             if (config('filament-affiliates.integrations.filament_cart', true)) {
                 app(CartBridge::class)->warm();
@@ -101,5 +125,10 @@ final class FilamentAffiliatesServiceProvider extends PackageServiceProvider
         Gate::policy(AffiliateSupportTicket::class, AffiliateSupportTicketPolicy::class);
         Gate::policy(AffiliateTaxDocument::class, AffiliateTaxDocumentPolicy::class);
         Gate::policy(AffiliateTouchpoint::class, AffiliateTouchpointPolicy::class);
+    }
+    /** @return array{features: array<string, string>, owners: array<string, string>, writes: array<string, list<string>>, extensions: array<string, list<string>>} */
+    private function catalog(): array
+    {
+        return $this->catalog ??= FeatureCatalog::load(dirname(__DIR__), __NAMESPACE__);
     }
 }

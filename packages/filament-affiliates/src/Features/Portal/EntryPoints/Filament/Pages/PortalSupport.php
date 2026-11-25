@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentAffiliates\Pages\Portal;
+namespace AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages;
 
 use AIArmada\Affiliates\Features\Support\Api\SupportTicketApi;
 use AIArmada\Affiliates\Features\Tax\Api\TaxDocumentApi;
-use AIArmada\FilamentAffiliates\Concerns\PortalPage;
+use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Concerns\PortalPage;
 use BackedEnum;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;

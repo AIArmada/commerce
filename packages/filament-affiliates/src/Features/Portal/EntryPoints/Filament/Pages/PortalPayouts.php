@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentAffiliates\Pages\Portal;
+namespace AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages;
 
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\CompletedPayout;
 use AIArmada\Affiliates\States\PayoutStatus;
-use AIArmada\FilamentAffiliates\Concerns\PortalPage;
+use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Concerns\PortalPage;
 use BackedEnum;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;

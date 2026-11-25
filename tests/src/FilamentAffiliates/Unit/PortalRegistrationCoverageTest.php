@@ -7,7 +7,7 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
-use AIArmada\FilamentAffiliates\Pages\Portal\PortalRegistration;
+use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages\PortalRegistration;
 use Filament\Forms\Components\TextInput;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentAffiliates\Concerns;
+namespace AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Concerns;
 
 use Filament\Pages\Page;
 use Illuminate\Support\Str;

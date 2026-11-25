@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentAffiliates\Concerns;
+namespace AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Concerns;
 
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;

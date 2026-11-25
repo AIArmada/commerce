@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentAffiliates\Pages\Portal;
+namespace AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages;
 
 use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Models\AffiliateProgram;
@@ -10,7 +10,7 @@ use AIArmada\Affiliates\Models\AffiliateProgramCreative;
 use AIArmada\Affiliates\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Services\ProgramService;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
-use AIArmada\FilamentAffiliates\Concerns\PortalPage;
+use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Concerns\PortalPage;
 use BackedEnum;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
