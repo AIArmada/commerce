@@ -19,7 +19,7 @@ use AIArmada\FilamentDocs\Resources\DocTemplateResource;
 uses(TestCase::class);
 
 beforeEach(function (): void {
-    User::query()->delete();
+    User::query()->where('email', '!=', 'default-owner@example.com')->delete();
     Permission::query()->delete();
 });
 

@@ -23,7 +23,7 @@ beforeEach(function (): void {
     AffiliatePayout::query()->delete();
     AffiliateConversion::query()->delete();
     Affiliate::query()->delete();
-    User::query()->delete();
+    User::query()->where('email', '!=', 'default-owner@example.com')->delete();
 });
 
 // Helper class to test the trait

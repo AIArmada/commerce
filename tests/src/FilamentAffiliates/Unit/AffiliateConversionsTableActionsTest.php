@@ -18,7 +18,7 @@ use Spatie\ModelStates\Exceptions\TransitionNotFound;
 beforeEach(function (): void {
     AffiliateConversion::query()->delete();
     Affiliate::query()->delete();
-    User::query()->delete();
+    User::query()->where('email', '!=', 'default-owner@example.com')->delete();
     Permission::query()->delete();
 });
 
