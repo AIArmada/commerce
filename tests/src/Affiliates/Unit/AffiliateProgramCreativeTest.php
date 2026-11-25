@@ -188,7 +188,8 @@ test('creative media replaces its asset and is removed when the creative is dele
     Storage::disk('public')->assertExists($firstPath);
 
     $creative->refresh();
-    $second = $creative->addMedia(UploadedFile::fake()->image('second.png'))->toMediaCollection('creative_asset');
+    app(CreativeAdministration::class)->update(null, (string) $creative->getKey(), [], file_get_contents(UploadedFile::fake()->image('second.png')->getPathname()));
+    $second = $creative->fresh()->getFirstMedia('creative_asset');
     expect($creative->fresh()->getMedia('creative_asset'))->toHaveCount(1)
         ->and($creative->fresh()->getAssetUrl())->toBe($second->getFullUrl());
     Storage::disk('public')->assertMissing($firstPath);
@@ -341,4 +342,47 @@ test('rolled back program deletion preserves creative media rows and files', fun
         ->and($creative->fresh())->not->toBeNull()
         ->and($media->fresh())->not->toBeNull();
     Storage::disk('public')->assertExists($path);
+});
+
+
+test('creative replacement rolls back metadata and media without destroying the previous asset', function (): void {
+    $api = app(CreativeAdministration::class);
+    $firstBytes = file_get_contents(UploadedFile::fake()->image('first.png')->getPathname());
+    $secondBytes = file_get_contents(UploadedFile::fake()->image('second.png', 32, 32)->getPathname());
+    $id = $api->create(null, ['type' => 'image', 'name' => 'First', 'tracking_code' => 'REPLACE'], $firstBytes);
+    $creative = AffiliateProgramCreative::query()->findOrFail($id);
+    $first = $creative->getFirstMedia('creative_asset');
+    $firstPath = $first->getPathRelativeToRoot();
+    $replacementPath = null;
+
+    expect(function () use ($creative, $api, $id, $secondBytes, $firstPath, &$replacementPath): void {
+        $creative->getConnection()->transaction(function () use ($api, $id, $secondBytes, $firstPath, &$replacementPath): void {
+            $api->update(null, $id, ['name' => 'Second'], $secondBytes);
+            $replacementPath = AffiliateProgramCreative::query()->findOrFail($id)->getFirstMedia('creative_asset')->getPathRelativeToRoot();
+            Storage::disk('public')->assertExists($firstPath);
+            Storage::disk('public')->assertExists($replacementPath);
+
+            throw new RuntimeException('force rollback');
+        });
+    })->toThrow(RuntimeException::class, 'force rollback');
+
+    expect($creative->fresh()->name)->toBe('First')
+        ->and($creative->fresh()->getFirstMedia('creative_asset')->getKey())->toBe($first->getKey());
+    Storage::disk('public')->assertExists($firstPath);
+    Storage::disk('public')->assertMissing($replacementPath);
+});
+
+test('creative uploads reject active content and retain the current asset', function (): void {
+    $api = app(CreativeAdministration::class);
+    $bytes = file_get_contents(UploadedFile::fake()->image('asset.png')->getPathname());
+    $id = $api->create(null, ['type' => 'image', 'name' => 'Asset', 'tracking_code' => 'SAFE'], $bytes);
+    $creative = AffiliateProgramCreative::query()->findOrFail($id);
+    $first = $creative->getFirstMedia('creative_asset');
+
+    expect(fn () => $api->update(null, $id, ['name' => 'Unsafe'], '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>'))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    expect($creative->fresh()->name)->toBe('Asset')
+        ->and($creative->fresh()->getFirstMedia('creative_asset')->getKey())->toBe($first->getKey());
+    Storage::disk('public')->assertExists($first->getPathRelativeToRoot());
 });

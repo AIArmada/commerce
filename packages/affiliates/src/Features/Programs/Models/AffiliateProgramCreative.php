@@ -41,6 +41,8 @@ class AffiliateProgramCreative extends Model implements Auditable, HasMedia
     use LogsCommerceActivity;
     use ScopesByProgramOwner;
 
+    protected $table = 'affiliate_program_creatives';
+
     protected $fillable = [
         'program_id',
         'type',
@@ -106,7 +108,6 @@ class AffiliateProgramCreative extends Model implements Auditable, HasMedia
                 'image/png',
                 'image/gif',
                 'image/webp',
-                'image/svg+xml',
                 'video/mp4',
                 'video/webm',
                 'application/pdf',

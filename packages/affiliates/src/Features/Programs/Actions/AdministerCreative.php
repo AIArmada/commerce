@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Programs\Actions;
 
 use AIArmada\Affiliates\Contracts\CreativeAssetRemoval;
+use AIArmada\Affiliates\Contracts\CreativeAssetReplacement;
 use AIArmada\Affiliates\Features\Programs\Api\CreativeAdministration;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramCreative;
@@ -16,27 +17,43 @@ use RuntimeException;
 
 final readonly class AdministerCreative implements CreativeAdministration
 {
-    public function __construct(private CreativeAssetRemoval $assets) {}
+    public function __construct(private CreativeAssetRemoval $assets, private CreativeAssetReplacement $replacement) {}
 
-    public function create(?string $programId, array $data): string
+    public function create(?string $programId, array $data, ?string $assetBytes = null): string
     {
-        return (new AffiliateProgramCreative)->getConnection()->transaction(function () use ($programId, $data): string {
+        return (new AffiliateProgramCreative)->getConnection()->transaction(function () use ($programId, $data, $assetBytes): string {
             $this->lockProgram($programId);
 
-            return (string) AffiliateProgramCreative::query()->create([
+            $creative = AffiliateProgramCreative::query()->create([
                 ...$this->validated($data),
                 'program_id' => $programId,
-            ])->getKey();
+            ]);
+
+            if ($assetBytes !== null) {
+                $this->replaceAsset($creative, $assetBytes);
+            }
+
+            return (string) $creative->getKey();
         }, attempts: 3);
     }
 
-    public function update(?string $programId, string $creativeId, array $data): void
+    public function update(?string $programId, string $creativeId, array $data, ?string $assetBytes = null, bool $removeAsset = false): void
     {
-        (new AffiliateProgramCreative)->getConnection()->transaction(function () use ($programId, $creativeId, $data): void {
+        (new AffiliateProgramCreative)->getConnection()->transaction(function () use ($programId, $creativeId, $data, $assetBytes, $removeAsset): void {
             $creative = $this->lockCreative($programId, $creativeId);
             $creative->update($this->validated(array_replace($creative->only([
                 'name', 'type', 'description', 'width', 'height', 'destination_url', 'tracking_code', 'metadata',
             ]), $data)));
+
+            if ($assetBytes !== null && $removeAsset) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['asset' => 'Choose either a replacement or removal.']);
+            }
+
+            if ($assetBytes !== null) {
+                $this->replaceAsset($creative, $assetBytes);
+            } elseif ($removeAsset) {
+                $this->assets->remove($creativeId, $creative->getMorphClass(), spl_object_id($creative->getConnection()));
+            }
         }, attempts: 3);
     }
 
@@ -52,6 +69,11 @@ final readonly class AdministerCreative implements CreativeAdministration
 
             return true;
         });
+    }
+
+    private function replaceAsset(AffiliateProgramCreative $creative, string $bytes): void
+    {
+        $this->replacement->replace((string) $creative->getKey(), $creative->getMorphClass(), spl_object_id($creative->getConnection()), $bytes);
     }
 
     private function lockCreative(?string $programId, string $creativeId): AffiliateProgramCreative

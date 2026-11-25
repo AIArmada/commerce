@@ -8,6 +8,7 @@ use AIArmada\Affiliates\Features\Attribution\EntryPoints\Http\ResolvePublicAffil
 use AIArmada\Affiliates\Cart\AffiliateDiscountConditionProvider;
 use AIArmada\Affiliates\Contracts\AffiliateWebhookTransport;
 use AIArmada\Affiliates\Contracts\CreativeAssetRemoval;
+use AIArmada\Affiliates\Contracts\CreativeAssetReplacement;
 use AIArmada\Affiliates\Contracts\NetworkPostbackGateway;
 use AIArmada\Affiliates\Contracts\PayoutCsvWriter;
 use AIArmada\Affiliates\Contracts\PayoutProcessorRegistry;
@@ -15,6 +16,7 @@ use AIArmada\Affiliates\Contracts\TaxRecipientProvider;
 use AIArmada\Affiliates\Contracts\TaxWorksheetWriter;
 use AIArmada\Affiliates\Drivers\Exports\LocalPayoutCsvWriter;
 use AIArmada\Affiliates\Drivers\Media\SpatieCreativeAssetRemoval;
+use AIArmada\Affiliates\Drivers\Media\SpatieCreativeAssetReplacement;
 use AIArmada\Affiliates\Drivers\Network\HttpNetworkPostbackGateway;
 use AIArmada\Affiliates\Drivers\Payouts\PayoutProcessorFactory;
 use AIArmada\Affiliates\Drivers\Tax\SpatieTaxWorksheetWriter;
@@ -105,6 +107,7 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
         $catalog = $this->catalog();
 
         $this->app->bindIf(CreativeAssetRemoval::class, SpatieCreativeAssetRemoval::class);
+        $this->app->bindIf(CreativeAssetReplacement::class, SpatieCreativeAssetReplacement::class);
         $this->app->bindIf(PayoutCsvWriter::class, LocalPayoutCsvWriter::class);
         $this->app->bindIf(NetworkPostbackGateway::class, HttpNetworkPostbackGateway::class);
         $this->app->bindIf(TaxRecipientProvider::class, UnavailableTaxRecipientProvider::class);

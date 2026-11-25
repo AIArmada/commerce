@@ -15,7 +15,8 @@ use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
@@ -130,11 +131,17 @@ final class AffiliateCreativeResource extends Resource
 
             Section::make('Asset File')
                 ->schema([
-                    SpatieMediaLibraryFileUpload::make('asset')
-                        ->collection('creative_asset')
+                    FileUpload::make('asset')
+                        ->storeFiles(false)
+                        ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/webm', 'application/pdf', 'application/zip'])
                         ->maxSize((int) ceil((int) config('media-library.max_file_size', 10485760) / 1024))
                         ->label('Upload File')
-                        ->helperText('Upload an image, video, PDF, or ZIP file.'),
+                        ->helperText('Upload a new image, video, PDF, or ZIP to replace the current asset.'),
+
+                    Toggle::make('remove_asset')
+                        ->label('Remove current asset')
+                        ->visibleOn('edit')
+                        ->default(false),
 
                     TextInput::make('width')
                         ->label('Width (px)')

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Features\Programs\EntryPoints\Filament\Resources\AffiliateProgramResource\RelationManagers;
 
 use AIArmada\Affiliates\Features\Programs\Api\CreativeAdministration;
+use AIArmada\FilamentAffiliates\Features\Programs\EntryPoints\Filament\Support\CreativeAssetInput;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramCreative;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
@@ -16,7 +17,8 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -69,11 +71,17 @@ final class CreativesRelationManager extends RelationManager
             Textarea::make('description')
                 ->rows(3),
 
-            SpatieMediaLibraryFileUpload::make('asset')
-                ->collection('creative_asset')
+            FileUpload::make('asset')
+                ->storeFiles(false)
+                ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/webm', 'application/pdf', 'application/zip'])
                 ->maxSize((int) ceil((int) config('media-library.max_file_size', 10485760) / 1024))
                 ->label('Upload File')
-                ->helperText('Upload an image, video, PDF, or ZIP file.'),
+                ->helperText('Upload a new image, video, PDF, or ZIP to replace the current asset.'),
+
+            Toggle::make('remove_asset')
+                ->label('Remove current asset')
+                ->visibleOn('edit')
+                ->default(false),
 
             TextInput::make('destination_url')
                 ->url()
@@ -132,7 +140,7 @@ final class CreativesRelationManager extends RelationManager
                 CreateAction::make()
                     ->authorize(fn (): bool => ! $this->isReadOnly() && FilamentPermission::hasAbility('affiliate.update'))
                     ->using(function (array $data): AffiliateProgramCreative {
-                        $id = app(CreativeAdministration::class)->create((string) $this->getOwnerRecord()->getKey(), $data);
+                        $id = app(CreativeAdministration::class)->create((string) $this->getOwnerRecord()->getKey(), $data, CreativeAssetInput::bytes($data['asset'] ?? null));
 
                         return AffiliateProgramCreative::query()->findOrFail($id);
                     }),
@@ -141,7 +149,7 @@ final class CreativesRelationManager extends RelationManager
                 EditAction::make()
                     ->authorize(fn (): bool => ! $this->isReadOnly() && FilamentPermission::hasAbility('affiliate.update'))
                     ->using(function (AffiliateProgramCreative $record, array $data): AffiliateProgramCreative {
-                        app(CreativeAdministration::class)->update((string) $this->getOwnerRecord()->getKey(), (string) $record->getKey(), $data);
+                        app(CreativeAdministration::class)->update((string) $this->getOwnerRecord()->getKey(), (string) $record->getKey(), $data, CreativeAssetInput::bytes($data['asset'] ?? null), (bool) ($data['remove_asset'] ?? false));
 
                         return $record->refresh();
                     }),
