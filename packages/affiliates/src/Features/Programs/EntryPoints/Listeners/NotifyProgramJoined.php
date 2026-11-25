@@ -4,15 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Programs\EntryPoints\Listeners;
 
+use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Events\AffiliateProgramJoined;
 use AIArmada\Affiliates\Features\Programs\Queries\ProgramJoinQuery;
-use AIArmada\Affiliates\Notifications\ProgramJoinedNotification;
+use AIArmada\Affiliates\Features\Programs\Notifications\ProgramJoinedNotification;
 use AIArmada\Communications\Actions\DispatchManagedNotificationAction;
 use AIArmada\Communications\Data\CommunicationContextData;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 
 /**
- * Notifies the affiliate on program join (approved or pending).
+ * Notifies the affiliate on program approval.
  *
  * Managed notifications via the communications package when installed;
  * silent otherwise. On by default — silence must be an explicit
@@ -41,7 +42,7 @@ final class NotifyProgramJoined
 
         OwnerContext::withOwner($owner, static fn () => $dispatcher->handle(
             $affiliate,
-            new ProgramJoinedNotification($program, $membership),
+            new ProgramJoinedNotification($program->name, $membership->status === MembershipStatus::Approved),
             new CommunicationContextData(
                 purpose: 'affiliates.program_joined',
                 subjectType: $program->getMorphClass(),

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Data\AffiliateConversionData;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\ProgramVisibility;
@@ -9,6 +10,8 @@ use AIArmada\Affiliates\Features\Attribution\Api\CartAttribution;
 use AIArmada\Affiliates\Features\Conversions\Actions\RecordAffiliateConversion;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramEnrollment;
 use AIArmada\Affiliates\Models\AffiliateProgram;
+use AIArmada\Affiliates\Features\Conversions\Notifications\ConversionRecordedNotification;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Communications\CommunicationsServiceProvider;
 use AIArmada\Communications\Models\Communication;
 use Illuminate\Support\Facades\Queue;
@@ -42,10 +45,16 @@ describe('engine notifications', function (): void {
 
         app(ProgramEnrollment::class)->join($affiliate->id, $program->id);
 
-        $communication = Communication::query()->where('purpose', 'affiliates.program_joined')->firstOrFail();
+        expect(Communication::query()->where('purpose', 'affiliates.program_joined')->exists())->toBeFalse();
 
-        expect($communication->idempotency_key)->toStartWith('program-joined:')
-            ->and($communication->recipients()->count())->toBe(1);
+        OwnerContext::withOwner(null, function (): void {
+            $communication = Communication::query()->where('purpose', 'affiliates.program_joined')->firstOrFail();
+
+            expect($communication->owner_type)->toBeNull()
+                ->and($communication->owner_id)->toBeNull()
+                ->and($communication->idempotency_key)->toStartWith('program-joined:')
+                ->and($communication->recipients()->count())->toBe(1);
+        });
     });
 
     test('recorded conversions queue a managed notification', function (): void {
@@ -67,7 +76,7 @@ describe('engine notifications', function (): void {
         $affiliate = createTestAffiliate();
         app(ProgramEnrollment::class)->join($affiliate->id, notificationProgram()->id);
 
-        expect(Communication::query()->exists())->toBeFalse();
+        expect(Communication::query()->withoutOwnerScope()->exists())->toBeFalse();
     });
 
     test('affiliates route mail to the contact email', function (): void {
@@ -76,4 +85,16 @@ describe('engine notifications', function (): void {
         expect($affiliate->routeNotificationForMail())->toBe($affiliate->contact_email)
             ->and(createTestAffiliate()->routeNotificationForMail())->toBeNull();
     });
+});
+
+test('conversion notification uses the currency minor-unit precision', function (): void {
+    $notification = new ConversionRecordedNotification(new AffiliateConversionData(
+        id: 'conversion',
+        affiliateId: 'affiliate',
+        affiliateCode: 'AFF',
+        commissionMinor: 1500,
+        commissionCurrency: 'JPY',
+    ));
+
+    expect($notification->toMail(null)->subject)->toBe('New commission: JPY 1,500');
 });

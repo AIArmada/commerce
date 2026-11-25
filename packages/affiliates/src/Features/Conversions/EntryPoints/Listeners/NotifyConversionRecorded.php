@@ -6,7 +6,7 @@ namespace AIArmada\Affiliates\Features\Conversions\EntryPoints\Listeners;
 
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Notifications\ConversionRecordedNotification;
+use AIArmada\Affiliates\Features\Conversions\Notifications\ConversionRecordedNotification;
 use AIArmada\Communications\Actions\DispatchManagedNotificationAction;
 use AIArmada\Communications\Data\CommunicationContextData;
 
