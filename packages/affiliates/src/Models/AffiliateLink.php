@@ -139,14 +139,6 @@ class AffiliateLink extends Model implements Auditable
     }
 
     /**
-     * @return HasMany<AffiliateTouchpoint, $this>
-     */
-    public function touchpoints(): HasMany
-    {
-        return $this->hasMany(AffiliateTouchpoint::class, 'affiliate_link_id');
-    }
-
-    /**
      * @return HasMany<AffiliateConversion, $this>
      */
     public function conversions(): HasMany

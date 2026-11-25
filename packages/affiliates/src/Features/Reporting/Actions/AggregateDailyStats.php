@@ -8,13 +8,13 @@ use AIArmada\Affiliates\Features\Reporting\Api\DailyStatRecord;
 use AIArmada\Affiliates\Features\Reporting\Api\DailyStatsWriter;
 use AIArmada\Affiliates\Features\Reporting\Models\AffiliateDailyStat;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateTouchpoint;
+use AIArmada\Affiliates\Features\Attribution\Api\TouchpointReader;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
 
 final readonly class AggregateDailyStats implements DailyStatsWriter
 {
-    public function __construct(private DeleteAffiliateDailyStats $delete) {}
+    public function __construct(private DeleteAffiliateDailyStats $delete, private TouchpointReader $touchpoints) {}
 
     /**
      * Aggregate statistics for all affiliates on a given date.
@@ -51,14 +51,9 @@ final readonly class AggregateDailyStats implements DailyStatsWriter
             $dayEnd = $date->endOfDay();
             $reference = $this->referenceCurrency($affiliate);
 
-            $touchpointStats = AffiliateTouchpoint::query()
-                ->where('affiliate_id', $affiliate->id)
-                ->whereBetween('touched_at', [$dayStart, $dayEnd])
-                ->selectRaw('COUNT(*) as clicks, COUNT(DISTINCT ip_address) as unique_clicks')
-                ->first();
-
-            $clicks = (int) ($touchpointStats?->getAttribute('clicks') ?? 0);
-            $uniqueClicks = (int) ($touchpointStats?->getAttribute('unique_clicks') ?? 0);
+            $touchpointStats = $this->touchpoints->clickStats($affiliateId, $dayStart, $dayEnd);
+            $clicks = $touchpointStats['clicks'];
+            $uniqueClicks = $touchpointStats['unique_clicks'];
 
             $attributions = $affiliate->attributions()
                 ->whereBetween('first_seen_at', [$dayStart, $dayEnd])
@@ -172,32 +167,7 @@ final readonly class AggregateDailyStats implements DailyStatsWriter
      */
     private function buildBreakdown(Affiliate $affiliate, CarbonImmutable $dayStart, CarbonImmutable $dayEnd): array
     {
-        $rows = AffiliateTouchpoint::query()
-            ->where('affiliate_id', $affiliate->id)
-            ->whereBetween('touched_at', [$dayStart, $dayEnd])
-            ->selectRaw('source, campaign, COUNT(*) as count')
-            ->groupBy('source', 'campaign')
-            ->get();
-
-        $bySource = [];
-        $byCampaign = [];
-
-        foreach ($rows as $row) {
-            $count = (int) $row->getAttribute('count');
-
-            if (is_string($row->getAttribute('source'))) {
-                $bySource[$row->getAttribute('source')] = ($bySource[$row->getAttribute('source')] ?? 0) + $count;
-            }
-
-            if (is_string($row->getAttribute('campaign'))) {
-                $byCampaign[$row->getAttribute('campaign')] = ($byCampaign[$row->getAttribute('campaign')] ?? 0) + $count;
-            }
-        }
-
-        return [
-            'by_source' => $bySource,
-            'by_campaign' => $byCampaign,
-        ];
+        return $this->touchpoints->breakdown((string) $affiliate->getKey(), $dayStart, $dayEnd);
     }
 
     private function revenueMinorExpression(): string

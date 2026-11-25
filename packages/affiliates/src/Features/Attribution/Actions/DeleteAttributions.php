@@ -9,7 +9,7 @@ use AIArmada\Affiliates\Features\Conversions\Api\ConversionAttributionMaintenanc
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliateTouchpoint;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateTouchpoint;
 use Illuminate\Database\Eloquent\Builder;
 use LogicException;
 
@@ -46,7 +46,7 @@ final readonly class DeleteAttributions implements AttributionRemoval
         $connection->transaction(function () use ($query): void {
             (clone $query)->lockForUpdate()->chunkById(100, function ($attributions): void {
                 foreach ($attributions as $attribution) {
-                    $attribution->touchpoints()->delete();
+                    AffiliateTouchpoint::query()->where('affiliate_attribution_id', $attribution->getKey())->delete();
                     $this->conversions->detachAttribution((string) $attribution->getKey());
 
                     if (! $attribution->delete()) {

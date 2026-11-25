@@ -63,7 +63,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read Affiliate $affiliate
  * @property-read AffiliateLink|null $affiliateLink
  * @property-read Collection<int, AffiliateConversion> $conversions
- * @property-read Collection<int, AffiliateTouchpoint> $touchpoints
  */
 class AffiliateAttribution extends Model
 {
@@ -178,14 +177,6 @@ class AffiliateAttribution extends Model
     public function conversions(): HasMany
     {
         return $this->hasMany(AffiliateConversion::class, 'affiliate_attribution_id');
-    }
-
-    /**
-     * @return HasMany<AffiliateTouchpoint, $this>
-     */
-    public function touchpoints(): HasMany
-    {
-        return $this->hasMany(AffiliateTouchpoint::class, 'affiliate_attribution_id');
     }
 
     public function scopeActive(Builder $query): Builder

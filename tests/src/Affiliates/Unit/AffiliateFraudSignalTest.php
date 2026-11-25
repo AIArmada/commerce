@@ -8,7 +8,8 @@ use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliateTouchpoint;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateTouchpoint;
+use AIArmada\Affiliates\Features\Attribution\Api\TouchpointReader;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\PendingConversion;
 use Carbon\CarbonImmutable;
@@ -52,7 +53,7 @@ describe('AffiliateFraudSignal Model', function (): void {
         expect($signal->conversion->id)->toBe($conversion->id);
     });
 
-    test('belongs to touchpoint when set', function (): void {
+    test('resolves its touchpoint through attribution when set', function (): void {
         $attribution = AffiliateAttribution::create([
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
@@ -84,8 +85,8 @@ describe('AffiliateFraudSignal Model', function (): void {
             'detected_at' => now(),
         ]);
 
-        expect($signal->touchpoint)->toBeInstanceOf(AffiliateTouchpoint::class);
-        expect($signal->touchpoint->id)->toBe($touchpoint->id);
+        expect(app(TouchpointReader::class)->existsForAffiliate($signal->touchpoint_id, $signal->affiliate_id))->toBeTrue()
+            ->and(app(TouchpointReader::class)->existsForAffiliate($signal->touchpoint_id, (string) \Illuminate\Support\Str::uuid()))->toBeFalse();
     });
 
     test('scopeHighSeverity returns high and critical signals', function (): void {

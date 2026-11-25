@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Conversions\Actions;
 
 use AIArmada\Affiliates\Data\AffiliateConversionData;
-use AIArmada\Affiliates\Data\AttributionTouch;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
 use AIArmada\Affiliates\Features\Attribution\Api\AttributionDistribution;
@@ -17,7 +16,7 @@ use AIArmada\Affiliates\Features\Webhooks\Api\WebhookApi;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliateTouchpoint;
+use AIArmada\Affiliates\Features\Attribution\Api\TouchpointReader;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\ConversionStatus;
 use AIArmada\Affiliates\States\PendingConversion;
@@ -42,6 +41,7 @@ final readonly class RecordAffiliateConversion implements CartConversionRecordin
         private AllocateUplineCommissions $allocateUpline,
         private ApplyConversionAccounting $accounting,
         private FraudApi $fraud,
+        private TouchpointReader $touchpoints,
     ) {}
 
     public function record(Cart $cart, array $payload = []): ?AffiliateConversionData
@@ -138,14 +138,7 @@ final readonly class RecordAffiliateConversion implements CartConversionRecordin
         $weights = $frozenAttribution instanceof AffiliateAttribution
             ? [$affiliate->getKey() => 1.0]
             : $this->attributionModel->distribute(
-                $attribution?->touchpoints()
-                    ->get(['affiliate_id', 'touched_at'])
-                    ->map(static fn (AffiliateTouchpoint $touch): AttributionTouch => new AttributionTouch(
-                        (string) $touch->affiliate_id,
-                        $touch->touched_at?->toImmutable(),
-                    ))
-                    ->values()
-                    ->all() ?? [],
+                $attribution === null ? [] : $this->touchpoints->distributionTouches((string) $attribution->getKey()),
             );
 
         if ($weights === []) {

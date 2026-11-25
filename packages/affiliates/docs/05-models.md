@@ -103,7 +103,7 @@ use AIArmada\Affiliates\Models\AffiliateAttribution;
 ```php
 $attribution->affiliate;    // BelongsTo<Affiliate>
 $attribution->conversions;  // HasMany<AffiliateConversion>
-$attribution->touchpoints;  // HasMany<AffiliateTouchpoint>
+app(\AIArmada\Affiliates\Features\Attribution\Api\TouchpointReader::class)->distributionTouches($attribution->id);
 ```
 
 Attribution identity fields describe the originating commerce subject:

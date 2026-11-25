@@ -8,7 +8,7 @@ use AIArmada\Affiliates\Features\Reporting\Api\ReportingApi;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliateTouchpoint;
+use AIArmada\Affiliates\Features\Attribution\Api\TouchpointReader;
 use AIArmada\CommerceSupport\Support\CurrencyConverter;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Builder;
@@ -17,7 +17,7 @@ use stdClass;
 
 final readonly class AffiliateReportQuery implements ReportingApi
 {
-    public function __construct(private CurrencyConverter $converter) {}
+    public function __construct(private CurrencyConverter $converter, private TouchpointReader $touchpoints) {}
 
     /**
      * Money legs are grouped by the conversion currency. Single-currency
@@ -185,24 +185,16 @@ final readonly class AffiliateReportQuery implements ReportingApi
         $subjects = [];
         $moneyBySubject = [];
 
-        $visitRows = AffiliateTouchpoint::query()
-            ->forOwner()
-            ->whereBetween('touched_at', [$startDate, $endDate])
-            ->whereNotNull('subject_type')
-            ->whereNotNull('subject_key')
-            ->toBase()
-            ->selectRaw('subject_type, subject_key, MAX(subject_title_snapshot) as subject_title_snapshot, COUNT(*) as visits')
-            ->groupBy('subject_type', 'subject_key')
-            ->get();
+        $visitRows = $this->touchpoints->subjectVisits($startDate, $endDate);
 
         foreach ($visitRows as $row) {
-            $key = $this->subjectKey((string) $row->subject_type, (string) $row->subject_key);
+            $key = $this->subjectKey((string) $row['subject_type'], (string) $row['subject_key']);
 
             $subjects[$key] = [
-                'subject_type' => (string) $row->subject_type,
-                'subject_key' => (string) $row->subject_key,
-                'subject_title_snapshot' => $this->nullableString($row->subject_title_snapshot),
-                'visits' => (int) $row->visits,
+                'subject_type' => (string) $row['subject_type'],
+                'subject_key' => (string) $row['subject_key'],
+                'subject_title_snapshot' => $this->nullableString($row['subject_title_snapshot']),
+                'visits' => (int) $row['visits'],
                 'attributions' => 0,
                 'conversions' => 0,
                 'revenue_minor' => 0,

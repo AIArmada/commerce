@@ -8,12 +8,14 @@ use AIArmada\Affiliates\Data\ClickFraudEvidence;
 use AIArmada\Affiliates\Data\ConversionFraudEvidence;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliateTouchpoint;
+use AIArmada\Affiliates\Features\Attribution\Api\TouchpointReader;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 
-final class FraudEvidenceQuery
+final readonly class FraudEvidenceQuery
 {
+    public function __construct(private TouchpointReader $touchpoints) {}
+
     public function click(string $affiliateId, ?string $ipAddress, string $fingerprint, ?int $clickCount): ClickFraudEvidence
     {
         $now = CarbonImmutable::now();
@@ -21,20 +23,11 @@ final class FraudEvidenceQuery
         $last = null;
 
         if (config('affiliates.tracking.fingerprint.enabled', false)) {
-            $fingerprintCount = AffiliateTouchpoint::query()
-                ->where('affiliate_id', $affiliateId)
-                ->where('fingerprint', $fingerprint)
-                ->where('touched_at', '>=', $now->subDay())
-                ->count();
+            $fingerprintCount = $this->touchpoints->fingerprintCount($affiliateId, $fingerprint, $now->subDay());
         }
 
         if ($ipAddress !== null && config('affiliates.fraud.anomaly.geo.enabled', false)) {
-            $last = AffiliateTouchpoint::query()
-                ->where('affiliate_id', $affiliateId)
-                ->where('ip_address', '!=', $ipAddress)
-                ->whereNotNull('touched_at')
-                ->latest('touched_at')
-                ->first(['ip_address', 'touched_at']);
+            $last = $this->touchpoints->latestOtherIp($affiliateId, $ipAddress);
         }
 
         return new ClickFraudEvidence(
@@ -44,8 +37,8 @@ final class FraudEvidenceQuery
             max(0, (int) config('affiliates.fraud.velocity.max_clicks_per_hour', 100)),
             $fingerprintCount,
             max(1, (int) config('affiliates.tracking.fingerprint.threshold', 5)),
-            $last?->ip_address,
-            $last?->touched_at?->diffInMinutes($now),
+            $last['ip_address'] ?? null,
+            ($last['touched_at'] ?? null)?->diffInMinutes($now),
         );
     }
 

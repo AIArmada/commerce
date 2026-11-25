@@ -9,7 +9,6 @@ use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliateTouchpoint;
 use AIArmada\Affiliates\Models\Concerns\ScopesByAffiliateOwner;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
@@ -41,7 +40,6 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property Carbon|null $updated_at
  * @property-read Affiliate $affiliate
  * @property-read AffiliateConversion|null $conversion
- * @property-read AffiliateTouchpoint|null $touchpoint
  */
 class AffiliateFraudSignal extends Model implements Auditable
 {
@@ -104,14 +102,6 @@ class AffiliateFraudSignal extends Model implements Auditable
     public function conversion(): BelongsTo
     {
         return $this->belongsTo(AffiliateConversion::class);
-    }
-
-    /**
-     * @return BelongsTo<AffiliateTouchpoint, $this>
-     */
-    public function touchpoint(): BelongsTo
-    {
-        return $this->belongsTo(AffiliateTouchpoint::class);
     }
 
     public function scopePending(Builder $query): Builder

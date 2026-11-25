@@ -9,7 +9,8 @@ use AIArmada\Affiliates\Features\Conversions\Api\ConversionAttributionMaintenanc
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliateTouchpoint;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateTouchpoint;
+use AIArmada\Affiliates\Features\Attribution\Api\TouchpointReader;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\PendingConversion;
 use Carbon\CarbonImmutable;
@@ -64,14 +65,27 @@ describe('AffiliateAttribution Model', function (): void {
         expect($attribution->conversions())->toBeInstanceOf(HasMany::class);
     });
 
-    it('has many touchpoints', function (): void {
+    it('reads touchpoints through the attribution feature', function (): void {
         $attribution = AffiliateAttribution::create([
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
             'cart_instance' => 'default',
         ]);
 
-        expect($attribution->touchpoints())->toBeInstanceOf(HasMany::class);
+        $reader = app(TouchpointReader::class);
+        expect($reader->distributionTouches((string) $attribution->getKey()))->toBe([]);
+
+        AffiliateTouchpoint::create([
+            'affiliate_attribution_id' => $attribution->id,
+            'affiliate_id' => $this->affiliate->id,
+            'affiliate_code' => $this->affiliate->code,
+            'touched_at' => CarbonImmutable::now(),
+        ]);
+
+        $touches = $reader->distributionTouches((string) $attribution->getKey());
+        expect($touches)->toHaveCount(1)
+            ->and($touches[0]->affiliateId)->toBe($this->affiliate->id)
+            ->and($touches[0]->touchedAt)->toBeInstanceOf(CarbonImmutable::class);
     });
 
     it('stores UTM parameters', function (): void {
