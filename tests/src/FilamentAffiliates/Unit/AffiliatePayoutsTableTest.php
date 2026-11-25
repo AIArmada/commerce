@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Actions\Affiliates\DisableAffiliate;
 use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
 use AIArmada\Affiliates\Actions\Payouts\CreatePayout;
 use AIArmada\Affiliates\Enums\CommissionType;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycle;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
@@ -51,7 +51,7 @@ test('mark completed surfaces a blocked gate as a danger notification instead of
 
     $payout = CreatePayout::run([$conversion->id]);
 
-    DisableAffiliate::run($affiliate);
+    app(AffiliateLifecycle::class)->disable($affiliate->id);
 
     AffiliatePayoutsTable::markCompleted($payout);
 

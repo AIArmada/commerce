@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Services;
+namespace AIArmada\Affiliates\Features\Identity\Queries;
 
 use AIArmada\Affiliates\Contracts\QualifiesForOpenApproval;
 use AIArmada\Affiliates\Enums\RegistrationApprovalMode;

@@ -12,16 +12,16 @@ The canonical orchestration surface for affiliates is the `Actions` tree. Prefer
 
 | Action | Purpose |
 |--------|---------|
-| `ApproveAffiliate::run($affiliate)` | Approve a pending affiliate |
+| `app(AffiliateLifecycle::class)->approve($affiliateId)` | Approve a pending affiliate |
 | `AttachAffiliateToCart::run($affiliate, $cart, $context)` | Attach an affiliate to a cart |
 | `AttachAffiliateFromCookie::run($cart, $cookieValue, $context)` | Attach from cookie tracking |
 | `CapturePublicAffiliateReferral::run($request, $affiliateCode)` | Capture public referral |
 | `CreateAffiliate::run($data, $owner)` | Create a new affiliate |
 | `CreateTrackingLink::run($affiliate, $destinationUrl, $attributes)` | Create a tracking link |
 | `GenerateAffiliateCode::run($name)` | Generate a unique code |
-| `RejectAffiliate::run($affiliate)` | Reject an affiliate |
-| `DisableAffiliate::run($affiliate)` | Disable an affiliate |
-| `PauseAffiliate::run($affiliate)` | Pause an affiliate |
+| `app(AffiliateLifecycle::class)->reject($affiliateId)` | Reject an affiliate |
+| `app(AffiliateLifecycle::class)->disable($affiliateId)` | Disable an affiliate |
+| `app(AffiliateLifecycle::class)->pause($affiliateId)` | Pause an affiliate |
 | `DetachAffiliateFromCart::run($cart)` | Detach the affiliate from a cart |
 | `ResolvePublicAffiliateReferralContext::run($request)` | Resolve referral context |
 | `TouchAffiliateAttribution::run($cookieValue, $context)` | Touch cookie attribution |

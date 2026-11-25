@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Actions\Affiliates\DisableAffiliate;
 use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
 use AIArmada\Affiliates\Actions\Payouts\CreatePayout;
 use AIArmada\Affiliates\Actions\Payouts\ProcessAffiliatePayout;
@@ -13,6 +12,7 @@ use AIArmada\Affiliates\Data\PayoutStatusResult;
 use AIArmada\Affiliates\Drivers\Payouts\PayoutProcessorFactory;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\PayoutMethodType;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycle;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
@@ -153,7 +153,7 @@ test('a gate-blocked completion parks as unknown with the gate reason', function
     $affiliate = createProcessPayoutAffiliate();
     $payout = createProcessPayout($affiliate);
 
-    DisableAffiliate::run($affiliate->fresh());
+    app(AffiliateLifecycle::class)->disable($affiliate->id);
     useFakeSuccessProcessor();
     $processor = Mockery::mock(ProcessAffiliatePayoutFakeSuccessProcessor::class)->makePartial();
     $processor->shouldNotReceive('process');
@@ -271,7 +271,7 @@ test('provider submission refuses drift from the reserved conversions', function
 
 test('a valid disabled-affiliate override is stamped only after provider completion', function (): void {
     $affiliate = createProcessPayoutAffiliate();
-    DisableAffiliate::run($affiliate);
+    app(AffiliateLifecycle::class)->disable($affiliate->id);
     $payout = createProcessPayout($affiliate->fresh(), ['payout_override_reason' => 'Earned before closure']);
     useFakeSuccessProcessor();
     $processor = Mockery::mock(ProcessAffiliatePayoutFakeSuccessProcessor::class)->makePartial();

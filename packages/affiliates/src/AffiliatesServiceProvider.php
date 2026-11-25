@@ -8,7 +8,6 @@ use AIArmada\Affiliates\Actions\Affiliates\ResolvePublicAffiliateReferralContext
 use AIArmada\Affiliates\Cart\AffiliateDiscountConditionProvider;
 use AIArmada\Affiliates\Contracts\MerchantIdentity;
 use AIArmada\Affiliates\Contracts\MerchantLedger;
-use AIArmada\Affiliates\Contracts\QualifiesForOpenApproval;
 use AIArmada\Affiliates\Drivers\Payouts\PayoutProcessorFactory;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
 use AIArmada\Affiliates\Events\AffiliateProgramJoined;
@@ -18,7 +17,7 @@ use AIArmada\Affiliates\Features\Support\Models\AffiliateSupportMessage;
 use AIArmada\Affiliates\Features\Support\Models\AffiliateSupportTicket;
 use AIArmada\Affiliates\Features\Tax\Models\AffiliateTaxDocument;
 use AIArmada\Affiliates\Features\Upline\Models\AffiliateUpline;
-use AIArmada\Affiliates\Listeners\AutoApproveOpenAffiliate;
+use AIArmada\Affiliates\Features\Identity\EntryPoints\Listeners\AutoApproveOpenAffiliate;
 use AIArmada\Affiliates\Listeners\NotifyConversionRecorded;
 use AIArmada\Affiliates\Listeners\NotifyProgramJoined;
 use AIArmada\Affiliates\Listeners\RecordCommissionForOrder;
@@ -50,7 +49,6 @@ use AIArmada\Affiliates\Services\CommissionCalculator;
 use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
 use AIArmada\Affiliates\Services\MerchantIdentityService;
 use AIArmada\Affiliates\Services\MerchantLedgerService;
-use AIArmada\Affiliates\Services\OpenApprovalPolicy;
 use AIArmada\Affiliates\Services\PayoutReconciliationService;
 use AIArmada\Affiliates\Strategies\FirstTouchAttribution;
 use AIArmada\Affiliates\Strategies\LastTouchAttribution;
@@ -116,7 +114,6 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
         }
 
         $this->app->singleton(CommissionCalculator::class);
-        $this->app->singleton(QualifiesForOpenApproval::class, OpenApprovalPolicy::class);
         $this->app->singleton(AttributionModel::class);
         $this->app->singleton(PayoutProcessorFactory::class);
         $this->app->scoped(CommissionRuleEngine::class);

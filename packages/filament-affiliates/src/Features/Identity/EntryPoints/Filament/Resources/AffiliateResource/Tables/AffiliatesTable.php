@@ -4,15 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources\AffiliateResource\Tables;
 
-use AIArmada\Affiliates\Actions\Affiliates\ApproveAffiliate;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\RegistrationApprovalMode;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycle;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\Affiliates\States\Pending;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources\AffiliateResource;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
@@ -22,7 +21,6 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
 final class AffiliatesTable
@@ -110,22 +108,6 @@ final class AffiliatesTable
     {
         Gate::authorize('update', $record);
 
-        $key = $record->getKey();
-
-        if ((bool) config('affiliates.owner.enabled', false)) {
-            OwnerWriteGuard::findOrFailForOwner(Affiliate::class, $key);
-        }
-
-        return DB::transaction(function () use ($key): bool {
-            $affiliate = Affiliate::query()->whereKey($key)->lockForUpdate()->firstOrFail();
-
-            if (! $affiliate->status instanceof Pending) {
-                return false;
-            }
-
-            app(ApproveAffiliate::class)->handle($affiliate);
-
-            return true;
-        }, attempts: 3);
+        return app(AffiliateLifecycle::class)->approve((string) $record->getKey());
     }
 }

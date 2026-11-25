@@ -7,7 +7,7 @@ use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateToCart;
 use AIArmada\Affiliates\AffiliatesServiceProvider;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
 use AIArmada\Affiliates\Events\AffiliateProgramJoined;
-use AIArmada\Affiliates\Listeners\AutoApproveOpenAffiliate;
+use AIArmada\Affiliates\Features\Identity\EntryPoints\Listeners\AutoApproveOpenAffiliate;
 use AIArmada\Affiliates\Listeners\IncrementAffiliateLinkClicks;
 use AIArmada\Affiliates\Listeners\NotifyConversionRecorded;
 use AIArmada\Affiliates\Listeners\NotifyProgramJoined;

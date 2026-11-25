@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Actions\Affiliates\DisableAffiliate;
 use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
 use AIArmada\Affiliates\Actions\Payouts\CreatePayout;
 use AIArmada\Affiliates\Actions\Payouts\UpdatePayoutStatus;
 use AIArmada\Affiliates\Enums\CommissionType;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycle;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
@@ -56,7 +56,7 @@ test('CreatePayout blocks disabled affiliates without an override reason', funct
     $affiliate = createGateTestAffiliate();
     $conversion = recordGateApprovedConversion($affiliate);
 
-    DisableAffiliate::run($affiliate);
+    app(AffiliateLifecycle::class)->disable($affiliate->id);
 
     expect($affiliate->fresh()->status->equals(Disabled::class))->toBeTrue();
 
@@ -68,7 +68,7 @@ test('CreatePayout releases earned balances for disabled affiliates with an audi
     $affiliate = createGateTestAffiliate();
     $conversion = recordGateApprovedConversion($affiliate);
 
-    DisableAffiliate::run($affiliate);
+    app(AffiliateLifecycle::class)->disable($affiliate->id);
 
     $payout = CreatePayout::run([$conversion->id], [
         'payout_override_reason' => 'Account closed in good standing; releasing earned balance.',
@@ -94,7 +94,7 @@ test('completing a payout is blocked when the affiliate is disabled after creati
 
     $payout = CreatePayout::run([$conversion->id]);
 
-    DisableAffiliate::run($affiliate);
+    app(AffiliateLifecycle::class)->disable($affiliate->id);
 
     expect(fn (): object => UpdatePayoutStatus::run($payout, 'completed'))
         ->toThrow(InvalidArgumentException::class, 'no longer receive payouts');

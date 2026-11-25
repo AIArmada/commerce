@@ -2,9 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Actions\Affiliates\ApproveAffiliate;
 use AIArmada\Affiliates\Actions\Affiliates\CreateAffiliate;
-use AIArmada\Affiliates\Actions\Affiliates\RejectAffiliate;
 use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\ProgramVisibility;
@@ -16,6 +14,7 @@ use AIArmada\Affiliates\Features\Reporting\Api\DailyStatRecord;
 use AIArmada\Affiliates\Features\Reporting\Api\DailyStatsReader;
 use AIArmada\Affiliates\Features\Reporting\Api\DailyStatsWriter;
 use AIArmada\Affiliates\Features\Reporting\Models\AffiliateDailyStat;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycle;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateProgram;
@@ -41,7 +40,7 @@ test('CreateAffiliate creates an affiliate', function (): void {
     expect($affiliate->code)->toBe('REG001');
 });
 
-test('ApproveAffiliate activates an affiliate', function (): void {
+test('affiliate lifecycle approves a pending affiliate', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'APPROVE001',
         'name' => 'Pending Affiliate',
@@ -51,12 +50,12 @@ test('ApproveAffiliate activates an affiliate', function (): void {
         'currency' => 'USD',
     ]);
 
-    $result = app(ApproveAffiliate::class)->handle($affiliate);
-
-    expect($result->status->equals(Active::class))->toBeTrue();
+    expect(app(AffiliateLifecycle::class)->approve($affiliate->id))->toBeTrue()
+        ->and(app(AffiliateLifecycle::class)->approve($affiliate->id))->toBeFalse()
+        ->and($affiliate->refresh()->status->equals(Active::class))->toBeTrue();
 });
 
-test('RejectAffiliate disables an affiliate', function (): void {
+test('affiliate lifecycle rejects a pending affiliate', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'REJECT001',
         'name' => 'Pending Affiliate',
@@ -66,9 +65,9 @@ test('RejectAffiliate disables an affiliate', function (): void {
         'currency' => 'USD',
     ]);
 
-    $result = app(RejectAffiliate::class)->handle($affiliate);
-
-    expect($result->status->equals(Disabled::class))->toBeTrue();
+    expect(app(AffiliateLifecycle::class)->reject($affiliate->id))->toBeTrue()
+        ->and(app(AffiliateLifecycle::class)->reject($affiliate->id))->toBeFalse()
+        ->and($affiliate->refresh()->status->equals(Disabled::class))->toBeTrue();
 });
 
 // DailyStatsWriter Tests

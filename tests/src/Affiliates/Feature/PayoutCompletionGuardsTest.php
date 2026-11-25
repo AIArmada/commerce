@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Actions\Affiliates\DisableAffiliate;
-use AIArmada\Affiliates\Actions\Affiliates\PauseAffiliate;
 use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
 use AIArmada\Affiliates\Actions\Conversions\ReverseAffiliateConversion;
 use AIArmada\Affiliates\Actions\Conversions\VoidAffiliateConversion;
@@ -12,6 +10,7 @@ use AIArmada\Affiliates\Actions\Payouts\CreatePayout;
 use AIArmada\Affiliates\Actions\Payouts\UpdatePayoutStatus;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Exceptions\PayoutCompletionBlockedException;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycle;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
@@ -121,7 +120,7 @@ test('caller-supplied override metadata is stripped when no override is needed',
     expect($payout->metadata['payout_override'] ?? null)->toBeNull()
         ->and($payout->metadata['note'] ?? null)->toBe('kept');
 
-    DisableAffiliate::run($affiliate);
+    app(AffiliateLifecycle::class)->disable($affiliate->id);
 
     expect(fn (): object => UpdatePayoutStatus::run($payout, 'completed'))
         ->toThrow(InvalidArgumentException::class, 'can no longer receive payouts');
@@ -180,7 +179,7 @@ test('reconcilePayout refuses completion for a disabled affiliate', function ():
     $conversion = recordCompletionGuardConversion($affiliate);
     $payout = CreatePayout::run([$conversion->id]);
 
-    DisableAffiliate::run($affiliate);
+    app(AffiliateLifecycle::class)->disable($affiliate->id);
 
     expect(fn (): bool => app(PayoutReconciliationService::class)->reconcilePayout($payout, 'completed', ['reference' => 'ext-1']))
         ->toThrow(InvalidArgumentException::class, 'can no longer receive payouts');
@@ -193,7 +192,7 @@ test('reconcilePayout refuses completion for a paused affiliate', function (): v
     $conversion = recordCompletionGuardConversion($affiliate);
     $payout = CreatePayout::run([$conversion->id]);
 
-    PauseAffiliate::run($affiliate);
+    app(AffiliateLifecycle::class)->pause($affiliate->id);
 
     expect(fn (): bool => app(PayoutReconciliationService::class)->reconcilePayout($payout, 'completed', ['reference' => 'ext-1']))
         ->toThrow(InvalidArgumentException::class, 'can no longer receive payouts');
@@ -205,7 +204,7 @@ test('an override payout completes through the manual path and stamps the overri
     $affiliate = createCompletionGuardAffiliate();
     $conversion = recordCompletionGuardConversion($affiliate);
 
-    DisableAffiliate::run($affiliate);
+    app(AffiliateLifecycle::class)->disable($affiliate->id);
 
     $payout = CreatePayout::run([$conversion->id], [
         'payout_override_reason' => 'Account closed in good standing.',
@@ -223,7 +222,7 @@ test('an override payout completes through the reconciliation path', function ()
     $affiliate = createCompletionGuardAffiliate();
     $conversion = recordCompletionGuardConversion($affiliate);
 
-    DisableAffiliate::run($affiliate);
+    app(AffiliateLifecycle::class)->disable($affiliate->id);
 
     $payout = CreatePayout::run([$conversion->id], [
         'payout_override_reason' => 'Account closed in good standing.',
@@ -241,7 +240,7 @@ test('a forged override on a paused affiliate does not unblock completion', func
     $conversion = recordCompletionGuardConversion($affiliate);
     $payout = CreatePayout::run([$conversion->id]);
 
-    PauseAffiliate::run($affiliate);
+    app(AffiliateLifecycle::class)->pause($affiliate->id);
 
     DB::table((new AffiliatePayout)->getTable())
         ->where('id', $payout->getKey())
@@ -289,7 +288,7 @@ test('completing a bare manual payout refuses a disabled payee without an overri
     $affiliate = createCompletionGuardAffiliate();
     $payout = createBareManualPayout($affiliate);
 
-    DisableAffiliate::run($affiliate);
+    app(AffiliateLifecycle::class)->disable($affiliate->id);
 
     expect(fn (): object => UpdatePayoutStatus::run($payout, 'completed'))
         ->toThrow(InvalidArgumentException::class, 'can no longer receive payouts');
@@ -301,7 +300,7 @@ test('a stamped override unblocks a bare manual payout for a disabled payee', fu
     $affiliate = createCompletionGuardAffiliate();
     $payout = createBareManualPayout($affiliate, ['payout_override' => ['reason' => 'Earned before closure']]);
 
-    DisableAffiliate::run($affiliate);
+    app(AffiliateLifecycle::class)->disable($affiliate->id);
 
     UpdatePayoutStatus::run($payout, 'completed');
 
