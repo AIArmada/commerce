@@ -5,15 +5,18 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Enums\ProgramStatus;
+use AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkReader;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink;
 use AIArmada\Affiliates\Features\Programs\Api\TierQualificationReader;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramTier;
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
+use AIArmada\Affiliates\States\RejectedConversion;
 
 describe('AffiliateProgramTier Model', function (): void {
     beforeEach(function (): void {
@@ -218,5 +221,55 @@ describe('AffiliateProgramTier Model', function (): void {
         expect($tier->benefits['priority_support'])->toBeTrue();
         expect($tier->benefits['custom_links'])->toBe(5);
         expect($tier->benefits['exclusive_offers'])->toContain('summer_promo');
+    });
+
+    test('program link volume counts each conversion once and excludes another affiliate link', function (): void {
+        $attributes = [
+            'status' => Active::class,
+            'commission_type' => 'percentage',
+            'commission_rate' => 500,
+            'currency' => 'USD',
+        ];
+        $affiliate = Affiliate::create($attributes + ['code' => 'LINK-VOLUME-A', 'name' => 'Link Volume A']);
+        $other = Affiliate::create($attributes + ['code' => 'LINK-VOLUME-B', 'name' => 'Link Volume B']);
+        $linkAttributes = [
+            'program_id' => $this->program->id,
+            'destination_url' => 'https://example.com/offer',
+            'tracking_url' => 'https://example.com/go/offer',
+        ];
+        $link = AffiliateLink::create($linkAttributes + ['affiliate_id' => $affiliate->id]);
+        $otherLink = AffiliateLink::create($linkAttributes + ['affiliate_id' => $other->id]);
+        $attribution = AffiliateAttribution::create([
+            'affiliate_id' => $affiliate->id,
+            'affiliate_code' => $affiliate->code,
+            'affiliate_link_id' => $link->id,
+        ]);
+
+        $base = [
+            'affiliate_id' => $affiliate->id,
+            'affiliate_code' => $affiliate->code,
+            'value_minor' => 10000,
+            'commission_minor' => 500,
+            'commission_currency' => 'USD',
+            'occurred_at' => now(),
+        ];
+        foreach ([
+            ['external_reference' => 'volume-direct-and-attribution', 'affiliate_link_id' => $link->id, 'affiliate_attribution_id' => $attribution->id, 'status' => ApprovedConversion::class],
+            ['external_reference' => 'volume-attribution-only', 'affiliate_attribution_id' => $attribution->id, 'status' => ApprovedConversion::class],
+            ['external_reference' => 'volume-other-link', 'affiliate_link_id' => $otherLink->id, 'status' => ApprovedConversion::class],
+            ['external_reference' => 'volume-rejected', 'affiliate_link_id' => $link->id, 'status' => RejectedConversion::class],
+        ] as $conversion) {
+            AffiliateConversion::create($base + $conversion);
+        }
+
+        $reader = app(TrackingLinkReader::class);
+        $approved = $reader->programVolume($affiliate->id, $this->program->id, 'USD', approvedOnly: true);
+        $all = $reader->programVolume($affiliate->id, $this->program->id, 'USD');
+
+        expect($approved->count)->toBe(2)
+            ->and($approved->byCurrency)->toBe(['USD' => 20000])
+            ->and($all->count)->toBe(3)
+            ->and($all->byCurrency)->toBe(['USD' => 30000])
+            ->and($reader->belongsTo($otherLink->id, $affiliate->id))->toBeFalse();
     });
 });

@@ -29,10 +29,13 @@ final class LinkForm
             : ['affiliate_link'];
 
         foreach ($subjectTypes as $subjectType) {
-            if (is_string($subjectType)
-                && ($subjectType === $link->subject_type
-                    || (($protectedClass = Relation::getMorphedModel($subjectType) ?? $subjectType) !== ''
-                        && class_exists($protectedClass) && is_a($subjectClass, $protectedClass, true)))) {
+            if (! is_string($subjectType) || $subjectType === '') {
+                continue;
+            }
+
+            $protectedClass = Relation::getMorphedModel($subjectType) ?? $subjectType;
+            if ($subjectType === $link->subject_type
+                || (class_exists($protectedClass) && is_a($subjectClass, $protectedClass, true))) {
                 return true;
             }
         }
