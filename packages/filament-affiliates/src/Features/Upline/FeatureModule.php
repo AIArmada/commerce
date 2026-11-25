@@ -6,7 +6,7 @@ namespace AIArmada\FilamentAffiliates\Features\Upline;
 
 use AIArmada\Affiliates\Features\Upline\Models\AffiliateUpline;
 use AIArmada\Affiliates\Models\AffiliateRank;
-use AIArmada\Affiliates\Models\AffiliateRankHistory;
+use AIArmada\Affiliates\Features\Upline\Models\AffiliateRankHistory;
 use AIArmada\FilamentAffiliates\Features\Upline\EntryPoints\Filament\Policies\AffiliateRankHistoryPolicy;
 use AIArmada\FilamentAffiliates\Features\Upline\EntryPoints\Filament\Policies\AffiliateRankPolicy;
 use AIArmada\FilamentAffiliates\Features\Upline\EntryPoints\Filament\Policies\AffiliateUplinePolicy;
