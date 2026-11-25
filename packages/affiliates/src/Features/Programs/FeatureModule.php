@@ -23,6 +23,7 @@ final class FeatureModule implements FeatureModuleContract
         $app->bind(Api\TierQualificationReader::class, Queries\ProgramTierQualificationQuery::class);
         $app->bind(Api\ProgramPortalReader::class, Queries\ProgramPortalQuery::class);
         $app->bind(Api\PortalCreativeReader::class, Queries\PortalCreativeQuery::class);
+        $app->bind(Api\CreativeAdministration::class, Actions\AdministerCreative::class);
     }
 
     public function boot(Application $app): void {}

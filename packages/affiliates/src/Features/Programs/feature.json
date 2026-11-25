@@ -18,7 +18,8 @@
       "AIArmada\\Affiliates\\Features\\Programs\\Actions\\AdministerProgramTier"
     ],
     "table:affiliate_program_creatives": [
-      "AIArmada\\Affiliates\\Features\\Programs\\Actions\\AdministerProgram"
+      "AIArmada\\Affiliates\\Features\\Programs\\Actions\\AdministerProgram",
+      "AIArmada\\Affiliates\\Features\\Programs\\Actions\\AdministerCreative"
     ]
   },
   "extensions": {}

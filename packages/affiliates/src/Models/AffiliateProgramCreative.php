@@ -126,8 +126,11 @@ class AffiliateProgramCreative extends Model implements Auditable, HasMedia
         }
 
         $param = (string) config('affiliates.links.parameter', 'aff');
-        [$url, $fragment] = array_pad(explode('#', $destination, 2), 2, null);
-        [$base, $query] = array_pad(explode('?', $url, 2), 2, null);
+        $fragmentParts = explode('#', $destination, 2);
+        $urlParts = explode('?', $fragmentParts[0], 2);
+        $fragment = $fragmentParts[1] ?? null;
+        $base = $urlParts[0];
+        $query = $urlParts[1] ?? null;
 
         $parameters = array_filter(explode('&', $query ?? ''), static function (string $pair) use ($param): bool {
             return $pair !== '' && urldecode(explode('=', $pair, 2)[0]) !== $param;

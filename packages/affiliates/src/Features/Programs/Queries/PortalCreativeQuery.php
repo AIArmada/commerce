@@ -20,7 +20,7 @@ final readonly class PortalCreativeQuery implements PortalCreativeReader
 
         $generalCreatives = AffiliateProgramCreative::query()
             ->general()
-            ->with('media')
+            ->with(['media', 'program'])
             ->orderByDesc('created_at')
             ->orderBy('id')
             ->limit(200)
@@ -43,7 +43,7 @@ final readonly class PortalCreativeQuery implements PortalCreativeReader
             ->limit(200)
             ->get();
 
-        return $this->mapAssets(collect($generalCreatives)->concat($programCreatives), $affiliate)->all();
+        return array_values($this->mapAssets(collect($generalCreatives)->concat($programCreatives), $affiliate)->all());
     }
 
     /**

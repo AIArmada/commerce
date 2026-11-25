@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Features\Programs\EntryPoints\Filament\Resources;
 
+use AIArmada\Affiliates\Features\Programs\Api\CreativeAdministration;
 use AIArmada\Affiliates\Models\AffiliateProgramCreative;
-use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use BackedEnum;
 use Filament\Actions\BulkActionGroup;
@@ -40,27 +41,27 @@ final class AffiliateCreativeResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return FilamentPermission::hasAbility('affiliate.viewAny');
+        return self::hasGeneralContext() && FilamentPermission::hasAbility('affiliate.viewAny');
     }
 
     public static function canView(Model $record): bool
     {
-        return FilamentPermission::hasAbility('affiliate.view');
+        return self::hasGeneralContext() && FilamentPermission::hasAbility('affiliate.view');
     }
 
     public static function canCreate(): bool
     {
-        return FilamentPermission::hasAbility('affiliate.create');
+        return self::hasGeneralContext() && FilamentPermission::hasAbility('affiliate.create');
     }
 
     public static function canEdit(Model $record): bool
     {
-        return FilamentPermission::hasAbility('affiliate.update');
+        return self::hasGeneralContext() && FilamentPermission::hasAbility('affiliate.update');
     }
 
     public static function canDelete(Model $record): bool
     {
-        return FilamentPermission::hasAbility('affiliate.delete');
+        return self::hasGeneralContext() && FilamentPermission::hasAbility('affiliate.delete');
     }
 
     public static function shouldRegisterNavigation(): bool
@@ -79,10 +80,14 @@ final class AffiliateCreativeResource extends Resource
             return $query;
         }
 
-        /** @var Builder<Model> $modelQuery */
-        $modelQuery = $query;
+        return self::hasGeneralContext()
+            ? $query->withoutGlobalScope('program_owner')
+            : $query->whereRaw('1 = 0');
+    }
 
-        return OwnerUiScope::apply($modelQuery, includeGlobal: false);
+    private static function hasGeneralContext(): bool
+    {
+        return ! (bool) config('affiliates.owner.enabled', false) || OwnerContext::isExplicitGlobal();
     }
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-photo';
@@ -152,6 +157,7 @@ final class AffiliateCreativeResource extends Resource
                         ->maxLength(2048),
 
                     TextInput::make('tracking_code')
+                        ->required()
                         ->label('Tracking Code Identifier')
                         ->maxLength(255)
                         ->default(fn (): string => mb_strtoupper(Str::random(8))),
@@ -187,6 +193,7 @@ final class AffiliateCreativeResource extends Resource
                     ->url(fn (?string $state): ?string => $state, shouldOpenInNewTab: true),
 
                 TextColumn::make('destination_url')
+                    ->state(fn (AffiliateProgramCreative $record): ?string => $record->safeDestinationUrl())
                     ->label('Destination')
                     ->limit(40)
                     ->url(fn (?string $state): ?string => $state, shouldOpenInNewTab: true),
@@ -217,7 +224,13 @@ final class AffiliateCreativeResource extends Resource
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->action(function ($records): void {
+                            foreach ($records as $record) {
+                                abort_unless(self::canDelete($record), 403);
+                                app(CreativeAdministration::class)->delete(null, (string) $record->getKey());
+                            }
+                        }),
                 ]),
             ]);
     }

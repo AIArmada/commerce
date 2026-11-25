@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Features\Programs\EntryPoints\Filament\Resources\AffiliateProgramResource\RelationManagers;
 
+use AIArmada\Affiliates\Features\Programs\Api\CreativeAdministration;
 use AIArmada\Affiliates\Models\AffiliateProgramCreative;
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
+use AIArmada\CommerceSupport\Support\FilamentPermission;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
@@ -101,6 +103,7 @@ final class CreativesRelationManager extends RelationManager
                     ->limit(40),
 
                 TextColumn::make('destination_url')
+                    ->state(fn (AffiliateProgramCreative $record): ?string => $record->safeDestinationUrl())
                     ->label('Destination')
                     ->url(fn (?string $state): ?string => $state, shouldOpenInNewTab: true)
                     ->limit(40),
@@ -110,15 +113,35 @@ final class CreativesRelationManager extends RelationManager
                     ->copyable(),
             ])
             ->headerActions([
-                CreateAction::make(),
+                CreateAction::make()
+                    ->authorize(fn (): bool => FilamentPermission::hasAbility('affiliate.update'))
+                    ->using(function (array $data): AffiliateProgramCreative {
+                        $id = app(CreativeAdministration::class)->create((string) $this->getOwnerRecord()->getKey(), $data);
+
+                        return AffiliateProgramCreative::query()->findOrFail($id);
+                    }),
             ])
             ->actions([
-                EditAction::make(),
-                DeleteAction::make(),
+                EditAction::make()
+                    ->authorize(fn (): bool => FilamentPermission::hasAbility('affiliate.update'))
+                    ->using(function (AffiliateProgramCreative $record, array $data): AffiliateProgramCreative {
+                        app(CreativeAdministration::class)->update((string) $this->getOwnerRecord()->getKey(), (string) $record->getKey(), $data);
+
+                        return $record->refresh();
+                    }),
+                DeleteAction::make()
+                    ->authorize(fn (): bool => FilamentPermission::hasAbility('affiliate.update'))
+                    ->using(fn (AffiliateProgramCreative $record): bool => app(CreativeAdministration::class)->delete((string) $this->getOwnerRecord()->getKey(), (string) $record->getKey())),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->authorize(fn (): bool => FilamentPermission::hasAbility('affiliate.update'))
+                        ->action(function ($records): void {
+                            foreach ($records as $record) {
+                                app(CreativeAdministration::class)->delete((string) $this->getOwnerRecord()->getKey(), (string) $record->getKey());
+                            }
+                        }),
                 ]),
             ]);
     }

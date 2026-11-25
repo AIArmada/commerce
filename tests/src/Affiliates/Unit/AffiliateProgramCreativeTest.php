@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\ProgramStatus;
+use AIArmada\Affiliates\Features\Programs\Api\CreativeAdministration;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramAdministration;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateProgram;
@@ -279,3 +280,36 @@ test('creative links reject non-http destinations', function (string $destinatio
     expect($creative->getTrackingUrl(new Affiliate(['code' => 'REF'])))->toBeNull()
         ->and($creative->getEmbedCode(new Affiliate(['code' => 'REF'])))->toBeNull();
 })->with(['javascript:alert(1)', 'data:text/html,hello', 'ftp://example.com/file']);
+
+test('creative administration validates destinations and fixes the program identity', function (): void {
+    $program = AffiliateProgram::create([
+        'name' => 'Creative Administration', 'slug' => 'creative-admin', 'status' => ProgramStatus::Active,
+        'commission_type' => 'percentage', 'default_commission_rate_basis_points' => 1000,
+        'cookie_lifetime_days' => 30,
+    ]);
+    $api = app(CreativeAdministration::class);
+    $data = ['name' => 'Text', 'type' => 'text_link', 'tracking_code' => 'ADMIN', 'destination_url' => 'https://example.com'];
+    expect(fn () => $api->create($program->id, [...$data, 'destination_url' => 'javascript:alert(1)']))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    $id = $api->create($program->id, [...$data, 'program_id' => null]);
+    $api->update($program->id, $id, ['program_id' => null, 'name' => 'Updated']);
+    $creative = AffiliateProgramCreative::query()->findOrFail($id);
+    expect($creative->program_id)->toBe($program->id)
+        ->and($creative->name)->toBe('Updated');
+
+    expect(fn () => $api->delete(null, $id))->toThrow(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
+    expect($api->delete($program->id, $id))->toBeTrue()
+        ->and($creative->fresh())->toBeNull();
+});
+
+test('tenant-owned contexts cannot administer general creatives', function (): void {
+    $owner = User::create(['name' => 'Creative Tenant', 'email' => 'creative-tenant@example.com', 'password' => 'secret']);
+    config(['affiliates.owner.enabled' => true, 'affiliates.owner.include_global' => false]);
+
+    OwnerContext::withOwner($owner, function (): void {
+        expect(fn () => app(CreativeAdministration::class)->create(null, [
+            'name' => 'Global', 'type' => 'text_link', 'tracking_code' => 'GLOBAL',
+        ]))->toThrow(AuthorizationException::class);
+    });
+});
