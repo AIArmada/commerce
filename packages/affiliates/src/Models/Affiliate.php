@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Models;
 
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutHoldReader;
 use AIArmada\Affiliates\Data\AffiliateData;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\RegistrationApprovalMode;
@@ -80,7 +81,6 @@ use Spatie\ModelStates\HasStates;
  * @property-read Collection<int, AffiliateConversion> $conversions
  * @property-read Collection<int, AffiliateBalance> $balances
  * @property-read Collection<int, AffiliatePayoutMethod> $payoutMethods
- * @property-read Collection<int, AffiliatePayoutHold> $payoutHolds
  * @property-read Collection<int, AffiliatePayout> $payouts
  * @property-read Collection<int, AffiliateLink> $links
  * @property-read Collection<int, AffiliateProgram> $programs
@@ -318,14 +318,6 @@ class Affiliate extends Model implements Auditable
     }
 
     /**
-     * @return HasMany<AffiliatePayoutHold, $this>
-     */
-    public function payoutHolds(): HasMany
-    {
-        return $this->hasMany(AffiliatePayoutHold::class);
-    }
-
-    /**
      * Get all vouchers linked to this affiliate (when aiarmada/vouchers is installed).
      *
      * @return HasMany<Voucher, $this>|HasMany<Model, $this>
@@ -340,24 +332,13 @@ class Affiliate extends Model implements Auditable
         return $this->hasMany(Model::class, 'affiliate_id');
     }
 
-    public function hasActivePayoutHold(): bool
-    {
-        return $this->payoutHolds()
-            ->whereNull('released_at')
-            ->where(function ($query): void {
-                $query->whereNull('expires_at')
-                    ->orWhere('expires_at', '>', CarbonImmutable::now());
-            })
-            ->exists();
-    }
-
     public function canRequestPayout(?string $currency = null): bool
     {
         if (! $this->isActive()) {
             return false;
         }
 
-        if ($this->hasActivePayoutHold()) {
+        if (app(PayoutHoldReader::class)->hasActive((string) $this->getKey())) {
             return false;
         }
 
@@ -519,7 +500,7 @@ class Affiliate extends Model implements Auditable
                 || $affiliate->links()->exists()
                 || $affiliate->balances()->exists()
                 || $affiliate->payoutMethods()->exists()
-                || $affiliate->payoutHolds()->exists()
+                || app(PayoutHoldReader::class)->hasRecords((string) $affiliate->getKey())
                 || $affiliate->children()->exists()) {
                 throw new LogicException('Affiliate removal must preserve history and clean up owned records through the affiliate removal action.');
             }

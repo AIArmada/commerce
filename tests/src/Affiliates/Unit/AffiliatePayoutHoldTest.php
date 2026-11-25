@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliatePayoutHold;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutHold;
 use AIArmada\Affiliates\States\Active;
 use Carbon\CarbonImmutable;
 

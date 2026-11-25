@@ -9,7 +9,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\Models\AffiliatePayoutHold;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutHold;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\CompletedPayout;

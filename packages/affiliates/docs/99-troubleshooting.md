@@ -183,9 +183,7 @@ $conversion->occurred_at->addDays(30)->isPast();
 
 3. **No active holds:**
 ```php
-$affiliate->payoutHolds()
-    ->whereNull('released_at')
-    ->exists(); // Should be false
+app(\AIArmada\Affiliates\Features\Payouts\Api\PayoutHoldReader::class)->hasActive((string) $affiliate->getKey()); // Should be false
 ```
 
 4. **Minimum payout threshold:**

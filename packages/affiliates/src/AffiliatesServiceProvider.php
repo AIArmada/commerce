@@ -42,7 +42,7 @@ use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateLink;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutEvent;
-use AIArmada\Affiliates\Models\AffiliatePayoutHold;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutHold;
 use AIArmada\Affiliates\Models\AffiliatePayoutMethod;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramCreative;

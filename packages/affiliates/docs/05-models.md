@@ -51,7 +51,6 @@ $affiliate->programs;         // BelongsToMany<AffiliateProgram>
 $affiliate->dailyStats;       // HasMany<AffiliateDailyStat>
 $affiliate->rank;             // BelongsTo<AffiliateRank>
 $affiliate->payoutMethods;    // HasMany<AffiliatePayoutMethod>
-$affiliate->payoutHolds;      // HasMany<AffiliatePayoutHold>
 $affiliate->vouchers;         // HasMany<Voucher>
 $affiliate->balances;         // HasMany<AffiliateBalance>, one row per currency
 ```
@@ -63,7 +62,7 @@ Commission rules, promotions and volume tiers are program-scoped and owned by Co
 ```php
 $affiliate->isActive();                // Check if status is Active
 $affiliate->canBeAttributed();         // Active, or pending under open registration
-$affiliate->hasActivePayoutHold();     // Check for unreleased payout holds
+app(\AIArmada\Affiliates\Features\Payouts\Api\PayoutHoldReader::class)->hasActive((string) $affiliate->getKey());     // Check for unreleased payout holds
 $affiliate->canRequestPayout();        // True when any balance meets its minimum payout
 $affiliate->canRequestPayout('USD');   // True when the USD balance meets its minimum
 $affiliate->balanceFor('USD');         // The USD AffiliateBalance, or null
@@ -300,7 +299,7 @@ use AIArmada\Affiliates\Models\AffiliatePayoutMethod;
 Temporary holds on payouts.
 
 ```php
-use AIArmada\Affiliates\Models\AffiliatePayoutHold;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutHold;
 ```
 
 | Attribute | Type | Description |

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources\AffiliateResource\Schemas;
 
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutHoldReader;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
@@ -88,12 +89,12 @@ final class AffiliateInfolist
 
                         TextEntry::make('payout_holds_count')
                             ->label('Payout Holds')
-                            ->state(fn ($record): int => $record->payoutHolds()->count())
+                            ->state(fn ($record): int => app(PayoutHoldReader::class)->count((string) $record->getKey()))
                             ->numeric(),
 
                         TextEntry::make('has_active_payout_hold')
                             ->label('Active Hold')
-                            ->state(fn ($record): string => $record->hasActivePayoutHold() ? 'Yes' : 'No')
+                            ->state(fn ($record): string => app(PayoutHoldReader::class)->hasActive((string) $record->getKey()) ? 'Yes' : 'No')
                             ->badge()
                             ->color(fn (string $state): string => $state === 'Yes' ? 'warning' : 'success'),
                     ]),

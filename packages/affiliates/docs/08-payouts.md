@@ -202,7 +202,7 @@ $holdId = $holds->place(
 
 $holds->release((string) $affiliate->getKey(), $holdId, 'Investigation complete, no issues found');
 
-$hasHolds = $affiliate->hasActivePayoutHold();
+$hasHolds = app(\AIArmada\Affiliates\Features\Payouts\Api\PayoutHoldReader::class)->hasActive((string) $affiliate->getKey());
 ```
 
 > **warning:**

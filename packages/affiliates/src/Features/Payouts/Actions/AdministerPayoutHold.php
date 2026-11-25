@@ -6,7 +6,7 @@ namespace AIArmada\Affiliates\Features\Payouts\Actions;
 
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutHoldAdministration;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliatePayoutHold;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutHold;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Carbon\CarbonImmutable;
 use DateTimeImmutable;
@@ -29,7 +29,8 @@ final readonly class AdministerPayoutHold implements PayoutHoldAdministration
 
         return $this->connection()->transaction(function () use ($affiliateId, $validated, $expiresAt): string {
             $affiliate = $this->lockAffiliate($affiliateId);
-            $hold = $affiliate->payoutHolds()->create([
+            $hold = AffiliatePayoutHold::query()->create([
+                'affiliate_id' => $affiliate->getKey(),
                 ...$validated,
                 'expires_at' => $expiresAt,
             ]);
@@ -42,7 +43,7 @@ final readonly class AdministerPayoutHold implements PayoutHoldAdministration
     {
         $this->connection()->transaction(function () use ($affiliateId, $holdId, $notes): void {
             $affiliate = $this->lockAffiliate($affiliateId);
-            $hold = $affiliate->payoutHolds()->lockForUpdate()->findOrFail($holdId);
+            $hold = AffiliatePayoutHold::query()->where('affiliate_id', $affiliate->getKey())->lockForUpdate()->findOrFail($holdId);
 
             if ($hold->released_at !== null) {
                 return;

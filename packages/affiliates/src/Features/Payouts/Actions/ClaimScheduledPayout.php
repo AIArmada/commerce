@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Payouts\Actions;
 
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutHold;
 use AIArmada\Affiliates\Features\Conversions\Api\PayoutReservation;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
@@ -48,11 +49,7 @@ final class ClaimScheduledPayout
             return false;
         }
 
-        if ($affiliate->payoutHolds()
-            ->whereNull('released_at')
-            ->where(static function ($query): void {
-                $query->whereNull('expires_at')->orWhere('expires_at', '>', CarbonImmutable::now());
-            })
+        if (AffiliatePayoutHold::query()->where('affiliate_id', $affiliate->getKey())->active()
             ->exists()) {
             return false;
         }
@@ -75,7 +72,7 @@ final class ClaimScheduledPayout
 
         $connection = (new Affiliate)->getConnection();
 
-        foreach ([new AffiliateBalance, new AffiliateConversion, new AffiliatePayout, new AffiliatePayoutOperation, new AffiliatePayoutEvent] as $model) {
+        foreach ([new AffiliateBalance, new AffiliateConversion, new AffiliatePayout, new AffiliatePayoutOperation, new AffiliatePayoutEvent, new AffiliatePayoutHold] as $model) {
             if ($model->getConnection() !== $connection) {
                 throw new LogicException('Scheduled payout reservation requires a shared database connection.');
             }
@@ -104,11 +101,7 @@ final class ClaimScheduledPayout
                 return null;
             }
 
-            $activeHold = $affiliate->payoutHolds()
-                ->whereNull('released_at')
-                ->where(function ($query): void {
-                    $query->whereNull('expires_at')->orWhere('expires_at', '>', CarbonImmutable::now());
-                })
+            $activeHold = AffiliatePayoutHold::query()->where('affiliate_id', $affiliate->getKey())->active()
                 ->lockForUpdate()
                 ->first();
 

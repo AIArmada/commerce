@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutHoldReader;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Events\AffiliateActivated;
 use AIArmada\Affiliates\Events\AffiliateCreated;
@@ -13,7 +14,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliatePayoutHold;
+use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutHold;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\Affiliates\States\Disabled;
@@ -293,7 +294,7 @@ describe('Affiliate Model - Relationships', function (): void {
             'commission_rate' => 1000,
             'currency' => 'USD',
         ]);
-        expect($affiliate->payoutHolds())->toBeInstanceOf(HasMany::class);
+        expect(app(PayoutHoldReader::class)->count($affiliate->id))->toBe(0);
     });
 
     test('belongs to rank', function (): void {
@@ -344,7 +345,7 @@ describe('Affiliate Model - Payout Hold Methods', function (): void {
             'released_at' => null,
         ]);
 
-        expect($affiliate->hasActivePayoutHold())->toBeTrue();
+        expect(app(PayoutHoldReader::class)->hasActive($affiliate->id))->toBeTrue();
     });
 
     test('hasActivePayoutHold returns false when hold is released', function (): void {
@@ -363,7 +364,7 @@ describe('Affiliate Model - Payout Hold Methods', function (): void {
             'released_at' => now(),
         ]);
 
-        expect($affiliate->hasActivePayoutHold())->toBeFalse();
+        expect(app(PayoutHoldReader::class)->hasActive($affiliate->id))->toBeFalse();
     });
 
     test('hasActivePayoutHold returns false when hold is expired', function (): void {
@@ -382,7 +383,7 @@ describe('Affiliate Model - Payout Hold Methods', function (): void {
             'expires_at' => now()->subDay(),
         ]);
 
-        expect($affiliate->hasActivePayoutHold())->toBeFalse();
+        expect(app(PayoutHoldReader::class)->hasActive($affiliate->id))->toBeFalse();
     });
 
     test('hasActivePayoutHold returns false with no holds', function (): void {
@@ -395,7 +396,7 @@ describe('Affiliate Model - Payout Hold Methods', function (): void {
             'currency' => 'USD',
         ]);
 
-        expect($affiliate->hasActivePayoutHold())->toBeFalse();
+        expect(app(PayoutHoldReader::class)->hasActive($affiliate->id))->toBeFalse();
     });
 });
 

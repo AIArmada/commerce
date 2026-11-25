@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Models;
+namespace AIArmada\Affiliates\Features\Payouts\Models;
 
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\Concerns\ScopesByAffiliateOwner;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
@@ -32,6 +33,8 @@ class AffiliatePayoutHold extends Model implements Auditable
     use LogsCommerceActivity;
     use ScopesByAffiliateOwner;
 
+    protected $table = 'affiliate_payout_holds';
+
     protected $fillable = [
         'affiliate_id',
         'reason',
@@ -57,6 +60,16 @@ class AffiliatePayoutHold extends Model implements Auditable
     public function affiliate(): BelongsTo
     {
         return $this->belongsTo(Affiliate::class);
+    }
+
+    /** @param \Illuminate\Database\Eloquent\Builder<self> $query
+     * @return \Illuminate\Database\Eloquent\Builder<self>
+     */
+    public function scopeActive(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    {
+        return $query->whereNull('released_at')->where(function ($builder): void {
+            $builder->whereNull('expires_at')->orWhere('expires_at', '>', now());
+        });
     }
 
     public function isActive(): bool
