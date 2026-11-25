@@ -22,9 +22,9 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\PublicHandle;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Contacting\Actions\ReplaceGeneralContactMethods;
 use AIArmada\Contacting\Concerns\HasContactMethods;
 use AIArmada\Contacting\Concerns\HasSocialProfiles;
-use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Vouchers\Models\Voucher;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
@@ -107,13 +107,9 @@ class Affiliate extends Model implements Auditable
 
     public const string PURPOSE_GENERAL = 'general';
 
-    private ?string $contactEmailCache = null;
-
     private ?string $pendingContactEmail = null;
 
     private bool $contactEmailDirty = false;
-
-    private ?string $websiteUrlCache = null;
 
     private ?string $pendingWebsiteUrl = null;
 
@@ -510,8 +506,7 @@ class Affiliate extends Model implements Auditable
         });
 
         self::saved(function (self $affiliate): void {
-            $affiliate->syncPendingContactEmail();
-            $affiliate->syncPendingWebsiteUrl();
+            $affiliate->syncPendingContacts();
         });
 
         self::deleting(function (self $affiliate): void {
@@ -597,11 +592,7 @@ class Affiliate extends Model implements Auditable
     private function resolveContactEmail(): ?string
     {
         if ($this->contactEmailDirty) {
-            return $this->contactEmailCache;
-        }
-
-        if ($this->contactEmailCache !== null) {
-            return $this->contactEmailCache;
+            return $this->pendingContactEmail;
         }
 
         return OwnerContext::withOwner($this->owner, function (): ?string {
@@ -614,37 +605,12 @@ class Affiliate extends Model implements Auditable
 
             return $this->cleanString($contactMethod?->normalized_value ?? $contactMethod?->value);
         });
-    }
-
-    private function syncPendingContactEmail(): void
-    {
-        if (! $this->contactEmailDirty) {
-            return;
-        }
-
-        OwnerContext::withOwner($this->owner, function (): void {
-            $this->contactMethods()
-                ->where('type', 'email')
-                ->where('purpose', 'general')
-                ->delete();
-
-            if ($this->pendingContactEmail !== null) {
-                $this->addContactMethod(ContactMethodData::email($this->pendingContactEmail, 'general'));
-            }
-        });
-
-        $this->pendingContactEmail = null;
-        $this->contactEmailDirty = false;
     }
 
     private function resolveWebsiteUrl(): ?string
     {
         if ($this->websiteUrlDirty) {
-            return $this->websiteUrlCache;
-        }
-
-        if ($this->websiteUrlCache !== null) {
-            return $this->websiteUrlCache;
+            return $this->pendingWebsiteUrl;
         }
 
         return OwnerContext::withOwner($this->owner, function (): ?string {
@@ -659,31 +625,33 @@ class Affiliate extends Model implements Auditable
         });
     }
 
-    private function syncPendingWebsiteUrl(): void
+    private function syncPendingContacts(): void
     {
-        if (! $this->websiteUrlDirty) {
+        $changes = [];
+
+        if ($this->contactEmailDirty) {
+            $changes['email'] = $this->pendingContactEmail;
+        }
+
+        if ($this->websiteUrlDirty) {
+            $changes['website'] = $this->pendingWebsiteUrl;
+        }
+
+        if ($changes === []) {
             return;
         }
 
-        OwnerContext::withOwner($this->owner, function (): void {
-            $this->contactMethods()
-                ->where('type', 'website')
-                ->where('purpose', 'general')
-                ->delete();
+        OwnerContext::withOwner($this->owner, fn () => app(ReplaceGeneralContactMethods::class)->execute($this, $changes));
 
-            if ($this->pendingWebsiteUrl !== null) {
-                $this->addContactMethod(ContactMethodData::website($this->pendingWebsiteUrl, 'general'));
-            }
-        });
-
+        $this->pendingContactEmail = null;
+        $this->contactEmailDirty = false;
         $this->pendingWebsiteUrl = null;
         $this->websiteUrlDirty = false;
     }
 
     public function setContactEmailAttribute(mixed $value): void
     {
-        $this->contactEmailCache = $this->cleanString($value);
-        $this->pendingContactEmail = $this->contactEmailCache;
+        $this->pendingContactEmail = $this->cleanString($value);
         $this->contactEmailDirty = true;
     }
 
@@ -694,8 +662,7 @@ class Affiliate extends Model implements Auditable
 
     public function setWebsiteUrlAttribute(mixed $value): void
     {
-        $this->websiteUrlCache = $this->cleanString($value);
-        $this->pendingWebsiteUrl = $this->websiteUrlCache;
+        $this->pendingWebsiteUrl = $this->cleanString($value);
         $this->websiteUrlDirty = true;
     }
 

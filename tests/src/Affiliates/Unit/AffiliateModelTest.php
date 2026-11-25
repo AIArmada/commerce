@@ -27,6 +27,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Validation\ValidationException;
 
 describe('Affiliate Model - Owner Scopes', function (): void {
     test('scopeForOwner filters by owner when enabled', function (): void {
@@ -500,6 +501,21 @@ describe('Affiliate Model - Accessors', function (): void {
         ]);
 
         expect($affiliate->email)->toBe('test@example.com');
+    });
+
+    test('invalid contact replacement preserves the existing email', function (): void {
+        $affiliate = Affiliate::create([
+            'code' => 'EMAIL-ROLLBACK',
+            'name' => 'Contact Rollback',
+            'status' => Active::class,
+            'contact_email' => 'original@example.com',
+            'website_url' => 'https://example.com',
+        ]);
+
+        expect(fn () => $affiliate->update(['contact_email' => 'not-an-email']))
+            ->toThrow(ValidationException::class)
+            ->and($affiliate->fresh()->contact_email)->toBe('original@example.com')
+            ->and($affiliate->fresh()->website_url)->toBe('https://example.com');
     });
 
     test('stores commission rate in basis points', function (): void {
