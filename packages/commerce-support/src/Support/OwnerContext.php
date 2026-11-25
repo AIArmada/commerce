@@ -86,18 +86,18 @@ final class OwnerContext
 
         $request->attributes->set(self::REQUEST_KEY, ['hasOverride' => true, 'override' => $owner]);
 
-        if ($switchingToOwner) {
-            try {
+        try {
+            if ($switchingToOwner) {
                 event(new MadeOwnerCurrentEvent($owner));
-            } catch (Throwable $e) {
-                $request->attributes->set(self::REQUEST_KEY, $previousState);
-
-                throw $e;
             }
-        }
 
-        if ($forgettingPreviousOwner) {
-            event(new ForgotCurrentOwnerEvent($previousOwner));
+            if ($forgettingPreviousOwner) {
+                event(new ForgotCurrentOwnerEvent($previousOwner));
+            }
+        } catch (Throwable $e) {
+            $request->attributes->set(self::REQUEST_KEY, $previousState);
+
+            throw $e;
         }
     }
 
@@ -186,18 +186,18 @@ final class OwnerContext
 
         self::writeState(['hasOverride' => true, 'override' => $owner]);
 
-        if ($owner !== null) {
-            try {
+        try {
+            if ($owner !== null) {
                 event(new MadeOwnerCurrentEvent($owner));
-            } catch (Throwable $e) {
-                self::restoreState($capturedRequest, $previous);
-
-                throw $e;
             }
-        }
 
-        if ($displacingOwner) {
-            event(new ForgotCurrentOwnerEvent($previousOwner));
+            if ($displacingOwner) {
+                event(new ForgotCurrentOwnerEvent($previousOwner));
+            }
+        } catch (Throwable $e) {
+            self::restoreState($capturedRequest, $previous);
+
+            throw $e;
         }
 
         try {
@@ -228,7 +228,11 @@ final class OwnerContext
             throw new InvalidArgumentException('Owner type and owner id must not be empty strings.');
         }
 
-        if ($ownerType === null || $ownerId === null) {
+        if (($ownerType === null) !== ($ownerId === null)) {
+            throw new InvalidArgumentException('Owner type and owner id must both be present or both be null.');
+        }
+
+        if ($ownerType === null && $ownerId === null) {
             return null;
         }
 

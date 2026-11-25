@@ -27,12 +27,10 @@ use AIArmada\CommerceSupport\Support\PublicHttpUrlGuard;
 use AIArmada\CommerceSupport\Support\SettingsExchangeRateProvider;
 use AIArmada\CommerceSupport\Targeting\Contracts\TargetingEngineInterface;
 use AIArmada\CommerceSupport\Targeting\TargetingEngine;
-use Carbon\CarbonImmutable;
 use Filament\Support\Assets\Js;
 use Filament\Support\Facades\FilamentAsset;
 use Filament\Tables\Table;
 use Filament\Widgets\Widget;
-use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Schema;
 use InvalidArgumentException;
 use Laravel\Octane\Events\RequestReceived;
@@ -150,7 +148,6 @@ final class SupportServiceProvider extends PackageServiceProvider
 
     public function bootingPackage(): void
     {
-        Date::use(CarbonImmutable::class);
         $this->configureFilamentTables();
         $this->registerFilamentAssets();
         $this->registerTagModel();

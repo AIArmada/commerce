@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\CommerceSupport\Support;
 
 use AIArmada\CommerceSupport\Contracts\PublicDnsResolver;
-use AIArmada\CommerceSupport\Drivers\SystemPublicDnsResolver;
 use Closure;
 use InvalidArgumentException;
 use Throwable;
@@ -72,7 +71,7 @@ final class PublicHttpUrlGuard
             return;
         }
 
-        $this->dnsResolver = new SystemPublicDnsResolver;
+        $this->dnsResolver = app(PublicDnsResolver::class);
     }
 
     public function isAllowed(string $url): bool

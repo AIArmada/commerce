@@ -195,6 +195,10 @@ final class OwnerFilesystem
             $decoded = $next;
         }
 
+        if (rawurldecode($decoded) !== $decoded || preg_match('/[\\x00-\\x1F\\x7F]/', $decoded) === 1) {
+            throw new InvalidArgumentException('Relative path contains invalid encoded characters.');
+        }
+
         $unified = str_replace('\\', '/', $decoded);
 
         if (str_starts_with($unified, '/') || preg_match('#^[a-zA-Z]:#', $unified) === 1) {
