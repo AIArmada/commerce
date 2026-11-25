@@ -7,9 +7,8 @@ namespace AIArmada\Affiliates\Features\Attribution\Actions;
 use AIArmada\Affiliates\Exceptions\AffiliateNotFoundException;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateLink;
-use AIArmada\Affiliates\Models\AffiliateProgram;
+use AIArmada\Affiliates\Features\Programs\Api\TrackingProgramGuard;
 use AIArmada\Affiliates\Support\Links\AffiliateLinkDestination;
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Links\Actions\CreatePublicLink;
 use AIArmada\Links\Actions\GenerateLinkUrl;
 use AIArmada\Links\LinksServiceProvider;
@@ -21,6 +20,8 @@ use LogicException;
 
 final readonly class CreateTrackingLink
 {
+    public function __construct(private TrackingProgramGuard $programs) {}
+
     public function handle(string $affiliateId, string $destinationUrl, array $attributes = []): AffiliateLink
     {
         $affiliate = Affiliate::query()->forOwner()->findOrFail($affiliateId);
@@ -30,21 +31,6 @@ final readonly class CreateTrackingLink
         }
 
         $programId = Arr::get($attributes, 'program_id');
-
-        if (is_string($programId) || is_int($programId)) {
-            if (! config('affiliates.owner.enabled', false)) {
-                $program = AffiliateProgram::query()->findOrFail($programId);
-            } else {
-                $program = OwnerWriteGuard::findOrFailForOwner(
-                    AffiliateProgram::class,
-                    $programId,
-                    includeGlobal: true,
-                    message: 'Selected program is not accessible in the current owner scope.',
-                );
-            }
-
-            $programId = (string) $program->getKey();
-        }
 
         $params = Arr::get($attributes, 'params', []);
 
@@ -67,6 +53,7 @@ final readonly class CreateTrackingLink
         $allowedHosts = AffiliateLinkDestination::allowedHosts($destinationUrl);
 
         Validator::make($attributes, [
+            'program_id' => ['nullable', 'string', 'uuid'],
             'tracking_url' => ['prohibited'],
             'short_url' => ['prohibited'],
             'custom_slug' => ['nullable', 'string', 'min:8', 'max:64', 'regex:/^[a-z0-9]+$/'],
@@ -85,6 +72,10 @@ final readonly class CreateTrackingLink
             $affiliate = Affiliate::query()->forOwner()->lockForUpdate()->findOrFail($affiliate->getKey());
             if (! $affiliate->canBeAttributed()) {
                 throw new AffiliateNotFoundException("Affiliate {$affiliate->code} cannot receive attribution.");
+            }
+
+            if (is_string($programId)) {
+                $this->programs->lockForTracking($programId, spl_object_id($affiliate->getConnection()));
             }
 
             $affiliateLink = AffiliateLink::query()->create([

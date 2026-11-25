@@ -27,7 +27,7 @@ final readonly class IncrementAffiliateLinkClicks
             ->with(['affiliate' => fn ($query) => $query->withoutGlobalScope(OwnerScope::class)])
             ->find($event->link->subject_id);
 
-        if ($link !== null && $link->affiliate !== null) {
+        if ($link !== null && $link->affiliate !== null && $link->trackedLink()->whereKey($event->link->getKey())->exists()) {
             $owner = OwnerContext::fromTypeAndId($link->affiliate->owner_type, $link->affiliate->owner_id);
             OwnerContext::withOwner($owner, fn () => $this->links->recordClick((string) $link->getKey()));
         }

@@ -21,7 +21,7 @@ final class AffiliateLinkGate implements LinkGateInterface
             ->with(['affiliate' => fn ($query) => $query->withoutGlobalScope(OwnerScope::class)])
             ->find($link->subject_id);
 
-        if ($affiliateLink === null) {
+        if ($affiliateLink === null || $affiliateLink->affiliate === null || ! $affiliateLink->trackedLink()->whereKey($link->getKey())->exists()) {
             return 'link_unknown';
         }
 

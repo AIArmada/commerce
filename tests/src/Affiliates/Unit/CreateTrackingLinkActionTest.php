@@ -7,6 +7,7 @@ use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\ProgramVisibility;
 use AIArmada\Affiliates\Features\Attribution\Actions\CreateTrackingLink;
+use AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkAdministration;
 use AIArmada\Affiliates\Features\Attribution\EntryPoints\Listeners\IncrementAffiliateLinkClicks;
 use AIArmada\Affiliates\Features\Conversions\Actions\RecordAffiliateOutcome;
 use AIArmada\Affiliates\Models\Affiliate;
@@ -212,10 +213,27 @@ test('it counts only human clicks associated with the public tracking link', fun
 
     $listener->handle(new LinkClicked($tracked, new LinkClick(['link_id' => (string) Str::uuid()])));
     $listener->handle(new LinkClicked($tracked, new LinkClick(['link_id' => $tracked->getKey(), 'is_bot' => true])));
+    $forged = clone $tracked;
+    $forged->setAttribute($forged->getKeyName(), (string) Str::uuid());
+    $listener->handle(new LinkClicked($forged, new LinkClick(['link_id' => $forged->getKey()])));
 
     expect($link->refresh()->clicks)->toBe(0);
 
     $listener->handle(new LinkClicked($tracked, new LinkClick(['link_id' => $tracked->getKey()])));
 
     expect($link->refresh()->clicks)->toBe(1);
+});
+
+test('tracking link commands reject malformed program references and null affiliate reassignment', function (): void {
+    config(['affiliates.links.allowed_hosts' => ['ilmu360.test']]);
+    $links = app(TrackingLinkAdministration::class);
+    $destination = 'https://ilmu360.test/event';
+    $affiliateId = (string) $this->affiliate->getKey();
+    foreach (['invalid-uuid', [], 123] as $invalid) {
+        expect(fn () => $links->create($affiliateId, $destination, ['program_id' => $invalid]))->toThrow(ValidationException::class);
+    }
+    $link = $links->create($affiliateId, $destination);
+    expect(fn () => $links->update($link->id, ['program_id' => 'invalid-uuid']))->toThrow(ValidationException::class)
+        ->and(fn () => $links->update($link->id, ['affiliate_id' => null]))->toThrow(ValidationException::class);
+    expect(AffiliateLink::query()->findOrFail($link->id)->affiliate_id)->toBe($affiliateId);
 });
