@@ -95,12 +95,15 @@ final class SignalRecorderSupport
         // Trust boundary: a half-null tuple must never fall through to a
         // global property, and a deleted owner must never route into an
         // orphaned property. Both fail here instead.
-        $owner = OwnerContext::fromTypeAndIdOrFail(
+        return $this->resolveTrackedPropertyForAffiliateOwner(
             $this->stringValue($model->getAttribute('owner_type')),
             $model->getAttribute('owner_id'),
         );
+    }
 
-        return $this->trackedPropertyResolver->resolveForOwner($owner);
+    public function resolveTrackedPropertyForAffiliateOwner(?string $ownerType, string | int | null $ownerId): ?TrackedProperty
+    {
+        return $this->trackedPropertyResolver->resolveForOwner(OwnerContext::fromTypeAndIdOrFail($ownerType, $ownerId));
     }
 
     public function modelAttribute(Model $model, string $attribute): mixed

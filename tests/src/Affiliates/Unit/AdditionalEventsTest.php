@@ -19,8 +19,8 @@ test('AffiliateActivated event uses Dispatchable trait', function (): void {
     expect(in_array(Dispatchable::class, class_uses_recursive(AffiliateActivated::class)))->toBeTrue();
 });
 
-test('AffiliateActivated event uses SerializesModels trait', function (): void {
-    expect(in_array(SerializesModels::class, class_uses_recursive(AffiliateActivated::class)))->toBeTrue();
+test('AffiliateActivated event does not serialize Eloquent models', function (): void {
+    expect(in_array(SerializesModels::class, class_uses_recursive(AffiliateActivated::class)))->toBeFalse();
 });
 
 test('AffiliateTierUpgraded event allows null fromTier for initial tier assignment', function (): void {

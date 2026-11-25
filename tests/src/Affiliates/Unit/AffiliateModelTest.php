@@ -594,7 +594,7 @@ describe('Affiliate Model - Events', function (): void {
     test('dispatches AffiliateCreated event on creation', function (): void {
         Event::fake([AffiliateCreated::class]);
 
-        Affiliate::create([
+        $affiliate = Affiliate::create([
             'code' => 'EVENT-001',
             'name' => 'Event Test Affiliate',
             'status' => Draft::class,
@@ -603,7 +603,7 @@ describe('Affiliate Model - Events', function (): void {
             'currency' => 'USD',
         ]);
 
-        Event::assertDispatched(AffiliateCreated::class);
+        Event::assertDispatched(AffiliateCreated::class, fn (AffiliateCreated $event): bool => $event->affiliate->id === $affiliate->id);
     });
 
     test('dispatches AffiliateActivated event when status changes to Active', function (): void {
@@ -620,7 +620,7 @@ describe('Affiliate Model - Events', function (): void {
 
         $affiliate->update(['status' => Active::class]);
 
-        Event::assertDispatched(AffiliateActivated::class);
+        Event::assertDispatched(AffiliateActivated::class, fn (AffiliateActivated $event): bool => $event->affiliate->id === $affiliate->id);
     });
 
     test('does not dispatch AffiliateActivated when status stays same', function (): void {

@@ -6,6 +6,8 @@ namespace AIArmada\Signals\Services\Recorders;
 
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalReader;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalReference;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycleReader;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycleReference;
 use AIArmada\Signals\Models\SignalEvent;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
@@ -166,39 +168,37 @@ final class AffiliateSignalRecorder
         ]);
     }
 
-    public function recordCreated(Model $affiliate): ?SignalEvent
+    public function recordCreated(AffiliateLifecycleReference $affiliate): ?SignalEvent
     {
-        $this->assertSourceModel($affiliate, 'AIArmada\\Affiliates\\Models\\Affiliate');
+        $canonical = app(AffiliateLifecycleReader::class)->find($affiliate);
 
-        $canonical = $this->support->resolveSourceModel(
-            'AIArmada\\Affiliates\\Models\\Affiliate',
-            $this->support->stringValue($affiliate->getKey()),
-        );
-
-        if (! $canonical instanceof Model) {
+        if ($canonical === null) {
             return null;
         }
 
-        $this->assertCanonicalOwner($affiliate, $canonical, 'affiliate');
-
-        $trackedProperty = $this->support->resolveTrackedPropertyForAffiliateModel($canonical);
+        $reference = $canonical->reference;
+        $trackedProperty = $this->support->resolveTrackedPropertyForAffiliateOwner($reference->ownerType, $reference->ownerId);
 
         if ($trackedProperty === null) {
             return null;
         }
 
+        if ($canonical->createdAt === null) {
+            throw new InvalidArgumentException('Trusted signal source is missing timestamp attributes [created_at].');
+        }
+
         return $this->support->ingest($trackedProperty, [
             'event_name' => (string) config('signals.integrations.affiliates.created_event_name', 'affiliate.created'),
             'event_category' => (string) config('signals.integrations.affiliates.lifecycle_event_category', 'affiliate_lifecycle'),
-            'occurred_at' => $this->support->requiredModelTimestamp($canonical, ['created_at']),
-            'idempotency_key' => 'affiliate-created:' . $canonical->getKey(),
-            'source_event_id' => (string) $canonical->getKey(),
+            'occurred_at' => $canonical->createdAt->toIso8601String(),
+            'idempotency_key' => 'affiliate-created:' . $reference->id,
+            'source_event_id' => $reference->id,
             'revenue_minor' => 0,
             'currency' => $trackedProperty->currency,
             'properties' => array_filter([
-                'affiliate_id' => (string) $canonical->getKey(),
-                'affiliate_code' => $this->requiredStringAttribute($canonical, 'code'),
-                'registration_approval_mode' => $this->support->stringValue($this->support->modelAttribute($canonical, 'registration_approval_mode')),
+                'affiliate_id' => $reference->id,
+                'affiliate_code' => $canonical->code,
+                'registration_approval_mode' => $canonical->registrationApprovalMode,
             ], static fn (mixed $value): bool => $value !== null),
         ]);
     }

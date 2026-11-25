@@ -22,7 +22,7 @@ final class SignalEventMap
             ],
             'AIArmada\\Affiliates\\Events\\AffiliateCreated' => [
                 'method' => 'recordAffiliateCreated',
-                'arguments' => [['property' => 'affiliate', 'type' => 'model']],
+                'arguments' => [['property' => 'affiliate', 'type' => 'object']],
             ],
             'AIArmada\\Affiliates\\Events\\AffiliateProgramJoined' => [
                 'method' => 'recordAffiliateProgramJoined',

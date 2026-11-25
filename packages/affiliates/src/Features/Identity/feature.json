@@ -23,7 +23,8 @@
       "AIArmada\\Affiliates\\Features\\Identity\\Actions\\AdministerAffiliate",
       "AIArmada\\Affiliates\\Features\\Identity\\Actions\\CreateAffiliate",
       "AIArmada\\Affiliates\\Features\\Identity\\Actions\\DetachAffiliateRank",
-      "AIArmada\\Affiliates\\Features\\Identity\\Actions\\DeleteAffiliate"
+      "AIArmada\\Affiliates\\Features\\Identity\\Actions\\DeleteAffiliate",
+      "AIArmada\\Affiliates\\Features\\Identity\\Actions\\ProvisionAffiliateVoucher"
     ]
   },
   "extensions": {}

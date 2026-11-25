@@ -110,7 +110,7 @@ it('keeps one explicit mapping for each commerce signal listener source', functi
 it('maps affiliate lifecycle events to exact recorder methods and arguments', function (): void {
     expect(SignalEventMap::for('AIArmada\\Affiliates\\Events\\AffiliateCreated'))->toBe([
         'method' => 'recordAffiliateCreated',
-        'arguments' => [['property' => 'affiliate', 'type' => 'model']],
+        'arguments' => [['property' => 'affiliate', 'type' => 'object']],
     ])->and(SignalEventMap::for('AIArmada\\Affiliates\\Events\\AffiliateProgramJoined'))->toBe([
         'method' => 'recordAffiliateProgramJoined',
         'arguments' => [

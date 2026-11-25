@@ -125,8 +125,8 @@ use AIArmada\Affiliates\Events\FraudSignalDetected;
 use AIArmada\Affiliates\Events\HoldingShortfallDetected;
 
 // Affiliate created (model hook) / activated
-AffiliateCreated::class;        // (Affiliate $affiliate)
-AffiliateActivated::class;      // (Affiliate $affiliate)
+AffiliateCreated::class;        // (AffiliateLifecycleReference $affiliate)
+AffiliateActivated::class;      // (AffiliateLifecycleReference $affiliate)
 AffiliateConversionReversed::class; // (?string $origin, ?string $sourceRef, ?string $externalReference, string $reason)
 
 // Program membership changes

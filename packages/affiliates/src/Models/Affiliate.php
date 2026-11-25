@@ -9,6 +9,7 @@ use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\RegistrationApprovalMode;
 use AIArmada\Affiliates\Events\AffiliateActivated;
 use AIArmada\Affiliates\Events\AffiliateCreated;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycleReference;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\Affiliates\States\Pending;
@@ -165,6 +166,11 @@ class Affiliate extends Model implements Auditable
             'paused_at',
             'identity_sealed_at',
         ];
+    }
+
+    public function lifecycleReference(): AffiliateLifecycleReference
+    {
+        return new AffiliateLifecycleReference((string) $this->getKey(), $this->owner_type, $this->owner_id === null ? null : (string) $this->owner_id);
     }
 
     public function toData(): AffiliateData
@@ -477,7 +483,7 @@ class Affiliate extends Model implements Auditable
         });
 
         self::created(function (self $affiliate): void {
-            AffiliateCreated::dispatch($affiliate);
+            AffiliateCreated::dispatch($affiliate->lifecycleReference());
         });
 
         self::updating(function (self $affiliate): void {
@@ -497,7 +503,7 @@ class Affiliate extends Model implements Auditable
         self::updated(function (self $affiliate): void {
             // Fire activated event when status changes to Active
             if ($affiliate->wasChanged('status') && $affiliate->status instanceof Active) {
-                AffiliateActivated::dispatch($affiliate);
+                AffiliateActivated::dispatch($affiliate->lifecycleReference());
             }
         });
 
