@@ -349,6 +349,7 @@ return [
 
     'tax' => [
         'storage_disk' => env('AFFILIATES_TAX_STORAGE_DISK', 'local'),
+        'pdf_driver' => env('AFFILIATES_TAX_PDF_DRIVER', 'browsershot'),
         // Stored/compared in minor units (e.g. 60000 = $600.00)
         '1099_threshold' => env('AFFILIATES_TAX_1099_THRESHOLD', 60000),
         '1099_threshold_currency' => env('AFFILIATES_TAX_1099_THRESHOLD_CURRENCY', 'USD'),

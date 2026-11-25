@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Data\TaxRecipientDetails;
 use AIArmada\Affiliates\Data\TaxWorksheetRequest;
-use AIArmada\Affiliates\Drivers\Tax\PrivateTaxWorksheetWriter;
+use AIArmada\Affiliates\Drivers\Tax\SpatieTaxWorksheetWriter;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use Illuminate\Support\Facades\Storage;
+use Spatie\LaravelPdf\Drivers\PdfDriver;
+use Spatie\LaravelPdf\PdfOptions;
 
 /** @param array<string, mixed> $data */
 function taxWorksheetRequest(array $data): TaxWorksheetRequest
@@ -23,7 +25,10 @@ function taxWorksheetRequest(array $data): TaxWorksheetRequest
 }
 
 beforeEach(function (): void {
-    $this->generator = new PrivateTaxWorksheetWriter;
+    $driver = Mockery::mock(PdfDriver::class);
+    $driver->shouldReceive('generatePdf')->andReturnUsing(static fn (string $html, ?string $header, ?string $footer, PdfOptions $options): string => "%PDF-1.7\n" . $html);
+    app()->instance('laravel-pdf.driver.browsershot', $driver);
+    $this->generator = new SpatieTaxWorksheetWriter;
 
     $this->affiliate = Affiliate::create([
         'code' => 'TAX-' . uniqid(),
@@ -36,7 +41,7 @@ beforeEach(function (): void {
     ]);
 });
 
-describe('PrivateTaxWorksheetWriter', function (): void {
+describe('SpatieTaxWorksheetWriter', function (): void {
     describe('generate', function (): void {
         test('generates tax document and returns path', function (): void {
             Storage::fake('local');
@@ -57,9 +62,10 @@ describe('PrivateTaxWorksheetWriter', function (): void {
             expect($result)->toContain('tax-documents/2024/');
             expect($result)->toContain('1099-NEC-2024-');
             expect($result)->toContain($this->affiliate->id);
-            expect($result)->toEndWith('.txt');
+            expect($result)->toEndWith('.pdf');
 
             Storage::disk('local')->assertExists($result);
+            expect(Storage::disk('local')->get($result))->toStartWith('%PDF-');
             expect(Storage::disk('local')->getVisibility($result))->toBe('private');
         });
 
@@ -185,7 +191,7 @@ describe('PrivateTaxWorksheetWriter', function (): void {
             $result = $this->generator->write(taxWorksheetRequest($data));
             $content = Storage::disk('local')->get($result);
 
-            expect($content)->toContain("Address: \n");
+            expect($content)->toContain('Address: </p>');
         });
 
         test('formats amount correctly in dollars', function (): void {
@@ -223,7 +229,7 @@ describe('PrivateTaxWorksheetWriter', function (): void {
             $result = $this->generator->write(taxWorksheetRequest($data));
             $content = Storage::disk('local')->get($result);
 
-            expect($content)->toContain('1099-NEC preparation worksheet (not an official IRS filing)');
+            expect($content)->toContain('not an official IRS filing');
             expect($content)->toContain('Tax Year: 2024');
         });
     });
@@ -349,5 +355,23 @@ describe('PrivateTaxWorksheetWriter', function (): void {
 
             Storage::disk('local')->assertExists($result);
         });
+    });
+    test('rejects remote drivers before sending sensitive data', function (): void {
+        config(['affiliates.tax.pdf_driver' => 'cloudflare']);
+        $request = new TaxWorksheetRequest((string) $this->affiliate->getKey(), 2024, 70000, 'USD', new TaxRecipientDetails('Recipient', '123456789'));
+
+        expect(fn () => $this->generator->write($request))->toThrow(RuntimeException::class, 'local PDF driver');
+    });
+
+    test('rejects invalid renderer content', function (): void {
+        Storage::fake('local');
+        $driver = Mockery::mock(PdfDriver::class);
+        $driver->shouldReceive('generatePdf')->andReturn('not a PDF');
+        app()->instance('laravel-pdf.driver.browsershot', $driver);
+
+        $request = new TaxWorksheetRequest((string) $this->affiliate->getKey(), 2024, 70000, 'USD', new TaxRecipientDetails('Recipient', '123456789'));
+
+        expect(fn () => $this->generator->write($request))->toThrow(RuntimeException::class, 'did not return a PDF');
+        expect(Storage::disk('local')->allFiles())->toBe([]);
     });
 });

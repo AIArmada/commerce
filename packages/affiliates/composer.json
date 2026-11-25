@@ -8,10 +8,12 @@
     "source": "https://github.com/aiarmada/commerce"
   },
   "require": {
-    "aiarmada/contacting": "self.version",
     "aiarmada/commerce-support": "self.version",
+    "aiarmada/contacting": "self.version",
     "php": "^8.5",
+    "spatie/browsershot": "^5.4.2",
     "spatie/laravel-medialibrary": "^11.23.11",
+    "spatie/laravel-pdf": "^2.14.0",
     "spatie/laravel-settings": "^3.10.1"
   },
   "suggest": {
