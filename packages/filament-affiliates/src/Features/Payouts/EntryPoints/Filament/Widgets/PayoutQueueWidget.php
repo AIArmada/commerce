@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Widgets;
 
-use AIArmada\Affiliates\Actions\Payouts\ProcessAffiliatePayout;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutAdministration;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Affiliates\States\ProcessingPayout;
@@ -81,7 +81,7 @@ final class PayoutQueueWidget extends BaseWidget
                     ? OwnerWriteGuard::findOrFailForOwner(AffiliatePayout::class, $record->getKey())
                     : AffiliatePayout::findOrFail($record->getKey());
 
-                        $result = app(ProcessAffiliatePayout::class)->handle($payout);
+                        $result = app(PayoutAdministration::class)->process((string) $payout->getKey());
 
                         if ($result->success) {
                             Notification::make()

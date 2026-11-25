@@ -9,6 +9,7 @@ use AIArmada\Affiliates\Contracts\PayoutProcessorInterface;
 use AIArmada\Affiliates\Data\PayoutRequest;
 use AIArmada\Affiliates\Data\PayoutResult;
 use AIArmada\Affiliates\Data\PayoutStatusResult;
+use AIArmada\Affiliates\Contracts\PayoutProcessorRegistry;
 use AIArmada\Affiliates\Drivers\Payouts\PayoutProcessorFactory;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\PayoutMethodType;
@@ -108,7 +109,7 @@ function useFakeSuccessProcessor(): void
 {
     $factory = new PayoutProcessorFactory;
     $factory->register(PayoutMethodType::BankTransfer->value, ProcessAffiliatePayoutFakeSuccessProcessor::class);
-    app()->instance(PayoutProcessorFactory::class, $factory);
+    app()->instance(PayoutProcessorRegistry::class, $factory);
 }
 
 final class ProcessAffiliatePayoutFakeThrowingProcessor implements PayoutProcessorInterface
@@ -294,7 +295,7 @@ test('a non-gate processor exception keeps the generic processing code', functio
 
     $factory = new PayoutProcessorFactory;
     $factory->register(PayoutMethodType::BankTransfer->value, ProcessAffiliatePayoutFakeThrowingProcessor::class);
-    app()->instance(PayoutProcessorFactory::class, $factory);
+    app()->instance(PayoutProcessorRegistry::class, $factory);
 
     $result = app(ProcessAffiliatePayout::class)->handle($payout);
 
@@ -309,7 +310,7 @@ test('a late provider response cannot overwrite a newer payout lease', function 
 
     $factory = new PayoutProcessorFactory;
     $factory->register(PayoutMethodType::BankTransfer->value, ProcessAffiliatePayoutFakeSuccessProcessor::class);
-    app()->instance(PayoutProcessorFactory::class, $factory);
+    app()->instance(PayoutProcessorRegistry::class, $factory);
 
     $processor = Mockery::mock(ProcessAffiliatePayoutFakeSuccessProcessor::class)->makePartial();
     $processor->shouldReceive('process')->once()->andReturnUsing(function (PayoutRequest $claimedPayout): PayoutResult {
@@ -337,7 +338,7 @@ test('a late provider response cannot revert a completed payout', function (): v
 
     $factory = new PayoutProcessorFactory;
     $factory->register(PayoutMethodType::BankTransfer->value, ProcessAffiliatePayoutFakeSuccessProcessor::class);
-    app()->instance(PayoutProcessorFactory::class, $factory);
+    app()->instance(PayoutProcessorRegistry::class, $factory);
 
     $processor = Mockery::mock(ProcessAffiliatePayoutFakeSuccessProcessor::class)->makePartial();
     $processor->shouldReceive('process')->once()->andReturnUsing(function (PayoutRequest $claimedPayout): PayoutResult {

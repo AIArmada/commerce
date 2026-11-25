@@ -18,7 +18,6 @@ use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\States\PayoutStatus;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -47,9 +46,10 @@ final class UpdatePayoutStatus
         AffiliatePayout $payout,
         string $status,
         ?string $notes = null,
-        array $metadata = []
+        array $metadata = [],
+        bool $retainNote = false,
     ): AffiliatePayout {
-        return DB::transaction(function () use ($payout, $status, $notes, $metadata): AffiliatePayout {
+        return $payout->getConnection()->transaction(function () use ($payout, $status, $notes, $metadata, $retainNote): AffiliatePayout {
             $locked = AffiliatePayout::query()->with('operation')->lockForUpdate()->findOrFail($payout->getKey());
 
             $from = $locked->status;
@@ -80,6 +80,10 @@ final class UpdatePayoutStatus
 
             if ($newStatus->equals(CancelledPayout::class) && $locked->cancelled_at === null) {
                 $locked->cancelled_at = CarbonImmutable::now();
+            }
+
+            if ($retainNote && $notes !== null) {
+                $locked->metadata = array_merge($locked->metadata ?? [], ['notes' => $notes]);
             }
 
             $locked->save();

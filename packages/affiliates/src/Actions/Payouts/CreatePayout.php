@@ -38,7 +38,7 @@ final class CreatePayout
      * @param  array<int, string>  $conversionIds
      * @param  array<string, mixed>  $attributes
      */
-    public function handle(array $conversionIds, array $attributes = []): AffiliatePayout
+    public function handle(array $conversionIds, array $attributes = [], ?string $expectedAffiliateId = null): AffiliatePayout
     {
         $conversionIds = array_values(array_unique(array_filter($conversionIds)));
 
@@ -46,7 +46,7 @@ final class CreatePayout
             throw new InvalidArgumentException('At least one unpaid conversion is required to create a payout.');
         }
 
-        return DB::transaction(function () use ($conversionIds, $attributes): AffiliatePayout {
+        return DB::transaction(function () use ($conversionIds, $attributes, $expectedAffiliateId): AffiliatePayout {
             /** @var Collection<int, AffiliateConversion> $conversions */
             $conversions = AffiliateConversion::query()
                 ->forOwner()
@@ -67,6 +67,10 @@ final class CreatePayout
             }
 
             $affiliate = Affiliate::query()->forOwner()->lockForUpdate()->findOrFail((string) $affiliateIds->first());
+
+            if ($expectedAffiliateId !== null && (string) $affiliate->getKey() !== $expectedAffiliateId) {
+                throw new InvalidArgumentException('The conversions do not belong to the selected affiliate.');
+            }
 
             $onlyFixedRewardAwards = $conversions->every(
                 fn (AffiliateConversion $conversion): bool => $conversion->conversion_type === 'reward_award',

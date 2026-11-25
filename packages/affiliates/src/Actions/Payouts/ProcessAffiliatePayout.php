@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Actions\Payouts;
 
 use AIArmada\Affiliates\Data\PayoutResult;
-use AIArmada\Affiliates\Drivers\Payouts\PayoutProcessorFactory;
+use AIArmada\Affiliates\Contracts\PayoutProcessorRegistry;
 use AIArmada\Affiliates\Exceptions\PayoutCompletionBlockedException;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
@@ -24,7 +24,7 @@ use Throwable;
 final class ProcessAffiliatePayout
 {
     public function __construct(
-        private readonly PayoutProcessorFactory $factory,
+        private readonly PayoutProcessorRegistry $factory,
         private readonly PayoutReconciliationService $reconciliation,
         private readonly UpdatePayoutStatus $updatePayoutStatus,
     ) {}

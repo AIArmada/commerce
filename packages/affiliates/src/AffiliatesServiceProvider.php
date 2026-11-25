@@ -14,6 +14,7 @@ use AIArmada\Affiliates\Contracts\AffiliateWebhookTransport;
 use AIArmada\Affiliates\Drivers\Webhooks\PinnedAffiliateWebhookTransport;
 use AIArmada\Affiliates\Actions\Affiliates\ResolvePublicAffiliateReferralContext;
 use AIArmada\Affiliates\Cart\AffiliateDiscountConditionProvider;
+use AIArmada\Affiliates\Contracts\PayoutProcessorRegistry;
 use AIArmada\Affiliates\Drivers\Payouts\PayoutProcessorFactory;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
 use AIArmada\Affiliates\Events\AffiliateProgramJoined;
@@ -124,7 +125,7 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
 
         $this->app->singleton(CommissionCalculator::class);
         $this->app->singleton(AttributionModel::class);
-        $this->app->singleton(PayoutProcessorFactory::class);
+        $this->app->singleton(PayoutProcessorRegistry::class, PayoutProcessorFactory::class);
         $this->app->scoped(CommissionRuleEngine::class);
         $this->app->singleton(Support\Catalog\PromotableRegistry::class);
         $this->app->singleton(PayoutReconciliationService::class);

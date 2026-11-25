@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Resources\AffiliatePayoutResource\Tables;
 
-use AIArmada\Affiliates\Actions\Payouts\UpdatePayoutStatus;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutAdministration;
 use AIArmada\Affiliates\Exceptions\PayoutCompletionBlockedException;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\CompletedPayout;
@@ -87,7 +87,7 @@ final class AffiliatePayoutsTable
                             ? OwnerWriteGuard::findOrFailForOwner(AffiliatePayout::class, $record->getKey())
                             : AffiliatePayout::findOrFail($record->getKey());
 
-                        app(UpdatePayoutStatus::class)->handle($payout, ProcessingPayout::value());
+                        app(PayoutAdministration::class)->updateStatus((string) $payout->getKey(), ProcessingPayout::value());
                     }),
                 Action::make('fail')
                     ->label('Mark Failed')
@@ -103,7 +103,7 @@ final class AffiliatePayoutsTable
                             ? OwnerWriteGuard::findOrFailForOwner(AffiliatePayout::class, $record->getKey())
                             : AffiliatePayout::findOrFail($record->getKey());
 
-                        app(UpdatePayoutStatus::class)->handle($payout, FailedPayout::value());
+                        app(PayoutAdministration::class)->updateStatus((string) $payout->getKey(), FailedPayout::value());
                     }),
                 Action::make('export')
                     ->label('Export CSV')
@@ -138,7 +138,7 @@ final class AffiliatePayoutsTable
             : AffiliatePayout::findOrFail($record->getKey());
 
         try {
-            app(UpdatePayoutStatus::class)->handle($payout, CompletedPayout::value());
+            app(PayoutAdministration::class)->updateStatus((string) $payout->getKey(), CompletedPayout::value());
         } catch (PayoutCompletionBlockedException $exception) {
             Notification::make()
                 ->danger()

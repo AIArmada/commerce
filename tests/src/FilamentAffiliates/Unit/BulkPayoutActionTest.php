@@ -6,6 +6,7 @@ use AIArmada\Affiliates\Contracts\PayoutProcessorInterface;
 use AIArmada\Affiliates\Data\PayoutRequest;
 use AIArmada\Affiliates\Data\PayoutResult;
 use AIArmada\Affiliates\Data\PayoutStatusResult;
+use AIArmada\Affiliates\Contracts\PayoutProcessorRegistry;
 use AIArmada\Affiliates\Drivers\Payouts\PayoutProcessorFactory;
 use AIArmada\Affiliates\Enums\PayoutMethodType;
 use AIArmada\Affiliates\Models\Affiliate;
@@ -106,7 +107,7 @@ it('processes a pending payout successfully', function (): void {
 
     $factory = new PayoutProcessorFactory;
     $factory->register('bank_transfer', TestSuccessPayoutProcessor::class);
-    app()->instance(PayoutProcessorFactory::class, $factory);
+    app()->instance(PayoutProcessorRegistry::class, $factory);
 
     $action = BulkPayoutAction::make('bulk_process_payouts');
     $action->deselectRecordsAfterCompletion(false);
@@ -213,7 +214,7 @@ it('marks a pending payout as failed when the processor fails', function (): voi
 
     $factory = new PayoutProcessorFactory;
     $factory->register('bank_transfer', TestFailingPayoutProcessor::class);
-    app()->instance(PayoutProcessorFactory::class, $factory);
+    app()->instance(PayoutProcessorRegistry::class, $factory);
 
     $action = BulkPayoutAction::make('bulk_process_payouts');
     $action->deselectRecordsAfterCompletion(false);
@@ -271,7 +272,7 @@ it('leaves a payout processing when the processor throws', function (): void {
 
     $factory = new PayoutProcessorFactory;
     $factory->register('bank_transfer', TestThrowingPayoutProcessor::class);
-    app()->instance(PayoutProcessorFactory::class, $factory);
+    app()->instance(PayoutProcessorRegistry::class, $factory);
 
     $action = BulkPayoutAction::make('bulk_process_payouts');
     $action->deselectRecordsAfterCompletion(false);
@@ -366,7 +367,7 @@ it('rejects cross-tenant payout selection without mutating any selected payouts'
 
     $factory = new PayoutProcessorFactory;
     $factory->register('bank_transfer', TestSuccessPayoutProcessor::class);
-    app()->instance(PayoutProcessorFactory::class, $factory);
+    app()->instance(PayoutProcessorRegistry::class, $factory);
 
     $action = BulkPayoutAction::make('bulk_process_payouts');
     $action->deselectRecordsAfterCompletion(false);

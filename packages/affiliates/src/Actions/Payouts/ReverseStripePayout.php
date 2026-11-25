@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Actions\Payouts;
 
-use AIArmada\Affiliates\Drivers\Payouts\StripeConnectProcessor;
+use AIArmada\Affiliates\Contracts\PayoutProcessorRegistry;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliatePayoutOperation;
 use AIArmada\Affiliates\Queries\PayoutRequestQuery;
@@ -13,7 +13,7 @@ use Carbon\CarbonImmutable;
 
 final readonly class ReverseStripePayout
 {
-    public function __construct(private StripeConnectProcessor $processor) {}
+    public function __construct(private PayoutProcessorRegistry $processors) {}
 
     public function execute(string $payoutId): bool
     {
@@ -36,7 +36,7 @@ final readonly class ReverseStripePayout
                 return true;
             }
 
-            if (! $this->processor->cancel(PayoutRequestQuery::fromPayout($payout, []))) {
+            if (! $this->processors->make('stripe_connect')->cancel(PayoutRequestQuery::fromPayout($payout, []))) {
                 return false;
             }
 

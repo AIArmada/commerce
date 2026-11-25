@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Resources\AffiliatePayoutResource\Pages;
 
-use AIArmada\Affiliates\Actions\Payouts\CreatePayout;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutAdministration;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
@@ -48,7 +49,9 @@ final class CreateAffiliatePayout extends CreateRecord
         }
 
         try {
-            return CreatePayout::run($conversionIds, $attributes);
+            $payoutId = app(PayoutAdministration::class)->create((string) $affiliate->getKey(), $conversionIds, $attributes);
+
+            return AffiliatePayout::query()->findOrFail($payoutId);
         } catch (InvalidArgumentException | ModelNotFoundException $exception) {
             $field = str_contains($exception->getMessage(), 'cannot receive payouts')
                 ? 'payout_override_reason'

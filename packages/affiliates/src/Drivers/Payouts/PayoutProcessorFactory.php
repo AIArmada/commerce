@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Drivers\Payouts;
 
 use AIArmada\Affiliates\Contracts\PayoutProcessorInterface;
+use AIArmada\Affiliates\Contracts\PayoutProcessorRegistry;
 use AIArmada\Affiliates\Enums\PayoutMethodType;
 use InvalidArgumentException;
 
-final class PayoutProcessorFactory
+final class PayoutProcessorFactory implements PayoutProcessorRegistry
 {
     /**
      * @var array<string, class-string<PayoutProcessorInterface>>

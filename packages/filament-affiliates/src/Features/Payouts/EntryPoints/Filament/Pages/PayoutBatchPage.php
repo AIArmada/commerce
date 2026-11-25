@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Pages;
 
-use AIArmada\Affiliates\Actions\Payouts\ProcessAffiliatePayout;
-use AIArmada\Affiliates\Actions\Payouts\UpdatePayoutStatus;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutAdministration;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\FailedPayout;
@@ -198,7 +197,7 @@ final class PayoutBatchPage extends Page implements HasForms, HasTable
                             ? OwnerWriteGuard::findOrFailForOwner(AffiliatePayout::class, $record->getKey())
                             : AffiliatePayout::findOrFail($record->getKey());
 
-                        $result = app(ProcessAffiliatePayout::class)->handle($payout);
+                        $result = app(PayoutAdministration::class)->process((string) $payout->getKey());
 
                         if ($result->success) {
                             Notification::make()
@@ -233,18 +232,12 @@ final class PayoutBatchPage extends Page implements HasForms, HasTable
                             ? OwnerWriteGuard::findOrFailForOwner(AffiliatePayout::class, $record->getKey())
                             : AffiliatePayout::findOrFail($record->getKey());
 
-                        $payout = app(UpdatePayoutStatus::class)->handle(
-                            $payout,
+                        app(PayoutAdministration::class)->updateStatus(
+                            (string) $payout->getKey(),
                             FailedPayout::value(),
                             $data['reason'],
+                            retainNote: true,
                         );
-
-                        // Fund release + conversion unlink are handled inside UpdatePayoutStatus.
-                        $payout->forceFill([
-                            'metadata' => array_merge($payout->metadata ?? [], [
-                                'notes' => $data['reason'],
-                            ]),
-                        ])->save();
 
                         Notification::make()
                             ->warning()
@@ -272,7 +265,7 @@ final class PayoutBatchPage extends Page implements HasForms, HasTable
                             ? OwnerWriteGuard::findOrFailForOwner(AffiliatePayout::class, $record->getKey())
                             : AffiliatePayout::findOrFail($record->getKey());
 
-                            $result = app(ProcessAffiliatePayout::class)->handle($payout);
+                            $result = app(PayoutAdministration::class)->process((string) $payout->getKey());
 
                             if ($result->success) {
                                 $success++;

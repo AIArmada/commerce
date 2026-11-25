@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Actions;
 
-use AIArmada\Affiliates\Actions\Payouts\ProcessAffiliatePayout;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutAdministration;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
@@ -48,7 +48,7 @@ final class BulkPayoutAction extends BulkAction
                     continue;
                 }
 
-                $result = app(ProcessAffiliatePayout::class)->handle($payout);
+                $result = app(PayoutAdministration::class)->process((string) $payout->getKey());
 
                 if ($result->success) {
                     $processed++;
