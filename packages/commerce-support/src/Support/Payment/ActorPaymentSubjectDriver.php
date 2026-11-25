@@ -36,7 +36,7 @@ final class ActorPaymentSubjectDriver implements PaymentSubjectDriverInterface
 
     public function resolve(PaymentSubjectContext $context): ?ResolvedPaymentSubject
     {
-        if (! $context->actor instanceof Model) {
+        if ($context->actor === null) {
             return null;
         }
 

@@ -13,9 +13,9 @@ use Illuminate\Support\Facades\Schema;
 beforeEach(function (): void {
     Config::set('vouchers.wallet.enabled', true);
 
-    // Drop and recreate users table for testing to ensure correct schema
-    Schema::dropIfExists('users');
-    Schema::create('users', function ($table): void {
+    // Keep the persisted tenant user separate from the wallet holder fixture.
+    Schema::dropIfExists('test_wallet_users');
+    Schema::create('test_wallet_users', function ($table): void {
         $table->id();
         $table->string('name');
         $table->string('email');
@@ -460,7 +460,7 @@ final class TestWalletUser extends Model
 {
     use HasVouchers;
 
-    protected $table = 'users';
+    protected $table = 'test_wallet_users';
 
     protected $guarded = [];
 }

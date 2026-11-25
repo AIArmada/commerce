@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Authz\Support\UserRoleChecker;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 
 it('assigns the configured super-admin role to the explicitly selected account', function (): void {
@@ -11,7 +12,7 @@ it('assigns the configured super-admin role to the explicitly selected account',
     $this->artisan('authz:super-admin', ['--user' => $user->getKey()])
         ->assertSuccessful();
 
-    expect($user->fresh()->hasRole($roleName))->toBeTrue();
+    expect(UserRoleChecker::hasGlobalRole($user->fresh(), $roleName))->toBeTrue();
 });
 
 it('rejects an invalid explicitly selected panel without granting a role', function (): void {
@@ -21,5 +22,5 @@ it('rejects an invalid explicitly selected panel without granting a role', funct
     $this->artisan('authz:super-admin', ['--user' => $user->getKey(), '--panel' => 'missing-authz-panel'])
         ->assertFailed();
 
-    expect($user->fresh()->hasRole($roleName))->toBeFalse();
+    expect(UserRoleChecker::hasGlobalRole($user->fresh(), $roleName))->toBeFalse();
 });

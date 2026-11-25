@@ -160,9 +160,7 @@ it('keeps the can-be-impersonated helper aligned with scope enforcement', functi
         'email' => 'unassigned-target@example.com',
         'password' => 'secret',
     ]);
-    $owner = OwnerContext::resolve();
-
-    expect($owner)->not->toBeNull();
+    $owner = User::factory()->create();
 
     setPermissionsTeamId($owner->getKey());
     $this->actingAs($actor);

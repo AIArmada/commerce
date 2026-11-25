@@ -60,6 +60,9 @@ describe('InventoryOwnerScope retention', function (): void {
             }
         });
 
+        // Resolve the trusted tenant before measuring business queries.
+        OwnerContext::resolve();
+
         DB::enableQueryLog();
         $legacyResult = InventoryOwnerScope::applyToLocationQuery(InventoryLevel::query())
             ->whereHas('location', fn (Builder $query): Builder => InventoryOwnerScope::applyToLocationQuery($query))

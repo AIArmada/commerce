@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Authz\Console\Commands\SuperAdminCommand;
+use AIArmada\Authz\Features\Authorization\EntryPoints\Console\SuperAdminCommand;
 use AIArmada\Authz\Features\Authorization\Authz;
 use AIArmada\Authz\Features\Authorization\Models\Role;
 use AIArmada\Authz\Support\UserRoleChecker;
@@ -22,6 +22,8 @@ it('flushes the permission cache through the public clear cache api', function (
 });
 
 it('checks global roles without leaking the active team scope', function (): void {
+    $owner = OwnerContext::resolve();
+    expect($owner)->not->toBeNull();
     setPermissionsTeamId(null);
 
     $user = User::query()->create([
@@ -35,10 +37,10 @@ it('checks global roles without leaking the active team scope', function (): voi
     ]);
 
     $user->assignRole($role);
-    $owner = OwnerContext::resolve();
-    expect($owner)->not->toBeNull();
 
     setPermissionsTeamId($owner->getKey());
+
+    $user->unsetRelation('roles');
 
     expect(UserRoleChecker::hasRole($user, 'global-super-admin'))->toBeFalse()
         ->and(UserRoleChecker::hasGlobalRole($user, 'global-super-admin'))->toBeTrue()
