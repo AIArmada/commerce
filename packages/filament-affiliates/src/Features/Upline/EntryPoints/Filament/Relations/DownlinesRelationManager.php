@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources\AffiliateResource\RelationManagers;
+namespace AIArmada\FilamentAffiliates\Features\Upline\EntryPoints\Filament\Relations;
 
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
-use AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources\AffiliateResource;
+use AIArmada\FilamentAffiliates\Features\Identity\Api\AffiliateAdminLinks;
 use Filament\Actions\Action;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Support\Icons\Heroicon;
@@ -79,7 +79,7 @@ final class DownlinesRelationManager extends RelationManager
                 Action::make('view')
                     ->label('View')
                     ->icon(Heroicon::OutlinedEye)
-                    ->url(fn (Affiliate $record): string => AffiliateResource::getUrl('view', ['record' => $record]))
+                    ->url(fn (Affiliate $record): string => app(AffiliateAdminLinks::class)->view((string) $record->getKey()))
                     ->openUrlInNewTab(),
             ])
             ->bulkActions([])

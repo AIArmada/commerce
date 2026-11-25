@@ -13,7 +13,9 @@ use Illuminate\Support\Facades\Gate;
 final class FeatureModule implements FeatureModuleContract
 {
     public function register(Application $app): void
-    {}
+    {
+        $app->bind(Api\AffiliateAdminLinks::class, Queries\AffiliateResourceLinks::class);
+    }
 
     public function boot(Application $app): void
     {

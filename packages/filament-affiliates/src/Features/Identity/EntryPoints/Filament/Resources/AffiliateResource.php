@@ -11,16 +11,11 @@ use AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources
 use AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources\AffiliateResource\Pages\EditAffiliate;
 use AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources\AffiliateResource\Pages\ListAffiliates;
 use AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources\AffiliateResource\Pages\ViewAffiliate;
-use AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources\AffiliateResource\RelationManagers\ConversionsRelationManager;
-use AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources\AffiliateResource\RelationManagers\DownlinesRelationManager;
-use AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources\AffiliateResource\RelationManagers\PayoutHoldsRelationManager;
-use AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources\AffiliateResource\RelationManagers\PayoutMethodsRelationManager;
-use AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources\AffiliateResource\RelationManagers\PayoutsRelationManager;
-use AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources\AffiliateResource\RelationManagers\ProgramsRelationManager;
-use AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources\AffiliateResource\RelationManagers\VouchersRelationManager;
 use AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources\AffiliateResource\Schemas\AffiliateForm;
 use AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources\AffiliateResource\Schemas\AffiliateInfolist;
 use AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources\AffiliateResource\Tables\AffiliatesTable;
+use AIArmada\FilamentAffiliates\Contracts\AffiliateRelationContribution;
+use AIArmada\FilamentAffiliates\Platform\ExtensionRegistry;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -100,15 +95,20 @@ final class AffiliateResource extends Resource
 
     public static function getRelations(): array
     {
-        return [
-            DownlinesRelationManager::class,
-            ConversionsRelationManager::class,
-            ProgramsRelationManager::class,
-            PayoutsRelationManager::class,
-            PayoutMethodsRelationManager::class,
-            PayoutHoldsRelationManager::class,
-            VouchersRelationManager::class,
-        ];
+        $relations = [];
+        foreach (app(ExtensionRegistry::class)->resolve('identity.relations', AffiliateRelationContribution::class) as $contribution) {
+            if ($contribution instanceof AffiliateRelationContribution) {
+                foreach ($contribution->relations() as $priority => $relation) {
+                    if (isset($relations[$priority])) {
+                        throw new \LogicException('Duplicate affiliate relation priority.');
+                    }
+                    $relations[$priority] = $relation;
+                }
+            }
+        }
+        ksort($relations);
+
+        return array_values($relations);
     }
 
     public static function getPages(): array

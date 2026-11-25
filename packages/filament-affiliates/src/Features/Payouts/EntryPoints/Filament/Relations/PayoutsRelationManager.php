@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources\AffiliateResource\RelationManagers;
+namespace AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Relations;
 
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;

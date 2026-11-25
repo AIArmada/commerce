@@ -2,9 +2,8 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources\AffiliateResource\RelationManagers;
+namespace AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Relations;
 
-use AIArmada\Affiliates\Enums\PayoutMethodType;
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
@@ -12,61 +11,60 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DateTimePicker;
-use Filament\Forms\Components\KeyValue;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Toggle;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
-use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
-final class PayoutMethodsRelationManager extends RelationManager
+final class PayoutHoldsRelationManager extends RelationManager
 {
     use VerifiesRelationManagerOwnerContext;
 
-    protected static string $relationship = 'payoutMethods';
+    protected static string $relationship = 'payoutHolds';
 
     public function form(Schema $schema): Schema
     {
         return $schema->schema([
-            Select::make('type')
-                ->options(PayoutMethodType::class)
+            TextInput::make('reason')
                 ->required(),
 
-            KeyValue::make('details')
-                ->required(),
+            Textarea::make('notes')
+                ->rows(3),
 
-            DateTimePicker::make('verified_at'),
+            DateTimePicker::make('expires_at'),
 
-            Toggle::make('is_default')
-                ->default(false),
+            TextInput::make('placed_by')
+                ->label('Placed By')
+                ->maxLength(255),
+
+            DateTimePicker::make('released_at'),
         ]);
     }
 
     public function table(Table $table): Table
     {
         return $table
-            ->recordTitleAttribute('type')
+            ->recordTitleAttribute('reason')
             ->columns([
-                TextColumn::make('type')
-                    ->badge(),
+                TextColumn::make('reason')
+                    ->searchable(),
 
-                TextColumn::make('label')
-                    ->label('Label')
+                TextColumn::make('notes')
+                    ->limit(40)
                     ->placeholder('—'),
 
-                IconColumn::make('verified_at')
-                    ->label('Verified')
-                    ->boolean(),
-
-                IconColumn::make('is_default')
-                    ->label('Default')
-                    ->boolean(),
-
-                TextColumn::make('updated_at')
-                    ->label('Updated')
+                TextColumn::make('expires_at')
+                    ->label('Expires')
                     ->dateTime()
+                    ->placeholder('—')
+                    ->sortable(),
+
+                TextColumn::make('released_at')
+                    ->label('Released')
+                    ->dateTime()
+                    ->placeholder('—')
                     ->sortable(),
             ])
             ->headerActions([

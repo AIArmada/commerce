@@ -8,7 +8,7 @@ use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
-use AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources\AffiliateResource;
+use AIArmada\FilamentAffiliates\Features\Identity\Api\AffiliateAdminLinks;
 use AIArmada\FilamentAuthz\Resources\UserResource;
 use Filament\Actions\EditAction;
 use Filament\Infolists\Components\TextEntry;
@@ -81,8 +81,8 @@ class ViewUser extends ViewRecord
                         ->label('Affiliate')
                         ->state('View Affiliate Profile')
                         ->url(
-                            class_exists(AffiliateResource::class)
-                                ? AffiliateResource::getUrl('view', ['record' => $affiliate])
+                            interface_exists(AffiliateAdminLinks::class) && app()->bound(AffiliateAdminLinks::class)
+                                ? app(AffiliateAdminLinks::class)->view((string) $affiliate->getKey())
                                 : null,
                             shouldOpenInNewTab: true,
                         )

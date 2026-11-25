@@ -5,6 +5,9 @@
   "extensions": {
     "admin.panel.contributions": [
       "AIArmada\\FilamentAffiliates\\Features\\Payouts\\Extensions\\AdminPanelContribution"
+    ],
+    "identity.relations": [
+      "AIArmada\\FilamentAffiliates\\Features\\Payouts\\Extensions\\AffiliateRelations"
     ]
   }
 }
