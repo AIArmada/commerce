@@ -8,13 +8,12 @@ use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateAdministration;
 use AIArmada\Affiliates\Features\Identity\Queries\ResolveAffiliateLinkedOwner;
 use AIArmada\Affiliates\Features\Identity\Queries\ValidateAffiliateParentAssignment;
+use AIArmada\Affiliates\Features\Upline\Api\RankAssignmentGuard;
 use AIArmada\Affiliates\Features\Upline\Api\UplineApi;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateRank;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
-use InvalidArgumentException;
 
 final readonly class AdministerAffiliate implements AffiliateAdministration
 {
@@ -22,6 +21,7 @@ final readonly class AdministerAffiliate implements AffiliateAdministration
         private ResolveAffiliateLinkedOwner $owners,
         private ValidateAffiliateParentAssignment $parents,
         private UplineApi $upline,
+        private RankAssignmentGuard $ranks,
     ) {}
 
     public function create(array $data): string
@@ -115,14 +115,6 @@ final readonly class AdministerAffiliate implements AffiliateAdministration
             return;
         }
 
-        if ((bool) config('affiliates.owner.enabled', false)) {
-            OwnerWriteGuard::findOrFailForOwner(AffiliateRank::class, $affiliate->rank_id);
-
-            return;
-        }
-
-        if (! AffiliateRank::query()->whereKey($affiliate->rank_id)->exists()) {
-            throw new InvalidArgumentException('The selected affiliate rank is not accessible.');
-        }
+        $this->ranks->assertAssignable($affiliate->rank_id);
     }
 }

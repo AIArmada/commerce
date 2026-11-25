@@ -8,6 +8,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateRank;
 use AIArmada\Affiliates\States\Active;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Validation\ValidationException;
 
 describe('AffiliateRank Model', function (): void {
     it('can be created with required fields', function (): void {
@@ -322,6 +323,31 @@ describe('AffiliateRank Model', function (): void {
         expect(app(RankAdministration::class)->delete((string) $rank->getKey()))->toBeTrue()
             ->and($rank->fresh())->toBeNull()
             ->and($affiliate->fresh()->rank_id)->toBeNull();
+    });
+
+    it('validates rank administration without persisting invalid thresholds or rates', function (): void {
+        $administration = app(RankAdministration::class);
+        $data = [
+            'name' => 'Validated', 'slug' => 'validated', 'level' => 1,
+            'commission_rate_basis_points' => 1000,
+        ];
+
+        expect(fn () => $administration->create(array_replace($data, ['commission_rate_basis_points' => 10001])))
+            ->toThrow(ValidationException::class)
+            ->and(fn () => $administration->create(array_replace($data, ['min_team_sales' => -1])))
+            ->toThrow(ValidationException::class)
+            ->and(AffiliateRank::query()->count())->toBe(0);
+
+        $id = $administration->create($data + ['currency' => 'myr', 'override_rates' => [1 => '500']]);
+        $rank = AffiliateRank::query()->findOrFail($id);
+
+        expect($rank->currency)->toBe('MYR')
+            ->and($rank->getOverrideRateForDepth(1))->toBe(500)
+            ->and(fn () => $administration->update($id, ['override_rates' => [0 => 500]]))
+            ->toThrow(ValidationException::class)
+            ->and(fn () => $administration->update($id, ['min_active_downlines' => -1]))
+            ->toThrow(ValidationException::class)
+            ->and($rank->fresh()->override_rates)->toBe([1 => 500]);
     });
 
     it('uses correct table name from config', function (): void {

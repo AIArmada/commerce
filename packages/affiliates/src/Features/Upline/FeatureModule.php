@@ -14,6 +14,7 @@ final class FeatureModule implements FeatureModuleContract
         $app->bind(Api\UplineApi::class, Actions\UplineGateway::class);
         $app->bind(Api\RankQualificationApi::class, Actions\QualifyAffiliateRank::class);
         $app->bind(Api\RankAdministration::class, Actions\AdministerRank::class);
+        $app->bind(Api\RankAssignmentGuard::class, Queries\AssertRankAssignable::class);
         $app->bind(Api\RankHistoryRemovalGuard::class, Queries\AssertNoRankHistory::class);
     }
 

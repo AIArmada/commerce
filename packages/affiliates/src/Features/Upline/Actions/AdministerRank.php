@@ -9,6 +9,8 @@ use AIArmada\Affiliates\Features\Upline\Api\RankAdministration;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateRank;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 use LogicException;
 
 final readonly class AdministerRank implements RankAdministration
@@ -17,7 +19,7 @@ final readonly class AdministerRank implements RankAdministration
 
     public function create(array $data): string
     {
-        return (string) AffiliateRank::query()->create($this->attributes($data))->getKey();
+        return (string) AffiliateRank::query()->create($this->attributes($data, creating: true))->getKey();
     }
 
     public function update(string $rankId, array $data): void
@@ -51,8 +53,40 @@ final readonly class AdministerRank implements RankAdministration
      * @param array<string, mixed> $data
      * @return array<string, mixed>
      */
-    private function attributes(array $data): array
+    private function attributes(array $data, bool $creating = false): array
     {
-        return Arr::only($data, ['name', 'slug', 'level', 'min_personal_sales', 'min_team_sales', 'min_active_downlines', 'currency', 'commission_rate_basis_points', 'override_rates', 'benefits', 'metadata']);
+        $attributes = Arr::only($data, ['name', 'slug', 'level', 'min_personal_sales', 'min_team_sales', 'min_active_downlines', 'currency', 'commission_rate_basis_points', 'override_rates', 'benefits', 'metadata']);
+        $presence = $creating ? [] : ['sometimes'];
+
+        if (isset($attributes['currency']) && is_string($attributes['currency'])) {
+            $attributes['currency'] = mb_strtoupper(mb_trim($attributes['currency']));
+        }
+
+        $validated = Validator::make($attributes, [
+            'name' => [...$presence, 'required', 'string', 'max:255'],
+            'slug' => [$required, 'string', 'max:255'],
+            'level' => [...$presence, 'required', 'integer', 'min:1', 'max:2147483647'],
+            'commission_rate_basis_points' => [$required, 'integer', 'between:0,10000'],
+            'min_personal_sales' => ['sometimes', 'required', 'integer', 'between:0,2147483647'],
+            'min_team_sales' => ['sometimes', 'required', 'integer', 'between:0,2147483647'],
+            'min_active_downlines' => ['sometimes', 'required', 'integer', 'between:0,2147483647'],
+            'currency' => ['sometimes', 'required', 'string', 'regex:/^[A-Z]{3}$/D'],
+            'override_rates' => ['sometimes', 'nullable', 'array'],
+            'override_rates.*' => ['required', 'integer', 'between:0,10000'],
+            'benefits' => ['sometimes', 'nullable', 'array'],
+            'metadata' => ['sometimes', 'nullable', 'array'],
+        ])->validate();
+
+        if (is_array($validated['override_rates'] ?? null)) {
+            foreach ($validated['override_rates'] as $depth => $rate) {
+                if (! is_int($depth) || $depth < 1) {
+                    throw ValidationException::withMessages(['override_rates' => 'Override depths must be positive integers.']);
+                }
+
+                $validated['override_rates'][$depth] = (int) $rate;
+            }
+        }
+
+        return $validated;
     }
 }
