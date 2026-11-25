@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Programs\Models;
 
-use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Models\Affiliate;
-
 use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramJoinReference;
+use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\Concerns\ScopesByAffiliateOwner;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use Carbon\CarbonImmutable;

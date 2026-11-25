@@ -14,8 +14,8 @@ use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\FilamentAffiliates\Support\RankLabelProjection;
+use AIArmada\Vouchers\Models\Voucher;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 

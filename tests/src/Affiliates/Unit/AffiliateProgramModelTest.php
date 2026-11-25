@@ -6,12 +6,13 @@ use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\ProgramVisibility;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramMembershipReader;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramCreative;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramMembership;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramTier;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramMembership;
-use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramTier;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\Pending;
@@ -124,7 +125,7 @@ describe('AffiliateProgram Model', function (): void {
         ]);
 
         $program->refresh();
-        expect(app(\AIArmada\Affiliates\Features\Programs\Api\ProgramMembershipReader::class)->programIds((string) $affiliate->getKey()))->toBe([$program->id]);
+        expect(app(ProgramMembershipReader::class)->programIds((string) $affiliate->getKey()))->toBe([$program->id]);
     });
 
     it('stores creatives for a program', function (): void {
@@ -178,7 +179,7 @@ describe('AffiliateProgram Model', function (): void {
         ]);
 
         $program->refresh();
-        expect(app(\AIArmada\Affiliates\Features\Programs\Api\ProgramMembershipReader::class)->find((string) $affiliate->getKey(), (string) $program->getKey()))->not->toBeNull();
+        expect(app(ProgramMembershipReader::class)->find((string) $affiliate->getKey(), (string) $program->getKey()))->not->toBeNull();
     });
 
     it('isActive returns true when status is active and within date range', function (): void {

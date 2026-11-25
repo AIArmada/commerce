@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Features\Programs\Api\ProgramMembershipReader;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 
@@ -24,5 +25,5 @@ test('Affiliate can be created with required fields', function (): void {
 test('Affiliate has programs relationship', function (): void {
     $affiliate = new Affiliate;
 
-    expect(app(\AIArmada\Affiliates\Features\Programs\Api\ProgramMembershipReader::class)->programIds((string) $affiliate->getKey()))->toBe([]);
+    expect(app(ProgramMembershipReader::class)->programIds((string) $affiliate->getKey()))->toBe([]);
 });

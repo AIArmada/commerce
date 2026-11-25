@@ -7,12 +7,6 @@ namespace AIArmada\FilamentAffiliates\Features\Programs\EntryPoints\Filament\Res
 use AIArmada\Affiliates\Features\Programs\Api\ProgramTierAdministration;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramTier;
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\Relation;
-use Illuminate\Auth\Access\AuthorizationException;
-use Filament\Support\Components\Attributes\Unexposed;
-
-use function Filament\authorize;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Filament\Actions\BulkActionGroup;
@@ -25,8 +19,14 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
+use Filament\Support\Components\Attributes\Unexposed;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Relation;
+
+use function Filament\authorize;
 
 final class TiersRelationManager extends RelationManager
 {

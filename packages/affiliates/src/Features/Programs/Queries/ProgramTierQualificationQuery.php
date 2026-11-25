@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Programs\Queries;
 
 use AIArmada\Affiliates\Features\Programs\Api\TierQualificationReader;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramTier;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramTier;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\Support\RevenueVolume;

@@ -2,17 +2,18 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Features\Attribution\Api\TouchpointReader;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateTouchpoint;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalStatus;
 use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Features\Attribution\Models\AffiliateTouchpoint;
-use AIArmada\Affiliates\Features\Attribution\Api\TouchpointReader;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\PendingConversion;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Str;
 
 describe('AffiliateFraudSignal Model', function (): void {
     beforeEach(function (): void {
@@ -86,7 +87,7 @@ describe('AffiliateFraudSignal Model', function (): void {
         ]);
 
         expect(app(TouchpointReader::class)->existsForAffiliate($signal->touchpoint_id, $signal->affiliate_id))->toBeTrue()
-            ->and(app(TouchpointReader::class)->existsForAffiliate($signal->touchpoint_id, (string) \Illuminate\Support\Str::uuid()))->toBeFalse();
+            ->and(app(TouchpointReader::class)->existsForAffiliate($signal->touchpoint_id, (string) Str::uuid()))->toBeFalse();
     });
 
     test('scopeHighSeverity returns high and critical signals', function (): void {

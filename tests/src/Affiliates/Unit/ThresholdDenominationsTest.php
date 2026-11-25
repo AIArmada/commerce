@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\ProgramVisibility;
@@ -10,14 +9,15 @@ use AIArmada\Affiliates\Features\Commissions\Api\CommissionRuleCalculation;
 use AIArmada\Affiliates\Features\Commissions\Api\PerformanceBonusCalculation;
 use AIArmada\Affiliates\Features\Commissions\Models\AffiliateVolumeTier;
 use AIArmada\Affiliates\Features\Conversions\Actions\ApplyConversionAccounting;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\Affiliates\Features\Programs\Api\TierQualificationReader;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramTier;
 use AIArmada\Affiliates\Features\Upline\Api\RankQualificationApi;
+use AIArmada\Affiliates\Features\Upline\Models\AffiliateRank;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateLink;
 use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramTier;
-use AIArmada\Affiliates\Features\Upline\Models\AffiliateRank;
 use AIArmada\Affiliates\Settings\AffiliateBonusSettings;
 use AIArmada\Affiliates\Settings\AffiliatePayoutSettings;
 use AIArmada\Affiliates\States\Active;

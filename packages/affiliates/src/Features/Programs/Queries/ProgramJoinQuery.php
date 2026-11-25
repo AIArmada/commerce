@@ -7,9 +7,9 @@ namespace AIArmada\Affiliates\Features\Programs\Queries;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramJoinReader;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramJoinRecord;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramJoinReference;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramMembership;
 use InvalidArgumentException;
 
 final class ProgramJoinQuery implements ProgramJoinReader

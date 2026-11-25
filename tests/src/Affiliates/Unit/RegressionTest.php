@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Features\Commissions\Api\CommissionPricing;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\Affiliates\Features\Payouts\Actions\CreatePayout;
 use AIArmada\Affiliates\Features\Payouts\Actions\UpdatePayoutStatus;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutReconciliation;
@@ -11,7 +12,6 @@ use AIArmada\Affiliates\Features\Webhooks\Api\WebhookApi;
 use AIArmada\Affiliates\Features\Webhooks\Models\AffiliateWebhookDelivery;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
-use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\Active;

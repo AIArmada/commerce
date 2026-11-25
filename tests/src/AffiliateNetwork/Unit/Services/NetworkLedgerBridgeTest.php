@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\AffiliateNetwork\Data\LegStatus;
 use AIArmada\AffiliateNetwork\Events\NetworkConversionRecorded;
 use AIArmada\AffiliateNetwork\Features\Attribution\Actions\RecordLinkCounters;
@@ -16,6 +15,7 @@ use AIArmada\Affiliates\Contracts\MerchantLedger;
 use AIArmada\Affiliates\Data\ExternalConversion;
 use AIArmada\Affiliates\Features\Conversions\Actions\ReverseAffiliateConversion;
 use AIArmada\Affiliates\Features\Conversions\Actions\VoidAffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;

@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Attribution\Actions;
 
 use AIArmada\Affiliates\Features\Attribution\Api\AttributionRemoval;
+use AIArmada\Affiliates\Features\Attribution\Models\AffiliateTouchpoint;
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionAttributionMaintenance;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Features\Attribution\Models\AffiliateTouchpoint;
 use Illuminate\Database\Eloquent\Builder;
 use LogicException;
 

@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\AffiliateNetwork\Contracts\NetworkLedger;
 use AIArmada\AffiliateNetwork\Data\LegStatus;
 use AIArmada\AffiliateNetwork\Data\NetworkConversionDraft;
@@ -19,6 +18,7 @@ use AIArmada\AffiliateNetwork\Features\Ledger\Models\NetworkConversionLeg;
 use AIArmada\AffiliateNetwork\Features\Ledger\Queries\LedgerReconciliationQuery;
 use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use AIArmada\Affiliates\Enums\CommissionType;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active as AffiliateActive;

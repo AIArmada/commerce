@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Reporting\Actions;
 
+use AIArmada\Affiliates\Features\Attribution\Api\TouchpointReader;
 use AIArmada\Affiliates\Features\Reporting\Api\DailyStatRecord;
 use AIArmada\Affiliates\Features\Reporting\Api\DailyStatsWriter;
 use AIArmada\Affiliates\Features\Reporting\Models\AffiliateDailyStat;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Features\Attribution\Api\TouchpointReader;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
 

@@ -6,9 +6,9 @@ namespace AIArmada\Affiliates\Features\Fraud\Queries;
 
 use AIArmada\Affiliates\Data\ClickFraudEvidence;
 use AIArmada\Affiliates\Data\ConversionFraudEvidence;
+use AIArmada\Affiliates\Features\Attribution\Api\TouchpointReader;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Features\Attribution\Api\TouchpointReader;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 

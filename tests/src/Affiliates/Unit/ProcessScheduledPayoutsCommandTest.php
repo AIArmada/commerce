@@ -3,11 +3,11 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\CommissionType;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\Affiliates\Features\Payouts\EntryPoints\Console\ProcessScheduledPayoutsCommand;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutEvent;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutHold;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\Active;

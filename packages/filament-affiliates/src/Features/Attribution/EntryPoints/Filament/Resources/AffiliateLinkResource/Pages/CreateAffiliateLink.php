@@ -30,5 +30,4 @@ final class CreateAffiliateLink extends CreateRecord
 
         return AffiliateLink::query()->findOrFail($created->id);
     }
-
 }

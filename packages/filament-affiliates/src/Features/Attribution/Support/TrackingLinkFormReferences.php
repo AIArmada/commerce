@@ -17,7 +17,7 @@ final readonly class TrackingLinkFormReferences
     ) {}
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
     public function validate(array $data): array

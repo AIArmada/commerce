@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Reporting\Queries;
 
+use AIArmada\Affiliates\Features\Attribution\Api\TouchpointReader;
 use AIArmada\Affiliates\Features\Reporting\Api\ReportingApi;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Features\Attribution\Api\TouchpointReader;
 use AIArmada\CommerceSupport\Support\CurrencyConverter;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Builder;

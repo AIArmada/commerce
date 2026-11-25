@@ -5,6 +5,8 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Events\AffiliateActivated;
 use AIArmada\Affiliates\Events\AffiliateCreated;
+use AIArmada\Affiliates\Features\Conversions\Api\BalanceReader;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalStatus;
 use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
@@ -16,7 +18,6 @@ use AIArmada\Affiliates\Features\Upline\Api\RankAdministration;
 use AIArmada\Affiliates\Features\Upline\Api\RankDirectory;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
-use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;
@@ -273,7 +274,7 @@ describe('Affiliate Model - Relationships', function (): void {
             'commission_rate' => 1000,
             'currency' => 'USD',
         ]);
-        expect(app(\AIArmada\Affiliates\Features\Conversions\Api\BalanceReader::class)->forAffiliate((string) $affiliate->getKey()))->toBe([]);
+        expect(app(BalanceReader::class)->forAffiliate((string) $affiliate->getKey()))->toBe([]);
     });
 
     test('has many payout methods', function (): void {

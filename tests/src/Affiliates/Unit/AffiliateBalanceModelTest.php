@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Features\Conversions\Actions\ApplyConversionAccounting;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Conversions\Api\BalanceReader;
+use AIArmada\Affiliates\Features\Conversions\Api\BalanceSnapshot;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
@@ -294,10 +296,10 @@ it('exposes immutable currency balances through the conversions reader', functio
         'minimum_payout_minor' => 1000,
     ]);
 
-    $reader = app(\AIArmada\Affiliates\Features\Conversions\Api\BalanceReader::class);
+    $reader = app(BalanceReader::class);
     $snapshot = $reader->find((string) $affiliate->getKey(), 'usd');
 
-    expect($snapshot)->toBeInstanceOf(\AIArmada\Affiliates\Features\Conversions\Api\BalanceSnapshot::class)
+    expect($snapshot)->toBeInstanceOf(BalanceSnapshot::class)
         ->and($snapshot->availableMinor)->toBe(2500)
         ->and($reader->find((string) $affiliate->getKey(), 'MYR'))->toBeNull()
         ->and($reader->canRequestPayout((string) $affiliate->getKey(), 'USD'))->toBeTrue();

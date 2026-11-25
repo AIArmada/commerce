@@ -48,5 +48,4 @@ final class EditAffiliateLink extends EditRecord
                 ->using(fn (AffiliateLink $record): bool => app(TrackingLinkAdministration::class)->delete((string) $record->getKey())),
         ];
     }
-
 }
