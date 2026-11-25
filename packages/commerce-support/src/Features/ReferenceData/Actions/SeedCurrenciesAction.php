@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\CommerceSupport\Actions;
+namespace AIArmada\CommerceSupport\Features\ReferenceData\Actions;
 
-use AIArmada\CommerceSupport\Models\Currency;
+use AIArmada\CommerceSupport\Features\ReferenceData\Models\Currency;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
-class SeedCurrenciesAction
+final readonly class SeedCurrenciesAction
 {
     /**
      * @return array{created: int, updated: int, skipped: int}
      */
     public function execute(): array
     {
-        $currencies = require __DIR__ . '/../../resources/data/currencies.php';
+        $currencies = require dirname(__DIR__, 4) . '/resources/data/currencies.php';
 
         if (! is_array($currencies)) {
             throw new RuntimeException('Currency data file must return an array.');
@@ -80,18 +80,17 @@ class SeedCurrenciesAction
             }
 
             foreach (array_chunk($inserts, 500) as $chunk) {
-                DB::table($table)->insert($chunk);
+                $result['created'] += DB::table($table)->insertOrIgnore($chunk);
             }
 
-            if ($updates !== []) {
-                DB::table($table)->upsert($updates, ['code'], [
+            foreach (array_chunk($updates, 500) as $chunk) {
+                DB::table($table)->upsert($chunk, ['code'], [
                     'name', 'symbol', 'symbol_native', 'precision',
                     'symbol_first', 'decimal_mark', 'thousands_separator',
                     'updated_at',
                 ]);
             }
 
-            $result['created'] = count($inserts);
             $result['updated'] = count($updates);
 
             return $result;

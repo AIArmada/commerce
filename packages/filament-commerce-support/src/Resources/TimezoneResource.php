@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCommerceSupport\Resources;
 
-use AIArmada\CommerceSupport\Models\Timezone;
+use AIArmada\CommerceSupport\Features\ReferenceData\Models\Timezone;
 use AIArmada\FilamentCommerceSupport\Resources\TimezoneResource\Pages\ListTimezones;
 use AIArmada\FilamentCommerceSupport\Resources\TimezoneResource\Pages\ViewTimezone;
 use BackedEnum;

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCommerceSupport\Resources;
 
-use AIArmada\CommerceSupport\Models\Language;
+use AIArmada\CommerceSupport\Features\ReferenceData\Models\Language;
 use AIArmada\FilamentCommerceSupport\Resources\LanguageResource\Pages\ListLanguages;
 use AIArmada\FilamentCommerceSupport\Resources\LanguageResource\Pages\ViewLanguage;
 use BackedEnum;

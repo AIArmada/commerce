@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\CommerceSupport\Actions\SeedCurrenciesAction;
-use AIArmada\CommerceSupport\Actions\SeedLanguagesAction;
-use AIArmada\CommerceSupport\Actions\SeedTimezonesAction;
-use AIArmada\CommerceSupport\Models\Currency;
-use AIArmada\CommerceSupport\Models\Language;
-use AIArmada\CommerceSupport\Models\Timezone;
+use AIArmada\CommerceSupport\Features\ReferenceData\Actions\SeedCurrenciesAction;
+use AIArmada\CommerceSupport\Features\ReferenceData\Actions\SeedLanguagesAction;
+use AIArmada\CommerceSupport\Features\ReferenceData\Actions\SeedTimezonesAction;
+use AIArmada\CommerceSupport\Features\ReferenceData\Models\Currency;
+use AIArmada\CommerceSupport\Features\ReferenceData\Models\Language;
+use AIArmada\CommerceSupport\Features\ReferenceData\Models\Timezone;
 
 it('seeds the shared reference catalogues', function (): void {
     app(SeedCurrenciesAction::class)->execute();

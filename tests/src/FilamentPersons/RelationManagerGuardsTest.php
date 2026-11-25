@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use AIArmada\CommerceSupport\Models\Language;
+use AIArmada\CommerceSupport\Features\ReferenceData\Models\Language;
 use AIArmada\FilamentPersons\Resources\CredentialDefinitionResource;
 use AIArmada\FilamentPersons\Resources\PersonResource;
 use AIArmada\FilamentPersons\Resources\PersonResource\RelationManagers\AffiliationsRelationManager;

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCommerceSupport\Resources;
 
-use AIArmada\CommerceSupport\Models\Currency;
+use AIArmada\CommerceSupport\Features\ReferenceData\Models\Currency;
 use AIArmada\FilamentCommerceSupport\Resources\CurrencyResource\Pages\ListCurrencies;
 use AIArmada\FilamentCommerceSupport\Resources\CurrencyResource\Pages\ViewCurrency;
 use BackedEnum;

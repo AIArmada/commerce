@@ -10,6 +10,9 @@ use AIArmada\CommerceSupport\Contracts\Payment\PaymentSubjectResolverInterface;
 use AIArmada\CommerceSupport\Contracts\PublicDnsResolver;
 use AIArmada\CommerceSupport\Drivers\Http\PinnedHttpClient;
 use AIArmada\CommerceSupport\Drivers\SystemPublicDnsResolver;
+use AIArmada\CommerceSupport\Platform\ExtensionRegistry;
+use AIArmada\CommerceSupport\Platform\FeatureCatalog;
+use AIArmada\CommerceSupport\Platform\FeatureModule;
 use AIArmada\CommerceSupport\Support\AuditableModelRegistry;
 use AIArmada\CommerceSupport\Support\ConditionalMigrationLoader;
 use AIArmada\CommerceSupport\Support\CurrencyConverter;
@@ -89,10 +92,13 @@ final class SupportServiceProvider extends PackageServiceProvider
         $this->registerPaymentSubjectResolver();
         $this->registerTargetingEngine();
         $this->registerPinnedHttpTransport();
-        $this->registerLanguageServices();
         $this->registerOctaneListeners();
-        $this->app->singleton(Actions\SeedCurrenciesAction::class);
-        $this->app->singleton(Actions\SeedTimezonesAction::class);
+        $catalog = FeatureCatalog::load(dirname(__DIR__), __NAMESPACE__);
+        $this->app->singleton(ExtensionRegistry::class, fn ($app): ExtensionRegistry => new ExtensionRegistry($app, $catalog['extensions']));
+
+        foreach (array_keys($catalog['features']) as $feature) {
+            $this->featureModule($feature)->register($this->app);
+        }
     }
 
     private function registerOctaneListeners(): void
@@ -456,9 +462,23 @@ final class SupportServiceProvider extends PackageServiceProvider
         });
     }
 
-    private function registerLanguageServices(): void
+    public function packageBooted(): void
     {
-        $this->app->singleton(Actions\SeedLanguagesAction::class);
+        foreach (array_keys(FeatureCatalog::load(dirname(__DIR__), __NAMESPACE__)['features']) as $feature) {
+            $this->featureModule($feature)->boot($this->app);
+        }
+    }
+
+    private function featureModule(string $feature): FeatureModule
+    {
+        $class = __NAMESPACE__ . '\\Features\\' . $feature . '\\FeatureModule';
+        $module = $this->app->make($class);
+
+        if (! $module instanceof FeatureModule) {
+            throw new RuntimeException("Invalid feature module [{$class}].");
+        }
+
+        return $module;
     }
 
     private function registerPaymentSubjectResolver(): void

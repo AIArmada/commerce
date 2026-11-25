@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\CommerceSupport\Actions;
+namespace AIArmada\CommerceSupport\Features\ReferenceData\Actions;
 
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
-class SeedLanguagesAction
+final readonly class SeedLanguagesAction
 {
     public function execute(): array
     {
-        $languages = require __DIR__ . '/../../resources/data/languages.php';
+        $languages = require dirname(__DIR__, 4) . '/resources/data/languages.php';
 
         if (! is_array($languages)) {
             throw new RuntimeException('Language data file must return an array.');
@@ -26,7 +26,7 @@ class SeedLanguagesAction
         $valid = [];
 
         foreach ($languages as $row) {
-            if (! isset($row['code'], $row['name'])) {
+            if (! is_array($row) || ! isset($row['code'], $row['name'])) {
                 $result['skipped']++;
 
                 continue;
@@ -76,14 +76,13 @@ class SeedLanguagesAction
             }
 
             foreach (array_chunk($inserts, 500) as $chunk) {
-                DB::table($table)->insert($chunk);
+                $result['created'] += DB::table($table)->insertOrIgnore($chunk);
             }
 
-            if ($updates !== []) {
-                DB::table($table)->upsert($updates, ['code'], ['name', 'native', 'dir', 'updated_at']);
+            foreach (array_chunk($updates, 500) as $chunk) {
+                DB::table($table)->upsert($chunk, ['code'], ['name', 'native', 'dir', 'updated_at']);
             }
 
-            $result['created'] = count($inserts);
             $result['updated'] = count($updates);
 
             return $result;

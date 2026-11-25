@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\CommerceSupport\Actions;
+namespace AIArmada\CommerceSupport\Features\ReferenceData\Actions;
 
-use AIArmada\CommerceSupport\Models\Timezone;
+use AIArmada\CommerceSupport\Features\ReferenceData\Models\Timezone;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
-class SeedTimezonesAction
+final readonly class SeedTimezonesAction
 {
     /**
      * @return array{created: int, updated: int, skipped: int}
      */
     public function execute(): array
     {
-        $timezones = require __DIR__ . '/../../resources/data/timezones.php';
+        $timezones = require dirname(__DIR__, 4) . '/resources/data/timezones.php';
 
         if (! is_array($timezones)) {
             throw new RuntimeException('Timezone data file must return an array.');
@@ -44,15 +44,15 @@ class SeedTimezonesAction
         }
 
         return DB::transaction(function () use ($table, $now, $valid, $result): array {
-            $existingNames = DB::table($table)
+            $existingNames = array_fill_keys(DB::table($table)
                 ->whereIn('name', array_keys($valid))
                 ->pluck('name')
-                ->all();
+                ->all(), true);
 
             $inserts = [];
 
             foreach ($valid as $name => $row) {
-                if (in_array($name, $existingNames, true)) {
+                if (isset($existingNames[$name])) {
                     $result['skipped']++;
 
                     continue;
@@ -66,10 +66,9 @@ class SeedTimezonesAction
             }
 
             foreach (array_chunk($inserts, 500) as $chunk) {
-                DB::table($table)->insert($chunk);
+                $result['created'] += DB::table($table)->insertOrIgnore($chunk);
             }
 
-            $result['created'] = count($inserts);
 
             return $result;
         });

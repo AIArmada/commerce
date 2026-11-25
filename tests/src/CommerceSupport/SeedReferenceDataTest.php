@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\CommerceSupport\Actions\SeedCurrenciesAction;
-use AIArmada\CommerceSupport\Actions\SeedLanguagesAction;
-use AIArmada\CommerceSupport\Actions\SeedTimezonesAction;
+use AIArmada\CommerceSupport\Features\ReferenceData\Actions\SeedCurrenciesAction;
+use AIArmada\CommerceSupport\Features\ReferenceData\Actions\SeedLanguagesAction;
+use AIArmada\CommerceSupport\Features\ReferenceData\Actions\SeedTimezonesAction;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;

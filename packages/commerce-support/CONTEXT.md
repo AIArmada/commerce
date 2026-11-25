@@ -43,8 +43,8 @@ keywords:
 - Owner/security: Defines the owner boundary (HasOwner, OwnerScope, OwnerContext).
 
 ## Key surfaces
-- Models: `Currency`, `Language`, `NotificationPreference`, `Report`, `SavedSearch`, `Tag`, `Timezone`
-- Actions/Services: `Actions/DiscoverCommerceMigrationPublishTagsAction`, `Actions/DiscoverCommercePublishTagsAction`, `Actions/EnsureCustomGuidelinesSymlinkAction`, `Actions/ProcessWebhookCallAction`, `Actions/ResolveOwnedModelOrFailAction`, `Actions/ResolveOwnerJobContextAction`, `Actions/ResolveProjectRootAction`, `Actions/SeedCurrenciesAction`
+- Models: `Features/ReferenceData/Models/{Currency,Language,Timezone}`, `NotificationPreference`, `Report`, `SavedSearch`, `Tag`
+- Actions/Services: `Actions/DiscoverCommerceMigrationPublishTagsAction`, `Actions/DiscoverCommercePublishTagsAction`, `Actions/EnsureCustomGuidelinesSymlinkAction`, `Actions/ProcessWebhookCallAction`, `Actions/ResolveOwnedModelOrFailAction`, `Actions/ResolveOwnerJobContextAction`, `Actions/ResolveProjectRootAction`, `Features/ReferenceData/Actions/SeedCurrenciesAction`
 - Config `commerce-support.php`: `database`, `morph_key_type`, `json_column_type`, `tables`, `saved_searches`, `reports`, `notification_preferences`, `languages`, `currencies`, `timezones`
 
 ## Docs map
