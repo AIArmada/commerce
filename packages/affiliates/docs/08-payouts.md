@@ -225,14 +225,13 @@ Conversions must mature before payout eligibility:
 ### Using Actions (Canonical API)
 
 ```php
-use AIArmada\Affiliates\Actions\Conversions\ProcessConversionMaturity;
-use AIArmada\Affiliates\Actions\Conversions\MatureConversion;
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionMaturity;
 
 // Promote all qualified conversions that have reached maturity
-$results = ProcessConversionMaturity::run();
+$results = app(ConversionMaturity::class)->process();
 
 // Mature a specific conversion (returns bool)
-$matured = MatureConversion::run($conversion);
+$matured = app(ConversionMaturity::class)->mature($conversionId);
 ```
 
 Configure in `config/affiliates.php`:

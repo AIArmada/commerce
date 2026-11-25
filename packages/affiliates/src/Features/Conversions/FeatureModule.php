@@ -12,6 +12,8 @@ final class FeatureModule implements FeatureModuleContract
 {
     public function register(Application $app): void
     {
+        $app->bind(Api\ConversionAdministration::class, Actions\AdministerConversion::class);
+        $app->bind(Api\ConversionMaturity::class, Actions\ProcessConversionMaturity::class);
         $app->scoped(MerchantLedger::class, Actions\ExternalConversionLedger::class);
     }
 

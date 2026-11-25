@@ -35,8 +35,8 @@ arguments and returns a `RedirectResponse`.
 | Action | Purpose |
 |--------|---------|
 | `AllocateUplineCommissions::run($baseConversions, $autoApprove, $statusEnum, $attributionId)` | Distribute upline commissions |
-| `MatureConversion::run($conversion)` | Mature a single conversion |
-| `ProcessConversionMaturity::run()` | Process batch maturity |
+| `app(ConversionMaturity::class)->mature($conversionId)` | Mature a single conversion |
+| `app(ConversionMaturity::class)->process()` | Process batch maturity |
 | `RecordAffiliateConversion::run($cart, $payload)` | Record a conversion |
 | `ReverseAffiliateConversion::run($conversion, $reason)` | Reverse a conversion (negated companion) |
 | `VoidAffiliateConversion::run($conversion, $reason)` | Settle a conversion as not payable |

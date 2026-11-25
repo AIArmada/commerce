@@ -91,7 +91,7 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
                 Features\Reporting\EntryPoints\Commands\AggregateDailyStatsCommand::class,
                 Features\Upline\EntryPoints\Console\ProcessRankUpgradesCommand::class,
                 Console\Commands\ProcessScheduledPayoutsCommand::class,
-                Console\Commands\ProcessCommissionMaturityCommand::class,
+                Features\Conversions\EntryPoints\Console\ProcessCommissionMaturityCommand::class,
             ]);
     }
 

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Actions\Conversions\AllocateUplineCommissions;
 use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
-use AIArmada\Affiliates\Actions\Conversions\ProcessConversionMaturity;
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionMaturity;
 use AIArmada\Affiliates\Actions\Payouts\ClaimScheduledPayout;
 use AIArmada\Affiliates\Actions\Payouts\CreatePayout;
 use AIArmada\Affiliates\Data\AffiliateConversionData;
@@ -256,7 +256,7 @@ test('conversion maturity skips purpose-tagged affiliates', function (): void {
         'occurred_at' => CarbonImmutable::now()->subDays(60),
     ]);
 
-    $matured = app(ProcessConversionMaturity::class)->handle();
+    $matured = app(ConversionMaturity::class)->process();
 
     expect($matured)->toBe(0)
         ->and($conversion->fresh()->status->getValue())->toBe(QualifiedConversion::value());

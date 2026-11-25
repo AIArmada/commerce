@@ -2,8 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Actions\Conversions\MatureConversion;
-use AIArmada\Affiliates\Actions\Conversions\ProcessConversionMaturity;
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionMaturity;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
@@ -13,7 +12,7 @@ use AIArmada\Affiliates\States\QualifiedConversion;
 
 // MatureConversion Action Tests
 test('MatureConversion returns false for non-qualified conversion', function (): void {
-    $action = app(MatureConversion::class);
+    $action = app(ConversionMaturity::class);
 
     $affiliate = Affiliate::create([
         'code' => 'MATURE001',
@@ -35,13 +34,13 @@ test('MatureConversion returns false for non-qualified conversion', function ():
         'occurred_at' => now()->subDays(60),
     ]);
 
-    $result = $action->handle($conversion);
+    $result = $action->mature($conversion->id);
 
     expect($result)->toBeFalse();
 });
 
 test('MatureConversion returns false for conversion with future maturity date', function (): void {
-    $action = app(MatureConversion::class);
+    $action = app(ConversionMaturity::class);
 
     $affiliate = Affiliate::create([
         'code' => 'MATURE002',
@@ -63,14 +62,14 @@ test('MatureConversion returns false for conversion with future maturity date', 
         'occurred_at' => now(), // Just occurred, not mature yet
     ]);
 
-    $result = $action->handle($conversion);
+    $result = $action->mature($conversion->id);
 
     expect($result)->toBeFalse();
 });
 
 // ProcessConversionMaturity Action Tests
 test('ProcessConversionMaturity matures due conversions and skips the rest', function (): void {
-    $action = app(ProcessConversionMaturity::class);
+    $action = app(ConversionMaturity::class);
 
     $affiliate = Affiliate::create([
         'code' => 'MATURE003',
@@ -103,6 +102,9 @@ test('ProcessConversionMaturity matures due conversions and skips the rest', fun
         'occurred_at' => now(),
     ]);
 
-    expect($action->handle())->toBe(1)
-        ->and($due->fresh()->status->equals(ApprovedConversion::class))->toBeTrue();
+    expect($action->process(dryRun: true))->toBe(1)
+        ->and($due->fresh()->status->equals(QualifiedConversion::class))->toBeTrue()
+        ->and($action->process())->toBe(1)
+        ->and($due->fresh()->status->equals(ApprovedConversion::class))->toBeTrue()
+        ->and($action->process())->toBe(0);
 });

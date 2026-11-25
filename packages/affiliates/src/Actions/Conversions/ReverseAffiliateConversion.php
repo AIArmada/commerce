@@ -8,7 +8,6 @@ use AIArmada\Affiliates\Events\AffiliateConversionReversed;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\ReversedConversion;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -32,7 +31,7 @@ final class ReverseAffiliateConversion
 
     public function handle(AffiliateConversion $conversion, string $reason): AffiliateConversion
     {
-        return DB::transaction(function () use ($conversion, $reason): AffiliateConversion {
+        return $conversion->getConnection()->transaction(function () use ($conversion, $reason): AffiliateConversion {
             $locked = AffiliateConversion::query()
                 ->whereKey($conversion->getKey())
                 ->lockForUpdate()
@@ -119,7 +118,7 @@ final class ReverseAffiliateConversion
 
     private function dispatchReversed(AffiliateConversion $conversion, string $reason): void
     {
-        DB::connection()->afterCommit(function () use ($conversion, $reason): void {
+        $conversion->getConnection()->afterCommit(function () use ($conversion, $reason): void {
             event(new AffiliateConversionReversed(
                 origin: is_string($conversion->origin) ? $conversion->origin : null,
                 sourceRef: is_string($conversion->source_ref) ? $conversion->source_ref : null,

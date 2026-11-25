@@ -9,7 +9,6 @@ use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\States\RejectedConversion;
 use AIArmada\Affiliates\States\ReversedConversion;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -34,7 +33,7 @@ final class VoidAffiliateConversion
      */
     public function handle(AffiliateConversion $conversion, string $reason): AffiliateConversion
     {
-        return DB::transaction(function () use ($conversion, $reason): AffiliateConversion {
+        return $conversion->getConnection()->transaction(function () use ($conversion, $reason): AffiliateConversion {
             $locked = AffiliateConversion::query()
                 ->whereKey($conversion->getKey())
                 ->lockForUpdate()
@@ -55,7 +54,7 @@ final class VoidAffiliateConversion
             $locked->update(['status' => RejectedConversion::class]);
 
             $this->accounting->handle($locked, $previousStatus);
-            DB::connection()->afterCommit(function () use ($locked, $reason): void {
+            $locked->getConnection()->afterCommit(function () use ($locked, $reason): void {
                 event(new AffiliateConversionReversed(
                     origin: is_string($locked->origin) ? $locked->origin : null,
                     sourceRef: is_string($locked->source_ref) ? $locked->source_ref : null,

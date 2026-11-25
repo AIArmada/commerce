@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Fraud\Actions;
 
-use AIArmada\Affiliates\Actions\Conversions\VoidAffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionAdministration;
 use AIArmada\Affiliates\Enums\FraudSignalStatus;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudReviewApi;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudReviewResult;
@@ -48,7 +48,7 @@ final readonly class ReviewFraudSignal implements FraudReviewApi
 
             if ($rejectLinkedConversion && $signal->conversion !== null) {
                 try {
-                    VoidAffiliateConversion::run($signal->conversion, sprintf('Fraud review rejected linked conversion (signal %s).', $signalId));
+                    app(ConversionAdministration::class)->voidConversion((string) $signal->conversion->getKey(), sprintf('Fraud review rejected linked conversion (signal %s).', $signalId));
                 } catch (InvalidArgumentException $exception) {
                     $rejectionError = $exception->getMessage();
                 }

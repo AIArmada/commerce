@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Console\Commands;
+namespace AIArmada\Affiliates\Features\Conversions\EntryPoints\Console;
 
-use AIArmada\Affiliates\Actions\Conversions\ProcessConversionMaturity;
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionMaturity;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
 use Illuminate\Console\Command;
@@ -17,21 +17,20 @@ final class ProcessCommissionMaturityCommand extends Command
     protected $description = 'Process commission maturity and move to available balance';
 
     public function __construct(
-        private readonly ProcessConversionMaturity $processConversionMaturity,
+        private readonly ConversionMaturity $processConversionMaturity,
     ) {
         parent::__construct();
     }
 
     public function handle(): int
     {
-        $dryRun = $this->option('dry-run');
+        $dryRun = (bool) $this->option('dry-run');
 
         $this->info('Processing commission maturity...');
 
         if ($dryRun) {
             $this->warn('Running in dry-run mode - no changes will be made.');
 
-            return self::SUCCESS;
         }
 
         $runner = new OwnerBatchRunner(
@@ -39,9 +38,9 @@ final class ProcessCommissionMaturityCommand extends Command
             ['enabled' => 'affiliates.owner.enabled', 'include_global' => 'affiliates.owner.include_global'],
         );
 
-        $matured = $runner->run(fn (): int => $this->processConversionMaturity->handle()) ?? 0;
+        $matured = $runner->run(fn (): int => $this->processConversionMaturity->process($dryRun)) ?? 0;
 
-        $this->info("Matured {$matured} conversions.");
+        $this->info($dryRun ? "Would mature {$matured} conversions." : "Matured {$matured} conversions.");
 
         return self::SUCCESS;
     }
