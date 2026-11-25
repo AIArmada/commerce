@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\FilamentVouchers\Resources\VoucherResource\Schemas;
 
 use AIArmada\Affiliates\Enums\CommissionType;
-use AIArmada\Affiliates\Models\AffiliateProgram;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramReferenceReader;
+use AIArmada\FilamentAffiliates\Features\Programs\Api\ProgramAdminLinks;
+use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\FilamentVouchers\Support\ConditionTargetDisplay;
 use AIArmada\FilamentVouchers\Support\MoneyHelper;
 use AIArmada\Vouchers\Enums\VoucherType;
@@ -161,7 +163,7 @@ final class VoucherInfolist
                 }),
         ];
 
-        if (class_exists(AffiliateProgram::class)) {
+        if (interface_exists(ProgramReferenceReader::class) && app()->bound(ProgramReferenceReader::class)) {
             $components[] = Section::make('Affiliate Commission')
                 ->schema([
                     Grid::make(3)
@@ -190,20 +192,20 @@ final class VoucherInfolist
                                 )
                                 ->placeholder('—'),
 
-                            TextEntry::make('affiliateProgram.name')
+                            TextEntry::make('affiliate_program_name')
                                 ->label('Commission Program')
-                                ->url(static function ($record): ?string {
-                                    if (! $record->affiliateProgram) {
+                                ->state(static fn (Voucher $record): ?string => $record->affiliate_program_id === null
+                                    ? null
+                                    : app(ProgramReferenceReader::class)->label($record->affiliate_program_id))
+                                ->url(static function (Voucher $record): ?string {
+                                    if ($record->affiliate_program_id === null
+                                        || ! app(ProgramReferenceReader::class)->exists($record->affiliate_program_id)
+                                        || ! interface_exists(ProgramAdminLinks::class)
+                                        || ! app()->bound(ProgramAdminLinks::class)) {
                                         return null;
                                     }
 
-                                    $resourceClass = 'AIArmada\\FilamentAffiliates\\Resources\\AffiliateProgramResource';
-
-                                    if (! class_exists($resourceClass)) {
-                                        return null;
-                                    }
-
-                                    return $resourceClass::getUrl('view', ['record' => $record->affiliateProgram]);
+                                    return app(ProgramAdminLinks::class)->view($record->affiliate_program_id);
                                 })
                                 ->placeholder('No program'),
                         ]),

@@ -12,7 +12,10 @@ use Illuminate\Support\Facades\Gate;
 
 final class FeatureModule implements FeatureModuleContract
 {
-    public function register(Application $app): void {}
+    public function register(Application $app): void
+    {
+        $app->bind(Api\ProgramAdminLinks::class, Queries\ProgramResourceLinks::class);
+    }
 
     public function boot(Application $app): void
     {
