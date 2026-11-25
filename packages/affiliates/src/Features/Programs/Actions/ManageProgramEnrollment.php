@@ -13,7 +13,8 @@ use AIArmada\Affiliates\Features\Programs\Api\ProgramEnrollment;
 use AIArmada\Affiliates\Features\Programs\Queries\ProgramMembershipQuery;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Models\AffiliateProgramMembership;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramTier;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramMembership;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
@@ -50,7 +51,7 @@ final readonly class ManageProgramEnrollment implements ProgramEnrollment
                 throw new ProgramEnrollmentDenied('Affiliate cannot join this program.');
             }
 
-            $tier = $program->tiers()->withoutGlobalScope('program_owner')->first();
+            $tier = AffiliateProgramTier::query()->where('program_id', $program->getKey())->orderBy('level')->withoutGlobalScope('program_owner')->first();
             $status = $program->requires_approval ? MembershipStatus::Pending : MembershipStatus::Approved;
             $now = CarbonImmutable::now();
 
@@ -107,7 +108,7 @@ final readonly class ManageProgramEnrollment implements ProgramEnrollment
     {
         $connection = (new AffiliateProgramMembership)->getConnection();
 
-        if ($affiliate->getConnection() !== $connection || $program->getConnection() !== $connection) {
+        if ($affiliate->getConnection() !== $connection || $program->getConnection() !== $connection || (new AffiliateProgramTier)->getConnection() !== $connection) {
             throw new RuntimeException('Program enrollment requires a shared database connection.');
         }
     }

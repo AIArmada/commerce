@@ -5,8 +5,14 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Features\Programs\EntryPoints\Filament\Resources\AffiliateProgramResource\RelationManagers;
 
 use AIArmada\Affiliates\Features\Programs\Api\ProgramTierAdministration;
-use AIArmada\Affiliates\Models\AffiliateProgramTier;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramTier;
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Auth\Access\AuthorizationException;
+use Filament\Support\Components\Attributes\Unexposed;
+
+use function Filament\authorize;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Filament\Actions\BulkActionGroup;
@@ -27,6 +33,25 @@ final class TiersRelationManager extends RelationManager
     use VerifiesRelationManagerOwnerContext;
 
     protected static string $relationship = 'tiers';
+
+    #[Unexposed]
+    public static function canViewForRecord(Model $ownerRecord, string $pageClass): bool
+    {
+        if (! FilamentPermission::hasAbility('affiliate.view')) {
+            return false;
+        }
+
+        try {
+            return authorize('viewAny', AffiliateProgramTier::class, static::shouldCheckPolicyExistence())->allowed();
+        } catch (AuthorizationException $exception) {
+            return $exception->toResponse()->allowed();
+        }
+    }
+
+    public function getRelationship(): Relation
+    {
+        return $this->getOwnerRecord()->hasMany(AffiliateProgramTier::class, 'program_id')->orderBy('level');
+    }
 
     public function form(Schema $schema): Schema
     {

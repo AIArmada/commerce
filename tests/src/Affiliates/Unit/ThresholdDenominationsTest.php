@@ -16,7 +16,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateLink;
 use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Models\AffiliateProgramTier;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramTier;
 use AIArmada\Affiliates\Features\Upline\Models\AffiliateRank;
 use AIArmada\Affiliates\Settings\AffiliateBonusSettings;
 use AIArmada\Affiliates\Settings\AffiliatePayoutSettings;

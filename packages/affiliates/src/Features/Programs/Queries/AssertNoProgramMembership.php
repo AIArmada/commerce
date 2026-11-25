@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Programs\Queries;
 
 use AIArmada\Affiliates\Features\Programs\Api\MembershipRemovalGuard;
-use AIArmada\Affiliates\Models\AffiliateProgramMembership;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramMembership;
 use Illuminate\Validation\ValidationException;
 use LogicException;
 

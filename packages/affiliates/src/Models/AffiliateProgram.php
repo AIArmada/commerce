@@ -7,6 +7,7 @@ namespace AIArmada\Affiliates\Models;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\ProgramVisibility;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramMembershipReader;
 use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\Affiliates\Support\RevenueVolume;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
@@ -16,11 +17,8 @@ use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -47,9 +45,6 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property Carbon|null $updated_at
  * @property string|null $owner_type
  * @property string|null $owner_id
- * @property-read Collection<int, AffiliateProgramTier> $tiers
- * @property-read AffiliateProgramMembership|null $pivot
- * @property-read Collection<int, Affiliate> $affiliates
  * @property-read Model|null $owner
  */
 class AffiliateProgram extends Model implements Auditable
@@ -108,35 +103,6 @@ class AffiliateProgram extends Model implements Auditable
         return config('affiliates.database.tables.programs', 'affiliate_programs');
     }
 
-    /**
-     * @return HasMany<AffiliateProgramTier, $this>
-     */
-    public function tiers(): HasMany
-    {
-        return $this->hasMany(AffiliateProgramTier::class, 'program_id')->orderBy('level');
-    }
-
-    /**
-     * @return BelongsToMany<Affiliate, $this, AffiliateProgramMembership, 'pivot'>
-     */
-    public function affiliates(): BelongsToMany
-    {
-        $membershipTable = config('affiliates.database.tables.program_memberships', 'affiliate_program_memberships');
-
-        return $this->belongsToMany(Affiliate::class, $membershipTable, 'program_id', 'affiliate_id')
-            ->using(AffiliateProgramMembership::class)
-            ->withPivot(['id', 'tier_id', 'status', 'applied_at', 'approved_at', 'rejected_at', 'suspended_at', 'expires_at'])
-            ->withTimestamps();
-    }
-
-    /**
-     * @return HasMany<AffiliateProgramMembership, $this>
-     */
-    public function memberships(): HasMany
-    {
-        return $this->hasMany(AffiliateProgramMembership::class, 'program_id');
-    }
-
     public function isActive(): bool
     {
         if ($this->status !== ProgramStatus::Active) {
@@ -166,7 +132,7 @@ class AffiliateProgram extends Model implements Auditable
         }
 
         // Check if already a member
-        if ($this->affiliates()->where('affiliate_id', $affiliate->id)->exists()) {
+        if (app(ProgramMembershipReader::class)->find((string) $affiliate->getKey(), (string) $this->getKey()) !== null) {
             return false;
         }
 
@@ -176,11 +142,6 @@ class AffiliateProgram extends Model implements Auditable
         }
 
         return true;
-    }
-
-    public function getDefaultTier(): ?AffiliateProgramTier
-    {
-        return once(fn () => $this->tiers()->orderBy('level')->first());
     }
 
     public function scopeActive(Builder $query): Builder

@@ -155,7 +155,6 @@ Replacing the file removes the previous media and deleting the creative removes 
 ## Using the Program feature APIs
 
 ```php
-use AIArmada\Affiliates\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramEnrollment;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramMembershipReader;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramTierManagement;
@@ -177,10 +176,9 @@ app(ProgramEnrollment::class)->leave($affiliate->id, $programId);
 app(ProgramTierManagement::class)->upgrade($affiliate->id, $programId, $goldTierId);
 
 // Get affiliate's memberships
-$memberships = AffiliateProgramMembership::query()
-    ->with('program', 'tier')
-    ->where('affiliate_id', $affiliate->id)
-    ->get();
+$reader = app(ProgramMembershipReader::class);
+$programIds = $reader->programIds($affiliate->id);
+$membership = $reader->find($affiliate->id, $programId);
 ```
 
 ## Commission Templates

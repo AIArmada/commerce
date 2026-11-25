@@ -7,7 +7,7 @@ namespace AIArmada\Affiliates\Features\Programs\Queries;
 use AIArmada\Affiliates\Features\Programs\Api\TierQualificationReader;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Models\AffiliateProgramTier;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramTier;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\Support\RevenueVolume;
@@ -20,7 +20,7 @@ final readonly class ProgramTierQualificationQuery implements TierQualificationR
     {
         $affiliate = Affiliate::query()->findOrFail($affiliateId);
         $program = AffiliateProgram::query()->findOrFail($programId);
-        $tier = $program->tiers()->withoutGlobalScope('program_owner')->whereKey($tierId)->firstOrFail();
+        $tier = AffiliateProgramTier::query()->where('program_id', $program->getKey())->orderBy('level')->withoutGlobalScope('program_owner')->whereKey($tierId)->firstOrFail();
 
         return $this->best($affiliate, $program, collect([$tier])) !== null;
     }

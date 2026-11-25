@@ -9,7 +9,7 @@ use AIArmada\Affiliates\Features\Programs\Api\ProgramJoinRecord;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramJoinReference;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Models\AffiliateProgramMembership;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramMembership;
 use InvalidArgumentException;
 
 final class ProgramJoinQuery implements ProgramJoinReader

@@ -10,8 +10,8 @@ use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramCreative;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Models\AffiliateProgramMembership;
-use AIArmada\Affiliates\Models\AffiliateProgramTier;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramMembership;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramTier;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\Pending;
@@ -89,7 +89,7 @@ describe('AffiliateProgram Model', function (): void {
         ]);
 
         $program->refresh();
-        $tiers = $program->tiers;
+        $tiers = AffiliateProgramTier::query()->where('program_id', $program->getKey())->orderBy('level')->get();
 
         expect($tiers)->toHaveCount(2)
             ->and($tiers->first()->name)->toBe('Silver') // Level 1 first (ordered by level)
@@ -124,8 +124,7 @@ describe('AffiliateProgram Model', function (): void {
         ]);
 
         $program->refresh();
-        expect($program->affiliates)->toHaveCount(1)
-            ->and($program->affiliates->first()->id)->toBe($affiliate->id);
+        expect(app(\AIArmada\Affiliates\Features\Programs\Api\ProgramMembershipReader::class)->programIds((string) $affiliate->getKey()))->toBe([$program->id]);
     });
 
     it('stores creatives for a program', function (): void {
@@ -179,7 +178,7 @@ describe('AffiliateProgram Model', function (): void {
         ]);
 
         $program->refresh();
-        expect($program->memberships)->toHaveCount(1);
+        expect(app(\AIArmada\Affiliates\Features\Programs\Api\ProgramMembershipReader::class)->find((string) $affiliate->getKey(), (string) $program->getKey()))->not->toBeNull();
     });
 
     it('isActive returns true when status is active and within date range', function (): void {
@@ -433,7 +432,7 @@ describe('AffiliateProgram Model', function (): void {
             'commission_rate_basis_points' => 1000,
         ]);
 
-        $defaultTier = $program->getDefaultTier();
+        $defaultTier = AffiliateProgramTier::query()->where('program_id', $program->getKey())->orderBy('level')->first();
 
         // getDefaultTier returns the entry-level tier (lowest level number)
         expect($defaultTier)->not->toBeNull()

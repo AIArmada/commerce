@@ -12,7 +12,8 @@ use AIArmada\Affiliates\Features\Programs\Api\MembershipRecord;
 use AIArmada\Affiliates\Features\Programs\Queries\ProgramMembershipQuery;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Models\AffiliateProgramMembership;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramTier;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramMembership;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
@@ -97,14 +98,14 @@ final readonly class AdministerProgramMembership implements MembershipAdministra
         $previous = $creating ? null : $membership->status;
         $data['status'] = ($data['status'] ?? null) instanceof MembershipStatus ? $data['status']->value : ($data['status'] ?? $previous?->value ?? MembershipStatus::Pending->value);
         $attributes = Validator::make($data, [
-            'tier_id' => ['sometimes', 'nullable', 'string'],
+            'tier_id' => ['sometimes', 'nullable', 'uuid'],
             'status' => ['required', Rule::enum(MembershipStatus::class)],
             'applied_at' => ['sometimes', 'required', 'date'],
             'approved_at' => ['sometimes', 'nullable', 'date'],
             'expires_at' => ['sometimes', 'nullable', 'date'],
         ])->validate();
 
-        if (isset($attributes['tier_id']) && ! $program->tiers()->withoutGlobalScope('program_owner')->whereKey($attributes['tier_id'])->exists()) {
+        if (isset($attributes['tier_id']) && ! AffiliateProgramTier::query()->where('program_id', $program->getKey())->orderBy('level')->withoutGlobalScope('program_owner')->whereKey($attributes['tier_id'])->exists()) {
             throw ValidationException::withMessages(['tier_id' => 'The selected tier does not belong to this program.']);
         }
 
@@ -149,7 +150,7 @@ final readonly class AdministerProgramMembership implements MembershipAdministra
     {
         $connection = (new AffiliateProgramMembership)->getConnection();
 
-        if ($affiliate->getConnection() !== $connection || $program->getConnection() !== $connection) {
+        if ($affiliate->getConnection() !== $connection || $program->getConnection() !== $connection || (new AffiliateProgramTier)->getConnection() !== $connection) {
             throw new RuntimeException('Program administration requires a shared database connection.');
         }
     }

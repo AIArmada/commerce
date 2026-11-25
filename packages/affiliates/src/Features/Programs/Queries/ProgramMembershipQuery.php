@@ -7,7 +7,7 @@ namespace AIArmada\Affiliates\Features\Programs\Queries;
 use AIArmada\Affiliates\Features\Programs\Api\MembershipRecord;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramMembershipReader;
 use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Models\AffiliateProgramMembership;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramMembership;
 
 final readonly class ProgramMembershipQuery implements ProgramMembershipReader
 {

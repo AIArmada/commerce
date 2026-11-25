@@ -12,8 +12,8 @@ use AIArmada\Affiliates\Features\Programs\Queries\ProgramMembershipQuery;
 use AIArmada\Affiliates\Features\Programs\Queries\ProgramTierQualificationQuery;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Models\AffiliateProgramMembership;
-use AIArmada\Affiliates\Models\AffiliateProgramTier;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramMembership;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramTier;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Collection;
@@ -32,7 +32,7 @@ final readonly class UpgradeProgramTier implements ProgramTierManagement
         return (new AffiliateProgramMembership)->getConnection()->transaction(function () use ($affiliateId, $programId, $tierId): MembershipRecord {
             $affiliate = Affiliate::query()->lockForUpdate()->findOrFail($affiliateId);
             $program = $this->resolveProgram($programId);
-            $tier = $program->tiers()->withoutGlobalScope('program_owner')->whereKey($tierId)->first();
+            $tier = AffiliateProgramTier::query()->where('program_id', $program->getKey())->orderBy('level')->withoutGlobalScope('program_owner')->whereKey($tierId)->first();
 
             if ($tier === null) {
                 throw new RuntimeException('Selected tier does not belong to the specified program.');
@@ -57,7 +57,7 @@ final readonly class UpgradeProgramTier implements ProgramTierManagement
     public function processUpgrades(string $programId): int
     {
         $program = $this->resolveProgram($programId);
-        $tiers = $program->tiers()->withoutGlobalScope('program_owner')->reorder('level', 'desc')->get();
+        $tiers = AffiliateProgramTier::query()->where('program_id', $program->getKey())->orderBy('level')->withoutGlobalScope('program_owner')->reorder('level', 'desc')->get();
         $upgraded = 0;
 
         AffiliateProgramMembership::query()

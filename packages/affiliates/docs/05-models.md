@@ -46,7 +46,7 @@ $affiliate->payouts;          // MorphMany<AffiliatePayout>
 $affiliate->links;            // HasMany<AffiliateLink>
 $affiliate->parent;           // BelongsTo<Affiliate>
 $affiliate->children;         // HasMany<Affiliate>
-$affiliate->programs;         // BelongsToMany<AffiliateProgram>
+app(\AIArmada\Affiliates\Features\Programs\Api\ProgramMembershipReader::class)->programIds((string) $affiliate->getKey());
 $affiliate->dailyStats;       // HasMany<AffiliateDailyStat>
 app(\AIArmada\Affiliates\Features\Upline\Api\RankDirectory::class)->label($affiliate->rank_id);
 $affiliate->vouchers;         // HasMany<Voucher>
@@ -229,13 +229,7 @@ use AIArmada\Affiliates\Models\AffiliateProgram;
 | `starts_at` | timestamp | Program start date |
 | `ends_at` | timestamp | Program end date |
 
-**Relationships:**
-
-```php
-$program->tiers;        // HasMany<AffiliateProgramTier>
-$program->memberships;  // HasMany<AffiliateProgramMembership>
-$program->affiliates;   // BelongsToMany<Affiliate>
-```
+Program tiers and memberships are internal Programs feature records. Use `ProgramTierAdministration`, `MembershipAdministration`, `ProgramMembershipReader` and `ProgramTierManagement` instead of cross-feature ORM relationships.
 
 ### AffiliateProgramMembership
 

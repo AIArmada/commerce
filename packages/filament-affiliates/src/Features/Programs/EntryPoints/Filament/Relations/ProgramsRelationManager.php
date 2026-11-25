@@ -7,8 +7,15 @@ namespace AIArmada\FilamentAffiliates\Features\Programs\EntryPoints\Filament\Rel
 use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Features\Programs\Api\MembershipAdministration;
 use AIArmada\Affiliates\Features\Programs\Api\MembershipReviewApi;
-use AIArmada\Affiliates\Models\AffiliateProgramMembership;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramMembership;
+use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Auth\Access\AuthorizationException;
+use Filament\Support\Components\Attributes\Unexposed;
+
+use function Filament\authorize;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
@@ -34,6 +41,25 @@ final class ProgramsRelationManager extends RelationManager
     protected static string $relationship = 'programMemberships';
 
     protected static ?string $title = 'Programs';
+
+    #[Unexposed]
+    public static function canViewForRecord(Model $ownerRecord, string $pageClass): bool
+    {
+        if (! FilamentPermission::hasAbility('affiliate.view')) {
+            return false;
+        }
+
+        try {
+            return authorize('viewAny', AffiliateProgramMembership::class, static::shouldCheckPolicyExistence())->allowed();
+        } catch (AuthorizationException $exception) {
+            return $exception->toResponse()->allowed();
+        }
+    }
+
+    public function getRelationship(): Relation
+    {
+        return $this->getOwnerRecord()->hasMany(AffiliateProgramMembership::class, 'affiliate_id')->whereIn('program_id', AffiliateProgram::query()->select('id'));
+    }
 
     public function form(Schema $schema): Schema
     {

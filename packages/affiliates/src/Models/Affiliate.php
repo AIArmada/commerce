@@ -34,7 +34,6 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Facades\Validator;
@@ -81,7 +80,6 @@ use Spatie\ModelStates\HasStates;
  * @property-read Collection<int, AffiliateConversion> $conversions
  * @property-read Collection<int, AffiliatePayout> $payouts
  * @property-read Collection<int, AffiliateLink> $links
- * @property-read Collection<int, AffiliateProgram> $programs
  * @property-read Collection<int, Voucher> $vouchers
  * @property-read Model|null $owner
  */
@@ -221,31 +219,6 @@ class Affiliate extends Model implements Auditable
     public function links(): HasMany
     {
         return $this->hasMany(AffiliateLink::class);
-    }
-
-    /**
-     * @return HasMany<AffiliateProgramMembership, $this>
-     */
-    public function programMemberships(): HasMany
-    {
-        return $this->hasMany(AffiliateProgramMembership::class, 'affiliate_id')
-            ->whereIn('program_id', AffiliateProgram::query()->select('id'));
-    }
-
-    /**
-     * @return BelongsToMany<AffiliateProgram, $this, AffiliateProgramMembership, 'pivot'>
-     */
-    public function programs(): BelongsToMany
-    {
-        return $this->belongsToMany(
-            AffiliateProgram::class,
-            config('affiliates.database.tables.program_memberships', 'affiliate_program_memberships'),
-            'affiliate_id',
-            'program_id'
-        )
-            ->using(AffiliateProgramMembership::class)
-            ->withPivot(['id', 'tier_id', 'status', 'applied_at', 'approved_at', 'rejected_at', 'suspended_at', 'expires_at'])
-            ->withTimestamps();
     }
 
     /**
