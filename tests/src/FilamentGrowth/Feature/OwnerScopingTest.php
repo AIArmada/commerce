@@ -152,7 +152,10 @@ it('scopes ExperimentResource queries and mutation gates by accessible tracked p
     $names = ExperimentResource::getEloquentQuery()->pluck('name')->all();
 
     expect($names)->toContain($experimentB->name)
-        ->and(ExperimentResource::canEdit($experimentB))->toBeTrue();
+        ->not->toContain($experimentA->name)
+        ->and(ExperimentResource::canEdit($experimentB))->toBeTrue()
+        ->and(ExperimentResource::canEdit($experimentA))->toBeFalse()
+        ->and(ExperimentResource::canDelete($experimentA))->toBeFalse();
 });
 
 it('scopes VariantResource query to the resolved owner', function (): void {
@@ -202,8 +205,10 @@ it('scopes VariantResource queries and experiment helpers by accessible tracked 
     // selectedExperimentModuleType is now public on VariantForm
 
     expect($codes)->toContain($variantB->code)
-        ->and(VariantResource::canEdit($variantA))->toBeTrue()
-        ->and(VariantResource::canDelete($variantA))->toBeTrue()
+        ->not->toContain($variantA->code)
+        ->and(VariantResource::canEdit($variantA))->toBeFalse()
+        ->and(VariantResource::canDelete($variantA))->toBeFalse()
+        ->and(VariantResource::canEdit($variantB))->toBeTrue()
         ->and((string) VariantForm::selectedExperimentModuleType((string) $experimentA->getKey()))->toBe('')
         ->and((string) VariantForm::selectedExperimentModuleType((string) $experimentB->getKey()))->toBe((string) $experimentB->module_type);
 });
@@ -382,8 +387,10 @@ it('removes experiments and variants from readable queries when the tracked prop
         ->where('id', $experiment->getKey())
         ->update(['tracked_property_id' => $foreignTrackedProperty->getKey()]);
 
-    expect(ExperimentResource::getEloquentQuery()->whereKey($experiment->getKey())->exists())->toBeTrue()
-        ->and(VariantResource::getEloquentQuery()->whereKey($variant->getKey())->exists())->toBeTrue();
+    expect(ExperimentResource::getEloquentQuery()->whereKey($experiment->getKey())->exists())->toBeFalse()
+        ->and(VariantResource::getEloquentQuery()->whereKey($variant->getKey())->exists())->toBeFalse()
+        ->and(VariantResource::canEdit($variant))->toBeFalse()
+        ->and(VariantResource::canDelete($variant))->toBeFalse();
 });
 
 it('scopes variant code uniqueness to writable experiments only', function (): void {

@@ -35,7 +35,7 @@ final class ExperimentResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return ExperimentHelpers::applyOwnerSafeRelationCounts(
-            OwnerUiScope::apply(Experiment::query()),
+            ExperimentHelpers::scopeExperiments(Experiment::query()),
         )->with([
             'trackedProperty' => function ($query) {
                 $builder = $query instanceof Relation ? $query->getQuery() : $query;
@@ -83,8 +83,7 @@ final class ExperimentResource extends Resource
             return false;
         }
 
-        return OwnerUiScope::canMutateRecord($record)
-            || ExperimentHelpers::canMutateViaTrackedProperty($record);
+        return ExperimentHelpers::canMutateExperiment($record);
     }
 
     public static function canDelete(Model $record): bool
@@ -97,8 +96,7 @@ final class ExperimentResource extends Resource
             return false;
         }
 
-        return OwnerUiScope::canMutateRecord($record)
-            || ExperimentHelpers::canMutateViaTrackedProperty($record);
+        return ExperimentHelpers::canMutateExperiment($record);
     }
 
     public static function canDeleteAny(): bool

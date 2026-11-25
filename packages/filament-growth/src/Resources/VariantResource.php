@@ -35,6 +35,7 @@ final class VariantResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return OwnerUiScope::apply(Variant::query())
+            ->whereIn('experiment_id', ExperimentHelpers::scopeExperiments(Experiment::query())->select('id'))
             ->with(['experiment:id,name']);
     }
 
@@ -73,13 +74,7 @@ final class VariantResource extends Resource
             return false;
         }
 
-        if (OwnerUiScope::canMutateRecord($record)) {
-            return true;
-        }
-
-        $experiment = $record->relationLoaded('experiment') ? $record->experiment : OwnerUiScope::apply(Experiment::query())->find($record->experiment_id);
-
-        return $experiment instanceof Experiment && ExperimentHelpers::canMutateViaTrackedProperty($experiment);
+        return ExperimentHelpers::canMutateVariant($record);
     }
 
     public static function canDelete(Model $record): bool
@@ -92,13 +87,7 @@ final class VariantResource extends Resource
             return false;
         }
 
-        if (OwnerUiScope::canMutateRecord($record)) {
-            return true;
-        }
-
-        $experiment = $record->relationLoaded('experiment') ? $record->experiment : OwnerUiScope::apply(Experiment::query())->find($record->experiment_id);
-
-        return $experiment instanceof Experiment && ExperimentHelpers::canMutateViaTrackedProperty($experiment);
+        return ExperimentHelpers::canMutateVariant($record);
     }
 
     public static function canDeleteAny(): bool
