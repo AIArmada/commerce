@@ -156,12 +156,12 @@ $all = Affiliate::withoutOwnerScope()->get();
 
 ## Owner-Scoped Lookups
 
-Affiliate lookup follows the active owner context. Within a request, cached lookup results are isolated by owner scope.
+Affiliate lookup follows the active owner context. Each lookup returns a fresh immutable record in the active owner scope.
 
 ```php
-use AIArmada\Affiliates\Contracts\AffiliateLookup;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
 
-$affiliateLookup = app(AffiliateLookup::class);
+$affiliateLookup = app(AffiliateDirectory::class);
 
 $affiliate = $affiliateLookup->findByCode('PARTNER42');
 ```

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateToCart;
 use AIArmada\Affiliates\Cart\AffiliateDiscountConditionProvider;
-use AIArmada\Affiliates\Contracts\AffiliateLookup;
+use AIArmada\Affiliates\Queries\AffiliateLookupQuery;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\Disabled;
@@ -50,7 +50,7 @@ describe('AffiliateDiscountConditionProvider', function (): void {
         config(['affiliates.cart.customer_discounts_enabled' => false]);
 
         $cart = createAffiliateTestCart('disabled-feature');
-        $lookup = app(AffiliateLookup::class);
+        $lookup = app(AffiliateLookupQuery::class);
 
         $provider = new AffiliateDiscountConditionProvider($lookup);
         $conditions = $provider->getConditionsFor($cart);
@@ -60,7 +60,7 @@ describe('AffiliateDiscountConditionProvider', function (): void {
 
     it('returns empty conditions when no affiliate attached', function (): void {
         $cart = createAffiliateTestCart('no-affiliate-attached');
-        $lookup = app(AffiliateLookup::class);
+        $lookup = app(AffiliateLookupQuery::class);
 
         $provider = new AffiliateDiscountConditionProvider($lookup);
         $conditions = $provider->getConditionsFor($cart);
@@ -80,7 +80,7 @@ describe('AffiliateDiscountConditionProvider', function (): void {
         ]);
 
         $cart = createAffiliateTestCart('no-discount-test');
-        $lookup = app(AffiliateLookup::class);
+        $lookup = app(AffiliateLookupQuery::class);
 
         // Attach affiliate to cart
         app(AttachAffiliateToCart::class)->handle($affiliate, $cart);
@@ -108,7 +108,7 @@ describe('AffiliateDiscountConditionProvider', function (): void {
         ]);
 
         $cart = createAffiliateTestCart('percentage-discount-test');
-        $lookup = app(AffiliateLookup::class);
+        $lookup = app(AffiliateLookupQuery::class);
         app(AttachAffiliateToCart::class)->handle($affiliate, $cart);
 
         $provider = new AffiliateDiscountConditionProvider($lookup);
@@ -138,7 +138,7 @@ describe('AffiliateDiscountConditionProvider', function (): void {
         ]);
 
         $cart = createAffiliateTestCart('fixed-discount-test');
-        $lookup = app(AffiliateLookup::class);
+        $lookup = app(AffiliateLookupQuery::class);
         app(AttachAffiliateToCart::class)->handle($affiliate, $cart);
 
         $provider = new AffiliateDiscountConditionProvider($lookup);
@@ -149,14 +149,14 @@ describe('AffiliateDiscountConditionProvider', function (): void {
     });
 
     it('returns the correct type', function (): void {
-        $lookup = app(AffiliateLookup::class);
+        $lookup = app(AffiliateLookupQuery::class);
         $provider = new AffiliateDiscountConditionProvider($lookup);
 
         expect($provider->getType())->toBe('affiliate_discount');
     });
 
     it('returns the correct priority', function (): void {
-        $lookup = app(AffiliateLookup::class);
+        $lookup = app(AffiliateLookupQuery::class);
         $provider = new AffiliateDiscountConditionProvider($lookup);
 
         expect($provider->getPriority())->toBe(120);
@@ -167,7 +167,7 @@ describe('AffiliateDiscountConditionProvider', function (): void {
 
         $condition = createTestAffiliateCondition('voucher');
 
-        $lookup = app(AffiliateLookup::class);
+        $lookup = app(AffiliateLookupQuery::class);
         $provider = new AffiliateDiscountConditionProvider($lookup);
 
         expect($provider->validate($condition, $cart))->toBeTrue();
@@ -178,7 +178,7 @@ describe('AffiliateDiscountConditionProvider', function (): void {
 
         $condition = createTestAffiliateCondition('affiliate_discount', 'INVALID-NONEXISTENT');
 
-        $lookup = app(AffiliateLookup::class);
+        $lookup = app(AffiliateLookupQuery::class);
         $provider = new AffiliateDiscountConditionProvider($lookup);
 
         expect($provider->validate($condition, $cart))->toBeFalse();
@@ -197,7 +197,7 @@ describe('AffiliateDiscountConditionProvider', function (): void {
         $cart = createAffiliateTestCart('inactive-test');
         $condition = createTestAffiliateCondition('affiliate_discount', 'INACTIVE-TEST');
 
-        $lookup = app(AffiliateLookup::class);
+        $lookup = app(AffiliateLookupQuery::class);
         $provider = new AffiliateDiscountConditionProvider($lookup);
 
         expect($provider->validate($condition, $cart))->toBeFalse();
@@ -222,7 +222,7 @@ describe('AffiliateDiscountConditionProvider', function (): void {
         $cart = createAffiliateTestCart('valid-active-test');
         $condition = createTestAffiliateCondition('affiliate_discount', 'VALID-DISCOUNT-TEST');
 
-        $lookup = app(AffiliateLookup::class);
+        $lookup = app(AffiliateLookupQuery::class);
         $provider = new AffiliateDiscountConditionProvider($lookup);
 
         expect($provider->validate($condition, $cart))->toBeTrue();
@@ -245,7 +245,7 @@ describe('AffiliateDiscountConditionProvider', function (): void {
         ]);
 
         $cart = createAffiliateTestCart('zero-discount-test');
-        $lookup = app(AffiliateLookup::class);
+        $lookup = app(AffiliateLookupQuery::class);
         app(AttachAffiliateToCart::class)->handle($affiliate, $cart);
 
         $provider = new AffiliateDiscountConditionProvider($lookup);
@@ -271,7 +271,7 @@ describe('AffiliateDiscountConditionProvider', function (): void {
         ]);
 
         $cart = createAffiliateTestCart('with-attrs-test');
-        $lookup = app(AffiliateLookup::class);
+        $lookup = app(AffiliateLookupQuery::class);
         app(AttachAffiliateToCart::class)->handle($affiliate, $cart);
 
         $provider = new AffiliateDiscountConditionProvider($lookup);

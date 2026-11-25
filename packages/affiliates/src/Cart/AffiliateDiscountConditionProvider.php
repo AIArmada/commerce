@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Cart;
 
-use AIArmada\Affiliates\Contracts\AffiliateLookup;
+use AIArmada\Affiliates\Queries\AffiliateLookupQuery;
 use AIArmada\Affiliates\Data\AffiliateData;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Cart\Cart;
@@ -30,7 +30,7 @@ final readonly class AffiliateDiscountConditionProvider implements ConditionProv
     private const int PRIORITY = 120;
 
     public function __construct(
-        private AffiliateLookup $affiliateLookup,
+        private AffiliateLookupQuery $affiliateLookup,
     ) {}
 
     /**

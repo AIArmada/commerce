@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Support\Middleware;
 
 use AIArmada\Affiliates\Actions\Affiliates\TrackAffiliateVisit;
-use AIArmada\Affiliates\Contracts\AffiliateLookup;
+use AIArmada\Affiliates\Queries\AffiliateLookupQuery;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -14,7 +14,7 @@ use Symfony\Component\HttpFoundation\Response;
 final class CaptureAffiliateReferralFromPath
 {
     public function __construct(
-        private readonly AffiliateLookup $affiliateLookup,
+        private readonly AffiliateLookupQuery $affiliateLookup,
         private readonly TrackAffiliateVisit $trackAffiliateVisit,
     ) {}
 

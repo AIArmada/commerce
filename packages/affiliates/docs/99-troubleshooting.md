@@ -410,9 +410,9 @@ php artisan tinker
 ```
 
 ```php
-$affiliateLookup = app(\AIArmada\Affiliates\Contracts\AffiliateLookup::class);
+$affiliateLookup = app(\AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory::class);
 $affiliate = $affiliateLookup->findByCode('PARTNER42');
-$affiliate->toArray();
+$affiliate;
 ```
 
 ### Inspect Middleware

@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Pages\Portal;
 
-use AIArmada\Affiliates\Actions\Affiliates\CreateAffiliate;
-use AIArmada\Affiliates\Contracts\AffiliateLookup;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
+use AIArmada\Affiliates\Features\Identity\Api\RegistrationApi;
 use AIArmada\Affiliates\Enums\RegistrationApprovalMode;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Services\UplineService;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateRecord;
 use AIArmada\Authz\Features\Authorization\Api\RoleAdministrationApi;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -225,9 +224,7 @@ class PortalRegistration extends FilamentRegister
         $this->isCodeChecking = true;
         $this->codeAvailabilityMessage = '';
 
-        $exists = Affiliate::query()
-            ->whereRaw('LOWER(code) = ?', [mb_strtolower($value)])
-            ->exists();
+        $exists = app(AffiliateDirectory::class)->findByCode($value) !== null;
 
         $this->isCodeChecking = false;
         $this->isCodeAvailable = ! $exists;
@@ -300,9 +297,7 @@ class PortalRegistration extends FilamentRegister
         $this->isReferralChecking = true;
         $this->referralMessage = '';
 
-        $exists = Affiliate::query()
-            ->whereRaw('LOWER(code) = ?', [mb_strtolower($value)])
-            ->exists();
+        $exists = app(AffiliateDirectory::class)->findByCode($value)?->canBeAttributed === true;
 
         $this->isReferralChecking = false;
         $this->isReferralValid = $exists;
@@ -344,7 +339,7 @@ class PortalRegistration extends FilamentRegister
             ->nationalMode();
     }
 
-    protected function createAffiliateForUser(Model $user, array $data): Affiliate
+    protected function createAffiliateForUser(Model $user, array $data): AffiliateRecord
     {
         $owner = $user;
 
@@ -367,33 +362,20 @@ class PortalRegistration extends FilamentRegister
             $affiliateData['code'] = $data['affiliate_code'];
         }
 
-        $referrer = null;
+        $reference = EloquentRecordReference::fromModel($owner);
 
-        if (! empty($data['referral_code'])) {
-            $referrer = app(AffiliateLookup::class)->findByCode($data['referral_code']);
+        if ($reference === null) {
+            throw new InvalidArgumentException('A persisted owner is required.');
         }
 
-        if (! $referrer) {
-            $cookieName = config('affiliates.cookies.name', 'affiliate_session');
-            $cookieValue = request()->cookie($cookieName) ?? ($_COOKIE[$cookieName] ?? null);
+        $cookie = request()->cookie(config('affiliates.cookies.name', 'affiliate_session'));
 
-            if ($cookieValue) {
-                $referrer = app(AffiliateLookup::class)->findActiveAffiliateByCookie($cookieValue);
-            }
-        }
-
-        if ($referrer) {
-            $affiliateData['parent_affiliate_id'] = $referrer->id;
-        }
-
-        $affiliate = app(CreateAffiliate::class)->handle($affiliateData, $owner);
-
-        if ($referrer) {
-            $uplineService = app(UplineService::class);
-            $uplineService->addToUpline($affiliate, $referrer);
-        }
-
-        return $affiliate;
+        return app(RegistrationApi::class)->register(
+            $affiliateData,
+            $reference,
+            is_string($data['referral_code'] ?? null) ? $data['referral_code'] : null,
+            is_string($cookie) ? $cookie : null,
+        );
     }
 
     public function getRegisterFormAction(): Action

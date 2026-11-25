@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Actions\Affiliates;
 
-use AIArmada\Affiliates\Contracts\AffiliateLookup;
+use AIArmada\Affiliates\Queries\AffiliateLookupQuery;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -14,7 +14,7 @@ final class ResolvePublicAffiliateReferralContext
     use AsAction;
 
     public function __construct(
-        private readonly AffiliateLookup $affiliateLookup,
+        private readonly AffiliateLookupQuery $affiliateLookup,
     ) {}
 
     /**

@@ -2,9 +2,8 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Resolvers;
+namespace AIArmada\Affiliates\Queries;
 
-use AIArmada\Affiliates\Contracts\AffiliateLookup;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Cart\Cart;
@@ -12,15 +11,12 @@ use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
-use AIArmada\CommerceSupport\Support\OwnerScopeKey;
-use Closure;
 use Illuminate\Database\Connection;
 use Illuminate\Database\Eloquent\Builder;
 use Throwable;
 
-final class DatabaseAffiliateLookup implements AffiliateLookup
+final class AffiliateLookupQuery
 {
-    private const REQUEST_CACHE_KEY = 'aiarmada.affiliates.lookup';
 
     /** @return Builder<Affiliate> */
     private function query(): Builder
@@ -36,17 +32,17 @@ final class DatabaseAffiliateLookup implements AffiliateLookup
 
     public function findByCode(string $code): ?Affiliate
     {
-        return $this->remembered('code:' . mb_strtolower(mb_trim($code)), fn (): ?Affiliate => $this->findByColumn($this->query(), 'code', $code));
+        return $this->findByColumn($this->query(), 'code', $code);
     }
 
     public function findByDefaultVoucherCode(string $voucherCode): ?Affiliate
     {
-        return $this->remembered('voucher:' . mb_strtolower(mb_trim($voucherCode)), fn (): ?Affiliate => $this->findByColumn($this->query(), 'default_voucher_code', $voucherCode));
+        return $this->findByColumn($this->query(), 'default_voucher_code', $voucherCode);
     }
 
     public function findById(string $id): ?Affiliate
     {
-        return $this->remembered('id:' . $id, fn (): ?Affiliate => $this->query()->whereKey($id)->first());
+        return $this->query()->whereKey($id)->first();
     }
 
     public function findActiveAffiliateByCookie(string $cookieValue): ?Affiliate
@@ -136,42 +132,5 @@ final class DatabaseAffiliateLookup implements AffiliateLookup
             OwnerContext::resolve(),
             (bool) config('affiliates.owner.include_global', false),
         );
-    }
-
-    private function remembered(string $key, Closure $resolver): ?Affiliate
-    {
-        if (! app()->bound('request')) {
-            return $resolver();
-        }
-
-        $config = Affiliate::ownerScopeConfig();
-        $scope = 'unscoped';
-
-        if ($config->enabled) {
-            $owner = OwnerContext::resolveConfigured($config);
-
-            if ($owner === null && ! OwnerContext::isExplicitGlobal()) {
-                return $resolver();
-            }
-
-            $scope = OwnerScopeKey::forOwner($owner);
-        }
-
-        $key = $scope . ':' . $key;
-        $request = request();
-        $cache = $request->attributes->get(self::REQUEST_CACHE_KEY, []);
-
-        if (is_array($cache) && array_key_exists($key, $cache)) {
-            $affiliate = $cache[$key];
-
-            return $affiliate instanceof Affiliate ? $affiliate : null;
-        }
-
-        $affiliate = $resolver();
-        $cache = is_array($cache) ? $cache : [];
-        $cache[$key] = $affiliate;
-        $request->attributes->set(self::REQUEST_CACHE_KEY, $cache);
-
-        return $affiliate;
     }
 }

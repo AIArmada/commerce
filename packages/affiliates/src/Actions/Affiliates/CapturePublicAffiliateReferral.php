@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Actions\Affiliates;
 
-use AIArmada\Affiliates\Contracts\AffiliateLookup;
+use AIArmada\Affiliates\Queries\AffiliateLookupQuery;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -17,7 +17,7 @@ final class CapturePublicAffiliateReferral
     use AsAction;
 
     public function __construct(
-        private readonly AffiliateLookup $affiliateLookup,
+        private readonly AffiliateLookupQuery $affiliateLookup,
         private readonly TrackAffiliateVisit $trackAffiliateVisit,
     ) {}
 

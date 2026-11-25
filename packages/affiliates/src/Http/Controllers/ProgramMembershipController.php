@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Http\Controllers;
 
-use AIArmada\Affiliates\Contracts\AffiliateLookup;
+use AIArmada\Affiliates\Queries\AffiliateLookupQuery;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Services\ProgramService;
 use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
@@ -24,7 +24,7 @@ use RuntimeException;
 final class ProgramMembershipController extends Controller
 {
     public function __construct(
-        private readonly AffiliateLookup $affiliateLookup,
+        private readonly AffiliateLookupQuery $affiliateLookup,
         private readonly ProgramService $programs,
     ) {}
 

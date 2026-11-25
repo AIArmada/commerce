@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Support\Integrations;
 
 use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateFromCookie;
-use AIArmada\Affiliates\Contracts\AffiliateLookup;
+use AIArmada\Affiliates\Queries\AffiliateLookupQuery;
 use AIArmada\Affiliates\Data\AffiliateAttributionData;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Cart\Cart;
@@ -28,7 +28,7 @@ final class CartBridge
             return null;
         }
 
-        if (app(AffiliateLookup::class)->findAttachedAttribution($cart) !== null) {
+        if (app(AffiliateLookupQuery::class)->findAttachedAttribution($cart) !== null) {
             return null;
         }
 

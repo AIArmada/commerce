@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Actions\Affiliates;
 
-use AIArmada\Affiliates\Contracts\AffiliateLookup;
+use AIArmada\Affiliates\Queries\AffiliateLookupQuery;
 use AIArmada\Affiliates\Data\AffiliateAttributionData;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudApi;
 use AIArmada\Affiliates\Models\Affiliate;
@@ -25,7 +25,7 @@ final class TrackAffiliateVisit
     use AsAction;
 
     public function __construct(
-        private readonly AffiliateLookup $affiliateLookup,
+        private readonly AffiliateLookupQuery $affiliateLookup,
         private readonly FraudApi $fraud,
     ) {}
 

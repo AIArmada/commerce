@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Listeners;
 
 use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateToCart;
-use AIArmada\Affiliates\Contracts\AffiliateLookup;
+use AIArmada\Affiliates\Queries\AffiliateLookupQuery;
 use AIArmada\Vouchers\Events\VoucherApplied;
 
 final class AttachAffiliateFromVoucher
 {
     public function __construct(
-        private readonly AffiliateLookup $affiliateLookup,
+        private readonly AffiliateLookupQuery $affiliateLookup,
         private readonly AttachAffiliateToCart $attachAffiliateToCart,
     ) {}
 

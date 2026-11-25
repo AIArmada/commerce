@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Contracts\AffiliateLookup;
 use AIArmada\Affiliates\Enums\FraudSeverity;
 use AIArmada\Affiliates\Enums\FraudSignalStatus;
 use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
@@ -205,39 +204,6 @@ it('validates commission rates and caps level rows', function (): void {
 // Registration creates users from explicit fields only.
 it('registers users from explicit fields and ignores stray input', function (): void {
     config(['affiliates.registration.enabled' => true]);
-
-    app()->instance(AffiliateLookup::class, new class implements AffiliateLookup
-    {
-        public function findByCode(string $code): ?Affiliate
-        {
-            return null;
-        }
-
-        public function findByDefaultVoucherCode(string $voucherCode): ?Affiliate
-        {
-            return null;
-        }
-
-        public function findById(string $id): ?Affiliate
-        {
-            return null;
-        }
-
-        public function findActiveAffiliateByCookie(string $cookieValue): ?Affiliate
-        {
-            return null;
-        }
-
-        public function findActiveAttributionByCookie(string $cookieValue): ?AffiliateAttribution
-        {
-            return null;
-        }
-
-        public function findAttachedAttribution(Cart $cart): ?AffiliateAttribution
-        {
-            return null;
-        }
-    });
 
     $page = new PortalRegistration;
     $method = new ReflectionMethod(PortalRegistration::class, 'handleRegistration');

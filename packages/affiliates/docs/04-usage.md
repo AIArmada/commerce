@@ -12,11 +12,11 @@ This guide covers common workflows for tracking affiliates, recording conversion
 
 ```php
 use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateToCart;
-use AIArmada\Affiliates\Contracts\AffiliateLookup;
+use AIArmada\Affiliates\Queries\AffiliateLookupQuery;
 use AIArmada\Cart\Contracts\CartManagerInterface;
 
 $cart = app(CartManagerInterface::class)->getCurrentCart();
-$affiliate = app(AffiliateLookup::class)->findByCode('PARTNER42');
+$affiliate = app(AffiliateLookupQuery::class)->findByCode('PARTNER42');
 
 if ($affiliate !== null) {
     AttachAffiliateToCart::run($affiliate, $cart, [
@@ -34,9 +34,9 @@ if ($affiliate !== null) {
 
 ```php
 use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateToCart;
-use AIArmada\Affiliates\Contracts\AffiliateLookup;
+use AIArmada\Affiliates\Queries\AffiliateLookupQuery;
 
-$affiliateLookup = app(AffiliateLookup::class);
+$affiliateLookup = app(AffiliateLookupQuery::class);
 
 // Find affiliate by code
 $affiliate = $affiliateLookup->findByCode('PARTNER42');

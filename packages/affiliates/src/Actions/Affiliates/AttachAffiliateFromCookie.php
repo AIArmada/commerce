@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Actions\Affiliates;
 
-use AIArmada\Affiliates\Contracts\AffiliateLookup;
+use AIArmada\Affiliates\Queries\AffiliateLookupQuery;
 use AIArmada\Affiliates\Data\AffiliateAttributionData;
 use AIArmada\Cart\Cart;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -15,7 +15,7 @@ final class AttachAffiliateFromCookie
 
     public function __construct(
         private readonly AttachAffiliateToCart $attachAffiliate,
-        private readonly AffiliateLookup $affiliateLookup,
+        private readonly AffiliateLookupQuery $affiliateLookup,
     ) {}
 
     public function handle(Cart $cart, string $cookieValue, array $context = []): ?AffiliateAttributionData

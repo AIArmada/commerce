@@ -6,7 +6,6 @@ namespace AIArmada\Affiliates;
 
 use AIArmada\Affiliates\Actions\Affiliates\ResolvePublicAffiliateReferralContext;
 use AIArmada\Affiliates\Cart\AffiliateDiscountConditionProvider;
-use AIArmada\Affiliates\Contracts\AffiliateLookup;
 use AIArmada\Affiliates\Contracts\MerchantCatalog;
 use AIArmada\Affiliates\Contracts\MerchantIdentity;
 use AIArmada\Affiliates\Contracts\MerchantLedger;
@@ -47,7 +46,6 @@ use AIArmada\Affiliates\Models\AffiliateVolumeTier;
 use AIArmada\Affiliates\Platform\ExtensionRegistry;
 use AIArmada\Affiliates\Platform\FeatureCatalog;
 use AIArmada\Affiliates\Platform\FeatureModule;
-use AIArmada\Affiliates\Resolvers\DatabaseAffiliateLookup;
 use AIArmada\Affiliates\Services\AttributionModel;
 use AIArmada\Affiliates\Services\CommissionCalculator;
 use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
@@ -124,7 +122,6 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
         }
 
         $this->app->singleton(CommissionCalculator::class);
-        $this->app->singleton(AffiliateLookup::class, DatabaseAffiliateLookup::class);
         $this->app->singleton(QualifiesForOpenApproval::class, OpenApprovalPolicy::class);
         $this->app->singleton(AttributionModel::class);
         $this->app->singleton(UplineService::class);
