@@ -62,7 +62,7 @@ describe('AffiliateRank Model', function (): void {
         $goldRank = AffiliateRank::create([
             'name' => 'Gold',
             'slug' => 'gold',
-            'level' => 1, // Lower level = higher rank
+            'level' => 3, // Higher level = higher rank
             'commission_rate_basis_points' => 2000,
         ]);
 
@@ -81,7 +81,7 @@ describe('AffiliateRank Model', function (): void {
         $goldRank = AffiliateRank::create([
             'name' => 'Gold',
             'slug' => 'gold',
-            'level' => 1,
+            'level' => 3,
             'commission_rate_basis_points' => 2000,
         ]);
 

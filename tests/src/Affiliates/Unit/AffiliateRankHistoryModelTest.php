@@ -122,14 +122,14 @@ describe('AffiliateRankHistory Model', function (): void {
         $silverRank = AffiliateRank::create([
             'name' => 'Silver',
             'slug' => 'silver-promo-' . uniqid(),
-            'level' => 2, // Lower level = higher rank
+            'level' => 2, // Higher level = higher rank
             'commission_rate_basis_points' => 1000,
         ]);
 
         $goldRank = AffiliateRank::create([
             'name' => 'Gold',
             'slug' => 'gold-promo-' . uniqid(),
-            'level' => 1,
+            'level' => 3,
             'commission_rate_basis_points' => 1500,
         ]);
 
@@ -165,7 +165,7 @@ describe('AffiliateRankHistory Model', function (): void {
         $silverRank = AffiliateRank::create([
             'name' => 'Silver',
             'slug' => 'silver-demo-' . uniqid(),
-            'level' => 4,
+            'level' => 2,
             'commission_rate_basis_points' => 1000,
         ]);
 

@@ -24,7 +24,7 @@ final readonly class QualifyAffiliateRank implements RankQualificationApi
     {
         $rank = $this->query->evaluate(Affiliate::query()->findOrFail($affiliateId));
 
-        return $rank === null ? null : new QualifiedRank((string) $rank->getKey(), $rank->name, $rank->level, $rank->currencyCode());
+        return $rank?->toQualifiedRank();
     }
 
     public function processAllRankUpgrades(bool $dryRun = false): int
@@ -112,9 +112,9 @@ final readonly class QualifyAffiliateRank implements RankQualificationApi
         $affiliate->setRelation('rank', $rank);
 
         $this->events->dispatch(new AffiliateRankChanged(
-            affiliate: $affiliate,
-            fromRank: $oldRank,
-            toRank: $rank,
+            affiliateId: (string) $affiliate->getKey(),
+            fromRank: $oldRank?->toQualifiedRank(),
+            toRank: $rank?->toQualifiedRank(),
             reason: $reason,
         ));
     }

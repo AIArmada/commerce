@@ -384,7 +384,11 @@ test('rank upgrades are processed correctly', function (): void {
     $affiliate->refresh();
     expect($affiliate->rank_id)->toBe($this->silverRank->id);
 
-    Event::assertDispatched(AffiliateRankChanged::class);
+    Event::assertDispatched(AffiliateRankChanged::class, fn (AffiliateRankChanged $event): bool => $event->affiliateId === $affiliate->id
+        && $event->fromRank?->id === $this->bronzeRank->id
+        && $event->toRank?->id === $this->silverRank->id
+        && $event->isPromotion()
+        && ! $event->isDemotion());
 });
 
 test('active downline count is correctly calculated', function (): void {

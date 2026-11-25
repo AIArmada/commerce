@@ -82,14 +82,15 @@ test('AffiliateRankChanged event allows null fromRank for initial rank', functio
     ]);
 
     $event = new AffiliateRankChanged(
-        affiliate: $affiliate,
+        affiliateId: $affiliate->id,
         fromRank: null,
-        toRank: $toRank,
+        toRank: $toRank->toQualifiedRank(),
         reason: RankQualificationReason::Initial
     );
 
     expect($event->fromRank)->toBeNull();
-    expect($event->toRank)->toBe($toRank);
+    expect($event->toRank)->toEqual($toRank->toQualifiedRank());
+    expect($event->affiliateId)->toBe($affiliate->id);
     expect($event->reason)->toBe(RankQualificationReason::Initial);
 });
 
@@ -104,30 +105,28 @@ test('AffiliateRankChanged event detects demotion correctly', function (): void 
     ]);
 
     $fromRank = AffiliateRank::create([
-        'name' => 'Silver',
-        'slug' => 'silver-2',
-        'level' => 2,
+        'name' => 'Gold',
+        'slug' => 'gold-2',
+        'level' => 3,
         'commission_rate_basis_points' => 100,
     ]);
 
     $toRank = AffiliateRank::create([
-        'name' => 'Gold',
-        'slug' => 'gold',
-        'level' => 3,
+        'name' => 'Silver',
+        'slug' => 'silver',
+        'level' => 2,
         'commission_rate_basis_points' => 200,
     ]);
 
     $event = new AffiliateRankChanged(
-        affiliate: $affiliate,
-        fromRank: $fromRank,
-        toRank: $toRank,
+        affiliateId: $affiliate->id,
+        fromRank: $fromRank->toQualifiedRank(),
+        toRank: $toRank->toQualifiedRank(),
         reason: RankQualificationReason::Qualified
     );
 
-    // Test isPromotion - lower level number means higher rank
     expect($event->isPromotion())->toBeFalse();
 
-    // Test isDemotion - toRank has higher level number (lower rank)
     expect($event->isDemotion())->toBeTrue();
 });
 
@@ -142,23 +141,23 @@ test('AffiliateRankChanged event detects promotion correctly', function (): void
     ]);
 
     $fromRank = AffiliateRank::create([
-        'name' => 'Gold',
-        'slug' => 'gold-2',
-        'level' => 3,
+        'name' => 'Silver',
+        'slug' => 'silver-2',
+        'level' => 2,
         'commission_rate_basis_points' => 200,
     ]);
 
     $toRank = AffiliateRank::create([
-        'name' => 'Silver',
-        'slug' => 'silver-3',
-        'level' => 2,
+        'name' => 'Gold',
+        'slug' => 'gold-3',
+        'level' => 3,
         'commission_rate_basis_points' => 100,
     ]);
 
     $event = new AffiliateRankChanged(
-        affiliate: $affiliate,
-        fromRank: $fromRank,
-        toRank: $toRank,
+        affiliateId: $affiliate->id,
+        fromRank: $fromRank->toQualifiedRank(),
+        toRank: $toRank->toQualifiedRank(),
         reason: RankQualificationReason::Qualified
     );
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Models;
 
+use AIArmada\Affiliates\Features\Upline\Api\QualifiedRank;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -87,14 +88,19 @@ class AffiliateRank extends Model implements Auditable
         return $this->hasMany(Affiliate::class, 'rank_id');
     }
 
+    public function toQualifiedRank(): QualifiedRank
+    {
+        return new QualifiedRank((string) $this->getKey(), $this->name, $this->level, $this->currencyCode());
+    }
+
     public function isHigherThan(self $other): bool
     {
-        return $this->level < $other->level;
+        return $this->level > $other->level;
     }
 
     public function isLowerThan(self $other): bool
     {
-        return $this->level > $other->level;
+        return $this->level < $other->level;
     }
 
     public function getOverrideRateForDepth(int $depth): int

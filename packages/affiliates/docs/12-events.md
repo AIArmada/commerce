@@ -133,8 +133,8 @@ AffiliateConversionReversed::class; // (?string $origin, ?string $sourceRef, ?st
 AffiliateProgramJoined::class;  // (AffiliateProgramMembership $membership)
 AffiliateProgramLeft::class;    // (string $affiliateId, string $programId, string $membershipId)
 
-// Rank and tier upgrades
-AffiliateRankChanged::class;    // (Affiliate $affiliate, AffiliateRank $newRank, ?AffiliateRank $previousRank)
+// Rank and tier upgrades (higher numeric level = higher rank)
+AffiliateRankChanged::class;    // (string $affiliateId, ?QualifiedRank $fromRank, ?QualifiedRank $toRank, RankQualificationReason $reason)
 AffiliateTierUpgraded::class;   // (string $affiliateId, string $programId, ?string $fromTierId, string $toTierId)
 
 // Daily aggregation finished
