@@ -22,9 +22,9 @@ final readonly class AnalyzeFraud implements FraudApi
 
     /** @param iterable<FraudRule> $rules */
     public function __construct(
+        private FraudEvidenceQuery $evidence,
         #[Tag('affiliates.fraud_rule')]
         iterable $rules = [],
-        private FraudEvidenceQuery $evidence = new FraudEvidenceQuery,
         private CountFraudClick $counter = new CountFraudClick,
         private RecordFraudFinding $record = new RecordFraudFinding,
         private FraudRiskProfileQuery $profile = new FraudRiskProfileQuery,
