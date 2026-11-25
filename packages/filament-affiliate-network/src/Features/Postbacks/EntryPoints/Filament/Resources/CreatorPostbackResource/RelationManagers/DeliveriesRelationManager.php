@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliateNetwork\Features\Postbacks\EntryPoints\Filament\Resources\CreatorPostbackResource\RelationManagers;
 
 use AIArmada\AffiliateNetwork\Data\PostbackDeliveryStatus;
-use AIArmada\AffiliateNetwork\Features\Postbacks\Actions\DeliverCreatorPostback;
+use AIArmada\AffiliateNetwork\Features\Postbacks\Api\PostbacksApi;
 use AIArmada\AffiliateNetwork\Features\Postbacks\Models\CreatorPostbackDelivery;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
@@ -68,13 +68,13 @@ final class DeliveriesRelationManager extends RelationManager
                     ->visible(fn (CreatorPostbackDelivery $record): bool => $record->status !== PostbackDeliveryStatus::Delivered)
                     ->action(function (CreatorPostbackDelivery $record): void {
                         try {
-                            $delivery = app(DeliverCreatorPostback::class)->execute((string) $record->getKey());
+                            $status = app(PostbacksApi::class)->retry((string) $record->getKey());
 
                             $notification = Notification::make()
                                 ->title('Delivery retried')
-                                ->body($delivery->status->label());
+                                ->body($status->label());
 
-                            if ($delivery->status === PostbackDeliveryStatus::Delivered) {
+                            if ($status === PostbackDeliveryStatus::Delivered) {
                                 $notification->success();
                             } else {
                                 $notification->danger();

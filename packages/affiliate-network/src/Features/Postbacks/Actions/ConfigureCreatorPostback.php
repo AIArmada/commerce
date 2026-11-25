@@ -6,18 +6,19 @@ namespace AIArmada\AffiliateNetwork\Features\Postbacks\Actions;
 
 use AIArmada\AffiliateNetwork\Data\PostbackEventType;
 use AIArmada\AffiliateNetwork\Features\Postbacks\Models\CreatorPostbackEndpoint;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use RuntimeException;
 
-final class ConfigureCreatorPostback
+final readonly class ConfigureCreatorPostback
 {
     /**
      * @param  array<string, mixed>  $data
      */
-    public function execute(string $affiliateId, array $data): CreatorPostbackEndpoint
+    public function execute(string $affiliateId, array $data, ?string $endpointId = null): CreatorPostbackEndpoint
     {
+        Validator::make(['affiliate_id' => $affiliateId], ['affiliate_id' => ['required', 'string', 'max:255']])->validate();
+
         $validated = Validator::make($data, [
             'offer_id' => ['nullable', 'string', 'max:36'],
             'url_template' => ['required', 'string', 'max:2048', 'regex:/^https?:\/\//i'],
@@ -41,15 +42,27 @@ final class ConfigureCreatorPostback
 
         $secret = $validated['signing_secret'] ?? null;
 
-        return DB::transaction(fn (): CreatorPostbackEndpoint => CreatorPostbackEndpoint::create([
-            'affiliate_id' => $affiliateId,
-            'offer_id' => $validated['offer_id'] ?? null,
-            'url_template' => $urlTemplate,
-            'http_method' => mb_strtoupper((string) $validated['http_method']),
-            'events' => $events,
-            'signing_secret_encrypted' => is_string($secret) && $secret !== '' ? encrypt($secret) : null,
-            'is_active' => (bool) ($validated['is_active'] ?? true),
-        ]));
+        return (new CreatorPostbackEndpoint)->getConnection()->transaction(function () use ($affiliateId, $endpointId, $validated, $urlTemplate, $events, $secret): CreatorPostbackEndpoint {
+            $endpoint = $endpointId === null
+                ? new CreatorPostbackEndpoint(['affiliate_id' => $affiliateId])
+                : CreatorPostbackEndpoint::query()->whereKey($endpointId)->where('affiliate_id', $affiliateId)->lockForUpdate()->firstOrFail();
+
+            $endpoint->fill([
+                'offer_id' => $validated['offer_id'] ?? null,
+                'url_template' => $urlTemplate,
+                'http_method' => mb_strtoupper((string) $validated['http_method']),
+                'events' => $events,
+                'is_active' => (bool) ($validated['is_active'] ?? true),
+            ]);
+
+            if (is_string($secret) && $secret !== '') {
+                $endpoint->signing_secret_encrypted = encrypt($secret);
+            }
+
+            $endpoint->save();
+
+            return $endpoint;
+        });
     }
 
     /**

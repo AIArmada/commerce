@@ -398,6 +398,24 @@ describe('creator postback resource', function (): void {
         expect(decrypt($endpoint->fresh()->signing_secret_encrypted))->toBe('rotated');
     });
 
+    test('editing an endpoint cannot retarget it to a different affiliate or expose ciphertext', function (): void {
+        $endpoint = CreatorPostbackEndpoint::factory()->create(['signing_secret_encrypted' => encrypt('private')]);
+        $page = (new ReflectionClass(EditCreatorPostback::class))->newInstanceWithoutConstructor();
+        $method = new ReflectionMethod(EditCreatorPostback::class, 'handleRecordUpdate');
+
+        $method->invoke($page, $endpoint, [
+            'affiliate_id' => 'different-affiliate',
+            'offer_id' => null,
+            'url_template' => 'https://example.com/hook',
+            'http_method' => 'POST',
+            'events' => ['conversion.recorded'],
+            'is_active' => true,
+        ]);
+
+        expect($endpoint->fresh()->affiliate_id)->toBe($endpoint->affiliate_id)
+            ->and($endpoint->fresh()->toArray())->not->toHaveKey('signing_secret_encrypted');
+    });
+
     test('table exposes the endpoint columns, filters, and delete actions', function (): void {
         $table = CreatorPostbacksTable::configure(Table::make(new PowerFeatureHostComponent));
 

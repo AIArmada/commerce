@@ -6,7 +6,7 @@ namespace AIArmada\FilamentAffiliateNetwork\Features\Postbacks\EntryPoints\Filam
 
 use AIArmada\AffiliateNetwork\Data\PostbackEventType;
 use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
-use AIArmada\AffiliateNetwork\Features\Postbacks\Actions\DeleteCreatorPostback;
+use AIArmada\AffiliateNetwork\Features\Postbacks\Api\PostbacksApi;
 use AIArmada\AffiliateNetwork\Features\Postbacks\Models\CreatorPostbackEndpoint;
 use AIArmada\AffiliateNetwork\Platform\ScopesByBelongsToOwner;
 use Filament\Actions;
@@ -73,7 +73,7 @@ final class CreatorPostbacksTable
                 Actions\EditAction::make(),
                 Actions\DeleteAction::make()
                     ->action(function (CreatorPostbackEndpoint $record): void {
-                        app(DeleteCreatorPostback::class)->execute((string) $record->getKey());
+                        app(PostbacksApi::class)->delete((string) $record->getKey());
                     }),
             ])
             ->bulkActions([
@@ -81,7 +81,7 @@ final class CreatorPostbacksTable
                     Actions\DeleteBulkAction::make()
                         ->action(function ($records): void {
                             foreach ($records as $record) {
-                                app(DeleteCreatorPostback::class)->execute((string) $record->getKey());
+                                app(PostbacksApi::class)->delete((string) $record->getKey());
                             }
                         }),
                 ]),

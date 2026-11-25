@@ -24,6 +24,7 @@ final class CreatorPostbackForm
                     ->schema([
                         TextInput::make('affiliate_id')
                             ->label('Affiliate ID')
+                            ->disabledOn('edit')
                             ->required()
                             ->maxLength(255),
 
