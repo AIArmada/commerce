@@ -24,6 +24,7 @@ final class FeatureModule implements FeatureModuleContract
         $app->bind(Api\PerformanceBonusPosting::class, Actions\AwardPerformanceBonuses::class);
         $app->bind(Api\PerformanceBonusQueries::class, Queries\QueryPerformanceBonuses::class);
         $app->bind(Api\ConversionMaturity::class, Actions\ProcessConversionMaturity::class);
+        $app->bind(Api\PayoutConversionIntegrity::class, Queries\ReadPayoutConversionIntegrity::class);
         $app->bind(Api\PayoutReservation::class, Actions\ReservePayoutFunds::class);
         $app->bind(Api\PayoutConversionSettlement::class, Actions\SettlePayoutConversions::class);
         $app->scoped(MerchantLedger::class, Actions\ExternalConversionLedger::class);

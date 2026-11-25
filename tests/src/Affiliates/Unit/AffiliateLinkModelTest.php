@@ -66,6 +66,19 @@ describe('AffiliateLink Model', function (): void {
             ->and($link->program->id)->toBe($program->id);
     });
 
+    it('rejects malformed and missing program references even without tenancy', function (): void {
+        config(['affiliates.owner.enabled' => false]);
+
+        foreach (['malformed', (string) \Illuminate\Support\Str::uuid()] as $programId) {
+            expect(fn () => AffiliateLink::create([
+                'affiliate_id' => $this->affiliate->id,
+                'program_id' => $programId,
+                'destination_url' => 'https://example.com/product',
+                'tracking_url' => 'https://track.example.com/go/test',
+            ]))->toThrow(\Illuminate\Auth\Access\AuthorizationException::class);
+        }
+    });
+
     it('increments clicks', function (): void {
         $link = AffiliateLink::create([
             'affiliate_id' => $this->affiliate->id,

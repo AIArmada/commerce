@@ -11,10 +11,9 @@ use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\Concerns\ScopesByAffiliateOwner;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
-use AIArmada\CommerceSupport\Support\OwnerScope;
+use AIArmada\Affiliates\Features\Programs\Api\TrackingProgramGuard;
 use AIArmada\Links\Models\Link;
 use Carbon\CarbonImmutable;
-use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -188,33 +187,12 @@ class AffiliateLink extends Model implements Auditable
 
     private static function guardProgramReference(self $link): void
     {
-        if (! (bool) config('affiliates.owner.enabled', false)) {
-            return;
+        if ($link->program_id !== null) {
+            app(TrackingProgramGuard::class)->assertReference(
+                $link->program_id,
+                spl_object_id($link->getConnection()),
+            );
         }
-
-        if ($link->program_id === null) {
-            return;
-        }
-
-        if (! self::programExistsInCurrentOrGlobalScope($link->program_id)) {
-            throw new AuthorizationException('Cross-tenant program reference is not allowed.');
-        }
-    }
-
-    private static function programExistsInCurrentOrGlobalScope(string $programId): bool
-    {
-        if (AffiliateProgram::query()->whereKey($programId)->exists()) {
-            return true;
-        }
-
-        $config = AffiliateProgram::ownerScopeConfig();
-
-        return AffiliateProgram::query()
-            ->withoutGlobalScope(OwnerScope::class)
-            ->whereKey($programId)
-            ->whereNull($config->ownerTypeColumn)
-            ->whereNull($config->ownerIdColumn)
-            ->exists();
     }
 
     /**

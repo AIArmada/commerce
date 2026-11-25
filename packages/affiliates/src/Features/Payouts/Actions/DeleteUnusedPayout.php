@@ -10,7 +10,7 @@ use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutHold;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutMethod;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutOperation;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Api\PayoutConversionIntegrity;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\PendingPayout;
 use Illuminate\Validation\ValidationException;
@@ -18,12 +18,13 @@ use LogicException;
 
 final readonly class DeleteUnusedPayout implements PayoutRemoval
 {
+    public function __construct(private PayoutConversionIntegrity $conversions) {}
+
     public function deleteUnused(string $payoutId): bool
     {
         $connection = (new AffiliatePayout)->getConnection();
 
         if ($connection !== (new AffiliatePayoutEvent)->getConnection()
-            || $connection !== (new AffiliateConversion)->getConnection()
             || $connection !== (new AffiliatePayoutOperation)->getConnection()) {
             throw new LogicException('Payout removal requires a shared database connection.');
         }
@@ -37,7 +38,7 @@ final readonly class DeleteUnusedPayout implements PayoutRemoval
                 || $payout->external_reference !== null
                 || $payout->affiliate_payout_operation_id !== null
                 || AffiliatePayoutOperation::query()->where('affiliate_payout_id', $payoutId)->exists()
-                || $payout->conversions()->exists()) {
+                || $this->conversions->hasConversions($payoutId, spl_object_id($payout->getConnection()))) {
                 throw ValidationException::withMessages(['payout' => 'A payout with financial or processing history cannot be deleted.']);
             }
 

@@ -15,6 +15,35 @@ use LogicException;
 
 final readonly class LockTrackingProgram implements TrackingProgramGuard
 {
+    public function assertReference(string $programId, int $connectionIdentity): void
+    {
+        if (! Str::isUuid($programId)) {
+            throw new AuthorizationException('Invalid program reference.');
+        }
+
+        $program = new AffiliateProgram;
+        if (spl_object_id($program->getConnection()) !== $connectionIdentity) {
+            throw new LogicException('Tracking program validation requires a shared database connection.');
+        }
+
+        $query = AffiliateProgram::query()->whereKey($programId);
+
+        if ($query->exists()) {
+            return;
+        }
+
+        if (config('affiliates.owner.enabled', false) && AffiliateProgram::query()
+            ->withoutGlobalScope(OwnerScope::class)
+            ->whereKey($programId)
+            ->whereNull($program->ownerScopeConfig()->ownerTypeColumn)
+            ->whereNull($program->ownerScopeConfig()->ownerIdColumn)
+            ->exists()) {
+            return;
+        }
+
+        throw new AuthorizationException('Cross-tenant or missing program reference is not allowed.');
+    }
+
     public function lockForTracking(string $programId, int $connectionIdentity): void
     {
         if (! Str::isUuid($programId)) {

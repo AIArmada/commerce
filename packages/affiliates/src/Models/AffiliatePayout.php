@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Models;
 
+use AIArmada\Affiliates\Features\Conversions\Api\PayoutConversionIntegrity;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutEventHistory;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutReservationReader;
 use AIArmada\Affiliates\States\PayoutStatus;
@@ -128,18 +129,18 @@ class AffiliatePayout extends Model implements Auditable
     {
         $expected = mb_strtoupper((string) $this->currency);
 
-        $foreign = $this->conversions()
-            ->distinct()
-            ->pluck('commission_currency')
-            ->map(fn (mixed $code): string => mb_strtoupper((string) $code))
-            ->reject(fn (string $code): bool => $code === '' || $code === $expected);
+        $currencies = app(PayoutConversionIntegrity::class)->currencies(
+            (string) $this->getKey(),
+            spl_object_id($this->getConnection()),
+        );
+        $foreign = array_filter($currencies, static fn (string $code): bool => $code !== $expected);
 
-        if ($foreign->isNotEmpty()) {
+        if ($foreign !== []) {
             throw new InvalidArgumentException(sprintf(
                 'Payout [%s] is %s but links %s conversions: a payout must use the same currency as its conversions.',
                 (string) $this->getKey(),
                 $expected,
-                $foreign->implode(','),
+                implode(',', $foreign),
             ));
         }
     }
@@ -238,7 +239,7 @@ class AffiliatePayout extends Model implements Auditable
                 || $payout->external_reference !== null
                 || $payout->affiliate_payout_operation_id !== null
                 || app(PayoutReservationReader::class)->hasOperations((string) $payout->getKey(), spl_object_id($payout->getConnection()))
-                || $payout->conversions()->exists()
+                || app(PayoutConversionIntegrity::class)->hasConversions((string) $payout->getKey(), spl_object_id($payout->getConnection()))
                 || app(PayoutEventHistory::class)->hasEvents((string) $payout->getKey())) {
                 throw new InvalidArgumentException('A payout with financial, processing or event history cannot be deleted directly.');
             }
