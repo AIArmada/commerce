@@ -48,7 +48,7 @@ final readonly class CalculateRuleCommission implements CommissionRuleCalculatio
         }
 
         return $connection->transaction(function () use ($affiliateId, $orderAmountMinor, $context): CommissionCalculationResult {
-            $affiliate = Affiliate::query()->forOwner()->lockForUpdate()->findOrFail($affiliateId);
+            $affiliate = Affiliate::query()->forOwner(includeGlobal: true)->lockForUpdate()->findOrFail($affiliateId);
 
             return $this->calculateForAffiliate($affiliate, $orderAmountMinor, $context);
         });

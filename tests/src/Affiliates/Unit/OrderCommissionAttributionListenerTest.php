@@ -2,11 +2,14 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Features\Attribution\Api\CartAttribution;
 use AIArmada\Affiliates\Features\Conversions\Actions\RecordAffiliateConversion;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Models\AffiliateCommissionPromotion;
+use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Orders\Events\CommissionAttributionRequired;
 use AIArmada\Orders\Models\Order;
@@ -334,4 +337,75 @@ it('records zero-value conversions for free orders without phantom money', funct
         ->and($balance->holding_minor)->toBe(0)
         ->and($balance->available_minor)->toBe(0)
         ->and($balance->lifetime_earnings_minor)->toBe(0);
+});
+
+it('does not consume a promotion twice when a conversion is replayed', function (): void {
+    $affiliate = Affiliate::create([
+        'code' => 'PROMO-RETRY',
+        'name' => 'Promotion retry',
+        'status' => Active::class,
+        'commission_type' => 'percentage',
+        'commission_rate' => 1000,
+        'currency' => 'MYR',
+    ]);
+    $program = AffiliateProgram::create([
+        'name' => 'Retry program',
+        'slug' => 'promotion-retry',
+        'status' => ProgramStatus::Active,
+        'commission_type' => 'percentage',
+        'default_commission_rate_basis_points' => 1000,
+        'cookie_lifetime_days' => 30,
+    ]);
+    $promotion = AffiliateCommissionPromotion::create([
+        'program_id' => $program->id,
+        'name' => 'Limited bonus',
+        'bonus_type' => 'flat',
+        'bonus_value' => 500,
+        'starts_at' => now()->subDay(),
+        'ends_at' => now()->addDay(),
+        'max_uses' => 3,
+    ]);
+    $cart = app('cart')->getCurrentCart();
+    app(CartAttribution::class)->attach((string) $affiliate->getKey(), $cart);
+    $cart->add('promo-retry-item', 'Order item', 10.00, 1);
+    $payload = [
+        'affiliate_id' => $affiliate->id,
+        'affiliate_program_id' => $program->id,
+        'external_reference' => 'PROMOTION-RETRY-ORDER',
+        'subtotal' => 10000,
+        'total' => 10000,
+    ];
+
+    $record = app(RecordAffiliateConversion::class);
+    $first = $record->record($cart, $payload);
+    $second = $record->record($cart, $payload);
+
+    expect($first)->not->toBeNull()
+        ->and($second->id)->toBe($first->id)
+        ->and($promotion->fresh()->current_uses)->toBe(1)
+        ->and(AffiliateConversion::query()->where('external_reference', 'PROMOTION-RETRY-ORDER')->count())->toBe(1);
+});
+
+it('does not duplicate a cart conversion after its commission rate changes', function (): void {
+    $affiliate = Affiliate::create([
+        'code' => 'REPRICE-RETRY',
+        'name' => 'Reprice retry',
+        'status' => Active::class,
+        'commission_type' => 'percentage',
+        'commission_rate' => 1000,
+        'currency' => 'MYR',
+    ]);
+    $cart = app('cart')->getCurrentCart();
+    app(CartAttribution::class)->attach((string) $affiliate->getKey(), $cart);
+    $cart->add('reprice-item', 'Order item', 10.00, 1);
+    $payload = ['affiliate_id' => $affiliate->id, 'subtotal' => 10000, 'total' => 10000];
+    $record = app(RecordAffiliateConversion::class);
+    $first = $record->record($cart, $payload);
+
+    $affiliate->update(['commission_rate' => 2000]);
+    $second = $record->record($cart, $payload);
+
+    expect($first)->not->toBeNull()
+        ->and($second->id)->toBe($first->id)
+        ->and(AffiliateConversion::query()->where('affiliate_id', $affiliate->id)->count())->toBe(1);
 });

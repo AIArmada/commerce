@@ -29,6 +29,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Stringable;
 use InvalidArgumentException;
+use LogicException;
 
 final readonly class RecordAffiliateConversion implements CartConversionRecording
 {
@@ -126,12 +127,9 @@ final readonly class RecordAffiliateConversion implements CartConversionRecordin
         $subtotalMinor = $this->resolveMinorAmount($payload['subtotal'] ?? null, fn () => $cart->subtotal()->getAmount());
         $totalMinor = $this->resolveMinorAmount($payload['total'] ?? null, fn () => $cart->total()->getAmount());
 
-        $commissionMinor = $this->resolveCommission(
-            $affiliate,
-            $subtotalMinor ?? $totalMinor ?? 0,
-            $payload,
-            $attribution,
-        );
+        // Pricing can consume a limited-use promotion. Resolve it only when
+        // there is a new conversion leg to post, after idempotency is checked.
+        $commissionMinor = null;
 
         $status = config('affiliates.commissions.default_status', PendingConversion::value());
         $statusEnum = ConversionStatus::fromString($status);
@@ -160,18 +158,88 @@ final readonly class RecordAffiliateConversion implements CartConversionRecordin
         $conversions = [];
         $firstConversion = null;
 
+        // Lock every credited identity in a stable order. Deletion and
+        // concurrent recording must serialize against the same affiliate rows.
+        $connection = (new AffiliateConversion)->getConnection();
+
+        if ($connection !== $affiliate->getConnection()) {
+            throw new LogicException('Conversion recording requires a shared affiliate database connection.');
+        }
+
+        $ids = array_values(array_unique([(string) $affiliate->getKey(), ...array_map('strval', array_keys($weights))]));
+        $locked = Affiliate::query()->forOwner(includeGlobal: true)->whereKey($ids)->orderBy('id')->lockForUpdate()->get()->keyBy('id');
+        $affiliate = $locked->get((string) $affiliate->getKey());
+
+        if (! $affiliate instanceof Affiliate || $locked->count() !== count($ids)) {
+            throw new InvalidArgumentException('A conversion beneficiary is missing or outside the current owner scope.');
+        }
+
+        $explicitIdempotencyKey = $payload['idempotency_key'] ?? null;
+
+        if ($explicitIdempotencyKey !== null
+            && (! is_string($explicitIdempotencyKey)
+                || mb_trim($explicitIdempotencyKey) === ''
+                || mb_strlen($explicitIdempotencyKey) > 64)) {
+            throw new InvalidArgumentException('Explicit conversion idempotency keys must be non-empty strings up to 64 characters.');
+        }
+
+
         foreach ($weights as $affiliateId => $weight) {
             $weight = max(0, (float) $weight);
-            $portionCommission = (int) round($commissionMinor * $weight);
             $portionRevenue = (int) round(($totalMinor ?? 0) * $weight);
-            $beneficiary = $affiliateId === $affiliate->getKey()
-                ? $affiliate
-                : $this->findAffiliateById($affiliateId);
+            $beneficiary = $locked->get((string) $affiliateId);
 
-            if ($beneficiary instanceof Affiliate && ! $beneficiary->isCommercialPurpose()) {
-                $portionCommission = 0;
+            if (! $beneficiary instanceof Affiliate) {
+                throw new LogicException('A locked conversion beneficiary is unavailable.');
             }
 
+            $affiliateId = (string) $beneficiary->getKey();
+            $ownerType = $beneficiary->owner_type;
+            $ownerId = $beneficiary->owner_id;
+
+            $idempotencyKey = is_string($explicitIdempotencyKey)
+                ? hash('sha256', implode('|', [
+                    'affiliate-conversion',
+                    $ownerType ?? 'global',
+                    $ownerId ?? 'global',
+                    $affiliateId,
+                    mb_trim($explicitIdempotencyKey),
+                ]))
+                : $this->resolveIdempotencyKey(
+                    $externalReference,
+                    $affiliateId,
+                    $conversionType,
+                    $channel,
+                    $ownerType,
+                    $ownerId,
+                    $cart,
+                    $subtotalMinor,
+                    $totalMinor,
+                );
+
+            $existing = AffiliateConversion::query()->forOwner(includeGlobal: true)
+                ->where('idempotency_key', $idempotencyKey)->first();
+
+            if ($existing instanceof AffiliateConversion) {
+                $existingData = $existing->toData();
+                $firstConversion ??= $existingData;
+
+                if ($this->shouldDispatch('dispatch_conversion')) {
+                    $this->events->dispatch(new AffiliateConversionRecorded($existingData));
+                }
+
+                continue;
+            }
+
+            $commissionMinor ??= $this->resolveCommission(
+                $affiliate,
+                $subtotalMinor ?? $totalMinor ?? 0,
+                $payload,
+                $attribution,
+            );
+            $portionCommission = $beneficiary->isCommercialPurpose()
+                ? (int) round($commissionMinor * $weight)
+                : 0;
             $conversionMetadata = $this->buildConversionMetadata(
                 $payload['metadata'] ?? [],
                 $weight,
@@ -179,12 +247,9 @@ final readonly class RecordAffiliateConversion implements CartConversionRecordin
                 $payload['subject_title_snapshot'] ?? $attribution?->subject_title_snapshot,
             );
 
-            $affiliateId = (string) ($beneficiary?->getKey() ?? $affiliateId);
-            $ownerType = $beneficiary?->owner_type ?? $affiliate->owner_type;
-            $ownerId = $beneficiary?->owner_id ?? $affiliate->owner_id;
             $conversionAttributes = [
-                'affiliate_id' => $beneficiary?->getKey() ?? $affiliateId,
-                'affiliate_code' => $beneficiary?->code ?? $affiliate->code,
+                'affiliate_id' => $affiliateId,
+                'affiliate_code' => $beneficiary->code,
                 'affiliate_attribution_id' => $attribution?->getKey(),
                 'affiliate_link_id' => $payload['affiliate_link_id'] ?? $attribution?->affiliate_link_id,
                 'affiliate_program_id' => $payload['affiliate_program_id'] ?? $attribution?->affiliate_program_id,
@@ -214,36 +279,6 @@ final readonly class RecordAffiliateConversion implements CartConversionRecordin
                 'occurred_at' => $payload['occurred_at'] ?? CarbonImmutable::now(),
                 'approved_at' => $autoApprove ? CarbonImmutable::now() : null,
             ];
-
-            $explicitIdempotencyKey = $payload['idempotency_key'] ?? null;
-
-            if ($explicitIdempotencyKey !== null
-                && (! is_string($explicitIdempotencyKey)
-                    || mb_trim($explicitIdempotencyKey) === ''
-                    || mb_strlen($explicitIdempotencyKey) > 64)) {
-                throw new InvalidArgumentException('Explicit conversion idempotency keys must be non-empty strings up to 64 characters.');
-            }
-
-            $idempotencyKey = is_string($explicitIdempotencyKey)
-                ? hash('sha256', implode('|', [
-                    'affiliate-conversion',
-                    $ownerType ?? 'global',
-                    $ownerId ?? 'global',
-                    $affiliateId,
-                    mb_trim($explicitIdempotencyKey),
-                ]))
-                : $this->resolveIdempotencyKey(
-                    $externalReference,
-                    $affiliateId,
-                    $conversionType,
-                    $channel,
-                    $ownerType,
-                    $ownerId,
-                    $cart,
-                    $subtotalMinor,
-                    $totalMinor,
-                    $portionCommission,
-                );
 
             if (is_string($explicitIdempotencyKey)) {
                 $conversionAttributes['metadata']['caller_idempotency_key'] = mb_trim($explicitIdempotencyKey);
@@ -305,7 +340,7 @@ final readonly class RecordAffiliateConversion implements CartConversionRecordin
      */
     private function createIdempotent(array $attributes): AffiliateConversion
     {
-        $existing = AffiliateConversion::query()
+        $existing = AffiliateConversion::query()->forOwner(includeGlobal: true)
             ->where('idempotency_key', $attributes['idempotency_key'])
             ->first();
 
@@ -328,7 +363,7 @@ final readonly class RecordAffiliateConversion implements CartConversionRecordin
                 throw $exception;
             }
 
-            $existing = AffiliateConversion::query()
+            $existing = AffiliateConversion::query()->forOwner(includeGlobal: true)
                 ->where('idempotency_key', $attributes['idempotency_key'])
                 ->firstOrFail();
             $existing->wasRecentlyCreated = false;
@@ -391,17 +426,6 @@ final readonly class RecordAffiliateConversion implements CartConversionRecordin
         $scale = max(1, (int) config('affiliates.currency.percentage_scale', 100));
 
         return (int) max(0, round(($baseAmount * $value) / ($scale * 100)));
-    }
-
-    private function findAffiliateById(string $affiliateId): ?Affiliate
-    {
-        $query = Affiliate::query();
-
-        if (config('affiliates.owner.enabled', false)) {
-            $query->forOwner(includeGlobal: true);
-        }
-
-        return $query->find($affiliateId);
     }
 
     private function resolveAttribution(Cart $cart, array $payload): ?AffiliateAttribution
@@ -509,7 +533,6 @@ final readonly class RecordAffiliateConversion implements CartConversionRecordin
         Cart $cart,
         ?int $subtotalMinor,
         ?int $totalMinor,
-        int $commissionMinor,
     ): string {
         if (is_string($externalReference) && mb_trim($externalReference) !== '') {
             $seed = 'ref:' . $externalReference;
@@ -520,7 +543,6 @@ final readonly class RecordAffiliateConversion implements CartConversionRecordin
                 $cart->instance(),
                 $subtotalMinor ?? 0,
                 $totalMinor ?? 0,
-                $commissionMinor,
             ]);
         }
 
