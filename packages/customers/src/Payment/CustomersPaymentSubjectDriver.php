@@ -9,6 +9,8 @@ use AIArmada\CommerceSupport\Contracts\Payment\PaymentCustomerData;
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentSubjectContext;
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentSubjectDriverInterface;
 use AIArmada\CommerceSupport\Contracts\Payment\ResolvedPaymentSubject;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Services\CustomerResolver;
@@ -31,46 +33,58 @@ final class CustomersPaymentSubjectDriver implements PaymentSubjectDriverInterfa
 
     public function supports(PaymentSubjectContext $context): bool
     {
-        return $context->subject instanceof Customer
-            || $context->sessionCustomer instanceof Customer
+        return $this->isCustomerReference($context->subject)
+            || $this->isCustomerReference($context->sessionCustomer)
             || $context->actor !== null
             || $this->resolveEmail($context) !== null;
     }
 
     public function resolve(PaymentSubjectContext $context): ?ResolvedPaymentSubject
     {
-        $sessionCustomer = $context->subject instanceof Customer
-            ? $context->subject
-            : ($context->sessionCustomer instanceof Customer ? $context->sessionCustomer : null);
-        $owner = $context->owner;
+        $owner = EloquentRecordReference::resolve($context->owner);
 
-        $customer = $this->shouldResolveWithoutPersistence($context)
-            ? $this->customerResolver->resolveExisting(
-                user: $context->actor,
-                sessionCustomer: $sessionCustomer,
-                billingData: $context->billingData,
-                shippingData: $context->shippingData,
-                owner: $owner,
-            )
-            : $this->customerResolver->resolve(
-                user: $context->actor,
-                sessionCustomer: $sessionCustomer,
-                billingData: $context->billingData,
-                shippingData: $context->shippingData,
-                owner: $owner,
-            );
+        $customer = OwnerContext::withOwner($owner, function () use ($context, $owner): ?Customer {
+            $reference = $this->isCustomerReference($context->subject)
+                ? $context->subject
+                : $context->sessionCustomer;
+            $sessionCustomer = $this->isCustomerReference($reference)
+                ? EloquentRecordReference::resolve($reference)
+                : null;
+            $actor = EloquentRecordReference::resolve($context->actor?->reference);
+
+            return $this->shouldResolveWithoutPersistence($context)
+                ? $this->customerResolver->resolveExisting(
+                    user: $actor,
+                    sessionCustomer: $sessionCustomer instanceof Customer ? $sessionCustomer : null,
+                    billingData: $context->billingData,
+                    shippingData: $context->shippingData,
+                    owner: $owner,
+                )
+                : $this->customerResolver->resolve(
+                    user: $actor,
+                    sessionCustomer: $sessionCustomer instanceof Customer ? $sessionCustomer : null,
+                    billingData: $context->billingData,
+                    shippingData: $context->shippingData,
+                    owner: $owner,
+                );
+        });
 
         if ($customer === null) {
             return null;
         }
 
         return new ResolvedPaymentSubject(
-            subject: $customer,
+            subject: EloquentRecordReference::fromModel($customer),
             paymentCustomer: OwnerContext::withOwner($owner, fn (): PaymentCustomerData => $this->toPaymentCustomer($customer, $context)),
             isGuest: $customer->isGuest(),
             resolvedBy: $this->getIdentifier(),
             metadata: $context->metadata,
         );
+    }
+
+    private function isCustomerReference(?RecordReference $reference): bool
+    {
+        return $reference !== null && $reference->type === (new Customer)->getMorphClass();
     }
 
     private function shouldResolveWithoutPersistence(PaymentSubjectContext $context): bool
@@ -145,7 +159,7 @@ final class CustomersPaymentSubjectDriver implements PaymentSubjectDriverInterfa
     {
         return $this->cleanString($context->billingData['email'] ?? null)
             ?? $this->cleanString($context->shippingData['email'] ?? null)
-            ?? $this->cleanString($context->actor?->getAttribute('email'));
+            ?? $this->cleanString($context->actor?->email);
     }
 
     private function resolveCustomerEmail(Customer $customer): ?string

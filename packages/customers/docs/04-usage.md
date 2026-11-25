@@ -163,7 +163,7 @@ use AIArmada\Customers\Services\CustomerResolver;
 
 $customer = app(CustomerResolver::class)->resolve(
     user: auth()->user(),
-    sessionCustomer: $checkoutSession->customer,
+    sessionCustomer: EloquentRecordReference::fromModel($checkoutSession->customer),
     billingData: $checkoutSession->billing_data ?? [],
     shippingData: $checkoutSession->shipping_data ?? [],
 );
@@ -205,14 +205,15 @@ When checkout calls the driver from `checkout.resolve_customer`, the driver stay
 
 ```php
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentSubjectContext;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentSubjectResolverInterface;
 
 $resolved = app(PaymentSubjectResolverInterface::class)->resolve(
     new PaymentSubjectContext(
         gateway: 'cashier-chip',
         actor: auth()->user(),
-        sessionCustomer: $checkoutSession->customer,
-        sessionBillable: $checkoutSession->billable,
+        sessionCustomer: EloquentRecordReference::fromModel($checkoutSession->customer),
+        sessionBillable: EloquentRecordReference::fromModel($checkoutSession->billable),
         billingData: $checkoutSession->billing_data ?? [],
         shippingData: $checkoutSession->shipping_data ?? [],
         metadata: ['checkout_session_id' => $checkoutSession->id],
