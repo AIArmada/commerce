@@ -9,10 +9,6 @@ use AIArmada\AffiliateNetwork\Data\NetworkAffiliate;
 use AIArmada\AffiliateNetwork\Drivers\UserKeyIdentityDriver;
 use AIArmada\Affiliates\Contracts\MerchantIdentity;
 use AIArmada\Affiliates\Data\MerchantAffiliate;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Eloquent\Relations\Relation;
 
 final class AffiliatesIdentityDriver implements AffiliateIdentityResolver
@@ -39,31 +35,9 @@ final class AffiliatesIdentityDriver implements AffiliateIdentityResolver
             return $this->find($affiliateId);
         }
 
-        try {
-            $affiliate = OwnerWriteGuard::findOrFailForOwner(
-                Affiliate::class,
-                $affiliateId,
-                includeGlobal: false,
-                message: 'Affiliate is not accessible in the current owner scope.',
-            );
-        } catch (AuthorizationException) {
-            return null;
-        } catch (ModelNotFoundException) {
-            return $this->users->findAccessible($affiliateId);
-        }
+        $merchant = $this->merchants->findAccessible($affiliateId);
 
-        if (! $affiliate instanceof Affiliate) {
-            return null;
-        }
-
-        return new NetworkAffiliate(
-            id: (string) $affiliate->getKey(),
-            code: (string) $affiliate->code,
-            handle: (string) $affiliate->handle,
-            email: $affiliate->contact_email,
-            ownerType: $affiliate->owner_type,
-            ownerId: $affiliate->owner_id,
-        );
+        return $merchant === null ? null : $this->toNetworkAffiliate($merchant);
     }
 
     public function requiresMerchantProfile(): bool

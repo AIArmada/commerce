@@ -215,6 +215,12 @@ describe('merchant seam', function (): void {
             ->toBe((string) $affiliateA->getKey())
             ->and(OwnerContext::withOwner($ownerB, fn (): ?string => $identities->findIdForEmail($email)))
             ->toBe((string) $affiliateB->getKey())
+            ->and(OwnerContext::withOwner($ownerA, fn () => $identities->findAccessible((string) $affiliateA->getKey()))?->id)
+            ->toBe((string) $affiliateA->getKey())
+            ->and(OwnerContext::withOwner($ownerA, fn () => $identities->findAccessible((string) $affiliateB->getKey())))
+            ->toBeNull()
+            ->and(OwnerContext::withOwner($ownerA, fn () => $identities->findAccessible((string) Str::uuid())))
+            ->toBeNull()
             ->and($unverifiedMethod->is_verified)
             ->toBeFalse();
     });

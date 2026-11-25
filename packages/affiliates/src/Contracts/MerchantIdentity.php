@@ -16,6 +16,9 @@ interface MerchantIdentity
 {
     public function find(string $id): ?MerchantAffiliate;
 
+    /** Resolve only within the current owner scope. */
+    public function findAccessible(string $id): ?MerchantAffiliate;
+
     /**
      * Resolve an Active affiliate id by verified contact email.
      */

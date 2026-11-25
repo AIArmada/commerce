@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Services;
+namespace AIArmada\Affiliates\Features\Identity\Queries;
 
 use AIArmada\Affiliates\Contracts\MerchantIdentity;
 use AIArmada\Affiliates\Data\MerchantAffiliate;
@@ -10,6 +10,8 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScope;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
@@ -19,13 +21,32 @@ use Illuminate\Database\Eloquent\Builder;
  * Active affiliates, preferring the current owner when one is resolved.
  * Unknown ids resolve to null — recognition never gates.
  */
-final class MerchantIdentityService implements MerchantIdentity
+final class MerchantAffiliateQuery implements MerchantIdentity
 {
     public function find(string $id): ?MerchantAffiliate
     {
         $affiliate = Affiliate::query()->withoutOwnerScope()->whereKey($id)->first();
 
         return $affiliate instanceof Affiliate ? self::toMerchantAffiliate($affiliate) : null;
+    }
+
+    public function findAccessible(string $id): ?MerchantAffiliate
+    {
+        if (! config('affiliates.owner.enabled', false)) {
+            return $this->find($id);
+        }
+
+        try {
+            $affiliate = OwnerWriteGuard::findOrFailForOwner(
+                Affiliate::class,
+                $id,
+                includeGlobal: false,
+            );
+        } catch (AuthorizationException) {
+            return null;
+        }
+
+        return self::toMerchantAffiliate($affiliate);
     }
 
     public function findIdForEmail(string $email): ?string
