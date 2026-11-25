@@ -179,7 +179,7 @@ test('top performer threshold compares in its declared currency', function (): v
     denominationsConversion($affiliate, 40000, 'ORD-DENOM-005');
 
     $bonuses = app(PerformanceBonusCalculation::class)->calculatePerformanceBonuses(
-        CommissionRuleType::TopPerformer,
+        CommissionRuleType::TopPerformer->value,
         CarbonImmutable::now()->startOfMonth(),
         CarbonImmutable::now()->endOfMonth(),
     );
@@ -206,7 +206,7 @@ test('growth previous-revenue floor compares in its declared currency', function
     denominationsConversion($affiliate, 80000, 'ORD-DENOM-006B');
 
     $bonuses = app(PerformanceBonusCalculation::class)->calculatePerformanceBonuses(
-        CommissionRuleType::Growth,
+        CommissionRuleType::Growth->value,
         CarbonImmutable::now()->startOfMonth(),
         CarbonImmutable::now()->endOfMonth(),
     );

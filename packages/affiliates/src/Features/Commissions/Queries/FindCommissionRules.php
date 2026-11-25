@@ -40,7 +40,7 @@ final class FindCommissionRules implements CommissionRulePreview
             $winner = $rules->first(static fn (AffiliateCommissionRule $rule): bool => $rule->matches($context));
             $quotes[] = $winner === null ? null : new CommissionRuleQuote(
                 (string) $winner->getKey(),
-                $winner->commission_type,
+                $winner->commission_type->value,
                 $winner->commission_value,
             );
         }

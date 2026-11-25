@@ -31,11 +31,13 @@ final class CalculatePerformanceBonuses implements PerformanceBonusCalculation
      * @return list<array{bonus_type: string, affiliate_id: string, affiliate_name: string, amount_minor: int, reason: string, metrics: array<string, mixed>}>
      */
     public function calculatePerformanceBonuses(
-        CommissionRuleType $type,
+        string $type,
         CarbonImmutable $from,
         CarbonImmutable $to,
         bool $includeGlobal = false,
     ): array {
+        $type = CommissionRuleType::from($type);
+
         if ($from->greaterThan($to)) {
             throw new InvalidArgumentException('Performance bonus start must not exceed the end.');
         }

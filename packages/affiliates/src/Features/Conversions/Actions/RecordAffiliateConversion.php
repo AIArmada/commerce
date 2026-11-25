@@ -411,7 +411,7 @@ final readonly class RecordAffiliateConversion implements CartConversionRecordin
             return $result->finalCommissionMinor;
         }
 
-        return $this->commissionPricing->calculateBase($affiliate->commission_type, $affiliate->commission_rate, $baseAmount);
+        return $this->commissionPricing->calculateBase($affiliate->commission_type->value, $affiliate->commission_rate, $baseAmount);
     }
 
     private function calculateVoucherCommission(array $override, int $baseAmount): int

@@ -52,7 +52,7 @@ use AIArmada\Affiliates\Platform\ExtensionRegistry;
 use AIArmada\Affiliates\Platform\FeatureCatalog;
 use AIArmada\Affiliates\Platform\FeatureModule;
 use AIArmada\Affiliates\Support\Integrations\CartBridge;
-use AIArmada\Affiliates\Support\Integrations\VoucherIntegrationRegistrar;
+use AIArmada\Affiliates\Features\Attribution\EntryPoints\Listeners\VoucherIntegrationRegistrar;
 use AIArmada\Affiliates\Support\Middleware\CaptureAffiliateReferralFromPath;
 use AIArmada\Affiliates\Support\Middleware\HydratePublicAffiliateReferralContext;
 use AIArmada\Affiliates\Support\Middleware\TrackAffiliateCookie;

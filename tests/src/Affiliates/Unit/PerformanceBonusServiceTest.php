@@ -495,7 +495,7 @@ describe('PerformanceBonusQueries', function (): void {
             ]);
 
             $bonuses = app(PerformanceBonusCalculation::class)->calculatePerformanceBonuses(
-                CommissionRuleType::Growth,
+                CommissionRuleType::Growth->value,
                 CarbonImmutable::now()->startOfMonth()->toImmutable(),
                 CarbonImmutable::now()->endOfMonth()->toImmutable(),
             );

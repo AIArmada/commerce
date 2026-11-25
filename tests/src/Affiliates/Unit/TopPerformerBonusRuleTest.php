@@ -80,7 +80,7 @@ it('keeps top performer bonuses inside the current owner scope', function (): vo
     }
 
     $bonuses = OwnerContext::withOwner($ownerA, fn (): array => app(PerformanceBonusCalculation::class)->calculatePerformanceBonuses(
-        CommissionRuleType::TopPerformer,
+        CommissionRuleType::TopPerformer->value,
         CarbonImmutable::now()->startOfMonth(),
         CarbonImmutable::now()->endOfMonth(),
     ));
@@ -149,13 +149,13 @@ it('honors the caller include global flag instead of overriding it from config',
     $to = CarbonImmutable::now()->endOfMonth();
 
     $scoped = OwnerContext::withOwner($owner, fn (): array => $engine->calculatePerformanceBonuses(
-        CommissionRuleType::TopPerformer,
+        CommissionRuleType::TopPerformer->value,
         $from,
         $to,
         false,
     ));
     $withGlobal = OwnerContext::withOwner($owner, fn (): array => $engine->calculatePerformanceBonuses(
-        CommissionRuleType::TopPerformer,
+        CommissionRuleType::TopPerformer->value,
         $from,
         $to,
         true,
@@ -179,7 +179,7 @@ it('fails closed without an owner context when owner mode is enabled', function 
     });
 
     expect(fn () => app(PerformanceBonusCalculation::class)->calculatePerformanceBonuses(
-        CommissionRuleType::TopPerformer,
+        CommissionRuleType::TopPerformer->value,
         CarbonImmutable::now()->startOfMonth(),
         CarbonImmutable::now()->endOfMonth(),
     ))->toThrow(RuntimeException::class, 'owner context or explicit global context');

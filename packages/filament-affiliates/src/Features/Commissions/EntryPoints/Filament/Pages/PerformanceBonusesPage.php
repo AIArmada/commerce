@@ -238,7 +238,7 @@ final class PerformanceBonusesPage extends Page implements HasForms, HasTable
         $bonuses = [];
 
         foreach (CommissionRuleType::performanceBonusCases() as $type) {
-            foreach ($engine->calculatePerformanceBonuses($type, $from, $to) as $bonus) {
+            foreach ($engine->calculatePerformanceBonuses($type->value, $from, $to) as $bonus) {
                 $bonuses[] = $bonus;
             }
         }

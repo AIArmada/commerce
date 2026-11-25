@@ -13,7 +13,7 @@ use AIArmada\Affiliates\Features\Conversions\EntryPoints\Listeners\NotifyConvers
 use AIArmada\Affiliates\Features\Programs\EntryPoints\Listeners\NotifyProgramJoined;
 use AIArmada\Affiliates\Features\Conversions\EntryPoints\Listeners\RecordCommissionForOrder;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Support\Integrations\VoucherIntegrationRegistrar;
+use AIArmada\Affiliates\Features\Attribution\EntryPoints\Listeners\VoucherIntegrationRegistrar;
 use AIArmada\Affiliates\Support\Middleware\CaptureAffiliateReferralFromPath;
 use AIArmada\Affiliates\Support\Middleware\HydratePublicAffiliateReferralContext;
 use AIArmada\Affiliates\Support\Middleware\TrackAffiliateCookie;

@@ -161,7 +161,7 @@ test('performance leaderboard breaks revenue ties by affiliate id', function ():
     }
 
     $bonuses = app(PerformanceBonusCalculation::class)->calculatePerformanceBonuses(
-        CommissionRuleType::TopPerformer,
+        CommissionRuleType::TopPerformer->value,
         CarbonImmutable::now()->startOfMonth(),
         CarbonImmutable::now()->endOfMonth(),
     );

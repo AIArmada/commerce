@@ -155,7 +155,7 @@ describe('multicurrency threshold comparisons', function (): void {
         recordThresholdConversion($affiliate, 235000, 'MYR', 'GRO-CUR-MYR', $from->addDays(6));
 
         $bonuses = app(PerformanceBonusCalculation::class)->calculatePerformanceBonuses(
-            CommissionRuleType::Growth,
+            CommissionRuleType::Growth->value,
             $from,
             $to
         );
@@ -183,7 +183,7 @@ describe('multicurrency threshold comparisons', function (): void {
         recordThresholdConversion($myrAffiliate, 470000, 'MYR', 'TOP-MYR-1', $from->addDays(5));
 
         $bonuses = app(PerformanceBonusCalculation::class)->calculatePerformanceBonuses(
-            CommissionRuleType::TopPerformer,
+            CommissionRuleType::TopPerformer->value,
             $from,
             $to
         );

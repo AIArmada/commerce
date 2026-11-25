@@ -145,7 +145,7 @@ final readonly class ProgramCatalogQuery implements MerchantCatalog
                 ? ['commission_type' => 'fixed', 'rate_bp' => null, 'fixed_minor' => (int) $program->default_commission_rate_basis_points]
                 : ['commission_type' => 'percentage', 'rate_bp' => (int) $program->default_commission_rate_basis_points, 'fixed_minor' => null];
         } else {
-            $effective = $winner->commissionType === CommissionType::Fixed
+            $effective = $winner->commissionType === CommissionType::Fixed->value
                 ? ['commission_type' => 'fixed', 'rate_bp' => null, 'fixed_minor' => (int) $winner->value]
                 : ['commission_type' => 'percentage', 'rate_bp' => (int) $winner->value, 'fixed_minor' => null];
         }

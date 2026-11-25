@@ -9,9 +9,9 @@ use AIArmada\Affiliates\Features\Commissions\Api\CommissionPricing;
 
 final class CalculateCommissionPricing implements CommissionPricing
 {
-    public function calculateBase(CommissionType $type, int $rate, int $subtotalMinor): int
+    public function calculateBase(string $type, int $rate, int $subtotalMinor): int
     {
-        if ($type === CommissionType::Fixed) {
+        if (CommissionType::from($type) === CommissionType::Fixed) {
             return $this->clamp($rate);
         }
 

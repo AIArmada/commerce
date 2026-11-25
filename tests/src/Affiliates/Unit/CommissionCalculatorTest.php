@@ -31,7 +31,7 @@ test('percentage commissions respect basis points precision', function (): void 
         'commission_rate' => 1250, // 12.50%
     ]);
 
-    $commission = app(CommissionPricing::class)->calculateBase($affiliate->commission_type, $affiliate->commission_rate, 20_00);
+    $commission = app(CommissionPricing::class)->calculateBase($affiliate->commission_type->value, $affiliate->commission_rate, 20_00);
 
     expect($commission)->toBe(250);
 });
@@ -42,7 +42,7 @@ test('fixed commissions return static minor units', function (): void {
         'commission_rate' => 1234,
     ]);
 
-    $commission = app(CommissionPricing::class)->calculateBase($affiliate->commission_type, $affiliate->commission_rate, 99_99);
+    $commission = app(CommissionPricing::class)->calculateBase($affiliate->commission_type->value, $affiliate->commission_rate, 99_99);
 
     expect($commission)->toBe(1234);
 });

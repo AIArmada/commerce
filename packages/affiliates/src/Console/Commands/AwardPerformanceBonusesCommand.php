@@ -100,7 +100,7 @@ final class AwardPerformanceBonusesCommand extends Command
 
         foreach ($types as $bonusType) {
             try {
-                $bonuses = $this->engine->calculatePerformanceBonuses($bonusType, $from, $to);
+                $bonuses = $this->engine->calculatePerformanceBonuses($bonusType->value, $from, $to);
             } catch (Throwable) {
                 $summary['errors']++;
 
