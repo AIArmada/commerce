@@ -117,6 +117,8 @@ test('payout integrity sees conversions hidden by the current owner scope', func
     OwnerContext::withOwner($ownerA, function () use ($payout): void {
         expect(fn () => $payout->assertHomogeneousConversions())->toThrow(InvalidArgumentException::class, 'same currency');
 
+        expect(fn () => $payout->assertSingleAffiliateConversions())->toThrow(InvalidArgumentException::class, 'one affiliate');
+
         $integrity = app(PayoutConversionIntegrity::class);
         expect($integrity->hasConversions($payout->id, spl_object_id($payout->getConnection())))->toBeTrue();
     });

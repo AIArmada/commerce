@@ -27,6 +27,20 @@ final readonly class ReadPayoutConversionIntegrity implements PayoutConversionIn
             ->all();
     }
 
+    public function affiliateIds(string $payoutId, int $connectionIdentity, ?string $exceptConversionId = null): array
+    {
+        $query = $this->linked($payoutId, $connectionIdentity);
+
+        if ($exceptConversionId !== null) {
+            $query->whereKeyNot($exceptConversionId);
+        }
+
+        return $query->distinct()->pluck('affiliate_id')
+            ->map(static fn (mixed $id): string => (string) $id)
+            ->values()
+            ->all();
+    }
+
     /** @return Builder<AffiliateConversion> */
     private function linked(string $payoutId, int $connectionIdentity): Builder
     {

@@ -152,13 +152,11 @@ class AffiliatePayout extends Model implements Auditable
         ?AffiliateConversion $conversion = null,
         Model | string | null $owner = OwnerContext::CURRENT,
     ): void {
-        $query = $this->conversions()->forOwner($owner);
-
-        if ($conversion?->exists && $conversion->getKey() !== null) {
-            $query->whereKeyNot($conversion->getKey());
-        }
-
-        $affiliateIds = $query->distinct()->pluck('affiliate_id');
+        $affiliateIds = collect(app(PayoutConversionIntegrity::class)->affiliateIds(
+            (string) $this->getKey(),
+            spl_object_id($this->getConnection()),
+            $conversion?->exists ? (string) $conversion->getKey() : null,
+        ));
 
         if ($conversion instanceof AffiliateConversion) {
             $affiliateIds->push($conversion->affiliate_id);
