@@ -17,7 +17,8 @@
     "table:affiliates": [
       "AIArmada\\Affiliates\\Features\\Identity\\Actions\\TransitionAffiliateStatus",
       "AIArmada\\Affiliates\\Features\\Identity\\Actions\\ClaimAffiliateIdentity",
-      "AIArmada\\Affiliates\\Features\\Identity\\Actions\\UpdatePortalProfile"
+      "AIArmada\\Affiliates\\Features\\Identity\\Actions\\UpdatePortalProfile",
+      "AIArmada\\Affiliates\\Features\\Identity\\Actions\\AdministerAffiliate"
     ]
   },
   "extensions": {}

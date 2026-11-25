@@ -42,7 +42,7 @@ keywords:
 
 ## Key surfaces
 - Resources: `AffiliateCommissionTemplateResource`, `AffiliateConversionResource`, `AffiliateCreativeResource`, `AffiliateFraudSignalResource`, `AffiliateLinkResource`, `AffiliatePayoutResource`, `AffiliateProgramResource`, `AffiliateRankHistoryResource`, `AffiliateRankResource`, `AffiliateResource`, `AffiliateSupportTicketResource`, `AffiliateTaxDocumentResource`, `AffiliateTouchpointResource`, `AffiliateUplineResource`, `AffiliateVolumeTierResource`
-- Actions/Services: `Actions/BulkFraudReviewAction`, `Actions/BulkPayoutAction`, `Actions/ProcessAffiliatePayout`, `Actions/ResolveAffiliateLinkedOwner`, `Actions/UpdateAffiliateFraudSignalStatus`, `Actions/ValidateAffiliateParentAssignment`, `Services/AffiliateStatsAggregator`, `Services/PayoutExportService`
+- Actions/Services: `Actions/BulkFraudReviewAction`, `Actions/BulkPayoutAction`, `Actions/ProcessAffiliatePayout`, `Actions/UpdateAffiliateFraudSignalStatus`, `Services/AffiliateStatsAggregator`, `Services/PayoutExportService`
 - Conversions table: origin/source-ref provenance columns + reverse row action (`Tables/AffiliateConversionsTable::reverse`)
 - Config `filament-affiliates.php`: `navigation`, `group`, `widgets`, `currency`, `features`, `admin`, `conversions`, `payouts`, `programs`, `commission_management`
 

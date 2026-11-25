@@ -2,9 +2,8 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Actions;
+namespace AIArmada\Affiliates\Features\Identity\Queries;
 
-use AIArmada\Affiliates\Models\Affiliate;
 use Illuminate\Foundation\Auth\User;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -24,7 +23,7 @@ final class ResolveAffiliateLinkedOwner
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
-    public function handle(array $data, ?Affiliate $record = null): array
+    public function handle(array $data): array
     {
         $linkedUserId = $data['linked_user'] ?? null;
 

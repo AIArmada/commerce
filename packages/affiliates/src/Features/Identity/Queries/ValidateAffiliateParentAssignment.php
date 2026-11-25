@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Actions;
+namespace AIArmada\Affiliates\Features\Identity\Queries;
 
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
@@ -96,12 +96,16 @@ final class ValidateAffiliateParentAssignment
     private function ensureNoHierarchyCycle(Affiliate $record, Affiliate $candidateParent): void
     {
         $current = $candidateParent;
+        $visited = [];
 
         while ($current instanceof Affiliate) {
-            if ((string) $current->getKey() === (string) $record->getKey()) {
+            $id = (string) $current->getKey();
+
+            if ($id === (string) $record->getKey() || isset($visited[$id])) {
                 throw $this->validationException('Selected parent affiliate would create a hierarchy cycle.');
             }
 
+            $visited[$id] = true;
             $current = $current->parent;
         }
     }

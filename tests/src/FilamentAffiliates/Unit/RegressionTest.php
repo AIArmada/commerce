@@ -24,7 +24,7 @@ use AIArmada\Authz\Features\Authorization\Models\Permission;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAffiliates\Features\Commissions\EntryPoints\Filament\Pages\ManageAffiliateCommissionSettings;
 use AIArmada\FilamentAffiliates\Features\Fraud\EntryPoints\Filament\Resources\AffiliateFraudSignalResource;
-use AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Actions\ResolveAffiliateLinkedOwner;
+use AIArmada\Affiliates\Features\Identity\Queries\ResolveAffiliateLinkedOwner;
 use AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Actions\BulkPayoutAction;
 use AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Pages\PayoutBatchPage;
 use AIArmada\FilamentAffiliates\Features\Payouts\Queries\PayoutExportService;
