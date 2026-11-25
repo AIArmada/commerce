@@ -8,7 +8,7 @@ use AIArmada\CommerceSupport\Data\OwnerScopeConfig;
 use AIArmada\CommerceSupport\Support\OwnerScopeConfigFactory;
 use ReflectionClass;
 
-trait HasOwnerScopeConfig // @phpstan-ignore trait.unused
+trait HasOwnerScopeConfig
 {
     private static function readOptionalStaticProperty(string $property, mixed $default): mixed
     {

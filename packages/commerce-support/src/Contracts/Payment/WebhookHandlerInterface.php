@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\CommerceSupport\Contracts\Payment;
 
 use AIArmada\CommerceSupport\Data\WebhookRequestData;
-use AIArmada\CommerceSupport\Exceptions\WebhookVerificationException;
+use RuntimeException;
 
 /**
  * Interface for handling payment gateway webhooks.
@@ -19,7 +19,7 @@ interface WebhookHandlerInterface
      * Verify the webhook signature/authenticity.
      *
      *
-     * @throws WebhookVerificationException If verification fails
+     * @throws RuntimeException If verification fails
      */
     public function verifyWebhook(WebhookRequestData $request): bool;
 

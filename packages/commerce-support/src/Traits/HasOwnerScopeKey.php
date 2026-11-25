@@ -9,7 +9,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScopeKey;
 use Illuminate\Database\Eloquent\Model;
 
-trait HasOwnerScopeKey // @phpstan-ignore trait.unused
+trait HasOwnerScopeKey
 {
     protected static string $ownerScopeKeyColumn = 'owner_scope';
 

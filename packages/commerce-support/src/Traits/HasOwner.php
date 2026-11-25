@@ -26,13 +26,11 @@ use InvalidArgumentException;
  * @property string|null $owner_type
  * @property int|string|null $owner_id
  */
-trait HasOwner // @phpstan-ignore trait.unused
+trait HasOwner
 {
     protected static function resolveOwnerScopeConfig(): OwnerScopeConfig
     {
-        // @phpstan-ignore function.alreadyNarrowedType
         if (method_exists(static::class, 'ownerScopeConfig')) {
-            // @phpstan-ignore function.alreadyNarrowedType
             return static::ownerScopeConfig();
         }
 

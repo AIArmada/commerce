@@ -103,8 +103,8 @@ final class OwnerBatchRunner
 
         $columns = OwnerTupleColumns::forModelClass($this->modelClass);
 
-        /** @var Collection<int, ?Model> $owners */
-        $owners = collect();
+        /** @var list<Model|null> $owners */
+        $owners = [];
         $seenGlobal = false;
 
         $rows = $model->getConnection()->table($model->getTable())
@@ -123,16 +123,15 @@ final class OwnerBatchRunner
                 }
 
                 $seenGlobal = true;
-                $owners->push(null);
+                $owners[] = null;
 
                 continue;
             }
 
-            $owners->push($parsed->toOwnerModelOrFail());
+            $owners[] = $parsed->toOwnerModelOrFail();
         }
 
-        // @phpstan-ignore-next-line Collection covariance false positive with exact array shape.
-        return $owners;
+        return collect($owners);
     }
 
     /**
