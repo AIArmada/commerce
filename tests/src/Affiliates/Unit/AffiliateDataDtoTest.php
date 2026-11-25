@@ -51,7 +51,7 @@ describe('AffiliateAttributionData', function (): void {
             expect($data->source)->toBe('google');
             expect($data->medium)->toBe('cpc');
             expect($data->campaign)->toBe('summer_sale');
-            expect($data->expiresAt)->toBe($expiresAt);
+            expect($data->expiresAt)->toEqual($expiresAt->toImmutable());
             expect($data->metadata)->toBe($metadata);
         });
     });
@@ -376,8 +376,10 @@ describe('AffiliateData', function (): void {
 });
 
 describe('Data classes structure', function (): void {
-    test('AffiliateAttributionData extends Data', function (): void {
-        expect(is_subclass_of(AffiliateAttributionData::class, Data::class))->toBeTrue();
+    test('AffiliateAttributionData is a final readonly value object', function (): void {
+        $reflection = new ReflectionClass(AffiliateAttributionData::class);
+        expect($reflection->isFinal())->toBeTrue()
+            ->and($reflection->isReadOnly())->toBeTrue();
     });
 
     test('AffiliateData is a final readonly value object', function (): void {
@@ -386,15 +388,17 @@ describe('Data classes structure', function (): void {
             ->and($reflection->isReadOnly())->toBeTrue();
     });
 
-    test('AffiliateAttributionData uses SnakeCaseMapper', function (): void {
-        $reflection = new ReflectionClass(AffiliateAttributionData::class);
-        $attributes = $reflection->getAttributes();
-
-        $mapperAttributes = array_filter($attributes, fn ($attr) => str_contains($attr->getName(), 'MapInputName'));
-        expect(count($mapperAttributes))->toBeGreaterThan(0);
+    test('AffiliateAttributionData does not depend on Laravel Data', function (): void {
+        expect(is_subclass_of(AffiliateAttributionData::class, Data::class))->toBeFalse();
     });
 
     test('AffiliateData does not depend on model states or Laravel Data', function (): void {
         expect(is_subclass_of(AffiliateData::class, Data::class))->toBeFalse();
     });
+});
+
+test('attribution UTM encoding keeps reserved characters inside parameter values', function (): void {
+    $data = new AffiliateAttributionData('attr', 'aff', 'CODE', source: 'search & social', campaign: 'a=b');
+
+    expect($data->getUtmString())->toBe('utm_source=search%20%26%20social&utm_campaign=a%3Db');
 });

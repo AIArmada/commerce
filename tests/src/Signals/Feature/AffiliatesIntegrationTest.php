@@ -162,7 +162,7 @@ it('records an affiliate attributed signal for the matching owner property', fun
 
     Event::dispatch(new AffiliateAttributed(
         $affiliate->toData(),
-        AffiliateAttributionData::fromModel($attribution),
+        $attribution->toData(),
     ));
 
     $event = SignalEvent::query()->withoutOwnerScope()->sole();

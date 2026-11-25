@@ -55,7 +55,7 @@ final class TrackAffiliateVisit
 
         $attribution = $this->storeCookieAttribution($affiliate, $context, $cookieValue);
 
-        return AffiliateAttributionData::fromModel($attribution);
+        return $attribution->toData();
     }
 
     private function storeCookieAttribution(Affiliate $affiliate, array $context, ?string $cookieValue): AffiliateAttribution

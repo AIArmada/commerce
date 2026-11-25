@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Models;
 
+use AIArmada\Affiliates\Data\AffiliateAttributionData;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
@@ -124,6 +125,33 @@ class AffiliateAttribution extends Model
         'last_cookie_seen_at' => 'immutable_datetime',
         'expires_at' => 'immutable_datetime',
     ];
+
+    public function toData(): AffiliateAttributionData
+    {
+        return new AffiliateAttributionData(
+            id: (string) $this->getKey(),
+            affiliateId: (string) $this->affiliate_id,
+            affiliateCode: (string) $this->affiliate_code,
+            subjectType: $this->subject_type,
+            subjectKey: $this->subject_key,
+            subjectInstance: $this->subject_instance,
+            subjectTitleSnapshot: $this->subject_title_snapshot,
+            cartIdentifier: $this->cart_identifier,
+            cartInstance: (string) $this->cart_instance,
+            cookieValue: $this->cookie_value,
+            voucherCode: $this->voucher_code,
+            affiliateProgramId: $this->affiliate_program_id,
+            commissionOverride: $this->commission_override,
+            uplineLevels: $this->upline_levels,
+            source: $this->source,
+            medium: $this->medium,
+            campaign: $this->campaign,
+            expiresAt: $this->expires_at,
+            ownerType: $this->owner_type,
+            ownerId: $this->owner_id,
+            metadata: $this->metadata,
+        );
+    }
 
     public function getTable(): string
     {

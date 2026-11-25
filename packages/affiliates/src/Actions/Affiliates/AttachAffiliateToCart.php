@@ -88,12 +88,12 @@ final class AttachAffiliateToCart
             $this->events?->dispatch(
                 new AffiliateAttributed(
                     $affiliate->toData(),
-                    AffiliateAttributionData::fromModel($attribution)
+                    $attribution->toData()
                 )
             );
         }
 
-        $attributionData = AffiliateAttributionData::fromModel($attribution);
+        $attributionData = $attribution->toData();
 
         if ($this->shouldDispatch('dispatch_webhooks')) {
             $this->webhooks->dispatch('attribution', $attributionData->toArray());

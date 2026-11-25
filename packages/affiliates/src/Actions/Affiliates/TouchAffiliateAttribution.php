@@ -39,7 +39,7 @@ final class TouchAffiliateAttribution
         $attribution->last_cookie_seen_at = CarbonImmutable::now();
         $attribution->save();
 
-        return AffiliateAttributionData::fromModel($attribution);
+        return $attribution->toData();
     }
 
     private function buildTouchPayload(AffiliateAttribution $attribution, array $context): array

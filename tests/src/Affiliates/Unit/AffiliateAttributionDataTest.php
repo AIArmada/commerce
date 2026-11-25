@@ -46,13 +46,15 @@ test('AffiliateAttributionData constructor sets properties', function (): void {
     expect($data->source)->toBe('google');
     expect($data->medium)->toBe('cpc');
     expect($data->campaign)->toBe('summer');
-    expect($data->expiresAt)->toBe($expiresAt);
+    expect($data->expiresAt)->toEqual($expiresAt->toImmutable());
+    $expiresAt->addDay();
+    expect($data->expiresAt)->not->toEqual($expiresAt);
     expect($data->ownerType)->toBe('users');
     expect($data->ownerId)->toBe('owner-1');
     expect($data->metadata)->toBe(['key' => 'value']);
 });
 
-test('AffiliateAttributionData fromModel creates data from attribution', function (): void {
+test('AffiliateAttributionData projects an attribution model', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'AFF1',
         'name' => 'Test Affiliate',
@@ -87,7 +89,7 @@ test('AffiliateAttributionData fromModel creates data from attribution', functio
         'owner_id' => 'owner-1',
     ])->save();
 
-    $data = AffiliateAttributionData::fromModel($attribution);
+    $data = $attribution->toData();
 
     expect($data->id)->toBe($attribution->id);
     expect($data->affiliateId)->toBe($affiliate->id);
