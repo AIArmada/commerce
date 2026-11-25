@@ -237,7 +237,6 @@ use AIArmada\Affiliates\Models\AffiliateProgram;
 ```php
 $program->tiers;        // HasMany<AffiliateProgramTier>
 $program->memberships;  // HasMany<AffiliateProgramMembership>
-$program->creatives;    // HasMany<AffiliateProgramCreative>
 $program->affiliates;   // BelongsToMany<Affiliate>
 ```
 

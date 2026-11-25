@@ -7,7 +7,7 @@ namespace AIArmada\Affiliates\Features\Programs\Actions;
 use AIArmada\Affiliates\Features\Commissions\Api\ProgramCommissionCleanup;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramAdministration;
 use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Models\AffiliateProgramCreative;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramCreative;
 use AIArmada\Affiliates\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Models\AffiliateProgramTier;
 use AIArmada\CommerceSupport\Support\OwnerContext;

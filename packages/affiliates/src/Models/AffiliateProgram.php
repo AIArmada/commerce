@@ -50,7 +50,6 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property-read Collection<int, AffiliateProgramTier> $tiers
  * @property-read AffiliateProgramMembership|null $pivot
  * @property-read Collection<int, Affiliate> $affiliates
- * @property-read Collection<int, AffiliateProgramCreative> $creatives
  * @property-read Model|null $owner
  */
 class AffiliateProgram extends Model implements Auditable
@@ -128,14 +127,6 @@ class AffiliateProgram extends Model implements Auditable
             ->using(AffiliateProgramMembership::class)
             ->withPivot(['id', 'tier_id', 'status', 'applied_at', 'approved_at', 'rejected_at', 'suspended_at', 'expires_at'])
             ->withTimestamps();
-    }
-
-    /**
-     * @return HasMany<AffiliateProgramCreative, $this>
-     */
-    public function creatives(): HasMany
-    {
-        return $this->hasMany(AffiliateProgramCreative::class, 'program_id');
     }
 
     /**

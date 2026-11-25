@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Features\Programs\EntryPoints\Filament\Resources;
 
 use AIArmada\Affiliates\Features\Programs\Api\CreativeAdministration;
-use AIArmada\Affiliates\Models\AffiliateProgramCreative;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramCreative;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use BackedEnum;

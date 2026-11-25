@@ -7,7 +7,7 @@ namespace AIArmada\Affiliates\Features\Programs\Queries;
 use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Features\Programs\Api\PortalCreativeReader;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateProgramCreative;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramCreative;
 use AIArmada\Affiliates\Models\AffiliateProgramMembership;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;

@@ -8,7 +8,7 @@ use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Features\Programs\Api\MerchantCatalog;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramSnapshot;
 use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Models\AffiliateProgramCreative;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramCreative;
 use AIArmada\Affiliates\Features\Commissions\Api\CommissionCatalogReader;
 use AIArmada\Affiliates\Features\Commissions\Api\CommissionRulePreview;
 use AIArmada\Affiliates\Features\Commissions\Api\CommissionRuleQuote;
@@ -112,7 +112,7 @@ final readonly class ProgramCatalogQuery implements MerchantCatalog
                 'default_rate_bp' => (int) $program->default_commission_rate_basis_points,
             ],
             'subjects' => $resolved->values()->all(),
-            'creatives' => $program->creatives()->with('media')->orderBy('id')->get()
+            'creatives' => AffiliateProgramCreative::query()->where('program_id', $program->id)->with('media')->orderBy('id')->get()
                 ->map(fn (AffiliateProgramCreative $creative): array => [
                     'id' => (string) $creative->getKey(),
                     'type' => $creative->type,

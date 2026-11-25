@@ -123,7 +123,7 @@ MembershipStatus::Suspended;  // Temporarily disabled
 Provide affiliates with promotional materials:
 
 ```php
-use AIArmada\Affiliates\Models\AffiliateProgramCreative;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramCreative;
 
 $creative = AffiliateProgramCreative::create([
     'program_id' => $programId,

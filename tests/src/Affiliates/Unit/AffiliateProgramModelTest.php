@@ -9,7 +9,7 @@ use AIArmada\Affiliates\Enums\ProgramVisibility;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Models\AffiliateProgramCreative;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramCreative;
 use AIArmada\Affiliates\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Models\AffiliateProgramTier;
 use AIArmada\Affiliates\States\Active;
@@ -128,7 +128,7 @@ describe('AffiliateProgram Model', function (): void {
             ->and($program->affiliates->first()->id)->toBe($affiliate->id);
     });
 
-    it('has many creatives', function (): void {
+    it('stores creatives for a program', function (): void {
         $program = AffiliateProgram::create([
             'name' => 'Test Program',
             'status' => ProgramStatus::Active,
@@ -148,7 +148,7 @@ describe('AffiliateProgram Model', function (): void {
         ]);
 
         $program->refresh();
-        expect($program->creatives)->toHaveCount(1);
+        expect(AffiliateProgramCreative::query()->where('program_id', $program->id)->count())->toBe(1);
     });
 
     it('has many memberships', function (): void {

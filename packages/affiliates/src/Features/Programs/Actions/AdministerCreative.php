@@ -6,7 +6,7 @@ namespace AIArmada\Affiliates\Features\Programs\Actions;
 
 use AIArmada\Affiliates\Features\Programs\Api\CreativeAdministration;
 use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Models\AffiliateProgramCreative;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramCreative;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Illuminate\Auth\Access\AuthorizationException;

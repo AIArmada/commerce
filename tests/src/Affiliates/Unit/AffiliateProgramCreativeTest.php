@@ -7,7 +7,7 @@ use AIArmada\Affiliates\Features\Programs\Api\CreativeAdministration;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramAdministration;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Models\AffiliateProgramCreative;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramCreative;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -219,7 +219,8 @@ test('creative media reads and program assignments respect the owner boundary', 
             'commission_type' => 'percentage', 'default_commission_rate_basis_points' => 1000,
             'cookie_lifetime_days' => 30,
         ]);
-        $creative = $program->creatives()->create([
+        $creative = AffiliateProgramCreative::query()->create([
+            'program_id' => $program->id,
             'type' => 'image', 'name' => 'Owner A Asset', 'tracking_code' => 'MEDIA-A',
         ]);
         $creative->addMedia(UploadedFile::fake()->image('owner-a.png'))->toMediaCollection('creative_asset');
@@ -247,7 +248,8 @@ test('deleting a program removes its creative media and files', function (): voi
         'commission_type' => 'percentage', 'default_commission_rate_basis_points' => 1000,
         'cookie_lifetime_days' => 30,
     ]);
-    $creative = $program->creatives()->create([
+    $creative = AffiliateProgramCreative::query()->create([
+            'program_id' => $program->id,
         'type' => 'image', 'name' => 'Program Asset', 'tracking_code' => 'PROGRAM-MEDIA',
     ]);
     $media = $creative->addMedia(UploadedFile::fake()->image('program.png'))->toMediaCollection('creative_asset');

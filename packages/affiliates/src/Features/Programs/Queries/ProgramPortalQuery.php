@@ -8,7 +8,7 @@ use AIArmada\Affiliates\Features\Programs\Api\PortalProgramRecord;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramPortalReader;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Models\AffiliateProgramCreative;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramCreative;
 use AIArmada\Affiliates\Models\AffiliateProgramMembership;
 
 final readonly class ProgramPortalQuery implements ProgramPortalReader
@@ -29,10 +29,10 @@ final readonly class ProgramPortalQuery implements ProgramPortalReader
             ->get()
             ->keyBy('program_id');
 
-        $programs->filter(fn (AffiliateProgram $program): bool => $memberships->get($program->id)?->isActive() ?? false)
-            ->load('creatives.media');
+        $activeIds = $programs->filter(fn (AffiliateProgram $program): bool => $memberships->get($program->id)?->isActive() ?? false)->modelKeys();
+        $creatives = AffiliateProgramCreative::query()->whereIn('program_id', $activeIds)->with('media')->orderBy('id')->get()->groupBy('program_id');
 
-        return $programs->map(function (AffiliateProgram $program) use ($affiliate, $memberships): PortalProgramRecord {
+        return $programs->map(function (AffiliateProgram $program) use ($affiliate, $memberships, $creatives): PortalProgramRecord {
             $membership = $memberships->get($program->id);
             $active = $membership?->isActive() ?? false;
 
@@ -48,7 +48,7 @@ final readonly class ProgramPortalQuery implements ProgramPortalReader
                 activeMembership: $active,
                 canJoin: $membership === null && $program->canJoin($affiliate),
                 creatives: $active
-                    ? $program->creatives->map(fn (AffiliateProgramCreative $creative): array => [
+                    ? $creatives->get($program->id, collect())->map(fn (AffiliateProgramCreative $creative): array => [
                         'id' => (string) $creative->getKey(),
                         'name' => (string) $creative->name,
                         'type' => (string) $creative->type,

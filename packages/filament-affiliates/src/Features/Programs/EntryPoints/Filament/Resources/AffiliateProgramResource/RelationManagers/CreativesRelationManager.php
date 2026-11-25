@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Features\Programs\EntryPoints\Filament\Resources\AffiliateProgramResource\RelationManagers;
 
 use AIArmada\Affiliates\Features\Programs\Api\CreativeAdministration;
-use AIArmada\Affiliates\Models\AffiliateProgramCreative;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramCreative;
+use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use Filament\Actions\BulkActionGroup;
@@ -22,7 +23,10 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Filament\Support\Components\Attributes\Unexposed;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Str;
 
 final class CreativesRelationManager extends RelationManager
@@ -30,6 +34,18 @@ final class CreativesRelationManager extends RelationManager
     use VerifiesRelationManagerOwnerContext;
 
     protected static string $relationship = 'creatives';
+
+    #[Unexposed]
+    public static function canViewForRecord(Model $ownerRecord, string $pageClass): bool
+    {
+        return $ownerRecord instanceof AffiliateProgram && FilamentPermission::hasAbility('affiliate.view');
+    }
+
+    #[Unexposed]
+    public function getRelationship(): Relation | Builder
+    {
+        return $this->getOwnerRecord()->hasMany(AffiliateProgramCreative::class, 'program_id');
+    }
 
     public function form(Schema $schema): Schema
     {
@@ -114,7 +130,7 @@ final class CreativesRelationManager extends RelationManager
             ])
             ->headerActions([
                 CreateAction::make()
-                    ->authorize(fn (): bool => FilamentPermission::hasAbility('affiliate.update'))
+                    ->authorize(fn (): bool => ! $this->isReadOnly() && FilamentPermission::hasAbility('affiliate.update'))
                     ->using(function (array $data): AffiliateProgramCreative {
                         $id = app(CreativeAdministration::class)->create((string) $this->getOwnerRecord()->getKey(), $data);
 
@@ -123,20 +139,20 @@ final class CreativesRelationManager extends RelationManager
             ])
             ->actions([
                 EditAction::make()
-                    ->authorize(fn (): bool => FilamentPermission::hasAbility('affiliate.update'))
+                    ->authorize(fn (): bool => ! $this->isReadOnly() && FilamentPermission::hasAbility('affiliate.update'))
                     ->using(function (AffiliateProgramCreative $record, array $data): AffiliateProgramCreative {
                         app(CreativeAdministration::class)->update((string) $this->getOwnerRecord()->getKey(), (string) $record->getKey(), $data);
 
                         return $record->refresh();
                     }),
                 DeleteAction::make()
-                    ->authorize(fn (): bool => FilamentPermission::hasAbility('affiliate.update'))
+                    ->authorize(fn (): bool => ! $this->isReadOnly() && FilamentPermission::hasAbility('affiliate.update'))
                     ->using(fn (AffiliateProgramCreative $record): bool => app(CreativeAdministration::class)->delete((string) $this->getOwnerRecord()->getKey(), (string) $record->getKey())),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make()
-                        ->authorize(fn (): bool => FilamentPermission::hasAbility('affiliate.update'))
+                        ->authorize(fn (): bool => ! $this->isReadOnly() && FilamentPermission::hasAbility('affiliate.update'))
                         ->action(function ($records): void {
                             foreach ($records as $record) {
                                 app(CreativeAdministration::class)->delete((string) $this->getOwnerRecord()->getKey(), (string) $record->getKey());

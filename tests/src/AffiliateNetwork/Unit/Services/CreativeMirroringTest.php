@@ -23,7 +23,7 @@ use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionRule;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Models\AffiliateProgramCreative;
+use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgramCreative;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\PublicHttpUrlGuard;
@@ -191,8 +191,8 @@ test('program visibility and cross-owner creative reads and writes fail closed',
 });
 
 test('file-less text links and documents mirror without losing types and rate locks preserve creative updates', function (): void {
-    $text = $this->program->creatives()->create(['type' => 'text_link', 'name' => 'Text', 'tracking_code' => 'text']);
-    $this->program->creatives()->create(['type' => 'document', 'name' => 'Document', 'tracking_code' => 'doc']);
+    $text = AffiliateProgramCreative::query()->create(['program_id' => $this->program->id, 'type' => 'text_link', 'name' => 'Text', 'tracking_code' => 'text']);
+    AffiliateProgramCreative::query()->create(['program_id' => $this->program->id, 'type' => 'document', 'name' => 'Document', 'tracking_code' => 'doc']);
     $this->importer->execute($this->site->toRecord(), $this->program->id);
     $offer = AffiliateOffer::firstOrFail();
     expect($offer->creatives()->where('external_creative_id', $text->id)->firstOrFail()->type)->toBe(CreativeType::Text)
