@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Actions\Conversions;
 
 use AIArmada\Affiliates\Data\AffiliateConversionData;
+use AIArmada\Affiliates\Data\AttributionTouch;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Models\AffiliateTouchpoint;
 use AIArmada\Affiliates\Services\AttributionModel;
 use AIArmada\Affiliates\Services\CommissionCalculator;
 use AIArmada\Affiliates\Services\Commissions\CommissionCaps;
@@ -125,10 +127,18 @@ final class RecordAffiliateConversion
         $statusEnum = ConversionStatus::fromString($status);
         $autoApprove = config('affiliates.commissions.auto_approve', false);
 
-        $touches = $attribution?->touchpoints()->get() ?? collect();
         $weights = $frozenAttribution instanceof AffiliateAttribution
             ? [$affiliate->getKey() => 1.0]
-            : $this->attributionModel->distribute($touches);
+            : $this->attributionModel->distribute(
+                $attribution?->touchpoints()
+                    ->get(['affiliate_id', 'touched_at'])
+                    ->map(static fn (AffiliateTouchpoint $touch): AttributionTouch => new AttributionTouch(
+                        (string) $touch->affiliate_id,
+                        $touch->touched_at?->toImmutable(),
+                    ))
+                    ->values()
+                    ->all() ?? [],
+            );
 
         if ($weights === []) {
             $weights = [$affiliate->getKey() => 1.0];

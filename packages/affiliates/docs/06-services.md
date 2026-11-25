@@ -372,8 +372,8 @@ $model->strategies();
 $strategy = $model->resolve();          // e.g. resolve('first_touch')
 $strategy = $model->resolve('linear');
 
-// Distribute credit across a touchpoint collection
-$distribution = $model->distribute($touchpoints);
+// Distribute credit across immutable AttributionTouch records
+$distribution = $model->distribute($touches);
 ```
 
 ## Merchant Seam Contracts

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Strategies;
 
 use AIArmada\Affiliates\Contracts\AttributionStrategy;
-use Illuminate\Support\Collection;
+use AIArmada\Affiliates\Data\AttributionTouch;
 
 final class LinearAttribution implements AttributionStrategy
 {
@@ -19,18 +19,24 @@ final class LinearAttribution implements AttributionStrategy
         return 'Linear';
     }
 
-    public function distribute(Collection $touches): array
+    /**
+     * @param  list<AttributionTouch>  $touches
+     * @return array<string, float>
+     */
+    public function distribute(array $touches): array
     {
-        if ($touches->isEmpty()) {
+        if ($touches === []) {
             return [];
         }
 
-        $count = $touches->count();
-        $weight = $count > 0 ? (1 / $count) : 0;
+        $counts = [];
 
-        return $touches
-            ->groupBy('affiliate_id')
-            ->map(fn (Collection $group): float => $weight * $group->count())
-            ->toArray();
+        foreach ($touches as $touch) {
+            $counts[$touch->affiliateId] = ($counts[$touch->affiliateId] ?? 0) + 1;
+        }
+
+        $total = count($touches);
+
+        return array_map(static fn (int $count): float => $count / $total, $counts);
     }
 }

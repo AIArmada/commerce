@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Services;
 
 use AIArmada\Affiliates\Contracts\AttributionStrategy;
+use AIArmada\Affiliates\Data\AttributionTouch;
 use AIArmada\Affiliates\Strategies\LastTouchAttribution;
 use Illuminate\Container\Attributes\Tag;
-use Illuminate\Support\Collection;
 
 final class AttributionModel
 {
@@ -38,7 +38,11 @@ final class AttributionModel
         return $this->strategiesByKey['last_touch'] ?? new LastTouchAttribution;
     }
 
-    public function distribute(Collection $touches): array
+    /**
+     * @param  list<AttributionTouch>  $touches
+     * @return array<string, float>
+     */
+    public function distribute(array $touches): array
     {
         return $this->resolve()->distribute($touches);
     }

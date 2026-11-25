@@ -5,8 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Strategies;
 
 use AIArmada\Affiliates\Contracts\AttributionStrategy;
-use AIArmada\Affiliates\Models\AffiliateTouchpoint;
-use Illuminate\Support\Collection;
+use AIArmada\Affiliates\Data\AttributionTouch;
 
 final class LastTouchAttribution implements AttributionStrategy
 {
@@ -20,15 +19,20 @@ final class LastTouchAttribution implements AttributionStrategy
         return 'Last Touch';
     }
 
-    public function distribute(Collection $touches): array
+    /**
+     * @param  list<AttributionTouch>  $touches
+     * @return array<string, float>
+     */
+    public function distribute(array $touches): array
     {
-        if ($touches->isEmpty()) {
-            return [];
+        $selected = null;
+
+        foreach ($touches as $touch) {
+            if ($selected === null || $touch->touchedAt > $selected->touchedAt) {
+                $selected = $touch;
+            }
         }
 
-        /** @var AffiliateTouchpoint $touch */
-        $touch = $touches->sortByDesc('touched_at')->first();
-
-        return [$touch->affiliate_id => 1.0];
+        return $selected === null ? [] : [$selected->affiliateId => 1.0];
     }
 }
