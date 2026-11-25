@@ -7,7 +7,8 @@ namespace AIArmada\FilamentAffiliates\Features\Programs\EntryPoints\Filament\Res
 use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Features\Commissions\Api\ProgramCommissionAdministration;
-use AIArmada\Affiliates\Models\AffiliateCommissionRule;
+use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionRule;
+use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\Events\Features\Catalog\Models\Event;
@@ -32,12 +33,28 @@ use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Filament\Support\Components\Attributes\Unexposed;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Database\Eloquent\Builder;
 
 final class CommissionRulesRelationManager extends RelationManager
 {
     use VerifiesRelationManagerOwnerContext;
 
     protected static string $relationship = 'commissionRules';
+
+    #[Unexposed]
+    public static function canViewForRecord(Model $ownerRecord, string $pageClass): bool
+    {
+        return $ownerRecord instanceof AffiliateProgram && FilamentPermission::hasAbility('affiliate.view');
+    }
+
+    #[Unexposed]
+    public function getRelationship(): Relation | Builder
+    {
+        return $this->getOwnerRecord()->hasMany(AffiliateCommissionRule::class, 'program_id')->orderByDesc('priority');
+    }
 
     public function form(Schema $schema): Schema
     {
@@ -223,7 +240,7 @@ final class CommissionRulesRelationManager extends RelationManager
             ])
             ->headerActions([
                 CreateAction::make()
-                    ->authorize(fn (): bool => FilamentPermission::hasAbility('affiliate.update'))
+                    ->authorize(fn (): bool => ! $this->isReadOnly() && FilamentPermission::hasAbility('affiliate.update'))
                     ->using(function (array $data): AffiliateCommissionRule {
                         $id = app(ProgramCommissionAdministration::class)->createRule((string) $this->getOwnerRecord()->getKey(), $data);
 
@@ -232,20 +249,20 @@ final class CommissionRulesRelationManager extends RelationManager
             ])
             ->actions([
                 EditAction::make()
-                    ->authorize(fn (): bool => FilamentPermission::hasAbility('affiliate.update'))
+                    ->authorize(fn (): bool => ! $this->isReadOnly() && FilamentPermission::hasAbility('affiliate.update'))
                     ->using(function (AffiliateCommissionRule $record, array $data): AffiliateCommissionRule {
                         app(ProgramCommissionAdministration::class)->updateRule((string) $this->getOwnerRecord()->getKey(), (string) $record->getKey(), $data);
 
                         return $record->refresh();
                     }),
                 DeleteAction::make()
-                    ->authorize(fn (): bool => FilamentPermission::hasAbility('affiliate.update'))
+                    ->authorize(fn (): bool => ! $this->isReadOnly() && FilamentPermission::hasAbility('affiliate.update'))
                     ->using(fn (AffiliateCommissionRule $record): bool => app(ProgramCommissionAdministration::class)->deleteRule((string) $this->getOwnerRecord()->getKey(), (string) $record->getKey())),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make()
-                        ->authorize(fn (): bool => FilamentPermission::hasAbility('affiliate.update'))
+                        ->authorize(fn (): bool => ! $this->isReadOnly() && FilamentPermission::hasAbility('affiliate.update'))
                         ->action(function ($records): void {
                             foreach ($records as $record) {
                                 app(ProgramCommissionAdministration::class)->deleteRule((string) $this->getOwnerRecord()->getKey(), (string) $record->getKey());

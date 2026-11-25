@@ -7,7 +7,7 @@ namespace AIArmada\Affiliates\Features\Commissions\Queries;
 use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Features\Commissions\Api\CommissionRulePreview;
 use AIArmada\Affiliates\Features\Commissions\Api\CommissionRuleQuote;
-use AIArmada\Affiliates\Models\AffiliateCommissionRule;
+use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionRule;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;

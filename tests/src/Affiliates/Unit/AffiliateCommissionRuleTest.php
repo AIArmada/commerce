@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
-use AIArmada\Affiliates\Models\AffiliateCommissionRule;
+use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionRule;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 

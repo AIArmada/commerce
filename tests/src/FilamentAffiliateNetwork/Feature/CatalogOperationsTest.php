@@ -13,7 +13,7 @@ use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\ProgramVisibility;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateCommissionRule;
+use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionRule;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\FilamentAffiliateNetwork\Features\Catalog\EntryPoints\Filament\Resources\AffiliateOfferResource\RelationManagers\LinksRelationManager;

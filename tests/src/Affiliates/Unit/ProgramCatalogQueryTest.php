@@ -8,8 +8,8 @@ use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\ProgramVisibility;
 use AIArmada\Affiliates\Features\Programs\Queries\ProgramCatalogQuery;
-use AIArmada\Affiliates\Models\AffiliateCommissionPromotion;
-use AIArmada\Affiliates\Models\AffiliateCommissionRule;
+use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionPromotion;
+use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionRule;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Features\Commissions\Models\AffiliateVolumeTier;
 use AIArmada\Affiliates\Features\Commissions\Api\CommissionRulePreview;
@@ -35,7 +35,7 @@ beforeEach(function (): void {
         }
     });
 
-    $this->service = new ProgramCatalogQuery(app(CommissionRulePreview::class), $this->registry, app(\AIArmada\Affiliates\Features\Commissions\Api\VolumeTierReader::class));
+    $this->service = new ProgramCatalogQuery(app(CommissionRulePreview::class), $this->registry, app(\AIArmada\Affiliates\Features\Commissions\Api\VolumeTierReader::class), app(\AIArmada\Affiliates\Features\Commissions\Api\CommissionCatalogReader::class));
 
     $this->program = AffiliateProgram::create([
         'name' => 'Catalog Program',

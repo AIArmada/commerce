@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Commissions\Actions;
 
 use AIArmada\Affiliates\Features\Commissions\Api\PromotionUsage;
-use AIArmada\Affiliates\Models\AffiliateCommissionPromotion;
+use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionPromotion;
 
 final readonly class ConsumePromotionUsage implements PromotionUsage
 {

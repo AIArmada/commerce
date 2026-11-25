@@ -49,8 +49,6 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string|null $owner_id
  * @property-read Collection<int, AffiliateProgramTier> $tiers
  * @property-read AffiliateProgramMembership|null $pivot
- * @property-read Collection<int, AffiliateCommissionRule> $commissionRules
- * @property-read Collection<int, AffiliateCommissionPromotion> $commissionPromotions
  * @property-read Collection<int, Affiliate> $affiliates
  * @property-read Collection<int, AffiliateProgramCreative> $creatives
  * @property-read Model|null $owner
@@ -117,22 +115,6 @@ class AffiliateProgram extends Model implements Auditable
     public function tiers(): HasMany
     {
         return $this->hasMany(AffiliateProgramTier::class, 'program_id')->orderBy('level');
-    }
-
-    /**
-     * @return HasMany<AffiliateCommissionRule, $this>
-     */
-    public function commissionRules(): HasMany
-    {
-        return $this->hasMany(AffiliateCommissionRule::class, 'program_id')->orderByDesc('priority');
-    }
-
-    /**
-     * @return HasMany<AffiliateCommissionPromotion, $this>
-     */
-    public function commissionPromotions(): HasMany
-    {
-        return $this->hasMany(AffiliateCommissionPromotion::class, 'program_id')->orderByDesc('created_at');
     }
 
     /**

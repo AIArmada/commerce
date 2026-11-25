@@ -259,7 +259,7 @@ AffiliateVolumeTier::create([
 Custom rules for specific conditions:
 
 ```php
-use AIArmada\Affiliates\Models\AffiliateCommissionRule;
+use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionRule;
 use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Enums\CommissionType;
 
@@ -286,7 +286,7 @@ AffiliateCommissionRule::create([
 Time-limited commission boosts:
 
 ```php
-use AIArmada\Affiliates\Models\AffiliateCommissionPromotion;
+use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionPromotion;
 use AIArmada\Affiliates\Enums\CommissionType;
 
 AffiliateCommissionPromotion::create([

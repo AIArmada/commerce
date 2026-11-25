@@ -119,9 +119,8 @@ AffiliateVolumeTier::where('program_id', $program->id)->get();
 
 3. **Commission rules priority:**
 ```php
-$program->commissionRules()
-    ->orderBy('priority', 'desc')
-    ->get();
+app(\AIArmada\Affiliates\Features\Commissions\Api\CommissionRulePreview::class)
+    ->previewCatalogRules((string) $program->getKey(), [$context]);
 ```
 
 4. **Opaque purpose:** affiliates with a host-defined non-commercial

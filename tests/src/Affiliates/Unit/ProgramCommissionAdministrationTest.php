@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Features\Commissions\Api\ProgramCommissionAdministration;
-use AIArmada\Affiliates\Models\AffiliateCommissionPromotion;
-use AIArmada\Affiliates\Models\AffiliateCommissionRule;
+use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionPromotion;
+use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionRule;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Validation\ValidationException;

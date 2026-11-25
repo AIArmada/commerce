@@ -56,9 +56,7 @@ $affiliate->vouchers;         // HasMany<Voucher>
 $affiliate->balances;         // HasMany<AffiliateBalance>, one row per currency
 ```
 
-`commissionRules` and `volumeTiers` are **not** relationships on `Affiliate` —
-those rows are program-scoped and reachable via `$program->commissionRules()` and
-`$program->volumeTiers()`.
+Commission rules, promotions and volume tiers are program-scoped and owned by Commissions. Use `ProgramCommissionAdministration` and `VolumeTierAdministration` for mutations, and `CommissionCatalogReader`, `CommissionRulePreview` and `VolumeTierReader` for catalog reads.
 
 **Key Methods:**
 

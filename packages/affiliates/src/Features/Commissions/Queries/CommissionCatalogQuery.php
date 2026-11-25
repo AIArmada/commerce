@@ -6,8 +6,8 @@ namespace AIArmada\Affiliates\Features\Commissions\Queries;
 
 use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Features\Commissions\Api\CommissionCatalogReader;
-use AIArmada\Affiliates\Models\AffiliateCommissionPromotion;
-use AIArmada\Affiliates\Models\AffiliateCommissionRule;
+use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionPromotion;
+use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionRule;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 
 final readonly class CommissionCatalogQuery implements CommissionCatalogReader
