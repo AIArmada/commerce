@@ -192,7 +192,7 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
 
         if (class_exists(LinksServiceProvider::class)) {
             $this->app->tag([Support\Links\AffiliateLinkGate::class], LinkGateInterface::class);
-            Event::listen(LinkClicked::class, Listeners\IncrementAffiliateLinkClicks::class);
+            Event::listen(LinkClicked::class, Features\Attribution\EntryPoints\Listeners\IncrementAffiliateLinkClicks::class);
         }
     }
 

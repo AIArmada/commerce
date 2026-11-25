@@ -7,6 +7,7 @@ use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\ProgramVisibility;
 use AIArmada\Affiliates\Features\Attribution\Actions\CreateTrackingLink;
+use AIArmada\Affiliates\Features\Attribution\EntryPoints\Listeners\IncrementAffiliateLinkClicks;
 use AIArmada\Affiliates\Features\Conversions\Actions\RecordAffiliateOutcome;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
@@ -18,6 +19,8 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
+use AIArmada\Links\Events\LinkClicked;
+use AIArmada\Links\Models\LinkClick;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Str;
@@ -199,4 +202,20 @@ test('it rejects a cross-tenant program when owner scoping is enabled', function
             'affiliates.links.allowed_hosts' => $previousAllowedHosts,
         ]);
     }
+});
+
+test('it counts only human clicks associated with the public tracking link', function (): void {
+    config(['affiliates.links.allowed_hosts' => ['ilmu360.test']]);
+    $link = app(CreateTrackingLink::class)->handle((string) $this->affiliate->getKey(), 'https://ilmu360.test/event');
+    $tracked = $link->trackedLink()->firstOrFail();
+    $listener = app(IncrementAffiliateLinkClicks::class);
+
+    $listener->handle(new LinkClicked($tracked, new LinkClick(['link_id' => (string) Str::uuid()])));
+    $listener->handle(new LinkClicked($tracked, new LinkClick(['link_id' => $tracked->getKey(), 'is_bot' => true])));
+
+    expect($link->refresh()->clicks)->toBe(0);
+
+    $listener->handle(new LinkClicked($tracked, new LinkClick(['link_id' => $tracked->getKey()])));
+
+    expect($link->refresh()->clicks)->toBe(1);
 });
