@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Upline\Queries;
 
 use AIArmada\Affiliates\Features\Upline\Api\RankDirectory;
-use AIArmada\Affiliates\Models\AffiliateRank;
+use AIArmada\Affiliates\Features\Upline\Models\AffiliateRank;
 use AIArmada\CommerceSupport\Support\LikeSearch;
 use Illuminate\Support\Str;
 

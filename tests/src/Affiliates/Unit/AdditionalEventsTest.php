@@ -10,7 +10,7 @@ use AIArmada\Affiliates\Events\DailyStatsAggregated;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramTier;
-use AIArmada\Affiliates\Models\AffiliateRank;
+use AIArmada\Affiliates\Features\Upline\Models\AffiliateRank;
 use AIArmada\Affiliates\States\Active;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;

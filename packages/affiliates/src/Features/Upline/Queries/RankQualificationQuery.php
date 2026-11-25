@@ -6,7 +6,7 @@ namespace AIArmada\Affiliates\Features\Upline\Queries;
 
 use AIArmada\Affiliates\Features\Upline\Api\UplineApi;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateRank;
+use AIArmada\Affiliates\Features\Upline\Models\AffiliateRank;
 use AIArmada\Affiliates\Support\RevenueVolume;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;

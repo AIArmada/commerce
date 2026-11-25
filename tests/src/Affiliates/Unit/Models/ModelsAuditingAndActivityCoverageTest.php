@@ -23,7 +23,7 @@ use AIArmada\Affiliates\Models\AffiliateLink;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramTier;
-use AIArmada\Affiliates\Models\AffiliateRank;
+use AIArmada\Affiliates\Features\Upline\Models\AffiliateRank;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use OwenIt\Auditing\Contracts\Auditable;

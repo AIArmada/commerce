@@ -76,7 +76,6 @@ use Spatie\ModelStates\HasStates;
  * @property-read string|null $contact_email Alias for the primary email contact method
  * @property-read string|null $website_url Alias for the primary website contact method
  * @property-read Affiliate|null $parent
- * @property-read AffiliateRank|null $rank
  * @property-read Collection<int, Affiliate> $children
  * @property-read Collection<int, AffiliateAttribution> $attributions
  * @property-read Collection<int, AffiliateConversion> $conversions
@@ -264,14 +263,6 @@ class Affiliate extends Model implements Auditable
     public function children(): HasMany
     {
         return $this->hasMany(self::class, 'parent_affiliate_id');
-    }
-
-    /**
-     * @return BelongsTo<AffiliateRank, $this>
-     */
-    public function rank(): BelongsTo
-    {
-        return $this->belongsTo(AffiliateRank::class, 'rank_id');
     }
 
     /**

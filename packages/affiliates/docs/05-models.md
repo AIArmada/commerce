@@ -49,7 +49,7 @@ $affiliate->parent;           // BelongsTo<Affiliate>
 $affiliate->children;         // HasMany<Affiliate>
 $affiliate->programs;         // BelongsToMany<AffiliateProgram>
 $affiliate->dailyStats;       // HasMany<AffiliateDailyStat>
-$affiliate->rank;             // BelongsTo<AffiliateRank>
+app(\AIArmada\Affiliates\Features\Upline\Api\RankDirectory::class)->label($affiliate->rank_id);
 $affiliate->vouchers;         // HasMany<Voucher>
 $affiliate->balances;         // HasMany<AffiliateBalance>, one row per currency
 ```

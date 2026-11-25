@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Features\Upline\Models\AffiliateRank;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
@@ -14,6 +15,7 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Concerns\InteractsWithAffiliate;
+use AIArmada\FilamentAffiliates\Support\RankLabelProjection;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -253,3 +255,28 @@ class InteractsWithAffiliateTestOwner extends Model
 
     protected $keyType = 'string';
 }
+
+it('projects rank labels without an affiliate model relationship', function (): void {
+    config(['affiliates.owner.enabled' => false]);
+    $rank = AffiliateRank::query()->create([
+        'name' => 'Projected rank',
+        'slug' => 'projected-rank',
+        'level' => 1,
+        'commission_rate_basis_points' => 1000,
+    ]);
+    $affiliate = Affiliate::query()->create([
+        'code' => 'RANK-' . Str::uuid(),
+        'name' => 'Ranked affiliate',
+        'status' => Active::class,
+        'commission_type' => 'percentage',
+        'commission_rate' => 500,
+        'currency' => 'USD',
+        'rank_id' => $rank->getKey(),
+    ]);
+
+    $projected = Affiliate::query()->addSelect(['rank_name' => RankLabelProjection::query()])
+        ->findOrFail($affiliate->getKey());
+
+    expect($projected->getAttribute('rank_name'))->toBe('Projected rank')
+        ->and($projected->getKey())->toBe($affiliate->getKey());
+});

@@ -14,6 +14,7 @@ use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\FilamentAffiliates\Support\RankLabelProjection;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -278,7 +279,7 @@ trait InteractsWithAffiliate
         }
 
         return $affiliate->children()
-            ->with(['rank'])
+            ->addSelect(['rank_name' => RankLabelProjection::query()])
             ->withCount('conversions')
             ->orderBy('created_at', 'desc')
             ->limit(max(1, $limit))

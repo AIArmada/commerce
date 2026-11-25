@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Models;
+namespace AIArmada\Affiliates\Features\Upline\Models;
 
 use AIArmada\Affiliates\Features\Upline\Api\QualifiedRank;
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;

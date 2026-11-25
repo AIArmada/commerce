@@ -12,6 +12,8 @@ use AIArmada\Affiliates\Features\Identity\Api\AffiliateRemoval;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutHoldReader;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutMethodReader;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutHold;
+use AIArmada\Affiliates\Features\Upline\Api\RankAdministration;
+use AIArmada\Affiliates\Features\Upline\Api\RankDirectory;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateBalance;
@@ -298,9 +300,16 @@ describe('Affiliate Model - Relationships', function (): void {
         expect(app(PayoutHoldReader::class)->count($affiliate->id))->toBe(0);
     });
 
-    test('belongs to rank', function (): void {
-        $affiliate = new Affiliate;
-        expect($affiliate->rank())->toBeInstanceOf(BelongsTo::class);
+    test('resolves assigned rank through the Upline directory', function (): void {
+        $rankId = app(RankAdministration::class)->create([
+            'name' => 'Directory Rank',
+            'slug' => 'directory-rank',
+            'level' => 1,
+            'commission_rate_basis_points' => 1000,
+        ]);
+        $affiliate = new Affiliate(['rank_id' => $rankId]);
+
+        expect(app(RankDirectory::class)->label($affiliate->rank_id))->toBe('Directory Rank');
     });
 
     test('parent-child relationship works correctly', function (): void {

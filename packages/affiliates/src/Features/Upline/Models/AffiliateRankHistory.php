@@ -6,7 +6,6 @@ namespace AIArmada\Affiliates\Features\Upline\Models;
 
 use AIArmada\Affiliates\Enums\RankQualificationReason;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateRank;
 use AIArmada\Affiliates\Models\Concerns\ScopesByAffiliateOwner;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;

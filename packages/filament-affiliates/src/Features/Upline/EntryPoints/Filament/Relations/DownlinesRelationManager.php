@@ -7,6 +7,7 @@ namespace AIArmada\FilamentAffiliates\Features\Upline\EntryPoints\Filament\Relat
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\FilamentAffiliates\Features\Identity\Api\AffiliateAdminLinks;
+use AIArmada\FilamentAffiliates\Support\RankLabelProjection;
 use Filament\Actions\Action;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Support\Icons\Heroicon;
@@ -41,7 +42,7 @@ final class DownlinesRelationManager extends RelationManager
                     ->badge()
                     ->sortable(),
 
-                TextColumn::make('rank.name')
+                TextColumn::make('rank_name')
                     ->label('Rank')
                     ->placeholder('—')
                     ->sortable(),
@@ -73,7 +74,7 @@ final class DownlinesRelationManager extends RelationManager
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->modifyQueryUsing(fn (Builder $query) => $query->with(['rank'])->withCount('conversions'))
+            ->modifyQueryUsing(fn (Builder $query) => $query->addSelect(['rank_name' => RankLabelProjection::query()])->withCount('conversions'))
             ->defaultSort('created_at', 'desc')
             ->actions([
                 Action::make('view')

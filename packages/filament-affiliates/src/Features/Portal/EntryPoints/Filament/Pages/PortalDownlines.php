@@ -6,6 +6,7 @@ namespace AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages
 
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Concerns\PortalPage;
+use AIArmada\FilamentAffiliates\Support\RankLabelProjection;
 use BackedEnum;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -49,7 +50,7 @@ class PortalDownlines extends PortalPage implements HasTable
             ->query(
                 Affiliate::query()
                     ->where('parent_affiliate_id', $affiliate->getKey())
-                    ->with(['rank'])
+                    ->addSelect(['rank_name' => RankLabelProjection::query()])
             )
             ->columns([
                 TextColumn::make('code')
@@ -67,7 +68,7 @@ class PortalDownlines extends PortalPage implements HasTable
                     ->badge()
                     ->sortable(),
 
-                TextColumn::make('rank.name')
+                TextColumn::make('rank_name')
                     ->label(__('Rank'))
                     ->placeholder('—'),
 

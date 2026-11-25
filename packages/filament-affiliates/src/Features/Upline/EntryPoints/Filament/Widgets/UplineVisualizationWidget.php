@@ -8,6 +8,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\FilamentAffiliates\Support\RankLabelProjection;
 use Filament\Widgets\Widget;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -61,7 +62,7 @@ final class UplineVisualizationWidget extends Widget
                 )
                 ->whereNull('parent_affiliate_id')
                 ->where('status', AffiliateStatus::fromString(Active::class)->getValue())
-                ->with(['rank'])
+                ->addSelect(['rank_name' => RankLabelProjection::query()])
                 ->withCount(['children', 'conversions'])
                 ->limit(10)
                 ->get();
@@ -75,7 +76,7 @@ final class UplineVisualizationWidget extends Widget
                 fn ($query) => $query->forOwner($owner),
             )
             ->whereKey($this->affiliateId)
-            ->with(['rank'])
+            ->addSelect(['rank_name' => RankLabelProjection::query()])
             ->withCount(['children', 'conversions'])
             ->first();
 
@@ -119,7 +120,7 @@ final class UplineVisualizationWidget extends Widget
         if ($currentDepth < $this->clampedDepth($this->depth)) {
             $children = $affiliate->children()
                 ->where('status', AffiliateStatus::fromString(Active::class)->getValue())
-                ->with(['rank'])
+                ->addSelect(['rank_name' => RankLabelProjection::query()])
                 ->withCount(['children', 'conversions'])
                 ->limit(self::MAX_BREADTH)
                 ->get()
@@ -140,7 +141,7 @@ final class UplineVisualizationWidget extends Widget
             'name' => $affiliate->name,
             'code' => $affiliate->code,
             'status' => AffiliateStatus::normalize($affiliate->status),
-            'rank' => $affiliate->rank?->name,
+            'rank' => $affiliate->getAttribute('rank_name'),
             'conversions' => $conversionsCount,
             'children' => $children,
             'children_count' => $childrenCount,
