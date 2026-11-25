@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Pages;
 
-use AIArmada\Affiliates\Services\AffiliateReportService;
+use AIArmada\Affiliates\Features\Reporting\Api\ReportingApi;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use BackedEnum;
 use Carbon\CarbonImmutable;
@@ -101,7 +101,7 @@ final class ReportsPage extends Page implements HasForms
 
     public function generateReport(): void
     {
-        $service = app(AffiliateReportService::class);
+        $service = app(ReportingApi::class);
 
         $startDate = match ($this->period) {
             'week' => CarbonImmutable::now()->subWeek(),

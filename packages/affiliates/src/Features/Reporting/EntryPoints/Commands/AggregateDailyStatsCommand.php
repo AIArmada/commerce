@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Console\Commands;
+namespace AIArmada\Affiliates\Features\Reporting\EntryPoints\Commands;
 
 use AIArmada\Affiliates\Events\DailyStatsAggregated;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Services\DailyAggregationService;
+use AIArmada\Affiliates\Features\Reporting\Api\DailyStatsWriter;
 use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
@@ -21,7 +21,7 @@ final class AggregateDailyStatsCommand extends Command
 
     protected $description = 'Aggregate daily affiliate statistics';
 
-    public function handle(DailyAggregationService $service): int
+    public function handle(DailyStatsWriter $service): int
     {
         if ($this->option('backfill')) {
             return $this->handleBackfill($service);
@@ -47,7 +47,7 @@ final class AggregateDailyStatsCommand extends Command
         return self::SUCCESS;
     }
 
-    private function handleBackfill(DailyAggregationService $service): int
+    private function handleBackfill(DailyStatsWriter $service): int
     {
         $from = $this->option('from')
             ? CarbonImmutable::parse($this->option('from'))
@@ -64,7 +64,7 @@ final class AggregateDailyStatsCommand extends Command
             ['enabled' => 'affiliates.owner.enabled', 'include_global' => 'affiliates.owner.include_global'],
         );
 
-        $totalProcessed = $runner->run(fn (): int => $service->backfill($from, $to)) ?? 0;
+        $totalProcessed = $runner->run(fn (): int => $service->aggregateRange($from, $to)) ?? 0;
 
         $this->info("Backfill complete. Processed {$totalProcessed} affiliate-days.");
 

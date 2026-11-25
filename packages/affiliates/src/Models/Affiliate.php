@@ -78,7 +78,6 @@ use Spatie\ModelStates\HasStates;
  * @property-read Collection<int, AffiliateAttribution> $attributions
  * @property-read Collection<int, AffiliateConversion> $conversions
  * @property-read Collection<int, AffiliateFraudSignal> $fraudSignals
- * @property-read Collection<int, AffiliateDailyStat> $dailyStats
  * @property-read Collection<int, AffiliateBalance> $balances
  * @property-read Collection<int, AffiliatePayoutMethod> $payoutMethods
  * @property-read Collection<int, AffiliatePayoutHold> $payoutHolds
@@ -256,14 +255,6 @@ class Affiliate extends Model implements Auditable
     public function fraudSignals(): HasMany
     {
         return $this->hasMany(AffiliateFraudSignal::class);
-    }
-
-    /**
-     * @return HasMany<AffiliateDailyStat, $this>
-     */
-    public function dailyStats(): HasMany
-    {
-        return $this->hasMany(AffiliateDailyStat::class);
     }
 
     /**
@@ -512,7 +503,7 @@ class Affiliate extends Model implements Auditable
             });
             $affiliate->conversions()->delete();
             $affiliate->fraudSignals()->delete();
-            $affiliate->dailyStats()->delete();
+            app(\AIArmada\Affiliates\Features\Reporting\Api\DailyStatsWriter::class)->deleteForAffiliate((string) $affiliate->getKey());
             $affiliate->links()->chunkById(100, function ($links): void {
                 foreach ($links as $link) {
                     $link->delete();

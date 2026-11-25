@@ -16,7 +16,7 @@ use AIArmada\Affiliates\Models\AffiliatePayoutEvent;
 use AIArmada\Affiliates\Models\AffiliatePayoutMethod;
 use AIArmada\Affiliates\Models\AffiliatePayoutOperation;
 use AIArmada\Affiliates\Models\AffiliateUpline;
-use AIArmada\Affiliates\Services\AffiliateReportService;
+use AIArmada\Affiliates\Features\Reporting\Api\ReportingApi;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\FailedPayout;
@@ -433,7 +433,7 @@ it('searches payout affiliates lazily instead of preloading every row', function
 
 // Malformed custom report dates fall back instead of throwing.
 it('falls back to sane defaults for malformed custom report dates', function (): void {
-    app()->instance(AffiliateReportService::class, new class
+    app()->instance(ReportingApi::class, new class
     {
         public function getSummary($startDate, $endDate): array
         {
@@ -469,7 +469,7 @@ it('falls back to sane defaults for malformed custom report dates', function ():
 it('orders swapped custom report dates instead of querying an empty range', function (): void {
     $captured = ['start' => null, 'end' => null];
 
-    app()->instance(AffiliateReportService::class, new class($captured)
+    app()->instance(ReportingApi::class, new class($captured)
     {
         /** @var array{start:mixed, end:mixed} */
         public array $captured;

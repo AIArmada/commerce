@@ -7,7 +7,7 @@ namespace Tests\Affiliates\Unit\Services;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Services\CohortAnalyzer;
+use AIArmada\Affiliates\Features\Reporting\Api\CohortApi;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Data\RecordReference;
@@ -22,7 +22,7 @@ uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     Model::unguard();
-    $this->analyzer = new CohortAnalyzer;
+    $this->analyzer = app(CohortApi::class);
 
     // Set fixed time for consistent testing
     CarbonImmutable::setTestNow('2024-06-01 12:00:00');

@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Services;
+namespace AIArmada\Affiliates\Features\Reporting\Actions;
 
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateDailyStat;
+use AIArmada\Affiliates\Features\Reporting\Models\AffiliateDailyStat;
+use AIArmada\Affiliates\Features\Reporting\Api\DailyStatsWriter;
+use AIArmada\Affiliates\Features\Reporting\Api\DailyStatRecord;
 use AIArmada\Affiliates\Models\AffiliateTouchpoint;
-use AIArmada\CommerceSupport\Support\CurrencyConverter;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
-final class DailyAggregationService
+final readonly class AggregateDailyStats implements DailyStatsWriter
 {
-    public function __construct(private readonly CurrencyConverter $converter) {}
+    public function __construct(private DeleteAffiliateDailyStats $delete) {}
 
     /**
      * Aggregate statistics for all affiliates on a given date.
@@ -26,7 +26,7 @@ final class DailyAggregationService
         Affiliate::query()
             ->chunkById(100, function ($affiliates) use ($date, &$affiliateCount): void {
                 foreach ($affiliates as $affiliate) {
-                    $this->aggregateForAffiliate($affiliate, $date);
+                    $this->aggregateForAffiliate((string) $affiliate->getKey(), $date);
                     $affiliateCount++;
                 }
             });
@@ -41,10 +41,12 @@ final class DailyAggregationService
      * currency row only so period sums never double-count; conversion counts
      * and money are per leg and sum cleanly.
      *
-     * @return Collection<int, AffiliateDailyStat>
+     * @return list<DailyStatRecord>
      */
-    public function aggregateForAffiliate(Affiliate $affiliate, CarbonImmutable $date): Collection
+    public function aggregateForAffiliate(string $affiliateId, CarbonImmutable $date): array
     {
+        return (new AffiliateDailyStat)->getConnection()->transaction(function () use ($affiliateId, $date): array {
+        $affiliate = Affiliate::query()->whereKey($affiliateId)->lockForUpdate()->firstOrFail();
         $dayStart = $date->startOfDay();
         $dayEnd = $date->endOfDay();
         $reference = $this->referenceCurrency($affiliate);
@@ -83,7 +85,7 @@ final class DailyAggregationService
             $legs[$currency]['commission'] += (int) $row->commission_minor;
         }
 
-        if ($legs === []) {
+        if ($legs === [] || ($clicks > 0 || $attributions > 0) && ! isset($legs[$reference])) {
             $legs[$reference] = ['conversions' => 0, 'revenue' => 0, 'commission' => 0];
         }
 
@@ -125,17 +127,22 @@ final class DailyAggregationService
             ['owner_type', 'owner_id', 'clicks', 'unique_clicks', 'attributions', 'conversions', 'revenue_cents', 'commission_cents', 'conversion_rate', 'epc_cents', 'breakdown', 'updated_at'],
         );
 
+        AffiliateDailyStat::query()->where('affiliate_id', $affiliate->id)->where('date', $date->toDateString())->whereNotIn('currency', array_keys($legs))->delete();
+
         return AffiliateDailyStat::query()
             ->where('affiliate_id', $affiliate->id)
             ->where('date', $date->toDateString())
             ->orderBy('currency')
-            ->get();
+            ->get()->map(static fn (AffiliateDailyStat $stat): DailyStatRecord => new DailyStatRecord(
+                (string) $stat->getKey(), $stat->currency, $stat->clicks, $stat->unique_clicks, $stat->attributions, $stat->conversions, $stat->revenue_cents, $stat->commission_cents,
+            ))->values()->all();
+        }, attempts: 3);
     }
 
     /**
-     * Backfill statistics for a date range.
+     * Recalculate derived statistics for a requested date range.
      */
-    public function backfill(CarbonImmutable $startDate, CarbonImmutable $endDate): int
+    public function aggregateRange(CarbonImmutable $startDate, CarbonImmutable $endDate): int
     {
         $totalProcessed = 0;
         $currentDate = $startDate;
@@ -148,103 +155,9 @@ final class DailyAggregationService
         return $totalProcessed;
     }
 
-    /**
-     * Get aggregated stats for an affiliate over a period.
-     *
-     * Money folds per currency and converts to the affiliate currency when
-     * legs span currencies; totals are null when a rate is missing.
-     *
-     * @return array{clicks: int, unique_clicks: int, attributions: int, conversions: int, revenue_cents: int|null, commission_cents: int|null, currency: string, converted: bool, by_currency: array<string, array{conversions: int, revenue_cents: int, commission_cents: int}>, conversion_rate: float|null, epc_cents: float|null}
-     */
-    public function getAggregatedStats(Affiliate $affiliate, CarbonImmutable $from, CarbonImmutable $to): array
+    public function deleteForAffiliate(string $affiliateId): void
     {
-        $rows = AffiliateDailyStat::query()
-            ->where('affiliate_id', $affiliate->id)
-            ->whereBetween('date', [$from->toDateString(), $to->toDateString()])
-            ->toBase()
-            ->selectRaw('currency, COALESCE(SUM(clicks), 0) as clicks, COALESCE(SUM(unique_clicks), 0) as unique_clicks, COALESCE(SUM(attributions), 0) as attributions, COALESCE(SUM(conversions), 0) as conversions, COALESCE(SUM(revenue_cents), 0) as revenue_cents, COALESCE(SUM(commission_cents), 0) as commission_cents')
-            ->groupBy('currency')
-            ->get();
-
-        $reference = $this->referenceCurrency($affiliate);
-        $byCurrency = [];
-        $clicks = 0;
-        $uniqueClicks = 0;
-        $attributions = 0;
-        $conversions = 0;
-
-        foreach ($rows as $row) {
-            $currency = $this->normalizeCurrency($row->currency ?? null, $reference);
-
-            $byCurrency[$currency] ??= ['conversions' => 0, 'revenue_cents' => 0, 'commission_cents' => 0];
-            $byCurrency[$currency]['conversions'] += (int) $row->conversions;
-            $byCurrency[$currency]['revenue_cents'] += (int) $row->revenue_cents;
-            $byCurrency[$currency]['commission_cents'] += (int) $row->commission_cents;
-            $clicks += (int) $row->clicks;
-            $uniqueClicks += (int) $row->unique_clicks;
-            $attributions += (int) $row->attributions;
-            $conversions += (int) $row->conversions;
-        }
-
-        if ($rows->isEmpty()) {
-            return [
-                'clicks' => 0,
-                'unique_clicks' => 0,
-                'attributions' => 0,
-                'conversions' => 0,
-                'revenue_cents' => 0,
-                'commission_cents' => 0,
-                'currency' => $reference,
-                'converted' => false,
-                'by_currency' => [],
-                'conversion_rate' => null,
-                'epc_cents' => null,
-            ];
-        }
-
-        if (count($byCurrency) === 1) {
-            $only = (string) array_key_first($byCurrency);
-            $single = $byCurrency[$only];
-
-            return [
-                'clicks' => $clicks,
-                'unique_clicks' => $uniqueClicks,
-                'attributions' => $attributions,
-                'conversions' => $conversions,
-                'revenue_cents' => $single['revenue_cents'],
-                'commission_cents' => $single['commission_cents'],
-                'currency' => $only,
-                'converted' => false,
-                'by_currency' => $byCurrency,
-                'conversion_rate' => $clicks > 0 ? $conversions / $clicks : 0,
-                'epc_cents' => $clicks > 0 ? $single['commission_cents'] / $clicks : 0,
-            ];
-        }
-
-        $revenueByCurrency = [];
-        $commissionByCurrency = [];
-
-        foreach ($byCurrency as $currency => $money) {
-            $revenueByCurrency[$currency] = $money['revenue_cents'];
-            $commissionByCurrency[$currency] = $money['commission_cents'];
-        }
-
-        $revenue = $this->converter->totalMinor($revenueByCurrency, $reference, $to);
-        $commission = $this->converter->totalMinor($commissionByCurrency, $reference, $to);
-
-        return [
-            'clicks' => $clicks,
-            'unique_clicks' => $uniqueClicks,
-            'attributions' => $attributions,
-            'conversions' => $conversions,
-            'revenue_cents' => $revenue,
-            'commission_cents' => $commission,
-            'currency' => $reference,
-            'converted' => $revenue !== null && $commission !== null,
-            'by_currency' => $byCurrency,
-            'conversion_rate' => $clicks > 0 ? $conversions / $clicks : 0,
-            'epc_cents' => $clicks > 0 && $commission !== null ? $commission / $clicks : null,
-        ];
+        $this->delete->execute($affiliateId);
     }
 
     /**

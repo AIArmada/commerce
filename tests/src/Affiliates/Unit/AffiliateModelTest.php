@@ -241,7 +241,6 @@ describe('Affiliate Model - Relationships', function (): void {
             'commission_rate' => 1000,
             'currency' => 'USD',
         ]);
-        expect($affiliate->dailyStats())->toBeInstanceOf(HasMany::class);
     });
 
     test('has one balance', function (): void {

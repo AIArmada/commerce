@@ -2,22 +2,22 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Services;
+namespace AIArmada\Affiliates\Features\Reporting\Queries;
 
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateTouchpoint;
 use AIArmada\CommerceSupport\Support\CurrencyConverter;
-use Carbon\CarbonInterface;
+use AIArmada\Affiliates\Features\Reporting\Api\ReportingApi;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use stdClass;
 
-final class AffiliateReportService
+final readonly class AffiliateReportQuery implements ReportingApi
 {
-    public function __construct(private readonly CurrencyConverter $converter) {}
+    public function __construct(private CurrencyConverter $converter) {}
 
     /**
      * Money legs are grouped by the conversion currency. Single-currency
@@ -27,7 +27,7 @@ final class AffiliateReportService
      *
      * @return array{attributions: int, conversions: int, revenue_minor: int|null, commission_minor: int|null, currency: string, converted: bool, by_currency: array<string, array{conversions: int, revenue_minor: int, commission_minor: int}>}
      */
-    public function getSummary(CarbonInterface $startDate, CarbonInterface $endDate): array
+    public function getSummary(DateTimeInterface $startDate, DateTimeInterface $endDate): array
     {
         $rows = AffiliateConversion::query()
             ->forOwner()
@@ -57,7 +57,7 @@ final class AffiliateReportService
     /**
      * @return array<int, array{affiliate_id: string, affiliate_code: string, name: string|null, currency: string, conversions: int, revenue_minor: int, commission_minor: int}>
      */
-    public function getTopAffiliates(CarbonInterface $startDate, CarbonInterface $endDate, int $limit = 10): array
+    public function getTopAffiliates(DateTimeInterface $startDate, DateTimeInterface $endDate, int $limit = 10): array
     {
         $rows = AffiliateConversion::query()
             ->forOwner()
@@ -116,7 +116,7 @@ final class AffiliateReportService
     /**
      * @return array<int, array{date: string, currency: string, conversions: int, revenue_minor: int, commission_minor: int}>
      */
-    public function getConversionTrend(CarbonInterface $startDate, CarbonInterface $endDate): array
+    public function getConversionTrend(DateTimeInterface $startDate, DateTimeInterface $endDate): array
     {
         $rows = AffiliateConversion::query()
             ->forOwner()
@@ -144,7 +144,7 @@ final class AffiliateReportService
     /**
      * @return array{sources: array<string, int>, campaigns: array<string, int>}
      */
-    public function getTrafficSources(CarbonInterface $startDate, CarbonInterface $endDate): array
+    public function getTrafficSources(DateTimeInterface $startDate, DateTimeInterface $endDate): array
     {
         $conversionsTable = (new AffiliateConversion)->getTable();
         $attributionsTable = (new AffiliateAttribution)->getTable();
@@ -180,7 +180,7 @@ final class AffiliateReportService
     /**
      * @return array<int, array{subject_type: string, subject_key: string, subject_title_snapshot: string|null, visits: int, attributions: int, conversions: int, revenue_minor: int|null, commission_minor: int|null, currency: string, converted: bool, by_currency: array<string, array{conversions: int, revenue_minor: int, commission_minor: int}>}>
      */
-    public function getTopSubjects(CarbonInterface $startDate, CarbonInterface $endDate, int $limit = 10): array
+    public function getTopSubjects(DateTimeInterface $startDate, DateTimeInterface $endDate, int $limit = 10): array
     {
         $subjects = [];
         $moneyBySubject = [];
@@ -388,7 +388,7 @@ final class AffiliateReportService
         ];
     }
 
-    private function applyAttributionWindow(Builder $query, CarbonInterface $startDate, CarbonInterface $endDate): Builder
+    private function applyAttributionWindow(Builder $query, DateTimeInterface $startDate, DateTimeInterface $endDate): Builder
     {
         return $query->where(function (Builder $builder) use ($startDate, $endDate): void {
             $builder

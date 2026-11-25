@@ -6,7 +6,7 @@ use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\Services\AffiliateReportService;
+use AIArmada\Affiliates\Features\Reporting\Api\ReportingApi;
 use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
 use AIArmada\Affiliates\Services\PayoutReconciliationService;
 use AIArmada\Affiliates\Settings\AffiliateBonusSettings;
@@ -94,7 +94,7 @@ test('report summaries disclose conversion provenance', function (): void {
         ]);
     }
 
-    $summary = app(AffiliateReportService::class)->getSummary($start, $end);
+    $summary = app(ReportingApi::class)->getSummary($start, $end);
 
     expect($summary['converted'])->toBeTrue()
         ->and($summary['conversion'])->toBe([
@@ -128,7 +128,7 @@ test('top affiliates break ranking ties by affiliate id', function (): void {
     }
 
     $expected = collect($affiliates)->map(fn (Affiliate $a): string => (string) $a->id)->sort()->values()->all();
-    $actual = collect(app(AffiliateReportService::class)->getTopAffiliates($start, $end, 10))
+    $actual = collect(app(ReportingApi::class)->getTopAffiliates($start, $end, 10))
         ->pluck('affiliate_id')->all();
 
     expect($actual)->toBe($expected);

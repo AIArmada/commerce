@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Services\AffiliateReportService;
+use AIArmada\Affiliates\Features\Reporting\Api\ReportingApi;
 use AIArmada\FilamentAffiliates\Pages\ReportsPage;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
@@ -10,7 +10,7 @@ use Carbon\CarbonInterface;
 it('generates a report for predefined periods', function (): void {
     $captured = ['start' => null, 'end' => null];
 
-    app()->instance(AffiliateReportService::class, new class($captured)
+    app()->instance(ReportingApi::class, new class($captured)
     {
         /** @var array{start:mixed, end:mixed} */
         public array $captured;
@@ -71,7 +71,7 @@ it('generates a report for predefined periods', function (): void {
 it('generates a report for a custom range with parsed dates', function (): void {
     $captured = ['start' => null, 'end' => null];
 
-    app()->instance(AffiliateReportService::class, new class($captured)
+    app()->instance(ReportingApi::class, new class($captured)
     {
         /** @var array{start:mixed, end:mixed} */
         public array $captured;
@@ -129,7 +129,7 @@ it('generates a report for a custom range with parsed dates', function (): void 
 it('generates a report for a custom range with missing dates using sane defaults', function (): void {
     $captured = ['start' => null, 'end' => null];
 
-    app()->instance(AffiliateReportService::class, new class($captured)
+    app()->instance(ReportingApi::class, new class($captured)
     {
         /** @var array{start:mixed, end:mixed} */
         public array $captured;

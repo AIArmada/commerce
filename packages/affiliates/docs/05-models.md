@@ -341,7 +341,7 @@ use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
 Aggregated daily statistics.
 
 ```php
-use AIArmada\Affiliates\Models\AffiliateDailyStat;
+use AIArmada\Affiliates\Features\Reporting\Models\AffiliateDailyStat;
 ```
 
 | Attribute | Type | Description |

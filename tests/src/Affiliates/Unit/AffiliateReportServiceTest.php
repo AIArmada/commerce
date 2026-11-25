@@ -8,7 +8,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateTouchpoint;
-use AIArmada\Affiliates\Services\AffiliateReportService;
+use AIArmada\Affiliates\Features\Reporting\Api\ReportingApi;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\CommerceSupport\Settings\ExchangeRateSettings;
@@ -50,7 +50,7 @@ test('affiliate report service summarizes totals and utm', function (): void {
         'subtotal' => 2000,
     ]);
 
-    $summary = app(AffiliateReportService::class)->affiliateSummary($this->affiliate->getKey());
+    $summary = app(ReportingApi::class)->affiliateSummary($this->affiliate->getKey());
 
     expect($summary['totals']['commission_minor'])->toBe(30)
         ->and($summary['totals']['conversions'])->toBe(2)
@@ -86,7 +86,7 @@ test('affiliate report service prefers neutral revenue fields and attribution fi
         'campaign' => 'ramadan',
     ]);
 
-    $service = app(AffiliateReportService::class);
+    $service = app(ReportingApi::class);
     $startDate = $occurredAt->copy()->subHour();
     $endDate = $occurredAt->copy()->addHour();
 
@@ -198,7 +198,7 @@ test('affiliate report service returns top subjects with visits and conversions'
         'touched_at' => $occurredAt,
     ]);
 
-    $subjects = app(AffiliateReportService::class)->getTopSubjects(
+    $subjects = app(ReportingApi::class)->getTopSubjects(
         $occurredAt->copy()->subHour(),
         $occurredAt->copy()->addHour(),
     );
@@ -251,7 +251,7 @@ test('affiliate report service refuses to blend mixed-currency totals without ra
 
     config(['affiliates.currency.default' => 'USD']);
 
-    $service = app(AffiliateReportService::class);
+    $service = app(ReportingApi::class);
     $summary = $service->getSummary($occurredAt->copy()->subHour(), $occurredAt->copy()->addHour());
 
     expect($summary['conversions'])->toBe(2)
@@ -288,7 +288,7 @@ test('affiliate report service converts mixed-currency totals when rates exist',
     config(['affiliates.currency.default' => 'USD']);
     (new ExchangeRateSettings(['base' => 'USD', 'rates' => ['MYR' => 4.7], 'history' => []]))->save();
 
-    $service = app(AffiliateReportService::class);
+    $service = app(ReportingApi::class);
     $startDate = $occurredAt->copy()->subHour();
     $endDate = $occurredAt->copy()->addHour();
 

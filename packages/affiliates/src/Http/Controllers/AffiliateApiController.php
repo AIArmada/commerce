@@ -6,7 +6,7 @@ namespace AIArmada\Affiliates\Http\Controllers;
 
 use AIArmada\Affiliates\Actions\Affiliates\CreateTrackingLink;
 use AIArmada\Affiliates\Contracts\AffiliateLookup;
-use AIArmada\Affiliates\Services\AffiliateReportService;
+use AIArmada\Affiliates\Features\Reporting\Api\ReportingApi;
 use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Http\JsonResponse;
@@ -21,7 +21,7 @@ final class AffiliateApiController extends Controller
     public function __construct(
         private readonly AffiliateLookup $affiliateLookup,
         private readonly CreateTrackingLink $createTrackingLink,
-        private readonly AffiliateReportService $reports,
+        private readonly ReportingApi $reports,
     ) {}
 
     public function summary(string $code): JsonResponse

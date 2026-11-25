@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Services;
+namespace AIArmada\Affiliates\Features\Reporting\Queries;
 
+use AIArmada\Affiliates\Features\Reporting\Api\CohortApi;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
@@ -20,7 +21,7 @@ use RuntimeException;
 /**
  * Analyzes affiliate cohorts by acquisition date to track lifetime value and performance trends.
  */
-final class CohortAnalyzer
+final class CohortQuery implements CohortApi
 {
     /**
      * Analyze cohorts by month of acquisition.
@@ -367,7 +368,7 @@ final class CohortAnalyzer
 
         $cohortQuery = DB::table($affiliatesTable)
             ->select('id', DB::raw("$dateFormat as cohort_month"))
-            ->whereBetween('created_at', [$from, $to]);
+            ->whereBetween('created_at', [$from, $to])->orderBy('cohort_month');
 
         if ((bool) config('affiliates.owner.enabled', false)) {
             $owner = OwnerContext::resolve();

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Console\Commands\AggregateDailyStatsCommand;
+use AIArmada\Affiliates\Features\Reporting\EntryPoints\Commands\AggregateDailyStatsCommand;
 use AIArmada\Affiliates\Console\Commands\ExportAffiliatePayoutCommand;
 use AIArmada\Affiliates\Console\Commands\ProcessCommissionMaturityCommand;
 use AIArmada\Affiliates\Console\Commands\ProcessRankUpgradesCommand;

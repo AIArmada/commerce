@@ -247,24 +247,24 @@ $service->getAvailablePrograms();                    // Collection — no affili
 $service->processTierUpgrades($program);             // int
 ```
 
-## DailyAggregationService
+## DailyStatsWriter
 
 Aggregates daily statistics for reporting. Stats are stored one row per affiliate, date, and currency; money never blends across currencies.
 
 ```php
-use AIArmada\Affiliates\Services\DailyAggregationService;
+use AIArmada\Affiliates\Features\Reporting\Api\DailyStatsWriter;
 use Carbon\CarbonImmutable;
 
-$service = app(DailyAggregationService::class);
+$service = app(DailyStatsWriter::class);
 
 // Aggregate every affiliate for one date (returns affiliate count).
 $service->aggregate(CarbonImmutable::today());
 
 // Aggregate one affiliate for one date (returns one stat per currency).
-$stats = $service->aggregateForAffiliate($affiliate, CarbonImmutable::today());
+$stats = $service->aggregateForAffiliate((string) $affiliate->getKey(), CarbonImmutable::today());
 
 // Backfill a date range (returns total affiliate-days processed).
-$service->backfill($startDate, $endDate);
+$service->aggregateRange($startDate, $endDate);
 
 // Summarize an affiliate over a period.
 $stats = $service->getAggregatedStats($affiliate, $startDate, $endDate);
@@ -279,15 +279,15 @@ $stats['converted'];     // true when FX math was applied
 $stats['by_currency'];   // ['USD' => ['conversions' => ..., ...], ...]
 ```
 
-## AffiliateReportService
+## ReportingApi
 
 Generates reports and analytics. Money legs group by conversion currency; totals convert to `affiliates.currency.default` only when legs span currencies, and null when an exchange rate is missing — `by_currency` always holds the exact legs.
 
 ```php
-use AIArmada\Affiliates\Services\AffiliateReportService;
+use AIArmada\Affiliates\Features\Reporting\Api\ReportingApi;
 use Carbon\CarbonImmutable;
 
-$service = app(AffiliateReportService::class);
+$service = app(ReportingApi::class);
 $from = CarbonImmutable::now()->subMonth();
 $to = CarbonImmutable::now();
 
@@ -309,14 +309,14 @@ $one = $service->affiliateSummary($affiliateId);
 // Totals carry 'currency', 'converted', and 'by_currency' like getSummary().
 ```
 
-## CohortAnalyzer
+## CohortApi
 
 Analyzes affiliate cohorts for trends.
 
 ```php
-use AIArmada\Affiliates\Services\CohortAnalyzer;
+use AIArmada\Affiliates\Features\Reporting\Api\CohortApi;
 
-$analyzer = app(CohortAnalyzer::class);
+$analyzer = app(CohortApi::class);
 
 // Monthly cohort breakdown over a window
 $monthly = $analyzer->analyzeMonthly($from, $to, monthsToTrack: 12);
