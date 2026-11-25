@@ -253,7 +253,7 @@ Listen to impersonation events for logging/auditing:
 Fired when impersonation starts:
 
 ```php
-use AIArmada\Authz\Events\TakeImpersonation;
+use AIArmada\Authz\Features\Impersonation\Events\TakeImpersonation;
 
 class LogImpersonationStart
 {
@@ -272,7 +272,7 @@ class LogImpersonationStart
 Fired when impersonation ends:
 
 ```php
-use AIArmada\Authz\Events\LeaveImpersonation;
+use AIArmada\Authz\Features\Impersonation\Events\LeaveImpersonation;
 
 class LogImpersonationEnd
 {

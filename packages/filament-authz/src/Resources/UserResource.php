@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Resources;
 
-use AIArmada\Authz\Support\ImpersonationScopeGuard;
+use AIArmada\Authz\Features\Impersonation\Queries\ImpersonationScopeGuard;
 use AIArmada\Authz\Support\UserRoleChecker;
 use AIArmada\FilamentAuthz\Facades\FilamentAuthz;
 use AIArmada\FilamentAuthz\Resources\UserResource\Pages;

@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Authz\Models\Role;
-use AIArmada\Authz\Support\AuthzScopeResolver;
+use AIArmada\Authz\Features\Authorization\Models\Role;
+use AIArmada\Authz\Features\Authorization\Support\AuthzScopeResolver;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Events\Data\AssignmentRequestStatus;
 use AIArmada\Events\Features\Catalog\Models\EventOrganizer;

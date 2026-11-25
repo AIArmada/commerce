@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Http\Middleware;
 
-use AIArmada\Authz\Services\ImpersonateManager;
+use AIArmada\Authz\Features\Impersonation\Actions\ImpersonateManager;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;

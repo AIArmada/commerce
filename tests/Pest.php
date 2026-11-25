@@ -7,7 +7,7 @@ if (! class_exists('Facades\\Livewire\\Features\\SupportFileUploads\\GenerateSig
 }
 
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Authz\Models\Role;
+use AIArmada\Authz\Features\Authorization\Models\Role;
 use AIArmada\Cart\Conditions\ConditionTarget;
 use AIArmada\Cart\Tests\CartEngineTestCase;
 use AIArmada\Commerce\Tests\Addressing\AddressingDatabaseTestCase;

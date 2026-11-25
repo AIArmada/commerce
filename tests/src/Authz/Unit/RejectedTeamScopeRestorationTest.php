@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Authz\Authz;
+use AIArmada\Authz\Features\Authorization\Authz;
 use AIArmada\Authz\Exceptions\ScopeResolutionException;
 use AIArmada\Authz\Exceptions\ScopeRestorationException;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;

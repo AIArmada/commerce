@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\Authz\Models\AuthzScope;
-use AIArmada\Authz\Models\Permission;
-use AIArmada\Authz\Models\Role;
+use AIArmada\Authz\Features\Authorization\Models\AuthzScope;
+use AIArmada\Authz\Features\Authorization\Models\Permission;
+use AIArmada\Authz\Features\Authorization\Models\Role;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAuthz\Resources\PermissionResource;
 use AIArmada\FilamentAuthz\Resources\RoleResource;

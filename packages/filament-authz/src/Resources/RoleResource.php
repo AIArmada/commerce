@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Resources;
 
-use AIArmada\Authz\Concerns\ScopesAuthzTenancy;
-use AIArmada\Authz\Models\Role;
+use AIArmada\Authz\Features\Authorization\Concerns\ScopesAuthzTenancy;
+use AIArmada\Authz\Features\Authorization\Models\Role;
 use AIArmada\Authz\Support\UserRoleChecker;
 use AIArmada\FilamentAuthz\FilamentAuthzPlugin;
 use AIArmada\FilamentAuthz\Resources\RoleResource\Concerns\HasAuthzFormComponents;

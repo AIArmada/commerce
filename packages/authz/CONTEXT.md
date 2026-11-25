@@ -43,7 +43,7 @@ keywords:
 - Owner/security: No HasOwner; uses Spatie teams + AuthzScope.
 
 ## Key surfaces
-- Actions/Services: `Services/ImpersonateManager`, `Services/PermissionKeyBuilder`, `Services/WildcardPermissionResolver`, `Support/AuthzScopeContext`, `Support/AuthzScopeResolver`, `Support/AuthzScopeTeamResolver`, `Support/CommandProhibitor`, `Support/ImpersonationScopeGuard`
+- Actions/Services: `Features/Impersonation/Actions/ImpersonateManager`, `Services/PermissionKeyBuilder`, `Services/WildcardPermissionResolver`, `Features/Authorization/Support/AuthzScopeContext`, `Features/Authorization/Support/AuthzScopeResolver`, `Features/Authorization/Support/AuthzScopeTeamResolver`, `Support/CommandProhibitor`, `Features/Impersonation/Queries/ImpersonationScopeGuard`
 - Config `authz.php`: `database`, `super_admin_role`, `guards`, `users`, `wildcard_permissions`, `permissions`, `custom_permissions`, `sync`, `scopes`, `impersonate`
 
 ## Docs map

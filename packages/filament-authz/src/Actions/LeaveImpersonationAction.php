@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Actions;
 
-use AIArmada\Authz\Services\ImpersonateManager;
-use AIArmada\Authz\Support\BackToUrlSanitizer;
+use AIArmada\Authz\Features\Impersonation\Actions\ImpersonateManager;
+use AIArmada\Authz\Features\Impersonation\Support\BackToUrlSanitizer;
 use Filament\Actions\Action;
 use Filament\Navigation\MenuItem;
 use Filament\Notifications\Notification;

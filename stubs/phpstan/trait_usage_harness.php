@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Commerce\PHPStan\TraitUsageHarness;
 
-use AIArmada\Authz\Concerns\HasAuthzScope;
-use AIArmada\Authz\Models\AuthzScope;
+use AIArmada\Authz\Features\Authorization\Concerns\HasAuthzScope;
+use AIArmada\Authz\Features\Authorization\Models\AuthzScope;
 use AIArmada\CommerceSupport\Traits\FormatsMoney;
 use AIArmada\CommerceSupport\Traits\HasPaymentStatus;
 use AIArmada\CommerceSupport\Traits\OwnerContextJob;

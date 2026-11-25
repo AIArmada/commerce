@@ -81,7 +81,7 @@ When `authz.wildcard_permissions` is enabled, a granted permission containing
 ## Impersonation
 
 ```php
-use AIArmada\Authz\Services\ImpersonateManager;
+use AIArmada\Authz\Features\Impersonation\Actions\ImpersonateManager;
 
 $manager = app(ImpersonateManager::class);
 $manager->take($administrator, $target, 'web', '/admin');

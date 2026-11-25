@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
+use AIArmada\Authz\Features\Authorization\EntryPoints\Console\SuperAdminCommand;
+use AIArmada\Authz\Features\Authorization\EntryPoints\Console\SyncAuthzCommand;
 use AIArmada\Authz\EntryPoints\Console\Concerns\Prohibitable;
-use AIArmada\Authz\EntryPoints\Console\SuperAdminCommand;
-use AIArmada\Authz\EntryPoints\Console\SyncAuthzCommand;
-use AIArmada\Authz\Models\Permission;
-use AIArmada\Authz\Models\Role;
+use AIArmada\Authz\Features\Authorization\Models\Permission;
+use AIArmada\Authz\Features\Authorization\Models\Role;
 use AIArmada\FilamentAuthz\Console\DiscoverCommand;
 use AIArmada\FilamentAuthz\Console\GeneratePoliciesCommand;
 use AIArmada\FilamentAuthz\Console\SeederCommand;
@@ -104,8 +104,8 @@ describe('SeederCommand', function (): void {
         $content = $method->invoke($command, collect(), collect(), 'all');
 
         expect($content)
-            ->toContain('use AIArmada\\Authz\\Models\\Permission;')
-            ->toContain('use AIArmada\\Authz\\Models\\Role;')
+            ->toContain('use AIArmada\\Authz\\Features\\Authorization\\Models\\Permission;')
+            ->toContain('use AIArmada\\Authz\\Features\\Authorization\\Models\\Role;')
             ->not->toContain('use Spatie\\Permission\\Models\\Permission;')
             ->not->toContain('use Spatie\\Permission\\Models\\Role;');
     });

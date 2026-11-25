@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Commerce\Tests\FilamentCashierChip;
 
-use AIArmada\Authz\Models\Permission;
-use AIArmada\Authz\Models\Role;
+use AIArmada\Authz\Features\Authorization\Models\Permission;
+use AIArmada\Authz\Features\Authorization\Models\Role;
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\CashierChipServiceProvider;
 use AIArmada\CashierChip\Subscription\Subscription;

@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "name": "Impersonation",
+  "owns": {
+    "store:impersonation_session": [
+      "AIArmada\\Authz\\Features\\Impersonation\\Actions\\ImpersonateManager"
+    ]
+  },
+  "extensions": {}
+}

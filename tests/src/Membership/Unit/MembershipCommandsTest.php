@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Authz\Models\Permission;
-use AIArmada\Authz\Models\Role;
+use AIArmada\Authz\Features\Authorization\Models\Permission;
+use AIArmada\Authz\Features\Authorization\Models\Role;
 use AIArmada\Membership\Enums\MemberRole;
 use AIArmada\Membership\MembershipServiceProvider;
 use AIArmada\Membership\Services\MembershipRoleSyncService;

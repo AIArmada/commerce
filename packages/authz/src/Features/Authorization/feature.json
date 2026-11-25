@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "name": "Authorization",
+  "owns": {
+    "table:authz_scopes": [
+      "AIArmada\\Authz\\Features\\Authorization\\Actions\\EnsureScopeForModel",
+      "AIArmada\\Authz\\Features\\Authorization\\Actions\\UpdateScopeLabel",
+      "AIArmada\\Authz\\Features\\Authorization\\Actions\\DeleteScopeForModel"
+    ],
+    "table:roles": [
+      "AIArmada\\Authz\\Features\\Authorization\\Actions\\PersistRole",
+      "AIArmada\\Authz\\Features\\Authorization\\Actions\\DeleteScopeAssignments",
+      "AIArmada\\Authz\\Features\\Authorization\\Actions\\AssignGlobalSuperAdmin",
+      "AIArmada\\Authz\\Features\\Authorization\\Actions\\SyncConfiguredAuthorization"
+    ],
+    "table:permissions": [
+      "AIArmada\\Authz\\Features\\Authorization\\Actions\\PersistPermission",
+      "AIArmada\\Authz\\Features\\Authorization\\Actions\\SyncConfiguredAuthorization"
+    ],
+    "table:model_has_roles": [
+      "AIArmada\\Authz\\Features\\Authorization\\Actions\\DeleteScopeAssignments",
+      "AIArmada\\Authz\\Features\\Authorization\\Actions\\AssignGlobalSuperAdmin"
+    ],
+    "table:model_has_permissions": [
+      "AIArmada\\Authz\\Features\\Authorization\\Actions\\DeleteScopeAssignments"
+    ],
+    "table:role_has_permissions": [
+      "AIArmada\\Authz\\Features\\Authorization\\Actions\\DeleteScopeAssignments",
+      "AIArmada\\Authz\\Features\\Authorization\\Actions\\SyncConfiguredAuthorization",
+      "AIArmada\\Authz\\Features\\Authorization\\Actions\\SyncRolePermissions"
+    ]
+  },
+  "extensions": {}
+}

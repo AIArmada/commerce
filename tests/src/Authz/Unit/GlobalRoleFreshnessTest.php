@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Authz\Authz;
-use AIArmada\Authz\Models\Role;
+use AIArmada\Authz\Features\Authorization\Authz;
+use AIArmada\Authz\Features\Authorization\Models\Role;
 use AIArmada\Authz\Support\UserRoleChecker;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\FilamentPermission;

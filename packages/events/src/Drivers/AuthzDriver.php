@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Drivers;
 
-use AIArmada\Authz\Models\Role;
+use AIArmada\Authz\Features\Authorization\Models\Role;
 use AIArmada\Events\Contracts\EventAuthzDriver;
 use AIArmada\Events\Data\EventAssignmentData;
 use Illuminate\Database\Eloquent\Model;
@@ -15,7 +15,7 @@ use Spatie\Permission\PermissionRegistrar;
 
 final class AuthzDriver implements EventAuthzDriver
 {
-    private const string SCOPE_RESOLVER = 'AIArmada\\Authz\\Support\\AuthzScopeResolver';
+    private const string SCOPE_RESOLVER = 'AIArmada\\Authz\\Features\\Authorization\\Support\\AuthzScopeResolver';
 
     public function syncAssignment(EventAssignmentData $assignment): void
     {

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Support;
 
-use AIArmada\Authz\Models\AuthzScope;
+use AIArmada\Authz\Features\Authorization\Models\AuthzScope;
 use Filament\Forms\Components\Select;
 use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\Section;

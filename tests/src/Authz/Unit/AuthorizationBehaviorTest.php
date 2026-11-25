@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use AIArmada\Authz\AuthzServiceProvider;
-use AIArmada\Authz\Models\Permission;
-use AIArmada\Authz\Models\Role;
-use AIArmada\Authz\Support\ImpersonationScopeGuard;
+use AIArmada\Authz\Features\Authorization\Models\Permission;
+use AIArmada\Authz\Features\Authorization\Models\Role;
+use AIArmada\Authz\Features\Impersonation\Queries\ImpersonationScopeGuard;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use Illuminate\Support\Facades\Gate;
 use Spatie\Permission\PermissionRegistrar;

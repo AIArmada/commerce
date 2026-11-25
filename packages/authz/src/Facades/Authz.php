@@ -7,7 +7,7 @@ namespace AIArmada\Authz\Facades;
 use Illuminate\Support\Facades\Facade;
 
 /**
- * @method static \AIArmada\Authz\Authz buildPermissionKeyUsing(\Closure $callback)
+ * @method static \AIArmada\Authz\Features\Authorization\Api\AuthorizationApi buildPermissionKeyUsing(\Closure $callback)
  * @method static string buildPermissionKey(string $subject, string $action)
  * @method static string|int|null resolveScopeId(mixed $scope)
  * @method static mixed withScope(mixed $scope, callable $callback, ?\Illuminate\Contracts\Auth\Access\Authorizable $user = null)
@@ -16,12 +16,12 @@ use Illuminate\Support\Facades\Facade;
  * @method static array getCustomPermissions()
  * @method static void clearCache()
  *
- * @see \AIArmada\Authz\Authz
+ * @see \AIArmada\Authz\Features\Authorization\Api\AuthorizationApi
  */
 final class Authz extends Facade
 {
     protected static function getFacadeAccessor(): string
     {
-        return \AIArmada\Authz\Authz::class;
+        return \AIArmada\Authz\Features\Authorization\Api\AuthorizationApi::class;
     }
 }

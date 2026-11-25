@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Actions;
 
-use AIArmada\Authz\Services\ImpersonateManager;
-use AIArmada\Authz\Support\BackToUrlSanitizer;
-use AIArmada\Authz\Support\ImpersonationScopeGuard;
+use AIArmada\Authz\Features\Impersonation\Actions\ImpersonateManager;
+use AIArmada\Authz\Features\Impersonation\Support\BackToUrlSanitizer;
+use AIArmada\Authz\Features\Impersonation\Queries\ImpersonationScopeGuard;
 use AIArmada\Authz\Support\UserRoleChecker;
 use AIArmada\FilamentAuthz\Support\ImpersonationActorAuth;
 use Closure;

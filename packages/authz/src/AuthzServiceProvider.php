@@ -4,16 +4,19 @@ declare(strict_types=1);
 
 namespace AIArmada\Authz;
 
-use AIArmada\Authz\EntryPoints\Console\SuperAdminCommand;
-use AIArmada\Authz\EntryPoints\Console\SyncAuthzCommand;
-use AIArmada\Authz\Guard\SessionGuard;
-use AIArmada\Authz\Models\Permission as AuthzPermission;
-use AIArmada\Authz\Models\Role as AuthzRole;
-use AIArmada\Authz\Services\ImpersonateManager;
+use AIArmada\Authz\Features\Authorization\EntryPoints\Console\SuperAdminCommand;
+use AIArmada\Authz\Features\Authorization\EntryPoints\Console\SyncAuthzCommand;
+use AIArmada\Authz\Features\Impersonation\EntryPoints\Auth\SessionGuard;
+use AIArmada\Authz\Features\Authorization\Api\AuthorizationApi;
+use AIArmada\Authz\Features\Authorization\Models\Permission as AuthzPermission;
+use AIArmada\Authz\Features\Authorization\Models\Role as AuthzRole;
+use AIArmada\Authz\Features\Impersonation\Api\ImpersonationApi;
+use AIArmada\Authz\Platform\FeatureCatalog;
+use AIArmada\Authz\Platform\FeatureModule;
+use AIArmada\Authz\Platform\ExtensionRegistry;
 use AIArmada\Authz\Services\PermissionKeyBuilder;
 use AIArmada\Authz\Services\WildcardPermissionResolver;
-use AIArmada\Authz\Support\AuthzScopeContext;
-use AIArmada\Authz\Support\AuthzScopeTeamResolver;
+use AIArmada\Authz\Features\Authorization\Support\AuthzScopeTeamResolver;
 use AIArmada\Authz\Support\UserRoleChecker;
 use AIArmada\Authz\Support\UserWildcardPermissions;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -57,20 +60,12 @@ final class AuthzServiceProvider extends PackageServiceProvider
     {
         $this->configureSpatiePermissions();
 
-        $this->app->scoped(AuthzScopeContext::class, static fn (): AuthzScopeContext => new AuthzScopeContext);
+        $catalog = FeatureCatalog::load(dirname(__DIR__), __NAMESPACE__);
+        $this->app->singleton(ExtensionRegistry::class, fn ($app): ExtensionRegistry => new ExtensionRegistry($app, $catalog['extensions']));
 
-        $this->app->singleton(WildcardPermissionResolver::class);
-        $this->app->singleton(PermissionKeyBuilder::class);
-
-        $this->app->singleton(Authz::class, function ($app): Authz {
-            return new Authz(
-                $app->make(PermissionKeyBuilder::class)
-            );
-        });
-
-        $this->app->singleton(ImpersonateManager::class, function ($app): ImpersonateManager {
-            return new ImpersonateManager($app);
-        });
+        foreach (array_keys($catalog['features']) as $feature) {
+            $this->featureModule($feature)->register($this->app);
+        }
 
         $this->registerTeamResolver();
         $this->registerAuthDriver();
@@ -80,6 +75,10 @@ final class AuthzServiceProvider extends PackageServiceProvider
 
     public function packageBooted(): void
     {
+        foreach (array_keys(FeatureCatalog::load(dirname(__DIR__), __NAMESPACE__)['features']) as $feature) {
+            $this->featureModule($feature)->boot($this->app);
+        }
+
         $this->assertConfiguration();
 
         $this->registerBladeDirectives();
@@ -95,6 +94,18 @@ final class AuthzServiceProvider extends PackageServiceProvider
         if (! isset($this->package)) {
             $this->register();
         }
+    }
+
+    private function featureModule(string $feature): FeatureModule
+    {
+        $class = __NAMESPACE__ . '\\Features\\' . $feature . '\\FeatureModule';
+        $module = $this->app->make($class);
+
+        if (! $module instanceof FeatureModule) {
+            throw new InvalidArgumentException("Invalid Authz feature module [{$class}].");
+        }
+
+        return $module;
     }
 
     private function assertConfiguration(): void
@@ -234,8 +245,8 @@ final class AuthzServiceProvider extends PackageServiceProvider
                 UserRoleChecker::flushGlobalRoleCache();
                 UserWildcardPermissions::flushCache();
 
-                if (app()->has(Authz::class)) {
-                    app(Authz::class)->clearCache();
+                if (app()->has(AuthorizationApi::class)) {
+                    app(AuthorizationApi::class)->clearCache();
                 }
             }
         );
@@ -328,11 +339,11 @@ final class AuthzServiceProvider extends PackageServiceProvider
     private function registerImpersonationEventListeners(): void
     {
         Event::listen(Login::class, function (): void {
-            app(ImpersonateManager::class)->clear();
+            app(ImpersonationApi::class)->clear();
         });
 
         Event::listen(Logout::class, function (): void {
-            app(ImpersonateManager::class)->clear();
+            app(ImpersonationApi::class)->clear();
         });
     }
 }

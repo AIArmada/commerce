@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Authz\Support\BackToUrlSanitizer;
+use AIArmada\Authz\Features\Impersonation\Support\BackToUrlSanitizer;
 
 describe('Impersonation return URL sanitizer', function (): void {
     it('falls back to root path for external back-to urls', function (): void {

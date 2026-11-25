@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAuthz\Console;
 
 use AIArmada\Authz\EntryPoints\Console\Concerns\Prohibitable;
-use AIArmada\Authz\Models\Permission;
-use AIArmada\Authz\Models\Role;
+use AIArmada\Authz\Features\Authorization\Models\Permission;
+use AIArmada\Authz\Features\Authorization\Models\Role;
 use AIArmada\FilamentAuthz\Facades\FilamentAuthz;
 use Filament\Facades\Filament;
 use Illuminate\Console\Command;
@@ -171,8 +171,8 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use AIArmada\Authz\Models\Permission;
-use AIArmada\Authz\Models\Role;
+use AIArmada\Authz\Features\Authorization\Models\Permission;
+use AIArmada\Authz\Features\Authorization\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
 /**

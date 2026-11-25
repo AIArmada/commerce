@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz;
 
-use AIArmada\Authz\Authz as BaseAuthz;
+use AIArmada\Authz\Features\Authorization\Authz as BaseAuthz;
 use AIArmada\FilamentAuthz\Support\PanelExclusions;
 use Filament\Facades\Filament;
 use Filament\Pages\Page;

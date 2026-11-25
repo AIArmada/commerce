@@ -163,7 +163,7 @@ Enable Spatie teams and Authz scopes in `config/authz.php`:
 Add scopes to your models:
 
 ```php
-use AIArmada\Authz\Concerns\HasAuthzScope;
+use AIArmada\Authz\Features\Authorization\Concerns\HasAuthzScope;
 
 class Workspace extends Model
 {
@@ -427,8 +427,8 @@ Use in Blade templates:
 Listen to impersonation events:
 
 ```php
-use AIArmada\Authz\Events\TakeImpersonation;
-use AIArmada\Authz\Events\LeaveImpersonation;
+use AIArmada\Authz\Features\Impersonation\Events\TakeImpersonation;
+use AIArmada\Authz\Features\Impersonation\Events\LeaveImpersonation;
 
 // In EventServiceProvider
 protected $listen = [
