@@ -341,9 +341,9 @@ it('migrates guest carts into the authenticated owner cart when owner scoping is
     {
         public function __construct(private User $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
         {
-            return $this->owner;
+            return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -445,9 +445,9 @@ it('uses the resolved owner boundary when migrating carts in owner mode', functi
     {
         public function __construct(private User $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
         {
-            return $this->owner;
+            return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
         }
     });
 

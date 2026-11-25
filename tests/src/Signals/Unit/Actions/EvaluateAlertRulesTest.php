@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Signals\Actions\EvaluateAlertRules;
 use AIArmada\Signals\Models\SignalAlertLog;
 use AIArmada\Signals\Models\SignalAlertRule;
@@ -15,7 +15,7 @@ use Carbon\CarbonImmutable;
 uses(SignalsTestCase::class);
 
 it('evaluates and dispatches matching alert rules', function (): void {
-    $owner = app(OwnerResolverInterface::class)->resolve();
+    $owner = OwnerContext::resolve();
     expect($owner)->toBeInstanceOf(User::class);
 
     $property = TrackedProperty::query()->create([

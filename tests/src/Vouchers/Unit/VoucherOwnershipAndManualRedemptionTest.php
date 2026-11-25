@@ -103,9 +103,9 @@ it('scopes vouchers to the resolved owner', function (): void {
         {
             public function __construct(private TestOwner $owner) {}
 
-            public function resolve(): ?EloquentModel
+            public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
             {
-                return $this->owner;
+                return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
             }
         };
     });
@@ -132,9 +132,9 @@ it('scopes vouchers to the resolved owner', function (): void {
         {
             public function __construct(private TestOwner $owner) {}
 
-            public function resolve(): ?EloquentModel
+            public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
             {
-                return $this->owner;
+                return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
             }
         };
     });
@@ -155,9 +155,9 @@ it('scopes vouchers to the resolved owner', function (): void {
         {
             public function __construct(private TestOwner $owner) {}
 
-            public function resolve(): ?EloquentModel
+            public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
             {
-                return $this->owner;
+                return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
             }
         };
     });
@@ -194,9 +194,9 @@ it('overrides provided owner columns when resolver owner is available', function
         {
             public function __construct(private TestOwner $owner) {}
 
-            public function resolve(): ?EloquentModel
+            public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
             {
-                return $this->owner;
+                return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
             }
         };
     });

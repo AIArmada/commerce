@@ -33,7 +33,7 @@ beforeEach(function (): void {
 
     app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
     {
-        public function resolve(): ?Model
+        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
         {
             return null;
         }
@@ -121,9 +121,9 @@ it('calculates stats using an owner-scoped query', function (): void {
     {
         public function __construct(private readonly ?Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
         {
-            return $this->owner;
+            return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
         }
     });
 

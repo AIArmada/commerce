@@ -101,7 +101,7 @@ describe('InventoryLocation', function (): void {
 
         app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
         {
-            public function resolve(): ?Model
+            public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
             {
                 return null;
             }
@@ -128,9 +128,9 @@ describe('InventoryLocation', function (): void {
         {
             public function __construct(private readonly ?Model $owner) {}
 
-            public function resolve(): ?Model
+            public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
             {
-                return $this->owner;
+                return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
             }
         });
 
@@ -158,9 +158,9 @@ describe('InventoryLocation', function (): void {
         {
             public function __construct(private readonly ?Model $owner) {}
 
-            public function resolve(): ?Model
+            public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
             {
-                return $this->owner;
+                return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
             }
         });
 
@@ -392,9 +392,9 @@ describe('InventoryLocation', function (): void {
         {
             public function __construct(private readonly ?Model $owner) {}
 
-            public function resolve(): ?Model
+            public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
             {
-                return $this->owner;
+                return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
             }
         });
 
@@ -404,7 +404,7 @@ describe('InventoryLocation', function (): void {
         // Create global location
         app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
         {
-            public function resolve(): ?Model
+            public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
             {
                 return null;
             }
@@ -417,9 +417,9 @@ describe('InventoryLocation', function (): void {
         {
             public function __construct(private readonly ?Model $owner) {}
 
-            public function resolve(): ?Model
+            public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
             {
-                return $this->owner;
+                return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
             }
         });
         $otherLocation = InventoryLocation::factory()->create();
@@ -441,9 +441,9 @@ describe('InventoryLocation', function (): void {
         {
             public function __construct(private readonly ?Model $owner) {}
 
-            public function resolve(): ?Model
+            public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
             {
-                return $this->owner;
+                return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
             }
         });
 
@@ -453,7 +453,7 @@ describe('InventoryLocation', function (): void {
         // Create global location
         app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
         {
-            public function resolve(): ?Model
+            public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
             {
                 return null;
             }

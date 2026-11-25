@@ -39,7 +39,7 @@ final class OwnerContext
     {
         return $config->owner === null
             ? self::resolve()
-            : self::fromTypeAndIdOrFail($config->owner->type, $config->owner->id);
+            : app(OwnerModelLookup::class)->resolve($config->owner);
     }
 
     public static function resolve(): ?Model
@@ -57,7 +57,9 @@ final class OwnerContext
         /** @var OwnerResolverInterface $resolver */
         $resolver = app(OwnerResolverInterface::class);
 
-        return $resolver->resolve();
+        $reference = $resolver->resolve();
+
+        return $reference === null ? null : app(OwnerModelLookup::class)->resolve($reference);
     }
 
     /**
@@ -151,6 +153,10 @@ final class OwnerContext
      */
     public static function flushState(): void
     {
+        if (app()->resolved(OwnerModelLookup::class)) {
+            app(OwnerModelLookup::class)->clear();
+        }
+
         self::$fallback = ['hasOverride' => false, 'override' => null];
 
         $request = self::httpRequest();

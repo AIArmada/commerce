@@ -30,7 +30,7 @@ beforeEach(function (): void {
     // Default to no ambient owner context so seeding explicit-owner rows is deterministic.
     app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
     {
-        public function resolve(): ?Model
+        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
         {
             return null;
         }
@@ -117,9 +117,9 @@ it('scopes Order::forOwner() to current owner plus global and excludes corrupt p
             private readonly ?Model $owner,
         ) {}
 
-        public function resolve(): ?Model
+        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
         {
-            return $this->owner;
+            return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -193,7 +193,7 @@ it('returns strict global-only when owner resolver returns null', function (): v
 
     app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
     {
-        public function resolve(): ?Model
+        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
         {
             return null;
         }
@@ -221,9 +221,9 @@ it('rejects explicit owner that does not match current owner context', function 
             private readonly ?Model $owner,
         ) {}
 
-        public function resolve(): ?Model
+        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
         {
-            return $this->owner;
+            return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -247,9 +247,9 @@ it('auto-assigns owner on create when enabled', function (): void {
             private readonly ?Model $owner,
         ) {}
 
-        public function resolve(): ?Model
+        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
         {
-            return $this->owner;
+            return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
         }
     });
 

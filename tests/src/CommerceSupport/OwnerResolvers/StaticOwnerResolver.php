@@ -11,8 +11,8 @@ final class StaticOwnerResolver implements OwnerResolverInterface
 {
     public static ?Model $owner = null;
 
-    public function resolve(): ?Model
+    public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
     {
-        return self::$owner;
+        return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel(self::$owner);
     }
 }

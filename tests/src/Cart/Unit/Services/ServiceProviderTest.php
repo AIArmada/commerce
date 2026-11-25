@@ -18,7 +18,7 @@ it('integration: fails fast when cart storage is resolved without an owner in ow
 
     app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new class implements OwnerResolverInterface
     {
-        public function resolve(): ?Model
+        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
         {
             return null;
         }
@@ -36,7 +36,7 @@ it('integration: allows explicit global cart storage resolution in owner mode', 
 
     app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new class implements OwnerResolverInterface
     {
-        public function resolve(): ?Model
+        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
         {
             return null;
         }

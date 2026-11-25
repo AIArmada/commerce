@@ -29,9 +29,9 @@ it('scopes program tiers and creatives by current owner', function (): void {
                 private readonly ?Model $owner,
             ) {}
 
-            public function resolve(): ?Model
+            public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
             {
-                return $this->owner;
+                return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
             }
         });
     };

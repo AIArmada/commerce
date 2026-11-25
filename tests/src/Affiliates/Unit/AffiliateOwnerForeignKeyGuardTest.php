@@ -29,9 +29,9 @@ it('rejects cross-tenant affiliate_id writes when owner mode is enabled', functi
             private readonly ?Model $owner,
         ) {}
 
-        public function resolve(): ?Model
+        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
         {
-            return $this->owner;
+            return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -55,9 +55,9 @@ it('rejects cross-tenant affiliate_id writes when owner mode is enabled', functi
             private readonly ?Model $owner,
         ) {}
 
-        public function resolve(): ?Model
+        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
         {
-            return $this->owner;
+            return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -81,9 +81,9 @@ it('rejects cross-tenant affiliate_id writes when owner mode is enabled', functi
             private readonly ?Model $owner,
         ) {}
 
-        public function resolve(): ?Model
+        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
         {
-            return $this->owner;
+            return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -145,9 +145,9 @@ it('rejects cross-tenant ticket_id writes when owner mode is enabled', function 
             private readonly ?Model $owner,
         ) {}
 
-        public function resolve(): ?Model
+        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
         {
-            return $this->owner;
+            return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -179,9 +179,9 @@ it('rejects cross-tenant ticket_id writes when owner mode is enabled', function 
             private readonly ?Model $owner,
         ) {}
 
-        public function resolve(): ?Model
+        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
         {
-            return $this->owner;
+            return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
         }
     });
 

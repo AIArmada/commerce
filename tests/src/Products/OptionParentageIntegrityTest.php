@@ -332,7 +332,7 @@ it('rejects owner-protected creates without a resolvable owner context', functio
     // Without a resolvable owner context, owner-protected creates fail fast.
     app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
     {
-        public function resolve(): ?Model
+        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
         {
             return null;
         }

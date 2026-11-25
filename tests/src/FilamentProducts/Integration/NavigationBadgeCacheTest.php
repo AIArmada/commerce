@@ -55,9 +55,9 @@ it('caches the product navigation badge per owner', function (): void {
     {
         public function __construct(private readonly ?Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
         {
-            return $this->owner;
+            return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -100,9 +100,9 @@ it('caches the category navigation badge', function (): void {
     {
         public function __construct(private readonly ?Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
         {
-            return $this->owner;
+            return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -135,9 +135,9 @@ it('caches the visible collection navigation badge', function (): void {
     {
         public function __construct(private readonly ?Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
         {
-            return $this->owner;
+            return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -180,9 +180,9 @@ it('returns null badges when the owner has no records', function (): void {
     {
         public function __construct(private readonly ?Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
         {
-            return $this->owner;
+            return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -227,9 +227,9 @@ it('isolates cached badges between owners', function (): void {
     {
         public function __construct(private readonly ?Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
         {
-            return $this->owner;
+            return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -239,9 +239,9 @@ it('isolates cached badges between owners', function (): void {
     {
         public function __construct(private readonly ?Model $owner) {}
 
-        public function resolve(): ?Model
+        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
         {
-            return $this->owner;
+            return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
         }
     });
 

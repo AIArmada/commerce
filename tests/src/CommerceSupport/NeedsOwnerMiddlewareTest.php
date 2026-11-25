@@ -52,7 +52,7 @@ describe('NeedsOwner middleware', function (): void {
 
         app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
         {
-            public function resolve(): ?Model
+            public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
             {
                 return null;
             }

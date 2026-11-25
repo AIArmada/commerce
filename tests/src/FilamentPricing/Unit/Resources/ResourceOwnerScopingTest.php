@@ -33,9 +33,9 @@ it('scopes filament pricing resources to the resolved owner (including global)',
         {
             public function __construct(private readonly ?Model $owner) {}
 
-            public function resolve(): ?Model
+            public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
             {
-                return $this->owner;
+                return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
             }
         });
     };
@@ -79,7 +79,7 @@ it('returns strict global-only when owner resolver returns null', function (): v
 
     app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new class implements OwnerResolverInterface
     {
-        public function resolve(): ?Model
+        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
         {
             return null;
         }

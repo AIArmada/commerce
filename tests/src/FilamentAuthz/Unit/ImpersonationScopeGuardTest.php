@@ -7,7 +7,7 @@ use AIArmada\Authz\Features\Authorization\Models\Permission;
 use AIArmada\Authz\Features\Authorization\Models\Role;
 use AIArmada\Authz\Features\Impersonation\Queries\ImpersonationScopeGuard;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Spatie\Permission\PermissionRegistrar;
 
 use function AIArmada\Authz\can_be_impersonated;
@@ -160,7 +160,7 @@ it('keeps the can-be-impersonated helper aligned with scope enforcement', functi
         'email' => 'unassigned-target@example.com',
         'password' => 'secret',
     ]);
-    $owner = app(OwnerResolverInterface::class)->resolve();
+    $owner = OwnerContext::resolve();
 
     expect($owner)->not->toBeNull();
 
@@ -180,7 +180,7 @@ it('recognizes a global super admin while a tenant scope is active', function ()
     ]);
     $role = Role::findOrCreate((string) config('authz.super_admin_role'), 'web');
     $actor->assignRole($role);
-    $owner = app(OwnerResolverInterface::class)->resolve();
+    $owner = OwnerContext::resolve();
 
     expect($owner)->not->toBeNull();
 

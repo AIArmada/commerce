@@ -274,7 +274,7 @@ it('rejects a forged parentage pointing at a payment owned by another owner', fu
 
     app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
     {
-        public function resolve(): ?Model
+        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
         {
             return null;
         }

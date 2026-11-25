@@ -27,7 +27,7 @@ if (! function_exists('chipAggregatePurchase')) {
 beforeEach(function (): void {
     app()->bind(OwnerResolverInterface::class, fn () => new class implements OwnerResolverInterface
     {
-        public function resolve(): ?Model
+        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
         {
             return null;
         }

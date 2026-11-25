@@ -135,7 +135,7 @@ it('only loads the shared webhook migration when a package registers a valid web
 
 class SupportTestOwnerResolver implements OwnerResolverInterface
 {
-    public function resolve(): ?Model
+    public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
     {
         return null;
     }

@@ -28,8 +28,8 @@ final class CommunicationPolicy
                 && $communication->owner_id === null;
         }
 
-        return $communication->owner_type === $owner->getMorphClass()
-            && (string) $communication->owner_id === (string) $owner->getKey();
+        return $communication->owner_type === $owner->type
+            && (string) $communication->owner_id === $owner->id;
     }
 
     public function create(User $user): bool

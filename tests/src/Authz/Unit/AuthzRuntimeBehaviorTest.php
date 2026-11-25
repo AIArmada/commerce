@@ -8,7 +8,7 @@ use AIArmada\Authz\Features\Authorization\Models\Role;
 use AIArmada\Authz\Support\UserRoleChecker;
 use AIArmada\Authz\Support\UserWildcardPermissions;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Support\Collection;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -35,7 +35,7 @@ it('checks global roles without leaking the active team scope', function (): voi
     ]);
 
     $user->assignRole($role);
-    $owner = app(OwnerResolverInterface::class)->resolve();
+    $owner = OwnerContext::resolve();
     expect($owner)->not->toBeNull();
 
     setPermissionsTeamId($owner->getKey());
@@ -46,7 +46,7 @@ it('checks global roles without leaking the active team scope', function (): voi
 });
 
 it('treats team-scoped assignments as global for the super-admin check', function (): void {
-    $owner = app(OwnerResolverInterface::class)->resolve();
+    $owner = OwnerContext::resolve();
     expect($owner)->not->toBeNull();
 
     // Single-tenant seeders scope every assignment to the owner; the

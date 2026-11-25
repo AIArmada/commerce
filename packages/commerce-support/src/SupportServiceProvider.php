@@ -18,6 +18,7 @@ use AIArmada\CommerceSupport\Support\ConditionalMigrationLoader;
 use AIArmada\CommerceSupport\Support\CurrencyConverter;
 use AIArmada\CommerceSupport\Support\LoggableModelRegistry;
 use AIArmada\CommerceSupport\Support\NullOwnerResolver;
+use AIArmada\CommerceSupport\Support\OwnerModelLookup;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\CommerceSupport\Support\Payment\ActorPaymentSubjectDriver;
@@ -85,6 +86,7 @@ final class SupportServiceProvider extends PackageServiceProvider
 
     public function packageRegistered(): void
     {
+        $this->app->scoped(OwnerModelLookup::class);
         $this->registerOwnerResolver();
         $this->registerExchangeRates();
         $this->registerPaymentSubjectResolver();

@@ -21,6 +21,8 @@ use AIArmada\Chip\Models\Client;
 use AIArmada\Chip\Models\Payment;
 use AIArmada\Chip\Models\Purchase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocApproval;
@@ -140,7 +142,7 @@ final class AppServiceProvider extends ServiceProvider
                  * Default to the seeded admin owner, while still allowing demo owner switching
                  * through the session-backed /demo/owner/{user} route.
                  */
-                public function resolve(): ?Model
+                public function resolve(): ?RecordReference
                 {
                     $request = request();
 
@@ -151,7 +153,7 @@ final class AppServiceProvider extends ServiceProvider
                             $sessionOwner = User::query()->find((string) $ownerId);
 
                             if ($sessionOwner instanceof Model) {
-                                return $sessionOwner;
+                                return EloquentRecordReference::fromModel($sessionOwner);
                             }
                         }
                     }
@@ -161,10 +163,10 @@ final class AppServiceProvider extends ServiceProvider
                         ->first();
 
                     if ($owner instanceof Model) {
-                        return $owner;
+                        return EloquentRecordReference::fromModel($owner);
                     }
 
-                    return User::query()->first();
+                    return EloquentRecordReference::fromModel(User::query()->first());
                 }
             };
         });

@@ -25,11 +25,11 @@ beforeEach(function (): void {
 
     app()->scoped(OwnerResolverInterface::class, static fn (): OwnerResolverInterface => new class implements OwnerResolverInterface
     {
-        public function resolve(): ?Model
+        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
         {
             $user = auth()->user();
 
-            return $user instanceof Model ? $user : null;
+            return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($user instanceof Model ? $user : null);
         }
     });
 });
@@ -97,7 +97,7 @@ it('fails closed when owner context is missing', function (): void {
 
     app()->scoped(OwnerResolverInterface::class, static fn (): OwnerResolverInterface => new class implements OwnerResolverInterface
     {
-        public function resolve(): ?Model
+        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
         {
             return null;
         }

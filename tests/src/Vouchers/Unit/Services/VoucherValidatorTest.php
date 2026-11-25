@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\OwnerModelLookup;
 use AIArmada\Vouchers\Services\VoucherValidator;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
@@ -84,7 +86,13 @@ describe('VoucherValidator', function (): void {
 
             $mockOwner = Mockery::mock(Model::class);
             $ownerResolver = Mockery::mock(OwnerResolverInterface::class);
-            $ownerResolver->shouldReceive('resolve')->once()->andReturn($mockOwner);
+            $reference = new RecordReference('test-owner', 'test-id');
+            $ownerResolver->shouldReceive('resolve')->once()->andReturn($reference);
+            $lookup = new class($mockOwner) {
+                public function __construct(private Model $model) {}
+                public function resolve(RecordReference $reference): Model { return $this->model; }
+            };
+            app()->instance(OwnerModelLookup::class, $lookup);
 
             app()->instance(OwnerResolverInterface::class, $ownerResolver);
 

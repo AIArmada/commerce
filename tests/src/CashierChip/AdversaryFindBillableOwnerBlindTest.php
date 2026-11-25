@@ -38,7 +38,7 @@ it('refuses to resolve a foreign billable without an owner context', function ()
     OwnerContext::flushState();
     app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
     {
-        public function resolve(): ?Model
+        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
         {
             return null;
         }

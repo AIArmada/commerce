@@ -291,7 +291,7 @@ it('blocks cross-owner, global, and missing-context writes', function (): void {
     // Without a resolvable owner context, owner-protected creates fail fast.
     app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
     {
-        public function resolve(): ?Model
+        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
         {
             return null;
         }

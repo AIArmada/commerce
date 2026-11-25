@@ -171,7 +171,7 @@ it('fails closed without an owner context when owner mode is enabled', function 
     topPerformerRuleSettings(['topPerformerEnabled' => true]);
     app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
     {
-        public function resolve(): ?Model
+        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
         {
             return null;
         }
