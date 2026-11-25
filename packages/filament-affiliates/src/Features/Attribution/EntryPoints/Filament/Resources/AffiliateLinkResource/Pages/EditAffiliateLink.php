@@ -84,7 +84,8 @@ final class EditAffiliateLink extends EditRecord
             Actions\ViewAction::make(),
             Actions\DeleteAction::make()
                 ->authorize(fn (AffiliateLink $record): bool => AffiliateLinkResource::canDelete($record))
-                ->visible(fn (AffiliateLink $record): bool => AffiliateLinkResource::canDelete($record)),
+                ->visible(fn (AffiliateLink $record): bool => AffiliateLinkResource::canDelete($record))
+                ->using(fn (AffiliateLink $record): bool => app(TrackingLinkAdministration::class)->delete((string) $record->getKey())),
         ];
     }
 

@@ -8,7 +8,6 @@ use AIArmada\Affiliates\Models\Concerns\ScopesByAffiliateOwner;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerScope;
-use AIArmada\Links\LinksServiceProvider;
 use AIArmada\Links\Models\Link;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -182,12 +181,6 @@ class AffiliateLink extends Model implements Auditable
 
     protected static function booted(): void
     {
-        static::deleting(function (self $link): void {
-            if (class_exists(Link::class) && app()->providerIsLoaded(LinksServiceProvider::class)) {
-                $link->trackedLink()->get()->each(fn (Link $tracked) => $tracked->delete());
-            }
-        });
-
         static::creating(function (self $link): void {
             self::guardProgramReference($link);
         });

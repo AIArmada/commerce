@@ -7,7 +7,9 @@ use AIArmada\Affiliates\Features\Attribution\Actions\UpdateTrackingLink;
 use AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkAdministration;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Links\Models\Link;
@@ -106,4 +108,39 @@ test('hosts can default to branded links without requiring an option on each cre
     $affiliate = handleAffiliate(['handle' => 'saifreviews']);
     $link = app(CreateTrackingLink::class)->handle((string) $affiliate->getKey(), 'https://merchant.example');
     expect($link->tracking_url)->toContain('/go/saifreviews/link-');
+});
+
+test('tracking link removal deletes its public link and clicks atomically', function (): void {
+    config(['affiliates.links.allowed_hosts' => ['merchant.example']]);
+    $affiliate = handleAffiliate();
+    $link = app(CreateTrackingLink::class)->handle((string) $affiliate->getKey(), 'https://merchant.example');
+    $trackedId = $link->trackedLink->id;
+    $this->get($link->tracking_url)->assertRedirect();
+
+    expect(app(TrackingLinkAdministration::class)->delete((string) $link->getKey()))->toBeTrue()
+        ->and($link->fresh())->toBeNull()
+        ->and(Link::query()->whereKey($trackedId)->exists())->toBeFalse()
+        ->and(LinkClick::query()->where('link_id', $trackedId)->exists())->toBeFalse();
+});
+
+test('tracking link removal rejects recorded conversions', function (): void {
+    config(['affiliates.links.allowed_hosts' => ['merchant.example']]);
+    $affiliate = handleAffiliate();
+    $link = app(CreateTrackingLink::class)->handle((string) $affiliate->getKey(), 'https://merchant.example');
+    AffiliateConversion::query()->create([
+        'affiliate_id' => $affiliate->id,
+        'affiliate_code' => $affiliate->code,
+        'affiliate_link_id' => $link->id,
+        'external_reference' => 'LINK-' . Str::random(8),
+        'subtotal_minor' => 1000,
+        'value_minor' => 1000,
+        'commission_minor' => 100,
+        'commission_currency' => 'MYR',
+        'status' => ApprovedConversion::class,
+        'occurred_at' => now(),
+    ]);
+
+    expect(fn () => app(TrackingLinkAdministration::class)->delete((string) $link->getKey()))->toThrow(ValidationException::class)
+        ->and($link->fresh())->not->toBeNull()
+        ->and($link->trackedLink()->exists())->toBeTrue();
 });

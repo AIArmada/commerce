@@ -12,6 +12,10 @@ interface TrackingLinkAdministration
     /** @param array<string, mixed> $attributes */
     public function update(string $linkId, array $attributes): TrackingLinkData;
 
+    public function delete(string $linkId): bool;
+
+    public function deleteForAffiliate(string $affiliateId): void;
+
     public function setEnabled(string $linkId, bool $enabled): void;
 
     public function recordClick(string $linkId): void;
