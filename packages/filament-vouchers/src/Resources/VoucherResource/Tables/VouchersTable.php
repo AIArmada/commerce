@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Resources\VoucherResource\Tables;
 
-use AIArmada\Affiliates\Models\AffiliateProgram;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramReferenceReader;
 use AIArmada\FilamentVouchers\Support\ConditionTargetDisplay;
 use AIArmada\FilamentVouchers\Support\MoneyHelper;
 use AIArmada\Vouchers\Enums\VoucherType;
@@ -42,10 +42,6 @@ final class VouchersTable
 
                 if (class_exists('AIArmada\\Promotions\\Models\\Promotion')) {
                     $query->with('promotion');
-                }
-
-                if (class_exists(AffiliateProgram::class)) {
-                    $query->with('affiliateProgram');
                 }
 
                 return $query;
@@ -154,9 +150,12 @@ final class VouchersTable
                     ->wrap()
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                class_exists(AffiliateProgram::class)
-                    ? TextColumn::make('affiliateProgram.name')
+                interface_exists(ProgramReferenceReader::class) && app()->bound(ProgramReferenceReader::class)
+                    ? TextColumn::make('affiliate_program_name')
                         ->label('Program')
+                        ->state(static fn (Voucher $record): ?string => $record->affiliate_program_id === null
+                            ? null
+                            : app(ProgramReferenceReader::class)->label($record->affiliate_program_id))
                         ->placeholder('—')
                         ->toggleable(isToggledHiddenByDefault: true)
                     : null,
