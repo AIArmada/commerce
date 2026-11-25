@@ -8,6 +8,7 @@ use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource\Pages\CreateAffiliateSite;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource\Pages\EditAffiliateSite;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource\Pages\ListAffiliateSites;
+use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource\RelationManagers\StatementsRelationManager;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource\Schemas\AffiliateSiteForm;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource\Tables\AffiliateSitesTable;
 use AIArmada\FilamentAffiliateNetwork\Support\NetworkAdminAccess;
@@ -65,7 +66,9 @@ final class AffiliateSiteResource extends Resource
 
     public static function getRelations(): array
     {
-        return [];
+        return [
+            StatementsRelationManager::class,
+        ];
     }
 
     /**

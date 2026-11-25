@@ -12,11 +12,12 @@ rules, calculations, and persistence live in the core package.
 
 ## What this package owns
 
-- Filament resources for sites, offers, categories, applications, and merchant statements
-- Six offer relation managers (creatives, links, legs, invitations, deals, coupons)
+- Filament resources for sites, offers, categories, applications, merchant statements, and creator postbacks
+- Offer relation managers (creatives, links, legs, invitations, deals, coupons)
+- Site statements relation manager and creator-postback deliveries relation manager
 - Merchant dashboard page
 - Network stats and top-offers widgets
-- Filament action workflows for verification, catalog sync/token rotation, application review, offer state, leg adjust/lock/reverse, and statement lifecycle
+- Filament action workflows for verification (including strategy-based), prepaid balance adjustment, catalog sync/token rotation, application review, offer state, leg adjust/lock/reverse, postback retry, and statement lifecycle
 
 ## What this package does not own
 
@@ -41,6 +42,13 @@ rules, calculations, and persistence live in the core package.
 | `AffiliateOfferCategoryResource` | `Features\Catalog\Models\AffiliateOfferCategory` | List, Create, Edit | Hierarchical, cycle-safe |
 | `AffiliateOfferApplicationResource` | `Features\Enrollment\Models\AffiliateOfferApplication` | List, View | Approve/reject/revoke + bulk approve |
 | `MerchantStatementResource` | `Features\Ledger\Models\MerchantStatement` | List, View | **Admin-only**; Generate/Issue/Mark Paid/Void |
+| `CreatorPostbackResource` | `Features\Postbacks\Models\CreatorPostbackEndpoint` | List, Create, Edit | **Admin-only**; deliveries relation with retry |
+
+### Site relation managers
+
+| Manager | Relationship | Actions |
+|---|---|---|
+| `StatementsRelationManager` | `statements` | View link, Issue, Mark Paid, Void |
 
 ### Offer relation managers
 
@@ -58,8 +66,8 @@ rules, calculations, and persistence live in the core package.
 | Surface | Description |
 |---|---|
 | `MerchantDashboardPage` | Owner-scoped merchant analytics at `/affiliate-network/merchant-dashboard` |
-| `NetworkStatsWidget` | Network-wide stats (6 cards), 30s `OwnerCache` |
-| `TopOffersWidget` | Network-wide top-10 offers by clicks, 30s `OwnerCache` |
+| `NetworkStatsWidget` | Network-wide stats (8 cards), 30s `OwnerCache` |
+| `TopOffersWidget` | Network-wide top-10 offers by clicks with EPC/conv. rate, 30s `OwnerCache` |
 
 ## Plugin architecture
 
@@ -83,7 +91,8 @@ filament-affiliate-network/
     │   ├── AffiliateOfferResource/{Pages,Schemas,Tables,RelationManagers}
     │   ├── AffiliateOfferCategoryResource/{Pages,Schemas,Tables}
     │   ├── AffiliateOfferApplicationResource/{Pages,Schemas,Tables}
-    │   └── MerchantStatementResource/{Pages,Schemas,Tables}
+    │   ├── MerchantStatementResource/{Pages,Schemas,Tables}
+    │   └── CreatorPostbackResource/{Pages,Schemas,Tables,RelationManagers}
     ├── Support/{NetworkAdminAccess,NetworkStatsAggregator}
     └── Widgets/{NetworkStatsWidget,TopOffersWidget}
 ```

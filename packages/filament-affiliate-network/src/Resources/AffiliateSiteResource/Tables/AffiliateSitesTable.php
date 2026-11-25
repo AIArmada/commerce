@@ -5,17 +5,25 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource\Tables;
 
 use AIArmada\AffiliateNetwork\Data\SiteStatus;
+use AIArmada\AffiliateNetwork\Features\Sites\Actions\AdjustMerchantPrepaidBalance;
 use AIArmada\AffiliateNetwork\Features\Sites\Actions\ReinstateSite;
 use AIArmada\AffiliateNetwork\Features\Sites\Actions\RejectSite;
+use AIArmada\AffiliateNetwork\Features\Sites\Actions\RotateCatalogToken;
 use AIArmada\AffiliateNetwork\Features\Sites\Actions\SuspendSite;
 use AIArmada\AffiliateNetwork\Features\Sites\Actions\VerifySite;
+use AIArmada\AffiliateNetwork\Features\Sites\Actions\VerifySiteByStrategy;
 use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentAffiliateNetwork\Actions\SyncSiteCatalog;
 use Filament\Actions;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use RuntimeException;
 
 final class AffiliateSitesTable
 {
@@ -42,6 +50,19 @@ final class AffiliateSitesTable
                     ->counts('offers')
                     ->sortable(),
 
+                TextColumn::make('default_locking_days')
+                    ->label('Locking (days)')
+                    ->numeric()
+                    ->toggleable(),
+
+                TextColumn::make('prepaid_balance_minor')
+                    ->label('Prepaid balance')
+                    ->formatStateUsing(fn (AffiliateSite $record): ?string => $record->prepaid_balance_minor === null
+                        ? null
+                        : MoneyFormatter::formatMinor((int) $record->prepaid_balance_minor, self::currency($record)))
+                    ->placeholder('Postpaid')
+                    ->toggleable(),
+
                 TextColumn::make('verified_at')
                     ->dateTime()
                     ->sortable()
@@ -66,6 +87,72 @@ final class AffiliateSitesTable
                     ->visible(fn (AffiliateSite $record): bool => $record->isPending())
                     ->action(function (AffiliateSite $record): void {
                         self::withSiteOwner($record, fn (): AffiliateSite => app(VerifySite::class)->execute($record));
+                    }),
+                Actions\Action::make('verify_strategy')
+                    ->label('Verify by Strategy')
+                    ->icon('heroicon-o-shield-check')
+                    ->color('success')
+                    ->visible(fn (AffiliateSite $record): bool => $record->isPending())
+                    ->form([
+                        Select::make('method')
+                            ->label('Verification strategy')
+                            ->options([
+                                'dns' => 'DNS',
+                                'meta_tag' => 'Meta tag',
+                                'file' => 'File',
+                            ])
+                            ->required(),
+                    ])
+                    ->action(function (AffiliateSite $record, array $data): void {
+                        try {
+                            self::withSiteOwner($record, fn (): AffiliateSite => app(VerifySiteByStrategy::class)->execute($record, (string) $data['method']));
+
+                            Notification::make()
+                                ->title('Site verified')
+                                ->success()
+                                ->send();
+                        } catch (RuntimeException $exception) {
+                            Notification::make()
+                                ->title('Verification failed')
+                                ->body($exception->getMessage())
+                                ->danger()
+                                ->send();
+                        }
+                    }),
+                Actions\Action::make('adjust_prepaid')
+                    ->label('Adjust Prepaid Balance')
+                    ->icon('heroicon-o-banknotes')
+                    ->color('info')
+                    ->form([
+                        TextInput::make('delta_minor')
+                            ->label('Balance delta (minor)')
+                            ->rule('integer')
+                            ->required()
+                            ->helperText('Positive to top up, negative to debit.'),
+                    ])
+                    ->action(function (AffiliateSite $record, array $data): void {
+                        $balance = app(AdjustMerchantPrepaidBalance::class)->execute((string) $record->getKey(), (int) $data['delta_minor']);
+
+                        Notification::make()
+                            ->title('Prepaid balance adjusted')
+                            ->body(MoneyFormatter::formatMinor($balance, self::currency($record)))
+                            ->success()
+                            ->send();
+                    }),
+                Actions\Action::make('rotate_catalog_token')
+                    ->label('Rotate Catalog Token')
+                    ->icon('heroicon-o-key')
+                    ->color('warning')
+                    ->requiresConfirmation()
+                    ->visible(fn (AffiliateSite $record): bool => $record->isVerified())
+                    ->action(function (AffiliateSite $record): void {
+                        $token = self::withSiteOwner($record, fn (): string => app(RotateCatalogToken::class)->execute($record));
+
+                        Notification::make()
+                            ->title('New catalog token')
+                            ->body($token)
+                            ->persistent()
+                            ->send();
                     }),
                 Actions\Action::make('reject')
                     ->icon('heroicon-o-x-mark')
@@ -111,6 +198,17 @@ final class AffiliateSitesTable
         }
 
         return $options;
+    }
+
+    private static function currency(AffiliateSite $record): string
+    {
+        $currency = $record->budget_currency;
+
+        if (is_string($currency) && mb_trim($currency) !== '') {
+            return mb_strtoupper($currency);
+        }
+
+        return mb_strtoupper((string) config('affiliate-network.currency.default', 'MYR'));
     }
 
     /**

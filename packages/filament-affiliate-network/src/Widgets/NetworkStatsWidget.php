@@ -21,7 +21,7 @@ final class NetworkStatsWidget extends StatsOverviewWidget
 
     protected function getStats(): array
     {
-        /** @var array{activeSites: int, activeOffers: int, pendingApplications: int, totalClicks: int, totalConversions: int, totalRevenue: int|null, conversionRate: float, revenueFormatted: string, revenueCurrency: string, revenueConverted: bool, revenueByCurrency: array<string, int>} $aggregated */
+        /** @var array{activeSites: int, activeOffers: int, pendingApplications: int, totalClicks: int, totalConversions: int, totalRevenue: int|null, conversionRate: float, revenueFormatted: string, revenueCurrency: string, revenueConverted: bool, revenueByCurrency: array<string, int>, pendingLegsCount: int, openStatementsCount: int} $aggregated */
         $aggregated = OwnerCache::remember(
             null,
             'affiliate-network.network-stats',
@@ -58,6 +58,16 @@ final class NetworkStatsWidget extends StatsOverviewWidget
                 ->description($this->revenueDescription($aggregated))
                 ->icon('heroicon-o-banknotes')
                 ->color('success'),
+
+            Stat::make('Pending Lock Legs', number_format($aggregated['pendingLegsCount']))
+                ->description('Awaiting lock maturity')
+                ->icon('heroicon-o-lock-closed')
+                ->color('warning'),
+
+            Stat::make('Issued Statements', number_format($aggregated['openStatementsCount']))
+                ->description('Issued but unpaid')
+                ->icon('heroicon-o-document-currency-dollar')
+                ->color('info'),
         ];
     }
 

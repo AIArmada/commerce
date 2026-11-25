@@ -8,11 +8,13 @@ use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOfferCategory;
 use AIArmada\AffiliateNetwork\Features\Enrollment\Models\AffiliateOfferApplication;
 use AIArmada\AffiliateNetwork\Features\Ledger\Models\MerchantStatement;
+use AIArmada\AffiliateNetwork\Features\Postbacks\Models\CreatorPostbackEndpoint;
 use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use AIArmada\FilamentAffiliateNetwork\Policies\AffiliateOfferApplicationPolicy;
 use AIArmada\FilamentAffiliateNetwork\Policies\AffiliateOfferCategoryPolicy;
 use AIArmada\FilamentAffiliateNetwork\Policies\AffiliateOfferPolicy;
 use AIArmada\FilamentAffiliateNetwork\Policies\AffiliateSitePolicy;
+use AIArmada\FilamentAffiliateNetwork\Policies\CreatorPostbackPolicy;
 use AIArmada\FilamentAffiliateNetwork\Policies\MerchantStatementPolicy;
 use Illuminate\Support\Facades\Gate;
 use Spatie\LaravelPackageTools\Package;
@@ -40,5 +42,6 @@ final class FilamentAffiliateNetworkServiceProvider extends PackageServiceProvid
         Gate::policy(AffiliateOffer::class, AffiliateOfferPolicy::class);
         Gate::policy(AffiliateOfferApplication::class, AffiliateOfferApplicationPolicy::class);
         Gate::policy(MerchantStatement::class, MerchantStatementPolicy::class);
+        Gate::policy(CreatorPostbackEndpoint::class, CreatorPostbackPolicy::class);
     }
 }

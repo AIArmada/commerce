@@ -5,10 +5,14 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliateNetwork\Pages;
 
 use AIArmada\AffiliateNetwork\Data\ApplicationStatus;
+use AIArmada\AffiliateNetwork\Data\LegStatus;
 use AIArmada\AffiliateNetwork\Data\OfferStatus;
+use AIArmada\AffiliateNetwork\Data\SettlementStatus;
 use AIArmada\AffiliateNetwork\Data\SiteStatus;
 use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Features\Enrollment\Models\AffiliateOfferApplication;
+use AIArmada\AffiliateNetwork\Features\Ledger\Models\MerchantStatement;
+use AIArmada\AffiliateNetwork\Features\Ledger\Models\NetworkConversionLeg;
 use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use AIArmada\FilamentAffiliateNetwork\Support\NetworkAdminAccess;
 use BackedEnum;
@@ -92,6 +96,12 @@ final class MerchantDashboardPage extends Page
             Stat::make('Pending Applications', number_format($this->getPendingApplicationsCount()))
                 ->icon('heroicon-o-clock')
                 ->description('Awaiting review'),
+            Stat::make('Pending Lock Legs', number_format($this->getPendingLegsCount()))
+                ->icon('heroicon-o-lock-closed')
+                ->description('Awaiting lock maturity'),
+            Stat::make('Issued Statements', number_format($this->getOpenStatementsCount()))
+                ->icon('heroicon-o-document-currency-dollar')
+                ->description('Issued but unpaid'),
         ];
     }
 
@@ -145,6 +155,20 @@ final class MerchantDashboardPage extends Page
     {
         return $this->memoizedCounts['pending_applications'] ??= AffiliateOfferApplication::query()
             ->where('status', ApplicationStatus::Pending)
+            ->count();
+    }
+
+    public function getPendingLegsCount(): int
+    {
+        return $this->memoizedCounts['pending_legs'] ??= NetworkConversionLeg::query()
+            ->where('status', LegStatus::Pending)
+            ->count();
+    }
+
+    public function getOpenStatementsCount(): int
+    {
+        return $this->memoizedCounts['open_statements'] ??= MerchantStatement::query()
+            ->where('status', SettlementStatus::Issued)
             ->count();
     }
 }

@@ -9,6 +9,7 @@ use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Features\Sites\Api\SitesApi;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource;
+use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Schemas\AffiliateOfferForm;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
@@ -19,6 +20,8 @@ final class EditAffiliateOffer extends EditRecord
 
     protected function handleRecordUpdate(Model $record, array $data): Model
     {
+        $data = AffiliateOfferForm::normalizeData($data);
+
         /** @var AffiliateOffer $record */
         $site = app(SitesApi::class)->findByIdUnscoped((string) $record->site_id);
         $owner = $site === null

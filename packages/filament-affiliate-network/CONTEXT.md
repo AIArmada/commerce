@@ -42,12 +42,14 @@ keywords:
 - Owner/security: Filament adapter; defers to core scope, but revalidates IDs in action handlers.
 
 ## Key surfaces
-- Resources: `AffiliateSiteResource`, `AffiliateOfferResource`, `AffiliateOfferCategoryResource`, `AffiliateOfferApplicationResource`, `MerchantStatementResource`
+- Resources: `AffiliateSiteResource`, `AffiliateOfferResource`, `AffiliateOfferCategoryResource`, `AffiliateOfferApplicationResource`, `MerchantStatementResource`, `CreatorPostbackResource`
 - Relation managers (offer edit): `CreativesRelationManager`, `LinksRelationManager`, `LegsRelationManager` (Adjust, Lock Matured, Reverse), `InvitationsRelationManager`, `DealsRelationManager`, `CouponsRelationManager`
+- Relation managers (site edit): `StatementsRelationManager` (View, Issue, Mark Paid, Void)
+- Relation managers (postback edit): `DeliveriesRelationManager` (Retry)
 - Pages: `MerchantDashboardPage`
 - Widgets: `NetworkStatsWidget`, `TopOffersWidget`
 - Support: `NetworkAdminAccess`, `NetworkStatsAggregator`, `Actions\SyncSiteCatalog`
-- Policies: `AffiliateSitePolicy`, `AffiliateOfferPolicy`, `AffiliateOfferCategoryPolicy`, `AffiliateOfferApplicationPolicy`, `MerchantStatementPolicy`
+- Policies: `AffiliateSitePolicy`, `AffiliateOfferPolicy`, `AffiliateOfferCategoryPolicy`, `AffiliateOfferApplicationPolicy`, `MerchantStatementPolicy`, `CreatorPostbackPolicy`
 - Config `filament-affiliate-network.php`: `navigation.group`, `navigation.sort`, `authorization.admin_ability`
 
 ## Docs map

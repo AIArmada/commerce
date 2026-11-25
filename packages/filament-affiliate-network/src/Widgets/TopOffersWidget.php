@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliateNetwork\Widgets;
 
+use AIArmada\AffiliateNetwork\Data\OfferPerformanceMetrics;
 use AIArmada\AffiliateNetwork\Data\OfferStatus;
+use AIArmada\AffiliateNetwork\Features\Catalog\Api\OfferRecord;
 use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Features\Catalog\Queries\OfferMetricsQuery;
 use AIArmada\AffiliateNetwork\Platform\ScopesByBelongsToOwner;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerCache;
@@ -43,6 +46,21 @@ final class TopOffersWidget extends BaseWidget
                 ->pluck('id')
                 ->all()),
         );
+
+        /** @var array<string, OfferPerformanceMetrics> $metricsById */
+        $metricsById = OwnerContext::withOwner(null, function () use ($offerIds): array {
+            if ($offerIds === []) {
+                return [];
+            }
+
+            $offers = AffiliateOffer::withoutGlobalScope(ScopesByBelongsToOwner::class)
+                ->whereKey($offerIds)
+                ->get()
+                ->map(fn (AffiliateOffer $offer): OfferRecord => $offer->toRecord())
+                ->all();
+
+            return app(OfferMetricsQuery::class)->batch($offers);
+        });
 
         return $table
             ->query(
@@ -88,6 +106,26 @@ final class TopOffersWidget extends BaseWidget
                 Tables\Columns\TextColumn::make('rate_base_bp')
                     ->label('Commission')
                     ->formatStateUsing(fn (AffiliateOffer $record): string => $record->formattedRate()),
+
+                Tables\Columns\TextColumn::make('epc')
+                    ->label('EPC')
+                    ->state(function (AffiliateOffer $record) use ($metricsById): string {
+                        $metrics = $metricsById[(string) $record->getKey()] ?? null;
+
+                        return $metrics === null
+                            ? '—'
+                            : MoneyFormatter::formatMinor((int) round($metrics->epcMinor), $metrics->currency);
+                    }),
+
+                Tables\Columns\TextColumn::make('conversion_rate')
+                    ->label('Conv. Rate')
+                    ->state(function (AffiliateOffer $record) use ($metricsById): string {
+                        $metrics = $metricsById[(string) $record->getKey()] ?? null;
+
+                        return $metrics === null
+                            ? '—'
+                            : number_format($metrics->conversionRate * 100, 2) . '%';
+                    }),
             ])
             ->heading('Top Performing Offers')
             ->paginated(false);

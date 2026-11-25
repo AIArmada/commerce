@@ -17,7 +17,7 @@ network-wide widgets, so its counts cannot mix merchants.
 
 **Features**
 
-- Stats overview: sites, verified sites, active offers, pending applications
+- Stats overview: sites, verified sites, active offers, pending applications, pending lock legs, issued statements
 - 5 most recent pending applications
 - Top 5 offers by application count
 
@@ -31,6 +31,8 @@ $this->getSitesCount(): int;
 $this->getVerifiedSitesCount(): int;
 $this->getActiveOffersCount(): int;
 $this->getPendingApplicationsCount(): int;
+$this->getPendingLegsCount(): int;
+$this->getOpenStatementsCount(): int;
 ```
 
 **URL:** `/affiliate-network/merchant-dashboard`
@@ -58,8 +60,9 @@ Both widgets are network-wide admin reports, gated by
 
 ### NetworkStatsWidget
 
-Six stat cards: Active Sites (verified), Active Offers (live), Pending
-Applications, Total Clicks, Conversion Rate, Total Revenue.
+Eight stat cards: Active Sites (verified), Active Offers (live), Pending
+Applications, Total Clicks, Conversion Rate, Total Revenue, Pending Lock Legs
+(pending ledger legs), Issued Statements (issued but unpaid).
 
 `NetworkStatsAggregator::aggregate()` returns:
 
@@ -69,6 +72,7 @@ Applications, Total Clicks, Conversion Rate, Total Revenue.
     'totalClicks', 'totalConversions', 'totalRevenue',
     'conversionRate', 'revenueFormatted', 'revenueCurrency',
     'revenueConverted', 'revenueByCurrency',
+    'pendingLegsCount', 'openStatementsCount',
 ]
 ```
 
@@ -130,8 +134,9 @@ class NetworkStatsWidget extends StatsOverviewWidget
 
 ### TopOffersWidget
 
-Top 10 offers by clicks with per-offer conversions and revenue, each formatted in
-the offer's own currency.
+Top 10 offers by clicks with per-offer conversions, revenue, EPC (formatted in
+the offer currency), and conversion rate. Metrics are batch-computed once per
+render through `OfferMetricsQuery::batch()`.
 
 **Sort order:** 2.
 

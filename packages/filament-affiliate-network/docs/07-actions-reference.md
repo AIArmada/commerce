@@ -16,6 +16,9 @@ inside the correct owner context; this package never writes domain rows directly
 | Edit | — | always | Edit form |
 | Sync catalog | `heroicon-o-arrow-path` | always | `Actions\SyncSiteCatalog` (confirmation) |
 | Verify | `heroicon-o-check-badge` | `isPending()` | Verify inside the site owner context |
+| Verify by Strategy | `heroicon-o-shield-check` | `isPending()` | `VerifySiteByStrategy` for `dns`/`meta_tag`/`file`; catches `RuntimeException` into a danger notification |
+| Adjust Prepaid Balance | `heroicon-o-banknotes` | always | `AdjustMerchantPrepaidBalance` with an integer minor delta; success toast shows formatted balance |
+| Rotate Catalog Token | `heroicon-o-key` | `isVerified()` | `RotateCatalogToken` inside the site owner context; plaintext token shown once (persistent) |
 | Reject | `heroicon-o-x-mark` | `isPending()` | Reject |
 | Suspend | `heroicon-o-pause` | `isVerified()` | Suspend (keeps `verified_at`) |
 | Reinstate | `heroicon-o-play` | `isSuspended()` | Restore to verified |
@@ -189,6 +192,33 @@ Action::make('revoke')
     ->visible(fn ($record): bool => $record->isApproved())
     ->action(fn ($record, array $data) => app(RevokeApplication::class)->execute($record, (string) $data['reason'], auth()->user()?->name));
 ```
+
+### Site statements relation manager
+
+`StatementsRelationManager` is registered on `AffiliateSiteResource` and exposes
+the same lifecycle actions as the statements resource:
+
+| Action | Visibility | Effect |
+|---|---|---|
+| View | always | Link to `MerchantStatementResource` view page |
+| Issue | `draft` | `IssueMerchantStatement` |
+| Mark Paid | `draft`/`issued` | `MarkMerchantStatementPaid` with optional reference |
+| Void | `draft`/`issued` | `VoidMerchantStatement` |
+
+## CreatorPostbackResource (admin-only)
+
+| Action | Visibility | Effect |
+|---|---|---|
+| Create | always | `ConfigureCreatorPostback::execute($affiliateId, $data)` |
+| Edit | always | Direct update; non-blank `signing_secret` is encrypted first |
+| Delete / bulk delete | always | `DeleteCreatorPostback::execute(...)` per record |
+
+### Deliveries relation manager
+
+`DeliveriesRelationManager` is read-only apart from **Retry**, visible until the
+delivery is `Delivered`; it calls
+`DeliverCreatorPostback::execute((string) $record->getKey())` and turns either
+the result or a thrown exception into a Filament notification.
 
 ## MerchantStatementResource (admin-only)
 

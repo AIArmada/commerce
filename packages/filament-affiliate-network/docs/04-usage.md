@@ -7,10 +7,10 @@ title: Usage
 This guide covers every shipped surface. All resources are owner-safe; the
 network-wide admin surfaces are noted explicitly.
 
-The plugin provides **five resources** (sites, offers, categories,
-applications, merchant statements), **six offer relation managers**, a merchant
-dashboard page, and two network reporting widgets. There is no marketplace page
-in this package.
+The plugin provides **six resources** (sites, offers, categories,
+applications, merchant statements, creator postbacks), **nine offer/site/postback
+relation managers**, a merchant dashboard page, and two network reporting
+widgets. There is no marketplace page in this package.
 
 Every resource, page, table, and widget action gates on
 `NetworkAdminAccess::allows()`, which reads
@@ -34,7 +34,8 @@ Manage merchant sites, verification, catalog sync, tokens, and settlement.
 
 ### Table columns
 
-Name, domain (copyable), status (badge), offers count, verified at, created at.
+Name, domain (copyable), status (badge), offers count, locking days, prepaid
+balance (formatted, `Postpaid` placeholder), verified at, created at.
 
 ### Form sections
 
@@ -64,6 +65,9 @@ empty to keep).
 | Edit | always | Edit details |
 | Sync catalog | always | `Actions\SyncSiteCatalog` pulls offers now (confirmation) |
 | Verify | `isPending()` | Runs inside the site owner context |
+| **Verify by Strategy** | `isPending()` | Choose `dns`, `meta_tag`, or `file`; `VerifySiteByStrategy` inside the site owner context |
+| **Adjust Prepaid Balance** | always | `AdjustMerchantPrepaidBalance` with an integer minor-unit delta; success toast shows the new balance |
+| **Rotate Catalog Token** | `isVerified()` | `RotateCatalogToken` inside the site owner context; plaintext token shown once in a persistent notification |
 | Reject | `isPending()` | Reject |
 | Suspend | `isVerified()` | Suspend (keeps `verified_at`) |
 | Reinstate | `isSuspended()` | Restore to verified |
@@ -125,11 +129,16 @@ source (`mirrored`/`manual`), network fee bp, volume tiers repeater.
 
 **Settings** — status (`draft`/`published`/`archived`), visibility
 (`public`/`private`/`unlisted`), featured, requires approval, allow deep
-linking, landing URL, **fallback URL**, **fallback offer ID**, start/end dates.
+linking, landing URL, **fallback URL**, **fallback offer** (searchable select of
+published offers, excluding the current record), start/end dates.
 
-**Advanced** — `event_rates` (multi-event CPA), `active_promotions`,
-`restrictions` (country/channel/device/order), `metadata` key/value
-(collapsed).
+**Advanced** — `event_rates` repeater (`event_type`, `rate_base_bp`,
+`rate_fixed_minor`, dehydrated to the `['<event_type>' => [...]]` map used by
+`PostConversionLeg`), `active_promotions` repeater (name, bonus/override rate,
+bonus fixed, multiplier, window, consumed by `EvaluateActivePromotion`),
+`restrictions` structured inputs (allowed/blocked countries, channels, devices
+and order min/max, consumed by `EvaluateOfferRestrictions`; all-empty groups
+normalize to `null`), and `metadata` key/value (collapsed).
 
 ### Actions
 
@@ -171,6 +180,12 @@ Header action **Invite affiliate**; row action **Revoke**.
 
 **Coupons** — code, affiliate, site, window, active. Header action **Assign
 coupon**; row action **Revoke**.
+
+### Site statements tab
+
+`AffiliateSiteResource` registers `StatementsRelationManager`, listing the
+site's merchant statements with View, Issue, Mark Paid, and Void actions that
+match `MerchantStatementResource`.
 
 ```php
 use AIArmada\AffiliateNetwork\Features\Ledger\Actions\AdjustConversionLeg;
@@ -308,6 +323,43 @@ app(IssueMerchantStatement::class)->execute((string) $statement->getKey());
 app(MarkMerchantStatementPaid::class)->execute((string) $statement->getKey(), 'BANK-REF');
 app(VoidMerchantStatement::class)->execute((string) $statement->getKey());
 ```
+
+---
+
+## CreatorPostbackResource (admin-only)
+
+Manage creator postback endpoints and their delivery history.
+
+- `canViewAny()` / `shouldRegisterNavigation()` require
+  `NetworkAdminAccess::allows()`.
+- Navigation sort is `navigation.sort + 5`.
+
+### Form
+
+**Endpoint** — affiliate ID, offer (searchable; empty means "All offers"),
+URL template (with `{leg_id}`, `{offer_id}`, `{external_reference}`,
+`{event_type}`, `{status}`, `{revenue_minor}`, `{commission_minor}`,
+`{payout_minor}`, `{currency}`, `{sub1}`, `{sub2}`, `{sub3}`, `{coupon_code}`),
+HTTP method (`GET`/`POST`), active toggle.
+
+**Delivery** — events checkbox list (`PostbackEventType` cases) and signing
+secret (password/revealable; blank on edit preserves the existing secret).
+
+### Actions
+
+| Action | Effect |
+|---|---|
+| Create | `ConfigureCreatorPostback::execute($affiliateId, $data)` |
+| Edit | Updates the endpoint; a non-blank secret is encrypted before save |
+| Delete / bulk delete | `DeleteCreatorPostback::execute(...)` per record |
+
+### Deliveries tab
+
+`DeliveriesRelationManager` lists `event_type`, status badge, HTTP status,
+attempts, last error, delivered at, and resolved URL. The **Retry** row action is
+visible until a delivery is `Delivered` and calls
+`DeliverCreatorPostback::execute((string) $record->getKey())`, surfacing success
+or danger notifications.
 
 ---
 

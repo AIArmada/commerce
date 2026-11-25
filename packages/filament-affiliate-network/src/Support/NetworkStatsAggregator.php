@@ -5,11 +5,15 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliateNetwork\Support;
 
 use AIArmada\AffiliateNetwork\Data\ApplicationStatus;
+use AIArmada\AffiliateNetwork\Data\LegStatus;
 use AIArmada\AffiliateNetwork\Data\OfferStatus;
+use AIArmada\AffiliateNetwork\Data\SettlementStatus;
 use AIArmada\AffiliateNetwork\Data\SiteStatus;
 use AIArmada\AffiliateNetwork\Features\Attribution\Models\AffiliateOfferLink;
 use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Features\Enrollment\Models\AffiliateOfferApplication;
+use AIArmada\AffiliateNetwork\Features\Ledger\Models\MerchantStatement;
+use AIArmada\AffiliateNetwork\Features\Ledger\Models\NetworkConversionLeg;
 use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use AIArmada\AffiliateNetwork\Platform\ScopesByBelongsToOwner;
 use AIArmada\CommerceSupport\Support\CurrencyConverter;
@@ -26,7 +30,7 @@ final class NetworkStatsAggregator
      * default for display, or null when a rate is missing so the widget
      * shows the breakdown instead of a blended number.
      *
-     * @return array{activeSites: int, activeOffers: int, pendingApplications: int, totalClicks: int, totalConversions: int, totalRevenue: int|null, conversionRate: float, revenueFormatted: string, revenueCurrency: string, revenueConverted: bool, revenueByCurrency: array<string, int>}
+     * @return array{activeSites: int, activeOffers: int, pendingApplications: int, totalClicks: int, totalConversions: int, totalRevenue: int|null, conversionRate: float, revenueFormatted: string, revenueCurrency: string, revenueConverted: bool, revenueByCurrency: array<string, int>, pendingLegsCount: int, openStatementsCount: int}
      */
     public static function aggregate(): array
     {
@@ -37,6 +41,8 @@ final class NetworkStatsAggregator
             $activeSites = AffiliateSite::query()->withoutOwnerScope()->where('status', SiteStatus::Verified)->count();
             $activeOffers = AffiliateOffer::withoutGlobalScope(ScopesByBelongsToOwner::class)->where('status', OfferStatus::Published)->count();
             $pendingApplications = AffiliateOfferApplication::withoutGlobalScope(ScopesByBelongsToOwner::class)->where('status', ApplicationStatus::Pending)->count();
+            $pendingLegsCount = NetworkConversionLeg::withoutOwnerScope()->where('status', LegStatus::Pending)->count();
+            $openStatementsCount = MerchantStatement::withoutOwnerScope()->where('status', SettlementStatus::Issued)->count();
 
             $conversionRate = $totalClicks > 0
                 ? round(($totalConversions / $totalClicks) * 100, 2)
@@ -56,6 +62,8 @@ final class NetworkStatsAggregator
                 'revenueCurrency' => $revenue['currency'],
                 'revenueConverted' => $revenue['converted'],
                 'revenueByCurrency' => $revenue['by_currency'],
+                'pendingLegsCount' => $pendingLegsCount,
+                'openStatementsCount' => $openStatementsCount,
             ];
         });
     }

@@ -254,6 +254,121 @@ it('reverses a posted leg', function (): void {
 });
 ```
 
+## Testing structured offer editors
+
+```php
+use AIArmada\AffiliateNetwork\Features\Catalog\Queries\EvaluateActivePromotion;
+use AIArmada\AffiliateNetwork\Features\Catalog\Queries\EvaluateOfferRestrictions;
+use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Schemas\AffiliateOfferForm;
+use Filament\Schemas\Schema;
+
+it('hydrates and dehydrates event rates, promotions, and restrictions', function (): void {
+    $schema = AffiliateOfferForm::configure(
+        Schema::make($host)->model(AffiliateOffer::class)->statePath('data')
+    );
+
+    $schema->fill([
+        'event_rates' => [
+            'purchase' => ['rate_base_bp' => 1500, 'rate_fixed_minor' => 500],
+        ],
+        'active_promotions' => [
+            ['name' => 'Launch', 'bonus_rate_bp' => 500],
+            ['name' => '', 'multiplier' => null],
+        ],
+        'restrictions' => [
+            'allowed_countries' => ['MY'],
+            'blocked_devices' => ['tablet'],
+            'min_order_minor' => '250',
+        ],
+    ]);
+
+    $state = $schema->getState();
+
+    expect($state['event_rates']['purchase']['rate_base_bp'])->toBe(1500)
+        ->and($state['active_promotions'])->toHaveCount(1)
+        ->and($state['restrictions']['min_order_minor'])->toBe(250);
+});
+```
+
+The dehydrated shapes feed `PostConversionLeg` (`event_rates`),
+`EvaluateActivePromotion` (`active_promotions`), and
+`EvaluateOfferRestrictions` (`restrictions`) unchanged. `fallback_offer_id` is a
+searchable select of published offers that excludes the record being edited.
+
+## Testing creator postbacks
+
+```php
+use AIArmada\AffiliateNetwork\Contracts\CreatorPostbackTransport;
+use AIArmada\AffiliateNetwork\Features\Postbacks\Models\CreatorPostbackDelivery;
+use AIArmada\AffiliateNetwork\Features\Postbacks\Models\CreatorPostbackEndpoint;
+use AIArmada\FilamentAffiliateNetwork\Resources\CreatorPostbackResource;
+use AIArmada\FilamentAffiliateNetwork\Resources\CreatorPostbackResource\RelationManagers\DeliveriesRelationManager;
+
+it('renders the postbacks list for admins', function (): void {
+    livewire(CreatorPostbackResource\Pages\ListCreatorPostbacks::class)->assertSuccessful();
+});
+
+it('retries a failed delivery through the relation manager', function (): void {
+    $endpoint = CreatorPostbackEndpoint::factory()->create();
+    $delivery = CreatorPostbackDelivery::factory()->forEndpoint($endpoint)->failed()->create();
+
+    app()->instance(CreatorPostbackTransport::class, new FakeSuccessfulTransport);
+
+    livewire(DeliveriesRelationManager::class, [
+        'ownerRecord' => $endpoint,
+        'pageClass' => CreatorPostbackResource\Pages\EditCreatorPostback::class,
+    ])->callTableAction('retry', $delivery);
+
+    expect($delivery->fresh()->status)->toBe(PostbackDeliveryStatus::Delivered);
+});
+```
+
+## Testing site power actions
+
+```php
+it('adjusts prepaid balance from the table action', function (): void {
+    $site = AffiliateSite::factory()->verified()->create(['prepaid_balance_minor' => 1000]);
+
+    livewire(AffiliateSiteResource\Pages\ListAffiliateSites::class)
+        ->callTableAction('adjust_prepaid', $site, ['delta_minor' => 2500]);
+
+    expect($site->fresh()->prepaid_balance_minor)->toBe(3500);
+});
+
+it('rotates the catalog token', function (): void {
+    $site = AffiliateSite::factory()->verified()->create();
+
+    livewire(AffiliateSiteResource\Pages\ListAffiliateSites::class)
+        ->callTableAction('rotate_catalog_token', $site);
+
+    expect($site->fresh()->hasCatalogToken())->toBeTrue();
+});
+```
+
+`StatementsRelationManager` mirrors the statement lifecycle (View, Issue, Mark
+Paid, Void) and can be tested with the `ownerRecord` + `pageClass` pattern.
+
+## Testing metrics and stats
+
+```php
+use AIArmada\FilamentAffiliateNetwork\Support\NetworkStatsAggregator;
+
+it('exposes offer metrics columns', function (): void {
+    $table = AffiliateOffersTable::configure(Table::make($host));
+
+    expect($table->getColumn('epc'))->not->toBeNull()
+        ->and($table->getColumn('conversion_rate'))->not->toBeNull()
+        ->and($table->getColumn('reversal_rate'))->not->toBeNull()
+        ->and($table->getColumn('locking_days'))->not->toBeNull();
+});
+
+it('aggregates pending legs and issued statements', function (): void {
+    $stats = NetworkStatsAggregator::aggregate();
+
+    expect($stats)->toHaveKeys(['pendingLegsCount', 'openStatementsCount']);
+});
+```
+
 ## Testing pages and widgets
 
 `MerchantDashboardPage`, `NetworkStatsWidget`, and `TopOffersWidget` are

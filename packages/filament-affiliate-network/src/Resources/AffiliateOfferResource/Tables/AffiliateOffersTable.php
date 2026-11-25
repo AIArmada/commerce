@@ -10,8 +10,10 @@ use AIArmada\AffiliateNetwork\Data\OfferVisibility;
 use AIArmada\AffiliateNetwork\Features\Catalog\Actions\ArchiveOffer;
 use AIArmada\AffiliateNetwork\Features\Catalog\Actions\PublishOffer;
 use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Features\Catalog\Queries\OfferMetricsQuery;
 use AIArmada\AffiliateNetwork\Features\Sites\Api\SitesApi;
 use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use Filament\Actions;
@@ -56,6 +58,31 @@ final class AffiliateOffersTable
                     ->numeric()
                     ->sortable()
                     ->toggleable(),
+
+                TextColumn::make('locking_days')
+                    ->label('Locking (d)')
+                    ->numeric()
+                    ->placeholder('site default')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                TextColumn::make('epc')
+                    ->label('EPC')
+                    ->state(function (AffiliateOffer $record): string {
+                        $metrics = app(OfferMetricsQuery::class)->forOffer($record->toRecord());
+
+                        return MoneyFormatter::formatMinor((int) round($metrics->epcMinor), $metrics->currency);
+                    })
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                TextColumn::make('conversion_rate')
+                    ->label('Conv. rate')
+                    ->state(fn (AffiliateOffer $record): string => number_format(app(OfferMetricsQuery::class)->forOffer($record->toRecord())->conversionRate * 100, 2) . '%')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                TextColumn::make('reversal_rate')
+                    ->label('Reversal rate')
+                    ->state(fn (AffiliateOffer $record): string => number_format(app(OfferMetricsQuery::class)->forOffer($record->toRecord())->reversalRate * 100, 2) . '%')
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('source')
                     ->label('Source')
