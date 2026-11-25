@@ -88,6 +88,10 @@ beforeEach(function (): void {
         $table->nullableUuidMorphs('owner');
         $table->json('metadata')->nullable();
         $table->timestamp('occurred_at')->nullable();
+        $table->timestamp('approved_at')->nullable();
+        $table->timestamp('rejected_at')->nullable();
+        $table->timestamp('reversed_at')->nullable();
+        $table->timestamp('paid_at')->nullable();
         $table->timestamps();
     });
 });

@@ -271,7 +271,7 @@ class AffiliateConversion extends Model
         static::saving(function (self $conversion): void {
             if (! $conversion->exists && config('affiliates.commissions.auto_approve', false)
                 && $conversion->status->equals(PendingConversion::class)) {
-                $conversion->status = ApprovedConversion::class;
+                $conversion->status = new ApprovedConversion($conversion);
             }
 
             if ($conversion->exists && ! $conversion->isDirty('status')) {

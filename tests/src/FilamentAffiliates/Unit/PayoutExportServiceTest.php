@@ -11,6 +11,8 @@ use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\FilamentAffiliates\Features\Payouts\Queries\PayoutExportService;
 use Illuminate\Support\Str;
+use OpenSpout\Reader\XLSX\Reader;
+use Spatie\LaravelPdf\Facades\Pdf;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 beforeEach(function (): void {
@@ -90,7 +92,7 @@ it('downloads payout as CSV', function (): void {
         ->and($content)->toContain('paid');
 });
 
-it('downloads payout as Excel (XML fallback)', function (): void {
+it('downloads a valid XLSX workbook with payout conversion rows', function (): void {
     $payout = createPayoutWithConversions();
     $service = new PayoutExportService;
 
@@ -102,9 +104,30 @@ it('downloads payout as Excel (XML fallback)', function (): void {
     $response->sendContent();
     $content = (string) ob_get_clean();
 
-    // Either a ZIP-based XLSX (starts with PK) or XML spreadsheet fallback.
-    expect($content === '' || str_starts_with($content, 'PK') || str_contains($content, '<Workbook'))
-        ->toBeTrue();
+    expect($content)->toStartWith('PK')
+        ->and($response->headers->get('Content-Type'))->toBe('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+
+    $path = tempnam(sys_get_temp_dir(), 'affiliate-payout-xlsx-');
+    expect($path)->not->toBeFalse();
+    file_put_contents($path, $content);
+    $reader = new Reader;
+    $rows = [];
+
+    try {
+        $reader->open($path);
+        foreach ($reader->getSheetIterator() as $sheet) {
+            foreach ($sheet->getRowIterator() as $row) {
+                $rows[] = $row->toArray();
+            }
+        }
+    } finally {
+        $reader->close();
+        unlink($path);
+    }
+
+    expect($rows)->toHaveCount(3)
+        ->and($rows[0])->toContain('Affiliate Code')
+        ->and(array_merge(...array_slice($rows, 1)))->toContain('REF-001', 'ORD-002');
 });
 
 it('builds PDF HTML for a payout (without invoking external PDF generators)', function (): void {
@@ -144,26 +167,31 @@ it('formats payout status safely for both enum and string statuses', function ()
     expect($stringStatus)->toBe('processing');
 });
 
-it('streams an HTML download via the internal fallback', function (): void {
+it('streams bytes returned by the Spatie PDF renderer', function (): void {
     $payout = createPayoutWithConversions();
-    $service = new PayoutExportService;
+    $bytes = "%PDF-1.7\n% renderer test payload\n%%EOF";
+    $builder = Mockery::mock();
+    $builder->shouldReceive('format')->once()->with('a4')->andReturnSelf();
+    $builder->shouldReceive('base64')->once()->andReturn(base64_encode($bytes));
+    Pdf::shouldReceive('html')->once()->withArgs(static fn (string $html): bool => str_contains($html, 'Affiliate Payout Report') && str_contains($html, 'REF-001'))->andReturn($builder);
 
-    $reflection = new ReflectionClass($service);
-
-    $buildExportData = $reflection->getMethod('buildExportData');
-    /** @var array<int, array<string>> $data */
-    $data = $buildExportData->invoke($service, $payout);
-
-    $streamHtml = $reflection->getMethod('streamHtml');
-
-    /** @var StreamedResponse $response */
-    $response = $streamHtml->invoke($service, $payout, $data, $payout->reference . '.pdf');
+    $response = (new PayoutExportService)->downloadPdf($payout);
+    expect($response->headers->get('Content-Type'))->toBe('application/pdf');
 
     ob_start();
     $response->sendContent();
-    $content = (string) ob_get_clean();
+    expect((string) ob_get_clean())->toBe($bytes);
+});
 
-    expect($content)->toContain('Affiliate Payout Report');
+it('refuses non-PDF renderer output rather than serving HTML as a PDF', function (): void {
+    $payout = createPayoutWithConversions();
+    $builder = Mockery::mock();
+    $builder->shouldReceive('format')->once()->with('a4')->andReturnSelf();
+    $builder->shouldReceive('base64')->once()->andReturn(base64_encode('<html>invalid PDF</html>'));
+    Pdf::shouldReceive('html')->once()->andReturn($builder);
+
+    expect(fn () => (new PayoutExportService)->downloadPdf($payout))
+        ->toThrow(RuntimeException::class, 'Payout PDF renderer returned invalid PDF data.');
 });
 
 it('handles payouts with zero conversions', function (): void {
