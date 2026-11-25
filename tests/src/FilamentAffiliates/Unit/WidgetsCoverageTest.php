@@ -7,9 +7,9 @@ use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\CommerceSupport\Persistence\OwnerCache;
-use AIArmada\FilamentAffiliates\Services\AffiliateStatsAggregator;
-use AIArmada\FilamentAffiliates\Widgets\AffiliateStatsWidget;
-use AIArmada\FilamentAffiliates\Widgets\PerformanceOverviewWidget;
+use AIArmada\FilamentAffiliates\Features\Reporting\Queries\AffiliateStatsAggregator;
+use AIArmada\FilamentAffiliates\Features\Reporting\EntryPoints\Filament\Widgets\AffiliateStatsWidget;
+use AIArmada\FilamentAffiliates\Features\Reporting\EntryPoints\Filament\Widgets\PerformanceOverviewWidget;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
@@ -141,7 +141,7 @@ it('PerformanceOverviewWidget refuses to trend mixed-currency revenue without ra
 
 it('RealTimeActivityWidget shows neutral reference semantics', function (): void {
     $repositoryRoot = dirname(__DIR__, 4);
-    $source = file_get_contents($repositoryRoot . '/packages/filament-affiliates/src/Widgets/RealTimeActivityWidget.php');
+    $source = file_get_contents($repositoryRoot . '/packages/filament-affiliates/src/Features/Reporting/EntryPoints/Filament/Widgets/RealTimeActivityWidget.php');
 
     expect($source)
         ->toContain("TextColumn::make('external_reference')")

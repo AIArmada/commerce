@@ -11,9 +11,9 @@ use AIArmada\Affiliates\Features\Reporting\Api\ReportingApi;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use AIArmada\FilamentAffiliates\Pages\FraudReviewPage;
-use AIArmada\FilamentAffiliates\Pages\PayoutBatchPage;
-use AIArmada\FilamentAffiliates\Pages\ReportsPage;
+use AIArmada\FilamentAffiliates\Features\Fraud\EntryPoints\Filament\Pages\FraudReviewPage;
+use AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Pages\PayoutBatchPage;
+use AIArmada\FilamentAffiliates\Features\Reporting\EntryPoints\Filament\Pages\ReportsPage;
 use Illuminate\Support\Str;
 
 beforeEach(function (): void {

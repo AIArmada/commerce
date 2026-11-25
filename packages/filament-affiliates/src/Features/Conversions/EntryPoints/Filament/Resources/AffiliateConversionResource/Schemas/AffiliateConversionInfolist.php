@@ -1,0 +1,129 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\FilamentAffiliates\Features\Conversions\EntryPoints\Filament\Resources\AffiliateConversionResource\Schemas;
+
+use AIArmada\Affiliates\States\ConversionStatus;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
+use Filament\Support\Enums\FontWeight;
+
+final class AffiliateConversionInfolist
+{
+    public static function configure(Schema $schema): Schema
+    {
+        return $schema->components([
+            Section::make('Cart Integration')
+                ->schema([
+                    Grid::make(3)->schema([
+                        TextEntry::make('external_reference')
+                            ->label('Reference')
+                            ->placeholder('—')
+                            ->weight(FontWeight::SemiBold)
+                            ->copyable(),
+                        TextEntry::make('subject_key')
+                            ->label('Subject Identifier')
+                            ->placeholder('—'),
+                        TextEntry::make('subject_instance')
+                            ->label('Subject Instance')
+                            ->placeholder('—'),
+                    ]),
+                ]),
+
+            Section::make('Subject')
+                ->schema([
+                    Grid::make(2)->schema([
+                        TextEntry::make('subject_type')
+                            ->label('Subject Type')
+                            ->placeholder('—'),
+                        TextEntry::make('subject_title_snapshot')
+                            ->label('Subject Title')
+                            ->placeholder('—'),
+                    ]),
+                ])
+                ->collapsed(),
+
+            Section::make('Affiliate')
+                ->schema([
+                    Grid::make(3)->schema([
+                        TextEntry::make('affiliate.name')
+                            ->label('Affiliate Name')
+                            ->placeholder('—'),
+                        TextEntry::make('affiliate_code')
+                            ->label('Affiliate Code')
+                            ->badge()
+                            ->color('info'),
+                        TextEntry::make('voucher_code')
+                            ->label('Voucher Code')
+                            ->placeholder('—')
+                            ->badge()
+                            ->color('success'),
+                    ]),
+                ]),
+
+            Section::make('Amounts')
+                ->schema([
+                    Grid::make(4)->schema([
+                        TextEntry::make('subtotal_minor')
+                            ->label('Subtotal')
+                            ->formatStateUsing(fn ($state, $record): string => MoneyFormatter::formatMinor((int) $state, $record->commission_currency ?? config('affiliates.currency.default', 'MYR')))
+                            ->weight(FontWeight::SemiBold),
+
+                        TextEntry::make('value_minor')
+                            ->label('Value')
+                            ->formatStateUsing(fn ($state, $record): string => MoneyFormatter::formatMinor((int) $state, $record->commission_currency ?? config('affiliates.currency.default', 'MYR')))
+                            ->weight(FontWeight::SemiBold),
+
+                        TextEntry::make('commission_minor')
+                            ->label('Commission')
+                            ->formatStateUsing(fn ($state, $record): string => MoneyFormatter::formatMinor((int) $state, $record->commission_currency ?? config('affiliates.currency.default', 'MYR')))
+                            ->badge()
+                            ->color('success')
+                            ->weight(FontWeight::Bold),
+
+                        TextEntry::make('commission_currency')
+                            ->label('Currency'),
+                    ]),
+                ]),
+
+            Section::make('Status & Dates')
+                ->schema([
+                    Grid::make(4)->schema([
+                        TextEntry::make('status')
+                            ->label('Status')
+                            ->badge()
+                            ->color(fn ($state): string => $state === null ? 'gray' : ConversionStatus::fromString($state)->color())
+                            ->formatStateUsing(fn ($state): string => $state === null ? '—' : ConversionStatus::fromString($state)->label()),
+
+                        TextEntry::make('occurred_at')
+                            ->label('Occurred At')
+                            ->dateTime()
+                            ->placeholder('—'),
+
+                        TextEntry::make('approved_at')
+                            ->label('Approved At')
+                            ->dateTime()
+                            ->placeholder('—'),
+
+                        TextEntry::make('created_at')
+                            ->label('Created At')
+                            ->dateTime(),
+                    ]),
+                ]),
+
+            Section::make('Metadata')
+                ->schema([
+                    TextEntry::make('metadata')
+                        ->label('Metadata')
+                        ->formatStateUsing(fn ($state): string => $state ? json_encode($state, JSON_PRETTY_PRINT) : '—')
+                        ->prose()
+                        ->markdown(),
+                ])
+                ->collapsed(),
+        ]);
+    }
+}

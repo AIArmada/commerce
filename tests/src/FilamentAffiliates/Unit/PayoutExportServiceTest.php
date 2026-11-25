@@ -9,7 +9,7 @@ use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\States\PendingPayout;
-use AIArmada\FilamentAffiliates\Services\PayoutExportService;
+use AIArmada\FilamentAffiliates\Features\Payouts\Queries\PayoutExportService;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 

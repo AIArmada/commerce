@@ -1,0 +1,82 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\FilamentAffiliates\Features\Compliance\EntryPoints\Filament\Resources\AffiliateSupportTicketResource\Pages;
+
+use AIArmada\Affiliates\Features\Support\Api\SupportTicketApi;
+use AIArmada\Affiliates\Features\Support\Models\AffiliateSupportTicket;
+use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\FilamentAffiliates\Features\Compliance\EntryPoints\Filament\Resources\AffiliateSupportTicketResource;
+use Filament\Resources\Pages\CreateRecord;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Validation\ValidationException;
+use InvalidArgumentException;
+use RuntimeException;
+
+final class CreateAffiliateSupportTicket extends CreateRecord
+{
+    protected static string $resource = AffiliateSupportTicketResource::class;
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    protected function mutateFormDataBeforeCreate(array $data): array
+    {
+        $affiliateId = $data['affiliate_id'] ?? null;
+
+        if (! is_string($affiliateId) && ! is_int($affiliateId)) {
+            throw ValidationException::withMessages([
+                'data.affiliate_id' => 'The selected affiliate is invalid.',
+            ]);
+        }
+
+        $data['affiliate_id'] = $this->resolveOwnedAffiliateId((string) $affiliateId);
+
+        return $data;
+    }
+
+    protected function handleRecordCreation(array $data): Model
+    {
+        $id = app(SupportTicketApi::class)->open(
+            (string) $data['affiliate_id'],
+            (string) $data['subject'],
+            (string) $data['category'],
+            (string) $data['priority'],
+            status: (string) $data['status'],
+        );
+
+        return AffiliateSupportTicket::query()->findOrFail($id);
+    }
+
+    private function resolveOwnedAffiliateId(string $affiliateId): string
+    {
+        if (! (bool) config('affiliates.owner.enabled', false)) {
+            $affiliate = Affiliate::query()->find($affiliateId);
+
+            if (! $affiliate instanceof Affiliate) {
+                throw ValidationException::withMessages([
+                    'data.affiliate_id' => 'The selected affiliate is invalid.',
+                ]);
+            }
+
+            return (string) $affiliate->getKey();
+        }
+
+        try {
+            return (string) OwnerWriteGuard::findOrFailForOwner(
+                Affiliate::class,
+                $affiliateId,
+                includeGlobal: (bool) config('affiliates.owner.include_global', false),
+                message: 'The selected affiliate is not accessible in the current owner scope.',
+            )->getKey();
+        } catch (AuthorizationException | InvalidArgumentException | RuntimeException) {
+            throw ValidationException::withMessages([
+                'data.affiliate_id' => 'The selected affiliate is not accessible in the current owner scope.',
+            ]);
+        }
+    }
+}

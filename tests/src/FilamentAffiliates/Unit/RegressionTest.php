@@ -24,17 +24,17 @@ use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Authz\Features\Authorization\Models\Permission;
 use AIArmada\Cart\Cart;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use AIArmada\FilamentAffiliates\Actions\BulkPayoutAction;
-use AIArmada\FilamentAffiliates\Actions\ResolveAffiliateLinkedOwner;
-use AIArmada\FilamentAffiliates\Pages\ManageAffiliateCommissionSettings;
-use AIArmada\FilamentAffiliates\Pages\PayoutBatchPage;
+use AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Actions\BulkPayoutAction;
+use AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Actions\ResolveAffiliateLinkedOwner;
+use AIArmada\FilamentAffiliates\Features\Commissions\EntryPoints\Filament\Pages\ManageAffiliateCommissionSettings;
+use AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Pages\PayoutBatchPage;
 use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages\PortalConversions;
 use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages\PortalLinks;
 use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages\PortalRegistration;
-use AIArmada\FilamentAffiliates\Pages\ReportsPage;
-use AIArmada\FilamentAffiliates\Resources\AffiliateFraudSignalResource;
-use AIArmada\FilamentAffiliates\Services\PayoutExportService;
-use AIArmada\FilamentAffiliates\Widgets\UplineVisualizationWidget;
+use AIArmada\FilamentAffiliates\Features\Reporting\EntryPoints\Filament\Pages\ReportsPage;
+use AIArmada\FilamentAffiliates\Features\Fraud\EntryPoints\Filament\Resources\AffiliateFraudSignalResource;
+use AIArmada\FilamentAffiliates\Features\Payouts\Queries\PayoutExportService;
+use AIArmada\FilamentAffiliates\Features\Upline\EntryPoints\Filament\Widgets\UplineVisualizationWidget;
 use Filament\Actions\Enums\ActionStatus;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
@@ -381,7 +381,7 @@ it('uses js-safe clipboard handlers in portal blades', function (): void {
             ->and($source)->toContain('writeText(@js(');
     }
 
-    $form = (string) file_get_contents($root . '/packages/filament-affiliates/src/Resources/AffiliateResource/Schemas/AffiliateForm.php');
+    $form = (string) file_get_contents($root . '/packages/filament-affiliates/src/Features/Identity/EntryPoints/Filament/Resources/AffiliateResource/Schemas/AffiliateForm.php');
 
     expect($form)->toContain('->alphaDash()');
 });
@@ -389,7 +389,7 @@ it('uses js-safe clipboard handlers in portal blades', function (): void {
 // Payout affiliate picker is lazy and owner-aware.
 it('searches payout affiliates lazily instead of preloading every row', function (): void {
     $source = (string) file_get_contents(
-        dirname(__DIR__, 4) . '/packages/filament-affiliates/src/Resources/AffiliatePayoutResource.php'
+        dirname(__DIR__, 4) . '/packages/filament-affiliates/src/Features/Payouts/EntryPoints/Filament/Resources/AffiliatePayoutResource.php'
     );
 
     expect($source)->toContain('getSearchResultsUsing')

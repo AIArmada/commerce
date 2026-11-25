@@ -12,7 +12,7 @@ use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Affiliates\States\ProcessingPayout;
 use AIArmada\Authz\Features\Authorization\Models\Permission;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use AIArmada\FilamentAffiliates\Widgets\PayoutQueueWidget;
+use AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Widgets\PayoutQueueWidget;
 use Filament\Tables\Table;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Str;

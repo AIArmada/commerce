@@ -12,7 +12,7 @@ use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\Affiliates\States\RejectedConversion;
 use AIArmada\Authz\Features\Authorization\Models\Permission;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use AIArmada\FilamentAffiliates\Pages\FraudReviewPage;
+use AIArmada\FilamentAffiliates\Features\Fraud\EntryPoints\Filament\Pages\FraudReviewPage;
 use Filament\Tables\Table;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Collection;

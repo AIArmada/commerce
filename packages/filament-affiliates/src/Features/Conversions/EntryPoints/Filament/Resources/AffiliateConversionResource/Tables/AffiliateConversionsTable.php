@@ -1,0 +1,206 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\FilamentAffiliates\Features\Conversions\EntryPoints\Filament\Resources\AffiliateConversionResource\Tables;
+
+use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
+use AIArmada\Affiliates\Actions\Conversions\ReverseAffiliateConversion as ReverseConversion;
+use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\States\ApprovedConversion;
+use AIArmada\Affiliates\States\ConversionStatus;
+use AIArmada\Affiliates\States\PaidConversion;
+use AIArmada\Affiliates\States\RejectedConversion;
+use AIArmada\Affiliates\States\ReversedConversion;
+use AIArmada\Affiliates\Support\Integrations\CartBridge;
+use AIArmada\Affiliates\Support\Integrations\VoucherBridge;
+use AIArmada\CommerceSupport\Support\FilamentPermission;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\FilamentAffiliates\Features\Conversions\EntryPoints\Filament\Resources\AffiliateConversionResource;
+use Carbon\CarbonImmutable;
+use Filament\Actions\Action;
+use Filament\Forms\Components\TextInput;
+use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Table;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
+
+final class AffiliateConversionsTable
+{
+    public static function configure(Table $table): Table
+    {
+        return $table
+            ->columns([
+                TextColumn::make('affiliate_code')
+                    ->label('Affiliate')
+                    ->searchable()
+                    ->sortable(),
+
+                TextColumn::make('external_reference')
+                    ->label('Reference')
+                    ->icon(Heroicon::OutlinedReceiptPercent)
+                    ->placeholder('—')
+                    ->searchable(),
+
+                TextColumn::make('commission_minor')
+                    ->label('Commission')
+                    ->formatStateUsing(fn (AffiliateConversion $record): string => MoneyFormatter::formatMinor($record->commission_minor, $record->commission_currency))
+                    ->badge()
+                    ->color('success')
+                    ->sortable(),
+
+                TextColumn::make('status')
+                    ->badge()
+                    ->color(fn (ConversionStatus | string $state): string => self::statusColor($state))
+                    ->formatStateUsing(fn (ConversionStatus | string $state): string => self::statusLabel($state))
+                    ->sortable(),
+
+                TextColumn::make('origin')
+                    ->label('Origin')
+                    ->badge()
+                    ->placeholder('—')
+                    ->toggleable()
+                    ->sortable(),
+
+                TextColumn::make('source_ref')
+                    ->label('Source Ref')
+                    ->placeholder('—')
+                    ->copyable()
+                    ->toggleable()
+                    ->searchable(),
+
+                TextColumn::make('occurred_at')
+                    ->label('Occurred')
+                    ->dateTime()
+                    ->sortable(),
+            ])
+            ->filters([
+                SelectFilter::make('status')
+                    ->options(ConversionStatus::options()),
+            ])
+            ->actions([
+                Action::make('view')
+                    ->label('View')
+                    ->icon(Heroicon::OutlinedEye)
+                    ->url(fn (AffiliateConversion $record): string => AffiliateConversionResource::getUrl('view', ['record' => $record])),
+                Action::make('cart')
+                    ->label('Cart')
+                    ->icon(Heroicon::OutlinedShoppingCart)
+                    ->visible(fn () => app(CartBridge::class)->isAvailable())
+                    ->url(fn (AffiliateConversion $record): ?string => app(CartBridge::class)->resolveUrl(
+                        $record->subject_key,
+                        $record->subject_instance
+                    ))
+                    ->openUrlInNewTab(),
+                Action::make('voucher')
+                    ->label('Voucher')
+                    ->icon(Heroicon::OutlinedTicket)
+                    ->visible(fn (AffiliateConversion $record): bool => $record->voucher_code !== null && app(VoucherBridge::class)->isAvailable())
+                    ->url(fn (AffiliateConversion $record): ?string => app(VoucherBridge::class)->resolveUrl($record->voucher_code))
+                    ->openUrlInNewTab(),
+                Action::make('approve')
+                    ->label('Approve')
+                    ->color('success')
+                    ->icon(Heroicon::OutlinedCheck)
+                    ->authorize(fn (): bool => FilamentPermission::hasAnyAbility(['affiliate_conversion.update', 'affiliate.approve']))
+                    ->visible(fn (AffiliateConversion $record): bool => $record->status->canTransitionTo(ApprovedConversion::class))
+                    ->requiresConfirmation()
+                    ->action(fn (AffiliateConversion $record): bool => self::updateStatus($record, ApprovedConversion::class)),
+                Action::make('reject')
+                    ->label('Reject')
+                    ->color('danger')
+                    ->icon(Heroicon::OutlinedXMark)
+                    ->authorize(fn (): bool => FilamentPermission::hasAnyAbility(['affiliate_conversion.update', 'affiliate.approve']))
+                    ->visible(fn (AffiliateConversion $record): bool => $record->status->canTransitionTo(RejectedConversion::class))
+                    ->requiresConfirmation()
+                    ->action(fn (AffiliateConversion $record): bool => self::updateStatus($record, RejectedConversion::class)),
+                Action::make('mark_paid')
+                    ->label('Mark Paid')
+                    ->color('primary')
+                    ->icon(Heroicon::OutlinedBanknotes)
+                    ->authorize(fn (): bool => FilamentPermission::hasAnyAbility(['affiliate_conversion.update', 'affiliate.approve']))
+                    ->visible(fn (AffiliateConversion $record): bool => $record->status->canTransitionTo(PaidConversion::class))
+                    ->requiresConfirmation()
+                    ->action(fn (AffiliateConversion $record): bool => self::updateStatus($record, PaidConversion::class)),
+                Action::make('reverse')
+                    ->label('Reverse')
+                    ->color('danger')
+                    ->icon(Heroicon::OutlinedArrowUturnLeft)
+                    ->authorize(fn (): bool => FilamentPermission::hasAnyAbility(['affiliate_conversion.update', 'affiliate.approve']))
+                    ->visible(fn (AffiliateConversion $record): bool => $record->status->canTransitionTo(ReversedConversion::class))
+                    ->form([
+                        TextInput::make('reason')
+                            ->label('Reason')
+                            ->required()
+                            ->maxLength(120)
+                            ->placeholder('refund, chargeback, clawback…'),
+                    ])
+                    ->action(function (AffiliateConversion $record, array $data): void {
+                        self::reverse($record, (string) $data['reason']);
+                    }),
+            ])
+            ->bulkActions([]);
+    }
+
+    public static function statusColor(ConversionStatus | string $state): string
+    {
+        return ConversionStatus::fromString($state)->color();
+    }
+
+    public static function statusLabel(ConversionStatus | string $state): string
+    {
+        return ConversionStatus::fromString($state)->label();
+    }
+
+    public static function reverse(AffiliateConversion $record, string $reason): void
+    {
+        Gate::authorize('update', $record);
+
+        $conversion = (bool) config('affiliates.owner.enabled', false)
+            ? OwnerWriteGuard::findOrFailForOwner(AffiliateConversion::class, $record->getKey())
+            : AffiliateConversion::findOrFail($record->getKey());
+
+        ReverseConversion::run($conversion, $reason);
+    }
+
+    public static function updateStatus(AffiliateConversion $record, ConversionStatus | string $status): bool
+    {
+        Gate::authorize('update', $record);
+
+        $conversion = (bool) config('affiliates.owner.enabled', false)
+            ? OwnerWriteGuard::findOrFailForOwner(AffiliateConversion::class, $record->getKey())
+            : AffiliateConversion::findOrFail($record->getKey());
+
+        $statusClass = ConversionStatus::resolveStateClassFor($status, $conversion);
+
+        // The transition itself saves (DefaultTransition), so everything must
+        // happen inside one locked transaction: concurrent approves would
+        // otherwise double-credit from a stale previous status.
+        return DB::transaction(function () use ($conversion, $statusClass): bool {
+            $locked = AffiliateConversion::query()->whereKey($conversion->getKey())->lockForUpdate()->firstOrFail();
+
+            if ($locked->status->equals($statusClass)) {
+                return true;
+            }
+
+            if ($statusClass === RejectedConversion::class
+                || $statusClass === ReversedConversion::class
+                || $statusClass === PaidConversion::class) {
+                $locked->assertNotReservedByOpenPayout();
+            }
+
+            $previousStatus = $locked->status;
+            $locked->approved_at = in_array($statusClass, [ApprovedConversion::class, PaidConversion::class], true)
+                ? ($locked->approved_at ?? CarbonImmutable::now())
+                : null;
+            $locked->status->transitionTo($statusClass);
+
+            app(ApplyConversionAccounting::class)->handle($locked, $previousStatus);
+
+            return true;
+        }, attempts: 3);
+    }
+}

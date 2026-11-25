@@ -4,34 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates;
 
-use AIArmada\FilamentAffiliates\Pages\FraudReviewPage;
-use AIArmada\FilamentAffiliates\Pages\ManageAffiliateBonusSettings;
-use AIArmada\FilamentAffiliates\Pages\ManageAffiliateCommissionSettings;
-use AIArmada\FilamentAffiliates\Pages\ManageAffiliatePayoutSettings;
-use AIArmada\FilamentAffiliates\Pages\PayoutBatchPage;
-use AIArmada\FilamentAffiliates\Pages\PerformanceBonusesPage;
-use AIArmada\FilamentAffiliates\Pages\ReportsPage;
-use AIArmada\FilamentAffiliates\Resources\AffiliateCommissionTemplateResource;
-use AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource;
-use AIArmada\FilamentAffiliates\Resources\AffiliateCreativeResource;
-use AIArmada\FilamentAffiliates\Resources\AffiliateFraudSignalResource;
-use AIArmada\FilamentAffiliates\Resources\AffiliateLinkResource;
-use AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource;
-use AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource;
-use AIArmada\FilamentAffiliates\Resources\AffiliateRankHistoryResource;
-use AIArmada\FilamentAffiliates\Resources\AffiliateRankResource;
-use AIArmada\FilamentAffiliates\Resources\AffiliateResource;
-use AIArmada\FilamentAffiliates\Resources\AffiliateSupportTicketResource;
-use AIArmada\FilamentAffiliates\Resources\AffiliateTaxDocumentResource;
-use AIArmada\FilamentAffiliates\Resources\AffiliateTouchpointResource;
-use AIArmada\FilamentAffiliates\Resources\AffiliateUplineResource;
-use AIArmada\FilamentAffiliates\Resources\AffiliateVolumeTierResource;
-use AIArmada\FilamentAffiliates\Widgets\AffiliateStatsWidget;
-use AIArmada\FilamentAffiliates\Widgets\FraudAlertWidget;
-use AIArmada\FilamentAffiliates\Widgets\PayoutQueueWidget;
-use AIArmada\FilamentAffiliates\Widgets\PerformanceOverviewWidget;
-use AIArmada\FilamentAffiliates\Widgets\RealTimeActivityWidget;
-use AIArmada\FilamentAffiliates\Widgets\UplineVisualizationWidget;
+use AIArmada\FilamentAffiliates\Contracts\AdminPanelContribution;
+use AIArmada\FilamentAffiliates\Platform\ExtensionRegistry;
 use Filament\Contracts\Plugin;
 use Filament\Panel;
 
@@ -68,123 +42,55 @@ final class FilamentAffiliatesPlugin implements Plugin
         //
     }
 
-    /**
-     * @return array<class-string>
-     */
+    /** @return list<class-string> */
     private function getResources(): array
     {
         $features = $this->getAdminFeatures();
-        $resources = [AffiliateResource::class];
+        $result = [];
 
-        if ($features['conversions']) {
-            $resources[] = AffiliateConversionResource::class;
+        foreach ($this->contributions() as $contribution) {
+            array_push($result, ...$contribution->resources($features));
         }
 
-        if ($features['payouts']) {
-            $resources[] = AffiliatePayoutResource::class;
-        }
-
-        if ($features['programs']) {
-            $resources[] = AffiliateProgramResource::class;
-        }
-
-        if ($features['commission_management']) {
-            $resources[] = AffiliateCommissionTemplateResource::class;
-        }
-
-        if ($features['volume_tiers']) {
-            $resources[] = AffiliateVolumeTierResource::class;
-        }
-
-        if ($features['links']) {
-            $resources[] = AffiliateLinkResource::class;
-        }
-
-        if ($features['attribution']) {
-            $resources[] = AffiliateTouchpointResource::class;
-        }
-
-        if ($features['ranks']) {
-            $resources[] = AffiliateRankResource::class;
-            $resources[] = AffiliateRankHistoryResource::class;
-        }
-
-        if ($features['support_compliance']) {
-            $resources[] = AffiliateSupportTicketResource::class;
-            $resources[] = AffiliateTaxDocumentResource::class;
-        }
-
-        if ($features['upline_visualization']) {
-            $resources[] = AffiliateUplineResource::class;
-        }
-
-        if ($features['fraud_monitoring']) {
-            $resources[] = AffiliateFraudSignalResource::class;
-        }
-
-        if ($features['creatives']) {
-            $resources[] = AffiliateCreativeResource::class;
-        }
-
-        return $resources;
+        return $result;
     }
 
-    /**
-     * @return array<class-string>
-     */
+    /** @return list<class-string> */
     private function getPages(): array
     {
         $features = $this->getAdminFeatures();
-        $pages = [
-            ManageAffiliateCommissionSettings::class,
-        ];
+        $result = [];
 
-        if ($features['fraud_monitoring']) {
-            $pages[] = FraudReviewPage::class;
+        foreach ($this->contributions() as $contribution) {
+            array_push($result, ...$contribution->pages($features));
         }
 
-        if ($features['payouts']) {
-            $pages[] = PayoutBatchPage::class;
-            $pages[] = ManageAffiliatePayoutSettings::class;
-            $pages[] = PerformanceBonusesPage::class;
-        }
-
-        if ($features['commission_management']) {
-            $pages[] = ManageAffiliateBonusSettings::class;
-        }
-
-        if ($features['reports']) {
-            $pages[] = ReportsPage::class;
-        }
-
-        return $pages;
+        return $result;
     }
 
-    /**
-     * @return array<class-string>
-     */
+    /** @return list<class-string> */
     private function getWidgets(): array
     {
         $features = $this->getAdminFeatures();
-        $widgets = [
-            AffiliateStatsWidget::class,
-            PerformanceOverviewWidget::class,
-            RealTimeActivityWidget::class,
-        ];
+        $result = [];
 
-        if ($features['fraud_monitoring']) {
-            $widgets[] = FraudAlertWidget::class;
+        foreach ($this->contributions() as $contribution) {
+            array_push($result, ...$contribution->widgets($features));
         }
 
-        if ($features['payouts']) {
-            $widgets[] = PayoutQueueWidget::class;
-        }
+        return $result;
+    }
+    /** @return list<AdminPanelContribution> */
+    private function contributions(): array
+    {
+        $contributions = array_values(array_filter(
+            app(ExtensionRegistry::class)->resolve('admin.panel.contributions', AdminPanelContribution::class),
+            static fn (object $value): bool => $value instanceof AdminPanelContribution,
+        ));
 
-        if ($features['upline_visualization']) {
-            $widgets[] = UplineVisualizationWidget::class;
-        }
+        usort($contributions, static fn (AdminPanelContribution $left, AdminPanelContribution $right): int => $left->priority() <=> $right->priority());
 
-        return $widgets;
+        return $contributions;
     }
 
     /**

@@ -11,7 +11,7 @@ use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\States\Pending;
 use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\CommerceSupport\Settings\ExchangeRateSettings;
-use AIArmada\FilamentAffiliates\Services\AffiliateStatsAggregator;
+use AIArmada\FilamentAffiliates\Features\Reporting\Queries\AffiliateStatsAggregator;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Str;
 

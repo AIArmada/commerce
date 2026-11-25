@@ -7,7 +7,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\FilamentAffiliates\Resources\AffiliateFraudSignalResource;
+use AIArmada\FilamentAffiliates\Features\Fraud\EntryPoints\Filament\Resources\AffiliateFraudSignalResource;
 use AIArmada\FilamentPromotions\Resources\PromotionResource;
 use AIArmada\Promotions\Enums\PromotionType;
 use AIArmada\Promotions\Models\Promotion;

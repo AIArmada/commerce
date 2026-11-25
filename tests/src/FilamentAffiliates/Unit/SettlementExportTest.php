@@ -7,7 +7,7 @@ use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\CommerceSupport\Settings\ExchangeRateSettings;
-use AIArmada\FilamentAffiliates\Services\PayoutExportService;
+use AIArmada\FilamentAffiliates\Features\Payouts\Queries\PayoutExportService;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Artisan;
 use Symfony\Component\HttpFoundation\StreamedResponse;

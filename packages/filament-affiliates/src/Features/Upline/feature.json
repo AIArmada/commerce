@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "name": "Upline",
+  "owns": {},
+  "extensions": {
+    "admin.panel.contributions": [
+      "AIArmada\\FilamentAffiliates\\Features\\Upline\\Extensions\\AdminPanelContribution"
+    ]
+  }
+}

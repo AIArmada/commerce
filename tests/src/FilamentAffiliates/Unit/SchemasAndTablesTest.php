@@ -1,7 +1,7 @@
 <?php
 
 declare(strict_types=1);
-use AIArmada\FilamentAffiliates\Resources\AffiliateResource\Schemas\AffiliateForm;
+use AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources\AffiliateResource\Schemas\AffiliateForm;
 use Filament\Schemas\Concerns\InteractsWithSchemas;
 use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Schemas\Schema;
@@ -10,8 +10,8 @@ use Livewire\Component;
 it('conversion resource schemas use neutral reference fields', function (): void {
     $repositoryRoot = dirname(__DIR__, 4);
 
-    $infolistSource = file_get_contents($repositoryRoot . '/packages/filament-affiliates/src/Resources/AffiliateConversionResource/Schemas/AffiliateConversionInfolist.php');
-    $tableSource = file_get_contents($repositoryRoot . '/packages/filament-affiliates/src/Resources/AffiliateConversionResource/Tables/AffiliateConversionsTable.php');
+    $infolistSource = file_get_contents($repositoryRoot . '/packages/filament-affiliates/src/Features/Conversions/EntryPoints/Filament/Resources/AffiliateConversionResource/Schemas/AffiliateConversionInfolist.php');
+    $tableSource = file_get_contents($repositoryRoot . '/packages/filament-affiliates/src/Features/Conversions/EntryPoints/Filament/Resources/AffiliateConversionResource/Tables/AffiliateConversionsTable.php');
 
     expect($infolistSource)
         ->toContain("TextEntry::make('external_reference')")
@@ -26,9 +26,9 @@ it('conversion resource schemas use neutral reference fields', function (): void
 it('fraud review surfaces share dual-permission authorization semantics', function (): void {
     $repositoryRoot = dirname(__DIR__, 4);
 
-    $fraudResourceSource = file_get_contents($repositoryRoot . '/packages/filament-affiliates/src/Resources/AffiliateFraudSignalResource.php');
-    $fraudPageSource = file_get_contents($repositoryRoot . '/packages/filament-affiliates/src/Pages/FraudReviewPage.php');
-    $fraudWidgetSource = file_get_contents($repositoryRoot . '/packages/filament-affiliates/src/Widgets/FraudAlertWidget.php');
+    $fraudResourceSource = file_get_contents($repositoryRoot . '/packages/filament-affiliates/src/Features/Fraud/EntryPoints/Filament/Resources/AffiliateFraudSignalResource.php');
+    $fraudPageSource = file_get_contents($repositoryRoot . '/packages/filament-affiliates/src/Features/Fraud/EntryPoints/Filament/Pages/FraudReviewPage.php');
+    $fraudWidgetSource = file_get_contents($repositoryRoot . '/packages/filament-affiliates/src/Features/Fraud/EntryPoints/Filament/Widgets/FraudAlertWidget.php');
 
     expect($fraudResourceSource)
         ->toContain("FilamentPermission::hasAnyAbility(['affiliate.approve', 'affiliates.fraud.update'])")
@@ -42,8 +42,8 @@ it('affiliate portal views and schemas use state helpers instead of enum value p
     $repositoryRoot = dirname(__DIR__, 4);
 
     $dashboardSource = file_get_contents($repositoryRoot . '/packages/filament-affiliates/resources/views/pages/portal/dashboard.blade.php');
-    $infolistSource = file_get_contents($repositoryRoot . '/packages/filament-affiliates/src/Resources/AffiliateConversionResource/Schemas/AffiliateConversionInfolist.php');
-    $tableSource = file_get_contents($repositoryRoot . '/packages/filament-affiliates/src/Resources/AffiliateResource/Tables/AffiliatesTable.php');
+    $infolistSource = file_get_contents($repositoryRoot . '/packages/filament-affiliates/src/Features/Conversions/EntryPoints/Filament/Resources/AffiliateConversionResource/Schemas/AffiliateConversionInfolist.php');
+    $tableSource = file_get_contents($repositoryRoot . '/packages/filament-affiliates/src/Features/Identity/EntryPoints/Filament/Resources/AffiliateResource/Tables/AffiliatesTable.php');
 
     expect($dashboardSource)
         ->toContain(':color="$affiliate->status->color()"')
@@ -88,7 +88,7 @@ it('affiliate portal ships package-owned styling hooks instead of relying on app
 
 it('AffiliatePayoutsTable uses canonical payout status values', function (): void {
     $repositoryRoot = dirname(__DIR__, 4);
-    $source = file_get_contents($repositoryRoot . '/packages/filament-affiliates/src/Resources/AffiliatePayoutResource/Tables/AffiliatePayoutsTable.php');
+    $source = file_get_contents($repositoryRoot . '/packages/filament-affiliates/src/Features/Payouts/EntryPoints/Filament/Resources/AffiliatePayoutResource/Tables/AffiliatePayoutsTable.php');
 
     expect($source)
         ->toContain('PayoutStatus::options()')

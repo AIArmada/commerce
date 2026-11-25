@@ -1,0 +1,121 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\FilamentAffiliates\Features\Attribution\EntryPoints\Filament\Resources\AffiliateLinkResource\Pages;
+
+use AIArmada\Affiliates\Actions\Affiliates\UpdateTrackingLink;
+use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Models\AffiliateLink;
+use AIArmada\Affiliates\Models\AffiliateProgram;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\FilamentAffiliates\Features\Attribution\EntryPoints\Filament\Resources\AffiliateLinkResource;
+use Filament\Actions;
+use Filament\Resources\Pages\EditRecord;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Validation\ValidationException;
+use InvalidArgumentException;
+use RuntimeException;
+
+final class EditAffiliateLink extends EditRecord
+{
+    protected static string $resource = AffiliateLinkResource::class;
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        $affiliateId = $data['affiliate_id'] ?? null;
+
+        if (! is_string($affiliateId) && ! is_int($affiliateId)) {
+            throw ValidationException::withMessages([
+                'data.affiliate_id' => 'The selected affiliate is invalid.',
+            ]);
+        }
+
+        $data['affiliate_id'] = $this->resolveOwnedId(
+            Affiliate::class,
+            (string) $affiliateId,
+            'affiliate_id',
+        );
+
+        $programId = $data['program_id'] ?? null;
+
+        if ($programId === null || $programId === '') {
+            $data['program_id'] = null;
+
+            return $data;
+        }
+
+        if (! is_string($programId) && ! is_int($programId)) {
+            throw ValidationException::withMessages([
+                'data.program_id' => 'The selected program is invalid.',
+            ]);
+        }
+
+        $data['program_id'] = $this->resolveOwnedId(
+            AffiliateProgram::class,
+            (string) $programId,
+            'program_id',
+        );
+
+        return $data;
+    }
+
+    protected function handleRecordUpdate(Model $record, array $data): Model
+    {
+        $link = AffiliateLink::query()->whereKey($record->getKey())->firstOrFail();
+
+        if ($link->affiliate !== null && ! $link->affiliate->isCommercialPurpose()) {
+            unset($data['destination_url'], $data['tracking_url'], $data['custom_slug']);
+        }
+
+        return UpdateTrackingLink::run($link, $data);
+    }
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Actions\ViewAction::make(),
+            Actions\DeleteAction::make()
+                ->authorize(fn (AffiliateLink $record): bool => AffiliateLinkResource::canDelete($record))
+                ->visible(fn (AffiliateLink $record): bool => AffiliateLinkResource::canDelete($record)),
+        ];
+    }
+
+    /**
+     * @template TModel of Model
+     *
+     * @param  class-string<TModel>  $model
+     */
+    private function resolveOwnedId(string $model, string $id, string $field): string
+    {
+        if (! (bool) config('affiliates.owner.enabled', false)) {
+            $record = $model::query()->find($id);
+
+            if (! $record instanceof Model) {
+                throw ValidationException::withMessages([
+                    'data.' . $field => 'The selected ' . str_replace('_id', '', $field) . ' is invalid.',
+                ]);
+            }
+
+            return (string) $record->getKey();
+        }
+
+        try {
+            return (string) OwnerWriteGuard::findOrFailForOwner(
+                $model,
+                $id,
+                includeGlobal: (bool) config('affiliates.owner.include_global', false),
+                message: 'The selected ' . str_replace('_id', '', $field) . ' is not accessible in the current owner scope.',
+            )->getKey();
+        } catch (AuthorizationException | InvalidArgumentException | RuntimeException) {
+            throw ValidationException::withMessages([
+                'data.' . $field => 'The selected ' . str_replace('_id', '', $field) . ' is not accessible in the current owner scope.',
+            ]);
+        }
+    }
+}

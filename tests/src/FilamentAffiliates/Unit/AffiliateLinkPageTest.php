@@ -11,8 +11,8 @@ use AIArmada\Affiliates\States\Active;
 use AIArmada\Authz\Features\Authorization\Models\Permission;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\FilamentAffiliates\Resources\AffiliateLinkResource;
-use AIArmada\FilamentAffiliates\Resources\AffiliateLinkResource\Pages\CreateAffiliateLink;
+use AIArmada\FilamentAffiliates\Features\Attribution\EntryPoints\Filament\Resources\AffiliateLinkResource;
+use AIArmada\FilamentAffiliates\Features\Attribution\EntryPoints\Filament\Resources\AffiliateLinkResource\Pages\CreateAffiliateLink;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 

@@ -6,7 +6,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\FilamentAffiliates\Actions\ValidateAffiliateParentAssignment;
+use AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Actions\ValidateAffiliateParentAssignment;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 

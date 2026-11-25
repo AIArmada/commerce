@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "name": "Payouts",
+  "owns": {},
+  "extensions": {
+    "admin.panel.contributions": [
+      "AIArmada\\FilamentAffiliates\\Features\\Payouts\\Extensions\\AdminPanelContribution"
+    ]
+  }
+}

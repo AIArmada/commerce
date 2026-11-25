@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 use AIArmada\Authz\Features\Authorization\Models\Permission;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use AIArmada\FilamentAffiliates\Pages\FraudReviewPage;
-use AIArmada\FilamentAffiliates\Pages\PayoutBatchPage;
-use AIArmada\FilamentAffiliates\Pages\ReportsPage;
+use AIArmada\FilamentAffiliates\Features\Fraud\EntryPoints\Filament\Pages\FraudReviewPage;
+use AIArmada\FilamentAffiliates\Features\Payouts\EntryPoints\Filament\Pages\PayoutBatchPage;
+use AIArmada\FilamentAffiliates\Features\Reporting\EntryPoints\Filament\Pages\ReportsPage;
 
 beforeEach(function (): void {
     User::query()->where('email', '!=', 'default-owner@example.com')->delete();

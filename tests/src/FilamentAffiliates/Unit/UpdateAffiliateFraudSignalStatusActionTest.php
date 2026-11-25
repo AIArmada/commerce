@@ -16,7 +16,7 @@ use AIArmada\Affiliates\States\RejectedConversion;
 use AIArmada\Authz\Features\Authorization\Models\Permission;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\FilamentAffiliates\Actions\UpdateAffiliateFraudSignalStatus;
+use AIArmada\FilamentAffiliates\Features\Fraud\EntryPoints\Filament\Actions\UpdateAffiliateFraudSignalStatus;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Str;

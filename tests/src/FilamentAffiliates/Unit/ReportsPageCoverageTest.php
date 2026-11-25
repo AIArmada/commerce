@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Features\Reporting\Api\ReportingApi;
-use AIArmada\FilamentAffiliates\Pages\ReportsPage;
+use AIArmada\FilamentAffiliates\Features\Reporting\EntryPoints\Filament\Pages\ReportsPage;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 

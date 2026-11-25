@@ -8,7 +8,7 @@ use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\Authz\Features\Authorization\Models\Permission;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use AIArmada\FilamentAffiliates\Policies\AffiliateConversionPolicy;
+use AIArmada\FilamentAffiliates\Features\Conversions\EntryPoints\Filament\Policies\AffiliateConversionPolicy;
 use Illuminate\Support\Str;
 
 beforeEach(function (): void {

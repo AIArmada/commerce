@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "name": "Attribution",
+  "owns": {},
+  "extensions": {
+    "admin.panel.contributions": [
+      "AIArmada\\FilamentAffiliates\\Features\\Attribution\\Extensions\\AdminPanelContribution"
+    ]
+  }
+}

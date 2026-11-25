@@ -8,7 +8,7 @@ use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
-use AIArmada\FilamentAffiliates\Resources\AffiliateResource;
+use AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources\AffiliateResource;
 use AIArmada\FilamentAuthz\Resources\UserResource;
 use Filament\Actions\EditAction;
 use Filament\Infolists\Components\TextEntry;

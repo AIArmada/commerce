@@ -9,7 +9,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Authz\Features\Authorization\Models\Permission;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use AIArmada\FilamentAffiliates\Widgets\FraudAlertWidget;
+use AIArmada\FilamentAffiliates\Features\Fraud\EntryPoints\Filament\Widgets\FraudAlertWidget;
 use Filament\Tables\Table;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Str;
