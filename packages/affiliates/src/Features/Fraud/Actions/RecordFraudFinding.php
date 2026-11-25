@@ -6,14 +6,15 @@ namespace AIArmada\Affiliates\Features\Fraud\Actions;
 
 use AIArmada\Affiliates\Data\FraudFinding;
 use AIArmada\Affiliates\Enums\FraudSignalStatus;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalRecord;
 use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
 use Carbon\CarbonImmutable;
 
 final readonly class RecordFraudFinding
 {
-    public function execute(string $affiliateId, ?string $conversionId, FraudFinding $finding): AffiliateFraudSignal
+    public function execute(string $affiliateId, ?string $conversionId, FraudFinding $finding): FraudSignalRecord
     {
-        return AffiliateFraudSignal::create([
+        $signal = AffiliateFraudSignal::create([
             'affiliate_id' => $affiliateId,
             'conversion_id' => $conversionId,
             'rule_code' => $finding->ruleCode,
@@ -24,5 +25,7 @@ final readonly class RecordFraudFinding
             'status' => FraudSignalStatus::Detected,
             'detected_at' => CarbonImmutable::now(),
         ]);
+
+        return new FraudSignalRecord((string) $signal->getKey(), $affiliateId, $conversionId, $finding->ruleCode, $finding->riskPoints, $finding->severity, $finding->description);
     }
 }

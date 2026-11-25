@@ -15,7 +15,7 @@ use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Services\Commissions\CommissionCaps;
-use AIArmada\Affiliates\Features\Fraud\Actions\AnalyzeFraud;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudApi;
 use AIArmada\Affiliates\States\RejectedConversion;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Carbon\CarbonImmutable;
@@ -54,7 +54,7 @@ final class RecordAffiliateOutcome
     public function __construct(
         private readonly Dispatcher $events,
         private readonly ApplyConversionAccounting $accounting,
-        private readonly AnalyzeFraud $fraud,
+        private readonly FraudApi $fraud,
     ) {}
 
     /**
@@ -270,8 +270,8 @@ final class RecordAffiliateOutcome
                 ];
             }
 
-            $fraudVerdict = $this->fraud->analyzeConversion($conversion);
-            $rejected = ! ($fraudVerdict['allowed'] ?? true);
+            $fraudVerdict = $this->fraud->analyzeConversion((string) $conversion->getKey());
+            $rejected = ! $fraudVerdict->allowed;
 
             if ($rejected) {
                 $conversion->update(['status' => RejectedConversion::class]);

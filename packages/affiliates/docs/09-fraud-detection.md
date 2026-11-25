@@ -41,20 +41,16 @@ Fraud detection operates at multiple levels:
 ],
 ```
 
-## Using AnalyzeFraud
+## Using FraudApi
 
 ```php
 use AIArmada\Affiliates\Enums\FraudSeverity;
-use AIArmada\Affiliates\Features\Fraud\Actions\AnalyzeFraud;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudApi;
 
-$service = app(AnalyzeFraud::class);
+$service = app(FraudApi::class);
 ```
 
-Both entrypoints return the same array shape:
-
-```php
-['allowed' => bool, 'score' => int, 'signals' => AffiliateFraudSignal[]]
-```
+Both entrypoints return an immutable `FraudAssessment` with `allowed`, `score`, and `signals` (`FraudSignalRecord[]`).
 
 `allowed` is `false` once the summed `risk_points` reach
 `affiliates.fraud.blocking_threshold`. Rules are registered under the
@@ -63,13 +59,13 @@ Both entrypoints return the same array shape:
 ### Analyzing Clicks
 
 ```php
-$result = $service->analyzeClick($affiliate, request());
+$result = $service->analyzeClick((string) $affiliate->getKey(), request()->ip(), request()->userAgent());
 
-foreach ($result['signals'] as $signal) {
-    // Each signal is a persisted AffiliateFraudSignal model
-    echo $signal->rule_code;    // e.g. 'CLICK_VELOCITY'
+foreach ($result->signals as $signal) {
+    // Each signal is an immutable FraudSignalRecord for a persisted signal
+    echo $signal->ruleCode;    // e.g. 'CLICK_VELOCITY'
     echo $signal->severity;     // FraudSeverity enum
-    echo $signal->risk_points;  // points this rule contributed
+    echo $signal->riskPoints;  // points this rule contributed
 }
 ```
 
@@ -77,14 +73,14 @@ foreach ($result['signals'] as $signal) {
 
 ```php
 // Check conversion for suspicious patterns
-$result = $service->analyzeConversion($conversion);
+$result = $service->analyzeConversion((string) $conversion->getKey());
 ```
 
 ### Getting the Risk Profile
 
 ```php
 // Rolling 30-day fraud profile for an affiliate
-$profile = $service->getRiskProfile($affiliate);
+$profile = $service->getRiskProfile((string) $affiliate->getKey());
 // ['total_score', 'severity', 'signal_count', 'by_rule', 'pending_review', 'confirmed']
 
 if ($profile['severity'] === FraudSeverity::Critical) {
@@ -136,7 +132,7 @@ Confirmed as blocking.
 
 ## Recording Signals Manually
 
-There is no `AnalyzeFraud::recordSignal()`. Persist the row directly —
+There is no `FraudApi::recordSignal()`. Persist the row directly —
 the `FraudSignalDetected` event is dispatched by the detection service, not by
 the model, so fire it yourself if listeners must run.
 

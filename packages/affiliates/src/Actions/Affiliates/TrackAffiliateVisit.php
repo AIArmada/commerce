@@ -8,14 +8,13 @@ use AIArmada\Affiliates\Contracts\AffiliateLookup;
 use AIArmada\Affiliates\Data\AffiliateAttributionData;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
-use AIArmada\Affiliates\Features\Fraud\Actions\AnalyzeFraud;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudApi;
 use AIArmada\Affiliates\Support\IpHasher;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
@@ -27,7 +26,7 @@ final class TrackAffiliateVisit
 
     public function __construct(
         private readonly AffiliateLookup $affiliateLookup,
-        private readonly AnalyzeFraud $fraud,
+        private readonly FraudApi $fraud,
     ) {}
 
     public function handle(string $code, array $context = [], ?string $cookieValue = null): ?AffiliateAttributionData
@@ -50,7 +49,7 @@ final class TrackAffiliateVisit
             return null;
         }
 
-        if (! $this->fraud->analyzeClick($affiliate, $this->clickRequest($context))['allowed']) {
+        if (! $this->fraud->analyzeClick((string) $affiliate->getKey(), is_string($context['ip_address'] ?? null) ? $context['ip_address'] : null, is_string($context['user_agent'] ?? null) ? $context['user_agent'] : null)->allowed) {
             return null;
         }
 
@@ -241,24 +240,6 @@ final class TrackAffiliateVisit
         return hash_equals($attribution->fingerprint, $fingerprint);
     }
 
-    private function clickRequest(array $context): Request
-    {
-        $server = [];
-
-        if (isset($context['ip_address']) && is_string($context['ip_address'])) {
-            $server['REMOTE_ADDR'] = $context['ip_address'];
-        }
-
-        if (isset($context['user_agent']) && is_string($context['user_agent'])) {
-            $server['HTTP_USER_AGENT'] = $context['user_agent'];
-        }
-
-        if (isset($context['referrer_url']) && is_string($context['referrer_url'])) {
-            $server['HTTP_REFERER'] = $context['referrer_url'];
-        }
-
-        return Request::create('/', 'GET', [], [], [], $server);
-    }
 
     private function isSelfReferral(Affiliate $affiliate): bool
     {

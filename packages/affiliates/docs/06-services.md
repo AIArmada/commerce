@@ -134,32 +134,31 @@ $service->releaseReservedFunds($payout);
 $pending = $service->getPayoutsNeedingReconciliation();
 ```
 
-## AnalyzeFraud
+## FraudApi
 
 Real-time fraud detection. Rules are tagged `affiliates.fraud_rule`; both
-entrypoints return the same `['allowed' => bool, 'score' => int, 'signals' => array]`
-shape where each signal is a persisted `AffiliateFraudSignal`.
+entrypoints return an immutable `FraudAssessment` containing `allowed`, `score`, and `signals` (a list of immutable `FraudSignalRecord` DTOs).
 
 ```php
-use AIArmada\Affiliates\Features\Fraud\Actions\AnalyzeFraud;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudApi;
 
-$service = app(AnalyzeFraud::class);
+$service = app(FraudApi::class);
 
 // Analyze an inbound click
-$result = $service->analyzeClick($affiliate, request());
-$result['allowed'];  // false once score >= affiliates.fraud.blocking_threshold
-$result['score'];
-$result['signals'];   // AffiliateFraudSignal[]
+$result = $service->analyzeClick((string) $affiliate->getKey(), request()->ip(), request()->userAgent());
+$result->allowed;  // false once score >= affiliates.fraud.blocking_threshold
+$result->score;
+$result->signals;   // FraudSignalRecord[]
 
 // Analyze a recorded conversion
-$result = $service->analyzeConversion($conversion);
+$result = $service->analyzeConversion((string) $conversion->getKey());
 
 // 30-day rolling risk profile for an affiliate
-$profile = $service->getRiskProfile($affiliate);
+$profile = $service->getRiskProfile((string) $affiliate->getKey());
 // ['total_score', 'severity', 'signal_count', 'by_rule', 'pending_review', 'confirmed']
 ```
 
-Individual checks live in `Rules/` (velocity, self-referral, device
+Individual checks live in `Features/Fraud/Extensions/` (velocity, self-referral, device
 fingerprint, geo anomaly, unusual amount, rapid conversion). See
 [Fraud Detection](09-fraud-detection.md).
 

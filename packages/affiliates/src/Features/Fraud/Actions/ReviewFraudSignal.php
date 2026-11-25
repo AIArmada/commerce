@@ -6,12 +6,13 @@ namespace AIArmada\Affiliates\Features\Fraud\Actions;
 
 use AIArmada\Affiliates\Actions\Conversions\VoidAffiliateConversion;
 use AIArmada\Affiliates\Enums\FraudSignalStatus;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudReviewApi;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudReviewResult;
 use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
 use Carbon\CarbonImmutable;
 use InvalidArgumentException;
 
-final readonly class ReviewFraudSignal
+final readonly class ReviewFraudSignal implements FraudReviewApi
 {
     public function execute(string $signalId, FraudSignalStatus $status, ?string $reviewedBy, ?string $reviewNotes = null, bool $rejectLinkedConversion = false): FraudReviewResult
     {

@@ -4,148 +4,89 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Fraud\Actions;
 
-use AIArmada\Affiliates\Features\Fraud\Actions\CountFraudClick;
-use AIArmada\Affiliates\Features\Fraud\Actions\RecordFraudFinding;
 use AIArmada\Affiliates\Contracts\FraudRule;
-use AIArmada\Affiliates\Enums\FraudSeverity;
-use AIArmada\Affiliates\Enums\FraudSignalStatus;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudApi;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudAssessment;
+use AIArmada\Affiliates\Features\Fraud\Queries\FraudEvidenceQuery;
+use AIArmada\Affiliates\Features\Fraud\Queries\FraudRiskProfileQuery;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
-use AIArmada\Affiliates\Features\Fraud\Queries\FraudEvidenceQuery;
 use AIArmada\Affiliates\Support\IpHasher;
-use Carbon\CarbonImmutable;
 use Illuminate\Container\Attributes\Tag;
-use Illuminate\Http\Request;
 
-final class AnalyzeFraud
+final readonly class AnalyzeFraud implements FraudApi
 {
     /** @var list<FraudRule> */
-    private array $clickRules;
+    private array $rules;
 
-    /** @var list<FraudRule> */
-    private array $conversionRules;
-
+    /** @param iterable<FraudRule> $rules */
     public function __construct(
         #[Tag('affiliates.fraud_rule')]
         iterable $rules = [],
-        private readonly FraudEvidenceQuery $evidence = new FraudEvidenceQuery,
-        private readonly CountFraudClick $counter = new CountFraudClick,
-        private readonly RecordFraudFinding $record = new RecordFraudFinding,
+        private FraudEvidenceQuery $evidence = new FraudEvidenceQuery,
+        private CountFraudClick $counter = new CountFraudClick,
+        private RecordFraudFinding $record = new RecordFraudFinding,
+        private FraudRiskProfileQuery $profile = new FraudRiskProfileQuery,
     ) {
-        $this->clickRules = [];
-        $this->conversionRules = [];
-
-        foreach ($rules as $rule) {
-            $this->clickRules[] = $rule;
-            $this->conversionRules[] = $rule;
-        }
+        $this->rules = array_values(is_array($rules) ? $rules : iterator_to_array($rules, false));
     }
 
-    public function analyzeClick(Affiliate $affiliate, Request $request): array
+    public function analyzeClick(string $affiliateId, ?string $ipAddress, ?string $userAgent): FraudAssessment
     {
         if (! config('affiliates.fraud.enabled', true)) {
-            return [
-                'allowed' => true,
-                'score' => 0,
-                'signals' => [],
-            ];
+            return new FraudAssessment(true, 0, []);
         }
 
-        $signals = [];
-        $ip = IpHasher::hash($request->ip());
-        $fingerprint = hash('sha256', $request->userAgent() . '|' . $request->ip());
-        $count = config('affiliates.fraud.velocity.enabled', true) ? $this->counter->execute((string) $affiliate->id, $ip) : null;
-        $evidence = $this->evidence->click((string) $affiliate->id, $ip, $fingerprint, $count);
+        Affiliate::query()->whereKey($affiliateId)->firstOrFail(['id']);
 
-        foreach ($this->clickRules as $rule) {
+        $signals = [];
+        $ip = IpHasher::hash($ipAddress);
+        $fingerprint = hash('sha256', $userAgent . '|' . $ipAddress);
+        $count = config('affiliates.fraud.velocity.enabled', true) ? $this->counter->execute($affiliateId, $ip) : null;
+        $evidence = $this->evidence->click($affiliateId, $ip, $fingerprint, $count);
+
+        foreach ($this->rules as $rule) {
             $finding = $rule->analyzeClick($evidence);
 
             if ($finding !== null) {
-                $signals[] = $this->record->execute((string) $affiliate->id, null, $finding);
+                $signals[] = $this->record->execute($affiliateId, null, $finding);
             }
         }
 
-        $score = collect($signals)->sum('risk_points');
-        $allowed = $score < config('affiliates.fraud.blocking_threshold', 100);
-
-        return [
-            'allowed' => $allowed,
-            'score' => $score,
-            'signals' => $signals,
-        ];
+        return $this->assessment($signals);
     }
 
-    public function analyzeConversion(AffiliateConversion $conversion): array
+    public function analyzeConversion(string $conversionId): FraudAssessment
     {
         if (! config('affiliates.fraud.enabled', true)) {
-            return [
-                'allowed' => true,
-                'score' => 0,
-                'signals' => [],
-            ];
+            return new FraudAssessment(true, 0, []);
         }
 
-        $signals = [];
+        $conversion = AffiliateConversion::query()->with(['affiliate', 'attribution'])->findOrFail($conversionId);
         $evidence = $this->evidence->conversion($conversion);
+        $signals = [];
 
-        foreach ($this->conversionRules as $rule) {
+        foreach ($this->rules as $rule) {
             $finding = $rule->analyzeConversion($evidence);
 
             if ($finding !== null) {
-                $signals[] = $this->record->execute((string) $conversion->affiliate_id, (string) $conversion->id, $finding);
+                $signals[] = $this->record->execute((string) $conversion->affiliate_id, $conversionId, $finding);
             }
         }
 
-        $score = collect($signals)->sum('risk_points');
-        $allowed = $score < config('affiliates.fraud.blocking_threshold', 100);
-
-        return [
-            'allowed' => $allowed,
-            'score' => $score,
-            'signals' => $signals,
-        ];
+        return $this->assessment($signals);
     }
 
-    public function getRiskProfile(Affiliate $affiliate): array
+    public function getRiskProfile(string $affiliateId): array
     {
-        $rows = AffiliateFraudSignal::query()
-            ->where('affiliate_id', $affiliate->id)
-            ->where('detected_at', '>=', CarbonImmutable::now()->subDays(30))
-            ->toBase()
-            ->selectRaw('rule_code, status, COUNT(*) as signal_count, SUM(risk_points) as total_points')
-            ->groupBy('rule_code', 'status')
-            ->get();
+        return $this->profile->execute($affiliateId);
+    }
 
-        $totalScore = $signalCount = $pendingReview = $confirmed = 0;
-        $byRule = [];
+    /** @param list<\AIArmada\Affiliates\Features\Fraud\Api\FraudSignalRecord> $signals */
+    private function assessment(array $signals): FraudAssessment
+    {
+        $score = array_sum(array_map(static fn ($signal): int => $signal->riskPoints, $signals));
 
-        foreach ($rows as $row) {
-            $count = (int) $row->signal_count;
-            $points = (int) $row->total_points;
-            $rule = (string) $row->rule_code;
-            $totalScore += $points;
-            $signalCount += $count;
-            $byRule[$rule] ??= ['count' => 0, 'total_points' => 0];
-            $byRule[$rule]['count'] += $count;
-            $byRule[$rule]['total_points'] += $points;
-
-            if ($row->status === FraudSignalStatus::Detected->value) {
-                $pendingReview += $count;
-            }
-
-            if ($row->status === FraudSignalStatus::Confirmed->value) {
-                $confirmed += $count;
-            }
-        }
-
-        return [
-            'total_score' => $totalScore,
-            'severity' => FraudSeverity::fromScore($totalScore),
-            'signal_count' => $signalCount,
-            'by_rule' => $byRule,
-            'pending_review' => $pendingReview,
-            'confirmed' => $confirmed,
-        ];
+        return new FraudAssessment($score < (int) config('affiliates.fraud.blocking_threshold', 100), $score, $signals);
     }
 }

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Actions;
 
 use AIArmada\Affiliates\Enums\FraudSignalStatus;
-use AIArmada\Affiliates\Features\Fraud\Actions\ReviewFraudSignal;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudReviewApi;
 use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Gate;
@@ -24,7 +24,7 @@ final class UpdateAffiliateFraudSignalStatus
         Gate::authorize('update', $record);
 
         $reviewedBy = auth()->user()?->getAuthIdentifier();
-        $result = app(ReviewFraudSignal::class)->execute(
+        $result = app(FraudReviewApi::class)->execute(
             (string) $record->getKey(),
             $status,
             $reviewedBy === null ? null : (string) $reviewedBy,

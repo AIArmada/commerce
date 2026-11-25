@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Services;
 
-use AIArmada\Affiliates\Features\Fraud\Actions\AnalyzeFraud;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudApi;
 use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
 use AIArmada\Affiliates\Actions\Conversions\VoidAffiliateConversion;
 use AIArmada\Affiliates\Contracts\MerchantIdentity;
@@ -40,7 +40,7 @@ final class MerchantLedgerService implements MerchantLedger
     public function __construct(
         private readonly MerchantIdentity $identities,
         private readonly ApplyConversionAccounting $accounting,
-        private readonly AnalyzeFraud $fraud,
+        private readonly FraudApi $fraud,
         private readonly Dispatcher $events,
         private readonly VoidAffiliateConversion $void,
     ) {}
@@ -88,7 +88,7 @@ final class MerchantLedgerService implements MerchantLedger
                 return $conversion;
             }
 
-            if (! $this->fraud->analyzeConversion($conversion)['allowed']) {
+            if (! $this->fraud->analyzeConversion((string) $conversion->getKey())->allowed) {
                 $conversion->update(['status' => RejectedConversion::class]);
             }
 
