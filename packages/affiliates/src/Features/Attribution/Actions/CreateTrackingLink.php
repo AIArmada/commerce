@@ -54,6 +54,7 @@ final readonly class CreateTrackingLink
 
         Validator::make($attributes, [
             'program_id' => ['nullable', 'string', 'uuid'],
+            'deactivated_at' => ['nullable', 'date'],
             'tracking_url' => ['prohibited'],
             'short_url' => ['prohibited'],
             'custom_slug' => ['nullable', 'string', 'min:8', 'max:64', 'regex:/^[a-z0-9]+$/'],

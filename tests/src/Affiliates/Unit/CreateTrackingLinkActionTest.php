@@ -242,3 +242,18 @@ test('tracking link commands reject malformed program references and null affili
         ->and(fn () => $links->update($link->id, ['affiliate_id' => null]))->toThrow(ValidationException::class);
     expect(AffiliateLink::query()->findOrFail($link->id)->affiliate_id)->toBe($affiliateId);
 });
+
+test('link administration persists deactivation and preserves an existing disable timestamp', function (): void {
+    config(['affiliates.links.allowed_hosts' => ['ilmu360.test']]);
+    $links = app(TrackingLinkAdministration::class);
+    $created = $links->create((string) $this->affiliate->getKey(), 'https://ilmu360.test/event');
+    $links->update($created->id, ['deactivated_at' => '2024-01-01 12:00:00']);
+    $link = AffiliateLink::query()->findOrFail($created->id);
+    expect($link->isEnabled())->toBeFalse();
+    $timestamp = $link->deactivated_at;
+    $links->setEnabled($created->id, false);
+    expect($link->refresh()->deactivated_at?->equalTo($timestamp))->toBeTrue();
+    $links->update($created->id, ['deactivated_at' => null]);
+    expect($link->refresh()->isEnabled())->toBeTrue();
+    expect(fn () => $links->update($created->id, ['deactivated_at' => 'invalid-date']))->toThrow(ValidationException::class);
+});

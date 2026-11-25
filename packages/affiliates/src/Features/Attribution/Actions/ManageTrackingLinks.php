@@ -94,9 +94,17 @@ final readonly class ManageTrackingLinks implements TrackingLinkAdministration
 
     public function setEnabled(string $linkId, bool $enabled): void
     {
-        AffiliateLink::query()->findOrFail($linkId)->update([
-            'deactivated_at' => $enabled ? null : CarbonImmutable::now(),
-        ]);
+        $reference = AffiliateLink::query()->findOrFail($linkId);
+        $connection = $reference->getConnection();
+        $this->assertSharedConnection($reference);
+
+        $connection->transaction(function () use ($reference, $linkId, $enabled): void {
+            Affiliate::query()->forOwner()->lockForUpdate()->findOrFail($reference->affiliate_id);
+            $link = AffiliateLink::query()->where('affiliate_id', $reference->affiliate_id)->lockForUpdate()->findOrFail($linkId);
+            if ($link->isEnabled() !== $enabled) {
+                $link->update(['deactivated_at' => $enabled ? null : CarbonImmutable::now()]);
+            }
+        }, attempts: 3);
     }
 
     public function recordClick(string $linkId): void
