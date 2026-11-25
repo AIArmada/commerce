@@ -8,7 +8,7 @@ use AIArmada\Affiliates\Contracts\FraudRule;
 use AIArmada\Affiliates\Data\ClickFraudEvidence;
 use AIArmada\Affiliates\Data\ConversionFraudEvidence;
 use AIArmada\Affiliates\Data\FraudFinding;
-use AIArmada\Affiliates\Enums\FraudSeverity;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
 
 final class FingerprintRepeatRule implements FraudRule
 {

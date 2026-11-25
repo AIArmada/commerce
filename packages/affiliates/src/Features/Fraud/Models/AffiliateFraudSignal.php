@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Fraud\Models;
 
-use AIArmada\Affiliates\Enums\FraudSeverity;
-use AIArmada\Affiliates\Enums\FraudSignalStatus;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalStatus;
 use AIArmada\Affiliates\Features\Fraud\Actions\PublishFraudSignalDetected;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;

@@ -44,7 +44,7 @@ Fraud detection operates at multiple levels:
 ## Using FraudApi
 
 ```php
-use AIArmada\Affiliates\Enums\FraudSeverity;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudApi;
 
 $service = app(FraudApi::class);
@@ -104,7 +104,7 @@ Six rules ship in `AIArmada\Affiliates\Features\Fraud\Extensions`, identified by
 ## Fraud Severity Levels
 
 ```php
-use AIArmada\Affiliates\Enums\FraudSeverity;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
 
 FraudSeverity::Low;       // riskThreshold() 20 — minor concern
 FraudSeverity::Medium;    // riskThreshold() 50 — investigate
@@ -118,7 +118,7 @@ FraudSeverity::Critical;  // riskThreshold() 100 — immediate action needed
 ## Fraud Signal Statuses
 
 ```php
-use AIArmada\Affiliates\Enums\FraudSignalStatus;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalStatus;
 
 FraudSignalStatus::Detected;  // Newly detected and awaiting review
 FraudSignalStatus::Reviewed;  // Reviewed by admin
@@ -137,7 +137,7 @@ persists the signal and emits the normal after-commit event.
 
 ```php
 use AIArmada\Affiliates\Data\FraudFinding;
-use AIArmada\Affiliates\Enums\FraudSeverity;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
 use AIArmada\Affiliates\Features\Fraud\Actions\RecordFraudFinding;
 
 $signal = app(RecordFraudFinding::class)->execute(

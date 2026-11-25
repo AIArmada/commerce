@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Features\Fraud\EntryPoints\Filament\Pages;
 
-use AIArmada\Affiliates\Enums\FraudSeverity;
-use AIArmada\Affiliates\Enums\FraudSignalStatus;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalStatus;
 use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\FilamentAffiliates\Features\Fraud\EntryPoints\Filament\Actions\BulkFraudReviewAction;

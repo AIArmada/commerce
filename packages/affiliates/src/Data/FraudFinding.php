@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Data;
 
-use AIArmada\Affiliates\Enums\FraudSeverity;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
 
 final readonly class FraudFinding
 {

@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Fraud\Api;
 
-use AIArmada\Affiliates\Enums\FraudSeverity;
-
 final readonly class FraudSignalRecord
 {
     public function __construct(

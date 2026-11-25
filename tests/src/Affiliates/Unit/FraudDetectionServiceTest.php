@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\CommissionType;
-use AIArmada\Affiliates\Enums\FraudSeverity;
-use AIArmada\Affiliates\Enums\FraudSignalStatus;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalStatus;
 use AIArmada\Affiliates\Events\FraudSignalDetected;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudApi;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudAssessment;

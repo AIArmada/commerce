@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\CommissionType;
-use AIArmada\Affiliates\Enums\FraudSeverity;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
 use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\ProgramVisibility;

@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\FraudSeverity;
-use AIArmada\Affiliates\Enums\FraudSignalStatus;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalStatus;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\ProgramVisibility;
 use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;

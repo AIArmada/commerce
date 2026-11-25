@@ -1,8 +1,8 @@
 <?php
 
 use AIArmada\Affiliates\Enums\CommissionType;
-use AIArmada\Affiliates\Enums\FraudSeverity;
-use AIArmada\Affiliates\Enums\FraudSignalStatus;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
 use AIArmada\Affiliates\States\Active;
