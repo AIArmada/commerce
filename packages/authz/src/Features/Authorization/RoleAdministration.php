@@ -7,6 +7,8 @@ namespace AIArmada\Authz\Features\Authorization;
 use AIArmada\Authz\Features\Authorization\Actions\AssignExistingRole;
 use AIArmada\Authz\Features\Authorization\Actions\EnsurePermissions;
 use AIArmada\Authz\Features\Authorization\Actions\EnsureRoleDefinition;
+use AIArmada\Authz\Features\Authorization\Actions\SyncUserPermissions;
+use AIArmada\Authz\Features\Authorization\Actions\SyncUserRoles;
 use AIArmada\Authz\Features\Authorization\Api\RoleAdministrationApi;
 use AIArmada\Authz\Features\Authorization\Api\RoleRecord;
 use AIArmada\Authz\Features\Authorization\Models\Permission;
@@ -22,6 +24,8 @@ final readonly class RoleAdministration implements RoleAdministrationApi
         private EnsurePermissions $permissions,
         private AssignExistingRole $assign,
         private PermissionRegistrar $registrar,
+        private SyncUserRoles $userRoles,
+        private SyncUserPermissions $userPermissions,
     ) {}
 
     public function permissionNames(string $guard): array
@@ -49,5 +53,14 @@ final readonly class RoleAdministration implements RoleAdministrationApi
     public function assignExistingRole(RecordReference $record, string $name, string $guard, string | int | null $scope): bool
     {
         return $this->assign->execute($record, $name, $guard, $scope);
+    }
+    public function syncUserRoles(RecordReference $record, array $roleIds, string $guard, bool $restrictToCurrentTeam, string $scopeMode): void
+    {
+        $this->userRoles->execute($record, $roleIds, $guard, $restrictToCurrentTeam, $scopeMode);
+    }
+
+    public function syncUserPermissions(RecordReference $record, array $permissionIds, string $guard): void
+    {
+        $this->userPermissions->execute($record, $permissionIds, $guard);
     }
 }

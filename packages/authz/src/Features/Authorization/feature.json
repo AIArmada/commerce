@@ -25,10 +25,12 @@
       "AIArmada\\Authz\\Features\\Authorization\\Actions\\AssignGlobalSuperAdmin",
       "AIArmada\\Authz\\Features\\Authorization\\Actions\\AssignExistingRole",
       "AIArmada\\Authz\\Features\\Authorization\\Actions\\AssignUserRole",
-      "AIArmada\\Authz\\Features\\Authorization\\Actions\\RevokeUserRole"
+      "AIArmada\\Authz\\Features\\Authorization\\Actions\\RevokeUserRole",
+      "AIArmada\\Authz\\Features\\Authorization\\Actions\\SyncUserRoles"
     ],
     "table:model_has_permissions": [
-      "AIArmada\\Authz\\Features\\Authorization\\Actions\\DeleteScopeAssignments"
+      "AIArmada\\Authz\\Features\\Authorization\\Actions\\DeleteScopeAssignments",
+      "AIArmada\\Authz\\Features\\Authorization\\Actions\\SyncUserPermissions"
     ],
     "table:role_has_permissions": [
       "AIArmada\\Authz\\Features\\Authorization\\Actions\\DeleteScopeAssignments",
