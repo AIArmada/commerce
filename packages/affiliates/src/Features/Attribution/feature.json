@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "name": "Attribution",
+  "owns": {
+    "table:affiliate_attributions": [
+      "AIArmada\\Affiliates\\Features\\Attribution\\Actions\\TouchAffiliateAttribution"
+    ]
+  },
+  "extensions": {}
+}

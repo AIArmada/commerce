@@ -211,15 +211,6 @@ class AffiliateAttribution extends Model
         return $scoped;
     }
 
-    public function refreshLastSeen(): void
-    {
-        $this->last_seen_at = CarbonImmutable::now();
-
-        if ($this->isDirty('last_seen_at')) {
-            $this->save();
-        }
-    }
-
     protected static function booted(): void
     {
         static::creating(function (self $attribution): void {

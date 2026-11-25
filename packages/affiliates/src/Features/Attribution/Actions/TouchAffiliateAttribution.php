@@ -2,24 +2,22 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Actions\Affiliates;
+namespace AIArmada\Affiliates\Features\Attribution\Actions;
 
 use AIArmada\Affiliates\Data\AffiliateAttributionData;
+use AIArmada\Affiliates\Features\Attribution\Api\AttributionActivity;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Queries\AffiliateLookupQuery;
 use AIArmada\Affiliates\Support\IpHasher;
 use Carbon\CarbonImmutable;
-use Lorisleiva\Actions\Concerns\AsAction;
 
-final class TouchAffiliateAttribution
+final readonly class TouchAffiliateAttribution implements AttributionActivity
 {
-    use AsAction;
-
     public function __construct(
-        private readonly AffiliateLookupQuery $affiliateLookup,
+        private AffiliateLookupQuery $affiliateLookup,
     ) {}
 
-    public function handle(string $cookieValue, array $context = []): ?AffiliateAttributionData
+    public function touch(string $cookieValue, array $context = []): ?AffiliateAttributionData
     {
         $attribution = $this->affiliateLookup->findActiveAttributionByCookie($cookieValue);
 
@@ -27,19 +25,30 @@ final class TouchAffiliateAttribution
             return null;
         }
 
-        $attribution->loadMissing('affiliate');
+        return $attribution->getConnection()->transaction(function () use ($attribution, $context): ?AffiliateAttributionData {
+            $locked = AffiliateAttribution::query()
+                ->forOwner()
+                ->where('cookie_value', $attribution->cookie_value)
+                ->active()
+                ->lockForUpdate()
+                ->find($attribution->getKey());
 
-        if (! $attribution->affiliate) {
-            return null;
-        }
+            if (! $locked instanceof AffiliateAttribution || ! $locked->affiliate?->canBeAttributed()) {
+                return null;
+            }
 
-        $payload = $this->buildTouchPayload($attribution, $context);
-        $this->fillAttribution($attribution, $payload);
+            $this->fillAttribution($locked, $this->buildTouchPayload($locked, $context));
 
-        $attribution->last_cookie_seen_at = CarbonImmutable::now();
-        $attribution->save();
+            $now = CarbonImmutable::now();
+            $locked->last_seen_at = $now;
+            $locked->last_cookie_seen_at = $now;
 
-        return $attribution->toData();
+            if ($locked->isDirty()) {
+                $locked->save();
+            }
+
+            return $locked->toData();
+        }, attempts: 3);
     }
 
     private function buildTouchPayload(AffiliateAttribution $attribution, array $context): array

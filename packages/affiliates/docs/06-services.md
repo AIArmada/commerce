@@ -24,7 +24,7 @@ The canonical orchestration surface for affiliates is the `Actions` tree. Prefer
 | `app(AffiliateLifecycle::class)->pause($affiliateId)` | Pause an affiliate |
 | `DetachAffiliateFromCart::run($cart)` | Detach the affiliate from a cart |
 | `ResolvePublicAffiliateReferralContext::run($request)` | Resolve referral context |
-| `TouchAffiliateAttribution::run($cookieValue, $context)` | Touch cookie attribution |
+| `app(AttributionActivity::class)->touch($cookieValue, $context)` | Touch cookie attribution |
 | `TrackAffiliateVisit::run($code, $context, $cookieValue)` | Track a visit by code |
 
 `CapturePublicAffiliateReferral::run($request, $affiliateCode)` takes two

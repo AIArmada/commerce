@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\CommissionType;
+use AIArmada\Affiliates\Features\Attribution\Api\AttributionActivity;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
@@ -226,11 +227,12 @@ describe('AffiliateAttribution Model', function (): void {
             'affiliate_code' => $this->affiliate->code,
             'cart_instance' => 'default',
             'last_seen_at' => Carbon::now()->subHour(),
+            'cookie_value' => 'refresh-model-last-seen',
         ]);
 
         $originalLastSeen = $attribution->last_seen_at;
 
-        $attribution->refreshLastSeen();
+        app(AttributionActivity::class)->touch('refresh-model-last-seen');
         $attribution->refresh();
 
         expect($attribution->last_seen_at->gt($originalLastSeen))->toBeTrue();

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Support\Middleware;
 
-use AIArmada\Affiliates\Actions\Affiliates\TouchAffiliateAttribution;
+use AIArmada\Affiliates\Features\Attribution\Api\AttributionActivity;
 use AIArmada\Affiliates\Actions\Affiliates\TrackAffiliateVisit;
 use AIArmada\Affiliates\Models\AffiliateLink;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -18,7 +18,7 @@ final class TrackAffiliateCookie
 {
     public function __construct(
         private readonly TrackAffiliateVisit $trackAffiliateVisit,
-        private readonly TouchAffiliateAttribution $touchAffiliateAttribution,
+        private readonly AttributionActivity $attributionActivity,
     ) {}
 
     public function handle(Request $request, Closure $next): Response
@@ -66,7 +66,7 @@ final class TrackAffiliateCookie
             }
             $cookieValue = $attribution?->cookieValue;
         } elseif ($cookieValue) {
-            $this->touchAffiliateAttribution->handle($cookieValue, $context);
+            $this->attributionActivity->touch($cookieValue, $context);
         }
 
         if (! $cookieValue) {

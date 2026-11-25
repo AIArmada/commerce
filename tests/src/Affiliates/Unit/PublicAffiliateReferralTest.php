@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Actions\Affiliates\ResolvePublicAffiliateReferralContext;
-use AIArmada\Affiliates\Actions\Affiliates\TouchAffiliateAttribution;
+use AIArmada\Affiliates\Features\Attribution\Api\AttributionActivity;
 use AIArmada\Affiliates\Actions\Affiliates\TrackAffiliateVisit;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
@@ -173,14 +173,24 @@ test('touching attribution preserves the stored hash unless a new raw IP arrives
 
     expect($stored->ip_address)->toBe(IpHasher::hash($firstIp));
 
-    app(TouchAffiliateAttribution::class)->handle('touch-cookie-f03', []);
+    app(AttributionActivity::class)->touch('touch-cookie-f03', []);
 
     expect($stored->refresh()->ip_address)->toBe(IpHasher::hash($firstIp));
 
-    app(TouchAffiliateAttribution::class)->handle('touch-cookie-f03', ['ip_address' => $secondIp]);
+    app(AttributionActivity::class)->touch('touch-cookie-f03', ['ip_address' => $secondIp]);
 
     $touched = $stored->refresh();
 
     expect($touched->ip_address)->toBe(IpHasher::hash($secondIp))
         ->and($touched->ip_address)->not->toBe(IpHasher::hash((string) IpHasher::hash($secondIp)));
+});
+
+test('attribution activity does not revive expired cookies', function (): void {
+    app(TrackAffiliateVisit::class)->handle($this->affiliate->code, [], 'expired-touch-cookie');
+    $attribution = AffiliateAttribution::query()->where('cookie_value', 'expired-touch-cookie')->sole();
+    $attribution->update(['expires_at' => now()->subDay()]);
+    $expiresAt = $attribution->fresh()->expires_at;
+
+    expect(app(AttributionActivity::class)->touch('expired-touch-cookie'))->toBeNull()
+        ->and($attribution->fresh()->expires_at->equalTo($expiresAt))->toBeTrue();
 });
