@@ -15,14 +15,12 @@ use AIArmada\Affiliates\Features\Identity\Models\AffiliateCredential;
 use AIArmada\Affiliates\Features\Identity\Models\AffiliateOwnershipCapability;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutRemoval;
 use AIArmada\Affiliates\Features\Reporting\Api\DailyStatsWriter;
-use AIArmada\Affiliates\Features\Support\Api\SupportTicketApi;
-use AIArmada\Affiliates\Features\Tax\Api\TaxDocumentApi;
 use AIArmada\Affiliates\Features\Upline\Api\UplineApi;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Models\AffiliateRankHistory;
 use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\VouchersServiceProvider;
+use AIArmada\Vouchers\VoucherServiceProvider;
 use Illuminate\Validation\ValidationException;
 use LogicException;
 
@@ -36,8 +34,6 @@ final readonly class DeleteAffiliate implements AffiliateRemoval
         private FraudSignalMaintenance $fraud,
         private DailyStatsWriter $statistics,
         private UplineApi $upline,
-        private SupportTicketApi $support,
-        private TaxDocumentApi $tax,
     ) {}
 
     public function delete(string $affiliateId): bool
@@ -62,9 +58,7 @@ final readonly class DeleteAffiliate implements AffiliateRemoval
 
             if (AffiliateProgramMembership::query()->where('affiliate_id', $affiliateId)->exists()
                 || AffiliateRankHistory::query()->where('affiliate_id', $affiliateId)->exists()
-                || $this->support->ticketsFor($affiliateId) !== []
-                || $this->tax->documentsFor($affiliateId, 1) !== []
-                || (class_exists(Voucher::class) && app()->providerIsLoaded(VouchersServiceProvider::class) && $affiliate->vouchers()->exists())) {
+                || (class_exists(Voucher::class) && app()->providerIsLoaded(VoucherServiceProvider::class) && $affiliate->vouchers()->exists())) {
                 throw ValidationException::withMessages(['affiliate' => 'An affiliate with linked business or historical records cannot be deleted.']);
             }
 

@@ -17,10 +17,12 @@ use AIArmada\AffiliateNetwork\Features\Catalog\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Features\Enrollment\Actions\ApplyToOffer;
 use AIArmada\AffiliateNetwork\Features\Enrollment\Models\AffiliateOfferApplication;
 use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateRemoval;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Validation\ValidationException;
 
 final class CapturingNotificationDispatcher implements NotificationDispatcher
 {
@@ -98,6 +100,17 @@ describe('cross-tenant application flow', function (): void {
         expect($notification)->not->toBeNull()
             ->and($notification['ownerType'])->toBe($merchant->getMorphClass())
             ->and((string) $notification['ownerId'])->toBe((string) $merchant->getKey());
+
+        OwnerContext::withOwner($creator, function () use ($affiliate): void {
+            expect(fn () => app(AffiliateRemoval::class)->delete((string) $affiliate->getKey()))
+                ->toThrow(ValidationException::class);
+
+            expect($affiliate->fresh())->not->toBeNull();
+        });
+
+        OwnerContext::withOwner($merchant, function () use ($application): void {
+            expect($application->fresh())->not->toBeNull();
+        });
     });
 
     test('emits pure DTO events carrying owner coordinates', function (): void {
