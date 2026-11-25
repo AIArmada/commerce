@@ -10,6 +10,7 @@ use AIArmada\Affiliates\States\Active;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Str;
 
 describe('AffiliatePayoutHold Model', function (): void {
     it('can be created with required fields', function (): void {
@@ -146,7 +147,7 @@ describe('AffiliatePayoutHold Model', function (): void {
 
         expect($hold->isActive())->toBeTrue();
 
-        expect(fn () => $administration->release('missing-affiliate', $holdId))->toThrow(ModelNotFoundException::class);
+        expect(fn () => $administration->release((string) Str::uuid(), $holdId))->toThrow(ModelNotFoundException::class);
         expect($hold->fresh()->isActive())->toBeTrue();
 
         $administration->release((string) $affiliate->getKey(), $holdId, 'Reviewed');
