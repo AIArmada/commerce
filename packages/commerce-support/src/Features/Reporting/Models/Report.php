@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\CommerceSupport\Models;
+namespace AIArmada\CommerceSupport\Features\Reporting\Models;
 
-use AIArmada\CommerceSupport\Enums\ReportSeverity;
-use AIArmada\CommerceSupport\Enums\ReportStatus;
+use AIArmada\CommerceSupport\Features\Reporting\Api\ReportSeverity;
+use AIArmada\CommerceSupport\Features\Reporting\Api\ReportStatus;
 use Carbon\CarbonImmutable;
 use Eloquent;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -107,50 +107,5 @@ class Report extends Model
         static::creating(function (Report $report): void {
             $report->reported_at ??= CarbonImmutable::now();
         });
-    }
-
-    public function startReview(Model $reviewer): bool
-    {
-        $this->reviewedBy()->associate($reviewer);
-        $this->status = ReportStatus::UnderReview;
-        $this->reviewed_at = CarbonImmutable::now();
-
-        return $this->save();
-    }
-
-    public function resolve(Model $reviewer, ?string $resolution = null): bool
-    {
-        $this->reviewedBy()->associate($reviewer);
-        $this->status = ReportStatus::Resolved;
-        $this->reviewed_at ??= CarbonImmutable::now();
-        $this->resolved_at = CarbonImmutable::now();
-
-        if ($resolution !== null) {
-            $this->resolution = $resolution;
-        }
-
-        return $this->save();
-    }
-
-    public function reject(Model $reviewer, ?string $resolution = null): bool
-    {
-        $this->reviewedBy()->associate($reviewer);
-        $this->status = ReportStatus::Rejected;
-        $this->reviewed_at ??= CarbonImmutable::now();
-        $this->rejected_at = CarbonImmutable::now();
-
-        if ($resolution !== null) {
-            $this->resolution = $resolution;
-        }
-
-        return $this->save();
-    }
-
-    public function archive(): bool
-    {
-        $this->status = ReportStatus::Archived;
-        $this->archived_at = CarbonImmutable::now();
-
-        return $this->save();
     }
 }

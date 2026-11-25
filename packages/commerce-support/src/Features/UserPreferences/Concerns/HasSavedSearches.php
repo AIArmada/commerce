@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\CommerceSupport\Traits;
+namespace AIArmada\CommerceSupport\Features\UserPreferences\Concerns;
 
-use AIArmada\CommerceSupport\Models\SavedSearch;
+use AIArmada\CommerceSupport\Features\UserPreferences\Models\SavedSearch;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 trait HasSavedSearches

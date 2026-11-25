@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\CommerceSupport\Traits;
+namespace AIArmada\CommerceSupport\Features\Reporting\Concerns;
 
-use AIArmada\CommerceSupport\Models\Report;
+use AIArmada\CommerceSupport\Features\Reporting\Models\Report;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 trait HasReports

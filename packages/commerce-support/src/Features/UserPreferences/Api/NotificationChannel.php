@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\CommerceSupport\Enums;
+namespace AIArmada\CommerceSupport\Features\UserPreferences\Api;
 
 enum NotificationChannel: string
 {

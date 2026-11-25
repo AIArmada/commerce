@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\CommerceSupport\Models;
+namespace AIArmada\CommerceSupport\Features\UserPreferences\Models;
 
 use Eloquent;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
