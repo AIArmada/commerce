@@ -20,9 +20,18 @@ interface RoleAdministrationApi
     public function resolveRecordScope(RecordReference $record): string | int | null;
 
     public function assignExistingRole(RecordReference $record, string $name, string $guard, string | int | null $scope): bool;
+
     /** @param list<string> $roleIds */
     public function syncUserRoles(RecordReference $record, array $roleIds, string $guard, bool $restrictToCurrentTeam, string $scopeMode): void;
 
     /** @param list<string> $permissionIds */
     public function syncUserPermissions(RecordReference $record, array $permissionIds, string $guard): void;
+    /** @param list<string> $permissionNames */
+    public function saveRoleDefinition(?string $id, string $name, string $guard, string | int | null $scope, array $permissionNames): RoleRecord;
+
+    public function savePermissionDefinition(?string $id, string $name, string $guard): string;
+
+    public function deleteRoleDefinition(string $id): bool;
+
+    public function deletePermissionDefinition(string $id): bool;
 }

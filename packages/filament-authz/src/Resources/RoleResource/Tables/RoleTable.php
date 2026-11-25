@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAuthz\Resources\RoleResource\Tables;
 
 use AIArmada\FilamentAuthz\FilamentAuthzPlugin;
+use AIArmada\FilamentAuthz\Resources\RoleResource;
+use AIArmada\FilamentAuthz\Support\DeleteAuthzDefinitions;
 use Closure;
 use Filament\Actions;
 use Filament\Tables\Columns\TextColumn;
@@ -12,6 +14,7 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Spatie\Permission\PermissionRegistrar;
 
 final class RoleTable
@@ -106,10 +109,10 @@ final class RoleTable
             ->filters($filters)
             ->actions([
                 Actions\EditAction::make(),
-                Actions\DeleteAction::make(),
+                Actions\DeleteAction::make()->using(fn (Model $record): bool => RoleResource::deleteDefinition($record)),
             ])
             ->bulkActions([
-                Actions\DeleteBulkAction::make(),
+                DeleteAuthzDefinitions::bulk(RoleResource::deleteDefinition(...)),
             ])
             ->defaultSort('name')
             ->striped()

@@ -55,4 +55,3 @@ describe('HasWidgetAuthz Trait', function (): void {
     });
 });
 
-/* HasPanelAuthz/SyncsRolePermissions existence checks removed; both traits are exercised by RegressionTest + Authz tests. */

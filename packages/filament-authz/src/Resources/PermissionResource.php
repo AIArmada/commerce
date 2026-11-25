@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Resources;
 
+use AIArmada\Authz\Features\Authorization\Api\RoleAdministrationApi;
 use AIArmada\Authz\Features\Authorization\Concerns\ScopesAuthzTenancy;
 use AIArmada\Authz\Features\Authorization\Models\AuthzScope;
 use AIArmada\Authz\Features\Authorization\Models\Permission;
 use AIArmada\Authz\Support\UserRoleChecker;
 use AIArmada\FilamentAuthz\Resources\PermissionResource\Pages;
+use AIArmada\FilamentAuthz\Support\DeleteAuthzDefinitions;
 use Filament\Actions;
 use Filament\Forms;
 use Filament\Forms\Components\Placeholder;
@@ -19,6 +21,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Auth\Access\Authorizable;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Builder;
@@ -67,6 +70,31 @@ class PermissionResource extends Resource
     public static function canDelete(Model $record): bool
     {
         return static::checkAbility('permission.delete');
+    }
+
+    /** @param array<string, mixed> $data */
+    public static function saveDefinition(array $data, ?Model $record = null): Model
+    {
+        if ($record === null ? ! static::canCreate() : ! static::canEdit($record)) {
+            throw new AuthorizationException;
+        }
+
+        $id = app(RoleAdministrationApi::class)->savePermissionDefinition(
+            $record === null ? null : (string) $record->getKey(),
+            (string) $data['name'],
+            (string) $data['guard_name'],
+        );
+
+        return $record === null ? static::getEloquentQuery()->whereKey($id)->firstOrFail() : $record->refresh();
+    }
+
+    public static function deleteDefinition(Model $record): bool
+    {
+        if (! static::canDelete($record)) {
+            throw new AuthorizationException;
+        }
+
+        return app(RoleAdministrationApi::class)->deletePermissionDefinition((string) $record->getKey());
     }
 
     protected static function checkAbility(string $ability): bool
@@ -168,9 +196,9 @@ class PermissionResource extends Resource
                 ->indicator('Assigned'),
         ])->actions([
             Actions\EditAction::make(),
-            Actions\DeleteAction::make(),
+            Actions\DeleteAction::make()->using(fn (Model $record): bool => static::deleteDefinition($record)),
         ])->bulkActions([
-            Actions\DeleteBulkAction::make(),
+            DeleteAuthzDefinitions::bulk(static::deleteDefinition(...)),
         ])->defaultSort('name')
             ->striped()
             ->persistSearchInSession()

@@ -2,18 +2,19 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentAuthz\Resources\PermissionResource\Pages;
+namespace AIArmada\FilamentAuthz\Resources\${kind}Resource\Pages;
 
-use AIArmada\FilamentAuthz\Resources\PermissionResource;
+use AIArmada\FilamentAuthz\Resources\${kind}Resource;
 use Filament\Resources\Pages\CreateRecord;
-use Spatie\Permission\PermissionRegistrar;
+use Illuminate\Database\Eloquent\Model;
 
 class CreatePermission extends CreateRecord
 {
     protected static string $resource = PermissionResource::class;
 
-    protected function afterCreate(): void
+    /** @param array<string, mixed> $data */
+    protected function handleRecordCreation(array $data): Model
     {
-        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        return static::getResource()::saveDefinition($data);
     }
 }

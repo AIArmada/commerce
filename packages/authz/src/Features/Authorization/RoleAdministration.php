@@ -5,8 +5,12 @@ declare(strict_types=1);
 namespace AIArmada\Authz\Features\Authorization;
 
 use AIArmada\Authz\Features\Authorization\Actions\AssignExistingRole;
+use AIArmada\Authz\Features\Authorization\Actions\DeletePermissionDefinition;
+use AIArmada\Authz\Features\Authorization\Actions\DeleteRoleDefinition;
 use AIArmada\Authz\Features\Authorization\Actions\EnsurePermissions;
 use AIArmada\Authz\Features\Authorization\Actions\EnsureRoleDefinition;
+use AIArmada\Authz\Features\Authorization\Actions\SavePermissionDefinition;
+use AIArmada\Authz\Features\Authorization\Actions\SaveRoleDefinition;
 use AIArmada\Authz\Features\Authorization\Actions\SyncUserPermissions;
 use AIArmada\Authz\Features\Authorization\Actions\SyncUserRoles;
 use AIArmada\Authz\Features\Authorization\Api\RoleAdministrationApi;
@@ -26,6 +30,10 @@ final readonly class RoleAdministration implements RoleAdministrationApi
         private PermissionRegistrar $registrar,
         private SyncUserRoles $userRoles,
         private SyncUserPermissions $userPermissions,
+        private SaveRoleDefinition $saveRole,
+        private SavePermissionDefinition $savePermission,
+        private DeleteRoleDefinition $deleteRole,
+        private DeletePermissionDefinition $deletePermission,
     ) {}
 
     public function permissionNames(string $guard): array
@@ -54,6 +62,7 @@ final readonly class RoleAdministration implements RoleAdministrationApi
     {
         return $this->assign->execute($record, $name, $guard, $scope);
     }
+
     public function syncUserRoles(RecordReference $record, array $roleIds, string $guard, bool $restrictToCurrentTeam, string $scopeMode): void
     {
         $this->userRoles->execute($record, $roleIds, $guard, $restrictToCurrentTeam, $scopeMode);
@@ -62,5 +71,26 @@ final readonly class RoleAdministration implements RoleAdministrationApi
     public function syncUserPermissions(RecordReference $record, array $permissionIds, string $guard): void
     {
         $this->userPermissions->execute($record, $permissionIds, $guard);
+    }
+    public function saveRoleDefinition(?string $id, string $name, string $guard, string | int | null $scope, array $permissionNames): RoleRecord
+    {
+        $role = $this->saveRole->execute($id, $name, $guard, $scope, $permissionNames);
+
+        return new RoleRecord((string) $role->getKey(), $name, $guard, $scope);
+    }
+
+    public function savePermissionDefinition(?string $id, string $name, string $guard): string
+    {
+        return (string) $this->savePermission->execute($id, $name, $guard)->getKey();
+    }
+
+    public function deleteRoleDefinition(string $id): bool
+    {
+        return $this->deleteRole->execute($id);
+    }
+
+    public function deletePermissionDefinition(string $id): bool
+    {
+        return $this->deletePermission->execute($id);
     }
 }

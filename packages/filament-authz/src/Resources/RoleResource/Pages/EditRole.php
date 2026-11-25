@@ -2,37 +2,27 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentAuthz\Resources\RoleResource\Pages;
+namespace AIArmada\FilamentAuthz\Resources\${kind}Resource\Pages;
 
-use AIArmada\Authz\Features\Authorization\Concerns\SyncsRolePermissions;
-use AIArmada\Authz\Features\Authorization\Models\Role;
-use AIArmada\FilamentAuthz\Resources\RoleResource;
+use AIArmada\FilamentAuthz\Resources\${kind}Resource;
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Database\Eloquent\Model;
 
-/**
- * @property Role $record
- */
 class EditRole extends EditRecord
 {
-    use SyncsRolePermissions;
-
     protected static string $resource = RoleResource::class;
 
     protected function getHeaderActions(): array
     {
         return [
-            DeleteAction::make(),
+            DeleteAction::make()->using(fn (Model $record): bool => static::getResource()::deleteDefinition($record)),
         ];
     }
 
-    protected function mutateFormDataBeforeSave(array $data): array
+    /** @param array<string, mixed> $data */
+    protected function handleRecordUpdate(Model $record, array $data): Model
     {
-        return $this->extractPermissionIds($data);
-    }
-
-    protected function afterSave(): void
-    {
-        $this->syncPermissionsToRole();
+        return static::getResource()::saveDefinition($data, $record);
     }
 }

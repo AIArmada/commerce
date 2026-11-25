@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Resources;
 
+use AIArmada\Authz\Features\Authorization\Api\RoleAdministrationApi;
 use AIArmada\Authz\Features\Authorization\Concerns\ScopesAuthzTenancy;
 use AIArmada\Authz\Features\Authorization\Models\Role;
 use AIArmada\Authz\Support\UserRoleChecker;
@@ -17,6 +18,7 @@ use Filament\Panel;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Auth\Access\Authorizable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -71,12 +73,94 @@ class RoleResource extends Resource
 
     public static function canEdit(Model $record): bool
     {
-        return static::checkAbility('role.update');
+        return static::checkAbility('role.update')
+            && static::getEloquentQuery()->whereKey($record->getKey())->exists();
     }
 
     public static function canDelete(Model $record): bool
     {
-        return static::checkAbility('role.delete');
+        return static::checkAbility('role.delete')
+            && static::getEloquentQuery()->whereKey($record->getKey())->exists();
+    }
+
+    /** @param array<string, mixed> $data */
+    public static function saveDefinition(array $data, ?Model $record = null): Model
+    {
+        if ($record === null ? ! static::canCreate() : ! static::canEdit($record)) {
+            throw new AuthorizationException;
+        }
+
+        $permissionNames = [];
+        foreach ($data as $key => $value) {
+            if (str_starts_with($key, 'permissions_') && is_array($value)) {
+                foreach ($value as $permission) {
+                    if (is_string($permission) && $permission !== '') {
+                        $permissionNames[] = $permission;
+                    }
+                }
+            }
+        }
+
+        $saved = app(RoleAdministrationApi::class)->saveRoleDefinition(
+            $record === null ? null : (string) $record->getKey(),
+            (string) $data['name'],
+            (string) $data['guard_name'],
+            static::scopeForWrite($data, $record),
+            array_values(array_unique($permissionNames)),
+        );
+
+        return $record === null ? static::getEloquentQuery()->whereKey($saved->id)->firstOrFail() : $record->refresh();
+    }
+
+    public static function deleteDefinition(Model $record): bool
+    {
+        if (! static::canDelete($record)) {
+            throw new AuthorizationException;
+        }
+
+        return app(RoleAdministrationApi::class)->deleteRoleDefinition((string) $record->getKey());
+    }
+
+    /** @param array<string, mixed> $data */
+    protected static function scopeForWrite(array $data, ?Model $record): string | int | null
+    {
+        $registrar = app(PermissionRegistrar::class);
+        if (! $registrar->teams) {
+            return null;
+        }
+
+        $key = $registrar->teamsKey;
+        if (! config('filament-authz.central_app', false) && static::shouldScopeToTenant()) {
+            $active = $registrar->getPermissionsTeamId();
+            if (array_key_exists($key, $data) && (string) $data[$key] !== (string) $active) {
+                throw new AuthorizationException('The role scope must match the active tenant.');
+            }
+
+            return $active;
+        }
+
+        $scope = array_key_exists($key, $data)
+            ? $data[$key]
+            : ($record === null
+                ? (config('filament-authz.scoped_to_tenant', true) ? $registrar->getPermissionsTeamId() : null)
+                : $record->getAttribute($key));
+
+        if ($scope === '') {
+            $scope = null;
+        }
+
+        if ($scope !== null && ! is_string($scope) && ! is_int($scope)) {
+            throw new AuthorizationException('Invalid role scope.');
+        }
+
+        if (config('authz.scopes.enabled', false) && config('filament-authz.central_app', false)) {
+            $configured = static::getConfiguredScopeOptions();
+            if ($scope !== null && $configured !== null && ! array_key_exists((string) $scope, $configured)) {
+                throw new AuthorizationException('The role scope is outside this panel.');
+            }
+        }
+
+        return $scope;
     }
 
     protected static function checkAbility(string $ability): bool

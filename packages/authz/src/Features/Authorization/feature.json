@@ -12,13 +12,17 @@
       "AIArmada\\Authz\\Features\\Authorization\\Actions\\DeleteScopeAssignments",
       "AIArmada\\Authz\\Features\\Authorization\\Actions\\AssignGlobalSuperAdmin",
       "AIArmada\\Authz\\Features\\Authorization\\Actions\\SyncConfiguredAuthorization",
-      "AIArmada\\Authz\\Features\\Authorization\\Actions\\EnsureRoleDefinition"
+      "AIArmada\\Authz\\Features\\Authorization\\Actions\\EnsureRoleDefinition",
+      "AIArmada\\Authz\\Features\\Authorization\\Actions\\SaveRoleDefinition",
+      "AIArmada\\Authz\\Features\\Authorization\\Actions\\DeleteRoleDefinition"
     ],
     "table:permissions": [
       "AIArmada\\Authz\\Features\\Authorization\\Actions\\PersistPermission",
       "AIArmada\\Authz\\Features\\Authorization\\Actions\\SyncConfiguredAuthorization",
       "AIArmada\\Authz\\Features\\Authorization\\Actions\\EnsurePermissions",
-      "AIArmada\\Authz\\Features\\Authorization\\Actions\\EnsureRoleDefinition"
+      "AIArmada\\Authz\\Features\\Authorization\\Actions\\EnsureRoleDefinition",
+      "AIArmada\\Authz\\Features\\Authorization\\Actions\\SavePermissionDefinition",
+      "AIArmada\\Authz\\Features\\Authorization\\Actions\\DeletePermissionDefinition"
     ],
     "table:model_has_roles": [
       "AIArmada\\Authz\\Features\\Authorization\\Actions\\DeleteScopeAssignments",
@@ -26,17 +30,21 @@
       "AIArmada\\Authz\\Features\\Authorization\\Actions\\AssignExistingRole",
       "AIArmada\\Authz\\Features\\Authorization\\Actions\\AssignUserRole",
       "AIArmada\\Authz\\Features\\Authorization\\Actions\\RevokeUserRole",
-      "AIArmada\\Authz\\Features\\Authorization\\Actions\\SyncUserRoles"
+      "AIArmada\\Authz\\Features\\Authorization\\Actions\\SyncUserRoles",
+      "AIArmada\\Authz\\Features\\Authorization\\Actions\\DeleteRoleDefinition"
     ],
     "table:model_has_permissions": [
       "AIArmada\\Authz\\Features\\Authorization\\Actions\\DeleteScopeAssignments",
-      "AIArmada\\Authz\\Features\\Authorization\\Actions\\SyncUserPermissions"
+      "AIArmada\\Authz\\Features\\Authorization\\Actions\\SyncUserPermissions",
+      "AIArmada\\Authz\\Features\\Authorization\\Actions\\DeletePermissionDefinition"
     ],
     "table:role_has_permissions": [
       "AIArmada\\Authz\\Features\\Authorization\\Actions\\DeleteScopeAssignments",
       "AIArmada\\Authz\\Features\\Authorization\\Actions\\SyncConfiguredAuthorization",
       "AIArmada\\Authz\\Features\\Authorization\\Actions\\SyncRolePermissions",
-      "AIArmada\\Authz\\Features\\Authorization\\Actions\\EnsureRoleDefinition"
+      "AIArmada\\Authz\\Features\\Authorization\\Actions\\EnsureRoleDefinition",
+      "AIArmada\\Authz\\Features\\Authorization\\Actions\\DeleteRoleDefinition",
+      "AIArmada\\Authz\\Features\\Authorization\\Actions\\DeletePermissionDefinition"
     ]
   },
   "extensions": {}
