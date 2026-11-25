@@ -24,7 +24,7 @@ final class RankQualificationService
     private array $metricsCache = [];
 
     public function __construct(
-        private readonly UplineService $uplineService,
+        private readonly UplineApi $uplineService,
         private readonly Dispatcher $events
     ) {}
 
@@ -141,9 +141,9 @@ final class RankQualificationService
             $currency,
         );
 
-        $teamSales = $this->uplineService->getTeamSales($affiliate, $from, null, $currency);
+        $teamSales = $this->uplineService->teamSales((string) $affiliate->getKey(), $from, null, $currency);
 
-        $activeDownlines = $this->uplineService->getActiveDownlineCount($affiliate);
+        $activeDownlines = $this->uplineService->activeDownlineCount((string) $affiliate->getKey());
 
         $lifetimeValue = $this->sumRevenue($affiliate, null, $currency);
 

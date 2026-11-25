@@ -162,30 +162,30 @@ Individual checks live in `Features/Fraud/Extensions/` (velocity, self-referral,
 fingerprint, geo anomaly, unusual amount, rapid conversion). See
 [Fraud Detection](09-fraud-detection.md).
 
-## UplineService
+## UplineApi
 
 Manages affiliate upline hierarchies (MLM).
 
 ```php
-use AIArmada\Affiliates\Services\UplineService;
+use AIArmada\Affiliates\Features\Upline\Api\UplineApi;
 
-$service = app(UplineService::class);
+$service = app(UplineApi::class);
 ```
 
 ### Methods
 
 ```php
 // Add an affiliate under a sponsor
-$service->addToUpline($affiliate, $sponsor);
+$service->add((string) $affiliate->getKey(), (string) $sponsor->getKey());
 
 // Get upline affiliates
-$uplines = $service->getUpline($affiliate);
+$uplines = $service->ancestors((string) $affiliate->getKey());
 
 // Get downline affiliates
-$downlines = $service->getDownline($affiliate);
+$downlines = $service->descendants((string) $affiliate->getKey());
 
 // Team sales for a period, measured in the affiliate currency
-$teamSales = $service->getTeamSales($affiliate, $from, $to);
+$teamSales = $service->teamSales((string) $affiliate->getKey(), $from, $to);
 ```
 
 Revenue thresholds (team sales, rank metrics, volume tiers, program eligibility) measure volume in the affiliate's currency via `RevenueVolume`: legs convert when exchange rates exist, otherwise only the affiliate-currency leg counts. The top-performer leaderboard ranks raw sums when every affiliate earns one currency, and converts to `affiliates.currency.default` when currencies mix — entries without a rate sink below ranked ones and never earn the bonus.

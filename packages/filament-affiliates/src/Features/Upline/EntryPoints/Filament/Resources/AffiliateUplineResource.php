@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Features\Upline\EntryPoints\Filament\Resources;
 
-use AIArmada\Affiliates\Models\AffiliateUpline;
+use AIArmada\Affiliates\Features\Upline\Models\AffiliateUpline;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\FilamentAffiliates\Features\Upline\EntryPoints\Filament\Resources\AffiliateUplineResource\Pages\ListAffiliateUplines;
 use AIArmada\FilamentAffiliates\Features\Upline\EntryPoints\Filament\Resources\AffiliateUplineResource\Pages\ViewAffiliateUpline;

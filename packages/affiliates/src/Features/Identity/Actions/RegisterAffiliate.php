@@ -9,7 +9,7 @@ use AIArmada\Affiliates\Features\Identity\Api\AffiliateRecord;
 use AIArmada\Affiliates\Features\Identity\Api\RegistrationApi;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Queries\AffiliateLookupQuery;
-use AIArmada\Affiliates\Services\UplineService;
+use AIArmada\Affiliates\Features\Upline\Api\UplineApi;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use InvalidArgumentException;
@@ -19,7 +19,7 @@ final readonly class RegisterAffiliate implements RegistrationApi
     public function __construct(
         private AffiliateLookupQuery $lookup,
         private CreateAffiliate $create,
-        private UplineService $upline,
+        private UplineApi $upline,
     ) {}
 
     public function register(array $data, RecordReference $owner, ?string $referralCode, ?string $cookie): AffiliateRecord
@@ -48,7 +48,7 @@ final readonly class RegisterAffiliate implements RegistrationApi
 
             $affiliate = $this->create->handle($data, $ownerModel);
             if ($sponsor !== null) {
-                $this->upline->addToUpline($affiliate, $sponsor);
+                $this->upline->add((string) $affiliate->getKey(), (string) $sponsor->getKey());
             }
 
             return new AffiliateRecord(

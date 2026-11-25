@@ -453,7 +453,7 @@ Downlines are loaded via the `children()` relationship on the `Affiliate` model 
 New affiliates can optionally enter a referral code during self-registration. If the code matches an existing affiliate:
 
 - The new affiliate's `parent_affiliate_id` is set to the referrer
-- The `UplineService::addToUpline()` is called to build the closure table when upline features are enabled
+- The `UplineApi::add()` is called to build the closure table when upline features are enabled
 
 ```php
 // The portal registration form includes a "Referral Code (optional)" field.
@@ -464,21 +464,21 @@ New affiliates can optionally enter a referral code during self-registration. If
 ### Working with the Upline Programmatically
 
 ```php
-use AIArmada\Affiliates\Services\UplineService;
+use AIArmada\Affiliates\Features\Upline\Api\UplineApi;
 
-$upline = app(UplineService::class);
+$upline = app(UplineApi::class);
 
 // Get direct downlines
-$downlines = $upline->getDirectRecruits($affiliate);
+$downlines = $upline->descendants((string) $affiliate->getKey(), 1);
 
 // Get entire downline tree
-$allDownlines = $upline->getDownline($affiliate);
+$allDownlines = $upline->descendants((string) $affiliate->getKey());
 
 // Get upline
-$ancestors = $upline->getUpline($affiliate);
+$ancestors = $upline->ancestors((string) $affiliate->getKey());
 
 // Build a tree structure for visualization
-$tree = $upline->buildTree($affiliate, $maxDepth = 3);
+$tree = $upline->tree((string) $affiliate->getKey(), $maxDepth = 3);
 ```
 
 ### Querying Affiliates

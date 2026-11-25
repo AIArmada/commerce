@@ -12,10 +12,10 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateRank;
-use AIArmada\Affiliates\Models\AffiliateUpline;
+use AIArmada\Affiliates\Features\Upline\Models\AffiliateUpline;
 use AIArmada\Affiliates\Services\PerformanceBonusService;
 use AIArmada\Affiliates\Services\RankQualificationService;
-use AIArmada\Affiliates\Services\UplineService;
+use AIArmada\Affiliates\Features\Upline\Api\UplineApi;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\ConversionStatus;
 use AIArmada\Affiliates\States\PendingConversion;
@@ -76,15 +76,15 @@ test('direct rank operations cannot assign ranks to purpose-tagged affiliates', 
 test('upline operations exclude tagged affiliates and reject direct enrollment', function (): void {
     config(['affiliates.upline.enabled' => true]);
 
-    $service = app(UplineService::class);
+    $service = app(UplineApi::class);
     $root = createTestAffiliate(['code' => 'PURP-UPROOT']);
     $commercial = createTestAffiliate(['code' => 'PURP-UPCHILD']);
     $tagged = createTestAffiliate(['code' => 'PURP-UPTAGGED', 'purpose' => 'host_attribution_only']);
 
-    $service->addToUpline($root);
-    $service->addToUpline($commercial, $root);
+    $service->add((string) $root->getKey());
+    $service->add((string) $commercial->getKey(), (string) $root->getKey());
 
-    expect(fn () => $service->addToUpline($tagged, $root))
+    expect(fn () => $service->add((string) $tagged->getKey(), (string) $root->getKey()))
         ->toThrow(InvalidArgumentException::class);
 
     AffiliateUpline::query()->create([
@@ -93,9 +93,9 @@ test('upline operations exclude tagged affiliates and reject direct enrollment',
         'depth' => 1,
     ]);
 
-    expect($service->getActiveDownlineCount($root))->toBe(1)
-        ->and(AffiliateUpline::getDescendantCount($root))->toBe(1)
-        ->and($service->getTeamSales($tagged))->toBe(0);
+    expect($service->activeDownlineCount((string) $root->getKey()))->toBe(1)
+        ->and(app(UplineApi::class)->descendantCount((string) $root->getKey()))->toBe(1)
+        ->and($service->teamSales((string) $tagged->getKey()))->toBe(0);
 });
 
 test('scheduled payout claims refuse purpose-tagged affiliates', function (): void {

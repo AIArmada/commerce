@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Pages;
 
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliateUpline;
+use AIArmada\Affiliates\Features\Upline\Api\UplineApi;
 use AIArmada\Affiliates\States\ConversionStatus;
 use AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Concerns\PortalPage;
 use BackedEnum;
@@ -52,11 +52,7 @@ class PortalConversions extends PortalPage implements HasTable
         $affiliateIds = [$affiliateId];
 
         if (config('affiliates.upline.enabled', false)) {
-            $descendantIds = AffiliateUpline::query()
-                ->where('ancestor_id', $affiliateId)
-                ->where('depth', '>', 0)
-                ->pluck('descendant_id')
-                ->toArray();
+            $descendantIds = app(UplineApi::class)->descendantIds((string) $affiliateId);
 
             $affiliateIds = array_values(array_unique(array_merge($affiliateIds, $descendantIds)));
         }
@@ -144,11 +140,7 @@ class PortalConversions extends PortalPage implements HasTable
         $uplineConversions = 0;
 
         if ($affiliate && config('affiliates.upline.enabled', false)) {
-            $descendantIds = AffiliateUpline::query()
-                ->where('ancestor_id', $affiliate->getKey())
-                ->where('depth', '>', 0)
-                ->pluck('descendant_id')
-                ->toArray();
+            $descendantIds = app(UplineApi::class)->descendantIds((string) $affiliate->getKey());
 
             if ($descendantIds !== []) {
                 $uplineConversions = (int) AffiliateConversion::query()

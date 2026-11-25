@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "name": "Upline",
+  "owns": {
+    "table:affiliate_upline": [
+      "AIArmada\\Affiliates\\Features\\Upline\\Actions\\ManageUpline"
+    ]
+  },
+  "extensions": {}
+}

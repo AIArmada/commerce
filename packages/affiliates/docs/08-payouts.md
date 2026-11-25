@@ -424,15 +424,15 @@ For MLM/upline structures, distribute commissions to uplines:
 ],
 ```
 
-When a conversion is recorded, the UplineService resolves the upline chain so multi-level commissions credit upline affiliates:
+When a conversion is recorded, the upline API exposes the upline chain so multi-level commissions credit upline affiliates:
 
 ```php
-use AIArmada\Affiliates\Services\UplineService;
+use AIArmada\Affiliates\Features\Upline\Api\UplineApi;
 
-$uplineService = app(UplineService::class);
+$uplineService = app(UplineApi::class);
 
 // Upline chain for a conversion's affiliate
-$uplines = $uplineService->getUpline($conversion->affiliate);
+$uplines = $uplineService->ancestors((string) $conversion->affiliate_id);
 ```
 
 

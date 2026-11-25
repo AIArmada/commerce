@@ -3,7 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateUpline;
+use AIArmada\Affiliates\Features\Upline\Api\UplineApi;
+use AIArmada\Affiliates\Features\Upline\Models\AffiliateUpline;
 use AIArmada\Affiliates\States\Active;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -11,6 +12,7 @@ uses(RefreshDatabase::class);
 
 describe('AffiliateUpline Model', function (): void {
     beforeEach(function (): void {
+        config(['affiliates.upline.enabled' => true]);
         $this->rootAffiliate = Affiliate::create([
             'code' => 'ROOT-001',
             'name' => 'Root Affiliate',
@@ -110,7 +112,7 @@ describe('AffiliateUpline Model', function (): void {
             'currency' => 'USD',
         ]);
 
-        AffiliateUpline::addToUpline($affiliate);
+        app(UplineApi::class)->add((string) $affiliate->getKey());
 
         $selfReference = AffiliateUpline::query()
             ->where('ancestor_id', $affiliate->id)
@@ -123,7 +125,7 @@ describe('AffiliateUpline Model', function (): void {
 
     it('can add affiliate to network with sponsor', function (): void {
         // Add root to network first
-        AffiliateUpline::addToUpline($this->rootAffiliate);
+        app(UplineApi::class)->add((string) $this->rootAffiliate->getKey());
 
         $newAffiliate = Affiliate::create([
             'code' => 'NEW-001',
@@ -135,7 +137,7 @@ describe('AffiliateUpline Model', function (): void {
             'parent_affiliate_id' => $this->rootAffiliate->id,
         ]);
 
-        AffiliateUpline::addToUpline($newAffiliate, $this->rootAffiliate);
+        app(UplineApi::class)->add((string) $newAffiliate->getKey(), (string) $this->rootAffiliate->getKey());
 
         // Should have self-reference
         $selfReference = AffiliateUpline::query()
@@ -158,75 +160,75 @@ describe('AffiliateUpline Model', function (): void {
 
     it('can get ancestors of affiliate', function (): void {
         // Set up network structure
-        AffiliateUpline::addToUpline($this->rootAffiliate);
-        AffiliateUpline::addToUpline($this->childAffiliate, $this->rootAffiliate);
-        AffiliateUpline::addToUpline($this->grandchildAffiliate, $this->childAffiliate);
+        app(UplineApi::class)->add((string) $this->rootAffiliate->getKey());
+        app(UplineApi::class)->add((string) $this->childAffiliate->getKey(), (string) $this->rootAffiliate->getKey());
+        app(UplineApi::class)->add((string) $this->grandchildAffiliate->getKey(), (string) $this->childAffiliate->getKey());
 
-        $ancestors = AffiliateUpline::getAncestors($this->grandchildAffiliate);
+        $ancestors = app(UplineApi::class)->ancestors((string) $this->grandchildAffiliate->getKey());
 
         expect($ancestors)->toHaveCount(2)
-            ->and($ancestors->pluck('id')->toArray())->toContain($this->rootAffiliate->id)
-            ->and($ancestors->pluck('id')->toArray())->toContain($this->childAffiliate->id);
+            ->and(array_column($ancestors, 'id'))->toContain($this->rootAffiliate->id)
+            ->and(array_column($ancestors, 'id'))->toContain($this->childAffiliate->id);
     });
 
     it('can get descendants of affiliate', function (): void {
         // Set up network structure
-        AffiliateUpline::addToUpline($this->rootAffiliate);
-        AffiliateUpline::addToUpline($this->childAffiliate, $this->rootAffiliate);
-        AffiliateUpline::addToUpline($this->grandchildAffiliate, $this->childAffiliate);
+        app(UplineApi::class)->add((string) $this->rootAffiliate->getKey());
+        app(UplineApi::class)->add((string) $this->childAffiliate->getKey(), (string) $this->rootAffiliate->getKey());
+        app(UplineApi::class)->add((string) $this->grandchildAffiliate->getKey(), (string) $this->childAffiliate->getKey());
 
-        $descendants = AffiliateUpline::getDescendants($this->rootAffiliate);
+        $descendants = app(UplineApi::class)->descendants((string) $this->rootAffiliate->getKey());
 
         expect($descendants)->toHaveCount(2)
-            ->and($descendants->pluck('id')->toArray())->toContain($this->childAffiliate->id)
-            ->and($descendants->pluck('id')->toArray())->toContain($this->grandchildAffiliate->id);
+            ->and(array_column($descendants, 'id'))->toContain($this->childAffiliate->id)
+            ->and(array_column($descendants, 'id'))->toContain($this->grandchildAffiliate->id);
     });
 
     it('can get affiliates at specific depth', function (): void {
         // Set up network structure
-        AffiliateUpline::addToUpline($this->rootAffiliate);
-        AffiliateUpline::addToUpline($this->childAffiliate, $this->rootAffiliate);
-        AffiliateUpline::addToUpline($this->grandchildAffiliate, $this->childAffiliate);
+        app(UplineApi::class)->add((string) $this->rootAffiliate->getKey());
+        app(UplineApi::class)->add((string) $this->childAffiliate->getKey(), (string) $this->rootAffiliate->getKey());
+        app(UplineApi::class)->add((string) $this->grandchildAffiliate->getKey(), (string) $this->childAffiliate->getKey());
 
-        $atDepth1 = AffiliateUpline::getAtDepth($this->rootAffiliate, 1);
-        $atDepth2 = AffiliateUpline::getAtDepth($this->rootAffiliate, 2);
+        $atDepth1 = app(UplineApi::class)->descendants((string) $this->rootAffiliate->getKey(), 1);
+        $atDepth2 = app(UplineApi::class)->descendants((string) $this->rootAffiliate->getKey(), 2);
 
         expect($atDepth1)->toHaveCount(1)
-            ->and($atDepth1->first()->id)->toBe($this->childAffiliate->id)
+            ->and($atDepth1[0]->id)->toBe($this->childAffiliate->id)
             ->and($atDepth2)->toHaveCount(1)
-            ->and($atDepth2->first()->id)->toBe($this->grandchildAffiliate->id);
+            ->and($atDepth2[0]->id)->toBe($this->grandchildAffiliate->id);
     });
 
     it('can get direct children', function (): void {
         // Set up network structure
-        AffiliateUpline::addToUpline($this->rootAffiliate);
-        AffiliateUpline::addToUpline($this->childAffiliate, $this->rootAffiliate);
-        AffiliateUpline::addToUpline($this->grandchildAffiliate, $this->childAffiliate);
+        app(UplineApi::class)->add((string) $this->rootAffiliate->getKey());
+        app(UplineApi::class)->add((string) $this->childAffiliate->getKey(), (string) $this->rootAffiliate->getKey());
+        app(UplineApi::class)->add((string) $this->grandchildAffiliate->getKey(), (string) $this->childAffiliate->getKey());
 
-        $directChildren = AffiliateUpline::getDirectChildren($this->rootAffiliate);
+        $directChildren = app(UplineApi::class)->descendants((string) $this->rootAffiliate->getKey(), 1);
 
         expect($directChildren)->toHaveCount(1)
-            ->and($directChildren->first()->id)->toBe($this->childAffiliate->id);
+            ->and($directChildren[0]->id)->toBe($this->childAffiliate->id);
     });
 
     it('can get descendant count', function (): void {
         // Set up network structure
-        AffiliateUpline::addToUpline($this->rootAffiliate);
-        AffiliateUpline::addToUpline($this->childAffiliate, $this->rootAffiliate);
-        AffiliateUpline::addToUpline($this->grandchildAffiliate, $this->childAffiliate);
+        app(UplineApi::class)->add((string) $this->rootAffiliate->getKey());
+        app(UplineApi::class)->add((string) $this->childAffiliate->getKey(), (string) $this->rootAffiliate->getKey());
+        app(UplineApi::class)->add((string) $this->grandchildAffiliate->getKey(), (string) $this->childAffiliate->getKey());
 
-        $count = AffiliateUpline::getDescendantCount($this->rootAffiliate);
+        $count = app(UplineApi::class)->descendantCount((string) $this->rootAffiliate->getKey());
 
         expect($count)->toBe(2);
     });
 
     it('can remove affiliate from network', function (): void {
         // Set up network structure
-        AffiliateUpline::addToUpline($this->rootAffiliate);
-        AffiliateUpline::addToUpline($this->childAffiliate, $this->rootAffiliate);
-        AffiliateUpline::addToUpline($this->grandchildAffiliate, $this->childAffiliate);
+        app(UplineApi::class)->add((string) $this->rootAffiliate->getKey());
+        app(UplineApi::class)->add((string) $this->childAffiliate->getKey(), (string) $this->rootAffiliate->getKey());
+        app(UplineApi::class)->add((string) $this->grandchildAffiliate->getKey(), (string) $this->childAffiliate->getKey());
 
-        AffiliateUpline::removeFromUpline($this->childAffiliate);
+        app(UplineApi::class)->remove((string) $this->childAffiliate->getKey());
 
         // Child and grandchild paths should be removed
         $childPaths = AffiliateUpline::query()

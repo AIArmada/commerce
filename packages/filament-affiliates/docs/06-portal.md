@@ -107,7 +107,7 @@ When the affiliate has downlines (affiliates they directly referred), the dashbo
 The registration form includes an optional **Referral Code** field. If a valid affiliate code is entered:
 
 - The new affiliate is linked as a direct downline (`parent_affiliate_id`) of the referring affiliate.
-- The `UplineService::addToUpline()` call builds the closure table entry (when `affiliates.upline.enabled` is `true`).
+- The `UplineApi::add()` call builds the closure table entry (when `affiliates.upline.enabled` is `true`).
 
 
 Public handles are available during registration and profile editing when

@@ -8,7 +8,7 @@ use AIArmada\Affiliates\Models\AffiliateRank;
 use AIArmada\FilamentAffiliates\Features\Upline\EntryPoints\Filament\Policies\AffiliateRankPolicy;
 use AIArmada\Affiliates\Models\AffiliateRankHistory;
 use AIArmada\FilamentAffiliates\Features\Upline\EntryPoints\Filament\Policies\AffiliateRankHistoryPolicy;
-use AIArmada\Affiliates\Models\AffiliateUpline;
+use AIArmada\Affiliates\Features\Upline\Models\AffiliateUpline;
 use AIArmada\FilamentAffiliates\Features\Upline\EntryPoints\Filament\Policies\AffiliateUplinePolicy;
 use AIArmada\FilamentAffiliates\Platform\FeatureModule as FeatureModuleContract;
 use Illuminate\Contracts\Foundation\Application;
