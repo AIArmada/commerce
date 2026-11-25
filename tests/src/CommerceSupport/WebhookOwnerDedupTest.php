@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\CommerceSupport\Actions\ProcessWebhookCallAction;
-use AIArmada\CommerceSupport\Webhooks\CommerceWebhookProcessor;
+use AIArmada\CommerceSupport\Features\Webhooks\Actions\ProcessWebhookCallAction;
+use AIArmada\CommerceSupport\Features\Webhooks\EntryPoints\CommerceWebhookProcessor;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\Schema;
 use Spatie\WebhookClient\Models\WebhookCall;

@@ -56,7 +56,7 @@ return [
 ### 2. Create Processor
 
 ```php
-use AIArmada\CommerceSupport\Webhooks\CommerceWebhookProcessor;
+use AIArmada\CommerceSupport\Features\Webhooks\EntryPoints\CommerceWebhookProcessor;
 
 class ProcessPaymentWebhook extends CommerceWebhookProcessor
 {
@@ -187,7 +187,7 @@ class PaymentWebhookProfile implements WebhookProfile
 Extend `CommerceWebhookProcessor` for common behavior:
 
 ```php
-use AIArmada\CommerceSupport\Webhooks\CommerceWebhookProcessor;
+use AIArmada\CommerceSupport\Features\Webhooks\EntryPoints\CommerceWebhookProcessor;
 
 class ProcessPaymentWebhook extends CommerceWebhookProcessor
 {

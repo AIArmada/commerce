@@ -8,7 +8,7 @@ use AIArmada\Chip\Actions\DispatchChipWebhookAction;
 use AIArmada\Chip\Models\Webhook;
 use AIArmada\Chip\Support\ChipWebhookOwnerResolver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Webhooks\CommerceWebhookProcessor;
+use AIArmada\CommerceSupport\Features\Webhooks\EntryPoints\CommerceWebhookProcessor;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;

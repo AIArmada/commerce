@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\CommerceSupport\Actions;
+namespace AIArmada\CommerceSupport\Features\Webhooks\Actions;
 
 use Carbon\CarbonImmutable;
 use DateTimeInterface;

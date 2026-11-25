@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\CommerceSupport\Webhooks;
+namespace AIArmada\CommerceSupport\Features\Webhooks\EntryPoints;
 
-use AIArmada\CommerceSupport\Actions\ProcessWebhookCallAction;
+use AIArmada\CommerceSupport\Features\Webhooks\Actions\ProcessWebhookCallAction;
 use Spatie\WebhookClient\Jobs\ProcessWebhookJob;
 use Spatie\WebhookClient\Models\WebhookCall;
 

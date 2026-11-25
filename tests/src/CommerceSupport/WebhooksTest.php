@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\CommerceSupport\Actions\ProcessWebhookCallAction;
+use AIArmada\CommerceSupport\Features\Webhooks\Actions\ProcessWebhookCallAction;
 use AIArmada\CommerceSupport\Webhooks\CommerceSignatureValidator;
-use AIArmada\CommerceSupport\Webhooks\CommerceWebhookProcessor;
+use AIArmada\CommerceSupport\Features\Webhooks\EntryPoints\CommerceWebhookProcessor;
 use AIArmada\CommerceSupport\Webhooks\CommerceWebhookProfile;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\QueryException;

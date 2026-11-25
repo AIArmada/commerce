@@ -62,7 +62,7 @@ $product = ResolveOwnedModelOrFailAction::run(
 **Use case:** Custom webhook processors that need to safely handle webhook calls.
 
 ```php
-use AIArmada\CommerceSupport\Actions\ProcessWebhookCallAction;
+use AIArmada\CommerceSupport\Features\Webhooks\Actions\ProcessWebhookCallAction;
 
 ProcessWebhookCallAction::run(
     webhookCall: $webhookCall,
