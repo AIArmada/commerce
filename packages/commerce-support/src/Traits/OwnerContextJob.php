@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\CommerceSupport\Traits;
 
 use AIArmada\CommerceSupport\Actions\ResolveOwnerJobContextAction;
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Data\OwnerJobContext;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerJobContextMapper;
 use Illuminate\Queue\SerializesModels;
 use RuntimeException;

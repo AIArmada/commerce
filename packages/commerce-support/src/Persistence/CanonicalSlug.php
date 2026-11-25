@@ -6,8 +6,8 @@ namespace AIArmada\CommerceSupport\Persistence;
 
 use AIArmada\CommerceSupport\Contracts\SlugRedirectRecorder;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
-use InvalidArgumentException;
 use Illuminate\Database\Eloquent\Model;
+use InvalidArgumentException;
 
 /**
  * Persist canonical slugs and record redirects on change.

@@ -5,6 +5,8 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\FilamentOrders\Fixtures\TestOwner;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\FilamentOrders\Widgets\OrderTimelineWidget;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Created;
@@ -30,7 +32,7 @@ beforeEach(function (): void {
 
     app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
     {
-        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+        public function resolve(): ?RecordReference
         {
             return null;
         }
@@ -46,9 +48,9 @@ it('builds a timeline from payments, notes and shipment state', function (): voi
     {
         public function __construct(private readonly ?Model $owner) {}
 
-        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+        public function resolve(): ?RecordReference
         {
-            return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 

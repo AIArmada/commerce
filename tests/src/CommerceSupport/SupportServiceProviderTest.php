@@ -3,12 +3,12 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\NullOwnerResolver;
 use AIArmada\CommerceSupport\SupportServiceProvider;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Filament\Widgets\Widget;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Schema;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\WebhookClient\Models\WebhookCall;
@@ -135,7 +135,7 @@ it('only loads the shared webhook migration when a package registers a valid web
 
 class SupportTestOwnerResolver implements OwnerResolverInterface
 {
-    public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+    public function resolve(): ?RecordReference
     {
         return null;
     }

@@ -10,6 +10,8 @@ use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Services\CohortAnalyzer;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -517,9 +519,9 @@ test('analyzeMonthly keeps owner isolation on batched queries', function (): voi
         {
             public function __construct(private readonly ?Model $owner) {}
 
-            public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+            public function resolve(): ?RecordReference
             {
-                return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
+                return EloquentRecordReference::fromModel($this->owner);
             }
         });
     };

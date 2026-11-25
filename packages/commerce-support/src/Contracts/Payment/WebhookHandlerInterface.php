@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\CommerceSupport\Contracts\Payment;
 
-use AIArmada\CommerceSupport\Exceptions\WebhookVerificationException;
 use AIArmada\CommerceSupport\Data\WebhookRequestData;
+use AIArmada\CommerceSupport\Exceptions\WebhookVerificationException;
 
 /**
  * Interface for handling payment gateway webhooks.

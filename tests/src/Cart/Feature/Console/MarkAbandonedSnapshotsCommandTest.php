@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
-use Illuminate\Database\Eloquent\Model;
+use AIArmada\CommerceSupport\Data\RecordReference;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -13,7 +13,7 @@ beforeEach(function (): void {
 
     app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
     {
-        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+        public function resolve(): ?RecordReference
         {
             return null;
         }

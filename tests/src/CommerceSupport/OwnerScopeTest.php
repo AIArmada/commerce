@@ -2,14 +2,13 @@
 
 declare(strict_types=1);
 
-use AIArmada\CommerceSupport\Support\OwnerScopeConfigFactory;
-
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Contracts\OwnerScopeConfigurable;
+use AIArmada\CommerceSupport\Data\OwnerScopeConfig;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
-use AIArmada\CommerceSupport\Data\OwnerScopeConfig;
+use AIArmada\CommerceSupport\Support\OwnerScopeConfigFactory;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeKey;

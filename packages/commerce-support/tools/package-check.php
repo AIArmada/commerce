@@ -14,6 +14,7 @@ $unknownOptions = [];
 foreach ($rawArgs as $arg) {
     if ($expectValue) {
         $expectValue = false;
+
         continue;
     }
     if ($arg === '--json') {
@@ -21,6 +22,7 @@ foreach ($rawArgs as $arg) {
     }
     if ($arg === '--root' || $arg === '--diff-base') {
         $expectValue = true;
+
         continue;
     }
     if (str_starts_with($arg, '--root=') || str_starts_with($arg, '--diff-base=')) {
@@ -29,19 +31,19 @@ foreach ($rawArgs as $arg) {
     $unknownOptions[] = $arg;
 }
 if ($expectValue) {
-    fwrite(STDERR, 'Missing value for option: '.end($rawArgs)."\n");
+    fwrite(STDERR, 'Missing value for option: ' . end($rawArgs) . "\n");
     exit(2);
 }
 if ($unknownOptions !== []) {
-    fwrite(STDERR, 'Unknown option(s): '.implode(' ', $unknownOptions)."\nAllowed: --root=<path>, --diff-base=<ref>, --json\n");
+    fwrite(STDERR, 'Unknown option(s): ' . implode(' ', $unknownOptions) . "\nAllowed: --root=<path>, --diff-base=<ref>, --json\n");
     exit(2);
 }
 
 $options = getopt('', ['root:', 'json', 'diff-base:']);
 $root = realpath($options['root'] ?? dirname(__DIR__));
-$autoload = $root === false ? null : $root.'/vendor/autoload.php';
+$autoload = $root === false ? null : $root . '/vendor/autoload.php';
 if ($root !== false && ! is_file($autoload)) {
-    $autoload = dirname($root, 2).'/vendor/autoload.php';
+    $autoload = dirname($root, 2) . '/vendor/autoload.php';
 }
 if ($autoload === null || ! is_file($autoload)) {
     fwrite(STDERR, "Run composer install (including dev dependencies) first.\n");
@@ -55,7 +57,7 @@ if (! class_exists(ParserFactory::class)) {
     exit(2);
 }
 
-$diffBase = is_string($options['diff-base'] ?? null) ? trim($options['diff-base']) : null;
+$diffBase = is_string($options['diff-base'] ?? null) ? mb_trim($options['diff-base']) : null;
 $changedFiles = null;
 if ($diffBase !== null && $diffBase !== '') {
     $cmd = sprintf('git -C %s diff --name-only --diff-filter=ACMRT %s 2>/dev/null', escapeshellarg($root), escapeshellarg($diffBase));
@@ -66,20 +68,20 @@ if ($diffBase !== null && $diffBase !== '') {
         fwrite(STDERR, "Unable to compute git diff against '{$diffBase}'.\n");
         exit(2);
     }
-    $changedFiles = array_flip(array_map(static fn (string $p): string => str_replace('\\', '/', trim($p)), $out));
+    $changedFiles = array_flip(array_map(static fn (string $p): string => str_replace('\\', '/', mb_trim($p)), $out));
 }
 
 $findings = [];
 $report = static function (string $rule, string $file, int $line, string $target, string $message) use (&$findings): void {
-    $key = $rule.'|'.$file.'|'.$line.'|'.$target;
+    $key = $rule . '|' . $file . '|' . $line . '|' . $target;
     $findings[$key] = compact('rule', 'file', 'line', 'target', 'message');
 };
 
-$finder = new NodeFinder();
-$parser = (new ParserFactory())->createForNewestSupportedVersion();
+$finder = new NodeFinder;
+$parser = (new ParserFactory)->createForNewestSupportedVersion();
 
 try {
-    $configPath = $root.'/tools/architecture.json';
+    $configPath = $root . '/tools/architecture.json';
     if (! is_file($configPath)) {
         throw new RuntimeException("Missing {$configPath}. Run pkg_scaffold.py init --apply first.");
     }
@@ -89,23 +91,23 @@ try {
         || ($config['kind'] ?? null) !== 'package'
         || ! in_array($config['layout'] ?? null, ['single', 'modular'], true)
         || ! is_string($config['namespace'] ?? null)
-        || trim($config['namespace']) === ''
+        || mb_trim($config['namespace']) === ''
         || ! is_array($config['exceptions'] ?? null)) {
         throw new RuntimeException('Invalid tools/architecture.json package schema.');
     }
 
     $layout = $config['layout'];
-    $pkgNs = trim($config['namespace'], '\\');
-    $pkgPrefix = $pkgNs.'\\';
-    $sourceDir = trim((string) ($config['sourceDir'] ?? 'src'), '/');
+    $pkgNs = mb_trim($config['namespace'], '\\');
+    $pkgPrefix = $pkgNs . '\\';
+    $sourceDir = mb_trim((string) ($config['sourceDir'] ?? 'src'), '/');
     $antiSlop = is_array($config['antiSlop'] ?? null) ? $config['antiSlop'] : [];
 
     $features = [];
     $owners = [];
     if ($layout === 'modular') {
-        $catalogClass = $pkgPrefix.'Platform\\FeatureCatalog';
+        $catalogClass = $pkgPrefix . 'Platform\\FeatureCatalog';
         if (! class_exists($catalogClass)) {
-            $catalogFile = $root.'/'.$sourceDir.'/Platform/FeatureCatalog.php';
+            $catalogFile = $root . '/' . $sourceDir . '/Platform/FeatureCatalog.php';
             if (is_file($catalogFile)) {
                 require_once $catalogFile;
             }
@@ -119,23 +121,24 @@ try {
     }
 
     $featureOf = static function (string $fqcn) use ($pkgPrefix): ?string {
-        if (! str_starts_with($fqcn, $pkgPrefix.'Features\\')) {
+        if (! str_starts_with($fqcn, $pkgPrefix . 'Features\\')) {
             return null;
         }
-        $rest = substr($fqcn, strlen($pkgPrefix.'Features\\'));
+        $rest = mb_substr($fqcn, mb_strlen($pkgPrefix . 'Features\\'));
+
         return preg_match('/^([A-Z][A-Za-z0-9]*)\\\\/', $rest, $m) ? $m[1] : null;
     };
 
     $paths = [];
     foreach ([$sourceDir, 'config', 'routes'] as $directory) {
-        if (! is_dir($root.'/'.$directory)) {
+        if (! is_dir($root . '/' . $directory)) {
             continue;
         }
         $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($root.'/'.$directory, FilesystemIterator::SKIP_DOTS)
+            new RecursiveDirectoryIterator($root . '/' . $directory, FilesystemIterator::SKIP_DOTS)
         );
         foreach ($iterator as $file) {
-            $relative = str_replace('\\', '/', substr($file->getPathname(), strlen($root) + 1));
+            $relative = str_replace('\\', '/', mb_substr($file->getPathname(), mb_strlen($root) + 1));
             if ($file->isFile() && $file->getExtension() === 'php') {
                 $paths[$relative] = $file->getPathname();
             }
@@ -146,12 +149,12 @@ try {
     foreach ($paths as $relative => $path) {
         $sourceCode = (string) file_get_contents($path);
         $ast = $parser->parse($sourceCode) ?? [];
-        $traverser = new NodeTraverser();
-        $traverser->addVisitor(new NameResolver());
+        $traverser = new NodeTraverser;
+        $traverser->addVisitor(new NameResolver);
         $ast = $traverser->traverse($ast);
 
-        $inSrc = str_starts_with($relative, $sourceDir.'/');
-        $srcRel = $inSrc ? substr($relative, strlen($sourceDir) + 1) : '';
+        $inSrc = str_starts_with($relative, $sourceDir . '/');
+        $srcRel = $inSrc ? mb_substr($relative, mb_strlen($sourceDir) + 1) : '';
         $isConfigFile = str_starts_with($relative, 'config/');
         $isPlatform = $inSrc && str_starts_with($srcRel, 'Platform/');
         $isDriver = $inSrc && str_starts_with($srcRel, 'Drivers/');
@@ -163,7 +166,7 @@ try {
         $applyAntiSlop = ($changedFiles === null) || isset($changedFiles[$relative]) || $sourceFeature !== null || $isPlatform || $isContractOrData;
 
         $expectedClass = $inSrc
-            ? $pkgPrefix.str_replace('/', '\\', substr($srcRel, 0, -4))
+            ? $pkgPrefix . str_replace('/', '\\', mb_substr($srcRel, 0, -4))
             : null;
 
         foreach ($finder->findInstanceOf($ast, Node\Stmt\ClassLike::class) as $class) {
@@ -200,7 +203,7 @@ try {
                     }
                 }
                 foreach ($class->getMethods() as $method) {
-                    if (strtolower($method->name->toString()) === 'gettable') {
+                    if (mb_strtolower($method->name->toString()) === 'gettable') {
                         $hasTableOrGetter = true;
                     }
                 }
@@ -233,7 +236,7 @@ try {
             $antiSlop,
             $report
         ): void {
-            $target = ltrim($target, '\\');
+            $target = mb_ltrim($target, '\\');
 
             if (($antiSlop['banAppImports'] ?? true) && $inSrc && (str_starts_with($target, 'App\\') || $target === 'App')) {
                 $report(
@@ -256,8 +259,8 @@ try {
                     );
                 }
                 if (str_starts_with($target, $pkgPrefix)
-                    && ! str_starts_with($target, $pkgPrefix.'Contracts\\')
-                    && ! str_starts_with($target, $pkgPrefix.'Data\\')
+                    && ! str_starts_with($target, $pkgPrefix . 'Contracts\\')
+                    && ! str_starts_with($target, $pkgPrefix . 'Data\\')
                     && ! str_contains($target, '\\Api\\')) {
                     $report(
                         'contract-leak',
@@ -270,7 +273,7 @@ try {
             }
 
             if ($inSrc && ! $isDriver && ! str_ends_with($srcRel, 'ServiceProvider.php')
-                && str_starts_with($target, $pkgPrefix.'Drivers\\')) {
+                && str_starts_with($target, $pkgPrefix . 'Drivers\\')) {
                 $report(
                     'driver-direct',
                     $relative,
@@ -293,7 +296,7 @@ try {
                     );
                 }
 
-                if ($isPlatform && ($targetFeature !== null || str_starts_with($target, $pkgPrefix.'Drivers\\'))) {
+                if ($isPlatform && ($targetFeature !== null || str_starts_with($target, $pkgPrefix . 'Drivers\\'))) {
                     $report(
                         'layer-direction',
                         $relative,
@@ -312,7 +315,7 @@ try {
                 } elseif ($targetFeature !== null
                     && $targetFeature !== $sourceFeature
                     && ! str_ends_with($srcRel, 'ServiceProvider.php')
-                    && ! str_starts_with($target, $pkgPrefix."Features\\{$targetFeature}\\Api\\")) {
+                    && ! str_starts_with($target, $pkgPrefix . "Features\\{$targetFeature}\\Api\\")) {
                     $report(
                         'feature-private',
                         $relative,
@@ -332,14 +335,14 @@ try {
             }
             if ($node instanceof Node\Stmt\GroupUse) {
                 foreach ($node->uses as $use) {
-                    $checkDependency($node->prefix->toString().'\\'.$use->name->toString(), $use->getStartLine());
+                    $checkDependency($node->prefix->toString() . '\\' . $use->name->toString(), $use->getStartLine());
                 }
             }
             if ($node instanceof Node\Name\FullyQualified) {
                 $checkDependency($node->toString(), $node->getStartLine());
             }
             if ($node instanceof Node\Scalar\String_) {
-                $val = ltrim($node->value, '\\');
+                $val = mb_ltrim($node->value, '\\');
                 if (str_starts_with($val, $pkgPrefix) || str_starts_with($val, 'App\\')) {
                     $checkDependency($val, $node->getStartLine());
                 }
@@ -350,26 +353,26 @@ try {
             }
 
             if ($node instanceof Node\Expr\FuncCall && $node->name instanceof Node\Name) {
-                $fn = strtolower($node->name->toString());
+                $fn = mb_strtolower($node->name->toString());
                 if (($antiSlop['banSleep'] ?? true) && in_array($fn, ['sleep', 'usleep', 'time_nanosleep', 'time_sleep_until'], true)) {
-                    $report('banned-footgun', $relative, $node->getStartLine(), $fn.'()', 'Imperative sleep hacks are banned in package code. Use queued backoff or explicit state transitions.');
+                    $report('banned-footgun', $relative, $node->getStartLine(), $fn . '()', 'Imperative sleep hacks are banned in package code. Use queued backoff or explicit state transitions.');
                 }
                 if (($antiSlop['banEnvOutsideConfig'] ?? true) && ! $isConfigFile && $fn === 'env') {
                     $report('banned-footgun', $relative, $node->getStartLine(), 'env()', 'Never call env() outside config/. Read from config() so cached configs work in consumer apps.');
                 }
                 if (in_array($fn, ['dd', 'dump', 'ray', 'var_dump'], true)) {
-                    $report('banned-footgun', $relative, $node->getStartLine(), $fn.'()', 'Debug dump calls are banned in shipped package code.');
+                    $report('banned-footgun', $relative, $node->getStartLine(), $fn . '()', 'Debug dump calls are banned in shipped package code.');
                 }
             }
 
             if ($node instanceof Node\Expr\StaticCall && $node->class instanceof Node\Name && $node->name instanceof Node\Identifier) {
-                $cls = ltrim($node->class->toString(), '\\');
-                $method = strtolower($node->name->toString());
+                $cls = mb_ltrim($node->class->toString(), '\\');
+                $method = mb_strtolower($node->name->toString());
                 if (($antiSlop['banModelUnguard'] ?? true) && $method === 'unguard' && str_ends_with($cls, 'Model')) {
-                    $report('banned-footgun', $relative, $node->getStartLine(), $cls.'::unguard', 'Never call Model::unguard() in a package—it mutates global mass-assignment state in consumer apps.');
+                    $report('banned-footgun', $relative, $node->getStartLine(), $cls . '::unguard', 'Never call Model::unguard() in a package—it mutates global mass-assignment state in consumer apps.');
                 }
                 if (($antiSlop['banHostGlobalMutations'] ?? true) && in_array($method, ['shouldbestrict', 'preventlazyloading', 'preventsilentlydiscardingattributes', 'preventaccessingmissingattributes'], true) && str_ends_with($cls, 'Model')) {
-                    $report('host-global-mutation', $relative, $node->getStartLine(), $cls.'::'.$node->name->toString(), 'Packages must NEVER mutate host app global Eloquent strictness settings.');
+                    $report('host-global-mutation', $relative, $node->getStartLine(), $cls . '::' . $node->name->toString(), 'Packages must NEVER mutate host app global Eloquent strictness settings.');
                 }
                 if (($antiSlop['banHostGlobalMutations'] ?? true) && $cls === 'Illuminate\\Support\\Facades\\DB' && $method === 'prohibitdestructivecommands') {
                     $report('host-global-mutation', $relative, $node->getStartLine(), 'DB::prohibitDestructiveCommands', 'Packages must NEVER mutate host app global DB command prohibitions.');
@@ -378,7 +381,7 @@ try {
                     $report('host-global-mutation', $relative, $node->getStartLine(), 'Date::use', 'Packages must NEVER override the host app global Date factory.');
                 }
                 if (($antiSlop['banSleep'] ?? true) && $cls === 'Illuminate\\Support\\Sleep' && in_array($method, ['for', 'sleep', 'usleep'], true)) {
-                    $report('banned-footgun', $relative, $node->getStartLine(), 'Sleep::'.$method, 'Imperative Sleep hacks are banned in package code.');
+                    $report('banned-footgun', $relative, $node->getStartLine(), 'Sleep::' . $method, 'Imperative Sleep hacks are banned in package code.');
                 }
             }
         }
@@ -393,14 +396,14 @@ try {
 
                 if (($antiSlop['banInlineSuppressions'] ?? true)
                     && preg_match('/@phpstan-ignore|phpcs:(?:disable|ignore)|@psalm-suppress/i', $text)) {
-                    $report('no-suppression', $relative, $line, trim(strtok($text, "\n") ?: 'suppression'), 'Inline static-analysis suppressions are banned. Fix the root cause instead.');
+                    $report('no-suppression', $relative, $line, mb_trim(strtok($text, "\n") ?: 'suppression'), 'Inline static-analysis suppressions are banned. Fix the root cause instead.');
                 }
 
                 if (($antiSlop['commentHygiene'] ?? true)
                     && $token[0] === T_COMMENT
                     && ! preg_match('/license|copyright|spdx|https?:\/\/|prettier-ignore/i', $text)
                     && preg_match('/\b(do not remove|don\'t remove|do not touch|temporary workaround|quick fix|fine for now|too risky|hack|todo|fixme|said never)\b/i', $text)) {
-                    $report('comment-hygiene', $relative, $line, trim(strtok($text, "\n") ?: 'comment'), 'Workaround or claimed-constraint comments are banned. Encode invariants as types, lints, or tests.');
+                    $report('comment-hygiene', $relative, $line, mb_trim(strtok($text, "\n") ?: 'comment'), 'Workaround or claimed-constraint comments are banned. Encode invariants as types, lints, or tests.');
                 }
             }
         }
@@ -409,11 +412,11 @@ try {
     $suppressible = ['feature-private', 'driver-direct'];
     foreach ($config['exceptions'] as $exception) {
         foreach (['rule', 'file', 'target', 'reason', 'owner', 'expires'] as $field) {
-            if (! is_string($exception[$field] ?? null) || trim($exception[$field]) === '') {
+            if (! is_string($exception[$field] ?? null) || mb_trim($exception[$field]) === '') {
                 throw new RuntimeException("Exception requires non-empty '{$field}'.");
             }
         }
-        if (! in_array($exception['rule'], $suppressible, true) || strpbrk($exception['file'].$exception['target'], '*?') !== false) {
+        if (! in_array($exception['rule'], $suppressible, true) || strpbrk($exception['file'] . $exception['target'], '*?') !== false) {
             throw new RuntimeException("Exception for {$exception['file']} must use an allowed rule and exact file/target (no wildcards).");
         }
         $date = DateTimeImmutable::createFromFormat('!Y-m-d', $exception['expires']);
@@ -432,7 +435,7 @@ try {
         }
     }
 } catch (Throwable $error) {
-    fwrite(STDERR, 'Package architecture check error: '.$error->getMessage()."\n");
+    fwrite(STDERR, 'Package architecture check error: ' . $error->getMessage() . "\n");
     exit(2);
 }
 
@@ -445,12 +448,12 @@ if (isset($options['json'])) {
         'namespace' => $pkgNs,
         'features' => array_keys($features),
         'findings' => $findings,
-    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)."\n";
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n";
 } else {
     foreach ($findings as $finding) {
         echo "{$finding['file']}:{$finding['line']} [{$finding['rule']}] {$finding['target']}: {$finding['message']}\n";
     }
-    echo count($findings)." package architecture violation(s) checked (layout: {$layout}).\n";
+    echo count($findings) . " package architecture violation(s) checked (layout: {$layout}).\n";
 }
 
 exit($findings !== [] ? 1 : 0);

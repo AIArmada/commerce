@@ -9,9 +9,10 @@ use AIArmada\Cart\Snapshots\CartSnapshotItem as CartItem;
 use AIArmada\Cart\Storage\StorageInterface;
 use AIArmada\Commerce\Tests\Fixtures\Models\User as TestUser;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 
@@ -204,9 +205,9 @@ describe('Cart Model', function (): void {
         {
             public function __construct(private TestUser $user) {}
 
-            public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+            public function resolve(): ?RecordReference
             {
-                return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->user);
+                return EloquentRecordReference::fromModel($this->user);
             }
         });
 
@@ -227,9 +228,9 @@ describe('Cart Model', function (): void {
         {
             public function __construct(private TestUser $owner) {}
 
-            public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+            public function resolve(): ?RecordReference
             {
-                return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
+                return EloquentRecordReference::fromModel($this->owner);
             }
         });
 
@@ -277,9 +278,9 @@ describe('Cart Model', function (): void {
         {
             public function __construct(private TestUser $owner) {}
 
-            public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+            public function resolve(): ?RecordReference
             {
-                return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
+                return EloquentRecordReference::fromModel($this->owner);
             }
         });
 

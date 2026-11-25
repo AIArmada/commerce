@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Tests\Fixtures\TestOwner;
 use AIArmada\Orders\Models\Order;
@@ -30,7 +32,7 @@ beforeEach(function (): void {
     // Default to no ambient owner context so seeding explicit-owner rows is deterministic.
     app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
     {
-        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+        public function resolve(): ?RecordReference
         {
             return null;
         }
@@ -117,9 +119,9 @@ it('scopes Order::forOwner() to current owner plus global and excludes corrupt p
             private readonly ?Model $owner,
         ) {}
 
-        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+        public function resolve(): ?RecordReference
         {
-            return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -193,7 +195,7 @@ it('returns strict global-only when owner resolver returns null', function (): v
 
     app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
     {
-        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+        public function resolve(): ?RecordReference
         {
             return null;
         }
@@ -221,9 +223,9 @@ it('rejects explicit owner that does not match current owner context', function 
             private readonly ?Model $owner,
         ) {}
 
-        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+        public function resolve(): ?RecordReference
         {
-            return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -247,9 +249,9 @@ it('auto-assigns owner on create when enabled', function (): void {
             private readonly ?Model $owner,
         ) {}
 
-        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+        public function resolve(): ?RecordReference
         {
-            return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 

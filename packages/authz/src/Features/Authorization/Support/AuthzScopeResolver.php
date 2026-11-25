@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Authz\Features\Authorization\Support;
 
-use AIArmada\Authz\Features\Authorization\Actions\EnsureScopeForModel;
 use AIArmada\Authz\Exceptions\ScopeResolutionException;
+use AIArmada\Authz\Features\Authorization\Actions\EnsureScopeForModel;
 use AIArmada\Authz\Features\Authorization\Models\AuthzScope;
 use Illuminate\Database\Eloquent\Model;
 

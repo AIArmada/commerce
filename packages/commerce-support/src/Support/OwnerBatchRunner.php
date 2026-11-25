@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\CommerceSupport\Support;
 
 use AIArmada\CommerceSupport\Data\OwnerScopeConfig;
-
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
 use Illuminate\Database\Eloquent\Model;

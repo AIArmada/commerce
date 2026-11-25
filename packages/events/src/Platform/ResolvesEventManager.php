@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Platform;
 
-use AIArmada\CommerceSupport\Support\OwnerScopeConfigFactory;
-
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Data\OwnerScopeConfig;
+use AIArmada\CommerceSupport\Support\OwnerScopeConfigFactory;
 use AIArmada\Events\Contracts\CanManageEventsFor;
 use Illuminate\Database\Eloquent\Model;
 

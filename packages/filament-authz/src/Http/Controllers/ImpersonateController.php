@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAuthz\Http\Controllers;
 
 use AIArmada\Authz\Features\Impersonation\Actions\ImpersonateManager;
-use AIArmada\Authz\Features\Impersonation\Support\BackToUrlSanitizer;
 use AIArmada\Authz\Features\Impersonation\Queries\ImpersonationScopeGuard;
+use AIArmada\Authz\Features\Impersonation\Support\BackToUrlSanitizer;
 use AIArmada\Authz\Support\UserRoleChecker;
 use Filament\Facades\Filament;
 use Illuminate\Contracts\Auth\Authenticatable;

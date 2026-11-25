@@ -39,5 +39,4 @@ final readonly class OwnerJobContext
     {
         return $this->ownerIsGlobal;
     }
-
 }

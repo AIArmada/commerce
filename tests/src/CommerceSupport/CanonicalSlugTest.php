@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Contracts\SlugRedirectRecorder;
-use AIArmada\CommerceSupport\Persistence\CanonicalSlug;
 use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Persistence\CanonicalSlug;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;

@@ -26,19 +26,19 @@ final class PackageOwnedWriteRule implements Rule
 
     public function __construct(private readonly string $projectRoot)
     {
-        $cfgPath = rtrim($projectRoot, '/').'/tools/architecture.json';
+        $cfgPath = mb_rtrim($projectRoot, '/') . '/tools/architecture.json';
         if (is_file($cfgPath)) {
             $cfg = json_decode((string) file_get_contents($cfgPath), true);
             if (is_array($cfg)) {
                 $this->layout = ($cfg['layout'] ?? 'single') === 'modular' ? 'modular' : 'single';
-                $this->sourceDir = trim((string) ($cfg['sourceDir'] ?? 'src'), '/');
-                $this->pkgNs = trim((string) ($cfg['namespace'] ?? ''), '\\');
+                $this->sourceDir = mb_trim((string) ($cfg['sourceDir'] ?? 'src'), '/');
+                $this->pkgNs = mb_trim((string) ($cfg['namespace'] ?? ''), '\\');
             }
         }
 
         if ($this->layout === 'modular' && $this->pkgNs !== '') {
-            $catalogClass = $this->pkgNs.'\\Platform\\FeatureCatalog';
-            $catalogFile = rtrim($projectRoot, '/').'/'.$this->sourceDir.'/Platform/FeatureCatalog.php';
+            $catalogClass = $this->pkgNs . '\\Platform\\FeatureCatalog';
+            $catalogFile = mb_rtrim($projectRoot, '/') . '/' . $this->sourceDir . '/Platform/FeatureCatalog.php';
             if (! class_exists($catalogClass) && is_file($catalogFile)) {
                 require_once $catalogFile;
             }
@@ -65,7 +65,7 @@ final class PackageOwnedWriteRule implements Rule
             return [];
         }
 
-        $method = strtolower($node->name->toString());
+        $method = mb_strtolower($node->name->toString());
         $type = $node instanceof Node\Expr\StaticCall
             ? ($node->class instanceof Node\Name ? new ObjectType($scope->resolveName($node->class)) : $scope->getType($node->class))
             : $scope->getType($node->var);
@@ -107,13 +107,13 @@ final class PackageOwnedWriteRule implements Rule
         }
 
         $file = str_replace('\\', '/', $scope->getFile());
-        $relative = ltrim(substr($file, strlen(str_replace('\\', '/', $this->projectRoot))), '/');
+        $relative = mb_ltrim(mb_substr($file, mb_strlen(str_replace('\\', '/', $this->projectRoot))), '/');
 
-        if (! str_starts_with($relative, $this->sourceDir.'/') || str_contains($relative, '/Database/Migrations/')) {
+        if (! str_starts_with($relative, $this->sourceDir . '/') || str_contains($relative, '/Database/Migrations/')) {
             return [];
         }
 
-        $srcRel = substr($relative, strlen($this->sourceDir) + 1);
+        $srcRel = mb_substr($relative, mb_strlen($this->sourceDir) + 1);
 
         if ($this->layout === 'single') {
             if (str_starts_with($srcRel, 'Actions/') || str_starts_with($srcRel, 'Persistence/') || str_starts_with($srcRel, 'Drivers/')) {
@@ -189,10 +189,10 @@ final class PackageOwnedWriteRule implements Rule
     {
         while ($node instanceof Node\Expr\MethodCall || $node instanceof Node\Expr\NullsafeMethodCall || $node instanceof Node\Expr\StaticCall) {
             if ($node->name instanceof Node\Identifier
-                && in_array(strtolower($node->name->toString()), ['table', 'from'], true)
+                && in_array(mb_strtolower($node->name->toString()), ['table', 'from'], true)
                 && isset($node->args[0])
                 && $node->args[0]->value instanceof Node\Scalar\String_) {
-                return 'table:'.$node->args[0]->value->value;
+                return 'table:' . $node->args[0]->value->value;
             }
             if ($node instanceof Node\Expr\StaticCall) {
                 break;
@@ -207,10 +207,10 @@ final class PackageOwnedWriteRule implements Rule
     {
         while ($node instanceof Node\Expr\MethodCall || $node instanceof Node\Expr\NullsafeMethodCall || $node instanceof Node\Expr\StaticCall) {
             if ($node->name instanceof Node\Identifier
-                && in_array(strtolower($node->name->toString()), ['disk', 'store', 'connection'], true)
+                && in_array(mb_strtolower($node->name->toString()), ['disk', 'store', 'connection'], true)
                 && isset($node->args[0])
                 && $node->args[0]->value instanceof Node\Scalar\String_) {
-                return 'store:'.$node->args[0]->value->value;
+                return 'store:' . $node->args[0]->value->value;
             }
             if ($node instanceof Node\Expr\StaticCall) {
                 break;

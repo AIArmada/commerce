@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Authz\Features\Authorization\Authz;
 use AIArmada\Authz\Exceptions\ScopeResolutionException;
+use AIArmada\Authz\Features\Authorization\Authz;
 use AIArmada\Authz\Features\Authorization\Models\AuthzScope;
 use AIArmada\Authz\Features\Authorization\Models\Permission;
 use AIArmada\Authz\Features\Authorization\Support\AuthzScopeContext;

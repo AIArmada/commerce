@@ -19,12 +19,14 @@ function forcePurchase(array $attributes): Purchase
 {
     return tap(new Purchase, fn (Purchase $p) => $p->forceFill($attributes)->save());
 }
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use Illuminate\Support\Facades\Schema;
 
 beforeEach(function (): void {
     app()->bind(OwnerResolverInterface::class, fn () => new class implements OwnerResolverInterface
     {
-        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+        public function resolve(): ?RecordReference
         {
             return null;
         }
@@ -95,9 +97,9 @@ it('scopes filament resource queries to the current owner', function (): void {
     {
         public function __construct(private Model $owner) {}
 
-        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+        public function resolve(): ?RecordReference
         {
-            return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -267,9 +269,9 @@ it('resource rejects cross-tenant reads', function (): void {
     {
         public function __construct(private Model $owner) {}
 
-        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+        public function resolve(): ?RecordReference
         {
-            return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -281,9 +283,9 @@ it('resource rejects cross-tenant reads', function (): void {
     {
         public function __construct(private Model $owner) {}
 
-        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+        public function resolve(): ?RecordReference
         {
-            return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -360,9 +362,9 @@ it('widget metrics reject cross-tenant data', function (): void {
     {
         public function __construct(private Model $owner) {}
 
-        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+        public function resolve(): ?RecordReference
         {
-            return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -382,9 +384,9 @@ it('widget metrics reject cross-tenant data', function (): void {
     {
         public function __construct(private Model $owner) {}
 
-        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+        public function resolve(): ?RecordReference
         {
-            return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 

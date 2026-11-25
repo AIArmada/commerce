@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Commerce\Tests\Orders;
 
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Testing\OwnerScopingContractTests;
 use AIArmada\CommerceSupport\Tests\Fixtures\TestOwner;
@@ -107,7 +108,7 @@ trait OrderOwnerScopingPestTests
 
         app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
         {
-            public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+            public function resolve(): ?RecordReference
             {
                 return null;
             }

@@ -6,6 +6,7 @@ namespace AIArmada\CommerceSupport\Support;
 
 use AIArmada\CommerceSupport\Data\OwnerJobContext;
 use Illuminate\Database\Eloquent\Model;
+use InvalidArgumentException;
 
 final class OwnerJobContextMapper
 {
@@ -14,7 +15,7 @@ final class OwnerJobContextMapper
         $reference = EloquentRecordReference::fromModel($owner);
 
         if ($reference === null) {
-            throw new \InvalidArgumentException('A persisted owner is required.');
+            throw new InvalidArgumentException('A persisted owner is required.');
         }
 
         return new OwnerJobContext($reference->type, $reference->id);

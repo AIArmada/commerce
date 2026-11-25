@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Chip\Models\Purchase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentChip\Resources\BaseChipResource;
 use AIArmada\FilamentChip\Resources\PurchaseResource;
@@ -27,7 +28,7 @@ if (! function_exists('chipAggregatePurchase')) {
 beforeEach(function (): void {
     app()->bind(OwnerResolverInterface::class, fn () => new class implements OwnerResolverInterface
     {
-        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+        public function resolve(): ?RecordReference
         {
             return null;
         }

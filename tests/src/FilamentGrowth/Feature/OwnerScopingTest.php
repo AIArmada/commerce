@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScopeKey;
@@ -130,9 +132,9 @@ it('scopes ExperimentResource query to the resolved owner', function (): void {
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+        public function resolve(): ?RecordReference
         {
-            return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -155,9 +157,9 @@ it('scopes ExperimentResource queries and mutation gates by accessible tracked p
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+        public function resolve(): ?RecordReference
         {
-            return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -178,9 +180,9 @@ it('scopes VariantResource query to the resolved owner', function (): void {
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+        public function resolve(): ?RecordReference
         {
-            return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -204,9 +206,9 @@ it('scopes VariantResource queries and experiment helpers by accessible tracked 
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+        public function resolve(): ?RecordReference
         {
-            return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -234,9 +236,9 @@ it('includes global experiments when growth owner include_global is enabled', fu
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+        public function resolve(): ?RecordReference
         {
-            return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -262,9 +264,9 @@ it('includes global variants when growth owner include_global is enabled', funct
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+        public function resolve(): ?RecordReference
         {
-            return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -289,9 +291,9 @@ it('does not expose global tracked properties or experiments as writable create 
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+        public function resolve(): ?RecordReference
         {
-            return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -337,9 +339,9 @@ it('fails closed for experiment mutations when the tracked property drifts out o
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+        public function resolve(): ?RecordReference
         {
-            return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -375,9 +377,9 @@ it('removes experiments and variants from readable queries when the tracked prop
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+        public function resolve(): ?RecordReference
         {
-            return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -411,9 +413,9 @@ it('scopes variant code uniqueness to writable experiments only', function (): v
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+        public function resolve(): ?RecordReference
         {
-            return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -447,9 +449,9 @@ it('rejects mixed experiment bulk deletes before deleting any selected records',
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+        public function resolve(): ?RecordReference
         {
-            return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -474,9 +476,9 @@ it('rejects mixed variant bulk deletes before deleting any selected records', fu
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+        public function resolve(): ?RecordReference
         {
-            return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -502,9 +504,9 @@ it('fails closed when helper lookups receive a foreign experiment record object'
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+        public function resolve(): ?RecordReference
         {
-            return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -524,9 +526,9 @@ it('scopes tracked property helper queries to the resolved owner when signals ow
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+        public function resolve(): ?RecordReference
         {
-            return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -569,9 +571,9 @@ it('uses the resolved owner scope key for experiment slug validation when growth
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+        public function resolve(): ?RecordReference
         {
-            return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -591,9 +593,9 @@ it('does not resolve foreign tracked properties for experiment resources when gr
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+        public function resolve(): ?RecordReference
         {
-            return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -609,9 +611,9 @@ it('memoizes the selected experiment module type for repeated variant form visib
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+        public function resolve(): ?RecordReference
         {
-            return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -655,7 +657,7 @@ it('does not reuse cached experiment module types across owner scope changes in 
 it('uses distinct selected experiment module type cache keys for unresolved and explicit global contexts', function (): void {
     app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new class implements OwnerResolverInterface
     {
-        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+        public function resolve(): ?RecordReference
         {
             return null;
         }
@@ -685,9 +687,9 @@ it('counts only owner-matched child rows for readable global experiments in the 
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+        public function resolve(): ?RecordReference
         {
-            return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -768,9 +770,9 @@ it('finds readable global experiments when filtering by visible tracked property
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+        public function resolve(): ?RecordReference
         {
-            return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 
@@ -796,9 +798,9 @@ it('prunes stale variant settings when the selected experiment module changes', 
     {
         public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+        public function resolve(): ?RecordReference
         {
-            return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 

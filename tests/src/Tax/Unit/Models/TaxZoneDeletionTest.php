@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Tax\Models\TaxRate;
 use AIArmada\Tax\Models\TaxZone;
@@ -17,9 +19,9 @@ $bindOwner = function (?Model $owner): void {
     {
         public function __construct(private ?Model $owner) {}
 
-        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+        public function resolve(): ?RecordReference
         {
-            return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
+            return EloquentRecordReference::fromModel($this->owner);
         }
     });
 };

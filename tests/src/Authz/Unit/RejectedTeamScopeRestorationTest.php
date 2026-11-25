@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\Authz\Features\Authorization\Authz;
 use AIArmada\Authz\Exceptions\ScopeResolutionException;
 use AIArmada\Authz\Exceptions\ScopeRestorationException;
+use AIArmada\Authz\Features\Authorization\Authz;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use Illuminate\Contracts\Auth\Access\Authorizable;
 use Illuminate\Database\Eloquent\Model;

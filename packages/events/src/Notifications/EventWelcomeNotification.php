@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Notifications;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Data\OwnerJobContext;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerJobContextMapper;
 use AIArmada\Events\Data\EventWelcomeNotificationData;
 use Illuminate\Bus\Queueable;

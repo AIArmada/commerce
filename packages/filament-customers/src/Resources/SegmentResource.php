@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCustomers\Resources;
 
-use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Persistence\OwnerCache;
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Customers\Models\Segment;
 use AIArmada\FilamentCustomers\Resources\SegmentResource\Pages;
 use AIArmada\FilamentCustomers\Resources\SegmentResource\Schemas\SegmentForm;

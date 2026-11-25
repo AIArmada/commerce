@@ -6,7 +6,6 @@ namespace AIArmada\Authz\Drivers;
 
 use AIArmada\Authz\Contracts\AdminUserProvisioner;
 use AIArmada\CommerceSupport\Data\RecordReference;
-
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Hashing\Hasher;
 use Illuminate\Database\Eloquent\Model;

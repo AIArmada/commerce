@@ -5,7 +5,9 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\FilamentDocs\FilamentDocsServiceProvider;
@@ -25,11 +27,11 @@ beforeEach(function (): void {
 
     app()->scoped(OwnerResolverInterface::class, static fn (): OwnerResolverInterface => new class implements OwnerResolverInterface
     {
-        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+        public function resolve(): ?RecordReference
         {
             $user = auth()->user();
 
-            return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($user instanceof Model ? $user : null);
+            return EloquentRecordReference::fromModel($user instanceof Model ? $user : null);
         }
     });
 });
@@ -97,7 +99,7 @@ it('fails closed when owner context is missing', function (): void {
 
     app()->scoped(OwnerResolverInterface::class, static fn (): OwnerResolverInterface => new class implements OwnerResolverInterface
     {
-        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+        public function resolve(): ?RecordReference
         {
             return null;
         }

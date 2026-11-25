@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Authz\Features\Authorization\EntryPoints\Console;
 
-use AIArmada\Authz\Features\Authorization\Actions\AssignGlobalSuperAdmin;
 use AIArmada\Authz\Contracts\AdminUserProvisioner;
-use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\Authz\EntryPoints\Console\Concerns\Prohibitable;
+use AIArmada\Authz\Features\Authorization\Actions\AssignGlobalSuperAdmin;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\LikeSearch;
 use Filament\Facades\Filament;
 use Illuminate\Console\Command;

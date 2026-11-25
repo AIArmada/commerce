@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
-use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Data\OwnerScopeConfig;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
 use AIArmada\CommerceSupport\Traits\HasOwner;
@@ -21,7 +22,7 @@ use Illuminate\Validation\Rules\Unique;
 beforeEach(function (): void {
     app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
     {
-        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+        public function resolve(): ?RecordReference
         {
             return null;
         }

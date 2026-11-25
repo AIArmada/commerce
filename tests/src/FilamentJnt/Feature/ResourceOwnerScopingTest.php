@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\FilamentJnt\FilamentJntTestCase;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\FilamentJnt\Resources\JntOrderResource;
@@ -13,7 +14,6 @@ use AIArmada\FilamentJnt\Resources\JntWebhookLogResource;
 use AIArmada\Jnt\Models\JntOrder;
 use AIArmada\Jnt\Models\JntTrackingEvent;
 use AIArmada\Jnt\Models\JntWebhookLog;
-use Illuminate\Database\Eloquent\Model;
 
 uses(FilamentJntTestCase::class);
 
@@ -243,7 +243,7 @@ it('requires an owner context before resolving Filament JNT resource queries', f
 
     app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
     {
-        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+        public function resolve(): ?RecordReference
         {
             return null;
         }

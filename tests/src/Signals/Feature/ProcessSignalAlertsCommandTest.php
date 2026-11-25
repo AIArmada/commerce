@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\PublicHttpUrlGuard;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\Signals\Models\SignalAlertLog;
@@ -13,7 +14,6 @@ use AIArmada\Signals\Models\SignalEvent;
 use AIArmada\Signals\Models\TrackedProperty;
 use AIArmada\Signals\Services\SignalAlertDispatcher;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Http;
 
 uses(SignalsTestCase::class);
@@ -190,7 +190,7 @@ it('processes signal alert rules for each owner when no ambient owner is resolve
 
     app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
     {
-        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+        public function resolve(): ?RecordReference
         {
             return null;
         }

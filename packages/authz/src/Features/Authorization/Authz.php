@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace AIArmada\Authz\Features\Authorization;
 
 use AIArmada\Authz\Exceptions\ScopeResolutionException;
-use AIArmada\Authz\Features\Authorization\Api\AuthorizationApi;
 use AIArmada\Authz\Exceptions\ScopeRestorationException;
-use AIArmada\Authz\Services\PermissionKeyBuilder;
+use AIArmada\Authz\Features\Authorization\Api\AuthorizationApi;
 use AIArmada\Authz\Features\Authorization\Support\AuthzScopeContext;
 use AIArmada\Authz\Features\Authorization\Support\AuthzScopeResolver;
 use AIArmada\Authz\Features\Authorization\Support\AuthzScopeTeamResolver;
+use AIArmada\Authz\Services\PermissionKeyBuilder;
 use AIArmada\Authz\Support\UserRoleChecker;
 use AIArmada\Authz\Support\UserWildcardPermissions;
 use AIArmada\CommerceSupport\Support\OwnerContext;

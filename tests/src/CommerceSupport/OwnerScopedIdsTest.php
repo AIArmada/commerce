@@ -2,14 +2,13 @@
 
 declare(strict_types=1);
 
-use AIArmada\CommerceSupport\Support\EloquentRecordReference;
-
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\OwnerScopeConfig;
 use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\Filament\OwnerScopedIds;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Data\OwnerScopeConfig;
 use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use Illuminate\Database\Eloquent\Model;

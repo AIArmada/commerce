@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Authz\Facades;
 
+use AIArmada\Authz\Features\Authorization\Api\AuthorizationApi;
 use Illuminate\Support\Facades\Facade;
 
 /**
@@ -16,12 +17,12 @@ use Illuminate\Support\Facades\Facade;
  * @method static array getCustomPermissions()
  * @method static void clearCache()
  *
- * @see \AIArmada\Authz\Features\Authorization\Api\AuthorizationApi
+ * @see AuthorizationApi
  */
 final class Authz extends Facade
 {
     protected static function getFacadeAccessor(): string
     {
-        return \AIArmada\Authz\Features\Authorization\Api\AuthorizationApi::class;
+        return AuthorizationApi::class;
     }
 }

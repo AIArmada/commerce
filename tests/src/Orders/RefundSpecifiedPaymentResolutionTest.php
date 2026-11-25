@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Orders\Actions\RegisterOrderRefund;
 use AIArmada\Orders\Enums\PaymentStatus;
@@ -274,7 +275,7 @@ it('rejects a forged parentage pointing at a payment owned by another owner', fu
 
     app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
     {
-        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+        public function resolve(): ?RecordReference
         {
             return null;
         }

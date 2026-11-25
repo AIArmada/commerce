@@ -12,9 +12,10 @@ use AIArmada\CashierChip\Testing\FakeChipCollectService;
 use AIArmada\Chip\ChipServiceProvider;
 use AIArmada\Commerce\Tests\CashierChip\Fixtures\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use Illuminate\Cache\CacheServiceProvider;
 use Illuminate\Database\DatabaseServiceProvider;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Events\EventServiceProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -180,9 +181,9 @@ abstract class CashierChipTestCase extends Orchestra
         {
             public function __construct(private readonly User $owner) {}
 
-            public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+            public function resolve(): ?RecordReference
             {
-                return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
+                return EloquentRecordReference::fromModel($this->owner);
             }
         });
 

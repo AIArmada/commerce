@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\Authz\Features\Impersonation\Actions;
 
 use AIArmada\Authz\Features\Impersonation\Api\ImpersonationApi;
+use AIArmada\Authz\Features\Impersonation\EntryPoints\Auth\SessionGuard;
 use AIArmada\Authz\Features\Impersonation\Events\LeaveImpersonation;
 use AIArmada\Authz\Features\Impersonation\Events\TakeImpersonation;
-use AIArmada\Authz\Features\Impersonation\EntryPoints\Auth\SessionGuard;
-use AIArmada\Authz\Features\Impersonation\Support\BackToUrlSanitizer;
 use AIArmada\Authz\Features\Impersonation\Queries\ImpersonationScopeGuard;
+use AIArmada\Authz\Features\Impersonation\Support\BackToUrlSanitizer;
 use AIArmada\Authz\Support\UserRoleChecker;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Foundation\Application;

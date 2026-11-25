@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\Authz\Features\Impersonation\EntryPoints\Auth\SessionGuard;
 use AIArmada\Authz\Features\Authorization\Models\Role;
 use AIArmada\Authz\Features\Impersonation\Actions\ImpersonateManager;
+use AIArmada\Authz\Features\Impersonation\EntryPoints\Auth\SessionGuard;
 use AIArmada\Authz\Features\Impersonation\Support\BackToUrlSanitizer;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use Illuminate\Auth\Events\Authenticated;
@@ -151,7 +151,7 @@ it('does not override the standard Laravel session driver', function (): void {
 
     $guard = auth()->guard('standard');
 
-    expect($guard)->toBeInstanceOf(\Illuminate\Auth\SessionGuard::class)
+    expect($guard)->toBeInstanceOf(Illuminate\Auth\SessionGuard::class)
         ->and($guard)->not->toBeInstanceOf(SessionGuard::class);
 });
 

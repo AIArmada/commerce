@@ -5,7 +5,6 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Data\OwnerJobContext;
 use AIArmada\CommerceSupport\Support\OwnerJobContextMapper;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\FilamentDocs\Jobs\GenerateDocPdfsJob;

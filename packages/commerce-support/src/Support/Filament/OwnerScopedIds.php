@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\CommerceSupport\Support\Filament;
 
-use AIArmada\CommerceSupport\Support\OwnerScopeConfigFactory;
-
+use AIArmada\CommerceSupport\Data\OwnerScopeConfig;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\CommerceSupport\Support\OwnerScope;
-use AIArmada\CommerceSupport\Data\OwnerScopeConfig;
+use AIArmada\CommerceSupport\Support\OwnerScopeConfigFactory;
 use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;

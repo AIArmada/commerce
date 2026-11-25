@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\CommerceSupport\Contracts\Auditable;
 use AIArmada\CommerceSupport\Contracts\Loggable;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\AuditableModelRegistry;
 use AIArmada\CommerceSupport\Support\LoggableModelRegistry;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -21,7 +22,7 @@ it('flushes fallback owner context at a lifecycle boundary', function (): void {
 
     app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
     {
-        public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+        public function resolve(): ?RecordReference
         {
             return null;
         }

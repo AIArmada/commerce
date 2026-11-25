@@ -6,10 +6,10 @@ namespace AIArmada\Authz\Features\Impersonation;
 
 use AIArmada\Authz\Features\Impersonation\Actions\ImpersonateManager;
 use AIArmada\Authz\Features\Impersonation\Api\ImpersonationApi;
+use AIArmada\Authz\Features\Impersonation\EntryPoints\Http\LeaveImpersonationController;
 use AIArmada\Authz\Platform\FeatureModule as FeatureModuleContract;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\Route;
-use AIArmada\Authz\Features\Impersonation\EntryPoints\Http\LeaveImpersonationController;
 
 final class FeatureModule implements FeatureModuleContract
 {

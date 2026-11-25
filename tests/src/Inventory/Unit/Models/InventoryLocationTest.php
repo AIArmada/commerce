@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Data\RecordReference;
+use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Enums\TemperatureZone;
 use AIArmada\Inventory\Models\InventoryAllocation;
@@ -101,7 +103,7 @@ describe('InventoryLocation', function (): void {
 
         app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
         {
-            public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+            public function resolve(): ?RecordReference
             {
                 return null;
             }
@@ -128,9 +130,9 @@ describe('InventoryLocation', function (): void {
         {
             public function __construct(private readonly ?Model $owner) {}
 
-            public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+            public function resolve(): ?RecordReference
             {
-                return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
+                return EloquentRecordReference::fromModel($this->owner);
             }
         });
 
@@ -158,9 +160,9 @@ describe('InventoryLocation', function (): void {
         {
             public function __construct(private readonly ?Model $owner) {}
 
-            public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+            public function resolve(): ?RecordReference
             {
-                return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
+                return EloquentRecordReference::fromModel($this->owner);
             }
         });
 
@@ -392,9 +394,9 @@ describe('InventoryLocation', function (): void {
         {
             public function __construct(private readonly ?Model $owner) {}
 
-            public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+            public function resolve(): ?RecordReference
             {
-                return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
+                return EloquentRecordReference::fromModel($this->owner);
             }
         });
 
@@ -404,7 +406,7 @@ describe('InventoryLocation', function (): void {
         // Create global location
         app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
         {
-            public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+            public function resolve(): ?RecordReference
             {
                 return null;
             }
@@ -417,9 +419,9 @@ describe('InventoryLocation', function (): void {
         {
             public function __construct(private readonly ?Model $owner) {}
 
-            public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+            public function resolve(): ?RecordReference
             {
-                return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
+                return EloquentRecordReference::fromModel($this->owner);
             }
         });
         $otherLocation = InventoryLocation::factory()->create();
@@ -441,9 +443,9 @@ describe('InventoryLocation', function (): void {
         {
             public function __construct(private readonly ?Model $owner) {}
 
-            public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+            public function resolve(): ?RecordReference
             {
-                return \AIArmada\CommerceSupport\Support\EloquentRecordReference::fromModel($this->owner);
+                return EloquentRecordReference::fromModel($this->owner);
             }
         });
 
@@ -453,7 +455,7 @@ describe('InventoryLocation', function (): void {
         // Create global location
         app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
         {
-            public function resolve(): \AIArmada\CommerceSupport\Data\RecordReference | null
+            public function resolve(): ?RecordReference
             {
                 return null;
             }

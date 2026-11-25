@@ -88,9 +88,14 @@ describe('VoucherValidator', function (): void {
             $ownerResolver = Mockery::mock(OwnerResolverInterface::class);
             $reference = new RecordReference('test-owner', 'test-id');
             $ownerResolver->shouldReceive('resolve')->once()->andReturn($reference);
-            $lookup = new class($mockOwner) {
+            $lookup = new class($mockOwner)
+            {
                 public function __construct(private Model $model) {}
-                public function resolve(RecordReference $reference): Model { return $this->model; }
+
+                public function resolve(RecordReference $reference): Model
+                {
+                    return $this->model;
+                }
             };
             app()->instance(OwnerModelLookup::class, $lookup);
 
