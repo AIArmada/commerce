@@ -234,9 +234,5 @@ class AffiliateAttribution extends Model
             }
         });
 
-        static::deleting(function (self $attribution): void {
-            $attribution->touchpoints()->delete();
-            $attribution->conversions()->update(['affiliate_attribution_id' => null]);
-        });
     }
 }

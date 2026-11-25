@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Features\Attribution\Api\AttributionActivity;
+use AIArmada\Affiliates\Features\Attribution\Api\AttributionRemoval;
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionAttributionMaintenance;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
@@ -252,7 +254,7 @@ describe('AffiliateAttribution Model', function (): void {
             'touchpoint_type' => 'click',
         ]);
 
-        $attribution->delete();
+        app(AttributionRemoval::class)->deleteMany([(string) $attribution->getKey()]);
 
         expect(AffiliateTouchpoint::where('affiliate_attribution_id', $attribution->id)->count())->toBe(0);
     });
@@ -275,10 +277,34 @@ describe('AffiliateAttribution Model', function (): void {
             'status' => PendingConversion::class,
         ]);
 
-        $attribution->delete();
+        app(AttributionRemoval::class)->deleteMany([(string) $attribution->getKey()]);
         $conversion->refresh();
 
         expect($conversion->affiliate_attribution_id)->toBeNull();
+    });
+
+    it('rolls back touchpoint deletion when conversion cleanup fails', function (): void {
+        $attribution = AffiliateAttribution::create([
+            'affiliate_id' => $this->affiliate->id,
+            'affiliate_code' => $this->affiliate->code,
+            'cart_instance' => 'default',
+        ]);
+
+        $touchpoint = AffiliateTouchpoint::create([
+            'affiliate_attribution_id' => $attribution->id,
+            'affiliate_id' => $this->affiliate->id,
+            'affiliate_code' => $this->affiliate->code,
+            'touchpoint_type' => 'click',
+        ]);
+
+        $this->mock(ConversionAttributionMaintenance::class)
+            ->shouldReceive('detachAttribution')->with((string) $attribution->getKey())
+            ->andThrow(new RuntimeException('cleanup failed'));
+
+        expect(fn () => app(AttributionRemoval::class)->deleteMany([(string) $attribution->getKey()]))
+            ->toThrow(RuntimeException::class, 'cleanup failed')
+            ->and($attribution->fresh())->not->toBeNull()
+            ->and($touchpoint->fresh())->not->toBeNull();
     });
 
     it('stores user id', function (): void {

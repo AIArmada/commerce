@@ -13,6 +13,7 @@ final class FeatureModule implements FeatureModuleContract
     public function register(Application $app): void
     {
         $app->bind(Api\ConversionAdministration::class, Actions\AdministerConversion::class);
+        $app->bind(Api\ConversionAttributionMaintenance::class, Actions\DetachConversionAttribution::class);
         $app->bind(Api\CartConversionRecording::class, Actions\RecordAffiliateConversion::class);
         $app->bind(Api\AwardPosting::class, Actions\RecordAffiliateAward::class);
         $app->bind(Api\OutcomePosting::class, Actions\RecordAffiliateOutcome::class);

@@ -32,6 +32,7 @@ final readonly class AttachAffiliateToCart implements CartAttribution
         private Dispatcher $events,
         private WebhookApi $webhooks,
         private AffiliateLookupQuery $affiliateLookup,
+        private DeleteAttributions $removal,
     ) {}
 
     public function attach(string $affiliateId, Cart $cart, array $context = []): ?AffiliateAttributionData
@@ -356,15 +357,7 @@ final readonly class AttachAffiliateToCart implements CartAttribution
             ->pluck('id')
             ->all();
 
-        if ($toDelete !== []) {
-            AffiliateAttribution::query()
-                ->whereIn('id', $toDelete)
-                ->chunkById(100, function ($attributions): void {
-                    foreach ($attributions as $attribution) {
-                        $attribution->delete();
-                    }
-                });
-        }
+        $this->removal->deleteMany(array_map('strval', $toDelete));
     }
 
     private function isSelfReferral(Affiliate $affiliate): bool
