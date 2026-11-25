@@ -5,14 +5,14 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Enums\TaxDocumentStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\Models\AffiliateTaxDocument;
-use AIArmada\Affiliates\Services\Tax\TaxDocumentService;
+use AIArmada\Affiliates\Features\Tax\Models\AffiliateTaxDocument;
+use AIArmada\Affiliates\Features\Tax\Api\TaxDocumentApi;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\CompletedPayout;
 use Carbon\Carbon;
 
-test('TaxDocumentService calculateAnnualPayouts returns zero with no payouts', function (): void {
-    $service = app(TaxDocumentService::class);
+test('TaxDocumentApi calculateAnnualPayouts returns zero with no payouts', function (): void {
+    $service = app(TaxDocumentApi::class);
 
     $affiliate = Affiliate::create([
         'code' => 'TAXCALC001',
@@ -23,11 +23,11 @@ test('TaxDocumentService calculateAnnualPayouts returns zero with no payouts', f
         'currency' => 'USD',
     ]);
 
-    expect($service->calculateAnnualPayouts($affiliate, 2024))->toBe(0);
+    expect($service->calculateAnnualPayouts((string) $affiliate->getKey(), 2024))->toBe(0);
 });
 
-test('TaxDocumentService getDocumentsForAffiliate returns newest first scoped to the affiliate', function (): void {
-    $service = app(TaxDocumentService::class);
+test('TaxDocumentApi getDocumentsForAffiliate returns newest first scoped to the affiliate', function (): void {
+    $service = app(TaxDocumentApi::class);
 
     $affiliate = Affiliate::create([
         'code' => 'TAXDOCS001',
@@ -60,13 +60,13 @@ test('TaxDocumentService getDocumentsForAffiliate returns newest first scoped to
         }
     }
 
-    $documents = $service->getDocumentsForAffiliate($affiliate);
+    $documents = $service->documentsFor((string) $affiliate->getKey());
 
-    expect($documents->pluck('tax_year')->all())->toBe([2024, 2023]);
+    expect(array_column($documents, 'year'))->toBe([2024, 2023]);
 });
 
-test('TaxDocumentService markDocumentAsSent updates status', function (): void {
-    $service = app(TaxDocumentService::class);
+test('TaxDocumentApi markDocumentAsSent updates status', function (): void {
+    $service = app(TaxDocumentApi::class);
 
     $affiliate = Affiliate::create([
         'code' => 'TAXSENT001',
@@ -84,16 +84,17 @@ test('TaxDocumentService markDocumentAsSent updates status', function (): void {
         'status' => 'generated',
         'total_amount_minor' => 100000,
         'currency' => 'USD',
+        'document_path' => 'tax-documents/2024/sent.txt',
     ]);
 
-    $updated = $service->markDocumentAsSent($document);
+    $updated = $service->markSent((string) $document->getKey());
 
     expect($updated->status)->toBe(TaxDocumentStatus::Sent);
-    expect($updated->sent_at)->not->toBeNull();
+    expect($updated->sentAt)->not->toBeNull();
 });
 
-test('TaxDocumentService generate1099ForAffiliate returns null for below threshold', function (): void {
-    $service = app(TaxDocumentService::class);
+test('TaxDocumentApi generate1099ForAffiliate returns null for below threshold', function (): void {
+    $service = app(TaxDocumentApi::class);
 
     config(['affiliates.tax.1099_threshold' => 60000]);
 
@@ -107,13 +108,13 @@ test('TaxDocumentService generate1099ForAffiliate returns null for below thresho
     ]);
 
     // No payouts, so below threshold
-    $document = $service->generate1099ForAffiliate($affiliate, 2024);
+    $document = $service->generateForAffiliate((string) $affiliate->getKey(), 2024);
 
     expect($document)->toBeNull();
 });
 
-test('TaxDocumentService 1099 totals count USD payouts only', function (): void {
-    $service = app(TaxDocumentService::class);
+test('TaxDocumentApi 1099 totals count USD payouts only', function (): void {
+    $service = app(TaxDocumentApi::class);
 
     config(['affiliates.tax.1099_threshold' => 60000]);
 
@@ -141,11 +142,11 @@ test('TaxDocumentService 1099 totals count USD payouts only', function (): void 
         ]);
     }
 
-    expect($service->calculateAnnualPayouts($affiliate, 2024))->toBe(70000)
-        ->and($service->getAffiliatesRequiring1099(2024)->pluck('id'))->toContain($affiliate->id);
+    expect($service->calculateAnnualPayouts((string) $affiliate->getKey(), 2024))->toBe(70000)
+        ->and($service->affiliatesRequiring1099(2024))->toContain($affiliate->id);
 
-    $document = $service->generate1099ForAffiliate($affiliate, 2024);
+    $document = $service->generateForAffiliate((string) $affiliate->getKey(), 2024);
 
-    expect($document->total_amount_minor)->toBe(70000)
+    expect($document->amountMinor)->toBe(70000)
         ->and($document->currency)->toBe('USD');
 });

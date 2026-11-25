@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Pages\Portal;
 
 use AIArmada\Affiliates\Features\Support\Api\SupportTicketApi;
-use AIArmada\Affiliates\Models\AffiliateTaxDocument;
+use AIArmada\Affiliates\Features\Tax\Api\TaxDocumentApi;
 use AIArmada\FilamentAffiliates\Concerns\PortalPage;
 use BackedEnum;
 use Filament\Notifications\Notification;
@@ -155,23 +155,17 @@ class PortalSupport extends PortalPage
         }
         unset($ticket);
 
-        $taxDocuments = AffiliateTaxDocument::query()
-            ->where('affiliate_id', $affiliate->getKey())
-            ->orderByDesc('generated_at')
-            ->limit(50)
-            ->get()
-            ->map(fn (AffiliateTaxDocument $document): array => [
-                'id' => (string) $document->getKey(),
-                'document_type' => (string) $document->document_type,
-                'tax_year' => (int) $document->tax_year,
-                'status' => $document->status->value,
-                'total_amount_minor' => (int) $document->total_amount_minor,
-                'currency' => (string) $document->currency,
-                'document_path' => $document->document_path,
-                'notes' => $document->notes,
-                'generated_at' => $document->generated_at?->toDateTimeString(),
-                'sent_at' => $document->sent_at?->toDateTimeString(),
-            ])->all();
+        $taxDocuments = array_map(static fn ($document): array => [
+            'id' => $document->id,
+            'document_type' => $document->documentType,
+            'tax_year' => $document->year,
+            'status' => $document->status->value,
+            'total_amount_minor' => $document->amountMinor,
+            'currency' => $document->currency,
+            'notes' => $document->notes,
+            'generated_at' => $document->generatedAt,
+            'sent_at' => $document->sentAt,
+        ], app(TaxDocumentApi::class)->documentsFor((string) $affiliate->getKey(), 50));
 
         return [
             'hasAffiliate' => true,

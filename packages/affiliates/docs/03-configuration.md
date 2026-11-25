@@ -450,7 +450,7 @@ When false, the domain rejects custom handle writes and assigns a handle on crea
 ],
 ```
 
-`1099_threshold` is stored in minor units of `1099_threshold_currency` (default `USD`). For example, `60000` represents `$600.00`. Only completed payouts in the threshold currency count toward the threshold and the reported total — converted totals are never blended into a filing. Payouts in other currencies are disclosed on the document notes and listed by `TaxDocumentService::excludedPayoutsForYear()` for manual tax-team review.
+`1099_threshold` is stored in minor units of `1099_threshold_currency` (default `USD`). For example, `60000` represents `$600.00`. Only completed payouts in the threshold currency count toward the threshold and the reported total — converted totals are never blended into a worksheet. Payouts in other currencies are disclosed on the document notes and listed by `TaxDocumentApi::excludedPayoutsForYear()` for manual tax-team review. Bind `AIArmada\Affiliates\Contracts\TaxRecipientProvider` to a trusted host implementation that returns an immutable `TaxRecipientDetails` for the affiliate. Without a recipient the document remains `pending_info`. The default writer stores a private text preparation worksheet, not an official tax form or filing.
 
 ## Bonuses
 

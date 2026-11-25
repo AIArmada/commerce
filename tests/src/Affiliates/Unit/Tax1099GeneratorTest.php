@@ -2,14 +2,28 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Data\TaxRecipientDetails;
+use AIArmada\Affiliates\Data\TaxWorksheetRequest;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Services\Tax\Tax1099Generator;
+use AIArmada\Affiliates\Drivers\Tax\PrivateTaxWorksheetWriter;
 use AIArmada\Affiliates\States\Active;
 use Illuminate\Support\Facades\Storage;
 
+/** @param array<string, mixed> $data */
+function taxWorksheetRequest(array $data): TaxWorksheetRequest
+{
+    return new TaxWorksheetRequest(
+        (string) $data['affiliate']->getKey(),
+        $data['year'],
+        $data['total_amount'],
+        $data['currency'] ?? 'USD',
+        new TaxRecipientDetails($data['tax_info']['legal_name'], $data['tax_info']['tin'], $data['tax_info']['address'] ?? ''),
+    );
+}
+
 beforeEach(function (): void {
-    $this->generator = new Tax1099Generator;
+    $this->generator = new PrivateTaxWorksheetWriter;
 
     $this->affiliate = Affiliate::create([
         'code' => 'TAX-' . uniqid(),
@@ -22,7 +36,7 @@ beforeEach(function (): void {
     ]);
 });
 
-describe('Tax1099Generator', function (): void {
+describe('PrivateTaxWorksheetWriter', function (): void {
     describe('generate', function (): void {
         test('generates tax document and returns path', function (): void {
             Storage::fake('local');
@@ -38,14 +52,15 @@ describe('Tax1099Generator', function (): void {
                 ],
             ];
 
-            $result = $this->generator->generate($data);
+            $result = $this->generator->write(taxWorksheetRequest($data));
 
             expect($result)->toContain('tax-documents/2024/');
             expect($result)->toContain('1099-NEC-2024-');
             expect($result)->toContain($this->affiliate->id);
-            expect($result)->toEndWith('.pdf');
+            expect($result)->toEndWith('.txt');
 
             Storage::disk('local')->assertExists($result);
+            expect(Storage::disk('local')->getVisibility($result))->toBe('private');
         });
 
         test('stores document in year-specific folder', function (): void {
@@ -61,12 +76,12 @@ describe('Tax1099Generator', function (): void {
                 ],
             ];
 
-            $result = $this->generator->generate($data);
+            $result = $this->generator->write(taxWorksheetRequest($data));
 
             expect($result)->toStartWith('tax-documents/2023/');
         });
 
-        test('creates unique filenames per affiliate and date', function (): void {
+        test('creates a unique private worksheet for each generation', function (): void {
             Storage::fake('local');
 
             $data = [
@@ -79,19 +94,14 @@ describe('Tax1099Generator', function (): void {
                 ],
             ];
 
-            $result = $this->generator->generate($data);
+            $result = $this->generator->write(taxWorksheetRequest($data));
 
-            $expectedPattern = sprintf(
-                '1099-NEC-2024-%s-%s.pdf',
-                $this->affiliate->id,
-                now()->format('Ymd')
-            );
-
-            expect($result)->toContain($expectedPattern);
+            expect($result)->toContain('1099-NEC-2024-' . $this->affiliate->id . '-')
+                ->and($this->generator->write(taxWorksheetRequest($data)))->not->toBe($result);
         });
     });
 
-    describe('PDF content generation', function (): void {
+    describe('Worksheet content generation', function (): void {
         test('includes payer information from config', function (): void {
             Storage::fake('local');
 
@@ -113,7 +123,7 @@ describe('Tax1099Generator', function (): void {
                 ],
             ];
 
-            $result = $this->generator->generate($data);
+            $result = $this->generator->write(taxWorksheetRequest($data));
             $content = Storage::disk('local')->get($result);
 
             expect($content)->toContain('Test Company Inc');
@@ -133,7 +143,7 @@ describe('Tax1099Generator', function (): void {
                 ],
             ];
 
-            $result = $this->generator->generate($data);
+            $result = $this->generator->write(taxWorksheetRequest($data));
             $content = Storage::disk('local')->get($result);
 
             expect($content)->toContain('John Q. Public');
@@ -153,7 +163,7 @@ describe('Tax1099Generator', function (): void {
                 ],
             ];
 
-            $result = $this->generator->generate($data);
+            $result = $this->generator->write(taxWorksheetRequest($data));
             $content = Storage::disk('local')->get($result);
 
             expect($content)->toContain('789 Affiliate Ave, Suite 100');
@@ -172,7 +182,7 @@ describe('Tax1099Generator', function (): void {
                 ],
             ];
 
-            $result = $this->generator->generate($data);
+            $result = $this->generator->write(taxWorksheetRequest($data));
             $content = Storage::disk('local')->get($result);
 
             expect($content)->toContain("Address: \n");
@@ -191,7 +201,7 @@ describe('Tax1099Generator', function (): void {
                 ],
             ];
 
-            $result = $this->generator->generate($data);
+            $result = $this->generator->write(taxWorksheetRequest($data));
             $content = Storage::disk('local')->get($result);
 
             expect($content)->toContain('$12,345.67');
@@ -210,10 +220,10 @@ describe('Tax1099Generator', function (): void {
                 ],
             ];
 
-            $result = $this->generator->generate($data);
+            $result = $this->generator->write(taxWorksheetRequest($data));
             $content = Storage::disk('local')->get($result);
 
-            expect($content)->toContain('IRS Form 1099-NEC');
+            expect($content)->toContain('1099-NEC preparation worksheet (not an official IRS filing)');
             expect($content)->toContain('Tax Year: 2024');
         });
     });
@@ -232,11 +242,11 @@ describe('Tax1099Generator', function (): void {
                 ],
             ];
 
-            $result = $this->generator->generate($data);
+            $result = $this->generator->write(taxWorksheetRequest($data));
             $content = Storage::disk('local')->get($result);
 
-            // SSN: XXX-XX-6789
-            expect($content)->toContain('XXX-XX-6789');
+            // SSN: ***-**-6789
+            expect($content)->toContain('***-**-6789');
             expect($content)->not->toContain('123-45-6789');
         });
 
@@ -253,10 +263,10 @@ describe('Tax1099Generator', function (): void {
                 ],
             ];
 
-            $result = $this->generator->generate($data);
+            $result = $this->generator->write(taxWorksheetRequest($data));
             $content = Storage::disk('local')->get($result);
 
-            expect($content)->toContain('XXX-XX-6789');
+            expect($content)->toContain('***-**-6789');
         });
 
         test('masks EIN format correctly', function (): void {
@@ -272,13 +282,10 @@ describe('Tax1099Generator', function (): void {
                 ],
             ];
 
-            $result = $this->generator->generate($data);
+            $result = $this->generator->write(taxWorksheetRequest($data));
             $content = Storage::disk('local')->get($result);
 
-            // EIN doesn't meet 9-digit requirement, uses alternate format
-            // After cleaning: 123456789 = 9 digits, so SSN format applies
-            // But 12-3456789 cleaned = 123456789 = 9 digits
-            expect($content)->toContain('XXX-XX-6789');
+            expect($content)->toContain('***-**-6789');
         });
 
         test('handles short TIN', function (): void {
@@ -294,11 +301,11 @@ describe('Tax1099Generator', function (): void {
                 ],
             ];
 
-            $result = $this->generator->generate($data);
+            $result = $this->generator->write(taxWorksheetRequest($data));
             $content = Storage::disk('local')->get($result);
 
             // Should use alternate masking format
-            expect($content)->toContain('XX-XXX5678');
+            expect($content)->toContain('***-**-5678');
         });
     });
 
@@ -318,7 +325,7 @@ describe('Tax1099Generator', function (): void {
                 ],
             ];
 
-            $result = $this->generator->generate($data);
+            $result = $this->generator->write(taxWorksheetRequest($data));
 
             Storage::disk('custom-tax-disk')->assertExists($result);
         });
@@ -338,7 +345,7 @@ describe('Tax1099Generator', function (): void {
                 ],
             ];
 
-            $result = $this->generator->generate($data);
+            $result = $this->generator->write(taxWorksheetRequest($data));
 
             Storage::disk('local')->assertExists($result);
         });

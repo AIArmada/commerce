@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Resources;
 
-use AIArmada\Affiliates\Models\AffiliateTaxDocument;
-use AIArmada\Affiliates\Services\Tax\TaxDocumentService;
+use AIArmada\Affiliates\Features\Tax\Models\AffiliateTaxDocument;
+use AIArmada\Affiliates\Features\Tax\Api\TaxDocumentApi;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\FilamentAffiliates\Resources\AffiliateTaxDocumentResource\Pages\ListAffiliateTaxDocuments;
@@ -130,12 +130,14 @@ final class AffiliateTaxDocumentResource extends Resource
                     ->label('Mark Sent')
                     ->icon('heroicon-o-paper-airplane')
                     ->authorize(fn (): bool => FilamentPermission::hasAbility('affiliate.update'))
-                    ->action(fn (AffiliateTaxDocument $record): AffiliateTaxDocument => app(TaxDocumentService::class)->markDocumentAsSent($record)),
+                    ->visible(fn (AffiliateTaxDocument $record): bool => $record->isGenerated())
+                    ->action(fn (AffiliateTaxDocument $record) => app(TaxDocumentApi::class)->markSent((string) $record->getKey())),
                 Action::make('regenerate')
                     ->label('Regenerate')
                     ->icon('heroicon-o-arrow-path')
                     ->authorize(fn (): bool => FilamentPermission::hasAbility('affiliate.update'))
-                    ->action(fn (AffiliateTaxDocument $record): AffiliateTaxDocument => app(TaxDocumentService::class)->regenerateDocument($record)),
+                    ->visible(fn (AffiliateTaxDocument $record): bool => ! $record->isSent())
+                    ->action(fn (AffiliateTaxDocument $record) => app(TaxDocumentApi::class)->regenerate((string) $record->getKey())),
             ]);
     }
 

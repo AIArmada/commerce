@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Models;
+namespace AIArmada\Affiliates\Features\Tax\Models;
 
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Enums\TaxDocumentStatus;
 use AIArmada\Affiliates\Models\Concerns\ScopesByAffiliateOwner;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
@@ -101,30 +102,6 @@ class AffiliateTaxDocument extends Model implements Auditable
         return $this->status === TaxDocumentStatus::Failed;
     }
 
-    public function markAsGenerated(?string $path = null): void
-    {
-        $this->update([
-            'status' => TaxDocumentStatus::Generated,
-            'document_path' => $path,
-            'generated_at' => CarbonImmutable::now(),
-        ]);
-    }
-
-    public function markAsSent(): void
-    {
-        $this->update([
-            'status' => TaxDocumentStatus::Sent,
-            'sent_at' => CarbonImmutable::now(),
-        ]);
-    }
-
-    public function markAsFailed(?string $notes = null): void
-    {
-        $this->update([
-            'status' => TaxDocumentStatus::Failed,
-            'notes' => $notes,
-        ]);
-    }
 
     /**
      * @return array<int, string>
