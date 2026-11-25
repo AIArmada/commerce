@@ -1,5 +1,7 @@
 parameters:
     customRulesetUsed: true
+    configDirectories:
+        - %currentWorkingDirectory%/config
     paths:
         - ../src
         - ../config
