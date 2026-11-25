@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\CommissionType;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateAdministration;
 use AIArmada\Affiliates\Features\Upline\Api\UplineApi;
 use AIArmada\Affiliates\Features\Upline\Models\AffiliateUpline;
 use AIArmada\Affiliates\Models\Affiliate;
@@ -520,4 +521,31 @@ describe('UplineApi', function (): void {
             expect($tree['stats'])->toHaveKeys(['direct_recruits', 'total_downline']);
         });
     });
+});
+
+test('administrative parent changes keep the closure tree and counts consistent', function (): void {
+    $admin = app(AffiliateAdministration::class);
+    $root = $this->rootAffiliate;
+    $this->service->add((string) $root->getKey());
+
+    $childId = $admin->create([
+        'code' => 'ADMIN-CHILD', 'name' => 'Child', 'status' => Active::class,
+        'commission_type' => CommissionType::Percentage, 'commission_rate' => 1000,
+        'currency' => 'USD', 'parent_affiliate_id' => $root->id,
+    ]);
+    $grandchildId = $admin->create([
+        'code' => 'ADMIN-GRANDCHILD', 'name' => 'Grandchild', 'status' => Active::class,
+        'commission_type' => CommissionType::Percentage, 'commission_rate' => 1000,
+        'currency' => 'USD', 'parent_affiliate_id' => $childId,
+    ]);
+
+    expect($root->fresh()->total_downline_count)->toBe(2);
+    $admin->update($childId, ['parent_affiliate_id' => null]);
+
+    expect(Affiliate::findOrFail($childId)->parent_affiliate_id)->toBeNull()
+        ->and(Affiliate::findOrFail($childId)->total_downline_count)->toBe(1)
+        ->and(Affiliate::findOrFail($grandchildId)->parent_affiliate_id)->toBe($childId)
+        ->and(Affiliate::findOrFail($grandchildId)->network_depth)->toBe(1)
+        ->and($root->fresh()->total_downline_count)->toBe(0)
+        ->and(AffiliateUpline::query()->where('ancestor_id', $root->id)->where('descendant_id', $grandchildId)->exists())->toBeFalse();
 });

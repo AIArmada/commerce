@@ -8,6 +8,7 @@ use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateAdministration;
 use AIArmada\Affiliates\Features\Identity\Queries\ResolveAffiliateLinkedOwner;
 use AIArmada\Affiliates\Features\Identity\Queries\ValidateAffiliateParentAssignment;
+use AIArmada\Affiliates\Features\Upline\Api\UplineApi;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateRank;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
@@ -20,6 +21,7 @@ final readonly class AdministerAffiliate implements AffiliateAdministration
     public function __construct(
         private ResolveAffiliateLinkedOwner $owners,
         private ValidateAffiliateParentAssignment $parents,
+        private UplineApi $upline,
     ) {}
 
     public function create(array $data): string
@@ -31,6 +33,10 @@ final readonly class AdministerAffiliate implements AffiliateAdministration
             $this->assertCommission($affiliate);
             $this->assertRank($affiliate);
             $affiliate->save();
+
+            if ((bool) config('affiliates.upline.enabled', false) && $affiliate->isCommercialPurpose()) {
+                $this->upline->add((string) $affiliate->getKey(), $affiliate->parent_affiliate_id);
+            }
 
             return (string) $affiliate->getKey();
         }, attempts: 3);
@@ -66,7 +72,12 @@ final readonly class AdministerAffiliate implements AffiliateAdministration
                 $this->assertRank($affiliate);
             }
 
+            $parentChanged = $affiliate->isDirty('parent_affiliate_id');
             $affiliate->save();
+
+            if ($parentChanged && (bool) config('affiliates.upline.enabled', false)) {
+                $this->upline->move($affiliateId, $affiliate->parent_affiliate_id);
+            }
         }, attempts: 3);
     }
 

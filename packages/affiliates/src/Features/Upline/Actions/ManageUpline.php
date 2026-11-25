@@ -16,7 +16,7 @@ final class ManageUpline
         $this->mutate($affiliateId, $sponsorId, false);
     }
 
-    public function move(string $affiliateId, string $sponsorId): void
+    public function move(string $affiliateId, ?string $sponsorId): void
     {
         $this->mutate($affiliateId, $sponsorId, true);
     }
@@ -24,6 +24,11 @@ final class ManageUpline
     private function mutate(string $affiliateId, ?string $sponsorId, bool $move): void
     {
         $connection = (new Affiliate)->getConnection();
+
+        if ($connection !== (new AffiliateUpline)->getConnection()) {
+            throw new LogicException('Affiliate upline mutation requires a shared database connection.');
+        }
+
         $connection->transaction(function () use ($affiliateId, $sponsorId, $move): void {
             $ids = $sponsorId === null ? [$affiliateId] : [$affiliateId, $sponsorId];
             $locked = Affiliate::query()->whereIn('id', $ids)->orderBy('id')->lockForUpdate()->get()->keyBy('id');
@@ -85,7 +90,13 @@ final class ManageUpline
 
     public function remove(string $affiliateId): void
     {
-        (new Affiliate)->getConnection()->transaction(function () use ($affiliateId): void {
+        $connection = (new Affiliate)->getConnection();
+
+        if ($connection !== (new AffiliateUpline)->getConnection()) {
+            throw new LogicException('Affiliate upline removal requires a shared database connection.');
+        }
+
+        $connection->transaction(function () use ($affiliateId): void {
             Affiliate::query()->whereKey($affiliateId)->lockForUpdate()->firstOrFail();
             if (! config('affiliates.upline.enabled', false)) {
                 return;
