@@ -313,7 +313,7 @@ final class RecordAffiliateAward
         $stored = AffiliateConversion::query()->whereKey($committed['conversion_id'])->firstOrFail();
         $result = new AffiliateOutcomeResult(
             $committed['disposition'],
-            AffiliateConversionData::fromModel($stored),
+            $stored->toData(),
         );
 
         // Only creation announces: replays stay silent so a retried award

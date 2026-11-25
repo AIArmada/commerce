@@ -7,7 +7,6 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
-use AIArmada\Affiliates\States\ConversionStatus;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
 
@@ -28,7 +27,7 @@ test('AffiliateConversionData constructor sets properties', function (): void {
         valueMinor: 1200,
         commissionMinor: 120,
         commissionCurrency: 'USD',
-        status: ConversionStatus::fromString(ApprovedConversion::class),
+        status: 'approved',
         occurredAt: $occurredAt,
         ownerType: 'users',
         ownerId: 'owner-1',
@@ -49,14 +48,16 @@ test('AffiliateConversionData constructor sets properties', function (): void {
     expect($data->valueMinor)->toBe(1200);
     expect($data->commissionMinor)->toBe(120);
     expect($data->commissionCurrency)->toBe('USD');
-    expect($data->status->equals(ApprovedConversion::class))->toBeTrue();
-    expect($data->occurredAt)->toBe($occurredAt);
+    expect($data->status)->toBe('approved');
+    expect($data->occurredAt)->toEqual($occurredAt->toImmutable());
+    $occurredAt->addDay();
+    expect($data->occurredAt)->not->toEqual($occurredAt);
     expect($data->ownerType)->toBe('users');
     expect($data->ownerId)->toBe('owner-1');
     expect($data->metadata)->toBe(['key' => 'value']);
 });
 
-test('AffiliateConversionData fromModel creates data from conversion', function (): void {
+test('AffiliateConversionData projects the conversion model', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'AFF1',
         'name' => 'Test Affiliate',
@@ -89,7 +90,7 @@ test('AffiliateConversionData fromModel creates data from conversion', function 
         'owner_id' => 'owner-1',
     ])->save();
 
-    $data = AffiliateConversionData::fromModel($conversion);
+    $data = $conversion->toData();
 
     expect($data->id)->toBe($conversion->id);
     expect($data->affiliateId)->toBe($affiliate->id);
@@ -105,7 +106,7 @@ test('AffiliateConversionData fromModel creates data from conversion', function 
     expect($data->commissionMinor)->toBe(120);
     expect($data->commissionCurrency)->toBe('USD');
     expect($data->conversionType)->toBe('registration');
-    expect($data->status->equals(ApprovedConversion::class))->toBeTrue();
+    expect($data->status)->toBe('approved');
     expect($data->occurredAt)->toBeInstanceOf(CarbonInterface::class);
     expect($data->ownerType)->toBe('users');
     expect($data->ownerId)->toBe('owner-1');
@@ -129,7 +130,7 @@ test('AffiliateConversionData toArray returns array representation', function ()
         commissionMinor: 120,
         commissionCurrency: 'USD',
         conversionType: 'registration',
-        status: ConversionStatus::fromString(ApprovedConversion::class),
+        status: 'approved',
         occurredAt: $occurredAt,
         ownerType: 'users',
         ownerId: 'owner-1',
@@ -138,7 +139,7 @@ test('AffiliateConversionData toArray returns array representation', function ()
 
     $array = $data->toArray();
 
-    expect($array['status'])->toBeInstanceOf(ApprovedConversion::class);
+    expect($array['status'])->toBe('approved');
 
     unset($array['status']);
 
@@ -180,7 +181,7 @@ test('AffiliateConversionData toArray handles null occurredAt', function (): voi
         commissionMinor: 120,
         commissionCurrency: 'USD',
         conversionType: 'registration',
-        status: ConversionStatus::fromString(ApprovedConversion::class),
+        status: 'approved',
         occurredAt: null,
         metadata: ['key' => 'value'],
     );
@@ -188,4 +189,11 @@ test('AffiliateConversionData toArray handles null occurredAt', function (): voi
     $array = $data->toArray();
 
     expect($array['occurred_at'])->toBeNull();
+});
+
+test('conversion snapshot is a final readonly value object', function (): void {
+    $reflection = new ReflectionClass(AffiliateConversionData::class);
+    expect($reflection->isFinal())->toBeTrue()
+        ->and($reflection->isReadOnly())->toBeTrue()
+        ->and((new AffiliateConversionData('id', 'affiliate', 'CODE'))->isPending())->toBeTrue();
 });

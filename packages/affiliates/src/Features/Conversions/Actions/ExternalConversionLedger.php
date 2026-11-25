@@ -8,7 +8,6 @@ use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
 use AIArmada\Affiliates\Actions\Conversions\VoidAffiliateConversion;
 use AIArmada\Affiliates\Contracts\MerchantIdentity;
 use AIArmada\Affiliates\Contracts\MerchantLedger;
-use AIArmada\Affiliates\Data\AffiliateConversionData;
 use AIArmada\Affiliates\Data\ExternalConversion;
 use AIArmada\Affiliates\Data\PostedConversion;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
@@ -108,7 +107,7 @@ final readonly class ExternalConversionLedger implements MerchantLedger
             $this->accounting->handle($conversion);
 
             if (! $conversion->status->equals(RejectedConversion::class)) {
-                $conversionData = AffiliateConversionData::fromModel($conversion);
+                $conversionData = $conversion->toData();
                 $connection->afterCommit(fn () => $this->events->dispatch(new AffiliateConversionRecorded($conversionData)));
             }
 

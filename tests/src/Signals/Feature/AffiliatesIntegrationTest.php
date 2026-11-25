@@ -274,7 +274,7 @@ it('records an affiliate conversion signal for the matching owner property', fun
     ])->save();
 
     Event::dispatch(new AffiliateConversionRecorded(
-        AffiliateConversionData::fromModel($conversion),
+        $conversion->toData(),
     ));
 
     $event = SignalEvent::query()->withoutOwnerScope()->sole();
@@ -467,13 +467,13 @@ it('deduplicates affiliate conversion retries without collapsing distinct conver
     };
 
     $first = $makeConversion('RETRY-REF-1');
-    Event::dispatch(new AffiliateConversionRecorded(AffiliateConversionData::fromModel($first)));
-    Event::dispatch(new AffiliateConversionRecorded(AffiliateConversionData::fromModel($first)));
+    Event::dispatch(new AffiliateConversionRecorded($first->toData()));
+    Event::dispatch(new AffiliateConversionRecorded($first->toData()));
 
     expect(SignalEvent::query()->withoutOwnerScope()->where('event_name', 'affiliate.conversion.recorded')->count())->toBe(1);
 
     $second = $makeConversion('RETRY-REF-2');
-    Event::dispatch(new AffiliateConversionRecorded(AffiliateConversionData::fromModel($second)));
+    Event::dispatch(new AffiliateConversionRecorded($second->toData()));
 
     expect(SignalEvent::query()->withoutOwnerScope()->where('event_name', 'affiliate.conversion.recorded')->count())->toBe(2);
 });

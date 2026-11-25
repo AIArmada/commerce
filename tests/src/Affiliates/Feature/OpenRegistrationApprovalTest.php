@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Actions\Affiliates\CreateAffiliate;
 use AIArmada\Affiliates\Actions\Affiliates\TrackAffiliateVisit;
-use AIArmada\Affiliates\Data\AffiliateConversionData;
 use AIArmada\Affiliates\Enums\FraudSeverity;
 use AIArmada\Affiliates\Enums\FraudSignalStatus;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
@@ -66,7 +65,7 @@ function createOpenTestConversion(Affiliate $affiliate, ?AffiliateAttribution $a
 
 function dispatchRecorded(AffiliateConversion $conversion): void
 {
-    Event::dispatch(new AffiliateConversionRecorded(AffiliateConversionData::fromModel($conversion)));
+    Event::dispatch(new AffiliateConversionRecorded($conversion->toData()));
 }
 
 test('open-pending affiliate activates on first qualifying conversion', function (): void {

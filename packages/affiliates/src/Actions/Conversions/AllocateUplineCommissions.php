@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Actions\Conversions;
 
-use AIArmada\Affiliates\Data\AffiliateConversionData;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
 use AIArmada\Affiliates\Features\Webhooks\Api\WebhookApi;
 use AIArmada\Affiliates\Models\Affiliate;
@@ -109,7 +108,7 @@ final class AllocateUplineCommissions
 
                     $this->accounting->handle($model);
 
-                    $uplineData = AffiliateConversionData::fromModel($model);
+                    $uplineData = $model->toData();
 
                     $shouldDispatchConversion = (bool) config('affiliates.events.dispatch_conversion', true);
 

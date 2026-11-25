@@ -216,7 +216,7 @@ it('records a later valid event after a failure', function (): void {
     ])->save();
 
     Event::dispatch(new AffiliateConversionRecorded(malformedConversionData()));
-    Event::dispatch(new AffiliateConversionRecorded(AffiliateConversionData::fromModel($conversion)));
+    Event::dispatch(new AffiliateConversionRecorded($conversion->toData()));
 
     expect(SignalEvent::query()->withoutOwnerScope()->sole()->event_name)->toBe('affiliate.conversion.recorded')
         ->and(reportedFailures())->toHaveCount(1);
@@ -272,7 +272,7 @@ it('rolls back only the recording attempt inside an outer transaction', function
 
     DB::transaction(function () use ($conversion): void {
         Event::dispatch(new AffiliateConversionRecorded(malformedConversionData()));
-        Event::dispatch(new AffiliateConversionRecorded(AffiliateConversionData::fromModel($conversion)));
+        Event::dispatch(new AffiliateConversionRecorded($conversion->toData()));
     });
 
     expect(SignalEvent::query()->withoutOwnerScope()->sole()->event_name)->toBe('affiliate.conversion.recorded')
@@ -489,7 +489,7 @@ it('rolls recording writes back with an outer transaction rollback', function ()
 
     try {
         DB::transaction(function () use ($conversion): void {
-            Event::dispatch(new AffiliateConversionRecorded(AffiliateConversionData::fromModel($conversion)));
+            Event::dispatch(new AffiliateConversionRecorded($conversion->toData()));
 
             // The recording must exist before the rollback; otherwise this
             // test would also pass if recording silently became a no-op.
@@ -693,7 +693,7 @@ function ingestConversionForAlerts(string $code): ?SignalEvent
     ])->save();
 
     return app(CommerceSignalsRecorder::class)->recordAffiliateConversionRecorded(
-        AffiliateConversionData::fromModel($conversion)
+        $conversion->toData()
     );
 }
 

@@ -247,7 +247,7 @@ final class RecordAffiliateConversion
                 // a prior attempt may never have dispatched (see the
                 // outcome path). Webhooks stay first-write-only: hosts
                 // must not receive duplicate external calls on retry.
-                $existingData = AffiliateConversionData::fromModel($conversion);
+                $existingData = $conversion->toData();
                 $firstConversion ??= $existingData;
 
                 if ($this->shouldDispatch('dispatch_conversion')) {
@@ -264,14 +264,14 @@ final class RecordAffiliateConversion
             $this->accounting->handle($conversion);
 
             if ($conversion->status->equals(RejectedConversion::class)) {
-                $firstConversion ??= AffiliateConversionData::fromModel($conversion);
+                $firstConversion ??= $conversion->toData();
 
                 continue;
             }
 
-            $firstConversion ??= AffiliateConversionData::fromModel($conversion);
+            $firstConversion ??= $conversion->toData();
 
-            $conversionData = AffiliateConversionData::fromModel($conversion);
+            $conversionData = $conversion->toData();
             $conversions[] = $conversionData;
 
             if ($this->shouldDispatch('dispatch_conversion')) {

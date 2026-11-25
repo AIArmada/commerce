@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Models;
 
+use AIArmada\Affiliates\Data\AffiliateConversionData;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\CancelledPayout;
 use AIArmada\Affiliates\States\CompletedPayout;
@@ -128,6 +129,33 @@ class AffiliateConversion extends Model
         'reversed_at',
         'paid_at',
     ];
+
+    public function toData(): AffiliateConversionData
+    {
+        return new AffiliateConversionData(
+            id: (string) $this->getKey(),
+            affiliateId: (string) $this->affiliate_id,
+            affiliateCode: (string) $this->affiliate_code,
+            subjectType: $this->subject_type,
+            subjectKey: $this->subject_key,
+            subjectInstance: $this->subject_instance,
+            subjectTitleSnapshot: $this->subject_title_snapshot,
+            voucherCode: $this->voucher_code,
+            affiliateProgramId: $this->affiliate_program_id,
+            uplineLevels: $this->upline_levels,
+            externalReference: $this->external_reference,
+            subtotalMinor: (int) $this->subtotal_minor,
+            valueMinor: (int) $this->value_minor,
+            commissionMinor: (int) $this->commission_minor,
+            commissionCurrency: (string) $this->commission_currency,
+            conversionType: $this->conversion_type,
+            status: $this->status->getValue(),
+            occurredAt: $this->occurred_at,
+            ownerType: $this->owner_type,
+            ownerId: $this->owner_id,
+            metadata: $this->metadata,
+        );
+    }
 
     public function getTable(): string
     {

@@ -291,7 +291,7 @@ final class RecordAffiliateOutcome
         $stored = AffiliateConversion::query()->whereKey($committed['conversion_id'])->firstOrFail();
         $result = new AffiliateOutcomeResult(
             $committed['disposition'],
-            AffiliateConversionData::fromModel($stored),
+            $stored->toData(),
         );
 
         if ($dispatchEvent) {
