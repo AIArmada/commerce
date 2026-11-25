@@ -14,6 +14,8 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateRank;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Database\Connection;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 use LogicException;
 
@@ -56,13 +58,17 @@ final readonly class QualifyAffiliateRank implements RankQualificationApi
 
     public function assignRank(string $affiliateId, ?string $rankId): void
     {
-        (new Affiliate)->getConnection()->transaction(function () use ($affiliateId, $rankId): void {
+        if ($rankId !== null && ! Str::isUuid($rankId)) {
+            throw new InvalidArgumentException('The selected affiliate rank is not accessible.');
+        }
+
+        $this->connection()->transaction(function () use ($affiliateId, $rankId): void {
             $affiliate = Affiliate::query()->lockForUpdate()->findOrFail($affiliateId);
             if (! $affiliate->isCommercialPurpose()) {
                 throw new InvalidArgumentException('A non-commercial affiliate cannot receive a rank.');
             }
 
-            $rank = $rankId === null ? null : AffiliateRank::query()->forOwner()->lockForUpdate()->findOrFail($rankId);
+            $rank = $rankId === null ? null : $this->query->ranksFor($affiliate)->sharedLock()->findOrFail($rankId);
             $this->change($affiliate, $rank, RankQualificationReason::Manual);
         }, attempts: 3);
     }
@@ -75,13 +81,13 @@ final readonly class QualifyAffiliateRank implements RankQualificationApi
 
     private function process(string $affiliateId, bool $dryRun): bool
     {
-        return (new Affiliate)->getConnection()->transaction(function () use ($affiliateId, $dryRun): bool {
+        return $this->connection()->transaction(function () use ($affiliateId, $dryRun): bool {
             $affiliate = Affiliate::query()->lockForUpdate()->findOrFail($affiliateId);
             if (! $affiliate->isCommercialPurpose()) {
                 return false;
             }
 
-            $rank = $this->query->evaluate($affiliate);
+            $rank = $this->query->evaluate($affiliate, lockRanks: ! $dryRun);
             if ($affiliate->rank_id === $rank?->id) {
                 return false;
             }
@@ -94,18 +100,25 @@ final readonly class QualifyAffiliateRank implements RankQualificationApi
         }, attempts: 3);
     }
 
+    private function connection(): Connection
+    {
+        $connection = (new Affiliate)->getConnection();
+
+        if ($connection !== (new AffiliateRank)->getConnection()
+            || $connection !== (new AffiliateRankHistory)->getConnection()) {
+            throw new LogicException('Rank assignment requires a shared database connection.');
+        }
+
+        return $connection;
+    }
+
     private function change(Affiliate $affiliate, ?AffiliateRank $rank, RankQualificationReason $reason): void
     {
         if ($affiliate->rank_id === $rank?->id) {
             return;
         }
 
-        if ((new AffiliateRank)->getConnection() !== $affiliate->getConnection()
-            || (new AffiliateRankHistory)->getConnection() !== $affiliate->getConnection()) {
-            throw new LogicException('Rank assignment requires a shared database connection.');
-        }
-
-        $oldRank = $affiliate->rank_id === null ? null : AffiliateRank::query()->forOwner()->find($affiliate->rank_id);
+        $oldRank = $affiliate->rank_id === null ? null : $this->query->ranksFor($affiliate)->sharedLock()->find($affiliate->rank_id);
         AffiliateRankHistory::create([
             'affiliate_id' => $affiliate->id,
             'from_rank_id' => $affiliate->rank_id,

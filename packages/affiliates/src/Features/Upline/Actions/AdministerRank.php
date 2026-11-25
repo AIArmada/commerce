@@ -6,6 +6,7 @@ namespace AIArmada\Affiliates\Features\Upline\Actions;
 
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateRankMaintenance;
 use AIArmada\Affiliates\Features\Upline\Api\RankAdministration;
+use AIArmada\Affiliates\Features\Upline\Models\AffiliateRankHistory;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateRank;
 use Illuminate\Support\Arr;
@@ -33,12 +34,19 @@ final readonly class AdministerRank implements RankAdministration
     {
         $connection = (new AffiliateRank)->getConnection();
 
-        if ($connection !== (new Affiliate)->getConnection()) {
+        if ($connection !== (new Affiliate)->getConnection()
+            || $connection !== (new AffiliateRankHistory)->getConnection()) {
             throw new LogicException('Rank removal requires a shared database connection.');
         }
 
         return $connection->transaction(function () use ($rankId): bool {
             $rank = AffiliateRank::query()->forOwner()->lockForUpdate()->findOrFail($rankId);
+            if (AffiliateRankHistory::query()->withoutGlobalScope('affiliate_owner')
+                ->where(static fn ($query) => $query->where('from_rank_id', $rankId)->orWhere('to_rank_id', $rankId))
+                ->exists()) {
+                throw ValidationException::withMessages(['rank' => 'A rank referenced by qualification history cannot be deleted.']);
+            }
+
             $this->affiliates->detachRank($rankId);
 
             if (! $rank->delete()) {

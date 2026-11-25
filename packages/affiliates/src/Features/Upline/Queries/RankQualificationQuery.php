@@ -9,12 +9,13 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateRank;
 use AIArmada\Affiliates\Support\RevenueVolume;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 
 final readonly class RankQualificationQuery
 {
     public function __construct(private UplineApi $upline) {}
 
-    public function evaluate(Affiliate $affiliate): ?AffiliateRank
+    public function evaluate(Affiliate $affiliate, bool $lockRanks = false): ?AffiliateRank
     {
         if (! $affiliate->isCommercialPurpose()) {
             return null;
@@ -22,7 +23,12 @@ final readonly class RankQualificationQuery
 
         $from = CarbonImmutable::now()->subDays(30);
         $metrics = [];
-        foreach (AffiliateRank::query()->forOwner()->orderByDesc('level')->orderBy('id')->get() as $rank) {
+        $ranks = $this->ranksFor($affiliate)->orderByDesc('level')->orderBy('id');
+        if ($lockRanks) {
+            $ranks->sharedLock();
+        }
+
+        foreach ($ranks->get() as $rank) {
             $currency = $rank->currencyCode();
             $values = $metrics[$currency] ??= $this->calculateMetrics($affiliate, $from, $currency);
 
@@ -32,6 +38,18 @@ final readonly class RankQualificationQuery
         }
 
         return null;
+    }
+
+    /** @return Builder<AffiliateRank> */
+    public function ranksFor(Affiliate $affiliate): Builder
+    {
+        $query = AffiliateRank::query()->forOwner();
+
+        if (config('affiliates.owner.enabled', false)) {
+            $query->where('owner_type', $affiliate->owner_type)->where('owner_id', $affiliate->owner_id);
+        }
+
+        return $query;
     }
 
     /** @return array{personal_sales: int, team_sales: int, active_downlines: int, lifetime_value: int} */

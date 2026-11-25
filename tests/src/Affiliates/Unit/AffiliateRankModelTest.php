@@ -5,6 +5,8 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Features\Upline\Api\RankAdministration;
 use AIArmada\Affiliates\Features\Upline\Api\RankDirectory;
+use AIArmada\Affiliates\Features\Upline\Api\RankQualificationApi;
+use AIArmada\Affiliates\Features\Upline\Models\AffiliateRankHistory;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateRank;
 use AIArmada\Affiliates\States\Active;
@@ -324,6 +326,30 @@ describe('AffiliateRank Model', function (): void {
         expect(app(RankAdministration::class)->delete((string) $rank->getKey()))->toBeTrue()
             ->and($rank->fresh())->toBeNull()
             ->and($affiliate->fresh()->rank_id)->toBeNull();
+    });
+
+    it('preserves historical ranks when deletion is requested', function (): void {
+        $rank = AffiliateRank::create([
+            'name' => 'Historical',
+            'slug' => 'historical',
+            'level' => 1,
+            'commission_rate_basis_points' => 1000,
+        ]);
+        $affiliate = Affiliate::create([
+            'code' => 'HISTORY-RANK-' . uniqid(),
+            'name' => 'Historical affiliate',
+            'status' => Active::class,
+            'commission_type' => CommissionType::Percentage,
+            'commission_rate' => 1000,
+            'currency' => 'USD',
+        ]);
+        app(RankQualificationApi::class)->assignRank((string) $affiliate->getKey(), (string) $rank->getKey());
+        app(RankQualificationApi::class)->assignRank((string) $affiliate->getKey(), null);
+
+        expect(fn () => app(RankAdministration::class)->delete((string) $rank->getKey()))
+            ->toThrow(ValidationException::class)
+            ->and($rank->fresh())->not->toBeNull()
+            ->and(AffiliateRankHistory::query()->where('from_rank_id', $rank->id)->count())->toBe(1);
     });
 
     it('validates rank administration without persisting invalid thresholds or rates', function (): void {

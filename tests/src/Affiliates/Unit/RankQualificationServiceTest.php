@@ -45,7 +45,6 @@ describe('RankQualificationApi', function (): void {
                 'min_personal_sales' => 100000,
                 'min_team_sales' => 500000,
                 'commission_rate_basis_points' => 0,
-                'commission_rate_basis_points' => 0,
                 'min_active_downlines' => 10,
                 'currency' => 'USD',
             ]);
@@ -64,7 +63,6 @@ describe('RankQualificationApi', function (): void {
                 'min_personal_sales' => 0,
                 'min_team_sales' => 0,
                 'commission_rate_basis_points' => 0,
-                'commission_rate_basis_points' => 0,
                 'min_active_downlines' => 0,
                 'currency' => 'USD',
             ]);
@@ -76,7 +74,6 @@ describe('RankQualificationApi', function (): void {
                 'level' => 2,
                 'min_personal_sales' => 100000,
                 'min_team_sales' => 500000,
-                'commission_rate_basis_points' => 0,
                 'commission_rate_basis_points' => 0,
                 'min_active_downlines' => 5,
                 'currency' => 'USD',
@@ -96,7 +93,6 @@ describe('RankQualificationApi', function (): void {
                 'level' => 1,
                 'min_personal_sales' => 5000,
                 'min_team_sales' => 0,
-                'commission_rate_basis_points' => 0,
                 'commission_rate_basis_points' => 0,
                 'min_active_downlines' => 0,
                 'currency' => 'USD',
@@ -309,6 +305,13 @@ describe('RankQualificationApi', function (): void {
     });
 
     describe('assignRank', function (): void {
+        test('rejects malformed rank identifiers before querying', function (): void {
+            expect(fn () => $this->service->assignRank((string) $this->affiliate->getKey(), 'invalid-rank'))
+                ->toThrow(InvalidArgumentException::class)
+                ->and($this->affiliate->fresh()->rank_id)->toBeNull()
+                ->and(AffiliateRankHistory::query()->count())->toBe(0);
+        });
+
         test('manually assigns rank', function (): void {
             $rank = AffiliateRank::create([
                 'name' => 'Manual Rank',
