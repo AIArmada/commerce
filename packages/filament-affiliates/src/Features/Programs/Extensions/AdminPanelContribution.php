@@ -25,15 +25,11 @@ final class AdminPanelContribution implements ContributionContract
 
     public function pages(array $features): array
     {
-        return array_values(array_filter([
-
-        ], static fn (?string $class): bool => $class !== null));
+        return [];
     }
 
     public function widgets(array $features): array
     {
-        return array_values(array_filter([
-
-        ], static fn (?string $class): bool => $class !== null));
+        return [];
     }
 }

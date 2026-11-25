@@ -48,6 +48,7 @@ function fraudSignalReference(AffiliateFraudSignal $signal): FraudSignalReferenc
 
 beforeEach(function (): void {
     app()->bind(FraudSignalReader::class, FraudSignalQuery::class);
+    (new \AIArmada\Affiliates\Features\Programs\FeatureModule)->register(app());
     Schema::dropIfExists('affiliate_fraud_signals');
     Schema::dropIfExists('affiliate_program_memberships');
     Schema::dropIfExists('affiliate_program_tiers');
@@ -104,6 +105,7 @@ beforeEach(function (): void {
         $table->timestamp('approved_at')->nullable();
         $table->timestamp('expires_at')->nullable();
         $table->foreignUuid('approved_by')->nullable();
+        $table->unique(['affiliate_id', 'program_id']);
         $table->timestamp('rejected_at')->nullable();
         $table->timestamp('suspended_at')->nullable();
         $table->timestamps();

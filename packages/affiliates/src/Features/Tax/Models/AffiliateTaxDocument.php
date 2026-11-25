@@ -25,7 +25,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string $currency
  * @property string|null $document_path
  * @property string|null $notes
- * @property Carbon|null $generated_at
+ * @property \Carbon\CarbonImmutable|null $generated_at
  * @property Carbon|null $sent_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at

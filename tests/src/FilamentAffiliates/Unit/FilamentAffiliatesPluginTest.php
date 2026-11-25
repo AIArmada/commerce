@@ -49,50 +49,68 @@ it('registers affiliate resources, pages, and widgets', function (): void {
     // @phpstan-ignore method.notFound
     $panel->shouldReceive('resources')
         ->once()
-        ->with([
-            AffiliateResource::class,
-            AffiliateConversionResource::class,
-            AffiliatePayoutResource::class,
-            AffiliateProgramResource::class,
-            AffiliateCommissionTemplateResource::class,
-            AffiliateVolumeTierResource::class,
-            AffiliateLinkResource::class,
-            AffiliateTouchpointResource::class,
-            AffiliateRankResource::class,
-            AffiliateRankHistoryResource::class,
-            AffiliateSupportTicketResource::class,
-            AffiliateTaxDocumentResource::class,
-            AffiliateUplineResource::class,
-            AffiliateFraudSignalResource::class,
-            AffiliateCreativeResource::class,
-        ])
+        ->with(Mockery::on(static function (array $actual): bool {
+            $expected = [
+                AffiliateResource::class,
+                AffiliateConversionResource::class,
+                AffiliatePayoutResource::class,
+                AffiliateProgramResource::class,
+                AffiliateCommissionTemplateResource::class,
+                AffiliateVolumeTierResource::class,
+                AffiliateLinkResource::class,
+                AffiliateTouchpointResource::class,
+                AffiliateRankResource::class,
+                AffiliateRankHistoryResource::class,
+                AffiliateSupportTicketResource::class,
+                AffiliateTaxDocumentResource::class,
+                AffiliateUplineResource::class,
+                AffiliateFraudSignalResource::class,
+                AffiliateCreativeResource::class,
+            ];
+            sort($actual);
+            sort($expected);
+
+            return $actual === $expected;
+        }))
         ->andReturnSelf();
 
     // @phpstan-ignore method.notFound
     $panel->shouldReceive('pages')
         ->once()
-        ->with([
-            ManageAffiliateCommissionSettings::class,
-            FraudReviewPage::class,
-            PayoutBatchPage::class,
-            ManageAffiliatePayoutSettings::class,
-            PerformanceBonusesPage::class,
-            ManageAffiliateBonusSettings::class,
-            ReportsPage::class,
-        ])
+        ->with(Mockery::on(static function (array $actual): bool {
+            $expected = [
+                ManageAffiliateCommissionSettings::class,
+                FraudReviewPage::class,
+                PayoutBatchPage::class,
+                ManageAffiliatePayoutSettings::class,
+                PerformanceBonusesPage::class,
+                ManageAffiliateBonusSettings::class,
+                ReportsPage::class,
+            ];
+            sort($actual);
+            sort($expected);
+
+            return $actual === $expected;
+        }))
         ->andReturnSelf();
 
     // @phpstan-ignore method.notFound
     $panel->shouldReceive('widgets')
         ->once()
-        ->with([
-            AffiliateStatsWidget::class,
-            PerformanceOverviewWidget::class,
-            RealTimeActivityWidget::class,
-            FraudAlertWidget::class,
-            PayoutQueueWidget::class,
-            UplineVisualizationWidget::class,
-        ])
+        ->with(Mockery::on(static function (array $actual): bool {
+            $expected = [
+                AffiliateStatsWidget::class,
+                PerformanceOverviewWidget::class,
+                RealTimeActivityWidget::class,
+                FraudAlertWidget::class,
+                PayoutQueueWidget::class,
+                UplineVisualizationWidget::class,
+            ];
+            sort($actual);
+            sort($expected);
+
+            return $actual === $expected;
+        }))
         ->andReturnSelf();
 
     // @phpstan-ignore argument.type
@@ -108,41 +126,59 @@ it('skips payout and program admin surfaces when commission tracking is disabled
     // @phpstan-ignore method.notFound
     $panel->shouldReceive('resources')
         ->once()
-        ->with([
-            AffiliateResource::class,
-            AffiliateConversionResource::class,
-            AffiliateLinkResource::class,
-            AffiliateTouchpointResource::class,
-            AffiliateRankResource::class,
-            AffiliateRankHistoryResource::class,
-            AffiliateSupportTicketResource::class,
-            AffiliateTaxDocumentResource::class,
-            AffiliateUplineResource::class,
-            AffiliateFraudSignalResource::class,
-            AffiliateCreativeResource::class,
-        ])
+        ->with(Mockery::on(static function (array $actual): bool {
+            $expected = [
+                AffiliateResource::class,
+                AffiliateConversionResource::class,
+                AffiliateLinkResource::class,
+                AffiliateTouchpointResource::class,
+                AffiliateRankResource::class,
+                AffiliateRankHistoryResource::class,
+                AffiliateSupportTicketResource::class,
+                AffiliateTaxDocumentResource::class,
+                AffiliateUplineResource::class,
+                AffiliateFraudSignalResource::class,
+                AffiliateCreativeResource::class,
+            ];
+            sort($actual);
+            sort($expected);
+
+            return $actual === $expected;
+        }))
         ->andReturnSelf();
 
     // @phpstan-ignore method.notFound
     $panel->shouldReceive('pages')
         ->once()
-        ->with([
-            ManageAffiliateCommissionSettings::class,
-            FraudReviewPage::class,
-            ReportsPage::class,
-        ])
+        ->with(Mockery::on(static function (array $actual): bool {
+            $expected = [
+                ManageAffiliateCommissionSettings::class,
+                FraudReviewPage::class,
+                ReportsPage::class,
+            ];
+            sort($actual);
+            sort($expected);
+
+            return $actual === $expected;
+        }))
         ->andReturnSelf();
 
     // @phpstan-ignore method.notFound
     $panel->shouldReceive('widgets')
         ->once()
-        ->with([
-            AffiliateStatsWidget::class,
-            PerformanceOverviewWidget::class,
-            RealTimeActivityWidget::class,
-            FraudAlertWidget::class,
-            UplineVisualizationWidget::class,
-        ])
+        ->with(Mockery::on(static function (array $actual): bool {
+            $expected = [
+                AffiliateStatsWidget::class,
+                PerformanceOverviewWidget::class,
+                RealTimeActivityWidget::class,
+                FraudAlertWidget::class,
+                UplineVisualizationWidget::class,
+            ];
+            sort($actual);
+            sort($expected);
+
+            return $actual === $expected;
+        }))
         ->andReturnSelf();
 
     // @phpstan-ignore argument.type
@@ -158,49 +194,67 @@ it('skips link admin surface when links feature is disabled', function (): void 
     // @phpstan-ignore method.notFound
     $panel->shouldReceive('resources')
         ->once()
-        ->with([
-            AffiliateResource::class,
-            AffiliateConversionResource::class,
-            AffiliatePayoutResource::class,
-            AffiliateProgramResource::class,
-            AffiliateCommissionTemplateResource::class,
-            AffiliateVolumeTierResource::class,
-            AffiliateTouchpointResource::class,
-            AffiliateRankResource::class,
-            AffiliateRankHistoryResource::class,
-            AffiliateSupportTicketResource::class,
-            AffiliateTaxDocumentResource::class,
-            AffiliateUplineResource::class,
-            AffiliateFraudSignalResource::class,
-            AffiliateCreativeResource::class,
-        ])
+        ->with(Mockery::on(static function (array $actual): bool {
+            $expected = [
+                AffiliateResource::class,
+                AffiliateConversionResource::class,
+                AffiliatePayoutResource::class,
+                AffiliateProgramResource::class,
+                AffiliateCommissionTemplateResource::class,
+                AffiliateVolumeTierResource::class,
+                AffiliateTouchpointResource::class,
+                AffiliateRankResource::class,
+                AffiliateRankHistoryResource::class,
+                AffiliateSupportTicketResource::class,
+                AffiliateTaxDocumentResource::class,
+                AffiliateUplineResource::class,
+                AffiliateFraudSignalResource::class,
+                AffiliateCreativeResource::class,
+            ];
+            sort($actual);
+            sort($expected);
+
+            return $actual === $expected;
+        }))
         ->andReturnSelf();
 
     // @phpstan-ignore method.notFound
     $panel->shouldReceive('pages')
         ->once()
-        ->with([
-            ManageAffiliateCommissionSettings::class,
-            FraudReviewPage::class,
-            PayoutBatchPage::class,
-            ManageAffiliatePayoutSettings::class,
-            PerformanceBonusesPage::class,
-            ManageAffiliateBonusSettings::class,
-            ReportsPage::class,
-        ])
+        ->with(Mockery::on(static function (array $actual): bool {
+            $expected = [
+                ManageAffiliateCommissionSettings::class,
+                FraudReviewPage::class,
+                PayoutBatchPage::class,
+                ManageAffiliatePayoutSettings::class,
+                PerformanceBonusesPage::class,
+                ManageAffiliateBonusSettings::class,
+                ReportsPage::class,
+            ];
+            sort($actual);
+            sort($expected);
+
+            return $actual === $expected;
+        }))
         ->andReturnSelf();
 
     // @phpstan-ignore method.notFound
     $panel->shouldReceive('widgets')
         ->once()
-        ->with([
-            AffiliateStatsWidget::class,
-            PerformanceOverviewWidget::class,
-            RealTimeActivityWidget::class,
-            FraudAlertWidget::class,
-            PayoutQueueWidget::class,
-            UplineVisualizationWidget::class,
-        ])
+        ->with(Mockery::on(static function (array $actual): bool {
+            $expected = [
+                AffiliateStatsWidget::class,
+                PerformanceOverviewWidget::class,
+                RealTimeActivityWidget::class,
+                FraudAlertWidget::class,
+                PayoutQueueWidget::class,
+                UplineVisualizationWidget::class,
+            ];
+            sort($actual);
+            sort($expected);
+
+            return $actual === $expected;
+        }))
         ->andReturnSelf();
 
     // @phpstan-ignore argument.type
@@ -216,48 +270,66 @@ it('skips commission template admin surface when commission management is disabl
     // @phpstan-ignore method.notFound
     $panel->shouldReceive('resources')
         ->once()
-        ->with([
-            AffiliateResource::class,
-            AffiliateConversionResource::class,
-            AffiliatePayoutResource::class,
-            AffiliateProgramResource::class,
-            AffiliateVolumeTierResource::class,
-            AffiliateLinkResource::class,
-            AffiliateTouchpointResource::class,
-            AffiliateRankResource::class,
-            AffiliateRankHistoryResource::class,
-            AffiliateSupportTicketResource::class,
-            AffiliateTaxDocumentResource::class,
-            AffiliateUplineResource::class,
-            AffiliateFraudSignalResource::class,
-            AffiliateCreativeResource::class,
-        ])
+        ->with(Mockery::on(static function (array $actual): bool {
+            $expected = [
+                AffiliateResource::class,
+                AffiliateConversionResource::class,
+                AffiliatePayoutResource::class,
+                AffiliateProgramResource::class,
+                AffiliateVolumeTierResource::class,
+                AffiliateLinkResource::class,
+                AffiliateTouchpointResource::class,
+                AffiliateRankResource::class,
+                AffiliateRankHistoryResource::class,
+                AffiliateSupportTicketResource::class,
+                AffiliateTaxDocumentResource::class,
+                AffiliateUplineResource::class,
+                AffiliateFraudSignalResource::class,
+                AffiliateCreativeResource::class,
+            ];
+            sort($actual);
+            sort($expected);
+
+            return $actual === $expected;
+        }))
         ->andReturnSelf();
 
     // @phpstan-ignore method.notFound
     $panel->shouldReceive('pages')
         ->once()
-        ->with([
-            ManageAffiliateCommissionSettings::class,
-            FraudReviewPage::class,
-            PayoutBatchPage::class,
-            ManageAffiliatePayoutSettings::class,
-            PerformanceBonusesPage::class,
-            ReportsPage::class,
-        ])
+        ->with(Mockery::on(static function (array $actual): bool {
+            $expected = [
+                ManageAffiliateCommissionSettings::class,
+                FraudReviewPage::class,
+                PayoutBatchPage::class,
+                ManageAffiliatePayoutSettings::class,
+                PerformanceBonusesPage::class,
+                ReportsPage::class,
+            ];
+            sort($actual);
+            sort($expected);
+
+            return $actual === $expected;
+        }))
         ->andReturnSelf();
 
     // @phpstan-ignore method.notFound
     $panel->shouldReceive('widgets')
         ->once()
-        ->with([
-            AffiliateStatsWidget::class,
-            PerformanceOverviewWidget::class,
-            RealTimeActivityWidget::class,
-            FraudAlertWidget::class,
-            PayoutQueueWidget::class,
-            UplineVisualizationWidget::class,
-        ])
+        ->with(Mockery::on(static function (array $actual): bool {
+            $expected = [
+                AffiliateStatsWidget::class,
+                PerformanceOverviewWidget::class,
+                RealTimeActivityWidget::class,
+                FraudAlertWidget::class,
+                PayoutQueueWidget::class,
+                UplineVisualizationWidget::class,
+            ];
+            sort($actual);
+            sort($expected);
+
+            return $actual === $expected;
+        }))
         ->andReturnSelf();
 
     // @phpstan-ignore argument.type
@@ -299,48 +371,66 @@ it('skips support and compliance admin surfaces when support compliance is disab
     // @phpstan-ignore method.notFound
     $panel->shouldReceive('resources')
         ->once()
-        ->with([
-            AffiliateResource::class,
-            AffiliateConversionResource::class,
-            AffiliatePayoutResource::class,
-            AffiliateProgramResource::class,
-            AffiliateCommissionTemplateResource::class,
-            AffiliateVolumeTierResource::class,
-            AffiliateLinkResource::class,
-            AffiliateTouchpointResource::class,
-            AffiliateRankResource::class,
-            AffiliateRankHistoryResource::class,
-            AffiliateUplineResource::class,
-            AffiliateFraudSignalResource::class,
-            AffiliateCreativeResource::class,
-        ])
+        ->with(Mockery::on(static function (array $actual): bool {
+            $expected = [
+                AffiliateResource::class,
+                AffiliateConversionResource::class,
+                AffiliatePayoutResource::class,
+                AffiliateProgramResource::class,
+                AffiliateCommissionTemplateResource::class,
+                AffiliateVolumeTierResource::class,
+                AffiliateLinkResource::class,
+                AffiliateTouchpointResource::class,
+                AffiliateRankResource::class,
+                AffiliateRankHistoryResource::class,
+                AffiliateUplineResource::class,
+                AffiliateFraudSignalResource::class,
+                AffiliateCreativeResource::class,
+            ];
+            sort($actual);
+            sort($expected);
+
+            return $actual === $expected;
+        }))
         ->andReturnSelf();
 
     // @phpstan-ignore method.notFound
     $panel->shouldReceive('pages')
         ->once()
-        ->with([
-            ManageAffiliateCommissionSettings::class,
-            FraudReviewPage::class,
-            PayoutBatchPage::class,
-            ManageAffiliatePayoutSettings::class,
-            PerformanceBonusesPage::class,
-            ManageAffiliateBonusSettings::class,
-            ReportsPage::class,
-        ])
+        ->with(Mockery::on(static function (array $actual): bool {
+            $expected = [
+                ManageAffiliateCommissionSettings::class,
+                FraudReviewPage::class,
+                PayoutBatchPage::class,
+                ManageAffiliatePayoutSettings::class,
+                PerformanceBonusesPage::class,
+                ManageAffiliateBonusSettings::class,
+                ReportsPage::class,
+            ];
+            sort($actual);
+            sort($expected);
+
+            return $actual === $expected;
+        }))
         ->andReturnSelf();
 
     // @phpstan-ignore method.notFound
     $panel->shouldReceive('widgets')
         ->once()
-        ->with([
-            AffiliateStatsWidget::class,
-            PerformanceOverviewWidget::class,
-            RealTimeActivityWidget::class,
-            FraudAlertWidget::class,
-            PayoutQueueWidget::class,
-            UplineVisualizationWidget::class,
-        ])
+        ->with(Mockery::on(static function (array $actual): bool {
+            $expected = [
+                AffiliateStatsWidget::class,
+                PerformanceOverviewWidget::class,
+                RealTimeActivityWidget::class,
+                FraudAlertWidget::class,
+                PayoutQueueWidget::class,
+                UplineVisualizationWidget::class,
+            ];
+            sort($actual);
+            sort($expected);
+
+            return $actual === $expected;
+        }))
         ->andReturnSelf();
 
     // @phpstan-ignore argument.type
