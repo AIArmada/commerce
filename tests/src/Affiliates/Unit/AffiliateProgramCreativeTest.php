@@ -251,7 +251,7 @@ test('deleting a program removes its creative media and files', function (): voi
     $media = $creative->addMedia(UploadedFile::fake()->image('program.png'))->toMediaCollection('creative_asset');
     $path = $media->getPathRelativeToRoot();
 
-    $program->delete();
+    app(\AIArmada\Affiliates\Features\Programs\Api\ProgramAdministration::class)->delete($program->id);
 
     expect($creative->fresh())->toBeNull()
         ->and($media->fresh())->toBeNull();

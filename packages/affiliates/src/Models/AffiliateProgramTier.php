@@ -94,14 +94,6 @@ class AffiliateProgramTier extends Model implements Auditable
         return mb_strtoupper((string) config('affiliates.currency.default', 'MYR'));
     }
 
-    protected static function booted(): void
-    {
-        static::deleting(function (self $tier): void {
-            // Set tier_id to null on memberships when tier is deleted
-            $tier->memberships()->update(['tier_id' => null]);
-        });
-    }
-
     protected function getActivityLogName(): string
     {
         return 'affiliates';

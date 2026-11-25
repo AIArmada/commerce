@@ -7,6 +7,7 @@ namespace AIArmada\FilamentAffiliates\Features\Programs\EntryPoints\Filament\Res
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\ProgramVisibility;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramAdministration;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
@@ -265,7 +266,12 @@ final class AffiliateProgramResource extends Resource
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->action(function ($records): void {
+                            foreach ($records as $record) {
+                                app(ProgramAdministration::class)->delete((string) $record->getKey());
+                            }
+                        }),
                 ]),
             ]);
     }

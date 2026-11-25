@@ -1,0 +1,100 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Affiliates\Features\Programs\Actions;
+
+use AIArmada\Affiliates\Features\Programs\Api\ProgramAdministration;
+use AIArmada\Affiliates\Models\AffiliateCommissionPromotion;
+use AIArmada\Affiliates\Models\AffiliateCommissionRule;
+use AIArmada\Affiliates\Models\AffiliateProgram;
+use AIArmada\Affiliates\Models\AffiliateProgramCreative;
+use AIArmada\Affiliates\Models\AffiliateProgramMembership;
+use AIArmada\Affiliates\Models\AffiliateProgramTier;
+use AIArmada\Affiliates\Models\AffiliateVolumeTier;
+use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use Illuminate\Support\Arr;
+use RuntimeException;
+
+final readonly class AdministerProgram implements ProgramAdministration
+{
+    public function create(array $data): string
+    {
+        return (new AffiliateProgram)->getConnection()->transaction(function () use ($data): string {
+            $program = new AffiliateProgram($this->attributes($data));
+
+            if ((bool) config('affiliates.owner.enabled', false)) {
+                $owner = OwnerContext::resolveConfigured(AffiliateProgram::ownerScopeConfig());
+                OwnerContext::assertResolvedOrExplicitGlobal($owner, 'Program creation requires an owner context or explicit global context.');
+
+                if ($owner !== null) {
+                    $program->owner()->associate($owner);
+                }
+            }
+
+            $program->save();
+
+            return (string) $program->getKey();
+        }, attempts: 3);
+    }
+
+    public function update(string $programId, array $data): void
+    {
+        (new AffiliateProgram)->getConnection()->transaction(function () use ($programId, $data): void {
+            $this->lockProgram($programId)->update($this->attributes($data));
+        }, attempts: 3);
+    }
+
+    public function delete(string $programId): void
+    {
+        (new AffiliateProgram)->getConnection()->transaction(function () use ($programId): void {
+            $program = $this->lockProgram($programId);
+            $connection = $program->getConnection();
+
+            foreach ([new AffiliateProgramMembership, new AffiliateProgramTier, new AffiliateProgramCreative, new AffiliateCommissionRule, new AffiliateCommissionPromotion, new AffiliateVolumeTier] as $model) {
+                if ($model->getConnection() !== $connection) {
+                    throw new RuntimeException('Program deletion requires a shared database connection.');
+                }
+            }
+
+            AffiliateProgramMembership::query()->withoutGlobalScope('affiliate_owner')->where('program_id', $programId)->delete();
+            AffiliateProgramTier::query()->withoutGlobalScope('program_owner')->where('program_id', $programId)->delete();
+            AffiliateCommissionRule::query()->withoutGlobalScope('program_owner')->where('program_id', $programId)->delete();
+            AffiliateCommissionPromotion::query()->withoutGlobalScope('program_owner')->where('program_id', $programId)->delete();
+            AffiliateVolumeTier::query()->withoutGlobalScope('program_owner')->where('program_id', $programId)->delete();
+
+            AffiliateProgramCreative::query()
+                ->withoutGlobalScope('program_owner')
+                ->where('program_id', $programId)
+                ->eachById(function (AffiliateProgramCreative $creative): void {
+                    $creative->delete();
+                });
+
+            $program->delete();
+            app(CommissionRuleEngine::class)->clearCache();
+        }, attempts: 3);
+    }
+
+    private function lockProgram(string $programId): AffiliateProgram
+    {
+        if ((bool) config('affiliates.owner.enabled', false)) {
+            OwnerWriteGuard::findOrFailForOwner(AffiliateProgram::class, $programId);
+        }
+
+        return AffiliateProgram::query()->lockForUpdate()->findOrFail($programId);
+    }
+
+    /** @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    private function attributes(array $data): array
+    {
+        return Arr::only($data, [
+            'name', 'slug', 'description', 'status', 'starts_at', 'ends_at', 'requires_approval',
+            'visibility', 'default_commission_rate_basis_points', 'paused_at', 'archived_at',
+            'commission_type', 'currency', 'cookie_lifetime_days', 'terms_url', 'eligibility_rules', 'metadata',
+        ]);
+    }
+}

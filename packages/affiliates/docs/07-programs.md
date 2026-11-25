@@ -9,11 +9,11 @@ Programs allow you to create structured affiliate offerings with different commi
 ## Creating Programs
 
 ```php
-use AIArmada\Affiliates\Models\AffiliateProgram;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramAdministration;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\ProgramVisibility;
 
-$program = AffiliateProgram::create([
+$programId = app(ProgramAdministration::class)->create([
     'name' => 'Premium Partners',
     'slug' => 'premium-partners',
     'description' => 'Our exclusive partner program with higher commissions',
@@ -53,11 +53,10 @@ ProgramStatus::Archived;  // Permanently closed
 Tiers allow progressive commission rates based on performance:
 
 ```php
-use AIArmada\Affiliates\Models\AffiliateProgramTier;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramTierAdministration;
 
 // Bronze tier (default)
-AffiliateProgramTier::create([
-    'program_id' => $program->id,
+app(ProgramTierAdministration::class)->create($programId, [
     'name' => 'Bronze',
     'level' => 1,
     'commission_rate_basis_points' => 1000, // 10%
@@ -66,8 +65,7 @@ AffiliateProgramTier::create([
 ]);
 
 // Silver tier
-AffiliateProgramTier::create([
-    'program_id' => $program->id,
+app(ProgramTierAdministration::class)->create($programId, [
     'name' => 'Silver',
     'level' => 2,
     'commission_rate_basis_points' => 1250, // 12.5%
@@ -76,8 +74,7 @@ AffiliateProgramTier::create([
 ]);
 
 // Gold tier
-AffiliateProgramTier::create([
-    'program_id' => $program->id,
+$goldTierId = app(ProgramTierAdministration::class)->create($programId, [
     'name' => 'Gold',
     'level' => 3,
     'commission_rate_basis_points' => 1500, // 15%
@@ -97,7 +94,7 @@ use AIArmada\Affiliates\Features\Programs\Api\ProgramTierManagement;
 use AIArmada\Affiliates\Features\Programs\Api\MerchantCatalog;
 
 // Join (enroll). Throws ProgramEnrollmentDenied when ineligible or closed.
-$membership = app(ProgramEnrollment::class)->join($affiliate->id, $program->id);
+$membership = app(ProgramEnrollment::class)->join($affiliate->id, $programId);
 
 if ($membership !== null) {
     app(\AIArmada\Affiliates\Features\Programs\Api\MembershipReviewApi::class)->approve($membership->id, 'admin-1');
@@ -106,8 +103,8 @@ if ($membership !== null) {
 // Program listings
 app(MerchantCatalog::class)->availablePrograms();              // list of program summaries
 app(ProgramMembershipReader::class)->programIds($affiliate->id);    // list of program IDs
-app(ProgramMembershipReader::class)->find($affiliate->id, $program->id)?->active ?? false;      // bool
-app(ProgramMembershipReader::class)->find($affiliate->id, $program->id); // ?MembershipRecord
+app(ProgramMembershipReader::class)->find($affiliate->id, $programId)?->active ?? false;      // bool
+app(ProgramMembershipReader::class)->find($affiliate->id, $programId); // ?MembershipRecord
 ```
 
 ## Membership Statuses
@@ -129,7 +126,7 @@ Provide affiliates with promotional materials:
 use AIArmada\Affiliates\Models\AffiliateProgramCreative;
 
 $creative = AffiliateProgramCreative::create([
-    'program_id' => $program->id,
+    'program_id' => $programId,
     'name' => 'Summer Sale Banner',
     'type' => 'banner',
     'tracking_code' => 'SUMMER-SALE',
@@ -168,13 +165,16 @@ use AIArmada\Affiliates\Features\Programs\Api\MerchantCatalog;
 $programs = app(MerchantCatalog::class)->availablePrograms();
 
 // Enroll affiliate
-$membership = app(ProgramEnrollment::class)->join($affiliate->id, $program->id);
+$membership = app(ProgramEnrollment::class)->join($affiliate->id, $programId);
+
+// Suspend administratively
+app(\AIArmada\Affiliates\Features\Programs\Api\MembershipAdministration::class)->suspend($membership->id);
 
 // Leave
-app(ProgramEnrollment::class)->leave($affiliate->id, $program->id);
+app(ProgramEnrollment::class)->leave($affiliate->id, $programId);
 
 // Upgrade tier — takes affiliate + program + tier, not the membership
-app(ProgramTierManagement::class)->upgrade($affiliate->id, $program->id, $goldTier->id);
+app(ProgramTierManagement::class)->upgrade($affiliate->id, $programId, $goldTierId);
 
 // Get affiliate's memberships
 $memberships = AffiliateProgramMembership::query()
@@ -219,7 +219,7 @@ $template = AffiliateCommissionTemplate::createMlm(
 $template->applyToAffiliate($affiliate);
 
 // Apply template to program
-$template->applyToProgram($program);
+$template->applyToProgram(\AIArmada\Affiliates\Models\AffiliateProgram::query()->findOrFail($programId));
 ```
 
 ## Volume Tiers
@@ -232,7 +232,7 @@ affiliate-scoped.
 use AIArmada\Affiliates\Models\AffiliateVolumeTier;
 
 AffiliateVolumeTier::create([
-    'program_id' => $program->id,
+    'program_id' => $programId,
     'name' => 'Base',
     'period' => 'monthly',
     'currency' => 'MYR',
@@ -242,7 +242,7 @@ AffiliateVolumeTier::create([
 ]);
 
 AffiliateVolumeTier::create([
-    'program_id' => $program->id,
+    'program_id' => $programId,
     'name' => 'Scale',
     'period' => 'monthly',
     'currency' => 'MYR',
@@ -262,7 +262,7 @@ use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Enums\CommissionType;
 
 AffiliateCommissionRule::create([
-    'program_id' => $program->id,
+    'program_id' => $programId,
     'name' => 'Electronics boost',
     'rule_type' => CommissionRuleType::Category,
     'priority' => 10,
@@ -288,7 +288,7 @@ use AIArmada\Affiliates\Models\AffiliateCommissionPromotion;
 use AIArmada\Affiliates\Enums\CommissionType;
 
 AffiliateCommissionPromotion::create([
-    'program_id' => $program->id,
+    'program_id' => $programId,
     'name' => 'Holiday Bonus',
     'bonus_type' => CommissionType::Percentage,
     'bonus_value' => 500, // +5% in basis points

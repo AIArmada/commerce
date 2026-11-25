@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Features\Programs\EntryPoints\Filament\Resources\AffiliateProgramResource\RelationManagers;
 
+use AIArmada\Affiliates\Features\Programs\Api\ProgramTierAdministration;
+use AIArmada\Affiliates\Models\AffiliateProgramTier;
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
+use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
@@ -95,15 +98,35 @@ final class TiersRelationManager extends RelationManager
                     ->sortable(),
             ])
             ->headerActions([
-                CreateAction::make(),
+                CreateAction::make()
+                    ->authorize(fn (): bool => FilamentPermission::hasAbility('affiliate.update'))
+                    ->using(function (array $data): AffiliateProgramTier {
+                        $id = app(ProgramTierAdministration::class)->create((string) $this->getOwnerRecord()->getKey(), $data);
+
+                        return AffiliateProgramTier::query()->findOrFail($id);
+                    }),
             ])
             ->actions([
-                EditAction::make(),
-                DeleteAction::make(),
+                EditAction::make()
+                    ->authorize(fn (): bool => FilamentPermission::hasAbility('affiliate.update'))
+                    ->using(function (AffiliateProgramTier $record, array $data): AffiliateProgramTier {
+                        app(ProgramTierAdministration::class)->update((string) $record->getKey(), $data);
+
+                        return $record->refresh();
+                    }),
+                DeleteAction::make()
+                    ->authorize(fn (): bool => FilamentPermission::hasAbility('affiliate.update'))
+                    ->action(fn (AffiliateProgramTier $record) => app(ProgramTierAdministration::class)->delete((string) $record->getKey())),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->authorize(fn (): bool => FilamentPermission::hasAbility('affiliate.update'))
+                        ->action(function ($records): void {
+                            foreach ($records as $record) {
+                                app(ProgramTierAdministration::class)->delete((string) $record->getKey());
+                            }
+                        }),
                 ]),
             ]);
     }

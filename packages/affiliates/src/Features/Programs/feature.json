@@ -6,7 +6,16 @@
       "AIArmada\\Affiliates\\Features\\Programs\\Actions\\AdministerProgramMembership",
       "AIArmada\\Affiliates\\Features\\Programs\\Actions\\ManageProgramEnrollment",
       "AIArmada\\Affiliates\\Features\\Programs\\Actions\\ReviewProgramMembership",
-      "AIArmada\\Affiliates\\Features\\Programs\\Actions\\UpgradeProgramTier"
+      "AIArmada\\Affiliates\\Features\\Programs\\Actions\\UpgradeProgramTier",
+      "AIArmada\\Affiliates\\Features\\Programs\\Actions\\AdministerProgram",
+      "AIArmada\\Affiliates\\Features\\Programs\\Actions\\AdministerProgramTier"
+    ],
+    "table:affiliate_programs": [
+      "AIArmada\\Affiliates\\Features\\Programs\\Actions\\AdministerProgram"
+    ],
+    "table:affiliate_program_tiers": [
+      "AIArmada\\Affiliates\\Features\\Programs\\Actions\\AdministerProgram",
+      "AIArmada\\Affiliates\\Features\\Programs\\Actions\\AdministerProgramTier"
     ]
   },
   "extensions": {}

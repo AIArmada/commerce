@@ -272,15 +272,6 @@ class AffiliateProgram extends Model implements Auditable
             }
         });
 
-        static::deleting(function (self $program): void {
-            $program->tiers()->delete();
-            $program->commissionRules()->delete();
-            $program->commissionPromotions()->delete();
-            $program->memberships()->delete();
-            $program->creatives()->each(function (AffiliateProgramCreative $creative): void {
-                $creative->delete();
-            });
-        });
     }
 
     private function evaluateEligibility(Affiliate $affiliate): bool

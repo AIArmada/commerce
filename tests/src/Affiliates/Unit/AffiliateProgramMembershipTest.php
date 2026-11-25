@@ -7,6 +7,8 @@ use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Features\Programs\Api\MembershipAdministration;
 use AIArmada\Affiliates\Features\Programs\Api\MembershipReviewApi;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramAdministration;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramTierAdministration;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramTierManagement;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateProgram;
@@ -276,6 +278,29 @@ describe('AffiliateProgramMembership Model', function (): void {
         $api->delete($created->id);
 
         expect(AffiliateProgramMembership::query()->whereKey($created->id)->exists())->toBeFalse();
+    });
+
+    test('tier administration removes membership references without deleting members', function (): void {
+        $membership = app(MembershipAdministration::class)->create($this->affiliate->id, $this->program->id, [
+            'tier_id' => $this->tier->id,
+        ]);
+
+        app(ProgramTierAdministration::class)->delete($this->tier->id);
+
+        expect(AffiliateProgramMembership::query()->findOrFail($membership->id)->tier_id)->toBeNull()
+            ->and(AffiliateProgramTier::query()->whereKey($this->tier->id)->exists())->toBeFalse();
+    });
+
+    test('program administration owns creation, updates and deletion', function (): void {
+        $api = app(ProgramAdministration::class);
+        $programId = $api->create(['name' => 'Managed program']);
+        $api->update($programId, ['name' => 'Renamed program']);
+
+        expect(AffiliateProgram::query()->findOrFail($programId)->name)->toBe('Renamed program');
+
+        $api->delete($programId);
+
+        expect(AffiliateProgram::query()->whereKey($programId)->exists())->toBeFalse();
     });
 
     test('upgradeTier method updates tier', function (): void {
