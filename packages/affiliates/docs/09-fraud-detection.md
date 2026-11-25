@@ -13,7 +13,7 @@ Fraud detection operates at multiple levels:
 1. **Velocity Checks** - Rate limiting for clicks and conversions
 2. **Anomaly Detection** - Unusual patterns in behavior
 3. **Fingerprinting** - Duplicate detection across sessions
-4. **Geographic Analysis** - Location-based fraud signals
+4. **Rapid IP Changes** - Unusually frequent IP changes (not geographic distance)
 5. **Conversion Time Analysis** - Suspiciously fast conversions
 
 ## Configuration
@@ -58,7 +58,7 @@ Both entrypoints return the same array shape:
 
 `allowed` is `false` once the summed `risk_points` reach
 `affiliates.fraud.blocking_threshold`. Rules are registered under the
-`affiliates.fraud_rule` tag, so you can add your own.
+`affiliates.fraud_rule` tag. Implement `FraudRule` using immutable `ClickFraudEvidence` and `ConversionFraudEvidence`; return a `FraudFinding` or null. Rules never persist signals; `RecordFraudFinding` owns persistence.
 
 ### Analyzing Clicks
 
@@ -100,7 +100,7 @@ Six rules ship in `AIArmada\Affiliates\Rules`, identified by `rule_code`:
 |-------------|------|-------------|
 | `CLICK_VELOCITY` | `ClickVelocityRule` — too many clicks in the hour | 30 |
 | `CONVERSION_VELOCITY` | `ConversionVelocityRule` — too many conversions in the day | 35 |
-| `GEO_ANOMALY` | `GeoAnomalyRule` — geography looks anomalous | 40 |
+| `GEO_ANOMALY` | `GeoAnomalyRule` — rapid IP change detected | 40 |
 | `FAST_CONVERSION` | `FastConversionRule` — conversion too soon after attribution | 45 |
 | `FINGERPRINT_REPEAT` | `FingerprintRepeatRule` — fingerprint seen too many times | 25 |
 | `SELF_REFERRAL` | `SelfReferralRule` — affiliate crediting themselves | 100 |

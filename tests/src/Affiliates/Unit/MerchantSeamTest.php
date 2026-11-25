@@ -2,6 +2,11 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Contracts\FraudRule;
+use AIArmada\Affiliates\Data\ClickFraudEvidence;
+use AIArmada\Affiliates\Data\ConversionFraudEvidence;
+use AIArmada\Affiliates\Data\FraudFinding;
+use AIArmada\Affiliates\Enums\FraudSeverity;
 use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
 use AIArmada\Affiliates\Actions\Conversions\VoidAffiliateConversion;
 use AIArmada\Affiliates\Contracts\MerchantCatalog;
@@ -106,12 +111,21 @@ describe('merchant seam', function (): void {
         $affiliate = createTestAffiliate();
         $draft = merchantSeamDraft((string) $affiliate->getKey());
         Event::fake([AffiliateConversionRecorded::class]);
-        $fraud = new FraudDetectionService([new class
+        $fraud = new FraudDetectionService([new class implements FraudRule
         {
-            /** @return array{risk_points: int} */
-            public function analyzeConversion(AffiliateConversion $conversion, array $context): array
+            public function ruleCode(): string
             {
-                return ['risk_points' => 100];
+                return 'TEST_BLOCK';
+            }
+
+            public function analyzeClick(ClickFraudEvidence $evidence): ?FraudFinding
+            {
+                return null;
+            }
+
+            public function analyzeConversion(ConversionFraudEvidence $evidence): FraudFinding
+            {
+                return new FraudFinding($this->ruleCode(), 100, FraudSeverity::Critical, 'Test fraud rejection', []);
             }
         }]);
         $ledger = new MerchantLedgerService(

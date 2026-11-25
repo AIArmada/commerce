@@ -41,7 +41,7 @@ final class FraudEvidenceQuery
             $ipAddress,
             $fingerprint,
             $clickCount,
-            max(1, (int) config('affiliates.fraud.velocity.max_clicks_per_hour', 100)),
+            max(0, (int) config('affiliates.fraud.velocity.max_clicks_per_hour', 100)),
             $fingerprintCount,
             max(1, (int) config('affiliates.tracking.fingerprint.threshold', 5)),
             $last?->ip_address,
@@ -64,7 +64,7 @@ final class FraudEvidenceQuery
 
         return new ConversionFraudEvidence(
             $affiliate instanceof Affiliate ? $affiliate->conversions()->where('occurred_at', '>=', $date)->where('occurred_at', '<', $date->addDay())->count() : 0,
-            max(1, (int) config('affiliates.fraud.velocity.max_conversions_per_day', 50)),
+            max(0, (int) config('affiliates.fraud.velocity.max_conversions_per_day', 50)),
             $date->toDateString(),
             $selfReferral,
             $ownerId,

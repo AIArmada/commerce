@@ -109,28 +109,43 @@ final class FraudDetectionService
 
     public function getRiskProfile(Affiliate $affiliate): array
     {
-        $signals = AffiliateFraudSignal::query()
+        $rows = AffiliateFraudSignal::query()
             ->where('affiliate_id', $affiliate->id)
             ->where('detected_at', '>=', CarbonImmutable::now()->subDays(30))
+            ->toBase()
+            ->selectRaw('rule_code, status, COUNT(*) as signal_count, SUM(risk_points) as total_points')
+            ->groupBy('rule_code', 'status')
             ->get();
 
-        $totalScore = $signals->sum('risk_points');
-        $severity = FraudSeverity::fromScore($totalScore);
+        $totalScore = $signalCount = $pendingReview = $confirmed = 0;
+        $byRule = [];
 
-        $byRule = $signals->groupBy('rule_code')
-            ->map(fn ($group) => [
-                'count' => $group->count(),
-                'total_points' => $group->sum('risk_points'),
-            ]);
+        foreach ($rows as $row) {
+            $count = (int) $row->signal_count;
+            $points = (int) $row->total_points;
+            $rule = (string) $row->rule_code;
+            $totalScore += $points;
+            $signalCount += $count;
+            $byRule[$rule] ??= ['count' => 0, 'total_points' => 0];
+            $byRule[$rule]['count'] += $count;
+            $byRule[$rule]['total_points'] += $points;
+
+            if ($row->status === FraudSignalStatus::Detected->value) {
+                $pendingReview += $count;
+            }
+
+            if ($row->status === FraudSignalStatus::Confirmed->value) {
+                $confirmed += $count;
+            }
+        }
 
         return [
             'total_score' => $totalScore,
-            'severity' => $severity,
-            'signal_count' => $signals->count(),
-            'by_rule' => $byRule->toArray(),
-            'pending_review' => $signals->where('status', FraudSignalStatus::Detected)->count(),
-            'confirmed' => $signals->where('status', FraudSignalStatus::Confirmed)->count(),
+            'severity' => FraudSeverity::fromScore($totalScore),
+            'signal_count' => $signalCount,
+            'by_rule' => $byRule,
+            'pending_review' => $pendingReview,
+            'confirmed' => $confirmed,
         ];
     }
-
 }
