@@ -6,10 +6,12 @@
       "AIArmada\\Affiliates\\Features\\Conversions\\Actions\\ExternalConversionLedger",
       "AIArmada\\Affiliates\\Features\\Conversions\\Actions\\AdministerConversion",
       "AIArmada\\Affiliates\\Features\\Conversions\\Actions\\ProcessConversionMaturity",
-      "AIArmada\\Affiliates\\Features\\Conversions\\Actions\\ReservePayoutFunds"
+      "AIArmada\\Affiliates\\Features\\Conversions\\Actions\\ReservePayoutFunds",
+      "AIArmada\\Affiliates\\Features\\Conversions\\Actions\\SettlePayoutConversions"
     ],
     "table:affiliate_balances": [
-      "AIArmada\\Affiliates\\Features\\Conversions\\Actions\\ReservePayoutFunds"
+      "AIArmada\\Affiliates\\Features\\Conversions\\Actions\\ReservePayoutFunds",
+      "AIArmada\\Affiliates\\Features\\Conversions\\Actions\\SettlePayoutConversions"
     ]
   },
   "extensions": {}

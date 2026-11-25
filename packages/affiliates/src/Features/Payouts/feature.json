@@ -6,7 +6,8 @@
       "AIArmada\\Affiliates\\Features\\Payouts\\Actions\\ClaimScheduledPayout"
     ],
     "table:affiliate_payout_operations": [
-      "AIArmada\\Affiliates\\Features\\Payouts\\Actions\\ClaimScheduledPayout"
+      "AIArmada\\Affiliates\\Features\\Payouts\\Actions\\ClaimScheduledPayout",
+      "AIArmada\\Affiliates\\Features\\Payouts\\Actions\\ReleasePayoutFunds"
     ],
     "table:affiliate_payout_events": [
       "AIArmada\\Affiliates\\Features\\Payouts\\Actions\\ClaimScheduledPayout"

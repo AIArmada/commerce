@@ -127,8 +127,7 @@ $service = app(PayoutReconciliationService::class);
 // Reconcile with provider — true when the payout actually changed
 $changed = $service->reconcilePayout($payout, 'paid', ['reference' => 'TXN-456']);
 
-// Release funds still reserved by a failed/cancelled payout
-$service->releaseReservedFunds($payout);
+// Failed or cancelled outcomes release reserved funds atomically.
 
 // Get payouts still needing reconciliation
 $pending = $service->getPayoutsNeedingReconciliation();

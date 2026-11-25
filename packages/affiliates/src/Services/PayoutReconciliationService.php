@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Services;
 
 use AIArmada\Affiliates\Actions\Payouts\AssertPayoutCompletable;
-use AIArmada\Affiliates\Exceptions\PayoutCompletionBlockedException;
+use AIArmada\Affiliates\Features\Conversions\Api\PayoutConversionSettlement;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutRelease;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliatePayoutOperation;
 use AIArmada\Affiliates\States\ApprovedConversion;
@@ -24,7 +24,7 @@ use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 
 final class PayoutReconciliationService
 {
@@ -35,7 +35,11 @@ final class PayoutReconciliationService
      */
     public const COMPLETION_BLOCKED_CODE = 'PAYOUT_COMPLETION_BLOCKED';
 
-    public function __construct(private readonly CurrencyConverter $converter) {}
+    public function __construct(
+        private readonly CurrencyConverter $converter,
+        private readonly PayoutConversionSettlement $settlement,
+        private readonly PayoutRelease $release,
+    ) {}
 
     /** @param array<string, mixed> $externalData */
     public function reconcilePayout(AffiliatePayout $payout, string $externalStatus, array $externalData = []): bool
@@ -46,7 +50,7 @@ final class PayoutReconciliationService
             return false;
         }
 
-        $changed = DB::transaction(function () use ($payout, $statusClass, $externalData, $externalStatus): bool {
+        $changed = $payout->getConnection()->transaction(function () use ($payout, $statusClass, $externalData, $externalStatus): bool {
             $locked = AffiliatePayout::query()->with('operation')->lockForUpdate()->find($payout->id);
 
             if (! $locked instanceof AffiliatePayout || $locked->status->equals($statusClass)) {
@@ -124,75 +128,13 @@ final class PayoutReconciliationService
 
     private function syncConversions(AffiliatePayout $payout, PayoutStatus $newStatus): void
     {
-        if ($newStatus->equals(CompletedPayout::class)) {
-            // Approved-only plus a count check: a conversion that left
-            // Approved out of band (raced reversal) fails the completion
-            // instead of being silently rewritten to paid.
-            $expected = $payout->conversions()->count();
-
-            $affected = $payout->conversions()
-                ->where('status', ApprovedConversion::value())
-                ->update([
-                    'status' => PaidConversion::value(),
-                    'paid_at' => CarbonImmutable::now(),
-                ]);
-
-            if ($affected !== $expected) {
-                throw new PayoutCompletionBlockedException(sprintf(
-                    'Payout [%s] cannot complete: %d of %d linked conversions left Approved out of band.',
-                    (string) $payout->getKey(),
-                    $expected - $affected,
-                    $expected,
-                ));
+        OwnerContext::withOwner($payout->owner, function () use ($payout, $newStatus): void {
+            if ($newStatus->equals(CompletedPayout::class)) {
+                $this->settlement->complete((string) $payout->getKey());
+            } elseif ($newStatus->equals(FailedPayout::class) || $newStatus->equals(CancelledPayout::class)) {
+                $this->release->release((string) $payout->getKey());
             }
-
-            return;
-        }
-
-        if ($newStatus->equals(FailedPayout::class) || $newStatus->equals(CancelledPayout::class)) {
-            if ($this->releaseReservedFunds($payout)) {
-                return;
-            }
-
-            $payout->conversions()->update([
-                'status' => ApprovedConversion::value(),
-                'affiliate_payout_id' => null,
-            ]);
-        }
-    }
-
-    public function releaseReservedFunds(AffiliatePayout $payout): bool
-    {
-        return DB::transaction(function () use ($payout): bool {
-            $locked = AffiliatePayout::query()->with('operation')->lockForUpdate()->find($payout->id);
-            $operation = $locked?->operation;
-
-            if (! $locked instanceof AffiliatePayout
-                || ! $operation instanceof AffiliatePayoutOperation
-                || $operation->payout_sequence === null
-                || $operation->funds_released_at !== null) {
-                return false;
-            }
-
-            $balance = AffiliateBalance::query()
-                ->where('affiliate_id', $operation->affiliate_id)
-                ->where('currency', mb_strtoupper((string) $operation->currency))
-                ->lockForUpdate()
-                ->first();
-
-            if (! $balance instanceof AffiliateBalance) {
-                return false;
-            }
-
-            $balance->increment('available_minor', $operation->amount_minor);
-            $locked->conversions()->update([
-                'status' => ApprovedConversion::value(),
-                'affiliate_payout_id' => null,
-            ]);
-            $operation->forceFill(['funds_released_at' => CarbonImmutable::now()])->save();
-
-            return true;
-        }, attempts: 3);
+        });
     }
 
     /** @return Collection<int, AffiliatePayout> */

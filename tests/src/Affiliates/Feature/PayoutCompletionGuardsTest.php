@@ -536,3 +536,37 @@ test('the gate fails legibly when the affiliate is missing', function (): void {
     expect(fn (): ?string => AssertPayoutCompletable::run($payout->fresh()))
         ->toThrow(PayoutCompletionBlockedException::class, 'missing or outside the payout owner scope');
 });
+
+test('a missing reserved balance rolls back payout failure without unlinking conversions', function (bool $reconcile): void {
+    $affiliate = createCompletionGuardAffiliate();
+    $conversion = recordCompletionGuardConversion($affiliate);
+    $payout = CreatePayout::run([$conversion->id]);
+
+    $affiliate->balances()->delete();
+
+    expect(fn (): mixed => $reconcile
+        ? app(PayoutReconciliationService::class)->reconcilePayout($payout, 'failed')
+        : UpdatePayoutStatus::run($payout, 'failed'))
+        ->toThrow(PayoutCompletionBlockedException::class, 'reserved balance is missing');
+
+    expect($conversion->fresh()->affiliate_payout_id)->toBe($payout->id)
+        ->and($payout->fresh()->status->getValue())->toBe('pending')
+        ->and($payout->fresh()->operation->funds_released_at)->toBeNull();
+})->with([false, true]);
+
+test('payout failure refuses to resurrect a conversion changed outside settlement', function (bool $reconcile): void {
+    $affiliate = createCompletionGuardAffiliate();
+    $conversion = recordCompletionGuardConversion($affiliate);
+    $payout = CreatePayout::run([$conversion->id]);
+
+    $conversion->newQuery()->whereKey($conversion->id)->update(['status' => 'rejected']);
+
+    expect(fn (): mixed => $reconcile
+        ? app(PayoutReconciliationService::class)->reconcilePayout($payout, 'failed')
+        : UpdatePayoutStatus::run($payout, 'failed'))
+        ->toThrow(PayoutCompletionBlockedException::class, 'no longer approved');
+
+    expect($conversion->fresh()->status->getValue())->toBe('rejected')
+        ->and($conversion->fresh()->affiliate_payout_id)->toBe($payout->id)
+        ->and($affiliate->balanceFor('USD')->available_minor)->toBe(0);
+})->with([false, true]);

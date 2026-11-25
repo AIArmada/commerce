@@ -25,7 +25,6 @@ final class ProcessAffiliatePayout
 {
     public function __construct(
         private readonly PayoutProcessorRegistry $factory,
-        private readonly PayoutReconciliationService $reconciliation,
         private readonly UpdatePayoutStatus $updatePayoutStatus,
     ) {}
 
@@ -107,7 +106,7 @@ final class ProcessAffiliatePayout
                     $locked->load('operation');
                     $locked->operation->forceFill(['status' => 'failed', 'last_error_code' => 'NO_DEFAULT_PAYOUT_METHOD'])->save();
 
-                    return ['error' => PayoutResult::failure('No default payout method is configured.', 'NO_DEFAULT_PAYOUT_METHOD'), 'release' => true];
+                    return ['error' => PayoutResult::failure('No default payout method is configured.', 'NO_DEFAULT_PAYOUT_METHOD')];
                 }
 
                 if (! $locked->status->equals(PendingPayout::class) && ! $needsReconciliation) {
@@ -136,10 +135,6 @@ final class ProcessAffiliatePayout
             }, attempts: 3);
 
             if (isset($claim['error'])) {
-                if (($claim['release'] ?? false) === true) {
-                    $this->reconciliation->releaseReservedFunds($payout);
-                }
-
                 return $claim['error'];
             }
 
@@ -200,7 +195,7 @@ final class ProcessAffiliatePayout
     private function recordResult(AffiliatePayout $payout, PayoutResult $result, ?string $notes = null, ?string $leaseExpiresAt = null): PayoutResult
     {
         $connection = $payout->getConnection();
-        $recorded = $connection->transaction(function () use ($payout, $result, $notes, $leaseExpiresAt): bool {
+        $connection->transaction(function () use ($payout, $result, $notes, $leaseExpiresAt): bool {
             $lockedQuery = AffiliatePayout::query()->with('operation');
 
             if ((bool) config('affiliates.owner.enabled', false)) {
@@ -302,10 +297,6 @@ final class ProcessAffiliatePayout
 
             return true;
         }, attempts: 3);
-
-        if ($recorded && $result->getStatus() === 'failed') {
-            $this->reconciliation->releaseReservedFunds($payout);
-        }
 
         return $result;
     }
