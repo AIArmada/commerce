@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Events;
 
-use AIArmada\Events\Models\EventAttendance;
+use AIArmada\Events\Data\AttendanceRecord;
 
-final class RegistrationCheckedIn
+final readonly class RegistrationCheckedIn
 {
     public function __construct(
-        public EventAttendance $attendance,
+        public AttendanceRecord $attendance,
     ) {}
 }

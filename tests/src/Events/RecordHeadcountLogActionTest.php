@@ -3,11 +3,12 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Events\Actions\RecordHeadcountLogAction;
 use AIArmada\Events\Exceptions\NotOpenDoorEventException;
 use AIArmada\Events\Exceptions\WrongOpenDoorModeException;
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventOccurrence;
+use AIArmada\Events\Features\Attendance\Actions\RecordHeadcountLogAction;
+use AIArmada\Events\Features\Attendance\Models\EventHeadcountLog;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
 
 beforeEach(function (): void {
     config()->set('events.features.free_only.open_door_mode', 'headcount');
@@ -19,12 +20,15 @@ it('records a headcount log for an open-door event', function (): void {
         $event = Event::factory()->freeOpenDoor()->published()->create();
         $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
 
-        $log = app(RecordHeadcountLogAction::class)->execute(
-            target: $occurrence,
+        $logId = app(RecordHeadcountLogAction::class)->execute(
+            'occurrence',
+            (string) $occurrence->getKey(),
             count: 50,
             intervalLabel: '10:00-10:15',
             notes: 'Peak crowd',
         );
+
+        $log = EventHeadcountLog::query()->findOrFail($logId);
 
         expect($log->exists)->toBeTrue();
         expect($log->event_id)->toBe($event->id);
@@ -41,7 +45,8 @@ it('throws for non-open-door events', function (): void {
         $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
 
         app(RecordHeadcountLogAction::class)->execute(
-            target: $occurrence,
+            'occurrence',
+            (string) $occurrence->getKey(),
             count: 1,
         );
     }))->toThrow(NotOpenDoorEventException::class);
@@ -54,7 +59,8 @@ it('throws when open door mode is not headcount', function (): void {
         $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
 
         app(RecordHeadcountLogAction::class)->execute(
-            target: $occurrence,
+            'occurrence',
+            (string) $occurrence->getKey(),
             count: 1,
         );
     }))->toThrow(WrongOpenDoorModeException::class);
@@ -65,11 +71,12 @@ it('enforces minimum count of 1', function (): void {
         $event = Event::factory()->freeOpenDoor()->published()->create();
         $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
 
-        $log = app(RecordHeadcountLogAction::class)->execute(
-            target: $occurrence,
+        $logId = app(RecordHeadcountLogAction::class)->execute(
+            'occurrence',
+            (string) $occurrence->getKey(),
             count: 0,
         );
 
-        expect($log->count)->toBe(1);
+        expect(EventHeadcountLog::query()->findOrFail($logId)->count)->toBe(1);
     });
 });

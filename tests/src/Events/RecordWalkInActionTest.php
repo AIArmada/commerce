@@ -3,12 +3,13 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Events\Actions\RecordWalkInAction;
 use AIArmada\Events\Events\WalkInRecorded;
 use AIArmada\Events\Exceptions\NotOpenDoorEventException;
 use AIArmada\Events\Exceptions\WrongOpenDoorModeException;
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventOccurrence;
+use AIArmada\Events\Features\Attendance\Actions\RecordWalkInAction;
+use AIArmada\Events\Features\Attendance\Models\EventWalkIn;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
 use Illuminate\Support\Facades\Event as EventFacade;
 
 beforeEach(function (): void {
@@ -23,11 +24,14 @@ it('records a walk-in for an open-door event', function (): void {
 
         EventFacade::fake([WalkInRecorded::class]);
 
-        $walkIn = app(RecordWalkInAction::class)->execute(
-            target: $occurrence,
+        $walkInId = app(RecordWalkInAction::class)->execute(
+            'occurrence',
+            (string) $occurrence->getKey(),
             count: 3,
             notes: 'Walk-in group',
         );
+
+        $walkIn = EventWalkIn::query()->findOrFail($walkInId);
 
         expect($walkIn->exists)->toBeTrue();
         expect($walkIn->event_id)->toBe($event->id);
@@ -37,7 +41,7 @@ it('records a walk-in for an open-door event', function (): void {
 
         EventFacade::assertDispatched(
             WalkInRecorded::class,
-            fn (WalkInRecorded $recorded): bool => $recorded->walkIn->is($walkIn),
+            fn (WalkInRecorded $recorded): bool => $recorded->walkInId === $walkInId,
         );
     });
 });
@@ -48,7 +52,8 @@ it('throws for non-open-door events', function (): void {
         $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
 
         app(RecordWalkInAction::class)->execute(
-            target: $occurrence,
+            'occurrence',
+            (string) $occurrence->getKey(),
             count: 1,
         );
     }))->toThrow(NotOpenDoorEventException::class);
@@ -61,7 +66,8 @@ it('throws when open door mode is not walk_in', function (): void {
         $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
 
         app(RecordWalkInAction::class)->execute(
-            target: $occurrence,
+            'occurrence',
+            (string) $occurrence->getKey(),
             count: 1,
         );
     }))->toThrow(WrongOpenDoorModeException::class);
@@ -72,11 +78,12 @@ it('enforces minimum count of 1', function (): void {
         $event = Event::factory()->freeOpenDoor()->published()->create();
         $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
 
-        $walkIn = app(RecordWalkInAction::class)->execute(
-            target: $occurrence,
+        $walkInId = app(RecordWalkInAction::class)->execute(
+            'occurrence',
+            (string) $occurrence->getKey(),
             count: 0,
         );
 
-        expect($walkIn->count)->toBe(1);
+        expect(EventWalkIn::query()->findOrFail($walkInId)->count)->toBe(1);
     });
 });

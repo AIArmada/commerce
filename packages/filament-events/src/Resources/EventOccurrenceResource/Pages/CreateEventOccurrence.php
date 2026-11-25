@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\FilamentEvents\Resources\EventOccurrenceResource\Pages;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Events\Actions\CreateEventOccurrenceAction;
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventOccurrence;
+use AIArmada\Events\Features\Catalog\Actions\CreateEventOccurrenceAction;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
 use AIArmada\FilamentEvents\Resources\EventOccurrenceResource;
 use Filament\Resources\Pages\CreateRecord;
 

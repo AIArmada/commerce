@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Contracts;
 
-use AIArmada\Events\Models\EventTimeExpression;
+use AIArmada\Events\Data\EventTimeExpressionData;
 use DateTimeInterface;
 
 interface ResolvesEventTimeExpression
 {
-    public function resolve(EventTimeExpression $expression, array $context = []): ?DateTimeInterface;
+    /**
+     * @param  array<string, mixed>  $context
+     */
+    public function resolve(EventTimeExpressionData $expression, array $context = []): ?DateTimeInterface;
 }

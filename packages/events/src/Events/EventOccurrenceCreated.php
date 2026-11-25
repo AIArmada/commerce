@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Events;
 
-use AIArmada\Events\Models\EventOccurrence;
-
-final class EventOccurrenceCreated
+final readonly class EventOccurrenceCreated
 {
     public function __construct(
-        public EventOccurrence $occurrence,
+        public string $occurrenceId,
+        public string $eventId,
     ) {}
 }

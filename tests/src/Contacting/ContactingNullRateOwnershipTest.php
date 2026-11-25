@@ -14,11 +14,11 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventOccurrence;
-use AIArmada\Events\Models\EventRegistration;
-use AIArmada\Events\Models\EventRegistrationItem;
-use AIArmada\Events\Resolvers\DefaultEventOrderItemFulfillmentResolver;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
+use AIArmada\Events\Features\Commerce\Queries\DefaultEventOrderItemFulfillmentResolver;
+use AIArmada\Events\Features\Registrations\Models\EventRegistration;
+use AIArmada\Events\Features\Registrations\Models\EventRegistrationItem;
 use Illuminate\Support\Str;
 use Stripe\Customer as StripeApiCustomer;
 
@@ -110,7 +110,7 @@ test('keeps the three owning reads below the one percent null/degraded rate thre
             'currency' => 'MYR',
             'status' => 'confirmed',
         ]);
-        $eventPayload = app(DefaultEventOrderItemFulfillmentResolver::class)->resolve($registrationItem);
+        $eventPayload = app(DefaultEventOrderItemFulfillmentResolver::class)->resolve((string) $registrationItem->getKey());
 
         return [
             'checkout.process_payment.customer_email' => $checkoutEmailRead,

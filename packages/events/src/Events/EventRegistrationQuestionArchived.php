@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Events;
 
-use AIArmada\Events\Models\EventRegistrationQuestion;
-
-final class EventRegistrationQuestionArchived
+final readonly class EventRegistrationQuestionArchived
 {
     public function __construct(
-        public EventRegistrationQuestion $question,
+        public string $questionId,
+        public string $eventId,
+        public ?string $occurrenceId = null,
+        public ?string $sessionId = null,
     ) {}
 }

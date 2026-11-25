@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEvents\Resources;
 
-use AIArmada\Events\Models\EventTaxonomy;
+use AIArmada\Events\Features\Taxonomy\Models\EventTaxonomy;
 use AIArmada\FilamentEvents\Resources\EventTaxonomyResource\Pages\CreateEventTaxonomy;
 use AIArmada\FilamentEvents\Resources\EventTaxonomyResource\Pages\EditEventTaxonomy;
 use AIArmada\FilamentEvents\Resources\EventTaxonomyResource\Pages\ListEventTaxonomies;

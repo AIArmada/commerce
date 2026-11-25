@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentEvents\Resources\EventOccurrenceResource\RelationManagers;
 
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
-use AIArmada\Events\Models\EventLocation;
+use AIArmada\Events\Features\Venues\Models\EventLocation;
 use Filament\Actions\ViewAction;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;

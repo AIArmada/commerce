@@ -14,7 +14,8 @@ The `config/filament-events.php` file controls plugin behavior.
 ],
 ```
 
-Customize the navigation group label for all event resources and pages, or override individual resources such as venues and venue spaces:
+Customize the navigation group label for all event resources and pages, or
+override individual resources such as venues and venue spaces:
 
 ```php
 'resources' => [
@@ -60,15 +61,18 @@ Customize the navigation group label for all event resources and pages, or overr
 ],
 ```
 
-Each resource can be individually disabled by setting its key to `false`. The resource will not be registered in the Filament panel or appear in navigation.
+Each resource can be individually disabled by setting its key to `false`.
+The resource will not be registered in the Filament panel or appear in
+navigation.
 
 > **info**
-> `ticket_type` ships in the config for cross-package symmetry, but this plugin does not
-> register a ticket type resource. Ticket administration lives in `aiarmada/filament-ticketing`.
+> Ticket type and pass administration live in `aiarmada/filament-ticketing`;
+> this plugin does not register a ticket type resource.
 
 ### Relation manager extensions
 
-Append application-owned relation managers to the event, occurrence, session, venue, or venue space resources:
+Append application-owned relation managers to the event, occurrence, session,
+venue, or venue space resources:
 
 ```php
 'resources' => [
@@ -82,7 +86,9 @@ Append application-owned relation managers to the event, occurrence, session, ve
 ],
 ```
 
-Each configured class must extend `Filament\Resources\RelationManagers\RelationManager`.
+Each configured class must extend
+`Filament\Resources\RelationManagers\RelationManager`. Invalid entries are
+skipped.
 
 ### Panel registration
 
@@ -90,13 +96,15 @@ Each configured class must extend `Filament\Resources\RelationManagers\RelationM
 FilamentEventsPlugin::make();
 ```
 
-The plugin reads resource toggles and navigation settings from `config/filament-events.php`.
+The plugin reads resource toggles and navigation settings from
+`config/filament-events.php`.
 
 ### Event form extensions
 
 The event resource accepts form extensions without coupling the package to
-application-specific fields such as media conversions or custom metadata. It ships with
-one default, `AIArmada\FilamentEvents\Extensions\DefaultEventMediaExtension` (cover,
+application-specific fields such as media conversions or custom metadata. It
+ships with one default,
+`AIArmada\FilamentEvents\Extensions\DefaultEventMediaExtension` (cover,
 poster, and gallery uploads backed by the `events` package media profile):
 
 ```php
@@ -107,16 +115,33 @@ poster, and gallery uploads backed by the `events` package media profile):
 ],
 ```
 
-Each extension must implement `AIArmada\FilamentEvents\Contracts\EventFormExtension` and
-return Filament schema components from `components()`. Setting the list replaces the
-default entirely — re-add `DefaultEventMediaExtension::class` if you still want media.
-The default renders nothing when the resolved event model does not implement spatie's
-`HasMedia`, so custom event models without media stay safe.
+Each extension must implement
+`AIArmada\FilamentEvents\Contracts\EventFormExtension` and return Filament
+schema components from `components()`. Setting the list replaces the default
+entirely — re-add `DefaultEventMediaExtension::class` if you still want media.
+The default renders nothing when the resolved event model does not implement
+spatie's `HasMedia`, so custom event models without media stay safe.
+
+### Occurrence form extensions
+
+The occurrence resource supports the same seam through
+`resources.occurrence_form_extensions`, with extensions implementing
+`AIArmada\FilamentEvents\Contracts\EventOccurrenceFormExtension`. It ships
+with no defaults:
+
+```php
+'resources' => [
+    'occurrence_form_extensions' => [
+        App\Filament\Resources\EventOccurrences\CustomOccurrenceExtension::class,
+    ],
+],
+```
 
 ### Term form extensions
 
-The term resource accepts form extensions the same way, for application-specific
-fields such as taxonomy metadata. It ships with no defaults:
+The term resource accepts form extensions the same way, for
+application-specific fields such as taxonomy metadata. It ships with no
+defaults:
 
 ```php
 'resources' => [
@@ -126,5 +151,14 @@ fields such as taxonomy metadata. It ships with no defaults:
 ],
 ```
 
-Each extension must implement `AIArmada\FilamentEvents\Contracts\TermFormExtension` and
-return Filament schema components from `components()`. Invalid entries are skipped.
+Each extension must implement
+`AIArmada\FilamentEvents\Contracts\TermFormExtension` and return Filament
+schema components from `components()`. Invalid entries are skipped.
+
+## Model resolution
+
+Form and table option queries resolve models through
+`AIArmada\Events\Platform\ModelResolver`, so overriding `events.models.*` in
+the core package config changes which classes the admin surfaces use. Keep
+custom models compatible with the relationships and state casts the
+resources expect (see `../events/docs/03-configuration.md`).

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\Events\Actions\RecordAgentTicketSaleAction;
 use AIArmada\Events\Exceptions\EventCapacityExceededException;
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventOccurrence;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
+use AIArmada\Events\Features\Commerce\Actions\RecordAgentTicketSaleAction;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 
@@ -32,5 +32,5 @@ it('blocks agent ticket sales when the scope does not have enough capacity', fun
         'quantity_on_hand' => 10,
     ]);
 
-    app(RecordAgentTicketSaleAction::class)->handle($ticketType, 2);
+    app(RecordAgentTicketSaleAction::class)->handle((string) $ticketType->getKey(), 2);
 })->throws(EventCapacityExceededException::class);

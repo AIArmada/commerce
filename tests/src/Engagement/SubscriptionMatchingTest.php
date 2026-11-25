@@ -9,7 +9,7 @@ use AIArmada\Engagement\Events\SubscriptionMatched;
 use AIArmada\Engagement\Tests\Fixtures\EngagementActor;
 use AIArmada\Engagement\Tests\Fixtures\EngagementSubject;
 use AIArmada\Events\Events\EventPublished;
-use AIArmada\Events\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\Event;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Event as EventFacade;
 
@@ -34,7 +34,7 @@ it('does not auto-match subscriptions when an events publication is dispatched',
 
     EventFacade::fake([SubscriptionMatched::class]);
 
-    event(new EventPublished($event));
+    event(new EventPublished((string) $event->getKey()));
 
     EventFacade::assertNotDispatched(SubscriptionMatched::class);
 });

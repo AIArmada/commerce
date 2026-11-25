@@ -6,15 +6,14 @@ use AIArmada\Addressing\Models\Address;
 use AIArmada\Addressing\Traits\HasAddresses;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Events\Data\VenueData;
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventFacility;
-use AIArmada\Events\Models\EventLocation;
-use AIArmada\Events\Models\FacilityType;
-use AIArmada\Events\Models\Venue;
-use AIArmada\Events\Models\VenueFacility;
-use AIArmada\Events\Models\VenueSpace;
-use AIArmada\Events\Models\VenueSpaceType;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Venues\Models\EventFacility;
+use AIArmada\Events\Features\Venues\Models\EventLocation;
+use AIArmada\Events\Features\Venues\Models\FacilityType;
+use AIArmada\Events\Features\Venues\Models\Venue;
+use AIArmada\Events\Features\Venues\Models\VenueFacility;
+use AIArmada\Events\Features\Venues\Models\VenueSpace;
+use AIArmada\Events\Features\Venues\Models\VenueSpaceType;
 
 it('adopts HasAddresses on every venue and facility model', function (): void {
     foreach ([
@@ -57,25 +56,20 @@ it('keeps physical and digital venue records address-optional while canonical wr
 
     $physicalVenue->attachAddress($address, type: 'primary', isPrimary: true);
 
-    $physicalData = VenueData::fromVenue($physicalVenue);
-    $digitalData = VenueData::fromVenue($digitalVenue);
+    $physicalAddress = $physicalVenue->primaryAddress();
 
-    expect($physicalData)->not->toBeNull()
-        ->and($physicalData?->line1)->toBe('1 Canonical Way')
-        ->and($physicalData?->line2)->toBe('Level 2')
-        ->and($physicalData?->city)->toBe('Kuala Lumpur')
-        ->and($physicalData?->state)->toBe('Wilayah Persekutuan')
-        ->and($physicalData?->postcode)->toBe('50450')
-        ->and($physicalData?->country_code)->toBe('MY')
-        ->and($physicalData?->latitude)->toBe(3.139)
-        ->and($physicalData?->longitude)->toBe(101.6869)
-        ->and($physicalData?->google_maps_url)->toBe('https://maps.example/canonical')
-        ->and($physicalData?->waze_url)->toBe('https://waze.example/canonical')
-        ->and($physicalData?->directions)->toBe('Enter through the north gate.')
-        ->and($digitalData)->not->toBeNull()
-        ->and($digitalData?->line1)->toBeNull()
-        ->and($digitalData?->city)->toBeNull()
-        ->and($digitalData?->country_code)->toBeNull()
+    expect($physicalAddress)->not->toBeNull()
+        ->and($physicalAddress?->line1)->toBe('1 Canonical Way')
+        ->and($physicalAddress?->line2)->toBe('Level 2')
+        ->and($physicalAddress?->city)->toBe('Kuala Lumpur')
+        ->and($physicalAddress?->state)->toBe('Wilayah Persekutuan')
+        ->and($physicalAddress?->postcode)->toBe('50450')
+        ->and($physicalAddress?->country_code)->toBe('MY')
+        ->and($physicalAddress?->latitude)->toBe(3.139)
+        ->and($physicalAddress?->longitude)->toBe(101.6869)
+        ->and($physicalAddress?->google_maps_url)->toBe('https://maps.example/canonical')
+        ->and($physicalAddress?->waze_url)->toBe('https://waze.example/canonical')
+        ->and($physicalAddress?->metadata['directions'] ?? null)->toBe('Enter through the north gate.')
         ->and($digitalVenue->primaryAddress())->toBeNull()
         ->and($digitalVenue->addresses()->count())->toBe(0);
 });

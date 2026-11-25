@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Events\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\Event;
 
 beforeEach(function (): void {
     config()->set('events.features.owner.enabled', false);

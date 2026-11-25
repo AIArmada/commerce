@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "name": "Search",
+  "owns": {
+    "table:event_search_documents": [
+      "AIArmada\\Events\\Features\\Search\\Actions\\DeleteEventSearchDocumentAction",
+      "AIArmada\\Events\\Features\\Search\\Actions\\DeleteSearchScopeDependents",
+      "AIArmada\\Events\\Features\\Search\\Actions\\IndexEventSearchTargetAction",
+      "AIArmada\\Events\\Features\\Search\\Actions\\UpsertEventSearchDocumentAction"
+    ]
+  },
+  "extensions": {
+    "events.cascade-delete": [
+      "AIArmada\\Events\\Features\\Search\\Extensions\\SearchDeleteCascadeExtension"
+    ]
+  }
+}

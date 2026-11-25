@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Database\Factories;
 
-use AIArmada\Events\Models\VenueSpaceType;
+use AIArmada\Events\Features\Venues\Models\VenueSpaceType;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

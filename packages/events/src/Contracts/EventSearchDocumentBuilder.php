@@ -4,15 +4,20 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Contracts;
 
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventOccurrence;
-use AIArmada\Events\Models\EventSession;
-
 interface EventSearchDocumentBuilder
 {
-    public function buildForEvent(Event $event): array;
+    /**
+     * @return array<string, mixed>
+     */
+    public function buildForEvent(string $eventId): array;
 
-    public function buildForOccurrence(EventOccurrence $occurrence): array;
+    /**
+     * @return array<string, mixed>
+     */
+    public function buildForOccurrence(string $occurrenceId): array;
 
-    public function buildForSession(EventSession $session): array;
+    /**
+     * @return array<string, mixed>
+     */
+    public function buildForSession(string $sessionId): array;
 }

@@ -8,25 +8,35 @@ arch('events')
 
 it('keeps package php free of app namespace and institution dependencies', function (): void {
     $packagePath = dirname(__DIR__, 4) . '/packages/events';
-    $iterator = new RecursiveIteratorIterator(
-        new RecursiveDirectoryIterator($packagePath, FilesystemIterator::SKIP_DOTS),
-    );
 
     $violations = [];
 
-    foreach ($iterator as $file) {
-        if (! $file instanceof SplFileInfo || $file->getExtension() !== 'php') {
+    foreach (['src', 'config', 'database', 'resources', 'routes'] as $directory) {
+        $path = $packagePath . DIRECTORY_SEPARATOR . $directory;
+
+        if (! is_dir($path)) {
             continue;
         }
 
-        $contents = file_get_contents($file->getPathname());
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS),
+        );
 
-        if ($contents === false) {
-            throw new RuntimeException("Unable to read [{$file->getPathname()}].");
-        }
+        foreach ($iterator as $file) {
+            if (! $file instanceof SplFileInfo || $file->getExtension() !== 'php') {
+                continue;
+            }
 
-        if (str_contains($contents, 'App\\') || str_contains($contents, 'Institution')) {
-            $violations[] = $file->getPathname();
+            $pathname = $file->getPathname();
+            $contents = file_get_contents($pathname);
+
+            if ($contents === false) {
+                throw new RuntimeException("Unable to read [{$pathname}].");
+            }
+
+            if (str_contains($contents, 'App\\') || str_contains($contents, 'Institution')) {
+                $violations[] = $pathname;
+            }
         }
     }
 

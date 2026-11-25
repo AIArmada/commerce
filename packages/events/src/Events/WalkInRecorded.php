@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Events;
 
-use AIArmada\Events\Models\EventWalkIn;
-
-final class WalkInRecorded
+final readonly class WalkInRecorded
 {
     public function __construct(
-        public EventWalkIn $walkIn,
+        public string $walkInId,
+        public string $eventId,
+        public ?string $occurrenceId = null,
+        public ?string $sessionId = null,
     ) {}
 }

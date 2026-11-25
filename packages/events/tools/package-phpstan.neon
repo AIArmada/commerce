@@ -1,0 +1,21 @@
+parameters:
+    customRulesetUsed: true
+    reportUnmatchedIgnoredErrors: false
+    paths:
+        - ../src
+        - ../config
+    excludePaths:
+        analyse:
+            - ../database/migrations/*
+            - ../src/Features/*/Database/Migrations/*
+    tmpDir: ../../../build/phpstan-arch-events
+    ignoreErrors:
+        - identifier: 'larastan.noEnvCallsOutsideOfConfig'
+
+services:
+    -
+        class: PackageArchitecture\StaticAnalysis\PackageOwnedWriteRule
+        arguments:
+            projectRoot: null
+        tags:
+            - phpstan.rules.rule

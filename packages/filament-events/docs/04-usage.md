@@ -6,17 +6,17 @@ title: Usage
 
 ### Events
 
-`EventResource` manages event definitions with lifecycle actions on the list page, and Create/Edit forms for event configuration.
+`EventResource` manages event definitions with lifecycle actions on the list page, and Create/Edit forms for event configuration. Record actions delegate to the core scalar-ID workflows: Publish and Archive/Cancel call `EventLifecycleWorkflow` (`publish($eventId)`, `archive('event', $eventId)`, `cancel('event', $eventId, $reason)`), and Clone calls `EventCloneService::cloneEvent($eventId, $options)` before redirecting to the new edit page.
 
-**Table columns:** title (searchable), status (badge, color-coded), visibility (badge), delivery_mode (badge), occurrences_count, published_at, last_state_change_at, updated_at.
+**Table columns:** title (searchable), status (badge, color-coded by the state class), visibility (badge), delivery_mode (badge), occurrences_count, published_at, last_state_change_at, updated_at.
 
 **Filters:** status, visibility, delivery_mode.
 
 **Row actions:**
-- **Publish** — promotes draft/pending events to published (calls `EventLifecycleWorkflow::publish()`)
-- **Archive** — archives approved events
-- **Cancel** — cancels an event with a reason
-- **Clone** — duplicates the event without its occurrences and redirects to the new edit page
+- **Publish** — promotes the event through `EventLifecycleWorkflow::publish()`
+- **Archive** — archives the event
+- **Cancel** — cancels the event with a reason
+- **Clone** — duplicates the event through `EventCloneService` and redirects to the new edit page
 
 The table header carries a single **Export Events** action using the built-in Filament exporter.
 
@@ -24,43 +24,50 @@ The table header carries a single **Export Events** action using the built-in Fi
 - **Pricing & Registration** — `pricing_mode` (select: paid/free/mixed), `registration_mode` (select: required/optional/none), `issue_passes_for_free` (tri-state select)
 - The inheritance chain is Event → Occurrence → Session; placeholder options indicate the fallback behavior at each level
 
+Create pages also expose a **From Template** header action (`CreateEvent::getHeaderActions()`), which calls `EventTemplateService::createFromTemplate($templateId)` and redirects to the created event.
+
 **Infolist sections:** Identity, Lifecycle, Ownership, Metadata.
 
-**Relation managers (on View page):** Occurrences, Sessions, Locations, Involvements, Registrations, Attendances, Classifications. All read-only.
+**Relation managers (on View page):** Occurrences, Sessions, Locations, Involvements, Registrations, Attendances, Classifications. Additional managers can be appended via `resources.event_relation_managers`.
 
 ### Occurrences
 
-`EventOccurrenceResource` manages scheduled runs with Create/Edit forms for occurrence-level pricing and registration overrides.
+`EventOccurrenceResource` manages scheduled runs with Create/Edit forms for
+occurrence-level pricing and registration overrides. The create page delegates
+to `CreateEventOccurrenceAction` (so `ends_at` defaulting and normalization
+match the domain layer), and record actions call `EventLifecycleWorkflow`
+with scalar IDs: `delay('occurrence', $id, $reason, $expectedStartsAt)`,
+`postpone('occurrence', $id, $reason)`, `cancel('occurrence', $id, $reason)`,
+`complete('occurrence', $id)`, and `cloneOccurrence($id)`.
 
 **Table columns:** event.title, title, starts_at (sortable), ends_at, status (badge), visibility (badge), capacity, published_at, cancelled_at.
 
 **Filters:** status, visibility, event.
 
-**Lifecycle actions:** Delay, Postpone, Cancel Occurrence, Complete.
-
-**Create/Edit form overrides:** Same Pricing & Registration fields as Event, with values inherited from the parent event when left unset. Visibility also inherits from the parent event when left unset.
-- Create forms also require the parent `event_id` and expose lifecycle defaults; edit forms keep the existing parent assignment unchanged.
+**Create/Edit form overrides:** Same Pricing & Registration fields as Event, with values inherited from the parent event when left unset. Visibility also inherits from the parent event when left unset. Create forms also require the parent `event_id`; edit forms keep the existing parent assignment unchanged.
 
 ### Sessions
 
-`EventSessionResource` manages agenda items within occurrences, with Create/Edit forms for session-level overrides.
+`EventSessionResource` manages agenda items within occurrences, with
+Create/Edit forms for session-level overrides. The create page delegates to
+`CreateEventSessionAction`; record actions call `EventLifecycleWorkflow`
+(`delay('session', …)`, `postpone`, `cancel`, `complete('session', $id)`) and
+`EventCloneService::cloneSession($id)`.
 
 **Table columns:** event.title, occurrence.title, title, starts_at, ends_at, status (badge), visibility (badge), capacity, published_at, cancelled_at, sort_order.
 
 **Filters:** status, visibility, event, occurrence.
 
-**Lifecycle actions:** Delay, Postpone, Cancel Session, Complete.
-
-**Create/Edit form overrides:** Same Pricing & Registration fields as Event/Occurrence, inherited from the parent occurrence/event when left unset. Sessions also require `starts_at` and `ends_at`, and visibility inherits from the parent occurrence when left unset.
-- Create forms also require the parent `event_occurrence_id` and expose lifecycle defaults; edit forms keep the existing parent assignment unchanged.
-- The lifecycle selector includes the same states as occurrences, including `rescheduled`.
+**Create/Edit form overrides:** Same Pricing & Registration fields as Event/Occurrence, inherited from the parent occurrence/event when left unset. Sessions also require `starts_at` and `ends_at`, and visibility inherits from the parent occurrence when left unset. Create forms also require the parent `event_occurrence_id`; edit forms keep the existing parent assignment unchanged.
 
 **Relation managers:** Involvements, Locations, Registrations, Attendances, Materials.
 
 ### Venues
 
 `VenueResource` manages physical venue/contact details. Address fields are
-resolved from the venue's canonical primary `HasAddresses` attachment.
+resolved from the venue's canonical primary `HasAddresses` attachment. Venue
+and venue-space resources are global catalogs: their queries are not owner
+scoped, matching the core package's intentional shared vocabularies.
 
 **Table columns:** name (searchable), venue_type (badge), city, state, country, status (badge), created_at.
 
@@ -76,7 +83,10 @@ resolved from the venue's canonical primary `HasAddresses` attachment.
 
 ### Ticket administration
 
-Ticket type, pass, holder, and transfer administration lives in `aiarmada/filament-ticketing`. Use that package's `TicketTypeResource`, `PassResource`, `PassHolderResource`, and `PassTransferResource` for generic ticketing CRUD across event and non-event ticketables.
+Ticket type, pass, holder, and transfer administration lives in
+`aiarmada/filament-ticketing`. Use that package's `TicketTypeResource`,
+`PassResource`, `PassHolderResource`, and `PassTransferResource` for generic
+ticketing CRUD across event and non-event ticketables.
 
 ### Attendance
 
@@ -92,27 +102,31 @@ The Check-In Console page (`/events/check-in`) provides:
 
 - **Search by pass number or registration number** — via header action modal
 - **Pass table** — shows pass_no, registration_no, registrant type, status, issued_at
-- **Check In action** — delegates to `EventCheckInService::checkIn()`, visible only for passes where `Pass::isValid()` is true
+- **Check In action** — delegates to `EventCheckInService::checkInWithResult()`, visible only for passes where `Pass::isValid()` is true
 - **Walk-In Check-In** — header action with event select + attendee name/email
 
 ```php
 use AIArmada\Events\Contracts\EventCheckInService;
 
-app(EventCheckInService::class)->checkIn([
+app(EventCheckInService::class)->checkInWithResult([
     'event_id' => $eventId,
     'event_occurrence_id' => $occurrenceId,
-    'pass_id' => $pass->id,
+    'pass_id' => $passId,
     'attendance_type' => 'registered',
     'check_in_source' => 'qr',
 ]);
 ```
 
+The console uses `checkInWithResult()` so duplicate scans resolve to the
+existing attendance instead of erroring.
+
 ## Approval Queue
 
-The Approval Queue page (`/events/approvals`) processes event submissions:
+The Approval Queue page (`/events/approvals`) processes event submissions
+through the scalar-ID `EventModerationWorkflow`:
 
 - **Table:** approvable_type (badge), approvable_id, status (badge), requested_by_type, assigned_to_type, created_at, approved_at, rejected_at
-- **Row actions:** Approve (optional notes), Reject (required reason), Assign to Me
+- **Row actions:** Approve (optional notes → `approve($submissionId, $actor, $notes)`), Reject (required reason → `reject($submissionId, $actor, $reason, $notes)`), Assign to Me (requires an authenticated user model)
 
 ## Event Public Preview
 
@@ -133,13 +147,22 @@ for the shared contract.
 
 ## Owner Safety
 
-All resources apply `OwnerUiScope::apply(..., includeGlobal: false)` to their main queries. This means:
+Event-bound resources (`EventResource`, occurrence, session, registration,
+participant, attendance, change log, template) apply
+`OwnerUiScope::apply(..., includeGlobal: false)` to their main queries. This
+means:
 
 - Tables only show records visible to the current owner
 - Relationship selects only list records visible to the current owner
 - Navigation badges are computed from owner-scoped queries
 
-Server-side validation in action handlers still relies on the core events package.
+Venue, venue-space, taxonomy, and term resources are intentional global
+catalogs and are not owner scoped, matching the core package's ownership
+model.
+
+Server-side validation in action handlers still relies on the core events
+package: lifecycle, clone, moderation, and check-in calls all run through
+owner-guarded scalar-ID contracts.
 
 ## Embedding events on host resources
 

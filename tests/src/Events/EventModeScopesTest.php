@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\Events\Enums\EventSeriesVisibility;
-use AIArmada\Events\Enums\RegistrationMode;
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventOccurrence;
-use AIArmada\Events\Models\EventSeries;
-use AIArmada\Events\Models\EventSession;
+use AIArmada\Events\Data\EventSeriesVisibility;
+use AIArmada\Events\Data\RegistrationMode;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
+use AIArmada\Events\Features\Catalog\Models\EventSeries;
+use AIArmada\Events\Features\Catalog\Models\EventSession;
 use AIArmada\Ticketing\Enums\PricingMode;
 
 beforeEach(function (): void {

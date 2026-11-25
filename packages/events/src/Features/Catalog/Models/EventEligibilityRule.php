@@ -1,0 +1,66 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Events\Features\Catalog\Models;
+
+use AIArmada\Events\Database\Factories\EventEligibilityRuleFactory;
+use AIArmada\Events\Platform\ScopesByEventOwner;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
+
+/**
+ * @property string $id
+ * @property string $event_id
+ * @property string|null $event_occurrence_id
+ * @property string|null $event_session_id
+ * @property string $rule_type
+ * @property string|null $operator
+ * @property string|null $value
+ * @property mixed|null $value_json
+ * @property string|null $effect
+ * @property string|null $message
+ * @property array|null $metadata
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ */
+final class EventEligibilityRule extends Model
+{
+    use HasFactory;
+    use HasUuids;
+    use ScopesByEventOwner;
+
+    protected $fillable = [
+        'event_id', 'event_occurrence_id', 'event_session_id',
+        'rule_type', 'operator', 'value', 'value_json',
+        'effect', 'message',
+        'metadata',
+    ];
+
+    public function getTable(): string
+    {
+        return $this->table ?? config('events.database.tables.event_eligibility_rules', 'event_eligibility_rules');
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'value_json' => 'array',
+            'metadata' => 'array',
+        ];
+    }
+
+    /** @return BelongsTo<Event, $this> */
+    public function event(): BelongsTo
+    {
+        return $this->belongsTo(Event::class);
+    }
+
+    protected static function newFactory(): EventEligibilityRuleFactory
+    {
+        return EventEligibilityRuleFactory::new();
+    }
+}

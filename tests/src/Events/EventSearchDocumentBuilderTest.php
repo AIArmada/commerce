@@ -3,15 +3,16 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Events\Jobs\BuildEventSearchDocumentJob;
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventAttribute;
-use AIArmada\Events\Models\EventAudience;
-use AIArmada\Events\Models\EventClassification;
-use AIArmada\Events\Models\EventOccurrence;
-use AIArmada\Events\Models\EventSearchDocument;
-use AIArmada\Events\Models\EventSession;
-use AIArmada\Events\Services\EventSearchDocumentBuilder;
+use AIArmada\Events\Contracts\EventSearchIndexer;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\EventAttribute;
+use AIArmada\Events\Features\Catalog\Models\EventAudience;
+use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
+use AIArmada\Events\Features\Catalog\Models\EventSession;
+use AIArmada\Events\Features\Search\EntryPoints\Jobs\BuildEventSearchDocumentJob;
+use AIArmada\Events\Features\Search\Models\EventSearchDocument;
+use AIArmada\Events\Features\Search\Queries\EventSearchDocumentBuilder;
+use AIArmada\Events\Features\Taxonomy\Models\EventClassification;
 
 beforeEach(function (): void {
     config()->set('events.features.owner.enabled', false);
@@ -68,7 +69,7 @@ describe('buildPayload', function (): void {
         $event = createSearchEvent();
 
         $builder = app(EventSearchDocumentBuilder::class);
-        $payload = $builder->buildPayload($event);
+        $payload = $builder->buildForEvent((string) $event->getKey());
 
         expect($payload)->toHaveKey('title', 'Ramadan Lecture');
         expect($payload)->toHaveKey('summary', 'A lecture on Ramadan');
@@ -89,7 +90,7 @@ describe('buildPayload', function (): void {
         ]);
 
         $builder = app(EventSearchDocumentBuilder::class);
-        $payload = $builder->buildPayload($event);
+        $payload = $builder->buildForEvent((string) $event->getKey());
 
         expect($payload['facets'])->toBe(['gender_restriction' => 'male_only']);
     });
@@ -113,7 +114,7 @@ describe('buildPayload', function (): void {
         ]);
 
         $builder = app(EventSearchDocumentBuilder::class);
-        $payload = $builder->buildPayload($event);
+        $payload = $builder->buildForEvent((string) $event->getKey());
 
         expect($payload['facets']['_audiences'])->toBe([
             'age_group' => ['adults'],
@@ -139,7 +140,7 @@ describe('buildPayload', function (): void {
         ]);
 
         $builder = app(EventSearchDocumentBuilder::class);
-        $payload = $builder->buildPayload($event);
+        $payload = $builder->buildForEvent((string) $event->getKey());
 
         expect($payload['facets']['_classifications'])->toBe([
             'topic' => ['ai'],
@@ -177,7 +178,7 @@ describe('buildPayloadForOccurrence', function (): void {
         $occurrence->refresh();
 
         $builder = app(EventSearchDocumentBuilder::class);
-        $payload = $builder->buildPayloadForOccurrence($occurrence);
+        $payload = $builder->buildForOccurrence((string) $occurrence->getKey());
 
         expect($payload)->toHaveKey('title', 'Ramadan Lecture Occurrence');
         expect($payload)->toHaveKey('summary', null);
@@ -238,7 +239,7 @@ describe('buildPayloadForSession', function (): void {
         $session->refresh();
 
         $builder = app(EventSearchDocumentBuilder::class);
-        $payload = $builder->buildPayloadForSession($session);
+        $payload = $builder->buildForSession((string) $session->getKey());
 
         expect($payload)->toHaveKey('title', 'Ramadan Lecture Session');
         expect($payload)->toHaveKey('summary', 'A focused session');
@@ -265,8 +266,9 @@ describe('buildForEvent', function (): void {
     it('creates a search document for the event', function (): void {
         $event = createSearchEvent();
 
-        $builder = app(EventSearchDocumentBuilder::class);
-        $doc = $builder->buildForEvent($event);
+        app(EventSearchIndexer::class)->index($event);
+
+        $doc = EventSearchDocument::where('event_id', $event->id)->firstOrFail();
 
         expect($doc)->toBeInstanceOf(EventSearchDocument::class);
         expect($doc->event_id)->toBe($event->id);
@@ -278,13 +280,14 @@ describe('buildForEvent', function (): void {
     it('upserts existing search document', function (): void {
         $event = createSearchEvent();
 
-        $builder = app(EventSearchDocumentBuilder::class);
-        $first = $builder->buildForEvent($event);
+        app(EventSearchIndexer::class)->index($event);
+        $first = EventSearchDocument::where('event_id', $event->id)->firstOrFail();
 
         $event->title = 'Updated Title';
         $event->save();
 
-        $second = $builder->buildForEvent($event);
+        app(EventSearchIndexer::class)->index($event);
+        $second = EventSearchDocument::where('event_id', $event->id)->firstOrFail();
 
         expect($second->id)->toBe($first->id);
         expect($second->title)->toBe('Updated Title');
@@ -295,8 +298,9 @@ describe('buildForOccurrence', function (): void {
     it('creates a search document for the occurrence', function (): void {
         $occurrence = createSearchOccurrence();
 
-        $builder = app(EventSearchDocumentBuilder::class);
-        $doc = $builder->buildForOccurrence($occurrence);
+        app(EventSearchIndexer::class)->index($occurrence);
+
+        $doc = EventSearchDocument::where('event_occurrence_id', $occurrence->id)->firstOrFail();
 
         expect($doc)->toBeInstanceOf(EventSearchDocument::class);
         expect($doc->event_id)->toBe($occurrence->event_id);
@@ -309,13 +313,14 @@ describe('buildForOccurrence', function (): void {
     it('upserts existing occurrence search document', function (): void {
         $occurrence = createSearchOccurrence();
 
-        $builder = app(EventSearchDocumentBuilder::class);
-        $first = $builder->buildForOccurrence($occurrence);
+        app(EventSearchIndexer::class)->index($occurrence);
+        $first = EventSearchDocument::where('event_occurrence_id', $occurrence->id)->firstOrFail();
 
         $occurrence->title = 'Updated Occurrence Title';
         $occurrence->save();
 
-        $second = $builder->buildForOccurrence($occurrence);
+        app(EventSearchIndexer::class)->index($occurrence);
+        $second = EventSearchDocument::where('event_occurrence_id', $occurrence->id)->firstOrFail();
 
         expect($second->id)->toBe($first->id);
         expect($second->title)->toBe('Updated Occurrence Title');
@@ -326,8 +331,9 @@ describe('buildForSession', function (): void {
     it('creates a search document for the session', function (): void {
         $session = createSearchSession();
 
-        $builder = app(EventSearchDocumentBuilder::class);
-        $doc = $builder->buildForSession($session);
+        app(EventSearchIndexer::class)->index($session);
+
+        $doc = EventSearchDocument::where('event_session_id', $session->id)->firstOrFail();
 
         expect($doc)->toBeInstanceOf(EventSearchDocument::class);
         expect($doc->event_id)->toBe($session->event_id);
@@ -340,13 +346,14 @@ describe('buildForSession', function (): void {
     it('upserts existing session search document', function (): void {
         $session = createSearchSession();
 
-        $builder = app(EventSearchDocumentBuilder::class);
-        $first = $builder->buildForSession($session);
+        app(EventSearchIndexer::class)->index($session);
+        $first = EventSearchDocument::where('event_session_id', $session->id)->firstOrFail();
 
         $session->title = 'Updated Session Title';
         $session->save();
 
-        $second = $builder->buildForSession($session);
+        app(EventSearchIndexer::class)->index($session);
+        $second = EventSearchDocument::where('event_session_id', $session->id)->firstOrFail();
 
         expect($second->id)->toBe($first->id);
         expect($second->title)->toBe('Updated Session Title');
@@ -358,7 +365,7 @@ describe('index', function (): void {
         $event = createSearchEvent();
 
         $builder = app(EventSearchDocumentBuilder::class);
-        $builder->index($event);
+        app(EventSearchIndexer::class)->index($event);
 
         $doc = EventSearchDocument::where('event_id', $event->id)->first();
 
@@ -372,7 +379,7 @@ describe('index', function (): void {
         $event = createSearchEvent();
 
         $builder = app(EventSearchDocumentBuilder::class);
-        $builder->index($event);
+        app(EventSearchIndexer::class)->index($event);
 
         $doc = EventSearchDocument::where('event_id', $event->id)->first();
 
@@ -383,7 +390,7 @@ describe('index', function (): void {
         $occurrence = createSearchOccurrence();
 
         $builder = app(EventSearchDocumentBuilder::class);
-        $builder->index($occurrence);
+        app(EventSearchIndexer::class)->index($occurrence);
 
         $doc = EventSearchDocument::where('event_occurrence_id', $occurrence->id)->first();
 
@@ -395,7 +402,7 @@ describe('index', function (): void {
         $session = createSearchSession();
 
         $builder = app(EventSearchDocumentBuilder::class);
-        $builder->index($session);
+        app(EventSearchIndexer::class)->index($session);
 
         $doc = EventSearchDocument::where('event_session_id', $session->id)->first();
 
@@ -409,11 +416,11 @@ describe('remove', function (): void {
         $event = createSearchEvent();
 
         $builder = app(EventSearchDocumentBuilder::class);
-        $builder->buildForEvent($event);
+        app(EventSearchIndexer::class)->index($event);
 
         expect(EventSearchDocument::where('event_id', $event->id)->exists())->toBeTrue();
 
-        $builder->remove($event);
+        app(EventSearchIndexer::class)->remove($event);
 
         expect(EventSearchDocument::where('event_id', $event->id)->exists())->toBeFalse();
     });
@@ -423,13 +430,13 @@ describe('remove', function (): void {
         $session = createSearchSession($occurrence);
 
         $builder = app(EventSearchDocumentBuilder::class);
-        $builder->buildForOccurrence($occurrence);
-        $builder->buildForSession($session);
+        app(EventSearchIndexer::class)->index($occurrence);
+        app(EventSearchIndexer::class)->index($session);
 
         expect(EventSearchDocument::where('event_occurrence_id', $occurrence->id)->exists())->toBeTrue();
         expect(EventSearchDocument::where('event_session_id', $session->id)->exists())->toBeTrue();
 
-        $builder->remove($occurrence);
+        app(EventSearchIndexer::class)->remove($occurrence);
 
         expect(EventSearchDocument::where('event_occurrence_id', $occurrence->id)->exists())->toBeFalse();
         expect(EventSearchDocument::where('event_session_id', $session->id)->exists())->toBeFalse();
@@ -439,11 +446,11 @@ describe('remove', function (): void {
         $session = createSearchSession();
 
         $builder = app(EventSearchDocumentBuilder::class);
-        $builder->buildForSession($session);
+        app(EventSearchIndexer::class)->index($session);
 
         expect(EventSearchDocument::where('event_session_id', $session->id)->exists())->toBeTrue();
 
-        $builder->remove($session);
+        app(EventSearchIndexer::class)->remove($session);
 
         expect(EventSearchDocument::where('event_session_id', $session->id)->exists())->toBeFalse();
     });
@@ -452,7 +459,7 @@ describe('remove', function (): void {
 describe('queued job serialization', function (): void {
     it('restores the latest event state after serialization', function (): void {
         $event = createSearchEvent();
-        $job = new BuildEventSearchDocumentJob($event);
+        $job = new BuildEventSearchDocumentJob(targetType: Event::class, targetId: (string) $event->getKey(), ownerType: null, ownerId: null, ownerIsGlobal: true);
 
         $event->title = 'Updated title';
         $event->save();

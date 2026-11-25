@@ -3,19 +3,19 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Events\Jobs\BuildEventSearchDocumentJob;
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventAttribute;
-use AIArmada\Events\Models\EventAudience;
-use AIArmada\Events\Models\EventOccurrence;
-use AIArmada\Events\Models\EventSearchDocument;
-use AIArmada\Events\Models\EventSession;
-use AIArmada\Events\Observers\EventAttributeObserver;
-use AIArmada\Events\Observers\EventAudienceObserver;
-use AIArmada\Events\Observers\EventObserver;
-use AIArmada\Events\Observers\EventOccurrenceObserver;
-use AIArmada\Events\Observers\EventSessionObserver;
-use AIArmada\Events\Services\EventSearchDocumentBuilder;
+use AIArmada\Events\Contracts\EventSearchIndexer;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\EventAttribute;
+use AIArmada\Events\Features\Catalog\Models\EventAudience;
+use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
+use AIArmada\Events\Features\Catalog\Models\EventSession;
+use AIArmada\Events\Features\Search\EntryPoints\Jobs\BuildEventSearchDocumentJob;
+use AIArmada\Events\Features\Search\EntryPoints\Observers\EventAttributeObserver;
+use AIArmada\Events\Features\Search\EntryPoints\Observers\EventAudienceObserver;
+use AIArmada\Events\Features\Search\EntryPoints\Observers\EventObserver;
+use AIArmada\Events\Features\Search\EntryPoints\Observers\EventOccurrenceObserver;
+use AIArmada\Events\Features\Search\EntryPoints\Observers\EventSessionObserver;
+use AIArmada\Events\Features\Search\Models\EventSearchDocument;
 use Illuminate\Support\Facades\Queue;
 
 beforeEach(function (): void {
@@ -70,7 +70,7 @@ function createIndexedSession(?EventOccurrence $occurrence = null): EventSession
 
 it('indexes and removes search documents when the event changes', function (): void {
     $event = createIndexedSearchEvent();
-    $observer = new EventObserver(app(EventSearchDocumentBuilder::class));
+    $observer = new EventObserver(app(EventSearchIndexer::class));
 
     $observer->saved($event);
 
@@ -86,7 +86,7 @@ it('queues search indexing when queue mode is enabled', function (): void {
     config()->set('events.search.queue_indexing', true);
     Queue::fake();
 
-    (new EventObserver(app(EventSearchDocumentBuilder::class)))->saved($event);
+    (new EventObserver(app(EventSearchIndexer::class)))->saved($event);
 
     Queue::assertPushed(BuildEventSearchDocumentJob::class, function (BuildEventSearchDocumentJob $job) use ($event): bool {
         return $job->targetType === Event::class
@@ -96,7 +96,7 @@ it('queues search indexing when queue mode is enabled', function (): void {
 
 it('does not index hidden event records', function (): void {
     $event = createIndexedSearchEvent();
-    $builder = app(EventSearchDocumentBuilder::class);
+    $builder = app(EventSearchIndexer::class);
     $builder->index($event);
 
     expect(EventSearchDocument::where('event_id', $event->id)->exists())->toBeTrue();
@@ -110,7 +110,7 @@ it('does not index hidden event records', function (): void {
 it('does not index children of hidden events', function (): void {
     $event = createIndexedSearchEvent();
     $occurrence = createIndexedOccurrence($event);
-    $builder = app(EventSearchDocumentBuilder::class);
+    $builder = app(EventSearchIndexer::class);
 
     $event->update(['visibility' => 'hidden']);
     $builder->index($occurrence->fresh());
@@ -123,7 +123,7 @@ it('removes search documents after an owned event has been deleted', function ()
 
     OwnerContext::withOwner(null, function (): void {
         $event = Event::factory()->create();
-        $observer = new EventObserver(app(EventSearchDocumentBuilder::class));
+        $observer = new EventObserver(app(EventSearchIndexer::class));
 
         $observer->saved($event);
         $eventId = $event->id;
@@ -139,7 +139,7 @@ it('removes search documents after an owned event has been deleted', function ()
 
 it('indexes and removes search documents when an occurrence changes', function (): void {
     $occurrence = createIndexedOccurrence();
-    $observer = new EventOccurrenceObserver(app(EventSearchDocumentBuilder::class));
+    $observer = new EventOccurrenceObserver(app(EventSearchIndexer::class));
 
     $observer->saved($occurrence);
 
@@ -152,7 +152,7 @@ it('indexes and removes search documents when an occurrence changes', function (
 
 it('indexes and removes search documents when a session changes', function (): void {
     $session = createIndexedSession();
-    $observer = new EventSessionObserver(app(EventSearchDocumentBuilder::class));
+    $observer = new EventSessionObserver(app(EventSearchIndexer::class));
 
     $observer->saved($session);
 
@@ -165,7 +165,7 @@ it('indexes and removes search documents when a session changes', function (): v
 
 it('reindexes search documents when an attribute is saved', function (): void {
     $event = createIndexedSearchEvent();
-    $observer = new EventAttributeObserver(app(EventSearchDocumentBuilder::class));
+    $observer = new EventAttributeObserver(app(EventSearchIndexer::class));
 
     $attribute = EventAttribute::factory()->create([
         'event_id' => $event->id,
@@ -184,7 +184,7 @@ it('reindexes search documents when an attribute is saved', function (): void {
 it('reindexes the event and occurrence when an occurrence-scoped attribute is saved', function (): void {
     $event = createIndexedSearchEvent();
     $occurrence = createIndexedOccurrence($event);
-    $observer = new EventAttributeObserver(app(EventSearchDocumentBuilder::class));
+    $observer = new EventAttributeObserver(app(EventSearchIndexer::class));
 
     $attribute = EventAttribute::query()->create([
         'event_id' => $event->id,
@@ -206,7 +206,7 @@ it('reindexes search documents when an audience is saved', function (): void {
     config()->set('events.attribute_sync.audience_types', ['age_group']);
 
     $event = createIndexedSearchEvent();
-    $observer = new EventAudienceObserver(app(EventSearchDocumentBuilder::class));
+    $observer = new EventAudienceObserver(app(EventSearchIndexer::class));
 
     $audience = EventAudience::factory()->create([
         'event_id' => $event->id,
@@ -231,7 +231,7 @@ it('reindexes the event and session when a session-scoped audience is saved', fu
     $event = createIndexedSearchEvent();
     $occurrence = createIndexedOccurrence($event);
     $session = createIndexedSession($occurrence);
-    $observer = new EventAudienceObserver(app(EventSearchDocumentBuilder::class));
+    $observer = new EventAudienceObserver(app(EventSearchIndexer::class));
 
     $audience = EventAudience::query()->create([
         'event_id' => $event->id,

@@ -4,137 +4,55 @@ declare(strict_types=1);
 
 namespace AIArmada\Events;
 
-use AIArmada\Cart\Contracts\CartManagerInterface;
-use AIArmada\Checkout\Contracts\CheckoutServiceInterface;
-use AIArmada\Checkout\Contracts\StepContributor;
-use AIArmada\CommerceSupport\Events\PaymentRefunded;
-use AIArmada\Engagement\EngagementServiceProvider;
-use AIArmada\Engagement\Integrations\Events\EngagementEventEngagementManager;
-use AIArmada\Events\Actions\CreateEventComponentRegistrationsAction;
-use AIArmada\Events\Actions\IssueEventRegistrationPassesAction;
-use AIArmada\Events\Actions\PromoteInterestedToConfirmedAction;
-use AIArmada\Events\Actions\RecordAgentTicketSaleAction;
-use AIArmada\Events\Actions\RecordHeadcountLogAction;
-use AIArmada\Events\Actions\RecordWalkInAction;
-use AIArmada\Events\Actions\RegisterForFreeAction;
-use AIArmada\Events\Actions\SyncManagementAssignmentToAuthzAction;
-use AIArmada\Events\Checkout\EventsStepContributor;
-use AIArmada\Events\Contracts\EventChangeNoticeAudienceResolver;
+use AIArmada\Events\Contracts\EventAuthzDriver;
+use AIArmada\Events\Contracts\EventCartDriver;
 use AIArmada\Events\Contracts\EventChangeNoticeNotificationDispatcher;
-use AIArmada\Events\Contracts\EventChangeNoticeWorkflow;
-use AIArmada\Events\Contracts\EventCheckInService;
-use AIArmada\Events\Contracts\EventCheckoutIntentResolver;
 use AIArmada\Events\Contracts\EventClassificationResolver;
-use AIArmada\Events\Contracts\EventCloneService;
 use AIArmada\Events\Contracts\EventDisplayTimezoneResolver;
 use AIArmada\Events\Contracts\EventEngagementManager;
-use AIArmada\Events\Contracts\EventLifecycleWorkflow;
-use AIArmada\Events\Contracts\EventModerationWorkflow;
-use AIArmada\Events\Contracts\EventOrderItemFulfillmentResolver;
+use AIArmada\Events\Contracts\EventOrderDriver;
 use AIArmada\Events\Contracts\EventReferenceResolver;
-use AIArmada\Events\Contracts\EventRefundEligibility;
-use AIArmada\Events\Contracts\EventRegistrationEligibility;
-use AIArmada\Events\Contracts\EventRegistrationQuestionResolver;
-use AIArmada\Events\Contracts\EventRegistrationScopeResolver;
 use AIArmada\Events\Contracts\EventScheduleResolver;
-use AIArmada\Events\Contracts\EventSearchEngine;
 use AIArmada\Events\Contracts\EventSearchIndexer;
 use AIArmada\Events\Contracts\EventSearchPayloadResolver;
 use AIArmada\Events\Contracts\EventSearchRelationProvider;
-use AIArmada\Events\Contracts\EventTaxonomyHierarchy;
-use AIArmada\Events\Contracts\EventTemplateService;
+use AIArmada\Events\Contracts\EventSeatingDriver;
+use AIArmada\Events\Contracts\EventTicketingDriver;
 use AIArmada\Events\Contracts\EventTranslationProvider;
-use AIArmada\Events\Contracts\RegistrationServiceInterface;
-use AIArmada\Events\Events\EventChangeNoticePublished;
-use AIArmada\Events\Events\EventFreeRegistrationConfirmed;
-use AIArmada\Events\Events\EventRegistrationApproved;
-use AIArmada\Events\Events\EventRegistrationCancelled;
-use AIArmada\Events\Events\EventRegistrationRefunded;
-use AIArmada\Events\Events\RegistrationCheckedIn;
-use AIArmada\Events\Integrations\NullEventEngagementManager;
-use AIArmada\Events\Listeners\AllocateEventSeatsOnPassIssued;
-use AIArmada\Events\Listeners\CancelBundleChildrenOnParentCanceled;
-use AIArmada\Events\Listeners\CompletePendingRefundOnPaymentRefunded;
-use AIArmada\Events\Listeners\DispatchEventChangeNoticeNotifications;
-use AIArmada\Events\Listeners\IssueEventPassesOnFreeRegistrationConfirmed;
-use AIArmada\Events\Listeners\ObserveEventTicketTypePricingConsistency;
-use AIArmada\Events\Listeners\ReleaseSeatsOnRegistrationRefunded;
-use AIArmada\Events\Listeners\RestoreTicketInventoryOnRegistrationRefunded;
-use AIArmada\Events\Listeners\RevokePassesOnRegistrationCancelled;
-use AIArmada\Events\Listeners\RevokePassesOnRegistrationRefunded;
-use AIArmada\Events\Listeners\SyncEventOrderCompletionOnRegistrationCheckedIn;
-use AIArmada\Events\Listeners\SyncEventOrderRegistrationsOnFulfillment;
-use AIArmada\Events\Listeners\SyncEventOrderRegistrationsOnOrderCanceled;
-use AIArmada\Events\Listeners\SyncEventOrderRegistrationsOnOrderRefunded;
-use AIArmada\Events\Listeners\SyncEventOrderRegistrationsOnOrderRefundFailed;
-use AIArmada\Events\Models\EventAttribute;
-use AIArmada\Events\Models\EventAudience;
-use AIArmada\Events\Models\EventClassification;
-use AIArmada\Events\Models\EventManagementAssignment;
-use AIArmada\Events\Models\EventOccurrence;
-use AIArmada\Events\Models\EventRegistration;
-use AIArmada\Events\Models\EventSession;
-use AIArmada\Events\Models\EventSubmission;
-use AIArmada\Events\Notifications\EventWelcomeNotification;
-use AIArmada\Events\Observers\EventAttributeObserver;
-use AIArmada\Events\Observers\EventAudienceObserver;
-use AIArmada\Events\Observers\EventClassificationObserver;
-use AIArmada\Events\Observers\EventObserver;
-use AIArmada\Events\Observers\EventOccurrenceObserver;
-use AIArmada\Events\Observers\EventSessionObserver;
-use AIArmada\Events\Policies\EventOccurrencePolicy;
-use AIArmada\Events\Policies\EventPolicy;
-use AIArmada\Events\Policies\EventRegistrationPolicy;
-use AIArmada\Events\Policies\EventSessionPolicy;
-use AIArmada\Events\Policies\EventSubmissionPolicy;
-use AIArmada\Events\Resolvers\DefaultEventChangeNoticeAudienceResolver;
-use AIArmada\Events\Resolvers\DefaultEventCheckoutIntentResolver;
-use AIArmada\Events\Resolvers\DefaultEventClassificationResolver;
-use AIArmada\Events\Resolvers\DefaultEventDisplayTimezoneResolver;
-use AIArmada\Events\Resolvers\DefaultEventOrderItemFulfillmentResolver;
-use AIArmada\Events\Resolvers\DefaultEventReferenceResolver;
-use AIArmada\Events\Resolvers\DefaultEventRefundEligibility;
-use AIArmada\Events\Resolvers\DefaultEventRegistrationEligibility;
-use AIArmada\Events\Resolvers\DefaultEventRegistrationQuestionResolver;
-use AIArmada\Events\Resolvers\DefaultEventRegistrationScopeResolver;
-use AIArmada\Events\Resolvers\DefaultEventSearchPayloadResolver;
-use AIArmada\Events\Resolvers\DefaultEventSearchRelationProvider;
-use AIArmada\Events\Resolvers\NullEventCheckoutIntentResolver;
-use AIArmada\Events\Resolvers\NullEventOrderItemFulfillmentResolver;
-use AIArmada\Events\Resolvers\NullEventScheduleResolver;
-use AIArmada\Events\Resolvers\NullEventTranslationProvider;
-use AIArmada\Events\Services\DefaultEventChangeNoticeWorkflow;
-use AIArmada\Events\Services\DefaultEventCheckInService;
-use AIArmada\Events\Services\DefaultEventLifecycleWorkflow;
-use AIArmada\Events\Services\DefaultEventModerationWorkflow;
-use AIArmada\Events\Services\EloquentEventSearchEngine;
-use AIArmada\Events\Services\EventCloneServiceImpl;
-use AIArmada\Events\Services\EventNotificationDispatcher;
-use AIArmada\Events\Services\EventQueryService;
-use AIArmada\Events\Services\EventSearchDocumentBuilder;
-use AIArmada\Events\Services\EventTaxonomyHierarchyService;
-use AIArmada\Events\Services\EventTemplateServiceImpl;
-use AIArmada\Events\Services\RegistrationService;
-use AIArmada\Events\Support\EventSubmissionOwnerScope;
-use AIArmada\Events\Support\Integration\CommerceIntegration;
-use AIArmada\Events\Support\ModelResolver;
-use AIArmada\FilamentAuthz\FilamentAuthzServiceProvider;
-use AIArmada\Orders\Events\OrderCanceled;
-use AIArmada\Orders\Events\OrderFulfillmentRequired;
-use AIArmada\Orders\Events\OrderRefunded;
-use AIArmada\Orders\Events\OrderRefundFailed;
-use AIArmada\Ticketing\Events\PassIssued;
-use AIArmada\Ticketing\Models\TicketType;
-use Illuminate\Contracts\Events\Dispatcher;
+use AIArmada\Events\Contracts\ResolvesEventTimeExpression;
+use AIArmada\Events\Drivers\AuthzDriver;
+use AIArmada\Events\Drivers\CartCheckoutDriver;
+use AIArmada\Events\Drivers\DefaultEventDisplayTimezoneDriver;
+use AIArmada\Events\Drivers\DefaultEventSearchPayloadDriver;
+use AIArmada\Events\Drivers\EventChangeNoticeNotificationDriver;
+use AIArmada\Events\Drivers\NullEventEngagementDriver;
+use AIArmada\Events\Drivers\NullEventScheduleDriver;
+use AIArmada\Events\Drivers\NullEventSearchIndexerDriver;
+use AIArmada\Events\Drivers\OrdersDriver;
+use AIArmada\Events\Drivers\SeatingDriver;
+use AIArmada\Events\Drivers\TicketingDriver;
+use AIArmada\Events\Features\Search\Actions\IndexEventSearchTargetAction;
+use AIArmada\Events\Platform\DefaultEventSearchRelationProvider;
+use AIArmada\Events\Platform\EventSubmissionOwnerScope;
+use AIArmada\Events\Platform\ExtensionRegistry;
+use AIArmada\Events\Platform\FeatureCatalog;
+use AIArmada\Events\Platform\FeatureModule;
+use AIArmada\Events\Platform\ModelResolver;
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Database\Eloquent\Relations\Relation;
-use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Notification;
 use RuntimeException;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
 final class EventsServiceProvider extends PackageServiceProvider
 {
+    private const string ENGAGEMENT_PROVIDER = 'AIArmada\\Engagement\\EngagementServiceProvider';
+
+    private const string ENGAGEMENT_MANAGER_DRIVER = 'AIArmada\\Engagement\\Integrations\\Events\\EngagementEventEngagementManager';
+
+    /** @var array{features: array<string, string>, owners: array<string, string>, writes: array<string, list<string>>, extensions: array<string, list<string>>}|null */
+    private ?array $catalog = null;
+
     public function configurePackage(Package $package): void
     {
         $package
@@ -145,340 +63,178 @@ final class EventsServiceProvider extends PackageServiceProvider
             ->discoversMigrations();
     }
 
-    public function registeringPackage(): void
+    public function packageRegistered(): void
     {
-        $eventClass = ModelResolver::eventClass();
-        Gate::policy($eventClass, EventPolicy::class);
-        Gate::policy(EventOccurrence::class, EventOccurrencePolicy::class);
-        Gate::policy(EventSession::class, EventSessionPolicy::class);
-        Gate::policy(ModelResolver::registrationClass(), EventRegistrationPolicy::class);
-        Gate::policy(ModelResolver::submissionClass(), EventSubmissionPolicy::class);
+        $catalog = $this->catalog();
 
-        $this->app->singleton(EventQueryService::class);
+        $this->app->singleton(ExtensionRegistry::class, fn (Application $app): ExtensionRegistry => new ExtensionRegistry(
+            $app,
+            $catalog['extensions'],
+        ));
 
-        $this->app->singleton(RegistrationService::class);
-        $this->app->singleton(EventChangeNoticeWorkflow::class, DefaultEventChangeNoticeWorkflow::class);
-        $this->app->singleton(EventModerationWorkflow::class, DefaultEventModerationWorkflow::class);
-        $this->app->singleton(EventLifecycleWorkflow::class, DefaultEventLifecycleWorkflow::class);
+        foreach (array_keys($catalog['features']) as $name) {
+            $instance = $this->app->make($this->moduleClass($name));
 
-        $this->app->bind(EventCheckInService::class, DefaultEventCheckInService::class);
-        $this->app->bind(RegistrationServiceInterface::class, RegistrationService::class);
-
-        $this->app->singleton(EventCloneService::class, EventCloneServiceImpl::class);
-        $this->app->singleton(EventTemplateService::class, EventTemplateServiceImpl::class);
-
-        $this->app->bind(EventEngagementManager::class, NullEventEngagementManager::class);
-
-        if (class_exists(EngagementServiceProvider::class)) {
-            $this->app->bind(
-                EventEngagementManager::class,
-                EngagementEventEngagementManager::class,
-            );
-        }
-
-        $this->app->bind(EventDisplayTimezoneResolver::class, $this->displayTimezoneResolverClass());
-        $this->app->bind(EventClassificationResolver::class, $this->classificationResolverClass());
-        $this->app->singleton(EventTaxonomyHierarchy::class, EventTaxonomyHierarchyService::class);
-        $this->app->bind(EventReferenceResolver::class, $this->referenceResolverClass());
-        $this->app->bind(EventScheduleResolver::class, $this->scheduleResolverClass());
-        $this->app->bind(EventSearchEngine::class, $this->searchEngineClass());
-        $this->app->bind(EventSearchPayloadResolver::class, $this->searchPayloadResolverClass());
-        $this->app->bind(EventSearchRelationProvider::class, $this->searchRelationProviderClass());
-        $this->app->bind(EventChangeNoticeAudienceResolver::class, $this->changeNoticeAudienceResolverClass());
-        $this->app->bind(EventChangeNoticeNotificationDispatcher::class, EventNotificationDispatcher::class);
-
-        $indexerClass = $this->searchIndexerClass();
-        $this->app->bind(EventSearchIndexer::class, fn (): EventSearchIndexer => app($indexerClass));
-        $this->app->bind(EventTranslationProvider::class, NullEventTranslationProvider::class);
-
-        $this->app->bind(EventRegistrationScopeResolver::class, DefaultEventRegistrationScopeResolver::class);
-        $this->app->bind(EventRegistrationQuestionResolver::class, DefaultEventRegistrationQuestionResolver::class);
-        $this->app->bind(EventRegistrationEligibility::class, DefaultEventRegistrationEligibility::class);
-        $this->app->bind(EventRefundEligibility::class, DefaultEventRefundEligibility::class);
-
-        $this->app->singleton(RegisterForFreeAction::class);
-        $this->app->singleton(PromoteInterestedToConfirmedAction::class);
-        $this->app->singleton(RecordWalkInAction::class);
-        $this->app->singleton(RecordHeadcountLogAction::class);
-        $this->app->singleton(CreateEventComponentRegistrationsAction::class);
-        $this->app->singleton(IssueEventRegistrationPassesAction::class);
-        $this->app->singleton(RecordAgentTicketSaleAction::class);
-
-        $this->app->make(Dispatcher::class)
-            ->listen(EventChangeNoticePublished::class, DispatchEventChangeNoticeNotifications::class);
-
-        $this->app->make(Dispatcher::class)
-            ->listen(EventFreeRegistrationConfirmed::class, IssueEventPassesOnFreeRegistrationConfirmed::class);
-
-        if (class_exists(PassIssued::class) && config('events.features.auto_allocate_seats', true)) {
-            $this->app->make(Dispatcher::class)
-                ->listen(PassIssued::class, AllocateEventSeatsOnPassIssued::class);
-        }
-
-        $this->app->make(Dispatcher::class)
-            ->listen(EventRegistrationCancelled::class, CancelBundleChildrenOnParentCanceled::class);
-
-        $dispatcher = $this->app->make(Dispatcher::class);
-
-        if (config('events.features.auto_revoke_passes_on_cancel', true)) {
-            $dispatcher->listen(EventRegistrationCancelled::class, RevokePassesOnRegistrationCancelled::class);
-        }
-
-        $dispatcher->listen(EventRegistrationRefunded::class, RevokePassesOnRegistrationRefunded::class);
-        $dispatcher->listen(EventRegistrationRefunded::class, ReleaseSeatsOnRegistrationRefunded::class);
-        $dispatcher->listen(EventRegistrationRefunded::class, RestoreTicketInventoryOnRegistrationRefunded::class);
-
-        if (CommerceIntegration::aiArmadaOrderFulfillmentAvailable()) {
-            $this->app->bind(EventOrderItemFulfillmentResolver::class, $this->fulfillmentResolverClass());
-            $this->app->bind(EventCheckoutIntentResolver::class, $this->checkoutIntentResolverClass());
-
-            $dispatcher = $this->app->make(Dispatcher::class);
-            $dispatcher->listen(OrderFulfillmentRequired::class, SyncEventOrderRegistrationsOnFulfillment::class);
-            $dispatcher->listen(OrderCanceled::class, SyncEventOrderRegistrationsOnOrderCanceled::class);
-            $dispatcher->listen(OrderRefunded::class, SyncEventOrderRegistrationsOnOrderRefunded::class);
-            $dispatcher->listen(OrderRefundFailed::class, SyncEventOrderRegistrationsOnOrderRefundFailed::class);
-            $dispatcher->listen(RegistrationCheckedIn::class, SyncEventOrderCompletionOnRegistrationCheckedIn::class);
-            $dispatcher->listen(PaymentRefunded::class, [CompletePendingRefundOnPaymentRefunded::class, 'handle']);
-        }
-
-        $this->app->make(Dispatcher::class)->listen(EventRegistrationApproved::class, function (EventRegistrationApproved $event): void {
-            if (! (bool) config('events.notifications.welcome.enabled', true)) {
-                return;
+            if ($instance instanceof FeatureModule) {
+                $instance->register($this->app);
             }
-
-            $notification = new EventWelcomeNotification($event->registration);
-            $recipient = $event->registration->routeNotificationForMail($notification);
-
-            if ($recipient === null) {
-                return;
-            }
-
-            Notification::route('mail', $recipient)->notify($notification);
-        });
-
-        if (class_exists(FilamentAuthzServiceProvider::class)) {
-            $this->app->make(Dispatcher::class)
-                ->listen(
-                    'eloquent.created: ' . EventManagementAssignment::class,
-                    SyncManagementAssignmentToAuthzAction::class,
-                );
         }
+
+        $this->registerConfiguredOverrides();
+        $this->registerDrivers();
+    }
+
+    public function packageBooted(): void
+    {
+        foreach (array_keys($this->catalog()['features']) as $name) {
+            $instance = $this->app->make($this->moduleClass($name));
+
+            if ($instance instanceof FeatureModule) {
+                $instance->boot($this->app);
+            }
+        }
+
+        EventSubmissionOwnerScope::register();
 
         $this->registerMorphMap();
     }
 
-    public function bootingPackage(): void
+    private function moduleClass(string $feature): string
     {
-        $eventClass = ModelResolver::eventClass();
+        return __NAMESPACE__ . '\\Features\\' . $feature . '\\FeatureModule';
+    }
 
-        EventSubmissionOwnerScope::register();
+    /**
+     * @return array{features: array<string, string>, owners: array<string, string>, writes: array<string, list<string>>, extensions: array<string, list<string>>}
+     */
+    private function catalog(): array
+    {
+        return $this->catalog ??= FeatureCatalog::load(dirname(__DIR__), __NAMESPACE__);
+    }
 
-        if (config('events.sync.build_search_documents')) {
-            $eventClass::observe(EventObserver::class);
-            EventOccurrence::observe(EventOccurrenceObserver::class);
-            EventSession::observe(EventSessionObserver::class);
+    private function registerConfiguredOverrides(): void
+    {
+        $this->bindInterfaceWhenConfigured(EventReferenceResolver::class, 'events.references.resolver');
+        $this->bindInterfaceWhenConfigured(EventClassificationResolver::class, 'events.classifications.resolver');
+        $this->bindInterfaceWhenConfigured(EventTranslationProvider::class, 'events.translations.provider');
+        $this->bindInterfaceWhenConfigured(ResolvesEventTimeExpression::class, 'events.time_expressions.resolver');
+    }
+
+    private function registerDrivers(): void
+    {
+        $this->app->bind(EventTicketingDriver::class, TicketingDriver::class);
+        $this->app->bind(EventSeatingDriver::class, SeatingDriver::class);
+        $this->app->bind(EventOrderDriver::class, OrdersDriver::class);
+        $this->app->bind(EventCartDriver::class, CartCheckoutDriver::class);
+        $this->app->bind(EventAuthzDriver::class, AuthzDriver::class);
+
+        $this->bindEngagementManager();
+
+        $this->bindDriver(
+            EventScheduleResolver::class,
+            'events.schedule.resolver',
+            NullEventScheduleDriver::class,
+        );
+
+        $this->bindDriver(
+            EventDisplayTimezoneResolver::class,
+            'events.timezone.display_timezone_resolver',
+            DefaultEventDisplayTimezoneDriver::class,
+        );
+
+        $this->bindDriver(
+            EventSearchPayloadResolver::class,
+            'events.search.payload_resolver',
+            DefaultEventSearchPayloadDriver::class,
+        );
+
+        $this->bindDriver(
+            EventSearchRelationProvider::class,
+            'events.search.relation_provider',
+            DefaultEventSearchRelationProvider::class,
+        );
+
+        $this->app->bind(EventChangeNoticeNotificationDispatcher::class, EventChangeNoticeNotificationDriver::class);
+        $this->app->bind(EventSearchIndexer::class, fn (): EventSearchIndexer => $this->app->make($this->searchIndexerClass()));
+    }
+
+    private function bindEngagementManager(): void
+    {
+        if (class_exists(self::ENGAGEMENT_PROVIDER) && class_exists(self::ENGAGEMENT_MANAGER_DRIVER)) {
+            $this->app->bind(EventEngagementManager::class, self::ENGAGEMENT_MANAGER_DRIVER);
+
+            return;
         }
 
-        if (config('events.sync.build_search_documents')) {
-            EventAttribute::observe(EventAttributeObserver::class);
-            EventAudience::observe(EventAudienceObserver::class);
+        $this->app->bind(EventEngagementManager::class, NullEventEngagementDriver::class);
+    }
+
+    /**
+     * @param  class-string  $contract
+     * @param  class-string  $default
+     */
+    private function bindDriver(string $contract, string $configKey, string $default): void
+    {
+        $configured = config($configKey);
+
+        if (is_string($configured) && $configured !== '') {
+            if (! is_a($configured, $contract, true)) {
+                throw new RuntimeException(sprintf('The %s config value must be a %s class.', $configKey, $contract));
+            }
+
+            $this->app->bind($contract, $configured);
+
+            return;
         }
 
-        if (config('events.sync.classifications_to_facets')) {
-            EventClassification::observe(EventClassificationObserver::class);
+        $this->app->bind($contract, $default);
+    }
+
+    /**
+     * @param  class-string  $contract
+     */
+    private function bindInterfaceWhenConfigured(string $contract, string $configKey): void
+    {
+        $configured = config($configKey);
+
+        if (! is_string($configured) || $configured === '') {
+            return;
         }
 
-        TicketType::observe(ObserveEventTicketTypePricingConsistency::class);
-
-        if (interface_exists(StepContributor::class)) {
-            $this->app->tag(EventsStepContributor::class, 'checkout.steps');
+        if (! is_a($configured, $contract, true)) {
+            throw new RuntimeException(sprintf('The %s config value must be a %s class.', $configKey, $contract));
         }
+
+        $this->app->bind($contract, $configured);
+    }
+
+    /**
+     * @return class-string<EventSearchIndexer>
+     */
+    private function searchIndexerClass(): string
+    {
+        $configured = config('events.search.indexer');
+
+        if (is_string($configured) && $configured !== '') {
+            if (! is_a($configured, EventSearchIndexer::class, true)) {
+                throw new RuntimeException('The events.search.indexer config value must be an EventSearchIndexer class.');
+            }
+
+            return $configured;
+        }
+
+        if (class_exists(IndexEventSearchTargetAction::class)) {
+            return IndexEventSearchTargetAction::class;
+        }
+
+        return NullEventSearchIndexerDriver::class;
     }
 
     private function registerMorphMap(): void
     {
         Relation::morphMap([
-            'event_registration' => EventRegistration::class,
-            'event_submission' => EventSubmission::class,
+            'event_registration' => ModelResolver::registrationClass(),
+            'event_submission' => ModelResolver::submissionClass(),
         ]);
-    }
-
-    private function checkoutPipelineAvailable(): bool
-    {
-        return interface_exists(CartManagerInterface::class)
-            && interface_exists(CheckoutServiceInterface::class);
-    }
-
-    private function fulfillmentResolverClass(): string
-    {
-        $resolver = config('events.integrations.order_item_fulfillment_resolver');
-
-        if ($resolver === null) {
-            if (! CommerceIntegration::aiArmadaOrderFulfillmentAvailable()) {
-                return NullEventOrderItemFulfillmentResolver::class;
-            }
-
-            return DefaultEventOrderItemFulfillmentResolver::class;
-        }
-
-        if (is_string($resolver) && is_a($resolver, EventOrderItemFulfillmentResolver::class, true)) {
-            return $resolver;
-        }
-
-        throw new RuntimeException('The events.integrations.order_item_fulfillment_resolver config value must be an EventOrderItemFulfillmentResolver class.');
-    }
-
-    private function checkoutIntentResolverClass(): string
-    {
-        $resolver = config('events.integrations.checkout_intent_resolver');
-
-        if ($resolver === null) {
-            if (! $this->checkoutPipelineAvailable()) {
-                return NullEventCheckoutIntentResolver::class;
-            }
-
-            return DefaultEventCheckoutIntentResolver::class;
-        }
-
-        if (is_string($resolver) && is_a($resolver, EventCheckoutIntentResolver::class, true)) {
-            return $resolver;
-        }
-
-        throw new RuntimeException('The events.integrations.checkout_intent_resolver config value must be an EventCheckoutIntentResolver class.');
-    }
-
-    private function displayTimezoneResolverClass(): string
-    {
-        $resolver = config('events.timezone.display_timezone_resolver');
-
-        if ($resolver === null) {
-            return DefaultEventDisplayTimezoneResolver::class;
-        }
-
-        if (is_string($resolver) && is_a($resolver, EventDisplayTimezoneResolver::class, true)) {
-            return $resolver;
-        }
-
-        throw new RuntimeException('The events.timezone.display_timezone_resolver config value must be an EventDisplayTimezoneResolver class.');
-    }
-
-    private function searchPayloadResolverClass(): string
-    {
-        $resolver = config('events.search.payload_resolver');
-
-        if ($resolver === null) {
-            return DefaultEventSearchPayloadResolver::class;
-        }
-
-        if (is_string($resolver) && is_a($resolver, EventSearchPayloadResolver::class, true)) {
-            return $resolver;
-        }
-
-        throw new RuntimeException('The events.search.payload_resolver config value must be an EventSearchPayloadResolver class.');
-    }
-
-    private function classificationResolverClass(): string
-    {
-        $resolver = config('events.classifications.resolver');
-
-        if ($resolver === null) {
-            return DefaultEventClassificationResolver::class;
-        }
-
-        if (is_string($resolver) && is_a($resolver, EventClassificationResolver::class, true)) {
-            return $resolver;
-        }
-
-        throw new RuntimeException('The events.classifications.resolver config value must be an EventClassificationResolver class.');
-    }
-
-    private function referenceResolverClass(): string
-    {
-        $resolver = config('events.references.resolver');
-
-        if ($resolver === null) {
-            return DefaultEventReferenceResolver::class;
-        }
-
-        if (is_string($resolver) && is_a($resolver, EventReferenceResolver::class, true)) {
-            return $resolver;
-        }
-
-        throw new RuntimeException('The events.references.resolver config value must be an EventReferenceResolver class.');
-    }
-
-    private function scheduleResolverClass(): string
-    {
-        $resolver = config('events.schedule.resolver');
-
-        if ($resolver === null) {
-            return NullEventScheduleResolver::class;
-        }
-
-        if (is_string($resolver) && is_a($resolver, EventScheduleResolver::class, true)) {
-            return $resolver;
-        }
-
-        throw new RuntimeException('The events.schedule.resolver config value must be an EventScheduleResolver class.');
-    }
-
-    private function searchEngineClass(): string
-    {
-        $resolver = config('events.search.engine');
-
-        if ($resolver === null) {
-            return EloquentEventSearchEngine::class;
-        }
-
-        if (is_string($resolver) && is_a($resolver, EventSearchEngine::class, true)) {
-            return $resolver;
-        }
-
-        throw new RuntimeException('The events.search.engine config value must be an EventSearchEngine class.');
-    }
-
-    private function searchRelationProviderClass(): string
-    {
-        $provider = config('events.search.relation_provider');
-
-        if ($provider === null) {
-            return DefaultEventSearchRelationProvider::class;
-        }
-
-        if (is_string($provider) && is_a($provider, EventSearchRelationProvider::class, true)) {
-            return $provider;
-        }
-
-        throw new RuntimeException('The events.search.relation_provider config value must be an EventSearchRelationProvider class.');
-    }
-
-    private function searchIndexerClass(): string
-    {
-        $resolver = config('events.search.indexer');
-
-        if ($resolver === null) {
-            return EventSearchDocumentBuilder::class;
-        }
-
-        if (is_string($resolver) && is_a($resolver, EventSearchIndexer::class, true)) {
-            return $resolver;
-        }
-
-        throw new RuntimeException('The events.search.indexer config value must be an EventSearchIndexer class.');
-    }
-
-    private function changeNoticeAudienceResolverClass(): string
-    {
-        $resolver = config('events.change_notices.audience_resolver');
-
-        if ($resolver === null) {
-            return DefaultEventChangeNoticeAudienceResolver::class;
-        }
-
-        if (is_string($resolver) && is_a($resolver, EventChangeNoticeAudienceResolver::class, true)) {
-            return $resolver;
-        }
-
-        throw new RuntimeException('The events.change_notices.audience_resolver config value must be an EventChangeNoticeAudienceResolver class.');
     }
 }

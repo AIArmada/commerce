@@ -7,9 +7,9 @@ namespace AIArmada\FilamentEvents\Pages;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Events\Contracts\EventModerationWorkflow;
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventApprovalRequest;
-use AIArmada\Events\Models\EventSubmission;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Governance\Models\EventApprovalRequest;
+use AIArmada\Events\Features\Governance\Models\EventSubmission;
 use BackedEnum;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
@@ -88,7 +88,7 @@ final class ApprovalQueue extends Page implements HasTable
 
                         Gate::authorize('update', $submission);
 
-                        app(EventModerationWorkflow::class)->approve($submission, Filament::auth()->user(), $data['notes'] ?? null);
+                        app(EventModerationWorkflow::class)->approve((string) $submission->getKey(), Filament::auth()->user(), $data['notes'] ?? null);
 
                         $record->update([
                             'status' => 'approved',
@@ -111,7 +111,7 @@ final class ApprovalQueue extends Page implements HasTable
 
                         Gate::authorize('update', $submission);
 
-                        app(EventModerationWorkflow::class)->reject($submission, Filament::auth()->user(), $data['reason'], $data['notes'] ?? null);
+                        app(EventModerationWorkflow::class)->reject((string) $submission->getKey(), Filament::auth()->user(), $data['reason'], $data['notes'] ?? null);
 
                         $record->update([
                             'status' => 'rejected',

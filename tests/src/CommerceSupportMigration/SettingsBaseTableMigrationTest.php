@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\SupportServiceProvider;
-use AIArmada\Events\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\Event;
 use AIArmada\Pricing\PricingServiceProvider;
 use AIArmada\Ticketing\Enums\PricingMode;
 use AIArmada\Ticketing\Models\TicketType;

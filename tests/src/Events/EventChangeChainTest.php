@@ -6,17 +6,17 @@ use AIArmada\Communications\Contracts\CommunicationManager;
 use AIArmada\Communications\Data\CommunicationContextData;
 use AIArmada\Communications\Facades\Communications;
 use AIArmada\Contacting\Data\ContactMethodData;
-use AIArmada\Events\Actions\DispatchEventChangeChainAction;
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventRegistration;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Changes\Actions\DispatchEventChangeChainAction;
+use AIArmada\Events\Features\Registrations\Models\EventRegistration;
 use AIArmada\Events\Notifications\EventChangeNoticeNotification;
 use Illuminate\Notifications\Notification;
 
 it('creates change log with update for cancellations', function (): void {
     $event = Event::factory()->create();
 
-    DispatchEventChangeChainAction::run(
-        eventId: $event->id,
+    app(DispatchEventChangeChainAction::class)->handle(
+        eventId: (string) $event->getKey(),
         changeType: 'cancelled',
         changeCategory: 'status',
         impactLevel: 'critical',
@@ -43,8 +43,8 @@ it('dispatches critical changes through the communications bridge', function ():
     ]);
     $participant->addContactMethod(ContactMethodData::email('alice@example.com'));
 
-    DispatchEventChangeChainAction::run(
-        eventId: $event->id,
+    app(DispatchEventChangeChainAction::class)->handle(
+        eventId: (string) $event->getKey(),
         changeType: 'cancelled',
         changeCategory: 'status',
         impactLevel: 'critical',

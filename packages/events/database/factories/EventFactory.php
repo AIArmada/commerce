@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Database\Factories;
 
-use AIArmada\Events\Enums\RegistrationMode;
-use AIArmada\Events\Models\Event;
+use AIArmada\Events\Data\RegistrationMode;
+use AIArmada\Events\Features\Catalog\Models\Event;
 use AIArmada\Ticketing\Enums\PricingMode;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;

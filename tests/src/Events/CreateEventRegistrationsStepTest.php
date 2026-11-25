@@ -7,11 +7,11 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Events\Contracts\RegistrationServiceInterface;
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventOccurrence;
-use AIArmada\Events\Models\EventRegistration;
-use AIArmada\Events\Models\EventSession;
-use AIArmada\Events\Steps\CreateEventRegistrationsStep;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
+use AIArmada\Events\Features\Catalog\Models\EventSession;
+use AIArmada\Events\Features\Commerce\EntryPoints\Checkout\CreateEventRegistrationsStep;
+use AIArmada\Events\Features\Registrations\Models\EventRegistration;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
 use AIArmada\Ticketing\Models\TicketType;
@@ -137,13 +137,17 @@ it('reuses snapshot participants and uses the purchaser when none were assigned'
         $registrationService = mock(RegistrationServiceInterface::class);
         $registrationService->shouldReceive('register')
             ->times(3)
-            ->andReturnUsing(function (array $data) use (&$captured): EventRegistration {
+            ->andReturnUsing(function (array $data) use (&$captured): string {
                 $captured[] = [
                     'ticket_type_id' => $data['items'][0]['ticket_type_id'] ?? null,
                     'participant' => $data['participants'][0] ?? null,
                 ];
 
-                return new EventRegistration;
+                return (string) EventRegistration::factory()->create([
+                    'event_id' => $data['event_id'] ?? null,
+                    'event_occurrence_id' => $data['event_occurrence_id'] ?? null,
+                    'event_session_id' => $data['event_session_id'] ?? null,
+                ])->getKey();
             });
 
         $step = app(CreateEventRegistrationsStep::class);
@@ -242,10 +246,14 @@ it('uses the customer contact methods when purchaser participants are built', fu
         $registrationService = mock(RegistrationServiceInterface::class);
         $registrationService->shouldReceive('register')
             ->once()
-            ->andReturnUsing(function (array $data) use (&$captured): EventRegistration {
+            ->andReturnUsing(function (array $data) use (&$captured): string {
                 $captured[] = $data['participants'][0] ?? null;
 
-                return new EventRegistration;
+                return (string) EventRegistration::factory()->create([
+                    'event_id' => $data['event_id'] ?? null,
+                    'event_occurrence_id' => $data['event_occurrence_id'] ?? null,
+                    'event_session_id' => $data['event_session_id'] ?? null,
+                ])->getKey();
             });
 
         $step = app(CreateEventRegistrationsStep::class);
@@ -392,7 +400,7 @@ it('routes registrations to the matching event scope for event, occurrence, and 
         $registrationService = mock(RegistrationServiceInterface::class);
         $registrationService->shouldReceive('register')
             ->times(3)
-            ->andReturnUsing(function (array $data) use (&$captured): EventRegistration {
+            ->andReturnUsing(function (array $data) use (&$captured): string {
                 $captured[] = [
                     'ticket_type_id' => $data['items'][0]['ticket_type_id'] ?? null,
                     'event_id' => $data['event_id'] ?? null,
@@ -401,7 +409,11 @@ it('routes registrations to the matching event scope for event, occurrence, and 
                     'participant_name' => $data['participants'][0]['name'] ?? null,
                 ];
 
-                return new EventRegistration;
+                return (string) EventRegistration::factory()->create([
+                    'event_id' => $data['event_id'] ?? null,
+                    'event_occurrence_id' => $data['event_occurrence_id'] ?? null,
+                    'event_session_id' => $data['event_session_id'] ?? null,
+                ])->getKey();
             });
 
         $step = app(CreateEventRegistrationsStep::class);
@@ -461,7 +473,7 @@ it('compensates only registrations recorded by the checkout step', function (): 
         $registrationService = mock(RegistrationServiceInterface::class);
         $registrationService->shouldReceive('cancel')
             ->once()
-            ->withArgs(fn (EventRegistration $actual, ?string $reason): bool => $actual->is($registration)
+            ->withArgs(fn (string $registrationId, ?string $reason): bool => $registrationId === (string) $registration->getKey()
                 && $reason === 'Checkout compensation');
         app()->instance(RegistrationServiceInterface::class, $registrationService);
 

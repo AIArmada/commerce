@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "name": "Commerce",
+  "owns": {},
+  "extensions": {
+    "events.cascade-delete": [
+      "AIArmada\\Events\\Features\\Commerce\\Extensions\\CommerceDeleteCascadeExtension"
+    ]
+  }
+}

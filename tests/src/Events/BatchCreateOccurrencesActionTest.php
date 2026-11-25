@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Events\Actions\BatchCreateOccurrencesAction;
-use AIArmada\Events\Models\Event;
+use AIArmada\Events\Features\Catalog\Actions\BatchCreateOccurrencesAction;
+use AIArmada\Events\Features\Catalog\Models\Event;
 use Carbon\CarbonImmutable;
 
 it('falls back to the template code when an occurrence code is blank', function (): void {

@@ -7,7 +7,7 @@ namespace AIArmada\FilamentEvents\Resources;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\OwnerCache;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Events\Models\EventRegistrationParticipant;
+use AIArmada\Events\Features\Registrations\Models\EventRegistrationParticipant;
 use BackedEnum;
 use Filament\Actions\ViewAction;
 use Filament\Infolists\Components\TextEntry;

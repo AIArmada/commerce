@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Events;
 
-use AIArmada\Events\Models\EventChangeLog;
-
-final class EventChangeNoticeRetracted
+final readonly class EventChangeNoticeRetracted
 {
     public function __construct(
-        public EventChangeLog $changeLog,
+        public string $changeLogId,
+        public string $eventId,
     ) {}
 }

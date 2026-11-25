@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentEvents\Resources\EventResource\Pages;
 
 use AIArmada\Events\Contracts\EventTemplateService;
-use AIArmada\Events\Models\EventTemplate;
+use AIArmada\Events\Features\Catalog\Models\EventTemplate;
 use AIArmada\FilamentEvents\Resources\EventResource;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
@@ -43,8 +43,8 @@ class CreateEvent extends CreateRecord
                     $template = EventTemplate::query()->findOrFail($data['event_template_id']);
 
                     try {
-                        $event = app(EventTemplateService::class)->createFromTemplate($template);
-                        redirect(EventResource::getUrl('edit', ['record' => $event]));
+                        $eventId = app(EventTemplateService::class)->createFromTemplate((string) $template->getKey());
+                        redirect(EventResource::getUrl('edit', ['record' => $eventId]));
                     } catch (Throwable $e) {
                         Notification::make()
                             ->title('Failed to create from template')

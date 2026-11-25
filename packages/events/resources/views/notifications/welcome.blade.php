@@ -3,6 +3,8 @@
 
 Hi, your registration for **{{ $brandName }} : {{ $eventName }}** is confirmed.
 
+**Registration No:** {{ $registrationNo }}
+
 <x-mail::button :url="config('app.url')">
 View Event Details
 </x-mail::button>

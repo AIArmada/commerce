@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Events\Listeners\SyncEventOrderRegistrationsOnFulfillment;
+use AIArmada\Events\Features\Commerce\EntryPoints\Listeners\SyncEventOrderRegistrationsOnFulfillment;
 use AIArmada\Orders\Events\OrderFulfillmentRequired;
 use Illuminate\Support\Facades\Event;
 

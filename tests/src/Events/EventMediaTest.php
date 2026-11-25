@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventMedia;
-use AIArmada\Events\Models\EventOccurrence;
-use AIArmada\Events\Models\EventSession;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\EventMedia;
+use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
+use AIArmada\Events\Features\Catalog\Models\EventSession;
 use Spatie\MediaLibrary\Support\FileNamer\DefaultFileNamer;
 
 it('registers the default media profile for each event scope', function (): void {

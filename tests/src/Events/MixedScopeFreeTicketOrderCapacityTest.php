@@ -3,14 +3,14 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Events\Actions\CreateRegistrationsFromOrderAction;
 use AIArmada\Events\Exceptions\EventCapacityExceededException;
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventOccurrence;
-use AIArmada\Events\Models\EventRegistration;
-use AIArmada\Events\Models\EventRegistrationItem;
-use AIArmada\Events\Models\EventRegistrationParticipant;
-use AIArmada\Events\Models\EventSession;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
+use AIArmada\Events\Features\Catalog\Models\EventSession;
+use AIArmada\Events\Features\Commerce\Actions\CreateRegistrationsFromOrderAction;
+use AIArmada\Events\Features\Registrations\Models\EventRegistration;
+use AIArmada\Events\Features\Registrations\Models\EventRegistrationItem;
+use AIArmada\Events\Features\Registrations\Models\EventRegistrationParticipant;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
 use AIArmada\Ticketing\Enums\PricingMode;
@@ -67,8 +67,9 @@ it('enforces occurrence capacity for a zero-price ticket in a mixed scope', func
         $orderItem = createMixedScopeOrderItem($freeTicket, $order);
 
         expect(fn () => app(CreateRegistrationsFromOrderAction::class)->handle(
-            target: $occurrence,
-            orderItem: $orderItem->fresh(),
+            scopeType: 'occurrence',
+            scopeId: (string) $occurrence->getKey(),
+            orderItemId: (string) $orderItem->id,
             participants: [['name' => 'Free Attendee']],
         ))->toThrow(EventCapacityExceededException::class);
 
@@ -114,8 +115,9 @@ it('enforces parent capacity for a zero-price session ticket when a sibling cons
         $orderItem = createMixedScopeOrderItem($freeTicket, $order);
 
         expect(fn () => app(CreateRegistrationsFromOrderAction::class)->handle(
-            target: $session,
-            orderItem: $orderItem->fresh(),
+            scopeType: 'session',
+            scopeId: (string) $session->getKey(),
+            orderItemId: (string) $orderItem->id,
             participants: [['name' => 'Free Attendee']],
         ))->toThrow(EventCapacityExceededException::class);
 
@@ -155,8 +157,9 @@ it('enforces session capacity for a zero-price session ticket in a mixed scope',
         $orderItem = createMixedScopeOrderItem($freeTicket, $order);
 
         expect(fn () => app(CreateRegistrationsFromOrderAction::class)->handle(
-            target: $session,
-            orderItem: $orderItem->fresh(),
+            scopeType: 'session',
+            scopeId: (string) $session->getKey(),
+            orderItemId: (string) $orderItem->id,
             participants: [['name' => 'Free Attendee']],
         ))->toThrow(EventCapacityExceededException::class);
 
@@ -183,21 +186,22 @@ it('creates free-ticket order registrations in a mixed scope when capacity remai
         $orderItem = createMixedScopeOrderItem($freeTicket, $order);
 
         $registrations = app(CreateRegistrationsFromOrderAction::class)->handle(
-            target: $occurrence,
-            orderItem: $orderItem->fresh(),
+            scopeType: 'occurrence',
+            scopeId: (string) $occurrence->getKey(),
+            orderItemId: (string) $orderItem->id,
             participants: [['name' => 'Free Attendee', 'is_purchaser' => true]],
         );
 
-        $registration = $registrations->first();
+        $registration = EventRegistration::query()->findOrFail($registrations[0]);
 
         expect($registrations)->toHaveCount(1)
-            ->and($registration?->status->getValue())->toBe('confirmed')
-            ->and($registration?->source)->toBe('order')
-            ->and($registration?->payment_status)->toBe('free')
-            ->and($registration?->external_order_id)->toBe($order->id)
-            ->and($registration?->items)->toHaveCount(1)
-            ->and($registration?->items->first()?->external_order_item_id)->toBe($orderItem->id)
-            ->and($registration?->passes)->toBeEmpty();
+            ->and($registration->status->getValue())->toBe('confirmed')
+            ->and($registration->source)->toBe('order')
+            ->and($registration->payment_status)->toBe('free')
+            ->and($registration->external_order_id)->toBe($order->id)
+            ->and($registration->items)->toHaveCount(1)
+            ->and($registration->items->first()?->external_order_item_id)->toBe($orderItem->id)
+            ->and($registration->passes)->toBeEmpty();
     });
 });
 
@@ -230,8 +234,9 @@ it('keeps a paid line discounted to zero under configured enforcement in a mixed
         ]);
 
         expect(fn () => app(CreateRegistrationsFromOrderAction::class)->handle(
-            target: $occurrence,
-            orderItem: $orderItem->fresh(),
+            scopeType: 'occurrence',
+            scopeId: (string) $occurrence->getKey(),
+            orderItemId: (string) $orderItem->id,
             participants: [['name' => 'Discounted Attendee']],
         ))->toThrow(EventCapacityExceededException::class);
 
@@ -269,17 +274,18 @@ it('keeps the configured paid bypass for a discounted-to-zero line when enforcem
         ]);
 
         $registrations = app(CreateRegistrationsFromOrderAction::class)->handle(
-            target: $occurrence,
-            orderItem: $orderItem->fresh(),
+            scopeType: 'occurrence',
+            scopeId: (string) $occurrence->getKey(),
+            orderItemId: (string) $orderItem->id,
             participants: [['name' => 'Discounted Attendee']],
         );
 
-        $registration = $registrations->first();
+        $registration = EventRegistration::query()->findOrFail($registrations[0]);
 
         expect($registrations)->toHaveCount(1)
-            ->and($registration?->status->getValue())->toBe('confirmed')
-            ->and($registration?->total_amount)->toBe(0)
-            ->and($registration?->payment_status)->toBeNull();
+            ->and($registration->status->getValue())->toBe('confirmed')
+            ->and($registration->total_amount)->toBe(0)
+            ->and($registration->payment_status)->toBeNull();
     });
 });
 
@@ -312,8 +318,9 @@ it('honors paid options for a discounted-to-zero line when enforcement is on and
         ]);
 
         $registrations = app(CreateRegistrationsFromOrderAction::class)->handle(
-            target: $occurrence,
-            orderItem: $orderItem->fresh(),
+            scopeType: 'occurrence',
+            scopeId: (string) $occurrence->getKey(),
+            orderItemId: (string) $orderItem->id,
             participants: [['name' => 'Discounted Attendee']],
             options: [
                 'registration_status' => 'pending',
@@ -322,11 +329,11 @@ it('honors paid options for a discounted-to-zero line when enforcement is on and
             ],
         );
 
-        $registration = $registrations->first();
+        $registration = EventRegistration::query()->findOrFail($registrations[0]);
 
         expect($registrations)->toHaveCount(1)
-            ->and($registration?->status->getValue())->toBe('pending')
-            ->and($registration?->payment_status)->toBe('pending')
-            ->and($registration?->items->first()?->status)->toBe('pending');
+            ->and($registration->status->getValue())->toBe('pending')
+            ->and($registration->payment_status)->toBe('pending')
+            ->and($registration->items->first()?->status)->toBe('pending');
     });
 });

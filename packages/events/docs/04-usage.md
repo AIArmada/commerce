@@ -2,49 +2,73 @@
 title: Usage
 ---
 
-## Search relation loading
+This guide uses the Modular Dune public surface: scalar-ID `Contracts`, feature
+`Api` interfaces, immutable `Data` DTOs, and config-driven model resolution.
+See [Troubleshooting](99-troubleshooting.md#legacy-namespaces-were-removed) for
+the legacy-name mapping.
 
-The package’s `EventSearchRelationProvider` supplies only package-owned eager-loading paths. Applications that render richer event cards can configure a provider that composes the package default and adds host-owned relations:
+## Resolving models
+
+Application code that may run with model overrides resolves classes through
+`ModelResolver`:
 
 ```php
-final class EventCardRelationshipProvider implements EventSearchRelationProvider
-{
-    public function relations(): array
-    {
-        return [
-            ...(new DefaultEventSearchRelationProvider)->relations(),
-            'institution.media',
-            'venue.addresses',
-        ];
-    }
-}
+use AIArmada\Events\Platform\ModelResolver;
+
+$eventClass = ModelResolver::eventClass();
+$occurrenceClass = ModelResolver::occurrenceClass();
+$sessionClass = ModelResolver::sessionClass();
+$registrationClass = ModelResolver::registrationClass();
+$venueClass = ModelResolver::venueClass();
+
+$event = $eventClass::query()->findOrFail($eventId);
 ```
 
-This provider is used by search adapters for eager loading only. It does not own matching thresholds, event fields, statuses, or search-index integration.
+The 23 keys are: `event`, `occurrence`, `session`, `registration`,
+`registration_participant`, `registration_question`, `attendance`, `walk_in`,
+`headcount_log`, `submission`, `escalation`, `approval_request`,
+`management_assignment`, `change_log`, `update`, `search_document`, `venue`,
+`venue_space`, `location`, `facility`, `classification`, `attribute`,
+`audience`. See [Configuration](03-configuration.md#model-overrides).
+
+The rest of this guide imports the default concrete classes for brevity; when
+your app overrides `events.models.*`, resolve through `ModelResolver` instead.
 
 ## Creating Events
 
 ### Free events
 
 ```php
-$event = Event::create([
-    'title' => 'Free Workshop',
-    'status' => 'draft',        // NOT NULL
-    'visibility' => 'public',   // NOT NULL
-    'pricing_mode' => PricingMode::Free,
-    'registration_mode' => RegistrationMode::Required,
-    'issue_passes_for_free' => true,
-]);
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Events\Data\RegistrationMode;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Ticketing\Enums\PricingMode;
+
+$event = OwnerContext::withOwner($owner, function (): Event {
+    return Event::query()->create([
+        'title' => 'Free Workshop',
+        'status' => 'draft',        // NOT NULL
+        'visibility' => 'public',   // NOT NULL
+        'pricing_mode' => PricingMode::Free,
+        'registration_mode' => RegistrationMode::Required,
+        'issue_passes_for_free' => true,
+    ]);
+});
 ```
 
-`status` and `visibility` are `NOT NULL` with no database default, so every `Event::create()`
-call must set both.
+`status` and `visibility` are `NOT NULL` with no database default, so every
+create must set both.
 
 ### Primary classifications
 
-An event, occurrence, or session can have only one primary classification within its own scope. Saving a primary `EventClassification` clears the other classifications in that same scope, so direct model writes and Filament relation-manager edits keep the invariant consistent.
+An event, occurrence, or session can have only one primary classification
+within its own scope. Saving a primary `EventClassification` clears the other
+classifications in that same scope, so direct model writes and Filament
+relation-manager edits keep the invariant consistent
+(`Features\Taxonomy\Actions\DemotePrimaryClassification` backs the direct
+path).
 
-Use factory states for convenience:
+Use factory states for convenience in tests and seeders:
 
 ```php
 Event::factory()->free()->published()->create();
@@ -58,164 +82,132 @@ Event::factory()->mixed()->published()->create();
 Pricing and registration modes follow this resolution chain:
 
 1. Session override → Occurrence override → Event override → config default / auto-derive
-2. Accessors like `effectivePricingMode()` and `effectiveRegistrationMode()` walk the chain and return the resolved value
-
-### Free registration
-
-```php
-use AIArmada\Events\Actions\RegisterForFreeAction;
-
-$registrations = app(RegisterForFreeAction::class)->execute(
-    target: $occurrence,
-    participants: [
-        ['name' => 'Alice', 'email' => 'alice@example.com', 'is_primary' => true],
-    ],
-);
-```
-
-The `target` can be an `Event`, `EventOccurrence`, or `EventSession`. Each participant produces one registration.
-
-### Optional registrations (Interested → Confirmed)
-
-For events with `registration_mode = Optional`:
-
-```php
-use AIArmada\Events\Actions\RegisterForFreeAction;
-use AIArmada\Events\Actions\PromoteInterestedToConfirmedAction;
-
-// Creates an Interested registration (no pass issued)
-$registrations = app(RegisterForFreeAction::class)->execute(
-    target: $occurrence,
-    participants: [['name' => 'Bob']],
-    options: ['with_pass' => false],
-);
-
-// Promote to confirmed + issue pass later
-$confirmed = app(PromoteInterestedToConfirmedAction::class)->execute(
-    $registrations->first(),
-);
-```
-
-### Open-door events (walk-in / headcount)
-
-For events with `registration_mode = None`:
-
-```php
-use AIArmada\Events\Actions\RecordWalkInAction;
-use AIArmada\Events\Actions\RecordHeadcountLogAction;
-
-// Walk-in: record attendance without a registration
-app(RecordWalkInAction::class)->execute(
-    target: $occurrence,
-    count: 3,
-    notes: 'Front desk check-in',
-);
-
-// Headcount: just increment a counter
-app(RecordHeadcountLogAction::class)->execute(
-    target: $occurrence,
-    count: 5,
-    intervalLabel: '10:00-10:15',
-    notes: 'Late arrivals from shuttle bus',
-);
-```
+2. Accessors `effectivePricingMode()` and `effectiveRegistrationMode()` walk the chain and return the resolved value
 
 ### Per-level overrides
 
 Sessions and occurrences can override the parent's mode:
 
 ```php
-$session = $occurrence->sessions()->create([
+use AIArmada\Events\Features\Catalog\Actions\CreateEventSessionAction;
+use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
+use AIArmada\Events\Features\Catalog\Models\EventSession;
+use AIArmada\Ticketing\Enums\PricingMode;
+
+$occurrence = EventOccurrence::query()->findOrFail($occurrenceId);
+
+$session = app(CreateEventSessionAction::class)->handle($occurrence, [
     'title' => 'Premium Workshop',
     'status' => 'scheduled',     // NOT NULL
     'visibility' => 'public',    // NOT NULL
     'pricing_mode' => PricingMode::Paid,     // Override free event
-    'registration_mode' => RegistrationMode::Required,
+    'registration_mode' => 'required',
     'capacity' => 50,
-    ...
 ]);
 ```
 
-This allows mixed-mode setups where a free event has a paid add-on session, or vice-versa.
-Visibility follows the same event → occurrence → session fallback when a create flow leaves it unset.
+This allows mixed-mode setups where a free event has a paid add-on session,
+or vice versa. Visibility follows the same event → occurrence → session
+fallback when a create flow leaves it unset.
 
 ### Scopes
 
 ```php
-// Query scopes
-Event::free()->get();              // pricing_mode = Free
-Event::mixed()->get();             // pricing_mode = Mixed
-Event::openDoor()->get();          // registration_mode = None
+use AIArmada\Events\Features\Catalog\Models\Event;
+
+Event::query()->free()->get();                // pricing_mode = Free
+Event::query()->mixed()->get();               // pricing_mode = Mixed
+Event::query()->openDoor()->get();            // registration_mode = None
+Event::query()->published()->get();           // status = published
 
 // Eager load for N+1-safe accessors
-Event::withResolvedModes()->get(); // eager-loads ticketTypes for effectivePricingMode()
+Event::query()->withResolvedModes()->get();   // eager-loads ticket types for effectivePricingMode()
 ```
 
 ### Visibility
 
-Use `hidden` when an event, occurrence, or session must be excluded from public discovery and event search indexing. It remains available to administrative queries, while `Event::public()` continues to return only public events.
+Use `hidden` when an event, occurrence, or session must be excluded from
+public discovery and event search indexing. It remains available to
+administrative queries, while the `public()` scope continues to return only
+public events.
 
 ```php
 $event->update(['visibility' => 'hidden']);
 
-Event::public()->get(); // excludes hidden events
+Event::query()->public()->get(); // excludes hidden events
 ```
 
-## Managing Events
+### Sharing
 
 ```php
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\States\EventStatus;
-
-$event = Event::create([
-    'title' => 'Annual Conference 2026',
-    'slug' => 'annual-conference-2026',
-    'summary' => 'A one-day tech conference for developers.',
-    'type' => 'conference',
-    'status' => EventStatus\Draft::class,
-    'visibility' => 'public',
-    'delivery_mode' => 'physical',
-]);
+$event->shareTitle();
+$event->shareUrl();          // uses events.shares.route_name
+$event->shareDescription();  // null when empty after normalization
+$event->shareImage();        // cover conversion URL when media exists
 ```
 
-### Event lifecycle
+## Event lifecycle
 
-Status transitions are handled by `spatie/laravel-model-states`. Use the workflow service to transition with side effects:
+Status transitions are handled by `spatie/laravel-model-states`. Use the
+workflow contract to transition with side effects; pass **scalar target
+types** (`'event'`, `'occurrence'`, `'session'`) and IDs:
 
 ```php
 use AIArmada\Events\Contracts\EventLifecycleWorkflow;
 
 $workflow = app(EventLifecycleWorkflow::class);
 
-$workflow->publish($event);
-$workflow->postpone($event, 'Venue unavailable');
-$workflow->delay($occurrence, 'Doors delayed', now()->addHour());
-$workflow->cancel($event, 'Weather emergency');
-$workflow->archive($event);
-$workflow->reschedule($occurrence, $newStart, $newEnd);
-$workflow->reschedule($session, $newStart); // open-ended: unknown end stays unknown
-$workflow->reschedule($occurrence, $newStart, $newEnd, ['timezone' => 'Asia/Kuala_Lumpur']);
-$workflow->complete($occurrence);
+$workflow->publish($eventId);                                            // records published_at, dispatches EventPublished
+$workflow->postpone('event', $eventId, 'Venue unavailable');
+$workflow->delay('occurrence', $occurrenceId, 'Doors delayed', now()->addHour());
+$workflow->cancel('session', $sessionId, 'Speaker illness');
+$workflow->archive('event', $eventId);
+$workflow->complete('occurrence', $occurrenceId);
+
+$rescheduledId = $workflow->reschedule('occurrence', $occurrenceId, $newStart, $newEnd);
+$workflow->reschedule('session', $sessionId, $newStart, null, ['timezone' => 'Asia/Kuala_Lumpur']);
 ```
+
+Workflow rules:
+
+- `delay` and `reschedule` reject the `'event'` target type; `archive` rejects `'session'`.
+- Live occurrences and sessions cannot be rescheduled.
+- `reschedule` returns the rescheduled target ID, accepts an explicit `null`
+  end for open-ended schedules, and rejects an end at or before the start.
+- Every transition records a change through `ChangesApi`, so updates and
+  change notices stay in sync.
 
 Direct model transitions without domain events:
 
 ```php
-use AIArmada\Events\States\EventStatus;
-use AIArmada\Events\States\OccurrenceStatus;
-use AIArmada\Events\States\RegistrationStatus;
+use AIArmada\Events\Features\Catalog\States\EventStatus;
+use AIArmada\Events\Features\Catalog\States\OccurrenceStatus;
+use AIArmada\Events\Features\Registrations\States\RegistrationStatus\RegistrationStatus;
 
 $event->status->transitionTo(EventStatus\Published::class);
 $occurrence->status->transitionTo(OccurrenceStatus\Cancelled::class);
-$registration->transitionStatus(RegistrationStatus\Confirmed::class);
+$registration->transitionStatus(RegistrationStatus::Confirmed::class);
 ```
 
-Use the workflow service when domain events are needed. `transitionStatus()` records a registration lifecycle timestamp, while calling `$registration->status->transitionTo(...)` intentionally bypasses that registration bookkeeping. Allowed transitions are defined in each state base class's `config()` method under `States/`.
+Use the workflow contract when domain events and change logs are needed.
+`transitionStatus()` records a registration lifecycle timestamp, while
+calling `$registration->status->transitionTo(...)` intentionally bypasses
+that bookkeeping. Allowed transitions are defined in each state base class's
+`config()` method.
 
 ## Managing Occurrences
 
 ```php
-$occurrence = $event->occurrences()->create([
+use AIArmada\Events\Features\Catalog\Actions\BatchCreateOccurrencesAction;
+use AIArmada\Events\Features\Catalog\Actions\CreateEventOccurrenceAction;
+use AIArmada\Events\Features\Catalog\Actions\DeleteEventSessionAction;
+use AIArmada\Events\Features\Catalog\Actions\UpdateEventOccurrenceAction;
+use AIArmada\Events\Features\Catalog\Actions\UpdateEventSessionAction;
+use AIArmada\Events\Features\Catalog\Models\Event;
+
+$event = Event::query()->findOrFail($eventId);
+
+$occurrence = app(CreateEventOccurrenceAction::class)->handle($event, [
     'title' => 'KL Conference Day 1',
     'starts_at' => now()->addDays(30),
     'ends_at' => now()->addDays(30)->addHours(8),
@@ -224,105 +216,197 @@ $occurrence = $event->occurrences()->create([
     'capacity' => 300,
     'visibility' => 'public',
 ]);
+
+app(UpdateEventOccurrenceAction::class)->handle($occurrence, ['capacity' => 350]);
+
+// Batch scheduling
+app(BatchCreateOccurrencesAction::class)->handle($event, [
+    ['title' => 'Day 1', 'starts_at' => $day1Start, 'ends_at' => $day1End],
+    ['title' => 'Day 2', 'starts_at' => $day2Start, 'ends_at' => $day2End],
+]);
+
+app(DeleteEventSessionAction::class)->handle($session);
 ```
 
-Occurrences represent the actual scheduled run of an event. They carry their own status lifecycle, capacity, and registration windows.
+Occurrences represent the actual scheduled run of an event. They carry their
+own status lifecycle, capacity, and registration windows.
+
+`CreateEventOccurrenceAction` defaults an omitted `ends_at` to two hours
+after the start; pass an explicit `null` for an open-ended occurrence.
+`CreateEventSessionAction` defaults an omitted `ends_at` to one hour after
+the start. Session slugs are generated from the title and uniquified within
+the event (`keynote`, `keynote-2`, ...), backed by a unique `event_id` +
+`slug` index. `UpdateEventOccurrenceAction` and `UpdateEventSessionAction`
+keep `ends_at` when the key is omitted, clear it when explicitly `null`, and
+return a changed-attribute array (empty when nothing changed). Content
+inputs are normalized server-side before persistence (titles trimmed with
+collapsed whitespace, blank summaries/descriptions stored as `null`).
 
 ### Primary occurrence sync
 
-`SyncPrimaryEventOccurrenceAction` creates or updates the primary occurrence (earliest by start time) with lifecycle protection:
+`SyncPrimaryEventOccurrenceAction` creates or updates the primary occurrence
+(earliest by start time) with lifecycle protection:
 
 ```php
+use AIArmada\Events\Data\ScheduleKind;
+use AIArmada\Events\Features\Catalog\Actions\SyncPrimaryEventOccurrenceAction;
+
 $occurrence = app(SyncPrimaryEventOccurrenceAction::class)->handle($event, [
     'schedule_kind' => ScheduleKind::Single,
     'starts_at' => $startsAt, // DateTimeInterface|string, stored immutable
-    'ends_at' => $endsAt, // omit to keep/default, null for open-ended
+    'ends_at' => $endsAt,     // omit to keep/default, null for open-ended
     'timezone' => 'Asia/Kuala_Lumpur',
 ]);
 ```
 
-Published, postponed, delayed, and rescheduled occurrences are rescheduled through `EventLifecycleWorkflow` so the transition is recorded, including open-ended schedules: an explicit `null` end stays unknown through the lifecycle transition. An omitted `ends_at` keeps the stored end for comparisons and for the workflow call. Requested non-schedule attributes (title, visibility, and so on) are applied after a successful lifecycle reschedule. Terminal occurrences (cancelled, completed, archived) and live occurrences refuse schedule changes with an `InvalidArgumentException`; re-syncing identical values is a no-op that never re-transitions but still applies non-schedule attributes. Re-rescheduling an already-rescheduled occurrence saves the new dates and records another change without an illegal self-transition. Date strings are parsed in the resolved timezone (attribute, occurrence, event, then `events.defaults.timezone`) and stored as UTC instants. Writes are owner-guarded through `EventWriteGuard`, and lifecycle guards re-resolve the persisted occurrence or session before checking the owning event so dirty in-memory `event_id` values cannot bypass the owner boundary.
+Published, postponed, delayed, and rescheduled occurrences are rescheduled
+through `EventLifecycleWorkflow` so the transition is recorded, including
+open-ended schedules: an explicit `null` end stays unknown through the
+lifecycle transition. An omitted `ends_at` keeps the stored end for
+comparisons and for the workflow call. Requested non-schedule attributes
+(title, visibility, and so on) are applied after a successful lifecycle
+reschedule. Terminal occurrences (cancelled, completed, archived) and live
+occurrences refuse schedule changes with an `InvalidArgumentException`;
+re-syncing identical values is a no-op that never re-transitions but still
+applies non-schedule attributes. Re-rescheduling an already-rescheduled
+occurrence saves the new dates and records another change without an illegal
+self-transition. Date strings are parsed in the resolved timezone (attribute,
+occurrence, event, then `events.defaults.timezone`) and stored as UTC
+instants. Writes are owner-guarded through `EventWriteGuard`, and lifecycle
+guards re-resolve the persisted occurrence or session before checking the
+owning event so dirty in-memory `event_id` values cannot bypass the owner
+boundary.
 
-`CreateEventOccurrenceAction` defaults an omitted `ends_at` to two hours after the start; pass an explicit `null` for an open-ended occurrence. `UpdateEventOccurrenceAction` keeps `ends_at` when the key is omitted and clears it when explicitly `null`.
-
-## Managing Sessions
+### Cloning and templates
 
 ```php
-$session = $occurrence->sessions()->create([
-    'title' => 'Keynote: Future of AI',
-    'slug' => 'keynote-ai',
-    'summary' => 'Opening keynote by industry leaders.',
-    'starts_at' => $occurrence->starts_at->addHours(1),
-    'ends_at' => $occurrence->starts_at->addHours(2),
-    'timezone' => 'Asia/Kuala_Lumpur',
-    'status' => 'scheduled',
-    'capacity' => 300,
-    'sort_order' => 1,
+use AIArmada\Events\Contracts\EventCloneService;
+use AIArmada\Events\Contracts\EventTemplateService;
+
+$cloneId = app(EventCloneService::class)->cloneEvent($eventId);          // string
+$cloneId = app(EventCloneService::class)->cloneOccurrence($occurrenceId);
+$cloneId = app(EventCloneService::class)->cloneSession($sessionId);
+
+$eventId = app(EventTemplateService::class)->createFromTemplate($templateId, [
+    'title' => 'Ramadan Lecture (March)',
 ]);
 ```
 
-Sessions are agenda items within an occurrence.
+Cloning delegates scope work to the `events.clone-scope` extension slot, so
+each feature clones exactly the records it owns.
 
-`CreateEventSessionAction` defaults an omitted `ends_at` to one hour after the start; pass an explicit `null` for an open-ended session. Session slugs are generated from the title and uniquified within the event (`keynote`, `keynote-2`, ...), backed by a unique `event_id` + `slug` index.
-
-Content inputs are normalized server-side before persistence. Titles are trimmed and repeated whitespace is collapsed, and blank summary or description inputs are stored as `null`.
-
-## Managing Venues
+## Free registration
 
 ```php
-use AIArmada\Events\Models\Venue;
-use AIArmada\Addressing\Models\Address;
+use AIArmada\Events\Features\Registrations\Actions\RegisterForFreeAction;
 
-$venue = Venue::create([
-    'name' => 'MATRADE Hall',
-    'slug' => 'matrade-hall',
-    'venue_type' => 'convention_center',
-    'status' => 'active',
-    'visibility' => 'public',
-]);
-
-$address = Address::create([
-    'line1' => 'Jalan Sultan Haji Ahmad Shah',
-    'city' => 'Kuala Lumpur',
-    'state' => 'WP Kuala Lumpur',
-    'country_code' => 'MY',
-]);
-
-$venue->attachAddress($address, type: 'primary', isPrimary: true);
+$registrationIds = app(RegisterForFreeAction::class)->execute(
+    'occurrence',
+    $occurrenceId,
+    participants: [
+        ['name' => 'Alice', 'email' => 'alice@example.com', 'is_primary' => true],
+    ],
+);
 ```
 
-Venues without a physical address, such as digital or virtual venues, simply
-omit the attachment. The canonical attachment is the write path, and venue and
-event-location consumers read from the canonical primary address.
+`execute()` accepts a scalar scope (`'event'`, `'occurrence'`, or `'session'`
+plus an ID) and returns a `list<string>` of registration IDs — one per
+participant. Every participant produces one registration.
 
-### Venue spaces
+Exceptions (all under `AIArmada\Events\Exceptions`):
 
-VenueSpace supports both reusable catalog spaces (venue_id = null) and
-venue-owned spaces (venue_id set). Slugs are unique within their ownership
-scope: catalog slugs are globally unique, while venue-owned slugs are unique
-per venue. Event locations store an optional space_name_snapshot so consumers
-can preserve the selected name when the live space is renamed.
+| Thrown | When |
+|---|---|
+| `NotFreeEventException` | Scope is not `Free`/`Mixed` pricing |
+| `OpenDoorRegistrationBlockedException` | Open door with `block` mode |
+| `UseRecordWalkInActionException` | Open door with `walk_in` mode |
+| `UseRecordHeadcountActionException` | Open door with `headcount` mode |
+| `EventRegistrationNotAvailableException` | Scope is not accepting registrations |
+| `EventCapacityExceededException` | Remaining capacity is lower than the participant count |
 
-### Venue facilities
+### Optional registrations (Interested → Confirmed)
 
-Place facilities are catalog values attached to venues and spaces, separate
-from event attributes and event-scoped facilities. See
-[Venue Facilities](06-venue-facilities.md) for the catalog, seed action,
-CRUD, filtering, typed availability, global-write rules, and capacity
-semantics.
+For events with `registration_mode = Optional`:
 
-## Managing Registrations
+```php
+use AIArmada\Events\Features\Registrations\Actions\PromoteInterestedToConfirmedAction;
+use AIArmada\Events\Features\Registrations\Actions\RegisterForFreeAction;
 
-### Basic registration
+// Creates Interested registrations (no pass issued)
+$registrationIds = app(RegisterForFreeAction::class)->execute(
+    'occurrence',
+    $occurrenceId,
+    participants: [['name' => 'Bob']],
+    options: ['with_pass' => false],
+);
+
+// Promote to confirmed + issue pass later
+app(PromoteInterestedToConfirmedAction::class)->execute($registrationIds[0]);
+```
+
+Promotion requires remaining capacity for the registration's full
+`total_participants` and throws `NotInterestedRegistrationException` when the
+status is not `Interested`.
+
+### Idempotent free checkout
+
+Retried checkout deliveries can pass an idempotency key; retries with the
+same key and participant count return the original batch instead of creating
+duplicates:
+
+```php
+app(RegisterForFreeAction::class)->execute(
+    'occurrence',
+    $occurrenceId,
+    participants: [['name' => 'Alice', 'is_primary' => true]],
+    options: ['idempotency_key' => 'checkout-attempt-1'],
+);
+```
+
+## Open-door events (walk-in / headcount)
+
+For events with `registration_mode = None`:
+
+```php
+use AIArmada\Events\Features\Attendance\Actions\RecordHeadcountLogAction;
+use AIArmada\Events\Features\Attendance\Actions\RecordWalkInAction;
+
+// Walk-in: record attendance without a registration
+$walkInId = app(RecordWalkInAction::class)->execute(
+    'occurrence',
+    $occurrenceId,
+    count: 3,
+    recordedBy: $user,          // optional Model
+    notes: 'Front desk check-in',
+);
+
+// Headcount: just increment a counter
+$headcountLogId = app(RecordHeadcountLogAction::class)->execute(
+    'occurrence',
+    $occurrenceId,
+    count: 5,
+    intervalLabel: '10:00-10:15',
+    recordedBy: $user,
+    notes: 'Late arrivals from shuttle bus',
+);
+```
+
+Both actions return the created record ID, enforce the scope's open-door mode
+(`NotOpenDoorEventException`, `WrongOpenDoorModeException`), and clamp the
+count to a minimum of 1.
+
+## Registrations
+
+### Registration service
 
 ```php
 use AIArmada\Events\Contracts\RegistrationServiceInterface;
 
-$registration = app(RegistrationServiceInterface::class)->register([
-    'event_id' => $event->id,
-    'event_occurrence_id' => $occurrence->id,
-    'registrant_type' => (new User)->getMorphClass(),
-    'registrant_id' => $user->id,
+$registrationId = app(RegistrationServiceInterface::class)->register([
+    'event_id' => $eventId,
+    'event_occurrence_id' => $occurrenceId,
+    'registrant_type' => $user->getMorphClass(),
+    'registrant_id' => $user->getKey(),
     'registration_type' => 'individual',
     'status' => 'pending',
     'source' => 'website',
@@ -345,7 +429,7 @@ $registration = app(RegistrationServiceInterface::class)->register([
     ],
     'items' => [
         [
-            'ticket_type_id' => $ticketType->id,
+            'ticket_type_id' => $ticketTypeId,
             'quantity' => 2,
             'unit_price' => 50000,
             'total_price' => 100000,
@@ -354,71 +438,187 @@ $registration = app(RegistrationServiceInterface::class)->register([
 ]);
 ```
 
-### Registration with occurrence/session-scoped participants
-
-```php
-$registration = app(RegistrationServiceInterface::class)->register([
-    'event_id' => $event->id,
-    'event_occurrence_id' => $occurrence->id,
-    'event_session_id' => $session->id,
-    'registration_type' => 'individual',
-    'status' => 'confirmed',
-    'source' => 'admin',
-]);
-
-// Participants can be scoped directly to an occurrence or session
-$participant = $registration->participants()->create([
-    'event_occurrence_id' => $occurrence->id,
-    'event_session_id' => $session->id,
-    'name' => 'John Doe',
-    'email' => 'john@example.com',
-    'is_primary' => true,
-    'status' => 'registered',
-]);
-
-// Direct queries on occurrences and sessions
-$session->participants;      // All participants for this session
-$occurrence->participants;   // All participants for this occurrence
-$participant->occurrence;    // BelongsTo relationship
-$participant->session;       // BelongsTo relationship
-```
+`register()` returns the new registration ID. Participant `email`, `phone`,
+and `company` values are written as `aiarmada/contacting` contact methods.
 
 ### Registration lifecycle
+
+All lifecycle methods take registration IDs:
 
 ```php
 $service = app(RegistrationServiceInterface::class);
 
-$service->approve($registration);           // pending → confirmed
-$service->cancel($registration, 'No-show'); // any → cancelled
-$service->reject($registration, 'Duplicate');
-$service->waitlist($registration);
-$service->complete($registration);
+$service->approve($registrationId, $actor);            // pending → confirmed (+ welcome notification)
+$service->cancel($registrationId, 'No-show', $actor);  // any → cancelled
+$service->reject($registrationId, 'Duplicate', $actor);
+$service->waitlist($registrationId);
+$service->complete($registrationId);
+$service->refund($registrationId, 'Requested');
+$service->markRefundPending($registrationId, 'Awaiting gateway');
+$service->restoreFromRefundPending($registrationId);
 ```
 
 ### Refund delivery safety
 
-`refund()` and `restoreFromRefundPending()` run against a row-locked fresh copy of the registration inside a transaction, so duplicate deliveries (retried order webhooks, double provider events) serialize per registration instead of both passing the status check: the second delivery sees the already-refunded state and becomes a no-op. This matters because the `EventRegistrationRefunded` listeners have real side effects — ticket inventory restore, seat release, and pass revocation would otherwise run twice. Keep refund-family transitions on `RegistrationServiceInterface`; reimplementing them without the lock reintroduces double-restore.
+`refund()` and `restoreFromRefundPending()` run against a row-locked fresh
+copy of the registration inside a transaction, so duplicate deliveries
+(retried order webhooks, double provider events) serialize per registration
+instead of both passing the status check: the second delivery sees the
+already-refunded state and becomes a no-op. This matters because the
+`EventRegistrationRefunded` listeners have real side effects — ticket
+inventory restore, seat release, and pass revocation would otherwise run
+twice. Keep refund-family transitions on `RegistrationServiceInterface`;
+reimplementing them without the lock reintroduces double-restore.
 
-### Order-based registration
+For order-backed refunds use the commerce path, which creates the provider
+refund and drives the state machine:
 
 ```php
-$service->createFromOrderItem([
-    'event_id' => $event->id,
-    'event_occurrence_id' => $occurrence->id,
-    'quantity' => 2,
-    'total_price' => 100000,
-    'currency' => 'MYR',
-    'order_id' => $order->id,
-    'registrant_type' => (new Customer)->getMorphClass(),
-    'registrant_id' => $customer->id,
-]);
+use AIArmada\Events\Features\Commerce\Actions\ProcessEventRegistrationRefundAction;
+
+$result = app(ProcessEventRegistrationRefundAction::class)->handle(
+    eventId: $eventId,
+    registrationId: $registrationId,
+    actor: $user,
+    organizerOverride: false,
+    reason: 'Requested by attendee',
+);
+// EventRefundResultData { status, transactionId, paymentId, message, refundId }
 ```
+
+### Reading registrations
+
+Cross-feature and UI code reads registrations through `RegistrationsApi`:
+
+```php
+use AIArmada\Events\Features\Registrations\Api\RegistrationsApi;
+
+$registrations = app(RegistrationsApi::class);
+
+$summary = $registrations->summarize($registrationId);            // ?RegistrationSummary
+$participants = $registrations->participantsForRegistration($registrationId);
+$orderItems = $registrations->orderItemsForRegistration($registrationId);
+$passIds = $registrations->passIdsForRegistration($registrationId);
+$remaining = $registrations->capacityRemaining($eventId, $occurrenceId, $sessionId, $capacity);
+```
+
+`RegistrationSummary`, `EventRegistrationParticipantData`, and
+`EventRegistrationOrderItemRef` are immutable DTOs — no Eloquent models cross
+the API boundary.
 
 ### Registration input validation
 
-`register()` validates its payload before writing: the occurrence and session must belong to the event, every item's ticket type must exist in the owner scope and belong to the same event, money stays non-negative integer minor units, registrant and participant morphs must resolve to existing models, participant emails must be valid, and bundle parents must belong to the same event. Forged `id` and scope columns on items, participants, and answers are stripped. Each collection (items, participants, answers) is capped at 1000 entries per registration.
+`register()` validates its payload before writing: the occurrence and session
+must belong to the event, every item's ticket type must exist in the owner
+scope and belong to the same event, money stays non-negative integer minor
+units, registrant and participant morphs must resolve to existing models,
+participant emails must be valid, and bundle parents must belong to the same
+event. Forged `id` and scope columns on items, participants, and answers are
+stripped. Each collection (items, participants, answers) is capped at 1000
+entries per registration.
 
-Free registrations accept an `idempotency_key` option; retries with the same key and participant count return the original batch instead of creating duplicates.
+### Scoped participants
+
+Participants can be scoped directly to an occurrence or session by setting
+`event_occurrence_id` / `event_session_id` on the participant payload. They
+inherit scope from the parent registration only when those columns are left
+null.
+
+## Check-in and Attendance
+
+```php
+use AIArmada\Events\Contracts\EventCheckInService;
+
+$checkIn = app(EventCheckInService::class);
+
+$attendance = $checkIn->checkIn([
+    'event_id' => $eventId,
+    'event_occurrence_id' => $occurrenceId,
+    'event_registration_id' => $registrationId,
+    'event_registration_participant_id' => $participantId,
+    'pass_id' => $passId,
+    'attendance_type' => 'registered',
+    'check_in_source' => 'qr',
+    'verified_by_user_id' => $staffUserId,   // UUID
+    'notes' => 'Gate 2',
+]);
+
+$checkIn->checkOut($attendance->id, $actor);
+$checkIn->cancelCheckIn($attendance->id, 'Duplicate scan', $actor);
+```
+
+Both `checkIn()` and `checkInWithResult()` return immutable `Data` records:
+`checkInWithResult()` returns `EventCheckInResult` (with a `created` flag so
+duplicate scans are detectable), `checkIn()` unwraps to `AttendanceRecord`.
+
+Validation highlights: `event_id` is required; attendee type/id must both be
+present or both null; `verified_by_user_id` must be a UUID; notes are capped
+at 5000 characters; metadata must be an array; `performed_by` type/id must
+both be present or both null. When no occurrence is supplied, the earliest
+occurrence in a check-in-accepting status is used, and a missing occurrence
+throws. Every mutation runs through `EventWriteGuard` and writes an
+`EventAttendanceLog` entry.
+
+### Attendance lookups
+
+```php
+use AIArmada\Events\Features\Attendance\Api\AttendanceApi;
+
+$attendance = app(AttendanceApi::class);
+
+$hasEvidence = $attendance->hasAttendanceEvidence($registrationId);
+$registrationId = $attendance->registrationIdForAttendance($attendanceId);
+```
+
+## Managing Venues
+
+```php
+use AIArmada\Addressing\Models\Address;
+use AIArmada\Events\Features\Venues\Models\Venue;
+
+$venue = Venue::query()->create([
+    'name' => 'MATRADE Hall',
+    'slug' => 'matrade-hall',
+    'venue_type' => 'convention_center',
+    'status' => 'active',
+    'visibility' => 'public',
+]);
+
+$address = Address::query()->create([
+    'line1' => 'Jalan Sultan Haji Ahmad Shah',
+    'city' => 'Kuala Lumpur',
+    'state' => 'WP Kuala Lumpur',
+    'country_code' => 'MY',
+]);
+
+$venue->attachAddress($address, type: 'primary', isPrimary: true);
+```
+
+Venues without a physical address, such as digital or virtual venues, simply
+omit the attachment. The canonical attachment is the write path, and venue
+and event-location consumers read from the canonical primary address:
+
+```php
+$primary = $venue->primaryAddress();
+$primary = $location->primaryAddress();
+```
+
+VenueSpace supports both reusable catalog spaces (`venue_id = null`) and
+venue-owned spaces (`venue_id` set). Slugs are unique within their ownership
+scope: catalog slugs are globally unique, while venue-owned slugs are unique
+per venue. Event locations store an optional `space_name_snapshot` so
+consumers can preserve the selected name when the live space is renamed.
+
+Venue catalog (`VenueSpace`, `VenueSpaceType`, `FacilityType`,
+`VenueFacility`) is unowned by design; `Venue` is also unowned.
+`EventLocation` and `EventFacility` are event-scoped via
+`ScopesByEventOwner`. All seven use only addressing `HasAddresses`.
+
+Place facilities are catalog values attached to venues and spaces, separate
+from event attributes and event-scoped facilities. See
+[Venue Facilities](06-venue-facilities.md) for the catalog, seed action,
+CRUD, filtering, typed availability, global-write rules, and capacity
+semantics.
 
 ## Managing Ticket Types
 
@@ -439,44 +639,45 @@ $ticketType = app(EnsureTicketTypeAction::class)->handle($occurrence, [
 ]);
 ```
 
-`EnsureTicketTypeAction` whitelists attributes explicitly, and `ticket_types` has no `quota`
-or `capacity` column — anything outside that whitelist is silently dropped. Per-scope
-capacity lives on the occurrence/session, and remaining-quota checks count
-`EventRegistrationItem` quantity across capacity-blocking statuses.
-
-## Check-in and Attendance
-
-```php
-use AIArmada\Events\Contracts\EventCheckInService;
-
-app(EventCheckInService::class)->checkIn([
-    'event_id' => $event->id,
-    'event_occurrence_id' => $occurrence->id,
-    'event_registration_id' => $registration->id,
-    'event_registration_participant_id' => $participant->id,
-    'pass_id' => $pass->id,
-    'attendance_type' => 'registered',
-    'check_in_source' => 'qr',
-]);
-```
-
-Attendee morphs must resolve to an existing model record, `verified_by_user_id` must be a UUID, notes are capped at 5000 characters, and metadata must be an array.
+`EnsureTicketTypeAction` whitelists attributes explicitly, and `ticket_types`
+has no `quota` or `capacity` column — anything outside that whitelist is
+silently dropped. Per-scope capacity lives on the occurrence/session, and
+remaining-quota checks count registration item quantity across
+capacity-blocking statuses. Events-facing code can use
+`Features\Commerce\Actions\EnsureTicketTypeForOccurrenceAction` with a scalar
+scope (`'event'`, `'occurrence'`, `'session'`).
 
 ## Managing Involvements
 
-Involvements link people (any model) to an event, occurrence, or session with a role. The `involveable` is polymorphic — it can be a `User`, `EventOrganizer`, `Speaker`, or any model implementing `CanBeInvolvedInEvents`.
+Involvements link people (any model) to an event, occurrence, or session with
+a role. The `involveable` is polymorphic — it can be a `User`,
+`EventOrganizer`, or any model implementing `CanBeInvolvedInEvents`.
 
-### Creating involvements
+### Syncing scoped involvements
+
+`SyncEventInvolvementsAction` replaces the involvement rows owned by one
+scope. The scope is re-resolved from persisted storage (never trusted from
+dirty in-memory attributes) and the owning event is owner-guarded, so a
+forged child model cannot redirect writes across events. Rows outside the
+scope are never touched, and organizer rows are preserved unless
+`'organizer'` is explicitly included in the role filter — organizer rows in
+the input are rejected without that opt-in. Every row must use a role inside
+the explicit filter, and an explicit empty filter is rejected instead of
+deleting more broadly. Every row is validated before any delete runs, role
+codes resolve in one batched query (unknown or inactive codes are rejected),
+and duplicate identities are collapsed per scope and role.
 
 ```php
-$event->involvements()->create([
-    'involveable_type' => (new Speaker)->getMorphClass(),
-    'involveable_id' => $speaker->id,
-    'role_code' => 'speaker',
-    'prominence' => 'headliner',
-    'is_featured' => true,
-    'status' => 'confirmed',
-]);
+use AIArmada\Events\Features\Catalog\Actions\SyncEventInvolvementsAction;
+
+app(SyncEventInvolvementsAction::class)->handle(
+    $session, // Event, EventOccurrence, or EventSession
+    [
+        ['role_code' => 'speaker', 'involveable_type' => 'person', 'involveable_id' => $personId],
+        ['role_code' => 'moderator', 'display_name' => 'Guest host', 'visibility' => 'private'],
+    ],
+    ['speaker', 'moderator'],
+);
 ```
 
 ### Organizers
@@ -485,8 +686,8 @@ An organizer is just an involvement with `role_code = 'organizer'`:
 
 ```php
 $event->involvements()->create([
-    'involveable_type' => (new User)->getMorphClass(),
-    'involveable_id' => $user->id,
+    'involveable_type' => $user->getMorphClass(),
+    'involveable_id' => $user->getKey(),
     'role_code' => 'organizer',
     'is_primary' => true,
     'visibility' => 'public',
@@ -494,40 +695,19 @@ $event->involvements()->create([
 ]);
 ```
 
-### Syncing scoped involvements
-
-`SyncEventInvolvementsAction` replaces the involvement rows owned by one event, occurrence, or session scope. The scope is re-resolved from persisted storage (never trusted from dirty in-memory attributes) and the owning event is owner-guarded, so a forged child model cannot redirect writes across events. Rows outside the scope are never touched, and organizer rows are preserved unless `'organizer'` is explicitly included in the role filter — organizer rows in the input are rejected without that opt-in. Every row must use a role inside the explicit filter, and an explicit empty filter is rejected instead of deleting more broadly. Every row is validated before any delete runs, role codes resolve in one batched query (unknown or inactive codes are rejected), and duplicate identities are collapsed per scope and role.
-
-```php
-app(SyncEventInvolvementsAction::class)->handle($session, [
-    ['role_code' => 'speaker', 'involveable_type' => 'person', 'involveable_id' => $personId],
-    ['role_code' => 'moderator', 'display_name' => 'Guest host', 'visibility' => 'private'],
-], ['speaker', 'moderator']);
-```
-
 ### Scoped languages and classifications
 
-`SyncEventLanguagesAction` and `SyncEventClassificationsAction` accept the same event, occurrence, or session scope and only replace rows owned by that scope. All three sync actions share the same persisted scope resolution: event-level syncs carry a null occurrence and session, and a nullable session occurrence is preserved as null rather than cast to an empty string.
+`SyncEventLanguagesAction` and `SyncEventClassificationsAction` accept the
+same event/occurrence/session scope and only replace rows owned by that
+scope. Event-level syncs carry a null occurrence and session, and a nullable
+session occurrence is preserved as null rather than cast to an empty string.
 
 ```php
+use AIArmada\Events\Features\Catalog\Actions\SyncEventLanguagesAction;
+use AIArmada\Events\Features\Taxonomy\Actions\SyncEventClassificationsAction;
+
 app(SyncEventLanguagesAction::class)->handle($session, ['ms', 'ar']);
 app(SyncEventClassificationsAction::class)->handle($session, ['topic' => ['Fiqh']]);
-```
-
-### Querying involvements
-
-```php
-// By role
-$event->involvements()->role('organizer')->get();
-$event->involvements()->role('speaker')->get();
-$event->involvements()->role('sponsor')->get();
-
-// Public-facing only
-$event->involvements()->public()->get();
-
-// Featured / headliner
-$event->involvements()->featured()->get();
-$event->involvements()->headliner()->get();
 ```
 
 ### Organizer vs createdBy
@@ -537,11 +717,15 @@ Don't confuse organizers (involvements) with `createdBy`:
 - **`createdBy`** (`created_by_type` / `created_by_id` on the `events` table) — who created the event record. A single morphTo, set on creation, not publicly displayed.
 - **Organizers** (`event_involvements` with `role_code = 'organizer'`) — people publicly credited as organizers. Multiple per event, with visibility, prominence, and display name control.
 
-A created-by user might also be listed as an organizer, but they're stored independently. Organizers are the public-facing list; `createdBy` is an audit trail.
+A created-by user might also be listed as an organizer, but they're stored
+independently. Organizers are the public-facing list; `createdBy` is an audit
+trail.
 
 ### The `CanOrganizeEvents` contract
 
-Any model attached as an organizer involvement can implement `CanOrganizeEvents` to control its display name, profile URL, and default public visibility:
+Any model attached as an organizer involvement can implement
+`CanOrganizeEvents` to control its display name, profile URL, and default
+public visibility:
 
 ```php
 use AIArmada\Events\Contracts\CanOrganizeEvents;
@@ -565,46 +749,65 @@ class User extends Model implements CanOrganizeEvents
 
 ## Owner-Scoped Queries
 
-When `events.features.owner.enabled` is `true`, event roots use `HasOwner`. Event-bound children inherit the event boundary, series/template children inherit their root boundary, submissions use their target owner before conversion, and polymorphic workflow records require an owner-safe parent:
+When `events.features.owner.enabled` is `true`, event roots use `HasOwner`.
+Event-bound children inherit the event boundary through
+`Platform\ScopesByEventOwner` (the `event_owner` global scope), series and
+template children inherit their root boundary, submissions use their target
+owner before conversion, and polymorphic workflow records require an
+owner-safe parent:
 
 ```php
-// Automatically scoped to current owner
-$myEvents = Event::all();
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Events\Features\Catalog\Models\Event;
+
+// Automatically scoped to the current owner
+$myEvents = Event::query()->get();
 
 // Explicit owner context
-use AIArmada\CommerceSupport\Support\OwnerContext;
-
-OwnerContext::withOwner($masjid, function () use ($registrant) {
-    Event::create([...]);
+OwnerContext::withOwner($masjid, function (): void {
+    Event::query()->create([...]);
 });
 
-OwnerContext::withOwner(null, function () use ($registrant) {
-    // Explicit global context for global records
-    Event::globalOnly()->get();
+// Explicit global context for global records
+OwnerContext::withOwner(null, function (): void {
+    Event::query()->globalOnly()->get();
 });
 
-// Without owner scope
-Event::withoutOwnerScope()->get();
+// Without owner scope (explicit cross-tenant opt-out)
+Event::query()->withoutOwnerScope()->get();
 ```
+
+`Platform\EventWriteGuard::findOrFail($eventId)` is the canonical write-path
+resolver: it enforces the owner scope (or returns the plain lookup when
+owner scoping is disabled) before any child mutation. Package code resolves
+the event first and never trusts caller-supplied parent models.
 
 ## Working with Passes
 
 ```php
-use AIArmada\Events\Actions\IssueEventRegistrationPassesAction;
+use AIArmada\Events\Contracts\EventPassIssuanceService;
 
-$passes = app(IssueEventRegistrationPassesAction::class)->handle($registration);
-$pass = $passes->first();
+$passes = app(EventPassIssuanceService::class)->issueForRegistration($registrationId);
 ```
+
+Free registrations created via `RegisterForFreeAction` do not have
+registration items; issuance ensures a hidden zero-priced ticket type for the
+resolved scope and issues a single generic pass. The concrete
+`Features\Commerce\Actions\IssueEventRegistrationPassesAction` also exposes
+`handle(string $registrationId, bool $respectFreePassPolicy = false)`.
 
 ## Seating Integration
 
-When `aiarmada/seating` is installed and a `TicketType` has a `seating_mode`, passes trigger automatic seat allocation on issue:
+When `aiarmada/seating` is installed and a `TicketType` has a `seating_mode`,
+passes trigger automatic seat allocation on issue:
 
 - **Assigned**: a specific seat is held, then converted to an allocation on pass issuance.
 - **General Admission**: a section-level allocation (no specific seat) is created, capped by section capacity.
 - **None**: no allocation is created.
 
-Pass revocation (cancel/refund/void/expire) automatically releases the associated seat allocation. This is handled by listeners in the events package — no manual release needed.
+Pass revocation (cancel/refund/void/expire) automatically releases the
+associated seat allocation through `Commerce` listeners — no manual release
+needed.
 
 ### Feature flags
 
@@ -615,17 +818,19 @@ Pass revocation (cancel/refund/void/expire) automatically releases the associate
 
 ## Selling Tickets via Commerce Checkout
 
-When `aiarmada/cart`, `aiarmada/checkout`, and `aiarmada/orders` are installed, ticket types can be sold through the standard commerce checkout pipeline alongside products.
+When `aiarmada/cart`, `aiarmada/checkout`, and `aiarmada/orders` are
+installed, ticket types can be sold through the standard commerce checkout
+pipeline alongside products.
 
 ### Adding ticket types to cart
 
 ```php
-use AIArmada\Events\Actions\AddEventTicketTypeToCartAction;
+use AIArmada\Events\Features\Commerce\Actions\AddEventTicketTypeToCartAction;
 use AIArmada\Ticketing\Models\TicketType;
 
-$ticketType = TicketType::find('...');
+$ticketType = TicketType::query()->findOrFail($ticketTypeId);
 
-AddEventTicketTypeToCartAction::make()->handle(
+app(AddEventTicketTypeToCartAction::class)->handle(
     cart: app(AIArmada\Cart\Contracts\CartManagerInterface::class)->getCartInstance('default'),
     ticketType: $ticketType,
     quantity: 2,
@@ -636,192 +841,437 @@ AddEventTicketTypeToCartAction::make()->handle(
 );
 ```
 
-The action validates status, visibility, sales windows, min/max quantity, and inventory (when configured) before adding. It handles cart merging — if the same ticket type is already in the cart, quantities and participants are merged rather than overwritten. Session-scoped ticket types preserve `event_session_id` in the cart item attributes.
+The action validates status, visibility, sales windows, min/max quantity, and
+inventory (when configured) before adding. It handles cart merging — if the
+same ticket type is already in the cart, quantities and participants are
+merged rather than overwritten. Session-scoped ticket types preserve
+`event_session_id` in the cart item attributes.
 
 ### Mixed carts (tickets + products)
 
-Ticket types and products can coexist in the same cart. The checkout pipeline runs pricing, discounts, shipping, tax, and payment uniformly. After order creation, `CreateEventRegistrationsStep` (auto-registered) processes event ticket items by resolving the matching event, occurrence, or session scope from each `TicketType`, then creates registrations and passes. Product items flow through normal order fulfillment.
+Ticket types and products can coexist in the same cart. The checkout pipeline
+runs pricing, discounts, shipping, tax, and payment uniformly. After order
+creation, `CreateEventRegistrationsStep` (registered as a checkout step
+contributor) processes event ticket items by resolving the matching event,
+occurrence, or session scope from each `TicketType`, then creates
+registrations and passes. Product items flow through normal order fulfillment.
 
 ### Participant data
 
-Participant data is stored in the cart item's `attributes.participants` array. The step resolves it in priority order:
+Participant data is stored in the cart item's `attributes.participants` array.
+The step resolves it in priority order:
+
 1. Participants from the cart item attributes (passed via `AddEventTicketTypeToCartAction`)
 2. Fallback to the order customer's name/email/phone
 3. Generic "Attendee #N" entries
 
-One participant entry produces one registration with one ticket item — matching the order item's quantity.
+One participant entry produces one registration with one ticket item —
+matching the order item's quantity.
 
 ### Quota validation
 
-Scope capacity is checked via `EventRegistrationScope::capacityRemaining()`: the minimum of the applicable finite occurrence and session remainings, where each remaining is configured `capacity` minus the summed `total_participants` of registrations in capacity-blocking statuses (`pending`, `confirmed`, `refund_pending`, `checked_in`). A `null` capacity means unbounded and is ignored in the minimum. Session registrations carry the parent `event_occurrence_id`, so sibling sessions and direct occurrence bookings all consume the same occurrence aggregate. Capacity-sensitive writes lock event, then occurrence, then session inside the transaction before checking. In a `Mixed` scope, order lines for genuinely free tickets (zero catalog price) always take the canonical free path with scope-capacity enforcement, even when paid-capacity enforcement is off; a paid line discounted to zero keeps paid semantics. Promoting an `interested` registration requires remaining capacity for its full `total_participants`. Quota is not checked during checkout intent (re-entering checkout for an existing registration). The inventory package is not required; ticket capacity is self-contained.
+Scope capacity is checked through `RegistrationsApi::capacityRemaining()` (and
+`Features\Registrations\Queries\RegistrationCapacityQuery`): the minimum of
+the applicable finite occurrence and session remainings, where each remaining
+is configured `capacity` minus the summed `total_participants` of
+registrations in capacity-blocking statuses (`pending`, `confirmed`,
+`refund_pending`, `checked_in`). A `null` capacity means unbounded and is
+ignored in the minimum. Session registrations carry the parent
+`event_occurrence_id`, so sibling sessions and direct occurrence bookings all
+consume the same occurrence aggregate. Capacity-sensitive writes lock event,
+then occurrence, then session inside the transaction before checking. In a
+`Mixed` scope, order lines for genuinely free tickets (zero catalog price)
+always take the canonical free path with scope-capacity enforcement, even
+when paid-capacity enforcement is off; a paid line discounted to zero keeps
+paid semantics. Promoting an `interested` registration requires remaining
+capacity for its full `total_participants`. Quota is not checked during
+checkout intent (re-entering checkout for an existing registration). The
+inventory package is not required; ticket capacity is self-contained.
 
 ### Checkout intent resolver
 
-`DefaultEventCheckoutIntentResolver` is bound when both cart and checkout packages are available. It creates a dedicated cart instance for the registration, preserving participant data:
+`DefaultEventCheckoutIntentResolver` is bound when both cart and checkout
+packages are available. It creates a dedicated cart instance for the
+registration, preserving participant data:
 
 ```php
-use AIArmada\Events\Actions\StartOccurrenceCheckoutAction;
-use AIArmada\Events\Models\EventOccurrence;
-use AIArmada\Events\Models\EventRegistration;
+use AIArmada\Events\Features\Commerce\Actions\StartOccurrenceCheckoutAction;
 
-$target = EventOccurrence::find('...');
-
-StartOccurrenceCheckoutAction::make()->handle($target, $registration);
-// Returns CheckoutSession from the commerce pipeline
+$session = app(StartOccurrenceCheckoutAction::class)->handle(
+    'occurrence',      // or 'session'
+    $occurrenceId,
+    $registrationId,
+);
+// Returns CheckoutSession from the commerce pipeline, or null when unavailable
 ```
 
-The first argument can be either an occurrence or a session. The resolver
-binding itself requires the Orders fulfillment integration; without the
-checkout pipeline the null resolver is bound and the action returns null
-instead of a session.
+The resolver binding itself requires the Orders fulfillment integration;
+without the checkout pipeline the null resolver is bound and the action
+returns null instead of a session.
 
-Override via config `events.integrations.checkout_intent_resolver` or by binding `EventCheckoutIntentResolver`.
+Override via config `events.integrations.checkout_intent_resolver` or by
+binding `EventCheckoutIntentResolver`.
 
 ### Per-scope ticket types
 
-When a ticket type is created against an `EventOccurrence` or `EventSession`, it is scoped to that specific occurrence or session. Both `AddEventTicketTypeToCartAction` (via attributes) and `CreateRegistrationsFromOrderAction` (via validation) enforce scope matching. Ticket types created against the parent `Event` remain event-wide and can be registered for any matching scope.
+When a ticket type is created against an `EventOccurrence` or `EventSession`,
+it is scoped to that specific occurrence or session. Both
+`AddEventTicketTypeToCartAction` (via attributes) and
+`CreateRegistrationsFromOrderAction` (via validation) enforce scope matching
+through `Platform\EventTicketScope`. Ticket types created against the parent
+`Event` remain event-wide and can be registered for any matching scope.
+
+### Agent sales
+
+```php
+use AIArmada\Events\Features\Commerce\Actions\RecordAgentTicketSaleAction;
+
+$result = app(RecordAgentTicketSaleAction::class)->handle(
+    ticketTypeId: $ticketTypeId,
+    quantity: 2,
+    agent: $agent,
+    customerData: ['name' => 'Walk-up Buyer', 'email' => 'buyer@example.com'],
+);
+```
 
 ## Extensibility via Contracts
 
-The package exposes contracts for every major operation. Bind your own implementation to override default behavior:
+The package exposes contracts for every major operation. Bind your own
+implementation to override default behavior:
 
 ```php
 use AIArmada\Events\Contracts\EventRegistrationEligibility;
 use AIArmada\Events\Contracts\EventSearchPayloadResolver;
 
 app()->bind(EventSearchPayloadResolver::class, MySearchResolver::class);
-```
-
-Registration actions call `EventRegistrationEligibility` before creating registrations. The default implementation rejects occurrences whose status is not listed in `events.lifecycle.occurrence.registration_accepting_statuses`. Bind a custom implementation when the host application needs additional access, publication, or entitlement rules:
-
-```php
 app()->bind(EventRegistrationEligibility::class, MyRegistrationEligibility::class);
 ```
 
-Available contracts: `RegistrationServiceInterface`, `EventLifecycleWorkflow`, `EventCheckInService`, `EventRegistrationEligibility`, `EventSearchPayloadResolver`, `EventDisplayTimezoneResolver`, `EventScheduleResolver`, and more.
+Registration actions call `EventRegistrationEligibility` before creating
+registrations. The default implementation rejects occurrences whose status is
+not listed in `events.lifecycle.occurrence.registration_accepting_statuses`.
+Bind a custom implementation when the host application needs additional
+access, publication, or entitlement rules.
+
+Available contracts include `RegistrationServiceInterface`,
+`EventLifecycleWorkflow`, `EventCheckInService`, `EventCloneService`,
+`EventTemplateService`, `EventModerationWorkflow`, `EventSubmissionConverter`,
+`EventTaxonomyHierarchy`, `EventPassIssuanceService`,
+`EventRefundEligibility`, `EventRegistrationEligibility`,
+`EventRegistrationScopeResolver`, `EventSearchEngine`, `EventSearchIndexer`,
+`EventSearchPayloadResolver`, `EventDisplayTimezoneResolver`,
+`EventScheduleResolver`, `EventEngagementManager`, and more.
+
+### ExtensionRegistry slots
+
+`Platform\ExtensionRegistry` resolves classes declared in feature manifests:
+
+```php
+use AIArmada\Events\Contracts\EventScopeCascadeDeleter;
+use AIArmada\Events\Platform\ExtensionRegistry;
+
+$deleters = app(ExtensionRegistry::class)->resolve('events.cascade-delete', EventScopeCascadeDeleter::class);
+$cloners = app(ExtensionRegistry::class)->resolve('events.clone-scope');
+```
+
+- `events.cascade-delete` — invoked when an event/occurrence/session subtree is deleted.
+- `events.clone-scope` — invoked by the clone service when cloning a scope.
+
+Package features declare their extensions in `feature.json`; applications can
+add their own by binding around the registry in a provider.
 
 ## Search Indexing
 
-When `events.sync.build_search_documents` is enabled, the package maintains `event_search_documents` automatically through the built-in search indexer for events, occurrences, and sessions.
+When `events.sync.build_search_documents` is enabled, the package maintains
+`event_search_documents` automatically through the built-in search indexer for
+events, occurrences, and sessions.
 
 ```php
-use AIArmada\Events\Services\EventSearchDocumentBuilder;
+use AIArmada\Events\Contracts\EventSearchDocumentBuilder;
 
 $builder = app(EventSearchDocumentBuilder::class);
-$document = $builder->buildForEvent($event);
-$occurrenceDocument = $builder->buildForOccurrence($occurrence);
-$sessionDocument = $builder->buildForSession($session);
+$document = $builder->buildForEvent($eventId);
+$occurrenceDocument = $builder->buildForOccurrence($occurrenceId);
+$sessionDocument = $builder->buildForSession($sessionId);
 ```
 
-The generated payload includes the target content and relation-backed facets for audiences and classifications when those sync flags are enabled. Opaque metadata is included only as diagnostic context and is never used as a source for promoted fields.
+The generated payload includes the target content and relation-backed facets
+for audiences and classifications when those sync flags are enabled. Opaque
+metadata is included only as diagnostic context and is never used as a source
+for promoted fields.
 
-Set `events.search.queue_indexing=true` to queue rebuilds instead of writing them synchronously. If you need to disable automatic indexing entirely, bind `events.search.indexer` to `AIArmada\Events\Resolvers\NullEventSearchIndexer`.
+Set `events.search.queue_indexing=true` to queue rebuilds instead of writing
+them synchronously (the `BuildEventSearchDocumentJob` carries owner context
+and is unique per target). To disable automatic indexing entirely, point
+`events.search.indexer` at
+`AIArmada\Events\Drivers\NullEventSearchIndexerDriver`.
+
+### Search relation loading
+
+The package's default `EventSearchRelationProvider` supplies only
+package-owned eager-loading paths. Applications that render richer event
+cards can configure a provider that composes the package default and adds
+host-owned relations:
+
+```php
+use AIArmada\Events\Contracts\EventSearchRelationProvider;
+use AIArmada\Events\Platform\DefaultEventSearchRelationProvider;
+
+final class EventCardRelationshipProvider implements EventSearchRelationProvider
+{
+    public function relations(): array
+    {
+        return [
+            ...(new DefaultEventSearchRelationProvider)->relations(),
+            'institution.media',
+            'venue.addresses',
+        ];
+    }
+}
+```
+
+Bind it via `events.search.relation_provider`. This provider is used by
+search adapters for eager loading only. It does not own matching thresholds,
+event fields, statuses, or search-index integration.
+
+### Search engine
+
+```php
+use AIArmada\Events\Contracts\EventSearchEngine;
+
+$results = app(EventSearchEngine::class)->search([
+    'query' => 'conference',
+    'limit' => 25,
+]);
+```
+
+The default `EloquentEventSearchEngine` returns an Eloquent collection;
+replace it via `events.search.engine` to plug in an external index.
 
 ## Dispatching an event change notice
 
-Publishing a notice goes through the workflow contract, which records the change and
-dispatches `EventChangeNoticePublished`. Delivery is a separate listener step, reached by
-binding `EventChangeNoticeNotificationDispatcher`:
+Publishing a notice goes through the workflow contract, which records the
+change and dispatches `EventChangeNoticePublished`. Delivery is a separate
+listener step, reached by binding `EventChangeNoticeNotificationDispatcher`:
 
 ```php
 use AIArmada\Events\Contracts\EventChangeNoticeWorkflow;
 
-app(EventChangeNoticeWorkflow::class)->publishNotice($changeLog, [
+app(EventChangeNoticeWorkflow::class)->publishNotice($changeLogId, [
     'reason' => 'Venue unavailable',
 ]);
 
-app(EventChangeNoticeWorkflow::class)->retractNotice($changeLog);
+app(EventChangeNoticeWorkflow::class)->retractNotice($changeLogId);
 ```
 
-The built-in `AIArmada\Events\Services\EventNotificationDispatcher` resolves recipients
-through the bound `EventChangeNoticeAudienceResolver` and sends an
-`EventChangeNoticeNotification` through `aiarmada/communications`. The audience scope comes
-from the change log's `impact_level`: `critical` or `high` targets `registrants`, anything
-else targets `followers`.
+The built-in `AIArmada\Events\Drivers\EventChangeNoticeNotificationDriver`
+resolves recipients through the bound `EventChangeNoticeAudienceResolver` and
+sends an `EventChangeNoticeNotification` through `aiarmada/communications`.
+The audience scope comes from the change log's `impact_level`: `critical` or
+`high` targets `registrants`, anything else targets `followers`.
+
+You can also record a change directly through the feature API:
+
+```php
+use AIArmada\Events\Features\Changes\Api\ChangesApi;
+
+app(ChangesApi::class)->dispatchChange(
+    eventId: $eventId,
+    changeType: 'venue_changed',
+    changeCategory: 'administration',
+    impactLevel: 'high',
+    requiresNotification: true,
+    reason: 'Main hall flooded',
+);
+```
 
 ## Deleting events
 
-Deleting an event cascades through the owned subtree in application logic: occurrences, sessions, registrations (with participants, answers, items, attendances, and passes), locations, media, classifications, updates, submissions, and the remaining event-scoped records, plus the event's ticket types and seat maps. Deleting an occurrence or session cascades through its own scope the same way. Cross-owner deletes are blocked by the owner write guards before the cascade runs.
+Deleting an event cascades through the owned subtree in application logic:
+occurrences, sessions, registrations (with participants, answers, items,
+attendances, and passes), locations, media, classifications, updates,
+submissions, and the remaining event-scoped records, plus the event's ticket
+types and seat maps. Deleting an occurrence or session cascades through its
+own scope the same way. The cascade runs through the `events.cascade-delete`
+`ExtensionRegistry` slot, so each feature's extension deletes exactly the
+tables it owns. Cross-owner deletes are blocked by the owner write guards
+before the cascade runs.
 
 ## Event submissions
 
-`EventSubmission.target_type` / `target_id` is the owner target the submission is filed under, resolved through the `target()` morph. It is never the submitted event or session: converted or container-bound submissions point at the created graph through `event_id`, `event_occurrence_id`, and `event_session_id` instead.
+`EventSubmission.target_type` / `target_id` is the owner target the submission
+is filed under, resolved through the `target()` morph. It is never the
+submitted event or session: converted or container-bound submissions point at
+the created graph through `event_id`, `event_occurrence_id`, and
+`event_session_id` instead.
 
 ```php
+use AIArmada\Events\Features\Governance\Models\EventSubmission;
+
 $submission = EventSubmission::query()->create([
+    'submitter_type' => $submitter->getMorphClass(),
+    'submitter_id' => $submitter->getKey(),
     'target_type' => $owner->getMorphClass(),
     'target_id' => $owner->getKey(),
-    'event_id' => $event->id,
-    'event_occurrence_id' => $occurrence->id,
-    'event_session_id' => $session->id,
+    'submission_data' => [
+        'title' => 'Ramadan Lecture',
+        'description' => 'Event description',
+        'starts_at' => '2026-07-01 09:00:00',
+        'ends_at' => '2026-07-01 10:00:00',
+    ],
     'status' => 'pending',
     'submitted_at' => now(),
 ]);
-
-$submission->session; // BelongsTo EventSession
 ```
 
-Writes are guarded by `EventSubmissionOwnerScope`: the target pair must both be present or both null, persisted targets are immutable, and event-bound submissions must pass the event write guard. Graph integrity runs on every save even when owner scoping is disabled or the submission is global: `event_id` is required when an occurrence or session is linked, a linked occurrence must exist and belong to the submitted event, a linked session must exist and belong to the submitted event, and a supplied occurrence must match the session's occurrence (a null session occurrence never matches a non-null supplied occurrence). A null submission occurrence with a session is allowed and preserves the canonical null. Deletes only enforce the owner boundary and never block cleanup on a missing parent. Session deletes cascade to linked submissions.
+Writes are guarded by `Platform\EventSubmissionOwnerScope`: the target pair
+must both be present or both null, persisted targets are immutable, and
+event-bound submissions must pass the event write guard. Graph integrity runs
+on every save even when owner scoping is disabled or the submission is
+global: `event_id` is required when an occurrence or session is linked, a
+linked occurrence must exist and belong to the submitted event, a linked
+session must exist and belong to the submitted event, and a supplied
+occurrence must match the session's occurrence (a null session occurrence
+never matches a non-null supplied occurrence). A null submission occurrence
+with a session is allowed and preserves the canonical null. Deletes only
+enforce the owner boundary and never block cleanup on a missing parent.
+Session deletes cascade to linked submissions.
+
+### Moderation workflow
+
+```php
+use AIArmada\Events\Contracts\EventModerationWorkflow;
+use AIArmada\Events\Contracts\EventSubmissionConverter;
+
+$moderation = app(EventModerationWorkflow::class);
+
+$moderation->submit($submissionId, $actor);
+$moderation->approve($submissionId, $actor, 'Looks good');
+$moderation->requestChanges($submissionId, $actor, 'Add a venue', 'See notes');
+$moderation->reject($submissionId, $actor, 'Duplicate');
+
+// Approve + convert into a real event graph
+$eventId = app(EventSubmissionConverter::class)->convert($submissionId);
+```
+
+Conversion normalizes title/summary/description content and creates the
+event and its primary occurrence.
+
+### Assignment requests and escalations
+
+```php
+use AIArmada\Events\Features\Governance\Actions\ApproveAssignmentRequestAction;
+use AIArmada\Events\Features\Governance\Actions\SubmitAssignmentRequestAction;
+use AIArmada\Events\Features\Governance\Api\GovernanceApi;
+
+$request = app(SubmitAssignmentRequestAction::class)->handle(
+    manageable: $event,
+    requestor: $user,
+    justification: 'Regional manager coverage',
+    requestedRole: 'manager',
+);
+
+$assignment = app(ApproveAssignmentRequestAction::class)->handle($request, $reviewer, 'manager', 'Approved');
+
+// Resolve open escalations for an event (through the scalar-ID API)
+app(GovernanceApi::class)->resolveEscalations($eventId);
+```
+
+Approved assignments mirror to the authz integration through the bound
+`EventAuthzDriver`.
 
 ## Finalizing event orders
 
-Order finalization runs on the event path, not from the console. When a registration is checked in,
-`SyncEventOrderCompletionOnRegistrationCheckedIn` dispatches `SyncEventOrderCompletionAction`, which
-fulfils every order item through `FulfillEventOrderItemAction`. Payment and cancellation transitions
-(`SyncEventOrderRegistrationsOnOrderPaid`, `…OnOrderCanceled`, `…OnOrderRefunded`,
-`…OnOrderRefundFailed`) drive the same fulfilment for order-backed registrations.
+Order finalization runs on the event path, not from the console. When a
+registration is checked in,
+`SyncEventOrderCompletionOnRegistrationCheckedIn` dispatches
+`SyncEventOrderCompletionAction`, which fulfils every order item through
+`FulfillEventOrderItemAction`. Payment and cancellation transitions
+(`SyncEventOrderRegistrationsOnFulfillment`, `…OnOrderCanceled`,
+`…OnOrderRefunded`, `…OnOrderRefundFailed`) drive the same fulfilment for
+order-backed registrations.
 
-Per-occurrence finalization is available to applications through the action, which must run inside a
-resolved owner context:
+Per-scope finalization is available to applications through the action,
+which must run inside a resolved owner context:
 
 ```php
-use AIArmada\Events\Actions\FinalizeOccurredEventOrdersAction;
-use AIArmada\Events\Models\EventOccurrence;
+use AIArmada\Events\Features\Commerce\Actions\FinalizeOccurredEventOrdersAction;
 
-app(FinalizeOccurredEventOrdersAction::class)->handle(EventOccurrence::query()->findOrFail($id));
+app(FinalizeOccurredEventOrdersAction::class)->handle('occurrence', $occurrenceId);
 ```
 
-Item fulfilment is delegated to the bound `EventOrderItemFulfillmentResolver`. The package default
-resolves contact details and returns them without persisting; bind your own resolver to write them.
+Item fulfilment is delegated to the bound
+`EventOrderItemFulfillmentResolver`. The package default resolves contact
+details and returns them without persisting; bind your own resolver to write
+them.
 
 ## Ownership model
 
-7 models use `HasOwner` directly (`Event`, `EventSeries`, `EventTemplate`, `EventOrganizer`, `EventItinerary`, `EventHeadcountLog`, `EventWalkIn`). 44 models inherit the event boundary via `ScopesByEventOwner` (`event_owner` scope). 11 stay unscoped: catalog/pivot/submission exceptions (`EventRole`, `EventTaxonomy`, `EventTerm`, `EventTermPolicy`, `EventSeriesItemPivot`, `EventSubmission`) plus venue catalog (`Venue`, `VenueSpace`, `VenueSpaceType`, `FacilityType`, `VenueFacility`).
+7 models use `HasOwner` directly (`Event`, `EventSeries`, `EventTemplate`,
+`EventOrganizer`, `EventItinerary`, `EventHeadcountLog`, `EventWalkIn`). 44
+models inherit the event boundary via `Platform\ScopesByEventOwner`
+(`event_owner` scope). The remaining records stay unscoped by design:
+catalog/pivot/submission exceptions (`EventRole`, `EventTaxonomy`,
+`EventTerm`, `EventTermPolicy`, `EventSeriesItemPivot`, `EventSubmission`)
+plus the venue catalog (`Venue`, `VenueSpace`, `VenueSpaceType`,
+`FacilityType`, `VenueFacility`).
 
 ```php
-use AIArmada\Events\Support\EventWriteGuard;
+use AIArmada\Events\Platform\EventWriteGuard;
 
 $event = EventWriteGuard::findOrFail($eventId);
 ```
 
-Write paths resolve the event first via `EventWriteGuard::findOrFail()`, which enforces the owner scope before mutating children.
+Write paths resolve the event first via `EventWriteGuard::findOrFail()`, which
+enforces the owner scope before mutating children.
 
-The venue and taxonomy catalogs (`Venue`, `VenueSpace`, `VenueSpaceType`, `FacilityType`, `VenueFacility`, `EventTaxonomy`, `EventTerm`, `EventTermPolicy`, `EventRole`) are intentional global vocabularies shared across owners. Writes to them from tenant flows run in explicit global context; the admin surface owns write authorization for these tables.
+The venue and taxonomy catalogs are intentional global vocabularies shared
+across owners. Writes to them from tenant flows run in explicit global
+context; the admin surface owns write authorization for these tables.
+Authorization beyond the query layer lives in domain policies: `EventPolicy`
+plus `EventOccurrencePolicy`, `EventSessionPolicy`,
+`EventRegistrationPolicy`, and `EventSubmissionPolicy`, all registered by
+their feature modules. Management abilities resolve through the event owner
+(via the `CanManageEventsFor` contract) and public events stay viewable.
 
-Authorization beyond the query layer lives in domain policies: `EventPolicy` plus `EventOccurrencePolicy`, `EventSessionPolicy`, `EventRegistrationPolicy`, and `EventSubmissionPolicy`, all registered in the service provider. Management abilities resolve through the event owner; public events stay viewable.
-
-## Owner query notes
+## Query service
 
 ```php
-use AIArmada\Events\Services\EventQueryService;
+use AIArmada\Events\Features\Catalog\Queries\EventQueryService;
 
-$events = app(EventQueryService::class)->findByOwner($owner);
-$events = app(EventQueryService::class)->findByOwner($owner, 50);
+$query = app(EventQueryService::class);
+
+$events = $query->findPublished();            // 100 rows, clamped to 500
+$events = $query->findUpcoming(10);
+$events = $query->findByOwner($owner, 50);
+$event = $query->findBySlug('annual-conference-2026'); // earliest on duplicate slugs
 ```
 
-`EventQueryService::findPublished()` and `findByOwner()` default to 100 rows and clamp to 500. The search engine defaults to 25 rows and clamps to 100. `findBySlug()` resolves duplicate slugs to the earliest created event.
+`findPublished()`, `findUpcoming()`, and `findByOwner()` default to 100 rows
+and clamp to 500. The search engine defaults to 25 rows and clamps to 100.
 
 ## Order to registration to pass sequence
 
 ```php
-use AIArmada\Events\Actions\CreateRegistrationsFromOrderAction;
-use AIArmada\Events\Actions\IssueEventRegistrationPassesAction;
+use AIArmada\Events\Features\Commerce\Actions\CreateRegistrationsFromOrderAction;
+use AIArmada\Events\Features\Commerce\Actions\IssueEventRegistrationPassesAction;
 
-$registrations = app(CreateRegistrationsFromOrderAction::class)->handle($target, $orderItem, $participants, $purchaser);
-$passes = app(IssueEventRegistrationPassesAction::class)->handle($registrations->first());
+$registrationIds = app(CreateRegistrationsFromOrderAction::class)->handle(
+    'occurrence',        // scope type
+    $occurrenceId,       // scope id
+    $orderItemId,
+    $participants,
+    $purchaser,
+);
+
+app(IssueEventRegistrationPassesAction::class)->handle($registrationIds[0]);
 ```
 
-Canonical paid flow: order item → `CreateRegistrationsFromOrderAction` (scope + eligibility + `RegistrationService::register` + component expansion) → `IssueEventRegistrationPassesAction` → ticketing `IssuePassesAction`. Free order items reuse `RegisterForFreeAction` with `defer_pass_issuance` before the same pass step.
+Canonical paid flow: order item → `CreateRegistrationsFromOrderAction`
+(scope + eligibility + `RegistrationServiceInterface::register` + component
+expansion) → pass issuance through the ticketing driver. Free order items
+reuse `RegisterForFreeAction` with `defer_pass_issuance` before the same pass
+step.
 
 ## Ticketing DTOs and delivery
 
@@ -835,23 +1285,19 @@ $passDto = PassData::fromPass($pass);
 $components = app(ExpandTicketTypeComponentsAction::class)->handle($ticketType);
 ```
 
-Use the canonical ticketing DTOs and `ExpandTicketTypeComponentsAction` (also used by `CreateEventComponentRegistrationsAction`). Delivery goes through the communications manager (`EventNotificationDispatcher`); cross-package links stay as `EventReference` rows with content remaining in events.
+Use the canonical ticketing DTOs and `ExpandTicketTypeComponentsAction` (also
+used by `CreateEventComponentRegistrationsAction`). Delivery goes through the
+communications manager; cross-package links stay as `EventReference` rows
+with content remaining in events.
 
-## Content sync and model traits
+## Content sync
 
 ```php
-use AIArmada\Events\Actions\SynchronizeEventContent;
+use AIArmada\Events\Features\Catalog\Actions\SynchronizeEventContent;
 
 app(SynchronizeEventContent::class)->handle($event);
 ```
 
-`EventContentSynchronizer` is canonical for title/summary/description normalization. `src/Traits` keeps 6 relation traits plus 3 organizer traits (`CanOrganizeEvents`, `HasEvents`, `OwnsEvents`). There is no global helper and no `files` autoload in `composer.json`.
-
-## Venue and facility addresses
-
-Venue catalog (`VenueSpace`, `VenueSpaceType`, `FacilityType`, `VenueFacility`) is unowned by design; `Venue` is also unowned. `EventLocation` and `EventFacility` are event-scoped via `ScopesByEventOwner`. All seven use only addressing `HasAddresses`; read via the canonical primary address:
-
-```php
-$primary = $venue->primaryAddress();
-$primary = $location->primaryAddress();
-```
+`Platform\EventContentNormalizer` is canonical for title/summary/description
+normalization (titles trimmed with collapsed whitespace, blank summaries and
+descriptions stored as `null`).

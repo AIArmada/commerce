@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Database\Factories;
 
-use AIArmada\Events\Enums\EventRegistrationQuestionStatus;
-use AIArmada\Events\Enums\EventRegistrationQuestionType;
-use AIArmada\Events\Models\EventRegistrationQuestion;
+use AIArmada\Events\Data\EventRegistrationQuestionStatus;
+use AIArmada\Events\Data\EventRegistrationQuestionType;
+use AIArmada\Events\Features\Registrations\Models\EventRegistrationQuestion;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

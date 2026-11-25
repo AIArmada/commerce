@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventAttendance;
-use AIArmada\Events\Models\EventChangeLog;
-use AIArmada\Events\Models\EventOccurrence;
-use AIArmada\Events\Models\EventRegistration;
-use AIArmada\Events\Models\EventSession;
+use AIArmada\Events\Features\Attendance\Models\EventAttendance;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
+use AIArmada\Events\Features\Catalog\Models\EventSession;
+use AIArmada\Events\Features\Changes\Models\EventChangeLog;
+use AIArmada\Events\Features\Registrations\Models\EventRegistration;
 use AIArmada\FilamentEvents\Resources\EventAttendanceResource;
 use AIArmada\FilamentEvents\Resources\EventChangeLogResource;
 use AIArmada\FilamentEvents\Resources\EventOccurrenceResource;

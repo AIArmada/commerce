@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentEvents\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
-use AIArmada\Events\Models\EventAttendance;
-use AIArmada\Events\Support\ModelResolver;
+use AIArmada\Events\Features\Attendance\Models\EventAttendance;
+use AIArmada\Events\Platform\ModelResolver;
 use AIArmada\FilamentEvents\Actions\Exporter\EventAttendanceExporter;
 use BackedEnum;
 use Filament\Actions\ExportAction;

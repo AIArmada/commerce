@@ -4,15 +4,20 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Contracts;
 
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventOccurrence;
-use AIArmada\Events\Models\EventSession;
-
 interface EventCloneService
 {
-    public function cloneEvent(Event $event, array $options = []): Event;
+    /**
+     * @param  array<string, mixed>  $options
+     */
+    public function cloneEvent(string $eventId, array $options = []): string;
 
-    public function cloneOccurrence(EventOccurrence $occurrence, array $options = []): EventOccurrence;
+    /**
+     * @param  array<string, mixed>  $options
+     */
+    public function cloneOccurrence(string $occurrenceId, array $options = []): string;
 
-    public function cloneSession(EventSession $session, array $options = []): EventSession;
+    /**
+     * @param  array<string, mixed>  $options
+     */
+    public function cloneSession(string $sessionId, array $options = []): string;
 }

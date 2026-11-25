@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentEvents\Resources;
 
 use AIArmada\Addressing\Models\Address;
-use AIArmada\Events\Models\Venue;
-use AIArmada\Events\Support\ModelResolver;
+use AIArmada\Events\Features\Venues\Models\Venue;
+use AIArmada\Events\Platform\ModelResolver;
 use AIArmada\FilamentEvents\Actions\Exporter\VenueExporter;
 use AIArmada\FilamentEvents\Actions\Importer\VenueImporter;
 use BackedEnum;
@@ -32,7 +32,10 @@ class VenueResource extends Resource
      */
     public static function getModel(): string
     {
-        return ModelResolver::venueClass();
+        /** @var class-string<Venue> $model */
+        $model = ModelResolver::venueClass();
+
+        return $model;
     }
 
     public static function getNavigationGroup(): string | UnitEnum | null

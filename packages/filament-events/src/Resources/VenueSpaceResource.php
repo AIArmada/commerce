@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEvents\Resources;
 
-use AIArmada\Events\Models\VenueSpace;
-use AIArmada\Events\Support\ModelResolver;
+use AIArmada\Events\Features\Venues\Models\VenueSpace;
+use AIArmada\Events\Platform\ModelResolver;
 use AIArmada\FilamentEvents\Resources\VenueSpaceResource\Pages\CreateVenueSpace;
 use AIArmada\FilamentEvents\Resources\VenueSpaceResource\Pages\EditVenueSpace;
 use AIArmada\FilamentEvents\Resources\VenueSpaceResource\Pages\ListVenueSpaces;
@@ -31,7 +31,10 @@ class VenueSpaceResource extends Resource
      */
     public static function getModel(): string
     {
-        return ModelResolver::venueSpaceClass();
+        /** @var class-string<VenueSpace> $model */
+        $model = ModelResolver::venueSpaceClass();
+
+        return $model;
     }
 
     public static function getNavigationGroup(): string | UnitEnum | null

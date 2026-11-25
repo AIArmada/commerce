@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Database\Factories;
 
-use AIArmada\Events\Models\EventSearchDocument;
+use AIArmada\Events\Features\Search\Models\EventSearchDocument;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

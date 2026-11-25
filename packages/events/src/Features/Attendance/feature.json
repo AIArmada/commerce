@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "name": "Attendance",
+  "owns": {
+    "table:event_attendances": [
+      "AIArmada\\Events\\Features\\Attendance\\Actions\\DefaultEventCheckInService",
+      "AIArmada\\Events\\Features\\Attendance\\Actions\\DeleteAttendanceDependents",
+      "AIArmada\\Events\\Features\\Attendance\\Actions\\DeleteAttendanceScopeDependents"
+    ],
+    "table:event_attendance_logs": [
+      "AIArmada\\Events\\Features\\Attendance\\Actions\\DefaultEventCheckInService",
+      "AIArmada\\Events\\Features\\Attendance\\Actions\\DeleteAttendanceDependents"
+    ],
+    "table:event_walk_ins": [
+      "AIArmada\\Events\\Features\\Attendance\\Actions\\RecordWalkInAction"
+    ],
+    "table:event_headcount_logs": [
+      "AIArmada\\Events\\Features\\Attendance\\Actions\\RecordHeadcountLogAction"
+    ]
+  },
+  "extensions": {
+    "events.cascade-delete": [
+      "AIArmada\\Events\\Features\\Attendance\\Extensions\\AttendanceDeleteCascadeExtension"
+    ]
+  }
+}

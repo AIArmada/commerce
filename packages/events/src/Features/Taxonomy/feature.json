@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "name": "Taxonomy",
+  "owns": {
+    "table:event_taxonomies": [
+      "AIArmada\\Events\\Features\\Taxonomy\\Actions\\DeleteTaxonomyDependents",
+      "AIArmada\\Events\\Features\\Taxonomy\\Actions\\SyncEventClassificationsAction"
+    ],
+    "table:event_terms": [
+      "AIArmada\\Events\\Features\\Taxonomy\\Actions\\DeleteTaxonomyDependents",
+      "AIArmada\\Events\\Features\\Taxonomy\\Actions\\DeleteTermDependents",
+      "AIArmada\\Events\\Features\\Taxonomy\\Actions\\SyncEventClassificationsAction"
+    ],
+    "table:event_classifications": [
+      "AIArmada\\Events\\Features\\Taxonomy\\Actions\\CloneTaxonomyScopeAction",
+      "AIArmada\\Events\\Features\\Taxonomy\\Actions\\DeleteTaxonomyScopeDependents",
+      "AIArmada\\Events\\Features\\Taxonomy\\Actions\\DemotePrimaryClassification",
+      "AIArmada\\Events\\Features\\Taxonomy\\Actions\\SyncEventClassificationsAction"
+    ],
+    "table:event_term_policies": [
+      "AIArmada\\Events\\Features\\Taxonomy\\Actions\\DeleteTaxonomyDependents",
+      "AIArmada\\Events\\Features\\Taxonomy\\Actions\\DeleteTermDependents"
+    ]
+  },
+  "extensions": {
+    "events.cascade-delete": [
+      "AIArmada\\Events\\Features\\Taxonomy\\Extensions\\TaxonomyDeleteCascadeExtension"
+    ],
+    "events.clone-scope": [
+      "AIArmada\\Events\\Features\\Taxonomy\\Extensions\\TaxonomyCloneScopeExtension"
+    ]
+  }
+}

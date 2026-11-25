@@ -1,14 +1,8 @@
 <?php
 
 declare(strict_types=1);
+
 use AIArmada\Customers\Models\Customer;
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventAttendance;
-use AIArmada\Events\Models\EventRegistration;
-use AIArmada\Events\Models\EventRegistrationQuestion;
-use AIArmada\Events\Models\EventSubmission;
-use AIArmada\Events\Models\Venue;
-use AIArmada\Events\Models\VenueSpace;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
@@ -25,15 +19,31 @@ $ownerConfig = [
 
 return [
 
-    /* Model class overrides */
+    /* Model class overrides (defaults are registered by each FeatureModule) */
     'models' => [
-        'event' => Event::class,
-        'registration' => EventRegistration::class,
-        'attendance' => EventAttendance::class,
-        'submission' => EventSubmission::class,
-        'registration_question' => EventRegistrationQuestion::class,
-        'venue' => Venue::class,
-        'venue_space' => VenueSpace::class,
+        'event' => null,
+        'occurrence' => null,
+        'session' => null,
+        'registration' => null,
+        'registration_participant' => null,
+        'registration_question' => null,
+        'attendance' => null,
+        'walk_in' => null,
+        'headcount_log' => null,
+        'submission' => null,
+        'escalation' => null,
+        'approval_request' => null,
+        'management_assignment' => null,
+        'change_log' => null,
+        'update' => null,
+        'search_document' => null,
+        'venue' => null,
+        'venue_space' => null,
+        'location' => null,
+        'facility' => null,
+        'classification' => null,
+        'attribute' => null,
+        'audience' => null,
     ],
 
     /* Database */
@@ -98,14 +108,11 @@ return [
             // Event-domain organizer profiles. Tenant organizations live in aiarmada/organizations.
             'event_organizers' => env('EVENTS_TABLE_EVENT_ORGANIZERS', $tablePrefix . 'event_organizers'),
 
-            // Free-only / RSVP mode (new in 000071–000072)
             'event_walk_ins' => env('EVENTS_TABLE_WALK_INS', $tablePrefix . 'event_walk_ins'),
             'event_headcount_logs' => env('EVENTS_TABLE_HEADCOUNT_LOGS', $tablePrefix . 'event_headcount_logs'),
 
-            // Module 8: Data Quality & Verification
             'event_verifications' => env('EVENTS_TABLE_VERIFICATIONS', $tablePrefix . 'event_verifications'),
 
-            // Module 9: Moderation & Reporting
             'event_escalations' => env('EVENTS_TABLE_ESCALATIONS', $tablePrefix . 'event_escalations'),
             'event_reports' => env('EVENTS_TABLE_REPORTS', $tablePrefix . 'event_reports'),
             'event_moderation_actions' => env('EVENTS_TABLE_MODERATION_ACTIONS', $tablePrefix . 'event_moderation_actions'),
@@ -260,6 +267,8 @@ return [
     'references' => ['resolver' => null],
     'timezone' => ['display_timezone_resolver' => null],
     'schedule' => ['resolver' => null],
+    'time_expressions' => ['resolver' => null],
+    'translations' => ['provider' => null],
 
     'sync' => [
         'classifications_to_facets' => env('EVENTS_SYNC_CLASSIFICATIONS_TO_FACETS', true),

@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Events;
 
-use AIArmada\Events\Models\EventSession;
-
-final class EventSessionUpdated
+final readonly class EventSessionUpdated
 {
+    /**
+     * @param  array<string, array{old: mixed, new: mixed}>  $changes
+     */
     public function __construct(
-        public EventSession $session,
+        public string $sessionId,
+        public string $eventId,
         public array $changes = [],
     ) {}
 }

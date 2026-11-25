@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventOccurrence;
-use AIArmada\Events\Models\EventRegistration;
-use AIArmada\Events\Models\EventRegistrationItem;
-use AIArmada\Events\Steps\IssueEventPassesStep;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
+use AIArmada\Events\Features\Commerce\EntryPoints\Checkout\IssueEventPassesStep;
+use AIArmada\Events\Features\Registrations\Models\EventRegistration;
+use AIArmada\Events\Features\Registrations\Models\EventRegistrationItem;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
 use AIArmada\Ticketing\Contracts\PassDeliveryServiceInterface;

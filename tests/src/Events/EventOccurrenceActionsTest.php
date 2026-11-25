@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\Events\Actions\BatchCreateOccurrencesAction;
-use AIArmada\Events\Actions\CreateEventOccurrenceAction;
-use AIArmada\Events\Actions\UpdateEventOccurrenceAction;
 use AIArmada\Events\Events\EventOccurrenceUpdated;
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventOccurrence;
+use AIArmada\Events\Features\Catalog\Actions\BatchCreateOccurrencesAction;
+use AIArmada\Events\Features\Catalog\Actions\CreateEventOccurrenceAction;
+use AIArmada\Events\Features\Catalog\Actions\UpdateEventOccurrenceAction;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
 
 beforeEach(function (): void {
     config()->set('events.features.owner.enabled', false);

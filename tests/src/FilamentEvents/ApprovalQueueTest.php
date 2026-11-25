@@ -5,9 +5,9 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventApprovalRequest;
-use AIArmada\Events\Models\EventSubmission;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Governance\Models\EventApprovalRequest;
+use AIArmada\Events\Features\Governance\Models\EventSubmission;
 use Illuminate\Database\Eloquent\Builder;
 
 it('only lists approval requests for event submissions', function (): void {

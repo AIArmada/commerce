@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Contracts;
 
-use AIArmada\Events\Models\EventTemplate;
-
 interface EventTemplateService
 {
-    public function createFromTemplate(EventTemplate $template, array $overrides = []): mixed;
+    /**
+     * @param  array<string, mixed>  $overrides
+     */
+    public function createFromTemplate(string $templateId, array $overrides = []): string;
 }

@@ -14,9 +14,9 @@ keywords:
 
 ## Snapshot
 - Composer: `aiarmada/filament-events`
-- Role: Filament admin for events/occurrences/sessions/venues/registrations + check-in console.
+- Role: Filament v5 admin adapter for `aiarmada/events` — resources, relation managers, check-in console, approval queue, public preview, and stats widget.
 - Triggers: filament, events-ui, check-in
-- Search first: `src/Resources, src/Pages, config, docs`
+- Search first: `src/Resources, src/Pages, src/RelationManagers, config, docs`
 - Related: `events`, `filament-authz`, `filament-ticketing`
 - Paired: `events` (core domain owner)
 
@@ -30,6 +30,8 @@ keywords:
 
 ## Guardrails
 - Adapter only: no domain models/actions/calculations. Keep all business rules in `events`.
+- All mutations go through `events` scalar-ID contracts: `EventLifecycleWorkflow` (`publish($eventId)`, `cancel('occurrence', $id, …)`), `EventCloneService`, `EventModerationWorkflow`, `EventCheckInService`, `EventTemplateService` — never mutate status columns directly.
+- Resolve event models through `AIArmada\Events\Platform\ModelResolver`; venue and taxonomy resources are global catalogs (no owner scope) while event-bound resources apply `OwnerUiScope::apply(..., includeGlobal: false)`.
 - Filament tenancy is not a security boundary; revalidate every submitted ID server-side (owner scope).
 - If behavior or calculations change, move them to `events` and keep this package UI-only.
 - Update `docs/*.md` in the same pass when public behavior or config changes.
@@ -37,12 +39,15 @@ keywords:
 ## Decide fast
 - Use when: Event operations UI.
 - Skip when: Registration rules — see events; ticket CRUD — see filament-ticketing.
-- Owner/security: Owner queries; global preview surfaces intentional.
+- Owner/security: Owner queries for event-bound resources; venue/taxonomy catalogs and global preview surfaces are intentional.
 
 ## Key surfaces
-- Resources: `EventAttendanceResource`, `EventChangeLogResource`, `EventOccurrenceResource`, `EventRegistrationParticipantResource`, `EventRegistrationResource`, `EventResource`, `EventSessionResource`, `EventTaxonomyResource`, `EventTemplateResource`, `EventTermResource`, `VenueResource`, `VenueSpaceResource`
-- Actions/Services: `Actions/Exporter/EventAttendanceExporter`, `Actions/Exporter/EventExporter`, `Actions/Exporter/EventOccurrenceExporter`, `Actions/Exporter/EventRegistrationExporter`, `Actions/Exporter/EventSessionExporter`, `Actions/Exporter/VenueExporter`, `Actions/Importer/EventRegistrationImporter`, `Actions/Importer/EventSessionImporter`, `Actions/Importer/VenueImporter`
-- Config `filament-events.php`: `navigation`, `group`, `resources`, `enabled`, `event`, `occurrence`, `session`, `venue`, `venue_space`, `registration`, `registration_participant`, `attendance`, `change_log`, `event_template`, `event_taxonomy`, `event_term`, `navigation_sort`, `event_form_extensions`, `event_relation_managers`, `occurrence_relation_managers`, `session_relation_managers`
+- Resources: `EventResource`, `EventOccurrenceResource`, `EventSessionResource`, `EventAttendanceResource`, `EventChangeLogResource`, `EventRegistrationResource`, `EventRegistrationParticipantResource`, `EventTemplateResource`, `EventTaxonomyResource`, `EventTermResource`, `VenueResource`, `VenueSpaceResource`
+- Pages: `CheckInConsole`, `ApprovalQueue`, `EventPublicPreview`
+- Widgets: `EventStatsWidget`; host embedding: `RelationManagers\EventsRelationManager`
+- Extensions: `Contracts\EventFormExtension`, `Contracts\EventOccurrenceFormExtension`, `Contracts\TermFormExtension`; default `Extensions\DefaultEventMediaExtension`
+- Import/Export: `Actions\Importer\{EventRegistrationImporter,EventSessionImporter,VenueImporter}`, `Actions\Exporter\{EventAttendanceExporter,EventExporter,EventOccurrenceExporter,EventRegistrationExporter,EventSessionExporter,VenueExporter}`
+- Config `filament-events.php`: `navigation.group`; `resources.enabled`, `resources.navigation_sort`, `resources.navigation_group`, `resources.event_form_extensions`, `resources.occurrence_form_extensions`, `resources.term_form_extensions`, `resources.*_relation_managers`
 
 ## Docs map
 - Start: `01-overview` → `03-configuration` → `04-usage` → `99-troubleshooting`

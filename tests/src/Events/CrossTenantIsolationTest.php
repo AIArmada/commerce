@@ -8,24 +8,25 @@ use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\NullOwnerResolver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Events\Actions\DispatchEventChangeChainAction;
-use AIArmada\Events\Actions\SubmitAssignmentRequestAction;
 use AIArmada\Events\Contracts\EventLifecycleWorkflow;
 use AIArmada\Events\Contracts\RegistrationServiceInterface;
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventAccessPolicy;
-use AIArmada\Events\Models\EventManagementAssignmentRequest;
-use AIArmada\Events\Models\EventOccurrence;
-use AIArmada\Events\Models\EventRegistration;
-use AIArmada\Events\Models\EventReport;
-use AIArmada\Events\Models\EventSeries;
-use AIArmada\Events\Models\EventSeriesRule;
-use AIArmada\Events\Models\EventSubmission;
-use AIArmada\Events\Models\EventSubmissionAttachment;
-use AIArmada\Events\Models\EventTemplate;
-use AIArmada\Events\Models\EventTemplateItem;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\EventAccessPolicy;
+use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
+use AIArmada\Events\Features\Catalog\Models\EventSeries;
+use AIArmada\Events\Features\Catalog\Models\EventSeriesRule;
+use AIArmada\Events\Features\Catalog\Models\EventTemplate;
+use AIArmada\Events\Features\Catalog\Models\EventTemplateItem;
+use AIArmada\Events\Features\Changes\Actions\DispatchEventChangeChainAction;
+use AIArmada\Events\Features\Governance\Actions\SubmitAssignmentRequestAction;
+use AIArmada\Events\Features\Governance\Models\EventManagementAssignmentRequest;
+use AIArmada\Events\Features\Governance\Models\EventReport;
+use AIArmada\Events\Features\Governance\Models\EventSubmission;
+use AIArmada\Events\Features\Governance\Models\EventSubmissionAttachment;
+use AIArmada\Events\Features\Registrations\Models\EventRegistration;
 use AIArmada\Ticketing\Models\TicketType;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 it('fails closed when an owner-protected child query has no owner context', function (): void {
     config()->set('events.features.owner.enabled', true);
@@ -101,11 +102,11 @@ it('isolates event-bound child reads and writes by owner', function (): void {
             ->and(Event::query()->where('slug', $eventA->slug)->value('title'))->toBe($eventA->title)
             ->and(Event::query()->where('slug', $eventB->slug)->exists())->toBeFalse();
 
-        expect(fn () => app(RegistrationServiceInterface::class)->cancel($registrationB))
-            ->toThrow(AuthorizationException::class);
+        expect(fn () => app(RegistrationServiceInterface::class)->cancel((string) $registrationB->getKey()))
+            ->toThrow(ModelNotFoundException::class);
 
-        expect(fn () => app(EventLifecycleWorkflow::class)->complete($occurrenceB))
-            ->toThrow(AuthorizationException::class);
+        expect(fn () => app(EventLifecycleWorkflow::class)->complete('occurrence', (string) $occurrenceB->getKey()))
+            ->toThrow(ModelNotFoundException::class);
 
         expect(fn () => EventRegistration::factory()->create([
             'event_id' => $eventB->id,
@@ -120,8 +121,8 @@ it('isolates event-bound child reads and writes by owner', function (): void {
             'event_id' => $eventB->id,
         ]))->toThrow(AuthorizationException::class);
 
-        DispatchEventChangeChainAction::run(
-            eventId: $eventA->id,
+        app(DispatchEventChangeChainAction::class)->handle(
+            eventId: (string) $eventA->getKey(),
             changeType: 'published',
         );
 

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Database\Factories;
 
-use AIArmada\Events\Models\EventTaxonomy;
+use AIArmada\Events\Features\Taxonomy\Models\EventTaxonomy;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

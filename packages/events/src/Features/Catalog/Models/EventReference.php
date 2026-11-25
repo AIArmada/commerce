@@ -1,0 +1,78 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Events\Features\Catalog\Models;
+
+use AIArmada\Events\Database\Factories\EventReferenceFactory;
+use AIArmada\Events\Platform\ScopesByEventOwner;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Carbon;
+
+/**
+ * @property string $id
+ * @property string $event_id
+ * @property string|null $event_occurrence_id
+ * @property string|null $event_session_id
+ * @property string|null $referenceable_type
+ * @property string|null $referenceable_id
+ * @property string $reference_type
+ * @property string $title
+ * @property string|null $url
+ * @property string|null $citation
+ * @property string $visibility
+ * @property int $sort_order
+ * @property string|null $notes
+ * @property array|null $metadata
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ */
+final class EventReference extends Model
+{
+    use HasFactory;
+    use HasUuids;
+    use ScopesByEventOwner;
+
+    protected $fillable = [
+        'event_id', 'event_occurrence_id', 'event_session_id',
+        'referenceable_type', 'referenceable_id',
+        'reference_type',
+        'title', 'url', 'citation',
+        'visibility', 'sort_order', 'notes',
+        'metadata',
+    ];
+
+    public function getTable(): string
+    {
+        return $this->table ?? config('events.database.tables.event_references', 'event_references');
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'sort_order' => 'integer',
+            'metadata' => 'array',
+        ];
+    }
+
+    /** @return BelongsTo<Event, $this> */
+    public function event(): BelongsTo
+    {
+        return $this->belongsTo(Event::class);
+    }
+
+    /** @return MorphTo<Model, $this> */
+    public function referenceable(): MorphTo
+    {
+        return $this->morphTo();
+    }
+
+    protected static function newFactory(): EventReferenceFactory
+    {
+        return EventReferenceFactory::new();
+    }
+}

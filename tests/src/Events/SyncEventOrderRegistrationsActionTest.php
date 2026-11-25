@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\Events\Actions\SyncEventOrderRegistrationsAction;
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventRegistration;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Commerce\Actions\SyncEventOrderRegistrationsAction;
+use AIArmada\Events\Features\Registrations\Models\EventRegistration;
 
 it('handles repeated order lifecycle events idempotently', function (): void {
     $event = Event::factory()->create();

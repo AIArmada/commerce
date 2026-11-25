@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Services\EloquentEventSearchEngine;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Search\Queries\EloquentEventSearchEngine;
 
 it('falls back to safe search sorting for unsupported fields and directions', function (): void {
     Event::factory()->create([
@@ -20,8 +20,11 @@ it('falls back to safe search sorting for unsupported fields and directions', fu
         'sort_dir' => 'sideways',
     ]);
 
+    /** @var Event|null $first */
+    $first = $results->first();
+
     expect($results)->toHaveCount(2)
-        ->and($results->first()->title)->toBe('Newer');
+        ->and($first?->title)->toBe('Newer');
 });
 
 it('excludes hidden events from discovery search unless explicitly requested', function (): void {

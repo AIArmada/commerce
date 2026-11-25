@@ -17,10 +17,10 @@ keywords:
 
 ## Snapshot
 - Composer: `aiarmada/events`
-- Role: Events domain: series/venues/occurrences/sessions, registrations, check-in, change workflows (60+ models).
+- Role: Modular Dune events domain: 9 features (`Catalog`, `Venues`, `Taxonomy`, `Registrations`, `Attendance`, `Commerce`, `Changes`, `Governance`, `Search`), pure `Contracts`/`Data`, external `Drivers`, and shared `Platform` primitives.
 - Triggers: event, venue, occurrence, registration, check-in, waitlist
-- Search first: `src/Models, src/Actions, src/Services, config, docs`
-- Related: `filament-events`, `products`, `customers`, `orders`
+- Search first: `src/Features, src/Contracts, src/Data, src/Drivers, src/Platform, config, docs`
+- Related: `filament-events`, `ticketing`, `seating`, `products`, `customers`, `orders`
 - Paired: `filament-events` (Filament admin adapter)
 
 ## Read next
@@ -32,21 +32,25 @@ keywords:
 6. `docs/02-installation.md` when setup or publishing changes are involved
 
 ## Guardrails
-- Owns models, actions, services, events, calculations, and persistence rules.
-- `EventOrganizer` is an event-scoped organizer role/profile, not a tenant organization or a replacement for shared `persons.Person`. Involvements may point at a person or another `CanBeInvolvedInEvents` model through the event-owned polymorphic role.
+- Modular Dune layout: every durable `table:*` resource has exactly one owning feature listed in `src/Features/<Feature>/feature.json`; only that feature's `Actions`/`Persistence` classes may write it.
+- Public surface is scalar-ID based: `Contracts` interfaces (`RegistrationServiceInterface`, `EventLifecycleWorkflow`, `EventCheckInService`, …), feature `Api` contracts (`CatalogApi`, `RegistrationsApi`, `AttendanceApi`, `ChangesApi`, `GovernanceApi`), and immutable `Data` DTOs/enums. Never return Eloquent models from `Api`/`Contracts`.
+- `src/Platform` owns `ModelResolver`, `ExtensionRegistry` (slots `events.cascade-delete`, `events.clone-scope`), `EventWriteGuard`, `FeatureCatalog`, and the ownership scoping traits; `Platform` must never import concrete `Features` or `Drivers`.
+- `EventOrganizer` is an event-scoped organizer role/profile, not a tenant organization or a replacement for shared `persons.Person`.
+- Keep `composer arch:check` (AST boundaries + Larastan `OwnedWriteRule`) green; `tools/architecture.json` must stay at `"exceptions": []`.
 - If admin UI changes too, audit `filament-events`.
 - Update `docs/*.md` in the same pass when public behavior or config changes.
 
 ## Decide fast
-- Use when: Event scheduling, venues, registrations, attendance.
+- Use when: Event scheduling, venues, registrations, attendance, governance, search indexing.
 - Skip when: Ticket inventory/pricing — see ticketing; seat maps — see seating; shared human identity — see persons.
-- Owner/security: direct owner models use commerce-support `HasOwner`; event
-  children use the documented relation-via-event owner boundary.
+- Owner/security: event roots use `commerce-support` `HasOwner`; event children inherit the event boundary through `Platform\ScopesByEventOwner` (`event_owner` scope); venue/taxonomy catalogs are intentional global vocabularies.
 
 ## Key surfaces
-- Models: `Event`, `EventAccessPolicy`, `EventApprovalRequest`, `EventAttendance`, `EventAttendanceLog`, `EventAttribute`, `EventAudience`, `EventAudienceProfile`, `EventAvailabilityBlock`, `EventChangeLog`
-- Actions/Services: `Actions/AddEventTicketTypeToCartAction`, `Actions/AllocateEventSeatsOnPassIssued`, `Actions/ApproveAssignmentRequestAction`, `Actions/ArchiveEventRegistrationQuestionAction`, `Actions/CreateEventComponentRegistrationsAction`, `Actions/BatchCreateOccurrencesAction`, `Actions/CancelAssignmentRequestAction`, `Actions/SynchronizeEventContent`
-- Config `events.php`: `models`, `database`, `defaults`, `features` (with `features.owner.enabled` / `include_global` / `auto_assign_on_create`), `lifecycle` (`lifecycle.event`, `lifecycle.session`, `lifecycle.occurrence`, `lifecycle.registration`), `media`, `shares`, `codes`, `sync`, `attribute_sync`, `search`, `change_notices`, `integrations`, `notifications`
+- Features: `Catalog` (events/occurrences/sessions/involvements/series/templates), `Venues`, `Taxonomy`, `Registrations`, `Attendance`, `Commerce` (checkout/orders/ticketing bridge), `Changes`, `Governance` (submissions/moderation/escalations), `Search`.
+- Api contracts: `Features\Catalog\Api\CatalogApi`, `Features\Registrations\Api\RegistrationsApi` (+ `RegistrationSummary`, `EventRegistrationParticipantData`, `EventRegistrationOrderItemRef`), `Features\Attendance\Api\AttendanceApi`, `Features\Changes\Api\ChangesApi`, `Features\Governance\Api\GovernanceApi`.
+- Contracts: `RegistrationServiceInterface`, `EventLifecycleWorkflow`, `EventCheckInService`, `EventCloneService`, `EventTemplateService`, `EventModerationWorkflow`, `EventSubmissionConverter`, `EventTaxonomyHierarchy`, `EventPassIssuanceService`, plus resolver/driver seams.
+- Drivers: `TicketingDriver`, `SeatingDriver`, `OrdersDriver`, `CartCheckoutDriver`, `AuthzDriver`, `EventChangeNoticeNotificationDriver`, `DefaultEventDisplayTimezoneDriver`, `DefaultEventSearchPayloadDriver`, and null-object fallbacks.
+- Config `events.php`: `models` (all `null`, per-app overrides via `events.models.*`), `database.tables`, `features` (`owner`, `free_only`, `auto_allocate_seats`, …), `defaults`, `media`, `lifecycle`, `sync`, `attribute_sync`, `search`, `change_notices`, `integrations`, `notifications`.
 
 ## Docs map
 - Start: `01-overview` → `03-configuration` → `04-usage` → `99-troubleshooting`

@@ -1,0 +1,80 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Events\Features\Taxonomy\Models;
+
+use AIArmada\Events\Database\Factories\EventTaxonomyFactory;
+use AIArmada\Events\Features\Taxonomy\Actions\DeleteTaxonomyDependents;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
+
+/**
+ * @property string $id
+ * @property string $code
+ * @property string $name
+ * @property string|null $description
+ * @property bool $is_hierarchical
+ * @property bool $is_active
+ * @property array|null $metadata
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ */
+final class EventTaxonomy extends Model
+{
+    use HasFactory;
+    use HasUuids;
+
+    protected $fillable = [
+        'code', 'name', 'description',
+        'is_hierarchical', 'is_active',
+        'metadata',
+    ];
+
+    public function getTable(): string
+    {
+        return $this->table ?? config('events.database.tables.event_taxonomies', 'event_taxonomies');
+    }
+
+    protected static function booted(): void
+    {
+        static::deleting(function (EventTaxonomy $taxonomy): void {
+            app(DeleteTaxonomyDependents::class)->handle($taxonomy);
+        });
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'is_hierarchical' => 'boolean',
+            'is_active' => 'boolean',
+            'metadata' => 'array',
+        ];
+    }
+
+    /** @return HasMany<EventTerm, $this> */
+    public function terms(): HasMany
+    {
+        return $this->hasMany(EventTerm::class, 'event_taxonomy_id')->orderBy('sort_order')->orderBy('name');
+    }
+
+    /** @return HasMany<EventTerm, $this> */
+    public function activeTerms(): HasMany
+    {
+        return $this->terms()->where('is_active', true);
+    }
+
+    /** @return HasMany<EventTerm, $this> */
+    public function rootTerms(): HasMany
+    {
+        return $this->activeTerms()->whereNull('parent_id');
+    }
+
+    protected static function newFactory(): EventTaxonomyFactory
+    {
+        return EventTaxonomyFactory::new();
+    }
+}

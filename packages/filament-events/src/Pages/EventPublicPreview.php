@@ -6,7 +6,7 @@ namespace AIArmada\FilamentEvents\Pages;
 
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRecordOwnerContext;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
-use AIArmada\Events\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\Event;
 use BackedEnum;
 use Filament\Infolists;
 use Filament\Pages\Page;

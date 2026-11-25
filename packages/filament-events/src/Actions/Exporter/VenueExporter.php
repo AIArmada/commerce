@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentEvents\Actions\Exporter;
 
 use AIArmada\Addressing\Models\Address;
-use AIArmada\Events\Models\Venue;
-use AIArmada\Events\Support\ModelResolver;
+use AIArmada\Events\Features\Venues\Models\Venue;
+use AIArmada\Events\Platform\ModelResolver;
 use Filament\Actions\Exports\ExportColumn;
 use Filament\Actions\Exports\Exporter;
 use Filament\Actions\Exports\Models\Export;
@@ -18,7 +18,10 @@ final class VenueExporter extends Exporter
      */
     public static function getModel(): string
     {
-        return ModelResolver::venueClass();
+        /** @var class-string<Venue> $model */
+        $model = ModelResolver::venueClass();
+
+        return $model;
     }
 
     public static function getColumns(): array

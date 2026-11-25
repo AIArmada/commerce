@@ -1,0 +1,126 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Events\Features\Registrations\States\RegistrationStatus;
+
+use Filament\Support\Contracts\HasColor;
+use Spatie\ModelStates\State;
+use Spatie\ModelStates\StateConfig;
+
+abstract class RegistrationStatus extends State implements HasColor
+{
+    /** @var array<class-string, StateConfig> */
+    private static array $configCache = [];
+
+    public static function config(): StateConfig
+    {
+        // Spatie rebuilds this config (including a directory scan) on every
+        // state instantiation, i.e. on every status attribute read.
+        return self::$configCache[static::class] ??= self::buildConfig();
+    }
+
+    private static function buildConfig(): StateConfig
+    {
+        return parent::config()
+            ->registerStatesFromDirectory(__DIR__)
+            ->default(Pending::class)
+            ->allowTransition(Pending::class, Confirmed::class)
+            ->allowTransition(Pending::class, Cancelled::class)
+            ->allowTransition(Pending::class, Waitlisted::class)
+            ->allowTransition(Pending::class, Rejected::class)
+            ->allowTransition(Pending::class, Interested::class)
+            ->allowTransition(Pending::class, Expired::class)
+            ->allowTransition(Pending::class, Completed::class)
+            ->allowTransition(Confirmed::class, CheckedIn::class)
+            ->allowTransition(Confirmed::class, Cancelled::class)
+            ->allowTransition(Confirmed::class, NoShow::class)
+            ->allowTransition(Confirmed::class, Refunded::class)
+            ->allowTransition(Confirmed::class, Expired::class)
+            ->allowTransition(Confirmed::class, Completed::class)
+            ->allowTransition(Confirmed::class, RefundPending::class)
+            ->allowTransition(Waitlisted::class, Pending::class)
+            ->allowTransition(Waitlisted::class, Confirmed::class)
+            ->allowTransition(Waitlisted::class, Cancelled::class)
+            ->allowTransition(Waitlisted::class, Rejected::class)
+            ->allowTransition(Waitlisted::class, Expired::class)
+            ->allowTransition(Interested::class, Confirmed::class)
+            ->allowTransition(Interested::class, Cancelled::class)
+            ->allowTransition(Interested::class, Expired::class)
+            ->allowTransition(Interested::class, Completed::class)
+            ->allowTransition(CheckedIn::class, Completed::class)
+            ->allowTransition(CheckedIn::class, NoShow::class)
+            ->allowTransition(CheckedIn::class, RefundPending::class)
+            ->allowTransition(NoShow::class, RefundPending::class)
+            ->allowTransition(Completed::class, RefundPending::class)
+            ->allowTransition(RefundPending::class, Confirmed::class)
+            ->allowTransition(RefundPending::class, CheckedIn::class)
+            ->allowTransition(RefundPending::class, NoShow::class)
+            ->allowTransition(RefundPending::class, Completed::class)
+            ->allowTransition(RefundPending::class, Refunded::class)
+            ->allowTransition(Refunded::class, Cancelled::class);
+    }
+
+    public static function options(): array
+    {
+        return [
+            'pending' => 'Pending',
+            'confirmed' => 'Confirmed',
+            'cancelled' => 'Cancelled',
+            'rejected' => 'Rejected',
+            'waitlisted' => 'Waitlisted',
+            'checked_in' => 'Checked In',
+            'no_show' => 'No Show',
+            'interested' => 'Interested',
+            'refund_pending' => 'Refund Pending',
+            'refunded' => 'Refunded',
+            'completed' => 'Completed',
+            'expired' => 'Expired',
+        ];
+    }
+
+    /** @return string[] */
+    public static function capacityBlockingStates(): array
+    {
+        return [
+            Pending::class,
+            Confirmed::class,
+            CheckedIn::class,
+            RefundPending::class,
+            NoShow::class,
+        ];
+    }
+
+    /** @return string[] */
+    public static function checkInAllowedStates(): array
+    {
+        return [
+            Confirmed::class,
+        ];
+    }
+
+    /** @return string[] */
+    public static function terminalStates(): array
+    {
+        return [
+            CheckedIn::class,
+            Cancelled::class,
+            Refunded::class,
+            NoShow::class,
+        ];
+    }
+
+    abstract public function label(): string;
+
+    abstract public static function name(): string;
+
+    public function getColor(): string
+    {
+        return match (static::name()) {
+            'pending', 'waitlisted', 'interested', 'refund_pending' => 'warning',
+            'confirmed', 'completed', 'checked_in' => 'success',
+            'cancelled', 'rejected', 'refunded', 'no_show', 'expired' => 'danger',
+            default => 'gray',
+        };
+    }
+}

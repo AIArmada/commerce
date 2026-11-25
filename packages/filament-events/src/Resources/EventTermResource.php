@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEvents\Resources;
 
-use AIArmada\Events\Models\EventTerm;
+use AIArmada\Events\Features\Taxonomy\Models\EventTerm;
 use AIArmada\FilamentEvents\Contracts\TermFormExtension;
 use AIArmada\FilamentEvents\Resources\EventTermResource\Pages\CreateEventTerm;
 use AIArmada\FilamentEvents\Resources\EventTermResource\Pages\EditEventTerm;

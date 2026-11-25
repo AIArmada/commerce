@@ -2,23 +2,25 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cart\Cart;
 use AIArmada\Cart\Contracts\CartManagerInterface;
-use AIArmada\Cart\Models\CartItem;
-use AIArmada\Events\Actions\AddEventTicketTypeToCartAction;
-use AIArmada\Events\Actions\CreateOccurrenceCartLineAction;
-use AIArmada\Events\Actions\EnsureTicketTypeForOccurrenceAction;
-use AIArmada\Events\Actions\FinalizeOccurredEventOrdersAction;
-use AIArmada\Events\Actions\FulfillEventOrderAction;
-use AIArmada\Events\Actions\StartOccurrenceCheckoutAction;
+use AIArmada\Events\Contracts\EventCartDriver;
 use AIArmada\Events\Contracts\EventCheckoutIntentResolver;
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventOccurrence;
-use AIArmada\Events\Models\EventRegistration;
-use AIArmada\Events\Models\EventSession;
-use AIArmada\Events\Support\EventTicketScope;
+use AIArmada\Events\Contracts\EventOrderItemFulfillmentResolver;
+use AIArmada\Events\Data\EventCartLineData;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
+use AIArmada\Events\Features\Catalog\Models\EventSession;
+use AIArmada\Events\Features\Commerce\Actions\CreateOccurrenceCartLineAction;
+use AIArmada\Events\Features\Commerce\Actions\EnsureTicketTypeForOccurrenceAction;
+use AIArmada\Events\Features\Commerce\Actions\FinalizeOccurredEventOrdersAction;
+use AIArmada\Events\Features\Commerce\Actions\StartOccurrenceCheckoutAction;
+use AIArmada\Events\Features\Registrations\Models\EventRegistration;
+use AIArmada\Events\Platform\EventTicketScope;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Ticketing\Data\TicketTypeData;
+use AIArmada\Ticketing\Models\TicketType;
 
 beforeEach(function (): void {
     config()->set('events.features.owner.enabled', false);
@@ -46,10 +48,12 @@ it('ensures ticket types for sessions', function (): void {
         'status' => 'published',
     ]);
 
-    $ticketType = app(EnsureTicketTypeForOccurrenceAction::class)->handle($session, [
+    $ticketTypeId = app(EnsureTicketTypeForOccurrenceAction::class)->handle('session', (string) $session->getKey(), [
         'name' => 'Session Access',
         'price' => 2500,
     ]);
+
+    $ticketType = TicketType::query()->findOrFail($ticketTypeId);
 
     expect($ticketType->ticketable?->is($session))->toBeTrue()
         ->and(EventTicketScope::ids($ticketType))->toBe([
@@ -77,10 +81,12 @@ it('syncs session ticket quotas to the default inventory location', function ():
         'capacity' => 10,
     ]);
 
-    $ticketType = app(EnsureTicketTypeForOccurrenceAction::class)->handle($session, [
+    $ticketTypeId = app(EnsureTicketTypeForOccurrenceAction::class)->handle('session', (string) $session->getKey(), [
         'name' => 'Session Access',
         'price' => 2500,
     ]);
+
+    $ticketType = TicketType::query()->findOrFail($ticketTypeId);
 
     $level = InventoryLevel::query()
         ->where('inventoryable_type', $ticketType->getMorphClass())
@@ -94,7 +100,7 @@ it('syncs session ticket quotas to the default inventory location', function ():
 
     $level->incrementReserved(4);
 
-    app(EnsureTicketTypeForOccurrenceAction::class)->handle($session, [
+    app(EnsureTicketTypeForOccurrenceAction::class)->handle('session', (string) $session->getKey(), [
         'name' => 'Session Access',
         'price' => 2500,
         'quota' => 14,
@@ -125,33 +131,23 @@ it('adds session ticket types to the cart', function (): void {
     $cartManager = Mockery::mock(CartManagerInterface::class);
     $cartManager->shouldReceive('getCurrentCart')->once()->andReturn($cart);
 
-    $cartItem = new CartItem(
-        $ticketType->id,
-        $ticketType->name,
-        $ticketType->price,
-        2,
-        ['participants' => [['name' => 'Alice']]],
-        [],
-        $ticketType,
-    );
-    $addToCart = new class($cartItem)
-    {
-        public bool $called = false;
+    $capturedLine = null;
+    $cartDriver = Mockery::mock(EventCartDriver::class);
+    $cartDriver->shouldReceive('addLine')
+        ->once()
+        ->withArgs(function (Cart $cart, EventCartLineData $line) use (&$capturedLine, $ticketType): bool {
+            $capturedLine = $line;
 
-        public function __construct(private readonly CartItem $cartItem) {}
-
-        public function handle(...$arguments): CartItem
-        {
-            $this->called = true;
-
-            return $this->cartItem;
-        }
-    };
+            return $line->ticketTypeId === (string) $ticketType->getKey()
+                && $line->quantity === 2
+                && ($line->attributes['participants'] ?? null) === [['name' => 'Alice']];
+        });
+    $cartDriver->shouldReceive('addRequiredBundles')->once();
 
     app()->instance(CartManagerInterface::class, $cartManager);
-    app()->instance(AddEventTicketTypeToCartAction::class, $addToCart);
+    app()->instance(EventCartDriver::class, $cartDriver);
 
-    $result = app(CreateOccurrenceCartLineAction::class)->handle($session, [
+    app(CreateOccurrenceCartLineAction::class)->handle('session', (string) $session->getKey(), [
         'ticket_type_id' => $ticketType->id,
         'quantity' => 2,
         'participants' => [
@@ -159,8 +155,7 @@ it('adds session ticket types to the cart', function (): void {
         ],
     ]);
 
-    expect($result)->toBe($cartItem)
-        ->and($addToCart->called)->toBeTrue();
+    expect($capturedLine)->toBeInstanceOf(EventCartLineData::class);
 });
 
 it('starts checkout for sessions', function (): void {
@@ -184,12 +179,12 @@ it('starts checkout for sessions', function (): void {
     $resolver = Mockery::mock(EventCheckoutIntentResolver::class);
     $resolver->shouldReceive('resolve')
         ->once()
-        ->with($session, $registration)
+        ->with('session', (string) $session->getKey(), (string) $registration->getKey())
         ->andReturn('checkout-session');
 
     app()->instance(EventCheckoutIntentResolver::class, $resolver);
 
-    expect(app(StartOccurrenceCheckoutAction::class)->handle($session, $registration))->toBe('checkout-session');
+    expect(app(StartOccurrenceCheckoutAction::class)->handle('session', (string) $session->getKey(), (string) $registration->getKey()))->toBe('checkout-session');
 });
 
 it('finalizes session orders', function (): void {
@@ -210,24 +205,25 @@ it('finalizes session orders', function (): void {
         'event_session_id' => $session->id,
         'external_order_id' => 'order-123',
     ]);
+    $ticketType = createEventTicketType($session);
+    $item = $registration->items()->create([
+        'event_id' => $event->id,
+        'event_occurrence_id' => $occurrence->id,
+        'event_session_id' => $session->id,
+        'ticket_type_id' => $ticketType->id,
+        'quantity' => 1,
+        'unit_price' => 0,
+        'total_price' => 0,
+        'currency' => 'MYR',
+        'status' => 'confirmed',
+    ]);
 
-    $fulfillOrder = new class
-    {
-        public bool $called = false;
+    $resolver = Mockery::mock(EventOrderItemFulfillmentResolver::class);
+    $resolver->shouldReceive('resolve')
+        ->once()
+        ->with((string) $item->getKey());
 
-        public ?EventRegistration $registration = null;
+    app()->instance(EventOrderItemFulfillmentResolver::class, $resolver);
 
-        public function handle(EventRegistration $registration): void
-        {
-            $this->called = true;
-            $this->registration = $registration;
-        }
-    };
-
-    app()->instance(FulfillEventOrderAction::class, $fulfillOrder);
-
-    app(FinalizeOccurredEventOrdersAction::class)->handle($session);
-
-    expect($fulfillOrder->called)->toBeTrue()
-        ->and($fulfillOrder->registration?->is($registration))->toBeTrue();
+    app(FinalizeOccurredEventOrdersAction::class)->handle('session', (string) $session->getKey());
 });

@@ -11,7 +11,7 @@ accessibility). They are intentionally separate from two event-scoped systems:
   no place attachment, and no availability vocabulary.
 - `EventFacility` records what an event itself provides at its location
   (rental chairs, event-run shuttle). It is scoped to its owning event via
-  `ScopesByEventOwner` and cascades with the event.
+  `AIArmada\Events\Platform\ScopesByEventOwner` and cascades with the event.
 
 The place system already existed as the `FacilityType` catalog plus
 `VenueFacility` value rows attached to `Venue` and `VenueSpace`. This guide
@@ -40,7 +40,7 @@ missing codes only, never overwrites app-customized rows, and never touches
 unrelated rows. Nothing seeds automatically on boot.
 
 ```php
-use AIArmada\Events\Actions\SeedFacilityTypesAction;
+use AIArmada\Events\Features\Venues\Actions\SeedFacilityTypesAction;
 
 $result = app(SeedFacilityTypesAction::class)->execute();
 // ['created' => 5, 'skipped' => 0] on first run.
@@ -50,7 +50,7 @@ Seed extra types directly on the model; no application or institution
 dependency is required:
 
 ```php
-use AIArmada\Events\Models\FacilityType;
+use AIArmada\Events\Features\Venues\Models\FacilityType;
 
 FacilityType::query()->firstOrCreate(
     ['code' => 'nursing_room'],
@@ -69,10 +69,10 @@ context.
 
 ```php
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Events\Enums\FacilityAvailability;
-use AIArmada\Events\Models\FacilityType;
-use AIArmada\Events\Models\Venue;
-use AIArmada\Events\Models\VenueFacility;
+use AIArmada\Events\Data\FacilityAvailability;
+use AIArmada\Events\Features\Venues\Models\FacilityType;
+use AIArmada\Events\Features\Venues\Models\Venue;
+use AIArmada\Events\Features\Venues\Models\VenueFacility;
 
 OwnerContext::withOwner(null, function (): void {
     $venue = Venue::query()->where('slug', 'matrade-hall')->firstOrFail();
@@ -98,10 +98,10 @@ The venue must own the space; a mismatched pair is rejected.
 
 ```php
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Events\Enums\FacilityAvailability;
-use AIArmada\Events\Models\FacilityType;
-use AIArmada\Events\Models\VenueFacility;
-use AIArmada\Events\Models\VenueSpace;
+use AIArmada\Events\Data\FacilityAvailability;
+use AIArmada\Events\Features\Venues\Models\FacilityType;
+use AIArmada\Events\Features\Venues\Models\VenueFacility;
+use AIArmada\Events\Features\Venues\Models\VenueSpace;
 
 OwnerContext::withOwner(null, function (): void {
     $space = VenueSpace::query()->where('slug', 'hall-a')->firstOrFail();
@@ -131,10 +131,10 @@ template.
 
 ```php
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Events\Enums\FacilityAvailability;
-use AIArmada\Events\Models\FacilityType;
-use AIArmada\Events\Models\VenueFacility;
-use AIArmada\Events\Models\VenueSpace;
+use AIArmada\Events\Data\FacilityAvailability;
+use AIArmada\Events\Features\Venues\Models\FacilityType;
+use AIArmada\Events\Features\Venues\Models\VenueFacility;
+use AIArmada\Events\Features\Venues\Models\VenueSpace;
 
 OwnerContext::withOwner(null, function (): void {
     $template = VenueSpace::query()->where('slug', 'standard-classroom')->firstOrFail();
@@ -154,13 +154,9 @@ OwnerContext::withOwner(null, function (): void {
 
 Every model save (create, update, and relationship writes) enforces:
 
-- a facility type id is present as a valid UUID and exists (null, empty,
-  and malformed UUID strings such as `bad-id` are rejected);
+- a facility type id is present as a valid UUID and exists (null, empty, and malformed UUID strings such as `bad-id` are rejected);
 - at least one of venue or space is present;
-- place ids are valid UUID strings or null: non-string values, empty
-  strings, and malformed UUID strings are rejected before any existence
-  query, never silently treated as null; valid but unknown UUIDs still run
-  the existence check;
+- place ids are valid UUID strings or null: non-string values, empty strings, and malformed UUID strings are rejected before any existence query, never silently treated as null; valid but unknown UUIDs still run the existence check;
 - the referenced venue and space rows exist;
 - the venue owns the space (a standalone template requires a null venue).
 
@@ -170,8 +166,8 @@ bypass model events, so keep facility writes on the model.
 
 ### Space reparenting
 
-Changing a persisted `VenueSpace::$venue_id` while facilities are attached
-is rejected with `InvalidArgumentException`: the attached rows would keep
+Changing a persisted `VenueSpace::$venue_id` while facilities are attached is
+rejected with `InvalidArgumentException`: the attached rows would keep
 pointing at the old venue. Remove the space facilities first, then move the
 space. Spaces without facilities reparent freely in either direction (venue
 to venue, venue to standalone, standalone to venue), and a non-null new
@@ -180,9 +176,9 @@ parent must exist.
 ## Filtering
 
 ```php
-use AIArmada\Events\Enums\FacilityAvailability;
-use AIArmada\Events\Models\FacilityType;
-use AIArmada\Events\Models\VenueFacility;
+use AIArmada\Events\Data\FacilityAvailability;
+use AIArmada\Events\Features\Venues\Models\FacilityType;
+use AIArmada\Events\Features\Venues\Models\VenueFacility;
 
 // All values for one venue (venue-wide rows plus its spaces' rows).
 $forVenue = VenueFacility::query()->forVenue($venue)->get();
@@ -204,29 +200,24 @@ $open = VenueFacility::query()->whereAvailability(FacilityAvailability::Availabl
 $catalog = FacilityType::query()->active()->ordered()->get();
 ```
 
-`forVenue`, `forSpace`, and `forFacilityType` accept a persisted model or
-a valid UUID string. Unsaved/idless models (including `new Venue` and
-`new VenueSpace`) and malformed UUID strings throw
-`InvalidArgumentException` instead of matching `NULL`-place rows; valid
-but unknown UUIDs return empty with no existence query. `whereTypeCode`
-and `whereAvailability` are unchanged.
+`forVenue`, `forSpace`, and `forFacilityType` accept a persisted model or a
+valid UUID string. Unsaved/idless models (including `new Venue` and
+`new VenueSpace`) and malformed UUID strings throw `InvalidArgumentException`
+instead of matching `NULL`-place rows; valid but unknown UUIDs return empty
+with no existence query. `whereTypeCode` and `whereAvailability` are
+unchanged.
 
 Relation scope semantics:
 
-- `Venue::facilities()` returns venue-wide rows plus rows bound to that
-  venue's spaces, because both shapes carry the venue id. Standalone
-  template facilities are excluded.
-- `VenueSpace::facilities()` returns rows bound to that space only. For a
-  venue-bound space those rows also appear in `Venue::facilities()`; for a
-  standalone template they appear only here.
+- `Venue::facilities()` returns venue-wide rows plus rows bound to that venue's spaces, because both shapes carry the venue id. Standalone template facilities are excluded.
+- `VenueSpace::facilities()` returns rows bound to that space only. For a venue-bound space those rows also appear in `Venue::facilities()`; for a standalone template they appear only here.
 
 ## Typed availability
 
-`AIArmada\Events\Enums\FacilityAvailability` is a string-backed enum with
-`Available` and `Unavailable` cases plus `label()` and `options()` helpers.
-`VenueFacility` casts `availability` to it and defaults missing or null
-input to `Available`. `EventFacility` keeps its existing string availability;
-event semantics are unchanged.
+`AIArmada\Events\Data\FacilityAvailability` is a string-backed enum with
+`Available` and `Unavailable` cases. `VenueFacility` casts `availability` to
+it and defaults missing or null input to `Available`. `EventFacility` keeps
+its existing string availability; event semantics are unchanged.
 
 > **warning**
 >
@@ -237,23 +228,22 @@ event semantics are unchanged.
 
 ## Absence semantics
 
-The absence of a `VenueFacility` row means unrecorded/unknown — never read
-it as "not offered". Write an explicit `Unavailable` row when a place is
+The absence of a `VenueFacility` row means unrecorded/unknown — never read it
+as "not offered". Write an explicit `Unavailable` row when a place is
 confirmed to lack a facility (for example a hall with no parking), so
-consumers can tell "confirmed missing" apart from "nobody recorded it
-yet".
+consumers can tell "confirmed missing" apart from "nobody recorded it yet".
 
 ## Global catalog writes
 
 `Venue`, `VenueSpace`, `VenueSpaceType`, `FacilityType`, and `VenueFacility`
-are intentional global vocabularies shared across owners. They carry no
-owner scope, so reads work in any owner context. Catalog writes from tenant
-flows must run in explicit global context; the admin surface owns write
+are intentional global vocabularies shared across owners. They carry no owner
+scope, so reads work in any owner context. Catalog writes from tenant flows
+must run in explicit global context; the admin surface owns write
 authorization for these tables.
 
 ```php
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Events\Actions\SeedFacilityTypesAction;
+use AIArmada\Events\Features\Venues\Actions\SeedFacilityTypesAction;
 
 OwnerContext::withOwner(null, function (): void {
     app(SeedFacilityTypesAction::class)->execute();
@@ -265,9 +255,9 @@ writes this way. `SyncVenueFacilitiesAction` reconciles the venue-wide rows
 of one venue from catalog codes:
 
 ```php
-use AIArmada\Events\Actions\SyncVenueFacilitiesAction;
-use AIArmada\Events\Enums\FacilityAvailability;
-use AIArmada\Events\Models\Venue;
+use AIArmada\Events\Data\FacilityAvailability;
+use AIArmada\Events\Features\Venues\Actions\SyncVenueFacilitiesAction;
+use AIArmada\Events\Features\Venues\Models\Venue;
 
 $venue = Venue::query()->where('slug', 'matrade-hall')->firstOrFail();
 
@@ -278,26 +268,21 @@ app(SyncVenueFacilitiesAction::class)->handle($venue, [
 ```
 
 The venue must already be persisted; unsaved or deleted venues are rejected
-before anything mutates. Unknown codes throw `InvalidArgumentException`,
-and venue-wide rows whose codes are missing from the payload are removed —
-an empty payload clears the venue-wide rows but leaves space-bound rows and
-other venues untouched. Dropped rows delete through the model inside the
-sync transaction, so an invalid payload never partially replaces the
-existing values.
+before anything mutates. Unknown codes throw `InvalidArgumentException`, and
+venue-wide rows whose codes are missing from the payload are removed — an
+empty payload clears the venue-wide rows but leaves space-bound rows and
+other venues untouched. Dropped rows delete through the model inside the sync
+transaction, so an invalid payload never partially replaces the existing
+values.
 
 ## Deletion cleanup
 
 Application-level cascades remove facility values without database foreign
 keys:
 
-- Deleting a venue removes its venue-wide rows and the rows bound to its
-  spaces. Other venues' rows and standalone template rows survive.
+- Deleting a venue removes its venue-wide rows and the rows bound to its spaces. Other venues' rows and standalone template rows survive.
 - Deleting a space removes the rows bound to that space only.
-- Deleting a facility type is blocked when any `EventFacility` row anywhere
-  references it. The check runs cross-owner before place values are touched,
-  so a rejected delete preserves the catalog row, the place values, and the
-  event values. Retire referenced types with `is_active=false` instead; only
-  unreferenced types delete, removing just their own `VenueFacility` rows.
+- Deleting a facility type is blocked when any `EventFacility` row anywhere references it. The check runs cross-owner before place values are touched, so a rejected delete preserves the catalog row, the place values, and the event values. Retire referenced types with `is_active=false` instead; only unreferenced types delete, removing just their own `VenueFacility` rows.
 
 Spaces themselves survive venue deletion; only their facility values are
 removed.
@@ -330,29 +315,28 @@ prefix or remap tables without touching the package:
 ## Capacity semantics
 
 `VenueSpace::$capacity` is the default or suggested capacity of the shared
-space definition or template. Actual per-institution capacity lives
-app-side — in ilmu360 on the `institution_space` pivot — and the matching
-venue bridge is the app-side `institution_venue` table. No capacity schema
-or behavior changed in this package. Applications resolving effective
-capacity should total the override with a fallback to the shared default:
+space definition or template. Actual per-institution capacity lives app-side —
+in ilmu360 on the `institution_space` pivot — and the matching venue bridge
+is the app-side `institution_venue` table. No capacity schema or behavior
+changed in this package. Applications resolving effective capacity should
+total the override with a fallback to the shared default:
 
 ```sql
 SUM(COALESCE(institution_space.capacity, venue_spaces.capacity))
 ```
 
-Zero overrides must survive (they are explicit), null pivots fall back to
-the shared default, and when both are null the capacity is unknown and
-requires app policy — never silently claim zero.
+Zero overrides must survive (they are explicit), null pivots fall back to the
+shared default, and when both are null the capacity is unknown and requires
+app policy — never silently claim zero.
 
-`VenueFacility::$quantity` counts facility units (bays, rooms, counters)
-and `VenueFacility::$capacity` counts persons served by that facility
-value; both are independent of space capacity. Money stays in integer
-minor units (`fee_amount` plus `currency`).
+`VenueFacility::$quantity` counts facility units (bays, rooms, counters) and
+`VenueFacility::$capacity` counts persons served by that facility value; both
+are independent of space capacity. Money stays in integer minor units
+(`fee_amount` plus `currency`).
 
 ## Rejected: venue operator columns
 
-An operator morph or `institution_id` on `Venue` was rejected.
-Institution linkage is an app-side bridge (in ilmu360, the
-`institution_venue` table in the host application), not a package concern.
-Revisit only if a second application needs the same bridge and can justify
-a shared contract.
+An operator morph or `institution_id` on `Venue` was rejected. Institution
+linkage is an app-side bridge (in ilmu360, the `institution_venue` table in
+the host application), not a package concern. Revisit only if a second
+application needs the same bridge and can justify a shared contract.

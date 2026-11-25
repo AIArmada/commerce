@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Database\Factories;
 
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventAccessPolicy;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\EventAccessPolicy;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

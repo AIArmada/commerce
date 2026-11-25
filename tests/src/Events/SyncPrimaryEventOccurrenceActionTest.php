@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Events\Actions\SyncPrimaryEventOccurrenceAction;
 use AIArmada\Events\Contracts\EventLifecycleWorkflow;
 use AIArmada\Events\Events\EventOccurrenceRescheduled;
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventOccurrence;
+use AIArmada\Events\Features\Catalog\Actions\SyncPrimaryEventOccurrenceAction;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
 use Carbon\CarbonImmutable;
-use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Event as EventFacade;
 
 beforeEach(function (): void {
@@ -408,10 +408,11 @@ it('rejects a forged event_id bypass in the lifecycle reschedule guard', functio
 
         OwnerContext::withOwner($ownerB, function () use ($forged): void {
             expect(fn () => app(EventLifecycleWorkflow::class)->reschedule(
-                $forged,
+                'occurrence',
+                (string) $forged->getKey(),
                 CarbonImmutable::parse('2026-07-02 09:00:00'),
                 CarbonImmutable::parse('2026-07-02 11:00:00'),
-            ))->toThrow(AuthorizationException::class);
+            ))->toThrow(ModelNotFoundException::class);
         });
 
         OwnerContext::withOwner($ownerA, function () use ($occurrenceA): void {

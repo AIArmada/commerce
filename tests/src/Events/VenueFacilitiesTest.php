@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Events\Actions\SeedFacilityTypesAction;
-use AIArmada\Events\Actions\SyncVenueFacilitiesAction;
-use AIArmada\Events\Enums\FacilityAvailability;
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventAttribute;
-use AIArmada\Events\Models\EventFacility;
-use AIArmada\Events\Models\FacilityType;
-use AIArmada\Events\Models\Venue;
-use AIArmada\Events\Models\VenueFacility;
-use AIArmada\Events\Models\VenueSpace;
+use AIArmada\Events\Data\FacilityAvailability;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\EventAttribute;
+use AIArmada\Events\Features\Venues\Actions\SeedFacilityTypesAction;
+use AIArmada\Events\Features\Venues\Actions\SyncVenueFacilitiesAction;
+use AIArmada\Events\Features\Venues\Models\EventFacility;
+use AIArmada\Events\Features\Venues\Models\FacilityType;
+use AIArmada\Events\Features\Venues\Models\Venue;
+use AIArmada\Events\Features\Venues\Models\VenueFacility;
+use AIArmada\Events\Features\Venues\Models\VenueSpace;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 

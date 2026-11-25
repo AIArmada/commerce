@@ -5,38 +5,38 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\Events\Actions\ApproveAssignmentRequestAction;
-use AIArmada\Events\Actions\CloneEventContentsAction;
-use AIArmada\Events\Actions\PromoteInterestedToConfirmedAction;
-use AIArmada\Events\Actions\RegisterForFreeAction;
-use AIArmada\Events\Actions\SubmitAssignmentRequestAction;
-use AIArmada\Events\Actions\SyncEventClassificationsAction;
-use AIArmada\Events\Actions\UpdateEventOccurrenceAction;
-use AIArmada\Events\Actions\UpdateEventSessionAction;
 use AIArmada\Events\Contracts\EventCheckInService;
 use AIArmada\Events\Contracts\EventRegistrationEligibility;
 use AIArmada\Events\Contracts\EventRegistrationScopeResolver;
+use AIArmada\Events\Contracts\EventSearchIndexer;
 use AIArmada\Events\Contracts\RegistrationServiceInterface;
 use AIArmada\Events\Exceptions\EventCapacityExceededException;
 use AIArmada\Events\Exceptions\EventRegistrationNotAvailableException;
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventLocation;
-use AIArmada\Events\Models\EventManagementAssignment;
-use AIArmada\Events\Models\EventOccurrence;
-use AIArmada\Events\Models\EventOrganizer;
-use AIArmada\Events\Models\EventRegistration;
-use AIArmada\Events\Models\EventRegistrationItem;
-use AIArmada\Events\Models\EventRegistrationParticipant;
-use AIArmada\Events\Models\EventSearchDocument;
-use AIArmada\Events\Models\EventSession;
-use AIArmada\Events\Models\EventSubmission;
-use AIArmada\Events\Policies\EventOccurrencePolicy;
-use AIArmada\Events\Policies\EventRegistrationPolicy;
-use AIArmada\Events\Policies\EventSessionPolicy;
-use AIArmada\Events\Policies\EventSubmissionPolicy;
-use AIArmada\Events\Services\EloquentEventSearchEngine;
-use AIArmada\Events\Services\EventQueryService;
-use AIArmada\Events\Services\EventSearchDocumentBuilder;
+use AIArmada\Events\Features\Catalog\Actions\CloneEventContentsAction;
+use AIArmada\Events\Features\Catalog\Actions\UpdateEventOccurrenceAction;
+use AIArmada\Events\Features\Catalog\Actions\UpdateEventSessionAction;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
+use AIArmada\Events\Features\Catalog\Models\EventOrganizer;
+use AIArmada\Events\Features\Catalog\Models\EventSession;
+use AIArmada\Events\Features\Catalog\Policies\EventOccurrencePolicy;
+use AIArmada\Events\Features\Catalog\Policies\EventSessionPolicy;
+use AIArmada\Events\Features\Catalog\Queries\EventQueryService;
+use AIArmada\Events\Features\Governance\Actions\ApproveAssignmentRequestAction;
+use AIArmada\Events\Features\Governance\Actions\SubmitAssignmentRequestAction;
+use AIArmada\Events\Features\Governance\Models\EventManagementAssignment;
+use AIArmada\Events\Features\Governance\Models\EventSubmission;
+use AIArmada\Events\Features\Governance\Policies\EventSubmissionPolicy;
+use AIArmada\Events\Features\Registrations\Actions\PromoteInterestedToConfirmedAction;
+use AIArmada\Events\Features\Registrations\Actions\RegisterForFreeAction;
+use AIArmada\Events\Features\Registrations\Models\EventRegistration;
+use AIArmada\Events\Features\Registrations\Models\EventRegistrationItem;
+use AIArmada\Events\Features\Registrations\Models\EventRegistrationParticipant;
+use AIArmada\Events\Features\Registrations\Policies\EventRegistrationPolicy;
+use AIArmada\Events\Features\Search\Models\EventSearchDocument;
+use AIArmada\Events\Features\Search\Queries\EloquentEventSearchEngine;
+use AIArmada\Events\Features\Taxonomy\Actions\SyncEventClassificationsAction;
+use AIArmada\Events\Features\Venues\Models\EventLocation;
 use AIArmada\Ticketing\Models\TicketType;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -153,7 +153,7 @@ it('ignores forged item ids and scope columns on registration items', function (
         $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
         $ticketType = createEventTicketType($event);
 
-        $registration = app(RegistrationServiceInterface::class)->register([
+        $registrationId = app(RegistrationServiceInterface::class)->register([
             'event_id' => $event->id,
             'event_occurrence_id' => $occurrence->id,
             'registration_type' => 'individual',
@@ -170,6 +170,7 @@ it('ignores forged item ids and scope columns on registration items', function (
             ]],
         ]);
 
+        $registration = EventRegistration::query()->findOrFail($registrationId);
         $item = $registration->items()->firstOrFail();
 
         expect($item->event_id)->toBe($event->id)
@@ -260,13 +261,13 @@ it('blocks registrations for cancelled sessions and cancelled events', function 
         ]);
 
         $eligibility = app(EventRegistrationEligibility::class);
-        $scope = app(EventRegistrationScopeResolver::class)->resolve($session);
+        $scope = app(EventRegistrationScopeResolver::class)->resolve('session', (string) $session->getKey());
 
         expect(fn () => $eligibility->ensureEligible($scope))
             ->toThrow(EventRegistrationNotAvailableException::class, 'session');
 
         $cancelledEvent = Event::factory()->create(['status' => 'cancelled']);
-        $cancelledScope = app(EventRegistrationScopeResolver::class)->resolve($cancelledEvent);
+        $cancelledScope = app(EventRegistrationScopeResolver::class)->resolve('event', (string) $cancelledEvent->getKey());
 
         expect(fn () => $eligibility->ensureEligible($cancelledScope))
             ->toThrow(EventRegistrationNotAvailableException::class, 'event');
@@ -282,7 +283,7 @@ it('keeps accepting registrations on draft events for staff flows', function ():
         ]);
 
         $eligibility = app(EventRegistrationEligibility::class);
-        $scope = app(EventRegistrationScopeResolver::class)->resolve($occurrence);
+        $scope = app(EventRegistrationScopeResolver::class)->resolve('occurrence', (string) $occurrence->getKey());
 
         $eligibility->ensureEligible($scope);
 
@@ -338,7 +339,8 @@ it('stores the idempotency key in its own column', function (): void {
         $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
 
         app(RegisterForFreeAction::class)->execute(
-            target: $occurrence,
+            'occurrence',
+            (string) $occurrence->getKey(),
             participants: [['name' => 'Idempotent Irene', 'is_primary' => true]],
             options: ['idempotency_key' => 'repair-regression-key'],
         );
@@ -364,7 +366,10 @@ it('resolves duplicate slugs to the earliest created event', function (): void {
         $first = Event::factory()->create(['slug' => 'dupe-slug', 'created_at' => now()->subDay()]);
         Event::factory()->create(['slug' => 'dupe-slug']);
 
-        expect(app(EventQueryService::class)->findBySlug('dupe-slug')?->id)->toBe($first->id);
+        /** @var Event|null $found */
+        $found = app(EventQueryService::class)->findBySlug('dupe-slug');
+
+        expect($found?->id)->toBe($first->id);
     });
 });
 
@@ -541,14 +546,16 @@ it('isolates null-event morph rows by their owner-visible target', function (): 
 // Search document removal only touches the target event.
 it('removes search documents for one event without touching others', function (): void {
     OwnerContext::withOwner(null, function (): void {
+        config()->set('events.sync.build_search_documents', true);
+
         $event = Event::factory()->create(['title' => 'Keep Me Searchable']);
         $other = Event::factory()->create(['title' => 'Remove Me']);
 
-        $builder = app(EventSearchDocumentBuilder::class);
-        $builder->buildForEvent($event);
-        $builder->buildForEvent($other);
+        $indexer = app(EventSearchIndexer::class);
+        $indexer->index($event);
+        $indexer->index($other);
 
-        $builder->remove($other);
+        $indexer->remove($other);
 
         expect(EventSearchDocument::query()->where('event_id', $other->id)->exists())->toBeFalse()
             ->and(EventSearchDocument::query()->where('event_id', $event->id)->exists())->toBeTrue();
@@ -592,7 +599,7 @@ it('leaves interested registrations untouched when promotion hits capacity', fun
         ]);
 
         try {
-            app(PromoteInterestedToConfirmedAction::class)->execute($registration);
+            app(PromoteInterestedToConfirmedAction::class)->execute((string) $registration->getKey());
             $this->fail('Expected promotion to exceed capacity.');
         } catch (EventCapacityExceededException) {
             expect($registration->fresh()->status->getValue())->toBe('interested');

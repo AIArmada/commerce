@@ -8,13 +8,13 @@ use AIArmada\Communications\Data\CommunicationContextData;
 use AIArmada\Communications\Facades\Communications;
 use AIArmada\Communications\Models\Communication;
 use AIArmada\Contacting\Data\ContactMethodData;
-use AIArmada\Events\Actions\DispatchEventChangeChainAction;
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventChangeLog;
-use AIArmada\Events\Models\EventRegistration;
-use AIArmada\Events\Models\EventUpdate;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Changes\Actions\DispatchEventChangeChainAction;
+use AIArmada\Events\Features\Changes\Actions\DispatchEventChangeNoticeNotificationsAction;
+use AIArmada\Events\Features\Changes\Models\EventChangeLog;
+use AIArmada\Events\Features\Changes\Models\EventUpdate;
+use AIArmada\Events\Features\Registrations\Models\EventRegistration;
 use AIArmada\Events\Notifications\EventChangeNoticeNotification;
-use AIArmada\Events\Services\EventNotificationDispatcher;
 use Illuminate\Notifications\Notification;
 
 beforeEach(function (): void {
@@ -65,15 +65,15 @@ it('dispatches an event change notice through communications with event context'
     app()->instance(CommunicationManager::class, $manager);
 
     OwnerContext::withOwner(null, function () use ($changeLog): void {
-        app(EventNotificationDispatcher::class)->dispatch($changeLog);
+        app(DispatchEventChangeNoticeNotificationsAction::class)->handle((string) $changeLog->getKey());
     });
 
     expect($capturedContext)->toBeInstanceOf(CommunicationContextData::class)
         ->and($capturedContext->subjectId)->toBe($event->id)
         ->and($capturedContext->purpose)->toBe('event-change-notice')
         ->and($capturedNotification)->toBeInstanceOf(EventChangeNoticeNotification::class)
-        ->and($capturedNotification->title)->toBe('Event Change Notice')
-        ->and($capturedNotification->message)->toBe('Weather conditions');
+        ->and($capturedNotification->data->title)->toBe('Event Change Notice')
+        ->and($capturedNotification->data->message)->toBe('Weather conditions');
 });
 
 it('routes a required change-chain notice through the listener and communications', function (): void {
@@ -92,8 +92,8 @@ it('routes a required change-chain notice through the listener and communication
     ]);
     $participant->addContactMethod(ContactMethodData::email('alice@example.com'));
 
-    DispatchEventChangeChainAction::run(
-        eventId: $event->id,
+    app(DispatchEventChangeChainAction::class)->handle(
+        eventId: (string) $event->getKey(),
         changeType: 'cancelled',
         changeCategory: 'status',
         impactLevel: 'critical',

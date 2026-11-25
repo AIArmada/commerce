@@ -3,12 +3,12 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Events\Actions\CreateRegistrationsFromOrderAction;
-use AIArmada\Events\Actions\IssueEventRegistrationPassesAction;
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventOccurrence;
-use AIArmada\Events\Models\EventRegistration;
-use AIArmada\Events\Models\EventSession;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
+use AIArmada\Events\Features\Catalog\Models\EventSession;
+use AIArmada\Events\Features\Commerce\Actions\CreateRegistrationsFromOrderAction;
+use AIArmada\Events\Features\Commerce\Actions\IssueEventRegistrationPassesAction;
+use AIArmada\Events\Features\Registrations\Models\EventRegistration;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -43,8 +43,9 @@ it('creates registrations for an order item using the order model as the externa
             ]);
 
             $registrations = app(CreateRegistrationsFromOrderAction::class)->handle(
-                target: $occurrence,
-                orderItem: $orderItem->fresh(),
+                scopeType: 'occurrence',
+                scopeId: (string) $occurrence->getKey(),
+                orderItemId: (string) $orderItem->id,
                 participants: [
                     ['name' => 'Alice Example', 'email' => 'alice@example.com'],
                     ['name' => 'Bob Example', 'email' => 'bob@example.com'],
@@ -102,8 +103,9 @@ it('can create a pending order registration for offline payment confirmation', f
             ]);
 
             $registrations = app(CreateRegistrationsFromOrderAction::class)->handle(
-                target: $occurrence,
-                orderItem: $orderItem->fresh(),
+                scopeType: 'occurrence',
+                scopeId: (string) $occurrence->getKey(),
+                orderItemId: (string) $orderItem->id,
                 participants: [['name' => 'Offline Attendee']],
                 options: [
                     'registration_status' => 'pending',
@@ -114,15 +116,14 @@ it('can create a pending order registration for offline payment confirmation', f
                 ],
             );
 
-            $registration = $registrations->first();
+            $registration = EventRegistration::query()->findOrFail($registrations[0]);
 
-            expect($registration)->not->toBeNull()
-                ->and($registration?->status->getValue())->toBe('pending')
-                ->and($registration?->source)->toBe('offline_admission')
-                ->and($registration?->payment_status)->toBe('pending')
-                ->and($registration?->metadata)->toBe(['offline_admission' => true])
-                ->and($registration?->items->first()?->status)->toBe('pending')
-                ->and($registration?->passes)->toBeEmpty();
+            expect($registration->status->getValue())->toBe('pending')
+                ->and($registration->source)->toBe('offline_admission')
+                ->and($registration->payment_status)->toBe('pending')
+                ->and($registration->metadata)->toBe(['offline_admission' => true])
+                ->and($registration->items->first()?->status)->toBe('pending')
+                ->and($registration->passes)->toBeEmpty();
         } finally {
             Relation::morphMap($originalMorphMap, false);
         }
@@ -153,14 +154,17 @@ it('does not issue a duplicate pass when event registration pass issuance is ret
                 'currency' => 'MYR',
             ]);
 
-            $registration = app(CreateRegistrationsFromOrderAction::class)->handle(
-                target: $occurrence,
-                orderItem: $orderItem->fresh(),
+            $registrations = app(CreateRegistrationsFromOrderAction::class)->handle(
+                scopeType: 'occurrence',
+                scopeId: (string) $occurrence->getKey(),
+                orderItemId: (string) $orderItem->id,
                 participants: [['name' => 'Pass Holder']],
-            )->firstOrFail();
+            );
 
-            $first = app(IssueEventRegistrationPassesAction::class)->handle($registration);
-            $second = app(IssueEventRegistrationPassesAction::class)->handle($registration->fresh());
+            $registration = EventRegistration::query()->findOrFail($registrations[0]);
+
+            $first = app(IssueEventRegistrationPassesAction::class)->handle((string) $registration->getKey());
+            $second = app(IssueEventRegistrationPassesAction::class)->handle((string) $registration->getKey());
 
             expect($first)->toHaveCount(1)
                 ->and($second)->toHaveCount(1)
@@ -197,20 +201,21 @@ it('creates order-linked registrations for free ticket items and defers pass iss
             ]);
 
             $registrations = app(CreateRegistrationsFromOrderAction::class)->handle(
-                target: $occurrence,
-                orderItem: $orderItem->fresh(),
+                scopeType: 'occurrence',
+                scopeId: (string) $occurrence->getKey(),
+                orderItemId: (string) $orderItem->id,
                 participants: [['name' => 'Free Attendee', 'is_purchaser' => true]],
             );
 
-            $registration = $registrations->first();
+            $registration = EventRegistration::query()->findOrFail($registrations[0]);
 
             expect($registrations)->toHaveCount(1)
-                ->and($registration?->source)->toBe('order')
-                ->and($registration?->status->getValue())->toBe('confirmed')
-                ->and($registration?->external_order_id)->toBe($order->id)
-                ->and($registration?->items)->toHaveCount(1)
-                ->and($registration?->items->first()?->external_order_item_id)->toBe($orderItem->id)
-                ->and($registration?->passes)->toBeEmpty();
+                ->and($registration->source)->toBe('order')
+                ->and($registration->status->getValue())->toBe('confirmed')
+                ->and($registration->external_order_id)->toBe($order->id)
+                ->and($registration->items)->toHaveCount(1)
+                ->and($registration->items->first()?->external_order_item_id)->toBe($orderItem->id)
+                ->and($registration->passes)->toBeEmpty();
         } finally {
             Relation::morphMap($originalMorphMap, false);
         }
@@ -251,20 +256,22 @@ it('returns existing registrations when replaying a paid order item after capaci
             ];
 
             $firstPass = app(CreateRegistrationsFromOrderAction::class)->handle(
-                target: $occurrence,
-                orderItem: $orderItem->fresh(),
+                scopeType: 'occurrence',
+                scopeId: (string) $occurrence->getKey(),
+                orderItemId: (string) $orderItem->id,
                 participants: $participants,
             );
 
             $replayed = app(CreateRegistrationsFromOrderAction::class)->handle(
-                target: $occurrence,
-                orderItem: $orderItem->fresh(),
+                scopeType: 'occurrence',
+                scopeId: (string) $occurrence->getKey(),
+                orderItemId: (string) $orderItem->id,
                 participants: $participants,
             );
 
             expect($firstPass)->toHaveCount(1)
                 ->and($replayed)->toHaveCount(1)
-                ->and($replayed->first()?->is($firstPass->first()))->toBeTrue();
+                ->and($replayed[0])->toBe($firstPass[0]);
         } finally {
             Relation::morphMap($originalMorphMap, false);
         }
@@ -296,16 +303,19 @@ it('creates registrations for occurrence-scoped ticket types on an occurrence', 
             ]);
 
             $registrations = app(CreateRegistrationsFromOrderAction::class)->handle(
-                target: $occurrence,
-                orderItem: $orderItem->fresh(),
+                scopeType: 'occurrence',
+                scopeId: (string) $occurrence->getKey(),
+                orderItemId: (string) $orderItem->id,
                 participants: [
                     ['name' => 'Alice Example', 'email' => 'alice@example.com'],
                 ],
             );
 
+            $registration = EventRegistration::query()->findOrFail($registrations[0]);
+
             expect($registrations)->toHaveCount(1);
-            expect($registrations->first()?->items)->toHaveCount(1)
-                ->and($registrations->first()?->items->first()?->ticket_type_id)->toBe($ticketType->id);
+            expect($registration->items)->toHaveCount(1)
+                ->and($registration->items->first()?->ticket_type_id)->toBe($ticketType->id);
         } finally {
             Relation::morphMap($originalMorphMap, false);
         }
@@ -341,16 +351,19 @@ it('creates registrations for session-scoped ticket types on a session', functio
             ]);
 
             $registrations = app(CreateRegistrationsFromOrderAction::class)->handle(
-                target: $session,
-                orderItem: $orderItem->fresh(),
+                scopeType: 'session',
+                scopeId: (string) $session->getKey(),
+                orderItemId: (string) $orderItem->id,
                 participants: [
                     ['name' => 'Alice Example', 'email' => 'alice@example.com'],
                 ],
             );
 
+            $registration = EventRegistration::query()->findOrFail($registrations[0]);
+
             expect($registrations)->toHaveCount(1);
-            expect($registrations->first()?->items)->toHaveCount(1)
-                ->and($registrations->first()?->items->first()?->ticket_type_id)->toBe($ticketType->id);
+            expect($registration->items)->toHaveCount(1)
+                ->and($registration->items->first()?->ticket_type_id)->toBe($ticketType->id);
         } finally {
             Relation::morphMap($originalMorphMap, false);
         }
@@ -382,8 +395,9 @@ it('rejects occurrence-scoped ticket types when targeting the event', function (
             ]);
 
             app(CreateRegistrationsFromOrderAction::class)->handle(
-                target: $event,
-                orderItem: $orderItem->fresh(),
+                scopeType: 'event',
+                scopeId: (string) $event->getKey(),
+                orderItemId: (string) $orderItem->id,
                 participants: [
                     ['name' => 'Alice Example', 'email' => 'alice@example.com'],
                 ],
@@ -423,8 +437,9 @@ it('rejects session-scoped ticket types when targeting an occurrence', function 
             ]);
 
             app(CreateRegistrationsFromOrderAction::class)->handle(
-                target: $occurrence,
-                orderItem: $orderItem->fresh(),
+                scopeType: 'occurrence',
+                scopeId: (string) $occurrence->getKey(),
+                orderItemId: (string) $orderItem->id,
                 participants: [
                     ['name' => 'Alice Example', 'email' => 'alice@example.com'],
                 ],

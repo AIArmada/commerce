@@ -1,0 +1,48 @@
+{
+  "schema": 1,
+  "name": "Registrations",
+  "owns": {
+    "table:event_registrations": [
+      "AIArmada\\Events\\Features\\Registrations\\Actions\\CancelBundleChildrenOnParentCanceledAction",
+      "AIArmada\\Events\\Features\\Registrations\\Actions\\CreateEventComponentRegistrationsAction",
+      "AIArmada\\Events\\Features\\Registrations\\Actions\\DefaultRegistrationService",
+      "AIArmada\\Events\\Features\\Registrations\\Actions\\DeleteRegistrationDependents",
+      "AIArmada\\Events\\Features\\Registrations\\Actions\\DeleteRegistrationsScopeDependents",
+      "AIArmada\\Events\\Features\\Registrations\\Actions\\PromoteInterestedToConfirmedAction",
+      "AIArmada\\Events\\Features\\Registrations\\Actions\\RecordRegistrationPaymentStatusAction",
+      "AIArmada\\Events\\Features\\Registrations\\Actions\\RegisterForFreeAction"
+    ],
+    "table:event_registration_participants": [
+      "AIArmada\\Events\\Features\\Registrations\\Actions\\CreateEventComponentRegistrationsAction",
+      "AIArmada\\Events\\Features\\Registrations\\Actions\\DefaultRegistrationService",
+      "AIArmada\\Events\\Features\\Registrations\\Actions\\DeleteRegistrationDependents",
+      "AIArmada\\Events\\Features\\Registrations\\Actions\\DeleteRegistrationsScopeDependents"
+    ],
+    "table:event_registration_answers": [
+      "AIArmada\\Events\\Features\\Registrations\\Actions\\DefaultRegistrationService",
+      "AIArmada\\Events\\Features\\Registrations\\Actions\\DeleteRegistrationDependents",
+      "AIArmada\\Events\\Features\\Registrations\\Actions\\DeleteRegistrationsScopeDependents"
+    ],
+    "table:event_registration_items": [
+      "AIArmada\\Events\\Features\\Registrations\\Actions\\CreateEventComponentRegistrationsAction",
+      "AIArmada\\Events\\Features\\Registrations\\Actions\\DefaultRegistrationService",
+      "AIArmada\\Events\\Features\\Registrations\\Actions\\DeleteRegistrationDependents",
+      "AIArmada\\Events\\Features\\Registrations\\Actions\\DeleteRegistrationsScopeDependents"
+    ],
+    "table:event_registration_questions": [
+      "AIArmada\\Events\\Features\\Registrations\\Actions\\ArchiveEventRegistrationQuestionAction",
+      "AIArmada\\Events\\Features\\Registrations\\Actions\\CloneRegistrationsScopeAction",
+      "AIArmada\\Events\\Features\\Registrations\\Actions\\CreateEventRegistrationQuestionAction",
+      "AIArmada\\Events\\Features\\Registrations\\Actions\\DeleteRegistrationsScopeDependents",
+      "AIArmada\\Events\\Features\\Registrations\\Actions\\UpdateEventRegistrationQuestionAction"
+    ]
+  },
+  "extensions": {
+    "events.cascade-delete": [
+      "AIArmada\\Events\\Features\\Registrations\\Extensions\\RegistrationsDeleteCascadeExtension"
+    ],
+    "events.clone-scope": [
+      "AIArmada\\Events\\Features\\Registrations\\Extensions\\RegistrationsCloneScopeExtension"
+    ]
+  }
+}

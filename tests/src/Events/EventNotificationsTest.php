@@ -6,9 +6,10 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Events\Contracts\RegistrationServiceInterface;
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventOccurrence;
-use AIArmada\Events\Models\EventRegistration;
+use AIArmada\Events\Data\EventWelcomeNotificationData;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
+use AIArmada\Events\Features\Registrations\Models\EventRegistration;
 use AIArmada\Events\Notifications\EventWelcomeNotification;
 use AIArmada\Ticketing\Contracts\PassDeliveryServiceInterface;
 use AIArmada\Ticketing\Notifications\TicketNotification;
@@ -71,7 +72,7 @@ it('sends a welcome notification when a registration is approved', function (): 
         ]);
         $participant->addContactMethod(ContactMethodData::email('alice@example.com'));
 
-        app(RegistrationServiceInterface::class)->approve($registration);
+        app(RegistrationServiceInterface::class)->approve((string) $registration->getKey());
 
         NotificationFacade::assertSentOnDemand(
             EventWelcomeNotification::class,
@@ -135,20 +136,29 @@ it('restores owner context while rendering serialized queued notifications', fun
     config()->set('events.features.owner.enabled', true);
     $owner = User::factory()->create();
 
-    [$welcome, $ticket] = OwnerContext::withOwner($owner, function (): array {
+    [$welcome, $ticket] = OwnerContext::withOwner($owner, function () use ($owner): array {
         $event = Event::factory()->create();
-        $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
         $registration = EventRegistration::factory()->create([
             'event_id' => $event->id,
-            'event_occurrence_id' => $occurrence->id,
         ]);
+        $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
+        $registration->update(['event_occurrence_id' => $occurrence->id]);
         $ticketType = createEventTicketType($occurrence);
         $pass = createEventPass($ticketType, $registration, [
             'pass_no' => 'PASS-QUEUED',
         ]);
 
         return [
-            new EventWelcomeNotification($registration),
+            new EventWelcomeNotification(new EventWelcomeNotificationData(
+                registrationId: (string) $registration->getKey(),
+                registrationNo: (string) $registration->registration_no,
+                eventName: (string) $event->title,
+                brandName: 'Test Brand',
+                fromAddress: 'hello@example.com',
+                fromName: 'Test Sender',
+                ownerType: $owner->getMorphClass(),
+                ownerId: (string) $owner->getKey(),
+            )),
             new TicketNotification($pass),
         ];
     });

@@ -7,8 +7,8 @@ use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Support\AddressOwnerGuard;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventLocation;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Venues\Models\EventLocation;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Str;
 

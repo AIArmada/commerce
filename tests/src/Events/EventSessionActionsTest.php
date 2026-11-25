@@ -4,10 +4,6 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Events\Actions\CloneEventSessionAction;
-use AIArmada\Events\Actions\CreateEventSessionAction;
-use AIArmada\Events\Actions\DeleteEventSessionAction;
-use AIArmada\Events\Actions\UpdateEventSessionAction;
 use AIArmada\Events\Events\EventSessionCancelled;
 use AIArmada\Events\Events\EventSessionCompleted;
 use AIArmada\Events\Events\EventSessionCreated;
@@ -16,9 +12,13 @@ use AIArmada\Events\Events\EventSessionDeleted;
 use AIArmada\Events\Events\EventSessionPostponed;
 use AIArmada\Events\Events\EventSessionRescheduled;
 use AIArmada\Events\Events\EventSessionUpdated;
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventOccurrence;
-use AIArmada\Events\Models\EventSession;
+use AIArmada\Events\Features\Catalog\Actions\CloneEventSessionAction;
+use AIArmada\Events\Features\Catalog\Actions\CreateEventSessionAction;
+use AIArmada\Events\Features\Catalog\Actions\DeleteEventSessionAction;
+use AIArmada\Events\Features\Catalog\Actions\UpdateEventSessionAction;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
+use AIArmada\Events\Features\Catalog\Models\EventSession;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 
@@ -53,7 +53,7 @@ it('creates a session under an occurrence', function (): void {
 
     expect($session->status->getValue())->toBe('scheduled');
 
-    Illuminate\Support\Facades\Event::assertDispatched(EventSessionCreated::class, fn (EventSessionCreated $e) => $e->session->is($session));
+    Illuminate\Support\Facades\Event::assertDispatched(EventSessionCreated::class, fn (EventSessionCreated $e) => $e->sessionId === (string) $session->getKey());
 });
 
 it('normalizes session content when creating a session', function (): void {
@@ -400,7 +400,7 @@ it('supports lifecycle transitions on sessions', function (): void {
         ->and($delayed->fresh()->changeLogs)->toHaveCount(1);
     Illuminate\Support\Facades\Event::assertDispatched(
         EventSessionDelayed::class,
-        fn (EventSessionDelayed $event): bool => $event->session->is($delayed)
+        fn (EventSessionDelayed $event): bool => $event->sessionId === (string) $delayed->getKey()
             && $event->expectedStartsAt?->toDateTimeString() === $startsAt->addHour()->toDateTimeString(),
     );
 
@@ -412,7 +412,7 @@ it('supports lifecycle transitions on sessions', function (): void {
         ->and($postponed->fresh()->changeLogs)->toHaveCount(1);
     Illuminate\Support\Facades\Event::assertDispatched(
         EventSessionPostponed::class,
-        fn (EventSessionPostponed $event): bool => $event->session->is($postponed),
+        fn (EventSessionPostponed $event): bool => $event->sessionId === (string) $postponed->getKey(),
     );
 
     $cancelled = $createSession();
@@ -423,7 +423,7 @@ it('supports lifecycle transitions on sessions', function (): void {
         ->and($cancelled->fresh()->changeLogs)->toHaveCount(1);
     Illuminate\Support\Facades\Event::assertDispatched(
         EventSessionCancelled::class,
-        fn (EventSessionCancelled $event): bool => $event->session->is($cancelled),
+        fn (EventSessionCancelled $event): bool => $event->sessionId === (string) $cancelled->getKey(),
     );
 
     $completed = $createSession();
@@ -434,7 +434,7 @@ it('supports lifecycle transitions on sessions', function (): void {
         ->and($completed->fresh()->changeLogs)->toHaveCount(1);
     Illuminate\Support\Facades\Event::assertDispatched(
         EventSessionCompleted::class,
-        fn (EventSessionCompleted $event): bool => $event->session->is($completed),
+        fn (EventSessionCompleted $event): bool => $event->sessionId === (string) $completed->getKey(),
     );
 
     $rescheduled = $createSession();
@@ -447,8 +447,9 @@ it('supports lifecycle transitions on sessions', function (): void {
         ->and($rescheduled->fresh()->changeLogs)->toHaveCount(1);
     Illuminate\Support\Facades\Event::assertDispatched(
         EventSessionRescheduled::class,
-        fn (EventSessionRescheduled $event): bool => $event->oldSession->starts_at?->toDateTimeString() === $startsAt->toDateTimeString()
-            && $event->newSession->starts_at?->toDateTimeString() === $startsAt->addDay()->toDateTimeString(),
+        fn (EventSessionRescheduled $event): bool => $event->sessionId === (string) $rescheduled->getKey()
+            && $event->previousStartsAt?->toDateTimeString() === $startsAt->toDateTimeString()
+            && $event->startsAt->toDateTimeString() === $startsAt->addDay()->toDateTimeString(),
     );
 });
 
@@ -468,7 +469,7 @@ it('archives a session on delete', function (): void {
     expect($fresh->status->getValue())->toBe('archived')
         ->and($fresh->archived_at)->not->toBeNull();
 
-    Illuminate\Support\Facades\Event::assertDispatched(EventSessionDeleted::class, fn (EventSessionDeleted $e) => $e->session->is($session));
+    Illuminate\Support\Facades\Event::assertDispatched(EventSessionDeleted::class, fn (EventSessionDeleted $e) => $e->sessionId === (string) $session->getKey());
 });
 
 it('clones a session with new slug', function (): void {
@@ -499,7 +500,7 @@ it('clones a session with new slug', function (): void {
 
     expect($clone->status->getValue())->toBe('scheduled');
 
-    Illuminate\Support\Facades\Event::assertDispatched(EventSessionCreated::class, fn (EventSessionCreated $e) => $e->session->is($clone));
+    Illuminate\Support\Facades\Event::assertDispatched(EventSessionCreated::class, fn (EventSessionCreated $e) => $e->sessionId === (string) $clone->getKey());
 });
 
 it('clones a session with overridden attributes', function (): void {

@@ -3,9 +3,10 @@
 declare(strict_types=1);
 
 use AIArmada\Events\Contracts\EventCheckInService;
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventOccurrence;
-use AIArmada\Events\Models\EventRegistration;
+use AIArmada\Events\Features\Attendance\Models\EventAttendance;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
+use AIArmada\Events\Features\Registrations\Models\EventRegistration;
 use Illuminate\Support\Str;
 
 it('checks in an attendee', function (): void {
@@ -19,9 +20,11 @@ it('checks in an attendee', function (): void {
         'check_in_source' => 'admin',
     ]);
 
-    expect($attendance->id)->not->toBeNull();
-    expect($attendance->checked_in_at)->not->toBeNull();
-    expect($attendance->fresh()->logs)->toHaveCount(1);
+    $model = EventAttendance::query()->findOrFail($attendance->id);
+
+    expect($attendance->id)->not->toBeNull()
+        ->and($attendance->checkedInAt)->not->toBeNull()
+        ->and($model->logs()->count())->toBe(1);
 });
 
 it('infers the occurrence from the participant registration', function (): void {
@@ -45,10 +48,10 @@ it('infers the occurrence from the participant registration', function (): void 
         'check_in_source' => 'kiosk',
     ]);
 
-    expect($attendance->event_occurrence_id)->toBe($occurrence->id)
-        ->and($attendance->event_registration_id)->toBe($registration->id)
-        ->and($attendance->event_registration_participant_id)->toBe($participant->id)
-        ->and($attendance->fresh()->logs)->toHaveCount(1);
+    expect($attendance->occurrenceId)->toBe($occurrence->id)
+        ->and($attendance->registrationId)->toBe($registration->id)
+        ->and($attendance->participantId)->toBe($participant->id)
+        ->and(EventAttendance::query()->findOrFail($attendance->id)->logs()->count())->toBe(1);
 });
 
 it('reuses an active participant check-in', function (): void {
@@ -71,11 +74,13 @@ it('reuses an active participant check-in', function (): void {
         'check_in_source' => 'kiosk',
     ];
 
-    $first = $service->checkIn($payload);
-    $second = $service->checkIn($payload);
+    $first = $service->checkInWithResult($payload);
+    $second = $service->checkInWithResult($payload);
 
-    expect($second->is($first))->toBeTrue()
-        ->and($first->fresh()->logs)->toHaveCount(1);
+    expect($first->created)->toBeTrue()
+        ->and($second->created)->toBeFalse()
+        ->and($second->attendance->id)->toBe($first->attendance->id)
+        ->and(EventAttendance::query()->findOrFail($first->attendance->id)->logs()->count())->toBe(1);
 });
 
 it('preserves the verifier and performer on a staff-assisted check-in', function (): void {
@@ -92,9 +97,9 @@ it('preserves the verifier and performer on a staff-assisted check-in', function
         'performed_by_type' => 'user',
         'performed_by_id' => $verifierId,
     ]);
-    $log = $attendance->fresh()->logs->first();
+    $log = EventAttendance::query()->findOrFail($attendance->id)->logs()->first();
 
-    expect($attendance->verified_by_user_id)->toBe($verifierId)
+    expect($attendance->verifiedByUserId)->toBe($verifierId)
         ->and($log?->performed_by_type)->toBe('user')
         ->and($log?->performed_by_id)->toBe($verifierId);
 });

@@ -3,14 +3,14 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Events\Actions\PromoteInterestedToConfirmedAction;
 use AIArmada\Events\Contracts\RegistrationServiceInterface;
 use AIArmada\Events\Exceptions\EventCapacityExceededException;
 use AIArmada\Events\Exceptions\NotInterestedRegistrationException;
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventOccurrence;
-use AIArmada\Events\Models\EventRegistration;
-use AIArmada\Events\Models\EventSession;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
+use AIArmada\Events\Features\Catalog\Models\EventSession;
+use AIArmada\Events\Features\Registrations\Actions\PromoteInterestedToConfirmedAction;
+use AIArmada\Events\Features\Registrations\Models\EventRegistration;
 use AIArmada\Ticketing\Models\Pass;
 
 beforeEach(function (): void {
@@ -27,10 +27,12 @@ it('promotes interested registration to confirmed', function (): void {
             'status' => 'interested',
         ]);
 
-        $result = app(PromoteInterestedToConfirmedAction::class)->execute($registration);
+        app(PromoteInterestedToConfirmedAction::class)->execute((string) $registration->getKey());
 
-        expect($result->status->getValue())->toBe('confirmed');
-        expect($result->approved_at)->not->toBeNull();
+        $registration->refresh();
+
+        expect($registration->status->getValue())->toBe('confirmed');
+        expect($registration->approved_at)->not->toBeNull();
     });
 });
 
@@ -42,7 +44,7 @@ it('throws for non-interested registrations', function (): void {
             'status' => 'confirmed',
         ]);
 
-        app(PromoteInterestedToConfirmedAction::class)->execute($registration);
+        app(PromoteInterestedToConfirmedAction::class)->execute((string) $registration->getKey());
     });
 })->throws(NotInterestedRegistrationException::class);
 
@@ -56,9 +58,9 @@ it('issues passes on promotion', function (): void {
             'status' => 'interested',
         ]);
 
-        $result = app(PromoteInterestedToConfirmedAction::class)->execute($registration);
+        app(PromoteInterestedToConfirmedAction::class)->execute((string) $registration->getKey());
 
-        expect($result->passes)->toHaveCount(1);
+        expect($registration->fresh()->passes)->toHaveCount(1);
     });
 });
 
@@ -87,7 +89,7 @@ it('blocks promotion when the session is at capacity', function (): void {
             'status' => 'interested',
         ]);
 
-        app(PromoteInterestedToConfirmedAction::class)->execute($registration);
+        app(PromoteInterestedToConfirmedAction::class)->execute((string) $registration->getKey());
     });
 })->throws(EventCapacityExceededException::class);
 
@@ -119,7 +121,7 @@ it('falls back to occurrence capacity when the session has no override', functio
             'status' => 'interested',
         ]);
 
-        app(PromoteInterestedToConfirmedAction::class)->execute($registration);
+        app(PromoteInterestedToConfirmedAction::class)->execute((string) $registration->getKey());
     }))->toThrow(EventCapacityExceededException::class, 'Occurrence');
 });
 
@@ -145,9 +147,9 @@ it('does not issue passes when the session overrides free pass issuance off', fu
             'status' => 'interested',
         ]);
 
-        $result = app(PromoteInterestedToConfirmedAction::class)->execute($registration);
+        app(PromoteInterestedToConfirmedAction::class)->execute((string) $registration->getKey());
 
-        expect($result->passes)->toHaveCount(0);
+        expect($registration->fresh()->passes)->toHaveCount(0);
     });
 });
 
@@ -168,16 +170,16 @@ it('blocks promotion when a group interested registration exceeds remaining capa
 
         // Group interest is constructible through the canonical service
         // contract, which accepts any positive total_participants.
-        $group = app(RegistrationServiceInterface::class)->register([
+        $group = EventRegistration::query()->findOrFail(app(RegistrationServiceInterface::class)->register([
             'event_id' => $event->id,
             'event_occurrence_id' => $occurrence->id,
             'registration_type' => 'group',
             'status' => 'interested',
             'source' => 'group_rsvp',
             'total_participants' => 3,
-        ]);
+        ]));
 
-        expect(fn () => app(PromoteInterestedToConfirmedAction::class)->execute($group))
+        expect(fn () => app(PromoteInterestedToConfirmedAction::class)->execute((string) $group->getKey()))
             ->toThrow(EventCapacityExceededException::class);
 
         expect($group->fresh()?->status->getValue())->toBe('interested')
@@ -200,18 +202,18 @@ it('promotes a group interested registration when remaining capacity fits', func
             'total_participants' => 1,
         ]);
 
-        $group = app(RegistrationServiceInterface::class)->register([
+        $group = EventRegistration::query()->findOrFail(app(RegistrationServiceInterface::class)->register([
             'event_id' => $event->id,
             'event_occurrence_id' => $occurrence->id,
             'registration_type' => 'group',
             'status' => 'interested',
             'source' => 'group_rsvp',
             'total_participants' => 2,
-        ]);
+        ]));
 
-        $result = app(PromoteInterestedToConfirmedAction::class)->execute($group);
+        app(PromoteInterestedToConfirmedAction::class)->execute((string) $group->getKey());
 
-        expect($result->status->getValue())->toBe('confirmed')
+        expect($group->fresh()->status->getValue())->toBe('confirmed')
             ->and($occurrence->fresh()?->capacityRemaining())->toBe(0);
     });
 });

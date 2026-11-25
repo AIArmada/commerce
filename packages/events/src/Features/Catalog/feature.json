@@ -1,0 +1,125 @@
+{
+  "schema": 1,
+  "name": "Catalog",
+  "owns": {
+    "table:events": [
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\CloneEventAction",
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\DefaultEventTemplateService",
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\DeleteCatalogScopeDependents",
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\SynchronizeEventContent",
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\CreateEventFromSubmissionAction"
+    ],
+    "table:event_occurrences": [
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\BatchCreateOccurrencesAction",
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\CloneEventOccurrenceAction",
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\CreateEventOccurrenceAction",
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\DefaultEventLifecycleWorkflow",
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\DefaultEventTemplateService",
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\DeleteCatalogScopeDependents",
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\EnsureOccurrenceAction",
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\SyncPrimaryEventOccurrenceAction",
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\UpdateEventOccurrenceAction",
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\CreateEventFromSubmissionAction"
+    ],
+    "table:event_sessions": [
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\CloneEventSessionAction",
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\CreateEventSessionAction",
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\DefaultEventLifecycleWorkflow",
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\DefaultEventTemplateService",
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\DeleteCatalogScopeDependents",
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\DeleteEventSessionAction",
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\UpdateEventSessionAction"
+    ],
+    "table:event_roles": [
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\SyncEventInvolvementsAction"
+    ],
+    "table:event_involvements": [
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\CloneEventContentsAction",
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\DeleteCatalogScopeDependents",
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\SyncEventInvolvementsAction",
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\CreateEventFromSubmissionAction"
+    ],
+    "table:event_access_policies": [
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\CloneEventContentsAction",
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\DeleteCatalogScopeDependents"
+    ],
+    "table:event_materials": [
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\CloneEventContentsAction",
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\DeleteCatalogScopeDependents"
+    ],
+    "table:event_references": [
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\CloneEventContentsAction",
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\DeleteCatalogScopeDependents"
+    ],
+    "table:event_links": [
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\CloneEventContentsAction",
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\DeleteCatalogScopeDependents"
+    ],
+    "table:event_media": [
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\CloneEventContentsAction",
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\DeleteCatalogScopeDependents"
+    ],
+    "table:event_languages": [
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\CloneEventContentsAction",
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\DeleteCatalogScopeDependents",
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\SyncEventLanguagesAction"
+    ],
+    "table:event_audiences": [
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\CloneEventContentsAction",
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\DeleteCatalogScopeDependents"
+    ],
+    "table:event_audience_profiles": [
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\CloneEventContentsAction",
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\DeleteCatalogScopeDependents"
+    ],
+    "table:event_eligibility_rules": [
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\CloneEventContentsAction",
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\DeleteCatalogScopeDependents"
+    ],
+    "table:event_time_expressions": [
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\CloneEventContentsAction",
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\DeleteCatalogScopeDependents"
+    ],
+    "table:event_itineraries": [
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\DeleteCatalogScopeDependents",
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\DeleteItineraryDependents"
+    ],
+    "table:event_itinerary_items": [
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\DeleteCatalogScopeDependents",
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\DeleteItineraryDependents"
+    ],
+    "table:event_series": [
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\DeleteSeriesDependents"
+    ],
+    "table:event_series_items": [
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\DeleteCatalogScopeDependents",
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\DeleteSeriesDependents"
+    ],
+    "table:event_series_rules": [
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\DeleteSeriesDependents"
+    ],
+    "table:event_attributes": [
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\DeleteCatalogScopeDependents"
+    ],
+    "table:event_availability_blocks": [
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\DeleteCatalogScopeDependents"
+    ],
+    "table:event_templates": [
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\DeleteTemplateDependents",
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\SaveEventTemplateAction"
+    ],
+    "table:event_template_items": [
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\DeleteTemplateDependents",
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\SaveEventTemplateAction"
+    ],
+    "table:event_revisions": [
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\DeleteCatalogScopeDependents"
+    ],
+    "table:event_recurrence_rules": [
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\DeleteCatalogScopeDependents"
+    ],
+    "table:event_organizers": [
+      "AIArmada\\Events\\Features\\Catalog\\Actions\\DeleteCatalogScopeDependents"
+    ]
+  }
+}

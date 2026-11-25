@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEvents\Extensions;
 
-use AIArmada\Events\Support\ModelResolver;
 use AIArmada\FilamentEvents\Contracts\EventFormExtension;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Schemas\Components\Component;
@@ -26,7 +25,9 @@ final class DefaultEventMediaExtension implements EventFormExtension
      */
     public function components(): array
     {
-        if (! is_a(ModelResolver::eventClass(), HasMedia::class, true)) {
+        $eventClass = config('events.models.event');
+
+        if (! is_string($eventClass) || ! is_a($eventClass, HasMedia::class, true)) {
             return [];
         }
 

@@ -1,6 +1,6 @@
 # AIArmada Filament Events
 
-Filament admin UI for events, occurrences, sessions, venues, registrations, attendance, check-in, and moderation workflows. Ticket type and pass administration lives in `aiarmada/filament-ticketing`.
+Filament v5 admin UI for events, occurrences, sessions, venues, registrations, attendance, check-in, and moderation workflows. Every mutation delegates to `aiarmada/events` scalar-ID contracts (`EventLifecycleWorkflow`, `EventCloneService`, `EventModerationWorkflow`, `EventCheckInService`, `EventTemplateService`); ticket type and pass administration lives in `aiarmada/filament-ticketing`.
 
 See [docs/](docs/) for installation, configuration, and usage.
 

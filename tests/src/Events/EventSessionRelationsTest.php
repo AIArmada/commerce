@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventAccessPolicy;
-use AIArmada\Events\Models\EventAudienceProfile;
-use AIArmada\Events\Models\EventClassification;
-use AIArmada\Events\Models\EventOccurrence;
-use AIArmada\Events\Models\EventSession;
-use AIArmada\Events\Models\EventTaxonomy;
-use AIArmada\Events\Models\EventTerm;
-use AIArmada\Events\Models\EventTimeExpression;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\EventAccessPolicy;
+use AIArmada\Events\Features\Catalog\Models\EventAudienceProfile;
+use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
+use AIArmada\Events\Features\Catalog\Models\EventSession;
+use AIArmada\Events\Features\Catalog\Models\EventTimeExpression;
+use AIArmada\Events\Features\Taxonomy\Models\EventClassification;
+use AIArmada\Events\Features\Taxonomy\Models\EventTaxonomy;
+use AIArmada\Events\Features\Taxonomy\Models\EventTerm;
 
 beforeEach(function (): void {
     config()->set('events.features.owner.enabled', false);

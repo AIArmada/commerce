@@ -7,10 +7,10 @@ namespace AIArmada\FilamentEvents\Resources;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Events\Contracts\EventCloneService;
 use AIArmada\Events\Contracts\EventLifecycleWorkflow;
-use AIArmada\Events\Enums\EventVisibility;
-use AIArmada\Events\Enums\RegistrationMode;
-use AIArmada\Events\Models\EventOccurrence;
-use AIArmada\Events\States\OccurrenceStatus\OccurrenceStatus as OccurrenceStatusState;
+use AIArmada\Events\Data\EventVisibility;
+use AIArmada\Events\Data\RegistrationMode;
+use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
+use AIArmada\Events\Features\Catalog\States\OccurrenceStatus\OccurrenceStatus as OccurrenceStatusState;
 use AIArmada\FilamentEvents\Actions\Exporter\EventOccurrenceExporter;
 use AIArmada\FilamentEvents\Contracts\EventOccurrenceFormExtension;
 use AIArmada\Ticketing\Enums\PricingMode;
@@ -123,7 +123,7 @@ final class EventOccurrenceResource extends Resource
                         DateTimePicker::make('expected_starts_at')->label('Expected New Start'),
                     ])
                     ->action(function (array $data, EventOccurrence $record): void {
-                        app(EventLifecycleWorkflow::class)->delay($record, $data['reason'] ?? null, $data['expected_starts_at'] ?? null);
+                        app(EventLifecycleWorkflow::class)->delay('occurrence', (string) $record->getKey(), $data['reason'] ?? null, $data['expected_starts_at'] ?? null);
                     })
                     ->visible(fn (?EventOccurrence $record) => in_array((string) ($record?->status ?? ''), ['published', 'scheduled'], true))
                     ->requiresConfirmation(),
@@ -135,7 +135,7 @@ final class EventOccurrenceResource extends Resource
                         Textarea::make('reason')->required(),
                     ])
                     ->action(function (array $data, EventOccurrence $record): void {
-                        app(EventLifecycleWorkflow::class)->postpone($record, $data['reason']);
+                        app(EventLifecycleWorkflow::class)->postpone('occurrence', (string) $record->getKey(), $data['reason']);
                     })
                     ->visible(fn (?EventOccurrence $record) => in_array((string) ($record?->status ?? ''), ['published', 'scheduled'], true))
                     ->requiresConfirmation(),
@@ -147,7 +147,7 @@ final class EventOccurrenceResource extends Resource
                         Textarea::make('reason')->required(),
                     ])
                     ->action(function (array $data, EventOccurrence $record): void {
-                        app(EventLifecycleWorkflow::class)->cancel($record, $data['reason']);
+                        app(EventLifecycleWorkflow::class)->cancel('occurrence', (string) $record->getKey(), $data['reason']);
                     })
                     ->visible(fn (?EventOccurrence $record) => ! in_array((string) ($record?->status ?? ''), ['cancelled', 'completed', 'archived'], true))
                     ->requiresConfirmation(),
@@ -156,7 +156,7 @@ final class EventOccurrenceResource extends Resource
                     ->icon('heroicon-o-check')
                     ->color('success')
                     ->action(function (EventOccurrence $record): void {
-                        app(EventLifecycleWorkflow::class)->complete($record);
+                        app(EventLifecycleWorkflow::class)->complete('occurrence', (string) $record->getKey());
                     })
                     ->visible(fn (?EventOccurrence $record) => (string) ($record?->status ?? '') === 'published')
                     ->requiresConfirmation(),
@@ -165,10 +165,10 @@ final class EventOccurrenceResource extends Resource
                     ->icon('heroicon-o-document-duplicate')
                     ->color('gray')
                     ->action(function (EventOccurrence $record): void {
-                        $clone = app(EventCloneService::class)->cloneOccurrence($record, [
+                        $cloneId = app(EventCloneService::class)->cloneOccurrence((string) $record->getKey(), [
                             'clone_sessions' => false,
                         ]);
-                        redirect(EventOccurrenceResource::getUrl('edit', ['record' => $clone]));
+                        redirect(EventOccurrenceResource::getUrl('edit', ['record' => $cloneId]));
                     })
                     ->requiresConfirmation(),
             ]);

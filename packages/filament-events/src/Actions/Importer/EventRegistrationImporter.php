@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\FilamentEvents\Actions\Importer;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventOccurrence;
-use AIArmada\Events\Models\EventRegistration;
-use AIArmada\Events\Support\ModelResolver;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
+use AIArmada\Events\Features\Registrations\Models\EventRegistration;
+use AIArmada\Events\Platform\ModelResolver;
 use AIArmada\FilamentEvents\Actions\Importer\Concerns\AuthorizesImportedRecords;
 use Closure;
 use Filament\Actions\Imports\ImportColumn;
@@ -29,7 +29,10 @@ final class EventRegistrationImporter extends Importer
      */
     public static function getModel(): string
     {
-        return ModelResolver::registrationClass();
+        /** @var class-string<EventRegistration> $model */
+        $model = ModelResolver::registrationClass();
+
+        return $model;
     }
 
     public static function getColumns(): array

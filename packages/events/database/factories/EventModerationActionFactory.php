@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Database\Factories;
 
-use AIArmada\Events\Models\EventModerationAction;
+use AIArmada\Events\Features\Governance\Models\EventModerationAction;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

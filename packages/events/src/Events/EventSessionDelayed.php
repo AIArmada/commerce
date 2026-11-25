@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Events;
 
-use AIArmada\Events\Models\EventSession;
-use DateTimeInterface;
+use Carbon\CarbonImmutable;
 
-final class EventSessionDelayed
+final readonly class EventSessionDelayed
 {
     public function __construct(
-        public EventSession $session,
+        public string $sessionId,
+        public string $eventId,
         public ?string $reason = null,
-        public ?DateTimeInterface $expectedStartsAt = null,
+        public ?CarbonImmutable $expectedStartsAt = null,
     ) {}
 }

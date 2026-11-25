@@ -4,12 +4,17 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Events;
 
-use AIArmada\Events\Models\EventOccurrence;
+use Carbon\CarbonImmutable;
 
-final class EventOccurrenceRescheduled
+final readonly class EventOccurrenceRescheduled
 {
     public function __construct(
-        public EventOccurrence $oldOccurrence,
-        public EventOccurrence $newOccurrence,
+        public string $occurrenceId,
+        public string $eventId,
+        public CarbonImmutable $startsAt,
+        public CarbonImmutable $endsAt,
+        public ?CarbonImmutable $previousStartsAt = null,
+        public ?CarbonImmutable $previousEndsAt = null,
+        public ?string $reason = null,
     ) {}
 }

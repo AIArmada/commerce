@@ -4,24 +4,35 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Contracts;
 
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventOccurrence;
-use AIArmada\Events\Models\EventSession;
 use DateTimeInterface;
 
 interface EventLifecycleWorkflow
 {
-    public function publish(Event $event): void;
+    public function publish(string $eventId): void;
 
-    public function cancel(Event | EventOccurrence | EventSession $target, ?string $reason = null): void;
+    public function cancel(string $targetType, string $targetId, ?string $reason = null): void;
 
-    public function postpone(Event | EventOccurrence | EventSession $target, ?string $reason = null): void;
+    public function postpone(string $targetType, string $targetId, ?string $reason = null): void;
 
-    public function delay(EventOccurrence | EventSession $target, ?string $reason = null, ?DateTimeInterface $expectedStartsAt = null): void;
+    public function delay(
+        string $targetType,
+        string $targetId,
+        ?string $reason = null,
+        ?DateTimeInterface $expectedStartsAt = null,
+    ): void;
 
-    public function reschedule(EventOccurrence | EventSession $target, DateTimeInterface $newStartsAt, ?DateTimeInterface $newEndsAt = null, array $options = []): EventOccurrence | EventSession;
+    /**
+     * @param  array<string, mixed>  $options
+     */
+    public function reschedule(
+        string $targetType,
+        string $targetId,
+        DateTimeInterface $newStartsAt,
+        ?DateTimeInterface $newEndsAt = null,
+        array $options = [],
+    ): string;
 
-    public function complete(Event | EventOccurrence | EventSession $target): void;
+    public function complete(string $targetType, string $targetId): void;
 
-    public function archive(Event | EventOccurrence $target, ?string $reason = null): void;
+    public function archive(string $targetType, string $targetId, ?string $reason = null): void;
 }

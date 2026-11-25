@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use AIArmada\Events\Exceptions\InconsistentTicketTypePricingException;
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventOccurrence;
-use AIArmada\Events\Models\EventSession;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
+use AIArmada\Events\Features\Catalog\Models\EventSession;
 use AIArmada\Ticketing\Enums\PricingMode;
 
 it('allows free ticket type on free event', function (): void {

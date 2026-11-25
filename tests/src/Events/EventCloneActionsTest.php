@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Events\Actions\CloneEventAction;
-use AIArmada\Events\Actions\CloneEventOccurrenceAction;
-use AIArmada\Events\Actions\CloneEventSessionAction;
-use AIArmada\Events\Actions\SaveEventTemplateAction;
 use AIArmada\Events\Contracts\EventCloneService;
 use AIArmada\Events\Contracts\EventTemplateService;
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventInvolvement;
-use AIArmada\Events\Models\EventLocation;
-use AIArmada\Events\Models\EventOccurrence;
-use AIArmada\Events\Models\EventSession;
+use AIArmada\Events\Features\Catalog\Actions\CloneEventAction;
+use AIArmada\Events\Features\Catalog\Actions\CloneEventOccurrenceAction;
+use AIArmada\Events\Features\Catalog\Actions\CloneEventSessionAction;
+use AIArmada\Events\Features\Catalog\Actions\SaveEventTemplateAction;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\EventInvolvement;
+use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
+use AIArmada\Events\Features\Catalog\Models\EventSession;
+use AIArmada\Events\Features\Venues\Models\EventLocation;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\UploadedFile;
@@ -41,11 +41,11 @@ it('clones a session with child contents', function (): void {
         'ends_at' => CarbonImmutable::parse('2026-07-01 10:00:00'),
     ]);
 
-    $location = EventLocation::factory()->create([
+    EventInvolvement::factory()->create([
         'event_id' => $event->id,
         'event_occurrence_id' => $occurrence->id,
         'event_session_id' => $session->id,
-        'label' => 'Room A',
+        'role_code' => 'speaker',
     ]);
 
     $clone = app(CloneEventSessionAction::class)->handle($session, [
@@ -60,9 +60,8 @@ it('clones a session with child contents', function (): void {
 
     expect($clone->status->getValue())->toBe('scheduled');
 
-    $clonedLocations = EventLocation::where('event_session_id', $clone->id)->get();
-    expect($clonedLocations)->toHaveCount(1);
-    expect($clonedLocations->first()->label)->toBe('Room A');
+    $clonedInvolvements = EventInvolvement::where('event_session_id', $clone->id)->get();
+    expect($clonedInvolvements)->toHaveCount(1);
 });
 
 it('clones a session without children when clone_children is false', function (): void {
@@ -76,18 +75,18 @@ it('clones a session without children when clone_children is false', function ()
         'ends_at' => CarbonImmutable::parse('2026-07-01 10:00:00'),
     ]);
 
-    EventLocation::factory()->create([
+    EventInvolvement::factory()->create([
         'event_id' => $event->id,
         'event_session_id' => $session->id,
-        'label' => 'Room A',
+        'role_code' => 'speaker',
     ]);
 
     $clone = app(CloneEventSessionAction::class)->handle($session, [
         'clone_children' => false,
     ]);
 
-    $clonedLocations = EventLocation::where('event_session_id', $clone->id)->get();
-    expect($clonedLocations)->toHaveCount(0);
+    $clonedInvolvements = EventInvolvement::where('event_session_id', $clone->id)->get();
+    expect($clonedInvolvements)->toHaveCount(0);
 });
 
 it('clones an occurrence with child sessions and contents', function (): void {
@@ -209,9 +208,9 @@ it('clones an event with event-level children', function (): void {
         'title' => 'Tech Conference 2026',
     ]);
 
-    $location = EventLocation::factory()->create([
+    EventInvolvement::factory()->create([
         'event_id' => $event->id,
-        'label' => 'Main Hall',
+        'role_code' => 'speaker',
     ]);
 
     $clone = app(CloneEventAction::class)->handle($event);
@@ -223,11 +222,10 @@ it('clones an event with event-level children', function (): void {
 
     expect($clone->status->getValue())->toBe('draft');
 
-    $clonedLocations = EventLocation::where('event_id', $clone->id)
+    $clonedInvolvements = EventInvolvement::where('event_id', $clone->id)
         ->whereNull('event_occurrence_id')
         ->get();
-    expect($clonedLocations)->toHaveCount(1);
-    expect($clonedLocations->first()->label)->toBe('Main Hall');
+    expect($clonedInvolvements)->toHaveCount(1);
 });
 
 it('clones an event with occurrences when clone_occurrences is true', function (): void {
@@ -266,15 +264,15 @@ it('does not clone runtime data (registrations, attendances)', function (): void
         'delivery_mode' => 'in_person',
     ]);
 
-    EventLocation::factory()->create([
+    EventInvolvement::factory()->create([
         'event_id' => $event->id,
-        'label' => 'Hall',
+        'role_code' => 'speaker',
     ]);
 
     $clone = app(CloneEventAction::class)->handle($event);
 
-    $clonedLocations = EventLocation::where('event_id', $clone->id)->count();
-    expect($clonedLocations)->toBe(1);
+    $clonedInvolvements = EventInvolvement::where('event_id', $clone->id)->count();
+    expect($clonedInvolvements)->toBe(1);
 
     $clonedOccurrences = EventOccurrence::where('event_id', $clone->id)->count();
     expect($clonedOccurrences)->toBe(0);
@@ -300,9 +298,10 @@ it('clones via EventCloneService', function (): void {
         'label' => 'Hall',
     ]);
 
-    $clone = app(EventCloneService::class)->cloneEvent($event);
+    $cloneId = app(EventCloneService::class)->cloneEvent((string) $event->getKey());
+    $clone = Event::query()->findOrFail($cloneId);
 
-    expect($clone)->exists->toBeTrue();
+    expect($clone->exists)->toBeTrue();
 
     $locations = EventLocation::where('event_id', $clone->id)->count();
     expect($locations)->toBe(1);
@@ -319,12 +318,14 @@ it('clones occurrence via EventCloneService', function (): void {
         'delivery_mode' => 'in_person',
     ]);
 
-    $clone = app(EventCloneService::class)->cloneOccurrence($occurrence, [
+    $cloneId = app(EventCloneService::class)->cloneOccurrence((string) $occurrence->getKey(), [
         'clone_sessions' => false,
     ]);
 
-    expect($clone)->exists->toBeTrue()
-        ->title->toBe('Day 1 (Copy)');
+    $clone = EventOccurrence::query()->findOrFail($cloneId);
+
+    expect($clone->exists)->toBeTrue()
+        ->and($clone->title)->toBe('Day 1 (Copy)');
 });
 
 it('clones session via EventCloneService', function (): void {
@@ -342,10 +343,11 @@ it('clones session via EventCloneService', function (): void {
         'ends_at' => CarbonImmutable::parse('2026-07-01 10:00:00'),
     ]);
 
-    $clone = app(EventCloneService::class)->cloneSession($session);
+    $cloneId = app(EventCloneService::class)->cloneSession((string) $session->getKey());
+    $clone = EventSession::query()->findOrFail($cloneId);
 
-    expect($clone)->exists->toBeTrue()
-        ->title->toBe('Workshop (Copy)');
+    expect($clone->exists)->toBeTrue()
+        ->and($clone->title)->toBe('Workshop (Copy)');
 });
 
 it('creates a template from an event via SaveEventTemplateAction', function (): void {
@@ -380,7 +382,8 @@ it('creates an event from a template via EventTemplateService', function (): voi
         'name' => 'Test Template',
     ]);
 
-    $created = app(EventTemplateService::class)->createFromTemplate($template);
+    $createdId = app(EventTemplateService::class)->createFromTemplate((string) $template->getKey());
+    $created = Event::query()->findOrFail($createdId);
 
     expect($created)->toBeInstanceOf(Event::class);
     expect($created->exists)->toBeTrue();
@@ -402,9 +405,11 @@ it('creates an occurrence from a template via EventTemplateService', function ()
         'name' => 'Occurrence Template',
     ]);
 
-    $created = app(EventTemplateService::class)->createFromTemplate($template, [
-        'event_id' => $event->id,
+    $createdId = app(EventTemplateService::class)->createFromTemplate((string) $template->getKey(), [
+        'event_id' => (string) $event->getKey(),
     ]);
+
+    $created = EventOccurrence::query()->findOrFail($createdId);
 
     expect($created)->toBeInstanceOf(EventOccurrence::class);
     expect($created->exists)->toBeTrue();
@@ -432,9 +437,11 @@ it('creates a session from a template via EventTemplateService', function (): vo
         'name' => 'Session Template',
     ]);
 
-    $created = app(EventTemplateService::class)->createFromTemplate($template, [
-        'event_occurrence_id' => $occurrence->id,
+    $createdId = app(EventTemplateService::class)->createFromTemplate((string) $template->getKey(), [
+        'event_occurrence_id' => (string) $occurrence->getKey(),
     ]);
+
+    $created = EventSession::query()->findOrFail($createdId);
 
     expect($created)->toBeInstanceOf(EventSession::class);
     expect($created->exists)->toBeTrue();

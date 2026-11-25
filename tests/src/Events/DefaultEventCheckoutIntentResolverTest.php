@@ -7,13 +7,16 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Events\Contracts\RegistrationServiceInterface;
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventOccurrence;
-use AIArmada\Events\Models\EventSession;
-use AIArmada\Events\Resolvers\DefaultEventCheckoutIntentResolver;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
+use AIArmada\Events\Features\Catalog\Models\EventSession;
+use AIArmada\Events\Features\Commerce\Queries\DefaultEventCheckoutIntentResolver;
+use AIArmada\Events\Features\Registrations\Models\EventRegistration;
 use AIArmada\Ticketing\Models\TicketType;
+use Illuminate\Support\Facades\Queue;
 
 beforeEach(function (): void {
+    Queue::fake();
     config()->set('events.features.owner.enabled', false);
     config()->set('checkout.owner.enabled', false);
     config()->set('orders.owner.enabled', false);
@@ -37,7 +40,7 @@ it('preserves the full participant payload when resolving an event checkout inte
         ]);
         $ticketType = createEventTicketType($occurrence);
 
-        $registration = app(RegistrationServiceInterface::class)->register([
+        $registrationId = app(RegistrationServiceInterface::class)->register([
             'event_id' => $event->id,
             'event_occurrence_id' => $occurrence->id,
             'registrant_type' => $customer->getMorphClass(),
@@ -69,9 +72,10 @@ it('preserves the full participant payload when resolving an event checkout inte
             ],
         ]);
 
+        $registration = EventRegistration::query()->findOrFail($registrationId);
         $registration->load('items.ticketType', 'participants', 'registrant');
 
-        $checkoutSession = app(DefaultEventCheckoutIntentResolver::class)->resolve($occurrence, $registration);
+        $checkoutSession = app(DefaultEventCheckoutIntentResolver::class)->resolve('occurrence', (string) $occurrence->getKey(), $registrationId);
 
         expect($checkoutSession)->toBeInstanceOf(CheckoutSession::class)
             ->and($checkoutSession->customer_id)->toBe($customer->id);
@@ -118,7 +122,7 @@ it('preserves the full participant payload when resolving a session checkout int
         ]);
         $ticketType = createEventTicketType($session);
 
-        $registration = app(RegistrationServiceInterface::class)->register([
+        $registrationId = app(RegistrationServiceInterface::class)->register([
             'event_id' => $event->id,
             'event_occurrence_id' => $occurrence->id,
             'event_session_id' => $session->id,
@@ -151,9 +155,10 @@ it('preserves the full participant payload when resolving a session checkout int
             ],
         ]);
 
+        $registration = EventRegistration::query()->findOrFail($registrationId);
         $registration->load('items.ticketType', 'participants', 'registrant');
 
-        $checkoutSession = app(DefaultEventCheckoutIntentResolver::class)->resolve($session, $registration);
+        $checkoutSession = app(DefaultEventCheckoutIntentResolver::class)->resolve('session', (string) $session->getKey(), $registrationId);
 
         expect($checkoutSession)->toBeInstanceOf(CheckoutSession::class)
             ->and($checkoutSession->customer_id)->toBe($customer->id);

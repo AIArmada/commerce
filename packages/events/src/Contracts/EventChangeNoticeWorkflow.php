@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Contracts;
 
-use AIArmada\Events\Models\EventChangeLog;
-
 interface EventChangeNoticeWorkflow
 {
-    public function publishNotice(EventChangeLog $changeLog, array $options = []): void;
+    /**
+     * @param  array<string, mixed>  $options
+     */
+    public function publishNotice(string $changeLogId, array $options = []): void;
 
-    public function retractNotice(EventChangeLog $changeLog): void;
+    public function retractNotice(string $changeLogId): void;
 }

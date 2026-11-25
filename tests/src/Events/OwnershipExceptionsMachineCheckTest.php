@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 it('keeps exactly eleven intentionally unscoped event model exceptions', function (): void {
     $repositoryPath = dirname(__DIR__, 3);
-    $modelsPath = 'packages/events/src/Models';
+    $featuresPath = 'packages/events/src/Features';
 
     $exceptions = [];
     $modelIterator = new RecursiveIteratorIterator(
         new RecursiveDirectoryIterator(
-            $repositoryPath . DIRECTORY_SEPARATOR . $modelsPath,
+            $repositoryPath . DIRECTORY_SEPARATOR . $featuresPath,
             FilesystemIterator::SKIP_DOTS,
         ),
     );
@@ -19,10 +19,16 @@ it('keeps exactly eleven intentionally unscoped event model exceptions', functio
             continue;
         }
 
-        $contents = file_get_contents($modelFile->getPathname());
+        $path = $modelFile->getPathname();
+
+        if (! str_contains($path, DIRECTORY_SEPARATOR . 'Models' . DIRECTORY_SEPARATOR)) {
+            continue;
+        }
+
+        $contents = file_get_contents($path);
 
         if ($contents === false) {
-            throw new RuntimeException("Unable to read event model file [{$modelFile->getPathname()}].");
+            throw new RuntimeException("Unable to read event model file [{$path}].");
         }
 
         if (
@@ -32,7 +38,7 @@ it('keeps exactly eleven intentionally unscoped event model exceptions', functio
             continue;
         }
 
-        $relativePath = mb_substr($modelFile->getPathname(), mb_strlen($repositoryPath) + 1);
+        $relativePath = mb_substr($path, mb_strlen($repositoryPath) + 1);
 
         $exceptions[] = str_replace(DIRECTORY_SEPARATOR, '/', $relativePath);
     }
@@ -41,16 +47,16 @@ it('keeps exactly eleven intentionally unscoped event model exceptions', functio
 
     expect($exceptions)->toHaveCount(11)
         ->and($exceptions)->toEqual([
-            'packages/events/src/Models/EventRole.php',
-            'packages/events/src/Models/EventSeriesItemPivot.php',
-            'packages/events/src/Models/EventSubmission.php',
-            'packages/events/src/Models/EventTaxonomy.php',
-            'packages/events/src/Models/EventTerm.php',
-            'packages/events/src/Models/EventTermPolicy.php',
-            'packages/events/src/Models/FacilityType.php',
-            'packages/events/src/Models/Venue.php',
-            'packages/events/src/Models/VenueFacility.php',
-            'packages/events/src/Models/VenueSpace.php',
-            'packages/events/src/Models/VenueSpaceType.php',
+            'packages/events/src/Features/Catalog/Models/EventRole.php',
+            'packages/events/src/Features/Catalog/Models/EventSeriesItemPivot.php',
+            'packages/events/src/Features/Governance/Models/EventSubmission.php',
+            'packages/events/src/Features/Taxonomy/Models/EventTaxonomy.php',
+            'packages/events/src/Features/Taxonomy/Models/EventTerm.php',
+            'packages/events/src/Features/Taxonomy/Models/EventTermPolicy.php',
+            'packages/events/src/Features/Venues/Models/FacilityType.php',
+            'packages/events/src/Features/Venues/Models/Venue.php',
+            'packages/events/src/Features/Venues/Models/VenueFacility.php',
+            'packages/events/src/Features/Venues/Models/VenueSpace.php',
+            'packages/events/src/Features/Venues/Models/VenueSpaceType.php',
         ]);
 });

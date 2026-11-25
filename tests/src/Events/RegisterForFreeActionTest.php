@@ -3,16 +3,16 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Events\Actions\RegisterForFreeAction;
 use AIArmada\Events\Exceptions\EventCapacityExceededException;
 use AIArmada\Events\Exceptions\EventRegistrationNotAvailableException;
 use AIArmada\Events\Exceptions\NotFreeEventException;
 use AIArmada\Events\Exceptions\OpenDoorRegistrationBlockedException;
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventOccurrence;
-use AIArmada\Events\Models\EventRegistration;
-use AIArmada\Events\Models\EventSession;
-use AIArmada\Events\States\OccurrenceStatus\Cancelled;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
+use AIArmada\Events\Features\Catalog\Models\EventSession;
+use AIArmada\Events\Features\Catalog\States\OccurrenceStatus\Cancelled;
+use AIArmada\Events\Features\Registrations\Actions\RegisterForFreeAction;
+use AIArmada\Events\Features\Registrations\Models\EventRegistration;
 
 beforeEach(function (): void {
     config()->set('events.features.free_only.auto_derive_pricing_from_ticket_types', true);
@@ -25,14 +25,15 @@ it('registers a single participant for a free event', function (): void {
         $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
 
         $registrations = app(RegisterForFreeAction::class)->execute(
-            target: $occurrence,
+            'occurrence',
+            (string) $occurrence->getKey(),
             participants: [
                 ['name' => 'Alice', 'email' => 'alice@example.com', 'is_primary' => true],
             ],
         );
 
         expect($registrations)->toHaveCount(1);
-        $registration = $registrations->first();
+        $registration = EventRegistration::query()->findOrFail($registrations[0]);
         expect($registration->exists)->toBeTrue();
         expect($registration->status->getValue())->toBe('confirmed');
         expect($registration->event_id)->toBe($event->id);
@@ -46,7 +47,8 @@ it('registers multiple participants', function (): void {
         $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
 
         $registrations = app(RegisterForFreeAction::class)->execute(
-            target: $occurrence,
+            'occurrence',
+            (string) $occurrence->getKey(),
             participants: [
                 ['name' => 'Alice', 'email' => 'alice@example.com', 'is_primary' => true],
                 ['name' => 'Bob', 'email' => 'bob@example.com'],
@@ -68,19 +70,21 @@ it('returns the same registration batch for an idempotent retry', function (): v
 
         $action = app(RegisterForFreeAction::class);
         $first = $action->execute(
-            target: $occurrence,
+            'occurrence',
+            (string) $occurrence->getKey(),
             participants: $participants,
             options: ['idempotency_key' => 'checkout-attempt-1'],
         );
         $retry = $action->execute(
-            target: $occurrence,
+            'occurrence',
+            (string) $occurrence->getKey(),
             participants: $participants,
             options: ['idempotency_key' => 'checkout-attempt-1'],
         );
 
         expect($first)->toHaveCount(2)
             ->and($retry)->toHaveCount(2)
-            ->and($retry->pluck('id')->all())->toBe($first->pluck('id')->all())
+            ->and($retry)->toBe($first)
             ->and(EventRegistration::query()->where('event_occurrence_id', $occurrence->id)->count())->toBe(2);
     });
 });
@@ -91,7 +95,8 @@ it('throws for paid events', function (): void {
         $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
 
         app(RegisterForFreeAction::class)->execute(
-            target: $occurrence,
+            'occurrence',
+            (string) $occurrence->getKey(),
             participants: [['name' => 'Alice', 'is_primary' => true]],
         );
     }))->toThrow(NotFreeEventException::class);
@@ -104,7 +109,8 @@ it('throws for open-door events with block mode', function (): void {
         $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
 
         app(RegisterForFreeAction::class)->execute(
-            target: $occurrence,
+            'occurrence',
+            (string) $occurrence->getKey(),
             participants: [['name' => 'Alice', 'is_primary' => true]],
         );
     }))->toThrow(OpenDoorRegistrationBlockedException::class);
@@ -117,7 +123,8 @@ it('rejects registration when the occurrence lifecycle is closed', function (): 
         $occurrence->status->transitionTo(Cancelled::class);
 
         app(RegisterForFreeAction::class)->execute(
-            target: $occurrence,
+            'occurrence',
+            (string) $occurrence->getKey(),
             participants: [['name' => 'Alice', 'is_primary' => true]],
         );
     }))->toThrow(EventRegistrationNotAvailableException::class);
@@ -129,12 +136,13 @@ it('creates interested registrations when passes are not issued', function (): v
         $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
 
         $registrations = app(RegisterForFreeAction::class)->execute(
-            target: $occurrence,
+            'occurrence',
+            (string) $occurrence->getKey(),
             participants: [['name' => 'Alice', 'is_primary' => true]],
             options: ['with_pass' => false],
         );
 
-        expect($registrations->first()->status->getValue())->toBe('interested');
+        expect(EventRegistration::query()->findOrFail($registrations[0])->status->getValue())->toBe('interested');
     });
 });
 
@@ -144,11 +152,12 @@ it('creates confirmed registrations with passes when requested', function (): vo
         $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
 
         $registrations = app(RegisterForFreeAction::class)->execute(
-            target: $occurrence,
+            'occurrence',
+            (string) $occurrence->getKey(),
             participants: [['name' => 'Alice', 'is_primary' => true]],
         );
 
-        $registration = $registrations->first();
+        $registration = EventRegistration::query()->findOrFail($registrations[0]);
         expect($registration->status->getValue())->toBe('confirmed');
         expect($registration->passes)->toHaveCount(1);
     });
@@ -159,12 +168,13 @@ it('accepts event-level target', function (): void {
         $event = Event::factory()->free()->published()->create();
 
         $registrations = app(RegisterForFreeAction::class)->execute(
-            target: $event,
+            'event',
+            (string) $event->getKey(),
             participants: [['name' => 'Alice', 'is_primary' => true]],
         );
 
         expect($registrations)->toHaveCount(1);
-        expect($registrations->first()->event_id)->toBe($event->id);
+        expect(EventRegistration::query()->findOrFail($registrations[0])->event_id)->toBe($event->id);
     });
 });
 
@@ -175,7 +185,8 @@ it('uses ticket-type derived free pricing', function (): void {
         $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
 
         $registrations = app(RegisterForFreeAction::class)->execute(
-            target: $occurrence,
+            'occurrence',
+            (string) $occurrence->getKey(),
             participants: [['name' => 'Alice', 'is_primary' => true]],
         );
 
@@ -197,7 +208,8 @@ it('falls back to occurrence capacity for session registrations', function (): v
         ]);
 
         app(RegisterForFreeAction::class)->execute(
-            target: $session,
+            'session',
+            (string) $session->getKey(),
             participants: [
                 ['name' => 'Alice', 'is_primary' => true],
                 ['name' => 'Bob', 'is_primary' => false],

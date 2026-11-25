@@ -7,10 +7,10 @@ namespace AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource\Relatio
 use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventOccurrence;
-use AIArmada\Events\Models\EventSession;
-use AIArmada\Events\Support\EventTicketScope;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
+use AIArmada\Events\Features\Catalog\Models\EventSession;
+use AIArmada\Events\Platform\EventTicketScope;
 use AIArmada\Products\Models\Product;
 use AIArmada\Ticketing\Models\TicketType;
 use Filament\Actions\BulkActionGroup;
@@ -105,7 +105,8 @@ final class CommissionRulesRelationManager extends RelationManager
                             ->get(['id', 'name', 'code', 'ticketable_id', 'ticketable_type']);
 
                         foreach ($ticketTypes as $ticket) {
-                            $eventName = EventTicketScope::event($ticket)?->title ?? 'Unknown Event';
+                            $event = EventTicketScope::event($ticket);
+                            $eventName = $event instanceof Event ? $event->title : 'Unknown Event';
                             $code = filled($ticket->code) ? " ({$ticket->code})" : '';
                             $options["ticket:{$ticket->id}"] = "[{$eventName}] {$ticket->name}{$code}";
                         }

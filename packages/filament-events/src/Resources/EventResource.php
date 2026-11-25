@@ -8,10 +8,10 @@ use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Events\Contracts\EventCloneService;
 use AIArmada\Events\Contracts\EventLifecycleWorkflow;
-use AIArmada\Events\Enums\EventVisibility;
-use AIArmada\Events\Enums\RegistrationMode;
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Support\ModelResolver;
+use AIArmada\Events\Data\EventVisibility;
+use AIArmada\Events\Data\RegistrationMode;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Platform\ModelResolver;
 use AIArmada\FilamentEvents\Actions\Exporter\EventExporter;
 use AIArmada\FilamentEvents\Contracts\EventFormExtension;
 use AIArmada\Ticketing\Enums\PricingMode;
@@ -184,7 +184,7 @@ class EventResource extends Resource
                 ->icon('heroicon-o-check-circle')
                 ->color('success')
                 ->action(static function (Event $record): void {
-                    app(EventLifecycleWorkflow::class)->publish($record);
+                    app(EventLifecycleWorkflow::class)->publish((string) $record->getKey());
                 })
                 ->visible(static fn (?Event $record): bool => $record !== null && in_array((string) $record->status, ['draft', 'pending', 'pending_review', 'needs_changes'], true))
                 ->requiresConfirmation(),
@@ -193,7 +193,7 @@ class EventResource extends Resource
                 ->icon('heroicon-o-archive-box')
                 ->color('warning')
                 ->action(static function (Event $record): void {
-                    app(EventLifecycleWorkflow::class)->archive($record);
+                    app(EventLifecycleWorkflow::class)->archive('event', (string) $record->getKey());
                 })
                 ->visible(static fn (?Event $record): bool => $record !== null && (string) $record->status === 'approved')
                 ->requiresConfirmation(),
@@ -205,7 +205,7 @@ class EventResource extends Resource
                     Textarea::make('reason')->required(),
                 ])
                 ->action(static function (array $data, Event $record): void {
-                    app(EventLifecycleWorkflow::class)->cancel($record, $data['reason']);
+                    app(EventLifecycleWorkflow::class)->cancel('event', (string) $record->getKey(), $data['reason']);
                 })
                 ->visible(static fn (?Event $record): bool => $record !== null && ! in_array((string) $record->status, ['cancelled', 'completed', 'archived'], true))
                 ->requiresConfirmation(),
@@ -214,10 +214,10 @@ class EventResource extends Resource
                 ->icon('heroicon-o-document-duplicate')
                 ->color('gray')
                 ->action(static function (Event $record): void {
-                    $clone = app(EventCloneService::class)->cloneEvent($record, [
+                    $cloneId = app(EventCloneService::class)->cloneEvent((string) $record->getKey(), [
                         'clone_occurrences' => false,
                     ]);
-                    redirect(static::getUrl('edit', ['record' => $clone]));
+                    redirect(static::getUrl('edit', ['record' => $cloneId]));
                 })
                 ->requiresConfirmation(),
         ];

@@ -1,0 +1,125 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Events\Features\Catalog\Models;
+
+use AIArmada\Events\Database\Factories\EventAvailabilityBlockFactory;
+use AIArmada\Events\Platform\ScopesByEventOwner;
+use Carbon\CarbonImmutable;
+use Eloquent;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Carbon;
+
+/**
+ * @property string $id
+ * @property string $blockable_type
+ * @property string $blockable_id
+ * @property string|null $event_id
+ * @property string|null $event_occurrence_id
+ * @property string|null $event_session_id
+ * @property string|null $reason
+ * @property string|null $notes
+ * @property CarbonImmutable $starts_at
+ * @property CarbonImmutable $ends_at
+ * @property string $timezone
+ * @property string $status
+ * @property string $visibility
+ * @property string|null $created_by_type
+ * @property string|null $created_by_id
+ * @property CarbonImmutable|null $released_at
+ * @property CarbonImmutable|null $expired_at
+ * @property CarbonImmutable|null $archived_at
+ * @property array|null $metadata
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Model|Eloquent $blockable
+ * @property-read Event|null $event
+ * @property-read EventOccurrence|null $occurrence
+ * @property-read EventSession|null $session
+ */
+final class EventAvailabilityBlock extends Model
+{
+    use HasFactory;
+    use HasUuids;
+    use ScopesByEventOwner;
+
+    protected $fillable = [
+        'blockable_type', 'blockable_id',
+        'event_id', 'event_occurrence_id', 'event_session_id',
+        'reason', 'notes',
+        'starts_at', 'ends_at', 'timezone',
+        'status', 'visibility',
+        'created_by_type', 'created_by_id',
+        'released_at', 'expired_at', 'archived_at',
+        'metadata',
+    ];
+
+    public function getTable(): string
+    {
+        return $this->table ?? config('events.database.tables.event_availability_blocks', 'event_availability_blocks');
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'starts_at' => 'immutable_datetime',
+            'ends_at' => 'immutable_datetime',
+            'released_at' => 'immutable_datetime',
+            'expired_at' => 'immutable_datetime',
+            'archived_at' => 'immutable_datetime',
+            'metadata' => 'array',
+        ];
+    }
+
+    /**
+     * @return MorphTo<Model, $this>
+     */
+    public function blockable(): MorphTo
+    {
+        return $this->morphTo();
+    }
+
+    /**
+     * @return BelongsTo<Event, $this>
+     */
+    public function event(): BelongsTo
+    {
+        return $this->belongsTo(Event::class);
+    }
+
+    protected static function eventOwnerMorphRelation(): ?string
+    {
+        return 'blockable';
+    }
+
+    protected static function eventOwnerEventIdColumn(): ?string
+    {
+        return 'event_id';
+    }
+
+    /**
+     * @return BelongsTo<EventOccurrence, $this>
+     */
+    public function occurrence(): BelongsTo
+    {
+        return $this->belongsTo(EventOccurrence::class, 'event_occurrence_id');
+    }
+
+    /**
+     * @return BelongsTo<EventSession, $this>
+     */
+    public function session(): BelongsTo
+    {
+        return $this->belongsTo(EventSession::class, 'event_session_id');
+    }
+
+    protected static function newFactory(): EventAvailabilityBlockFactory
+    {
+        return EventAvailabilityBlockFactory::new();
+    }
+}

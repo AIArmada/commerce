@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentEvents\Resources\EventResource\RelationManagers;
 
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
-use AIArmada\Events\States\RegistrationStatus\RegistrationStatus;
+use AIArmada\Events\Features\Registrations\States\RegistrationStatus\RegistrationStatus;
 use Filament\Actions\ViewAction;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Support\Contracts\HasColor;

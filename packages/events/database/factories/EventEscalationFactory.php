@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Database\Factories;
 
-use AIArmada\Events\Enums\EventEscalationType;
-use AIArmada\Events\Models\EventEscalation;
+use AIArmada\Events\Data\EventEscalationType;
+use AIArmada\Events\Features\Governance\Models\EventEscalation;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 

@@ -3,12 +3,12 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventRegistration;
-use AIArmada\Events\Models\EventSession;
-use AIArmada\Events\Models\Venue;
-use AIArmada\Events\Models\VenueSpace;
-use AIArmada\Events\Support\ModelResolver;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\EventSession;
+use AIArmada\Events\Features\Registrations\Models\EventRegistration;
+use AIArmada\Events\Features\Venues\Models\Venue;
+use AIArmada\Events\Features\Venues\Models\VenueSpace;
+use AIArmada\Events\Platform\ModelResolver;
 use AIArmada\FilamentEvents\Actions\Exporter\VenueExporter;
 use AIArmada\FilamentEvents\Actions\Importer\EventRegistrationImporter;
 use AIArmada\FilamentEvents\Actions\Importer\EventSessionImporter;

@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "name": "Changes",
+  "owns": {
+    "table:event_change_logs": [
+      "AIArmada\\Events\\Features\\Changes\\Actions\\DefaultEventChangeNoticeWorkflow",
+      "AIArmada\\Events\\Features\\Changes\\Actions\\DeleteChangesScopeDependents",
+      "AIArmada\\Events\\Features\\Changes\\Actions\\DispatchEventChangeChainAction",
+      "AIArmada\\Events\\Features\\Changes\\Actions\\RevertEventChangeChainAction"
+    ],
+    "table:event_updates": [
+      "AIArmada\\Events\\Features\\Changes\\Actions\\DeleteChangesScopeDependents",
+      "AIArmada\\Events\\Features\\Changes\\Actions\\DeleteUpdateDependents",
+      "AIArmada\\Events\\Features\\Changes\\Actions\\DispatchEventChangeChainAction",
+      "AIArmada\\Events\\Features\\Changes\\Actions\\RevertEventChangeChainAction"
+    ],
+    "table:event_update_items": [
+      "AIArmada\\Events\\Features\\Changes\\Actions\\DeleteChangesScopeDependents",
+      "AIArmada\\Events\\Features\\Changes\\Actions\\DeleteUpdateDependents",
+      "AIArmada\\Events\\Features\\Changes\\Actions\\DispatchEventChangeChainAction"
+    ]
+  },
+  "extensions": {
+    "events.cascade-delete": [
+      "AIArmada\\Events\\Features\\Changes\\Extensions\\ChangesDeleteCascadeExtension"
+    ]
+  }
+}

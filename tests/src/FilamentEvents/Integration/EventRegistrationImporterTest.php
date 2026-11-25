@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventRegistration;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Registrations\Models\EventRegistration;
 use AIArmada\FilamentEvents\Actions\Importer\EventRegistrationImporter;
 use Filament\Actions\Imports\Models\Import;
 use Illuminate\Contracts\Auth\Authenticatable;

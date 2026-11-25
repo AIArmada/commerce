@@ -6,8 +6,8 @@ namespace AIArmada\FilamentEvents\Actions\Importer;
 
 use AIArmada\Addressing\Models\Address;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Events\Models\Venue;
-use AIArmada\Events\Support\ModelResolver;
+use AIArmada\Events\Features\Venues\Models\Venue;
+use AIArmada\Events\Platform\ModelResolver;
 use AIArmada\FilamentEvents\Actions\Importer\Concerns\AuthorizesImportedRecords;
 use Filament\Actions\Imports\ImportColumn;
 use Filament\Actions\Imports\Importer;
@@ -27,7 +27,10 @@ final class VenueImporter extends Importer
      */
     public static function getModel(): string
     {
-        return ModelResolver::venueClass();
+        /** @var class-string<Venue> $model */
+        $model = ModelResolver::venueClass();
+
+        return $model;
     }
 
     public static function getColumns(): array

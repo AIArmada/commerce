@@ -6,11 +6,11 @@ use AIArmada\Events\Contracts\RegistrationServiceInterface;
 use AIArmada\Events\Events\EventRegistrationCompleted;
 use AIArmada\Events\Events\EventRegistrationRefunded;
 use AIArmada\Events\Events\EventRegistrationRefundRestored;
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventOccurrence;
-use AIArmada\Events\Models\EventRegistration;
-use AIArmada\Events\Models\EventSession;
-use AIArmada\Events\States\RegistrationStatus\Pending;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
+use AIArmada\Events\Features\Catalog\Models\EventSession;
+use AIArmada\Events\Features\Registrations\Models\EventRegistration;
+use AIArmada\Events\Features\Registrations\States\RegistrationStatus\Pending;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Event as EventFacade;
 
@@ -18,7 +18,7 @@ it('creates individual registration', function (): void {
     $event = Event::factory()->create();
     $ticketType = createEventTicketType($event);
 
-    $registration = app(RegistrationServiceInterface::class)->register([
+    $registrationId = app(RegistrationServiceInterface::class)->register([
         'event_id' => $event->id,
         'registration_type' => 'individual',
         'status' => 'pending',
@@ -32,6 +32,8 @@ it('creates individual registration', function (): void {
         ],
     ]);
 
+    $registration = EventRegistration::query()->findOrFail($registrationId);
+
     expect($registration->id)->not->toBeNull();
     expect($registration->registration_no)->toStartWith('REG-');
     expect($registration->registered_at)->not->toBeNull();
@@ -42,7 +44,7 @@ it('creates individual registration', function (): void {
 it('accepts a registration state object as the initial status', function (): void {
     $event = Event::factory()->create();
 
-    $registration = app(RegistrationServiceInterface::class)->register([
+    $registrationId = app(RegistrationServiceInterface::class)->register([
         'event_id' => $event->id,
         'registration_type' => 'individual',
         'status' => new Pending(new EventRegistration),
@@ -50,13 +52,15 @@ it('accepts a registration state object as the initial status', function (): voi
         'total_participants' => 1,
     ]);
 
+    $registration = EventRegistration::query()->findOrFail($registrationId);
+
     expect($registration->status->getValue())->toBe('pending');
 });
 
 it('persists answers supplied for each participant', function (): void {
     $event = Event::factory()->create();
 
-    $registration = app(RegistrationServiceInterface::class)->register([
+    $registrationId = app(RegistrationServiceInterface::class)->register([
         'event_id' => $event->id,
         'registration_type' => 'individual',
         'status' => 'pending',
@@ -77,6 +81,7 @@ it('persists answers supplied for each participant', function (): void {
         ],
     ]);
 
+    $registration = EventRegistration::query()->findOrFail($registrationId);
     $answer = $registration->participants()->firstOrFail()->answers()->first();
 
     expect($answer)->not->toBeNull()
@@ -106,7 +111,7 @@ it('cancels registration without deletion', function (): void {
     $event = Event::factory()->create();
     $registration = EventRegistration::factory()->create(['event_id' => $event->id]);
 
-    app(RegistrationServiceInterface::class)->cancel($registration, 'Changed mind');
+    app(RegistrationServiceInterface::class)->cancel((string) $registration->getKey(), 'Changed mind');
 
     expect($registration->fresh()->status->getValue())->toBe('cancelled');
 });
@@ -121,7 +126,7 @@ it('records the completion timestamp when completing a registration', function (
 
     EventFacade::fake([EventRegistrationCompleted::class]);
 
-    app(RegistrationServiceInterface::class)->complete($registration);
+    app(RegistrationServiceInterface::class)->complete((string) $registration->getKey());
 
     $completed = $registration->fresh();
 
@@ -130,7 +135,7 @@ it('records the completion timestamp when completing a registration', function (
 
     EventFacade::assertDispatched(
         EventRegistrationCompleted::class,
-        fn (EventRegistrationCompleted $event): bool => $event->registration->is($registration),
+        fn (EventRegistrationCompleted $event): bool => $event->registrationId === (string) $registration->getKey(),
     );
 });
 
@@ -143,8 +148,8 @@ it('preserves the original lifecycle timestamp when restoring a refund-pending r
     ]);
     $approvedAt = $registration->fresh()->approved_at;
 
-    app(RegistrationServiceInterface::class)->markRefundPending($registration, 'Payment provider retry');
-    app(RegistrationServiceInterface::class)->restoreFromRefundPending($registration, 'Payment provider recovered');
+    app(RegistrationServiceInterface::class)->markRefundPending((string) $registration->getKey(), 'Payment provider retry');
+    app(RegistrationServiceInterface::class)->restoreFromRefundPending((string) $registration->getKey(), 'Payment provider recovered');
 
     $restored = $registration->fresh();
 
@@ -165,8 +170,8 @@ it('emits a single refunded event under duplicate refund calls', function (): vo
     EventFacade::fake([EventRegistrationRefunded::class]);
 
     $service = app(RegistrationServiceInterface::class);
-    $service->refund($registration, 'Duplicate webhook delivery');
-    $service->refund($registration->fresh(), 'Duplicate webhook delivery');
+    $service->refund((string) $registration->getKey(), 'Duplicate webhook delivery');
+    $service->refund((string) $registration->fresh()->getKey(), 'Duplicate webhook delivery');
 
     EventFacade::assertDispatchedTimes(EventRegistrationRefunded::class, 1);
 
@@ -182,12 +187,12 @@ it('restores a refund-pending registration exactly once under duplicate calls', 
     ]);
 
     $service = app(RegistrationServiceInterface::class);
-    $service->markRefundPending($registration, 'Payment provider retry');
+    $service->markRefundPending((string) $registration->getKey(), 'Payment provider retry');
 
     EventFacade::fake([EventRegistrationRefundRestored::class]);
 
-    $service->restoreFromRefundPending($registration->fresh(), 'Payment provider recovered');
-    $service->restoreFromRefundPending($registration->fresh(), 'Payment provider recovered');
+    $service->restoreFromRefundPending((string) $registration->fresh()->getKey(), 'Payment provider recovered');
+    $service->restoreFromRefundPending((string) $registration->fresh()->getKey(), 'Payment provider recovered');
 
     EventFacade::assertDispatchedTimes(EventRegistrationRefundRestored::class, 1);
 

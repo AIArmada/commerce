@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Contacting\Data\ContactMethodData;
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventOccurrence;
-use AIArmada\Events\Models\EventRegistration;
-use AIArmada\Events\Models\EventRegistrationItem;
-use AIArmada\Events\Resolvers\DefaultEventOrderItemFulfillmentResolver;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
+use AIArmada\Events\Features\Commerce\Queries\DefaultEventOrderItemFulfillmentResolver;
+use AIArmada\Events\Features\Registrations\Models\EventRegistration;
+use AIArmada\Events\Features\Registrations\Models\EventRegistrationItem;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
 use AIArmada\Ticketing\Models\TicketType;
@@ -79,7 +79,7 @@ it('resolves order item fulfillment payloads from the registration participants'
             'external_order_item_type' => OrderItem::class,
         ]);
 
-        $payload = app(DefaultEventOrderItemFulfillmentResolver::class)->resolve($registrationItem);
+        $payload = app(DefaultEventOrderItemFulfillmentResolver::class)->resolve((string) $registrationItem->getKey());
 
         expect($payload)->toBe([
             'event_id' => $event->id,

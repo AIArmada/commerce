@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Database\Factories;
 
-use AIArmada\Events\Models\EventSubmissionLog;
+use AIArmada\Events\Features\Governance\Models\EventSubmissionLog;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

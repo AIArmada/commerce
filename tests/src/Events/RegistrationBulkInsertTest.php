@@ -3,14 +3,15 @@
 declare(strict_types=1);
 
 use AIArmada\Events\Contracts\RegistrationServiceInterface;
-use AIArmada\Events\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Registrations\Models\EventRegistration;
 use Illuminate\Support\Facades\DB;
 
 it('persists bulk children with identical data to per-row creates', function (): void {
     $event = Event::factory()->create();
     $ticketType = createEventTicketType($event);
 
-    $registration = app(RegistrationServiceInterface::class)->register([
+    $registrationId = app(RegistrationServiceInterface::class)->register([
         'event_id' => $event->id,
         'registration_type' => 'individual',
         'status' => 'pending',
@@ -49,6 +50,8 @@ it('persists bulk children with identical data to per-row creates', function ():
             ],
         ],
     ]);
+
+    $registration = EventRegistration::query()->findOrFail($registrationId);
 
     expect($registration->participants)->toHaveCount(1)
         ->and($registration->items)->toHaveCount(2)
@@ -108,7 +111,7 @@ it('inserts bulk children in chunks instead of one query per row', function (): 
         $statements[] = $query->sql;
     });
 
-    $registration = app(RegistrationServiceInterface::class)->register([
+    $registrationId = app(RegistrationServiceInterface::class)->register([
         'event_id' => $event->id,
         'registration_type' => 'individual',
         'status' => 'pending',
@@ -117,6 +120,8 @@ it('inserts bulk children in chunks instead of one query per row', function (): 
         'items' => $items,
         'answers' => $answers,
     ]);
+
+    $registration = EventRegistration::query()->findOrFail($registrationId);
 
     $itemInserts = array_filter(
         $statements,
@@ -152,7 +157,7 @@ it('checks answer participants with one preloaded query', function (): void {
         $statements[] = $query->sql;
     });
 
-    $registration = app(RegistrationServiceInterface::class)->register([
+    $registrationId = app(RegistrationServiceInterface::class)->register([
         'event_id' => $event->id,
         'registration_type' => 'individual',
         'status' => 'pending',
@@ -163,6 +168,8 @@ it('checks answer participants with one preloaded query', function (): void {
         ],
         'answers' => $answers,
     ]);
+
+    $registration = EventRegistration::query()->findOrFail($registrationId);
 
     $participantSelects = array_filter(
         $statements,
@@ -176,7 +183,7 @@ it('checks answer participants with one preloaded query', function (): void {
 it('rejects answers linked to another registration participant', function (): void {
     $event = Event::factory()->create();
 
-    $other = app(RegistrationServiceInterface::class)->register([
+    $otherId = app(RegistrationServiceInterface::class)->register([
         'event_id' => $event->id,
         'registration_type' => 'individual',
         'status' => 'pending',
@@ -186,6 +193,8 @@ it('rejects answers linked to another registration participant', function (): vo
             ['name' => 'Foreign Participant'],
         ],
     ]);
+
+    $other = EventRegistration::query()->findOrFail($otherId);
 
     $foreignId = $other->participants()->firstOrFail()->getKey();
 

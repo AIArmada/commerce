@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventOccurrence;
-use AIArmada\Events\Models\EventRegistration;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
+use AIArmada\Events\Features\Registrations\Models\EventRegistration;
 use Carbon\CarbonImmutable;
 
 it('counts blocked participants when calculating remaining occurrence capacity', function (): void {

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Events\Actions\RevokePassesForRegistrationAction;
-use AIArmada\Events\Models\EventRegistration;
+use AIArmada\Events\Features\Commerce\Actions\RevokePassesForRegistrationAction;
+use AIArmada\Events\Features\Registrations\Models\EventRegistration;
 use AIArmada\Ticketing\Models\Pass;
 use AIArmada\Ticketing\Models\TicketType;
 use AIArmada\Ticketing\Services\DefaultPassIssuer;
@@ -88,7 +88,7 @@ it('revokes passes by uuid registration through the string morph', function (): 
         );
     });
 
-    $revoked = OwnerContext::withOwner($owner, fn (): int => app(RevokePassesForRegistrationAction::class)->handle($registration));
+    $revoked = OwnerContext::withOwner($owner, fn (): int => app(RevokePassesForRegistrationAction::class)->handle((string) $registration->getKey()));
 
     expect($revoked)->toBe(1);
 });

@@ -4,12 +4,18 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Events;
 
-use AIArmada\Events\Models\EventSession;
+use Carbon\CarbonImmutable;
 
-final class EventSessionRescheduled
+final readonly class EventSessionRescheduled
 {
     public function __construct(
-        public EventSession $oldSession,
-        public EventSession $newSession,
+        public string $sessionId,
+        public string $eventId,
+        public CarbonImmutable $startsAt,
+        public CarbonImmutable $endsAt,
+        public ?string $occurrenceId = null,
+        public ?CarbonImmutable $previousStartsAt = null,
+        public ?CarbonImmutable $previousEndsAt = null,
+        public ?string $reason = null,
     ) {}
 }

@@ -7,10 +7,10 @@ namespace AIArmada\FilamentEvents\Resources;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Events\Contracts\EventCloneService;
 use AIArmada\Events\Contracts\EventLifecycleWorkflow;
-use AIArmada\Events\Enums\EventVisibility;
-use AIArmada\Events\Enums\RegistrationMode;
-use AIArmada\Events\Models\EventSession;
-use AIArmada\Events\States\OccurrenceStatus\OccurrenceStatus as OccurrenceStatusState;
+use AIArmada\Events\Data\EventVisibility;
+use AIArmada\Events\Data\RegistrationMode;
+use AIArmada\Events\Features\Catalog\Models\EventSession;
+use AIArmada\Events\Features\Catalog\States\OccurrenceStatus\OccurrenceStatus as OccurrenceStatusState;
 use AIArmada\FilamentEvents\Actions\Exporter\EventSessionExporter;
 use AIArmada\FilamentEvents\Actions\Importer\EventSessionImporter;
 use AIArmada\Ticketing\Enums\PricingMode;
@@ -137,7 +137,7 @@ final class EventSessionResource extends Resource
                         DateTimePicker::make('expected_starts_at')->label('Expected New Start'),
                     ])
                     ->action(function (array $data, EventSession $record): void {
-                        app(EventLifecycleWorkflow::class)->delay($record, $data['reason'] ?? null, $data['expected_starts_at'] ?? null);
+                        app(EventLifecycleWorkflow::class)->delay('session', (string) $record->getKey(), $data['reason'] ?? null, $data['expected_starts_at'] ?? null);
                     })
                     ->visible(fn (?EventSession $record) => in_array((string) ($record?->status ?? ''), ['published', 'scheduled'], true))
                     ->requiresConfirmation(),
@@ -149,7 +149,7 @@ final class EventSessionResource extends Resource
                         Textarea::make('reason')->required(),
                     ])
                     ->action(function (array $data, EventSession $record): void {
-                        app(EventLifecycleWorkflow::class)->postpone($record, $data['reason']);
+                        app(EventLifecycleWorkflow::class)->postpone('session', (string) $record->getKey(), $data['reason']);
                     })
                     ->visible(fn (?EventSession $record) => in_array((string) ($record?->status ?? ''), ['published', 'scheduled'], true))
                     ->requiresConfirmation(),
@@ -161,7 +161,7 @@ final class EventSessionResource extends Resource
                         Textarea::make('reason')->required(),
                     ])
                     ->action(function (array $data, EventSession $record): void {
-                        app(EventLifecycleWorkflow::class)->cancel($record, $data['reason']);
+                        app(EventLifecycleWorkflow::class)->cancel('session', (string) $record->getKey(), $data['reason']);
                     })
                     ->visible(fn (?EventSession $record) => ! in_array((string) ($record?->status ?? ''), ['cancelled', 'completed', 'archived'], true))
                     ->requiresConfirmation(),
@@ -170,7 +170,7 @@ final class EventSessionResource extends Resource
                     ->icon('heroicon-o-check')
                     ->color('success')
                     ->action(function (EventSession $record): void {
-                        app(EventLifecycleWorkflow::class)->complete($record);
+                        app(EventLifecycleWorkflow::class)->complete('session', (string) $record->getKey());
                     })
                     ->visible(fn (?EventSession $record) => (string) ($record?->status ?? '') === 'published')
                     ->requiresConfirmation(),
@@ -179,8 +179,8 @@ final class EventSessionResource extends Resource
                     ->icon('heroicon-o-document-duplicate')
                     ->color('gray')
                     ->action(function (EventSession $record): void {
-                        $clone = app(EventCloneService::class)->cloneSession($record);
-                        redirect(EventSessionResource::getUrl('edit', ['record' => $clone]));
+                        $cloneId = app(EventCloneService::class)->cloneSession((string) $record->getKey());
+                        redirect(EventSessionResource::getUrl('edit', ['record' => $cloneId]));
                     })
                     ->requiresConfirmation(),
             ]);

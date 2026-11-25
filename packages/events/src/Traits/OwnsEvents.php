@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Traits;
 
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Support\ModelResolver;
+use AIArmada\Events\Data\EventVisibility;
+use AIArmada\Events\Platform\ModelResolver;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 trait OwnsEvents
 {
     /**
-     * @return MorphMany<Event, $this>
+     * @return MorphMany<Model, $this>
      */
     public function ownedEvents(): MorphMany
     {
@@ -20,7 +21,7 @@ trait OwnsEvents
 
     public function defaultEventVisibility(): string
     {
-        return Event::PUBLIC;
+        return EventVisibility::Public->value;
     }
 
     public function defaultEventApprovalRequired(): bool

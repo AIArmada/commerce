@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentEvents\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
-use AIArmada\Events\Models\EventTemplate;
+use AIArmada\Events\Features\Catalog\Models\EventTemplate;
 use AIArmada\FilamentEvents\Resources\EventTemplateResource\Pages\CreateEventTemplate;
 use AIArmada\FilamentEvents\Resources\EventTemplateResource\Pages\EditEventTemplate;
 use AIArmada\FilamentEvents\Resources\EventTemplateResource\Pages\ListEventTemplates;

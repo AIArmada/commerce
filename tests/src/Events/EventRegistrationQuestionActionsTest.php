@@ -2,18 +2,19 @@
 
 declare(strict_types=1);
 
-use AIArmada\Events\Actions\ArchiveEventRegistrationQuestionAction;
-use AIArmada\Events\Actions\CreateEventRegistrationQuestionAction;
-use AIArmada\Events\Actions\UpdateEventRegistrationQuestionAction;
 use AIArmada\Events\Contracts\EventRegistrationQuestionResolver;
-use AIArmada\Events\Enums\EventRegistrationQuestionStatus;
-use AIArmada\Events\Enums\EventRegistrationQuestionType;
+use AIArmada\Events\Data\EventRegistrationQuestionStatus;
+use AIArmada\Events\Data\EventRegistrationQuestionType;
 use AIArmada\Events\Events\EventRegistrationQuestionArchived;
 use AIArmada\Events\Events\EventRegistrationQuestionCreated;
 use AIArmada\Events\Events\EventRegistrationQuestionUpdated;
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventOccurrence;
-use AIArmada\Events\Models\EventSession;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
+use AIArmada\Events\Features\Catalog\Models\EventSession;
+use AIArmada\Events\Features\Registrations\Actions\ArchiveEventRegistrationQuestionAction;
+use AIArmada\Events\Features\Registrations\Actions\CreateEventRegistrationQuestionAction;
+use AIArmada\Events\Features\Registrations\Actions\UpdateEventRegistrationQuestionAction;
+use AIArmada\Events\Features\Registrations\Models\EventRegistrationQuestion;
 use Illuminate\Support\Facades\Event as EventFacade;
 
 it('creates, updates, and archives a question without deleting its definition', function (): void {
@@ -24,12 +25,14 @@ it('creates, updates, and archives a question without deleting its definition', 
         EventRegistrationQuestionArchived::class,
     ]);
 
-    $question = app(CreateEventRegistrationQuestionAction::class)->handle($event, [
+    $questionId = app(CreateEventRegistrationQuestionAction::class)->handle('event', (string) $event->getKey(), [
         'question' => '  Meal   preference  ',
         'type' => EventRegistrationQuestionType::Select->value,
         'options' => ['Halal', 'Vegetarian', 'Halal'],
         'is_required' => true,
     ]);
+
+    $question = EventRegistrationQuestion::query()->findOrFail($questionId);
 
     expect($question->field_key)->toBe('meal_preference')
         ->and($question->question)->toBe('Meal preference')
@@ -38,19 +41,18 @@ it('creates, updates, and archives a question without deleting its definition', 
         ->and($question->is_required)->toBeTrue()
         ->and($question->status)->toBe(EventRegistrationQuestionStatus::Active);
 
-    $updated = app(UpdateEventRegistrationQuestionAction::class)->handle($question, [
+    $changes = app(UpdateEventRegistrationQuestionAction::class)->handle((string) $question->getKey(), [
         'question' => 'Meal choice',
         'options' => ['Halal', 'Vegetarian', 'No preference'],
     ]);
 
-    expect($updated['changes'])->toHaveKeys(['question', 'options'])
-        ->and($updated['question']->fresh()->question)->toBe('Meal choice');
+    expect($changes)->toHaveKeys(['question', 'options'])
+        ->and($question->fresh()->question)->toBe('Meal choice');
 
-    $archived = app(ArchiveEventRegistrationQuestionAction::class)->handle($question);
+    app(ArchiveEventRegistrationQuestionAction::class)->handle((string) $question->getKey());
 
-    expect($archived->getKey())->toBe($question->getKey())
-        ->and($archived->fresh()->status)->toBe(EventRegistrationQuestionStatus::Archived)
-        ->and($archived->fresh()->archived_at)->not->toBeNull();
+    expect($question->fresh()->status)->toBe(EventRegistrationQuestionStatus::Archived)
+        ->and($question->fresh()->archived_at)->not->toBeNull();
 
     EventFacade::assertDispatched(EventRegistrationQuestionCreated::class);
     EventFacade::assertDispatched(EventRegistrationQuestionUpdated::class);
@@ -67,55 +69,55 @@ it('resolves inherited questions and lets narrower scopes replace a field key', 
 
     $create = app(CreateEventRegistrationQuestionAction::class);
 
-    $create->handle($event, [
+    $create->handle('event', (string) $event->getKey(), [
         'field_key' => 'meal_preference',
         'question' => 'Meal preference',
         'type' => EventRegistrationQuestionType::Select->value,
         'options' => ['Halal', 'Vegetarian'],
     ]);
-    $create->handle($event, [
+    $create->handle('event', (string) $event->getKey(), [
         'field_key' => 'company',
         'question' => 'Organisation',
     ]);
-    $create->handle($occurrence, [
+    $create->handle('occurrence', (string) $occurrence->getKey(), [
         'field_key' => 'meal_preference',
         'question' => 'Meal preference for this day',
         'type' => EventRegistrationQuestionType::Select->value,
         'options' => ['Halal', 'Vegetarian', 'Vegan'],
     ]);
-    $sessionQuestion = $create->handle($session, [
+    $sessionQuestionId = $create->handle('session', (string) $session->getKey(), [
         'field_key' => 'accessibility_needs',
         'question' => 'Accessibility needs',
     ]);
 
-    $resolved = app(EventRegistrationQuestionResolver::class)->resolve($session);
+    $resolved = collect(app(EventRegistrationQuestionResolver::class)->resolve('session', (string) $session->getKey()));
 
     expect($resolved)->toHaveCount(3)
-        ->and($resolved->firstWhere('field_key', 'meal_preference')?->question)
+        ->and($resolved->firstWhere('fieldKey', 'meal_preference')?->question)
         ->toBe('Meal preference for this day')
-        ->and($resolved->firstWhere('field_key', 'company'))->not->toBeNull()
-        ->and($resolved->firstWhere('field_key', 'accessibility_needs')?->getKey())
-        ->toBe($sessionQuestion->getKey());
+        ->and($resolved->firstWhere('fieldKey', 'company'))->not->toBeNull()
+        ->and($resolved->firstWhere('fieldKey', 'accessibility_needs')?->id)
+        ->toBe($sessionQuestionId);
 });
 
 it('requires options for choice questions and prevents duplicate keys in one scope', function (): void {
     $event = Event::factory()->create();
     $create = app(CreateEventRegistrationQuestionAction::class);
 
-    expect(fn () => $create->handle($event, [
+    expect(fn () => $create->handle('event', (string) $event->getKey(), [
         'field_key' => 'meal_preference',
         'question' => 'Meal preference',
         'type' => EventRegistrationQuestionType::Select->value,
     ]))->toThrow(InvalidArgumentException::class);
 
-    $create->handle($event, [
+    $create->handle('event', (string) $event->getKey(), [
         'field_key' => 'meal_preference',
         'question' => 'Meal preference',
         'type' => EventRegistrationQuestionType::Select->value,
         'options' => ['Halal'],
     ]);
 
-    expect(fn () => $create->handle($event, [
+    expect(fn () => $create->handle('event', (string) $event->getKey(), [
         'field_key' => 'meal_preference',
         'question' => 'Another meal preference',
         'type' => EventRegistrationQuestionType::Select->value,
@@ -134,13 +136,13 @@ it('starts question ordering independently for each scope', function (): void {
 
     $create = app(CreateEventRegistrationQuestionAction::class);
 
-    $firstEventQuestion = $create->handle($firstEvent, ['question' => 'First event question']);
-    $secondEventQuestion = $create->handle($secondEvent, ['question' => 'Second event question']);
-    $occurrenceQuestion = $create->handle($occurrence, ['question' => 'Occurrence question']);
-    $sessionQuestion = $create->handle($session, ['question' => 'Session question']);
+    $firstEventQuestionId = $create->handle('event', (string) $firstEvent->getKey(), ['question' => 'First event question']);
+    $secondEventQuestionId = $create->handle('event', (string) $secondEvent->getKey(), ['question' => 'Second event question']);
+    $occurrenceQuestionId = $create->handle('occurrence', (string) $occurrence->getKey(), ['question' => 'Occurrence question']);
+    $sessionQuestionId = $create->handle('session', (string) $session->getKey(), ['question' => 'Session question']);
 
-    expect($firstEventQuestion->order_column)->toBe(1)
-        ->and($secondEventQuestion->order_column)->toBe(1)
-        ->and($occurrenceQuestion->order_column)->toBe(1)
-        ->and($sessionQuestion->order_column)->toBe(1);
+    expect(EventRegistrationQuestion::query()->findOrFail($firstEventQuestionId)->order_column)->toBe(1)
+        ->and(EventRegistrationQuestion::query()->findOrFail($secondEventQuestionId)->order_column)->toBe(1)
+        ->and(EventRegistrationQuestion::query()->findOrFail($occurrenceQuestionId)->order_column)->toBe(1)
+        ->and(EventRegistrationQuestion::query()->findOrFail($sessionQuestionId)->order_column)->toBe(1);
 });

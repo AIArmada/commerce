@@ -2,18 +2,15 @@
 
 declare(strict_types=1);
 
-use AIArmada\Events\Enums\RegistrationMode;
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Support\EventRegistrationScope;
+use AIArmada\Events\Data\EventRegistrationScopeData;
+use AIArmada\Events\Data\RegistrationMode;
 use AIArmada\Ticketing\Enums\PricingMode;
 
 it('creates scope from explicit modes', function (): void {
-    $event = Event::factory()->make();
-
-    $scope = new EventRegistrationScope(
-        event: $event,
-        occurrence: null,
-        session: null,
+    $scope = new EventRegistrationScopeData(
+        eventId: 'event-id',
+        occurrenceId: null,
+        sessionId: null,
         pricingMode: PricingMode::Free,
         registrationMode: RegistrationMode::Optional,
         shouldIssuePasses: true,
@@ -30,12 +27,10 @@ it('creates scope from explicit modes', function (): void {
 });
 
 it('identifies open door scope', function (): void {
-    $event = Event::factory()->make();
-
-    $scope = new EventRegistrationScope(
-        event: $event,
-        occurrence: null,
-        session: null,
+    $scope = new EventRegistrationScopeData(
+        eventId: 'event-id',
+        occurrenceId: null,
+        sessionId: null,
         pricingMode: PricingMode::Free,
         registrationMode: RegistrationMode::None,
         shouldIssuePasses: true,
@@ -47,12 +42,10 @@ it('identifies open door scope', function (): void {
 });
 
 it('identifies required registration scope', function (): void {
-    $event = Event::factory()->make();
-
-    $scope = new EventRegistrationScope(
-        event: $event,
-        occurrence: null,
-        session: null,
+    $scope = new EventRegistrationScopeData(
+        eventId: 'event-id',
+        occurrenceId: null,
+        sessionId: null,
         pricingMode: PricingMode::Free,
         registrationMode: RegistrationMode::Required,
         shouldIssuePasses: true,
@@ -61,4 +54,22 @@ it('identifies required registration scope', function (): void {
 
     expect($scope->requiresRegistration())->toBeTrue();
     expect($scope->isOpenDoor())->toBeFalse();
+});
+
+it('projects registration scope identifiers for persistence', function (): void {
+    $scope = new EventRegistrationScopeData(
+        eventId: 'event-id',
+        occurrenceId: 'occurrence-id',
+        sessionId: 'session-id',
+        pricingMode: PricingMode::Paid,
+        registrationMode: RegistrationMode::Required,
+        shouldIssuePasses: false,
+        capacity: 10,
+    );
+
+    expect($scope->toRegistrationData())->toBe([
+        'event_id' => 'event-id',
+        'event_occurrence_id' => 'occurrence-id',
+        'event_session_id' => 'session-id',
+    ]);
 });

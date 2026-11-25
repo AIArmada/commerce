@@ -1,0 +1,91 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Events\Features\Taxonomy\Models;
+
+use AIArmada\Events\Database\Factories\EventClassificationFactory;
+use AIArmada\Events\Features\Taxonomy\Actions\DemotePrimaryClassification;
+use AIArmada\Events\Platform\ModelResolver;
+use AIArmada\Events\Platform\ScopesByEventOwner;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
+
+/**
+ * @property string $id
+ * @property string $event_id
+ * @property string|null $event_occurrence_id
+ * @property string|null $event_session_id
+ * @property string|null $event_taxonomy_id
+ * @property string|null $event_term_id
+ * @property string|null $taxonomy_code
+ * @property string|null $term_code
+ * @property bool $is_primary
+ * @property int $weight
+ * @property int $sort_order
+ * @property array|null $metadata
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ */
+final class EventClassification extends Model
+{
+    use HasFactory;
+    use HasUuids;
+    use ScopesByEventOwner;
+
+    protected $fillable = [
+        'event_id', 'event_occurrence_id', 'event_session_id',
+        'event_taxonomy_id', 'event_term_id',
+        'taxonomy_code', 'term_code',
+        'is_primary', 'weight', 'sort_order',
+        'metadata',
+    ];
+
+    protected static function booted(): void
+    {
+        static::saved(function (EventClassification $classification): void {
+            app(DemotePrimaryClassification::class)->handle($classification);
+        });
+    }
+
+    public function getTable(): string
+    {
+        return $this->table ?? config('events.database.tables.event_classifications', 'event_classifications');
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'is_primary' => 'boolean',
+            'weight' => 'integer',
+            'sort_order' => 'integer',
+            'metadata' => 'array',
+        ];
+    }
+
+    /** @return BelongsTo<Model, $this> */
+    public function event(): BelongsTo
+    {
+        return $this->belongsTo(ModelResolver::eventClass());
+    }
+
+    /** @return BelongsTo<EventTaxonomy, $this> */
+    public function taxonomy(): BelongsTo
+    {
+        return $this->belongsTo(EventTaxonomy::class, 'event_taxonomy_id');
+    }
+
+    /** @return BelongsTo<EventTerm, $this> */
+    public function term(): BelongsTo
+    {
+        return $this->belongsTo(EventTerm::class, 'event_term_id');
+    }
+
+    protected static function newFactory(): EventClassificationFactory
+    {
+        return EventClassificationFactory::new();
+    }
+}

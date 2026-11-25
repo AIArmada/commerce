@@ -5,14 +5,14 @@ declare(strict_types=1);
 use AIArmada\CommerceSupport\Events\PaymentRefunded;
 use AIArmada\Events\Contracts\EventRefundEligibility;
 use AIArmada\Events\Contracts\EventTaxonomyHierarchy;
-use AIArmada\Events\Listeners\CompletePendingRefundOnPaymentRefunded;
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventRegistration;
-use AIArmada\Events\Models\EventRegistrationParticipant;
-use AIArmada\Events\Models\EventTaxonomy;
-use AIArmada\Events\Models\EventTerm;
-use AIArmada\Events\Resolvers\DefaultEventRefundEligibility;
-use AIArmada\Events\States\RegistrationStatus\Confirmed;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Commerce\EntryPoints\Listeners\CompletePendingRefundOnPaymentRefunded;
+use AIArmada\Events\Features\Registrations\Models\EventRegistration;
+use AIArmada\Events\Features\Registrations\Models\EventRegistrationParticipant;
+use AIArmada\Events\Features\Registrations\Queries\DefaultEventRefundEligibility;
+use AIArmada\Events\Features\Registrations\States\RegistrationStatus\Confirmed;
+use AIArmada\Events\Features\Taxonomy\Models\EventTaxonomy;
+use AIArmada\Events\Features\Taxonomy\Models\EventTerm;
 use Illuminate\Support\Facades\Event as EventFacade;
 use Illuminate\Support\Str;
 
@@ -75,7 +75,7 @@ test('event service provider binds EventRefundEligibility and PaymentRefunded li
     expect(app(EventRefundEligibility::class))->toBeInstanceOf(DefaultEventRefundEligibility::class);
 
     $listeners = EventFacade::getRawListeners()[PaymentRefunded::class] ?? [];
-    expect($listeners)->toContain([CompletePendingRefundOnPaymentRefunded::class, 'handle']);
+    expect($listeners)->toContain(CompletePendingRefundOnPaymentRefunded::class);
 
     $event = Event::factory()->create(['metadata' => ['registration' => ['refunds_enabled' => false]]]);
     $registration = EventRegistration::factory()->create([
@@ -84,6 +84,6 @@ test('event service provider binds EventRefundEligibility and PaymentRefunded li
         'total_amount' => 5000,
     ]);
 
-    expect(app(EventRefundEligibility::class)->refundsEnabled($event))->toBeFalse()
-        ->and(app(EventRefundEligibility::class)->canOrganizerRefund($event, $registration))->toBeFalse();
+    expect(app(EventRefundEligibility::class)->refundsEnabled((string) $event->getKey()))->toBeFalse()
+        ->and(app(EventRefundEligibility::class)->canOrganizerRefund((string) $event->getKey(), (string) $registration->getKey()))->toBeFalse();
 });

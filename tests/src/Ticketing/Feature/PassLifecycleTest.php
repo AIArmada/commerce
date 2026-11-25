@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use AIArmada\Events\Models\EventRegistration;
+use AIArmada\Events\Features\Registrations\Models\EventRegistration;
 use AIArmada\Ticketing\Models\Pass;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Spatie\ModelStates\Exceptions\TransitionNotFound;

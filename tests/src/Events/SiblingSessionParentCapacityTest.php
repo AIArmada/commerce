@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Events\Actions\LockEventRegistrationScopeAction;
-use AIArmada\Events\Actions\PromoteInterestedToConfirmedAction;
-use AIArmada\Events\Actions\RegisterForFreeAction;
 use AIArmada\Events\Contracts\EventRegistrationScopeResolver;
 use AIArmada\Events\Exceptions\EventCapacityExceededException;
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventOccurrence;
-use AIArmada\Events\Models\EventRegistration;
-use AIArmada\Events\Models\EventRegistrationParticipant;
-use AIArmada\Events\Models\EventSession;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
+use AIArmada\Events\Features\Catalog\Models\EventSession;
+use AIArmada\Events\Features\Registrations\Actions\LockEventRegistrationScopeAction;
+use AIArmada\Events\Features\Registrations\Actions\PromoteInterestedToConfirmedAction;
+use AIArmada\Events\Features\Registrations\Actions\RegisterForFreeAction;
+use AIArmada\Events\Features\Registrations\Models\EventRegistration;
+use AIArmada\Events\Features\Registrations\Models\EventRegistrationParticipant;
 use AIArmada\Ticketing\Models\Pass;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -44,21 +44,21 @@ it('consumes the shared occurrence aggregate across sibling sessions', function 
 
         $action = app(RegisterForFreeAction::class);
 
-        $action->execute(target: $sessionA, participants: [
+        $action->execute('session', (string) $sessionA->getKey(), participants: [
             ['name' => 'Amy', 'is_primary' => true],
             ['name' => 'Ben', 'is_primary' => false],
         ]);
-        $action->execute(target: $sessionB, participants: [
+        $action->execute('session', (string) $sessionB->getKey(), participants: [
             ['name' => 'Cal', 'is_primary' => true],
         ]);
 
         expect(EventRegistration::query()->where('event_occurrence_id', $occurrence->id)->count())->toBe(3);
 
-        expect(fn () => $action->execute(target: $sessionB, participants: [
+        expect(fn () => $action->execute('session', (string) $sessionB->getKey(), participants: [
             ['name' => 'Dee', 'is_primary' => true],
         ]))->toThrow(EventCapacityExceededException::class);
 
-        expect(fn () => $action->execute(target: $sessionA, participants: [
+        expect(fn () => $action->execute('session', (string) $sessionA->getKey(), participants: [
             ['name' => 'Eli', 'is_primary' => true],
         ]))->toThrow(EventCapacityExceededException::class);
 
@@ -83,18 +83,18 @@ it('counts direct occurrence bookings against the same parent aggregate', functi
 
         $action = app(RegisterForFreeAction::class);
 
-        $action->execute(target: $occurrence, participants: [
+        $action->execute('occurrence', (string) $occurrence->getKey(), participants: [
             ['name' => 'Direct', 'is_primary' => true],
         ]);
-        $action->execute(target: $session, participants: [
+        $action->execute('session', (string) $session->getKey(), participants: [
             ['name' => 'Seated', 'is_primary' => true],
         ]);
 
-        expect(fn () => $action->execute(target: $session, participants: [
+        expect(fn () => $action->execute('session', (string) $session->getKey(), participants: [
             ['name' => 'Overflow', 'is_primary' => true],
         ]))->toThrow(EventCapacityExceededException::class);
 
-        expect(fn () => $action->execute(target: $occurrence, participants: [
+        expect(fn () => $action->execute('occurrence', (string) $occurrence->getKey(), participants: [
             ['name' => 'Overflow Direct', 'is_primary' => true],
         ]))->toThrow(EventCapacityExceededException::class);
 
@@ -122,15 +122,15 @@ it('uses the stricter session cap when the session is tighter than the parent', 
 
         $action = app(RegisterForFreeAction::class);
 
-        $action->execute(target: $tightSession, participants: [
+        $action->execute('session', (string) $tightSession->getKey(), participants: [
             ['name' => 'First', 'is_primary' => true],
         ]);
 
-        expect(fn () => $action->execute(target: $tightSession, participants: [
+        expect(fn () => $action->execute('session', (string) $tightSession->getKey(), participants: [
             ['name' => 'Second', 'is_primary' => true],
         ]))->toThrow(EventCapacityExceededException::class);
 
-        $sibling = $action->execute(target: $roomySession, participants: [
+        $sibling = $action->execute('session', (string) $roomySession->getKey(), participants: [
             ['name' => 'Sibling', 'is_primary' => true],
         ]);
 
@@ -153,11 +153,11 @@ it('treats null session capacity as parent-bounded', function (): void {
 
         $action = app(RegisterForFreeAction::class);
 
-        $action->execute(target: $session, participants: [
+        $action->execute('session', (string) $session->getKey(), participants: [
             ['name' => 'First', 'is_primary' => true],
         ]);
 
-        expect(fn () => $action->execute(target: $session, participants: [
+        expect(fn () => $action->execute('session', (string) $session->getKey(), participants: [
             ['name' => 'Second', 'is_primary' => true],
         ]))->toThrow(EventCapacityExceededException::class);
     });
@@ -178,11 +178,11 @@ it('treats null parent capacity as session-bounded', function (): void {
 
         $action = app(RegisterForFreeAction::class);
 
-        $action->execute(target: $session, participants: [
+        $action->execute('session', (string) $session->getKey(), participants: [
             ['name' => 'First', 'is_primary' => true],
         ]);
 
-        expect(fn () => $action->execute(target: $session, participants: [
+        expect(fn () => $action->execute('session', (string) $session->getKey(), participants: [
             ['name' => 'Second', 'is_primary' => true],
         ]))->toThrow(EventCapacityExceededException::class);
     });
@@ -201,7 +201,7 @@ it('leaves no partial records when a batch exceeds capacity', function (): void 
             'capacity' => 2,
         ]);
 
-        expect(fn () => app(RegisterForFreeAction::class)->execute(target: $session, participants: [
+        expect(fn () => app(RegisterForFreeAction::class)->execute('session', (string) $session->getKey(), participants: [
             ['name' => 'One', 'is_primary' => true],
             ['name' => 'Two', 'is_primary' => false],
             ['name' => 'Three', 'is_primary' => false],
@@ -241,14 +241,14 @@ it('does not count cancelled or waitlisted registrations against capacity', func
             'total_participants' => 1,
         ]);
 
-        $registrations = app(RegisterForFreeAction::class)->execute(target: $session, participants: [
+        $registrations = app(RegisterForFreeAction::class)->execute('session', (string) $session->getKey(), participants: [
             ['name' => 'First', 'is_primary' => true],
             ['name' => 'Second', 'is_primary' => false],
         ]);
 
         expect($registrations)->toHaveCount(2);
 
-        expect(fn () => app(RegisterForFreeAction::class)->execute(target: $session, participants: [
+        expect(fn () => app(RegisterForFreeAction::class)->execute('session', (string) $session->getKey(), participants: [
             ['name' => 'Third', 'is_primary' => true],
         ]))->toThrow(EventCapacityExceededException::class);
     });
@@ -281,7 +281,7 @@ it('blocks promotion when the parent occurrence is exhausted despite session roo
             'status' => 'interested',
         ]);
 
-        expect(fn () => app(PromoteInterestedToConfirmedAction::class)->execute($interested))
+        expect(fn () => app(PromoteInterestedToConfirmedAction::class)->execute((string) $interested->getKey()))
             ->toThrow(EventCapacityExceededException::class, 'Occurrence');
 
         expect($interested->fresh()?->status->getValue())->toBe('interested')
@@ -310,13 +310,13 @@ it('rejects cross-owner session registration without writing', function (): void
     });
 
     expect(fn () => OwnerContext::withOwner($ownerB, function () use ($session): void {
-        app(RegisterForFreeAction::class)->execute(target: $session, participants: [
+        app(RegisterForFreeAction::class)->execute('session', (string) $session->getKey(), participants: [
             ['name' => 'Intruder', 'is_primary' => true],
         ]);
     }))->toThrow(AuthorizationException::class);
 
     expect(fn () => OwnerContext::withOwner($ownerB, function () use ($session): void {
-        $scope = app(EventRegistrationScopeResolver::class)->resolve($session);
+        $scope = app(EventRegistrationScopeResolver::class)->resolve('session', (string) $session->getKey());
 
         DB::transaction(fn () => app(LockEventRegistrationScopeAction::class)->handle($scope));
     }))->toThrow(ModelNotFoundException::class);
@@ -343,7 +343,7 @@ it('locks event then occurrence then session in one order', function (): void {
             'capacity' => 3,
         ]);
 
-        $scope = app(EventRegistrationScopeResolver::class)->resolve($session);
+        $scope = app(EventRegistrationScopeResolver::class)->resolve('session', (string) $session->getKey());
 
         $lockedTables = [];
 

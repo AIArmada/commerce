@@ -1,0 +1,50 @@
+{
+  "schema": 1,
+  "name": "Governance",
+  "owns": {
+    "table:event_submissions": [
+      "AIArmada\\Events\\Features\\Governance\\Actions\\DefaultEventModerationWorkflow",
+      "AIArmada\\Events\\Features\\Governance\\Actions\\DefaultEventSubmissionConverter",
+      "AIArmada\\Events\\Features\\Governance\\Actions\\DeleteGovernanceScopeDependents",
+      "AIArmada\\Events\\Features\\Governance\\Actions\\DeleteSubmissionDependents"
+    ],
+    "table:event_submission_logs": [
+      "AIArmada\\Events\\Features\\Governance\\Actions\\DeleteSubmissionDependents"
+    ],
+    "table:event_submission_attachments": [
+      "AIArmada\\Events\\Features\\Governance\\Actions\\DeleteSubmissionDependents"
+    ],
+    "table:event_approval_requests": [
+      "AIArmada\\Events\\Features\\Governance\\Actions\\DeleteGovernanceScopeDependents"
+    ],
+    "table:event_management_assignments": [
+      "AIArmada\\Events\\Features\\Governance\\Actions\\ApproveAssignmentRequestAction",
+      "AIArmada\\Events\\Features\\Governance\\Actions\\DeleteGovernanceScopeDependents"
+    ],
+    "table:event_management_assignment_requests": [
+      "AIArmada\\Events\\Features\\Governance\\Actions\\ApproveAssignmentRequestAction",
+      "AIArmada\\Events\\Features\\Governance\\Actions\\CancelAssignmentRequestAction",
+      "AIArmada\\Events\\Features\\Governance\\Actions\\DeleteGovernanceScopeDependents",
+      "AIArmada\\Events\\Features\\Governance\\Actions\\RejectAssignmentRequestAction",
+      "AIArmada\\Events\\Features\\Governance\\Actions\\SubmitAssignmentRequestAction"
+    ],
+    "table:event_verifications": [
+      "AIArmada\\Events\\Features\\Governance\\Actions\\DeleteGovernanceScopeDependents"
+    ],
+    "table:event_reports": [
+      "AIArmada\\Events\\Features\\Governance\\Actions\\DeleteGovernanceScopeDependents"
+    ],
+    "table:event_moderation_actions": [
+      "AIArmada\\Events\\Features\\Governance\\Actions\\DeleteGovernanceScopeDependents"
+    ],
+    "table:event_escalations": [
+      "AIArmada\\Events\\Features\\Governance\\Actions\\DeleteGovernanceScopeDependents",
+      "AIArmada\\Events\\Features\\Governance\\Actions\\ResolveEventEscalationsAction"
+    ]
+  },
+  "extensions": {
+    "events.cascade-delete": [
+      "AIArmada\\Events\\Features\\Governance\\Extensions\\GovernanceDeleteCascadeExtension"
+    ]
+  }
+}

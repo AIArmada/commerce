@@ -10,17 +10,54 @@ The `config/events.php` file controls all Events package behavior.
 
 ```php
 'models' => [
-    'event' => AIArmada\Events\Models\Event::class,
-    'registration' => AIArmada\Events\Models\EventRegistration::class,
-    'attendance' => AIArmada\Events\Models\EventAttendance::class,
-    'submission' => AIArmada\Events\Models\EventSubmission::class,
-    'registration_question' => AIArmada\Events\Models\EventRegistrationQuestion::class,
-    'venue' => AIArmada\Events\Models\Venue::class,
-    'venue_space' => AIArmada\Events\Models\VenueSpace::class,
+    'event' => null,
+    'occurrence' => null,
+    'session' => null,
+    'registration' => null,
+    'registration_participant' => null,
+    'registration_question' => null,
+    'attendance' => null,
+    'walk_in' => null,
+    'headcount_log' => null,
+    'submission' => null,
+    'escalation' => null,
+    'approval_request' => null,
+    'management_assignment' => null,
+    'change_log' => null,
+    'update' => null,
+    'search_document' => null,
+    'venue' => null,
+    'venue_space' => null,
+    'location' => null,
+    'facility' => null,
+    'classification' => null,
+    'attribute' => null,
+    'audience' => null,
 ],
 ```
 
-Configured model classes resolve at runtime through `AIArmada\Events\Support\ModelResolver` (including `venueClass()` and `venueSpaceClass()`).
+Every key ships as `null`. When the package boots, each feature's `FeatureModule`
+registers its default class only if the key is still `null`, so an application
+override wins. Resolve configured classes at runtime through
+`AIArmada\Events\Platform\ModelResolver` — never import the concrete package
+model when the host may swap it:
+
+```php
+use AIArmada\Events\Platform\ModelResolver;
+
+$eventClass = ModelResolver::eventClass();
+$venueClass = ModelResolver::venueClass();
+$registrationClass = ModelResolver::registrationClass();
+
+// Generic key access (throws for unknown keys):
+$submissionClass = ModelResolver::resolve('submission');
+```
+
+> **warning**
+>
+> `ModelResolver` throws a `RuntimeException` when a key is not configured or
+> does not resolve to an Eloquent model. Disabling an optional feature module
+> therefore disables every resolver call for its keys.
 
 ### Database
 
@@ -32,20 +69,24 @@ $tablePrefix = env('EVENTS_TABLE_PREFIX', '');
     'tables' => [
         'events' => env('EVENTS_TABLE_EVENTS', $tablePrefix . 'events'),
         'event_occurrences' => env('EVENTS_TABLE_OCCURRENCES', $tablePrefix . 'event_occurrences'),
-        // ... all 60+ table names configurable via env
+        // ... every table name is configurable via env
     ],
 ]
 ```
 
-Every table name is individually configurable via environment variables, allowing collision-free coexistence with other packages. Migrations resolve the JSON column type through `commerce_json_column_type('events', 'jsonb')`, which prefers `EVENTS_JSON_COLUMN_TYPE`, then the shared `COMMERCE_JSON_COLUMN_TYPE`, then this config value.
-
-The place-facility tables (`venues`, `venue_spaces`, `facility_types`,
-`venue_facilities`) resolve through the same `database.tables` map; see
-[Venue Facilities](06-venue-facilities.md#configurable-tables).
+Every table name is individually configurable via environment variables,
+allowing collision-free coexistence with other packages. Migrations resolve
+the JSON column type through `commerce_json_column_type('events', 'jsonb')`,
+which prefers `EVENTS_JSON_COLUMN_TYPE`, then the shared
+`COMMERCE_JSON_COLUMN_TYPE`, then this config value.
 
 ### Media profiles
 
-The package models use Spatie Media Library through configurable media profiles. The default profiles provide `cover`, `poster`, and `gallery` collections for `Event`, and a `cover` collection for occurrences and sessions. Applications can replace the collections or conversions without editing package models:
+The package models use Spatie Media Library through configurable media
+profiles (`Platform\RegistersEventMedia`). The default profiles provide
+`cover`, `poster`, and `gallery` collections for the event model, and a
+`cover` collection for occurrences and sessions. Applications can replace the
+collections or conversions without editing package models:
 
 ```php
 'media' => [
@@ -72,19 +113,11 @@ The package models use Spatie Media Library through configurable media profiles.
 ],
 ```
 
-Collection options include `disk`, `mimes`, `responsive`, `single_file`, `limit`, `fallback_url`, and `fallback_path`. Conversion options include `collections`, `fit`, `width`, `height`, `sharpen`, and `format`. The `mediaRecords()` relation remains the package's structured `EventMedia` relation; Spatie's file relation remains `media()`.
-
-### Event search relation provider
-
-Search adapters can share a relation provider so package-owned eager-loading stays separate from application-owned relations:
-
-```php
-'search' => [
-    'relation_provider' => App\Support\EventDiscovery\EventCardRelationshipProvider::class,
-],
-```
-
-The default provider returns only package-owned paths (`classifications.term` and `timeExpressions`). An application provider should compose that default and add its own relations, such as institutions, addresses, media, titles, or venues. This contract controls eager loading only; search matching, filters, and index adapters remain separate concerns.
+Collection options include `disk`, `mimes`, `responsive`, `single_file`,
+`limit`, `fallback_url`, and `fallback_path`. Conversion options include
+`collections`, `fit`, `width`, `height`, `sharpen`, and `format`. The
+`mediaRecords()` relation remains the package's structured `EventMedia`
+relation; Spatie's file relation remains `media()`.
 
 ### Defaults
 
@@ -95,13 +128,18 @@ The default provider returns only package-owned paths (`classifications.term` an
 ]
 ```
 
-`currency` is used when issuing registration passes without an explicit registration currency. `timezone` controls the package fallback display and scheduling timezone.
+`currency` is used when issuing registration passes without an explicit
+registration currency. `timezone` controls the package fallback display and
+scheduling timezone.
 
-### Free-Only Mode
+### Features
 
-`config/events.php` has a single `features` array. The `Free-Only Mode`, `Seating`,
-`Paid Registrations`, and `Owner Scoping` sections below each show one part of it — they are
-not standalone blocks, and replacing the whole array with one of them drops the sibling keys.
+`config/events.php` has a single `features` array. The `Free-Only Mode`,
+`Seating`, `Paid Registrations`, and `Owner Scoping` sections below each show
+one part of it — they are not standalone blocks, and replacing the whole
+array with one of them drops the sibling keys.
+
+#### Free-Only Mode
 
 ```php
 'features' => [
@@ -121,10 +159,11 @@ not standalone blocks, and replacing the whole array with one of them drops the 
 | `auto_derive_pricing_from_ticket_types` | When `true`, pricing mode is automatically inferred from ticket type prices (all free → Free, all paid → Paid, mixed → Mixed) |
 | `open_door_mode` | Default behavior for events with `registration_mode = none`. One of `block`, `walk_in`, `headcount`. |
 
-### Seating
+#### Seating and pass automation
 
 ```php
 'features' => [
+    'auto_issue_passes' => env('EVENTS_AUTO_ISSUE_PASSES', true),
     'auto_allocate_seats' => env('EVENTS_AUTO_ALLOCATE_SEATS', true),
     'auto_revoke_passes_on_cancel' => env('EVENTS_AUTO_REVOKE_PASSES_ON_CANCEL', true),
 ],
@@ -132,10 +171,11 @@ not standalone blocks, and replacing the whole array with one of them drops the 
 
 | Key | Description |
 |---|---|
+| `auto_issue_passes` | When enabled, free registrations issue passes automatically. Requires `aiarmada/ticketing`. |
 | `auto_allocate_seats` | When enabled, passes for ticket types with a seating mode trigger automatic seat allocation on issue. Requires `aiarmada/ticketing` and `aiarmada/seating`. |
 | `auto_revoke_passes_on_cancel` | When enabled, cancelling a registration automatically revokes all its passes. |
 
-### Paid Registrations
+#### Paid registrations
 
 ```php
 'features' => [
@@ -143,9 +183,25 @@ not standalone blocks, and replacing the whole array with one of them drops the 
 ]
 ```
 
-When enabled, paid registration flows stop before creating new confirmed registrations if the target occurrence or session has no remaining capacity. Replaying an order item that already has registrations remains idempotent.
+When enabled, paid registration flows stop before creating new confirmed
+registrations if the target occurrence or session has no remaining capacity.
+Replaying an order item that already has registrations remains idempotent.
 
-### Owner Scoping
+#### Commerce refunds
+
+```php
+'features' => [
+    'commerce' => [
+        'refunds_enabled_by_default' => (bool) env('EVENTS_REFUNDS_ENABLED_BY_DEFAULT', false),
+        'refund_self_service_hours' => (int) env('EVENTS_REFUND_SELF_SERVICE_HOURS', 48),
+    ],
+],
+```
+
+Consumed by the default `EventRefundEligibility` implementation to gate
+self-service refunds.
+
+#### Owner Scoping
 
 ```php
 'features' => [
@@ -157,7 +213,11 @@ When enabled, paid registration flows stop before creating new confirmed registr
 ]
 ```
 
-Controls multi-tenancy behavior. When enabled, event roots and children, series/template children, submissions, and polymorphic workflow records are scoped through an owner-safe parent. Global records are available when `include_global` is enabled, but mutating them still requires explicit global context.
+Controls multi-tenancy behavior. When enabled, event roots, event-bound
+children, series/template children, submissions, and polymorphic workflow
+records are scoped through an owner-safe parent. Global records are available
+when `include_global` is enabled, but mutating them still requires explicit
+global context.
 
 ### Codes
 
@@ -167,8 +227,8 @@ Controls multi-tenancy behavior. When enabled, event roots and children, series/
 ]
 ```
 
-Controls the prefix used for auto-generated registration numbers. There is no length
-config key; the numeric suffix is generated by the package.
+Controls the prefix used for auto-generated registration numbers. There is no
+length config key; the numeric suffix is generated by the package.
 
 ### Lifecycle
 
@@ -191,10 +251,22 @@ config key; the numeric suffix is generated by the package.
         'terminal_statuses' => ['checked_in', 'cancelled', 'refunded', 'no_show'],
         'auto_promote_waitlist' => env('EVENTS_AUTO_PROMOTE_WAITLIST', false),
     ],
-]
+],
 ```
 
-Controls which statuses allow registration, check-in, and walk-in. Registrations are accepted only when the event is not in a blocked status and the occurrence and session (when present) are in an accepting status. `capacity_blocking_statuses` determines which registration statuses consume occurrence capacity. Statuses are managed through `spatie/laravel-model-states` — transitions are defined in each state base class's `config()` method under `States/`.
+Controls which statuses allow registration, check-in, and walk-in. The
+`Platform\LifecyclePolicy` class reads these keys (`canAcceptRegistrations`,
+`canCheckIn`, `canWalkIn`, `isCapacityBlocking`, `isTerminal`,
+`shouldAutoPromoteWaitlist`). Registrations are accepted only when the event
+is not in a blocked status and the occurrence and session (when present) are
+in an accepting status. `capacity_blocking_statuses` determines which
+registration statuses consume occurrence capacity.
+
+Statuses are managed through `spatie/laravel-model-states`; transitions are
+defined in each state base class's `config()` method:
+`Features\Catalog\States\{EventStatus,OccurrenceStatus}`,
+`Features\Registrations\States\RegistrationStatus`, and
+`Features\Governance\States\EventModerationStatus`.
 
 ### Synchronization
 
@@ -212,10 +284,11 @@ Controls which statuses allow registration, check-in, and walk-in. Registrations
 ],
 ```
 
-These flags control the search document rebuild pipeline for events, occurrences, and sessions.
+These flags control the search document rebuild pipeline for events,
+occurrences, and sessions.
 
 - `classifications_to_facets` and `audiences_to_facets` add relation-backed facets to the search document payload.
-- `build_search_documents` enables automatic search document creation and removal for events, occurrences, and sessions. When it is disabled, the observers short-circuit and no documents are written.
+- `build_search_documents` enables automatic search document creation and removal for events, occurrences, and sessions. When it is disabled, the Search feature observers short-circuit and no documents are written.
 - `attribute_sync.attribute_keys`, `audience_types`, and `taxonomy_codes` let you narrow the synced records. Leave them `null` to sync everything.
 
 ### Resolvers (extensibility seams)
@@ -225,10 +298,13 @@ These flags control the search document rebuild pipeline for events, occurrences
 'references' => ['resolver' => null],
 'timezone' => ['display_timezone_resolver' => null],
 'schedule' => ['resolver' => null],
+'time_expressions' => ['resolver' => null],
+'translations' => ['provider' => null],
 'search' => [
     'payload_resolver' => null,
     'engine' => null,
     'indexer' => null,
+    'relation_provider' => null,
     'queue_indexing' => env('EVENTS_SEARCH_QUEUE_INDEXING', false),
     'queue_connection' => env('EVENTS_SEARCH_QUEUE_CONNECTION'),
     'queue_name' => env('EVENTS_SEARCH_QUEUE_NAME'),
@@ -239,16 +315,29 @@ These flags control the search document rebuild pipeline for events, occurrences
 ```
 
 Each resolver can be bound to a custom class for domain-specific behavior.
+The provider validates configured classes against the matching contract
+(`EventClassificationResolver`, `EventReferenceResolver`,
+`EventTranslationProvider`, `ResolvesEventTimeExpression`,
+`EventScheduleResolver`, `EventDisplayTimezoneResolver`,
+`EventSearchPayloadResolver`, `EventSearchRelationProvider`,
+`EventSearchEngine`, `EventSearchIndexer`,
+`EventChangeNoticeAudienceResolver`) and throws a `RuntimeException` when the
+class does not implement it.
 
-`search.indexer` defaults to the package's built-in `EventSearchDocumentBuilder` when left `null`. That builder maintains search documents for events, occurrences, and sessions. Set it to `AIArmada\Events\Resolvers\NullEventSearchIndexer` if you want to disable automatic search indexing explicitly, or point it at a custom indexer implementation.
+- `search.indexer` defaults to `AIArmada\Events\Features\Search\Actions\IndexEventSearchTargetAction`. Set it to `AIArmada\Events\Drivers\NullEventSearchIndexerDriver` to disable automatic indexing explicitly, or point it at a custom `EventSearchIndexer`.
+- `search.relation_provider` defaults to `AIArmada\Events\Platform\DefaultEventSearchRelationProvider`, which returns only package-owned paths (`classifications.term` and `timeExpressions`). An application provider should compose that default and add its own relations.
+- `timezone.display_timezone_resolver` defaults to `AIArmada\Events\Drivers\DefaultEventDisplayTimezoneDriver`; `schedule.resolver` defaults to the null driver.
 
 ### Integrations
 
 ```php
 'integrations' => [
-    'product_model' => class_exists(...) ? Product::class : null,
-    'customer_model' => class_exists(...) ? Customer::class : null,
-    'order_model' => class_exists(...) ? Order::class : null,
+    'product_model' => class_exists(Product::class) ? Product::class : null,
+    'variant_model' => class_exists(Variant::class) ? Variant::class : null,
+    'customer_model' => class_exists(Customer::class) ? Customer::class : null,
+    'order_model' => class_exists(Order::class) ? Order::class : null,
+    'order_item_model' => class_exists(OrderItem::class) ? OrderItem::class : null,
+    'inventory_location_model' => class_exists(InventoryLocation::class) ? InventoryLocation::class : null,
     'checkout_intent_resolver' => null,
     'order_item_fulfillment_resolver' => null,
 ]
@@ -257,8 +346,10 @@ Each resolver can be bound to a custom class for domain-specific behavior.
 The events package requires `aiarmada/addressing`. Venue, space, facility, and
 event-location models use `HasAddresses` for canonical address attachments.
 `Venue` and `EventLocation` read their canonical primary address attachment;
-new writes must use
-`attachAddress()`. Custom resolvers can override the other integration points.
+new writes must use `attachAddress()`. The default checkout-intent and
+order-item-fulfillment resolvers bind automatically when the commerce
+packages are present (see `Platform\CommerceIntegration`); custom resolvers
+can override both.
 
 ### Notifications
 
@@ -276,15 +367,37 @@ new writes must use
 
 The welcome notification is sent when a registration is approved.
 
+## Drivers
+
+External integrations resolve through `AIArmada\Events\Drivers` classes bound
+to `Contracts` interfaces in the service provider. Rebind the contract in an
+application provider to swap behavior; never import a driver class directly
+from feature code:
+
+| Contract | Default driver | Notes |
+|---|---|---|
+| `EventTicketingDriver` | `TicketingDriver` | Ticket types, pass issuance/revocation, inventory ships/restores |
+| `EventSeatingDriver` | `SeatingDriver` | Seat holds, allocations, releases |
+| `EventOrderDriver` | `OrdersDriver` | Order snapshots, refunds, item fulfilment markers |
+| `EventCartDriver` | `CartCheckoutDriver` | Cart instances, ticket lines, checkout start |
+| `EventAuthzDriver` | `AuthzDriver` | Management assignment mirroring |
+| `EventChangeNoticeNotificationDispatcher` | `EventChangeNoticeNotificationDriver` | Sends through `aiarmada/communications` |
+| `EventEngagementManager` | `NullEventEngagementDriver` (or engagement package) | Follow/bookmark/respond seam |
+| `EventScheduleResolver` | `NullEventScheduleDriver` | Override via `events.schedule.resolver` |
+| `EventSearchIndexer` | `IndexEventSearchTargetAction` (or `NullEventSearchIndexerDriver`) | Override via `events.search.indexer` |
+
 ## Change notices
 
-`events.change_notices.audience_resolver` is the only change-notice config key. Leave it
-`null` to use `AIArmada\Events\Resolvers\DefaultEventChangeNoticeAudienceResolver`, or set
-it to a class implementing `AIArmada\Events\Contracts\EventChangeNoticeAudienceResolver`
-(anything else throws at boot).
+`events.change_notices.audience_resolver` is the only change-notice config key.
+Leave it `null` to use the package default
+(`Features\Changes\Queries\DefaultEventChangeNoticeAudienceResolver`), or set
+it to a class implementing
+`AIArmada\Events\Contracts\EventChangeNoticeAudienceResolver` (anything else
+throws at boot).
 
 Delivery is a container seam, not a config key: bind
-`AIArmada\Events\Contracts\EventChangeNoticeNotificationDispatcher` to change delivery. The
-built-in `AIArmada\Events\Services\EventNotificationDispatcher` sends through
-`aiarmada/communications` and derives its audience scope from the change log's
-`impact_level` (`critical`/`high` → `registrants`, otherwise `followers`).
+`AIArmada\Events\Contracts\EventChangeNoticeNotificationDispatcher` to change
+delivery. The built-in `AIArmada\Events\Drivers\EventChangeNoticeNotificationDriver`
+sends through `aiarmada/communications` and derives its audience scope from
+the change log's `impact_level` (`critical`/`high` → `registrants`, otherwise
+`followers`).

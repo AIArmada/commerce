@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "name": "Venues",
+  "owns": {
+    "table:event_venues": [
+      "AIArmada\\Events\\Features\\Venues\\Actions\\DeleteVenueDependents"
+    ],
+    "table:event_venue_spaces": [
+      "AIArmada\\Events\\Features\\Venues\\Actions\\DeleteVenueSpaceDependents"
+    ],
+    "table:event_venue_space_types": [
+      "AIArmada\\Events\\Features\\Venues\\Actions\\DeleteVenueSpaceDependents"
+    ],
+    "table:event_locations": [
+      "AIArmada\\Events\\Features\\Venues\\Actions\\CloneVenuesScopeAction",
+      "AIArmada\\Events\\Features\\Venues\\Actions\\DeleteEventLocationDependents",
+      "AIArmada\\Events\\Features\\Venues\\Actions\\DeleteVenuesScopeDependents"
+    ],
+    "table:event_facility_types": [
+      "AIArmada\\Events\\Features\\Venues\\Actions\\DeleteFacilityTypeDependents",
+      "AIArmada\\Events\\Features\\Venues\\Actions\\SeedFacilityTypesAction"
+    ],
+    "table:event_venue_facilities": [
+      "AIArmada\\Events\\Features\\Venues\\Actions\\DeleteFacilityTypeDependents",
+      "AIArmada\\Events\\Features\\Venues\\Actions\\DeleteVenueDependents",
+      "AIArmada\\Events\\Features\\Venues\\Actions\\DeleteVenueSpaceDependents",
+      "AIArmada\\Events\\Features\\Venues\\Actions\\SyncVenueFacilitiesAction"
+    ],
+    "table:event_facilities": [
+      "AIArmada\\Events\\Features\\Venues\\Actions\\CloneVenuesScopeAction",
+      "AIArmada\\Events\\Features\\Venues\\Actions\\DeleteEventLocationDependents",
+      "AIArmada\\Events\\Features\\Venues\\Actions\\DeleteVenuesScopeDependents"
+    ]
+  },
+  "extensions": {
+    "events.cascade-delete": [
+      "AIArmada\\Events\\Features\\Venues\\Extensions\\VenuesDeleteCascadeExtension"
+    ],
+    "events.clone-scope": [
+      "AIArmada\\Events\\Features\\Venues\\Extensions\\VenuesCloneScopeExtension"
+    ]
+  }
+}

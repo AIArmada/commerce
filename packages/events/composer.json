@@ -27,7 +27,6 @@
     "aiarmada/inventory": "self.version",
     "aiarmada/seating": "self.version",
     "aiarmada/ticketing": "self.version",
-    "spatie/laravel-data": "^4.23.1",
     "spatie/laravel-medialibrary": "^11.23.11",
     "spatie/laravel-model-states": "^2.14.3",
     "spatie/laravel-package-tools": "^1.93.3"
@@ -52,14 +51,19 @@
     "laravel": {
       "providers": [
         "AIArmada\\Events\\EventsServiceProvider"
-      ],
-      "aliases": {
-        "Events": "AIArmada\\Events\\Facades\\Events"
-      }
+      ]
     }
   },
   "config": {
     "sort-packages": true
+  },
+  "scripts": {
+    "arch:boundaries": "@php tools/package-check.php",
+    "arch:writes": "cd ../.. && php vendor/bin/phpstan analyse -c packages/events/tools/package-phpstan.neon --autoload-file=packages/events/tools/Architecture/PackageOwnedWriteRule.php --no-progress",
+    "arch:check": [
+      "@arch:boundaries",
+      "@arch:writes"
+    ]
   },
   "minimum-stability": "dev",
   "prefer-stable": true

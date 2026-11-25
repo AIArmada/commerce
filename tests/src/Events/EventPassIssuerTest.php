@@ -2,15 +2,16 @@
 
 declare(strict_types=1);
 
-use AIArmada\Events\Actions\IssueEventRegistrationPassesAction;
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventOccurrence;
-use AIArmada\Events\Models\EventRegistration;
-use AIArmada\Events\Models\EventSession;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
+use AIArmada\Events\Features\Catalog\Models\EventSession;
+use AIArmada\Events\Features\Commerce\Actions\IssueEventRegistrationPassesAction;
+use AIArmada\Events\Features\Registrations\Models\EventRegistration;
 use AIArmada\Seating\Enums\SeatingMode;
 use AIArmada\Seating\Models\Seat;
 use AIArmada\Seating\Models\SeatMap;
 use AIArmada\Seating\Models\SeatSection;
+use AIArmada\Ticketing\Models\Pass;
 
 it('issues passes for registration items', function (): void {
     $event = Event::factory()->create();
@@ -21,7 +22,7 @@ it('issues passes for registration items', function (): void {
         'quantity' => 2,
     ]);
 
-    $passes = app(IssueEventRegistrationPassesAction::class)->handle($registration->fresh());
+    $passes = app(IssueEventRegistrationPassesAction::class)->handle((string) $registration->getKey());
 
     expect($passes)->toHaveCount(4); // 2 items * 2 admits = 4 passes
 });
@@ -71,8 +72,8 @@ it('prefers session seat maps over event seat maps', function (): void {
         'quantity' => 1,
     ]);
 
-    $passes = app(IssueEventRegistrationPassesAction::class)->handle($registration->fresh());
-    $pass = collect($passes)->first();
+    $passes = app(IssueEventRegistrationPassesAction::class)->handle((string) $registration->getKey());
+    $pass = Pass::query()->findOrFail($passes[0]);
 
     expect($pass->seatAllocations()->first()?->seat_id)->toBe($sessionSeat->id);
 });

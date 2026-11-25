@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Events;
 
-use AIArmada\Events\Models\EventSession;
-
-final class EventSessionCancelled
+final readonly class EventSessionCancelled
 {
     public function __construct(
-        public EventSession $session,
+        public string $sessionId,
+        public string $eventId,
+        public ?string $occurrenceId = null,
         public ?string $reason = null,
     ) {}
 }

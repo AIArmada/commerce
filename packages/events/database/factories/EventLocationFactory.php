@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Database\Factories;
 
-use AIArmada\Events\Models\EventLocation;
+use AIArmada\Events\Features\Venues\Models\EventLocation;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

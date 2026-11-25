@@ -5,10 +5,10 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Events\Contracts\EventLifecycleWorkflow;
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventOccurrence;
-use AIArmada\Events\Models\EventSubmission;
-use AIArmada\Events\Services\DefaultEventSubmissionConverter;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
+use AIArmada\Events\Features\Governance\Actions\DefaultEventSubmissionConverter;
+use AIArmada\Events\Features\Governance\Models\EventSubmission;
 
 it('creates an event in draft status', function (): void {
     $event = Event::factory()->create();
@@ -46,7 +46,9 @@ it('normalizes submission content when converting a submission', function (): vo
             'submitted_at' => now(),
         ]);
 
-        $event = app(DefaultEventSubmissionConverter::class)->convert($submission);
+        $eventId = app(DefaultEventSubmissionConverter::class)->convert((string) $submission->getKey());
+
+        $event = Event::query()->findOrFail($eventId);
 
         expect($event->title)->toBe('Ramadan Lecture')
             ->and($event->summary)->toBeNull()
@@ -78,7 +80,7 @@ it('creates an event with owner polymorphic reference', function (): void {
 it('publishes event using lifecycle workflow', function (): void {
     $event = Event::factory()->create(['status' => 'scheduled']);
 
-    app(EventLifecycleWorkflow::class)->publish($event);
+    app(EventLifecycleWorkflow::class)->publish((string) $event->getKey());
     $event->refresh();
 
     expect($event->status->getValue())->toBe(Event::PUBLISHED);
@@ -88,7 +90,7 @@ it('publishes event using lifecycle workflow', function (): void {
 it('cancels event and creates change log', function (): void {
     $event = Event::factory()->create(['status' => 'published']);
 
-    app(EventLifecycleWorkflow::class)->cancel($event, 'Test cancellation');
+    app(EventLifecycleWorkflow::class)->cancel('event', (string) $event->getKey(), 'Test cancellation');
     $event->refresh();
 
     expect($event->status->getValue())->toBe('cancelled');

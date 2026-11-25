@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEvents\Actions\Exporter;
 
-use AIArmada\Events\Models\EventAttendance;
+use AIArmada\Events\Features\Attendance\Models\EventAttendance;
 use Filament\Actions\Exports\ExportColumn;
 use Filament\Actions\Exports\Exporter;
 use Filament\Actions\Exports\Models\Export;

@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\FilamentEvents\Resources\EventSessionResource\Pages;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Events\Actions\CreateEventSessionAction;
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventOccurrence;
-use AIArmada\Events\Models\EventSession;
+use AIArmada\Events\Features\Catalog\Actions\CreateEventSessionAction;
+use AIArmada\Events\Features\Catalog\Models\Event;
+use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
+use AIArmada\Events\Features\Catalog\Models\EventSession;
 use AIArmada\FilamentEvents\Resources\EventSessionResource;
 use Filament\Resources\Pages\CreateRecord;
 

@@ -1,0 +1,134 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Events\Features\Governance\Models;
+
+use AIArmada\Events\Database\Factories\EventManagementAssignmentFactory;
+use AIArmada\Events\Platform\ModelResolver;
+use AIArmada\Events\Platform\ScopesByEventOwner;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Carbon;
+
+/**
+ * @property string $id
+ * @property string|null $event_id
+ * @property string|null $event_occurrence_id
+ * @property string|null $event_session_id
+ * @property string $manageable_type
+ * @property string $manageable_id
+ * @property string $manager_type
+ * @property string $manager_id
+ * @property string|null $assigned_by_type
+ * @property string|null $assigned_by_id
+ * @property string $role
+ * @property array|null $permissions
+ * @property array|null $metadata
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Model|null $event
+ * @property-read Model|null $occurrence
+ * @property-read Model|null $session
+ * @property-read Model|null $manageable
+ * @property-read Model|null $manager
+ */
+final class EventManagementAssignment extends Model
+{
+    use HasFactory;
+    use HasUuids;
+    use ScopesByEventOwner;
+
+    protected $fillable = [
+        'event_id', 'event_occurrence_id', 'event_session_id',
+        'manageable_type', 'manageable_id',
+        'manager_type', 'manager_id',
+        'assigned_by_type', 'assigned_by_id',
+        'role', 'permissions',
+        'metadata',
+    ];
+
+    public function getTable(): string
+    {
+        return $this->table ?? config('events.database.tables.event_management_assignments', 'event_management_assignments');
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'permissions' => 'array',
+            'metadata' => 'array',
+        ];
+    }
+
+    /**
+     * @return BelongsTo<Model, $this>
+     */
+    public function event(): BelongsTo
+    {
+        return $this->belongsTo(ModelResolver::eventClass(), 'event_id');
+    }
+
+    /**
+     * @return BelongsTo<Model, $this>
+     */
+    public function occurrence(): BelongsTo
+    {
+        return $this->belongsTo(ModelResolver::occurrenceClass(), 'event_occurrence_id');
+    }
+
+    /**
+     * @return BelongsTo<Model, $this>
+     */
+    public function session(): BelongsTo
+    {
+        return $this->belongsTo(ModelResolver::sessionClass(), 'event_session_id');
+    }
+
+    /**
+     * @return MorphTo<Model, $this>
+     */
+    public function manageable(): MorphTo
+    {
+        return $this->morphTo();
+    }
+
+    protected static function eventOwnerRelation(): ?string
+    {
+        return null;
+    }
+
+    protected static function eventOwnerMorphRelation(): ?string
+    {
+        return 'manageable';
+    }
+
+    protected static function eventOwnerEventIdColumn(): ?string
+    {
+        return 'event_id';
+    }
+
+    /**
+     * @return MorphTo<Model, $this>
+     */
+    public function manager(): MorphTo
+    {
+        return $this->morphTo();
+    }
+
+    /**
+     * @return MorphTo<Model, $this>
+     */
+    public function assignedBy(): MorphTo
+    {
+        return $this->morphTo();
+    }
+
+    protected static function newFactory(): EventManagementAssignmentFactory
+    {
+        return EventManagementAssignmentFactory::new();
+    }
+}

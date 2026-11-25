@@ -6,7 +6,7 @@ namespace AIArmada\FilamentEvents\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\JsonDisplay;
-use AIArmada\Events\Models\EventChangeLog;
+use AIArmada\Events\Features\Changes\Models\EventChangeLog;
 use AIArmada\FilamentEvents\Resources\EventChangeLogResource\Pages\ListEventChangeLogs;
 use AIArmada\FilamentEvents\Resources\EventChangeLogResource\Pages\ViewEventChangeLog;
 use BackedEnum;
