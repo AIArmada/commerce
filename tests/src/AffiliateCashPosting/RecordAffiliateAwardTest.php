@@ -18,6 +18,7 @@ use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateFraudSignal;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliateUpline;
+use AIArmada\Affiliates\Queries\AwardRecipientQuery;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\Disabled;
 use AIArmada\Affiliates\States\PaidConversion;
@@ -675,14 +676,14 @@ test('award decisions validate authorization proof and policy limits', function 
         ->and($allow->policyMinMinor)->toBe(10)
         ->and($allow->policyMaxMinor)->toBe(20);
 
-    expect(FixtureAffiliateAwardPolicy::deny()->decide($this->makeRecipient(), new AffiliateAwardProposal('k', 1, 'MYR', ApprovedConversion::class))->authorized)->toBeFalse();
+    expect(FixtureAffiliateAwardPolicy::deny()->decide(AwardRecipientQuery::fromAffiliate($this->makeRecipient()), new AffiliateAwardProposal('k', 1, 'MYR', ApprovedConversion::class))->authorized)->toBeFalse();
 
     expect(fn (): AffiliateAwardDecision => AffiliateAwardDecision::deny(''))->toThrow(InvalidArgumentException::class);
     expect(fn (): AffiliateAwardDecision => AffiliateAwardDecision::allow(-1))->toThrow(InvalidArgumentException::class);
     expect(fn (): AffiliateAwardDecision => AffiliateAwardDecision::allow(20, 10))->toThrow(InvalidArgumentException::class);
 
     $null = new NullAffiliateAwardPolicy;
-    expect($null->decide($this->makeRecipient(), new AffiliateAwardProposal('k', 1, 'MYR', ApprovedConversion::class))->authorized)->toBeFalse();
+    expect($null->decide(AwardRecipientQuery::fromAffiliate($this->makeRecipient()), new AffiliateAwardProposal('k', 1, 'MYR', ApprovedConversion::class))->authorized)->toBeFalse();
 });
 
 test('host authorization runs inside the posting transaction on the award connection', function (): void {

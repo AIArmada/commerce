@@ -7,6 +7,7 @@ namespace Tests\src\Referrals;
 use AIArmada\Affiliates\Data\AffiliateAwardDecision;
 use AIArmada\Affiliates\Data\AffiliateAwardProposal;
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Queries\AwardRecipientQuery;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
@@ -966,9 +967,9 @@ it('authorizes affiliates policies only for the exact pending referral reward', 
     $key = 'referrals:award:' . $reward->invite_id . ':referrer';
     $proposal = new AffiliateAwardProposal($key, 1250, 'MYR', ReferralRewardStatus::class, 'registration:affiliate-policy', (string) $reward->invite_id);
 
-    $decision = OwnerContext::withOwner($owner, fn (): AffiliateAwardDecision => $policy->decide($recipient, $proposal));
+    $decision = OwnerContext::withOwner($owner, fn (): AffiliateAwardDecision => $policy->decide(AwardRecipientQuery::fromAffiliate($recipient), $proposal));
     $wrongAmount = OwnerContext::withOwner($owner, fn (): AffiliateAwardDecision => $policy->decide(
-        $recipient,
+        AwardRecipientQuery::fromAffiliate($recipient),
         new AffiliateAwardProposal($key, 1300, 'MYR', ReferralRewardStatus::class, 'registration:affiliate-policy', (string) $reward->invite_id),
     ));
 

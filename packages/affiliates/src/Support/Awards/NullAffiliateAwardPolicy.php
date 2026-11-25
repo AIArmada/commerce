@@ -7,7 +7,7 @@ namespace AIArmada\Affiliates\Support\Awards;
 use AIArmada\Affiliates\Contracts\AffiliateAwardPolicy;
 use AIArmada\Affiliates\Data\AffiliateAwardDecision;
 use AIArmada\Affiliates\Data\AffiliateAwardProposal;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Data\AwardRecipient;
 
 /**
  * Truthful default refusal when the host bound no award policy.
@@ -18,7 +18,7 @@ use AIArmada\Affiliates\Models\Affiliate;
  */
 final class NullAffiliateAwardPolicy implements AffiliateAwardPolicy
 {
-    public function decide(Affiliate $recipient, AffiliateAwardProposal $proposal): AffiliateAwardDecision
+    public function decide(AwardRecipient $recipient, AffiliateAwardProposal $proposal): AffiliateAwardDecision
     {
         return AffiliateAwardDecision::deny('award_host_policy_unbound');
     }

@@ -7,6 +7,7 @@ namespace AIArmada\Commerce\Tests\AffiliateCashPosting\Support;
 use AIArmada\Affiliates\Contracts\AffiliateAwardPolicy;
 use AIArmada\Affiliates\Data\AffiliateAwardDecision;
 use AIArmada\Affiliates\Data\AffiliateAwardProposal;
+use AIArmada\Affiliates\Data\AwardRecipient;
 use AIArmada\Affiliates\Models\Affiliate;
 
 /**
@@ -53,15 +54,15 @@ final class FixtureAffiliateAwardPolicy implements AffiliateAwardPolicy
         self::$observedDecisions = [];
     }
 
-    public function decide(Affiliate $recipient, AffiliateAwardProposal $proposal): AffiliateAwardDecision
+    public function decide(AwardRecipient $recipient, AffiliateAwardProposal $proposal): AffiliateAwardDecision
     {
         if (self::$observe) {
-            $fresh = Affiliate::query()->whereKey($recipient->getKey())->lockForUpdate()->first();
+            $fresh = Affiliate::on($recipient->connectionName)->whereKey($recipient->id)->lockForUpdate()->first();
 
             self::$observedDecisions[] = [
-                'transaction_level' => $recipient->getConnection()->transactionLevel(),
-                'connection' => (string) $recipient->getConnection()->getName(),
-                'recipient' => (string) $recipient->getKey(),
+                'transaction_level' => \Illuminate\Support\Facades\DB::connection($recipient->connectionName)->transactionLevel(),
+                'connection' => $recipient->connectionName,
+                'recipient' => $recipient->id,
                 'award_key' => $proposal->awardKey,
                 'observed_attributable' => $fresh instanceof Affiliate ? $fresh->canBeAttributed() : null,
             ];

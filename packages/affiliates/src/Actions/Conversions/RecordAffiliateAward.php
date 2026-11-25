@@ -15,6 +15,7 @@ use AIArmada\Affiliates\Exceptions\AffiliateAwardPolicyLimitException;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Queries\AwardRecipientQuery;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\ConversionStatus;
 use AIArmada\Affiliates\States\PendingConversion;
@@ -247,7 +248,7 @@ final class RecordAffiliateAward
             // award connection: same-connection approval/source locks
             // taken here are held through commit. The call must stay
             // read-only because deadlock retries re-invoke it.
-            $decision = $policy->decide($recipient, $proposal);
+            $decision = $policy->decide(AwardRecipientQuery::fromAffiliate($recipient), $proposal);
 
             if (! $decision->authorized) {
                 return [

@@ -70,7 +70,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 
 interface AffiliateAwardPolicy
 {
-    public function decide(Affiliate $recipient, AffiliateAwardProposal $proposal): AffiliateAwardDecision;
+    public function decide(AwardRecipient $recipient, AffiliateAwardProposal $proposal): AffiliateAwardDecision;
 }
 ```
 
@@ -102,7 +102,9 @@ Rules:
   never on invented attribution.
 
 Atomicity contract: `decide()` runs INSIDE the posting transaction on
-the award connection, after the idempotency and recipient row locks.
+the award connection, after the idempotency and recipient row locks. The
+policy receives an immutable `AwardRecipient` snapshot, including the resolved
+connection name and owner tuple; same-connection reads remain atomic.
 The connection transaction level is at least 1 at invocation, and any
 same-connection `SELECT ... FOR UPDATE` the host performs (approval,
 budget, or eligibility source rows) is held through commit. Reads over
