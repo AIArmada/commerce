@@ -7,6 +7,7 @@ use AIArmada\Affiliates\Features\Conversions\Actions\AllocateUplineCommissions;
 use AIArmada\Affiliates\Features\Conversions\Actions\ApplyConversionAccounting;
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionMaturity;
 use AIArmada\Affiliates\Features\Conversions\Api\PerformanceBonusPosting;
+use AIArmada\Affiliates\Features\Conversions\Api\PerformanceBonusQueries;
 use AIArmada\Affiliates\Features\Payouts\Actions\ClaimScheduledPayout;
 use AIArmada\Affiliates\Features\Payouts\Actions\CreatePayout;
 use AIArmada\Affiliates\Features\Upline\Api\RankQualificationApi;
@@ -17,7 +18,6 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateRank;
-use AIArmada\Affiliates\Services\PerformanceBonusService;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\ConversionStatus;
 use AIArmada\Affiliates\States\PendingConversion;
@@ -328,12 +328,12 @@ test('leaderboard excludes purpose-tagged affiliates', function (): void {
         'occurred_at' => CarbonImmutable::now(),
     ]);
 
-    $rows = app(PerformanceBonusService::class)->getLeaderboard(
+    $rows = app(PerformanceBonusQueries::class)->getLeaderboard(
         CarbonImmutable::now()->startOfMonth(),
         CarbonImmutable::now()->endOfMonth(),
     );
 
-    $ids = $rows->map(fn ($row): string => (string) $row['affiliate_id'])->all();
+    $ids = array_column($rows, 'affiliate_id');
 
     expect($ids)->not->toContain((string) $tagged->getKey());
 });

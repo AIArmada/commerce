@@ -331,14 +331,14 @@ $comparison = $analyzer->compareCohorts($from, $to);
 $sources = $analyzer->analyzeBySource($from, $to);
 ```
 
-## PerformanceBonusService
+## PerformanceBonusQueries
 
-Calculates performance bonuses, awards them as approved bonus conversions, and exposes leaderboards based on approved revenue.
+Calculates performance bonuses and exposes owner-scoped leaderboards based on approved revenue. Posting is owned separately by `PerformanceBonusPosting`.
 
 ```php
-use AIArmada\Affiliates\Services\PerformanceBonusService;
+use AIArmada\Affiliates\Features\Conversions\Api\PerformanceBonusQueries;
 
-$service = app(PerformanceBonusService::class);
+$service = app(PerformanceBonusQueries::class);
 
 // Calculate all configured bonuses for a period
 $bonuses = $service->calculateBonuses($from, $to);
@@ -350,7 +350,7 @@ $awarded = app(\AIArmada\Affiliates\Features\Conversions\Api\PerformanceBonusPos
 $leaderboard = $service->getLeaderboard($from, $to, 10);
 ```
 
-The service uses approved conversions and treats `value_minor` as the revenue field.
+The query returns native arrays and uses approved conversions and treats `value_minor` as the revenue field.
 
 ## AttributionModel
 

@@ -5,11 +5,11 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Features\Conversions\Api\PerformanceBonusPosting;
+use AIArmada\Affiliates\Features\Conversions\Api\PerformanceBonusQueries;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
-use AIArmada\Affiliates\Services\PerformanceBonusService;
 use AIArmada\Affiliates\Settings\AffiliateBonusSettings;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
@@ -22,7 +22,7 @@ beforeEach(function (): void {
     // Settings cache outlives RefreshDatabase rollbacks within a process.
     Artisan::call('settings:clear-cache');
 
-    $this->service = app(PerformanceBonusService::class);
+    $this->service = app(PerformanceBonusQueries::class);
 
     $this->affiliate = Affiliate::create([
         'code' => 'PERF-' . uniqid(),
@@ -35,13 +35,13 @@ beforeEach(function (): void {
     ]);
 });
 
-describe('PerformanceBonusService', function (): void {
+describe('PerformanceBonusQueries', function (): void {
     describe('calculateBonuses', function (): void {
         // calculateBonuses uses HAVING clauses that are not compatible with the
         // SQLite test connection. These tests verify the method signature only.
 
         test('method signature accepts nullable Carbon parameters', function (): void {
-            $reflection = new ReflectionMethod(PerformanceBonusService::class, 'calculateBonuses');
+            $reflection = new ReflectionMethod(PerformanceBonusQueries::class, 'calculateBonuses');
             $params = $reflection->getParameters();
 
             expect($params)->toHaveCount(2);
@@ -52,7 +52,7 @@ describe('PerformanceBonusService', function (): void {
         });
 
         test('method returns array', function (): void {
-            $reflection = new ReflectionMethod(PerformanceBonusService::class, 'calculateBonuses');
+            $reflection = new ReflectionMethod(PerformanceBonusQueries::class, 'calculateBonuses');
             $returnType = $reflection->getReturnType();
 
             expect($returnType)->not->toBeNull();
@@ -245,13 +245,13 @@ describe('PerformanceBonusService', function (): void {
     });
 
     describe('getLeaderboard', function (): void {
-        test('returns collection', function (): void {
+        test('returns an array', function (): void {
             $result = $this->service->getLeaderboard();
 
-            expect($result)->toBeCollection();
+            expect($result)->toBeArray();
         });
 
-        test('returns empty collection when no conversions', function (): void {
+        test('returns an empty array when no conversions', function (): void {
             $result = $this->service->getLeaderboard();
 
             expect($result)->toBeEmpty();
@@ -273,7 +273,7 @@ describe('PerformanceBonusService', function (): void {
             $result = $this->service->getLeaderboard();
 
             expect($result)->toHaveCount(1);
-            expect($result->first()['affiliate_id'])->toBe($this->affiliate->id);
+            expect($result[0]['affiliate_id'])->toBe($this->affiliate->id);
         });
 
         test('excludes pending conversions', function (): void {
@@ -336,8 +336,8 @@ describe('PerformanceBonusService', function (): void {
             $result = $this->service->getLeaderboard();
 
             expect($result)->toHaveCount(2);
-            expect($result->first()['affiliate_id'])->toBe($affiliate2->id);
-            expect($result->first()['rank'])->toBe(1);
+            expect($result[0]['affiliate_id'])->toBe($affiliate2->id);
+            expect($result[0]['rank'])->toBe(1);
         });
 
         test('respects limit parameter', function (): void {
@@ -385,7 +385,7 @@ describe('PerformanceBonusService', function (): void {
             ]);
 
             $result = $this->service->getLeaderboard();
-            $entry = $result->first();
+            $entry = $result[0];
 
             expect($entry)->toHaveKeys([
                 'rank',
@@ -438,7 +438,7 @@ describe('PerformanceBonusService', function (): void {
             $result = $this->service->getLeaderboard($from, $to);
 
             expect($result)->toHaveCount(1);
-            expect($result->first()['total_revenue'])->toBe(8000); // Only in-range conversion
+            expect($result[0]['total_revenue'])->toBe(8000); // Only in-range conversion
         });
 
         test('calculates revenue from value_minor', function (): void {
@@ -454,7 +454,7 @@ describe('PerformanceBonusService', function (): void {
             ]);
 
             $result = $this->service->getLeaderboard();
-            $entry = $result->first();
+            $entry = $result[0];
 
             expect($entry['total_revenue'])->toBe(7000)
                 ->and($entry['avg_order_value'])->toBe(7000.0);

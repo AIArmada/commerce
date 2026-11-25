@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Services;
+namespace AIArmada\Affiliates\Features\Conversions\Queries;
 
 use AIArmada\Affiliates\Enums\CommissionRuleType;
+use AIArmada\Affiliates\Features\Conversions\Api\PerformanceBonusQueries;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
@@ -14,13 +15,12 @@ use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
+use LogicException;
 
-final class PerformanceBonusService
+final readonly class QueryPerformanceBonuses implements PerformanceBonusQueries
 {
     public function __construct(
-        private readonly CommissionRuleEngine $commissionRules,
+        private CommissionRuleEngine $commissionRules,
     ) {}
 
     public function calculateBonuses(
@@ -47,25 +47,37 @@ final class PerformanceBonusService
         ?CarbonImmutable $from = null,
         ?CarbonImmutable $to = null,
         int $limit = 10
-    ): Collection {
+    ): array {
         $from = $from ?? CarbonImmutable::now()->startOfMonth();
         $to = $to ?? CarbonImmutable::now()->endOfMonth();
 
-        $conversionsTable = (new AffiliateConversion)->getTable();
-        $affiliatesTable = (new Affiliate)->getTable();
-        $purposeColumn = DB::connection()->getQueryGrammar()->wrap("{$affiliatesTable}.purpose");
-        $revenueExpression = "COALESCE({$conversionsTable}.value_minor, 0)";
+        $conversion = new AffiliateConversion;
+        $affiliate = new Affiliate;
+        $connection = $conversion->getConnection();
 
-        $query = DB::table($conversionsTable)
+        if ($connection !== $affiliate->getConnection()) {
+            throw new LogicException('Performance bonus queries require a shared database connection.');
+        }
+
+        $conversionsTable = $conversion->getTable();
+        $affiliatesTable = $affiliate->getTable();
+        $grammar = $connection->getQueryGrammar();
+        $purposeColumn = $grammar->wrap("{$affiliatesTable}.purpose");
+        $valueColumn = $grammar->wrap("{$conversionsTable}.value_minor");
+        $idColumn = $grammar->wrap("{$conversionsTable}.id");
+        $commissionColumn = $grammar->wrap("{$conversionsTable}.commission_minor");
+        $revenueExpression = "COALESCE({$valueColumn}, 0)";
+
+        $query = $connection->table($conversionsTable)
             ->join($affiliatesTable, "{$conversionsTable}.affiliate_id", '=', "{$affiliatesTable}.id")
             ->select([
                 "{$affiliatesTable}.id as affiliate_id",
                 "{$affiliatesTable}.name as affiliate_name",
                 "{$affiliatesTable}.code as affiliate_code",
-                DB::raw("SUM({$revenueExpression}) as total_revenue"),
-                DB::raw("COUNT({$conversionsTable}.id) as total_conversions"),
-                DB::raw("SUM({$conversionsTable}.commission_minor) as total_commissions"),
-                DB::raw("AVG({$revenueExpression}) as avg_order_value"),
+                $connection->raw("SUM({$revenueExpression}) as total_revenue"),
+                $connection->raw("COUNT({$idColumn}) as total_conversions"),
+                $connection->raw("SUM({$commissionColumn}) as total_commissions"),
+                $connection->raw("AVG({$revenueExpression}) as avg_order_value"),
             ])
             ->whereBetween("{$conversionsTable}.occurred_at", [$from, $to])
             ->where("{$conversionsTable}.status", ApprovedConversion::value())
@@ -76,6 +88,7 @@ final class PerformanceBonusService
             })
             ->groupBy("{$affiliatesTable}.id", "{$affiliatesTable}.name", "{$affiliatesTable}.code")
             ->orderByDesc('total_revenue')
+            ->orderBy("{$affiliatesTable}.id")
             ->limit($limit);
 
         if ((bool) config('affiliates.owner.enabled', false)) {
@@ -116,6 +129,6 @@ final class PerformanceBonusService
                     'total_commissions' => (int) $row->total_commissions,
                     'avg_order_value' => round((float) $row->avg_order_value, 2),
                 ];
-            });
+            })->all();
     }
 }

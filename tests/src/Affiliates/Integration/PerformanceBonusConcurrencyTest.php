@@ -3,10 +3,10 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Features\Conversions\Api\PerformanceBonusPosting;
+use AIArmada\Affiliates\Features\Conversions\Api\PerformanceBonusQueries;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Services\PerformanceBonusService;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
@@ -224,14 +224,14 @@ test('leaderboard respects owner scope', function (): void {
     });
 
     OwnerContext::withOwner($ownerA, function (): void {
-        $leaderboard = app(PerformanceBonusService::class)->getLeaderboard();
+        $leaderboard = app(PerformanceBonusQueries::class)->getLeaderboard();
         expect($leaderboard)->toHaveCount(1);
-        expect($leaderboard->first()['total_revenue'])->toBe(50000);
+        expect($leaderboard[0]['total_revenue'])->toBe(50000);
     });
 
     OwnerContext::withOwner($ownerB, function (): void {
-        $leaderboard = app(PerformanceBonusService::class)->getLeaderboard();
+        $leaderboard = app(PerformanceBonusQueries::class)->getLeaderboard();
         expect($leaderboard)->toHaveCount(1);
-        expect($leaderboard->first()['total_revenue'])->toBe(100000);
+        expect($leaderboard[0]['total_revenue'])->toBe(100000);
     });
 });
