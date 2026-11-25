@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Support\Middleware;
+namespace AIArmada\Affiliates\Features\Attribution\EntryPoints\Middleware;
 
 use AIArmada\Affiliates\Features\Attribution\Api\AttributionActivity;
 use AIArmada\Affiliates\Features\Attribution\Api\AttributionTracking;
@@ -12,6 +12,7 @@ use AIArmada\CommerceSupport\Support\OwnerScope;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
 final class TrackAffiliateCookie
@@ -19,19 +20,12 @@ final class TrackAffiliateCookie
     public function __construct(
         private readonly AttributionTracking $attributionTracking,
         private readonly AttributionActivity $attributionActivity,
+        private readonly ReferralTrackingConsent $consent,
     ) {}
 
     public function handle(Request $request, Closure $next): Response
     {
-        if (! config('affiliates.cookies.enabled', true)) {
-            return $next($request);
-        }
-
-        if ($this->shouldRespectDoNotTrack($request)) {
-            return $next($request);
-        }
-
-        if ($this->requiresConsent() && ! $this->hasConsent($request)) {
+        if (! $this->consent->allows($request)) {
             return $next($request);
         }
 
@@ -41,7 +35,7 @@ final class TrackAffiliateCookie
         $cookieName = config('affiliates.cookies.name', 'affiliate_session');
         $cookieValue = $request->cookie($cookieName);
         $linkId = $request->query('aff_link');
-        $link = is_string($linkId) ? AffiliateLink::query()->withoutGlobalScope('affiliate_owner')
+        $link = is_string($linkId) && Str::isUuid($linkId) ? AffiliateLink::query()->withoutGlobalScope('affiliate_owner')
             ->with(['affiliate' => fn ($query) => $query->withoutGlobalScope(OwnerScope::class)])
             ->whereKey($linkId)->whereNull('deactivated_at')->first() : null;
         $affiliateCode = $linkId !== null ? $link?->affiliate->code : $this->resolveAffiliateCode($request);
@@ -125,34 +119,5 @@ final class TrackAffiliateCookie
             'ip_address' => $request->ip(),
             'metadata' => ['utm' => $querySnapshot],
         ];
-    }
-
-    private function shouldRespectDoNotTrack(Request $request): bool
-    {
-        if (! config('affiliates.cookies.respect_dnt', false)) {
-            return false;
-        }
-
-        return (string) $request->headers->get('DNT') === '1';
-    }
-
-    private function requiresConsent(): bool
-    {
-        return (bool) config('affiliates.cookies.require_consent', false);
-    }
-
-    private function hasConsent(Request $request): bool
-    {
-        if (! $this->requiresConsent()) {
-            return true;
-        }
-
-        $consentCookie = (string) config('affiliates.cookies.consent_cookie', 'affiliate_consent');
-
-        if ($request->boolean('affiliate_consent')) {
-            return true;
-        }
-
-        return (bool) $request->cookie($consentCookie);
     }
 }

@@ -2,19 +2,16 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Actions\Affiliates;
+namespace AIArmada\Affiliates\Features\Attribution\EntryPoints\Http;
 
-use AIArmada\Affiliates\Queries\AffiliateLookupQuery;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use Lorisleiva\Actions\Concerns\AsAction;
 
-final class ResolvePublicAffiliateReferralContext
+final readonly class ResolvePublicAffiliateReferralContext
 {
-    use AsAction;
-
     public function __construct(
-        private readonly AffiliateLookupQuery $affiliateLookup,
+        private AffiliateDirectory $affiliateLookup,
     ) {}
 
     /**
@@ -73,14 +70,14 @@ final class ResolvePublicAffiliateReferralContext
 
             $affiliate = $this->affiliateLookup->findByCode($affiliateCode);
 
-            if ($affiliate === null || ! $affiliate->canBeAttributed()) {
+            if ($affiliate === null || ! $affiliate->canBeAttributed) {
                 continue;
             }
 
             return [
-                'code' => (string) $affiliate->code,
-                'name' => (string) $affiliate->name,
-                'default_voucher_code' => $affiliate->default_voucher_code,
+                'code' => $affiliate->code,
+                'name' => $affiliate->name,
+                'default_voucher_code' => $affiliate->defaultVoucherCode,
                 'source' => 'query',
             ];
         }
@@ -101,14 +98,14 @@ final class ResolvePublicAffiliateReferralContext
 
         $affiliate = $this->affiliateLookup->findActiveAffiliateByCookie($cookieValue);
 
-        if ($affiliate === null || ! $affiliate->canBeAttributed()) {
+        if ($affiliate === null || ! $affiliate->canBeAttributed) {
             return null;
         }
 
         return [
-            'code' => (string) $affiliate->code,
-            'name' => (string) $affiliate->name,
-            'default_voucher_code' => $affiliate->default_voucher_code,
+            'code' => $affiliate->code,
+            'name' => $affiliate->name,
+            'default_voucher_code' => $affiliate->defaultVoucherCode,
             'source' => 'cookie',
         ];
     }

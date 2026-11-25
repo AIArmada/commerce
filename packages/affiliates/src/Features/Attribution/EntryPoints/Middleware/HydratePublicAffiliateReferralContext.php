@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Support\Middleware;
+namespace AIArmada\Affiliates\Features\Attribution\EntryPoints\Middleware;
 
-use AIArmada\Affiliates\Actions\Affiliates\ResolvePublicAffiliateReferralContext;
+use AIArmada\Affiliates\Features\Attribution\EntryPoints\Http\ResolvePublicAffiliateReferralContext;
 use Closure;
 use Illuminate\Http\Request;
 

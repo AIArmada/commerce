@@ -15,19 +15,16 @@ The canonical orchestration surface for affiliates is the `Actions` tree. Prefer
 | `app(AffiliateLifecycle::class)->approve($affiliateId)` | Approve a pending affiliate |
 | `app(CartAttribution::class)->attach((string) $affiliate->getKey(), $cart, $context)` | Attach an affiliate to a cart |
 | `app(CartAttribution::class)->attachFromCookie($cart, $cookieValue, $context)` | Attach from cookie tracking |
-| `CapturePublicAffiliateReferral::run($request, $affiliateCode)` | Capture public referral |
 | `app(AffiliateAdministration::class)->create($data)` | Create a new affiliate |
 | `app(TrackingLinkAdministration::class)->create((string) $affiliate->getKey(), $destinationUrl, $attributes)` | Create a tracking link |
 | `app(AffiliateLifecycle::class)->reject($affiliateId)` | Reject an affiliate |
 | `app(AffiliateLifecycle::class)->disable($affiliateId)` | Disable an affiliate |
 | `app(AffiliateLifecycle::class)->pause($affiliateId)` | Pause an affiliate |
 | `app(CartAttribution::class)->detach($cart)` | Detach the affiliate from a cart |
-| `ResolvePublicAffiliateReferralContext::run($request)` | Resolve referral context |
 | `app(AttributionActivity::class)->touch($cookieValue, $context)` | Touch cookie attribution |
 | `app(AttributionTracking::class)->track($code, $context, $cookieValue)` | Track a visit by code |
 
-`CapturePublicAffiliateReferral::run($request, $affiliateCode)` takes two
-arguments and returns a `RedirectResponse`.
+Public referral path capture and view context are handled by the Attribution feature's middleware. Use the `affiliates.referral_path` and `affiliates.public_context` aliases.
 
 ### Conversions Actions (`Actions/Conversions/`)
 

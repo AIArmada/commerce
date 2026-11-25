@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates;
 
-use AIArmada\Affiliates\Actions\Affiliates\ResolvePublicAffiliateReferralContext;
+use AIArmada\Affiliates\Features\Attribution\EntryPoints\Http\ResolvePublicAffiliateReferralContext;
 use AIArmada\Affiliates\Cart\AffiliateDiscountConditionProvider;
 use AIArmada\Affiliates\Contracts\AffiliateWebhookTransport;
 use AIArmada\Affiliates\Contracts\CreativeAssetRemoval;
@@ -57,9 +57,9 @@ use AIArmada\Affiliates\Platform\FeatureCatalog;
 use AIArmada\Affiliates\Platform\FeatureModule;
 use AIArmada\Affiliates\Support\Integrations\CartBridge;
 use AIArmada\Affiliates\Features\Attribution\EntryPoints\Listeners\VoucherIntegrationRegistrar;
-use AIArmada\Affiliates\Support\Middleware\CaptureAffiliateReferralFromPath;
-use AIArmada\Affiliates\Support\Middleware\HydratePublicAffiliateReferralContext;
-use AIArmada\Affiliates\Support\Middleware\TrackAffiliateCookie;
+use AIArmada\Affiliates\Features\Attribution\EntryPoints\Middleware\CaptureAffiliateReferralFromPath;
+use AIArmada\Affiliates\Features\Attribution\EntryPoints\Middleware\HydratePublicAffiliateReferralContext;
+use AIArmada\Affiliates\Features\Attribution\EntryPoints\Middleware\TrackAffiliateCookie;
 use AIArmada\Cart\CartManager;
 use AIArmada\Cart\Conditions\ConditionProviderRegistry;
 use AIArmada\Links\Contracts\LinkGateInterface;
@@ -90,7 +90,7 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
             ->hasViews('affiliates')
             ->runsMigrations()
             ->discoversMigrations()
-            ->hasRoutes(['api', 'web'])
+            ->hasRoutes(['api'])
             ->hasCommands([
                 Features\Commissions\EntryPoints\Console\AwardPerformanceBonusesCommand::class,
                 Features\Payouts\EntryPoints\Console\ExportAffiliatePayoutCommand::class,

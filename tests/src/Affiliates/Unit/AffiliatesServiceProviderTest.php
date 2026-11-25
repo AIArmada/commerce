@@ -14,9 +14,9 @@ use AIArmada\Affiliates\Features\Programs\EntryPoints\Listeners\NotifyProgramJoi
 use AIArmada\Affiliates\Features\Conversions\EntryPoints\Listeners\RecordCommissionForOrder;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Features\Attribution\EntryPoints\Listeners\VoucherIntegrationRegistrar;
-use AIArmada\Affiliates\Support\Middleware\CaptureAffiliateReferralFromPath;
-use AIArmada\Affiliates\Support\Middleware\HydratePublicAffiliateReferralContext;
-use AIArmada\Affiliates\Support\Middleware\TrackAffiliateCookie;
+use AIArmada\Affiliates\Features\Attribution\EntryPoints\Middleware\CaptureAffiliateReferralFromPath;
+use AIArmada\Affiliates\Features\Attribution\EntryPoints\Middleware\HydratePublicAffiliateReferralContext;
+use AIArmada\Affiliates\Features\Attribution\EntryPoints\Middleware\TrackAffiliateCookie;
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Conditions\ConditionProviderRegistry;
 use AIArmada\Cart\Contracts\CartManagerInterface;

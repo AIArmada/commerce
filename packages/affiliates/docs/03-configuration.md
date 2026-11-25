@@ -132,7 +132,7 @@ this flag.
 | `auto_register_middleware` | Auto-add middleware to `web` group |
 | `respect_dnt` | Honor Do Not Track browser headers |
 | `require_consent` | Require explicit consent before tracking |
-| `consent_cookie` | Cookie name for consent flag |
+| `consent_cookie` | Client-readable consent cookie; its value must explicitly be true (`1`, `true`, `on`, or `yes`) |
 
 ## Public Pages
 
@@ -160,7 +160,7 @@ this flag.
 | `enabled` | Enable package-owned public referral helpers and shared view data |
 | `view_data_key` | View variable populated by the public referral middleware / view composer |
 | `auto_register_middleware` | Push `HydratePublicAffiliateReferralContext` into the `web` middleware group |
-| `route.enabled` | Reserved: entry capture is middleware-based (see below), no route is registered |
+| `route.enabled` | Enable referral suffix capture; no separate route is registered |
 | `route.path` | Referral suffix pattern captured by the middleware, default `r/{affiliateCode}` |
 | `route.name` | Reserved entry-route name (no route is registered) |
 | `route.middleware` | Reserved entry-route middleware stack (no route is registered) |

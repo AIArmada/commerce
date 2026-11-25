@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Actions\Affiliates\ResolvePublicAffiliateReferralContext;
+use AIArmada\Affiliates\Features\Attribution\EntryPoints\Http\ResolvePublicAffiliateReferralContext;
 use AIArmada\Affiliates\Features\Attribution\Api\AttributionActivity;
 use AIArmada\Affiliates\Features\Attribution\Api\AttributionTracking;
 use AIArmada\Affiliates\Models\Affiliate;
@@ -205,4 +205,50 @@ test('visit tracking rotates an expired cookie instead of reusing its identifier
     expect($second)->not->toBeNull()
         ->and($second->cookieValue)->not->toBe('expired-visit-cookie')
         ->and($second->id)->not->toBe($first->id);
+});
+
+test('path referrals respect disabled cookies, do not track and consent settings', function (string $setting, bool $value, array $headers): void {
+    config()->set($setting, $value);
+
+    $response = $this->withHeaders($headers)->get('/r/' . $this->affiliate->code);
+
+    $response->assertRedirect(url('/'))
+        ->assertCookieMissing((string) config('affiliates.cookies.name', 'affiliate_session'));
+
+    expect(AffiliateAttribution::query()->count())->toBe(0);
+})->with([
+    ['affiliates.cookies.enabled', false, []],
+    ['affiliates.cookies.respect_dnt', true, ['DNT' => '1']],
+    ['affiliates.cookies.require_consent', true, []],
+]);
+
+test('a false consent cookie does not authorize path referral tracking', function (): void {
+    config()->set('affiliates.cookies.require_consent', true);
+
+    $this->withUnencryptedCookie((string) config('affiliates.cookies.consent_cookie'), 'false')
+        ->get('/r/' . $this->affiliate->code)
+        ->assertRedirect(url('/'))
+        ->assertCookieMissing((string) config('affiliates.cookies.name', 'affiliate_session'));
+
+    expect(AffiliateAttribution::query()->count())->toBe(0);
+});
+
+test('disabled path referral capture does not intercept the request', function (): void {
+    config()->set('affiliates.public_pages.route.enabled', false);
+
+    $request = Request::create('/r/' . $this->affiliate->code, 'GET');
+    $response = app(\AIArmada\Affiliates\Features\Attribution\EntryPoints\Middleware\CaptureAffiliateReferralFromPath::class)
+        ->handle($request, fn () => response('next'));
+
+    expect($response->getContent())->toBe('next')
+        ->and(AffiliateAttribution::query()->count())->toBe(0);
+});
+
+test('malformed tracking link IDs do not reach UUID database queries', function (): void {
+    $request = Request::create('/?aff_link=not-a-uuid', 'GET');
+    $response = app(\AIArmada\Affiliates\Features\Attribution\EntryPoints\Middleware\TrackAffiliateCookie::class)
+        ->handle($request, fn () => response('next'));
+
+    expect($response->getContent())->toBe('next')
+        ->and(AffiliateAttribution::query()->count())->toBe(0);
 });

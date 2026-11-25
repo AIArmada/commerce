@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Support\Middleware;
+namespace AIArmada\Affiliates\Features\Attribution\EntryPoints\Middleware;
 
 use AIArmada\Affiliates\Features\Attribution\Api\AttributionTracking;
-use AIArmada\Affiliates\Queries\AffiliateLookupQuery;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -14,12 +14,19 @@ use Symfony\Component\HttpFoundation\Response;
 final class CaptureAffiliateReferralFromPath
 {
     public function __construct(
-        private readonly AffiliateLookupQuery $affiliateLookup,
+        private readonly AffiliateDirectory $affiliateLookup,
         private readonly AttributionTracking $attributionTracking,
+        private readonly ReferralTrackingConsent $consent,
     ) {}
 
     public function handle(Request $request, Closure $next): Response
     {
+        if (! $request->isMethod('GET')
+            || ! config('affiliates.public_pages.enabled', true)
+            || ! config('affiliates.public_pages.route.enabled', true)) {
+            return $next($request);
+        }
+
         $path = '/' . $request->path();
 
         if (! preg_match('#/r/([a-zA-Z0-9_\-]+)$#', $path, $matches)) {
@@ -30,22 +37,26 @@ final class CaptureAffiliateReferralFromPath
 
         $affiliate = $this->affiliateLookup->findByCode($code);
 
-        if ($affiliate === null || ! $affiliate->canBeAttributed()) {
-            return $next($request);
-        }
-
-        $cookieName = (string) config('affiliates.cookies.name', 'affiliate_session');
-        $cookieValue = $request->cookie($cookieName);
-        $context = $this->buildContext($request);
-        $attribution = $this->attributionTracking->track($code, $context, $cookieValue);
-
-        if ($attribution === null || ! is_string($attribution->cookieValue) || $attribution->cookieValue === '') {
+        if ($affiliate === null || ! $affiliate->canBeAttributed) {
             return $next($request);
         }
 
         $prefix = mb_substr($path, 0, mb_strlen($path) - mb_strlen('/r/' . $code));
         $redirectPath = $prefix === '' ? '/' : $prefix;
         $redirectUrl = $redirectPath . ($request->getQueryString() ? '?' . $request->getQueryString() : '');
+
+        if (! $this->consent->allows($request)) {
+            return redirect($redirectUrl);
+        }
+
+        $cookieName = (string) config('affiliates.cookies.name', 'affiliate_session');
+        $cookieValue = $request->cookie($cookieName);
+        $context = $this->buildContext($request);
+        $attribution = $this->attributionTracking->track($affiliate->code, $context, $cookieValue);
+
+        if ($attribution === null || ! is_string($attribution->cookieValue) || $attribution->cookieValue === '') {
+            return $next($request);
+        }
 
         return redirect($redirectUrl)
             ->withCookie(cookie(
