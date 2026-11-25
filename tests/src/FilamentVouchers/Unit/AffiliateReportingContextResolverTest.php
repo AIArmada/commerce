@@ -355,9 +355,13 @@ it('keeps affiliate reporting owner scoped', function (): void {
         ]);
     });
 
-    $context = app(AffiliateReportingContextResolver::class)->resolve($usage);
+    $resolver = app(AffiliateReportingContextResolver::class);
+    $context = $resolver->resolve($usage);
+    $otherContext = OwnerContext::withOwner($ownerB, fn (): array => $resolver->resolve($usage));
 
-    expect($context)->toBe([
+    expect($otherContext['affiliate_code'])->toBe('AFF-OWNER-B')
+        ->and($resolver->resolve($usage))->toBe($context)
+        ->and($context)->toBe([
         'affiliate_code' => null,
         'affiliate_name' => null,
         'source' => null,
