@@ -250,3 +250,22 @@ test('AffiliateCommissionRule scopeOrdered orders by priority descending', funct
     expect($orderedRules->first())->toBe('High Priority');
     expect($orderedRules->last())->toBe('Low Priority');
 });
+
+test('commission rule conditions fail closed when context or operands are invalid', function (): void {
+    foreach ([
+        ['not_in' => ['US']],
+        ['max' => 10],
+        ['min' => 1],
+        ['equals' => null],
+    ] as $condition) {
+        $rule = new AffiliateCommissionRule(['is_active' => true, 'conditions' => ['field' => $condition]]);
+        expect($rule->matches([]))->toBeFalse();
+    }
+
+    $rule = new AffiliateCommissionRule(['is_active' => true, 'conditions' => ['amount' => ['max' => 10]]]);
+    expect($rule->matches(['amount' => null]))->toBeFalse()
+        ->and($rule->matches(['amount' => 'invalid']))->toBeFalse();
+
+    $rule->conditions = ['country' => ['not_in' => 'invalid']];
+    expect($rule->matches(['country' => 'MY']))->toBeFalse();
+});

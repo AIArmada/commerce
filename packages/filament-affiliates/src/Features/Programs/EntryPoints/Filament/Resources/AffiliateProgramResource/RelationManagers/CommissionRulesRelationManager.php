@@ -6,7 +6,10 @@ namespace AIArmada\FilamentAffiliates\Features\Programs\EntryPoints\Filament\Res
 
 use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Enums\CommissionType;
+use AIArmada\Affiliates\Features\Commissions\Api\ProgramCommissionAdministration;
+use AIArmada\Affiliates\Models\AffiliateCommissionRule;
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
+use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\Events\Features\Catalog\Models\Event;
 use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
 use AIArmada\Events\Features\Catalog\Models\EventSession;
@@ -151,7 +154,7 @@ final class CommissionRulesRelationManager extends RelationManager
                 ->label('Commission Value')
                 ->numeric()
                 ->required()
-                ->helperText('Percentage (e.g. 10 = 10%) or fixed amount in cents (e.g. 1000 = RM10).'),
+                ->helperText('Percentage in basis points (e.g. 1000 = 10%) or fixed amount in cents (e.g. 1000 = RM10).'),
 
             DateTimePicker::make('starts_at'),
 
@@ -219,15 +222,35 @@ final class CommissionRulesRelationManager extends RelationManager
                     ->placeholder('—'),
             ])
             ->headerActions([
-                CreateAction::make(),
+                CreateAction::make()
+                    ->authorize(fn (): bool => FilamentPermission::hasAbility('affiliate.update'))
+                    ->using(function (array $data): AffiliateCommissionRule {
+                        $id = app(ProgramCommissionAdministration::class)->createRule((string) $this->getOwnerRecord()->getKey(), $data);
+
+                        return AffiliateCommissionRule::query()->findOrFail($id);
+                    }),
             ])
             ->actions([
-                EditAction::make(),
-                DeleteAction::make(),
+                EditAction::make()
+                    ->authorize(fn (): bool => FilamentPermission::hasAbility('affiliate.update'))
+                    ->using(function (AffiliateCommissionRule $record, array $data): AffiliateCommissionRule {
+                        app(ProgramCommissionAdministration::class)->updateRule((string) $this->getOwnerRecord()->getKey(), (string) $record->getKey(), $data);
+
+                        return $record->refresh();
+                    }),
+                DeleteAction::make()
+                    ->authorize(fn (): bool => FilamentPermission::hasAbility('affiliate.update'))
+                    ->using(fn (AffiliateCommissionRule $record): bool => app(ProgramCommissionAdministration::class)->deleteRule((string) $this->getOwnerRecord()->getKey(), (string) $record->getKey())),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->authorize(fn (): bool => FilamentPermission::hasAbility('affiliate.update'))
+                        ->action(function ($records): void {
+                            foreach ($records as $record) {
+                                app(ProgramCommissionAdministration::class)->deleteRule((string) $this->getOwnerRecord()->getKey(), (string) $record->getKey());
+                            }
+                        }),
                 ]),
             ]);
     }

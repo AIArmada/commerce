@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Features\Programs\EntryPoints\Filament\Resources\AffiliateProgramResource\RelationManagers;
 
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Commissions\Api\ProgramCommissionAdministration;
+use AIArmada\Affiliates\Models\AffiliateCommissionPromotion;
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\CommerceSupport\Support\FilamentPermission;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
@@ -22,10 +23,6 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Validation\ValidationException;
-use InvalidArgumentException;
-use RuntimeException;
 
 final class CommissionPromotionsRelationManager extends RelationManager
 {
@@ -63,10 +60,6 @@ final class CommissionPromotionsRelationManager extends RelationManager
 
             TextInput::make('max_uses')
                 ->numeric(),
-
-            TextInput::make('current_uses')
-                ->numeric()
-                ->default(0),
 
             TagsInput::make('affiliate_ids')
                 ->label('Affiliate IDs')
@@ -106,79 +99,35 @@ final class CommissionPromotionsRelationManager extends RelationManager
             ])
             ->headerActions([
                 CreateAction::make()
-                    ->mutateDataUsing(fn (array $data): array => $this->sanitizeAffiliateIds($data)),
+                    ->authorize(fn (): bool => FilamentPermission::hasAbility('affiliate.update'))
+                    ->using(function (array $data): AffiliateCommissionPromotion {
+                        $id = app(ProgramCommissionAdministration::class)->createPromotion((string) $this->getOwnerRecord()->getKey(), $data);
+
+                        return AffiliateCommissionPromotion::query()->findOrFail($id);
+                    }),
             ])
             ->actions([
                 EditAction::make()
-                    ->mutateDataUsing(fn (array $data): array => $this->sanitizeAffiliateIds($data)),
-                DeleteAction::make(),
+                    ->authorize(fn (): bool => FilamentPermission::hasAbility('affiliate.update'))
+                    ->using(function (AffiliateCommissionPromotion $record, array $data): AffiliateCommissionPromotion {
+                        app(ProgramCommissionAdministration::class)->updatePromotion((string) $this->getOwnerRecord()->getKey(), (string) $record->getKey(), $data);
+
+                        return $record->refresh();
+                    }),
+                DeleteAction::make()
+                    ->authorize(fn (): bool => FilamentPermission::hasAbility('affiliate.update'))
+                    ->using(fn (AffiliateCommissionPromotion $record): bool => app(ProgramCommissionAdministration::class)->deletePromotion((string) $this->getOwnerRecord()->getKey(), (string) $record->getKey())),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->authorize(fn (): bool => FilamentPermission::hasAbility('affiliate.update'))
+                        ->action(function ($records): void {
+                            foreach ($records as $record) {
+                                app(ProgramCommissionAdministration::class)->deletePromotion((string) $this->getOwnerRecord()->getKey(), (string) $record->getKey());
+                            }
+                        }),
                 ]),
             ]);
-    }
-
-    /**
-     * @param  array<string, mixed>  $data
-     * @return array<string, mixed>
-     */
-    private function sanitizeAffiliateIds(array $data): array
-    {
-        $affiliateIds = $data['affiliate_ids'] ?? null;
-
-        if ($affiliateIds === null || $affiliateIds === []) {
-            $data['affiliate_ids'] = null;
-
-            return $data;
-        }
-
-        if (! is_array($affiliateIds)) {
-            throw ValidationException::withMessages([
-                'affiliate_ids' => 'Affiliate IDs must be a list of valid affiliates.',
-            ]);
-        }
-
-        $validatedAffiliateIds = [];
-
-        foreach ($affiliateIds as $affiliateId) {
-            if (! is_string($affiliateId) && ! is_int($affiliateId)) {
-                throw ValidationException::withMessages([
-                    'affiliate_ids' => 'Affiliate IDs must contain only valid affiliate identifiers.',
-                ]);
-            }
-
-            if (! (bool) config('affiliates.owner.enabled', false)) {
-                $affiliate = Affiliate::query()->find((string) $affiliateId);
-
-                if (! $affiliate instanceof Affiliate) {
-                    throw ValidationException::withMessages([
-                        'affiliate_ids' => 'Affiliate IDs must contain only valid affiliate identifiers.',
-                    ]);
-                }
-
-                $validatedAffiliateIds[] = (string) $affiliate->getKey();
-
-                continue;
-            }
-
-            try {
-                $validatedAffiliateIds[] = (string) OwnerWriteGuard::findOrFailForOwner(
-                    Affiliate::class,
-                    (string) $affiliateId,
-                    includeGlobal: (bool) config('affiliates.owner.include_global', false),
-                    message: 'One or more selected affiliates are not accessible in the current owner scope.',
-                )->getKey();
-            } catch (AuthorizationException | InvalidArgumentException | RuntimeException) {
-                throw ValidationException::withMessages([
-                    'affiliate_ids' => 'One or more selected affiliates are not accessible in the current owner scope.',
-                ]);
-            }
-        }
-
-        $data['affiliate_ids'] = array_values(array_unique($validatedAffiliateIds));
-
-        return $data;
     }
 }

@@ -146,20 +146,24 @@ class AffiliateCommissionRule extends Model implements Auditable
 
     private function evaluateCondition(string $field, mixed $requirement, array $context): bool
     {
-        $value = $context[$field] ?? null;
+        if (! array_key_exists($field, $context)) {
+            return false;
+        }
+
+        $value = $context[$field];
 
         if (is_array($requirement)) {
             if (isset($requirement['in'])) {
-                return in_array($value, $requirement['in'], true);
+                return is_array($requirement['in']) && in_array($value, $requirement['in'], true);
             }
             if (isset($requirement['not_in'])) {
-                return ! in_array($value, $requirement['not_in'], true);
+                return is_array($requirement['not_in']) && ! in_array($value, $requirement['not_in'], true);
             }
             if (isset($requirement['min'])) {
-                return $value >= $requirement['min'];
+                return is_numeric($value) && is_numeric($requirement['min']) && $value >= $requirement['min'];
             }
             if (isset($requirement['max'])) {
-                return $value <= $requirement['max'];
+                return is_numeric($value) && is_numeric($requirement['max']) && $value <= $requirement['max'];
             }
             if (isset($requirement['equals'])) {
                 return $value === $requirement['equals'];

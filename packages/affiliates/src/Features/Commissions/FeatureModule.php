@@ -21,6 +21,7 @@ final class FeatureModule implements FeatureModuleContract
         $app->bind(Api\CommissionRulePreview::class, Queries\FindCommissionRules::class);
         $app->bind(Api\PerformanceBonusCalculation::class, Queries\CalculatePerformanceBonuses::class);
         $app->bind(Api\PromotionUsage::class, Actions\ConsumePromotionUsage::class);
+        $app->bind(Api\ProgramCommissionAdministration::class, Actions\AdministerProgramCommissions::class);
     }
 
     public function boot(Application $app): void {}
