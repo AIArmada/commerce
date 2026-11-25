@@ -190,6 +190,21 @@ describe('power feature: creator S2S postbacks', function (): void {
             ->and($transport->sent)->toBe([]);
     });
 
+    test('delivery does not contact an endpoint after postbacks are disabled globally', function (): void {
+        config()->set('affiliate-network.creator_postbacks.enabled', false);
+
+        $endpoint = CreatorPostbackEndpoint::factory()->create(['is_active' => true]);
+        $delivery = CreatorPostbackDelivery::factory()->forEndpoint($endpoint)->create();
+        $transport = new RecordingPostbackTransport;
+        app()->instance(CreatorPostbackTransport::class, $transport);
+
+        $result = app(DeliverCreatorPostback::class)->execute((string) $delivery->getKey());
+
+        expect($result->status)->toBe(PostbackDeliveryStatus::Failed)
+            ->and($result->last_error)->toBe('endpoint_disabled')
+            ->and($transport->sent)->toBe([]);
+    });
+
     test('delivery fails closed when its configured signing secret cannot be decrypted', function (): void {
         $endpoint = CreatorPostbackEndpoint::factory()->create([
             'is_active' => true,
@@ -282,7 +297,7 @@ describe('power feature: creator S2S postbacks', function (): void {
         $result = (new HttpCreatorPostbackDriver($guard))->send('GET', (string) $delivery->resolved_url);
 
         expect($result->successful)->toBeFalse()
-            ->and($result->error)->not->toBeEmpty();
+            ->and($result->error)->toBe('transport_failed');
     });
 });
 
