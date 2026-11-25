@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Authz\Features\Authorization\Actions;
 
+use AIArmada\Authz\Features\Authorization\Models\Role;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -19,8 +20,8 @@ final readonly class SyncUserRoles
     public function __construct(private PermissionRegistrar $registrar) {}
 
     /**
-     * @param list<string> $roleIds
-     * @param list<string>|null $allowedScopeIds
+     * @param  list<string>  $roleIds
+     * @param  list<string>|null  $allowedScopeIds
      */
     public function execute(RecordReference $record, array $roleIds, string $guard, bool $restrictToCurrentTeam, string $scopeMode, ?array $allowedScopeIds, bool $includeSuperAdmin): void
     {
@@ -36,7 +37,7 @@ final readonly class SyncUserRoles
         $roleIds = array_values(array_unique($roleIds));
         $roleClass = $this->registrar->getRoleClass();
         $roleModel = new $roleClass;
-        if ($roleModel instanceof \AIArmada\Authz\Features\Authorization\Models\Role) {
+        if ($roleModel instanceof Role) {
             foreach ($roleIds as $id) {
                 if (! Str::isUuid($id)) {
                     throw new AuthorizationException('Invalid authorization identifier.');
@@ -118,6 +119,7 @@ final readonly class SyncUserRoles
 
                 if ($selectedById->has($id)) {
                     $retained[$id] = true;
+
                     continue;
                 }
 

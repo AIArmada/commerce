@@ -39,5 +39,4 @@ final class AuthzScope extends Model
     {
         return $this->morphTo();
     }
-
 }

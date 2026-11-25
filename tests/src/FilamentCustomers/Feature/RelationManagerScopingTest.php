@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Addressing\Models\Address;
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Models\CustomerNote;

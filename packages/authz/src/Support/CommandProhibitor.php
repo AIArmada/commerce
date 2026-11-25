@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Authz\Support;
 
-
 final class CommandProhibitor
 {
     /**

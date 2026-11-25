@@ -54,4 +54,3 @@ describe('HasWidgetAuthz Trait', function (): void {
         expect(CustomAuthzWidget::getAuthzPermission())->toBe('widget.custom-access');
     });
 });
-

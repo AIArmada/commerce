@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Authz\Features\Authorization\Actions;
 
+use AIArmada\Authz\Features\Authorization\Models\Permission;
 use AIArmada\CommerceSupport\Data\RecordReference;
 use AIArmada\CommerceSupport\Support\EloquentRecordReference;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -29,7 +30,7 @@ final readonly class SyncUserPermissions
         $permissionIds = array_values(array_unique($permissionIds));
         $permissionClass = $this->registrar->getPermissionClass();
         $permissionModel = new $permissionClass;
-        if ($permissionModel instanceof \AIArmada\Authz\Features\Authorization\Models\Permission) {
+        if ($permissionModel instanceof Permission) {
             foreach ($permissionIds as $id) {
                 if (! Str::isUuid($id)) {
                     throw new AuthorizationException('Invalid authorization identifier.');

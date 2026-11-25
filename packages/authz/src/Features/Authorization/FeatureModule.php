@@ -6,13 +6,13 @@ namespace AIArmada\Authz\Features\Authorization;
 
 use AIArmada\Authz\Features\Authorization\Api\AuthorizationApi;
 use AIArmada\Authz\Features\Authorization\Api\RoleAdministrationApi;
-use AIArmada\Authz\Features\Authorization\Support\AuthzScopeContext;
 use AIArmada\Authz\Features\Authorization\EntryPoints\Console\SuperAdminCommand;
 use AIArmada\Authz\Features\Authorization\EntryPoints\Console\SyncAuthzCommand;
-use AIArmada\Authz\Support\CommandProhibitor;
+use AIArmada\Authz\Features\Authorization\Support\AuthzScopeContext;
 use AIArmada\Authz\Platform\FeatureModule as FeatureModuleContract;
 use AIArmada\Authz\Services\PermissionKeyBuilder;
 use AIArmada\Authz\Services\WildcardPermissionResolver;
+use AIArmada\Authz\Support\CommandProhibitor;
 use Illuminate\Contracts\Foundation\Application;
 
 final class FeatureModule implements FeatureModuleContract

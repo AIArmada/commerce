@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Authz\Features\Authorization\EntryPoints\Console\SuperAdminCommand;
 use AIArmada\Authz\Features\Authorization\Authz;
+use AIArmada\Authz\Features\Authorization\EntryPoints\Console\SuperAdminCommand;
 use AIArmada\Authz\Features\Authorization\Models\Role;
 use AIArmada\Authz\Support\UserRoleChecker;
 use AIArmada\Authz\Support\UserWildcardPermissions;

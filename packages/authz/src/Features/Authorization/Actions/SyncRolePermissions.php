@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Authz\Features\Authorization\Actions;
 
+use Spatie\Permission\Exceptions\PermissionDoesNotExist;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
-use Spatie\Permission\Exceptions\PermissionDoesNotExist;
 use Spatie\Permission\PermissionRegistrar;
 
 final readonly class SyncRolePermissions

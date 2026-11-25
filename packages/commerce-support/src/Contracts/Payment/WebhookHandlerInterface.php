@@ -25,7 +25,6 @@ interface WebhookHandlerInterface
 
     /**
      * Parse the webhook payload and return a standardized result.
-     *
      */
     public function parseWebhook(WebhookRequestData $request): WebhookPayload;
 
