@@ -1,6 +1,19 @@
 {
   "schema": 1,
   "name": "Identity",
-  "owns": {},
+  "owns": {
+    "table:affiliate_claims": [
+      "AIArmada\\Affiliates\\Features\\Identity\\Actions\\ClaimAffiliateIdentity",
+      "AIArmada\\Affiliates\\Features\\Identity\\Actions\\RevokeAffiliateClaim"
+    ],
+    "table:affiliate_credentials": [
+      "AIArmada\\Affiliates\\Features\\Identity\\Actions\\IssueActivityCredential",
+      "AIArmada\\Affiliates\\Features\\Identity\\Actions\\ClaimAffiliateIdentity"
+    ],
+    "table:affiliate_ownership_capabilities": [
+      "AIArmada\\Affiliates\\Features\\Identity\\Actions\\IssueOwnershipCapability",
+      "AIArmada\\Affiliates\\Features\\Identity\\Actions\\ClaimAffiliateIdentity"
+    ]
+  },
   "extensions": {}
 }

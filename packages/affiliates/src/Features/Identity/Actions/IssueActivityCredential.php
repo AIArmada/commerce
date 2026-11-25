@@ -2,10 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Actions\Identity;
+namespace AIArmada\Affiliates\Features\Identity\Actions;
 
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateCredential;
+use AIArmada\Affiliates\Features\Identity\Models\AffiliateCredential;
+use AIArmada\Affiliates\Exceptions\SealedIdentityException;
 use Carbon\CarbonImmutable;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -24,6 +25,12 @@ final class IssueActivityCredential
      */
     public function handle(Affiliate $affiliate, array $options = []): array
     {
+        return $affiliate->getConnection()->transaction(function () use ($affiliate, $options): array {
+        $affiliate = Affiliate::query()->whereKey($affiliate->getKey())->lockForUpdate()->firstOrFail();
+        if ($affiliate->identity_sealed_at !== null) {
+            throw SealedIdentityException::forAffiliate((string) $affiliate->getKey());
+        }
+
         $secret = bin2hex(random_bytes(32));
         $expiresAt = $options['expires_at'] ?? CarbonImmutable::now()->addDays((int) ($options['ttl_days'] ?? 30));
 
@@ -39,5 +46,6 @@ final class IssueActivityCredential
         ]);
 
         return ['credential' => $credential, 'plaintext_secret' => $secret];
+        });
     }
 }

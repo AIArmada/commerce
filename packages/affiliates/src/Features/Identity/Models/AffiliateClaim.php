@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Models;
+namespace AIArmada\Affiliates\Features\Identity\Models;
 
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Carbon\CarbonInterface;
@@ -51,6 +52,8 @@ class AffiliateClaim extends Model
         'revoked_at',
     ];
 
+    protected $hidden = ['capability_verifier_hash'];
+
     protected $casts = [
         'claimed_at' => 'immutable_datetime',
         'revoked_at' => 'immutable_datetime',
@@ -58,7 +61,7 @@ class AffiliateClaim extends Model
 
     public function getTable(): string
     {
-        return config('affiliates.database.tables.claims', parent::getTable());
+        return config('affiliates.database.tables.claims', 'affiliate_claims');
     }
 
     /**

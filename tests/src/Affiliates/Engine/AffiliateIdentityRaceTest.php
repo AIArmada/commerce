@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Actions\Identity\ClaimAffiliateIdentity;
-use AIArmada\Affiliates\Actions\Identity\IssueActivityCredential;
-use AIArmada\Affiliates\Actions\Identity\IssueOwnershipCapability;
-use AIArmada\Affiliates\Actions\Identity\RevalidateIdentitySeal;
+use AIArmada\Affiliates\Features\Identity\Actions\ClaimAffiliateIdentity;
+use AIArmada\Affiliates\Features\Identity\Actions\IssueActivityCredential;
+use AIArmada\Affiliates\Features\Identity\Actions\IssueOwnershipCapability;
+use AIArmada\Affiliates\Features\Identity\Actions\RevalidateIdentitySeal;
 use AIArmada\Affiliates\Exceptions\SealedIdentityException;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateClaim;
-use AIArmada\Affiliates\Models\AffiliateCredential;
+use AIArmada\Affiliates\Features\Identity\Models\AffiliateClaim;
+use AIArmada\Affiliates\Features\Identity\Models\AffiliateCredential;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
@@ -123,13 +123,12 @@ test('repeatable read activity retries after a concurrent identity claim', funct
     $claimerConnection = 'affiliates_snapshot_claimer';
     config(['database.connections.' . $claimerConnection => config('database.connections.' . $connectionName)]);
     $writer = DB::connection($connectionName);
+    $issued = app(IssueActivityCredential::class)->run($affiliate);
     $writer->beginTransaction();
 
     try {
         $writer->statement('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
         expect(AffiliateClaim::query()->where('affiliate_id', $affiliate->getKey())->exists())->toBeFalse();
-        $issued = app(IssueActivityCredential::class)->run($affiliate);
-
         DB::setDefaultConnection($claimerConnection);
         app(ClaimAffiliateIdentity::class)->run($capability['plaintext_secret'], $type, $id, true);
         DB::setDefaultConnection($connectionName);

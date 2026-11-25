@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Actions\Identity\ClaimAffiliateIdentity;
-use AIArmada\Affiliates\Actions\Identity\IssueOwnershipCapability;
+use AIArmada\Affiliates\Features\Identity\Actions\ClaimAffiliateIdentity;
+use AIArmada\Affiliates\Features\Identity\Actions\IssueOwnershipCapability;
 use Carbon\CarbonImmutable;
 use LogicException;
 

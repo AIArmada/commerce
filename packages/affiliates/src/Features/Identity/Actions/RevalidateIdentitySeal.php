@@ -2,12 +2,14 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Actions\Identity;
+namespace AIArmada\Affiliates\Features\Identity\Actions;
 
 use AIArmada\Affiliates\Exceptions\SealedIdentityException;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateClaim;
-use AIArmada\Affiliates\Models\AffiliateCredential;
+use AIArmada\Affiliates\Features\Identity\Models\AffiliateClaim;
+use AIArmada\Affiliates\Features\Identity\Models\AffiliateCredential;
+use Carbon\CarbonImmutable;
+use InvalidArgumentException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -32,6 +34,10 @@ final class RevalidateIdentitySeal
 
         if ($lockedAffiliate->identity_sealed_at !== null || $sealed) {
             throw SealedIdentityException::forAffiliate((string) $lockedAffiliate->getKey());
+        }
+
+        if ((string) $credential->affiliate_id !== (string) $lockedAffiliate->getKey() || ! $credential->isUsableAt(CarbonImmutable::now())) {
+            throw new InvalidArgumentException('Activity credential is invalid for this affiliate.');
         }
     }
 }

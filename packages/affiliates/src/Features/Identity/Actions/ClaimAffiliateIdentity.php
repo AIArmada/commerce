@@ -2,15 +2,14 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Actions\Identity;
+namespace AIArmada\Affiliates\Features\Identity\Actions;
 
 use AIArmada\Affiliates\Exceptions\SealedIdentityException;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateClaim;
-use AIArmada\Affiliates\Models\AffiliateCredential;
-use AIArmada\Affiliates\Models\AffiliateOwnershipCapability;
+use AIArmada\Affiliates\Features\Identity\Models\AffiliateClaim;
+use AIArmada\Affiliates\Features\Identity\Models\AffiliateCredential;
+use AIArmada\Affiliates\Features\Identity\Models\AffiliateOwnershipCapability;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -34,14 +33,17 @@ final class ClaimAffiliateIdentity
         string | int $claimantId,
         bool $authorizationAssertion,
     ): AffiliateClaim {
+        if (mb_trim($claimantType) === '' || (string) $claimantId === '') {
+            throw new InvalidArgumentException('A claimant identity is required.');
+        }
+
         if (! $authorizationAssertion) {
             throw new InvalidArgumentException('Claim requires an explicit caller authorization assertion.');
         }
 
-        return DB::transaction(function () use ($capabilityVerifier, $claimantType, $claimantId): AffiliateClaim {
+        return (new Affiliate)->getConnection()->transaction(function () use ($capabilityVerifier, $claimantType, $claimantId): AffiliateClaim {
             $capability = AffiliateOwnershipCapability::query()
                 ->where('verifier_hash', hash('sha256', $capabilityVerifier))
-                ->lockForUpdate()
                 ->first();
 
             if (! $capability instanceof AffiliateOwnershipCapability) {
@@ -49,6 +51,7 @@ final class ClaimAffiliateIdentity
             }
 
             $affiliate = Affiliate::query()->lockForUpdate()->findOrFail($capability->affiliate_id);
+            $capability = AffiliateOwnershipCapability::query()->lockForUpdate()->findOrFail($capability->getKey());
 
             $existing = AffiliateClaim::query()
                 ->where('affiliate_id', $affiliate->getKey())
@@ -56,7 +59,8 @@ final class ClaimAffiliateIdentity
                 ->first();
 
             if ($existing instanceof AffiliateClaim) {
-                if ($existing->isActive() && $existing->belongsToClaimant($claimantType, $claimantId)) {
+                if ($existing->isActive() && $existing->belongsToClaimant($claimantType, $claimantId)
+                    && hash_equals((string) $existing->capability_verifier_hash, $capability->verifier_hash)) {
                     return $existing;
                 }
 

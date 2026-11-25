@@ -2,11 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Actions\Identity;
+namespace AIArmada\Affiliates\Features\Identity\Actions;
 
-use AIArmada\Affiliates\Models\AffiliateClaim;
+use AIArmada\Affiliates\Features\Identity\Models\AffiliateClaim;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -19,7 +18,7 @@ final class RevokeAffiliateClaim
 
     public function handle(AffiliateClaim $claim): void
     {
-        DB::transaction(function () use ($claim): void {
+        $claim->getConnection()->transaction(function () use ($claim): void {
             $locked = AffiliateClaim::query()->lockForUpdate()->findOrFail($claim->getKey());
 
             if (! $locked->isActive()) {

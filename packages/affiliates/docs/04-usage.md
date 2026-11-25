@@ -324,29 +324,27 @@ affiliates that have no owner yet. The plaintext secret is returned once at
 issuance; only its hash is stored.
 
 ```php
-use AIArmada\Affiliates\Actions\Identity\ClaimAffiliateIdentity;
-use AIArmada\Affiliates\Actions\Identity\IssueActivityCredential;
-use AIArmada\Affiliates\Actions\Identity\IssueOwnershipCapability;
-use AIArmada\Affiliates\Actions\Identity\RevalidateIdentitySeal;
-use AIArmada\Affiliates\Actions\Identity\RevokeAffiliateClaim;
+use AIArmada\Affiliates\Features\Identity\Api\IdentityProofApi;
+use AIArmada\CommerceSupport\Data\RecordReference;
 
-$credential = IssueActivityCredential::run($affiliate); // reusable, expirable
-$capability = IssueOwnershipCapability::run($affiliate); // one-time, consumable
+$proofs = app(IdentityProofApi::class);
+$credential = $proofs->issueActivityCredential($affiliateId);
+$capability = $proofs->issueOwnershipCapability($affiliateId);
 
-$claim = ClaimAffiliateIdentity::run(
-    $capability['plaintext_secret'],
-    $claimantType,   // polymorphic host model type
-    $claimantId,     // polymorphic host model id
-    true,            // explicit caller authorization assertion
+$claim = $proofs->claim(
+    $capability->plaintextSecret,
+    new RecordReference($claimantType, $claimantId),
+    true, // explicit caller authorization assertion
 );
+
+// Revocation preserves the permanent seal.
+$proofs->revoke($claim->id);
 ```
 
 Exactly one claim row ever exists per affiliate. Replaying a claim with the
 same claimant returns the active claim; any other claimant — and any replay
 after revocation — throws `SealedIdentityException`. Revocation preserves
-the row as history. Mutating activity writers must hold the affiliate row
-lock, then the credential row lock, then call `RevalidateIdentitySeal`
-immediately before writing, so in-flight activity racing a committing claim
+the row as history. Mutating activity writers must use the same affiliate database transaction and call `IdentityProofApi::assertActivityWritable($affiliateId, $credentialId)` immediately before writing. The API acquires the affiliate lock before the credential lock and verifies the seal and credential, so in-flight activity racing a committing claim
 is sealed instead of appending to sealed history. Claiming also permanently
 sets `identity_sealed_at` on the locked affiliate row. Under PostgreSQL
 `REPEATABLE READ`, an older activity transaction fails with SQLSTATE `40001`

@@ -2,10 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Actions\Identity;
+namespace AIArmada\Affiliates\Features\Identity\Actions;
 
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateOwnershipCapability;
+use AIArmada\Affiliates\Features\Identity\Models\AffiliateOwnershipCapability;
+use AIArmada\Affiliates\Exceptions\SealedIdentityException;
 use Carbon\CarbonImmutable;
 use InvalidArgumentException;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -25,6 +26,12 @@ final class IssueOwnershipCapability
      */
     public function handle(Affiliate $affiliate, array $options = []): array
     {
+        return $affiliate->getConnection()->transaction(function () use ($affiliate, $options): array {
+        $affiliate = Affiliate::query()->whereKey($affiliate->getKey())->lockForUpdate()->firstOrFail();
+        if ($affiliate->identity_sealed_at !== null) {
+            throw SealedIdentityException::forAffiliate((string) $affiliate->getKey());
+        }
+
         $now = CarbonImmutable::now();
 
         $activeExists = AffiliateOwnershipCapability::query()
@@ -54,5 +61,6 @@ final class IssueOwnershipCapability
         ]);
 
         return ['capability' => $capability, 'plaintext_secret' => $secret];
+        });
     }
 }

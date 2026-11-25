@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Models;
+namespace AIArmada\Affiliates\Features\Identity\Models;
 
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Carbon\CarbonInterface;
@@ -48,6 +49,8 @@ class AffiliateCredential extends Model
         'revoked_at',
     ];
 
+    protected $hidden = ['verifier_hash'];
+
     protected $casts = [
         'issued_at' => 'immutable_datetime',
         'expires_at' => 'immutable_datetime',
@@ -57,7 +60,7 @@ class AffiliateCredential extends Model
 
     public function getTable(): string
     {
-        return config('affiliates.database.tables.credentials', parent::getTable());
+        return config('affiliates.database.tables.credentials', 'affiliate_credentials');
     }
 
     /**

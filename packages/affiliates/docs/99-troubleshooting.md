@@ -133,14 +133,14 @@ unaffected.
 
 ### Sealed Identity on Claim
 
-**Symptoms:** `ClaimAffiliateIdentity` throws `SealedIdentityException`.
+**Symptoms:** `IdentityProofApi::claim()` throws `SealedIdentityException`.
 
 **Check:**
 
 1. A claim row already exists for the affiliate (active or revoked — both
 seal permanently). Replays by the same claimant return the active claim;
 any other claimant, and any replay after revocation, is sealed.
-2. Mutating writers must revalidate with `RevalidateIdentitySeal` under
+2. Mutating writers must revalidate with `IdentityProofApi::assertActivityWritable()` under
 the affiliate row lock immediately before writing; a claim committed
 between validation and write seals the write.
 3. PostgreSQL `REPEATABLE READ` transactions may fail with SQLSTATE `40001`
@@ -155,7 +155,7 @@ revoked, or invalid capability.
 
 **Check:** the capability row state (`status`, `expires_at`,
 `consumed_at`, `revoked_at`), not the seal — the seal only fires when a
-claim row exists. A second `IssueOwnershipCapability` while one is
+claim row exists. A second `IdentityProofApi::issueOwnershipCapability()` while one is
 active throws; wait for expiry/revocation instead of reissuing.
 
 ## Payout Issues
