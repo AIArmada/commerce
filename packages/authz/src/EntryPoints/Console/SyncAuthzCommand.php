@@ -2,13 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Authz\Console\Commands;
+namespace AIArmada\Authz\EntryPoints\Console;
 
-use AIArmada\Authz\Console\Concerns\Prohibitable;
-use AIArmada\Authz\Models\Permission;
-use AIArmada\Authz\Models\Role;
+use AIArmada\Authz\EntryPoints\Console\Concerns\Prohibitable;
+use AIArmada\Authz\Actions\SyncConfiguredAuthorization;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
 use Spatie\Permission\PermissionRegistrar;
 
 class SyncAuthzCommand extends Command
@@ -20,7 +18,7 @@ class SyncAuthzCommand extends Command
 
     protected $description = 'Sync roles and permissions from config(authz.sync).';
 
-    public function handle(): int
+    public function handle(SyncConfiguredAuthorization $sync): int
     {
         if (! $this->initializeProhibitable()) {
             return self::FAILURE;
@@ -47,26 +45,7 @@ class SyncAuthzCommand extends Command
             return self::FAILURE;
         }
 
-        $permissionCount = 0;
-        $roleCount = 0;
-
-        DB::transaction(function () use ($permissions, $roles, $guards, &$permissionCount, &$roleCount): void {
-            foreach ($permissions as $permission) {
-                foreach ($guards as $guard) {
-                    Permission::findOrCreate($permission, $guard);
-                    $permissionCount++;
-                }
-            }
-
-            foreach ($roles as $roleName => $perms) {
-                foreach ($guards as $guard) {
-                    /** @var Role $role */
-                    $role = Role::findOrCreate($roleName, $guard);
-                    $role->syncPermissions($perms);
-                    $roleCount++;
-                }
-            }
-        });
+        [$permissionCount, $roleCount] = $sync->execute($permissions, $roles, $guards);
 
         if ($this->option('flush-cache')) {
             app(PermissionRegistrar::class)->forgetCachedPermissions();

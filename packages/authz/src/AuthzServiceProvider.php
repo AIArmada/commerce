@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Authz;
 
-use AIArmada\Authz\Console\Commands\SuperAdminCommand;
-use AIArmada\Authz\Console\Commands\SyncAuthzCommand;
+use AIArmada\Authz\EntryPoints\Console\SuperAdminCommand;
+use AIArmada\Authz\EntryPoints\Console\SyncAuthzCommand;
 use AIArmada\Authz\Guard\SessionGuard;
 use AIArmada\Authz\Models\Permission as AuthzPermission;
 use AIArmada\Authz\Models\Role as AuthzRole;

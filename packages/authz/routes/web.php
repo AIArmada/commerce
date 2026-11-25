@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Authz\Http\Controllers\LeaveImpersonationController;
+use AIArmada\Authz\EntryPoints\Http\LeaveImpersonationController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('authz/leave-impersonation', LeaveImpersonationController::class)

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Console;
 
-use AIArmada\Authz\Console\Concerns\Prohibitable;
+use AIArmada\Authz\EntryPoints\Console\Concerns\Prohibitable;
 use AIArmada\FilamentAuthz\Facades\FilamentAuthz;
 use Filament\Facades\Filament;
 use Filament\Panel;

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Authz\Console\Concerns;
+namespace AIArmada\Authz\EntryPoints\Console\Concerns;
 
 /**
  * Allow commands to be prohibited in production environments.

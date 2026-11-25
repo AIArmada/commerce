@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Authz\Http\Controllers;
+namespace AIArmada\Authz\EntryPoints\Http;
 
 use AIArmada\Authz\Services\ImpersonateManager;
 use AIArmada\Authz\Support\BackToUrlSanitizer;
@@ -17,16 +17,12 @@ class LeaveImpersonationController
         }
 
         $backTo = $manager->getBackTo();
-        $manager->leave();
+        if (! $manager->leave()) {
+            return redirect('/')->withErrors(['impersonation' => 'Unable to end impersonation.']);
+        }
 
-        // Always redirect back to origin panel where impersonation began
-        $redirectTo = self::sanitizeBackToUrl($backTo);
+        $redirectTo = BackToUrlSanitizer::sanitize($backTo);
 
         return redirect($redirectTo)->with('status', 'Impersonation ended.');
-    }
-
-    private static function sanitizeBackToUrl(?string $url): string
-    {
-        return BackToUrlSanitizer::sanitize($url);
     }
 }

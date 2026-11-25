@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Authz\Console\Commands;
+namespace AIArmada\Authz\EntryPoints\Console;
 
-use AIArmada\Authz\Console\Concerns\Prohibitable;
+use AIArmada\Authz\EntryPoints\Console\Concerns\Prohibitable;
 use AIArmada\Authz\Models\Role;
 use AIArmada\CommerceSupport\Support\LikeSearch;
 use Filament\Facades\Filament;

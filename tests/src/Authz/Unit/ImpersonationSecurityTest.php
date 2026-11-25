@@ -118,3 +118,11 @@ it('refuses self impersonation in the helper across int and string identifiers',
 
     expect(can_be_impersonated(new GenericUser(['id' => '7'])))->toBeFalse();
 });
+
+it('rejects non-http and credential-bearing absolute return URLs', function (): void {
+    $host = request()->getHost();
+
+    expect(BackToUrlSanitizer::sanitize('ftp://' . $host . '/admin'))->toBe('/')
+        ->and(BackToUrlSanitizer::sanitize('https://user:secret@' . $host . '/admin'))->toBe('/')
+        ->and(BackToUrlSanitizer::sanitize('//' . $host . '/admin'))->toBe('/');
+});

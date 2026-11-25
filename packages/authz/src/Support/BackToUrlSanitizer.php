@@ -29,7 +29,9 @@ final class BackToUrlSanitizer
 
         $parsed = parse_url($url);
 
-        if (! is_array($parsed) || ! isset($parsed['host'])) {
+        if (! is_array($parsed) || ! isset($parsed['host'], $parsed['scheme'])
+            || ! in_array(mb_strtolower($parsed['scheme']), ['http', 'https'], true)
+            || isset($parsed['user']) || isset($parsed['pass'])) {
             return '/';
         }
 

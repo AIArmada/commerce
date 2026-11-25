@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\Authz\Console\Commands\SuperAdminCommand;
-use AIArmada\Authz\Console\Commands\SyncAuthzCommand;
-use AIArmada\Authz\Console\Concerns\Prohibitable;
+use AIArmada\Authz\EntryPoints\Console\SuperAdminCommand;
+use AIArmada\Authz\EntryPoints\Console\SyncAuthzCommand;
+use AIArmada\Authz\EntryPoints\Console\Concerns\Prohibitable;
 use AIArmada\Authz\Models\Permission;
 use AIArmada\Authz\Models\Role;
 use AIArmada\FilamentAuthz\Console\DiscoverCommand;
