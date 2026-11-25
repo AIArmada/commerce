@@ -105,7 +105,7 @@ final readonly class QualifyAffiliateRank implements RankQualificationApi
             throw new LogicException('Rank assignment requires a shared database connection.');
         }
 
-        $oldRank = $affiliate->rank;
+        $oldRank = $affiliate->rank_id === null ? null : AffiliateRank::query()->forOwner()->find($affiliate->rank_id);
         AffiliateRankHistory::create([
             'affiliate_id' => $affiliate->id,
             'from_rank_id' => $affiliate->rank_id,
@@ -115,7 +115,6 @@ final readonly class QualifyAffiliateRank implements RankQualificationApi
         ]);
 
         $affiliate->update(['rank_id' => $rank?->id]);
-        $affiliate->setRelation('rank', $rank);
 
         $this->events->dispatch(new AffiliateRankChanged(
             affiliateId: (string) $affiliate->getKey(),

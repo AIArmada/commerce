@@ -50,7 +50,7 @@ final class ProgramJoinQuery implements ProgramJoinReader
 
         $canonical = $membership->joinReference($affiliate, $program);
 
-        if ($reference->affiliate !== $canonical->affiliate) {
+        if (! $reference->affiliate->matches($canonical->affiliate)) {
             throw new InvalidArgumentException('Trusted affiliate owner or identity does not match the canonical source.');
         }
 

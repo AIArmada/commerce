@@ -6,6 +6,7 @@ namespace AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Res
 
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Features\Commissions\Api\CommissionTemplateReader;
+use AIArmada\Affiliates\Features\Upline\Api\RankDirectory;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\Affiliates\States\Draft;
@@ -90,7 +91,8 @@ final class AffiliateForm
 
                         Select::make('rank_id')
                             ->label('Rank')
-                            ->relationship('rank', 'name', modifyQueryUsing: fn (Builder $query): Builder => OwnerUiScope::apply($query, includeGlobal: false))
+                            ->getSearchResultsUsing(fn (string $search): array => app(RankDirectory::class)->options($search))
+                            ->getOptionLabelUsing(fn (mixed $value): ?string => app(RankDirectory::class)->label(is_string($value) ? $value : null))
                             ->searchable()
                             ->disabled(fn (?Affiliate $record): bool => self::hasNonCommercialPurpose($record))
                             ->dehydrated(fn (?Affiliate $record): bool => ! self::hasNonCommercialPurpose($record)),

@@ -11,4 +11,11 @@ final readonly class AffiliateLifecycleReference
         public ?string $ownerType,
         public ?string $ownerId,
     ) {}
+
+    public function matches(self $canonical): bool
+    {
+        return $this->id === $canonical->id
+            && $this->ownerType === $canonical->ownerType
+            && $this->ownerId === $canonical->ownerId;
+    }
 }

@@ -281,11 +281,10 @@ it('leaves a payout processing when the processor throws', function (): void {
     $action->call(['records' => new Collection([$payout])]);
 
     $payout->refresh();
-    $payout->load('operation');
 
     expect($payout->status)->toBeInstanceOf(ProcessingPayout::class)
-        ->and($payout->operation?->status)->toBe('unknown')
-        ->and($payout->operation?->last_error_code)->toBe('PAYOUT_PROCESSING_EXCEPTION');
+        ->and(AffiliatePayoutOperation::query()->findOrFail($payout->affiliate_payout_operation_id)->status)->toBe('unknown')
+        ->and(AffiliatePayoutOperation::query()->findOrFail($payout->affiliate_payout_operation_id)->last_error_code)->toBe('PAYOUT_PROCESSING_EXCEPTION');
 
     $event = AffiliatePayoutEvent::query()->where('affiliate_payout_id', $payout->getKey())->where('notes', 'Provider outcome: unknown (PAYOUT_PROCESSING_EXCEPTION)')->first();
     expect($event)->not->toBeNull()

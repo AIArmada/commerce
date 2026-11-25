@@ -137,7 +137,7 @@ it('rejects payouts through the domain action and returns conversions to approve
         'payout_sequence' => 7,
     ]);
 
-    $payout->operation->forceFill(['payout_sequence' => 7])->save();
+    AffiliatePayoutOperation::query()->findOrFail($payout->affiliate_payout_operation_id)->forceFill(['payout_sequence' => 7])->save();
 
     $conversion = AffiliateConversion::create([
         'affiliate_id' => $affiliate->getKey(),

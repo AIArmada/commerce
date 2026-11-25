@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Features\Upline\Api\RankAdministration;
+use AIArmada\Affiliates\Features\Upline\Api\RankDirectory;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateRank;
 use AIArmada\Affiliates\States\Active;
@@ -355,4 +356,25 @@ describe('AffiliateRank Model', function (): void {
 
         expect($rank->getTable())->toBe('affiliate_ranks');
     });
+});
+
+it('projects rank labels and validated discounts through the Upline API', function (): void {
+    $rank = AffiliateRank::query()->create([
+        'name' => 'Gold 100%',
+        'slug' => 'gold-directory',
+        'level' => 4,
+        'commission_rate_basis_points' => 1000,
+        'metadata' => ['customer_discount' => ['type' => 'percentage', 'value' => 500]],
+    ]);
+
+    $reader = app(RankDirectory::class);
+
+    expect($reader->options('100%'))->toBe([$rank->id => 'Gold 100%'])
+        ->and($reader->label($rank->id))->toBe('Gold 100%')
+        ->and($reader->label('invalid'))->toBeNull()
+        ->and($reader->customerDiscount($rank->id))->toBe(['type' => 'percentage', 'value' => 500]);
+
+    $rank->update(['metadata' => ['customer_discount' => ['type' => 'percentage', 'value' => 10001]]]);
+
+    expect($reader->customerDiscount($rank->id))->toBeNull();
 });

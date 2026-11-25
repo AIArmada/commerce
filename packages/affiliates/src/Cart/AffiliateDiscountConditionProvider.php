@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Cart;
 
 use AIArmada\Affiliates\Data\AffiliateData;
+use AIArmada\Affiliates\Features\Upline\Api\RankDirectory;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Queries\AffiliateLookupQuery;
 use AIArmada\Cart\Cart;
@@ -49,13 +50,13 @@ final readonly class AffiliateDiscountConditionProvider implements ConditionProv
 
         $affiliate = $this->affiliateLookup->findAttachedAttribution($cart)?->affiliate;
 
-        if (! $affiliate instanceof Affiliate) {
+        if (! $affiliate instanceof Affiliate || ! $affiliate->isActive()) {
             return [];
         }
 
         $affiliateData = $affiliate->toData();
 
-        $discount = $this->getAffiliateDiscountFromData($affiliateData);
+        $discount = $this->getAffiliateDiscountFromModel($affiliate);
 
         if ($discount === null) {
             return [];
@@ -106,35 +107,6 @@ final readonly class AffiliateDiscountConditionProvider implements ConditionProv
     }
 
     /**
-     * Get discount configuration from AffiliateData.
-     *
-     * @return array{type: string, value: int}|null
-     */
-    private function getAffiliateDiscountFromData(AffiliateData $affiliateData): ?array
-    {
-        $metadata = $affiliateData->metadata ?? [];
-
-        // Check for customer discount in affiliate metadata
-        $customerDiscount = $metadata['customer_discount'] ?? null;
-
-        if (! is_array($customerDiscount)) {
-            return null;
-        }
-
-        $value = $customerDiscount['value'] ?? null;
-        $type = $customerDiscount['type'] ?? 'percentage';
-
-        if (! is_numeric($value) || (int) $value <= 0) {
-            return null;
-        }
-
-        return [
-            'type' => $type,
-            'value' => (int) $value,
-        ];
-    }
-
-    /**
      * Get discount configuration from Affiliate model.
      *
      * @return array{type: string, value: int}|null
@@ -147,29 +119,19 @@ final readonly class AffiliateDiscountConditionProvider implements ConditionProv
         $customerDiscount = $metadata['customer_discount'] ?? null;
 
         if (! is_array($customerDiscount)) {
-            // Fall back to rank-based discount if available
-            $rank = $affiliate->rank;
-
-            if ($rank !== null) {
-                $rankMetadata = $rank->metadata ?? [];
-                $customerDiscount = $rankMetadata['customer_discount'] ?? null;
-            }
+            return app(RankDirectory::class)->customerDiscount($affiliate->rank_id);
         }
 
-        if (! is_array($customerDiscount)) {
-            return null;
-        }
-
-        $value = $customerDiscount['value'] ?? null;
+        $value = filter_var($customerDiscount['value'] ?? null, FILTER_VALIDATE_INT);
         $type = $customerDiscount['type'] ?? 'percentage';
 
-        if (! is_numeric($value) || (int) $value <= 0) {
+        if (! in_array($type, ['percentage', 'fixed'], true) || $value === false || $value <= 0 || ($type === 'percentage' && $value > 10000)) {
             return null;
         }
 
         return [
             'type' => $type,
-            'value' => (int) $value,
+            'value' => $value,
         ];
     }
 

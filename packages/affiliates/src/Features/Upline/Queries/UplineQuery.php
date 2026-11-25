@@ -8,6 +8,7 @@ use AIArmada\Affiliates\Features\Upline\Api\UplineMember;
 use AIArmada\Affiliates\Features\Upline\Models\AffiliateUpline;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Models\AffiliateRank;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\Affiliates\Support\RevenueVolume;
@@ -133,13 +134,13 @@ final class UplineQuery
      */
     public function tree(string $affiliateId, int $maxDepth = 5): array
     {
-        $root = Affiliate::query()->with('rank')->findOrFail($affiliateId);
+        $root = Affiliate::query()->findOrFail($affiliateId);
         if (! $this->isEnabled()) {
             return [
                 'id' => $root->id,
                 'name' => $root->name,
                 'code' => $root->code,
-                'rank' => $root->rank?->name,
+                'rank' => $root->rank_id === null ? null : AffiliateRank::query()->forOwner()->whereKey($root->rank_id)->value('name'),
                 'status' => AffiliateStatus::normalize($root->status),
                 'stats' => [
                     'direct_recruits' => $root->direct_downline_count,
@@ -150,18 +151,20 @@ final class UplineQuery
         }
 
         $maxDepth = $this->capMaxDepth($maxDepth);
-        $members = Affiliate::query()->whereCommercialPurpose()->with('rank')
+        $members = Affiliate::query()->whereCommercialPurpose()
             ->whereIn('id', AffiliateUpline::query()->where('ancestor_id', $affiliateId)
                 ->where('depth', '>', 0)->where('depth', '<=', $maxDepth)->select('descendant_id'))
             ->orderBy('id')->get()->keyBy('id');
 
+        $rankIds = $members->pluck('rank_id')->push($root->rank_id)->filter()->unique()->values()->all();
+        $rankNames = AffiliateRank::query()->forOwner()->whereIn('id', $rankIds)->pluck('name', 'id');
         $memberIds = $members->keys()->all();
         $edges = AffiliateUpline::query()->where('depth', 1)
             ->whereIn('ancestor_id', [$affiliateId, ...$memberIds])
             ->whereIn('descendant_id', $memberIds)->orderBy('descendant_id')->get()
             ->groupBy('ancestor_id');
 
-        $build = function (Affiliate $member, int $depth) use (&$build, $maxDepth, $edges, $members): array {
+        $build = function (Affiliate $member, int $depth) use (&$build, $maxDepth, $edges, $members, $rankNames): array {
             $children = [];
             if ($depth < $maxDepth) {
                 foreach ($edges->get($member->id, []) as $edge) {
@@ -176,7 +179,7 @@ final class UplineQuery
                 'id' => $member->id,
                 'name' => $member->name,
                 'code' => $member->code,
-                'rank' => $member->rank?->name,
+                'rank' => $member->rank_id === null ? null : $rankNames->get($member->rank_id),
                 'status' => AffiliateStatus::normalize($member->status),
                 'stats' => [
                     'direct_recruits' => $member->direct_downline_count,

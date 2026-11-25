@@ -165,7 +165,7 @@ test('a gate-blocked completion parks as unknown with the gate reason', function
 
     expect($result->isUnknown())->toBeTrue();
 
-    $operation = $payout->operation()->first()->fresh();
+    $operation = AffiliatePayoutOperation::query()->findOrFail($payout->affiliate_payout_operation_id)->fresh();
     // Same-second events tie on created_at: select the blocked outcome
     // by its notes prefix instead of relying on latest() order.
     $blockedEvent = AffiliatePayoutEvent::query()->where('affiliate_payout_id', $payout->getKey())->where('notes', 'like', 'Completion blocked:%')->first();
@@ -210,7 +210,7 @@ test('corrupt conversion links never reach a provider submission', function (boo
 
     if ($retry) {
         $payout->forceFill(['status' => ProcessingPayout::class])->save();
-        $payout->operation()->firstOrFail()->update(['status' => 'unknown', 'lease_expires_at' => null]);
+        AffiliatePayoutOperation::query()->findOrFail($payout->affiliate_payout_operation_id)->update(['status' => 'unknown', 'lease_expires_at' => null]);
     }
 
     useFakeSuccessProcessor();
@@ -225,7 +225,7 @@ test('corrupt conversion links never reach a provider submission', function (boo
 
     expect($result->isUnknown())->toBeTrue()
         ->and($result->failureCode)->toBe('PAYOUT_COMPLETION_BLOCKED')
-        ->and($payout->operation()->firstOrFail()->funds_released_at)->toBeNull()
+        ->and(AffiliatePayoutOperation::query()->findOrFail($payout->affiliate_payout_operation_id)->funds_released_at)->toBeNull()
         ->and($conversion->fresh()->status->equals(ApprovedConversion::class))->toBeTrue();
 })->with([true, false])->with([false, true]);
 
@@ -243,7 +243,7 @@ test('provider processing cannot complete a payout after its affiliate becomes D
 
     expect($result->isUnknown())->toBeTrue()
         ->and($payout->fresh()->status->equals(ProcessingPayout::class))->toBeTrue()
-        ->and($payout->operation()->firstOrFail()->last_error_code)->toBe('PAYOUT_COMPLETION_BLOCKED')
+        ->and(AffiliatePayoutOperation::query()->findOrFail($payout->affiliate_payout_operation_id)->last_error_code)->toBe('PAYOUT_COMPLETION_BLOCKED')
         ->and($blockedEvent?->notes)->toContain('non-commercial affiliate payout cannot be completed');
 });
 
@@ -301,7 +301,7 @@ test('a non-gate processor exception keeps the generic processing code', functio
     $result = app(ProcessAffiliatePayout::class)->handle($payout);
 
     expect($result->isUnknown())->toBeTrue()
-        ->and($payout->operation()->first()->fresh()->last_error_code)->toBe('PAYOUT_PROCESSING_EXCEPTION')
+        ->and(AffiliatePayoutOperation::query()->findOrFail($payout->affiliate_payout_operation_id)->fresh()->last_error_code)->toBe('PAYOUT_PROCESSING_EXCEPTION')
         ->and(AffiliatePayoutEvent::query()->where('affiliate_payout_id', $payout->getKey())->where('notes', 'like', 'Completion blocked:%')->exists())->toBeFalse();
 });
 
@@ -324,7 +324,7 @@ test('a late provider response cannot overwrite a newer payout lease', function 
     app()->instance(ProcessAffiliatePayoutFakeSuccessProcessor::class, $processor);
 
     $result = app(ProcessAffiliatePayout::class)->handle($payout);
-    $operation = $payout->operation()->firstOrFail()->fresh();
+    $operation = AffiliatePayoutOperation::query()->findOrFail($payout->affiliate_payout_operation_id)->fresh();
 
     expect($result->isUnknown())->toBeTrue()
         ->and($payout->fresh()->status->equals(ProcessingPayout::class))->toBeTrue()
@@ -356,13 +356,13 @@ test('a late provider response cannot revert a completed payout', function (): v
     app(ProcessAffiliatePayout::class)->handle($payout);
 
     expect($payout->fresh()->status->equals(CompletedPayout::class))->toBeTrue()
-        ->and($payout->operation()->firstOrFail()->fresh()->status)->toBe('completed');
+        ->and(AffiliatePayoutOperation::query()->findOrFail($payout->affiliate_payout_operation_id)->fresh()->status)->toBe('completed');
 });
 
 test('missing payout method does not release funds after provider submission', function (): void {
     $affiliate = createProcessPayoutAffiliate();
     $payout = createProcessPayout($affiliate);
-    $operation = $payout->operation()->firstOrFail();
+    $operation = AffiliatePayoutOperation::query()->findOrFail($payout->affiliate_payout_operation_id);
 
     AffiliatePayoutMethod::query()->where('affiliate_id', $affiliate->getKey())->delete();
     $payout->forceFill(['status' => ProcessingPayout::class])->save();
