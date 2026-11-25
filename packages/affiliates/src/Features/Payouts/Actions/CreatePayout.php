@@ -8,7 +8,8 @@ use AIArmada\Affiliates\Features\Conversions\Api\PayoutReservation;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutHold;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutOperation;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateBalance;
+use AIArmada\Affiliates\Features\Conversions\Api\BalanceReader;
+use AIArmada\Affiliates\Features\Conversions\Api\BalanceSnapshot;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\ApprovedConversion;
@@ -27,7 +28,7 @@ use LogicException;
  */
 final readonly class CreatePayout
 {
-    public function __construct(private PayoutReservation $reservation) {}
+    public function __construct(private PayoutReservation $reservation, private BalanceReader $balances) {}
 
     /**
      * Create a payout from the given conversion IDs.
@@ -53,7 +54,7 @@ final readonly class CreatePayout
 
         $connection = (new Affiliate)->getConnection();
 
-        foreach ([new AffiliateBalance, new AffiliateConversion, new AffiliatePayout, new AffiliatePayoutOperation, new AffiliatePayoutHold] as $model) {
+        foreach ([new AffiliateConversion, new AffiliatePayout, new AffiliatePayoutOperation, new AffiliatePayoutHold] as $model) {
             if ($model->getConnection() !== $connection) {
                 throw new LogicException('Payout reservation requires a shared database connection.');
             }
@@ -149,7 +150,7 @@ final readonly class CreatePayout
                 throw new InvalidArgumentException('A payout can only be created as pending or processing.');
             }
 
-            $sequence = $balance->payout_sequence + 1;
+            $sequence = $balance->payoutSequence + 1;
 
             $operation = new AffiliatePayoutOperation([
                 'affiliate_id' => (string) $affiliateIds->first(),
@@ -181,7 +182,7 @@ final readonly class CreatePayout
             $payout->save();
 
             $this->reservation->reserve(
-                (string) $balance->getKey(),
+                $balance->id,
                 (string) $affiliate->getKey(),
                 (string) $payout->getKey(),
                 $currency,
@@ -270,15 +271,11 @@ final readonly class CreatePayout
         }
     }
 
-    private function reserveBalance(Affiliate $affiliate, int $total, string $currency): AffiliateBalance
+    private function reserveBalance(Affiliate $affiliate, int $total, string $currency): BalanceSnapshot
     {
-        $balance = AffiliateBalance::query()
-            ->where('affiliate_id', $affiliate->getKey())
-            ->where('currency', $currency)
-            ->lockForUpdate()
-            ->first();
+        $balance = $this->balances->lock((string) $affiliate->getKey(), $currency, spl_object_id($affiliate->getConnection()));
 
-        if (! $balance instanceof AffiliateBalance || $balance->available_minor < $total) {
+        if ($balance === null || $balance->availableMinor < $total) {
             throw new InvalidArgumentException('Affiliate available balance does not cover the payout total.');
         }
 

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Features\Upline\Models\AffiliateRank;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateBalance;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\Active;

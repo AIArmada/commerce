@@ -6,16 +6,14 @@ namespace AIArmada\Affiliates\Features\Payouts\Actions;
 
 use AIArmada\Affiliates\Features\Payouts\Api\ScheduledPayoutSweep;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateBalance;
-use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\AffiliateStatus;
+use AIArmada\Affiliates\Features\Conversions\Api\BalanceReader;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Closure;
 use Throwable;
 
 final readonly class RunScheduledPayoutSweep implements ScheduledPayoutSweep
 {
-    public function __construct(private ClaimScheduledPayout $claim) {}
+    public function __construct(private ClaimScheduledPayout $claim, private BalanceReader $balances) {}
 
     public function sweep(bool $dryRun = true, ?string $affiliateId = null, int $minimum = 0): array
     {
@@ -37,20 +35,9 @@ final readonly class RunScheduledPayoutSweep implements ScheduledPayoutSweep
         $minimum = max(0, $minimum);
         $summary = ['processed' => 0, 'skipped' => 0, 'errors' => 0];
 
-        $query = AffiliateBalance::query()
-            ->where('available_minor', $minimum > 0 ? '>=' : '>', $minimum)
-            ->whereHas('affiliate', static function ($query): void {
-                $query->where('status', AffiliateStatus::normalize(Active::class))
-                    ->whereCommercialPurpose();
-            });
-
-        if ($affiliateId !== null && $affiliateId !== '') {
-            $query->where('affiliate_id', $affiliateId);
-        }
-
-        foreach ($query->select('id', 'affiliate_id', 'currency')->lazyById(100) as $balance) {
-            $id = (string) $balance->affiliate_id;
-            $currency = (string) $balance->currency;
+        foreach ($this->balances->payoutCandidates($minimum, $affiliateId) as $balance) {
+            $id = $balance->affiliateId;
+            $currency = $balance->currency;
 
             try {
                 $eligible = $dryRun

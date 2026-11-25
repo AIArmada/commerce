@@ -226,22 +226,24 @@ Configure in `config/affiliates.php`:
 Balances are per currency: each affiliate holds one `AffiliateBalance` row per currency earned. Conversion accounting routes every approved commission into the balance matching its `commission_currency`, creating the row on first use.
 
 ```php
-use AIArmada\Affiliates\Models\AffiliateBalance;
+use AIArmada\Affiliates\Features\Conversions\Api\BalanceReader;
+
+$reader = app(BalanceReader::class);
 
 // All balances for the affiliate, keyed by row.
-$balances = $affiliate->balances;
+$balances = $reader->forAffiliate((string) $affiliate->getKey());
 
 // The USD balance, or null when the affiliate never earned USD.
-$balance = $affiliate->balanceFor('USD');
+$balance = $reader->find((string) $affiliate->getKey(), 'USD');
 
 // Available for withdrawal
-$available = $balance->available_minor; // In cents
+$available = $balance?->availableMinor; // In cents
 
 // On hold (maturity, fraud review)
-$holding = $balance->holding_minor;
+$holding = $balance?->holdingMinor;
 
 // Total lifetime earnings
-$lifetime = $balance->lifetime_earnings_minor;
+$lifetime = $balance?->lifetimeEarningsMinor;
 
 // Combined holding + available balance
 $total = $balance->getTotalBalanceMinor();

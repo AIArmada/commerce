@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\Affiliates\Contracts\PayoutProcessorInterface;
 use AIArmada\Affiliates\Contracts\PayoutProcessorRegistry;
 use AIArmada\Affiliates\Data\PayoutRequest;
@@ -187,7 +188,7 @@ test('valid provider processing settles only the reserved conversions', function
     expect($result->isSuccess())->toBeTrue()
         ->and($payout->fresh()->status->equals(CompletedPayout::class))->toBeTrue()
         ->and($payout->conversions()->firstOrFail()->status->equals(PaidConversion::class))->toBeTrue()
-        ->and($affiliate->balanceFor('USD')->available_minor)->toBe(0);
+        ->and(AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'USD')->first()->available_minor)->toBe(0);
 });
 
 test('corrupt conversion links never reach a provider submission', function (bool $foreignAffiliate, bool $retry): void {

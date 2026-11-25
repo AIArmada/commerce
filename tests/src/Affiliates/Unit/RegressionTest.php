@@ -11,7 +11,7 @@ use AIArmada\Affiliates\Features\Webhooks\Api\WebhookApi;
 use AIArmada\Affiliates\Features\Webhooks\Models\AffiliateWebhookDelivery;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
-use AIArmada\Affiliates\Models\AffiliateBalance;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\Active;
@@ -112,7 +112,7 @@ test('create payout reserves available balance for approved conversions', functi
     $payout = app(CreatePayout::class)->handle([$conversion->id]);
 
     expect($payout->total_minor)->toBe(2000)
-        ->and($this->affiliate->balanceFor('USD')->available_minor)->toBe(3000)
+        ->and(AffiliateBalance::query()->where('affiliate_id', $this->affiliate->getKey())->where('currency', 'USD')->first()->available_minor)->toBe(3000)
         ->and($conversion->fresh()->affiliate_payout_id)->toBe($payout->getKey());
 });
 
@@ -157,7 +157,7 @@ test('payout cancellation refunds balance and unlinks conversions', function ():
 
     app(UpdatePayoutStatus::class)->handle($payout, CancelledPayout::class);
 
-    expect($this->affiliate->balanceFor('USD')->available_minor)->toBe(5000)
+    expect(AffiliateBalance::query()->where('affiliate_id', $this->affiliate->getKey())->where('currency', 'USD')->first()->available_minor)->toBe(5000)
         ->and(AffiliateConversion::query()->find($conversion->id)->affiliate_payout_id)->toBeNull()
         ->and(AffiliateConversion::query()->find($conversion->id)->status)->toBeInstanceOf(ApprovedConversion::class);
 });
@@ -188,7 +188,7 @@ test('reconcile ignores provider events that would illegally regress a terminal 
 
     expect($changed)->toBeFalse()
         ->and($payout->fresh()->status)->toBeInstanceOf(CompletedPayout::class)
-        ->and($this->affiliate->balanceFor('USD')->available_minor)->toBe(3000)
+        ->and(AffiliateBalance::query()->where('affiliate_id', $this->affiliate->getKey())->where('currency', 'USD')->first()->available_minor)->toBe(3000)
         ->and(AffiliateConversion::query()->find($conversion->id)->status)->toBeInstanceOf(PaidConversion::class);
 });
 
@@ -202,7 +202,7 @@ test('reconcile failure releases reserved funds and unlinks conversions', functi
 
     expect($changed)->toBeTrue()
         ->and($payout->fresh()->failed_at)->not->toBeNull()
-        ->and($this->affiliate->balanceFor('USD')->available_minor)->toBe(5000)
+        ->and(AffiliateBalance::query()->where('affiliate_id', $this->affiliate->getKey())->where('currency', 'USD')->first()->available_minor)->toBe(5000)
         ->and(AffiliateConversion::query()->find($conversion->id)->affiliate_payout_id)->toBeNull()
         ->and(AffiliateConversion::query()->find($conversion->id)->status)->toBeInstanceOf(ApprovedConversion::class);
 });

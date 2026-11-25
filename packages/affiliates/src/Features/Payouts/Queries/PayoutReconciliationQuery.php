@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Payouts\Queries;
 
+use AIArmada\Affiliates\Features\Conversions\Api\BalanceReader;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutReconciliation;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutReconciliationQueries;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutOperation;
@@ -26,7 +27,7 @@ use Illuminate\Support\Collection;
 
 final readonly class PayoutReconciliationQuery implements PayoutReconciliationQueries
 {
-    public function __construct(private CurrencyConverter $converter) {}
+    public function __construct(private CurrencyConverter $converter, private BalanceReader $balances) {}
 
     /** @return list<string> */
     public function payoutIdsNeedingReconciliation(): array
@@ -190,7 +191,7 @@ final readonly class PayoutReconciliationQuery implements PayoutReconciliationQu
     public function auditAllAffiliateBalances(string $affiliateId): array
     {
         $affiliate = Affiliate::query()->forOwner()->findOrFail($affiliateId);
-        $currencies = $affiliate->balances()->pluck('currency')->unique()->values()->all();
+        $currencies = array_map(static fn ($balance): string => $balance->currency, $this->balances->forAffiliate($affiliateId));
 
         $audits = [];
 
@@ -237,7 +238,7 @@ final readonly class PayoutReconciliationQuery implements PayoutReconciliationQu
             ->whereHas('payout', static fn (Builder $query): Builder => $query->whereIn('status', [PendingPayout::value(), ProcessingPayout::value()]))
             ->sum('amount_minor');
         $expectedAvailable = $approvedCommissions + $completedPayoutConversions - $paidOut - $pendingPayouts - $directPaidClawbacks;
-        $actualAvailable = $affiliate->balanceFor($currency)?->available_minor ?? 0;
+        $actualAvailable = $this->balances->find((string) $affiliate->getKey(), $currency)?->availableMinor ?? 0;
         $discrepancy = $expectedAvailable - $actualAvailable;
 
         return [

@@ -7,7 +7,7 @@ use AIArmada\Affiliates\Features\Payouts\EntryPoints\Console\ProcessScheduledPay
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutEvent;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutHold;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateBalance;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\Active;

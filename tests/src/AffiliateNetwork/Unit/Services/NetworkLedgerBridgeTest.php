@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\AffiliateNetwork\Data\LegStatus;
 use AIArmada\AffiliateNetwork\Events\NetworkConversionRecorded;
 use AIArmada\AffiliateNetwork\Features\Attribution\Actions\RecordLinkCounters;
@@ -71,7 +72,7 @@ describe('network ledger bridge', function (): void {
             ->and($conversion->commission_currency)->toBe('USD')
             ->and($conversion->value_minor)->toBe(10000)
             ->and($conversion->external_reference)->toBe('BRIDGE-ORDER-1')
-            ->and($this->affiliate->balanceFor('USD')?->holding_minor)->toBe(1000);
+            ->and(AffiliateBalance::query()->where('affiliate_id', $this->affiliate->getKey())->where('currency', 'USD')->first()?->holding_minor)->toBe(1000);
     });
 
     test('fulfills the payout share when a network fee applies', function (): void {
@@ -187,7 +188,7 @@ describe('network ledger bridge', function (): void {
         $conversion = AffiliateConversion::query()->where('external_reference', 'BRIDGE-REVERSE-1')->firstOrFail();
         $firstCompanion = app(ReverseAffiliateConversion::class)->handle($conversion, 'merchant refund');
         $secondCompanion = app(ReverseAffiliateConversion::class)->handle($conversion->fresh(), 'merchant refund');
-        $balance = $this->affiliate->balanceFor('USD')->fresh();
+        $balance = AffiliateBalance::query()->where('affiliate_id', $this->affiliate->getKey())->where('currency', 'USD')->first()->fresh();
 
         expect($firstCompanion->getKey())->toBe($secondCompanion->getKey())
             ->and($leg->fresh()->status)->toBe(LegStatus::Reversed)

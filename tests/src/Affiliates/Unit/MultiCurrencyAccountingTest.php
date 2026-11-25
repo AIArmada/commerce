@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Features\Conversions\Actions\ApplyConversionAccounting;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateBalance;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
@@ -72,11 +72,11 @@ describe('Multi-currency accounting', function (): void {
 
         recordConversionInCurrency($affiliate, 'EUR', 3000, ApprovedConversion::class);
 
-        $balance = $affiliate->balanceFor('EUR');
+        $balance = AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'EUR')->first();
 
         expect($balance)->toBeInstanceOf(AffiliateBalance::class)
             ->and($balance->available_minor)->toBe(3000)
-            ->and($affiliate->balanceFor('USD'))->toBeNull();
+            ->and(AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'USD')->first())->toBeNull();
     });
 
     test('exposes all balances through the balances relation', function (): void {
@@ -85,6 +85,6 @@ describe('Multi-currency accounting', function (): void {
         recordConversionInCurrency($affiliate, 'USD', 1000);
         recordConversionInCurrency($affiliate, 'MYR', 2000);
 
-        expect($affiliate->balances()->pluck('currency')->sort()->values()->all())->toBe(['MYR', 'USD']);
+        expect(AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->pluck('currency')->sort()->values()->all())->toBe(['MYR', 'USD']);
     });
 });

@@ -44,14 +44,12 @@ $affiliate->conversions;      // HasMany<AffiliateConversion>
 $affiliate->attributions;     // HasMany<AffiliateAttribution>
 $affiliate->payouts;          // MorphMany<AffiliatePayout>
 $affiliate->links;            // HasMany<AffiliateLink>
-$affiliate->balances;         // HasMany<AffiliateBalance>, one per currency
 $affiliate->parent;           // BelongsTo<Affiliate>
 $affiliate->children;         // HasMany<Affiliate>
 $affiliate->programs;         // BelongsToMany<AffiliateProgram>
 $affiliate->dailyStats;       // HasMany<AffiliateDailyStat>
 app(\AIArmada\Affiliates\Features\Upline\Api\RankDirectory::class)->label($affiliate->rank_id);
 $affiliate->vouchers;         // HasMany<Voucher>
-$affiliate->balances;         // HasMany<AffiliateBalance>, one row per currency
 ```
 
 Commission rules, promotions and volume tiers are program-scoped and owned by Commissions. Use `ProgramCommissionAdministration` and `VolumeTierAdministration` for mutations, and `CommissionCatalogReader`, `CommissionRulePreview` and `VolumeTierReader` for catalog reads.
@@ -64,7 +62,7 @@ $affiliate->canBeAttributed();         // Active, or pending under open registra
 app(\AIArmada\Affiliates\Features\Payouts\Api\PayoutHoldReader::class)->hasActive((string) $affiliate->getKey());     // Check for unreleased payout holds
 $affiliate->canRequestPayout();        // True when any balance meets its minimum payout
 $affiliate->canRequestPayout('USD');   // True when the USD balance meets its minimum
-$affiliate->balanceFor('USD');         // The USD AffiliateBalance, or null
+app(\AIArmada\Affiliates\Features\Conversions\Api\BalanceReader::class)->find((string) $affiliate->getKey(), 'USD');
 ```
 
 ### AffiliateAttribution
@@ -256,7 +254,7 @@ $membership->tier;       // BelongsTo<AffiliateProgramTier>
 Real-time balance tracking.
 
 ```php
-use AIArmada\Affiliates\Models\AffiliateBalance;
+use AIArmada\Affiliates\Features\Conversions\Api\BalanceReader;
 ```
 
 | Attribute | Type | Description |

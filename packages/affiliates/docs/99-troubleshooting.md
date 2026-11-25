@@ -194,7 +194,7 @@ app(\AIArmada\Affiliates\Features\Payouts\Api\PayoutHoldReader::class)->hasActiv
 ],
 
 // Affiliate must have at least this amount available in the payout currency
-$affiliate->balanceFor('USD')?->available_minor >= 5000;
+app(\AIArmada\Affiliates\Features\Conversions\Api\BalanceReader::class)->find((string) $affiliate->getKey(), 'USD')?->availableMinor >= 5000;
 ```
 
 ### Payout Processing Fails

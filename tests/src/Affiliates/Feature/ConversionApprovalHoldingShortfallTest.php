@@ -6,7 +6,7 @@ use AIArmada\Affiliates\Events\HoldingShortfallDetected;
 use AIArmada\Affiliates\Features\Conversions\Actions\ApplyConversionAccounting;
 use AIArmada\Affiliates\Features\Conversions\Actions\ReverseAffiliateConversion;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateBalance;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
@@ -67,12 +67,12 @@ test('approving a conversion with a divergent hold credits the full commission a
     Log::spy();
 
     $conversion = createShortfallHeldConversion('SHORT001');
-    $balance = $conversion->affiliate->balanceFor('USD');
+    $balance = AffiliateBalance::query()->where('affiliate_id', $conversion->affiliate->getKey())->where('currency', 'USD')->first();
     drainShortfallHolding($balance, 0);
 
     expect(AffiliateConversionsTable::updateStatus($conversion, ApprovedConversion::class))->toBeTrue();
 
-    $balance = $conversion->affiliate->balanceFor('USD')->fresh();
+    $balance = AffiliateBalance::query()->where('affiliate_id', $conversion->affiliate->getKey())->where('currency', 'USD')->first()->fresh();
 
     expect($balance->holding_minor)->toBe(0)
         ->and($balance->available_minor)->toBe(5000)
@@ -107,12 +107,12 @@ test('a partially drained pool still pays every approval in full', function (): 
     ]);
     app(ApplyConversionAccounting::class)->handle($second);
 
-    drainShortfallHolding($affiliate->balanceFor('USD'), 5000);
+    drainShortfallHolding(AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'USD')->first(), 5000);
 
     expect(AffiliateConversionsTable::updateStatus($first, ApprovedConversion::class))->toBeTrue();
     expect(AffiliateConversionsTable::updateStatus($second->fresh(), ApprovedConversion::class))->toBeTrue();
 
-    $balance = $affiliate->balanceFor('USD')->fresh();
+    $balance = AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'USD')->first()->fresh();
 
     expect($balance->holding_minor)->toBe(0)
         ->and($balance->available_minor)->toBe(10000)
@@ -129,7 +129,7 @@ test('approving with an upward adjustment credits the lifetime catch-up', functi
 
     expect(AffiliateConversionsTable::updateStatus($conversion->fresh(), ApprovedConversion::class))->toBeTrue();
 
-    $balance = $conversion->affiliate->balanceFor('USD')->fresh();
+    $balance = AffiliateBalance::query()->where('affiliate_id', $conversion->affiliate->getKey())->where('currency', 'USD')->first()->fresh();
 
     expect($balance->holding_minor)->toBe(0)
         ->and($balance->available_minor)->toBe(7000)
@@ -143,11 +143,11 @@ test('rejecting a conversion with a divergent hold voids without throwing and re
     Log::spy();
 
     $conversion = createShortfallHeldConversion('SHORT004');
-    drainShortfallHolding($conversion->affiliate->balanceFor('USD'), 0);
+    drainShortfallHolding(AffiliateBalance::query()->where('affiliate_id', $conversion->affiliate->getKey())->where('currency', 'USD')->first(), 0);
 
     expect(AffiliateConversionsTable::updateStatus($conversion, RejectedConversion::class))->toBeTrue();
 
-    $balance = $conversion->affiliate->balanceFor('USD')->fresh();
+    $balance = AffiliateBalance::query()->where('affiliate_id', $conversion->affiliate->getKey())->where('currency', 'USD')->first()->fresh();
 
     expect($balance->holding_minor)->toBe(0)
         ->and($balance->available_minor)->toBe(0)
@@ -172,7 +172,7 @@ test('reversing a held conversion zeroed after recording releases its hold', fun
 
     app(ReverseAffiliateConversion::class)->handle($conversion->fresh(), 'chargeback');
 
-    $balance = $affiliate->balanceFor('USD')->fresh();
+    $balance = AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'USD')->first()->fresh();
 
     expect($conversion->fresh()->status->equals(ReversedConversion::class))->toBeTrue()
         ->and($conversion->fresh()->held_minor)->toBe(0)
@@ -206,7 +206,7 @@ test('approving an off-record conversion reports no shortfall', function (): voi
 
     expect(AffiliateConversionsTable::updateStatus($conversion, ApprovedConversion::class))->toBeTrue();
 
-    $balance = $affiliate->balanceFor('USD')->fresh();
+    $balance = AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'USD')->first()->fresh();
 
     expect($balance->available_minor)->toBe(5000)
         ->and($balance->lifetime_earnings_minor)->toBe(5000);

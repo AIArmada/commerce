@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Exceptions\PayoutCompletionBlockedException;
 use AIArmada\Affiliates\Features\Conversions\Actions\ApplyConversionAccounting;
@@ -71,7 +72,7 @@ test('reversing a conversion reserved by an open payout throws and moves no mone
     expect(fn (): object => app(ReverseAffiliateConversion::class)->handle($conversion, 'duplicate'))
         ->toThrow(InvalidArgumentException::class, 'reserved by open payout');
 
-    $balance = $affiliate->balanceFor('USD')->fresh();
+    $balance = AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'USD')->first()->fresh();
 
     expect($balance->available_minor)->toBe(0)
         ->and($balance->lifetime_earnings_minor)->toBe(5000)
@@ -138,7 +139,7 @@ test('a reserved conversion becomes reversible after the payout is cancelled', f
 
     app(ReverseAffiliateConversion::class)->handle($conversion->fresh(), 'duplicate');
 
-    $balance = $affiliate->balanceFor('USD')->fresh();
+    $balance = AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'USD')->first()->fresh();
 
     expect($balance->available_minor)->toBe(0)
         ->and($balance->lifetime_earnings_minor)->toBe(0)
@@ -154,7 +155,7 @@ test('reversing a paid conversion linked to a completed payout still claws back'
 
     app(ReverseAffiliateConversion::class)->handle($conversion->fresh(), 'chargeback');
 
-    $balance = $affiliate->balanceFor('USD')->fresh();
+    $balance = AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'USD')->first()->fresh();
 
     expect($balance->available_minor)->toBe(-5000)
         ->and($conversion->fresh()->status->equals(ReversedConversion::class))->toBeTrue();
@@ -335,7 +336,7 @@ test('linking a foreign affiliate conversion is rejected before it is persisted'
         ->toThrow(InvalidArgumentException::class, 'across 2 affiliates');
 
     expect($foreign->fresh()->affiliate_payout_id)->toBeNull()
-        ->and($other->balanceFor('USD')->available_minor)->toBe(5000)
+        ->and(AffiliateBalance::query()->where('affiliate_id', $other->getKey())->where('currency', 'USD')->first()->available_minor)->toBe(5000)
         ->and($payout->fresh()->total_minor)->toBe(5000)
         ->and($payout->conversions()->count())->toBe(1);
 });
@@ -371,7 +372,7 @@ test('a record-only payout accepts conversions for its own affiliate', function 
     $conversion->update(['affiliate_payout_id' => $payout->getKey()]);
 
     expect($conversion->fresh()->affiliate_payout_id)->toBe($payout->getKey())
-        ->and($affiliate->balanceFor('USD')->available_minor)->toBe(5000);
+        ->and(AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'USD')->first()->available_minor)->toBe(5000);
 });
 
 test('a conversion cannot be linked to another owners payout', function (): void {
@@ -428,7 +429,7 @@ test('completion refuses extra same-affiliate conversions that were never reserv
         ->toThrow(PayoutCompletionBlockedException::class, 'reservation');
 
     expect($extra->fresh()->status->equals(ApprovedConversion::class))->toBeTrue()
-        ->and($affiliate->balanceFor('USD')->available_minor)->toBe(5000);
+        ->and(AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'USD')->first()->available_minor)->toBe(5000);
 })->with([false, true]);
 
 test('the gate resolves eligibility in the payout owner scope', function (): void {
@@ -548,7 +549,7 @@ test('a missing reserved balance rolls back payout failure without unlinking con
     $conversion = recordCompletionGuardConversion($affiliate);
     $payout = app(CreatePayout::class)->handle([$conversion->id]);
 
-    $affiliate->balances()->delete();
+    AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->delete();
 
     expect(fn (): mixed => $reconcile
         ? app(PayoutReconciliation::class)->reconcile((string) $payout->getKey(), 'failed')
@@ -574,7 +575,7 @@ test('payout failure refuses to resurrect a conversion changed outside settlemen
 
     expect($conversion->fresh()->status->getValue())->toBe('rejected')
         ->and($conversion->fresh()->affiliate_payout_id)->toBe($payout->id)
-        ->and($affiliate->balanceFor('USD')->available_minor)->toBe(0);
+        ->and(AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'USD')->first()->available_minor)->toBe(0);
 })->with([false, true]);
 
 test('manual payout reservation refuses duplicate conversion identifiers', function (): void {
@@ -585,7 +586,7 @@ test('manual payout reservation refuses duplicate conversion identifiers', funct
         ->toThrow(InvalidArgumentException::class, 'unique conversion IDs');
 
     expect($conversion->fresh()->affiliate_payout_id)->toBeNull()
-        ->and($affiliate->balanceFor('USD')->available_minor)->toBe(5000);
+        ->and(AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'USD')->first()->available_minor)->toBe(5000);
 });
 
 test('manual payout reservation accepts a normalized conversion currency', function (): void {
@@ -597,7 +598,7 @@ test('manual payout reservation accepts a normalized conversion currency', funct
 
     expect($payout->currency)->toBe('USD')
         ->and($conversion->fresh()->affiliate_payout_id)->toBe($payout->id)
-        ->and($affiliate->balanceFor('USD')->available_minor)->toBe(0);
+        ->and(AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'USD')->first()->available_minor)->toBe(0);
 });
 
 test('manual payout creation cannot reserve funds while an active hold exists', function (): void {
@@ -608,7 +609,7 @@ test('manual payout creation cannot reserve funds while an active hold exists', 
 
     expect(fn (): object => app(CreatePayout::class)->handle([$conversion->id]))
         ->toThrow(InvalidArgumentException::class, 'active payout hold')
-        ->and($affiliate->balanceFor('USD')->fresh()->available_minor)->toBe(5000)
+        ->and(AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'USD')->first()->fresh()->available_minor)->toBe(5000)
         ->and($conversion->fresh()->affiliate_payout_id)->toBeNull();
 
     $holds->release($affiliate->id, $holdId);

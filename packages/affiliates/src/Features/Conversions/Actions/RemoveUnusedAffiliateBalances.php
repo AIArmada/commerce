@@ -6,7 +6,7 @@ namespace AIArmada\Affiliates\Features\Conversions\Actions;
 
 use AIArmada\Affiliates\Features\Conversions\Api\UnusedAffiliateBalanceRemoval;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateBalance;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use Illuminate\Validation\ValidationException;
 use LogicException;
@@ -29,7 +29,7 @@ final readonly class RemoveUnusedAffiliateBalances implements UnusedAffiliateBal
                 throw ValidationException::withMessages(['affiliate' => 'An affiliate with conversion history cannot be deleted.']);
             }
 
-            $balances = $affiliate->balances()->lockForUpdate()->get();
+            $balances = AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->lockForUpdate()->get();
 
             foreach ($balances as $balance) {
                 if ($balance->holding_minor !== 0 || $balance->available_minor !== 0
@@ -38,7 +38,7 @@ final readonly class RemoveUnusedAffiliateBalances implements UnusedAffiliateBal
                 }
             }
 
-            $affiliate->balances()->delete();
+            AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->delete();
         }, attempts: 3);
     }
 }

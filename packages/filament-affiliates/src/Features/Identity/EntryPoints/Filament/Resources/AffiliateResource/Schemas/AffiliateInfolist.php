@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources\AffiliateResource\Schemas;
 
+use AIArmada\Affiliates\Features\Conversions\Api\BalanceReader;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutHoldReader;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\AffiliateStatus;
@@ -67,24 +68,28 @@ final class AffiliateInfolist
             Section::make('Finance')
                 ->schema([
                     Grid::make(3)->schema([
-                        TextEntry::make('balance.available_minor')
+                        TextEntry::make('balance_available_minor')
+                            ->state(fn (Affiliate $record): ?int => app(BalanceReader::class)->find((string) $record->getKey(), $record->currency)?->availableMinor)
                             ->label('Available')
-                            ->formatStateUsing(fn ($state, Affiliate $record): string => MoneyFormatter::formatMinor((int) $state, $record->balance?->currency ?? $record->currency))
+                            ->formatStateUsing(fn ($state, Affiliate $record): string => MoneyFormatter::formatMinor((int) $state, $record->currency))
                             ->placeholder('—'),
 
-                        TextEntry::make('balance.holding_minor')
+                        TextEntry::make('balance_holding_minor')
+                            ->state(fn (Affiliate $record): ?int => app(BalanceReader::class)->find((string) $record->getKey(), $record->currency)?->holdingMinor)
                             ->label('Holding')
-                            ->formatStateUsing(fn ($state, Affiliate $record): string => MoneyFormatter::formatMinor((int) $state, $record->balance?->currency ?? $record->currency))
+                            ->formatStateUsing(fn ($state, Affiliate $record): string => MoneyFormatter::formatMinor((int) $state, $record->currency))
                             ->placeholder('—'),
 
-                        TextEntry::make('balance.minimum_payout_minor')
+                        TextEntry::make('balance_minimum_payout_minor')
+                            ->state(fn (Affiliate $record): ?int => app(BalanceReader::class)->find((string) $record->getKey(), $record->currency)?->minimumPayoutMinor)
                             ->label('Minimum Payout')
-                            ->formatStateUsing(fn ($state, Affiliate $record): string => MoneyFormatter::formatMinor((int) $state, $record->balance?->currency ?? $record->currency))
+                            ->formatStateUsing(fn ($state, Affiliate $record): string => MoneyFormatter::formatMinor((int) $state, $record->currency))
                             ->placeholder('—'),
 
-                        TextEntry::make('balance.lifetime_earnings_minor')
+                        TextEntry::make('balance_lifetime_earnings_minor')
+                            ->state(fn (Affiliate $record): ?int => app(BalanceReader::class)->find((string) $record->getKey(), $record->currency)?->lifetimeEarningsMinor)
                             ->label('Lifetime Earnings')
-                            ->formatStateUsing(fn ($state, Affiliate $record): string => MoneyFormatter::formatMinor((int) $state, $record->balance?->currency ?? $record->currency))
+                            ->formatStateUsing(fn ($state, Affiliate $record): string => MoneyFormatter::formatMinor((int) $state, $record->currency))
                             ->placeholder('—'),
 
                         TextEntry::make('payout_holds_count')

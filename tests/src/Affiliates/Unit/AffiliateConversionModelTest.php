@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\Affiliates\Features\Conversions\Actions\ApplyConversionAccounting;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
@@ -73,7 +74,7 @@ describe('AffiliateConversion Model', function (): void {
             'occurred_at' => now(),
         ]);
 
-        $balance = $this->affiliate->fresh()->balanceFor('USD');
+        $balance = AffiliateBalance::query()->where('affiliate_id', $this->affiliate->fresh()->getKey())->where('currency', 'USD')->first();
 
         expect($balance)->not->toBeNull()
             ->and($balance?->holding_minor)->toBe(1000)
@@ -96,7 +97,7 @@ describe('AffiliateConversion Model', function (): void {
             'occurred_at' => now(),
         ])->fresh();
 
-        $balance = $this->affiliate->fresh()->balanceFor('USD');
+        $balance = AffiliateBalance::query()->where('affiliate_id', $this->affiliate->fresh()->getKey())->where('currency', 'USD')->first();
 
         expect($conversion?->status->equals(ApprovedConversion::class))->toBeTrue()
             ->and($conversion?->approved_at)->not->toBeNull()
@@ -126,7 +127,7 @@ describe('AffiliateConversion Model', function (): void {
         app(ApplyConversionAccounting::class)->handle($conversion, $previousStatus);
 
         $conversion = $conversion->fresh();
-        $balance = $this->affiliate->fresh()->balanceFor('USD');
+        $balance = AffiliateBalance::query()->where('affiliate_id', $this->affiliate->fresh()->getKey())->where('currency', 'USD')->first();
 
         expect($conversion?->approved_at)->not->toBeNull()
             ->and($balance)->not->toBeNull()
@@ -137,7 +138,7 @@ describe('AffiliateConversion Model', function (): void {
         $conversion?->update(['status' => PaidConversion::class]);
         app(ApplyConversionAccounting::class)->handle($conversion, $previousStatus);
 
-        $balance = $this->affiliate->fresh()->balanceFor('USD');
+        $balance = AffiliateBalance::query()->where('affiliate_id', $this->affiliate->fresh()->getKey())->where('currency', 'USD')->first();
 
         expect($balance?->available_minor)->toBe(0)
             ->and($balance?->lifetime_earnings_minor)->toBe(1000);

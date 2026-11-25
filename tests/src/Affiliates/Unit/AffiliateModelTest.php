@@ -16,7 +16,7 @@ use AIArmada\Affiliates\Features\Upline\Api\RankAdministration;
 use AIArmada\Affiliates\Features\Upline\Api\RankDirectory;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
-use AIArmada\Affiliates\Models\AffiliateBalance;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;
@@ -264,7 +264,7 @@ describe('Affiliate Model - Relationships', function (): void {
         ]);
     });
 
-    test('has one balance', function (): void {
+    test('reads balance records through the conversions feature', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'BAL-001',
             'name' => 'Balance Test',
@@ -273,7 +273,7 @@ describe('Affiliate Model - Relationships', function (): void {
             'commission_rate' => 1000,
             'currency' => 'USD',
         ]);
-        expect($affiliate->balances())->toBeInstanceOf(HasMany::class);
+        expect(app(\AIArmada\Affiliates\Features\Conversions\Api\BalanceReader::class)->forAffiliate((string) $affiliate->getKey()))->toBe([]);
     });
 
     test('has many payout methods', function (): void {

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Features\Portal\EntryPoints\Filament\Concerns;
 
+use AIArmada\Affiliates\Features\Conversions\Api\BalanceReader;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
@@ -168,9 +169,9 @@ trait InteractsWithAffiliate
 
         $map = [];
 
-        foreach ($affiliate->balances()->get(['currency', 'available_minor']) as $balance) {
+        foreach (app(BalanceReader::class)->forAffiliate((string) $affiliate->getKey()) as $balance) {
             $code = mb_strtoupper((string) $balance->currency);
-            $map[$code] = ($map[$code] ?? 0) + (int) $balance->available_minor;
+            $map[$code] = ($map[$code] ?? 0) + (int) $balance->availableMinor;
         }
 
         ksort($map);

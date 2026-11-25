@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Features\Conversions\Actions\ApplyConversionAccounting;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateBalance;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
@@ -275,7 +275,7 @@ describe('AffiliateBalance Model', function (): void {
     });
 });
 
-it('exposes the latest balance through the affiliate balance relation', function (): void {
+it('exposes immutable currency balances through the conversions reader', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'BAL-REL-' . uniqid(),
         'name' => 'Balance Relation Affiliate',
@@ -294,9 +294,13 @@ it('exposes the latest balance through the affiliate balance relation', function
         'minimum_payout_minor' => 1000,
     ]);
 
-    expect($affiliate->balance)->toBeInstanceOf(AffiliateBalance::class)
-        ->and($affiliate->balance->available_minor)->toBe(2500)
-        ->and(Affiliate::with('balance')->find($affiliate->id)->balance)->not->toBeNull();
+    $reader = app(\AIArmada\Affiliates\Features\Conversions\Api\BalanceReader::class);
+    $snapshot = $reader->find((string) $affiliate->getKey(), 'usd');
+
+    expect($snapshot)->toBeInstanceOf(\AIArmada\Affiliates\Features\Conversions\Api\BalanceSnapshot::class)
+        ->and($snapshot->availableMinor)->toBe(2500)
+        ->and($reader->find((string) $affiliate->getKey(), 'MYR'))->toBeNull()
+        ->and($reader->canRequestPayout((string) $affiliate->getKey(), 'USD'))->toBeTrue();
 });
 
 it('does not erase a negative available balance when settling another conversion', function (): void {

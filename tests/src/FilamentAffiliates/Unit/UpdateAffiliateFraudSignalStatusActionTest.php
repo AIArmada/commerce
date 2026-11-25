@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\Affiliates\Features\Conversions\Actions\ApplyConversionAccounting;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalStatus;
@@ -320,7 +321,7 @@ it('rejecting the linked conversion voids its holding', function (): void {
         expect($signal->fresh()->status)->toBe(FraudSignalStatus::Confirmed)
             ->and($conversion->fresh()->status->equals(RejectedConversion::class))->toBeTrue();
 
-        $balance = $affiliate->balanceFor('USD')->fresh();
+        $balance = AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'USD')->first()->fresh();
 
         expect($balance->holding_minor)->toBe(0)
             ->and($balance->available_minor)->toBe(0)

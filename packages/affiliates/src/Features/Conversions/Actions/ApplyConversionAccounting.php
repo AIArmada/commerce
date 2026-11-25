@@ -6,7 +6,7 @@ namespace AIArmada\Affiliates\Features\Conversions\Actions;
 
 use AIArmada\Affiliates\Events\HoldingShortfallDetected;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateBalance;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\ConversionStatus;
@@ -51,7 +51,7 @@ final readonly class ApplyConversionAccounting
 
             $currency = mb_strtoupper((string) ($lockedConversion->commission_currency ?: $lockedAffiliate->currency ?: config('affiliates.currency.default', 'MYR')));
 
-            $balance = $lockedAffiliate->balances()->where('currency', $currency)->lockForUpdate()->first()
+            $balance = AffiliateBalance::query()->where('affiliate_id', $lockedAffiliate->getKey())->where('currency', $currency)->lockForUpdate()->first()
                 ?? self::createBalance($lockedAffiliate, $currency);
 
             if ($previousStatus === null) {
@@ -273,7 +273,7 @@ final readonly class ApplyConversionAccounting
                 throw $exception;
             }
 
-            return $affiliate->balances()->where('currency', $currency)->firstOrFail();
+            return AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', $currency)->firstOrFail();
         }
     }
 }

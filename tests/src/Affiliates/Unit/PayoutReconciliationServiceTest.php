@@ -11,7 +11,7 @@ use AIArmada\Affiliates\Features\Payouts\Api\PayoutReconciliation;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutReconciliationQueries;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutOperation;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateBalance;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\Active;
@@ -615,7 +615,7 @@ describe('PayoutReconciliationQueries', function (): void {
             app(ApplyConversionAccounting::class)->handle($conversion);
 
             // Balance doesn't match (should be 10000)
-            $this->affiliate->balanceFor('USD')->update([
+            AffiliateBalance::query()->where('affiliate_id', $this->affiliate->getKey())->where('currency', 'USD')->first()->update([
                 'available_minor' => 5000, // Wrong!
             ]);
 

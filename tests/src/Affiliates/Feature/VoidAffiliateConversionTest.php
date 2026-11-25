@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\Affiliates\Features\Conversions\Actions\ApplyConversionAccounting;
 use AIArmada\Affiliates\Features\Conversions\Actions\VoidAffiliateConversion;
 use AIArmada\Affiliates\Models\Affiliate;
@@ -53,7 +54,7 @@ test('voiding a held conversion rejects it and voids holding', function (): void
 
     expect($result->status->equals(RejectedConversion::class))->toBeTrue();
 
-    $balance = $conversion->affiliate->balanceFor('USD')->fresh();
+    $balance = AffiliateBalance::query()->where('affiliate_id', $conversion->affiliate->getKey())->where('currency', 'USD')->first()->fresh();
 
     expect($balance->holding_minor)->toBe(0)
         ->and($balance->available_minor)->toBe(0)
@@ -67,7 +68,7 @@ test('voiding an approved conversion rejects it and voids available', function (
 
     app(VoidAffiliateConversion::class)->handle($conversion->fresh(), 'fraud confirmed');
 
-    $balance = $conversion->affiliate->balanceFor('USD')->fresh();
+    $balance = AffiliateBalance::query()->where('affiliate_id', $conversion->affiliate->getKey())->where('currency', 'USD')->first()->fresh();
 
     expect($conversion->fresh()->status->equals(RejectedConversion::class))->toBeTrue()
         ->and($balance->holding_minor)->toBe(0)
@@ -91,7 +92,7 @@ test('voiding a paid conversion reverses it with a clawback leg', function (): v
         ->and($result->conversion_type)->toBe('reversal')
         ->and($result->commission_minor)->toBe(-5000);
 
-    $balance = $conversion->affiliate->balanceFor('USD')->fresh();
+    $balance = AffiliateBalance::query()->where('affiliate_id', $conversion->affiliate->getKey())->where('currency', 'USD')->first()->fresh();
 
     expect($conversion->fresh()->status->equals(ReversedConversion::class))->toBeTrue()
         ->and($balance->available_minor)->toBe(-5000)
@@ -102,13 +103,13 @@ test('voiding a terminal conversion is a no-op', function (): void {
     $conversion = createVoidableConversion('VOID004');
 
     app(VoidAffiliateConversion::class)->handle($conversion, 'first');
-    $afterFirst = $conversion->affiliate->balanceFor('USD')->fresh()->toArray();
+    $afterFirst = AffiliateBalance::query()->where('affiliate_id', $conversion->affiliate->getKey())->where('currency', 'USD')->first()->fresh()->toArray();
 
     $result = app(VoidAffiliateConversion::class)->handle($conversion->fresh(), 'second');
 
     expect($result->status->equals(RejectedConversion::class))->toBeTrue();
 
-    $afterSecond = $conversion->affiliate->balanceFor('USD')->fresh()->toArray();
+    $afterSecond = AffiliateBalance::query()->where('affiliate_id', $conversion->affiliate->getKey())->where('currency', 'USD')->first()->fresh()->toArray();
 
     expect($afterSecond['holding_minor'])->toBe($afterFirst['holding_minor'])
         ->and($afterSecond['available_minor'])->toBe($afterFirst['available_minor'])

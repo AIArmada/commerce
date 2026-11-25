@@ -9,7 +9,7 @@ use AIArmada\Affiliates\Features\Conversions\Actions\RecordAffiliateOutcome;
 use AIArmada\Affiliates\Features\Payouts\Actions\CreatePayout;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
-use AIArmada\Affiliates\Models\AffiliateBalance;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateTouchpoint;

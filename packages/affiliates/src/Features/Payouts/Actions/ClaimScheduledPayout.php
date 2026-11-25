@@ -9,7 +9,7 @@ use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutEvent;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutHold;
 use AIArmada\Affiliates\Features\Payouts\Models\AffiliatePayoutOperation;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateBalance;
+use AIArmada\Affiliates\Features\Conversions\Api\BalanceReader;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\ApprovedConversion;
@@ -23,7 +23,7 @@ final class ClaimScheduledPayout
 {
     use AsAction;
 
-    public function __construct(private readonly PayoutReservation $reservation) {}
+    public function __construct(private readonly PayoutReservation $reservation, private readonly BalanceReader $balances) {}
 
     public function isEligibleSnapshot(string $affiliateId, int $minimumAmountMinor, ?string $currency = null): bool
     {
@@ -34,18 +34,15 @@ final class ClaimScheduledPayout
             return false;
         }
 
-        $balance = AffiliateBalance::query()
-            ->where('affiliate_id', $affiliate->id)
-            ->where('currency', $currency)
-            ->first();
+        $balance = $this->balances->find($affiliateId, $currency);
 
-        if (! $balance instanceof AffiliateBalance) {
+        if ($balance === null) {
             return false;
         }
 
-        $threshold = max($minimumAmountMinor, $balance->minimum_payout_minor);
+        $threshold = max($minimumAmountMinor, $balance->minimumPayoutMinor);
 
-        if ($balance->available_minor < $threshold || $balance->available_minor <= 0) {
+        if ($balance->availableMinor < $threshold || $balance->availableMinor <= 0) {
             return false;
         }
 
@@ -61,7 +58,7 @@ final class ClaimScheduledPayout
             return false;
         }
 
-        $allocation = $this->fundedConversionAllocation($affiliate, $balance->available_minor, $currency);
+        $allocation = $this->fundedConversionAllocation($affiliate, $balance->availableMinor, $currency);
 
         return $allocation['conversion_ids'] !== [] && $allocation['amount_minor'] >= $threshold;
     }
@@ -72,7 +69,7 @@ final class ClaimScheduledPayout
 
         $connection = (new Affiliate)->getConnection();
 
-        foreach ([new AffiliateBalance, new AffiliateConversion, new AffiliatePayout, new AffiliatePayoutOperation, new AffiliatePayoutEvent, new AffiliatePayoutHold] as $model) {
+        foreach ([new AffiliateConversion, new AffiliatePayout, new AffiliatePayoutOperation, new AffiliatePayoutEvent, new AffiliatePayoutHold] as $model) {
             if ($model->getConnection() !== $connection) {
                 throw new LogicException('Scheduled payout reservation requires a shared database connection.');
             }
@@ -85,19 +82,15 @@ final class ClaimScheduledPayout
                 return null;
             }
 
-            $balance = AffiliateBalance::query()
-                ->where('affiliate_id', $affiliate->id)
-                ->where('currency', $currency)
-                ->lockForUpdate()
-                ->first();
+            $balance = $this->balances->lock($affiliateId, $currency, spl_object_id($affiliate->getConnection()));
 
-            if (! $balance instanceof AffiliateBalance) {
+            if ($balance === null) {
                 return null;
             }
 
-            $threshold = max($minimumAmountMinor, $balance->minimum_payout_minor);
+            $threshold = max($minimumAmountMinor, $balance->minimumPayoutMinor);
 
-            if ($balance->available_minor < $threshold || $balance->available_minor <= 0) {
+            if ($balance->availableMinor < $threshold || $balance->availableMinor <= 0) {
                 return null;
             }
 
@@ -121,7 +114,7 @@ final class ClaimScheduledPayout
 
             $allocation = $this->fundedConversionAllocation(
                 affiliate: $affiliate,
-                availableMinor: $balance->available_minor,
+                availableMinor: $balance->availableMinor,
                 currency: $currency,
                 lockForUpdate: true,
             );
@@ -132,7 +125,7 @@ final class ClaimScheduledPayout
                 return null;
             }
 
-            $sequence = $balance->payout_sequence + 1;
+            $sequence = $balance->payoutSequence + 1;
             $operation = new AffiliatePayoutOperation([
                 'affiliate_id' => $affiliate->id,
                 'operation_key' => sprintf('scheduled:%s:%s:%d', $affiliate->id, $currency, $sequence),
@@ -167,7 +160,7 @@ final class ClaimScheduledPayout
             $payout->save();
 
             $this->reservation->reserve(
-                (string) $balance->getKey(),
+                $balance->id,
                 (string) $affiliate->getKey(),
                 (string) $payout->getKey(),
                 $currency,

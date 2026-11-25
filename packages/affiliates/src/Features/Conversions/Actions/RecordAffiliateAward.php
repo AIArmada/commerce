@@ -14,7 +14,7 @@ use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
 use AIArmada\Affiliates\Exceptions\AffiliateAwardPolicyLimitException;
 use AIArmada\Affiliates\Features\Conversions\Api\AwardPosting;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateBalance;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Queries\AwardRecipientQuery;
 use AIArmada\Affiliates\States\ApprovedConversion;

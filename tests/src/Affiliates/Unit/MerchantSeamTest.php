@@ -21,7 +21,7 @@ use AIArmada\Affiliates\Features\Fraud\Actions\AnalyzeFraud;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
 use AIArmada\Affiliates\Features\Programs\Api\MerchantCatalog;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateBalance;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\States\RejectedConversion;
@@ -260,7 +260,7 @@ describe('merchant seam', function (): void {
         $posted = $ledger->postExternalConversion($draft);
 
         expect($posted)->not->toBeNull()
-            ->and($affiliate->balanceFor('MYR')->holding_minor)->toBe(13485);
+            ->and(AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'MYR')->first()->holding_minor)->toBe(13485);
 
         $voided = $ledger->voidPosted('marketplace', $draft->sourceRef, $draft->externalReference, 'merchant refund');
 
@@ -269,7 +269,7 @@ describe('merchant seam', function (): void {
             ->and($voided->commissionMinor)->toBe(13485);
 
         $conversion = AffiliateConversion::query()->withoutOwnerScope()->findOrFail($posted->id);
-        $balance = $affiliate->balanceFor('MYR')->fresh();
+        $balance = AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'MYR')->first()->fresh();
 
         expect($conversion->status->equals(RejectedConversion::class))->toBeTrue()
             ->and($balance->holding_minor)->toBe(0)

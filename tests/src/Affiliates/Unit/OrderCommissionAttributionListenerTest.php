@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Features\Attribution\Api\CartAttribution;
 use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionPromotion;
@@ -331,7 +332,7 @@ it('records zero-value conversions for free orders without phantom money', funct
     event(new CommissionAttributionRequired($order));
 
     $conversion = AffiliateConversion::query()->sole();
-    $balance = $affiliate->balanceFor('MYR')->fresh();
+    $balance = AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'MYR')->first()->fresh();
 
     expect($conversion->commission_minor)->toBe(0)
         ->and($balance->holding_minor)->toBe(0)

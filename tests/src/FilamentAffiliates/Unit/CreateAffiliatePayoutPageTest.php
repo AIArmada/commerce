@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Features\Conversions\Actions\ApplyConversionAccounting;
 use AIArmada\Affiliates\Features\Payouts\Actions\UpdatePayoutStatus;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateBalance;
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\Active;
@@ -147,7 +147,7 @@ it('creates through the page by reserving selected conversions and prevents payi
         ->and($payout->status->equals(PendingPayout::class))->toBeTrue()
         ->and($payout->metadata['notes'])->toBe('Quarterly payout');
 
-    $balance = OwnerContext::withOwner($owner, fn (): ?AffiliateBalance => $affiliate->balanceFor('USD'));
+    $balance = OwnerContext::withOwner($owner, fn (): ?AffiliateBalance => AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'USD')->first());
 
     expect($balance?->available_minor)->toBe(0)
         ->and($conversion->fresh()->affiliate_payout_id)->toBe((string) $payout->getKey());
@@ -155,7 +155,7 @@ it('creates through the page by reserving selected conversions and prevents payi
     OwnerContext::withOwner($owner, fn (): AffiliatePayout => app(UpdatePayoutStatus::class)->handle($payout, 'completed'));
 
     $completedConversion = OwnerContext::withOwner($owner, fn (): AffiliateConversion => AffiliateConversion::query()->findOrFail($conversion->getKey()));
-    $balance = OwnerContext::withOwner($owner, fn (): ?AffiliateBalance => $affiliate->balanceFor('USD'));
+    $balance = OwnerContext::withOwner($owner, fn (): ?AffiliateBalance => AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'USD')->first());
 
     expect($completedConversion->status->equals(PaidConversion::class))->toBeTrue()
         ->and($payout->fresh()->status->equals(CompletedPayout::class))->toBeTrue()
@@ -201,7 +201,7 @@ it('releases reservations once when a page-created payout fails or is cancelled'
     OwnerContext::withOwner($owner, fn (): AffiliatePayout => app(UpdatePayoutStatus::class)->handle($payout, $status));
 
     $freshConversion = OwnerContext::withOwner($owner, fn (): AffiliateConversion => AffiliateConversion::query()->findOrFail($conversion->getKey()));
-    $balance = OwnerContext::withOwner($owner, fn (): ?AffiliateBalance => $affiliate->balanceFor('USD'));
+    $balance = OwnerContext::withOwner($owner, fn (): ?AffiliateBalance => AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'USD')->first());
 
     expect($payout->fresh()->status->getValue())->toBe($status)
         ->and($freshConversion->status->equals(ApprovedConversion::class))->toBeTrue()
@@ -225,7 +225,7 @@ it('rejects a conversion from a different affiliate even when the submitted affi
     });
 
     expect(OwnerContext::withOwner($owner, fn (): int => AffiliatePayout::query()->count()))->toBe(0)
-        ->and(OwnerContext::withOwner($owner, fn (): ?AffiliateBalance => $foreignAffiliate->balanceFor('USD'))?->available_minor)->toBe(5500);
+        ->and(OwnerContext::withOwner($owner, fn (): ?AffiliateBalance => AffiliateBalance::query()->where('affiliate_id', $foreignAffiliate->getKey())->where('currency', 'USD')->first())?->available_minor)->toBe(5500);
 });
 
 it('rejects a foreign owner conversion at the page server boundary', function (): void {
@@ -242,7 +242,7 @@ it('rejects a foreign owner conversion at the page server boundary', function ()
     });
 
     expect(OwnerContext::withOwner($ownerB, fn (): int => AffiliatePayout::query()->count()))->toBe(0)
-        ->and(OwnerContext::withOwner($ownerB, fn (): ?AffiliateBalance => $affiliateB->balanceFor('USD'))?->available_minor)->toBe(5500);
+        ->and(OwnerContext::withOwner($ownerB, fn (): ?AffiliateBalance => AffiliateBalance::query()->where('affiliate_id', $affiliateB->getKey())->where('currency', 'USD')->first())?->available_minor)->toBe(5500);
 });
 
 it('ignores injected payout total currency status and payee values', function (): void {

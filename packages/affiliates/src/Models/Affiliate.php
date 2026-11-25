@@ -9,6 +9,7 @@ use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\RegistrationApprovalMode;
 use AIArmada\Affiliates\Events\AffiliateActivated;
 use AIArmada\Affiliates\Events\AffiliateCreated;
+use AIArmada\Affiliates\Features\Conversions\Api\BalanceReader;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycleReference;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutHoldReader;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutMethodReader;
@@ -35,7 +36,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -79,7 +79,6 @@ use Spatie\ModelStates\HasStates;
  * @property-read Collection<int, Affiliate> $children
  * @property-read Collection<int, AffiliateAttribution> $attributions
  * @property-read Collection<int, AffiliateConversion> $conversions
- * @property-read Collection<int, AffiliateBalance> $balances
  * @property-read Collection<int, AffiliatePayout> $payouts
  * @property-read Collection<int, AffiliateLink> $links
  * @property-read Collection<int, AffiliateProgram> $programs
@@ -266,14 +265,6 @@ class Affiliate extends Model implements Auditable
     }
 
     /**
-     * @return HasMany<AffiliateBalance, $this>
-     */
-    public function balances(): HasMany
-    {
-        return $this->hasMany(AffiliateBalance::class);
-    }
-
-    /**
      * Route mail notifications to the primary email contact method.
      */
     public function routeNotificationForMail(): ?string
@@ -281,23 +272,6 @@ class Affiliate extends Model implements Auditable
         $email = $this->contact_email;
 
         return is_string($email) && $email !== '' ? $email : null;
-    }
-
-    public function balanceFor(string $currency): ?AffiliateBalance
-    {
-        return $this->balances()->where('currency', mb_strtoupper($currency))->first();
-    }
-
-    /**
-     * Current balance shortcut for single-currency affiliates.
-     *
-     * Multi-currency merchants should use balances() or balanceFor().
-     *
-     * @return HasOne<AffiliateBalance, $this>
-     */
-    public function balance(): HasOne
-    {
-        return $this->hasOne(AffiliateBalance::class)->latestOfMany();
     }
 
     /**
@@ -325,11 +299,7 @@ class Affiliate extends Model implements Auditable
             return false;
         }
 
-        if ($currency !== null) {
-            return $this->balanceFor($currency)?->canRequestPayout() ?? false;
-        }
-
-        return $this->balances()->get()->contains(fn (AffiliateBalance $balance): bool => $balance->canRequestPayout());
+        return app(BalanceReader::class)->canRequestPayout((string) $this->getKey(), $currency);
     }
 
     public function isActive(): bool
@@ -481,7 +451,7 @@ class Affiliate extends Model implements Auditable
                 || $affiliate->payouts()->exists()
                 || $affiliate->attributions()->exists()
                 || $affiliate->links()->exists()
-                || $affiliate->balances()->exists()
+                || app(BalanceReader::class)->hasRecords((string) $affiliate->getKey())
                 || app(PayoutMethodReader::class)->hasRecords((string) $affiliate->getKey())
                 || app(PayoutHoldReader::class)->hasRecords((string) $affiliate->getKey())
                 || $affiliate->children()->exists()) {

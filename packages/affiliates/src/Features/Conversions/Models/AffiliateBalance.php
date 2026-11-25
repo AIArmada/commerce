@@ -2,7 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Models;
+namespace AIArmada\Affiliates\Features\Conversions\Models;
+
+use AIArmada\Affiliates\Features\Conversions\Api\BalanceSnapshot;
+use AIArmada\Affiliates\Models\Affiliate;
 
 use AIArmada\Affiliates\Models\Concerns\ScopesByAffiliateOwner;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
@@ -57,6 +60,20 @@ class AffiliateBalance extends Model implements Auditable
         return $this->belongsTo(Affiliate::class);
     }
 
+    public function toSnapshot(): BalanceSnapshot
+    {
+        return new BalanceSnapshot(
+            (string) $this->getKey(),
+            $this->affiliate_id,
+            $this->currency,
+            $this->holding_minor,
+            $this->available_minor,
+            $this->lifetime_earnings_minor,
+            $this->minimum_payout_minor,
+            $this->payout_sequence,
+        );
+    }
+
     public function getTotalBalanceMinor(): int
     {
         return $this->holding_minor + $this->available_minor;
@@ -64,7 +81,7 @@ class AffiliateBalance extends Model implements Auditable
 
     public function canRequestPayout(): bool
     {
-        return $this->available_minor >= $this->minimum_payout_minor;
+        return $this->available_minor > 0 && $this->available_minor >= $this->minimum_payout_minor;
     }
 
     public function formatHolding(): string

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\ProgramVisibility;
@@ -86,7 +87,7 @@ test('new balances inherit the minimum of their own currency', function (): void
 
     app(ApplyConversionAccounting::class)->handle($conversion);
 
-    expect($affiliate->balanceFor('USD')?->minimum_payout_minor)->toBe(1000);
+    expect(AffiliateBalance::query()->where('affiliate_id', $affiliate->getKey())->where('currency', 'USD')->first()?->minimum_payout_minor)->toBe(1000);
 });
 
 test('volume tiers measure the boundary in the tier currency', function (): void {
