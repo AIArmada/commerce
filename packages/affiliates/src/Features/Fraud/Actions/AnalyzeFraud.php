@@ -2,23 +2,23 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Services;
+namespace AIArmada\Affiliates\Features\Fraud\Actions;
 
-use AIArmada\Affiliates\Actions\Affiliates\CountFraudClick;
-use AIArmada\Affiliates\Actions\Affiliates\RecordFraudFinding;
+use AIArmada\Affiliates\Features\Fraud\Actions\CountFraudClick;
+use AIArmada\Affiliates\Features\Fraud\Actions\RecordFraudFinding;
 use AIArmada\Affiliates\Contracts\FraudRule;
 use AIArmada\Affiliates\Enums\FraudSeverity;
 use AIArmada\Affiliates\Enums\FraudSignalStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliateFraudSignal;
-use AIArmada\Affiliates\Queries\FraudEvidenceQuery;
+use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
+use AIArmada\Affiliates\Features\Fraud\Queries\FraudEvidenceQuery;
 use AIArmada\Affiliates\Support\IpHasher;
 use Carbon\CarbonImmutable;
 use Illuminate\Container\Attributes\Tag;
 use Illuminate\Http\Request;
 
-final class FraudDetectionService
+final class AnalyzeFraud
 {
     /** @var list<FraudRule> */
     private array $clickRules;

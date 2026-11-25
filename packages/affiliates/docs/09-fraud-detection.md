@@ -41,13 +41,13 @@ Fraud detection operates at multiple levels:
 ],
 ```
 
-## Using FraudDetectionService
+## Using AnalyzeFraud
 
 ```php
 use AIArmada\Affiliates\Enums\FraudSeverity;
-use AIArmada\Affiliates\Services\FraudDetectionService;
+use AIArmada\Affiliates\Features\Fraud\Actions\AnalyzeFraud;
 
-$service = app(FraudDetectionService::class);
+$service = app(AnalyzeFraud::class);
 ```
 
 Both entrypoints return the same array shape:
@@ -94,7 +94,7 @@ if ($profile['severity'] === FraudSeverity::Critical) {
 
 ## Fraud Rules
 
-Six rules ship in `AIArmada\Affiliates\Rules`, identified by `rule_code`:
+Six rules ship in `AIArmada\Affiliates\Features\Fraud\Extensions`, identified by `rule_code`:
 
 | `rule_code` | Rule | Risk points |
 |-------------|------|-------------|
@@ -136,12 +136,12 @@ Confirmed as blocking.
 
 ## Recording Signals Manually
 
-There is no `FraudDetectionService::recordSignal()`. Persist the row directly —
+There is no `AnalyzeFraud::recordSignal()`. Persist the row directly —
 the `FraudSignalDetected` event is dispatched by the detection service, not by
 the model, so fire it yourself if listeners must run.
 
 ```php
-use AIArmada\Affiliates\Models\AffiliateFraudSignal;
+use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
 use AIArmada\Affiliates\Enums\FraudSeverity;
 use AIArmada\Affiliates\Enums\FraudSignalStatus;
 

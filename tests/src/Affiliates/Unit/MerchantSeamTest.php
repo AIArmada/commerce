@@ -22,7 +22,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Services\FraudDetectionService;
+use AIArmada\Affiliates\Features\Fraud\Actions\AnalyzeFraud;
 use AIArmada\Affiliates\Services\MerchantLedgerService;
 use AIArmada\Affiliates\States\RejectedConversion;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
@@ -111,7 +111,7 @@ describe('merchant seam', function (): void {
         $affiliate = createTestAffiliate();
         $draft = merchantSeamDraft((string) $affiliate->getKey());
         Event::fake([AffiliateConversionRecorded::class]);
-        $fraud = new FraudDetectionService([new class implements FraudRule
+        $fraud = new AnalyzeFraud([new class implements FraudRule
         {
             public function ruleCode(): string
             {

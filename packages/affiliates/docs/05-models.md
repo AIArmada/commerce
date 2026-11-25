@@ -321,7 +321,7 @@ use AIArmada\Affiliates\Models\AffiliatePayoutHold;
 Detected fraud signals.
 
 ```php
-use AIArmada\Affiliates\Models\AffiliateFraudSignal;
+use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
 ```
 
 | Attribute | Type | Description |

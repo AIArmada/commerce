@@ -9,8 +9,8 @@ use AIArmada\Affiliates\Events\FraudSignalDetected;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliateFraudSignal;
-use AIArmada\Affiliates\Services\FraudDetectionService;
+use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
+use AIArmada\Affiliates\Features\Fraud\Actions\AnalyzeFraud;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\PendingConversion;
@@ -22,7 +22,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 
 beforeEach(function (): void {
-    $this->service = app(FraudDetectionService::class);
+    $this->service = app(AnalyzeFraud::class);
 
     $this->affiliate = Affiliate::create([
         'code' => 'FRAUD-' . uniqid(),
@@ -35,7 +35,7 @@ beforeEach(function (): void {
     ]);
 });
 
-describe('FraudDetectionService', function (): void {
+describe('AnalyzeFraud', function (): void {
     describe('analyzeClick', function (): void {
         test('returns allowed true when no fraud signals', function (): void {
             $request = Request::create('/', 'GET', [], [], [], [

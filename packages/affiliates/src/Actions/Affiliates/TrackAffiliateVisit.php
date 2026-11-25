@@ -8,7 +8,7 @@ use AIArmada\Affiliates\Contracts\AffiliateLookup;
 use AIArmada\Affiliates\Data\AffiliateAttributionData;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
-use AIArmada\Affiliates\Services\FraudDetectionService;
+use AIArmada\Affiliates\Features\Fraud\Actions\AnalyzeFraud;
 use AIArmada\Affiliates\Support\IpHasher;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
@@ -27,7 +27,7 @@ final class TrackAffiliateVisit
 
     public function __construct(
         private readonly AffiliateLookup $affiliateLookup,
-        private readonly FraudDetectionService $fraud,
+        private readonly AnalyzeFraud $fraud,
     ) {}
 
     public function handle(string $code, array $context = [], ?string $cookieValue = null): ?AffiliateAttributionData

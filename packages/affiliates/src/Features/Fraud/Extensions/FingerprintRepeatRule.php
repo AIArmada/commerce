@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Rules;
+namespace AIArmada\Affiliates\Features\Fraud\Extensions;
 
 use AIArmada\Affiliates\Contracts\FraudRule;
 use AIArmada\Affiliates\Data\ClickFraudEvidence;

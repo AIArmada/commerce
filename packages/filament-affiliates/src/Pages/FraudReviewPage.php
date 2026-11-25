@@ -6,7 +6,7 @@ namespace AIArmada\FilamentAffiliates\Pages;
 
 use AIArmada\Affiliates\Enums\FraudSeverity;
 use AIArmada\Affiliates\Enums\FraudSignalStatus;
-use AIArmada\Affiliates\Models\AffiliateFraudSignal;
+use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\FilamentAffiliates\Actions\BulkFraudReviewAction;
 use AIArmada\FilamentAffiliates\Actions\UpdateAffiliateFraudSignalStatus;

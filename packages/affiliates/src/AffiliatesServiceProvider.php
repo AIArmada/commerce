@@ -26,7 +26,7 @@ use AIArmada\Affiliates\Models\AffiliateCommissionRule;
 use AIArmada\Affiliates\Models\AffiliateCommissionTemplate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateDailyStat;
-use AIArmada\Affiliates\Models\AffiliateFraudSignal;
+use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
 use AIArmada\Affiliates\Models\AffiliateLink;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliatePayoutEvent;
@@ -44,18 +44,14 @@ use AIArmada\Affiliates\Models\AffiliateTaxDocument;
 use AIArmada\Affiliates\Models\AffiliateTouchpoint;
 use AIArmada\Affiliates\Models\AffiliateUpline;
 use AIArmada\Affiliates\Models\AffiliateVolumeTier;
+use AIArmada\Affiliates\Platform\ExtensionRegistry;
+use AIArmada\Affiliates\Platform\FeatureCatalog;
+use AIArmada\Affiliates\Platform\FeatureModule;
 use AIArmada\Affiliates\Resolvers\DatabaseAffiliateLookup;
-use AIArmada\Affiliates\Rules\ClickVelocityRule;
-use AIArmada\Affiliates\Rules\ConversionVelocityRule;
-use AIArmada\Affiliates\Rules\FastConversionRule;
-use AIArmada\Affiliates\Rules\FingerprintRepeatRule;
-use AIArmada\Affiliates\Rules\GeoAnomalyRule;
-use AIArmada\Affiliates\Rules\SelfReferralRule;
 use AIArmada\Affiliates\Services\AttributionModel;
 use AIArmada\Affiliates\Services\CommissionCalculator;
 use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
 use AIArmada\Affiliates\Services\DailyAggregationService;
-use AIArmada\Affiliates\Services\FraudDetectionService;
 use AIArmada\Affiliates\Services\MerchantCatalogService;
 use AIArmada\Affiliates\Services\MerchantIdentityService;
 use AIArmada\Affiliates\Services\MerchantLedgerService;
@@ -80,6 +76,7 @@ use AIArmada\Links\Contracts\LinkGateInterface;
 use AIArmada\Links\Events\LinkClicked;
 use AIArmada\Links\LinksServiceProvider;
 use AIArmada\Orders\Events\CommissionAttributionRequired;
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -92,6 +89,9 @@ use Spatie\LaravelPackageTools\PackageServiceProvider;
 
 final class AffiliatesServiceProvider extends PackageServiceProvider
 {
+    /** @var array{features: array<string, string>, owners: array<string, string>, writes: array<string, list<string>>, extensions: array<string, list<string>>}|null */
+    private ?array $catalog = null;
+
     public function configurePackage(Package $package): void
     {
         $package
@@ -113,6 +113,18 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
 
     public function packageRegistered(): void
     {
+        $catalog = $this->catalog();
+
+        $this->app->singleton(ExtensionRegistry::class, fn (Application $app): ExtensionRegistry => new ExtensionRegistry($app, $catalog['extensions']));
+
+        foreach (array_keys($catalog['features']) as $name) {
+            $module = $this->app->make($this->moduleClass($name));
+
+            if ($module instanceof FeatureModule) {
+                $module->register($this->app);
+            }
+        }
+
         $this->app->singleton(CommissionCalculator::class);
         $this->app->singleton(AffiliateLookup::class, DatabaseAffiliateLookup::class);
         $this->app->singleton(QualifiesForOpenApproval::class, OpenApprovalPolicy::class);
@@ -121,7 +133,6 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
         $this->app->singleton(UplineService::class);
         $this->app->scoped(RankQualificationService::class);
         $this->app->singleton(DailyAggregationService::class);
-        $this->app->singleton(FraudDetectionService::class);
         $this->app->singleton(PayoutProcessorFactory::class);
         $this->app->scoped(CommissionRuleEngine::class);
         $this->app->singleton(ProgramService::class);
@@ -131,7 +142,6 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
         $this->app->singleton(CartBridge::class);
 
         $this->registerAttributionStrategies();
-        $this->registerFraudRules();
 
         $this->app->singleton(VoucherIntegrationRegistrar::class);
         $this->app->singleton(AffiliateDiscountConditionProvider::class);
@@ -162,6 +172,14 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
 
     public function packageBooted(): void
     {
+        foreach (array_keys($this->catalog()['features']) as $name) {
+            $module = $this->app->make($this->moduleClass($name));
+
+            if ($module instanceof FeatureModule) {
+                $module->boot($this->app);
+            }
+        }
+
         $this->registerMorphMap();
 
         Blade::anonymousComponentNamespace('affiliates::components', 'affiliates');
@@ -344,15 +362,14 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
         ], 'affiliates.attribution_strategy');
     }
 
-    private function registerFraudRules(): void
+    private function moduleClass(string $feature): string
     {
-        $this->app->tag([
-            ClickVelocityRule::class,
-            GeoAnomalyRule::class,
-            FingerprintRepeatRule::class,
-            SelfReferralRule::class,
-            ConversionVelocityRule::class,
-            FastConversionRule::class,
-        ], 'affiliates.fraud_rule');
+        return __NAMESPACE__ . '\\Features\\' . $feature . '\\FeatureModule';
+    }
+
+    /** @return array{features: array<string, string>, owners: array<string, string>, writes: array<string, list<string>>, extensions: array<string, list<string>>} */
+    private function catalog(): array
+    {
+        return $this->catalog ??= FeatureCatalog::load(dirname(__DIR__), __NAMESPACE__);
     }
 }

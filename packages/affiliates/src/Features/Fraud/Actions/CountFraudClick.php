@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Actions\Affiliates;
+namespace AIArmada\Affiliates\Features\Fraud\Actions;
 
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Cache;

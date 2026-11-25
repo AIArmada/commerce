@@ -9,7 +9,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliateFraudSignal;
+use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
 use AIArmada\Affiliates\States\Pending;
 use AIArmada\Affiliates\States\PendingConversion;
 use Illuminate\Database\QueryException;
@@ -338,7 +338,7 @@ test('a deadlock after saving the outcome retries with a fresh conversion', func
     // First-attempt-only deadlock after the conversion row is saved.
     // Fraud signals are written after save, so throwing in the signal's
     // creating hook simulates a post-save concurrency error on attempt 1.
-    // Production FraudDetectionService stays final; no mocking.
+    // Production AnalyzeFraud stays final; no mocking.
     AffiliateFraudSignal::creating(function (AffiliateFraudSignal $signal) use (&$attemptIds, &$thrown): void {
         $attemptIds[] = (string) $signal->conversion_id;
 

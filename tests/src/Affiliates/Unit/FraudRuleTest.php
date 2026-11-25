@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Data\ClickFraudEvidence;
-use AIArmada\Affiliates\Rules\GeoAnomalyRule;
+use AIArmada\Affiliates\Features\Fraud\Extensions\GeoAnomalyRule;
 
 test('rapid IP rule rejects old and future evidence without database access', function (): void {
     $rule = new GeoAnomalyRule;

@@ -8,9 +8,9 @@ use AIArmada\Affiliates\Events\FraudSignalDetected;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliateFraudSignal;
+use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
 use AIArmada\Affiliates\Models\AffiliateTouchpoint;
-use AIArmada\Affiliates\Services\FraudDetectionService;
+use AIArmada\Affiliates\Features\Fraud\Actions\AnalyzeFraud;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\Support\IpHasher;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
@@ -38,7 +38,7 @@ beforeEach(function (): void {
         'user_agent' => 'Mozilla/5.0 Test',
     ]);
 
-    $this->fraudService = app(FraudDetectionService::class);
+    $this->fraudService = app(AnalyzeFraud::class);
 
     // Enable fraud detection
     config([
@@ -58,7 +58,7 @@ test('click velocity fraud is detected when threshold is exceeded', function ():
     Event::fake([FraudSignalDetected::class]);
 
     // Get fresh service instance after event faking
-    $fraudService = app(FraudDetectionService::class);
+    $fraudService = app(AnalyzeFraud::class);
 
     $request = Request::create('/landing', 'GET');
     $request->server->set('REMOTE_ADDR', '192.168.1.100');
@@ -84,7 +84,7 @@ test('geo anomaly fraud is detected for rapid IP changes', function (): void {
     Event::fake([FraudSignalDetected::class]);
 
     // Get fresh service instance after event faking
-    $fraudService = app(FraudDetectionService::class);
+    $fraudService = app(AnalyzeFraud::class);
 
     // Create recent touchpoint with different IP (within 5 minute window)
     AffiliateTouchpoint::create([
@@ -114,7 +114,7 @@ test('fingerprint repeat fraud is detected', function (): void {
     Event::fake([FraudSignalDetected::class]);
 
     // Get fresh service instance after event faking
-    $fraudService = app(FraudDetectionService::class);
+    $fraudService = app(AnalyzeFraud::class);
 
     $fingerprint = hash('sha256', 'Mozilla/5.0 Test|192.168.1.1');
 
@@ -146,7 +146,7 @@ test('conversion velocity fraud is detected when daily limit exceeded', function
     Event::fake([FraudSignalDetected::class]);
 
     // Get fresh service instance after event faking
-    $fraudService = app(FraudDetectionService::class);
+    $fraudService = app(AnalyzeFraud::class);
 
     // Create conversions to hit the daily limit
     for ($i = 1; $i <= 5; $i++) {
@@ -187,7 +187,7 @@ test('self referral fraud is detected', function (): void {
     Event::fake([FraudSignalDetected::class]);
 
     // Get fresh service instance after event faking
-    $fraudService = app(FraudDetectionService::class);
+    $fraudService = app(AnalyzeFraud::class);
 
     config(['auth.providers.users.model' => User::class]);
 
@@ -223,7 +223,7 @@ test('fast conversion fraud is detected for suspiciously quick conversions', fun
     Event::fake([FraudSignalDetected::class]);
 
     // Get fresh service instance after event faking
-    $fraudService = app(FraudDetectionService::class);
+    $fraudService = app(AnalyzeFraud::class);
 
     // Enable conversion time fraud check
     config(['affiliates.fraud.anomaly.conversion_time.enabled' => true]);
@@ -316,7 +316,7 @@ test('clean click passes all fraud checks', function (): void {
     Event::fake([FraudSignalDetected::class]);
 
     // Get fresh service instance after event faking
-    $fraudService = app(FraudDetectionService::class);
+    $fraudService = app(AnalyzeFraud::class);
 
     $request = Request::create('/landing', 'GET');
     $request->server->set('REMOTE_ADDR', '203.0.113.50');
@@ -335,7 +335,7 @@ test('clean conversion passes all fraud checks', function (): void {
     Event::fake([FraudSignalDetected::class]);
 
     // Get fresh service instance after event faking
-    $fraudService = app(FraudDetectionService::class);
+    $fraudService = app(AnalyzeFraud::class);
 
     // Create attribution from 10 minutes ago
     $attribution = AffiliateAttribution::create([
@@ -371,7 +371,7 @@ test('multiple fraud signals accumulate to block traffic', function (): void {
     Event::fake([FraudSignalDetected::class]);
 
     // Get fresh service instance after event faking
-    $fraudService = app(FraudDetectionService::class);
+    $fraudService = app(AnalyzeFraud::class);
 
     $fingerprint = hash('sha256', 'Mozilla/5.0 Bot|192.168.1.1');
 

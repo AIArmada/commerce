@@ -12,10 +12,10 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliateFraudSignal;
+use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Services\Commissions\CommissionCaps;
-use AIArmada\Affiliates\Services\FraudDetectionService;
+use AIArmada\Affiliates\Features\Fraud\Actions\AnalyzeFraud;
 use AIArmada\Affiliates\States\RejectedConversion;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Carbon\CarbonImmutable;
@@ -54,7 +54,7 @@ final class RecordAffiliateOutcome
     public function __construct(
         private readonly Dispatcher $events,
         private readonly ApplyConversionAccounting $accounting,
-        private readonly FraudDetectionService $fraud,
+        private readonly AnalyzeFraud $fraud,
     ) {}
 
     /**

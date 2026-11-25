@@ -289,10 +289,10 @@ final class AffiliateSignalRecorder
 
     public function recordFraudSignalDetected(Model $signal): ?SignalEvent
     {
-        $this->assertSourceModel($signal, 'AIArmada\\Affiliates\\Models\\AffiliateFraudSignal');
+        $this->assertSourceModel($signal, 'AIArmada\\Affiliates\\Features\\Fraud\\Models\\AffiliateFraudSignal');
 
         $canonical = $this->support->resolveSourceModel(
-            'AIArmada\\Affiliates\\Models\\AffiliateFraudSignal',
+            'AIArmada\\Affiliates\\Features\\Fraud\\Models\\AffiliateFraudSignal',
             $this->support->stringValue($signal->getKey()),
         );
 

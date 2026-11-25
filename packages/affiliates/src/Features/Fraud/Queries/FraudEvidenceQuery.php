@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Queries;
+namespace AIArmada\Affiliates\Features\Fraud\Queries;
 
 use AIArmada\Affiliates\Data\ClickFraudEvidence;
 use AIArmada\Affiliates\Data\ConversionFraudEvidence;

@@ -203,7 +203,7 @@ AffiliateConversion::count();
 ```php
 \AIArmada\Affiliates\Models\AffiliateConversion::count();
 \AIArmada\Affiliates\Models\AffiliatePayout::count();
-\AIArmada\Affiliates\Models\AffiliateFraudSignal::count();
+\AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal::count();
 ```
 
 2. Verify owner mode/context (owner-scoped widgets will hide out-of-scope data).

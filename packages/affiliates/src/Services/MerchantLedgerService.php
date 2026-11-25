@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Services;
 
+use AIArmada\Affiliates\Features\Fraud\Actions\AnalyzeFraud;
 use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
 use AIArmada\Affiliates\Actions\Conversions\VoidAffiliateConversion;
 use AIArmada\Affiliates\Contracts\MerchantIdentity;
@@ -39,7 +40,7 @@ final class MerchantLedgerService implements MerchantLedger
     public function __construct(
         private readonly MerchantIdentity $identities,
         private readonly ApplyConversionAccounting $accounting,
-        private readonly FraudDetectionService $fraud,
+        private readonly AnalyzeFraud $fraud,
         private readonly Dispatcher $events,
         private readonly VoidAffiliateConversion $void,
     ) {}

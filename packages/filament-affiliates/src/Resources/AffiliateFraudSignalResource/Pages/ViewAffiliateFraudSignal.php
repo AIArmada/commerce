@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Resources\AffiliateFraudSignalResource\Pages;
 
 use AIArmada\Affiliates\Enums\FraudSignalStatus;
-use AIArmada\Affiliates\Models\AffiliateFraudSignal;
+use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
 use AIArmada\FilamentAffiliates\Actions\UpdateAffiliateFraudSignalStatus;
 use AIArmada\FilamentAffiliates\Resources\AffiliateFraudSignalResource;
 use Filament\Actions;

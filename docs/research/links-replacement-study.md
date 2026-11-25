@@ -82,7 +82,7 @@ Source: `packages/affiliates/{composer.json,config/affiliates.php,src/**}`
 - **`TrackAffiliateVisit`** (`src/Actions/Affiliates/TrackAffiliateVisit.php`) is the real
   click pipeline: code must resolve to an active affiliate; then IP rate-limit (default
   off), self-referral block (default on, owner comparison), fingerprint-duplicate block
-  (default off), and `FraudDetectionService::analyzeClick` must allow. Then it **upserts
+  (default off), and `AnalyzeFraud::analyzeClick` must allow. Then it **upserts
   one `AffiliateAttribution` row per cookie** (UUID cookie, fingerprint-mismatch rotates):
   affiliate_id/code, subject_*, cart_*, cookie_value, voucher, source/medium/campaign/term/content,
   landing/referrer/UA, **hashed** IP (`IpHasher::hash`), user/visitor/channel/origin/link/type,
@@ -92,7 +92,7 @@ Source: `packages/affiliates/{composer.json,config/affiliates.php,src/**}`
 - **Attribution window is two-layered**: DB row expiry (`attribution_ttl_days`) plus
   browser cookie TTL (`cookies.ttl_minutes`). Both default to 30 days but are independent
   knobs (`config/affiliates.php`).
-- **Fraud is behavioral, not UA-regex** (`src/Services/FraudDetectionService.php`,
+- **Fraud is behavioral, not UA-regex** (`src/Services/AnalyzeFraud.php`,
   `src/Rules/ClickVelocityRule.php`): tagged `FraudRule`s sum risk points; click allowed
   iff score < blocking_threshold (100). `ClickVelocityRule` counts clicks per
   affiliate+hashed-IP in cache (100/hour default) and emits `AffiliateFraudSignal`
@@ -191,7 +191,7 @@ Source: `packages/affiliate-network/{composer.json,config/affiliate-network.php,
 |---|---|---|
 | Signed query-param URL ment for the merchant's own pages (`?aff=&aff_exp=&aff_sig=`) | Cloaked `/go/{slug}` redirect to an arbitrary destination | Opposite mechanics: engine links never redirect through package routes; links rows must redirect |
 | Upsert-one-row-per-cookie attribution with TTL refresh (`TrackAffiliateVisit`, `TouchAffiliateAttribution`) | One immutable row per hit (`LinkClick`) | Storage-model mismatch; porting visits to clicks multiplies rows and loses the refresh-extended window |
-| Fraud pipeline keyed on affiliate + hashed IP with blocking scores (`FraudDetectionService`, `ClickVelocityRule` + 5 siblings) | UA-regex bot flag + human/total counters | No velocity, fingerprint, self-referral, or signal persistence; blocking semantics differ (score threshold vs hard gate) |
+| Fraud pipeline keyed on affiliate + hashed IP with blocking scores (`AnalyzeFraud`, `ClickVelocityRule` + 5 siblings) | UA-regex bot flag + human/total counters | No velocity, fingerprint, self-referral, or signal persistence; blocking semantics differ (score threshold vs hard gate) |
 | Commission engine: program rules, voucher overrides, multi-touch weights, upline, idempotent conversions (`RecordAffiliateConversion`) | No conversion concept; third parties listen to `LinkClicked` | The entire money side would still be hand-rolled; links contributes nothing |
 | `?aff=` links already in the wild + cookie middleware + voucher/cart bridges reading the same cookie | Global-slug namespace + stateless redirects | Migration breaks every issued URL and every middleware/bridge contract |
 | Dependency-light (`contacting`, `commerce-support` only) | Pulls `laravel-actions` + `device-detector` | Dead weight for a package that never renders device reports |

@@ -16,7 +16,7 @@ use AIArmada\Affiliates\Services\AttributionModel;
 use AIArmada\Affiliates\Services\CommissionCalculator;
 use AIArmada\Affiliates\Services\Commissions\CommissionCaps;
 use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
-use AIArmada\Affiliates\Services\FraudDetectionService;
+use AIArmada\Affiliates\Features\Fraud\Actions\AnalyzeFraud;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\ConversionStatus;
 use AIArmada\Affiliates\States\PendingConversion;
@@ -44,7 +44,7 @@ final class RecordAffiliateConversion
         private readonly AttributionModel $attributionModel,
         private readonly AllocateUplineCommissions $allocateUpline,
         private readonly ApplyConversionAccounting $accounting,
-        private readonly FraudDetectionService $fraud,
+        private readonly AnalyzeFraud $fraud,
     ) {}
 
     public function handle(Cart $cart, array $payload = []): ?AffiliateConversionData

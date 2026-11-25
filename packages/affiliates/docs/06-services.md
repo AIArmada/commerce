@@ -134,16 +134,16 @@ $service->releaseReservedFunds($payout);
 $pending = $service->getPayoutsNeedingReconciliation();
 ```
 
-## FraudDetectionService
+## AnalyzeFraud
 
 Real-time fraud detection. Rules are tagged `affiliates.fraud_rule`; both
 entrypoints return the same `['allowed' => bool, 'score' => int, 'signals' => array]`
 shape where each signal is a persisted `AffiliateFraudSignal`.
 
 ```php
-use AIArmada\Affiliates\Services\FraudDetectionService;
+use AIArmada\Affiliates\Features\Fraud\Actions\AnalyzeFraud;
 
-$service = app(FraudDetectionService::class);
+$service = app(AnalyzeFraud::class);
 
 // Analyze an inbound click
 $result = $service->analyzeClick($affiliate, request());
