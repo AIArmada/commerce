@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Listeners;
+namespace AIArmada\Affiliates\Features\Attribution\EntryPoints\Listeners;
 
 use AIArmada\Affiliates\Features\Attribution\Api\CartAttribution;
-use AIArmada\Affiliates\Queries\AffiliateLookupQuery;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
 use AIArmada\Vouchers\Events\VoucherApplied;
 
 final class AttachAffiliateFromVoucher
 {
     public function __construct(
-        private readonly AffiliateLookupQuery $affiliateLookup,
+        private readonly AffiliateDirectory $affiliateLookup,
         private readonly CartAttribution $cartAttribution,
     ) {}
 
@@ -52,11 +52,11 @@ final class AttachAffiliateFromVoucher
         if ($voucher->affiliateId !== null) {
             $affiliate = $this->affiliateLookup->findById($voucher->affiliateId);
 
-            if ($affiliate !== null && $affiliate->canBeAttributed()) {
-                $this->cartAttribution->attach((string) $affiliate->getKey(), $event->cart, $context);
-
-                return;
+            if ($affiliate !== null && $affiliate->canBeAttributed) {
+                $this->cartAttribution->attach($affiliate->id, $event->cart, $context);
             }
+
+            return;
         }
 
         if (! $this->shouldMatchDefaultVoucherCode()) {
@@ -65,11 +65,11 @@ final class AttachAffiliateFromVoucher
 
         $affiliate = $this->affiliateLookup->findByDefaultVoucherCode($event->voucher->code);
 
-        if (! $affiliate) {
+        if ($affiliate === null || ! $affiliate->canBeAttributed) {
             return;
         }
 
-        $this->cartAttribution->attach((string) $affiliate->getKey(), $event->cart, $context);
+        $this->cartAttribution->attach($affiliate->id, $event->cart, $context);
     }
 
     private function shouldMatchDefaultVoucherCode(): bool

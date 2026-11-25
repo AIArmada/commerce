@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Support\Integrations;
 
-use AIArmada\Affiliates\Listeners\AttachAffiliateFromVoucher;
+use AIArmada\Affiliates\Features\Attribution\EntryPoints\Listeners\AttachAffiliateFromVoucher;
 use AIArmada\Vouchers\Events\VoucherApplied;
 use Illuminate\Contracts\Events\Dispatcher;
 
