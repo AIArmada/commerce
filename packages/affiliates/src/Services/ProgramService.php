@@ -118,20 +118,6 @@ final class ProgramService
     }
 
     /**
-     * Approve a pending membership.
-     */
-    public function approveMembership(AffiliateProgramMembership $membership, ?string $approvedBy = null): void
-    {
-        $membership->approve($approvedBy);
-
-        $this->events->dispatch(new AffiliateProgramJoined(
-            $membership->affiliate,
-            $membership->program,
-            $membership
-        ));
-    }
-
-    /**
      * Upgrade an affiliate to a new tier within a program.
      */
     public function upgradeTier(

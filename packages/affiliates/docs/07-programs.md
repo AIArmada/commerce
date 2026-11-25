@@ -100,7 +100,7 @@ $programService = app(ProgramService::class);
 $membership = $programService->joinProgram($affiliate, $program);
 
 if ($membership !== null) {
-    $service->approveMembership($membership, 'admin-1');
+    app(\AIArmada\Affiliates\Features\Programs\Api\MembershipReviewApi::class)->approve((string) $membership->getKey(), 'admin-1');
 }
 
 // Program listings

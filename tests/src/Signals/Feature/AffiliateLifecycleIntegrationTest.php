@@ -14,6 +14,7 @@ use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalReader;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalReference;
 use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
 use AIArmada\Affiliates\Features\Fraud\Queries\FraudSignalQuery;
+use AIArmada\Affiliates\Features\Programs\Api\MembershipReviewApi;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramMembership;
@@ -599,8 +600,9 @@ it('records pending approvals only when approved', function (): void {
 
     expect(SignalEvent::query()->withoutOwnerScope()->count())->toBe(0);
 
-    $service->approveMembership($membership);
-    $service->approveMembership($membership->fresh() ?? $membership);
+    $review = app(MembershipReviewApi::class);
+    expect($review->approve((string) $membership->getKey()))->toBeTrue()
+        ->and($review->approve((string) $membership->getKey()))->toBeFalse();
 
     expect(SignalEvent::query()->withoutOwnerScope()->count())->toBe(1)
         ->and(SignalEvent::query()->withoutOwnerScope()->sole()->source_event_id)->toBe((string) $membership->getKey());

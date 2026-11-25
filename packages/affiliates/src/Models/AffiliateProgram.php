@@ -144,7 +144,7 @@ class AffiliateProgram extends Model implements Auditable
 
         return $this->belongsToMany(Affiliate::class, $membershipTable, 'program_id', 'affiliate_id')
             ->using(AffiliateProgramMembership::class)
-            ->withPivot(['tier_id', 'status', 'applied_at', 'approved_at', 'rejected_at', 'suspended_at', 'expires_at'])
+            ->withPivot(['id', 'tier_id', 'status', 'applied_at', 'approved_at', 'rejected_at', 'suspended_at', 'expires_at'])
             ->withTimestamps();
     }
 

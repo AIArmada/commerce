@@ -6,6 +6,7 @@ use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\ProgramVisibility;
+use AIArmada\Affiliates\Features\Programs\Api\MembershipReviewApi;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramMembership;
@@ -212,7 +213,7 @@ describe('ProgramService', function (): void {
             $membership = $this->service->joinProgram($this->affiliate, $this->program);
             expect($membership->status)->toBe(MembershipStatus::Pending);
 
-            $this->service->approveMembership($membership, 'admin@example.com');
+            expect(app(MembershipReviewApi::class)->approve((string) $membership->getKey(), 'admin@example.com'))->toBeTrue();
 
             $membership->refresh();
             expect($membership->status)->toBe(MembershipStatus::Approved);
@@ -401,4 +402,14 @@ describe('ProgramService', function (): void {
             expect($result)->toBeCollection();
         });
     });
+});
+
+test('membership review cannot overwrite a completed decision', function (): void {
+    $this->program->update(['requires_approval' => true]);
+    $membership = $this->service->joinProgram($this->affiliate, $this->program);
+    $review = app(MembershipReviewApi::class);
+
+    expect($review->reject((string) $membership->getKey()))->toBeTrue()
+        ->and($review->approve((string) $membership->getKey(), 'admin'))->toBeFalse()
+        ->and($membership->fresh()->status)->toBe(MembershipStatus::Rejected);
 });

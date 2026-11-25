@@ -12,6 +12,7 @@ final class FeatureModule implements FeatureModuleContract
     public function register(Application $app): void
     {
         $app->scoped(Api\MerchantCatalog::class, Queries\ProgramCatalogQuery::class);
+        $app->bind(Api\MembershipReviewApi::class, Actions\ReviewProgramMembership::class);
     }
 
     public function boot(Application $app): void {}

@@ -222,7 +222,7 @@ class Affiliate extends Model implements Auditable
             'program_id'
         )
             ->using(AffiliateProgramMembership::class)
-            ->withPivot(['tier_id', 'status', 'applied_at', 'approved_at', 'rejected_at', 'suspended_at', 'expires_at'])
+            ->withPivot(['id', 'tier_id', 'status', 'applied_at', 'approved_at', 'rejected_at', 'suspended_at', 'expires_at'])
             ->withTimestamps();
     }
 

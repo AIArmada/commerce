@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Features\Programs\EntryPoints\Filament\Resources\AffiliateProgramResource\RelationManagers;
 
 use AIArmada\Affiliates\Enums\MembershipStatus;
+use AIArmada\Affiliates\Features\Programs\Api\MembershipReviewApi;
 use AIArmada\Affiliates\Models\AffiliateProgramMembership;
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
@@ -99,10 +100,11 @@ final class MembershipsRelationManager extends RelationManager
                     ->icon('heroicon-o-check-circle')
                     ->visible(fn (AffiliateProgramMembership $record): bool => $record->status === MembershipStatus::Pending)
                     ->action(function (AffiliateProgramMembership $record): void {
-                        $record->update([
-                            'status' => MembershipStatus::Approved,
-                            'approved_at' => CarbonImmutable::now(),
-                        ]);
+                        $membershipId = $record->getKey();
+
+                        if ($membershipId === null || ! app(MembershipReviewApi::class)->approve((string) $membershipId)) {
+                            return;
+                        }
 
                         Notification::make()
                             ->title('Membership approved')
@@ -116,10 +118,11 @@ final class MembershipsRelationManager extends RelationManager
                     ->icon('heroicon-o-x-circle')
                     ->visible(fn (AffiliateProgramMembership $record): bool => $record->status === MembershipStatus::Pending)
                     ->action(function (AffiliateProgramMembership $record): void {
-                        $record->update([
-                            'status' => MembershipStatus::Rejected,
-                            'rejected_at' => CarbonImmutable::now(),
-                        ]);
+                        $membershipId = $record->getKey();
+
+                        if ($membershipId === null || ! app(MembershipReviewApi::class)->reject((string) $membershipId)) {
+                            return;
+                        }
 
                         Notification::make()
                             ->title('Membership rejected')

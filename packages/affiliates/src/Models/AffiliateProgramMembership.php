@@ -109,25 +109,6 @@ class AffiliateProgramMembership extends Pivot
         return true;
     }
 
-    public function approve(?string $approvedBy = null): void
-    {
-        $this->update([
-            'status' => MembershipStatus::Approved,
-            'approved_at' => CarbonImmutable::now(),
-            'approved_by' => $approvedBy,
-            'rejected_at' => null,
-            'suspended_at' => null,
-        ]);
-    }
-
-    public function reject(): void
-    {
-        $this->update([
-            'status' => MembershipStatus::Rejected,
-            'rejected_at' => CarbonImmutable::now(),
-        ]);
-    }
-
     public function suspend(): void
     {
         $this->update([

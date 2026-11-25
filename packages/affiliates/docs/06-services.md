@@ -234,7 +234,7 @@ if ($membership !== null) {
 }
 
 // Approve a pending membership
-$service->approveMembership($membership, approvedBy: 'admin-1');
+app(\AIArmada\Affiliates\Features\Programs\Api\MembershipReviewApi::class)->approve((string) $membership->getKey(), approvedBy: 'admin-1');
 
 // Upgrade tier — takes the affiliate + program, not the membership
 $service->upgradeTier($affiliate, $program, $goldTier);

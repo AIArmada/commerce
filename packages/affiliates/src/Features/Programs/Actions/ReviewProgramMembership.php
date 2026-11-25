@@ -1,0 +1,67 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Affiliates\Features\Programs\Actions;
+
+use AIArmada\Affiliates\Enums\MembershipStatus;
+use AIArmada\Affiliates\Events\AffiliateProgramJoined;
+use AIArmada\Affiliates\Features\Programs\Api\MembershipReviewApi;
+use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Models\AffiliateProgram;
+use AIArmada\Affiliates\Models\AffiliateProgramMembership;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use Carbon\CarbonImmutable;
+use Illuminate\Contracts\Events\Dispatcher;
+
+final readonly class ReviewProgramMembership implements MembershipReviewApi
+{
+    public function __construct(private Dispatcher $events) {}
+
+    public function approve(string $membershipId, ?string $approvedBy = null): bool
+    {
+        return $this->review($membershipId, MembershipStatus::Approved, $approvedBy);
+    }
+
+    public function reject(string $membershipId): bool
+    {
+        return $this->review($membershipId, MembershipStatus::Rejected, null);
+    }
+
+    private function review(string $membershipId, MembershipStatus $status, ?string $approvedBy): bool
+    {
+        return (new AffiliateProgramMembership)->getConnection()->transaction(function () use ($membershipId, $status, $approvedBy): bool {
+            $membership = AffiliateProgramMembership::query()->lockForUpdate()->findOrFail($membershipId);
+            $program = (bool) config('affiliates.owner.enabled', false)
+                ? OwnerWriteGuard::findOrFailForOwner(AffiliateProgram::class, $membership->program_id, includeGlobal: true)
+                : AffiliateProgram::query()->findOrFail($membership->program_id);
+
+            if ($membership->status !== MembershipStatus::Pending) {
+                return false;
+            }
+
+            if ($status === MembershipStatus::Rejected) {
+                $membership->update([
+                    'status' => MembershipStatus::Rejected,
+                    'rejected_at' => CarbonImmutable::now(),
+                ]);
+
+                return true;
+            }
+
+            $affiliate = Affiliate::query()->findOrFail($membership->affiliate_id);
+
+            $membership->update([
+                'status' => MembershipStatus::Approved,
+                'approved_at' => CarbonImmutable::now(),
+                'approved_by' => $approvedBy,
+                'rejected_at' => null,
+                'suspended_at' => null,
+            ]);
+
+            $this->events->dispatch(new AffiliateProgramJoined($affiliate, $program, $membership));
+
+            return true;
+        }, attempts: 3);
+    }
+}

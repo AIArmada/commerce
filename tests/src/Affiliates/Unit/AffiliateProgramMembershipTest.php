@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Enums\ProgramStatus;
+use AIArmada\Affiliates\Features\Programs\Api\MembershipReviewApi;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramMembership;
@@ -162,7 +163,7 @@ describe('AffiliateProgramMembership Model', function (): void {
             'applied_at' => now(),
         ]);
 
-        $membership->approve('admin@example.com');
+        app(MembershipReviewApi::class)->approve((string) $membership->getKey(), 'admin@example.com');
 
         $membership->refresh();
         expect($membership->status)->toBe(MembershipStatus::Approved);
@@ -178,7 +179,7 @@ describe('AffiliateProgramMembership Model', function (): void {
             'applied_at' => now(),
         ]);
 
-        $membership->approve();
+        app(MembershipReviewApi::class)->approve((string) $membership->getKey());
 
         $membership->refresh();
         expect($membership->status)->toBe(MembershipStatus::Approved);
@@ -193,7 +194,7 @@ describe('AffiliateProgramMembership Model', function (): void {
             'applied_at' => now(),
         ]);
 
-        $membership->reject();
+        app(MembershipReviewApi::class)->reject((string) $membership->getKey());
 
         $membership->refresh();
         expect($membership->status)->toBe(MembershipStatus::Rejected);

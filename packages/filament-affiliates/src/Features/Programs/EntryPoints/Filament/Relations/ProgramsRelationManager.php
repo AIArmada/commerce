@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Features\Programs\EntryPoints\Filament\Relations;
 
 use AIArmada\Affiliates\Enums\MembershipStatus;
+use AIArmada\Affiliates\Features\Programs\Api\MembershipReviewApi;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramTier;
 use AIArmada\CommerceSupport\Filament\Concerns\VerifiesRelationManagerOwnerContext;
@@ -102,10 +103,11 @@ final class ProgramsRelationManager extends RelationManager
                     ->icon('heroicon-o-check-circle')
                     ->visible(fn (AffiliateProgram $record): bool => $record->pivot?->status === MembershipStatus::Pending)
                     ->action(function (AffiliateProgram $record): void {
-                        $record->pivot->update([
-                            'status' => MembershipStatus::Approved,
-                            'approved_at' => CarbonImmutable::now(),
-                        ]);
+                        $membershipId = $record->pivot?->getKey();
+
+                        if ($membershipId === null || ! app(MembershipReviewApi::class)->approve((string) $membershipId)) {
+                            return;
+                        }
 
                         Notification::make()
                             ->title('Membership approved')
@@ -119,10 +121,11 @@ final class ProgramsRelationManager extends RelationManager
                     ->icon('heroicon-o-x-circle')
                     ->visible(fn (AffiliateProgram $record): bool => $record->pivot?->status === MembershipStatus::Pending)
                     ->action(function (AffiliateProgram $record): void {
-                        $record->pivot->update([
-                            'status' => MembershipStatus::Rejected,
-                            'rejected_at' => CarbonImmutable::now(),
-                        ]);
+                        $membershipId = $record->pivot?->getKey();
+
+                        if ($membershipId === null || ! app(MembershipReviewApi::class)->reject((string) $membershipId)) {
+                            return;
+                        }
 
                         Notification::make()
                             ->title('Membership rejected')
