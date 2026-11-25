@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Features\Commissions;
 
-use AIArmada\Affiliates\Models\AffiliateCommissionTemplate;
+use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionTemplate;
 use AIArmada\FilamentAffiliates\Features\Commissions\EntryPoints\Filament\Policies\AffiliateCommissionTemplatePolicy;
 use AIArmada\FilamentAffiliates\Platform\FeatureModule as FeatureModuleContract;
 use Illuminate\Contracts\Foundation\Application;

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Features\Commissions\EntryPoints\Filament\Resources\AffiliateCommissionTemplateResource\Pages;
 
 use AIArmada\Affiliates\Features\Commissions\Api\CommissionTemplateAdministration;
+use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionTemplate;
 use AIArmada\FilamentAffiliates\Features\Commissions\EntryPoints\Filament\Resources\AffiliateCommissionTemplateResource;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
@@ -25,7 +26,9 @@ final class EditAffiliateCommissionTemplate extends EditRecord
     {
         return [
             Actions\ViewAction::make(),
-            Actions\DeleteAction::make(),
+            Actions\DeleteAction::make()
+                ->authorize(fn (AffiliateCommissionTemplate $record): bool => AffiliateCommissionTemplateResource::canDelete($record))
+                ->using(fn (AffiliateCommissionTemplate $record): bool => app(CommissionTemplateAdministration::class)->delete((string) $record->getKey())),
         ];
     }
 }

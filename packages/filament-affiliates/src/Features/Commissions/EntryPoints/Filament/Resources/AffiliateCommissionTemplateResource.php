@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Features\Commissions\EntryPoints\Filament\Resources;
 
-use AIArmada\Affiliates\Models\AffiliateCommissionTemplate;
+use AIArmada\Affiliates\Features\Commissions\Api\CommissionTemplateAdministration;
+use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionTemplate;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\CommerceSupport\Support\OwnerUniqueRule;
 use AIArmada\FilamentAffiliates\Features\Commissions\EntryPoints\Filament\Resources\AffiliateCommissionTemplateResource\Pages\CreateAffiliateCommissionTemplate;
@@ -30,7 +31,10 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
+use Illuminate\Support\LazyCollection;
 use Illuminate\Validation\Rules\Unique;
+use Throwable;
 use UnitEnum;
 
 final class AffiliateCommissionTemplateResource extends Resource
@@ -170,7 +174,18 @@ final class AffiliateCommissionTemplateResource extends Resource
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()->using(static function (DeleteBulkAction $action, Collection | LazyCollection $records): void {
+                        foreach ($records as $record) {
+                            try {
+                                if (! self::canDelete($record) || ! app(CommissionTemplateAdministration::class)->delete((string) $record->getKey())) {
+                                    $action->reportBulkProcessingFailure();
+                                }
+                            } catch (Throwable $exception) {
+                                $action->reportBulkProcessingFailure();
+                                report($exception);
+                            }
+                        }
+                    }),
                 ]),
             ]);
     }

@@ -6,7 +6,7 @@ namespace AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Res
 
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateCommissionTemplate;
+use AIArmada\Affiliates\Features\Commissions\Api\CommissionTemplateReader;
 use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\Affiliates\States\Draft;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
@@ -127,39 +127,26 @@ final class AffiliateForm
                         Select::make('apply_template')
                             ->label('Commission Template')
                             ->helperText('Select a template to auto-fill commission type and rate.')
-                            ->getSearchResultsUsing(fn (string $search): array => LikeSearch::whereLike(
-                                OwnerUiScope::apply(
-                                    AffiliateCommissionTemplate::query()->active(),
-                                    includeGlobal: false,
-                                ),
-                                'name',
-                                LikeSearch::contains($search),
-                            )
-                                ->limit(50)
-                                ->pluck('name', 'id')
-                                ->toArray())
-                            ->getOptionLabelUsing(fn ($value): ?string => AffiliateCommissionTemplate::query()->find($value)?->name)
+                            ->getSearchResultsUsing(fn (string $search): array => app(CommissionTemplateReader::class)->search($search))
+                            ->getOptionLabelUsing(fn ($value): ?string => app(CommissionTemplateReader::class)->find((string) $value)?->name)
                             ->searchable()
                             ->disabled(fn (?Affiliate $record): bool => self::hasNonCommercialPurpose($record))
-                            ->afterStateUpdated(function (string $state, Set $set, Get $get): void {
-                                $template = AffiliateCommissionTemplate::query()->find($state);
-
-                                if (! $template) {
+                            ->afterStateUpdated(function (?string $state, Set $set): void {
+                                if ($state === null || $state === '') {
                                     return;
                                 }
 
-                                $rules = $template->getCommissionRules();
-                                $baseRule = collect($rules)->firstWhere('type', 'affiliate');
+                                $template = app(CommissionTemplateReader::class)->find($state);
 
-                                if (! $baseRule) {
+                                if ($template === null || $template->commissionType === null || $template->rate === null) {
                                     return;
                                 }
 
-                                $set('commission_type', $baseRule['commission_type']);
+                                $set('commission_type', $template->commissionType);
 
-                                $rate = (int) ($baseRule['rate'] ?? 0);
+                                $rate = $template->rate;
 
-                                $set('commission_rate', $baseRule['commission_type'] === CommissionType::Percentage->value
+                                $set('commission_rate', $template->commissionType === CommissionType::Percentage->value
                                     ? number_format($rate / 100, 2, '.', '')
                                     : (string) $rate);
                             })

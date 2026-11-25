@@ -9,7 +9,7 @@ use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Features\Commissions\Api\CommissionTemplateAdministration;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateAdministration;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramAdministration;
-use AIArmada\Affiliates\Models\AffiliateCommissionTemplate;
+use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionTemplate;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Illuminate\Support\Arr;
@@ -46,6 +46,13 @@ final readonly class AdministerCommissionTemplates implements CommissionTemplate
             $template = $this->lockTemplate($templateId);
             $template->fill($this->attributes($attributes));
             $this->persist($template);
+        }, attempts: 3);
+    }
+
+    public function delete(string $templateId): bool
+    {
+        return (new AffiliateCommissionTemplate)->getConnection()->transaction(function () use ($templateId): bool {
+            return (bool) $this->lockTemplate($templateId)->delete();
         }, attempts: 3);
     }
 

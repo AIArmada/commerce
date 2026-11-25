@@ -12,6 +12,8 @@ interface CommissionTemplateAdministration
     /** @param array<string, mixed> $attributes */
     public function update(string $templateId, array $attributes): void;
 
+    public function delete(string $templateId): bool;
+
     public function createStandardPercentage(string $name, int $rateBasisPoints = 1000, bool $isDefault = false): string;
 
     /** @param list<array{min_volume: int, max_volume: int|null, bonus_rate: int}> $volumeTiers */

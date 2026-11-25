@@ -5,8 +5,9 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Features\Commissions\Api\CommissionTemplateAdministration;
+use AIArmada\Affiliates\Features\Commissions\Api\CommissionTemplateReader;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateCommissionTemplate;
+use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionTemplate;
 use AIArmada\Affiliates\States\Active;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -374,4 +375,24 @@ describe('AffiliateCommissionTemplate Model', function (): void {
         expect($template->getTable())->toBe('affiliate_commission_templates');
     });
 
+});
+
+it('selects active templates through the owning feature and deletes through its administration API', function (): void {
+    $administration = app(CommissionTemplateAdministration::class);
+    $id = $administration->createStandardPercentage('Selectable Premium', 1250);
+    $inactiveId = $administration->create([
+        'name' => 'Selectable Inactive',
+        'is_active' => false,
+        'rules' => [],
+    ]);
+
+    $reader = app(CommissionTemplateReader::class);
+
+    expect($reader->search('Selectable'))->toBe([$id => 'Selectable Premium'])
+        ->and($reader->find($inactiveId))->toBeNull()
+        ->and($reader->find($id)?->commissionType)->toBe('percentage')
+        ->and($reader->find($id)?->rate)->toBe(1250);
+
+    expect($administration->delete($id))->toBeTrue()
+        ->and($reader->find($id))->toBeNull();
 });
