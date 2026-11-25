@@ -2,29 +2,34 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Actions\Payouts;
+namespace AIArmada\Affiliates\Features\Payouts\Actions;
 
+use AIArmada\Affiliates\Features\Conversions\Api\PayoutReservation;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliatePayoutOperation;
+use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Models\AffiliatePayoutEvent;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Affiliates\States\ProcessingPayout;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
+use LogicException;
 
 final class ClaimScheduledPayout
 {
     use AsAction;
+
+    public function __construct(private readonly PayoutReservation $reservation) {}
 
     public function isEligibleSnapshot(string $affiliateId, int $minimumAmountMinor, ?string $currency = null): bool
     {
         $currency = mb_strtoupper($currency ?? $this->defaultCurrency($affiliateId));
         $affiliate = Affiliate::query()->forOwner()->find($affiliateId);
 
-        if (! $affiliate instanceof Affiliate || ! $affiliate->isCommercialPurpose()) {
+        if (! $affiliate instanceof Affiliate || ! $affiliate->isCommercialPurpose() || ! $affiliate->canReceivePayout() || $affiliate->isDeactivated()) {
             return false;
         }
 
@@ -61,17 +66,25 @@ final class ClaimScheduledPayout
 
         $allocation = $this->fundedConversionAllocation($affiliate, $balance->available_minor, $currency);
 
-        return $allocation['amount_minor'] >= $threshold;
+        return $allocation['conversion_ids'] !== [] && $allocation['amount_minor'] >= $threshold;
     }
 
     public function handle(string $affiliateId, int $minimumAmountMinor, ?string $currency = null): ?AffiliatePayoutOperation
     {
         $currency = mb_strtoupper($currency ?? $this->defaultCurrency($affiliateId));
 
-        return DB::transaction(function () use ($affiliateId, $minimumAmountMinor, $currency): ?AffiliatePayoutOperation {
+        $connection = (new Affiliate)->getConnection();
+
+        foreach ([new AffiliateBalance, new AffiliateConversion, new AffiliatePayout, new AffiliatePayoutOperation, new AffiliatePayoutEvent] as $model) {
+            if ($model->getConnection() !== $connection) {
+                throw new LogicException('Scheduled payout reservation requires a shared database connection.');
+            }
+        }
+
+        return $connection->transaction(function () use ($affiliateId, $minimumAmountMinor, $currency): ?AffiliatePayoutOperation {
             $affiliate = Affiliate::query()->forOwner()->lockForUpdate()->find($affiliateId);
 
-            if (! $affiliate instanceof Affiliate || ! $affiliate->isCommercialPurpose()) {
+            if (! $affiliate instanceof Affiliate || ! $affiliate->isCommercialPurpose() || ! $affiliate->canReceivePayout() || $affiliate->isDeactivated()) {
                 return null;
             }
 
@@ -160,16 +173,15 @@ final class ClaimScheduledPayout
             ]);
             $payout->save();
 
-            $balance->forceFill([
-                'available_minor' => $balance->available_minor - $amountMinor,
-                'payout_sequence' => $sequence,
-            ])->save();
-
-            $affiliate->conversions()
-                ->whereIn('id', $conversionIds)
-                ->whereNull('affiliate_payout_id')
-                ->where('commission_currency', $currency)
-                ->update(['affiliate_payout_id' => $payout->id]);
+            $this->reservation->reserve(
+                (string) $balance->getKey(),
+                (string) $affiliate->getKey(),
+                (string) $payout->getKey(),
+                $currency,
+                $amountMinor,
+                $sequence,
+                $conversionIds,
+            );
 
             $payout->events()->create([
                 'to_status' => PendingPayout::value(),

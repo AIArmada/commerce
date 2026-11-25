@@ -14,6 +14,7 @@ final class FeatureModule implements FeatureModuleContract
     {
         $app->bind(Api\ConversionAdministration::class, Actions\AdministerConversion::class);
         $app->bind(Api\ConversionMaturity::class, Actions\ProcessConversionMaturity::class);
+        $app->bind(Api\PayoutReservation::class, Actions\ReservePayoutFunds::class);
         $app->scoped(MerchantLedger::class, Actions\ExternalConversionLedger::class);
     }
 

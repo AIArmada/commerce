@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Console\Commands;
 
-use AIArmada\Affiliates\Actions\Payouts\ClaimScheduledPayout;
+use AIArmada\Affiliates\Features\Payouts\Actions\ClaimScheduledPayout;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\States\Active;

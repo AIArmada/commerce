@@ -5,7 +5,11 @@
     "table:affiliate_conversions": [
       "AIArmada\\Affiliates\\Features\\Conversions\\Actions\\ExternalConversionLedger",
       "AIArmada\\Affiliates\\Features\\Conversions\\Actions\\AdministerConversion",
-      "AIArmada\\Affiliates\\Features\\Conversions\\Actions\\ProcessConversionMaturity"
+      "AIArmada\\Affiliates\\Features\\Conversions\\Actions\\ProcessConversionMaturity",
+      "AIArmada\\Affiliates\\Features\\Conversions\\Actions\\ReservePayoutFunds"
+    ],
+    "table:affiliate_balances": [
+      "AIArmada\\Affiliates\\Features\\Conversions\\Actions\\ReservePayoutFunds"
     ]
   },
   "extensions": {}

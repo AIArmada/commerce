@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
-use AIArmada\Affiliates\Actions\Payouts\ClaimScheduledPayout;
+use AIArmada\Affiliates\Features\Payouts\Actions\ClaimScheduledPayout;
 use AIArmada\Affiliates\Actions\Payouts\CreatePayout;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Models\Affiliate;

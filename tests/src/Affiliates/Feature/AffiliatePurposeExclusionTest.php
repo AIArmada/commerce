@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Actions\Conversions\AllocateUplineCommissions;
 use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionMaturity;
-use AIArmada\Affiliates\Actions\Payouts\ClaimScheduledPayout;
+use AIArmada\Affiliates\Features\Payouts\Actions\ClaimScheduledPayout;
 use AIArmada\Affiliates\Actions\Payouts\CreatePayout;
 use AIArmada\Affiliates\Data\AffiliateConversionData;
 use AIArmada\Affiliates\Features\Upline\Api\RankQualificationApi;
