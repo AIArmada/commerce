@@ -13,6 +13,9 @@
     ],
     "table:affiliate_payout_methods": [
       "AIArmada\\Affiliates\\Features\\Payouts\\Actions\\AdministerPayoutMethod"
+    ],
+    "table:affiliate_payout_holds": [
+      "AIArmada\\Affiliates\\Features\\Payouts\\Actions\\AdministerPayoutHold"
     ]
   },
   "extensions": {}

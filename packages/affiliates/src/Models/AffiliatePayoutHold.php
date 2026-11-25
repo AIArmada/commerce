@@ -7,7 +7,6 @@ namespace AIArmada\Affiliates\Models;
 use AIArmada\Affiliates\Models\Concerns\ScopesByAffiliateOwner;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
-use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -71,11 +70,6 @@ class AffiliatePayoutHold extends Model implements Auditable
         }
 
         return true;
-    }
-
-    public function release(): void
-    {
-        $this->update(['released_at' => CarbonImmutable::now()]);
     }
 
     protected function getActivityLogName(): string

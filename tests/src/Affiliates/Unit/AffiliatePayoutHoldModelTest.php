@@ -3,10 +3,12 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\CommissionType;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutHoldAdministration;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayoutHold;
 use AIArmada\Affiliates\States\Active;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 describe('AffiliatePayoutHold Model', function (): void {
@@ -138,18 +140,26 @@ describe('AffiliatePayoutHold Model', function (): void {
             'currency' => 'USD',
         ]);
 
-        $hold = AffiliatePayoutHold::create([
-            'affiliate_id' => $affiliate->id,
-            'reason' => 'to_be_released',
-        ]);
+        $administration = app(PayoutHoldAdministration::class);
+        $holdId = $administration->place((string) $affiliate->getKey(), 'to_be_released');
+        $hold = AffiliatePayoutHold::query()->findOrFail($holdId);
 
         expect($hold->isActive())->toBeTrue();
 
-        $hold->release();
+        expect(fn () => $administration->release('missing-affiliate', $holdId))->toThrow(ModelNotFoundException::class);
+        expect($hold->fresh()->isActive())->toBeTrue();
+
+        $administration->release((string) $affiliate->getKey(), $holdId, 'Reviewed');
 
         $hold->refresh();
         expect($hold->isActive())->toBeFalse()
-            ->and($hold->released_at)->not->toBeNull();
+            ->and($hold->released_at)->not->toBeNull()
+            ->and($hold->notes)->toBe('Reviewed');
+
+        $releasedAt = $hold->released_at;
+        $administration->release((string) $affiliate->getKey(), $holdId, 'Duplicate release');
+        expect($hold->fresh()->released_at->equalTo($releasedAt))->toBeTrue()
+            ->and($hold->fresh()->notes)->toBe('Reviewed');
     });
 
     it('casts dates correctly', function (): void {

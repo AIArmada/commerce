@@ -190,27 +190,20 @@ There is no `Stripe` case; use `StripeConnect`. Both
 Place temporary holds on affiliate payouts:
 
 ```php
-use AIArmada\Affiliates\Models\AffiliatePayoutHold;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutHoldAdministration;
 
-// Create hold
-$hold = AffiliatePayoutHold::create([
-    'affiliate_id' => $affiliate->id,
-    'reason' => 'Fraud investigation pending',
-    'notes' => 'Ticket FR-42',
-    'expires_at' => now()->addDays(30),
-    'placed_by' => 'admin-1',
-]);
+$holds = app(PayoutHoldAdministration::class);
+$holdId = $holds->place(
+    (string) $affiliate->getKey(),
+    'Fraud investigation pending',
+    notes: 'Ticket FR-42',
+    expiresAt: now()->addDays(30)->toImmutable(),
+    placedBy: 'admin-1',
+);
 
-// Release hold
-$hold->update([
-    'released_at' => now(),
-    'notes' => 'Investigation complete, no issues found',
-]);
+$holds->release((string) $affiliate->getKey(), $holdId, 'Investigation complete, no issues found');
 
-// Check for active holds
-$hasHolds = $affiliate->payoutHolds()
-    ->whereNull('released_at')
-    ->exists();
+$hasHolds = $affiliate->hasActivePayoutHold();
 ```
 
 > **warning:**
