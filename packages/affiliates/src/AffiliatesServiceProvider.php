@@ -54,7 +54,6 @@ use AIArmada\Affiliates\Platform\FeatureModule;
 use AIArmada\Affiliates\Services\AttributionModel;
 use AIArmada\Affiliates\Services\CommissionCalculator;
 use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
-use AIArmada\Affiliates\Services\PayoutReconciliationService;
 use AIArmada\Affiliates\Strategies\FirstTouchAttribution;
 use AIArmada\Affiliates\Strategies\LastTouchAttribution;
 use AIArmada\Affiliates\Strategies\LinearAttribution;
@@ -128,7 +127,6 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
         $this->app->singleton(PayoutProcessorRegistry::class, PayoutProcessorFactory::class);
         $this->app->scoped(CommissionRuleEngine::class);
         $this->app->singleton(Support\Catalog\PromotableRegistry::class);
-        $this->app->singleton(PayoutReconciliationService::class);
         $this->app->singleton(CartBridge::class);
 
         $this->registerAttributionStrategies();

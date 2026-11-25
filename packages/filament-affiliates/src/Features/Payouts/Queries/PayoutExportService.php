@@ -6,7 +6,7 @@ namespace AIArmada\FilamentAffiliates\Features\Payouts\Queries;
 
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\Services\PayoutReconciliationService;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutReconciliationQueries;
 use AIArmada\Affiliates\States\ConversionStatus;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -79,7 +79,7 @@ final class PayoutExportService
         }
 
         $payouts = $query->with('payee')->get();
-        $report = app(PayoutReconciliationService::class)->summarizePayouts($payouts, $startDate, $endDate);
+        $report = app(PayoutReconciliationQueries::class)->summarizePayoutIds($payouts->modelKeys(), $startDate, $endDate, (bool) config('affiliates.owner.include_global', false));
         $rows = $this->buildSettlementData($payouts, $report);
 
         return response()->streamDownload(

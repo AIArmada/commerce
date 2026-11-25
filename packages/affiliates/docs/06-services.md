@@ -112,14 +112,14 @@ Per-program rules, volume tiers, and promotions are evaluated by
 `CommissionRuleEngine::calculate()` with the affiliate's program rules;
 see [Programs](07-programs.md).
 
-## PayoutReconciliationService
+## PayoutReconciliationQueries
 
 Reconciles payouts with external payment providers.
 
 ```php
-use AIArmada\Affiliates\Services\PayoutReconciliationService;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutReconciliationQueries;
 
-$service = app(PayoutReconciliationService::class);
+$service = app(PayoutReconciliationQueries::class);
 
 // Reconcile with provider — true when the payout actually changed
 $changed = app(\AIArmada\Affiliates\Features\Payouts\Api\PayoutReconciliation::class)->reconcile($payoutId, 'paid', ['reference' => 'TXN-456']);
@@ -127,7 +127,7 @@ $changed = app(\AIArmada\Affiliates\Features\Payouts\Api\PayoutReconciliation::c
 // Failed or cancelled outcomes release reserved funds atomically.
 
 // Get payouts still needing reconciliation
-$pending = $service->getPayoutsNeedingReconciliation();
+$pending = $service->payoutIdsNeedingReconciliation();
 ```
 
 ## FraudApi

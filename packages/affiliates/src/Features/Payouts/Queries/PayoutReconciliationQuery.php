@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Services;
+namespace AIArmada\Affiliates\Features\Payouts\Queries;
 
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutReconciliation;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutReconciliationQueries;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliatePayoutOperation;
@@ -16,20 +17,21 @@ use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Affiliates\States\ProcessingPayout;
 use AIArmada\Affiliates\States\ReversedConversion;
 use AIArmada\CommerceSupport\Support\CurrencyConverter;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use Illuminate\Auth\Access\AuthorizationException;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
-final class PayoutReconciliationService
+final readonly class PayoutReconciliationQuery implements PayoutReconciliationQueries
 {
-    public function __construct(private readonly CurrencyConverter $converter) {}
+    public function __construct(private CurrencyConverter $converter) {}
 
-    /** @return Collection<int, AffiliatePayout> */
-    public function getPayoutsNeedingReconciliation(): Collection
+    /** @return list<string> */
+    public function payoutIdsNeedingReconciliation(): array
     {
         return AffiliatePayout::query()
-            ->with('operation')
             ->whereIn('status', [ProcessingPayout::value(), PendingPayout::value()])
             ->where(static function ($query): void {
                 $query->whereHas('operation', static function ($operationQuery): void {
@@ -37,13 +39,11 @@ final class PayoutReconciliationService
                 })->orWhereNotNull('external_reference');
             })
             ->where('updated_at', '<=', CarbonImmutable::now()->subMinutes(5))
-            ->get()
-            // Gate-blocked payouts are excluded in PHP rather than SQL so
-            // the external_reference branch cannot smuggle them back in:
-            // re-polling a known provider outcome would spam a provider
-            // call and a fresh timeline event per cycle.
-            ->reject(fn (AffiliatePayout $payout): bool => $payout->operation?->last_error_code === PayoutReconciliation::COMPLETION_BLOCKED_CODE)
-            ->values();
+            ->whereDoesntHave('operation', static fn ($query) => $query->where('last_error_code', PayoutReconciliation::COMPLETION_BLOCKED_CODE))
+            ->orderBy('id')
+            ->pluck('id')
+            ->map(static fn (mixed $id): string => (string) $id)
+            ->values()->all();
     }
 
     /** @return array<string, mixed> */
@@ -62,13 +62,25 @@ final class PayoutReconciliationService
         return $this->summarizePayouts($query->get(), $startDate, $endDate);
     }
 
+    public function summarizePayoutIds(array $payoutIds, ?string $startDate = null, ?string $endDate = null, bool $includeGlobal = false): array
+    {
+        $ids = array_values(array_unique($payoutIds));
+        $payouts = AffiliatePayout::query()->forOwner(OwnerContext::CURRENT, $includeGlobal)->whereKey($ids)->get();
+
+        if ($payouts->count() !== count($ids)) {
+            throw new AuthorizationException('One or more payouts are not accessible.');
+        }
+
+        return $this->summarizePayouts($payouts, $startDate, $endDate);
+    }
+
     /**
      * Settlement summary over an explicit payout set: per-currency legs
      * plus one labeled converted total with rate provenance.
      *
      * @param  Collection<int, AffiliatePayout>  $payouts
      */
-    public function summarizePayouts(Collection $payouts, ?string $startDate = null, ?string $endDate = null): array
+    private function summarizePayouts(Collection $payouts, ?string $startDate = null, ?string $endDate = null): array
     {
         $byStatus = $payouts->groupBy(fn (AffiliatePayout $item): string => $item->status->getValue())->map->count();
         $completed = $payouts->filter(fn (AffiliatePayout $item): bool => $item->status->equals(CompletedPayout::class));
@@ -176,21 +188,28 @@ final class PayoutReconciliationService
     }
 
     /** @return array<string, array<string, int|string|bool>> */
-    public function auditAllAffiliateBalances(Affiliate $affiliate): array
+    public function auditAllAffiliateBalances(string $affiliateId): array
     {
+        $affiliate = Affiliate::query()->forOwner()->findOrFail($affiliateId);
         $currencies = $affiliate->balances()->pluck('currency')->unique()->values()->all();
 
         $audits = [];
 
         foreach ($currencies as $currency) {
-            $audits[(string) $currency] = $this->auditAffiliateBalance($affiliate, (string) $currency);
+            $audits[(string) $currency] = $this->auditBalance($affiliate, (string) $currency);
         }
 
         return $audits;
     }
 
     /** @return array<string, int|string|bool> */
-    public function auditAffiliateBalance(Affiliate $affiliate, string $currency): array
+    public function auditAffiliateBalance(string $affiliateId, string $currency): array
+    {
+        return $this->auditBalance(Affiliate::query()->forOwner()->findOrFail($affiliateId), $currency);
+    }
+
+    /** @return array<string, int|string|bool> */
+    private function auditBalance(Affiliate $affiliate, string $currency): array
     {
         $currency = mb_strtoupper($currency);
         $approvedCommissions = (int) $affiliate->conversions()->where('status', ApprovedConversion::value())->where('commission_currency', $currency)->sum('commission_minor');

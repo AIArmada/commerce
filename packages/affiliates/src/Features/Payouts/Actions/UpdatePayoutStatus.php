@@ -59,7 +59,7 @@ final readonly class UpdatePayoutStatus
             $overrideReason = null;
 
             if ($newStatus->equals(CompletedPayout::class)) {
-                // Mirror PayoutReconciliationService: the gate checks WHO
+                // Mirror payout reconciliation: the gate checks WHO
                 // may be paid, this checks the linked legs are sane.
                 $locked->assertHomogeneousConversions();
                 $overrideReason = $this->completionGate->handle($locked);

@@ -8,7 +8,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
-use AIArmada\Affiliates\Services\PayoutReconciliationService;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutReconciliationQueries;
 use AIArmada\Affiliates\Settings\AffiliateBonusSettings;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
@@ -61,7 +61,7 @@ test('reconciliation report discloses conversion provenance and uses period-end 
         ]);
     }
 
-    $report = app(PayoutReconciliationService::class)->generateReport('2026-01-01', '2026-12-31');
+    $report = app(PayoutReconciliationQueries::class)->generateReport('2026-01-01', '2026-12-31');
 
     expect($report['by_currency'])->toHaveKeys(['USD', 'MYR'])
         ->and($report['summary']['converted'])->toBeTrue()

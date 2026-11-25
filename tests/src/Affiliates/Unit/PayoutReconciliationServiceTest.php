@@ -13,7 +13,7 @@ use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliatePayoutOperation;
-use AIArmada\Affiliates\Services\PayoutReconciliationService;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutReconciliationQueries;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\CompletedPayout;
@@ -29,7 +29,7 @@ beforeEach(function (): void {
     // Settings cache outlives RefreshDatabase rollbacks within a process.
     Artisan::call('settings:clear-cache');
 
-    $this->service = app(PayoutReconciliationService::class);
+    $this->service = app(PayoutReconciliationQueries::class);
 
     $this->affiliate = Affiliate::create([
         'code' => 'RECON-' . uniqid(),
@@ -67,7 +67,7 @@ function markReconciliationConversionPaidDirectly(AffiliateConversion $conversio
     app(ApplyConversionAccounting::class)->handle($conversion->fresh(), $previousStatus);
 }
 
-describe('PayoutReconciliationService', function (): void {
+describe('PayoutReconciliationQueries', function (): void {
     describe('reconcilePayout', function (): void {
         test('returns false for unknown external status', function (): void {
             $payout = AffiliatePayout::create([
@@ -198,10 +198,10 @@ describe('PayoutReconciliationService', function (): void {
                 'external_reference' => 'EXT-NEW',
             ]);
 
-            $result = $this->service->getPayoutsNeedingReconciliation();
+            $result = $this->service->payoutIdsNeedingReconciliation();
 
             expect($result)->toHaveCount(1);
-            expect($result->first()->id)->toBe($oldPayout->id);
+            expect($result[0])->toBe($oldPayout->id);
         });
 
         test('excludes completed payouts', function (): void {
@@ -219,7 +219,7 @@ describe('PayoutReconciliationService', function (): void {
             AffiliatePayout::where('id', $payout->id)
                 ->update(['updated_at' => now()->subHours(2)]);
 
-            $result = $this->service->getPayoutsNeedingReconciliation();
+            $result = $this->service->payoutIdsNeedingReconciliation();
 
             expect($result)->toBeEmpty();
         });
@@ -239,7 +239,7 @@ describe('PayoutReconciliationService', function (): void {
             AffiliatePayout::where('id', $payout->id)
                 ->update(['updated_at' => now()->subHours(2)]);
 
-            $result = $this->service->getPayoutsNeedingReconciliation();
+            $result = $this->service->payoutIdsNeedingReconciliation();
 
             expect($result)->toHaveCount(1);
         });
@@ -276,7 +276,7 @@ describe('PayoutReconciliationService', function (): void {
             // gate refuses it: re-polling would spam a provider call and
             // a fresh timeline event per cycle. Operator action, not
             // reconciliation, unblocks it.
-            expect($this->service->getPayoutsNeedingReconciliation())->toBeEmpty();
+            expect($this->service->payoutIdsNeedingReconciliation())->toBeEmpty();
         });
 
         test('includes unknown payouts that are not gate-blocked', function (): void {
@@ -306,7 +306,7 @@ describe('PayoutReconciliationService', function (): void {
             AffiliatePayout::where('id', $payout->id)
                 ->update(['updated_at' => now()->subHours(2)]);
 
-            $result = $this->service->getPayoutsNeedingReconciliation();
+            $result = $this->service->payoutIdsNeedingReconciliation();
 
             expect($result)->toHaveCount(1);
         });
@@ -444,7 +444,7 @@ describe('PayoutReconciliationService', function (): void {
             ]);
             $operation?->update(['affiliate_payout_id' => $payout->id]);
 
-            $audit = $this->service->auditAffiliateBalance($this->affiliate, 'USD');
+            $audit = $this->service->auditAffiliateBalance((string) $this->affiliate->getKey(), 'USD');
 
             expect($audit['paid_out_minor'])->toBe(0)
                 ->and($audit['pending_payouts_minor'])->toBe(0)
@@ -467,7 +467,7 @@ describe('PayoutReconciliationService', function (): void {
 
             $payout->update(['total_minor' => 20000]);
 
-            $audit = $this->service->auditAffiliateBalance($this->affiliate, 'USD');
+            $audit = $this->service->auditAffiliateBalance((string) $this->affiliate->getKey(), 'USD');
 
             expect($audit[$complete ? 'paid_out_minor' : 'pending_payouts_minor'])->toBe(10000)
                 ->and($audit['expected_available_minor'])->toBe(0)
@@ -488,7 +488,7 @@ describe('PayoutReconciliationService', function (): void {
             $conversion->update(['affiliate_payout_id' => $payout->id]);
 
             app(UpdatePayoutStatus::class)->handle($payout, CompletedPayout::value());
-            $audit = $this->service->auditAffiliateBalance($this->affiliate, 'USD');
+            $audit = $this->service->auditAffiliateBalance((string) $this->affiliate->getKey(), 'USD');
 
             expect($audit['paid_out_minor'])->toBe(0)
                 ->and($audit['completed_payout_conversions_minor'])->toBe(10000)
@@ -503,7 +503,7 @@ describe('PayoutReconciliationService', function (): void {
 
             app(UpdatePayoutStatus::class)->handle($payout, CompletedPayout::value());
 
-            $audit = $this->service->auditAffiliateBalance($this->affiliate, 'USD');
+            $audit = $this->service->auditAffiliateBalance((string) $this->affiliate->getKey(), 'USD');
 
             expect($conversion->fresh()->status->equals(PaidConversion::class))->toBeTrue()
                 ->and($audit['approved_commissions_minor'])->toBe(0)
@@ -521,7 +521,7 @@ describe('PayoutReconciliationService', function (): void {
             app(UpdatePayoutStatus::class)->handle($payout, FailedPayout::value());
             app(UpdatePayoutStatus::class)->handle($payout, FailedPayout::value());
 
-            $audit = $this->service->auditAffiliateBalance($this->affiliate, 'USD');
+            $audit = $this->service->auditAffiliateBalance((string) $this->affiliate->getKey(), 'USD');
 
             expect($conversion->fresh()->status->equals(ApprovedConversion::class))->toBeTrue()
                 ->and($conversion->fresh()->affiliate_payout_id)->toBeNull()
@@ -534,7 +534,7 @@ describe('PayoutReconciliationService', function (): void {
             $conversion = reconciliationAuditConversion($this->affiliate);
             markReconciliationConversionPaidDirectly($conversion);
 
-            $audit = $this->service->auditAffiliateBalance($this->affiliate, 'USD');
+            $audit = $this->service->auditAffiliateBalance((string) $this->affiliate->getKey(), 'USD');
 
             expect($conversion->fresh()->affiliate_payout_id)->toBeNull()
                 ->and($audit['completed_payout_conversions_minor'])->toBe(0)
@@ -551,7 +551,7 @@ describe('PayoutReconciliationService', function (): void {
 
             app(ReverseAffiliateConversion::class)->handle($conversion->fresh(), 'refund');
 
-            $audit = $this->service->auditAffiliateBalance($this->affiliate, 'USD');
+            $audit = $this->service->auditAffiliateBalance((string) $this->affiliate->getKey(), 'USD');
 
             expect($conversion->fresh()->reversed_at)->not->toBeNull()
                 ->and($audit['completed_payout_conversions_minor'])->toBe(0)
@@ -567,7 +567,7 @@ describe('PayoutReconciliationService', function (): void {
 
             app(ReverseAffiliateConversion::class)->handle($conversion->fresh(), 'refund');
 
-            $audit = $this->service->auditAffiliateBalance($this->affiliate, 'USD');
+            $audit = $this->service->auditAffiliateBalance((string) $this->affiliate->getKey(), 'USD');
 
             expect($audit['direct_paid_clawbacks_minor'])->toBe(10000)
                 ->and($audit['expected_available_minor'])->toBe(-10000)
@@ -584,7 +584,7 @@ describe('PayoutReconciliationService', function (): void {
                 'currency' => 'USD',
             ]);
 
-            $result = $this->service->auditAffiliateBalance($this->affiliate, 'USD');
+            $result = $this->service->auditAffiliateBalance((string) $this->affiliate->getKey(), 'USD');
 
             expect($result)->toHaveKeys([
                 'affiliate_id',
@@ -619,7 +619,7 @@ describe('PayoutReconciliationService', function (): void {
                 'available_minor' => 5000, // Wrong!
             ]);
 
-            $result = $this->service->auditAffiliateBalance($this->affiliate, 'USD');
+            $result = $this->service->auditAffiliateBalance((string) $this->affiliate->getKey(), 'USD');
 
             expect($result['expected_available_minor'])->toBe(10000);
             expect($result['actual_available_minor'])->toBe(5000);
@@ -628,7 +628,7 @@ describe('PayoutReconciliationService', function (): void {
         });
 
         test('handles affiliate without balance', function (): void {
-            $result = $this->service->auditAffiliateBalance($this->affiliate, 'USD');
+            $result = $this->service->auditAffiliateBalance((string) $this->affiliate->getKey(), 'USD');
 
             expect($result['actual_available_minor'])->toBe(0);
         });

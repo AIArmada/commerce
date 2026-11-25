@@ -343,12 +343,12 @@ AffiliatePayoutEvent::create([
 Reconcile payouts with external payment data:
 
 ```php
-use AIArmada\Affiliates\Services\PayoutReconciliationService;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutReconciliationQueries;
 
-$service = app(PayoutReconciliationService::class);
+$service = app(PayoutReconciliationQueries::class);
 
 // Get payouts still needing reconciliation
-$pending = $service->getPayoutsNeedingReconciliation();
+$pending = $service->payoutIdsNeedingReconciliation();
 
 // Reconcile with a provider status string
 $changed = app(\AIArmada\Affiliates\Features\Payouts\Api\PayoutReconciliation::class)->reconcile($payoutId, 'paid', [
@@ -373,7 +373,7 @@ $report['summary']['conversion'];         // ['currency', 'as_of', 'source'] pro
 $report['by_currency']['USD']['total_minor'];
 ```
 
-Use `summarizePayouts($payouts, $start, $end)` for the same settlement summary over an explicit payout set (for example an owner-scoped batch). Conversions linked to a payout must share one currency and one affiliate: linking a conversion with a different currency or affiliate throws, and provider submission rechecks the linked affiliate set before sending. `PayoutReconciliation::reconcile()` also refuses to complete a mixed-currency payout — `currency_mismatches` in the report points at corrupt rows.
+Use `summarizePayoutIds($payoutIds, $start, $end)` for the same settlement summary over an explicit payout set (for example an owner-scoped batch). Conversions linked to a payout must share one currency and one affiliate: linking a conversion with a different currency or affiliate throws, and provider submission rechecks the linked affiliate set before sending. `PayoutReconciliation::reconcile()` also refuses to complete a mixed-currency payout — `currency_mismatches` in the report points at corrupt rows.
 
 ## Artisan Commands
 
@@ -435,7 +435,7 @@ $uplines = $uplineService->ancestors((string) $conversion->affiliate_id);
 
 Every provider submission is tied to the durable `AffiliatePayoutOperation`. Stripe receives the operation UUID as its `Idempotency-Key`; PayPal receives a stable 30-character identity derived from that UUID as both `sender_batch_id` and `sender_item_id`. Provider calls use bounded connect/read timeouts and retries. Retryable HTTP failures, transport exceptions, and ambiguous duplicate responses are recorded as `unknown`, while the payout remains processing for reconciliation. Raw provider or exception messages are never persisted or shown to operators. Stripe reversals reuse a deterministic reversal idempotency key and are recorded locally as `reversed`.
 
-`PayoutReconciliationService::auditAffiliateBalance()` compares available
+`PayoutReconciliationQueries::auditAffiliateBalance()` compares available
 balance with approved commissions, open payout reservations, completed payout
 debits, and paid conversions attached to completed payouts. Reservation and
 debit amounts come from unreleased operations with a balance sequence, using
