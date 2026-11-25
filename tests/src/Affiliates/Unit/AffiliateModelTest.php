@@ -5,6 +5,9 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Events\AffiliateActivated;
 use AIArmada\Affiliates\Events\AffiliateCreated;
+use AIArmada\Affiliates\Enums\FraudSeverity;
+use AIArmada\Affiliates\Enums\FraudSignalStatus;
+use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateBalance;
@@ -220,7 +223,7 @@ describe('Affiliate Model - Relationships', function (): void {
         expect($affiliate->payouts())->toBeInstanceOf(MorphMany::class);
     });
 
-    test('has many fraud signals', function (): void {
+    test('deleting an affiliate clears fraud signals through the owning feature', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'FRAUD-001',
             'name' => 'Fraud Test',
@@ -229,7 +232,19 @@ describe('Affiliate Model - Relationships', function (): void {
             'commission_rate' => 1000,
             'currency' => 'USD',
         ]);
-        expect($affiliate->fraudSignals())->toBeInstanceOf(HasMany::class);
+        $signal = AffiliateFraudSignal::query()->create([
+            'affiliate_id' => $affiliate->getKey(),
+            'rule_code' => 'TEST',
+            'risk_points' => 10,
+            'severity' => FraudSeverity::Low,
+            'description' => 'Fraud signal cleanup',
+            'status' => FraudSignalStatus::Detected,
+            'detected_at' => now(),
+        ]);
+
+        $affiliate->delete();
+
+        expect(AffiliateFraudSignal::query()->whereKey($signal->getKey())->exists())->toBeFalse();
     });
 
     test('has many daily stats', function (): void {

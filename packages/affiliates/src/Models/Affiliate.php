@@ -9,7 +9,7 @@ use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\RegistrationApprovalMode;
 use AIArmada\Affiliates\Events\AffiliateActivated;
 use AIArmada\Affiliates\Events\AffiliateCreated;
-use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalMaintenance;
 use AIArmada\Affiliates\Features\Reporting\Api\DailyStatsWriter;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;
@@ -79,7 +79,6 @@ use Spatie\ModelStates\HasStates;
  * @property-read Collection<int, Affiliate> $children
  * @property-read Collection<int, AffiliateAttribution> $attributions
  * @property-read Collection<int, AffiliateConversion> $conversions
- * @property-read Collection<int, AffiliateFraudSignal> $fraudSignals
  * @property-read Collection<int, AffiliateBalance> $balances
  * @property-read Collection<int, AffiliatePayoutMethod> $payoutMethods
  * @property-read Collection<int, AffiliatePayoutHold> $payoutHolds
@@ -273,14 +272,6 @@ class Affiliate extends Model implements Auditable
     public function rank(): BelongsTo
     {
         return $this->belongsTo(AffiliateRank::class, 'rank_id');
-    }
-
-    /**
-     * @return HasMany<AffiliateFraudSignal, $this>
-     */
-    public function fraudSignals(): HasMany
-    {
-        return $this->hasMany(AffiliateFraudSignal::class);
     }
 
     /**
@@ -528,7 +519,7 @@ class Affiliate extends Model implements Auditable
                 }
             });
             $affiliate->conversions()->delete();
-            $affiliate->fraudSignals()->delete();
+            app(FraudSignalMaintenance::class)->deleteForAffiliate((string) $affiliate->getKey());
             app(DailyStatsWriter::class)->deleteForAffiliate((string) $affiliate->getKey());
             $affiliate->links()->chunkById(100, function ($links): void {
                 foreach ($links as $link) {

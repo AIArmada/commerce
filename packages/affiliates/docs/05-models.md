@@ -48,7 +48,6 @@ $affiliate->balances;         // HasMany<AffiliateBalance>, one per currency
 $affiliate->parent;           // BelongsTo<Affiliate>
 $affiliate->children;         // HasMany<Affiliate>
 $affiliate->programs;         // BelongsToMany<AffiliateProgram>
-$affiliate->fraudSignals;     // HasMany<AffiliateFraudSignal>
 $affiliate->dailyStats;       // HasMany<AffiliateDailyStat>
 $affiliate->rank;             // BelongsTo<AffiliateRank>
 $affiliate->payoutMethods;    // HasMany<AffiliatePayoutMethod>
@@ -318,7 +317,7 @@ use AIArmada\Affiliates\Models\AffiliatePayoutHold;
 
 ### AffiliateFraudSignal
 
-Detected fraud signals.
+Detected fraud signals, owned by the Fraud feature. Use its public API instead of traversing a relationship on the affiliate model.
 
 ```php
 use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;

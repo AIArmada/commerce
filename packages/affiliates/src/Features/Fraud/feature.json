@@ -4,7 +4,8 @@
   "owns": {
     "table:affiliate_fraud_signals": [
       "AIArmada\\Affiliates\\Features\\Fraud\\Actions\\RecordFraudFinding",
-      "AIArmada\\Affiliates\\Features\\Fraud\\Actions\\ReviewFraudSignal"
+      "AIArmada\\Affiliates\\Features\\Fraud\\Actions\\ReviewFraudSignal",
+      "AIArmada\\Affiliates\\Features\\Fraud\\Actions\\MaintainFraudSignals"
     ],
     "store:affiliate-fraud-clicks": [
       "AIArmada\\Affiliates\\Features\\Fraud\\Actions\\CountFraudClick"

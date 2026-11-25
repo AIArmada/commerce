@@ -9,7 +9,7 @@ use AIArmada\Affiliates\Data\AffiliateOutcomeResult;
 use AIArmada\Affiliates\Data\AffiliateOutcomeDisposition;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudApi;
-use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
+use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalMaintenance;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateBalance;
@@ -127,8 +127,9 @@ final class RecordAffiliateOutcome
             }
         }
 
+        $this->assertSameConnection($attribution, $affiliate);
+
         if ($attribution instanceof AffiliateAttribution) {
-            $this->assertSameConnection($attribution, $affiliate);
             $this->assertSameOwner($attribution, $affiliate);
             $this->assertAttributionReferences($attribution, $affiliate, $payload, $provenance);
         } else {
@@ -408,37 +409,22 @@ final class RecordAffiliateOutcome
         }
     }
 
-    private function assertSameConnection(AffiliateAttribution $attribution, mixed $affiliate): void
+    private function assertSameConnection(?AffiliateAttribution $attribution, Affiliate $affiliate): void
     {
-        $conversion = new AffiliateConversion;
-        $fraudSignal = new AffiliateFraudSignal;
-        $balance = new AffiliateBalance;
+        $connection = (new AffiliateConversion)->getConnection();
+        $participants = [$affiliate, new AffiliateBalance];
 
-        $resolved = [
-            'attribution' => $attribution->getConnection()->getName(),
-            'affiliate' => $affiliate->getConnection()->getName(),
-            'conversion' => $conversion->getConnection()->getName(),
-            'fraud_signal' => $fraudSignal->getConnection()->getName(),
-            'balance' => $balance->getConnection()->getName(),
-        ];
-
-        $unique = array_unique(array_values($resolved));
-
-        if (count($unique) !== 1) {
-            throw new LogicException('Affiliate outcome recording requires the attribution, affiliate, conversion, fraud-signal, and balance writes on the same resolved connection.');
+        if ($attribution !== null) {
+            $participants[] = $attribution;
         }
 
-        $instances = [
-            spl_object_id($attribution->getConnection()),
-            spl_object_id($affiliate->getConnection()),
-            spl_object_id($conversion->getConnection()),
-            spl_object_id($fraudSignal->getConnection()),
-            spl_object_id($balance->getConnection()),
-        ];
-
-        if (count(array_unique($instances)) !== 1) {
-            throw new LogicException('Affiliate outcome recording requires one shared connection instance for atomicity.');
+        foreach ($participants as $participant) {
+            if ($participant->getConnection() !== $connection) {
+                throw new LogicException('Affiliate outcome recording requires one shared connection instance for atomicity.');
+            }
         }
+
+        app(FraudSignalMaintenance::class)->assertConnection($connection->getName(), spl_object_id($connection));
     }
 
     private function isUniqueViolation(QueryException $exception): bool

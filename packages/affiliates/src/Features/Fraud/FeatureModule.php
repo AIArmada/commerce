@@ -21,6 +21,7 @@ final class FeatureModule implements FeatureModuleContract
         $app->singleton(FraudApi::class, AnalyzeFraud::class);
         $app->bind(FraudReviewApi::class, ReviewFraudSignal::class);
         $app->bind(FraudSignalReader::class, FraudSignalQuery::class);
+        $app->bind(Api\FraudSignalMaintenance::class, Actions\MaintainFraudSignals::class);
         $app->tag($app->make(ExtensionRegistry::class)->classesFor('affiliates.fraud_rule'), 'affiliates.fraud_rule');
     }
 
