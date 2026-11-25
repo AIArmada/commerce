@@ -12,6 +12,7 @@ use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\Chip\Services\WebhookService;
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentStatus;
 use Illuminate\Http\Request;
+use AIArmada\CommerceSupport\EntryPoints\Http\WebhookRequestMapper;
 use Illuminate\Support\Facades\Config;
 
 describe('Chip Facade', function (): void {
@@ -52,7 +53,7 @@ describe('ChipWebhookHandler', function (): void {
                 'status' => 'paid',
             ]));
 
-            expect($this->handler->getEventType($request))->toBe('purchase.paid');
+            expect($this->handler->getEventType(WebhookRequestMapper::fromRequest($request)))->toBe('purchase.paid');
         });
 
         it('returns the documented payment.refunded event type', function (): void {
@@ -61,7 +62,7 @@ describe('ChipWebhookHandler', function (): void {
                 'status' => 'refunded',
             ]));
 
-            expect($this->handler->getEventType($request))->toBe('payment.refunded');
+            expect($this->handler->getEventType(WebhookRequestMapper::fromRequest($request)))->toBe('payment.refunded');
         });
 
         it('returns the documented purchase.cancelled event type', function (): void {
@@ -70,7 +71,7 @@ describe('ChipWebhookHandler', function (): void {
                 'status' => 'cancelled',
             ]));
 
-            expect($this->handler->getEventType($request))->toBe('purchase.cancelled');
+            expect($this->handler->getEventType(WebhookRequestMapper::fromRequest($request)))->toBe('purchase.cancelled');
         });
 
         it('returns the documented purchase.payment_failure event type', function (): void {
@@ -79,7 +80,7 @@ describe('ChipWebhookHandler', function (): void {
                 'status' => 'error',
             ]));
 
-            expect($this->handler->getEventType($request))->toBe('purchase.payment_failure');
+            expect($this->handler->getEventType(WebhookRequestMapper::fromRequest($request)))->toBe('purchase.payment_failure');
         });
 
         it('does not derive an event type from a blocked status', function (): void {
@@ -88,7 +89,7 @@ describe('ChipWebhookHandler', function (): void {
                 'status' => 'blocked',
             ]));
 
-            expect($this->handler->getEventType($request))->toBe('purchase.payment_failure');
+            expect($this->handler->getEventType(WebhookRequestMapper::fromRequest($request)))->toBe('purchase.payment_failure');
         });
 
         it('returns the documented purchase.hold event type', function (): void {
@@ -97,7 +98,7 @@ describe('ChipWebhookHandler', function (): void {
                 'status' => 'hold',
             ]));
 
-            expect($this->handler->getEventType($request))->toBe('purchase.hold');
+            expect($this->handler->getEventType(WebhookRequestMapper::fromRequest($request)))->toBe('purchase.hold');
         });
 
         it('returns the documented purchase.preauthorized event type', function (): void {
@@ -106,7 +107,7 @@ describe('ChipWebhookHandler', function (): void {
                 'status' => 'preauthorized',
             ]));
 
-            expect($this->handler->getEventType($request))->toBe('purchase.preauthorized');
+            expect($this->handler->getEventType(WebhookRequestMapper::fromRequest($request)))->toBe('purchase.preauthorized');
         });
 
         it('returns the documented purchase.pending_execute event type', function (): void {
@@ -115,7 +116,7 @@ describe('ChipWebhookHandler', function (): void {
                 'status' => 'pending_execute',
             ]));
 
-            expect($this->handler->getEventType($request))->toBe('purchase.pending_execute');
+            expect($this->handler->getEventType(WebhookRequestMapper::fromRequest($request)))->toBe('purchase.pending_execute');
         });
 
         it('returns the documented purchase.pending_refund event type', function (): void {
@@ -124,7 +125,7 @@ describe('ChipWebhookHandler', function (): void {
                 'status' => 'pending_refund',
             ]));
 
-            expect($this->handler->getEventType($request))->toBe('purchase.pending_refund');
+            expect($this->handler->getEventType(WebhookRequestMapper::fromRequest($request)))->toBe('purchase.pending_refund');
         });
     });
 
@@ -134,7 +135,7 @@ describe('ChipWebhookHandler', function (): void {
                 'event_type' => 'purchase.paid',
             ]));
 
-            expect($this->handler->isPaymentEvent($request))->toBeTrue();
+            expect($this->handler->isPaymentEvent(WebhookRequestMapper::fromRequest($request)))->toBeTrue();
         });
     });
 
@@ -144,10 +145,10 @@ describe('ChipWebhookHandler', function (): void {
 
             $this->webhookService->shouldReceive('verifySignature')
                 ->once()
-                ->with($request)
+                ->withArgs(fn (Request $received): bool => $received->getContent() === $request->getContent() && $received->headers->get('X-Signature') === $request->headers->get('X-Signature'))
                 ->andReturn(false);
 
-            expect($this->handler->verifyWebhook($request))->toBeFalse();
+            expect($this->handler->verifyWebhook(WebhookRequestMapper::fromRequest($request)))->toBeFalse();
         });
     });
 
@@ -173,7 +174,7 @@ describe('ChipWebhookHandler', function (): void {
                     'updated_on' => time(),
                 ]);
 
-            $result = $this->handler->parseWebhook($request);
+            $result = $this->handler->parseWebhook(WebhookRequestMapper::fromRequest($request));
 
             expect($result->paymentId)->toBe('purchase-123');
             expect($result->reference)->toBe('REF-123');

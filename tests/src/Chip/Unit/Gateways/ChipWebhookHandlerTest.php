@@ -10,14 +10,11 @@ use AIArmada\Chip\Services\WebhookService;
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentStatus;
 use AIArmada\CommerceSupport\Contracts\Payment\WebhookHandlerInterface;
 use AIArmada\CommerceSupport\Exceptions\WebhookVerificationException;
-use Illuminate\Http\Request;
+use AIArmada\CommerceSupport\Data\WebhookRequestData;
 
-function createWebhookRequest(array $payload): Request
+function createWebhookRequest(array $payload): WebhookRequestData
 {
-    $request = Request::create('/webhook', 'POST', [], [], [], [], json_encode($payload));
-    $request->headers->set('Content-Type', 'application/json');
-
-    return $request;
+    return new WebhookRequestData(json_encode($payload, JSON_THROW_ON_ERROR), ['Content-Type' => ['application/json']]);
 }
 
 describe('ChipWebhookHandler instantiation', function (): void {
@@ -103,7 +100,7 @@ describe('ChipWebhookHandler getEventType', function (): void {
         $collectService = Mockery::mock(ChipCollectService::class);
 
         $handler = new ChipWebhookHandler($webhookService, $collectService);
-        $request = Request::create('/webhook', 'POST', [], [], [], [], 'invalid json');
+        $request = new WebhookRequestData('invalid json');
 
         $result = $handler->getEventType($request);
 
@@ -229,7 +226,7 @@ describe('ChipWebhookHandler getPaymentFromWebhook', function (): void {
         $collectService = Mockery::mock(ChipCollectService::class);
 
         $handler = new ChipWebhookHandler($webhookService, $collectService);
-        $request = Request::create('/webhook', 'POST', [], [], [], [], 'invalid');
+        $request = new WebhookRequestData('invalid');
 
         $result = $handler->getPaymentFromWebhook($request);
 

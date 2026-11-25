@@ -488,19 +488,19 @@ Gateways normalize incoming webhook requests through `WebhookHandlerInterface`.
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentIntentInterface;
 use AIArmada\CommerceSupport\Contracts\Payment\WebhookHandlerInterface;
 use AIArmada\CommerceSupport\Contracts\Payment\WebhookPayload;
-use Illuminate\Http\Request;
+use AIArmada\CommerceSupport\Data\WebhookRequestData;
 
 interface WebhookHandlerInterface
 {
-    public function verifyWebhook(Request $request): bool;
+    public function verifyWebhook(WebhookRequestData $request): bool;
 
-    public function parseWebhook(Request $request): WebhookPayload;
+    public function parseWebhook(WebhookRequestData $request): WebhookPayload;
 
-    public function getEventType(Request $request): string;
+    public function getEventType(WebhookRequestData $request): string;
 
-    public function isPaymentEvent(Request $request): bool;
+    public function isPaymentEvent(WebhookRequestData $request): bool;
 
-    public function getPaymentFromWebhook(Request $request): ?PaymentIntentInterface;
+    public function getPaymentFromWebhook(WebhookRequestData $request): ?PaymentIntentInterface;
 }
 ```
 
