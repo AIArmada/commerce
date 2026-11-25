@@ -81,6 +81,8 @@ final class SocialProfileRepeaterSchema
 
                         return app(SocialProfileConfig::class)->buildUrl($platformValue, $handle);
                     })
+                    ->url(fn (?string $state): ?string => $state)
+                    ->openUrlInNewTab()
                     ->columnSpanFull()
                     ->visible(fn (Get $get): bool => self::socialHandleVisible($get)),
                 TextInput::make('url')
