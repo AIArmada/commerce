@@ -229,7 +229,7 @@ on the operation, reason on the payout timeline):
 1. **Affiliate can no longer receive payouts** (paused, or disabled
    without an override): cancel the payout and re-create it with a
    `payout_override_reason` when the balance was legitimately earned —
-   via `CreatePayout` attributes or the payout create form's override
+   via `PayoutAdministration::create()` attributes or the payout create form's override
    field. The reason is audited onto `metadata.payout_override` and
    stamped with `override_completed_at` on completion. Note the gate
    also covers manual-record payouts (resolved via the payee), but

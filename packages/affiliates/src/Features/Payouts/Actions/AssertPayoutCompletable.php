@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Actions\Payouts;
+namespace AIArmada\Affiliates\Features\Payouts\Actions;
 
 use AIArmada\Affiliates\Exceptions\PayoutCompletionBlockedException;
 use AIArmada\Affiliates\Models\Affiliate;
@@ -13,7 +13,6 @@ use AIArmada\Affiliates\States\Disabled;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use InvalidArgumentException;
-use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
  * Eligibility gate for provider submission and both payout completion
@@ -23,10 +22,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * creation-time audited override for a disabled affiliate, in which
  * case the completion is stamped onto the override record.
  */
-final class AssertPayoutCompletable
+final readonly class AssertPayoutCompletable
 {
-    use AsAction;
-
     /**
      * @return string|null The override reason when this completion rides a creation-time override.
      */

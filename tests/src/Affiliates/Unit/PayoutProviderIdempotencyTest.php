@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Actions\Payouts\ReverseStripePayout;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutReversal;
 use AIArmada\Affiliates\Drivers\Payouts\PayPalProcessor;
 use AIArmada\Affiliates\Drivers\Payouts\StripeConnectProcessor;
 use AIArmada\Affiliates\Enums\CommissionType;
@@ -117,10 +117,10 @@ test('stripe reversals are locally and remotely idempotent', function (): void {
     $payout->save();
 
     Http::fake(['api.stripe.com/*' => Http::response(['id' => 'trr_123'], 200)]);
-    $reverse = app(ReverseStripePayout::class);
+    $reverse = app(PayoutReversal::class);
 
-    expect($reverse->execute($payout->id))->toBeTrue()
-        ->and($reverse->execute($payout->id))->toBeTrue();
+    expect($reverse->reverse($payout->id))->toBeTrue()
+        ->and($reverse->reverse($payout->id))->toBeTrue();
 
     Http::assertSentCount(1);
 });

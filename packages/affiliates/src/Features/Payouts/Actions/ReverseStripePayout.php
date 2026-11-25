@@ -2,29 +2,35 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Actions\Payouts;
+namespace AIArmada\Affiliates\Features\Payouts\Actions;
 
 use AIArmada\Affiliates\Contracts\PayoutProcessorRegistry;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutReversal;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliatePayoutOperation;
 use AIArmada\Affiliates\Queries\PayoutRequestQuery;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Carbon\CarbonImmutable;
 
-final readonly class ReverseStripePayout
+final readonly class ReverseStripePayout implements PayoutReversal
 {
     public function __construct(private PayoutProcessorRegistry $processors) {}
 
-    public function execute(string $payoutId): bool
+    public function reverse(string $payoutId): bool
     {
         if ((bool) config('affiliates.owner.enabled', false)) {
             OwnerWriteGuard::findOrFailForOwner(AffiliatePayout::class, $payoutId);
         }
 
-        $payout = AffiliatePayout::query()->with(['operation', 'payee'])->findOrFail($payoutId);
+        $connection = (new AffiliatePayout)->getConnection();
 
-        return $payout->getConnection()->transaction(function () use ($payout): bool {
-            $operation = AffiliatePayoutOperation::query()->whereKey($payout->affiliate_payout_operation_id)->lockForUpdate()->first();
+        if ($connection !== (new AffiliatePayoutOperation)->getConnection()) {
+            throw new \LogicException('Payout reversal requires a shared database connection.');
+        }
+
+        return $connection->transaction(function () use ($payoutId): bool {
+            $payout = AffiliatePayout::query()->forOwner()->with('payee')->lockForUpdate()->findOrFail($payoutId);
+            $operation = $payout->operation()->forOwner()->lockForUpdate()->first();
 
             if (! $operation instanceof AffiliatePayoutOperation) {
                 return false;

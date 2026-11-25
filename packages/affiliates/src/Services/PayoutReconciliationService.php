@@ -4,18 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Services;
 
-use AIArmada\Affiliates\Actions\Payouts\AssertPayoutCompletable;
-use AIArmada\Affiliates\Features\Conversions\Api\PayoutConversionSettlement;
-use AIArmada\Affiliates\Features\Payouts\Api\PayoutRelease;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutReconciliation;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliatePayoutOperation;
 use AIArmada\Affiliates\States\ApprovedConversion;
-use AIArmada\Affiliates\States\CancelledPayout;
 use AIArmada\Affiliates\States\CompletedPayout;
 use AIArmada\Affiliates\States\FailedPayout;
 use AIArmada\Affiliates\States\PaidConversion;
-use AIArmada\Affiliates\States\PayoutStatus;
 use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Affiliates\States\ProcessingPayout;
 use AIArmada\Affiliates\States\ReversedConversion;
@@ -24,118 +20,10 @@ use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
-use AIArmada\CommerceSupport\Support\OwnerContext;
 
 final class PayoutReconciliationService
 {
-    /**
-     * Operation code marking refused payout submission or completion.
-     * Blocked payouts need operator action before another provider
-     * attempt or completion.
-     */
-    public const COMPLETION_BLOCKED_CODE = 'PAYOUT_COMPLETION_BLOCKED';
-
-    public function __construct(
-        private readonly CurrencyConverter $converter,
-        private readonly PayoutConversionSettlement $settlement,
-        private readonly PayoutRelease $release,
-    ) {}
-
-    /** @param array<string, mixed> $externalData */
-    public function reconcilePayout(AffiliatePayout $payout, string $externalStatus, array $externalData = []): bool
-    {
-        $statusClass = $this->mapExternalStatus($externalStatus);
-
-        if ($statusClass === null) {
-            return false;
-        }
-
-        $changed = $payout->getConnection()->transaction(function () use ($payout, $statusClass, $externalData, $externalStatus): bool {
-            $locked = AffiliatePayout::query()->with('operation')->lockForUpdate()->find($payout->id);
-
-            if (! $locked instanceof AffiliatePayout || $locked->status->equals($statusClass)) {
-                return false;
-            }
-
-            // Provider events can arrive stale or out of order (including for
-            // terminal payouts). Only declared state-machine transitions run;
-            // anything else is ignored rather than forced.
-            if (! $locked->status->canTransitionTo($statusClass)) {
-                return false;
-            }
-
-            $fromStatus = $locked->status->getValue();
-            $reference = isset($externalData['reference']) && is_string($externalData['reference'])
-                ? mb_trim($externalData['reference'])
-                : null;
-            $providerStatus = isset($externalData['status']) && is_string($externalData['status'])
-                ? mb_substr($externalData['status'], 0, 64)
-                : mb_strtolower($externalStatus);
-            $newStatus = PayoutStatus::fromString($statusClass, $locked);
-
-            $overrideReason = null;
-
-            if ($newStatus->equals(CompletedPayout::class)) {
-                $locked->assertHomogeneousConversions();
-                $overrideReason = AssertPayoutCompletable::run($locked);
-            }
-
-            $metadata = array_merge($locked->metadata ?? [], array_filter([
-                'reconciled_at' => CarbonImmutable::now()->toIso8601String(),
-                'provider_status' => $providerStatus,
-                'external_reference' => $reference,
-                'external_data' => $externalData === [] ? null : $externalData,
-            ], static fn (mixed $value): bool => $value !== null && $value !== ''));
-
-            $locked->status->transitionTo($statusClass);
-
-            $locked->forceFill([
-                'paid_at' => $newStatus->equals(CompletedPayout::class) ? CarbonImmutable::now() : $locked->paid_at,
-                'failed_at' => $newStatus->equals(FailedPayout::class) ? CarbonImmutable::now() : $locked->failed_at,
-                'cancelled_at' => $newStatus->equals(CancelledPayout::class) ? CarbonImmutable::now() : $locked->cancelled_at,
-                'metadata' => $metadata,
-            ])->save();
-
-            if ($locked->operation instanceof AffiliatePayoutOperation) {
-                $locked->operation->forceFill([
-                    'status' => match (true) {
-                        $newStatus->equals(CompletedPayout::class) => 'completed',
-                        $newStatus->equals(FailedPayout::class) => 'failed',
-                        $newStatus->equals(CancelledPayout::class) => 'cancelled',
-                        default => 'submitted',
-                    },
-                    'provider_reference' => $reference ?: $locked->operation->provider_reference,
-                    'last_error_code' => $newStatus->equals(FailedPayout::class) ? 'PROVIDER_RECONCILED_FAILURE' : null,
-                    'completed_at' => $newStatus->equals(CompletedPayout::class) || $newStatus->equals(FailedPayout::class) || $newStatus->equals(CancelledPayout::class) ? CarbonImmutable::now() : null,
-                    'lease_expires_at' => null,
-                ])->save();
-            }
-
-            $this->syncConversions($locked, $newStatus);
-
-            $locked->events()->create([
-                'from_status' => $fromStatus,
-                'to_status' => $newStatus->getValue(),
-                'notes' => 'Provider status reconciled to ' . $newStatus->getValue() . ($overrideReason !== null ? ' under payout override: ' . $overrideReason : ''),
-                'metadata' => ['provider_status' => $providerStatus],
-            ]);
-
-            return true;
-        }, attempts: 3);
-
-        return $changed;
-    }
-
-    private function syncConversions(AffiliatePayout $payout, PayoutStatus $newStatus): void
-    {
-        OwnerContext::withOwner($payout->owner, function () use ($payout, $newStatus): void {
-            if ($newStatus->equals(CompletedPayout::class)) {
-                $this->settlement->complete((string) $payout->getKey());
-            } elseif ($newStatus->equals(FailedPayout::class) || $newStatus->equals(CancelledPayout::class)) {
-                $this->release->release((string) $payout->getKey());
-            }
-        });
-    }
+    public function __construct(private readonly CurrencyConverter $converter) {}
 
     /** @return Collection<int, AffiliatePayout> */
     public function getPayoutsNeedingReconciliation(): Collection
@@ -154,7 +42,7 @@ final class PayoutReconciliationService
             // the external_reference branch cannot smuggle them back in:
             // re-polling a known provider outcome would spam a provider
             // call and a fresh timeline event per cycle.
-            ->reject(fn (AffiliatePayout $payout): bool => $payout->operation?->last_error_code === self::COMPLETION_BLOCKED_CODE)
+            ->reject(fn (AffiliatePayout $payout): bool => $payout->operation?->last_error_code === PayoutReconciliation::COMPLETION_BLOCKED_CODE)
             ->values();
     }
 
@@ -347,18 +235,6 @@ final class PayoutReconciliationService
             'paid_out_minor' => $paidOut,
             'pending_payouts_minor' => $pendingPayouts,
         ];
-    }
-
-    private function mapExternalStatus(string $status): ?string
-    {
-        return match (mb_strtolower($status)) {
-            'completed', 'paid', 'success', 'succeeded' => CompletedPayout::class,
-            'failed', 'declined', 'rejected', 'error' => FailedPayout::class,
-            'pending', 'created' => PendingPayout::class,
-            'processing', 'in_progress' => ProcessingPayout::class,
-            'cancelled', 'canceled' => CancelledPayout::class,
-            default => null,
-        };
     }
 
     /** @return list<array<string, string>> */

@@ -40,7 +40,7 @@ Registration is config-driven:
 The Affiliate Payouts create page requires an affiliate and one or more
 approved, unlinked conversions. Search results show each conversion's
 reference, commission amount, and currency. The page calls the core
-`CreatePayout` action, which derives the total, currency, payee, and initial
+`PayoutAdministration::create()` API, which derives the total, currency, payee, and initial
 status from the selected conversions and reserves their available balance.
 The client cannot set those accounting fields. A payout can include only one
 affiliate and one currency. Failed or cancelled payouts release the

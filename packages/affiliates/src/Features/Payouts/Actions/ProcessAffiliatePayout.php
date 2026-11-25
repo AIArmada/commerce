@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Actions\Payouts;
+namespace AIArmada\Affiliates\Features\Payouts\Actions;
 
 use AIArmada\Affiliates\Data\PayoutResult;
 use AIArmada\Affiliates\Contracts\PayoutProcessorRegistry;
@@ -11,7 +11,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliatePayoutOperation;
 use AIArmada\Affiliates\Queries\PayoutRequestQuery;
-use AIArmada\Affiliates\Services\PayoutReconciliationService;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutReconciliation;
 use AIArmada\Affiliates\States\CompletedPayout;
 use AIArmada\Affiliates\States\FailedPayout;
 use AIArmada\Affiliates\States\PendingPayout;
@@ -21,11 +21,12 @@ use Carbon\CarbonImmutable;
 use InvalidArgumentException;
 use Throwable;
 
-final class ProcessAffiliatePayout
+final readonly class ProcessAffiliatePayout
 {
     public function __construct(
-        private readonly PayoutProcessorRegistry $factory,
-        private readonly UpdatePayoutStatus $updatePayoutStatus,
+        private PayoutProcessorRegistry $factory,
+        private UpdatePayoutStatus $updatePayoutStatus,
+        private AssertPayoutCompletable $completionGate,
     ) {}
 
     public function handle(AffiliatePayout $payout): PayoutResult
@@ -161,7 +162,7 @@ final class ProcessAffiliatePayout
 
             try {
                 $claimedPayout->assertHomogeneousConversions();
-                AssertPayoutCompletable::run($claimedPayout, false);
+                $this->completionGate->handle($claimedPayout, false);
             } catch (InvalidArgumentException $exception) {
                 throw new PayoutCompletionBlockedException($exception->getMessage(), previous: $exception);
             }
@@ -178,7 +179,7 @@ final class ProcessAffiliatePayout
             if ($throwable instanceof PayoutCompletionBlockedException) {
                 return $this->recordResult(
                     $claim['payout'] ?? $payout,
-                    PayoutResult::unknown(PayoutReconciliationService::COMPLETION_BLOCKED_CODE),
+                    PayoutResult::unknown(PayoutReconciliation::COMPLETION_BLOCKED_CODE),
                     'Completion blocked: ' . $throwable->getMessage(),
                     $claim['lease_expires_at'] ?? null,
                 );

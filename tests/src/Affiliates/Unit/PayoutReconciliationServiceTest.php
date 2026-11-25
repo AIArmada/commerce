@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
 use AIArmada\Affiliates\Actions\Conversions\ReverseAffiliateConversion;
-use AIArmada\Affiliates\Actions\Payouts\CreatePayout;
-use AIArmada\Affiliates\Actions\Payouts\UpdatePayoutStatus;
+use AIArmada\Affiliates\Features\Payouts\Actions\CreatePayout;
+use AIArmada\Affiliates\Features\Payouts\Actions\UpdatePayoutStatus;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliatePayoutOperation;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutReconciliation;
 use AIArmada\Affiliates\Services\PayoutReconciliationService;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
@@ -79,7 +80,7 @@ describe('PayoutReconciliationService', function (): void {
                 'method' => 'bank_transfer',
             ]);
 
-            $result = $this->service->reconcilePayout($payout, 'unknown_status');
+            $result = app(PayoutReconciliation::class)->reconcile((string) $payout->getKey(), 'unknown_status');
 
             expect($result)->toBeFalse();
 
@@ -98,7 +99,7 @@ describe('PayoutReconciliationService', function (): void {
                 'method' => 'bank_transfer',
             ]);
 
-            $result = $this->service->reconcilePayout($payout, 'completed');
+            $result = app(PayoutReconciliation::class)->reconcile((string) $payout->getKey(), 'completed');
 
             expect($result)->toBeFalse();
         });
@@ -114,7 +115,7 @@ describe('PayoutReconciliationService', function (): void {
                 'method' => 'bank_transfer',
             ]);
 
-            $result = $this->service->reconcilePayout($payout, 'completed');
+            $result = app(PayoutReconciliation::class)->reconcile((string) $payout->getKey(), 'completed');
 
             expect($result)->toBeTrue();
 
@@ -135,7 +136,7 @@ describe('PayoutReconciliationService', function (): void {
                 'metadata' => ['original' => 'data'],
             ]);
 
-            $this->service->reconcilePayout($payout, 'completed', [
+            app(PayoutReconciliation::class)->reconcile((string) $payout->getKey(), 'completed', [
                 'processor' => 'stripe',
                 'fee' => 250,
             ]);
@@ -158,7 +159,7 @@ describe('PayoutReconciliationService', function (): void {
                 'method' => 'bank_transfer',
             ]);
 
-            $result = $this->service->reconcilePayout($payout, 'COMPLETED');
+            $result = app(PayoutReconciliation::class)->reconcile((string) $payout->getKey(), 'COMPLETED');
 
             expect($result)->toBeTrue();
 
@@ -457,11 +458,11 @@ describe('PayoutReconciliationService', function (): void {
             $payee = User::query()->create([
                 'name' => 'Alternate payee', 'email' => uniqid() . '@example.com', 'password' => 'secret',
             ]);
-            $payout = CreatePayout::run([$conversion->id], $alternatePayee ? [
+            $payout = app(CreatePayout::class)->handle([$conversion->id], $alternatePayee ? [
                 'payee_type' => $payee->getMorphClass(), 'payee_id' => $payee->id,
             ] : []);
             if ($complete) {
-                UpdatePayoutStatus::run($payout, CompletedPayout::value());
+                app(UpdatePayoutStatus::class)->handle($payout, CompletedPayout::value());
             }
 
             $payout->update(['total_minor' => 20000]);
@@ -486,7 +487,7 @@ describe('PayoutReconciliationService', function (): void {
             ]);
             $conversion->update(['affiliate_payout_id' => $payout->id]);
 
-            UpdatePayoutStatus::run($payout, CompletedPayout::value());
+            app(UpdatePayoutStatus::class)->handle($payout, CompletedPayout::value());
             $audit = $this->service->auditAffiliateBalance($this->affiliate, 'USD');
 
             expect($audit['paid_out_minor'])->toBe(0)
@@ -498,9 +499,9 @@ describe('PayoutReconciliationService', function (): void {
 
         test('canonical create and completion reconcile the commission exactly once', function (): void {
             $conversion = reconciliationAuditConversion($this->affiliate);
-            $payout = CreatePayout::run([(string) $conversion->getKey()]);
+            $payout = app(CreatePayout::class)->handle([(string) $conversion->getKey()]);
 
-            UpdatePayoutStatus::run($payout, CompletedPayout::value());
+            app(UpdatePayoutStatus::class)->handle($payout, CompletedPayout::value());
 
             $audit = $this->service->auditAffiliateBalance($this->affiliate, 'USD');
 
@@ -515,10 +516,10 @@ describe('PayoutReconciliationService', function (): void {
 
         test('failure releases the reservation and restores the audit balance once', function (): void {
             $conversion = reconciliationAuditConversion($this->affiliate);
-            $payout = CreatePayout::run([(string) $conversion->getKey()]);
+            $payout = app(CreatePayout::class)->handle([(string) $conversion->getKey()]);
 
-            UpdatePayoutStatus::run($payout, FailedPayout::value());
-            UpdatePayoutStatus::run($payout, FailedPayout::value());
+            app(UpdatePayoutStatus::class)->handle($payout, FailedPayout::value());
+            app(UpdatePayoutStatus::class)->handle($payout, FailedPayout::value());
 
             $audit = $this->service->auditAffiliateBalance($this->affiliate, 'USD');
 
@@ -545,8 +546,8 @@ describe('PayoutReconciliationService', function (): void {
 
         test('paid payout reversals retain the completed payout debit as a clawback', function (): void {
             $conversion = reconciliationAuditConversion($this->affiliate);
-            $payout = CreatePayout::run([(string) $conversion->getKey()]);
-            UpdatePayoutStatus::run($payout, CompletedPayout::value());
+            $payout = app(CreatePayout::class)->handle([(string) $conversion->getKey()]);
+            app(UpdatePayoutStatus::class)->handle($payout, CompletedPayout::value());
 
             ReverseAffiliateConversion::run($conversion->fresh(), 'refund');
 

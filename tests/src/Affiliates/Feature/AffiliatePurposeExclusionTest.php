@@ -6,7 +6,7 @@ use AIArmada\Affiliates\Actions\Conversions\AllocateUplineCommissions;
 use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionMaturity;
 use AIArmada\Affiliates\Features\Payouts\Actions\ClaimScheduledPayout;
-use AIArmada\Affiliates\Actions\Payouts\CreatePayout;
+use AIArmada\Affiliates\Features\Payouts\Actions\CreatePayout;
 use AIArmada\Affiliates\Data\AffiliateConversionData;
 use AIArmada\Affiliates\Features\Upline\Api\RankQualificationApi;
 use AIArmada\Affiliates\Features\Upline\Api\UplineApi;
@@ -133,7 +133,7 @@ test('manual payout creation refuses approved conversions for purpose-tagged aff
         'commission_currency' => 'USD',
     ]);
 
-    expect(fn () => CreatePayout::run([(string) $conversion->getKey()]))
+    expect(fn () => app(CreatePayout::class)->handle([(string) $conversion->getKey()]))
         ->toThrow(InvalidArgumentException::class, 'Only commercial-purpose');
 });
 
@@ -163,7 +163,7 @@ test('reward-award backings remain payable through the separate award settlement
         'minimum_payout_minor' => 0,
     ]);
 
-    $payout = CreatePayout::run([(string) $conversion->getKey()]);
+    $payout = app(CreatePayout::class)->handle([(string) $conversion->getKey()]);
 
     expect($payout->conversion_count)->toBe(1)
         ->and($payout->total_minor)->toBe(1000);
@@ -186,7 +186,7 @@ test('reward-award settlement is blocked when the explicit switch is off', funct
         'commission_currency' => 'USD',
     ]);
 
-    expect(fn () => CreatePayout::run([(string) $conversion->getKey()]))
+    expect(fn () => app(CreatePayout::class)->handle([(string) $conversion->getKey()]))
         ->toThrow(InvalidArgumentException::class, 'Only commercial-purpose');
 });
 
@@ -208,7 +208,7 @@ test('reward-award settlement switch never permits mixed purchase payouts', func
         'commission_currency' => 'USD',
     ]));
 
-    expect(fn () => CreatePayout::run($conversions->map(fn (AffiliateConversion $conversion): string => (string) $conversion->getKey())->all()))
+    expect(fn () => app(CreatePayout::class)->handle($conversions->map(fn (AffiliateConversion $conversion): string => (string) $conversion->getKey())->all()))
         ->toThrow(InvalidArgumentException::class, 'Only commercial-purpose');
 });
 

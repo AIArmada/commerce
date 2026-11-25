@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
-use AIArmada\Affiliates\Actions\Payouts\CreatePayout;
+use AIArmada\Affiliates\Features\Payouts\Actions\CreatePayout;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalStatus;
 use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
@@ -376,7 +376,7 @@ it('keeps the review when the linked conversion is reserved by an open payout', 
             'detected_at' => now(),
         ]);
 
-        $payout = CreatePayout::run([$conversion->getKey()]);
+        $payout = app(CreatePayout::class)->handle([$conversion->getKey()]);
 
         return [$signal, $conversion, (string) $payout->getKey()];
     });

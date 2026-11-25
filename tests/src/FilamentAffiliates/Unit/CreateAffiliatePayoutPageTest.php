@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
-use AIArmada\Affiliates\Actions\Payouts\UpdatePayoutStatus;
+use AIArmada\Affiliates\Features\Payouts\Actions\UpdatePayoutStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
@@ -152,7 +152,7 @@ it('creates through the page by reserving selected conversions and prevents payi
     expect($balance?->available_minor)->toBe(0)
         ->and($conversion->fresh()->affiliate_payout_id)->toBe((string) $payout->getKey());
 
-    OwnerContext::withOwner($owner, fn (): AffiliatePayout => UpdatePayoutStatus::run($payout, 'completed'));
+    OwnerContext::withOwner($owner, fn (): AffiliatePayout => app(UpdatePayoutStatus::class)->handle($payout, 'completed'));
 
     $completedConversion = OwnerContext::withOwner($owner, fn (): AffiliateConversion => AffiliateConversion::query()->findOrFail($conversion->getKey()));
     $balance = OwnerContext::withOwner($owner, fn (): ?AffiliateBalance => $affiliate->balanceFor('USD'));
@@ -197,8 +197,8 @@ it('releases reservations once when a page-created payout fails or is cancelled'
         ->where('payee_id', $affiliate->getKey())
         ->firstOrFail());
 
-    OwnerContext::withOwner($owner, fn (): AffiliatePayout => UpdatePayoutStatus::run($payout, $status));
-    OwnerContext::withOwner($owner, fn (): AffiliatePayout => UpdatePayoutStatus::run($payout, $status));
+    OwnerContext::withOwner($owner, fn (): AffiliatePayout => app(UpdatePayoutStatus::class)->handle($payout, $status));
+    OwnerContext::withOwner($owner, fn (): AffiliatePayout => app(UpdatePayoutStatus::class)->handle($payout, $status));
 
     $freshConversion = OwnerContext::withOwner($owner, fn (): AffiliateConversion => AffiliateConversion::query()->findOrFail($conversion->getKey()));
     $balance = OwnerContext::withOwner($owner, fn (): ?AffiliateBalance => $affiliate->balanceFor('USD'));

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Actions\Payouts;
+namespace AIArmada\Affiliates\Features\Payouts\Actions;
 
 use AIArmada\Affiliates\Features\Webhooks\Api\WebhookApi;
 use AIArmada\Affiliates\Models\AffiliatePayout;
@@ -16,19 +16,17 @@ use AIArmada\Affiliates\States\FailedPayout;
 use AIArmada\Affiliates\States\PayoutStatus;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
-use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
  * Update the status of an affiliate payout.
  */
-final class UpdatePayoutStatus
+final readonly class UpdatePayoutStatus
 {
-    use AsAction;
-
     public function __construct(
-        private readonly WebhookApi $webhooks,
-        private readonly PayoutConversionSettlement $settlement,
-        private readonly PayoutRelease $release,
+        private WebhookApi $webhooks,
+        private PayoutConversionSettlement $settlement,
+        private PayoutRelease $release,
+        private AssertPayoutCompletable $completionGate,
     ) {}
 
     /**
@@ -64,7 +62,7 @@ final class UpdatePayoutStatus
                 // Mirror PayoutReconciliationService: the gate checks WHO
                 // may be paid, this checks the linked legs are sane.
                 $locked->assertHomogeneousConversions();
-                $overrideReason = AssertPayoutCompletable::run($locked);
+                $overrideReason = $this->completionGate->handle($locked);
             }
 
             $locked->status->transitionTo($newStatus::class);

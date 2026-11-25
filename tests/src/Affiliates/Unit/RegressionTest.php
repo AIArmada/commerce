@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Actions\Payouts\CreatePayout;
-use AIArmada\Affiliates\Actions\Payouts\UpdatePayoutStatus;
+use AIArmada\Affiliates\Features\Payouts\Actions\CreatePayout;
+use AIArmada\Affiliates\Features\Payouts\Actions\UpdatePayoutStatus;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Features\Webhooks\Api\WebhookApi;
 use AIArmada\Affiliates\Features\Webhooks\Models\AffiliateWebhookDelivery;
@@ -14,7 +14,7 @@ use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Services\CommissionCalculator;
 use AIArmada\Affiliates\Services\Commissions\CommissionCaps;
-use AIArmada\Affiliates\Services\PayoutReconciliationService;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutReconciliation;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\CancelledPayout;
@@ -169,7 +169,7 @@ test('reconcile completion marks conversions paid like status update', function 
     $conversion = makeApprovedConversionFor($this->affiliate, 2000);
     $payout = app(CreatePayout::class)->handle([$conversion->id]);
 
-    $changed = app(PayoutReconciliationService::class)->reconcilePayout($payout, 'completed');
+    $changed = app(PayoutReconciliation::class)->reconcile((string) $payout->getKey(), 'completed');
 
     expect($changed)->toBeTrue()
         ->and($payout->fresh()->status)->toBeInstanceOf(CompletedPayout::class)
@@ -185,7 +185,7 @@ test('reconcile ignores provider events that would illegally regress a terminal 
     $payout = app(CreatePayout::class)->handle([$conversion->id]);
     app(UpdatePayoutStatus::class)->handle($payout, CompletedPayout::class);
 
-    $changed = app(PayoutReconciliationService::class)->reconcilePayout($payout->fresh(), 'failed');
+    $changed = app(PayoutReconciliation::class)->reconcile((string) $payout->getKey(), 'failed');
 
     expect($changed)->toBeFalse()
         ->and($payout->fresh()->status)->toBeInstanceOf(CompletedPayout::class)
@@ -199,7 +199,7 @@ test('reconcile failure releases reserved funds and unlinks conversions', functi
     $conversion = makeApprovedConversionFor($this->affiliate, 2000);
     $payout = app(CreatePayout::class)->handle([$conversion->id]);
 
-    $changed = app(PayoutReconciliationService::class)->reconcilePayout($payout, 'failed');
+    $changed = app(PayoutReconciliation::class)->reconcile((string) $payout->getKey(), 'failed');
 
     expect($changed)->toBeTrue()
         ->and($payout->fresh()->failed_at)->not->toBeNull()

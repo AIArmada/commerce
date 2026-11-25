@@ -19,11 +19,10 @@ Conversions → Qualified / Holding → Maturity Check → Approved / Available 
 ### Using Actions (Canonical API)
 
 ```php
-use AIArmada\Affiliates\Actions\Payouts\CreatePayout;
-use AIArmada\Affiliates\Actions\Payouts\UpdatePayoutStatus;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutAdministration;
 
 // Create payout from conversion IDs
-$payout = CreatePayout::run($conversionIds, [
+$payoutId = app(PayoutAdministration::class)->create((string) $affiliate->getKey(), $conversionIds, [
     'payee_type' => $affiliate->getMorphClass(),
     'payee_id' => $affiliate->getKey(),
     'metadata' => ['note' => 'Monthly payout for January'],
@@ -40,10 +39,10 @@ silently ignored. The payout method is chosen later at processing time.
 Every payout reserves exactly one per-currency balance, so all conversions in a payout must share one `commission_currency`. Mixed-currency sets throw an `InvalidArgumentException` instead of summing silently — schedule one payout per currency. A `currency` attribute that disagrees with the conversions also throws.
 
 ```php
-use AIArmada\Affiliates\Actions\Payouts\CreatePayout;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutAdministration;
 
 // Throws: conversions span USD and MYR.
-$payout = CreatePayout::run($mixedConversionIds, [
+$payoutId = app(PayoutAdministration::class)->create((string) $affiliate->getKey(), $mixedConversionIds, [
     'payee_type' => $affiliate->getMorphClass(),
     'payee_id' => $affiliate->getKey(),
 ]);
@@ -51,14 +50,14 @@ $payout = CreatePayout::run($mixedConversionIds, [
 // Correct: group conversion IDs by commission_currency first, then run
 // one payout per group.
 foreach ($conversionIdsByCurrency as $currency => $ids) {
-    CreatePayout::run($ids, [
+    app(PayoutAdministration::class)->create((string) $affiliate->getKey(), $ids, [
         'payee_type' => $affiliate->getMorphClass(),
         'payee_id' => $affiliate->getKey(),
     ]);
 }
 
 // Update payout status
-UpdatePayoutStatus::run($payout, 'completed', 'Processed successfully');
+app(PayoutAdministration::class)->updateStatus($payoutId, 'completed', 'Processed successfully');
 ```
 
 ### Purpose Gate and Reward-Award Settlement
@@ -91,7 +90,7 @@ referral fulfillment is also disabled in `config/referrals.php`.
 Creating an `AffiliatePayout` model directly records a payout row only. It
 does not reserve an affiliate balance, claim conversions, or synchronize
 conversion status. Do not use direct model creation or manual conversion
-linking to settle commission. Use `CreatePayout` so eligibility, owner,
+linking to settle commission. Use `PayoutAdministration::create()` so eligibility, owner,
 currency, balance reservation, and atomic conversion claims are enforced.
 
 Existing manually created payout rows are not rewritten or backfilled. Before
@@ -294,9 +293,9 @@ The current maturity flow uses `holding_minor` for pre-payout commission state. 
 ### Processing payouts
 
 ```php
-use AIArmada\Affiliates\Actions\Payouts\ProcessAffiliatePayout;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutAdministration;
 
-$result = app(ProcessAffiliatePayout::class)->handle($payout);
+$result = app(PayoutAdministration::class)->process($payoutId);
 ```
 
 The action claims the payout, validates eligibility, constructs an immutable
@@ -310,7 +309,7 @@ affiliate's `payoutMethods` relation. `PayoutResult` exposes
 `isSuccessful()` or `getTransactionId()`.
 
 > [!WARNING]
-> Never complete a payout with a direct status write (`$payout->update(['status' => ...])`): it bypasses the completion eligibility gate, the Approved-only conversion sync, the payout event, and the operation sync — leaving conversions linked-but-approved against a payout that reported the money as sent. Always complete through `UpdatePayoutStatus::run($payout, 'completed', ...)` (or `AIArmada\Affiliates\Actions\Payouts\ProcessAffiliatePayout::handle($payout)` for the full claim/processor flow).
+> Never complete a payout with a direct status write (`$payout->update(['status' => ...])`): it bypasses the completion eligibility gate, the Approved-only conversion sync, the payout event, and the operation sync — leaving conversions linked-but-approved against a payout that reported the money as sent. Always complete through `app(PayoutAdministration::class)->updateStatus($payoutId, 'completed', ...)` (or `app(PayoutAdministration::class)->process($payoutId)` for the full claim/processor flow).
 
 ## Payout Events
 
@@ -352,7 +351,7 @@ $service = app(PayoutReconciliationService::class);
 $pending = $service->getPayoutsNeedingReconciliation();
 
 // Reconcile with a provider status string
-$changed = $service->reconcilePayout($payout, 'paid', [
+$changed = app(\AIArmada\Affiliates\Features\Payouts\Api\PayoutReconciliation::class)->reconcile($payoutId, 'paid', [
     'reference' => 'TXN-456',
     'status' => 'settled',
 ]);
@@ -374,7 +373,7 @@ $report['summary']['conversion'];         // ['currency', 'as_of', 'source'] pro
 $report['by_currency']['USD']['total_minor'];
 ```
 
-Use `summarizePayouts($payouts, $start, $end)` for the same settlement summary over an explicit payout set (for example an owner-scoped batch). Conversions linked to a payout must share one currency and one affiliate: linking a conversion with a different currency or affiliate throws, and provider submission rechecks the linked affiliate set before sending. `reconcilePayout()` also refuses to complete a mixed-currency payout — `currency_mismatches` in the report points at corrupt rows.
+Use `summarizePayouts($payouts, $start, $end)` for the same settlement summary over an explicit payout set (for example an owner-scoped batch). Conversions linked to a payout must share one currency and one affiliate: linking a conversion with a different currency or affiliate throws, and provider submission rechecks the linked affiliate set before sending. `PayoutReconciliation::reconcile()` also refuses to complete a mixed-currency payout — `currency_mismatches` in the report points at corrupt rows.
 
 ## Artisan Commands
 

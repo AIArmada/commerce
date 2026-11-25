@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateToCart;
 use AIArmada\Affiliates\Actions\Conversions\RecordAffiliateConversion;
 use AIArmada\Affiliates\Actions\Conversions\RecordAffiliateOutcome;
-use AIArmada\Affiliates\Actions\Payouts\CreatePayout;
+use AIArmada\Affiliates\Features\Payouts\Actions\CreatePayout;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
@@ -214,7 +214,7 @@ test('reward-award settlement for opaque purposes still settles', function (): v
         'minimum_payout_minor' => 0,
     ]);
 
-    $payout = CreatePayout::run([(string) $conversion->getKey()]);
+    $payout = app(CreatePayout::class)->handle([(string) $conversion->getKey()]);
 
     expect($payout->conversion_count)->toBe(1)
         ->and($payout->total_minor)->toBe(1000);

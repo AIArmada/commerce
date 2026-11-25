@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Actions\Payouts;
+namespace AIArmada\Affiliates\Features\Payouts\Actions;
 
 use AIArmada\Affiliates\Features\Conversions\Api\PayoutReservation;
 use AIArmada\Affiliates\Models\Affiliate;
@@ -20,16 +20,13 @@ use Illuminate\Support\Collection;
 use InvalidArgumentException;
 use Illuminate\Support\Str;
 use LogicException;
-use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
  * Create a new payout from affiliate conversions.
  */
-final class CreatePayout
+final readonly class CreatePayout
 {
-    use AsAction;
-
-    public function __construct(private readonly PayoutReservation $reservation) {}
+    public function __construct(private PayoutReservation $reservation) {}
 
     /**
      * Create a payout from the given conversion IDs.

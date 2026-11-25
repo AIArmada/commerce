@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
-use AIArmada\Affiliates\Actions\Payouts\CreatePayout;
-use AIArmada\Affiliates\Actions\Payouts\UpdatePayoutStatus;
+use AIArmada\Affiliates\Features\Payouts\Actions\CreatePayout;
+use AIArmada\Affiliates\Features\Payouts\Actions\UpdatePayoutStatus;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycle;
 use AIArmada\Affiliates\Models\Affiliate;
@@ -48,7 +48,7 @@ test('CreatePayout blocks affiliates that were never approved', function (): voi
     $affiliate = createGateTestAffiliate(Pending::class);
     $conversion = recordGateApprovedConversion($affiliate);
 
-    expect(fn (): object => CreatePayout::run([$conversion->id]))
+    expect(fn (): object => app(CreatePayout::class)->handle([$conversion->id]))
         ->toThrow(InvalidArgumentException::class, 'cannot receive payouts');
 });
 
@@ -60,7 +60,7 @@ test('CreatePayout blocks disabled affiliates without an override reason', funct
 
     expect($affiliate->fresh()->status->equals(Disabled::class))->toBeTrue();
 
-    expect(fn (): object => CreatePayout::run([$conversion->id]))
+    expect(fn (): object => app(CreatePayout::class)->handle([$conversion->id]))
         ->toThrow(InvalidArgumentException::class, 'payout_override_reason');
 });
 
@@ -70,7 +70,7 @@ test('CreatePayout releases earned balances for disabled affiliates with an audi
 
     app(AffiliateLifecycle::class)->disable($affiliate->id);
 
-    $payout = CreatePayout::run([$conversion->id], [
+    $payout = app(CreatePayout::class)->handle([$conversion->id], [
         'payout_override_reason' => 'Account closed in good standing; releasing earned balance.',
     ]);
 
@@ -83,7 +83,7 @@ test('CreatePayout ignores override reasons for pending affiliates', function ()
     $affiliate = createGateTestAffiliate(Pending::class);
     $conversion = recordGateApprovedConversion($affiliate);
 
-    expect(fn (): object => CreatePayout::run([$conversion->id], [
+    expect(fn (): object => app(CreatePayout::class)->handle([$conversion->id], [
         'payout_override_reason' => 'Trying to bypass review.',
     ]))->toThrow(InvalidArgumentException::class, 'cannot receive payouts');
 });
@@ -92,11 +92,11 @@ test('completing a payout is blocked when the affiliate is disabled after creati
     $affiliate = createGateTestAffiliate();
     $conversion = recordGateApprovedConversion($affiliate);
 
-    $payout = CreatePayout::run([$conversion->id]);
+    $payout = app(CreatePayout::class)->handle([$conversion->id]);
 
     app(AffiliateLifecycle::class)->disable($affiliate->id);
 
-    expect(fn (): object => UpdatePayoutStatus::run($payout, 'completed'))
+    expect(fn (): object => app(UpdatePayoutStatus::class)->handle($payout, 'completed'))
         ->toThrow(InvalidArgumentException::class, 'no longer receive payouts');
 
     expect($payout->fresh()->paid_at)->toBeNull();
@@ -106,9 +106,9 @@ test('completing a payout succeeds for a payable affiliate', function (): void {
     $affiliate = createGateTestAffiliate();
     $conversion = recordGateApprovedConversion($affiliate);
 
-    $payout = CreatePayout::run([$conversion->id]);
+    $payout = app(CreatePayout::class)->handle([$conversion->id]);
 
-    $completed = UpdatePayoutStatus::run($payout, 'completed');
+    $completed = app(UpdatePayoutStatus::class)->handle($payout, 'completed');
 
     expect($completed->paid_at)->not->toBeNull();
 });

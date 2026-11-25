@@ -3,14 +3,27 @@
   "name": "Payouts",
   "owns": {
     "table:affiliate_payouts": [
-      "AIArmada\\Affiliates\\Features\\Payouts\\Actions\\ClaimScheduledPayout"
+      "AIArmada\\Affiliates\\Features\\Payouts\\Actions\\ClaimScheduledPayout",
+      "AIArmada\\Affiliates\\Features\\Payouts\\Actions\\CreatePayout",
+      "AIArmada\\Affiliates\\Features\\Payouts\\Actions\\UpdatePayoutStatus",
+      "AIArmada\\Affiliates\\Features\\Payouts\\Actions\\ProcessAffiliatePayout",
+      "AIArmada\\Affiliates\\Features\\Payouts\\Actions\\AssertPayoutCompletable",
+      "AIArmada\\Affiliates\\Features\\Payouts\\Actions\\ReconcilePayout"
     ],
     "table:affiliate_payout_operations": [
       "AIArmada\\Affiliates\\Features\\Payouts\\Actions\\ClaimScheduledPayout",
-      "AIArmada\\Affiliates\\Features\\Payouts\\Actions\\ReleasePayoutFunds"
+      "AIArmada\\Affiliates\\Features\\Payouts\\Actions\\ReleasePayoutFunds",
+      "AIArmada\\Affiliates\\Features\\Payouts\\Actions\\CreatePayout",
+      "AIArmada\\Affiliates\\Features\\Payouts\\Actions\\UpdatePayoutStatus",
+      "AIArmada\\Affiliates\\Features\\Payouts\\Actions\\ProcessAffiliatePayout",
+      "AIArmada\\Affiliates\\Features\\Payouts\\Actions\\ReverseStripePayout",
+      "AIArmada\\Affiliates\\Features\\Payouts\\Actions\\ReconcilePayout"
     ],
     "table:affiliate_payout_events": [
-      "AIArmada\\Affiliates\\Features\\Payouts\\Actions\\ClaimScheduledPayout"
+      "AIArmada\\Affiliates\\Features\\Payouts\\Actions\\ClaimScheduledPayout",
+      "AIArmada\\Affiliates\\Features\\Payouts\\Actions\\UpdatePayoutStatus",
+      "AIArmada\\Affiliates\\Features\\Payouts\\Actions\\ProcessAffiliatePayout",
+      "AIArmada\\Affiliates\\Features\\Payouts\\Actions\\ReconcilePayout"
     ],
     "table:affiliate_payout_methods": [
       "AIArmada\\Affiliates\\Features\\Payouts\\Actions\\AdministerPayoutMethod"

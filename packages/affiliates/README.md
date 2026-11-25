@@ -111,7 +111,7 @@ Rate limiting and consent
 
 Payout batches
 
-Use `Actions/Payouts/CreatePayout` and `Actions/Payouts/UpdatePayoutStatus` to manage payout batches for exports or provider handoff. Conversions are linked via `affiliate_payout_id`, and payout records store aggregate totals and schedule/paid timestamps.
+Use `Features/Payouts/Api/PayoutAdministration` to manage payout batches for exports or provider handoff. Conversions are linked via `affiliate_payout_id`, and payout records store aggregate totals and schedule/paid timestamps.
 Multi-level uplines are supported via `parent_affiliate_id` on affiliates and `payouts.multi_level.*` config to define commission shares per level.
 
 Webhook + link utilities

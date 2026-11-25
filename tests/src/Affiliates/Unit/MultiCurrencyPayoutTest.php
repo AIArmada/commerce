@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
 use AIArmada\Affiliates\Features\Payouts\Actions\ClaimScheduledPayout;
-use AIArmada\Affiliates\Actions\Payouts\CreatePayout;
+use AIArmada\Affiliates\Features\Payouts\Actions\CreatePayout;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
@@ -56,7 +56,7 @@ describe('Multi-currency payouts', function (): void {
         $usd = recordApprovedConversion($affiliate, 'USD', 1000);
         $myr = recordApprovedConversion($affiliate, 'MYR', 2000);
 
-        expect(fn (): object => CreatePayout::run([$usd->id, $myr->id]))
+        expect(fn (): object => app(CreatePayout::class)->handle([$usd->id, $myr->id]))
             ->toThrow(InvalidArgumentException::class, 'only one currency');
     });
 
@@ -64,7 +64,7 @@ describe('Multi-currency payouts', function (): void {
         $affiliate = createPayoutTestAffiliate();
         $usd = recordApprovedConversion($affiliate, 'USD', 1000);
 
-        expect(fn (): object => CreatePayout::run([$usd->id], ['currency' => 'MYR']))
+        expect(fn (): object => app(CreatePayout::class)->handle([$usd->id], ['currency' => 'MYR']))
             ->toThrow(InvalidArgumentException::class, 'must match');
     });
 
@@ -73,7 +73,7 @@ describe('Multi-currency payouts', function (): void {
         $affiliate->forceFill(['purpose' => 'share_member'])->save();
         $conversion = recordApprovedConversion($affiliate, 'USD', 1000);
 
-        expect(fn (): object => CreatePayout::run([$conversion->id]))
+        expect(fn (): object => app(CreatePayout::class)->handle([$conversion->id]))
             ->toThrow(InvalidArgumentException::class, 'commercial-purpose');
 
         expect($conversion->fresh()->affiliate_payout_id)->toBeNull()
@@ -85,7 +85,7 @@ describe('Multi-currency payouts', function (): void {
         $usd = recordApprovedConversion($affiliate, 'USD', 1000);
         recordApprovedConversion($affiliate, 'MYR', 2000);
 
-        $payout = CreatePayout::run([$usd->id]);
+        $payout = app(CreatePayout::class)->handle([$usd->id]);
 
         expect($payout->currency)->toBe('USD')
             ->and($payout->total_minor)->toBe(1000)

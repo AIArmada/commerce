@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
-use AIArmada\Affiliates\Actions\Payouts\CreatePayout;
-use AIArmada\Affiliates\Actions\Payouts\ProcessAffiliatePayout;
+use AIArmada\Affiliates\Features\Payouts\Actions\CreatePayout;
+use AIArmada\Affiliates\Features\Payouts\Actions\ProcessAffiliatePayout;
 use AIArmada\Affiliates\Contracts\PayoutProcessorInterface;
 use AIArmada\Affiliates\Data\PayoutRequest;
 use AIArmada\Affiliates\Data\PayoutResult;
@@ -102,7 +102,7 @@ function createProcessPayout(Affiliate $affiliate, array $attributes = []): Affi
 
     ApplyConversionAccounting::run($conversion);
 
-    return CreatePayout::run([$conversion->id], $attributes);
+    return app(CreatePayout::class)->handle([$conversion->id], $attributes);
 }
 
 function useFakeSuccessProcessor(): void

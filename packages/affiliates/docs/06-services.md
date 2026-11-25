@@ -57,9 +57,8 @@ refuse conversions reserved by an open payout — see
 
 | Action | Purpose |
 |--------|---------|
-| `AssertPayoutCompletable::run($payout)` | Completion gate (shared by manual + reconcile paths) |
-| `CreatePayout::run($conversionIds, $attributes)` | Create a payout batch |
-| `UpdatePayoutStatus::run($payout, $status, $notes, $metadata)` | Update payout status |
+| `app(PayoutAdministration::class)->create($affiliateId, $conversionIds, $attributes)` | Create a payout batch |
+| `app(PayoutAdministration::class)->updateStatus($payoutId, $status, $notes)` | Update payout status |
 
 Manual commission payout creation rejects purpose-tagged affiliates. A payout
 containing only the fixed `reward_award` backing conversion can use the rewards
@@ -80,7 +79,7 @@ then refuses affiliates that can no longer receive payouts
 `InvalidArgumentException`) — unless the payout was created with a
 `payout_override_reason` for a disabled affiliate. The validated reason
 is stamped onto `metadata.payout_override` at creation, either via
-`CreatePayout::run($ids, ['payout_override_reason' => ...])` or via the
+`app(PayoutAdministration::class)->create($affiliateId, $ids, ['payout_override_reason' => ...])` or via the
 payout create form's override field (caller-supplied metadata can never
 forge it), and the completion time is recorded as
 `override_completed_at`. Completing a reserved payout also asserts
@@ -125,7 +124,7 @@ use AIArmada\Affiliates\Services\PayoutReconciliationService;
 $service = app(PayoutReconciliationService::class);
 
 // Reconcile with provider — true when the payout actually changed
-$changed = $service->reconcilePayout($payout, 'paid', ['reference' => 'TXN-456']);
+$changed = app(\AIArmada\Affiliates\Features\Payouts\Api\PayoutReconciliation::class)->reconcile($payoutId, 'paid', ['reference' => 'TXN-456']);
 
 // Failed or cancelled outcomes release reserved funds atomically.
 

@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\Services\PayoutReconciliationService;
+use AIArmada\Affiliates\Features\Payouts\Api\PayoutReconciliation;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\PendingPayout;
@@ -88,6 +88,6 @@ test('reconciliation refuses to complete a mixed-currency payout', function (): 
     AffiliateConversion::query()->whereKey($conversion->id)->update(['affiliate_payout_id' => $payout->id]);
     $payout->forceFill(['status' => ProcessingPayout::value()])->save();
 
-    expect(fn (): bool => app(PayoutReconciliationService::class)->reconcilePayout($payout, 'completed'))
+    expect(fn (): bool => app(PayoutReconciliation::class)->reconcile((string) $payout->getKey(), 'completed'))
         ->toThrow(InvalidArgumentException::class, 'same currency');
 });
