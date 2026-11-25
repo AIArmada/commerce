@@ -12,6 +12,8 @@ interface UplineApi
 
     public function remove(string $affiliateId): void;
 
+    public function detachForDeletion(string $affiliateId): void;
+
     public function move(string $affiliateId, string $sponsorId): void;
 
     /** @return list<UplineMember> */

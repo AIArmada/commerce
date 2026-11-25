@@ -8,6 +8,7 @@ use AIArmada\Affiliates\Events\AffiliateCreated;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalStatus;
 use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateRemoval;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateBalance;
@@ -243,7 +244,7 @@ describe('Affiliate Model - Relationships', function (): void {
             'detected_at' => now(),
         ]);
 
-        $affiliate->delete();
+        app(AffiliateRemoval::class)->delete((string) $affiliate->getKey());
 
         expect(AffiliateFraudSignal::query()->whereKey($signal->getKey())->exists())->toBeFalse();
     });
@@ -661,12 +662,12 @@ describe('Affiliate Model - Cascade Deletes', function (): void {
             'user_agent' => 'Test Browser',
         ]);
 
-        $affiliate->delete();
+        app(AffiliateRemoval::class)->delete((string) $affiliate->getKey());
 
         expect(AffiliateAttribution::where('affiliate_id', $affiliate->id)->count())->toBe(0);
     });
 
-    test('cascade deletes conversions on delete', function (): void {
+    test('rejects deletion when the affiliate has conversion history', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'CASCADE-002',
             'name' => 'Cascade Conversion Test',
@@ -686,9 +687,10 @@ describe('Affiliate Model - Cascade Deletes', function (): void {
             'status' => PendingConversion::class,
         ]);
 
-        $affiliate->delete();
-
-        expect(AffiliateConversion::where('affiliate_id', $affiliate->id)->count())->toBe(0);
+        expect(fn () => app(AffiliateRemoval::class)->delete((string) $affiliate->getKey()))
+            ->toThrow(ValidationException::class)
+            ->and($affiliate->fresh())->not->toBeNull()
+            ->and(AffiliateConversion::where('affiliate_id', $affiliate->id)->count())->toBe(1);
     });
 
     test('nulls parent_affiliate_id of children on delete', function (): void {
@@ -711,7 +713,7 @@ describe('Affiliate Model - Cascade Deletes', function (): void {
             'parent_affiliate_id' => $parent->id,
         ]);
 
-        $parent->delete();
+        app(AffiliateRemoval::class)->delete((string) $parent->getKey());
         $child->refresh();
 
         expect($child->parent_affiliate_id)->toBeNull();

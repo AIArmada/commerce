@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Features\Attribution\Actions\CreateTrackingLink;
 use AIArmada\Affiliates\Features\Attribution\Actions\UpdateTrackingLink;
 use AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkAdministration;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateRemoval;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
@@ -86,7 +87,7 @@ test('affiliate deletion removes tracked campaign links and their clicks', funct
     $link = app(CreateTrackingLink::class)->handle((string) $affiliate->getKey(), 'https://merchant.example');
     $trackedId = $link->trackedLink->id;
     $this->get($link->tracking_url)->assertRedirect();
-    $affiliate->delete();
+    app(AffiliateRemoval::class)->delete((string) $affiliate->getKey());
     expect(Link::query()->whereKey($trackedId)->exists())->toBeFalse()
         ->and(LinkClick::query()->where('link_id', $trackedId)->exists())->toBeFalse();
 });

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources\AffiliateResource\Pages;
 
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateAdministration;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateRemoval;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Resources\AffiliateResource;
 use Filament\Actions;
@@ -23,7 +24,8 @@ final class EditAffiliate extends EditRecord
             Actions\ViewAction::make(),
             Actions\DeleteAction::make()
                 ->authorize(fn (Affiliate $record): bool => AffiliateResource::canDelete($record))
-                ->visible(fn (Affiliate $record): bool => AffiliateResource::canDelete($record)),
+                ->visible(fn (Affiliate $record): bool => AffiliateResource::canDelete($record))
+                ->using(fn (Affiliate $record): bool => app(AffiliateRemoval::class)->delete((string) $record->getKey())),
         ];
     }
 

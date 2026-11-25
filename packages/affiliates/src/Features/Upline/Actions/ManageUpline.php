@@ -7,6 +7,7 @@ namespace AIArmada\Affiliates\Features\Upline\Actions;
 use AIArmada\Affiliates\Features\Upline\Models\AffiliateUpline;
 use AIArmada\Affiliates\Models\Affiliate;
 use InvalidArgumentException;
+use LogicException;
 
 final class ManageUpline
 {
@@ -97,6 +98,35 @@ final class ManageUpline
             AffiliateUpline::query()->whereIn('descendant_id', $descendants)->delete();
             Affiliate::query()->whereIn('id', $descendants)->update(['parent_affiliate_id' => null, 'direct_downline_count' => 0, 'total_downline_count' => 0, 'network_depth' => 0]);
             $this->refreshCounts($ancestors);
+        }, attempts: 3);
+    }
+
+    public function detachForDeletion(string $affiliateId): void
+    {
+        $connection = (new Affiliate)->getConnection();
+
+        if ($connection !== (new AffiliateUpline)->getConnection()) {
+            throw new LogicException('Affiliate upline removal requires a shared database connection.');
+        }
+
+        $connection->transaction(function () use ($affiliateId): void {
+            Affiliate::query()->forOwner()->lockForUpdate()->findOrFail($affiliateId);
+
+            $descendants = AffiliateUpline::query()->where('ancestor_id', $affiliateId)
+                ->where('depth', '>', 0)->pluck('descendant_id')->all();
+            $ancestors = AffiliateUpline::query()->where('descendant_id', $affiliateId)
+                ->where('depth', '>', 0)->pluck('ancestor_id')->all();
+
+            if ($descendants !== []) {
+                AffiliateUpline::query()->whereIn('descendant_id', $descendants)
+                    ->whereNotIn('ancestor_id', $descendants)->delete();
+            }
+
+            AffiliateUpline::query()->where(function ($query) use ($affiliateId): void {
+                $query->where('ancestor_id', $affiliateId)->orWhere('descendant_id', $affiliateId);
+            })->delete();
+
+            $this->refreshCounts(array_values(array_unique(array_merge($ancestors, $descendants))));
         }, attempts: 3);
     }
 

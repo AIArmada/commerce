@@ -23,6 +23,11 @@ final readonly class UplineGateway implements UplineApi
         $this->write->remove($affiliateId);
     }
 
+    public function detachForDeletion(string $affiliateId): void
+    {
+        $this->write->detachForDeletion($affiliateId);
+    }
+
     public function move(string $affiliateId, string $sponsorId): void
     {
         $this->write->move($affiliateId, $sponsorId);

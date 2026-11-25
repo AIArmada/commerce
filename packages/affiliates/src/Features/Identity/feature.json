@@ -8,11 +8,13 @@
     ],
     "table:affiliate_credentials": [
       "AIArmada\\Affiliates\\Features\\Identity\\Actions\\IssueActivityCredential",
-      "AIArmada\\Affiliates\\Features\\Identity\\Actions\\ClaimAffiliateIdentity"
+      "AIArmada\\Affiliates\\Features\\Identity\\Actions\\ClaimAffiliateIdentity",
+      "AIArmada\\Affiliates\\Features\\Identity\\Actions\\DeleteAffiliate"
     ],
     "table:affiliate_ownership_capabilities": [
       "AIArmada\\Affiliates\\Features\\Identity\\Actions\\IssueOwnershipCapability",
-      "AIArmada\\Affiliates\\Features\\Identity\\Actions\\ClaimAffiliateIdentity"
+      "AIArmada\\Affiliates\\Features\\Identity\\Actions\\ClaimAffiliateIdentity",
+      "AIArmada\\Affiliates\\Features\\Identity\\Actions\\DeleteAffiliate"
     ],
     "table:affiliates": [
       "AIArmada\\Affiliates\\Features\\Identity\\Actions\\TransitionAffiliateStatus",
@@ -20,7 +22,8 @@
       "AIArmada\\Affiliates\\Features\\Identity\\Actions\\UpdatePortalProfile",
       "AIArmada\\Affiliates\\Features\\Identity\\Actions\\AdministerAffiliate",
       "AIArmada\\Affiliates\\Features\\Identity\\Actions\\CreateAffiliate",
-      "AIArmada\\Affiliates\\Features\\Identity\\Actions\\DetachAffiliateRank"
+      "AIArmada\\Affiliates\\Features\\Identity\\Actions\\DetachAffiliateRank",
+      "AIArmada\\Affiliates\\Features\\Identity\\Actions\\DeleteAffiliate"
     ]
   },
   "extensions": {}

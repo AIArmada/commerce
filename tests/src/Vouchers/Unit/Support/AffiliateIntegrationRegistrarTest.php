@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateRemoval;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active as AffiliateActive;
 use AIArmada\Vouchers\Models\Voucher;
@@ -65,7 +66,7 @@ describe('AffiliateIntegrationRegistrar affiliate voucher creation', function ()
 
         // Clean up
         $voucher->delete();
-        $affiliate->delete();
+        app(AffiliateRemoval::class)->delete((string) $affiliate->getKey());
     });
 
     /* Inline string-math format tests removed; real coverage via reflection below. */

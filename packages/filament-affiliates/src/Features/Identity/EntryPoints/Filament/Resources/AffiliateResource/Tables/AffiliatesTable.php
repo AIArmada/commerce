@@ -7,6 +7,7 @@ namespace AIArmada\FilamentAffiliates\Features\Identity\EntryPoints\Filament\Res
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\RegistrationApprovalMode;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycle;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateRemoval;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\Affiliates\States\Pending;
@@ -100,7 +101,8 @@ final class AffiliatesTable
                 EditAction::make(),
                 DeleteAction::make()
                     ->authorize(fn (Affiliate $record): bool => AffiliateResource::canDelete($record))
-                    ->visible(fn (Affiliate $record): bool => AffiliateResource::canDelete($record)),
+                    ->visible(fn (Affiliate $record): bool => AffiliateResource::canDelete($record))
+                    ->using(fn (Affiliate $record): bool => app(AffiliateRemoval::class)->delete((string) $record->getKey())),
             ]);
     }
 

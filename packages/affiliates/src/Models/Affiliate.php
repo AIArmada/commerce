@@ -9,10 +9,6 @@ use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\RegistrationApprovalMode;
 use AIArmada\Affiliates\Events\AffiliateActivated;
 use AIArmada\Affiliates\Events\AffiliateCreated;
-use AIArmada\Affiliates\Features\Attribution\Api\AttributionRemoval;
-use AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkAdministration;
-use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalMaintenance;
-use AIArmada\Affiliates\Features\Reporting\Api\DailyStatsWriter;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\Affiliates\States\Pending;
@@ -510,20 +506,17 @@ class Affiliate extends Model implements Auditable
         });
 
         self::deleting(function (self $affiliate): void {
-            app(AttributionRemoval::class)->deleteForAffiliate((string) $affiliate->getKey());
-            $affiliate->conversions()->delete();
-            app(FraudSignalMaintenance::class)->deleteForAffiliate((string) $affiliate->getKey());
-            app(DailyStatsWriter::class)->deleteForAffiliate((string) $affiliate->getKey());
-            app(TrackingLinkAdministration::class)->deleteForAffiliate((string) $affiliate->getKey());
-            $affiliate->payoutMethods()->delete();
-            $affiliate->payoutHolds()->delete();
-            $affiliate->payouts()->chunkById(100, function ($payouts): void {
-                foreach ($payouts as $payout) {
-                    $payout->delete();
-                }
-            });
-            $affiliate->balances()->delete();
-            $affiliate->children()->update(['parent_affiliate_id' => null]);
+            if ($affiliate->identity_sealed_at !== null
+                || $affiliate->conversions()->exists()
+                || $affiliate->payouts()->exists()
+                || $affiliate->attributions()->exists()
+                || $affiliate->links()->exists()
+                || $affiliate->balances()->exists()
+                || $affiliate->payoutMethods()->exists()
+                || $affiliate->payoutHolds()->exists()
+                || $affiliate->children()->exists()) {
+                throw new LogicException('Affiliate removal must preserve history and clean up owned records through the affiliate removal action.');
+            }
         });
     }
 
