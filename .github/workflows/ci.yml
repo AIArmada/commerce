@@ -159,6 +159,8 @@ jobs:
           composer --working-dir=packages/commerce-support arch:check
           composer --working-dir=packages/filament-authz arch:check
           composer --working-dir=packages/filament-commerce-support arch:check
+          composer --working-dir=packages/affiliate-network arch:check
+          composer --working-dir=packages/filament-affiliate-network arch:check
 
   phpstan:
     name: PHPStan

@@ -11,7 +11,7 @@ use AIArmada\AffiliateNetwork\Features\Ledger\Actions\VoidMerchantStatement;
 use AIArmada\AffiliateNetwork\Features\Ledger\Models\MerchantStatement;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerScope;
-use AIArmada\FilamentAffiliateNetwork\Features\Ledger\EntryPoints\Filament\Resources\MerchantStatementResource;
+use AIArmada\FilamentAffiliateNetwork\Features\Ledger\Api\StatementLinks;
 use Filament\Actions\Action;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
@@ -90,7 +90,7 @@ final class StatementsRelationManager extends RelationManager
                 Action::make('view')
                     ->label('View')
                     ->icon('heroicon-o-eye')
-                    ->url(fn (MerchantStatement $record): string => MerchantStatementResource::getUrl('view', ['record' => $record])),
+                    ->url(fn (MerchantStatement $record): string => app(StatementLinks::class)->view((string) $record->getKey())),
 
                 Action::make('issue')
                     ->label('Issue')

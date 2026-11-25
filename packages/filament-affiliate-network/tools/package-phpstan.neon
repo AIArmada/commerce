@@ -1,0 +1,16 @@
+parameters:
+    customRulesetUsed: true
+    paths:
+        - ../src
+        - ../config
+    tmpDir: ../../../build/phpstan-arch-filament-affiliate-network
+    ignoreErrors:
+        - identifier: 'larastan.noEnvCallsOutsideOfConfig'
+
+services:
+    -
+        class: PackageArchitecture\StaticAnalysis\PackageOwnedWriteRule
+        arguments:
+            projectRoot: null
+        tags:
+            - phpstan.rules.rule

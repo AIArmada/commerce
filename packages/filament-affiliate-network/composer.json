@@ -33,5 +33,13 @@
   "prefer-stable": true,
   "suggest": {
     "aiarmada/filament-affiliates": "Optional integration"
+  },
+  "scripts": {
+    "arch:boundaries": "@php tools/package-check.php",
+    "arch:writes": "@php ../../vendor/bin/phpstan analyse -c tools/package-phpstan.neon --autoload-file=tools/Architecture/PackageOwnedWriteRule.php --no-progress",
+    "arch:check": [
+      "@arch:boundaries",
+      "@arch:writes"
+    ]
   }
 }
