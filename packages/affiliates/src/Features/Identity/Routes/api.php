@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Http\Controllers\AffiliateApiController;
-use AIArmada\Affiliates\Support\Middleware\EnsureApiAuthorized;
+use AIArmada\Affiliates\Features\Identity\EntryPoints\Http\AffiliateApiController;
+use AIArmada\Affiliates\EntryPoints\Http\Middleware\EnsureApiAuthorized;
 use AIArmada\CommerceSupport\Middleware\NeedsOwner;
 use Illuminate\Support\Facades\Route;
 

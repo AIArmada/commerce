@@ -398,7 +398,7 @@ php artisan affiliates:payout:export PAY-REF-1234
 php artisan affiliates:payout:export 2d8ce0f4-... --path=/path/to/payout.csv
 ```
 
-Exports a single payout (reference or ID) with its linked conversions. There is
+Exports a single payout (reference or UUID) with its linked conversions. The local CSV writer publishes atomically and fails on ambiguous references or filesystem errors. There is
 no `affiliates:export-payouts` command and no `--from`/`--to` date range.
 
 ## Multi-Level Payouts

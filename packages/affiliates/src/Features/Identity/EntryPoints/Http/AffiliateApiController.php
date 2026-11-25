@@ -2,11 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Http\Controllers;
+namespace AIArmada\Affiliates\Features\Identity\EntryPoints\Http;
 
 use AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkAdministration;
 use AIArmada\Affiliates\Features\Reporting\Api\ReportingApi;
-use AIArmada\Affiliates\Queries\AffiliateLookupQuery;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
+use AIArmada\Affiliates\Features\Identity\Queries\ReadAffiliateCreatives;
 use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Http\JsonResponse;
@@ -19,7 +20,8 @@ use InvalidArgumentException;
 final class AffiliateApiController extends Controller
 {
     public function __construct(
-        private readonly AffiliateLookupQuery $affiliateLookup,
+        private readonly AffiliateDirectory $affiliateLookup,
+        private readonly ReadAffiliateCreatives $creativeMetadata,
         private readonly TrackingLinkAdministration $trackingLinks,
         private readonly ReportingApi $reports,
     ) {}
@@ -38,7 +40,7 @@ final class AffiliateApiController extends Controller
             return response()->json(['message' => 'Affiliate not found'], 404);
         }
 
-        return response()->json($this->reports->affiliateSummary($affiliate->getKey()));
+        return response()->json($this->reports->affiliateSummary($affiliate->id));
     }
 
     public function links(string $code, Request $request): JsonResponse
@@ -81,7 +83,7 @@ final class AffiliateApiController extends Controller
         $subjectMetadata = $validated['subject_metadata'] ?? [];
 
         try {
-            $link = $this->trackingLinks->create((string) $affiliate->getKey(), $url, [
+            $link = $this->trackingLinks->create($affiliate->id, $url, [
                 'params' => $params,
                 'link_style' => $validated['link_style'] ?? config('affiliates.links.default_style', 'short'),
                 'link_label' => $validated['link_label'] ?? null,
@@ -115,13 +117,11 @@ final class AffiliateApiController extends Controller
             return $response;
         }
 
-        $affiliate = $this->affiliateLookup->findByCode($code);
+        $creatives = $this->creativeMetadata->findByCode($code);
 
-        if (! $affiliate) {
+        if ($creatives === null) {
             return response()->json(['message' => 'Affiliate not found'], 404);
         }
-
-        $creatives = $affiliate->metadata['creatives'] ?? [];
 
         return response()->json([
             'creatives' => $creatives,

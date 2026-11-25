@@ -90,7 +90,6 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
             ->hasViews('affiliates')
             ->runsMigrations()
             ->discoversMigrations()
-            ->hasRoutes(['api'])
             ->hasCommands([
                 Features\Commissions\EntryPoints\Console\AwardPerformanceBonusesCommand::class,
                 Features\Payouts\EntryPoints\Console\ExportAffiliatePayoutCommand::class,
@@ -161,6 +160,7 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
         }
 
         $this->registerMorphMap();
+        $this->loadRoutesFrom(__DIR__ . '/Features/Identity/Routes/api.php');
         $this->loadRoutesFrom(__DIR__ . '/Features/Programs/Routes/api.php');
 
         Blade::anonymousComponentNamespace('affiliates::components', 'affiliates');

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Features\Programs\EntryPoints\Http\ProgramCatalogController;
 use AIArmada\Affiliates\Features\Programs\EntryPoints\Http\ProgramMembershipController;
-use AIArmada\Affiliates\Support\Middleware\EnsureApiAuthorized;
+use AIArmada\Affiliates\EntryPoints\Http\Middleware\EnsureApiAuthorized;
 use AIArmada\CommerceSupport\Middleware\NeedsOwner;
 use Illuminate\Support\Facades\Route;
 

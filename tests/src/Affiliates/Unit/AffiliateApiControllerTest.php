@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\CommissionType;
-use AIArmada\Affiliates\Http\Controllers\AffiliateApiController;
+use AIArmada\Affiliates\Features\Identity\EntryPoints\Http\AffiliateApiController;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateLink;
 use AIArmada\Affiliates\States\Active;
@@ -253,6 +253,15 @@ describe('AffiliateApiController', function (): void {
             $data = json_decode($response->getContent(), true);
             expect($data['creatives'])->toHaveCount(2);
             expect($data['creatives'][0]['type'])->toBe('banner');
+        });
+
+        test('normalizes malformed creative metadata to an empty array', function (): void {
+            $this->affiliate->update(['metadata' => ['creatives' => 'invalid']]);
+
+            $response = $this->controller->creatives($this->affiliate->code);
+
+            expect($response->getStatusCode())->toBe(200)
+                ->and(json_decode($response->getContent(), true)['creatives'])->toBe([]);
         });
 
         test('returns 404 for unknown affiliate code', function (): void {

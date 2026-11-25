@@ -176,3 +176,22 @@ test('ProcessCommissionMaturityCommand handles dry run mode', function (): void 
         ->expectsOutputToContain('dry-run mode')
         ->assertSuccessful();
 });
+
+test('payout export rejects a reference matching more than one payout', function (): void {
+    $first = AffiliatePayout::create([
+        'reference' => 'AMBIGUOUS-FIRST',
+        'total_minor' => 0,
+        'currency' => 'USD',
+        'status' => PendingPayout::class,
+    ]);
+    AffiliatePayout::create([
+        'reference' => $first->id,
+        'total_minor' => 0,
+        'currency' => 'USD',
+        'status' => PendingPayout::class,
+    ]);
+
+    $this->artisan('affiliates:payout:export', ['payout' => $first->id])
+        ->expectsOutputToContain('reference is ambiguous')
+        ->assertFailed();
+});

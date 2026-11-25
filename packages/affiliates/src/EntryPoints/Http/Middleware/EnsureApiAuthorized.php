@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Support\Middleware;
+namespace AIArmada\Affiliates\EntryPoints\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
