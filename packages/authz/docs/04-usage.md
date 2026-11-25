@@ -106,6 +106,9 @@ php artisan authz:super-admin --panel=<filament-panel-id>
 ```
 
 `--user` takes a primary key. Omit it for an interactive email search, or pass
-`--create` to create the user interactively. Both commands refuse to run when
+`--create` to create a new user interactively. Existing email addresses are
+rejected by `--create`; select an existing account explicitly with `--user`.
+An explicit invalid panel or guard is rejected rather than falling back to a
+different guard. Both commands refuse to run when
 `CommandProhibitor::prohibitDestructiveCommands()` has prohibited them (for
 example in production).

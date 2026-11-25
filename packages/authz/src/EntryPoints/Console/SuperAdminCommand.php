@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace AIArmada\Authz\EntryPoints\Console;
 
+use AIArmada\Authz\Actions\AssignGlobalSuperAdmin;
+use AIArmada\Authz\Actions\CreateAdminUser;
 use AIArmada\Authz\EntryPoints\Console\Concerns\Prohibitable;
-use AIArmada\Authz\Models\Role;
 use AIArmada\CommerceSupport\Support\LikeSearch;
 use Filament\Facades\Filament;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\QueryException;
-use Illuminate\Support\Facades\Hash;
-use Spatie\Permission\PermissionRegistrar;
+use Illuminate\Database\UniqueConstraintViolationException;
+use InvalidArgumentException;
 
 use function Laravel\Prompts\info;
 use function Laravel\Prompts\password;
@@ -41,7 +41,7 @@ class SuperAdminCommand extends Command
 
     protected $description = 'Assign the super admin role to a user.';
 
-    public function handle(): int
+    public function handle(AssignGlobalSuperAdmin $assign, CreateAdminUser $create): int
     {
         if (! $this->initializeProhibitable()) {
             return self::FAILURE;
@@ -51,37 +51,26 @@ class SuperAdminCommand extends Command
         $guards = (array) config('authz.guards', ['web']);
         $guard = $this->resolveGuard($guards);
 
-        $user = $this->getOrCreateUser($guard);
+        if ($guard === null || ($this->option('create') && $this->option('user') !== null)) {
+            $this->error('Select a valid guard and use either --create or --user.');
+
+            return self::FAILURE;
+        }
+
+        $user = $this->getOrCreateUser($guard, $create);
 
         if ($user === null) {
             return self::FAILURE;
         }
 
-        $registrar = app(PermissionRegistrar::class);
-        $originalTeamId = $registrar->teams ? $registrar->getPermissionsTeamId() : null;
+        if (! method_exists($user, 'assignRole')) {
+            warning('User model does not support role assignments.');
 
-        try {
-            if ($registrar->teams) {
-                $registrar->setPermissionsTeamId(null);
-            }
-
-            foreach ($guards as $g) {
-                Role::findOrCreate($superAdminRole, $g);
-            }
-
-            if (method_exists($user, 'assignRole')) {
-                $user->assignRole($superAdminRole);
-                info("✓ Assigned '{$superAdminRole}' role to user: {$this->getUserIdentifier($user)}");
-            } else {
-                warning('User model does not have HasRoles trait. Please add Spatie\\Permission\\Traits\\HasRoles to your User model.');
-
-                return self::FAILURE;
-            }
-        } finally {
-            if ($registrar->teams) {
-                $registrar->setPermissionsTeamId($originalTeamId);
-            }
+            return self::FAILURE;
         }
+
+        $assign->execute($user, $guard, $superAdminRole);
+        info("Assigned '{$superAdminRole}' role to user: {$this->getUserIdentifier($user)}");
 
         return self::SUCCESS;
     }
@@ -89,12 +78,12 @@ class SuperAdminCommand extends Command
     /**
      * @return (Authenticatable&Model)|null
      */
-    protected function getOrCreateUser(string $guard): Authenticatable | Model | null
+    protected function getOrCreateUser(string $guard, CreateAdminUser $create): (Authenticatable & Model) | null
     {
         $userModel = $this->getUserModel($guard);
 
         if ($this->option('create')) {
-            return $this->createUser($userModel);
+            return $this->createUser($userModel, $create);
         }
 
         $userId = $this->option('user');
@@ -119,7 +108,7 @@ class SuperAdminCommand extends Command
      * @param  class-string<Model&Authenticatable>  $userModel
      * @return (Authenticatable&Model)|null
      */
-    protected function searchForUser(string $userModel): Authenticatable | Model | null
+    protected function searchForUser(string $userModel): (Authenticatable & Model) | null
     {
         $emailColumn = $this->getEmailColumn($userModel);
 
@@ -134,6 +123,7 @@ class SuperAdminCommand extends Command
                 $pattern = LikeSearch::contains($search);
 
                 return LikeSearch::whereLike($query, $emailColumn, $pattern)
+                    ->select([(new $userModel)->getKeyName(), $emailColumn])
                     ->limit(10)
                     ->get()
                     ->mapWithKeys(fn ($user): array => [
@@ -158,7 +148,7 @@ class SuperAdminCommand extends Command
      * @param  class-string<Model&Authenticatable>  $userModel
      * @return (Authenticatable&Model)|null
      */
-    protected function createUser(string $userModel): Authenticatable | Model | null
+    protected function createUser(string $userModel, CreateAdminUser $create): (Authenticatable & Model) | null
     {
         $emailColumn = $this->getEmailColumn($userModel);
         $nameColumn = $this->getNameColumn($userModel);
@@ -182,7 +172,7 @@ class SuperAdminCommand extends Command
         if ($existingUser !== null) {
             warning("User with email '{$email}' already exists.");
 
-            return $existingUser;
+            return null;
         }
 
         $password = password(
@@ -193,25 +183,12 @@ class SuperAdminCommand extends Command
                 : null,
         );
 
-        /** @var Authenticatable&Model $user */
-        $user = new $userModel;
-        $user->{$nameColumn} = $name;
-        $user->{$emailColumn} = $email;
-        $user->setAttribute('password', Hash::make($password));
-
         try {
-            $user->save();
-        } catch (QueryException $exception) {
-            /** @var (Authenticatable&Model)|null $racedUser */
-            $racedUser = $userModel::query()->where($emailColumn, $email)->first();
+            $user = $create->execute($userModel, $nameColumn, $emailColumn, $name, $email, $password);
+        } catch (UniqueConstraintViolationException) {
+            warning("User with email '{$email}' already exists. Use --user to select an existing account.");
 
-            if ($racedUser !== null) {
-                warning("User with email '{$email}' already exists.");
-
-                return $racedUser;
-            }
-
-            throw $exception;
+            return null;
         }
 
         info("✓ Created user: {$email}");
@@ -222,35 +199,35 @@ class SuperAdminCommand extends Command
     /**
      * @param  list<string>  $guards
      */
-    protected function resolveGuard(array $guards): string
+    protected function resolveGuard(array $guards): ?string
     {
         $default = $guards[0] ?? 'web';
         $panel = $this->option('panel');
 
         if (! is_string($panel) || $panel === '') {
-            return $default;
+            return is_array(config("auth.guards.{$default}")) ? $default : null;
         }
 
         if (! class_exists(Filament::class)) {
-            warning('Filament is not installed; ignoring --panel and using the default guard.');
+            warning('Filament is not installed; the requested panel cannot be resolved.');
 
-            return $default;
+            return null;
         }
 
         $panelInstance = Filament::getPanel($panel, false);
 
         if ($panelInstance === null) {
-            warning("Panel [{$panel}] not found; using the default guard.");
+            warning("Panel [{$panel}] not found.");
 
-            return $default;
+            return null;
         }
 
         $panelGuard = $panelInstance->getAuthGuard();
 
         if (config("auth.guards.{$panelGuard}") === null) {
-            warning("Panel [{$panel}] guard [{$panelGuard}] is not configured; using the default guard.");
+            warning("Panel [{$panel}] guard [{$panelGuard}] is not configured.");
 
-            return $default;
+            return null;
         }
 
         return $panelGuard;
@@ -263,8 +240,13 @@ class SuperAdminCommand extends Command
     {
         $provider = config("auth.guards.{$guard}.provider");
 
-        /** @var class-string<Model&Authenticatable> */
-        return config("auth.providers.{$provider}.model", 'App\\Models\\User');
+        $model = config("auth.providers.{$provider}.model");
+
+        if (! is_string($model) || ! is_a($model, Model::class, true) || ! is_a($model, Authenticatable::class, true)) {
+            throw new InvalidArgumentException("Auth guard [{$guard}] must use a configured Eloquent authenticatable model.");
+        }
+
+        return $model;
     }
 
     /**
