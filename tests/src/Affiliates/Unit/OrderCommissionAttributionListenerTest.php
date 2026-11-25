@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateToCart;
+use AIArmada\Affiliates\Features\Attribution\Api\CartAttribution;
 use AIArmada\Affiliates\Features\Conversions\Actions\RecordAffiliateConversion;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
@@ -26,7 +26,7 @@ it('records affiliate conversions when order commission attribution is required'
     ]);
 
     $cart = app('cart')->getCurrentCart();
-    app(AttachAffiliateToCart::class)->handle($affiliate, $cart);
+    app(CartAttribution::class)->attach((string) $affiliate->getKey(), $cart);
     $cart->add('order-item-1', 'Order item', 10.00, 1);
 
     $cartId = $cart->getId();
@@ -62,7 +62,7 @@ it('fails closed when an order carries a malformed owner tuple', function (): vo
     ]);
 
     $cart = app('cart')->getCurrentCart();
-    app(AttachAffiliateToCart::class)->handle($affiliate, $cart);
+    app(CartAttribution::class)->attach((string) $affiliate->getKey(), $cart);
     $cart->add('order-item-2', 'Order item', 10.00, 1);
 
     $cartId = $cart->getId();
@@ -110,7 +110,7 @@ it('leaves registration-line commissions to the checkout registration step', fun
     ]);
 
     $cart = app('cart')->getCurrentCart();
-    app(AttachAffiliateToCart::class)->handle($affiliate, $cart);
+    app(CartAttribution::class)->attach((string) $affiliate->getKey(), $cart);
     $cart->add('registration-line-item', 'Ticket registration', 10.00, 1);
 
     $order = Order::factory()->paid()->create([
@@ -139,7 +139,7 @@ it('uses the explicit checkout idempotency key for frozen commercial conversions
     ]);
 
     $cart = app('cart')->getCurrentCart();
-    app(AttachAffiliateToCart::class)->handle($affiliate, $cart, [
+    app(CartAttribution::class)->attach((string) $affiliate->getKey(), $cart, [
         'affiliate_program_id' => (string) Str::uuid(),
     ]);
     $cart->add('frozen-item', 'Ticket registration', 100.00, 1);
@@ -193,7 +193,7 @@ it('namespaces explicit idempotency keys by affiliate', function (): void {
     ]);
 
     $cart = app('cart')->getCurrentCart();
-    app(AttachAffiliateToCart::class)->handle($firstAffiliate, $cart);
+    app(CartAttribution::class)->attach((string) $firstAffiliate->getKey(), $cart);
     $cart->add('same-key-item-a', 'Same key item', 100.00, 1);
     $firstAttribution = AffiliateAttribution::query()
         ->where('affiliate_id', $firstAffiliate->getKey())
@@ -238,7 +238,7 @@ it('rejects payload attribution overrides that disagree with the frozen row', fu
     ]);
 
     $cart = app('cart')->getCurrentCart();
-    app(AttachAffiliateToCart::class)->handle($affiliate, $cart, [
+    app(CartAttribution::class)->attach((string) $affiliate->getKey(), $cart, [
         'affiliate_program_id' => (string) Str::uuid(),
         'affiliate_link_id' => (string) Str::uuid(),
     ]);
@@ -277,7 +277,7 @@ it('rejects frozen commercial conversion recording for a Dawah-purpose affiliate
     ]);
 
     $cart = app('cart')->getCurrentCart();
-    app(AttachAffiliateToCart::class)->handle($affiliate, $cart);
+    app(CartAttribution::class)->attach((string) $affiliate->getKey(), $cart);
     $cart->add('dawah-ticket-item', 'Ticket registration', 100.00, 1);
     $attribution = AffiliateAttribution::query()
         ->where('affiliate_id', $affiliate->getKey())
@@ -304,7 +304,7 @@ it('records zero-value conversions for free orders without phantom money', funct
     ]);
 
     $cart = app('cart')->getCurrentCart();
-    app(AttachAffiliateToCart::class)->handle($affiliate, $cart);
+    app(CartAttribution::class)->attach((string) $affiliate->getKey(), $cart);
     $cart->add('free-item-1', 'Free item', 0.00, 1);
 
     $cartId = $cart->getId();

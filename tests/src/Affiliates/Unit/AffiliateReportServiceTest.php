@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateToCart;
+use AIArmada\Affiliates\Features\Attribution\Api\CartAttribution;
 use AIArmada\Affiliates\Features\Conversions\Actions\RecordAffiliateConversion;
 use AIArmada\Affiliates\Features\Reporting\Api\ReportingApi;
 use AIArmada\Affiliates\Models\Affiliate;
@@ -28,14 +28,14 @@ beforeEach(function (): void {
     ]);
 
     $this->cart = app('cart')->getCurrentCart();
-    app(AttachAffiliateToCart::class)->handle($this->affiliate, $this->cart);
+    app(CartAttribution::class)->attach((string) $this->affiliate->getKey(), $this->cart);
 });
 
 test('affiliate report service summarizes totals and utm', function (): void {
     $recordAffiliateConversion = app(RecordAffiliateConversion::class);
 
     $cart = $this->cart;
-    app(AttachAffiliateToCart::class)->handle($this->affiliate, $cart, [
+    app(CartAttribution::class)->attach((string) $this->affiliate->getKey(), $cart, [
         'source' => 'newsletter',
         'campaign' => 'spring',
     ]);

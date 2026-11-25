@@ -11,7 +11,7 @@ This guide covers common workflows for tracking affiliates, recording conversion
 ### Using the Current Cart (with aiarmada/cart)
 
 ```php
-use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateToCart;
+use AIArmada\Affiliates\Features\Attribution\Api\CartAttribution;
 use AIArmada\Affiliates\Queries\AffiliateLookupQuery;
 use AIArmada\Cart\Contracts\CartManagerInterface;
 
@@ -19,7 +19,7 @@ $cart = app(CartManagerInterface::class)->getCurrentCart();
 $affiliate = app(AffiliateLookupQuery::class)->findByCode('PARTNER42');
 
 if ($affiliate !== null) {
-    AttachAffiliateToCart::run($affiliate, $cart, [
+    app(CartAttribution::class)->attach((string) $affiliate->getKey(), $cart, [
     'utm_source' => 'newsletter',
     'landing_url' => url()->current(),
     'subject_type' => 'product',
@@ -33,7 +33,7 @@ if ($affiliate !== null) {
 ### Using Actions Directly
 
 ```php
-use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateToCart;
+use AIArmada\Affiliates\Features\Attribution\Api\CartAttribution;
 use AIArmada\Affiliates\Queries\AffiliateLookupQuery;
 
 $affiliateLookup = app(AffiliateLookupQuery::class);
@@ -42,7 +42,7 @@ $affiliateLookup = app(AffiliateLookupQuery::class);
 $affiliate = $affiliateLookup->findByCode('PARTNER42');
 
 // Attach to cart with context
-$attribution = AttachAffiliateToCart::run($affiliate, $cart, [
+$attribution = app(CartAttribution::class)->attach((string) $affiliate->getKey(), $cart, [
     'source' => 'instagram',
     'campaign' => 'summer-sale',
 ]);
@@ -544,7 +544,7 @@ contexts automatically.
 ## Public handles and permanent campaign URLs
 
 Affiliates receive a generated public `handle` on creation. Pass `handle` to
-`CreateAffiliate::run()` to choose one, or update the owned affiliate's `handle`
+`AffiliateAdministration::create()` to choose one, or update the owned affiliate's `handle`
 when `affiliates.handles.allow_custom` is enabled. Values are normalized to
 lowercase and globally unique across affiliate owners in this installation.
 Handles are public branding; attribution continues to use the affiliate ID.

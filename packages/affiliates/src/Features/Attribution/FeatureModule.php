@@ -13,6 +13,7 @@ final class FeatureModule implements FeatureModuleContract
     {
         $app->bind(Api\AttributionActivity::class, Actions\TouchAffiliateAttribution::class);
         $app->bind(Api\AttributionTracking::class, Actions\TrackAffiliateVisit::class);
+        $app->bind(Api\CartAttribution::class, Actions\AttachAffiliateToCart::class);
     }
 
     public function boot(Application $app): void {}

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Actions\Affiliates\CreateAffiliate;
+use AIArmada\Affiliates\Features\Identity\Actions\CreateAffiliate;
 use AIArmada\Affiliates\Features\Attribution\Api\AttributionTracking;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalStatus;

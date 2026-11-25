@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Support\Integrations;
 
-use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateFromCookie;
+use AIArmada\Affiliates\Features\Attribution\Api\CartAttribution;
 use AIArmada\Affiliates\Data\AffiliateAttributionData;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Queries\AffiliateLookupQuery;
@@ -38,7 +38,7 @@ final class CartBridge
             return null;
         }
 
-        return app(AttachAffiliateFromCookie::class)->handle($cart, $cookieValue);
+        return app(CartAttribution::class)->attachFromCookie($cart, $cookieValue);
     }
 
     public function isAvailable(): bool

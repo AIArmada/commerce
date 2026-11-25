@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Identity\Actions;
 
-use AIArmada\Affiliates\Actions\Affiliates\CreateAffiliate;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateRecord;
 use AIArmada\Affiliates\Features\Identity\Api\RegistrationApi;
 use AIArmada\Affiliates\Features\Upline\Api\UplineApi;

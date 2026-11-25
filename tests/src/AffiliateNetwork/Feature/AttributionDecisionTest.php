@@ -12,7 +12,7 @@ use AIArmada\AffiliateNetwork\Features\Ledger\EntryPoints\Listeners\RecordProvis
 use AIArmada\AffiliateNetwork\Features\Ledger\Models\NetworkConversionLeg;
 use AIArmada\AffiliateNetwork\Features\Sites\Models\AffiliateSite;
 use AIArmada\AffiliateNetwork\Platform\AttributionCookie;
-use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateToCart;
+use AIArmada\Affiliates\Features\Attribution\Api\CartAttribution;
 use AIArmada\Affiliates\Features\Conversions\Actions\RecordAffiliateConversion;
 use AIArmada\Affiliates\AffiliatesServiceProvider;
 use AIArmada\Affiliates\Models\Affiliate;
@@ -149,7 +149,7 @@ describe('attribution decision', function (): void {
                 'owner_id' => (string) $owner->getKey(),
             ]);
             $cart = new Cart(new InMemoryStorage, 'profileless-cart-' . uniqid(), events: null, eventsEnabled: false);
-            app(AttachAffiliateToCart::class)->handle($engineAffiliate, $cart);
+            app(CartAttribution::class)->attach((string) $engineAffiliate->getKey(), $cart);
             $cart->add('profileless-network-item', 'Order item', 10.00, 1);
 
             AffiliateAttribution::query()

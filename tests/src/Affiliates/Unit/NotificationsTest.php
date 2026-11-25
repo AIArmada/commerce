@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateToCart;
+use AIArmada\Affiliates\Features\Attribution\Api\CartAttribution;
 use AIArmada\Affiliates\Features\Conversions\Actions\RecordAffiliateConversion;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
@@ -51,7 +51,7 @@ describe('engine notifications', function (): void {
     test('recorded conversions queue a managed notification', function (): void {
         $affiliate = createTestAffiliate(['contact_email' => 'conv-notify-' . uniqid() . '@example.com']);
         $cart = app('cart')->getCurrentCart();
-        app(AttachAffiliateToCart::class)->handle($affiliate, $cart);
+        app(CartAttribution::class)->attach((string) $affiliate->getKey(), $cart);
         $cart->add('notify-item', 'Order item', 10.00, 1);
 
         app(RecordAffiliateConversion::class)->record($cart, [

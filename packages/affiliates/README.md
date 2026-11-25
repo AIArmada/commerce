@@ -45,10 +45,10 @@ Both integrations are lazy – the service provider detects presence via `class_
 When `aiarmada/cart` is present, attach affiliates and record conversions through the cart-aware actions:
 
 ```php
-use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateToCart;
+use AIArmada\Affiliates\Features\Attribution\Api\CartAttribution;
 use AIArmada\Affiliates\Features\Conversions\Api\CartConversionRecording;
 
-AttachAffiliateToCart::run($affiliate, $cart, [
+app(CartAttribution::class)->attach((string) $affiliate->getKey(), $cart, [
     'utm_source' => 'newsletter',
     'landing_url' => url()->current(),
 ]);

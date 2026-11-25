@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Actions\Affiliates;
+namespace AIArmada\Affiliates\Features\Attribution\Actions;
 
 use AIArmada\Affiliates\Data\AffiliateAttributionData;
+use AIArmada\Affiliates\Features\Attribution\Api\CartAttribution;
+use AIArmada\Affiliates\Queries\AffiliateLookupQuery;
 use AIArmada\Affiliates\Events\AffiliateAttributed;
 use AIArmada\Affiliates\Exceptions\AffiliateNotFoundException;
 use AIArmada\Affiliates\Features\Webhooks\Api\WebhookApi;
@@ -22,18 +24,63 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
-use Lorisleiva\Actions\Concerns\AsAction;
+use LogicException;
 
-final class AttachAffiliateToCart
+final readonly class AttachAffiliateToCart implements CartAttribution
 {
-    use AsAction;
-
     public function __construct(
-        private readonly Dispatcher $events,
-        private readonly WebhookApi $webhooks,
+        private Dispatcher $events,
+        private WebhookApi $webhooks,
+        private AffiliateLookupQuery $affiliateLookup,
     ) {}
 
-    public function handle(Affiliate $affiliate, Cart $cart, array $context = []): ?AffiliateAttributionData
+    public function attach(string $affiliateId, Cart $cart, array $context = []): ?AffiliateAttributionData
+    {
+        $connection = (new Affiliate)->getConnection();
+
+        if ($connection !== (new AffiliateAttribution)->getConnection() || $connection !== (new AffiliateTouchpoint)->getConnection()) {
+            throw new LogicException('Cart attribution requires a shared database connection.');
+        }
+
+        return $connection->transaction(function () use ($affiliateId, $cart, $context): ?AffiliateAttributionData {
+            $affiliate = Affiliate::query()->forOwner()->lockForUpdate()->findOrFail($affiliateId);
+
+            return $this->attachLocked($affiliate, $cart, $context);
+        }, attempts: 3);
+    }
+
+    public function attachFromCookie(Cart $cart, string $cookieValue, array $context = []): ?AffiliateAttributionData
+    {
+        $attribution = $this->affiliateLookup->findActiveAttributionByCookie($cookieValue);
+
+        if (! $attribution || ! $attribution->affiliate || ! $attribution->affiliate->canBeAttributed()) {
+            return null;
+        }
+
+        $context = array_merge([
+            'cookie_value' => $cookieValue,
+            'source' => $context['source'] ?? $attribution->source,
+            'medium' => $context['medium'] ?? $attribution->medium,
+            'campaign' => $context['campaign'] ?? $attribution->campaign,
+            'term' => $context['term'] ?? $attribution->term,
+            'content' => $context['content'] ?? $attribution->content,
+            'landing_url' => $context['landing_url'] ?? $attribution->landing_url,
+            'referrer_url' => $context['referrer_url'] ?? $attribution->referrer_url,
+        ], $context);
+
+        return $this->attach((string) $attribution->affiliate->getKey(), $cart, $context);
+    }
+
+    public function detach(Cart $cart): void
+    {
+        AffiliateAttribution::query()->forOwner()
+            ->where('cart_identifier', $cart->getIdentifier())
+            ->where('cart_instance', $cart->instance())
+            ->active()
+            ->update(['expires_at' => CarbonImmutable::now()]);
+    }
+
+    private function attachLocked(Affiliate $affiliate, Cart $cart, array $context): ?AffiliateAttributionData
     {
         if (! $affiliate->canBeAttributed()) {
             throw new AffiliateNotFoundException("Affiliate {$affiliate->code} cannot receive attribution.");
@@ -53,13 +100,17 @@ final class AttachAffiliateToCart
 
         $this->applyOwnerScope($attributionQuery);
 
-        $attribution = $attributionQuery->first();
+        $attribution = $attributionQuery->lockForUpdate()->first();
 
         $payload = $this->buildAttributionPayload($affiliate, $cart, $context);
         $referredAt = CarbonImmutable::now();
 
         if (! $attribution && isset($payload['cookie_value'])) {
             $attribution = $this->findAttributionByCookie((string) $payload['cookie_value']);
+        }
+
+        if ($attribution && ($attribution->owner_type !== $affiliate->owner_type || (string) $attribution->owner_id !== (string) $affiliate->owner_id)) {
+            $attribution = null;
         }
 
         if ($attribution) {
@@ -240,7 +291,7 @@ final class AttachAffiliateToCart
 
         $this->applyOwnerScope($query);
 
-        return $query->first();
+        return $query->lockForUpdate()->first();
     }
 
     private function resolveCookieCandidates(?string $cookieValue): array
@@ -254,7 +305,7 @@ final class AttachAffiliateToCart
         try {
             $decryptedCookieValue = decrypt($cookieValue);
 
-            if ($decryptedCookieValue !== '') {
+            if (is_string($decryptedCookieValue) && $decryptedCookieValue !== '') {
                 $candidates[] = $decryptedCookieValue;
             }
         } catch (DecryptException) {
@@ -329,7 +380,7 @@ final class AttachAffiliateToCart
         }
 
         return $owner->getMorphClass() === $affiliate->owner_type
-            && $owner->getKey() === $affiliate->owner_id;
+            && (string) $owner->getKey() === (string) $affiliate->owner_id;
     }
 
     private function applyOwnerScope(Builder $query): Builder

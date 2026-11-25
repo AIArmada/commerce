@@ -2,19 +2,16 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Actions\Affiliates;
+namespace AIArmada\Affiliates\Features\Identity\Queries;
 
 use AIArmada\Affiliates\Models\Affiliate;
 use Illuminate\Support\Str;
-use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
  * Generate a unique affiliate code.
  */
 final class GenerateAffiliateCode
 {
-    use AsAction;
-
     /**
      * Generate a unique affiliate code based on the affiliate name.
      */

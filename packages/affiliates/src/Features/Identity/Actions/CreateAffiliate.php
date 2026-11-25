@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Actions\Affiliates;
+namespace AIArmada\Affiliates\Features\Identity\Actions;
 
 use AIArmada\Affiliates\Enums\CommissionType;
+use AIArmada\Affiliates\Features\Identity\Queries\GenerateAffiliateCode;
 use AIArmada\Affiliates\Enums\RegistrationApprovalMode;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
@@ -14,20 +15,16 @@ use AIArmada\Contacting\Data\ContactMethodData;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
-use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use LogicException;
-use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
  * Create a new affiliate.
  */
-final class CreateAffiliate
+final readonly class CreateAffiliate
 {
-    use AsAction;
-
     public function __construct(
-        private readonly GenerateAffiliateCode $generateCode,
+        private GenerateAffiliateCode $generateCode,
     ) {}
 
     /**
@@ -48,7 +45,7 @@ final class CreateAffiliate
 
         for ($attempt = 1; $attempt <= $attempts; $attempt++) {
             try {
-                return DB::transaction(function () use ($data, $owner, $name, $commissionType, $commissionRate, $parentId, $mode): Affiliate {
+                return (new Affiliate)->getConnection()->transaction(function () use ($data, $owner, $name, $commissionType, $commissionRate, $parentId, $mode): Affiliate {
                     $status = $mode->defaultStatus();
 
                     $affiliate = new Affiliate([
@@ -77,15 +74,15 @@ final class CreateAffiliate
                     $affiliate->save();
 
                     if ($email = $data['contact_email'] ?? null) {
-                        OwnerContext::withOwner($owner, fn () => $affiliate->addContactMethod(ContactMethodData::email($email, 'general')));
+                        OwnerContext::withOwner($affiliate->owner, fn () => $affiliate->addContactMethod(ContactMethodData::email($email, 'general')));
                     }
 
                     if ($website = $data['website_url'] ?? null) {
-                        OwnerContext::withOwner($owner, fn () => $affiliate->addContactMethod(ContactMethodData::website($website)));
+                        OwnerContext::withOwner($affiliate->owner, fn () => $affiliate->addContactMethod(ContactMethodData::website($website)));
                     }
 
                     if ($phone = $data['phone'] ?? null) {
-                        OwnerContext::withOwner($owner, fn () => $affiliate->addContactMethod(ContactMethodData::phone($phone, countryCode: 'MY', purpose: 'general')));
+                        OwnerContext::withOwner($affiliate->owner, fn () => $affiliate->addContactMethod(ContactMethodData::phone($phone, countryCode: 'MY', purpose: 'general')));
                     }
 
                     return $affiliate;

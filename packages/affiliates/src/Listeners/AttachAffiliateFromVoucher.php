@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Listeners;
 
-use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateToCart;
+use AIArmada\Affiliates\Features\Attribution\Api\CartAttribution;
 use AIArmada\Affiliates\Queries\AffiliateLookupQuery;
 use AIArmada\Vouchers\Events\VoucherApplied;
 
@@ -12,7 +12,7 @@ final class AttachAffiliateFromVoucher
 {
     public function __construct(
         private readonly AffiliateLookupQuery $affiliateLookup,
-        private readonly AttachAffiliateToCart $attachAffiliateToCart,
+        private readonly CartAttribution $cartAttribution,
     ) {}
 
     public function handle(VoucherApplied $event): void
@@ -53,7 +53,7 @@ final class AttachAffiliateFromVoucher
             $affiliate = $this->affiliateLookup->findById($voucher->affiliateId);
 
             if ($affiliate !== null && $affiliate->canBeAttributed()) {
-                $this->attachAffiliateToCart->handle($affiliate, $event->cart, $context);
+                $this->cartAttribution->attach((string) $affiliate->getKey(), $event->cart, $context);
 
                 return;
             }
@@ -69,7 +69,7 @@ final class AttachAffiliateFromVoucher
             return;
         }
 
-        $this->attachAffiliateToCart->handle($affiliate, $event->cart, $context);
+        $this->cartAttribution->attach((string) $affiliate->getKey(), $event->cart, $context);
     }
 
     private function shouldMatchDefaultVoucherCode(): bool

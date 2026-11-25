@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\AffiliateNetwork\AffiliateNetworkServiceProvider;
-use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateToCart;
+use AIArmada\Affiliates\Features\Attribution\Api\CartAttribution;
 use AIArmada\Affiliates\AffiliatesServiceProvider;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
 use AIArmada\Affiliates\Events\AffiliateProgramJoined;
@@ -186,7 +186,7 @@ it('registers one engine conversion listener across affiliate-network checkout g
         $affiliate = createTestAffiliate();
         $cart = new Cart(new InMemoryStorage, 'w1-cart-' . uniqid(), events: null, eventsEnabled: false);
         $cart->add('w1-item-' . uniqid(), 'Commission item', 10000, 1);
-        app(AttachAffiliateToCart::class)->handle($affiliate, $cart);
+        app(CartAttribution::class)->attach((string) $affiliate->getKey(), $cart);
 
         $cartManager = mock(CartManagerInterface::class);
         $cartManager->shouldReceive('getById')->once()->with($cart->getId())->andReturn($cart);

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateToCart;
+use AIArmada\Affiliates\Features\Attribution\Api\CartAttribution;
 use AIArmada\Affiliates\Features\Attribution\Api\AttributionTracking;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
@@ -38,7 +38,7 @@ function winnerOrder(string $cartId, string $reference, ?string $networkTouch): 
 function touchCart(Affiliate $affiliate, string $item, CarbonImmutable $touch): string
 {
     $cart = app('cart')->getCurrentCart();
-    app(AttachAffiliateToCart::class)->handle($affiliate, $cart);
+    app(CartAttribution::class)->attach((string) $affiliate->getKey(), $cart);
     $cart->add($item, 'Order item', 10.00, 1);
 
     AffiliateAttribution::query()
@@ -146,7 +146,7 @@ describe('cross-system winner protocol (engine side)', function (): void {
     test('engine records alone with no network marker', function (): void {
         $affiliate = winnerAffiliate('WIN-ALONE');
         $cart = app('cart')->getCurrentCart();
-        app(AttachAffiliateToCart::class)->handle($affiliate, $cart);
+        app(CartAttribution::class)->attach((string) $affiliate->getKey(), $cart);
         $cart->add('winner-5', 'Order item', 10.00, 1);
 
         $order = Order::factory()->paid()->create([

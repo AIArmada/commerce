@@ -60,7 +60,7 @@ public function panel(Panel $panel): Panel
 If using `aiarmada/cart`, attach attribution through the current cart action. The affiliates package does not decorate the cart manager:
 
 ```php
-use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateToCart;
+use AIArmada\Affiliates\Features\Attribution\Api\CartAttribution;
 use AIArmada\Affiliates\Queries\AffiliateLookupQuery;
 use AIArmada\Cart\Contracts\CartManagerInterface;
 
@@ -68,7 +68,7 @@ $cart = app(CartManagerInterface::class)->getCurrentCart();
 $affiliate = app(AffiliateLookupQuery::class)->findByCode('CODE123');
 
 if ($affiliate !== null) {
-    AttachAffiliateToCart::run($affiliate, $cart);
+    app(CartAttribution::class)->attach((string) $affiliate->getKey(), $cart);
 }
 ```
 
