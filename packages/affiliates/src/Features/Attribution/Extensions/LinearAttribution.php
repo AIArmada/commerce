@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Strategies;
+namespace AIArmada\Affiliates\Features\Attribution\Extensions;
 
 use AIArmada\Affiliates\Contracts\AttributionStrategy;
 use AIArmada\Affiliates\Data\AttributionTouch;

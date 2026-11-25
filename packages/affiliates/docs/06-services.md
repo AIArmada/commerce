@@ -352,14 +352,14 @@ $leaderboard = $service->getLeaderboard($from, $to, 10);
 
 The query returns native arrays and uses approved conversions and treats `value_minor` as the revenue field.
 
-## AttributionModel
+## AttributionDistribution
 
 Implements attribution logic (first-touch, last-touch, linear).
 
 ```php
-use AIArmada\Affiliates\Services\AttributionModel;
+use AIArmada\Affiliates\Features\Attribution\Api\AttributionDistribution;
 
-$model = app(AttributionModel::class);
+$model = app(AttributionDistribution::class);
 
 // Registered strategies (last_touch, first_touch, linear)
 $model->strategies();

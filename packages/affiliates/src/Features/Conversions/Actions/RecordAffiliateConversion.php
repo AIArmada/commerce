@@ -15,7 +15,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateTouchpoint;
-use AIArmada\Affiliates\Services\AttributionModel;
+use AIArmada\Affiliates\Features\Attribution\Api\AttributionDistribution;
 use AIArmada\Affiliates\Services\CommissionCalculator;
 use AIArmada\Affiliates\Services\Commissions\CommissionCaps;
 use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
@@ -38,7 +38,7 @@ final readonly class RecordAffiliateConversion implements CartConversionRecordin
         private CommissionRuleEngine $ruleEngine,
         private Dispatcher $events,
         private WebhookApi $webhooks,
-        private AttributionModel $attributionModel,
+        private AttributionDistribution $attributionModel,
         private AllocateUplineCommissions $allocateUpline,
         private ApplyConversionAccounting $accounting,
         private FraudApi $fraud,

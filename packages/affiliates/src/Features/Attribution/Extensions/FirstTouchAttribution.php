@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Affiliates\Strategies;
+namespace AIArmada\Affiliates\Features\Attribution\Extensions;
 
 use AIArmada\Affiliates\Contracts\AttributionStrategy;
 use AIArmada\Affiliates\Data\AttributionTouch;
 
-final class LastTouchAttribution implements AttributionStrategy
+final class FirstTouchAttribution implements AttributionStrategy
 {
     public function key(): string
     {
-        return 'last_touch';
+        return 'first_touch';
     }
 
     public function label(): string
     {
-        return 'Last Touch';
+        return 'First Touch';
     }
 
     /**
@@ -28,7 +28,7 @@ final class LastTouchAttribution implements AttributionStrategy
         $selected = null;
 
         foreach ($touches as $touch) {
-            if ($selected === null || $touch->touchedAt > $selected->touchedAt) {
+            if ($selected === null || $touch->touchedAt < $selected->touchedAt) {
                 $selected = $touch;
             }
         }

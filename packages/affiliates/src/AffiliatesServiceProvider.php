@@ -51,12 +51,8 @@ use AIArmada\Affiliates\Models\AffiliateVolumeTier;
 use AIArmada\Affiliates\Platform\ExtensionRegistry;
 use AIArmada\Affiliates\Platform\FeatureCatalog;
 use AIArmada\Affiliates\Platform\FeatureModule;
-use AIArmada\Affiliates\Services\AttributionModel;
 use AIArmada\Affiliates\Services\CommissionCalculator;
 use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
-use AIArmada\Affiliates\Strategies\FirstTouchAttribution;
-use AIArmada\Affiliates\Strategies\LastTouchAttribution;
-use AIArmada\Affiliates\Strategies\LinearAttribution;
 use AIArmada\Affiliates\Support\Integrations\CartBridge;
 use AIArmada\Affiliates\Support\Integrations\VoucherIntegrationRegistrar;
 use AIArmada\Affiliates\Support\Middleware\CaptureAffiliateReferralFromPath;
@@ -123,13 +119,11 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
         }
 
         $this->app->singleton(CommissionCalculator::class);
-        $this->app->singleton(AttributionModel::class);
         $this->app->singleton(PayoutProcessorRegistry::class, PayoutProcessorFactory::class);
         $this->app->scoped(CommissionRuleEngine::class);
         $this->app->singleton(Support\Catalog\PromotableRegistry::class);
         $this->app->singleton(CartBridge::class);
 
-        $this->registerAttributionStrategies();
 
         $this->app->singleton(VoucherIntegrationRegistrar::class);
         $this->app->singleton(AffiliateDiscountConditionProvider::class);
@@ -336,15 +330,6 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
         return isset($providers['AIArmada\AffiliateNetwork\AffiliateNetworkServiceProvider'])
             && config('affiliate-network.checkout.enabled', false)
             && config('affiliate-network.checkout.listen_for_orders', true);
-    }
-
-    private function registerAttributionStrategies(): void
-    {
-        $this->app->tag([
-            LastTouchAttribution::class,
-            FirstTouchAttribution::class,
-            LinearAttribution::class,
-        ], 'affiliates.attribution_strategy');
     }
 
     private function moduleClass(string $feature): string
