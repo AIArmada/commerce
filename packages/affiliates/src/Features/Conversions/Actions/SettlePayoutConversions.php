@@ -77,7 +77,7 @@ final readonly class SettlePayoutConversions implements PayoutConversionSettleme
 
         $reserved = $operation?->payout_sequence !== null;
 
-        if ($reserved) {
+        if ($operation instanceof AffiliatePayoutOperation && $operation->payout_sequence !== null) {
             $currency = mb_strtoupper($operation->currency);
             $matching = (clone $approved)->where('affiliate_id', $operation->affiliate_id)
                 ->whereRaw('UPPER(commission_currency) = ?', [$currency]);

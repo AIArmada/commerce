@@ -489,7 +489,10 @@ test('completion sync reads conversions in the payout owner scope', function ():
     // Evaluated under a mismatched ambient owner: the Approved→Paid
     // flip and the operation sync must still land on the payout's own
     // rows instead of silently matching zero rows (0 === 0 pass).
-    OwnerContext::withOwner($ownerA, fn (): mixed => $sync->invoke($action, $payout, new CompletedPayout($payout)));
+    $payout->getConnection()->transaction(function () use ($ownerA, $ownerB, $payout, $sync, $action): void {
+        OwnerContext::withOwner($ownerB, fn () => $payout->status->transitionTo(CompletedPayout::class));
+        OwnerContext::withOwner($ownerA, fn (): mixed => $sync->invoke($action, $payout, new CompletedPayout($payout)));
+    });
 
     expect($conversion->fresh()->status->equals(PaidConversion::class))->toBeTrue()
         ->and($payout->operation()->withoutGlobalScopes()->first()->status)->toBe('completed');
@@ -570,3 +573,26 @@ test('payout failure refuses to resurrect a conversion changed outside settlemen
         ->and($conversion->fresh()->affiliate_payout_id)->toBe($payout->id)
         ->and($affiliate->balanceFor('USD')->available_minor)->toBe(0);
 })->with([false, true]);
+
+test('manual payout reservation refuses duplicate conversion identifiers', function (): void {
+    $affiliate = createCompletionGuardAffiliate();
+    $conversion = recordCompletionGuardConversion($affiliate);
+
+    expect(fn (): object => CreatePayout::run([$conversion->id, $conversion->id]))
+        ->toThrow(InvalidArgumentException::class, 'unique conversion IDs');
+
+    expect($conversion->fresh()->affiliate_payout_id)->toBeNull()
+        ->and($affiliate->balanceFor('USD')->available_minor)->toBe(5000);
+});
+
+test('manual payout reservation accepts a normalized conversion currency', function (): void {
+    $affiliate = createCompletionGuardAffiliate();
+    $conversion = recordCompletionGuardConversion($affiliate);
+    $conversion->newQuery()->whereKey($conversion->id)->update(['commission_currency' => 'usd']);
+
+    $payout = CreatePayout::run([$conversion->id]);
+
+    expect($payout->currency)->toBe('USD')
+        ->and($conversion->fresh()->affiliate_payout_id)->toBe($payout->id)
+        ->and($affiliate->balanceFor('USD')->available_minor)->toBe(0);
+});

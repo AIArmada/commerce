@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Actions\Payouts;
 
+use AIArmada\Affiliates\Features\Conversions\Api\PayoutReservation;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
@@ -16,9 +17,9 @@ use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Affiliates\States\ProcessingPayout;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use InvalidArgumentException;
+use Illuminate\Support\Str;
+use LogicException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -27,6 +28,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
 final class CreatePayout
 {
     use AsAction;
+
+    public function __construct(private readonly PayoutReservation $reservation) {}
 
     /**
      * Create a payout from the given conversion IDs.
@@ -40,17 +43,30 @@ final class CreatePayout
      */
     public function handle(array $conversionIds, array $attributes = [], ?string $expectedAffiliateId = null): AffiliatePayout
     {
-        $conversionIds = array_values(array_unique(array_filter($conversionIds)));
+        $conversionIds = array_values(array_filter($conversionIds));
 
         if ($conversionIds === []) {
             throw new InvalidArgumentException('At least one unpaid conversion is required to create a payout.');
         }
 
-        return DB::transaction(function () use ($conversionIds, $attributes, $expectedAffiliateId): AffiliatePayout {
+        if (count($conversionIds) !== count(array_unique($conversionIds))) {
+            throw new InvalidArgumentException('A payout requires unique conversion IDs.');
+        }
+
+        $connection = (new Affiliate)->getConnection();
+
+        foreach ([new AffiliateBalance, new AffiliateConversion, new AffiliatePayout, new AffiliatePayoutOperation] as $model) {
+            if ($model->getConnection() !== $connection) {
+                throw new LogicException('Payout reservation requires a shared database connection.');
+            }
+        }
+
+        return $connection->transaction(function () use ($conversionIds, $attributes, $expectedAffiliateId): AffiliatePayout {
             /** @var Collection<int, AffiliateConversion> $conversions */
             $conversions = AffiliateConversion::query()
                 ->forOwner()
                 ->whereIn('id', $conversionIds)
+                ->where('commission_minor', '>', 0)
                 ->where('status', ApprovedConversion::value())
                 ->whereNull('affiliate_payout_id')
                 ->lockForUpdate()
@@ -131,13 +147,11 @@ final class CreatePayout
                 throw new InvalidArgumentException('A payout can only be created as pending or processing.');
             }
 
-            $sequence = $balance ? $balance->payout_sequence + 1 : null;
+            $sequence = $balance->payout_sequence + 1;
 
             $operation = new AffiliatePayoutOperation([
                 'affiliate_id' => (string) $affiliateIds->first(),
-                'operation_key' => $sequence === null
-                    ? 'manual:' . (string) Str::uuid()
-                    : sprintf('manual:%s:%s:%d', $affiliateIds->first(), $currency, $sequence),
+                'operation_key' => sprintf('manual:%s:%s:%d', $affiliateIds->first(), $currency, $sequence),
                 'status' => 'claimed',
                 'amount_minor' => $total,
                 'currency' => $currency,
@@ -164,24 +178,15 @@ final class CreatePayout
             $payout->forceFill(['owner_type' => $ownerType, 'owner_id' => $ownerId]);
             $payout->save();
 
-            if ($balance && $sequence !== null) {
-                $balance->forceFill([
-                    'available_minor' => $balance->available_minor - $total,
-                    'payout_sequence' => $sequence,
-                ])->save();
-            }
-
-            $claimed = AffiliateConversion::query()
-                ->forOwner()
-                ->whereIn('id', $conversions->pluck('id')->all())
-                ->where('status', ApprovedConversion::value())
-                ->whereNull('affiliate_payout_id')
-                ->where('commission_currency', $currency)
-                ->update(['affiliate_payout_id' => $payout->getKey()]);
-
-            if ($claimed !== $conversions->count()) {
-                throw new InvalidArgumentException('All conversions must be approved and not already linked to a payout.');
-            }
+            $this->reservation->reserve(
+                (string) $balance->getKey(),
+                (string) $affiliate->getKey(),
+                (string) $payout->getKey(),
+                $currency,
+                $total,
+                $sequence,
+                $conversionIds,
+            );
 
             $operation->forceFill([
                 'affiliate_payout_id' => $payout->id,
@@ -263,7 +268,7 @@ final class CreatePayout
         }
     }
 
-    private function reserveBalance(Affiliate $affiliate, int $total, string $currency): ?AffiliateBalance
+    private function reserveBalance(Affiliate $affiliate, int $total, string $currency): AffiliateBalance
     {
         $balance = AffiliateBalance::query()
             ->where('affiliate_id', $affiliate->getKey())
