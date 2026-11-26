@@ -2,10 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Features\PlaceLookup\Support;
+namespace AIArmada\Addressing\Features\Geography\Support;
 
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
 use AIArmada\Addressing\Data\AddressLevelDefinition;
+use AIArmada\Addressing\Data\GooglePlaceAddressComponents;
+use AIArmada\Addressing\Features\Geography\Api\PlaceGeographyResolver;
 use AIArmada\Addressing\Features\PostalCodes\Api\PostalAreaLookup;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressCountry;
@@ -14,7 +16,7 @@ use AIArmada\Addressing\Support\AddressAreaStateBridge;
 use AIArmada\Addressing\Support\CountryAddressProfileResolver;
 use AIArmada\Addressing\Support\ModelResolver;
 
-final readonly class GooglePlaceGeographyResolver
+final readonly class GooglePlaceGeographyResolver implements PlaceGeographyResolver
 {
     public function __construct(
         private AddressAreaHierarchyResolver $addressAreaHierarchyResolver,

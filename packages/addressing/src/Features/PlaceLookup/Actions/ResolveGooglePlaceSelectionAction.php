@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Addressing\Features\PlaceLookup\Actions;
 
 use AIArmada\Addressing\Contracts\GooglePlaceSelectionResolver;
-use AIArmada\Addressing\Features\PlaceLookup\Support\GooglePlaceAddressComponents;
-use AIArmada\Addressing\Features\PlaceLookup\Support\GooglePlaceGeographyResolver;
+use AIArmada\Addressing\Data\GooglePlaceAddressComponents;
+use AIArmada\Addressing\Features\Geography\Api\PlaceGeographyResolver;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 
@@ -14,7 +14,7 @@ final readonly class ResolveGooglePlaceSelectionAction implements GooglePlaceSel
 {
     public function __construct(
         private NormalizeGoogleMapsInputAction $normalizeGoogleMapsInputAction,
-        private readonly GooglePlaceGeographyResolver $geography,
+        private readonly PlaceGeographyResolver $geography,
     ) {}
 
     /**
