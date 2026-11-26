@@ -92,7 +92,7 @@ final class AddressPackageData
             return null;
         }
 
-        $country = AddressCountry::query()->find($countryId);
+        $country = ModelResolver::countryClass()::query()->find($countryId);
         $code = $country instanceof AddressCountry ? self::clean($country->getAttribute('iso2')) : null;
 
         return $code === null ? null : mb_strtoupper($code);
@@ -122,7 +122,7 @@ final class AddressPackageData
             return null;
         }
 
-        $state = State::query()->find($stateId);
+        $state = ModelResolver::stateClass()::query()->find($stateId);
 
         return $state instanceof State ? self::clean($state->getAttribute('name')) : null;
     }
@@ -231,7 +231,7 @@ final class AddressPackageData
             return null;
         }
 
-        $area = AddressArea::query()->find($id);
+        $area = ModelResolver::areaClass()::query()->find($id);
 
         return $area instanceof AddressArea ? $area : null;
     }

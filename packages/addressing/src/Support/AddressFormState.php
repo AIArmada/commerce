@@ -126,7 +126,7 @@ final class AddressFormState
     {
         $countryId = self::normalizeLocationId($data['country_id'] ?? null);
 
-        if ($countryId !== null && AddressCountry::query()->whereKey($countryId)->exists()) {
+        if ($countryId !== null && ModelResolver::countryClass()::query()->whereKey($countryId)->exists()) {
             return $countryId;
         }
 
@@ -190,7 +190,7 @@ final class AddressFormState
             ?? self::normalizeCountrySelection($original);
 
         if ($cityId !== null) {
-            $cityQuery = City::query()->whereKey($cityId);
+            $cityQuery = ModelResolver::cityClass()::query()->whereKey($cityId);
 
             if ($stateId !== null) {
                 $cityQuery->where('state_id', $stateId);
@@ -207,22 +207,27 @@ final class AddressFormState
             }
         }
 
-        foreach ($assignments as $role => $areaId) {
-            $areaQuery = AddressArea::query()->whereKey($areaId);
+        if ($assignments !== []) {
+            $areaQuery = ModelResolver::areaClass()::query()
+                ->whereIn('id', array_values($assignments));
 
             if ($countryId !== null) {
                 $areaQuery->where('country_id', $countryId);
             }
 
-            if (! $areaQuery->exists()) {
-                throw ValidationException::withMessages([
-                    'address.area_assignments.' . $role => __('The selected area does not belong to the selected country.'),
-                ]);
+            $availableIds = $areaQuery->pluck('id')->map(static fn (mixed $id): string => (string) $id)->flip();
+
+            foreach ($assignments as $role => $areaId) {
+                if (! $availableIds->has($areaId)) {
+                    throw ValidationException::withMessages([
+                        'address.area_assignments.' . $role => __('The selected area does not belong to the selected country.'),
+                    ]);
+                }
             }
         }
 
         if ($stateId !== null) {
-            $stateQuery = State::query()->whereKey($stateId);
+            $stateQuery = ModelResolver::stateClass()::query()->whereKey($stateId);
 
             if ($countryId !== null) {
                 $stateQuery->where('country_id', $countryId);
@@ -255,16 +260,14 @@ final class AddressFormState
     private static function hydrateAddressAreaLabels(array $payload): array
     {
         $country = isset($payload['country_id']) && is_string($payload['country_id'])
-            ? AddressCountry::query()->find($payload['country_id'])
+            ? ModelResolver::countryClass()::query()->find($payload['country_id'])
             : null;
         $state = isset($payload['state_id']) && is_string($payload['state_id'])
-            ? State::query()->find($payload['state_id'])
+            ? ModelResolver::stateClass()::query()->find($payload['state_id'])
             : null;
         $city = isset($payload['city_id']) && is_string($payload['city_id'])
-            ? City::query()->find($payload['city_id'])
+            ? ModelResolver::cityClass()::query()->find($payload['city_id'])
             : null;
-        $areas = collect(AddressAssignments::normalize((array) ($payload['area_assignments'] ?? [])))
-            ->map(static fn (string $areaId): ?AddressArea => AddressArea::query()->find($areaId));
 
         if ($country instanceof AddressCountry) {
             $payload['country'] = $country->name;
@@ -278,7 +281,13 @@ final class AddressFormState
         if ($city instanceof City) {
             $payload['city'] = $city->name;
         } elseif (empty($payload['city'])) {
-            foreach ($areas->reverse() as $area) {
+            $assignments = AddressAssignments::normalize((array) ($payload['area_assignments'] ?? []));
+            $areas = $assignments === []
+                ? collect()
+                : ModelResolver::areaClass()::query()->whereIn('id', array_values($assignments))->get()->keyBy('id');
+
+            foreach (array_reverse($assignments) as $areaId) {
+                $area = $areas->get($areaId);
                 if ($area instanceof AddressArea) {
                     $payload['city'] = $area->name;
 

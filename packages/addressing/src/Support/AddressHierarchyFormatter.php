@@ -235,7 +235,7 @@ final class AddressHierarchyFormatter
             return null;
         }
 
-        $country = AddressCountry::query()->find($countryId);
+        $country = ModelResolver::countryClass()::query()->find($countryId);
 
         return $country instanceof AddressCountry ? self::clean($country->getAttribute('name')) : null;
     }

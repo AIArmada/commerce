@@ -7,6 +7,7 @@ use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\City;
 use AIArmada\Addressing\Models\State;
 use AIArmada\Addressing\Support\LocationSlugSegments;
+use Illuminate\Support\Facades\DB;
 
 beforeEach(function (): void {
     $this->country = AddressCountry::query()->create(['iso2' => 'MY', 'name' => 'Malaysia']);
@@ -90,4 +91,26 @@ it('resolves country codes with configurable literal preference', function (): v
     expect(LocationSlugSegments::countryCode($address, true))->toBe('SG')
         ->and(LocationSlugSegments::countryCode($address))->toBe('MY')
         ->and(LocationSlugSegments::countryCode([]))->toBeNull();
+});
+
+it('does not query reference models when literal location data is complete', function (): void {
+    DB::enableQueryLog();
+    DB::flushQueryLog();
+
+    try {
+        $suffix = LocationSlugSegments::suffix([
+            'city' => 'Literal city',
+            'state' => 'Literal state',
+            'country_code' => 'MY',
+            'city_id' => $this->city->getKey(),
+            'state_id' => $this->state->getKey(),
+            'country_id' => $this->country->getKey(),
+        ], $this->area->getKey(), $this->area->getKey());
+
+        expect($suffix)->toBe('literal-city-literal-state-my')
+            ->and(DB::getQueryLog())->toBeEmpty();
+    } finally {
+        DB::disableQueryLog();
+        DB::flushQueryLog();
+    }
 });
