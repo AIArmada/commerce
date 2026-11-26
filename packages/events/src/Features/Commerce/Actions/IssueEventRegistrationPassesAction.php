@@ -15,7 +15,9 @@ use AIArmada\Events\Features\Registrations\Api\RegistrationsApi;
 use AIArmada\Events\Features\Registrations\Api\RegistrationSummary;
 use AIArmada\Events\Platform\EventTicketScope;
 use AIArmada\Events\Platform\EventWriteGuard;
+use AIArmada\Events\Platform\LifecyclePolicy;
 use AIArmada\Ticketing\Models\TicketType;
+use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 final class IssueEventRegistrationPassesAction implements EventPassIssuanceService
@@ -25,6 +27,7 @@ final class IssueEventRegistrationPassesAction implements EventPassIssuanceServi
         private readonly EventTicketingDriver $ticketing,
         private readonly CatalogApi $catalog,
         private readonly EventRegistrationScopeResolver $scopeResolver,
+        private readonly LifecyclePolicy $lifecycle,
     ) {}
 
     /**
@@ -45,73 +48,97 @@ final class IssueEventRegistrationPassesAction implements EventPassIssuanceServi
      */
     public function handle(string $registrationId, bool $respectFreePassPolicy = false): array
     {
-        $summary = $this->registrations->summarize($registrationId);
+        return DB::transaction(function () use ($registrationId, $respectFreePassPolicy): array {
+            $initial = $this->registrations->summarize($registrationId);
 
-        if ($summary === null) {
-            throw new InvalidArgumentException(sprintf('Registration [%s] does not exist.', $registrationId));
-        }
-
-        EventWriteGuard::findOrFail($summary->eventId);
-
-        $scopeRef = $this->scopeRef($summary);
-        $scope = $this->scopeResolver->resolve($scopeRef['type'], $scopeRef['id']);
-
-        if ($respectFreePassPolicy && ! $scope->shouldIssuePasses) {
-            return [];
-        }
-
-        $registrationType = $this->registrations->registrationMorphClass();
-        $existing = $this->registrations->passIdsForRegistration($registrationId);
-        $items = $this->registrations->orderItemsForRegistration($registrationId);
-
-        if ($items === []) {
-            $ticketTypeId = $this->ensureFreeTicketType($scope, $scopeRef);
-
-            return $this->issueForTicket(
-                summary: $summary,
-                registrationType: $registrationType,
-                ticketTypeId: $ticketTypeId,
-                quantity: 1,
-                metadata: ['issued_from' => 'free_registration'],
-                existingIds: $existing,
-            );
-        }
-
-        $issued = $existing;
-
-        foreach ($items as $item) {
-            $ticketTypeId = $item->ticketTypeId;
-
-            if ($ticketTypeId === null || $ticketTypeId === '') {
-                throw new InvalidArgumentException('Registration items must reference a TicketType.');
+            if ($initial === null) {
+                throw new InvalidArgumentException(sprintf('Registration [%s] does not exist.', $registrationId));
             }
 
-            $ticketType = TicketType::query()->with('ticketable')->find($ticketTypeId);
+            EventWriteGuard::findOrFail($initial->eventId);
 
-            if (! $ticketType instanceof TicketType) {
-                throw new InvalidArgumentException('Registration items must reference an existing TicketType.');
+            $scopeRef = $this->scopeRef($initial);
+
+            $this->registrations->lockScope($scopeRef['type'], $scopeRef['id']);
+            $this->registrations->lock($registrationId);
+
+            $summary = $this->registrations->summarize($registrationId);
+
+            if ($summary === null) {
+                throw new InvalidArgumentException(sprintf('Registration [%s] does not exist.', $registrationId));
             }
 
-            if (! EventTicketScope::belongsToRegistrationScope($ticketType, $scope)) {
-                throw new InvalidArgumentException('Registration items must reference a ticket type that belongs to the same event scope.');
+            if (! $this->lifecycle->canIssuePasses($summary->status)) {
+                return [];
             }
 
-            $quantity = max(1, $item->quantity * max(1, (int) $ticketType->admits_quantity));
+            $scope = $this->scopeResolver->resolve($scopeRef['type'], $scopeRef['id']);
 
-            $issued = array_values(array_unique(array_merge($issued, $this->issueForTicket(
-                summary: $summary,
-                registrationType: $registrationType,
-                ticketTypeId: $ticketTypeId,
-                quantity: $quantity,
-                metadata: array_filter([
-                    'registration_item_id' => $item->id,
-                    'ticket_type_id' => $ticketTypeId,
-                ], static fn (mixed $value): bool => $value !== null),
-                existingIds: $existing,
-            ))));
-        }
+            if ($respectFreePassPolicy && ! $scope->shouldIssuePasses) {
+                return [];
+            }
 
-        return $issued;
+            $registrationType = $this->registrations->registrationMorphClass();
+            $existing = $this->registrations->passIdsForRegistration($registrationId);
+            $items = $this->registrations->orderItemsForRegistration($registrationId);
+
+            if ($items === []) {
+                $ticketTypeId = $this->ensureFreeTicketType($scope, $scopeRef);
+
+                return $this->issueForTicket(
+                    summary: $summary,
+                    registrationType: $registrationType,
+                    ticketTypeId: $ticketTypeId,
+                    quantity: 1,
+                    metadata: ['issued_from' => 'free_registration'],
+                    existingIds: $existing,
+                );
+            }
+
+            $quantities = [];
+            $itemIds = [];
+
+            foreach ($items as $item) {
+                $ticketTypeId = $item->ticketTypeId;
+
+                if ($ticketTypeId === null || $ticketTypeId === '') {
+                    throw new InvalidArgumentException('Registration items must reference a TicketType.');
+                }
+
+                $ticketType = TicketType::query()->with('ticketable')->find($ticketTypeId);
+
+                if (! $ticketType instanceof TicketType) {
+                    throw new InvalidArgumentException('Registration items must reference an existing TicketType.');
+                }
+
+                if (! EventTicketScope::belongsToRegistrationScope($ticketType, $scope)) {
+                    throw new InvalidArgumentException('Registration items must reference a ticket type that belongs to the same event scope.');
+                }
+
+                $admits = max(1, (int) $ticketType->admits_quantity);
+                $quantities[$ticketTypeId] = ($quantities[$ticketTypeId] ?? 0) + max(1, $item->quantity) * $admits;
+                $itemIds[$ticketTypeId][] = $item->id;
+            }
+
+            $issued = $existing;
+
+            foreach ($quantities as $ticketTypeId => $quantity) {
+                $issued = array_values(array_unique(array_merge($issued, $this->issueForTicket(
+                    summary: $summary,
+                    registrationType: $registrationType,
+                    ticketTypeId: (string) $ticketTypeId,
+                    quantity: $quantity,
+                    metadata: array_filter([
+                        'registration_item_ids' => $itemIds[$ticketTypeId] ?? [],
+                        'registration_item_id' => $itemIds[$ticketTypeId][0] ?? null,
+                        'ticket_type_id' => (string) $ticketTypeId,
+                    ], static fn (mixed $value): bool => $value !== null),
+                    existingIds: $issued,
+                ))));
+            }
+
+            return $issued;
+        });
     }
 
     /**

@@ -10,6 +10,9 @@ use AIArmada\Events\Platform\ModelResolver;
 use AIArmada\Events\Platform\ScopesByEventOwner;
 use AIArmada\Ticketing\Models\Pass;
 use AIArmada\Ticketing\Models\PassHolder;
+use Carbon\CarbonImmutable;
+use DateTimeInterface;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -45,7 +48,9 @@ use Illuminate\Support\Carbon;
  */
 final class EventRegistrationParticipant extends Model
 {
-    use HasContactMethods;
+    use HasContactMethods {
+        resolveEmail as resolveContactMethodEmail;
+    }
     use HasFactory;
     use HasUuids;
     use ScopesByEventOwner;
@@ -78,6 +83,76 @@ final class EventRegistrationParticipant extends Model
             'age' => 'integer',
             'metadata' => 'array',
         ];
+    }
+
+    public function resolveEmail(bool $publicOnly = false): ?string
+    {
+        if (! $this->relationLoaded('contactMethods')) {
+            return $this->resolveContactMethodEmail($publicOnly);
+        }
+
+        $now = CarbonImmutable::now();
+
+        /** @var Collection<int, Model> $contactMethods */
+        $contactMethods = $this->getRelation('contactMethods');
+
+        $contact = $contactMethods
+            ->filter(function (Model $contactMethod) use ($now, $publicOnly): bool {
+                if ($contactMethod->getAttribute('type') !== 'email'
+                    || $contactMethod->getAttribute('normalized_value') === null) {
+                    return false;
+                }
+
+                if ($publicOnly && ! (bool) $contactMethod->getAttribute('is_public')) {
+                    return false;
+                }
+
+                $validFrom = $contactMethod->getAttribute('valid_from');
+                $validUntil = $contactMethod->getAttribute('valid_until');
+
+                if ($validFrom !== null && ! $this->isWithinValidityStart($validFrom, $now)) {
+                    return false;
+                }
+
+                return $validUntil === null || $this->isWithinValidityEnd($validUntil, $now);
+            })
+            ->sortBy([
+                ['is_primary', 'desc'],
+                ['sort_order', 'asc'],
+            ])
+            ->first();
+
+        if (! $contact instanceof Model) {
+            return null;
+        }
+
+        $value = $contact->getAttribute('normalized_value') ?? $contact->getAttribute('value');
+
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $value = mb_trim($value);
+
+        return $value === '' ? null : $value;
+    }
+
+    private function isWithinValidityStart(mixed $value, CarbonImmutable $now): bool
+    {
+        if (! $value instanceof DateTimeInterface && ! is_string($value)) {
+            return false;
+        }
+
+        return ! CarbonImmutable::parse($value)->isAfter($now);
+    }
+
+    private function isWithinValidityEnd(mixed $value, CarbonImmutable $now): bool
+    {
+        if (! $value instanceof DateTimeInterface && ! is_string($value)) {
+            return false;
+        }
+
+        return ! CarbonImmutable::parse($value)->isBefore($now);
     }
 
     /**

@@ -20,6 +20,7 @@ final class RecordWalkInAction
 {
     public function __construct(
         private readonly EventRegistrationScopeResolver $scopeResolver,
+        private readonly EnsureOpenDoorLifecycleAction $lifecycle,
     ) {}
 
     public function execute(
@@ -34,6 +35,7 @@ final class RecordWalkInAction
         return DB::transaction(function () use ($scope, $count, $recordedBy, $notes): string {
             EventWriteGuard::findOrFail($scope->eventId);
 
+            $this->lifecycle->handle($scope);
             $this->validateOpenDoorMode($scope);
 
             $walkIn = EventWalkIn::query()->create([

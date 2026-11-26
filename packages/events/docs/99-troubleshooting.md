@@ -95,7 +95,7 @@ Check:
 
 - The occurrence's `status` is in `lifecycle.occurrence.registration_accepting_statuses`
 - The occurrence has not reached capacity
-- The registration window is open
+- The applicable ticket type's sales window is open for paid tickets
 - `event_occurrence_id` references a valid occurrence
 
 ### `ModelResolver` throws "not configured"

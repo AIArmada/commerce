@@ -10,5 +10,7 @@ final readonly class EventRefundMatchData
         public ?string $refundId,
         public int $matchedCount,
         public bool $pending,
+        public ?string $ownerType = null,
+        public string | int | null $ownerId = null,
     ) {}
 }

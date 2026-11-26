@@ -72,19 +72,37 @@ final class SyncEventOrderRegistrationsAction
 
     private function syncCancelled(RegistrationSummary $summary): void
     {
-        $this->registrationService->cancel($summary->id, 'Order cancelled');
-        $this->registrations->recordPaymentStatus($summary->id, 'cancelled');
+        DB::transaction(function () use ($summary): void {
+            $this->registrations->lock($summary->id);
+
+            $this->registrationService->cancel($summary->id, 'Order cancelled');
+            $this->registrations->recordPaymentStatus($summary->id, 'cancelled');
+        });
     }
 
     private function syncRefunded(RegistrationSummary $summary): void
     {
-        $this->registrationService->refund($summary->id, 'Order refunded');
-        $this->registrations->recordPaymentStatus($summary->id, 'refunded');
+        DB::transaction(function () use ($summary): void {
+            $this->registrations->lock($summary->id);
+
+            $this->registrationService->refund($summary->id, 'Order refunded');
+            $this->registrations->recordPaymentStatus($summary->id, 'refunded');
+        });
     }
 
     private function syncRefundFailed(RegistrationSummary $summary): void
     {
-        $this->registrationService->restoreFromRefundPending($summary->id, 'Refund failed');
-        $this->registrations->recordPaymentStatus($summary->id, 'paid');
+        DB::transaction(function () use ($summary): void {
+            $this->registrations->lock($summary->id);
+
+            $current = $this->registrations->summarize($summary->id);
+
+            if ($current === null || $current->status !== 'refund_pending') {
+                return;
+            }
+
+            $this->registrationService->restoreFromRefundPending($summary->id, 'Refund failed');
+            $this->registrations->recordPaymentStatus($summary->id, 'paid');
+        });
     }
 }

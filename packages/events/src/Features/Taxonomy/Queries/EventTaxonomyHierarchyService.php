@@ -16,13 +16,18 @@ final class EventTaxonomyHierarchyService implements EventTaxonomyHierarchy
 {
     private const string REQUEST_CACHE_KEY = 'aiarmada.events.taxonomy-hierarchy';
 
+    public static function flushRequestCache(): void
+    {
+        if (! app()->bound('request')) {
+            return;
+        }
+
+        request()->attributes->remove(self::REQUEST_CACHE_KEY);
+    }
+
     public function taxonomy(string $code): ?EventTaxonomyData
     {
-        /** @var EventTaxonomy|null $taxonomy */
-        $taxonomy = $this->rememberForRequest(
-            "taxonomy:{$code}",
-            fn (): ?EventTaxonomy => EventTaxonomy::query()->where('code', $code)->first(),
-        );
+        $taxonomy = $this->taxonomyModel($code);
 
         return $taxonomy instanceof EventTaxonomy ? $this->toTaxonomyData($taxonomy) : null;
     }

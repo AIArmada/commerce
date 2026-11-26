@@ -7,7 +7,9 @@ namespace AIArmada\Events\Drivers;
 use AIArmada\Checkout\Contracts\PaymentGatewayResolverInterface;
 use AIArmada\Checkout\Contracts\PaymentProcessorInterface;
 use AIArmada\Checkout\Contracts\ProviderAwarePaymentProcessorInterface;
+use AIArmada\CommerceSupport\Data\OwnerScopeConfig;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Events\Contracts\EventOrderDriver;
 use AIArmada\Events\Data\EventOrderData;
@@ -24,6 +26,7 @@ use AIArmada\Orders\Models\OrderRefund;
 use AIArmada\Ticketing\Models\TicketType;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use RuntimeException;
 
@@ -180,7 +183,7 @@ final class OrdersDriver implements EventOrderDriver
         $metadata['payment_id'] = $this->paymentId($payment);
         $metadata['provider'] = $this->paymentProvider($payment);
 
-        $refunds = OwnerContext::withOwner(null, fn (): array => $this->orderService()->createPendingRefund(
+        $refunds = OwnerContext::withOwner($this->ownerOf($order), fn (): array => $this->orderService()->createPendingRefund(
             order: $order,
             amount: $amount,
             transactionId: $transactionId ?? 'event-refund-' . $orderId,
@@ -207,25 +210,19 @@ final class OrdersDriver implements EventOrderDriver
 
     public function claimRefund(string $refundId): bool
     {
-        return OwnerContext::withOwner(null, fn (): bool => $this->orderService()->claimPendingRefundSubmission($this->refund($refundId)));
+        $refund = $this->refund($refundId);
+
+        return OwnerContext::withOwner(
+            $this->ownerOf($refund),
+            fn (): bool => $this->orderService()->claimPendingRefundSubmission($refund),
+        );
     }
 
     public function completeRefund(string $refundId, ?string $transactionId = null): void
     {
         $refund = $this->refund($refundId);
-        $owner = OwnerContext::withOwner(null, function () use ($refund): ?Model {
-            $order = $refund->order;
 
-            if (! $order instanceof Order) {
-                return null;
-            }
-
-            $relatedOwner = $order->getRelationValue('owner');
-
-            return $relatedOwner instanceof Model ? $relatedOwner : null;
-        });
-
-        OwnerContext::withOwner($owner, function () use ($refund, $transactionId): void {
+        OwnerContext::withOwner($this->ownerOf($refund), function () use ($refund, $transactionId): void {
             $this->orderService()->completePendingRefund($refund, $transactionId);
         });
     }
@@ -233,10 +230,11 @@ final class OrdersDriver implements EventOrderDriver
     public function failRefund(string $refundId, string $reason): void
     {
         $reason = mb_trim($reason);
+        $refund = $this->refund($refundId);
 
-        OwnerContext::withOwner(null, function () use ($refundId, $reason): void {
+        OwnerContext::withOwner($this->ownerOf($refund), function () use ($refund, $reason): void {
             $this->orderService()->failPendingRefund(
-                $this->refund($refundId),
+                $refund,
                 $reason !== '' ? mb_substr($reason, 0, 500) : 'Refund failed.',
             );
         });
@@ -255,17 +253,18 @@ final class OrdersDriver implements EventOrderDriver
 
         if ($paymentId !== null && $paymentId !== '') {
             $refunds = $this->providerRefundQuery($amount, $currency, includeCompleted: true, provider: $provider)
-                ->where('metadata->provider_refund_id', $paymentId)
-                ->get();
+                ->where('metadata->provider_refund_id', $paymentId);
+
+            if ($eventRegistrationId !== null && $eventRegistrationId !== '') {
+                $refunds->where('metadata->event_registration_id', $eventRegistrationId);
+            }
+
+            $refunds = $refunds->get();
 
             if ($refunds->count() === 1) {
                 $refund = $refunds->first();
 
-                return new EventRefundMatchData(
-                    refundId: (string) $refund->getKey(),
-                    matchedCount: 1,
-                    pending: $refund->isPending(),
-                );
+                return $this->matchedRefund($refund);
             }
 
             if ($refunds->count() > 1) {
@@ -274,18 +273,19 @@ final class OrdersDriver implements EventOrderDriver
         }
 
         if ($eventRegistrationId !== null && $eventRegistrationId !== '') {
-            $refunds = $this->providerRefundQuery($amount, $currency, includeCompleted: true)
-                ->where('metadata->event_registration_id', $eventRegistrationId)
-                ->get();
+            $refunds = $this->providerRefundQuery($amount, $currency, includeCompleted: true, provider: $provider)
+                ->where('metadata->event_registration_id', $eventRegistrationId);
+
+            if ($relatedPaymentId !== null && $relatedPaymentId !== '') {
+                $refunds->where('metadata->payment_id', $relatedPaymentId);
+            }
+
+            $refunds = $refunds->get();
 
             if ($refunds->count() === 1) {
                 $refund = $refunds->first();
 
-                return new EventRefundMatchData(
-                    refundId: (string) $refund->getKey(),
-                    matchedCount: 1,
-                    pending: $refund->isPending(),
-                );
+                return $this->matchedRefund($refund);
             }
 
             if ($refunds->count() > 1) {
@@ -295,15 +295,16 @@ final class OrdersDriver implements EventOrderDriver
 
         if ($relatedPaymentId !== null && $relatedPaymentId !== '') {
             $refunds = $this->providerRefundQuery($amount, $currency, includeCompleted: false, provider: $provider)
-                ->where('metadata->payment_id', $relatedPaymentId)
-                ->get();
+                ->where('metadata->payment_id', $relatedPaymentId);
+
+            if ($eventRegistrationId !== null && $eventRegistrationId !== '') {
+                $refunds->where('metadata->event_registration_id', $eventRegistrationId);
+            }
+
+            $refunds = $refunds->get();
 
             if ($refunds->count() === 1) {
-                return new EventRefundMatchData(
-                    refundId: (string) $refunds->first()->getKey(),
-                    matchedCount: 1,
-                    pending: true,
-                );
+                return $this->matchedRefund($refunds->first());
             }
 
             return new EventRefundMatchData(refundId: null, matchedCount: $refunds->count(), pending: false);
@@ -321,21 +322,21 @@ final class OrdersDriver implements EventOrderDriver
             return true;
         }
 
-        $refund = $this->refund($refundId);
-        $metadata = is_array($refund->metadata) ? $refund->metadata : [];
-        $existingId = data_get($metadata, 'provider_refund_id');
+        return DB::transaction(function () use ($refundId, $providerRefundId): bool {
+            $refund = $this->refund($refundId, lock: true);
+            $metadata = is_array($refund->metadata) ? $refund->metadata : [];
+            $existingId = data_get($metadata, 'provider_refund_id');
 
-        if (is_scalar($existingId) && mb_trim((string) $existingId) !== '') {
-            return mb_trim((string) $existingId) === $providerRefundId;
-        }
+            if (is_scalar($existingId) && mb_trim((string) $existingId) !== '') {
+                return mb_trim((string) $existingId) === $providerRefundId;
+            }
 
-        $metadata['provider_refund_id'] = $providerRefundId;
+            $metadata['provider_refund_id'] = $providerRefundId;
 
-        OwnerContext::withOwner(null, function () use ($metadata, $refund): void {
             $refund->forceFill(['metadata' => $metadata])->save();
-        });
 
-        return true;
+            return true;
+        });
     }
 
     public function submitRefund(string $refundId): EventRefundResultData
@@ -373,14 +374,75 @@ final class OrdersDriver implements EventOrderDriver
         return Order::query()->with(['payments'])->findOrFail($orderId);
     }
 
-    private function refund(string $refundId): OrderRefund
+    private function refund(string $refundId, bool $lock = false): OrderRefund
     {
-        return OrderRefund::query()->findOrFail($refundId);
+        return OwnerScopeOverride::withoutIncludeGlobal(
+            static fn (): OrderRefund => OrderRefund::query()
+                ->when($lock, fn (Builder $query): Builder => $query->lockForUpdate())
+                ->findOrFail($refundId),
+        );
+    }
+
+    private function matchedRefund(OrderRefund $refund): EventRefundMatchData
+    {
+        $config = OrderRefund::ownerScopeConfig();
+
+        return new EventRefundMatchData(
+            refundId: (string) $refund->getKey(),
+            matchedCount: 1,
+            pending: $refund->isPending(),
+            ownerType: $refund->getAttribute($config->ownerTypeColumn),
+            ownerId: $refund->getAttribute($config->ownerIdColumn),
+        );
+    }
+
+    private function ownerOf(Model $model): ?Model
+    {
+        $typeColumn = 'owner_type';
+        $idColumn = 'owner_id';
+
+        if (method_exists($model, 'ownerScopeConfig')) {
+            $config = call_user_func([$model, 'ownerScopeConfig']);
+
+            if ($config instanceof OwnerScopeConfig) {
+                $typeColumn = $config->ownerTypeColumn;
+                $idColumn = $config->ownerIdColumn;
+            }
+        }
+
+        $type = $model->getAttribute($typeColumn);
+        $id = $model->getAttribute($idColumn);
+
+        if (! is_string($type) || $type === '' || (! is_string($id) && ! is_int($id))) {
+            if ($model instanceof OrderRefund) {
+                $order = $model->getRelationValue('order');
+
+                if ($order instanceof Order) {
+                    return $this->ownerOf($order);
+                }
+            }
+
+            return null;
+        }
+
+        return OwnerContext::fromTypeAndId($type, $id);
     }
 
     private function orderService(): OrderServiceInterface
     {
-        return $this->orders ?? throw new RuntimeException('The AIArmada orders integration is unavailable.');
+        if ($this->orders instanceof OrderServiceInterface) {
+            return $this->orders;
+        }
+
+        if (app()->bound(OrderServiceInterface::class)) {
+            $resolved = app(OrderServiceInterface::class);
+
+            if ($resolved instanceof OrderServiceInterface) {
+                return $resolved;
+            }
+        }
+
+        throw new RuntimeException('The AIArmada orders integration is unavailable.');
     }
 
     private function completedPayment(Order $order): OrderPayment
@@ -425,6 +487,11 @@ final class OrdersDriver implements EventOrderDriver
     {
         $identifier = mb_trim((string) $payment->gateway);
         $gateways = $this->gateways;
+
+        if ($gateways === null && app()->bound(PaymentGatewayResolverInterface::class)) {
+            $resolved = app(PaymentGatewayResolverInterface::class);
+            $gateways = $resolved instanceof PaymentGatewayResolverInterface ? $resolved : null;
+        }
 
         if ($gateways !== null && $identifier !== '' && $gateways->hasGateway($identifier)) {
             return $gateways->resolve($identifier);
@@ -517,7 +584,7 @@ final class OrdersDriver implements EventOrderDriver
             : [RefundStatus::Pending];
 
         $query = OrderRefund::query()
-            ->with(['order', 'payment'])
+            ->withoutOwnerScope()
             ->whereIn('status', $statuses)
             ->where('amount', $amount)
             ->where('currency', mb_strtoupper($currency))

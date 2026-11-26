@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\Events\Features\Taxonomy\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Events\Contracts\EventSearchIndexer;
 use AIArmada\Events\Features\Taxonomy\Models\EventClassification;
 use AIArmada\Events\Features\Taxonomy\Models\EventTaxonomy;
 use AIArmada\Events\Features\Taxonomy\Models\EventTerm;
+use AIArmada\Events\Features\Taxonomy\Queries\EventTaxonomyHierarchyService;
 use AIArmada\Events\Platform\EventScopeResolver;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
@@ -17,6 +19,10 @@ use Illuminate\Support\Str;
 
 final class SyncEventClassificationsAction
 {
+    public function __construct(
+        private readonly EventSearchIndexer $indexer,
+    ) {}
+
     /**
      * @param  array<string, list<mixed>>  $taxonomyValues
      * @param  array<string, array{name?: string, description?: string|null, is_hierarchical?: bool, is_active?: bool}>  $taxonomyDefinitions
@@ -33,7 +39,7 @@ final class SyncEventClassificationsAction
         $occurrenceId = $resolved['occurrence_id'];
         $sessionId = $resolved['session_id'];
 
-        return DB::transaction(function () use ($eventId, $occurrenceId, $sessionId, $taxonomyValues, $taxonomyDefinitions, $explicitTermIds): int {
+        $synced = DB::transaction(function () use ($eventId, $occurrenceId, $sessionId, $taxonomyValues, $taxonomyDefinitions, $explicitTermIds): int {
             $termIds = $this->resolveTermIds($taxonomyValues, $taxonomyDefinitions, $explicitTermIds);
 
             $delete = EventClassification::query()->where('event_id', $eventId);
@@ -95,6 +101,11 @@ final class SyncEventClassificationsAction
 
             return $synced;
         });
+
+        EventTaxonomyHierarchyService::flushRequestCache();
+        $this->indexer->index($scope);
+
+        return $synced;
     }
 
     /**

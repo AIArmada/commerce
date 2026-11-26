@@ -12,9 +12,10 @@ use AIArmada\Events\Data\EventChangeNoticeNotificationData;
 use AIArmada\Events\Data\EventNotificationRecipientData;
 use AIArmada\Events\Notifications\EventChangeNoticeNotification;
 use AIArmada\Events\Platform\ModelResolver;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\Relation;
-use Illuminate\Support\Str;
 
 final class EventChangeNoticeNotificationDriver implements EventChangeNoticeNotificationDispatcher
 {
@@ -23,67 +24,110 @@ final class EventChangeNoticeNotificationDriver implements EventChangeNoticeNoti
         private readonly EventChangeNoticeAudienceResolver $audienceResolver,
     ) {}
 
+    private const int RECIPIENT_BATCH_SIZE = 500;
+
     public function dispatch(EventChangeNoticeNotificationData $notice): void
     {
-        $recipients = $this->resolveRecipients($notice);
+        $notification = new EventChangeNoticeNotification($notice);
+        $subjectType = $notice->eventType ?? $this->defaultEventType();
 
-        if ($recipients === []) {
+        foreach ($this->recipientBatches($notice) as $recipients) {
+            $notifiables = $this->loadNotifiables($recipients);
+
+            foreach ($recipients as $recipient) {
+                $notifiable = $notifiables[$this->recipientKey($recipient)] ?? null;
+
+                if (! $notifiable instanceof Model || ! $this->hasMailDestination($notifiable, $notification)) {
+                    continue;
+                }
+
+                $this->manager->notify($notifiable, $notification, CommunicationContextData::from([
+                    'category' => 'transactional',
+                    'purpose' => 'event-change-notice',
+                    'subjectType' => $subjectType,
+                    'subjectId' => $notice->eventId,
+                    'metadata' => [
+                        'event_id' => $notice->eventId,
+                        'event_change_log_id' => $notice->changeLogId,
+                        'audience_scope' => $notice->audienceScope,
+                    ],
+                ]));
+            }
+        }
+    }
+
+    /**
+     * @return iterable<int, list<EventNotificationRecipientData>>
+     */
+    private function recipientBatches(EventChangeNoticeNotificationData $notice): iterable
+    {
+        if ($notice->recipients !== []) {
+            yield from $this->uniqueRecipientBatches($notice->recipients);
+
             return;
         }
 
-        $notification = new EventChangeNoticeNotification($notice);
+        if ($notice->updateId !== null) {
+            $resolved = false;
+
+            $audience = $this->audienceResolver->resolve($notice->updateId, $notice->audienceScope);
+
+            foreach ($this->uniqueRecipientBatches($audience) as $batch) {
+                $resolved = true;
+
+                yield $batch;
+            }
+
+            if ($resolved) {
+                return;
+            }
+        }
+
+        if ($notice->audienceScope !== 'registrants') {
+            return;
+        }
+
+        yield from $this->registrationRecipientBatches($notice->eventId);
+    }
+
+    /**
+     * @param  iterable<EventNotificationRecipientData>  $recipients
+     * @return iterable<int, list<EventNotificationRecipientData>>
+     */
+    private function uniqueRecipientBatches(iterable $recipients): iterable
+    {
+        $seen = [];
+        $batch = [];
 
         foreach ($recipients as $recipient) {
-            if (! Str::isUuid($recipient->notifiableId)) {
+            if (! $recipient instanceof EventNotificationRecipientData || $recipient->notifiableId === '') {
                 continue;
             }
 
-            $notifiable = $this->resolveNotifiable($recipient);
+            $key = $this->recipientKey($recipient);
 
-            if (! $notifiable instanceof Model || ! $this->hasMailDestination($notifiable, $notification)) {
+            if (isset($seen[$key])) {
                 continue;
             }
 
-            $this->manager->notify($notifiable, $notification, CommunicationContextData::from([
-                'category' => 'transactional',
-                'purpose' => 'event-change-notice',
-                'subjectType' => $notice->eventType ?? $this->defaultEventType(),
-                'subjectId' => $notice->eventId,
-                'metadata' => [
-                    'event_id' => $notice->eventId,
-                    'event_change_log_id' => $notice->changeLogId,
-                    'audience_scope' => $notice->audienceScope,
-                ],
-            ]));
+            $seen[$key] = true;
+            $batch[] = $recipient;
+
+            if (count($batch) === self::RECIPIENT_BATCH_SIZE) {
+                yield $batch;
+                $batch = [];
+            }
+        }
+
+        if ($batch !== []) {
+            yield $batch;
         }
     }
 
     /**
-     * @return list<EventNotificationRecipientData>
+     * @return iterable<int, list<EventNotificationRecipientData>>
      */
-    private function resolveRecipients(EventChangeNoticeNotificationData $notice): array
-    {
-        $recipients = $notice->recipients;
-
-        if ($notice->updateId !== null) {
-            foreach ($this->audienceResolver->resolve($notice->updateId, $notice->audienceScope) as $recipient) {
-                if ($recipient instanceof EventNotificationRecipientData) {
-                    $recipients[] = $recipient;
-                }
-            }
-        }
-
-        if ($recipients !== [] || $notice->audienceScope !== 'registrants') {
-            return $recipients;
-        }
-
-        return $this->registrationRecipients($notice->eventId);
-    }
-
-    /**
-     * @return list<EventNotificationRecipientData>
-     */
-    private function registrationRecipients(string $eventId): array
+    private function registrationRecipientBatches(string $eventId): iterable
     {
         $registrationClass = ModelResolver::registrationClass();
         $statuses = config(
@@ -91,38 +135,88 @@ final class EventChangeNoticeNotificationDriver implements EventChangeNoticeNoti
             ['pending', 'confirmed', 'checked_in'],
         );
 
-        $recipients = [];
+        $batch = [];
 
-        $registrationClass::query()
+        foreach ($registrationClass::query()
             ->where('event_id', $eventId)
             ->whereIn('status', $statuses)
-            ->chunkById(500, function (iterable $registrations) use (&$recipients): void {
-                foreach ($registrations as $registration) {
-                    if (! $registration instanceof Model) {
-                        continue;
-                    }
+            ->lazyById(self::RECIPIENT_BATCH_SIZE) as $registration) {
+            if ($registration instanceof Model) {
+                $batch[] = new EventNotificationRecipientData(
+                    notifiableType: $registration->getMorphClass(),
+                    notifiableId: (string) $registration->getKey(),
+                );
+            }
 
-                    $recipients[] = new EventNotificationRecipientData(
-                        notifiableType: $registration->getMorphClass(),
-                        notifiableId: (string) $registration->getKey(),
-                    );
-                }
-            });
-
-        return $recipients;
-    }
-
-    private function resolveNotifiable(EventNotificationRecipientData $recipient): ?Model
-    {
-        $modelClass = Relation::getMorphedModel($recipient->notifiableType) ?? $recipient->notifiableType;
-
-        if (! is_a($modelClass, Model::class, true)) {
-            return null;
+            if (count($batch) >= self::RECIPIENT_BATCH_SIZE) {
+                yield $batch;
+                $batch = [];
+            }
         }
 
-        $notifiable = $modelClass::query()->find($recipient->notifiableId);
+        if ($batch !== []) {
+            yield $batch;
+        }
+    }
 
-        return $notifiable instanceof Model ? $notifiable : null;
+    /**
+     * @param  list<EventNotificationRecipientData>  $recipients
+     * @return array<string, Model>
+     */
+    private function loadNotifiables(array $recipients): array
+    {
+        $grouped = [];
+
+        foreach ($recipients as $recipient) {
+            $grouped[$recipient->notifiableType][] = $recipient->notifiableId;
+        }
+
+        $notifiables = [];
+
+        foreach ($grouped as $type => $ids) {
+            $modelClass = Relation::getMorphedModel($type) ?? $type;
+
+            if (! is_a($modelClass, Model::class, true)) {
+                continue;
+            }
+
+            $query = $modelClass::query();
+
+            $this->eagerLoadNotificationRelations($query, $modelClass);
+
+            foreach ($query->whereKey($ids)->get() as $notifiable) {
+                if ($notifiable instanceof Model) {
+                    $notifiables[$type . ':' . $notifiable->getKey()] = $notifiable;
+                }
+            }
+        }
+
+        return $notifiables;
+    }
+
+    /**
+     * @param  Builder<Model>  $query
+     * @param  class-string<Model>  $modelClass
+     */
+    private function eagerLoadNotificationRelations(Builder $query, string $modelClass): void
+    {
+        $registrationClass = ModelResolver::registrationClass();
+
+        if (! is_a($modelClass, $registrationClass, true)) {
+            return;
+        }
+
+        $query->with([
+            'participants' => static fn (HasMany $participants): HasMany => $participants
+                ->orderByDesc('is_primary')
+                ->orderBy('created_at'),
+            'participants.contactMethods',
+        ]);
+    }
+
+    private function recipientKey(EventNotificationRecipientData $recipient): string
+    {
+        return $recipient->notifiableType . ':' . $recipient->notifiableId;
     }
 
     private function hasMailDestination(Model $recipient, EventChangeNoticeNotification $notification): bool

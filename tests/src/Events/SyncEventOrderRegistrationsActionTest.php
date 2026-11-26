@@ -65,3 +65,36 @@ it('rejects unsupported order event types', function (): void {
     expect(fn () => app(SyncEventOrderRegistrationsAction::class)->handle('order', 'order', 'unknown'))
         ->toThrow(InvalidArgumentException::class);
 });
+
+it('keeps cancellation and refund transitions and payment state in one terminal update', function (): void {
+    $event = Event::factory()->create();
+    $cancelled = EventRegistration::factory()->create([
+        'event_id' => $event->id,
+        'status' => 'confirmed',
+        'external_order_id' => 'order-cancel-terminal',
+        'external_order_type' => 'order',
+        'payment_status' => 'paid',
+    ]);
+    $refunded = EventRegistration::factory()->create([
+        'event_id' => $event->id,
+        'status' => 'refund_pending',
+        'external_order_id' => 'order-refund-terminal',
+        'external_order_type' => 'order',
+        'payment_status' => 'paid',
+        'metadata' => ['refund' => ['original_status' => 'confirmed']],
+    ]);
+
+    $action = app(SyncEventOrderRegistrationsAction::class);
+
+    $action->handle('order-cancel-terminal', 'order', 'cancelled');
+    $action->handle('order-cancel-terminal', 'order', 'cancelled');
+    $action->handle('order-refund-terminal', 'order', 'refunded');
+    $action->handle('order-refund-terminal', 'order', 'refunded');
+
+    expect($cancelled->fresh()->status->getValue())->toBe('cancelled')
+        ->and($cancelled->fresh()->cancelled_at)->not->toBeNull()
+        ->and($cancelled->fresh()->payment_status)->toBe('cancelled')
+        ->and($refunded->fresh()->status->getValue())->toBe('refunded')
+        ->and($refunded->fresh()->refunded_at)->not->toBeNull()
+        ->and($refunded->fresh()->payment_status)->toBe('refunded');
+});

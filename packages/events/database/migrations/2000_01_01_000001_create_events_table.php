@@ -43,7 +43,7 @@ return new class extends Migration
             $table->string('schedule_kind', 32)->default('single')->index();
             $table->string('pricing_mode')->nullable()->index();
             $table->string('registration_mode')->nullable()->index();
-            $table->boolean('issue_passes_for_free')->default(true);
+            $table->boolean('issue_passes_for_free')->nullable()->default(null);
 
             $table->index(['status', 'visibility'], 'events_public_listing_idx');
             $table->index('updated_at', 'events_updated_at_idx');

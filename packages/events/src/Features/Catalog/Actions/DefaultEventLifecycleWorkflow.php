@@ -184,10 +184,11 @@ final class DefaultEventLifecycleWorkflow implements EventLifecycleWorkflow
             $target->save();
 
             $this->recordChange($context['event_id'], 'rescheduled', null, $context['occurrence_id'], $context['session_id'], [
-                'old_starts_at' => $previousStartsAt,
-                'old_ends_at' => $previousEndsAt,
-                'new_starts_at' => $startsAt,
-                'new_ends_at' => $endsAt,
+                'starts_at' => $previousStartsAt,
+                'ends_at' => $previousEndsAt,
+            ], [
+                'starts_at' => $startsAt,
+                'ends_at' => $endsAt,
             ]);
 
             $occurrenceOrSessionEndsAt = $endsAt ?? $startsAt;
@@ -344,7 +345,8 @@ final class DefaultEventLifecycleWorkflow implements EventLifecycleWorkflow
     }
 
     /**
-     * @param  array<string, mixed>  $context
+     * @param  array<string, mixed>  $oldValue
+     * @param  array<string, mixed>  $newValue
      */
     private function recordChange(
         string $eventId,
@@ -352,7 +354,8 @@ final class DefaultEventLifecycleWorkflow implements EventLifecycleWorkflow
         ?string $reason = null,
         ?string $occurrenceId = null,
         ?string $sessionId = null,
-        array $context = [],
+        array $oldValue = [],
+        array $newValue = [],
     ): void {
         app(ChangesApi::class)->dispatchChange(
             eventId: $eventId,
@@ -363,7 +366,8 @@ final class DefaultEventLifecycleWorkflow implements EventLifecycleWorkflow
             reason: $reason,
             occurrenceId: $occurrenceId,
             sessionId: $sessionId,
-            oldValue: $context,
+            oldValue: $oldValue,
+            newValue: $newValue,
         );
     }
 

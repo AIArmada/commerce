@@ -71,6 +71,21 @@ test('event taxonomy hierarchy searchTerms returns filtered active terms', funct
         ->and($filtered[0]['code'])->toBe('fiqh');
 });
 
+test('event taxonomy hierarchy reflects taxonomy and term edits in the same request', function (): void {
+    $taxonomy = EventTaxonomy::factory()->create(['name' => 'Before']);
+    $term = EventTerm::factory()->create(['event_taxonomy_id' => $taxonomy->id, 'is_active' => true]);
+    $hierarchy = app(EventTaxonomyHierarchy::class);
+
+    expect($hierarchy->taxonomy($taxonomy->code)?->name)->toBe('Before')
+        ->and($hierarchy->terms($taxonomy->code))->toHaveCount(1);
+
+    $taxonomy->update(['name' => 'After']);
+    $term->delete();
+
+    expect($hierarchy->taxonomy($taxonomy->code)?->name)->toBe('After')
+        ->and($hierarchy->terms($taxonomy->code))->toBe([]);
+});
+
 test('event service provider binds EventRefundEligibility and PaymentRefunded listener', function (): void {
     expect(app(EventRefundEligibility::class))->toBeInstanceOf(DefaultEventRefundEligibility::class);
 

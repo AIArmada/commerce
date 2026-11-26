@@ -78,6 +78,14 @@ final class DefaultEventSubmissionConverter implements EventSubmissionConverter
                 throw new RuntimeException(sprintf('Event submission [%s] has already been converted.', $submissionId));
             }
 
+            if (! $state->canTransitionTo(Converted::class)) {
+                throw new RuntimeException(sprintf(
+                    'Event submission [%s] cannot be converted from [%s].',
+                    $submissionId,
+                    $state->getValue(),
+                ));
+            }
+
             $eventId = OwnerContext::withOwner($owner, fn (): string => $this->catalog->createEventFromSubmission(
                 new EventCreationData(
                     ownerType: $owner->getMorphClass(),
@@ -96,9 +104,8 @@ final class DefaultEventSubmissionConverter implements EventSubmissionConverter
                 ),
             ));
 
-            $state->transitionTo(Converted::class);
             $locked->setAttribute('event_id', $eventId);
-            $locked->save();
+            $state->transitionTo(Converted::class);
 
             return $eventId;
         });

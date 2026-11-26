@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Events\Platform;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
@@ -144,6 +145,14 @@ trait ScopesByEventOwner
             EventWriteGuard::findOrFail((string) $eventId);
         }
 
+        if ($eventIdColumn !== null && $model->exists) {
+            $originalEventId = $model->getRawOriginal($eventIdColumn);
+
+            if ($originalEventId !== null && (string) $originalEventId !== (string) $eventId) {
+                EventWriteGuard::findOrFail((string) $originalEventId);
+            }
+        }
+
         $morphRelation = static::eventOwnerMorphRelation();
 
         if ($morphRelation !== null) {
@@ -160,6 +169,17 @@ trait ScopesByEventOwner
             return;
         }
 
+        if ($model->exists && $model->isDirty()) {
+            $persisted = $model->newInstance([], true);
+            $persisted->setRawAttributes($model->getRawOriginal(), true);
+            self::assertRelatedOwner($persisted, $relation);
+        }
+
+        self::assertRelatedOwner($model, $relation);
+    }
+
+    private static function assertRelatedOwner(Model $model, string $relation): void
+    {
         $related = self::resolveRelationPath($model, $relation);
 
         if (! $related instanceof Model) {
@@ -274,7 +294,9 @@ trait ScopesByEventOwner
 
         if (method_exists($modelClass, 'eventOwnerRelation')
             || EventSubmissionOwnerScope::supports($modelClass)) {
-            if (! $modelClass::query()->whereKey($model->getKey())->exists()) {
+            if (! OwnerScopeOverride::withoutIncludeGlobal(
+                static fn (): bool => $modelClass::query()->whereKey($model->getKey())->exists(),
+            )) {
                 throw new AuthorizationException(sprintf(
                     'Cross-owner write blocked for %s.',
                     $modelClass,

@@ -464,6 +464,20 @@ class EventRegistration extends Model
 
     public function resolvePrimaryParticipant(): ?EventRegistrationParticipant
     {
+        if ($this->relationLoaded('participants')) {
+            /** @var Collection<int, EventRegistrationParticipant> $participants */
+            $participants = $this->getRelation('participants');
+
+            $participant = $participants
+                ->sortBy([
+                    ['is_primary', 'desc'],
+                    ['created_at', 'asc'],
+                ])
+                ->first();
+
+            return $participant instanceof EventRegistrationParticipant ? $participant : null;
+        }
+
         /** @var EventRegistrationParticipant|null $participant */
         $participant = $this->primaryParticipant()->first()
             ?? $this->participants()->orderByDesc('is_primary')->orderBy('created_at')->first();

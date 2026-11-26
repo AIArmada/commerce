@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Features\Catalog\Queries;
 
-use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\Events\Features\Catalog\Actions\CreateEventFromSubmissionAction;
 use AIArmada\Events\Features\Catalog\Api\CatalogApi;
 use AIArmada\Events\Features\Catalog\Api\EventCreationData;
@@ -14,7 +13,6 @@ use AIArmada\Events\Features\Catalog\Api\EventScopeRef;
 use AIArmada\Events\Features\Catalog\Models\Event;
 use AIArmada\Events\Features\Catalog\Models\EventOccurrence;
 use AIArmada\Events\Features\Catalog\Models\EventSession;
-use AIArmada\Events\Platform\EventWriteGuard;
 use AIArmada\Events\Platform\ModelResolver;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
@@ -159,10 +157,16 @@ final class EloquentCatalogApi implements CatalogApi
     private function describeEvent(string $eventId): ?EventScopeData
     {
         $eventClass = ModelResolver::eventClass();
-        $event = $eventClass::query()->withoutGlobalScope(OwnerScope::class)->whereKey($eventId)->first();
+        $event = $eventClass::query()->whereKey($eventId)->first();
 
         if (! $event instanceof Event) {
             return null;
+        }
+
+        $startsAt = $this->toImmutable($event->getAttribute('starts_at'));
+
+        if (! $startsAt instanceof CarbonImmutable) {
+            $startsAt = $this->toImmutable($event->primaryOccurrence()->value('starts_at'));
         }
 
         return new EventScopeData(
@@ -175,7 +179,7 @@ final class EloquentCatalogApi implements CatalogApi
             title: $event->title,
             status: $event->status->getValue(),
             capacity: null,
-            startsAt: $this->toImmutable($event->getAttribute('starts_at')),
+            startsAt: $startsAt,
             pricingMode: $event->effectivePricingMode()->value,
             registrationMode: $event->effectiveRegistrationMode()->value,
             shouldIssuePassesForFree: $event->shouldIssuePassesForFree(),
@@ -185,7 +189,7 @@ final class EloquentCatalogApi implements CatalogApi
     private function describeOccurrence(string $occurrenceId): ?EventScopeData
     {
         $occurrenceClass = ModelResolver::occurrenceClass();
-        $occurrence = $occurrenceClass::query()->withoutGlobalScope(EventWriteGuard::OWNER_SCOPE)->whereKey($occurrenceId)->first();
+        $occurrence = $occurrenceClass::query()->whereKey($occurrenceId)->first();
 
         if (! $occurrence instanceof EventOccurrence) {
             return null;
@@ -211,7 +215,7 @@ final class EloquentCatalogApi implements CatalogApi
     private function describeSession(string $sessionId): ?EventScopeData
     {
         $sessionClass = ModelResolver::sessionClass();
-        $session = $sessionClass::query()->withoutGlobalScope(EventWriteGuard::OWNER_SCOPE)->whereKey($sessionId)->first();
+        $session = $sessionClass::query()->whereKey($sessionId)->first();
 
         if (! $session instanceof EventSession) {
             return null;

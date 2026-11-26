@@ -83,6 +83,8 @@ Pricing and registration modes follow this resolution chain:
 
 1. Session override → Occurrence override → Event override → config default / auto-derive
 2. Accessors `effectivePricingMode()` and `effectiveRegistrationMode()` walk the chain and return the resolved value
+3. `issue_passes_for_free` is nullable at every level: an explicit `true`/`false` wins, and `null` inherits occurrence, session, then event, then `events.features.free_only.auto_issue_passes_for_free`
+4. With ticket-type derivation disabled, an occurrence/session without a local `pricing_mode` still inherits the explicit parent pricing mode instead of falling straight to `Paid`
 
 ### Per-level overrides
 
@@ -102,9 +104,13 @@ $session = app(CreateEventSessionAction::class)->handle($occurrence, [
     'visibility' => 'public',    // NOT NULL
     'pricing_mode' => PricingMode::Paid,     // Override free event
     'registration_mode' => 'required',
+    'issue_passes_for_free' => false,        // Explicit false overrides inherited true
     'capacity' => 50,
 ]);
 ```
+
+Creating an occurrence or session with these keys left absent (or explicitly
+`null`) preserves inheritance instead of writing a concrete default.
 
 This allows mixed-mode setups where a free event has a paid add-on session,
 or vice versa. Visibility follows the same event → occurrence → session
@@ -229,7 +235,10 @@ app(DeleteEventSessionAction::class)->handle($session);
 ```
 
 Occurrences represent the actual scheduled run of an event. They carry their
-own status lifecycle, capacity, and registration windows.
+own status lifecycle and capacity. Registration acceptance follows the
+occurrence status configured in `events.lifecycle.occurrence.registration_accepting_statuses`;
+paid ticket sales additionally follow each ticket type's `sales_starts_at` and
+`sales_ends_at` window.
 
 `CreateEventOccurrenceAction` defaults an omitted `ends_at` to two hours
 after the start; pass an explicit `null` for an open-ended occurrence.
@@ -348,6 +357,26 @@ Promotion requires remaining capacity for the registration's full
 `total_participants` and throws `NotInterestedRegistrationException` when the
 status is not `Interested`.
 
+Waitlisted registrations can be promoted through
+`PromoteWaitlistedRegistrationsAction`:
+
+```php
+use AIArmada\Events\Features\Registrations\Actions\PromoteWaitlistedRegistrationsAction;
+
+app(PromoteWaitlistedRegistrationsAction::class)->handle($registrationId);
+
+// Or promote a whole scope in waitlist order
+$promoted = app(PromoteWaitlistedRegistrationsAction::class)->handleScope(
+    'occurrence',
+    $occurrenceId,
+);
+```
+
+Promotion resolves and locks the parent scope first, re-checks lifecycle
+eligibility and capacity under that lock, and preserves FIFO order.
+`handleScope()` stops at the first request that no longer fits instead of
+promoting later requests ahead of it.
+
 ### Idempotent free checkout
 
 Retried checkout deliveries can pass an idempotency key; retries with the
@@ -366,6 +395,11 @@ app(RegisterForFreeAction::class)->execute(
 ## Open-door events (walk-in / headcount)
 
 For events with `registration_mode = None`:
+
+Walk-in and headcount writes also enforce the canonical lifecycle policy:
+the event must not be cancelled/completed/archived/expired/voided, an
+occurrence scope must be in `walk_in_accepting_statuses`, and a session scope
+must be in `registration_accepting_statuses`.
 
 ```php
 use AIArmada\Events\Features\Attendance\Actions\RecordHeadcountLogAction;
@@ -458,7 +492,16 @@ $service->markRefundPending($registrationId, 'Awaiting gateway');
 $service->restoreFromRefundPending($registrationId);
 ```
 
-### Refund delivery safety
+Pass issuance runs under the registration row lock and only for statuses in
+`events.lifecycle.registration.pass_issuance_statuses` (default `confirmed`,
+`checked_in`, `completed`); cancelled, refunded, rejected or expired
+registrations receive no passes. Quantities across every registration item
+that shares a ticket type are summed before issuing, including the ticket
+type's `admits_quantity`. Checkout records issued and delivered pass IDs
+separately in step data, so a retried checkout only delivers passes that have
+not already been delivered while still retrying any failed delivery.
+
+### Refund and admissions authorization
 
 `refund()` and `restoreFromRefundPending()` run against a row-locked fresh
 copy of the registration inside a transaction, so duplicate deliveries
@@ -471,7 +514,15 @@ twice. Keep refund-family transitions on `RegistrationServiceInterface`;
 reimplementing them without the lock reintroduces double-restore.
 
 For order-backed refunds use the commerce path, which creates the provider
-refund and drives the state machine:
+refund and drives the state machine inside the event's verified owner
+context. The self-service deadline uses the primary occurrence start time
+when the registration is event-level; `refund_failed` restores payment state
+only when the registration was genuinely `refund_pending`.
+
+Asynchronous provider confirmations match against the provider and refund
+identifiers before entering the matched order refund's owner context.
+Custom order drivers should populate `EventRefundMatchData::ownerType` and
+`ownerId` for tenant-owned matches.
 
 ```php
 use AIArmada\Events\Features\Commerce\Actions\ProcessEventRegistrationRefundAction;
@@ -485,6 +536,15 @@ $result = app(ProcessEventRegistrationRefundAction::class)->handle(
 );
 // EventRefundResultData { status, transactionId, paymentId, message, refundId }
 ```
+
+### Authorization defaults
+
+`EventRegistrationPolicy::requestRefund()` allows the polymorphic registrant
+or a manager resolved through the event/owner boundary; every other actor is
+denied. `EventPolicy::manageAdmissions()` allows the event owner/manager only.
+Both abilities deny by default, so a host that needs a different refund or
+admissions policy must override the policy class through Laravel's Gate
+registration rather than widening the package default.
 
 ### Reading registrations
 
@@ -554,9 +614,14 @@ duplicate scans are detectable), `checkIn()` unwraps to `AttendanceRecord`.
 Validation highlights: `event_id` is required; attendee type/id must both be
 present or both null; `verified_by_user_id` must be a UUID; notes are capped
 at 5000 characters; metadata must be an array; `performed_by` type/id must
-both be present or both null. When no occurrence is supplied, the earliest
-occurrence in a check-in-accepting status is used, and a missing occurrence
-throws. Every mutation runs through `EventWriteGuard` and writes an
+both be present or both null. Registrations must be in a
+`check_in_allowed_statuses` lifecycle state, selected passes must be valid,
+and an explicitly supplied occurrence must be in a check-in-accepting
+status. When no occurrence is supplied, the earliest occurrence in a
+check-in-accepting status is used, and a missing occurrence throws. Anonymous
+walk-ins without a registration, participant, pass, or attendee identity
+always create a new attendance instead of collapsing into an earlier one.
+Every mutation runs through `EventWriteGuard` and writes an
 `EventAttendanceLog` entry.
 
 ### Attendance lookups
@@ -646,6 +711,11 @@ remaining-quota checks count registration item quantity across
 capacity-blocking statuses. Events-facing code can use
 `Features\Commerce\Actions\EnsureTicketTypeForOccurrenceAction` with a scalar
 scope (`'event'`, `'occurrence'`, `'session'`).
+
+Server-derived cart identity attributes (`purchasable_type`,
+`purchasable_id`, `ticket_type_id`, event scope IDs, `code`, participants, and
+inventory keys) always win over `extraAttributes`; extra keys that do not
+collide are preserved as extension fields.
 
 ## Managing Involvements
 
@@ -781,6 +851,9 @@ Event::query()->withoutOwnerScope()->get();
 resolver: it enforces the owner scope (or returns the plain lookup when
 owner scoping is disabled) before any child mutation. Package code resolves
 the event first and never trusts caller-supplied parent models.
+`CatalogApi::describeScope()` and `RegistrationsApi::lock()` obey the active
+owner context by default; trusted cross-owner system paths must opt out
+explicitly rather than widening ordinary reads.
 
 ## Working with Passes
 
@@ -1040,13 +1113,17 @@ event fields, statuses, or search-index integration.
 use AIArmada\Events\Contracts\EventSearchEngine;
 
 $results = app(EventSearchEngine::class)->search([
-    'query' => 'conference',
+    'search' => 'conference',
+    'visibility' => 'public',
+    'status' => 'published',
     'limit' => 25,
 ]);
 ```
 
-The default `EloquentEventSearchEngine` returns an Eloquent collection;
-replace it via `events.search.engine` to plug in an external index.
+The default `EloquentEventSearchEngine` returns an owner-scoped Eloquent
+collection. Its default visibility filter excludes hidden events. For public
+listings, pass both `visibility => 'public'` and `status => 'published'`
+as shown above. Set `events.search.engine` to plug in an external index.
 
 ## Dispatching an event change notice
 
@@ -1232,7 +1309,10 @@ Authorization beyond the query layer lives in domain policies: `EventPolicy`
 plus `EventOccurrencePolicy`, `EventSessionPolicy`,
 `EventRegistrationPolicy`, and `EventSubmissionPolicy`, all registered by
 their feature modules. Management abilities resolve through the event owner
-(via the `CanManageEventsFor` contract) and public events stay viewable.
+(via the `CanManageEventsFor` contract). Public event visibility covers the
+event, its occurrences, and sessions only: registration and submission
+records stay visible to managers and to the polymorphic record owner
+(registrant or submitter), never to unrelated viewers.
 
 ## Query service
 

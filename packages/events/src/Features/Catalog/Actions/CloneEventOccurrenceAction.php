@@ -45,6 +45,9 @@ final class CloneEventOccurrenceAction
                 'visibility' => $options['visibility'] ?? $occurrence->visibility,
                 'delivery_mode' => $options['delivery_mode'] ?? $occurrence->delivery_mode,
                 'capacity' => $options['capacity'] ?? $occurrence->capacity,
+                'pricing_mode' => array_key_exists('pricing_mode', $options) ? $options['pricing_mode'] : $occurrence->pricing_mode,
+                'registration_mode' => array_key_exists('registration_mode', $options) ? $options['registration_mode'] : $occurrence->registration_mode,
+                'issue_passes_for_free' => array_key_exists('issue_passes_for_free', $options) ? $options['issue_passes_for_free'] : $occurrence->issue_passes_for_free,
                 'metadata' => $options['metadata'] ?? $occurrence->metadata,
             ]);
 
