@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Commissions\Models;
 
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\Concerns\ScopesByProgramOwner;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
@@ -86,7 +85,7 @@ class AffiliateCommissionPromotion extends Model implements Auditable
         return true;
     }
 
-    public function appliesToAffiliate(Affiliate $affiliate): bool
+    public function appliesToAffiliate(string $affiliateId): bool
     {
         if (! $this->isActive()) {
             return false;
@@ -96,7 +95,7 @@ class AffiliateCommissionPromotion extends Model implements Auditable
             return true;
         }
 
-        return in_array($affiliate->id, $this->affiliate_ids, true);
+        return in_array($affiliateId, $this->affiliate_ids, true);
     }
 
     public function scopeActive(Builder $query): Builder

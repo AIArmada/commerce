@@ -42,7 +42,7 @@ describe('AffiliateCommissionPromotion Model', function (): void {
             'ends_at' => now()->addWeek(),
         ]);
 
-        expect($promotion->appliesToAffiliate($this->affiliate))->toBeFalse();
+        expect($promotion->appliesToAffiliate($this->affiliate->id))->toBeFalse();
     });
 
     test('calculateBonus returns zero for unknown type', function (): void {

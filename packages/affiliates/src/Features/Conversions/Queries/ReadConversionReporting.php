@@ -12,9 +12,9 @@ use AIArmada\Affiliates\Features\Conversions\Api\VoucherConversionRecord;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateReportingReader;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Contracts\MerchantIdentity;
+use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use DateTimeInterface;
@@ -57,15 +57,15 @@ final readonly class ReadConversionReporting implements ConversionReportingReade
     public function approvedCommercialByAffiliate(DateTimeInterface $start, DateTimeInterface $end, bool $includeGlobal): array
     {
         $conversion = new AffiliateConversion;
-        $affiliate = new Affiliate;
+        $reference = app(MerchantIdentity::class)->ownerTable();
         $connection = $conversion->getConnection();
 
-        if ($connection !== $affiliate->getConnection()) {
+        if ($reference->connectionIdentity !== spl_object_id($connection)) {
             throw new LogicException('Performance bonus queries require a shared database connection.');
         }
 
         $conversionsTable = $conversion->getTable();
-        $affiliatesTable = $affiliate->getTable();
+        $affiliatesTable = $reference->table;
         $grammar = $connection->getQueryGrammar();
         $purposeColumn = $grammar->wrap("{$affiliatesTable}.purpose");
         $valueColumn = $grammar->wrap("{$conversionsTable}.value_minor");
@@ -93,16 +93,17 @@ final readonly class ReadConversionReporting implements ConversionReportingReade
             ])
             ->whereBetween("{$conversionsTable}.occurred_at", [$start, $end])
             ->where("{$conversionsTable}.status", ApprovedConversion::value())
-            ->where("{$affiliatesTable}.status", AffiliateStatus::normalize(Active::class))
+            ->where("{$affiliatesTable}.status", Active::$name)
             ->whereNull("{$affiliatesTable}.paused_at")
             ->whereNull("{$affiliatesTable}.deactivated_at")
             ->where(static function ($query) use ($affiliatesTable, $purposeColumn): void {
                 $query->whereNull("{$affiliatesTable}.purpose")
-                    ->orWhereRaw("LOWER(TRIM({$purposeColumn})) = ?", [Affiliate::PURPOSE_GENERAL]);
+                    ->orWhereRaw("LOWER(TRIM({$purposeColumn})) = ?", ['general']);
             })
             ->groupBy("{$affiliatesTable}.id", "{$affiliatesTable}.name", "{$conversionsTable}.commission_currency");
 
         if ((bool) config('affiliates.owner.enabled', false)) {
+            $includeGlobal = $includeGlobal && (bool) config('affiliates.owner.include_global', false) && ! OwnerScopeOverride::suppressIncludeGlobal();
             $owner = OwnerContext::resolve();
             OwnerContext::assertResolvedOrExplicitGlobal(
                 $owner,

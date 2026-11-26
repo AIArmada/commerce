@@ -13,7 +13,10 @@ use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionRule;
 use AIArmada\Affiliates\Features\Commissions\Models\AffiliateVolumeTier;
 use AIArmada\Affiliates\Features\Commissions\Queries\FindCommissionRules;
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionStatisticsReader;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfile;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use AIArmada\Affiliates\Support\RevenueVolume;
 use AIArmada\CommerceSupport\Support\CurrencyConverter;
 use Carbon\CarbonImmutable;
@@ -40,7 +43,8 @@ final readonly class CalculateRuleCommission implements CommissionRuleCalculatio
         int $orderAmountMinor,
         array $context = []
     ): CommissionCalculationResult {
-        $connection = (new Affiliate)->getConnection();
+        $connection = (new AffiliateCommissionPromotion)->getConnection();
+        app(AffiliateAccessGuard::class)->assertConnection(spl_object_id($connection));
 
         if ($connection !== (new AffiliateCommissionPromotion)->getConnection()
             || $connection !== (new AffiliateCommissionRule)->getConnection()
@@ -50,18 +54,19 @@ final readonly class CalculateRuleCommission implements CommissionRuleCalculatio
 
         $this->statistics->assertConnection(spl_object_id($connection));
 
-        return $connection->transaction(function () use ($affiliateId, $orderAmountMinor, $context): CommissionCalculationResult {
-            $affiliate = Affiliate::query()->forOwner(includeGlobal: true)->lockForUpdate()->findOrFail($affiliateId);
+        return $connection->transaction(function () use ($affiliateId, $orderAmountMinor, $context, $connection): CommissionCalculationResult {
+            $affiliate = app(AffiliateProfileReader::class)->lock($affiliateId, spl_object_id($connection))
+                ?? throw new ModelNotFoundException('Affiliate not found.');
 
             return $this->calculateForAffiliate($affiliate, $orderAmountMinor, $context);
         });
     }
 
     /** @param array<string, mixed> $context */
-    private function calculateForAffiliate(Affiliate $affiliate, int $orderAmountMinor, array $context): CommissionCalculationResult
+    private function calculateForAffiliate(AffiliateProfile $affiliate, int $orderAmountMinor, array $context): CommissionCalculationResult
     {
         $context = array_merge($context, [
-            'affiliate_id' => $affiliate->id,
+            'affiliate_id' => $affiliate->reference->id,
             'order_amount_minor' => $orderAmountMinor,
         ]);
 
@@ -145,11 +150,12 @@ final readonly class CalculateRuleCommission implements CommissionRuleCalculatio
         return $rule->calculateCommission($orderAmountMinor);
     }
 
-    private function calculateVolumeBonus(Affiliate $affiliate, int $orderAmountMinor, array $context): int
+    private function calculateVolumeBonus(AffiliateProfile $affiliate, int $orderAmountMinor, array $context): int
     {
         $programId = $context['program_id'] ?? null;
 
-        $reference = RevenueVolume::referenceFor($affiliate);
+        $reference = $affiliate->currency !== null && mb_trim($affiliate->currency) !== ''
+            ? mb_strtoupper(mb_trim($affiliate->currency)) : RevenueVolume::default();
         $since = CarbonImmutable::now()->startOfMonth();
 
         if ($programId !== null && $programId !== '') {
@@ -157,11 +163,11 @@ final readonly class CalculateRuleCommission implements CommissionRuleCalculatio
                 throw new LogicException('A program ID must be a UUID string.');
             }
 
-            $folded = app(TrackingLinkReader::class)->programVolume((string) $affiliate->getKey(), $programId, $reference, $since)->byCurrency;
+            $folded = app(TrackingLinkReader::class)->programVolume($affiliate->reference->id, $programId, $reference, $since)->byCurrency;
         } else {
             $folded = [];
 
-            foreach ($this->statistics->totals((string) $affiliate->getKey(), $reference, spl_object_id($affiliate->getConnection()), $since) as $row) {
+            foreach ($this->statistics->totals($affiliate->reference->id, $reference, spl_object_id((new AffiliateCommissionPromotion)->getConnection()), $since) as $row) {
                 $folded[$row->currency] = $row->revenueMinor;
             }
         }
@@ -210,12 +216,12 @@ final readonly class CalculateRuleCommission implements CommissionRuleCalculatio
         return max(0, $tierCommission - $defaultCommission);
     }
 
-    private function calculatePromotionBonus(Affiliate $affiliate, int $baseCommission, array $context): int
+    private function calculatePromotionBonus(AffiliateProfile $affiliate, int $baseCommission, array $context): int
     {
         $programId = $context['program_id'] ?? null;
 
         $promotions = $this->promotionsForProgram($programId)
-            ->filter(fn (AffiliateCommissionPromotion $promo) => $promo->appliesToAffiliate($affiliate));
+            ->filter(fn (AffiliateCommissionPromotion $promo) => $promo->appliesToAffiliate($affiliate->reference->id));
 
         $totalBonus = 0;
 

@@ -9,11 +9,12 @@ use AIArmada\Affiliates\Features\Commissions\Api\PerformanceBonusCalculation;
 use AIArmada\Affiliates\Features\Conversions\Api\PerformanceBonusQueries;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Contracts\MerchantIdentity;
+use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
+use Illuminate\Database\Query\JoinClause;
 use Carbon\CarbonImmutable;
 use LogicException;
 
@@ -52,15 +53,15 @@ final readonly class QueryPerformanceBonuses implements PerformanceBonusQueries
         $to = $to ?? CarbonImmutable::now()->endOfMonth();
 
         $conversion = new AffiliateConversion;
-        $affiliate = new Affiliate;
+        $reference = app(MerchantIdentity::class)->ownerTable();
         $connection = $conversion->getConnection();
 
-        if ($connection !== $affiliate->getConnection()) {
+        if ($reference->connectionIdentity !== spl_object_id($connection)) {
             throw new LogicException('Performance bonus queries require a shared database connection.');
         }
 
         $conversionsTable = $conversion->getTable();
-        $affiliatesTable = $affiliate->getTable();
+        $affiliatesTable = $reference->table;
         $grammar = $connection->getQueryGrammar();
         $purposeColumn = $grammar->wrap("{$affiliatesTable}.purpose");
         $valueColumn = $grammar->wrap("{$conversionsTable}.value_minor");
@@ -69,7 +70,16 @@ final readonly class QueryPerformanceBonuses implements PerformanceBonusQueries
         $revenueExpression = "COALESCE({$valueColumn}, 0)";
 
         $query = $connection->table($conversionsTable)
-            ->join($affiliatesTable, "{$conversionsTable}.affiliate_id", '=', "{$affiliatesTable}.id")
+            ->join($affiliatesTable, static function (JoinClause $join) use ($conversionsTable, $affiliatesTable): void {
+                $join->on("{$conversionsTable}.affiliate_id", '=', "{$affiliatesTable}.id");
+
+                foreach (['owner_type', 'owner_id'] as $column) {
+                    $left = "{$conversionsTable}.{$column}";
+                    $right = "{$affiliatesTable}.{$column}";
+                    $join->where(static fn ($query) => $query->whereColumn($left, $right)
+                        ->orWhere(static fn ($query) => $query->whereNull($left)->whereNull($right)));
+                }
+            })
             ->select([
                 "{$affiliatesTable}.id as affiliate_id",
                 "{$affiliatesTable}.name as affiliate_name",
@@ -81,10 +91,10 @@ final readonly class QueryPerformanceBonuses implements PerformanceBonusQueries
             ])
             ->whereBetween("{$conversionsTable}.occurred_at", [$from, $to])
             ->where("{$conversionsTable}.status", ApprovedConversion::value())
-            ->where("{$affiliatesTable}.status", AffiliateStatus::normalize(Active::class))
+            ->where("{$affiliatesTable}.status", Active::$name)
             ->where(static function ($query) use ($affiliatesTable, $purposeColumn): void {
                 $query->whereNull("{$affiliatesTable}.purpose")
-                    ->orWhereRaw("LOWER(TRIM({$purposeColumn})) = ?", [Affiliate::PURPOSE_GENERAL]);
+                    ->orWhereRaw("LOWER(TRIM({$purposeColumn})) = ?", ['general']);
             })
             ->groupBy("{$affiliatesTable}.id", "{$affiliatesTable}.name", "{$affiliatesTable}.code")
             ->orderByDesc('total_revenue')
@@ -98,7 +108,7 @@ final readonly class QueryPerformanceBonuses implements PerformanceBonusQueries
                 'Performance bonus queries require an owner context or explicit global context.',
             );
 
-            $includeGlobal = (bool) config('affiliates.owner.include_global', false);
+            $includeGlobal = (bool) config('affiliates.owner.include_global', false) && ! OwnerScopeOverride::suppressIncludeGlobal();
 
             OwnerQuery::applyToQueryBuilder(
                 $query,

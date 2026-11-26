@@ -122,7 +122,7 @@ describe('AffiliateCommissionPromotion Model', function (): void {
             'affiliate_ids' => null,
         ]);
 
-        expect($promo->appliesToAffiliate($affiliate))->toBeTrue();
+        expect($promo->appliesToAffiliate($affiliate->id))->toBeTrue();
     });
 
     it('applies to specific affiliates when affiliate_ids is set', function (): void {
@@ -154,8 +154,8 @@ describe('AffiliateCommissionPromotion Model', function (): void {
             'affiliate_ids' => [$includedAffiliate->id],
         ]);
 
-        expect($promo->appliesToAffiliate($includedAffiliate))->toBeTrue()
-            ->and($promo->appliesToAffiliate($excludedAffiliate))->toBeFalse();
+        expect($promo->appliesToAffiliate($includedAffiliate->id))->toBeTrue()
+            ->and($promo->appliesToAffiliate($excludedAffiliate->id))->toBeFalse();
     });
 
     it('increments usage', function (): void {

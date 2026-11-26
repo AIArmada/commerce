@@ -10,7 +10,9 @@ use AIArmada\Affiliates\Features\Commissions\Api\ProgramCommissionAdministration
 use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionPromotion;
 use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionRule;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramReferenceReader;
-use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -91,7 +93,9 @@ final readonly class AdministerProgramCommissions implements ProgramCommissionAd
     {
         $connection = (new AffiliateCommissionRule)->getConnection();
 
-        foreach ([new AffiliateCommissionRule, new AffiliateCommissionPromotion, new Affiliate] as $model) {
+        app(AffiliateAccessGuard::class)->assertConnection(spl_object_id($connection));
+
+        foreach ([new AffiliateCommissionRule, new AffiliateCommissionPromotion] as $model) {
             if ($model->getConnection() !== $connection) {
                 throw new RuntimeException('Program commission administration requires a shared database connection.');
             }
@@ -147,15 +151,18 @@ final readonly class AdministerProgramCommissions implements ProgramCommissionAd
             'ends_at' => ['required', 'date', 'after_or_equal:starts_at'],
             'max_uses' => ['nullable', 'integer', 'min:0'],
             'affiliate_ids' => ['nullable', 'array'],
-            'affiliate_ids.*' => ['required', 'string'],
+            'affiliate_ids.*' => ['required', 'uuid'],
         ])->validate();
 
         $ids = array_values(array_unique($attributes['affiliate_ids'] ?? []));
-        if ($ids !== []) {
-            $accessible = Affiliate::query()->forOwner(includeGlobal: (bool) config('affiliates.owner.include_global', false))
-                ->whereKey($ids)->count();
+        sort($ids, SORT_STRING);
+        $connectionIdentity = spl_object_id((new AffiliateCommissionPromotion)->getConnection());
+        $guard = app(AffiliateAccessGuard::class);
 
-            if ($accessible !== count($ids)) {
+        foreach ($ids as $id) {
+            try {
+                $guard->lockForWrite($id, $connectionIdentity);
+            } catch (AuthorizationException | ModelNotFoundException) {
                 throw ValidationException::withMessages(['affiliate_ids' => 'One or more affiliates are not accessible in the current owner scope.']);
             }
         }
