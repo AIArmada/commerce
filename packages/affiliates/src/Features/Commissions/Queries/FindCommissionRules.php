@@ -8,12 +8,14 @@ use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Features\Commissions\Api\CommissionRulePreview;
 use AIArmada\Affiliates\Features\Commissions\Api\CommissionRuleQuote;
 use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionRule;
-use AIArmada\Affiliates\Models\AffiliateProgram;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramReferenceReader;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
 final class FindCommissionRules implements CommissionRulePreview
 {
+    public function __construct(private readonly ProgramReferenceReader $programs) {}
+
     /** @return Collection<int, AffiliateCommissionRule> */
     public function matchingRules(array $context): Collection
     {
@@ -23,7 +25,7 @@ final class FindCommissionRules implements CommissionRulePreview
 
     public function previewCatalogRules(string $programId, array $contexts): array
     {
-        AffiliateProgram::query()->findOrFail($programId);
+        $this->programs->assertReadable($programId);
 
         $rules = $this->activeForProgram($programId)->filter(
             static fn (AffiliateCommissionRule $rule): bool => in_array($rule->rule_type, [

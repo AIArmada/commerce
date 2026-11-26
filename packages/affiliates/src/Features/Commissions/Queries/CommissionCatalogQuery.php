@@ -8,16 +8,18 @@ use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Features\Commissions\Api\CommissionCatalogReader;
 use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionPromotion;
 use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionRule;
-use AIArmada\Affiliates\Models\AffiliateProgram;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramReferenceReader;
 
 final readonly class CommissionCatalogQuery implements CommissionCatalogReader
 {
+    public function __construct(private ProgramReferenceReader $programs) {}
+
     /**
      * @return list<array{subject_type: string, subject_key: string, title: string, url: string, amount_minor: null, currency: null, context: array<string, mixed>}>
      */
     public function fallbackSubjects(string $programId, int $max): array
     {
-        AffiliateProgram::query()->findOrFail($programId);
+        $this->programs->assertReadable($programId);
         $max = max(1, $max);
 
         $rules = AffiliateCommissionRule::query()
@@ -68,7 +70,7 @@ final readonly class CommissionCatalogQuery implements CommissionCatalogReader
      */
     public function activePromotions(string $programId): array
     {
-        AffiliateProgram::query()->findOrFail($programId);
+        $this->programs->assertReadable($programId);
 
         return AffiliateCommissionPromotion::query()
             ->active()

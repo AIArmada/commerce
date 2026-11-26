@@ -6,16 +6,17 @@ namespace AIArmada\Affiliates\Features\Commissions\Actions;
 
 use AIArmada\Affiliates\Features\Commissions\Api\VolumeTierAdministration;
 use AIArmada\Affiliates\Features\Commissions\Models\AffiliateVolumeTier;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramReferenceReader;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Validator;
-use RuntimeException;
 
 final class AdministerVolumeTier implements VolumeTierAdministration
 {
+    public function __construct(private readonly ProgramReferenceReader $programs) {}
+
     public function create(array $data): string
     {
         return (new AffiliateVolumeTier)->getConnection()->transaction(function () use ($data): string {
@@ -82,15 +83,7 @@ final class AdministerVolumeTier implements VolumeTierAdministration
             return;
         }
 
-        if ((bool) config('affiliates.owner.enabled', false)) {
-            OwnerWriteGuard::findOrFailForOwner(AffiliateProgram::class, $programId);
-        }
-
-        if ((new AffiliateProgram)->getConnection() !== (new AffiliateVolumeTier)->getConnection()) {
-            throw new RuntimeException('Volume tier administration requires a shared database connection.');
-        }
-
-        AffiliateProgram::query()->lockForUpdate()->findOrFail($programId);
+        $this->programs->lockForAdministration($programId, spl_object_id((new AffiliateVolumeTier)->getConnection()));
     }
 
     /** @param array<string, mixed> $data

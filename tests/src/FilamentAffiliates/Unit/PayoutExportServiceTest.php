@@ -67,8 +67,7 @@ function createPayoutWithConversions(): AffiliatePayout
         'occurred_at' => now(),
     ]);
 
-    // Reload with conversions
-    return AffiliatePayout::with('conversions')->find($payout->getKey());
+    return $payout->refresh();
 }
 
 it('downloads payout as CSV', function (): void {
@@ -214,7 +213,7 @@ it('handles payouts with zero conversions', function (): void {
         'payee_id' => $affiliate->getKey(),
     ]);
 
-    $payout = AffiliatePayout::with('conversions')->find($payout->getKey());
+    $payout->refresh();
 
     $service = new PayoutExportService;
 

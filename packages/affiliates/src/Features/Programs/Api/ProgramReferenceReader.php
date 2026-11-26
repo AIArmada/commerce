@@ -8,6 +8,10 @@ interface ProgramReferenceReader
 {
     public function exists(string $id): bool;
 
+    public function assertReadable(string $id): void;
+
+    public function lockForAdministration(string $id, int $connectionIdentity): void;
+
     /** @return array<string, string> */
     public function options(string $search = '', int $limit = 50): array;
 

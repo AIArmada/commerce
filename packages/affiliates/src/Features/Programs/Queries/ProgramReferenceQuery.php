@@ -9,12 +9,42 @@ use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\CommerceSupport\Support\LikeSearch;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
+use LogicException;
 use RuntimeException;
 
 final readonly class ProgramReferenceQuery implements ProgramReferenceReader
 {
+    public function assertReadable(string $id): void
+    {
+        if (! Str::isUuid($id)) {
+            throw (new ModelNotFoundException)->setModel(AffiliateProgram::class, [$id]);
+        }
+
+        AffiliateProgram::query()->findOrFail($id);
+    }
+
+    public function lockForAdministration(string $id, int $connectionIdentity): void
+    {
+        $connection = (new AffiliateProgram)->getConnection();
+
+        if (spl_object_id($connection) !== $connectionIdentity || $connection->transactionLevel() < 1) {
+            throw new LogicException('Program administration requires a shared active database transaction.');
+        }
+
+        if (! Str::isUuid($id)) {
+            throw (new ModelNotFoundException)->setModel(AffiliateProgram::class, [$id]);
+        }
+
+        if ((bool) config('affiliates.owner.enabled', false)) {
+            OwnerWriteGuard::findOrFailForOwner(AffiliateProgram::class, $id);
+        }
+
+        AffiliateProgram::query()->lockForUpdate()->findOrFail($id);
+    }
+
     public function exists(string $id): bool
     {
         if (! Str::isUuid($id)) {

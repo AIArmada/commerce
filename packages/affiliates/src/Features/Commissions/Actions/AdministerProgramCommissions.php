@@ -10,8 +10,7 @@ use AIArmada\Affiliates\Features\Commissions\Api\ProgramCommissionAdministration
 use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionPromotion;
 use AIArmada\Affiliates\Features\Commissions\Models\AffiliateCommissionRule;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Affiliates\Features\Programs\Api\ProgramReferenceReader;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -19,9 +18,11 @@ use RuntimeException;
 
 final readonly class AdministerProgramCommissions implements ProgramCommissionAdministration
 {
+    public function __construct(private ProgramReferenceReader $programs) {}
+
     public function createRule(string $programId, array $data): string
     {
-        return (new AffiliateProgram)->getConnection()->transaction(function () use ($programId, $data): string {
+        return (new AffiliateCommissionRule)->getConnection()->transaction(function () use ($programId, $data): string {
             $this->lockProgram($programId);
 
             return (string) AffiliateCommissionRule::query()->create([
@@ -33,7 +34,7 @@ final readonly class AdministerProgramCommissions implements ProgramCommissionAd
 
     public function updateRule(string $programId, string $ruleId, array $data): void
     {
-        (new AffiliateProgram)->getConnection()->transaction(function () use ($programId, $ruleId, $data): void {
+        (new AffiliateCommissionRule)->getConnection()->transaction(function () use ($programId, $ruleId, $data): void {
             $this->lockProgram($programId);
             $rule = AffiliateCommissionRule::query()->where('program_id', $programId)->lockForUpdate()->findOrFail($ruleId);
             $rule->update($this->ruleAttributes(array_replace($rule->only([
@@ -45,7 +46,7 @@ final readonly class AdministerProgramCommissions implements ProgramCommissionAd
 
     public function deleteRule(string $programId, string $ruleId): bool
     {
-        return (new AffiliateProgram)->getConnection()->transaction(function () use ($programId, $ruleId): bool {
+        return (new AffiliateCommissionRule)->getConnection()->transaction(function () use ($programId, $ruleId): bool {
             $this->lockProgram($programId);
 
             return (bool) AffiliateCommissionRule::query()->where('program_id', $programId)->lockForUpdate()->findOrFail($ruleId)->delete();
@@ -54,7 +55,7 @@ final readonly class AdministerProgramCommissions implements ProgramCommissionAd
 
     public function createPromotion(string $programId, array $data): string
     {
-        return (new AffiliateProgram)->getConnection()->transaction(function () use ($programId, $data): string {
+        return (new AffiliateCommissionRule)->getConnection()->transaction(function () use ($programId, $data): string {
             $this->lockProgram($programId);
 
             return (string) AffiliateCommissionPromotion::query()->create([
@@ -67,7 +68,7 @@ final readonly class AdministerProgramCommissions implements ProgramCommissionAd
 
     public function updatePromotion(string $programId, string $promotionId, array $data): void
     {
-        (new AffiliateProgram)->getConnection()->transaction(function () use ($programId, $promotionId, $data): void {
+        (new AffiliateCommissionRule)->getConnection()->transaction(function () use ($programId, $promotionId, $data): void {
             $this->lockProgram($programId);
             $promotion = AffiliateCommissionPromotion::query()->where('program_id', $programId)->lockForUpdate()->findOrFail($promotionId);
             $promotion->update($this->promotionAttributes(array_replace($promotion->only([
@@ -79,7 +80,7 @@ final readonly class AdministerProgramCommissions implements ProgramCommissionAd
 
     public function deletePromotion(string $programId, string $promotionId): bool
     {
-        return (new AffiliateProgram)->getConnection()->transaction(function () use ($programId, $promotionId): bool {
+        return (new AffiliateCommissionRule)->getConnection()->transaction(function () use ($programId, $promotionId): bool {
             $this->lockProgram($programId);
 
             return (bool) AffiliateCommissionPromotion::query()->where('program_id', $programId)->lockForUpdate()->findOrFail($promotionId)->delete();
@@ -88,7 +89,7 @@ final readonly class AdministerProgramCommissions implements ProgramCommissionAd
 
     private function lockProgram(string $programId): void
     {
-        $connection = (new AffiliateProgram)->getConnection();
+        $connection = (new AffiliateCommissionRule)->getConnection();
 
         foreach ([new AffiliateCommissionRule, new AffiliateCommissionPromotion, new Affiliate] as $model) {
             if ($model->getConnection() !== $connection) {
@@ -96,11 +97,7 @@ final readonly class AdministerProgramCommissions implements ProgramCommissionAd
             }
         }
 
-        if ((bool) config('affiliates.owner.enabled', false)) {
-            OwnerWriteGuard::findOrFailForOwner(AffiliateProgram::class, $programId);
-        }
-
-        AffiliateProgram::query()->lockForUpdate()->findOrFail($programId);
+        $this->programs->lockForAdministration($programId, spl_object_id($connection));
     }
 
     /**
