@@ -6,6 +6,8 @@ namespace AIArmada\Affiliates\Features\Attribution\EntryPoints\Listeners;
 
 use AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkAdministration;
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycleReader;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\Links\Events\LinkClicked;
@@ -26,11 +28,17 @@ final readonly class IncrementAffiliateLinkClicks
         }
 
         $link = AffiliateLink::query()->withoutGlobalScope('affiliate_owner')
-            ->with(['affiliate' => fn ($query) => $query->withoutGlobalScope(OwnerScope::class)])
             ->find($event->link->subject_id);
 
-        if ($link !== null && $link->affiliate !== null && $link->trackedLink()->withoutGlobalScope(OwnerScope::class)->whereKey($event->link->getKey())->exists()) {
-            $owner = OwnerContext::fromTypeAndId($link->affiliate->owner_type, $link->affiliate->owner_id);
+        if ($link === null || ! $link->trackedLink()->withoutGlobalScope(OwnerScope::class)->whereKey($event->link->getKey())->exists()) {
+            return;
+        }
+
+        app(AffiliateAccessGuard::class)->assertConnection(spl_object_id($link->getConnection()));
+        $affiliate = app(AffiliateLifecycleReader::class)->findById($link->affiliate_id);
+
+        if ($affiliate !== null && $affiliate->canBeAttributed) {
+            $owner = OwnerContext::fromTypeAndIdOrFail($affiliate->reference->ownerType, $affiliate->reference->ownerId);
             OwnerContext::withOwner($owner, fn () => $this->links->recordClick((string) $link->getKey()));
         }
     }

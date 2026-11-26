@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Attribution\Extensions;
 
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycleReader;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\Links\Contracts\LinkGateInterface;
 use AIArmada\Links\Models\Link;
@@ -23,14 +25,20 @@ final class AffiliateLinkGate implements LinkGateInterface
         }
 
         $affiliateLink = AffiliateLink::query()->withoutGlobalScope('affiliate_owner')
-            ->with(['affiliate' => fn ($query) => $query->withoutGlobalScope(OwnerScope::class)])
             ->find($link->subject_id);
 
-        if ($affiliateLink === null || $affiliateLink->affiliate === null || ! $affiliateLink->trackedLink()->withoutGlobalScope(OwnerScope::class)->whereKey($link->getKey())->exists()) {
+        if ($affiliateLink === null || ! $affiliateLink->trackedLink()->withoutGlobalScope(OwnerScope::class)->whereKey($link->getKey())->exists()) {
             return 'link_unknown';
         }
 
-        return ! $affiliateLink->isEnabled() || ! $affiliateLink->affiliate->canBeAttributed()
+        app(AffiliateAccessGuard::class)->assertConnection(spl_object_id($affiliateLink->getConnection()));
+        $affiliate = app(AffiliateLifecycleReader::class)->findById($affiliateLink->affiliate_id);
+
+        if ($affiliate === null) {
+            return 'link_unknown';
+        }
+
+        return ! $affiliateLink->isEnabled() || ! $affiliate->canBeAttributed
             ? 'affiliate_link_inactive' : null;
     }
 }

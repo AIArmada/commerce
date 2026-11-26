@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Attribution\Models;
 
 use AIArmada\Affiliates\Features\Programs\Api\TrackingProgramGuard;
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\Concerns\ScopesByAffiliateOwner;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
@@ -13,7 +12,6 @@ use AIArmada\Links\Models\Link;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Support\Carbon;
@@ -45,7 +43,6 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property CarbonImmutable|null $deactivated_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read Affiliate $affiliate
  */
 class AffiliateLink extends Model implements Auditable
 {
@@ -111,14 +108,6 @@ class AffiliateLink extends Model implements Auditable
     public function getTable(): string
     {
         return config('affiliates.database.tables.links', 'affiliate_links');
-    }
-
-    /**
-     * @return BelongsTo<Affiliate, $this>
-     */
-    public function affiliate(): BelongsTo
-    {
-        return $this->belongsTo(Affiliate::class);
     }
 
     /**

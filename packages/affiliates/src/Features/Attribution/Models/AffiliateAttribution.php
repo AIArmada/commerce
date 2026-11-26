@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Features\Attribution\Models;
 
 use AIArmada\Affiliates\Data\AffiliateAttributionData;
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
@@ -14,7 +13,6 @@ use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property string $id
@@ -59,7 +57,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property CarbonInterface|null $expires_at
  * @property CarbonInterface|null $created_at
  * @property CarbonInterface|null $updated_at
- * @property-read Affiliate $affiliate
  */
 class AffiliateAttribution extends Model
 {
@@ -154,14 +151,6 @@ class AffiliateAttribution extends Model
     public function getTable(): string
     {
         return config('affiliates.database.tables.attributions', parent::getTable());
-    }
-
-    /**
-     * @return BelongsTo<Affiliate, $this>
-     */
-    public function affiliate(): BelongsTo
-    {
-        return $this->belongsTo(Affiliate::class);
     }
 
     public function scopeActive(Builder $query): Builder

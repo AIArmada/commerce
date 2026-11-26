@@ -13,6 +13,7 @@ final readonly class AffiliateLifecycleRecord
         public string $code,
         public string $name,
         public bool $active,
+        public bool $canBeAttributed,
         public ?CarbonImmutable $createdAt,
         public ?string $registrationApprovalMode,
     ) {}

@@ -6,14 +6,15 @@ namespace AIArmada\FilamentAffiliates\Features\Attribution\EntryPoints\Filament\
 
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink;
 use AIArmada\Affiliates\Features\Conversions\Api\LinkConversionReader;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
 use AIArmada\Affiliates\Features\Programs\Api\ProgramReferenceReader;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
-use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\FilamentAffiliates\Features\Attribution\EntryPoints\Filament\Resources\AffiliateLinkResource\Pages\CreateAffiliateLink;
 use AIArmada\FilamentAffiliates\Features\Attribution\EntryPoints\Filament\Resources\AffiliateLinkResource\Pages\EditAffiliateLink;
 use AIArmada\FilamentAffiliates\Features\Attribution\EntryPoints\Filament\Resources\AffiliateLinkResource\Pages\ListAffiliateLinks;
 use AIArmada\FilamentAffiliates\Features\Attribution\EntryPoints\Filament\Resources\AffiliateLinkResource\Pages\ViewAffiliateLink;
+use AIArmada\FilamentAffiliates\Support\AffiliateReferenceProjection;
 use BackedEnum;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
@@ -77,17 +78,10 @@ final class AffiliateLinkResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         /** @var Builder<AffiliateLink> $query */
-        $query = parent::getEloquentQuery()->with('affiliate');
+        $query = AffiliateReferenceProjection::apply(parent::getEloquentQuery());
         $query->addSelect(['program_name' => AffiliateProgram::query()->forOwner()->select('name')->whereColumn('id', $query->getModel()->qualifyColumn('program_id'))]);
 
-        /** @var Builder<Model> $modelQuery */
-        $modelQuery = $query;
-
-        if (! (bool) config('affiliates.owner.enabled', false)) {
-            return $modelQuery;
-        }
-
-        return OwnerUiScope::apply($modelQuery, includeGlobal: false);
+        return $query;
     }
 
     public static function form(Schema $schema): Schema
@@ -96,7 +90,8 @@ final class AffiliateLinkResource extends Resource
             Section::make('Link Details')
                 ->schema([
                     Forms\Components\Select::make('affiliate_id')
-                        ->relationship('affiliate', 'name', modifyQueryUsing: fn (Builder $query): Builder => OwnerUiScope::apply($query, includeGlobal: false))
+                        ->getSearchResultsUsing(fn (string $search): array => AffiliateReferenceProjection::options($search))
+                        ->getOptionLabelUsing(fn (?string $id): ?string => $id === null ? null : AffiliateReferenceProjection::label($id))
                         ->disabled(fn (string $operation): bool => $operation === 'edit')->dehydrated()
                         ->searchable()
                         ->required(),
@@ -110,8 +105,8 @@ final class AffiliateLinkResource extends Resource
                         ->url()
                         ->required()
                         ->maxLength(2048)
-                        ->disabled(fn (?AffiliateLink $record): bool => $record?->affiliate !== null && ! $record->affiliate->isCommercialPurpose())
-                        ->dehydrated(fn (?AffiliateLink $record): bool => $record?->affiliate === null || $record->affiliate->isCommercialPurpose()),
+                        ->disabled(fn (?AffiliateLink $record): bool => ! self::canEditDestination($record))
+                        ->dehydrated(fn (?AffiliateLink $record): bool => self::canEditDestination($record)),
 
                     Forms\Components\TextInput::make('tracking_url')
                         ->disabled()->dehydrated(false)->visible(fn (string $operation): bool => $operation !== 'create'),
@@ -155,10 +150,10 @@ final class AffiliateLinkResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('affiliate.code')
+                Tables\Columns\TextColumn::make('affiliate_code')
                     ->label('Affiliate')
-                    ->searchable()
-                    ->sortable(),
+                    ->searchable(query: fn (Builder $query, string $search): Builder => AffiliateReferenceProjection::search($query, $search, byCode: true))
+                    ->sortable(query: fn (Builder $query, string $direction): Builder => $query->orderBy('affiliate_reference.affiliate_code', $direction)),
 
                 Tables\Columns\TextColumn::make('program_name')
                     ->label('Program')
@@ -239,6 +234,11 @@ final class AffiliateLinkResource extends Resource
                 ])
                 ->columns(2),
         ]);
+    }
+
+    private static function canEditDestination(?AffiliateLink $record): bool
+    {
+        return $record === null || (app(AffiliateProfileReader::class)->find($record->affiliate_id, spl_object_id($record->getConnection()))?->commercial ?? false);
     }
 
     public static function getRelations(): array

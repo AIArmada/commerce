@@ -7,8 +7,9 @@ namespace AIArmada\Affiliates\Features\Attribution\EntryPoints\Middleware;
 use AIArmada\Affiliates\Features\Attribution\Api\AttributionActivity;
 use AIArmada\Affiliates\Features\Attribution\Api\AttributionTracking;
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateLifecycleReader;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerScope;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -36,13 +37,21 @@ final class TrackAffiliateCookie
         $cookieValue = $request->cookie($cookieName);
         $linkId = $request->query('aff_link');
         $link = is_string($linkId) && Str::isUuid($linkId) ? AffiliateLink::query()->withoutGlobalScope('affiliate_owner')
-            ->with(['affiliate' => fn ($query) => $query->withoutGlobalScope(OwnerScope::class)])
             ->whereKey($linkId)->whereNull('deactivated_at')->first() : null;
-        $affiliateCode = $linkId !== null ? $link?->affiliate->code : $this->resolveAffiliateCode($request);
+        $affiliate = null;
+
+        if ($link !== null) {
+            app(AffiliateAccessGuard::class)->assertConnection(spl_object_id($link->getConnection()));
+            $affiliate = app(AffiliateLifecycleReader::class)->findById($link->affiliate_id);
+        }
+
+        $affiliateCode = $linkId !== null
+            ? ($affiliate?->canBeAttributed ? $affiliate->code : null)
+            : $this->resolveAffiliateCode($request);
         $context = $this->buildContext($request);
 
         if ($affiliateCode) {
-            if ($link !== null) {
+            if ($link !== null && $affiliate !== null) {
                 $context = array_merge($context, [
                     'affiliate_link_id' => $link->id,
                     'subject_type' => $link->subject_type,
@@ -53,7 +62,7 @@ final class TrackAffiliateCookie
                     'metadata' => array_merge($link->subject_metadata ?? [], $context['metadata']),
                     'origin' => $link->origin,
                 ]);
-                $owner = OwnerContext::fromTypeAndId($link->affiliate->owner_type, $link->affiliate->owner_id);
+                $owner = OwnerContext::fromTypeAndIdOrFail($affiliate->reference->ownerType, $affiliate->reference->ownerId);
                 $attribution = OwnerContext::withOwner($owner, fn () => $this->attributionTracking->track($affiliateCode, $context, $cookieValue));
             } else {
                 $attribution = $this->attributionTracking->track($affiliateCode, $context, $cookieValue);

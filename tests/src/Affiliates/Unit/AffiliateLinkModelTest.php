@@ -11,10 +11,10 @@ use AIArmada\Affiliates\Features\Conversions\Api\LinkConversionReader;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use AIArmada\Affiliates\Features\Conversions\States\PendingConversion;
 use AIArmada\Affiliates\Features\Programs\Models\AffiliateProgram;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -42,15 +42,15 @@ describe('AffiliateLink Model', function (): void {
             ->and($link->tracking_url)->toBe('https://track.example.com/go/' . $this->affiliate->code);
     });
 
-    it('belongs to affiliate', function (): void {
+    it('references the affiliate through its identity directory', function (): void {
         $link = AffiliateLink::create([
             'affiliate_id' => $this->affiliate->id,
             'destination_url' => 'https://example.com/product',
             'tracking_url' => 'https://track.example.com/go/' . $this->affiliate->code,
         ]);
 
-        expect($link->affiliate())->toBeInstanceOf(BelongsTo::class)
-            ->and($link->affiliate->id)->toBe($this->affiliate->id);
+        expect(app(AffiliateDirectory::class)->findById($link->affiliate_id)?->id)->toBe($this->affiliate->id)
+            ->and(method_exists($link, 'affiliate'))->toBeFalse();
     });
 
     it('belongs to program', function (): void {

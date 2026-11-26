@@ -11,10 +11,10 @@ use AIArmada\Affiliates\Features\Attribution\Models\AffiliateTouchpoint;
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionAttributionMaintenance;
 use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use AIArmada\Affiliates\Features\Conversions\States\PendingConversion;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 describe('AffiliateAttribution Model', function (): void {
@@ -43,15 +43,15 @@ describe('AffiliateAttribution Model', function (): void {
             ->and($attribution->cart_instance)->toBe('default');
     });
 
-    it('belongs to affiliate', function (): void {
+    it('references the affiliate through its identity directory', function (): void {
         $attribution = AffiliateAttribution::create([
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
             'cart_instance' => 'default',
         ]);
 
-        expect($attribution->affiliate())->toBeInstanceOf(BelongsTo::class)
-            ->and($attribution->affiliate->id)->toBe($this->affiliate->id);
+        expect(app(AffiliateDirectory::class)->findById($attribution->affiliate_id)?->id)->toBe($this->affiliate->id)
+            ->and(method_exists($attribution, 'affiliate'))->toBeFalse();
     });
 
     it('has many conversions', function (): void {

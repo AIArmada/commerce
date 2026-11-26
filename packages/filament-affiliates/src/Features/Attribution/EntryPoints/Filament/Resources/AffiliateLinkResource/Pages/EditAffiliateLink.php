@@ -6,6 +6,7 @@ namespace AIArmada\FilamentAffiliates\Features\Attribution\EntryPoints\Filament\
 
 use AIArmada\Affiliates\Features\Attribution\Api\TrackingLinkAdministration;
 use AIArmada\Affiliates\Features\Attribution\Models\AffiliateLink;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
 use AIArmada\FilamentAffiliates\Features\Attribution\EntryPoints\Filament\Resources\AffiliateLinkResource;
 use AIArmada\FilamentAffiliates\Features\Attribution\Support\TrackingLinkFormReferences;
 use Filament\Actions;
@@ -29,7 +30,9 @@ final class EditAffiliateLink extends EditRecord
     {
         $link = AffiliateLink::query()->whereKey($record->getKey())->firstOrFail();
 
-        if ($link->affiliate !== null && ! $link->affiliate->isCommercialPurpose()) {
+        $affiliate = app(AffiliateProfileReader::class)->find($link->affiliate_id, spl_object_id($link->getConnection()));
+
+        if ($affiliate === null || ! $affiliate->commercial) {
             unset($data['destination_url'], $data['tracking_url'], $data['custom_slug']);
         }
 

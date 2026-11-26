@@ -49,6 +49,7 @@ final class AffiliateLifecycleQuery implements AffiliateLifecycleReader
             code: $affiliate->code,
             name: $affiliate->name,
             active: $affiliate->isActive(),
+            canBeAttributed: $affiliate->canBeAttributed(),
             createdAt: $affiliate->created_at === null ? null : CarbonImmutable::instance($affiliate->created_at),
             registrationApprovalMode: $affiliate->registration_approval_mode,
         );
