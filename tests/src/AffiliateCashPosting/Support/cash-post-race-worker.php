@@ -75,8 +75,8 @@ try {
     }
 
     try {
-        $result = app(RecordAffiliateAward::class)->handle(
-            $affiliate,
+        $result = app(RecordAffiliateAward::class)->post(
+            (string) $affiliate->getKey(),
             (string) $options['key'],
             (int) $options['amount'],
             (string) $options['currency'],

@@ -18,8 +18,9 @@ use AIArmada\Affiliates\Features\Conversions\Models\AffiliateConversion;
 use AIArmada\Affiliates\Features\Conversions\States\ApprovedConversion;
 use AIArmada\Affiliates\Features\Conversions\States\ConversionStatus;
 use AIArmada\Affiliates\Features\Conversions\States\PendingConversion;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Queries\AwardRecipientQuery;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfile;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
 use AIArmada\Affiliates\Support\Awards\AffiliateAwardKey;
 use AIArmada\Affiliates\Support\Awards\NullAffiliateAwardPolicy;
 use Carbon\CarbonImmutable;
@@ -27,6 +28,7 @@ use Carbon\CarbonInterface;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 use LogicException;
 
@@ -115,11 +117,6 @@ final readonly class RecordAffiliateAward implements AwardPosting
         private ReverseAffiliateConversion $reverser,
     ) {}
 
-    public function post(string $affiliateId, string $awardKey, int $amountMinor, string $currency, array $attributes = []): AffiliateOutcomeResult
-    {
-        return $this->handle(Affiliate::query()->forOwner()->findOrFail($affiliateId), $awardKey, $amountMinor, $currency, $attributes);
-    }
-
     public function reverse(string $conversionId, string $awardKey, string $reason): void
     {
         $key = AffiliateAwardKey::parse($awardKey);
@@ -138,8 +135,8 @@ final readonly class RecordAffiliateAward implements AwardPosting
     /**
      * @param  array<string, mixed>  $attributes
      */
-    public function handle(
-        Affiliate $affiliate,
+    public function post(
+        string $affiliateId,
         string $awardKey,
         int $amountMinor,
         string $currency,
@@ -168,7 +165,11 @@ final readonly class RecordAffiliateAward implements AwardPosting
         $occurredAt = $this->resolveOccurredAt(Arr::get($attributes, 'occurred_at'));
         $dispatchEvent = (bool) Arr::get($attributes, 'dispatch_event', true);
 
-        $this->assertSameConnection($affiliate);
+        $this->assertSameConnection();
+
+        if (! Str::isUuid($affiliateId)) {
+            return new AffiliateOutcomeResult(AffiliateOutcomeDisposition::NoAffiliate, null);
+        }
 
         $proposal = new AffiliateAwardProposal(
             awardKey: $key->value,
@@ -182,7 +183,7 @@ final readonly class RecordAffiliateAward implements AwardPosting
         $policy = $this->resolvePolicy();
 
         $idempotencyKey = $key->idempotencyKey();
-        $requestedAffiliateId = (string) $affiliate->getKey();
+        $requestedAffiliateId = $affiliateId;
 
         $connection = (new AffiliateConversion)->getConnection();
 
@@ -215,10 +216,7 @@ final readonly class RecordAffiliateAward implements AwardPosting
             // connection as posting, so a concurrent deactivation or
             // correction that commits first is observed here and can
             // never slip through a stale pre-transaction preflight.
-            $recipient = Affiliate::query()
-                ->whereKey($requestedAffiliateId)
-                ->lockForUpdate()
-                ->first();
+            $recipient = app(AffiliateProfileReader::class)->lock($requestedAffiliateId, spl_object_id($connection));
 
             if ($existing instanceof AffiliateConversion) {
                 // Settlement path: the earned obligation is already
@@ -226,7 +224,7 @@ final readonly class RecordAffiliateAward implements AwardPosting
                 // authorization and without any new effect. Owner
                 // binding still requires the locked recipient row; a
                 // missing recipient fails closed with no disclosure.
-                if (! $recipient instanceof Affiliate) {
+                if ($recipient === null) {
                     return [
                         'disposition' => AffiliateOutcomeDisposition::NoAffiliate,
                         'conversion_id' => null,
@@ -256,7 +254,7 @@ final readonly class RecordAffiliateAward implements AwardPosting
             // New money requires an attributable recipient AND an
             // affirmative host decision, both evaluated here inside the
             // lock boundary. Attribution status alone never posts.
-            if (! $recipient instanceof Affiliate || ! $recipient->canBeAttributed()) {
+            if ($recipient === null || ! $recipient->canBeAttributed) {
                 return [
                     'disposition' => AffiliateOutcomeDisposition::NoAffiliate,
                     'conversion_id' => null,
@@ -267,7 +265,7 @@ final readonly class RecordAffiliateAward implements AwardPosting
             // award connection: same-connection approval/source locks
             // taken here are held through commit. The call must stay
             // read-only because deadlock retries re-invoke it.
-            $decision = $policy->decide(AwardRecipientQuery::fromAffiliate($recipient), $proposal);
+            $decision = $policy->decide($recipient->awardRecipient, $proposal);
 
             if (! $decision->authorized) {
                 return [
@@ -520,28 +518,12 @@ final readonly class RecordAffiliateAward implements AwardPosting
         }
     }
 
-    private function assertSameConnection(Affiliate $affiliate): void
+    private function assertSameConnection(): void
     {
-        $conversion = new AffiliateConversion;
-        $balance = new AffiliateBalance;
+        $connection = (new AffiliateConversion)->getConnection();
+        app(AffiliateAccessGuard::class)->assertConnection(spl_object_id($connection));
 
-        $resolved = [
-            'affiliate' => $affiliate->getConnection()->getName(),
-            'conversion' => $conversion->getConnection()->getName(),
-            'balance' => $balance->getConnection()->getName(),
-        ];
-
-        if (count(array_unique(array_values($resolved))) !== 1) {
-            throw new LogicException('Affiliate award posting requires the recipient, conversion, and balance writes on the same resolved connection.');
-        }
-
-        $instances = [
-            spl_object_id($affiliate->getConnection()),
-            spl_object_id($conversion->getConnection()),
-            spl_object_id($balance->getConnection()),
-        ];
-
-        if (count(array_unique($instances)) !== 1) {
+        if ((new AffiliateBalance)->getConnection() !== $connection) {
             throw new LogicException('Affiliate award posting requires one shared connection instance for atomicity.');
         }
     }
@@ -550,7 +532,7 @@ final readonly class RecordAffiliateAward implements AwardPosting
      * @param  array<string, mixed>  $metadata
      */
     private function buildConversion(
-        Affiliate $recipient,
+        AffiliateProfile $recipient,
         string $idempotencyKey,
         int $amountMinor,
         string $currency,
@@ -564,7 +546,7 @@ final readonly class RecordAffiliateAward implements AwardPosting
     ): AffiliateConversion {
         $conversion = new AffiliateConversion([
             'idempotency_key' => $idempotencyKey,
-            'affiliate_id' => $recipient->getKey(),
+            'affiliate_id' => $recipient->reference->id,
             'affiliate_attribution_id' => null,
             'affiliate_code' => $recipient->code,
             'external_reference' => $externalReference,
@@ -582,8 +564,8 @@ final readonly class RecordAffiliateAward implements AwardPosting
             'approved_at' => $statusClass === ApprovedConversion::class ? CarbonImmutable::now('UTC') : null,
         ]);
         $conversion->forceFill([
-            'owner_type' => $recipient->owner_type,
-            'owner_id' => $recipient->owner_id,
+            'owner_type' => $recipient->reference->ownerType,
+            'owner_id' => $recipient->reference->ownerId,
         ]);
 
         return $conversion;

@@ -8,7 +8,6 @@ use AIArmada\Affiliates\Data\AffiliateAwardDecision;
 use AIArmada\Affiliates\Data\AffiliateAwardProposal;
 use AIArmada\Affiliates\Data\AwardRecipient;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Queries\AwardRecipientQuery;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScopeOverride;
@@ -953,9 +952,9 @@ it('authorizes affiliates policies only for the exact pending referral reward', 
     $accepted = $this->acceptInvite($owner, (string) $created->token, $invitee, $invitee->email);
     $qualified = OwnerContext::withOwner($owner, fn () => QualifyReferral::run($accepted, 'registration:affiliate-policy'));
     $reward = $qualified->rewards[0];
-    $recipient = new Affiliate;
-    $recipient->setAttribute('id', 'fixture-affiliate');
-    $resolver = new class(AwardRecipientQuery::fromAffiliate($recipient)) implements ReferralAffiliateResolver
+    $affiliateModel = new Affiliate;
+    $recipient = new AwardRecipient('fixture-affiliate', $affiliateModel->getMorphClass(), (string) $affiliateModel->getConnection()->getName(), null, null);
+    $resolver = new class($recipient) implements ReferralAffiliateResolver
     {
         public function __construct(private readonly AwardRecipient $affiliate) {}
 
@@ -968,13 +967,13 @@ it('authorizes affiliates policies only for the exact pending referral reward', 
     $key = 'referrals:award:' . $reward->invite_id . ':referrer';
     $proposal = new AffiliateAwardProposal($key, 1250, 'MYR', ReferralRewardStatus::class, 'registration:affiliate-policy', (string) $reward->invite_id);
 
-    $decision = OwnerContext::withOwner($owner, fn (): AffiliateAwardDecision => $policy->decide(AwardRecipientQuery::fromAffiliate($recipient), $proposal));
+    $decision = OwnerContext::withOwner($owner, fn (): AffiliateAwardDecision => $policy->decide($recipient, $proposal));
     $wrongAmount = OwnerContext::withOwner($owner, fn (): AffiliateAwardDecision => $policy->decide(
-        AwardRecipientQuery::fromAffiliate($recipient),
+        $recipient,
         new AffiliateAwardProposal($key, 1300, 'MYR', ReferralRewardStatus::class, 'registration:affiliate-policy', (string) $reward->invite_id),
     ));
 
-    $canonicalRecipient = AwardRecipientQuery::fromAffiliate($recipient);
+    $canonicalRecipient = $recipient;
     $forgedRecipient = new AwardRecipient(
         $canonicalRecipient->id,
         $canonicalRecipient->morphType,

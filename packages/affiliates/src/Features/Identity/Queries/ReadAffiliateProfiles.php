@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Identity\Queries;
 
+use AIArmada\Affiliates\Data\AwardRecipient;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfile;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateProfileReader;
 use AIArmada\Affiliates\Models\Affiliate;
@@ -55,6 +56,13 @@ final readonly class ReadAffiliateProfiles implements AffiliateProfileReader
             commercial: $affiliate->isCommercialPurpose(),
             canBeAttributed: $affiliate->canBeAttributed(),
             canReceivePayout: $affiliate->canReceivePayout(),
+            awardRecipient: new AwardRecipient(
+                (string) $affiliate->getKey(),
+                $affiliate->getMorphClass(),
+                (string) $affiliate->getConnection()->getName(),
+                $affiliate->owner_type,
+                $affiliate->owner_id === null ? null : (string) $affiliate->owner_id,
+            ),
         );
     }
 }

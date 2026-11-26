@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Identity\Api;
 
+use AIArmada\Affiliates\Data\AwardRecipient;
+
 final readonly class AffiliateProfile
 {
     public function __construct(
@@ -16,5 +18,6 @@ final readonly class AffiliateProfile
         public bool $commercial,
         public bool $canBeAttributed,
         public bool $canReceivePayout,
+        public AwardRecipient $awardRecipient,
     ) {}
 }
