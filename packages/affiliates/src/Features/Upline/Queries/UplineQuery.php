@@ -4,18 +4,20 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Features\Upline\Queries;
 
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionStatisticsReader;
 use AIArmada\Affiliates\Features\Upline\Api\UplineMember;
 use AIArmada\Affiliates\Features\Upline\Models\AffiliateRank;
 use AIArmada\Affiliates\Features\Upline\Models\AffiliateUpline;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\Affiliates\Support\RevenueVolume;
 use Carbon\CarbonImmutable;
 
-final class UplineQuery
+final readonly class UplineQuery
 {
+    public function __construct(private ConversionStatisticsReader $conversions) {}
+
     /** @return list<UplineMember> */
     public function ancestors(string $affiliateId): array
     {
@@ -80,28 +82,16 @@ final class UplineQuery
             ->where('ancestor_id', $affiliate->getKey())
             ->where('depth', '>', 0)
             ->whereHas('descendant', static fn ($query) => $query->whereCommercialPurpose())
-            ->select('descendant_id');
-
-        $query = AffiliateConversion::query()
-            ->whereIn('affiliate_id', $descendantIds);
-
-        if ($from) {
-            $query->where('occurred_at', '>=', $from);
-        }
-
-        if ($to) {
-            $query->where('occurred_at', '<=', $to);
-        }
-
-        $rows = $query
-            ->toBase()
-            ->selectRaw('commission_currency as currency, COALESCE(SUM(COALESCE(value_minor, 0)), 0) as total')
-            ->groupBy('commission_currency')
-            ->get();
+            ->pluck('descendant_id')->all();
 
         $reference = RevenueVolume::referenceFor($affiliate);
+        $revenue = [];
 
-        return RevenueVolume::measurableIn(RevenueVolume::foldRows($rows, $reference), $currency ?? $reference, $to);
+        foreach ($this->conversions->totalsForAffiliates($descendantIds, $reference, spl_object_id($affiliate->getConnection()), $from, $to) as $row) {
+            $revenue[$row->currency] = $row->revenueMinor;
+        }
+
+        return RevenueVolume::measurableIn($revenue, $currency ?? $reference, $to);
     }
 
     /**

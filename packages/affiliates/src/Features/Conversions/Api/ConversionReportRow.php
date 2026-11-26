@@ -13,6 +13,7 @@ final readonly class ConversionReportRow
         public int $commissionMinor,
         public ?string $affiliateId = null,
         public ?string $affiliateCode = null,
+        public ?string $affiliateName = null,
         public ?string $date = null,
         public ?string $subjectType = null,
         public ?string $subjectKey = null,

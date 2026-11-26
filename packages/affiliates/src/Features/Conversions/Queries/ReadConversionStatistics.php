@@ -14,7 +14,9 @@ use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\States\ReversedConversion;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 use LogicException;
+use stdClass;
 
 final readonly class ReadConversionStatistics implements ConversionStatisticsReader
 {
@@ -34,6 +36,45 @@ final readonly class ReadConversionStatistics implements ConversionStatisticsRea
             ->groupBy('commission_currency')
             ->get();
 
+        return $this->foldTotals($rows, $fallbackCurrency);
+    }
+
+    public function totalsForAffiliates(array $affiliateIds, string $fallbackCurrency, int $connectionIdentity, ?DateTimeInterface $from = null, ?DateTimeInterface $until = null, bool $includeGlobal = true): array
+    {
+        $this->assertConnection($connectionIdentity);
+        $totals = [];
+
+        foreach (array_chunk(array_values(array_unique($affiliateIds)), 500) as $ids) {
+            $rows = $this->query($connectionIdentity, $from, $until, null, $includeGlobal, true)
+                ->whereIn('affiliate_id', $ids)
+                ->toBase()
+                ->selectRaw('commission_currency AS currency, COUNT(*) AS conversion_count, COALESCE(SUM(value_minor), 0) AS revenue_minor, COALESCE(SUM(commission_minor), 0) AS commission_minor')
+                ->groupBy('commission_currency')
+                ->get();
+
+            foreach ($this->foldTotals($rows, $fallbackCurrency) as $row) {
+                $previous = $totals[$row->currency] ?? null;
+
+                $totals[$row->currency] = new ConversionCurrencyTotals(
+                    $row->currency,
+                    ($previous?->count ?? 0) + $row->count,
+                    ($previous?->revenueMinor ?? 0) + $row->revenueMinor,
+                    ($previous?->commissionMinor ?? 0) + $row->commissionMinor,
+                );
+            }
+        }
+
+        ksort($totals);
+
+        return array_values($totals);
+    }
+
+    /**
+     * @param Collection<int, stdClass> $rows
+     * @return list<ConversionCurrencyTotals>
+     */
+    private function foldTotals(Collection $rows, string $fallbackCurrency): array
+    {
         $totals = [];
 
         foreach ($rows as $row) {

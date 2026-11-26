@@ -9,11 +9,18 @@ use AIArmada\Affiliates\Features\Conversions\Api\ConversionReportingReader;
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionReportRow;
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionTrafficBreakdown;
 use AIArmada\Affiliates\Features\Conversions\Api\VoucherConversionRecord;
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\AffiliateStatus;
+use AIArmada\Affiliates\States\ApprovedConversion;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerQuery;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Support\Collection;
+use LogicException;
 use stdClass;
 use Throwable;
 
@@ -44,6 +51,70 @@ final readonly class ReadConversionReporting implements ConversionReportingReade
         return $this->project($this->window($start, $end)->toBase()
             ->selectRaw('affiliate_id, MAX(affiliate_code) AS affiliate_code, ' . $this->moneyExpression())
             ->groupBy('affiliate_id', 'commission_currency')->get());
+    }
+
+    public function approvedCommercialByAffiliate(DateTimeInterface $start, DateTimeInterface $end, bool $includeGlobal): array
+    {
+        $conversion = new AffiliateConversion;
+        $affiliate = new Affiliate;
+        $connection = $conversion->getConnection();
+
+        if ($connection !== $affiliate->getConnection()) {
+            throw new LogicException('Performance bonus queries require a shared database connection.');
+        }
+
+        $conversionsTable = $conversion->getTable();
+        $affiliatesTable = $affiliate->getTable();
+        $grammar = $connection->getQueryGrammar();
+        $purposeColumn = $grammar->wrap("{$affiliatesTable}.purpose");
+        $valueColumn = $grammar->wrap("{$conversionsTable}.value_minor");
+        $idColumn = $grammar->wrap("{$conversionsTable}.id");
+        $revenueExpression = "COALESCE({$valueColumn}, 0)";
+
+        $query = $connection->table($conversionsTable)
+            ->join($affiliatesTable, "{$conversionsTable}.affiliate_id", '=', "{$affiliatesTable}.id")
+            ->select([
+                "{$affiliatesTable}.id as affiliate_id",
+                "{$affiliatesTable}.name as affiliate_name",
+                "{$conversionsTable}.commission_currency as currency",
+                $connection->raw("SUM({$revenueExpression}) as revenue_minor"),
+                $connection->raw("COUNT({$idColumn}) as conversions"),
+                $connection->raw('0 AS commission_minor'),
+            ])
+            ->whereBetween("{$conversionsTable}.occurred_at", [$start, $end])
+            ->where("{$conversionsTable}.status", ApprovedConversion::value())
+            ->where("{$affiliatesTable}.status", AffiliateStatus::normalize(Active::class))
+            ->where(static function ($query) use ($affiliatesTable, $purposeColumn): void {
+                $query->whereNull("{$affiliatesTable}.purpose")
+                    ->orWhereRaw("LOWER(TRIM({$purposeColumn})) = ?", [Affiliate::PURPOSE_GENERAL]);
+            })
+            ->groupBy("{$affiliatesTable}.id", "{$affiliatesTable}.name", "{$conversionsTable}.commission_currency");
+
+        if ((bool) config('affiliates.owner.enabled', false)) {
+            $owner = OwnerContext::resolve();
+            OwnerContext::assertResolvedOrExplicitGlobal(
+                $owner,
+                'Performance bonus queries require an owner context or explicit global context.',
+            );
+
+            OwnerQuery::applyToQueryBuilder(
+                $query,
+                $owner,
+                $includeGlobal,
+                "{$conversionsTable}.owner_type",
+                "{$conversionsTable}.owner_id",
+            );
+            OwnerQuery::applyToQueryBuilder(
+                $query,
+                $owner,
+                $includeGlobal,
+                "{$affiliatesTable}.owner_type",
+                "{$affiliatesTable}.owner_id",
+            );
+        }
+
+
+        return $this->project($query->get());
     }
 
     public function byDay(DateTimeInterface $start, DateTimeInterface $end): array
@@ -170,6 +241,7 @@ final readonly class ReadConversionReporting implements ConversionReportingReade
             commissionMinor: (int) $row->commission_minor,
             affiliateId: isset($row->affiliate_id) ? (string) $row->affiliate_id : null,
             affiliateCode: isset($row->affiliate_code) ? (string) $row->affiliate_code : null,
+            affiliateName: isset($row->affiliate_name) ? (string) $row->affiliate_name : null,
             date: isset($row->date) ? (string) $row->date : null,
             subjectType: isset($row->subject_type) ? (string) $row->subject_type : null,
             subjectKey: isset($row->subject_key) ? (string) $row->subject_key : null,

@@ -17,6 +17,9 @@ interface ConversionReportingReader
     public function byAffiliate(DateTimeInterface $start, DateTimeInterface $end): array;
 
     /** @return list<ConversionReportRow> */
+    public function approvedCommercialByAffiliate(DateTimeInterface $start, DateTimeInterface $end, bool $includeGlobal): array;
+
+    /** @return list<ConversionReportRow> */
     public function byDay(DateTimeInterface $start, DateTimeInterface $end): array;
 
     /** @return list<ConversionReportRow> */

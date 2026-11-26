@@ -14,6 +14,11 @@ interface ConversionStatisticsReader
 
     public function assertConnection(int $connectionIdentity): void;
 
+    /** @param list<string> $affiliateIds
+     * @return list<ConversionCurrencyTotals>
+     */
+    public function totalsForAffiliates(array $affiliateIds, string $fallbackCurrency, int $connectionIdentity, ?DateTimeInterface $from = null, ?DateTimeInterface $until = null, bool $includeGlobal = true): array;
+
     /**
      * @param  list<string>  $affiliateIds
      * @param  list<string>|null  $statuses

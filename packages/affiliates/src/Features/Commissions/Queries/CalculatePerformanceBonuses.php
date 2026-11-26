@@ -7,8 +7,8 @@ namespace AIArmada\Affiliates\Features\Commissions\Queries;
 use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Features\Commissions\Api\PerformanceBonusCalculation;
 use AIArmada\Affiliates\Features\Conversions\Api\ConversionStatisticsReader;
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionReportingReader;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\Affiliates\States\ApprovedConversion;
@@ -16,15 +16,13 @@ use AIArmada\Affiliates\Support\BonusConfig;
 use AIArmada\Affiliates\Support\RevenueVolume;
 use AIArmada\CommerceSupport\Support\CurrencyConverter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerQuery;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use InvalidArgumentException;
-use LogicException;
 
 final readonly class CalculatePerformanceBonuses implements PerformanceBonusCalculation
 {
-    public function __construct(private ConversionStatisticsReader $statistics) {}
+    public function __construct(private ConversionStatisticsReader $statistics, private ConversionReportingReader $reporting) {}
 
     /**
      * Calculate one configured performance bonus commission rule type.
@@ -349,83 +347,26 @@ final readonly class CalculatePerformanceBonuses implements PerformanceBonusCalc
         int $limit,
         bool $includeGlobal,
     ): array {
-        $conversion = new AffiliateConversion;
-        $affiliate = new Affiliate;
-        $connection = $conversion->getConnection();
-
-        if ($connection !== $affiliate->getConnection()) {
-            throw new LogicException('Performance bonus queries require a shared database connection.');
-        }
-
-        $conversionsTable = $conversion->getTable();
-        $affiliatesTable = $affiliate->getTable();
-        $grammar = $connection->getQueryGrammar();
-        $purposeColumn = $grammar->wrap("{$affiliatesTable}.purpose");
-        $valueColumn = $grammar->wrap("{$conversionsTable}.value_minor");
-        $idColumn = $grammar->wrap("{$conversionsTable}.id");
-        $revenueExpression = "COALESCE({$valueColumn}, 0)";
-
-        $query = $connection->table($conversionsTable)
-            ->join($affiliatesTable, "{$conversionsTable}.affiliate_id", '=', "{$affiliatesTable}.id")
-            ->select([
-                "{$affiliatesTable}.id as affiliate_id",
-                "{$affiliatesTable}.name as affiliate_name",
-                "{$conversionsTable}.commission_currency as currency",
-                $connection->raw("SUM({$revenueExpression}) as total_revenue"),
-                $connection->raw("COUNT({$idColumn}) as total_conversions"),
-            ])
-            ->whereBetween("{$conversionsTable}.occurred_at", [$from, $to])
-            ->where("{$conversionsTable}.status", ApprovedConversion::value())
-            ->where("{$affiliatesTable}.status", AffiliateStatus::normalize(Active::class))
-            ->where(static function ($query) use ($affiliatesTable, $purposeColumn): void {
-                $query->whereNull("{$affiliatesTable}.purpose")
-                    ->orWhereRaw("LOWER(TRIM({$purposeColumn})) = ?", [Affiliate::PURPOSE_GENERAL]);
-            })
-            ->groupBy("{$affiliatesTable}.id", "{$affiliatesTable}.name", "{$conversionsTable}.commission_currency");
-
-        if ((bool) config('affiliates.owner.enabled', false)) {
-            $owner = OwnerContext::resolve();
-            OwnerContext::assertResolvedOrExplicitGlobal(
-                $owner,
-                'Performance bonus queries require an owner context or explicit global context.',
-            );
-
-            OwnerQuery::applyToQueryBuilder(
-                $query,
-                $owner,
-                $includeGlobal,
-                "{$conversionsTable}.owner_type",
-                "{$conversionsTable}.owner_id",
-            );
-            OwnerQuery::applyToQueryBuilder(
-                $query,
-                $owner,
-                $includeGlobal,
-                "{$affiliatesTable}.owner_type",
-                "{$affiliatesTable}.owner_id",
-            );
-        }
-
         $default = RevenueVolume::default();
         $entries = [];
 
-        foreach ($query->get() as $row) {
-            $id = (string) $row->affiliate_id;
+        foreach ($this->reporting->approvedCommercialByAffiliate($from, $to, $includeGlobal) as $row) {
+            $id = (string) $row->affiliateId;
 
             $entries[$id] ??= [
                 'affiliate_id' => $id,
-                'affiliate_name' => (string) $row->affiliate_name,
+                'affiliate_name' => (string) $row->affiliateName,
                 'total_conversions' => 0,
                 'by_currency' => [],
             ];
 
-            $entries[$id]['total_conversions'] += (int) $row->total_conversions;
+            $entries[$id]['total_conversions'] += (int) $row->conversions;
 
             $currency = is_string($row->currency) && mb_trim($row->currency) !== ''
                 ? mb_strtoupper(mb_trim($row->currency))
                 : $default;
 
-            $entries[$id]['by_currency'][$currency] = ($entries[$id]['by_currency'][$currency] ?? 0) + (int) $row->total_revenue;
+            $entries[$id]['by_currency'][$currency] = ($entries[$id]['by_currency'][$currency] ?? 0) + (int) $row->revenueMinor;
         }
 
         $networkCurrencies = [];
