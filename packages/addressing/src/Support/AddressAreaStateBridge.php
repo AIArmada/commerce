@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Addressing\Support;
 
 use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressAreaStateLink;
 use AIArmada\Addressing\Models\State;
 use Carbon\CarbonImmutable;
 
@@ -47,27 +46,21 @@ final class AddressAreaStateBridge
             return null;
         }
 
-        $linkTable = (new AddressAreaStateLink)->getTable();
-        $areaTable = (new AddressArea)->getTable();
         $link = ModelResolver::areaStateLinkClass()::query()
-            ->join($areaTable, "{$areaTable}.id", '=', "{$linkTable}.address_area_id")
-            ->where("{$linkTable}.state_id", $state->getKey())
-            ->where("{$areaTable}.is_active", true)
+            ->where('state_id', $state->getKey())
+            ->whereHas('addressArea', fn ($query) => $query->where('is_active', true))
             ->when($hierarchyType !== null, function ($query) use ($hierarchyType): void {
                 $query->where(function ($query) use ($hierarchyType): void {
                     $query->where('hierarchy_type', $hierarchyType)
                         ->orWhere('hierarchy_type', '');
                 })->orderByRaw('CASE WHEN hierarchy_type = ? THEN 0 ELSE 1 END', [$hierarchyType]);
             })
-            ->orderByDesc("{$linkTable}.updated_at")
-            ->orderByDesc("{$linkTable}.id")
-            ->select("{$linkTable}.address_area_id")
-            ->first();
-
-        $areaId = $link?->getAttribute('address_area_id');
+            ->orderByDesc('updated_at')
+            ->orderByDesc('id')
+            ->value('address_area_id');
         self::remember($cacheKey, is_string($areaId) ? $areaId : null);
 
-        return $areaId;
+        return is_string($areaId) ? $areaId : null;
     }
 
     /**
@@ -185,19 +178,19 @@ final class AddressAreaStateBridge
                 ->pluck('parent_address_area_id')
                 ->all();
 
-            $activeParentIds = ModelResolver::areaClass()::query()
-                ->whereIn('id', $parentIds)
-                ->where('is_active', true)
-                ->pluck('id')
-                ->map(static fn (mixed $id): string => (string) $id)
-                ->all();
-
-            $pending = array_merge($pending, $activeParentIds);
+            $pending = array_map(static fn (mixed $id): string => (string) $id, $parentIds);
         }
 
         self::rememberArea($cacheKey, null);
 
         return null;
+    }
+
+    public static function forgetAll(): void
+    {
+        if (app()->bound('request')) {
+            request()->attributes->remove(self::REQUEST_CACHE_KEY);
+        }
     }
 
     private static function resolveState(State | string | null $state): ?State

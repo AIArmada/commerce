@@ -50,6 +50,7 @@ final readonly class ClearGeographyReferencesAction
                 ->orWhere('child_address_area_id', $areaId)
                 ->delete();
             $areaClass::query()->where('parent_id', $areaId)->update(['parent_id' => null]);
+            AddressAreaStateBridge::forgetAll();
         });
     }
 

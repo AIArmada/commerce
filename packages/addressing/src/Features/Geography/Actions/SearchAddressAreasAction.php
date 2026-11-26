@@ -114,8 +114,8 @@ final class SearchAddressAreasAction implements AddressAreaSearch
             slug: $area->slug,
             source: $area->source,
             sourceId: $area->source_id,
-            latitude: $area->latitude,
-            longitude: $area->longitude,
+            latitude: $area->latitude === null ? null : (float) $area->latitude,
+            longitude: $area->longitude === null ? null : (float) $area->longitude,
         ))->all();
     }
 

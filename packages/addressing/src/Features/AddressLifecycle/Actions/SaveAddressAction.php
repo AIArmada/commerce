@@ -41,7 +41,9 @@ final readonly class SaveAddressAction implements AddressWriter
                 throw new LogicException('The address could not be saved.');
             }
 
-            $this->assignments->execute((string) $address->getKey(), $areaAssignments, $address->state_id, ['source' => 'filament-addressing']);
+            if ($recordId !== null || $areaAssignments !== []) {
+                $this->assignments->execute((string) $address->getKey(), $areaAssignments, $address->state_id, ['source' => 'filament-addressing']);
+            }
 
             return (string) $address->getKey();
         });
