@@ -281,6 +281,27 @@ jobs:
         # process does not inherit the `--ci` flag.
         run: vendor/bin/pest --no-tia --colors=always --parallel --shard=${{ matrix.shard }}/20
 
+      - name: Setup Node for real affiliate PDF verification
+        if: matrix.shard == 1
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
+      - name: Install local PDF rendering prerequisites
+        if: matrix.shard == 1
+        run: |
+          npm install --prefix "$RUNNER_TEMP/affiliate-pdf" --ignore-scripts --no-save --package-lock=false puppeteer@24.31.0
+          echo "AFFILIATE_PDF_NODE_MODULES=$RUNNER_TEMP/affiliate-pdf/node_modules" >> "$GITHUB_ENV"
+          echo "AFFILIATE_PDF_CHROME=$(command -v google-chrome)" >> "$GITHUB_ENV"
+          command -v pdftotext || (sudo apt-get update && sudo apt-get install -y poppler-utils)
+
+      - name: Verify real private affiliate tax PDF rendering
+        if: matrix.shard == 1
+        env:
+          AFFILIATE_REAL_PDF_TEST: '1'
+        run: vendor/bin/pest --no-tia tests/src/Affiliates/Unit/SpatieTaxWorksheetWriterTest.php --filter='renders a real private tax worksheet'
+
+
   ci:
     name: CI
     needs: [changes, rector, pint, phpstan, tests, dune-architecture]

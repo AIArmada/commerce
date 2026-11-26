@@ -15,6 +15,7 @@ use AIArmada\Affiliates\Features\Conversions\Models\AffiliateBalance;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSeverity;
 use AIArmada\Affiliates\Features\Fraud\Api\FraudSignalStatus;
 use AIArmada\Affiliates\Features\Fraud\Models\AffiliateFraudSignal;
+use AIArmada\Affiliates\Features\Identity\Api\AffiliateAccessGuard;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateDirectory;
 use AIArmada\Affiliates\Features\Identity\Api\AffiliateRemoval;
 use AIArmada\Affiliates\Features\Payouts\Api\PayoutAccountingReader;
@@ -32,9 +33,12 @@ use AIArmada\Affiliates\States\Draft;
 use AIArmada\Affiliates\States\Paused;
 use AIArmada\Affiliates\States\Pending;
 use AIArmada\Affiliates\Features\Conversions\States\PendingConversion;
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonInterface;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Event;
@@ -784,5 +788,32 @@ describe('Affiliate Model - Table Configuration', function (): void {
     test('uses correct table name from config', function (): void {
         $affiliate = new Affiliate;
         expect($affiliate->getTable())->toBe('affiliate_affiliates');
+    });
+});
+
+test('identity write guard rejects foreign owners and mismatched connections', function (): void {
+    config(['affiliates.owner.enabled' => true, 'affiliates.owner.include_global' => true]);
+    $ownerA = User::create(['name' => 'Guard Owner A', 'email' => 'guard-owner-a@example.com', 'password' => 'secret']);
+    $ownerB = User::create(['name' => 'Guard Owner B', 'email' => 'guard-owner-b@example.com', 'password' => 'secret']);
+    $affiliate = OwnerContext::withOwner($ownerA, fn (): Affiliate => Affiliate::create([
+        'code' => 'IDENTITY-GUARD',
+        'name' => 'Identity Guard Affiliate',
+        'status' => Active::class,
+    ]));
+
+    $guard = app(AffiliateAccessGuard::class);
+    $connection = $affiliate->getConnection();
+    $identity = spl_object_id($connection);
+
+    OwnerContext::withOwner($ownerA, function () use ($guard, $affiliate, $connection, $identity): void {
+        $guard->assertCanWrite($affiliate->id, $identity);
+        $connection->transaction(fn () => $guard->lockForWrite($affiliate->id, $identity));
+        expect(fn () => $guard->assertCanWrite($affiliate->id, -1))->toThrow(LogicException::class)
+            ->and(fn () => $guard->assertCanWrite('not-a-uuid', $identity))->toThrow(ModelNotFoundException::class);
+    });
+
+    OwnerContext::withOwner($ownerB, function () use ($guard, $affiliate, $connection, $identity): void {
+        expect(fn () => $connection->transaction(fn () => $guard->lockForWrite($affiliate->id, $identity)))
+            ->toThrow(AuthorizationException::class);
     });
 });

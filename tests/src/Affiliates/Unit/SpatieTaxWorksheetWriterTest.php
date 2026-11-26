@@ -9,8 +9,10 @@ use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use Illuminate\Support\Facades\Storage;
+use Spatie\LaravelPdf\Drivers\BrowsershotDriver;
 use Spatie\LaravelPdf\Drivers\PdfDriver;
 use Spatie\LaravelPdf\PdfOptions;
+use Symfony\Component\Process\Process;
 
 /** @param array<string, mixed> $data */
 function taxWorksheetRequest(array $data): TaxWorksheetRequest
@@ -386,3 +388,38 @@ describe('SpatieTaxWorksheetWriter', function (): void {
         expect(Storage::disk('local')->allFiles())->toBe([]);
     });
 });
+
+test('renders a real private tax worksheet with Browsershot', function (): void {
+    Storage::fake('local');
+    config(['affiliates.tax.pdf_driver' => 'browsershot', 'affiliates.tax.storage_disk' => 'local']);
+    app()->instance('laravel-pdf.driver.browsershot', new BrowsershotDriver([
+        'chrome_path' => getenv('AFFILIATE_PDF_CHROME'),
+        'node_modules_path' => getenv('AFFILIATE_PDF_NODE_MODULES'),
+        'no_sandbox' => true,
+    ]));
+
+    $path = $this->generator->write(new TaxWorksheetRequest(
+        (string) $this->affiliate->getKey(),
+        2024,
+        123456,
+        'USD',
+        new TaxRecipientDetails('Synthetic PDF Recipient', '123-45-6789', '123 Test Street'),
+        'Synthetic review notes',
+    ));
+
+    $disk = Storage::disk('local');
+    $bytes = $disk->get($path);
+    expect($bytes)->toStartWith('%PDF-')
+        ->and(mb_trim($bytes))->toEndWith('%%EOF')
+        ->and($disk->getVisibility($path))->toBe('private');
+
+    $process = new Process(['pdftotext', $disk->path($path), '-']);
+    $process->mustRun();
+
+    expect($process->getOutput())->toContain('Synthetic PDF Recipient')
+        ->toContain('***-**-6789')
+        ->toContain('$1,234.56')
+        ->toContain('not an official IRS filing')
+        ->toContain('Synthetic review notes')
+        ->not->toContain('123-45-6789');
+})->skip(fn (): bool => getenv('AFFILIATE_REAL_PDF_TEST') !== '1');
