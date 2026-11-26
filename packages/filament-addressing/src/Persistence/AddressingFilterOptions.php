@@ -98,7 +98,7 @@ final class AddressingFilterOptions
 
         return OwnerCache::remember(
             $owner,
-            'filament-addressing.filter-options.gap-roles.' . md5($gapClass),
+            'filament-addressing.filter-options.gap-roles.' . hash('sha256', self::key('gap-roles', $gapClass)),
             self::TTL_SECONDS,
             fn (): array => $gapClass::query()
                 ->forOwner($owner, true)

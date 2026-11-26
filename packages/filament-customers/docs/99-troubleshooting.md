@@ -378,7 +378,7 @@ $customer = Customer::query()
     ->findOrFail($customerId);
 
 // Then safely attach a canonical address
-$address = \AIArmada\Addressing\Models\Address::create([...]);
+$address = \AIArmada\Addressing\Features\AddressLifecycle\Models\Address::create([...]);
 $customer->attachAddress($address, type: 'shipping', isPrimary: true);
 ```
 

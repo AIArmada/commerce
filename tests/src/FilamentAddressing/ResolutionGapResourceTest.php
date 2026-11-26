@@ -17,6 +17,8 @@ use AIArmada\FilamentAddressing\Resources\ResolutionGapResource;
 use AIArmada\FilamentAddressing\Tables\ResolutionGapTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -183,6 +185,27 @@ it('scopes cached gap roles per owner with global roles shared', function (): vo
 
     expect($rolesA)->toBe(['alpha_probe' => 'Alpha probe', 'global_probe' => 'Global probe'])
         ->and($rolesB)->toBe(['beta_probe' => 'Beta probe', 'global_probe' => 'Global probe']);
+});
+
+it('separates cached gap roles by configured table', function (): void {
+    logTestGap('First table', 'first_table_probe');
+    expect(AddressingFilterOptions::gapRoles())->toBe(['first_table_probe' => 'First table probe']);
+
+    $original = config('addressing.database.tables.resolution_gaps');
+    $alternate = 'address_resolution_gaps_filter_probe';
+    Schema::create($alternate, function (Blueprint $table): void {
+        $table->string('role');
+        $table->nullableMorphs('owner');
+    });
+
+    try {
+        config()->set('addressing.database.tables.resolution_gaps', $alternate);
+
+        expect(AddressingFilterOptions::gapRoles())->toBe([]);
+    } finally {
+        config()->set('addressing.database.tables.resolution_gaps', $original);
+        Schema::dropIfExists($alternate);
+    }
 });
 
 it('uses the feature configured model when no Filament-specific override is present', function (): void {
