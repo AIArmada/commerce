@@ -4,11 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Addressing;
 
-use AIArmada\Addressing\Actions\SeedAddressCitiesAction;
-use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
-use AIArmada\Addressing\Actions\SeedAddressCountryReferencesAction;
-use AIArmada\Addressing\Actions\SeedAddressingAction;
-use AIArmada\Addressing\Actions\SeedAddressStatesAction;
 use AIArmada\Addressing\Features\ReferenceIntegrity\EntryPoints\Commands\CompareAddressingReferenceExportsCommand;
 use AIArmada\Addressing\Features\ReferenceIntegrity\EntryPoints\Commands\DiffCldrSubdivisionsCommand;
 use AIArmada\Addressing\Features\ReferenceIntegrity\EntryPoints\Commands\DiffGoogleAddressReferenceCommand;
@@ -78,11 +73,6 @@ final class AddressingServiceProvider extends PackageServiceProvider
             $this->modules[] = $module;
         }
 
-        $this->app->singleton(SeedAddressingAction::class);
-        $this->app->singleton(SeedAddressCountriesAction::class);
-        $this->app->singleton(SeedAddressCountryReferencesAction::class);
-        $this->app->singleton(SeedAddressStatesAction::class);
-        $this->app->singleton(SeedAddressCitiesAction::class);
         $this->app->singleton(CountryAddressProfileResolver::class);
         $this->app->singleton(CountryAddressFormatterResolver::class);
         $this->app->singleton(PostalAddressLookup::class, OneMapClient::class);

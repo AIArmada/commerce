@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
+use AIArmada\Addressing\Contracts\CountryDatasetSeeder;
 use AIArmada\Addressing\Contracts\CountryAddressProfile;
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
 use AIArmada\Addressing\Data\AddressLevelDefinition;
@@ -46,7 +46,7 @@ use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 
 beforeEach(function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
+    app(CountryDatasetSeeder::class)->execute();
 });
 
 it('creates addresses with the configured model override', function (): void {

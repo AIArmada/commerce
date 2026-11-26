@@ -17,10 +17,10 @@ php artisan migrate
 ```
 
 ```php
-use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
+use AIArmada\Addressing\Contracts\CountryDatasetSeeder;
 use AIArmada\Addressing\Contracts\CountryGeographySeeder;
 
-app(SeedAddressCountriesAction::class)->execute();
+app(CountryDatasetSeeder::class)->execute();
 app(CountryGeographySeeder::class)->execute('MY');
 ```
 

@@ -57,10 +57,10 @@ For custom orchestration, call the action directly. Without a callback it runs
 silently, which is what queued jobs and tests want:
 
 ```php
-use AIArmada\Addressing\Actions\SeedAddressingAction;
+use AIArmada\Addressing\Contracts\AddressingDatasetSeeder;
 use AIArmada\Addressing\Support\ConsoleSeedProgress;
 
-app(SeedAddressingAction::class)->execute(
+app(AddressingDatasetSeeder::class)->execute(
     ConsoleSeedProgress::for($this->command?->getOutput()),
 );
 ```

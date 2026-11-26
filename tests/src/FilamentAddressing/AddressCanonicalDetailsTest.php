@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
+use AIArmada\Addressing\Contracts\CountryDatasetSeeder;
 use AIArmada\Addressing\Models\Address;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaAssignment;
@@ -33,7 +33,7 @@ final class AddressCanonicalDetailsTestPolicy
 }
 
 beforeEach(function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
+    app(CountryDatasetSeeder::class)->execute();
     config()->set('auth.providers.users.model', FilamentAddressingPanelUser::class);
     Gate::policy(Address::class, AddressCanonicalDetailsTestPolicy::class);
 });

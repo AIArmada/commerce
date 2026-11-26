@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Contracts\AddressNavigationLinks;
-use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
+use AIArmada\Addressing\Contracts\CountryDatasetSeeder;
 use AIArmada\Addressing\Contracts\AddressAttachmentWriter;
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Models\Address;
@@ -59,7 +59,7 @@ final class AddressAdminCapabilitiesTestPolicy
 
 beforeEach(function (): void {
     AddressAdminCapabilitiesTestPolicy::$viewedAddressIds = [];
-    app(SeedAddressCountriesAction::class)->execute();
+    app(CountryDatasetSeeder::class)->execute();
     config()->set('auth.providers.users.model', FilamentAddressingPanelUser::class);
     Filament::auth()->login(FilamentAddressingPanelUser::query()->create(User::factory()->raw()));
     Gate::define('customers.addresses.create', fn (): bool => true);

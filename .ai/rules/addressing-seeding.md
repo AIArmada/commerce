@@ -13,7 +13,7 @@ paths:
 Applies to the seed actions, commands, seeders, and readers that populate
 addressing reference data.
 
-- `SeedAddressingAction` is the composition root: countries, references,
+- `AddressingDatasetSeeder` is the composition root: countries, references,
   states, cities, then every configured geography. Apps call the bundled
   `AIArmada\Addressing\Database\Seeders\AddressingSeeder`; they never
   hand-roll the orchestration.

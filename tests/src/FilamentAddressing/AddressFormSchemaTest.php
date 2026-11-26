@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Contracts\CountryStateSeeder;
-use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
-use AIArmada\Addressing\Actions\SeedAddressStatesAction;
+use AIArmada\Addressing\Contracts\CountryDatasetSeeder;
+use AIArmada\Addressing\Contracts\StateDatasetSeeder;
 use AIArmada\Addressing\Contracts\CountryAddressProfile;
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
 use AIArmada\Addressing\Data\AddressLevelDefinition;
@@ -17,7 +17,7 @@ use AIArmada\Addressing\Models\State;
 use AIArmada\FilamentAddressing\Schemas\AddressFormSchema;
 
 beforeEach(function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
+    app(CountryDatasetSeeder::class)->execute();
 });
 
 it('builds area assignment fields from the configured country profiles', function (): void {
@@ -235,7 +235,7 @@ it('lists only provider state-kind roots in the state selector', function (): vo
         static fn (array $row): bool => ($row['country_code'] ?? null) === 'GB',
     ));
 
-    app(SeedAddressStatesAction::class)->execute($states);
+    app(StateDatasetSeeder::class)->execute($states);
     app(CountryStateSeeder::class)->execute($country, app(UnitedKingdomGeographyProvider::class)->stateSeedData());
 
     $field = collect(AddressFormSchema::make())

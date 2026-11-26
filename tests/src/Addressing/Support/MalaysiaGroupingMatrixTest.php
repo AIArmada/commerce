@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\SeedAddressStatesAction;
+use AIArmada\Addressing\Contracts\StateDatasetSeeder;
 use AIArmada\Addressing\Contracts\CountryGeographySeeder;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\State;
@@ -16,7 +16,7 @@ it('groups subdivision and locality correctly for every Malaysian state and WP',
         static fn (array $row): bool => ($row['country_code'] ?? null) === 'MY',
     ));
 
-    app(SeedAddressStatesAction::class)->execute($states);
+    app(StateDatasetSeeder::class)->execute($states);
 
     app(CountryGeographySeeder::class)->execute('MY');
 

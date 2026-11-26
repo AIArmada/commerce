@@ -71,7 +71,7 @@ abstract class AddressingGeographyTestCase extends Orchestra
      * Seed a single country row with real attributes from countries.json.
      *
      * Geography tests exercise one country at a time; seeding all 250
-     * rows via SeedAddressCountriesAction is pure overhead here.
+     * rows via CountryDatasetSeeder is pure overhead here.
      *
      * @throws JsonException
      */

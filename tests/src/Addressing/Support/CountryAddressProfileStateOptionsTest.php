@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Addressing\Contracts\CountryStateSeeder;
-use AIArmada\Addressing\Actions\SeedAddressStatesAction;
+use AIArmada\Addressing\Contracts\StateDatasetSeeder;
 use AIArmada\Addressing\Contracts\CountryGeographySeeder;
 use AIArmada\Addressing\Contracts\AddressAreaSource;
 use AIArmada\Addressing\Contracts\CountryAddressProfile;
@@ -25,7 +25,7 @@ it('lists only the four mapped nations for GB after a full seed', function (): v
         static fn (array $row): bool => ($row['country_code'] ?? null) === 'GB',
     ));
 
-    app(SeedAddressStatesAction::class)->execute($states);
+    app(StateDatasetSeeder::class)->execute($states);
     app(CountryStateSeeder::class)->execute($country, app(UnitedKingdomGeographyProvider::class)->stateSeedData());
     app(CountryGeographySeeder::class)->execute('GB');
 
@@ -61,7 +61,7 @@ it('lists only the ten mapped counties for LT after a full seed', function (): v
         static fn (array $row): bool => ($row['country_code'] ?? null) === 'LT',
     ));
 
-    app(SeedAddressStatesAction::class)->execute($states);
+    app(StateDatasetSeeder::class)->execute($states);
     app(CountryStateSeeder::class)->execute($country, app(LithuaniaGeographyProvider::class)->stateSeedData());
     app(CountryGeographySeeder::class)->execute('LT');
 
@@ -105,7 +105,7 @@ it('respects the configured state subclass and its global scopes', function (): 
         static fn (array $row): bool => ($row['country_code'] ?? null) === 'GB',
     ));
 
-    app(SeedAddressStatesAction::class)->execute($states);
+    app(StateDatasetSeeder::class)->execute($states);
     app(CountryStateSeeder::class)->execute($country, app(UnitedKingdomGeographyProvider::class)->stateSeedData());
 
     $scopedState = new class extends State

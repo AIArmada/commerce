@@ -2,19 +2,25 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Actions;
+namespace AIArmada\Addressing\Features\Geography\Actions;
+
+use AIArmada\Addressing\Contracts\CityDatasetSeeder;
+use AIArmada\Addressing\Contracts\CountryDatasetSeeder;
+use AIArmada\Addressing\Contracts\CountryLinkSeeder;
+use AIArmada\Addressing\Contracts\StateDatasetSeeder;
+use AIArmada\Addressing\Contracts\AddressingDatasetSeeder;
 
 use AIArmada\Addressing\Support\CitySeedRowReader;
 use AIArmada\Addressing\Contracts\PostalCodeSeeder;
 use AIArmada\Addressing\Contracts\CountryGeographySeeder;
 
-class SeedAddressingAction
+final readonly class SeedAddressingAction implements AddressingDatasetSeeder
 {
     public function __construct(
-        private SeedAddressCountriesAction $seedCountries,
-        private SeedAddressCountryReferencesAction $seedCountryReferences,
-        private SeedAddressStatesAction $seedStates,
-        private SeedAddressCitiesAction $seedCities,
+        private CountryDatasetSeeder $seedCountries,
+        private CountryLinkSeeder $seedCountryReferences,
+        private StateDatasetSeeder $seedStates,
+        private CityDatasetSeeder $seedCities,
         private CountryGeographySeeder $seedGeographies,
         private PostalCodeSeeder $seedPostalCodes,
     ) {}
@@ -55,7 +61,7 @@ class SeedAddressingAction
      */
     private function citySeedRows(): ?array
     {
-        return (new CitySeedRowReader(__DIR__ . '/../../resources/data/cities.json'))->rowsForSeed(
+        return (new CitySeedRowReader(__DIR__ . '/../../../../resources/data/cities.json'))->rowsForSeed(
             config('addressing.seed.full_city_countries', []),
             app()->isProduction(),
         );

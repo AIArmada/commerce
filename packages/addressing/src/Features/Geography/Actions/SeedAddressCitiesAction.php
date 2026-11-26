@@ -2,14 +2,16 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Actions;
+namespace AIArmada\Addressing\Features\Geography\Actions;
+
+use AIArmada\Addressing\Contracts\CityDatasetSeeder;
 
 use AIArmada\Addressing\Support\CitySeedRowReader;
 use AIArmada\Addressing\Support\ModelResolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
 
-class SeedAddressCitiesAction
+final readonly class SeedAddressCitiesAction implements CityDatasetSeeder
 {
     /**
      * @param  ?callable(string, int, int, ?string=): void  $progress
@@ -26,7 +28,7 @@ class SeedAddressCitiesAction
     private function seed(?array $cities, ?callable $progress): array
     {
         $chunks = $cities === null
-            ? (new CitySeedRowReader(__DIR__ . '/../../resources/data/cities.json'))->readAllChunks(2000)
+            ? (new CitySeedRowReader(__DIR__ . '/../../../../resources/data/cities.json'))->readAllChunks(2000)
             : array_chunk($cities, 2000);
         $total = $cities === null ? 0 : count($cities);
 
@@ -109,7 +111,7 @@ class SeedAddressCitiesAction
                     }
 
                     $inserts[$key] = [
-                        'id' => (string) Str::orderedUuid(),
+                        'id' => (string) Str::uuid7(),
                         ...$attrs,
                         'created_at' => $now,
                         'updated_at' => $now,

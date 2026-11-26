@@ -18,13 +18,26 @@
       "AIArmada\\Addressing\\Features\\Geography\\Actions\\SeedCountryGeographiesAction"
     ],
     "table:states": [
-      "AIArmada\\Addressing\\Features\\Geography\\Actions\\SeedCountryStatesAction"
+      "AIArmada\\Addressing\\Features\\Geography\\Actions\\SeedCountryStatesAction",
+      "AIArmada\\Addressing\\Features\\Geography\\Actions\\SeedAddressStatesAction"
     ],
     "table:address_area_roles": [
       "AIArmada\\Addressing\\Features\\Geography\\Actions\\SeedCountryGeographiesAction"
     ],
     "table:address_area_state_links": [
       "AIArmada\\Addressing\\Features\\Geography\\Actions\\SeedCountryGeographiesAction"
+    ],
+    "table:cities": [
+      "AIArmada\\Addressing\\Features\\Geography\\Actions\\SeedAddressCitiesAction"
+    ],
+    "table:countries": [
+      "AIArmada\\Addressing\\Features\\Geography\\Actions\\SeedAddressCountriesAction"
+    ],
+    "table:country_currency_links": [
+      "AIArmada\\Addressing\\Features\\Geography\\Actions\\SeedAddressCountryReferencesAction"
+    ],
+    "table:country_timezone_links": [
+      "AIArmada\\Addressing\\Features\\Geography\\Actions\\SeedAddressCountryReferencesAction"
     ]
   },
   "extensions": {}

@@ -2,14 +2,16 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Actions;
+namespace AIArmada\Addressing\Features\Geography\Actions;
+
+use AIArmada\Addressing\Contracts\StateDatasetSeeder;
 
 use AIArmada\Addressing\Support\ModelResolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
 use RuntimeException;
 
-class SeedAddressStatesAction
+final readonly class SeedAddressStatesAction implements StateDatasetSeeder
 {
     /**
      * @param  ?callable(string, int, int, ?string=): void  $progress
@@ -26,7 +28,7 @@ class SeedAddressStatesAction
     private function seed(?array $states, ?callable $progress): array
     {
         if ($states === null) {
-            $path = __DIR__ . '/../../resources/data/states.json';
+            $path = __DIR__ . '/../../../../resources/data/states.json';
 
             $states = json_decode(file_get_contents($path), true, 512, JSON_THROW_ON_ERROR);
         }
@@ -94,7 +96,7 @@ class SeedAddressStatesAction
 
                 $now = CarbonImmutable::now()->toDateTimeString();
                 $inserts[$key] = [
-                    'id' => (string) Str::orderedUuid(),
+                    'id' => (string) Str::uuid7(),
                     ...$attrs,
                     'created_at' => $now,
                     'updated_at' => $now,

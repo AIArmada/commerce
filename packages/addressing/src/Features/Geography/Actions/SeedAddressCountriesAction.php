@@ -2,12 +2,14 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Actions;
+namespace AIArmada\Addressing\Features\Geography\Actions;
+
+use AIArmada\Addressing\Contracts\CountryDatasetSeeder;
 
 use AIArmada\Addressing\Support\ModelResolver;
 use RuntimeException;
 
-class SeedAddressCountriesAction
+final readonly class SeedAddressCountriesAction implements CountryDatasetSeeder
 {
     /**
      * @param  ?callable(string, int, int, ?string=): void  $progress
@@ -20,7 +22,7 @@ class SeedAddressCountriesAction
     /** @param ?callable(string, int, int, ?string=): void $progress */
     private function seed(?callable $progress): array
     {
-        $path = __DIR__ . '/../../resources/data/countries.json';
+        $path = __DIR__ . '/../../../../resources/data/countries.json';
 
         $raw = json_decode(file_get_contents($path), true, 512, JSON_THROW_ON_ERROR);
 

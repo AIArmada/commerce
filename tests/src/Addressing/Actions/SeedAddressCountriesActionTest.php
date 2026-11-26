@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
-use AIArmada\Addressing\Actions\SeedAddressCountryReferencesAction;
+use AIArmada\Addressing\Contracts\CountryDatasetSeeder;
+use AIArmada\Addressing\Contracts\CountryLinkSeeder;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Support\AddressingTableResolver;
 use AIArmada\CommerceSupport\Features\ReferenceData\Actions\SeedCurrenciesAction;
@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 
 beforeEach(function (): void {
-    $this->action = app(SeedAddressCountriesAction::class);
+    $this->action = app(CountryDatasetSeeder::class);
 });
 
 it('seeds bundled countries', function (): void {
@@ -113,7 +113,7 @@ it('stores reference data outside the country row', function (): void {
     $this->action->execute();
     app(SeedCurrenciesAction::class)->execute();
     app(SeedTimezonesAction::class)->execute();
-    app(SeedAddressCountryReferencesAction::class)->execute();
+    app(CountryLinkSeeder::class)->execute();
 
     $my = AddressCountry::where('iso2', 'MY')->first();
 
@@ -126,7 +126,7 @@ it('stores reference data outside the country row', function (): void {
 it('rebuilds bundled country reference links without retaining stale rows', function (): void {
     $this->action->execute();
 
-    app(SeedAddressCountryReferencesAction::class)->execute();
+    app(CountryLinkSeeder::class)->execute();
 
     $my = AddressCountry::where('iso2', 'MY')->firstOrFail();
     $tokyo = Timezone::where('name', 'Asia/Tokyo')->firstOrFail();
@@ -139,7 +139,7 @@ it('rebuilds bundled country reference links without retaining stale rows', func
         'updated_at' => now(),
     ]);
 
-    app(SeedAddressCountryReferencesAction::class)->execute();
+    app(CountryLinkSeeder::class)->execute();
 
     expect($my->fresh()->timezones->pluck('name')->all())
         ->not->toContain('Asia/Tokyo');
@@ -151,8 +151,8 @@ it('batches country currency and timezone reference inserts', function (): void 
     DB::enableQueryLog();
 
     try {
-        app(SeedAddressCountryReferencesAction::class)->execute();
-        app(SeedAddressCountryReferencesAction::class)->execute();
+        app(CountryLinkSeeder::class)->execute();
+        app(CountryLinkSeeder::class)->execute();
         $queries = collect(DB::getQueryLog())->pluck('query');
         $currencyTable = AddressingTableResolver::resolve('country_currency_links');
         $timezoneTable = AddressingTableResolver::resolve('country_timezone_links');

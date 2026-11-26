@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Addressing\Contracts\AddressAreaImporter;
 use AIArmada\Addressing\Features\ResolutionGaps\Actions\LogAddressResolutionGapAction;
-use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
+use AIArmada\Addressing\Contracts\CountryDatasetSeeder;
 use AIArmada\Addressing\Data\AddressAreaData;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaName;
@@ -21,7 +21,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 beforeEach(function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
+    app(CountryDatasetSeeder::class)->execute();
 
     app(AddressAreaImporter::class)->execute(new ArrayAddressAreaSource('areas', [
         new AddressAreaData(source: 'areas', sourceId: 'kl', countryCode: 'MY', type: 'locality', level: 2, name: 'Wilayah Persekutuan Kuala Lumpur'),

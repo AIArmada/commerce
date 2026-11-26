@@ -42,9 +42,9 @@ Geographic values use the canonical `latitude`, `longitude`, and
 ## Seed Country Data
 
 ```php
-use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
+use AIArmada\Addressing\Contracts\CountryDatasetSeeder;
 
-app(SeedAddressCountriesAction::class)->execute();
+app(CountryDatasetSeeder::class)->execute();
 // ['created' => 249, 'updated' => 0, 'skipped' => 0]
 ```
 
@@ -1215,7 +1215,7 @@ Countries, country references, states, and cities are loaded by seeders, not com
 php artisan db:seed --class="AIArmada\Addressing\Database\Seeders\AddressingSeeder"
 ```
 
-`AddressingSeeder` runs `SeedAddressingAction` — the same action the removed `address:seed*`
+`AddressingSeeder` runs `AddressingDatasetSeeder` — the same action the removed `address:seed*`
 commands called, so nothing was lost in the move to seeders. `AddressCountrySeeder` covers the
 ISO countries layer on its own, and `PostalCodeSeeder` covers every bundled postcode dataset.
 

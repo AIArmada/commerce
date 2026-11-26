@@ -100,8 +100,8 @@ This is a breaking behavior change for operators who previously edited
 identity fields in the panel. Filament forms reject edits to provider area
 source/source ID, state code/country, city name/country/state, and postcode
 country/code. To correct imported geography identity, update the authoritative
-provider/source data and rerun its core seed/import workflow (`SeedAddressStatesAction`,
-`SeedAddressCitiesAction`, `AddressAreaImporter`, or `ImportPostalCodesAction`
+provider/source data and rerun its core seed/import workflow (`StateDatasetSeeder`,
+`CityDatasetSeeder`, `AddressAreaImporter`, or `ImportPostalCodesAction`
 as appropriate), then review references to any newly keyed rows. In the panel,
 state names are editable only when the state has a stable code; code-less state
 names are protected because the seed workflow identifies them by country and

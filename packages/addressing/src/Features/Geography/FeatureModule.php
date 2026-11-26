@@ -24,6 +24,16 @@ use AIArmada\Addressing\Contracts\AddressAreaImporter;
 use AIArmada\Addressing\Contracts\CountryGeographySeeder;
 use AIArmada\Addressing\Features\Geography\Actions\ImportAddressAreasAction;
 use AIArmada\Addressing\Features\Geography\Actions\SeedCountryGeographiesAction;
+use AIArmada\Addressing\Contracts\CityDatasetSeeder;
+use AIArmada\Addressing\Contracts\CountryDatasetSeeder;
+use AIArmada\Addressing\Contracts\CountryLinkSeeder;
+use AIArmada\Addressing\Contracts\StateDatasetSeeder;
+use AIArmada\Addressing\Contracts\AddressingDatasetSeeder;
+use AIArmada\Addressing\Features\Geography\Actions\SeedAddressCitiesAction;
+use AIArmada\Addressing\Features\Geography\Actions\SeedAddressCountriesAction;
+use AIArmada\Addressing\Features\Geography\Actions\SeedAddressCountryReferencesAction;
+use AIArmada\Addressing\Features\Geography\Actions\SeedAddressStatesAction;
+use AIArmada\Addressing\Features\Geography\Actions\SeedAddressingAction;
 use AIArmada\Addressing\Platform\FeatureModule as FeatureModuleContract;
 use Illuminate\Contracts\Foundation\Application;
 
@@ -31,6 +41,11 @@ final class FeatureModule implements FeatureModuleContract
 {
     public function register(Application $app): void
     {
+        $app->singleton(CityDatasetSeeder::class, SeedAddressCitiesAction::class);
+        $app->singleton(CountryDatasetSeeder::class, SeedAddressCountriesAction::class);
+        $app->singleton(CountryLinkSeeder::class, SeedAddressCountryReferencesAction::class);
+        $app->singleton(StateDatasetSeeder::class, SeedAddressStatesAction::class);
+        $app->singleton(AddressingDatasetSeeder::class, SeedAddressingAction::class);
         $app->singleton(AddressAreaImporter::class, ImportAddressAreasAction::class);
         $app->singleton(CountryGeographySeeder::class, SeedCountryGeographiesAction::class);
         $app->singleton(AddressAreaDeletionGuard::class, GuardAddressAreaDeletionAction::class);

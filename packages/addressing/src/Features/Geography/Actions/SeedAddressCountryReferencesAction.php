@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Addressing\Actions;
+namespace AIArmada\Addressing\Features\Geography\Actions;
+
+use AIArmada\Addressing\Contracts\CountryLinkSeeder;
 
 use AIArmada\Addressing\Support\AddressingTableResolver;
 use AIArmada\Addressing\Support\ModelResolver;
@@ -12,10 +14,10 @@ use Illuminate\Database\ConnectionInterface;
 use Illuminate\Support\Str;
 use RuntimeException;
 
-class SeedAddressCountryReferencesAction
+final readonly class SeedAddressCountryReferencesAction implements CountryLinkSeeder
 {
     public function __construct(
-        private readonly ReferenceDataApi $referenceData,
+        private ReferenceDataApi $referenceData,
     ) {}
 
     /**
@@ -28,7 +30,7 @@ class SeedAddressCountryReferencesAction
         $this->referenceData->seedTimezones();
 
         $countries = json_decode(
-            file_get_contents(__DIR__ . '/../../resources/data/countries.json'),
+            file_get_contents(__DIR__ . '/../../../../resources/data/countries.json'),
             true,
             512,
             JSON_THROW_ON_ERROR,

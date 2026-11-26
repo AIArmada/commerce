@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
+use AIArmada\Addressing\Contracts\CountryDatasetSeeder;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressAreaPostalCode;
 use AIArmada\Addressing\Models\PostalCode;
@@ -27,7 +27,7 @@ use Livewire\Component;
 use Livewire\Livewire;
 
 beforeEach(function (): void {
-    app(SeedAddressCountriesAction::class)->execute();
+    app(CountryDatasetSeeder::class)->execute();
 });
 
 it('exports and imports a postcode with multiple independently sourced coverage links', function (): void {
