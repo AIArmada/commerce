@@ -37,6 +37,26 @@ final readonly class ReadAttributionReporting implements AttributionReportingRea
         return $row === null ? null : $this->record($row);
     }
 
+    public function findForConversion(string $id, string $affiliateId, ?string $ownerType, ?string $ownerId, int $connectionIdentity): ?AttributionReportingRecord
+    {
+        $this->assertSharedConnection($connectionIdentity);
+
+        if (! Str::isUuid($id) || ! $this->available()) {
+            return null;
+        }
+
+        $query = AffiliateAttribution::query()->forOwner(includeGlobal: true)
+            ->where('affiliate_id', $affiliateId)->with('affiliate');
+
+        if (config('affiliates.owner.enabled', false)) {
+            $query->where('owner_type', $ownerType)->where('owner_id', $ownerId);
+        }
+
+        $row = $query->find($id);
+
+        return $row === null ? null : $this->record($row);
+    }
+
     public function latestForVoucher(string $voucherCode): ?AttributionReportingRecord
     {
         if (! $this->available()) {

@@ -8,24 +8,25 @@ use AIArmada\Affiliates\Features\Attribution\Api\AttributionReportingReader;
 use AIArmada\Affiliates\Features\Reporting\Api\VoucherReportingContext;
 use AIArmada\Affiliates\Features\Reporting\Api\VoucherReportingReader;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionReportingReader;
+use AIArmada\Affiliates\Features\Conversions\Api\VoucherConversionRecord;
 use Illuminate\Database\Eloquent\Model;
 use Throwable;
 
 final readonly class VoucherReportingQuery implements VoucherReportingReader
 {
-    public function __construct(private AttributionReportingReader $attributions) {}
+    public function __construct(private AttributionReportingReader $attributions, private ConversionReportingReader $conversions) {}
 
     public function available(): bool
     {
-        return $this->hasTableFor(AffiliateConversion::class) || $this->attributions->available();
+        return $this->conversions->available() || $this->attributions->available();
     }
 
     public function resolve(string $voucherCode, ?string $orderReference): ?VoucherReportingContext
     {
         $voucherCode = mb_strtolower($voucherCode);
         $orderReference = $orderReference === null ? null : mb_strtolower($orderReference);
-        $conversion = $this->findMatchingConversion($voucherCode, $orderReference);
+        $conversion = $this->conversions->voucher($voucherCode, $orderReference);
         $context = $conversion === null ? null : $this->contextFromConversion($conversion);
 
         if ($context === null || ! array_filter($context, fn (mixed $value): bool => $this->normalizeString($value) !== null)) {
@@ -73,36 +74,6 @@ final readonly class VoucherReportingQuery implements VoucherReportingReader
         return $this->attributions->options('affiliate_code');
     }
 
-    private function findMatchingConversion(string $voucherCode, ?string $orderReference): ?AffiliateConversion
-    {
-        if (! $this->hasTableFor(AffiliateConversion::class)) {
-            return null;
-        }
-
-        $query = AffiliateConversion::query()
-            ->with('affiliate')
-            ->whereRaw('LOWER(voucher_code) = ?', [$voucherCode])
-            ->orderByDesc('occurred_at')
-            ->orderByDesc('created_at')
-            ->orderByDesc('id');
-
-        if ($orderReference !== null) {
-            return $query
-                ->whereRaw('LOWER(external_reference) = ?', [$orderReference])
-                ->first();
-        }
-
-        $matches = $query
-            ->limit(2)
-            ->get();
-
-        if ($matches->count() !== 1) {
-            return null;
-        }
-
-        return $matches->first();
-    }
-
     /**
      * @return array{
      *     affiliate_code: string|null,
@@ -112,17 +83,23 @@ final readonly class VoucherReportingQuery implements VoucherReportingReader
      *     campaign: string|null,
      * }
      */
-    private function contextFromConversion(AffiliateConversion $conversion): array
+    private function contextFromConversion(VoucherConversionRecord $conversion): array
     {
-        $attribution = $conversion->affiliate_attribution_id === null ? null : $this->attributions->find($conversion->affiliate_attribution_id);
+        $attribution = $conversion->attributionId === null ? null : $this->attributions->findForConversion(
+            $conversion->attributionId,
+            $conversion->affiliateId,
+            $conversion->ownerType,
+            $conversion->ownerId,
+            $conversion->connectionIdentity,
+        );
 
         return [
             'affiliate_code' => $this->firstNonEmpty(
-                $conversion->affiliate_code,
+                $conversion->affiliateCode,
                 $attribution?->affiliateCode,
             ),
             'affiliate_name' => $this->firstNonEmpty(
-                $conversion->affiliate?->name,
+                $conversion->affiliateName,
                 $attribution?->affiliateName,
             ),
             'source' => $attribution?->source,

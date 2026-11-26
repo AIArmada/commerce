@@ -8,15 +8,15 @@ use AIArmada\Affiliates\Features\Attribution\Api\AttributionReportingReader;
 use AIArmada\Affiliates\Features\Attribution\Api\TouchpointReader;
 use AIArmada\Affiliates\Features\Reporting\Api\ReportingApi;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionReportingReader;
+use AIArmada\Affiliates\Features\Conversions\Api\ConversionReportRow;
 use AIArmada\CommerceSupport\Support\CurrencyConverter;
 use DateTimeInterface;
 use Illuminate\Support\Collection;
-use stdClass;
 
 final readonly class AffiliateReportQuery implements ReportingApi
 {
-    public function __construct(private CurrencyConverter $converter, private TouchpointReader $touchpoints, private AttributionReportingReader $attributions) {}
+    public function __construct(private CurrencyConverter $converter, private TouchpointReader $touchpoints, private AttributionReportingReader $attributions, private ConversionReportingReader $conversions) {}
 
     /**
      * Money legs are grouped by the conversion currency. Single-currency
@@ -28,16 +28,7 @@ final readonly class AffiliateReportQuery implements ReportingApi
      */
     public function getSummary(DateTimeInterface $startDate, DateTimeInterface $endDate): array
     {
-        $rows = AffiliateConversion::query()
-            ->forOwner()
-            ->whereBetween('occurred_at', [$startDate, $endDate])
-            ->toBase()
-            ->selectRaw(sprintf(
-                'commission_currency as currency, COUNT(*) as conversions, COALESCE(SUM(%s), 0) as revenue_minor, COALESCE(SUM(commission_minor), 0) as commission_minor',
-                $this->revenueMinorExpression(),
-            ))
-            ->groupBy('commission_currency')
-            ->get();
+        $rows = collect($this->conversions->money($startDate, $endDate));
 
         $attributions = $this->attributions->countWindow($startDate, $endDate);
 
@@ -54,20 +45,11 @@ final readonly class AffiliateReportQuery implements ReportingApi
      */
     public function getTopAffiliates(DateTimeInterface $startDate, DateTimeInterface $endDate, int $limit = 10): array
     {
-        $rows = AffiliateConversion::query()
-            ->forOwner()
-            ->whereBetween('occurred_at', [$startDate, $endDate])
-            ->toBase()
-            ->selectRaw(sprintf(
-                'affiliate_id, commission_currency as currency, MAX(affiliate_code) as affiliate_code, COUNT(*) as conversions, SUM(%s) as revenue_minor, SUM(commission_minor) as commission_minor',
-                $this->revenueMinorExpression(),
-            ))
-            ->groupBy('affiliate_id', 'commission_currency')
-            ->get();
+        $rows = collect($this->conversions->byAffiliate($startDate, $endDate));
 
         $affiliateNamesById = Affiliate::query()
             ->forOwner()
-            ->whereIn('id', $rows->pluck('affiliate_id')->all())
+            ->whereIn('id', $rows->pluck('affiliateId')->all())
             ->pluck('name', 'id');
 
         $default = $this->defaultCurrency();
@@ -75,14 +57,14 @@ final readonly class AffiliateReportQuery implements ReportingApi
         // Rank on converted commission so legs in different currencies
         // compare fairly; legs without a rate sink below converted ones.
         return $rows
-            ->map(fn (object $row): array => [
-                'affiliate_id' => (string) $row->affiliate_id,
-                'affiliate_code' => (string) $row->affiliate_code,
-                'name' => $affiliateNamesById[(string) $row->affiliate_id] ?? null,
+            ->map(fn (ConversionReportRow $row): array => [
+                'affiliate_id' => (string) $row->affiliateId,
+                'affiliate_code' => (string) $row->affiliateCode,
+                'name' => $affiliateNamesById[(string) $row->affiliateId] ?? null,
                 'currency' => $this->normalizeCurrency($row->currency ?? null),
                 'conversions' => (int) $row->conversions,
-                'revenue_minor' => (int) $row->revenue_minor,
-                'commission_minor' => (int) $row->commission_minor,
+                'revenue_minor' => (int) $row->revenueMinor,
+                'commission_minor' => (int) $row->commissionMinor,
             ])
             ->sort(function (array $left, array $right) use ($default, $endDate): int {
                 $leftRank = $this->converter->convertMinor($left['commission_minor'], $left['currency'], $default, $endDate);
@@ -113,25 +95,15 @@ final readonly class AffiliateReportQuery implements ReportingApi
      */
     public function getConversionTrend(DateTimeInterface $startDate, DateTimeInterface $endDate): array
     {
-        $rows = AffiliateConversion::query()
-            ->forOwner()
-            ->whereBetween('occurred_at', [$startDate, $endDate])
-            ->toBase()
-            ->selectRaw(sprintf(
-                'DATE(occurred_at) as date, commission_currency as currency, COUNT(*) as conversions, SUM(%s) as revenue_minor, SUM(commission_minor) as commission_minor',
-                $this->revenueMinorExpression(),
-            ))
-            ->groupBy('date', 'commission_currency')
-            ->orderBy('date')
-            ->get();
+        $rows = collect($this->conversions->byDay($startDate, $endDate));
 
         return $rows
-            ->map(fn (object $row): array => [
+            ->map(fn (ConversionReportRow $row): array => [
                 'date' => (string) $row->date,
                 'currency' => $this->normalizeCurrency($row->currency ?? null),
                 'conversions' => (int) $row->conversions,
-                'revenue_minor' => (int) $row->revenue_minor,
-                'commission_minor' => (int) $row->commission_minor,
+                'revenue_minor' => (int) $row->revenueMinor,
+                'commission_minor' => (int) $row->commissionMinor,
             ])
             ->all();
     }
@@ -141,36 +113,7 @@ final readonly class AffiliateReportQuery implements ReportingApi
      */
     public function getTrafficSources(DateTimeInterface $startDate, DateTimeInterface $endDate): array
     {
-        $conversionsTable = (new AffiliateConversion)->getTable();
-        $this->attributions->assertSharedConnection(spl_object_id((new AffiliateConversion)->getConnection()));
-        $attributionsTable = (string) config('affiliates.database.tables.attributions', 'affiliate_attributions');
-
-        $rows = AffiliateConversion::query()
-            ->forOwner()
-            ->whereBetween("{$conversionsTable}.occurred_at", [$startDate, $endDate])
-            ->join($attributionsTable, "{$attributionsTable}.id", '=', "{$conversionsTable}.affiliate_attribution_id")
-            ->toBase()
-            ->selectRaw("{$attributionsTable}.source as source, {$attributionsTable}.campaign as campaign, COUNT(*) as conversions")
-            ->groupBy("{$attributionsTable}.source", "{$attributionsTable}.campaign")
-            ->get();
-
-        $sources = [];
-        $campaigns = [];
-
-        foreach ($rows as $row) {
-            if (is_string($row->source) && $row->source !== '') {
-                $sources[$row->source] = ($sources[$row->source] ?? 0) + (int) $row->conversions;
-            }
-
-            if (is_string($row->campaign) && $row->campaign !== '') {
-                $campaigns[$row->campaign] = ($campaigns[$row->campaign] ?? 0) + (int) $row->conversions;
-            }
-        }
-
-        return [
-            'sources' => $sources,
-            'campaigns' => $campaigns,
-        ];
+        return $this->conversions->traffic($startDate, $endDate)->toArray();
     }
 
     /**
@@ -218,26 +161,15 @@ final readonly class AffiliateReportQuery implements ReportingApi
             $subjects[$key]['attributions'] = (int) $row['attributions'];
         }
 
-        $conversionRows = AffiliateConversion::query()
-            ->forOwner()
-            ->whereBetween('occurred_at', [$startDate, $endDate])
-            ->whereNotNull('subject_type')
-            ->whereNotNull('subject_key')
-            ->toBase()
-            ->selectRaw(sprintf(
-                'subject_type, subject_key, MAX(subject_title_snapshot) as subject_title_snapshot, commission_currency as currency, COUNT(*) as conversions, SUM(%s) as revenue_minor, SUM(commission_minor) as commission_minor',
-                $this->revenueMinorExpression(),
-            ))
-            ->groupBy('subject_type', 'subject_key', 'commission_currency')
-            ->get();
+        $conversionRows = $this->conversions->bySubject($startDate, $endDate);
 
         foreach ($conversionRows as $row) {
-            $key = $this->subjectKey((string) $row->subject_type, (string) $row->subject_key);
+            $key = $this->subjectKey((string) $row->subjectType, (string) $row->subjectKey);
 
             $subjects[$key] ??= [
-                'subject_type' => (string) $row->subject_type,
-                'subject_key' => (string) $row->subject_key,
-                'subject_title_snapshot' => $this->nullableString($row->subject_title_snapshot),
+                'subject_type' => (string) $row->subjectType,
+                'subject_key' => (string) $row->subjectKey,
+                'subject_title_snapshot' => $this->nullableString($row->subjectTitleSnapshot),
                 'visits' => 0,
                 'attributions' => 0,
                 'conversions' => 0,
@@ -245,7 +177,7 @@ final readonly class AffiliateReportQuery implements ReportingApi
                 'commission_minor' => 0,
             ];
 
-            $subjects[$key]['subject_title_snapshot'] ??= $this->nullableString($row->subject_title_snapshot);
+            $subjects[$key]['subject_title_snapshot'] ??= $this->nullableString($row->subjectTitleSnapshot);
             $moneyBySubject[$key][] = $row;
         }
 
@@ -291,20 +223,7 @@ final readonly class AffiliateReportQuery implements ReportingApi
             return [];
         }
 
-        $conversionsTable = (new AffiliateConversion)->getTable();
-        $this->attributions->assertSharedConnection(spl_object_id((new AffiliateConversion)->getConnection()));
-        $attributionsTable = (string) config('affiliates.database.tables.attributions', 'affiliate_attributions');
-
-        $moneyRows = AffiliateConversion::query()
-            ->forOwner()
-            ->where('affiliate_id', $affiliateId)
-            ->toBase()
-            ->selectRaw(sprintf(
-                'commission_currency as currency, COUNT(*) as conversions, COALESCE(SUM(%s), 0) as revenue_minor, COALESCE(SUM(commission_minor), 0) as commission_minor',
-                $this->revenueMinorExpression(),
-            ))
-            ->groupBy('commission_currency')
-            ->get();
+        $moneyRows = collect($this->conversions->money(affiliateId: $affiliateId));
 
         $money = $this->summarizeMoney($moneyRows);
 
@@ -313,26 +232,7 @@ final readonly class AffiliateReportQuery implements ReportingApi
         $conversionCount = $money['conversions'];
         $ltv = $conversionCount > 0 && $totalRevenue !== null ? ($totalRevenue / $conversionCount) : null;
 
-        $utmRows = AffiliateConversion::query()
-            ->forOwner()
-            ->where("{$conversionsTable}.affiliate_id", $affiliateId)
-            ->join($attributionsTable, "{$attributionsTable}.id", '=', "{$conversionsTable}.affiliate_attribution_id")
-            ->toBase()
-            ->selectRaw("{$attributionsTable}.source as source, {$attributionsTable}.campaign as campaign, COUNT(*) as conversions")
-            ->groupBy("{$attributionsTable}.source", "{$attributionsTable}.campaign")
-            ->get();
-
-        $utm = ['sources' => [], 'campaigns' => []];
-
-        foreach ($utmRows as $row) {
-            if (is_string($row->source) && $row->source !== '') {
-                $utm['sources'][$row->source] = ($utm['sources'][$row->source] ?? 0) + (int) $row->conversions;
-            }
-
-            if (is_string($row->campaign) && $row->campaign !== '') {
-                $utm['campaigns'][$row->campaign] = ($utm['campaigns'][$row->campaign] ?? 0) + (int) $row->conversions;
-            }
-        }
+        $utm = $this->conversions->traffic(affiliateId: $affiliateId)->toArray();
 
         $attributionCount = $this->attributions->count($affiliateId);
 
@@ -364,15 +264,11 @@ final readonly class AffiliateReportQuery implements ReportingApi
         ];
     }
 
-    private function revenueMinorExpression(): string
-    {
-        return 'COALESCE(value_minor, 0)';
-    }
 
     /**
      * Fold per-currency aggregate rows into display totals.
      *
-     * @param  Collection<int, stdClass>  $rows
+     * @param  Collection<int, ConversionReportRow>  $rows
      * @return array{conversions: int, revenue_minor: int|null, commission_minor: int|null, currency: string, converted: bool, by_currency: array<string, array{conversions: int, revenue_minor: int, commission_minor: int}>}
      */
     private function summarizeMoney(Collection $rows, ?DateTimeInterface $asOf = null): array
@@ -385,8 +281,8 @@ final readonly class AffiliateReportQuery implements ReportingApi
 
             $byCurrency[$currency] ??= ['conversions' => 0, 'revenue_minor' => 0, 'commission_minor' => 0];
             $byCurrency[$currency]['conversions'] += (int) $row->conversions;
-            $byCurrency[$currency]['revenue_minor'] += (int) $row->revenue_minor;
-            $byCurrency[$currency]['commission_minor'] += (int) $row->commission_minor;
+            $byCurrency[$currency]['revenue_minor'] += (int) $row->revenueMinor;
+            $byCurrency[$currency]['commission_minor'] += (int) $row->commissionMinor;
             $conversions += (int) $row->conversions;
         }
 

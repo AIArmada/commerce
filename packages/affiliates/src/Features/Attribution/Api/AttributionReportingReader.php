@@ -12,6 +12,8 @@ interface AttributionReportingReader
 
     public function find(string $id): ?AttributionReportingRecord;
 
+    public function findForConversion(string $id, string $affiliateId, ?string $ownerType, ?string $ownerId, int $connectionIdentity): ?AttributionReportingRecord;
+
     public function latestForVoucher(string $voucherCode): ?AttributionReportingRecord;
 
     /** @return array<string, string> */

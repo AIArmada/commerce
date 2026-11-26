@@ -323,3 +323,36 @@ test('affiliate report service converts mixed-currency totals when rates exist',
         'converted' => true,
     ])->and($affiliateSummary['totals']['by_currency'])->toHaveKeys(['USD', 'MYR']);
 });
+
+test('traffic reporting excludes attribution references belonging to another affiliate', function (): void {
+    $other = Affiliate::create([
+        'code' => 'REPORT-OTHER',
+        'name' => 'Other affiliate',
+        'status' => Active::class,
+        'commission_type' => 'percentage',
+        'commission_rate' => 100,
+        'currency' => 'USD',
+    ]);
+
+    $attribution = AffiliateAttribution::create([
+        'affiliate_id' => $other->id,
+        'affiliate_code' => $other->code,
+        'source' => 'foreign-source',
+        'campaign' => 'foreign-campaign',
+    ]);
+
+    AffiliateConversion::create([
+        'affiliate_id' => $this->affiliate->id,
+        'affiliate_code' => $this->affiliate->code,
+        'affiliate_attribution_id' => $attribution->id,
+        'value_minor' => 1000,
+        'commission_minor' => 100,
+        'commission_currency' => 'USD',
+        'status' => ApprovedConversion::class,
+        'occurred_at' => now(),
+    ]);
+
+    $report = app(ReportingApi::class);
+    expect($report->affiliateSummary($this->affiliate->id)['utm'])->toBe(['sources' => [], 'campaigns' => []])
+        ->and($report->getTrafficSources(now()->subDay(), now()->addDay()))->toBe(['sources' => [], 'campaigns' => []]);
+});
