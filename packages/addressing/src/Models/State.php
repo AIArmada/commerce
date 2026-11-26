@@ -10,7 +10,7 @@ use AIArmada\Addressing\Support\AddressingTableResolver;
 use AIArmada\Addressing\Support\ModelResolver;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use AIArmada\Addressing\Persistence\TransactionalDeletionModel;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -24,7 +24,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property float|null $longitude
  * @property-read AddressCountry $country
  */
-class State extends Model
+class State extends TransactionalDeletionModel
 {
     use HasFactory;
     use HasUuids;
@@ -36,10 +36,6 @@ class State extends Model
         });
     }
 
-    public function delete(): ?bool
-    {
-        return $this->getConnection()->transaction(fn (): ?bool => parent::delete());
-    }
 
     protected $fillable = [
         'country_id',

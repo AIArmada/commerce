@@ -17,7 +17,7 @@ use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use AIArmada\Addressing\Persistence\TransactionalDeletionModel;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -50,7 +50,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property array|null $navigation_links
  * @property-read Addressable|null $pivot
  */
-class Address extends Model
+class Address extends TransactionalDeletionModel
 {
     use HasFactory;
     use HasOwner;
@@ -134,10 +134,6 @@ class Address extends Model
         return ['formatted_address' => $formatted, 'formatted_lines' => explode("\n", $formatted)];
     }
 
-    public function delete(): ?bool
-    {
-        return $this->getConnection()->transaction(fn (): ?bool => parent::delete());
-    }
 
     protected $fillable = [
         'country_id',

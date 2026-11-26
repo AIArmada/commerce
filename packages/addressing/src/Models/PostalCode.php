@@ -10,7 +10,7 @@ use AIArmada\Addressing\Support\AddressingTableResolver;
 use AIArmada\Addressing\Support\ModelResolver;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use AIArmada\Addressing\Persistence\TransactionalDeletionModel;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 /**
@@ -20,7 +20,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  * @property bool $is_active
  * @property array|null $metadata
  */
-class PostalCode extends Model
+class PostalCode extends TransactionalDeletionModel
 {
     use HasFactory;
     use HasUuids;
@@ -32,10 +32,6 @@ class PostalCode extends Model
         });
     }
 
-    public function delete(): ?bool
-    {
-        return $this->getConnection()->transaction(fn (): ?bool => parent::delete());
-    }
 
     protected $fillable = [
         'country_code',

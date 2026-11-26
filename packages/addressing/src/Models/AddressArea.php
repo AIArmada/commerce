@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use AIArmada\Addressing\Persistence\TransactionalDeletionModel;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -45,7 +45,7 @@ use Illuminate\Database\Query\Builder as QueryBuilder;
  * @property-read AddressCountry|null $country
  * @property-read AddressArea|null $parent
  */
-class AddressArea extends Model
+class AddressArea extends TransactionalDeletionModel
 {
     use HasFactory;
     use HasSpatialLocation;
@@ -77,10 +77,6 @@ class AddressArea extends Model
         });
     }
 
-    public function delete(): ?bool
-    {
-        return $this->getConnection()->transaction(fn (): ?bool => parent::delete());
-    }
 
     protected $fillable = [
         'country_id',

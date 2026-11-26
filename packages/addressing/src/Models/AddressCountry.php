@@ -12,7 +12,7 @@ use AIArmada\CommerceSupport\Features\ReferenceData\Models\Currency;
 use AIArmada\CommerceSupport\Features\ReferenceData\Models\Timezone;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use AIArmada\Addressing\Persistence\TransactionalDeletionModel;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -34,7 +34,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $emojiU
  * @property array|null $translations
  */
-class AddressCountry extends Model
+class AddressCountry extends TransactionalDeletionModel
 {
     use HasFactory;
     use HasUuids;
@@ -46,10 +46,6 @@ class AddressCountry extends Model
         });
     }
 
-    public function delete(): ?bool
-    {
-        return $this->getConnection()->transaction(fn (): ?bool => parent::delete());
-    }
 
     protected $fillable = [
         'iso2',

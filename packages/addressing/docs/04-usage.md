@@ -98,9 +98,10 @@ pointers cross-owner (free-text `state`/`city` and snapshots are preserved)
 and clears `address_area_state_links`, then prunes only area assignments that
 no longer validate without the state. Deleting a `City` nulls
 `addresses.city_id` the same way. Both deletes run in a transaction with no
-database cascades. Provider `seed()` stale-state cleanup must reuse
-`GeographyReferenceCleanup::pruneStatesByCodes()` so the same integrity runs
-instead of bulk deletes that bypass model events.
+database cascades. Provider state retirement runs through the `CountryStateSeeder`
+contract with `CountryStateSeedData::retiredCodes` so it invokes the same
+integrity rules instead of bulk deletes that bypass model events. A vetoed
+model deletion rolls back the reference cleanup as well.
 
 State selectors should offer only provider state-kind roots so every option
 resolves to an area parent. Use the core seam instead of hardcoding country
