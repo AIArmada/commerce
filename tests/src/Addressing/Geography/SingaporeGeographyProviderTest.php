@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Addressing\Contracts\CountryStateSeeder;
 use AIArmada\Addressing\Geography\Singapore\SingaporeGeographyProvider;
 use AIArmada\Addressing\Models\State;
 
@@ -14,7 +15,7 @@ it('preserves globally seeded states and adds missing Singapore districts', func
         'label' => 'Central',
     ]);
 
-    app(SingaporeGeographyProvider::class)->seed($country);
+    app(CountryStateSeeder::class)->execute($country, app(SingaporeGeographyProvider::class)->stateSeedData());
 
     $state->refresh();
 
@@ -130,7 +131,7 @@ it('keeps CDC districts hierarchy-agnostic and separate from the planning tree',
         ->and($mappings['01'])->not->toHaveKey('hierarchy_types');
 
     $country = $this->seedCountry('SG');
-    $provider->seed($country);
+    app(CountryStateSeeder::class)->execute($country, $provider->stateSeedData());
 
     expect(State::query()->where('country_id', $country->id)->orderBy('code')->pluck('name')->all())
         ->toBe(['Central Singapore', 'North East', 'North West', 'South East', 'South West']);

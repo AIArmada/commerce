@@ -11,10 +11,9 @@ use AIArmada\Addressing\Contracts\CountryGeographyProvider;
 use AIArmada\Addressing\Contracts\CountryHierarchyProvider;
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
 use AIArmada\Addressing\Data\AddressLevelDefinition;
+use AIArmada\Addressing\Data\CountryStateSeedData;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Support\CsvAddressAreaSource;
-use AIArmada\Addressing\Support\GeographyReferenceCleanup;
-use AIArmada\Addressing\Support\ModelResolver;
 
 class GuineaBissauGeographyProvider implements CountryAddressAreaMetadataProvider, CountryAreaTypeLabelProvider, CountryGeographyProvider, CountryHierarchyProvider
 {
@@ -32,24 +31,9 @@ class GuineaBissauGeographyProvider implements CountryAddressAreaMetadataProvide
         return 'GW';
     }
 
-    public function seed(AddressCountry $country): void
+    public function stateSeedData(): CountryStateSeedData
     {
-        $stateClass = ModelResolver::stateClass();
-        $statesData = $this->stateDefinitions();
-
-        foreach ($statesData as $s) {
-            $stateClass::updateOrCreate(
-                ['country_id' => $country->id, 'code' => $s['code']],
-                [
-                    'name' => $s['name'],
-                    'country_code' => $this->countryCode(),
-                ],
-            );
-        }
-
-        // Leste/Norte/Sul are statistical groupings, not administrative
-        // states. Delete stragglers seeded before that fix.
-        GeographyReferenceCleanup::pruneStatesByCodes($country, ['L', 'N', 'S']);
+        return new CountryStateSeedData($this->stateDefinitions(), ['L', 'N', 'S']);
     }
 
     /** @return list<AddressHierarchyDefinition> */

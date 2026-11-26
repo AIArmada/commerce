@@ -11,10 +11,9 @@ use AIArmada\Addressing\Contracts\CountryGeographyProvider;
 use AIArmada\Addressing\Contracts\CountryHierarchyProvider;
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
 use AIArmada\Addressing\Data\AddressLevelDefinition;
+use AIArmada\Addressing\Data\CountryStateSeedData;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Support\CsvAddressAreaSource;
-use AIArmada\Addressing\Support\GeographyReferenceCleanup;
-use AIArmada\Addressing\Support\ModelResolver;
 
 class MongoliaGeographyProvider implements CountryAddressAreaMetadataProvider, CountryAreaTypeLabelProvider, CountryGeographyProvider, CountryHierarchyProvider
 {
@@ -32,24 +31,9 @@ class MongoliaGeographyProvider implements CountryAddressAreaMetadataProvider, C
         return 'MN';
     }
 
-    public function seed(AddressCountry $country): void
+    public function stateSeedData(): CountryStateSeedData
     {
-        $stateClass = ModelResolver::stateClass();
-        $statesData = $this->stateDefinitions();
-
-        foreach ($statesData as $s) {
-            $stateClass::updateOrCreate(
-                ['country_id' => $country->id, 'code' => $s['code']],
-                [
-                    'name' => $s['name'],
-                    'country_code' => $this->countryCode(),
-                ],
-            );
-        }
-
-        // Ulaanbaatar follows ISO MN-1 (single digit). Delete stragglers
-        // seeded with the zero-padded code so reseeds converge.
-        GeographyReferenceCleanup::pruneStatesByCodes($country, ['001']);
+        return new CountryStateSeedData($this->stateDefinitions(), ['001']);
     }
 
     /** @return list<AddressHierarchyDefinition> */

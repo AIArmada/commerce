@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Addressing\Contracts\CountryStateSeeder;
 use AIArmada\Addressing\Geography\Indonesia\IndonesiaGeographyProvider;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Models\State;
@@ -33,7 +34,7 @@ it('streams the opt-in villages when the flag is on', function (): void {
 it('seeds the 38 ISO provinces including the six Papuas', function (): void {
     $country = $this->seedCountry('ID');
 
-    app(IndonesiaGeographyProvider::class)->seed($country);
+    app(CountryStateSeeder::class)->execute($country, app(IndonesiaGeographyProvider::class)->stateSeedData());
 
     $states = State::query()->where('country_id', $country->id)->orderBy('code')->pluck('name', 'code')->all();
 

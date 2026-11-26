@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Addressing\Contracts\CountryStateSeeder;
 use AIArmada\Addressing\Actions\SeedAddressCountriesAction;
 use AIArmada\Addressing\Actions\SeedAddressStatesAction;
 use AIArmada\Addressing\Contracts\CountryAddressProfile;
@@ -235,7 +236,7 @@ it('lists only provider state-kind roots in the state selector', function (): vo
     ));
 
     app(SeedAddressStatesAction::class)->execute($states);
-    app(UnitedKingdomGeographyProvider::class)->seed($country);
+    app(CountryStateSeeder::class)->execute($country, app(UnitedKingdomGeographyProvider::class)->stateSeedData());
 
     $field = collect(AddressFormSchema::make())
         ->first(fn ($component): bool => $component->getName() === 'state_id');

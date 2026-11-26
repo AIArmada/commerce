@@ -190,3 +190,17 @@ it('keeps every provider area row within address_areas column limits without mar
 
     expect($failures)->toBe([]);
 });
+
+it('provides state seed data without database writes', function (): void {
+    foreach (geographyProviderClasses() as $providerClass) {
+        $provider = app($providerClass);
+        $data = $provider->stateSeedData();
+
+        expect($data)->toBeInstanceOf(\AIArmada\Addressing\Data\CountryStateSeedData::class);
+
+        foreach ($data->states as $state) {
+            expect($state['code'])->not->toBeEmpty()
+                ->and($state['name'])->not->toBeEmpty();
+        }
+    }
+});

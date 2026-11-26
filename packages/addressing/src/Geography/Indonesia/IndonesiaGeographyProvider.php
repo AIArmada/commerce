@@ -11,11 +11,10 @@ use AIArmada\Addressing\Contracts\CountryGeographyProvider;
 use AIArmada\Addressing\Contracts\CountryHierarchyProvider;
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
 use AIArmada\Addressing\Data\AddressLevelDefinition;
+use AIArmada\Addressing\Data\CountryStateSeedData;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Support\CompositeAddressAreaSource;
 use AIArmada\Addressing\Support\CsvAddressAreaSource;
-use AIArmada\Addressing\Support\GeographyReferenceCleanup;
-use AIArmada\Addressing\Support\ModelResolver;
 
 class IndonesiaGeographyProvider implements CountryAddressAreaMetadataProvider, CountryAreaTypeLabelProvider, CountryGeographyProvider, CountryHierarchyProvider
 {
@@ -33,25 +32,9 @@ class IndonesiaGeographyProvider implements CountryAddressAreaMetadataProvider, 
         return 'ID';
     }
 
-    public function seed(AddressCountry $indonesia): void
+    public function stateSeedData(): CountryStateSeedData
     {
-        $stateClass = ModelResolver::stateClass();
-        $statesData = $this->stateDefinitions();
-
-        foreach ($statesData as $s) {
-            $stateClass::updateOrCreate(
-                ['country_id' => $indonesia->id, 'code' => $s['code']],
-                [
-                    'name' => $s['name'],
-                    'country_code' => $this->countryCode(),
-                ],
-            );
-        }
-
-        // ISO geographical units (island groups) are not provinces and were
-        // removed from the bundled state data. Delete stragglers seeded
-        // before that fix so names like Papua always resolve to a province.
-        GeographyReferenceCleanup::pruneStatesByCodes($indonesia, ['JW', 'KA', 'ML', 'NU', 'PP', 'SL', 'SM']);
+        return new CountryStateSeedData($this->stateDefinitions(), ['JW', 'KA', 'ML', 'NU', 'PP', 'SL', 'SM']);
     }
 
     /** @return list<AddressHierarchyDefinition> */

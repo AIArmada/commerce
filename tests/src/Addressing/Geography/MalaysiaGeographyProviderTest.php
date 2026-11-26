@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use AIArmada\Addressing\Contracts\CountryStateSeeder;
+use AIArmada\Addressing\Data\CountryStateSeedData;
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
 use AIArmada\Addressing\Contracts\AddressAreaSource;
 use AIArmada\Addressing\Contracts\CountryAddressAreaMetadataProvider;
@@ -32,12 +34,9 @@ final class ObsoleteLinkFakeGeographyProvider implements CountryAddressAreaMetad
         return 'MY';
     }
 
-    public function seed(AddressCountry $country): void
+    public function stateSeedData(): CountryStateSeedData
     {
-        ModelResolver::stateClass()::query()->updateOrCreate(
-            ['country_id' => $country->getKey(), 'code' => 'T1'],
-            ['name' => 'Test State', 'country_code' => 'MY'],
-        );
+        return new CountryStateSeedData([['code' => 'T1', 'name' => 'Test State']]);
     }
 
     public function addressHierarchies(): array
@@ -92,7 +91,7 @@ it('preserves globally seeded states and adds missing Malaysian states', functio
         'label' => 'Kuala Lumpur',
     ]);
 
-    app(MalaysiaGeographyProvider::class)->seed($country);
+    app(CountryStateSeeder::class)->execute($country, app(MalaysiaGeographyProvider::class)->stateSeedData());
 
     $state->refresh();
 
@@ -145,7 +144,10 @@ it('deactivates prior areas when a provider changes its imported source key', fu
             return 'MY';
         }
 
-        public function seed(AddressCountry $country): void {}
+        public function stateSeedData(): CountryStateSeedData
+    {
+        return new CountryStateSeedData([]);
+    }
 
         public function addressHierarchies(): array
         {

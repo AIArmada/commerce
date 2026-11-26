@@ -35,7 +35,7 @@ class BrazilGeographyProvider implements CountryAddressAreaMetadataProvider, Cou
 }
 ```
 
-- `CountryGeographyProvider` (extends `CountryAddressProfile`) is the only required contract. It contributes `countryCode()`, the stable `providerKey()`, `seed()` for `State` rows, and `addressHierarchies()`.
+- `CountryGeographyProvider` (extends `CountryAddressProfile`) is the only required contract. It contributes `countryCode()`, the stable `providerKey()`, `stateSeedData()` for `State` rows, and `addressHierarchies()`.
 - `CountryHierarchyProvider` is optional and contributes `addressAreaSource()` plus `stateAreaMappings()`. Every bundled provider implements it; without it the country has states but no area tree and no state↔area links.
 - `CountryAddressAreaMetadataProvider` is optional and contributes `areaRoles()`, `areaNames()`, and `areaRelationships()`, all keyed by CSV `source_id`. Empty arrays are a normal pattern, not a gap.
 - `CountryAddressFormatter` (extends `AddressFormatter`) lives in a separate class per country and is registered under the separate `addressing.formatters` key, not `addressing.geography.providers`. It contributes static `countryCode()` plus `format(AddressData $address): string`. The static code lets the resolver map country codes without instantiating formatters.
@@ -95,7 +95,7 @@ When a country exposes both an `administrative` and a `postal` hierarchy, every 
 
 ## stateDefinitions and seed()
 
-`seed()` populates `State` rows from a private `stateDefinitions()` list of `['name', 'code']` pairs, keyed by `[country_id, code]`:
+`stateSeedData()` populates `State` rows from a private `stateDefinitions()` list of `['name', 'code']` pairs, keyed by `[country_id, code]`:
 
 ```php
 private function stateDefinitions(): array
@@ -107,7 +107,7 @@ private function stateDefinitions(): array
 }
 ```
 
-Use the country's own subdivision codes: ISO 3166-2 second parts (`AC`, `JK`), alpha codes (`BB`…`TH` for Germany), ISTAT numbers (`21`…`88` for Italy), or official numeric strings (`13`, `14` for Bahrain). State names use official endonyms with diacritics (`São Paulo`, `Bayern`, `Piemonte`). Mirror `resources/data/states.json` for names, codes, and ordering so the provider and the bundled data never drift. If a definition changes (a renamed or merged subdivision), prune the stale rows in `seed()` with `GeographyReferenceCleanup::pruneStatesByCodes($country, [...])` so reseeds converge through model deletes with reference integrity; Indonesia (island-unit codes), Ethiopia (`SN`), and Iraq (`KR`) all carry such cleanup. Never bulk-delete states by query: it bypasses `State` events and leaves addresses, cities, and area links dangling.
+Use the country's own subdivision codes: ISO 3166-2 second parts (`AC`, `JK`), alpha codes (`BB`…`TH` for Germany), ISTAT numbers (`21`…`88` for Italy), or official numeric strings (`13`, `14` for Bahrain). State names use official endonyms with diacritics (`São Paulo`, `Bayern`, `Piemonte`). Mirror `resources/data/states.json` for names, codes, and ordering so the provider and the bundled data never drift. If a definition changes (a renamed or merged subdivision), prune the stale rows in `stateSeedData()` with `GeographyReferenceCleanup::pruneStatesByCodes($country, [...])` so reseeds converge through model deletes with reference integrity; Indonesia (island-unit codes), Ethiopia (`SN`), and Iraq (`KR`) all carry such cleanup. Never bulk-delete states by query: it bypasses `State` events and leaves addresses, cities, and area links dangling.
 
 ## areaNames, areaRoles, areaRelationships
 
@@ -260,7 +260,7 @@ Add `tests/src/Addressing/Geography/<Country>GeographyProviderTest.php` followin
 
 Assert at minimum:
 
-1. `seed()` creates every `State` (count plus one renamed-value check proving `updateOrCreate` overwrites stale names).
+1. `stateSeedData()` creates every `State` (count plus one renamed-value check proving `updateOrCreate` overwrites stale names).
 2. `stateAreaMappings()` covers every state code, with keys in a fixed order.
 3. `addressHierarchies()` has the expected keys, kinds, and assignment roles.
 4. `SeedCountryGeographiesAction::execute('<ISO2>')` imports the tree: active-area counts per type, one `AddressAreaStateLink` per mapping, and any declared aliases present.

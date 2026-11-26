@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Addressing\Contracts\CountryStateSeeder;
 use AIArmada\Addressing\Contracts\AddressAssignmentWriter;
 use AIArmada\Addressing\Contracts\CountryAddressProfile;
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
@@ -159,7 +160,7 @@ it('clears cross-owner references through a real provider cleanup and keeps late
         'country_code' => 'ID',
     ]));
 
-    app(IndonesiaGeographyProvider::class)->seed($country);
+    app(CountryStateSeeder::class)->execute($country, app(IndonesiaGeographyProvider::class)->stateSeedData());
 
     expect(State::query()->where('country_id', $country->id)->where('code', 'PP')->exists())->toBeFalse();
 

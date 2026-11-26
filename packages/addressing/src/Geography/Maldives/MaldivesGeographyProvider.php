@@ -11,10 +11,9 @@ use AIArmada\Addressing\Contracts\CountryGeographyProvider;
 use AIArmada\Addressing\Contracts\CountryHierarchyProvider;
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
 use AIArmada\Addressing\Data\AddressLevelDefinition;
+use AIArmada\Addressing\Data\CountryStateSeedData;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Support\CsvAddressAreaSource;
-use AIArmada\Addressing\Support\GeographyReferenceCleanup;
-use AIArmada\Addressing\Support\ModelResolver;
 
 class MaldivesGeographyProvider implements CountryAddressAreaMetadataProvider, CountryAreaTypeLabelProvider, CountryGeographyProvider, CountryHierarchyProvider
 {
@@ -32,25 +31,9 @@ class MaldivesGeographyProvider implements CountryAddressAreaMetadataProvider, C
         return 'MV';
     }
 
-    public function seed(AddressCountry $country): void
+    public function stateSeedData(): CountryStateSeedData
     {
-        $stateClass = ModelResolver::stateClass();
-        $statesData = $this->stateDefinitions();
-
-        foreach ($statesData as $s) {
-            $stateClass::updateOrCreate(
-                ['country_id' => $country->id, 'code' => $s['code']],
-                [
-                    'name' => $s['name'],
-                    'country_code' => $this->countryCode(),
-                ],
-            );
-        }
-
-        // Gnaviyani atoll was absorbed by Fuvahmulah city, which covers it
-        // entirely. Delete stragglers seeded before the fix so reseeds
-        // converge on the 18 atolls plus 5 cities.
-        GeographyReferenceCleanup::pruneStatesByCodes($country, ['29']);
+        return new CountryStateSeedData($this->stateDefinitions(), ['29']);
     }
 
     /** @return list<AddressHierarchyDefinition> */

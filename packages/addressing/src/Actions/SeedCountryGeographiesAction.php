@@ -6,6 +6,7 @@ namespace AIArmada\Addressing\Actions;
 
 use AIArmada\Addressing\Contracts\CountryAddressAreaMetadataProvider;
 use AIArmada\Addressing\Contracts\CountryGeographyProvider;
+use AIArmada\Addressing\Contracts\CountryStateSeeder;
 use AIArmada\Addressing\Contracts\CountryHierarchyProvider;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressCountry;
@@ -22,6 +23,7 @@ final class SeedCountryGeographiesAction
     public function __construct(
         private readonly Container $container,
         private readonly ImportAddressAreasAction $importAddressAreas,
+        private readonly CountryStateSeeder $stateSeeder,
     ) {}
 
     /**
@@ -74,7 +76,7 @@ final class SeedCountryGeographiesAction
                 };
 
             $areaSummary = $this->connection()->transaction(function () use ($provider, $country, $providerCode, $report): ?array {
-                $provider->seed($country);
+                $this->stateSeeder->execute($country, $provider->stateSeedData());
 
                 if (! $provider instanceof CountryHierarchyProvider) {
                     return null;

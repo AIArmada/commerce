@@ -11,10 +11,9 @@ use AIArmada\Addressing\Contracts\CountryGeographyProvider;
 use AIArmada\Addressing\Contracts\CountryHierarchyProvider;
 use AIArmada\Addressing\Data\AddressHierarchyDefinition;
 use AIArmada\Addressing\Data\AddressLevelDefinition;
+use AIArmada\Addressing\Data\CountryStateSeedData;
 use AIArmada\Addressing\Models\AddressCountry;
 use AIArmada\Addressing\Support\CsvAddressAreaSource;
-use AIArmada\Addressing\Support\GeographyReferenceCleanup;
-use AIArmada\Addressing\Support\ModelResolver;
 
 class CaribbeanNetherlandsGeographyProvider implements CountryAddressAreaMetadataProvider, CountryAreaTypeLabelProvider, CountryGeographyProvider, CountryHierarchyProvider
 {
@@ -32,24 +31,9 @@ class CaribbeanNetherlandsGeographyProvider implements CountryAddressAreaMetadat
         return 'BQ';
     }
 
-    public function seed(AddressCountry $country): void
+    public function stateSeedData(): CountryStateSeedData
     {
-        $stateClass = ModelResolver::stateClass();
-        $statesData = $this->stateDefinitions();
-
-        foreach ($statesData as $s) {
-            $stateClass::updateOrCreate(
-                ['country_id' => $country->id, 'code' => $s['code']],
-                [
-                    'name' => $s['name'],
-                    'country_code' => $this->countryCode(),
-                ],
-            );
-        }
-
-        // Malformed codes BQ1/BQ2/BQ3 were replaced by ISO codes BO/SA/SE.
-        // Delete stragglers seeded before that fix.
-        GeographyReferenceCleanup::pruneStatesByCodes($country, ['BQ1', 'BQ2', 'BQ3']);
+        return new CountryStateSeedData($this->stateDefinitions(), ['BQ1', 'BQ2', 'BQ3']);
     }
 
     /** @return list<AddressHierarchyDefinition> */

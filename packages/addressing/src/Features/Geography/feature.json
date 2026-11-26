@@ -12,6 +12,9 @@
     ],
     "table:address_area_relationships": [
       "AIArmada\\Addressing\\Features\\Geography\\Actions\\SaveAddressAreaAction"
+    ],
+    "table:states": [
+      "AIArmada\\Addressing\\Features\\Geography\\Actions\\SeedCountryStatesAction"
     ]
   },
   "extensions": {}

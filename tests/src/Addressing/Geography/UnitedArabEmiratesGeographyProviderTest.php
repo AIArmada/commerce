@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Addressing\Contracts\CountryStateSeeder;
 use AIArmada\Addressing\Geography\UnitedArabEmirates\UnitedArabEmiratesGeographyProvider;
 use AIArmada\Addressing\Models\State;
 
@@ -27,7 +28,7 @@ it('pins the verified UAE tree of 7 emirates', function (): void {
 it('seeds the 7 ISO 3166-2:AE emirates', function (): void {
     $country = $this->seedCountry('AE');
 
-    app(UnitedArabEmiratesGeographyProvider::class)->seed($country);
+    app(CountryStateSeeder::class)->execute($country, app(UnitedArabEmiratesGeographyProvider::class)->stateSeedData());
 
     $states = State::query()->where('country_id', $country->id)->orderBy('code')->pluck('name', 'code')->all();
 

@@ -12,6 +12,8 @@ use AIArmada\Addressing\Features\Geography\Actions\SaveAddressAreaAction;
 use AIArmada\Addressing\Features\Geography\Actions\SaveAddressAreaAliasAction;
 use AIArmada\Addressing\Features\Geography\Actions\DeleteAddressAreaAliasAction;
 use AIArmada\Addressing\Features\Geography\Actions\SetAddressAreaBoundaryAction;
+use AIArmada\Addressing\Contracts\CountryStateSeeder;
+use AIArmada\Addressing\Features\Geography\Actions\SeedCountryStatesAction;
 use AIArmada\Addressing\Platform\FeatureModule as FeatureModuleContract;
 use Illuminate\Contracts\Foundation\Application;
 
@@ -19,6 +21,7 @@ final class FeatureModule implements FeatureModuleContract
 {
     public function register(Application $app): void
     {
+        $app->singleton(CountryStateSeeder::class, SeedCountryStatesAction::class);
         $app->singleton(AddressAreaWriter::class, SaveAddressAreaAction::class);
         $app->singleton(AddressAreaAliasWriter::class, SaveAddressAreaAliasAction::class);
         $app->singleton(AddressAreaAliasDeleter::class, DeleteAddressAreaAliasAction::class);

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Addressing\Contracts\CountryStateSeeder;
 use AIArmada\Addressing\Actions\SeedAddressStatesAction;
 use AIArmada\Addressing\Actions\SeedCountryGeographiesAction;
 use AIArmada\Addressing\Contracts\AddressAreaSource;
@@ -25,7 +26,7 @@ it('lists only the four mapped nations for GB after a full seed', function (): v
     ));
 
     app(SeedAddressStatesAction::class)->execute($states);
-    app(UnitedKingdomGeographyProvider::class)->seed($country);
+    app(CountryStateSeeder::class)->execute($country, app(UnitedKingdomGeographyProvider::class)->stateSeedData());
     app(SeedCountryGeographiesAction::class)->execute('GB');
 
     $resolver = app(CountryAddressProfileResolver::class);
@@ -61,7 +62,7 @@ it('lists only the ten mapped counties for LT after a full seed', function (): v
     ));
 
     app(SeedAddressStatesAction::class)->execute($states);
-    app(LithuaniaGeographyProvider::class)->seed($country);
+    app(CountryStateSeeder::class)->execute($country, app(LithuaniaGeographyProvider::class)->stateSeedData());
     app(SeedCountryGeographiesAction::class)->execute('LT');
 
     $resolver = app(CountryAddressProfileResolver::class);
@@ -105,7 +106,7 @@ it('respects the configured state subclass and its global scopes', function (): 
     ));
 
     app(SeedAddressStatesAction::class)->execute($states);
-    app(UnitedKingdomGeographyProvider::class)->seed($country);
+    app(CountryStateSeeder::class)->execute($country, app(UnitedKingdomGeographyProvider::class)->stateSeedData());
 
     $scopedState = new class extends State
     {
