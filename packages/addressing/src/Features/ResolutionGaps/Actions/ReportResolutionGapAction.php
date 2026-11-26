@@ -98,7 +98,7 @@ final readonly class ReportResolutionGapAction implements ResolutionGapReporter
         try {
             return (string) $this->runWithinOwnerContext($attempt)->getKey();
         } catch (UniqueConstraintViolationException) {
-            return $this->runWithinOwnerContext($attempt);
+            return (string) $this->runWithinOwnerContext($attempt)->getKey();
         }
     }
 
