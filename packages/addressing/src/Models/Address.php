@@ -9,7 +9,7 @@ use AIArmada\Addressing\Contracts\AddressFormatter;
 use AIArmada\Addressing\Contracts\AddressNormalizer;
 use AIArmada\Addressing\Data\AddressData;
 use AIArmada\Addressing\Database\Factories\AddressFactory;
-use AIArmada\Addressing\Features\AddressLifecycle\Actions\DeleteAddressReferencesAction;
+use AIArmada\Addressing\Features\AddressLifecycle\Api\AddressDeletionCleanup;
 use AIArmada\Addressing\Support\AddressingTableResolver;
 use AIArmada\Addressing\Support\ModelResolver;
 use AIArmada\Addressing\Traits\HasSpatialLocation;
@@ -116,7 +116,7 @@ class Address extends Model
         });
 
         static::deleting(static function (Address $address): void {
-            app(DeleteAddressReferencesAction::class)->execute((string) $address->getKey());
+            app(AddressDeletionCleanup::class)->execute((string) $address->getKey());
         });
     }
 

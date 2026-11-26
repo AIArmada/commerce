@@ -76,11 +76,22 @@ final readonly class SyncAddressAreaAssignmentsAction implements AddressAssignme
         }
 
         $countryCode = mb_strtoupper(mb_trim((string) $countryCode));
-        $selectedAssignments = array_filter(
-            $assignments,
-            static fn (mixed $areaId): bool => is_string($areaId) && mb_trim($areaId) !== '',
-        );
-        $areaIds = array_values($selectedAssignments);
+        $selectedAssignments = [];
+
+        foreach ($assignments as $role => $areaId) {
+            if (! is_string($role) || ($areaId !== null && ! is_string($areaId))) {
+                throw ValidationException::withMessages(['address_areas' => 'Invalid address area assignment.']);
+            }
+
+            if ($areaId !== null && mb_trim($areaId) !== '') {
+                $selectedAssignments[$role] = mb_trim($areaId);
+            }
+        }
+        if ($selectedAssignments === []) {
+            return [];
+        }
+
+        $areaIds = array_values(array_unique($selectedAssignments));
         $areas = ModelResolver::areaClass()::query()
             ->whereIn('id', $areaIds)
             ->where('country_code', $countryCode)
@@ -88,7 +99,7 @@ final readonly class SyncAddressAreaAssignmentsAction implements AddressAssignme
             ->get()
             ->keyBy(fn (AddressArea $area): string => (string) $area->getKey());
 
-        if ($areas->count() !== count(array_unique($areaIds))) {
+        if ($areas->count() !== count($areaIds)) {
             throw ValidationException::withMessages([
                 'address_areas' => 'Every selected address area must belong to the address country.',
             ]);
@@ -198,9 +209,13 @@ final readonly class SyncAddressAreaAssignmentsAction implements AddressAssignme
                     continue;
                 }
 
-                foreach ($offending as $role) {
-                    unset($candidates[$role]);
+                $remaining = array_diff_key($candidates, array_fill_keys($offending, true));
+
+                if ($remaining === $candidates) {
+                    return [];
                 }
+
+                $candidates = $remaining;
             }
         }
 
@@ -431,6 +446,7 @@ final readonly class SyncAddressAreaAssignmentsAction implements AddressAssignme
             $relationships = ModelResolver::areaRelationshipClass()::query()
                 ->whereIn('child_address_area_id', $frontier)
                 ->where('relationship_type', 'contains')
+                ->whereHas('parent', static fn ($query) => $query->where('is_active', true))
                 ->where(function ($query): void {
                     $query->whereNull('valid_from')->orWhereDate('valid_from', '<=', CarbonImmutable::now());
                 })

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Addressing\Models;
 
 use AIArmada\Addressing\Database\Factories\CityFactory;
-use AIArmada\Addressing\Features\Geography\Actions\ClearGeographyReferencesAction;
+use AIArmada\Addressing\Features\Geography\Api\GeographyReferenceMaintenance;
 use AIArmada\Addressing\Support\AddressingTableResolver;
 use AIArmada\Addressing\Support\ModelResolver;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -32,7 +32,7 @@ class City extends Model
     protected static function booted(): void
     {
         static::deleting(static function (City $city): void {
-            app(ClearGeographyReferencesAction::class)->clearCity((string) $city->getKey());
+            app(GeographyReferenceMaintenance::class)->clearCity((string) $city->getKey());
         });
     }
 

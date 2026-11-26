@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Addressing\Models;
 
 use AIArmada\Addressing\Database\Factories\AddressAreaFactory;
-use AIArmada\Addressing\Features\Geography\Actions\ClearGeographyReferencesAction;
+use AIArmada\Addressing\Features\Geography\Api\GeographyReferenceMaintenance;
 use AIArmada\Addressing\Support\AddressingTableResolver;
 use AIArmada\Addressing\Support\ModelResolver;
 use AIArmada\Addressing\Support\SpatialLocation;
@@ -66,7 +66,7 @@ class AddressArea extends Model
     protected static function booted(): void
     {
         static::deleting(static function (AddressArea $area): void {
-            app(ClearGeographyReferencesAction::class)->clearArea((string) $area->getKey());
+            app(GeographyReferenceMaintenance::class)->clearArea((string) $area->getKey());
         });
     }
 

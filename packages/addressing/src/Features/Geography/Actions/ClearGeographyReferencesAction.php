@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace AIArmada\Addressing\Features\Geography\Actions;
 
 use AIArmada\Addressing\Features\AddressLifecycle\Api\AddressReferenceMaintenance;
+use AIArmada\Addressing\Features\Geography\Api\GeographyReferenceMaintenance;
 use AIArmada\Addressing\Features\PostalCodes\Api\AreaCoverageMaintenance;
 use AIArmada\Addressing\Support\AddressAreaStateBridge;
 use AIArmada\Addressing\Support\ModelResolver;
 use DomainException;
 
-final readonly class ClearGeographyReferencesAction
+final readonly class ClearGeographyReferencesAction implements GeographyReferenceMaintenance
 {
     public function __construct(
         private AddressReferenceMaintenance $addresses,

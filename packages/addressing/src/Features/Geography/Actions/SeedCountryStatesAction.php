@@ -44,7 +44,9 @@ final readonly class SeedCountryStatesAction implements CountryStateSeeder
 
             if ($retired !== []) {
                 foreach ($stateClass::query()->where('country_id', $countryId)->whereIn('code', $retired)->lazyById(500) as $state) {
-                    $state->delete();
+                    if (! $state->delete()) {
+                        throw new InvalidArgumentException('The retired state could not be deleted.');
+                    }
                 }
             }
         });

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Addressing\Models;
 
 use AIArmada\Addressing\Database\Factories\PostalCodeFactory;
-use AIArmada\Addressing\Features\PostalCodes\Actions\ClearAreaCoverageAction;
+use AIArmada\Addressing\Features\PostalCodes\Api\AreaCoverageMaintenance;
 use AIArmada\Addressing\Support\AddressingTableResolver;
 use AIArmada\Addressing\Support\ModelResolver;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -28,7 +28,7 @@ class PostalCode extends Model
     protected static function booted(): void
     {
         static::deleting(static function (PostalCode $postalCode): void {
-            app(ClearAreaCoverageAction::class)->clearPostalCode((string) $postalCode->getKey());
+            app(AreaCoverageMaintenance::class)->clearPostalCode((string) $postalCode->getKey());
         });
     }
 

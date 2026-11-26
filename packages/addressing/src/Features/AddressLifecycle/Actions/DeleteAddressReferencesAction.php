@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Addressing\Features\AddressLifecycle\Actions;
 
+use AIArmada\Addressing\Features\AddressLifecycle\Api\AddressDeletionCleanup;
 use AIArmada\Addressing\Support\AddressOwnerGuard;
 use AIArmada\Addressing\Support\ModelResolver;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 
-final readonly class DeleteAddressReferencesAction
+final readonly class DeleteAddressReferencesAction implements AddressDeletionCleanup
 {
     public function execute(string $addressId): void
     {
